@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-Usage: printDiFXInput.py [-h] [-a] [-f] [-b] [-r] [-u] [-v]
+Usage: printDiFXInput.py [-h] [-f] [-b] [-r] [-u] [-o] [-s] [-a] [-v]
                          <difx base name> [<difx base name> ...]
 
 Prints a summary of a DiFX .input file.
@@ -8,9 +8,11 @@ Prints a summary of a DiFX .input file.
 optional arguments:
   -h, --help        show this help message and exit
   -f, --freqs       Show FREQ table
-  -b, --baselines   Show BASELINE table
   -d, --datastreams Show DATASTREAMS and provided frequencies
+  -b, --baselines   Show BASELINE table
   -u, --unreffreqs  List frequencies not referenced by BASELINEs
+  -o, --outfreqs    List frequencies produced by BASELINEs
+  -s, --outfreqassy List output frequencies and contributing freqs
   -a, --all         Show all of the above items (default)
   -v                Increase verbosity
 
@@ -34,8 +36,10 @@ class PrintOpts:
 	def setAll(self,enabled):
 		self.printFREQ = enabled
 		self.printBASELINE = enabled
-		self.printUnreferenced = enabled
 		self.printDSTREAM = enabled
+		self.printUnreferenced = enabled
+		self.printReferenced = enabled
+		self.printOutputbandDetails = enabled
 
 
 def getPolsForFreq(ds,fqId):
@@ -106,7 +110,7 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 	if opts.printFREQ:
 		print("Frequencies in FREQ table:")
 		for n in range(len(cfg.freqs)):
-			print((" "*indent) + "fq %3d : %s" % (n, cfg.freqs[n].str().strip()))
+			print((" "*indent) + "fq %3d : %s" % (n, cfg.freqs[n].str()))
 		print("")
 
 	# Print out all recorded freqs listed in DATASTREAMS
@@ -146,23 +150,6 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 
 		print("")
 
-	# Print out all FREQ entries not referenced by DATASTREAMS
-	if opts.printUnreferenced:
-		print("Frequencies not referenced by any DATASTREAM:")
-		all_fqs_used = []
-		for d in cfg.datastreams:
-			all_fqs_used = all_fqs_used + d.recfreqindex + d.zoomfreqindex
-		all_fqs_used = set(all_fqs_used)
-		unused_fqs = list(set(range(len(cfg.freqs))) - all_fqs_used)
-		unused_fqs.sort()
-		if len(unused_fqs) < 1:
-			print((" "*indent) + "(none)")
-		else:
-			for n in range(len(unused_fqs)):
-				fq = unused_fqs[n]
-				print((" "*indent) + "fq %3d %s" % (fq, cfg.freqs[fq].str().strip()))
-		print("")
-
 	# Print out all BASELINEs
 	if opts.printBASELINE:
 		print("Content of BASELINE table:")
@@ -195,26 +182,68 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 					fqtype1, fqtype2 = 'rec ', 'rec '
 					if bl_band_1 >= ds1.nrecband: fqtype1 = 'zoom'
 					if bl_band_2 >= ds2.nrecband: fqtype2 = 'zoom'
-					print((" "*3*indent) + "%s %2d x %s %2d : %s%s : fq %2d x %2d : %s x %s" % (fqtype1,bl_band_1,fqtype2,bl_band_2, pol1,pol2, fq1,fq2,sfq1,sfq2))
-					if b.version >= 2.7:
-						print((" "*3*indent) + "  part of fq %3d %s" % (destfreq,sdestfq))
-						baseline_outputfreq_members[destfreq].append(fq1)
-						baseline_outputfreq_members[destfreq].append(fq2)
-			if b.version >= 2.7:
-				print((" "*2*indent) + "Output band mapping:")
-				for outfq in baseline_outputfreq_members.keys():
-					constituents = list(set(baseline_outputfreq_members[outfq]))
-					print((" "*3*indent) + "output fq %3d created from freq(s) %s" % (outfq,str(constituents)))
+					print((" "*3*indent) + "pols %s%s freqs %s x %s" % (pol1,pol2,sfq1,sfq2))
+					if opts.verbosity >= 1:
+						print((" "*3*indent) + "%s %2d x %s %2d -> fq %2d x %2d -> outFq %d" % (fqtype1,bl_band_1,fqtype2,bl_band_2, fq1,fq2,destfreq))
 		print("")
 
-		# Print all utilized destination freqs of the BASELINEs
-		if version >= 2.7:
-			all_dest_fqs = list(set(all_dest_fqs))
-			all_dest_fqs.sort()
-			print("All referenced output band FREQs:")
-			for fq in all_dest_fqs:
-				print((" "*1*indent) + "fq %3d : %s" % (fq, cfg.freqs[fq].str().strip()))
-			print((" "*1*indent) + "%d utilized output freqs in total" % (len(all_dest_fqs)))
+	# Print all utilized destination freqs of the BASELINEs
+	if opts.printReferenced:
+		nfreqs, freqs = cfg.determine_outputfreqs()
+		freqs.sort()
+		print("All output FREQs referenced by BASELINEs:")
+		for fq in freqs:
+			print((" "*1*indent) + "fq %3d : %s" % (fq, cfg.freqs[fq].str().strip()))
+		print((" "*1*indent) + "%d freqs in total expected in output visibility data" % (nfreqs))
+		print("")
+
+	# Print out all FREQ entries not referenced by DATASTREAMS
+	if opts.printUnreferenced:
+		print("Frequencies not referenced by any DATASTREAM:")
+		all_fqs_used = []
+		for d in cfg.datastreams:
+			all_fqs_used = all_fqs_used + d.recfreqindex + d.zoomfreqindex
+		all_fqs_used = set(all_fqs_used)
+		unused_fqs = list(set(range(len(cfg.freqs))) - all_fqs_used)
+		unused_fqs.sort()
+		if len(unused_fqs) < 1:
+			print((" "*indent) + "(none)")
+		else:
+			for n in range(len(unused_fqs)):
+				fq = unused_fqs[n]
+				print((" "*indent) + "fq %3d %s" % (fq, cfg.freqs[fq].str().strip()))
+		print("")
+
+	# Print out all Outputbands
+	if opts.printOutputbandDetails:
+		print("Outputbands and their assembly:")
+		nfreqs, freqs = cfg.determine_outputfreqs()
+		outputfreq_members = {freq:[] for freq in freqs}
+		for b in cfg.baselines:
+			ds1, ds2 = cfg.datastreams[b.dsaindex], cfg.datastreams[b.dsbindex]
+			for n in range(len(b.dsabandindex)):
+				bl_bands_1, bl_bands_2 = b.dsabandindex[n], b.dsbbandindex[n]
+				if b.version >= 2.7:
+					destfreq = b.destfreq[n]
+				else:
+					destfreq,tmp = getFreqPolOfBand(ds1,min(bl_bands_1))
+				for (bl_band_1,bl_band_2) in zip(bl_bands_1,bl_bands_2):
+					fq1,pol1 = getFreqPolOfBand(ds1,bl_band_1)
+					fq2,pol2 = getFreqPolOfBand(ds2,bl_band_2)					
+					outputfreq_members[destfreq].append(fq1)
+					outputfreq_members[destfreq].append(fq2)
+		outfreqs = outputfreq_members.keys()
+		outfreqs.sort()
+		for outfq in outfreqs:
+			constituents = list(set(outputfreq_members[outfq]))
+			constituents.sort()
+			print((" "*1*indent) + "freq %d %s assembled from" % (outfq, cfg.freqs[outfq].str().strip()))
+			for confq in constituents:
+				f = cfg.freqs[confq]
+				fstr = "%.6f MHz %3s at %.6f MHz" % (f.bandwidth, 'LSB' if f.lsb else 'USB', f.freq)
+				print((" "*2*indent) + "fq %3d bw %s" % (confq, fstr))
+
+		print("")
 
 if __name__ == "__main__":
 
@@ -233,12 +262,16 @@ if __name__ == "__main__":
 			sys.exit(-1)
 		if '-f' in args or '--freqs' in args:
 			opts.printFREQ = True
-		if '-b' in args or '--baselines' in args:
-			opts.printBASELINE = True
 		if '-d' in args or '--datastreams' in args:
 			opts.printDSTREAM = True
+		if '-b' in args or '--baselines' in args:
+			opts.printBASELINE = True
 		if '-u' in args or '--unreffreqs' in args:
 			opts.printUnreferenced = True
+		if '-o' in args or '--outfreqs' in args:
+			opts.printReferenced = True
+		if '-s' in args or '--outfreqassy' in args:
+			opts.printOutputbandDetails = True
 		opts.verbosity = args.count('-v') + args.count('--verbose')
 
 	if len(sys.argv) < 2:
@@ -248,4 +281,3 @@ if __name__ == "__main__":
 	for difxf in files:
 		print('\nInspecting %s:\n' % (difxf))
 		printDiFXInput(difxf, opts)
-
