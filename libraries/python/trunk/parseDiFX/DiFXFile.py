@@ -42,7 +42,7 @@ class DiFXFile:
         if inputfilename:
             self.open(inputfilename)
 
-    def open(self, inputfilename):
+    def open(self, inputfilename, phasecenterId=None, pulsarbinId=None):
         self.metainfo.fromfile(inputfilename)
         self.valid = self.metainfo.isvalid()
         if not self.valid:
@@ -50,7 +50,16 @@ class DiFXFile:
         
         self.difxfilepath = self.metainfo.common['difxfile']
 
-        glob_pattern = self.difxfilepath + '/DIFX_*.s*.b*'
+        glob_pattern = self.difxfilepath + '/DIFX_*'
+        if phasecenterId is not None:
+            glob_pattern = glob_pattern + '.s%04d' % (phasecenterId)
+        else:
+            glob_pattern = glob_pattern + '.s*'
+        if pulsarbinId is not None:
+            glob_pattern = glob_pattern + '.b%04d' % (pulsarbinId)
+        else:
+            glob_pattern = glob_pattern + '.b*'
+
         difxfileslist = glob.glob(glob_pattern)
         if len(difxfileslist) <= 0:
             print ('Warning: no visibility data file found in %s!' % (glob_pattern))

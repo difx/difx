@@ -23,6 +23,10 @@ parser.add_option("-m", "--maxrecords", dest="maxrecords", metavar="MAXRECORDS",
                   default="-1", help="Stop after comparing MAXRECORDS (if >0) records")
 parser.add_option("-w", "--warn-undiffable", dest="warnundiffable", action="store_true", default=False,
                   help="Show visibility records that cannot be diffed")
+parser.add_option("-P", "--phasecenter", dest="phasecenterId",
+                  default="None", help="Phase center (0..n-1) to compare")
+parser.add_option("-B", "--pulsarbin", dest="pulsarbinId",
+                  default="None", help="Pulsar bin (0..n-1) to compare")
 parser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False,
                   help="Turn verbose printing on")
 
@@ -38,6 +42,16 @@ epsilon        = float(options.epsilon)
 maxrecords     = int(options.maxrecords)
 warnundiffable = options.warnundiffable
 verbose        = options.verbose
+pulsarbin      = None
+phasecenter    = None
+try:
+    phasecenter = int(options.phasecenterId)
+except:
+    pass
+try:
+    pulsarbin = int(options.pulsarbinId)
+except:
+    pass
 
 
 class MetaMapper:
@@ -240,21 +254,24 @@ class DiFXAPSet:
 
 
 
-def getDiFXFile(basename: str) -> parseDiFX.DiFXFile:
+def getDiFXFile(basename: str, phasecenter, pulsarbin) -> parseDiFX.DiFXFile:
 	'''Open an pre-parse a DiFX file and metadata'''
 	if basename.endswith(suffixes):
 		basename = basename[:basename.rfind('.')]
 	inputfile = basename + '.input'
 	difx = parseDiFX.DiFXFile()
-	difx.open(inputfile)
+	difx.open(inputfile,phasecenterId=phasecenter,pulsarbinId=pulsarbin)
 	return difx
 
 
 
 if __name__ == "__main__":
 
-	A = getDiFXFile(args[0])
-	B = getDiFXFile(args[1])
+	A = getDiFXFile(args[0], phasecenter, pulsarbin)
+	B = getDiFXFile(args[1], phasecenter, pulsarbin)
+	if A.difxfile is None or B.difxfile is None:
+		sys.exit(1)
+
 	metamap = MetaMapper(A,B)
 
 	apsA = DiFXAPSet(A)

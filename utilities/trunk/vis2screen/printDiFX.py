@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-Usage: printDiFX.py <difx base name>
+Usage: printDiFX.py [-p|--phasecenter <n>] [-b|--pulsarbin <n>] <difx base name>
 
 Displays text based summaries of all visibility records in a DiFX data set.
 """
@@ -15,7 +15,7 @@ except:
 
 
 """Print visibility data records"""
-def printVisibilityfile(basename, Nprintchans=4):
+def printVisibilityfile(basename, Nprintchans=4, phasecenterId=None, pulsarbinId=None):
 
 	# Determine name of input file
 	if basename.endswith(('.difx','.input','.calc')):
@@ -24,7 +24,7 @@ def printVisibilityfile(basename, Nprintchans=4):
 
 	# Open the file set
 	difx = parseDiFX.DiFXFile()
-	difx.open(inputfile)
+	difx.open(inputfile,phasecenterId=phasecenterId,pulsarbinId=pulsarbinId)
 
 	# Loop through the difx file
 	while True:
@@ -75,9 +75,24 @@ def printVisibilityfile(basename, Nprintchans=4):
 
 if __name__ == '__main__':
 
-	if len(sys.argv) < 2:
+	phasecenterId = None
+	pulsarbinId = None
+
+	args = sys.argv[1:]
+	while len(args) > 0 and args[0][0]=='-':
+		if ('-p' in args[0] or '--phasecenter' in args[0]) and len(args) > 1:
+			phasecenterId = int(args[1])
+			args = args[2:]
+		elif ('-b' in args[0] or '--pulsarbin' in args[0]) and len(args) > 1:
+			pulsarbinId = int(args[1])
+			args = args[2:]
+		elif args[0][0] == '-':
+			args = args[1:]
+
+	if len(args) < 1:
 		print (__doc__)
 		sys.exit(-1)
 
-	for difxf in sys.argv[1:]:
-		printVisibilityfile(difxf)
+	for difxf in args:
+		printVisibilityfile(difxf,phasecenterId=phasecenterId,pulsarbinId=pulsarbinId)
+
