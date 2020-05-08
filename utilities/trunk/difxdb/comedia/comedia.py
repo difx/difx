@@ -735,6 +735,11 @@ class MainWindow(GenericWindow):
 	bindirFile = dirFile[:-3] + "bindir"
         if os.path.isfile(bindirFile):
             os.remove(bindirFile)
+	
+	# delete mark6 filelist
+	filelistFile = dirFile[:-3] + "filelist"
+        if os.path.isfile(filelistFile):
+            os.remove(filelistFile)
             
         session.close()
             
