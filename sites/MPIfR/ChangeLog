@@ -1,0 +1,9 @@
+
+Version 2.6
+~~~~~~~~~~~
+* Add utilities vdifcontinuitycheck.py and m5bcontinuitycheck.py,
+  as copies from the tools from https://bitbucket.org/jwagner313/vdifstream/
+
+Version 2.5
+~~~~~~~~~~~
+
