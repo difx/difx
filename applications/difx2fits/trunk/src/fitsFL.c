@@ -52,24 +52,35 @@ typedef struct
 	int severity;
 } FlagDatum;
 
+enum
+{
+	FreqTypeNone = 0,
+	FreqTypeRecBand,
+	FreqTypeDiFxFreq
+};
 
-static int parseFlag(char *line, char *antName, double timeRange[2], char *reason, int *recBand)
+static int parseFlag(char *line, char *antName, double timeRange[2], char *reason, int *recBand, int *chanRange)
 {
 	int l;
 	int n;
 
-	n = sscanf(line, "%s%lf%lf%d%n", antName, timeRange+0, timeRange+1, recBand, &l);
+	n = sscanf(line, "%s%lf%lf%d%d%d%n", antName, timeRange+0, timeRange+1, recBand, chanRange+0, chanRange+1, &l);
 
 	if(n < 4)
 	{
 		return 0;
 	}
 	
+	if(n < 6)
+	{
+		chanRange[0] = 0; /* no channel selective flagging */
+		chanRange[1] = 0;
+	}
+
 	copyQuotedString(reason, line+l, 40);
 	
 	return 1;
 }
-
 
 static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes, const struct fitsBinTableColumn *columns, int nColumn, const FlagDatum *FL)
 {
@@ -118,7 +129,7 @@ static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes, co
 	fitsWriteBinRow(out, fitsbuf);
 }
 
-static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys, const char *antennaName, const char *flagFile, struct fitsPrivate *out, char *fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, FlagDatum *FL, int refDay, int year, int nRec)
+static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys, const char *antennaName, const char *flagFile, struct fitsPrivate *out, char *fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, FlagDatum *FL, int refDay, int year, int nRec, const int freqType)
 {
 	FILE *in;
 	int i;
@@ -147,6 +158,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 		int recBand;
 		int v;
 		double timeRange[2];
+		int chanRange[2];
 		
 		rv = fgets(line, MaxLineLength, in);
 		if(!rv)
@@ -159,7 +171,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 		{
 			continue;
 		}
-		else if(parseFlag(line, antName, timeRange, FL->reason, &recBand))
+		else if(parseFlag(line, antName, timeRange, FL->reason, &recBand, chanRange))
 		{
 			int antennaId;
 			int freqId;
@@ -237,18 +249,31 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 			/* Set antenna of flag.  ALL flags are associated with exactly 1 antenna. */
 			FL->baselineId1[0] = antennaId + 1;
 
+			/* Set channels of flag. Defaults are 0, no channel selective flagging. */
+			FL->chanRange1[0] = chanRange[0];
+			FL->chanRange1[1] = chanRange[1];
+
 			dc = D->config + configId;
 			dfs = D->freqSet + dc->freqSetId;
 
-			/* convert the recorder channel number into FITS
+			/* Convert the recorder channel number into FITS
 			 * useful values: the IF index (bandId) and the
 			 * polarization index (polId).  Both are zero-based
-			 * numbers, with -1 implying "all values"
+			 * numbers, with -1 implying "all values".
 			 */
-			v = DifxConfigRecBand2FreqPol(D, configId, antennaId, recBand, &freqId, &FL->polId);
-			if(v < 0)
+			if(freqType == FreqTypeRecBand)
 			{
-				continue;
+				v = DifxConfigRecBand2FreqPol(D, configId, antennaId, recBand, &freqId, &FL->polId);
+				if(v < 0)
+				{
+					continue;
+				}
+			}
+			else if(freqType == FreqTypeDiFxFreq)
+			{
+				freqId = recBand;
+				FL->polId = -1; // all pols
+
 			}
 
 			/* Then cycle through all IFs to see if that IF is flagged or not */
@@ -366,7 +391,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 		v = globcase(__FUNCTION__, "*.*.flag", flagFile);
 		if(v > 0)
 		{
-			nRec = processFlagFile(D, p_fits_keys, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec);
+			nRec = processFlagFile(D, p_fits_keys, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec, FreqTypeRecBand);
 		}
 		else
 		{
@@ -379,7 +404,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 				strncpy(flagFile, D->job[j].inputFile, l);
 				snprintf(flagFile+l-5, DIFXIO_FILENAME_LENGTH-l+5, "%s.flag", D->antenna[antId].name);
 
-				nRec = processFlagFile(D, p_fits_keys, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec);
+				nRec = processFlagFile(D, p_fits_keys, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec, FreqTypeRecBand);
 			}
 			
 		}
@@ -388,7 +413,23 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 	/* Second: look for a multi-station flag file.  Unlike for tsys, pcal, and weather, flags will be applied from both
 	 * the antenna-specific flag file and "flag".
 	 */
-	nRec = processFlagFile(D, p_fits_keys, 0, "flag", out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec);
+	nRec = processFlagFile(D, p_fits_keys, 0, "flag", out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec, FreqTypeRecBand);
+
+	/* Third: look for spectral channel flag multi-station files. */
+	if(1)
+	{
+		char flagFile[DIFXIO_FILENAME_LENGTH];
+		int j, l;
+
+		for(j = 0; j < D->nJob; ++j)
+		{
+			l = strlen(D->job[j].inputFile);
+			strncpy(flagFile, D->job[j].inputFile, l);
+			snprintf(flagFile+l-5, DIFXIO_FILENAME_LENGTH-l+5, "channelflags");
+
+			nRec = processFlagFile(D, p_fits_keys, 0, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec, FreqTypeDiFxFreq);
+		}
+	}
 
 	/* Finally: make flags for bandId/polIds that were not observed */
 	FL.timeRange[0] = start;
