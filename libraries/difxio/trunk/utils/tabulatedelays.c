@@ -35,8 +35,8 @@
 
 const char program[] = "tabulatedelays";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.6";
-const char verdate[] = "20200501";
+const char version[] = "0.7";
+const char verdate[] = "20200513";
 
 void usage()
 {
@@ -56,6 +56,7 @@ void usage()
 	printf("--perint   print values at the center of every integration rather than every 8s\n\n");
 	printf("--addclock include clock offset/rate in delay/rate values\n\n");
 	printf("--noaxis   remove effect of axis offset from delay/rate values\n\n");
+	printf("--showpos  print the antenna coordinates in a comment at the top of the file\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 	printf("All normal program output goes to stdout.\n\n");
 	printf("This program reads through one or more difx datasets and evaluates\n");
@@ -166,6 +167,7 @@ int main(int argc, char **argv)
 	int addClock = 0;
 	int noAxis = 0;	/* if set, remove effect of axis offset from delay/rate */
 	int nNoIm = 0;	/* count of scans w/o model */
+	int showPos = 0;
 	DifxMergeOptions mergeOptions;
 	FILE *mjdFile = 0;
 
@@ -219,6 +221,10 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "--noaxis") == 0)
 			{
 				noAxis = 1;
+			}
+			else if(strcmp(argv[a], "--showpos") == 0)
+			{
+				showPos = 1;
 			}
 			else if(strcmp(argv[a], "-m") == 0 || strcmp(argv[a], "--mjdfile") == 0)
 			{
@@ -371,368 +377,279 @@ int main(int argc, char **argv)
 		}
 	}
 
-	for(s = 0; s < D->nScan; ++s)
+	if(showPos > 0)
 	{
-		const DifxScan *ds;
-		const DifxConfig *dc;
-		int refAnt;	/* points to a valid antenna in this poly */
-		int p, i;
-
-		ds = D->scan + s;
-		dc = D->config + ds->configId;
-
-		printf("\n# scan %d of %d: source = %s\n", s+1, D->nScan, D->source[ds->phsCentreSrcs[0]].name);
-
-		if(!ds->im)
+		printf("\n");
+		printf("# Antenna positions (in meters) are as follows:\n");
+		for(a = 0; a < D->nAntenna; ++a)
 		{
-			printf("#   No IM table for this scan\n");
-			++nNoIm;
-
-			continue;
+			printf("# ITRF POSITION %s %12.4f %12.4f %12.4f\n", D->antenna[a].name, D->antenna[a].X, D->antenna[a].Y, D->antenna[a].Z);
 		}
+	}
 
-		for(refAnt = 0; refAnt < D->nAntenna; ++refAnt)
+	if(mjdFile)
+	{
+		while(!feof(mjdFile))
 		{
-			if(ds->im[refAnt])
+			char line[20000];
+			double mjd;
+			int intmjd;
+			double sec;
+			char *rv;
+
+			const DifxScan *ds;
+			int refAnt;	/* points to a valid antenna in this poly */
+			int p;
+			int i;
+
+			rv = fgets(line, 19999, mjdFile);
+			if(!rv)
 			{
 				break;
 			}
-		}
-		if(refAnt >= D->nAntenna)
-		{
-			/* Huh, no delays for any antennas...? */
-
-			printf("#   No delays\n");
-
-			continue;
-		}
-
-		if(mjdFile)
-		{
-			while(!feof(mjdFile))
+			for(i = 0; line[i]; ++i)
 			{
-				char line[20000];
-				double mjd;
-				int intmjd;
-				double sec;
-				char *rv;
-				int i;
+				if(line[i] == '#')
+				{
+					line[i] = 0;
+					break;
+				}
+			}
 
-				rv = fgets(line, 19999, mjdFile);
-				if(!rv)
+			i = sscanf(line, "%lf", &mjd);
+			if(i != 1)
+			{
+				continue;
+			}
+
+			intmjd = (int)(mjd);
+			sec = (mjd - intmjd)*86400.0;
+
+			for(s = 0; s < D->nScan; ++s)
+			{
+				if(D->scan[s].mjdStart <= mjd && D->scan[s].mjdEnd >= mjd)
 				{
 					break;
 				}
-				for(i = 0; line[i]; ++i)
+			}
+
+			ds = D->scan + s;
+
+			if(s == D->nScan)
+			{
+				fprintf(stderr, "Skipping MJD value not in a scan: %f\n", mjd);
+				continue;
+			}
+
+			if(!ds->im)
+			{
+				printf("#   No IM table for this scan\n");
+				++nNoIm;
+
+				continue;
+			}
+
+			for(refAnt = 0; refAnt < D->nAntenna; ++refAnt)
+			{
+				if(ds->im[refAnt])
 				{
-					if(line[i] == '#')
-					{
-						line[i] = 0;
-						break;
-					}
-				}
-
-				i = sscanf(line, "%lf", &mjd);
-				if(i != 1)
-				{
-					continue;
-				}
-				if(mjd < 40000.0 || mjd > 80000.0)
-				{
-					fprintf(stderr, "Skipping nonsense MJD value: %f\n", mjd);
-					continue;
-				}
-
-				intmjd = (int)(mjd);
-				sec = (mjd - intmjd)*86400.0;
-
-				printf("%14.8f", mjd);
-
-				if(item == ItemClock)
-				{
-					for(a = 0; a < D->nAntenna; ++a)
-					{
-						printf("   %12.8f %12.9f", 
-							evaluateDifxAntennaClock(D->antenna+a, mjd),
-							evaluateDifxAntennaClockRate(D->antenna+a, mjd));
-					}
-				}
-				else if(item == ItemUVW)
-				{
-					for(a = 0; a < D->nAntenna; ++a)
-					{
-						p = getPolyIndex(ds, a, intmjd, sec);
-						if(p < 0)
-						{
-							printf("   %12.3f %12.3f %12.3f", 0.0, 0.0, 0.0);
-						}
-						else
-						{
-							double u, v, w;
-
-							if(ds->im[a] == 0)
-							{
-								u = v = w = 0.0;
-							}
-							else
-							{
-								u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
-								v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
-								w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
-							}
-
-							/* print to mm precision */
-							printf("   %12.3f %12.3f %12.3f", u, v, w); 
-						}
-					}
-				}
-				else
-				{
-					for(a = 0; a < D->nAntenna; ++a)
-					{
-						if(noAxis && D->antenna[a].mount != AntennaMountAltAz)
-						{
-							fprintf(stderr, "Unsupported option: --noaxis can only be used with alt-az mounts.\n");
-							fprintf(stderr, "Antenna %s has a %s mount type.\n", D->antenna[a].name, antennaMountTypeNames[D->antenna[a].mount]);
-
-							exit(0);
-						}
-
-						p = getPolyIndex(ds, a, intmjd, sec);
-						if(p < 0)
-						{
-							printf("   %12.6f %12.9f", 0.0, 0.0);
-						}
-						else
-						{
-							double v1, v2;
-
-							if(a >= ds->nAntenna)
-							{
-								v1 = v2 = -1.0;
-							}
-							else if(ds->im[a] == 0)
-							{
-								/* print zeros in cases where there is no data */
-								v1 = v2 = 0.0;
-							}
-							else
-							{
-								const double *poly;
-
-								switch(item)
-								{
-								case ItemDelay:
-									poly = ds->im[a][0][p].delay;
-									break;
-								case ItemAz:
-									poly = ds->im[a][0][p].az;
-									break;
-								case ItemEl:
-									poly = ds->im[a][0][p].elgeom;
-									break;
-								case ItemDry:
-									poly = ds->im[a][0][p].dry;
-									break;
-								case ItemWet:
-									poly = ds->im[a][0][p].wet;
-									break;
-								default:
-									fprintf(stderr, "Weird!\n");
-
-									exit(EXIT_FAILURE);
-								}
-
-								v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
-								v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
-
-								if(addClock && item == ItemDelay)
-								{
-									v1 += evaluateDifxAntennaClock(D->antenna+a, mjd);
-									v2 += evaluateDifxAntennaClockRate(D->antenna+a, mjd);
-								}
-
-								if(noAxis && item == ItemDelay)
-								{
-									const double c = 299.792458;	/* m/us */
-									double elev;			/* rad */
-									double axisOffset;		/* m */
-
-									axisOffset = D->antenna[a].offset[0];
-									elev = evaluatePoly(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec)*M_PI/180.0;
-
-									v1 -= axisOffset/c*cos(elev);
-									v2 += axisOffset/c*sin(elev)*evaluatePolyDeriv(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec)*M_PI/180.0;
-								}
-							}
-
-							/* print to picosecond and femtosecond/sec precision */
-							printf("   %12.6f %12.9f", v1, v2);
-						}
-					}
-					
-					printf("\n");
+					break;
 				}
 			}
-			if(mjdFile != stdin)
+			if(refAnt >= D->nAntenna)
 			{
-				fclose(mjdFile);
+				/* Huh, no delays for any antennas...? */
+
+				printf("#   No delays\n");
+
+				continue;
 			}
-		}
-		else if(perint)
-		{
-			double t;	/* time into scan, in seconds, initialized at tInt/2 */
 
-			for(t = 0.5*dc->tInt; t < ds->durSeconds; t += dc->tInt)
+			printf("%14.8f", mjd);
+
+			if(item == ItemClock)
 			{
-				double mjd;
-				int intmjd;
-				double sec;
-
-				mjd = ds->mjdStart + t/86400.0;
-				intmjd = (int)(mjd);
-				sec = (mjd - intmjd)*86400.0;
-
-				printf("%14.8f", mjd);
-
-				if(item == ItemClock)
+				for(a = 0; a < D->nAntenna; ++a)
 				{
-					for(a = 0; a < D->nAntenna; ++a)
-					{
-						printf("   %12.8f %12.9f", 
-							evaluateDifxAntennaClock(D->antenna+a, mjd),
-							evaluateDifxAntennaClockRate(D->antenna+a, mjd));
-					}
+					printf("   %12.8f %12.9f", 
+						evaluateDifxAntennaClock(D->antenna+a, mjd),
+						evaluateDifxAntennaClockRate(D->antenna+a, mjd));
 				}
-				else if(item == ItemUVW)
+			}
+			else if(item == ItemUVW)
+			{
+				for(a = 0; a < D->nAntenna; ++a)
 				{
-					for(a = 0; a < D->nAntenna; ++a)
+					p = getPolyIndex(ds, a, intmjd, sec);
+					if(p < 0)
 					{
-						p = getPolyIndex(ds, a, intmjd, sec);
-						if(p < 0)
+						printf("   %12.3f %12.3f %12.3f", 0.0, 0.0, 0.0);
+					}
+					else
+					{
+						double u, v, w;
+
+						if(ds->im[a] == 0)
 						{
-							printf("   %12.3f %12.3f %12.3f", 0.0, 0.0, 0.0);
+							u = v = w = 0.0;
 						}
 						else
 						{
-							double u, v, w;
-
-							if(ds->im[a] == 0)
-							{
-								u = v = w = 0.0;
-							}
-							else
-							{
-								u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
-								v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
-								w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
-							}
-
-							/* print to mm precision */
-							printf("   %12.3f %12.3f %12.3f", u, v, w); 
+							u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+							v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+							w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
 						}
+
+						/* print to mm precision */
+						printf("   %12.3f %12.3f %12.3f", u, v, w); 
 					}
 				}
-				else
+			}
+			else
+			{
+				for(a = 0; a < D->nAntenna; ++a)
 				{
-					for(a = 0; a < D->nAntenna; ++a)
+					if(noAxis && D->antenna[a].mount != AntennaMountAltAz)
 					{
-						if(noAxis && D->antenna[a].mount != AntennaMountAltAz)
-						{
-							fprintf(stderr, "Unsupported option: --noaxis can only be used with alt-az mounts.\n");
-							fprintf(stderr, "Antenna %s has a %s mount type.\n", D->antenna[a].name, antennaMountTypeNames[D->antenna[a].mount]);
+						fprintf(stderr, "Unsupported option: --noaxis can only be used with alt-az mounts.\n");
+						fprintf(stderr, "Antenna %s has a %s mount type.\n", D->antenna[a].name, antennaMountTypeNames[D->antenna[a].mount]);
 
-							exit(0);
+						exit(0);
+					}
+
+					p = getPolyIndex(ds, a, intmjd, sec);
+					if(p < 0)
+					{
+						printf("   %12.6f %12.9f", 0.0, 0.0);
+					}
+					else
+					{
+						double v1, v2;
+
+						if(a >= ds->nAntenna)
+						{
+							v1 = v2 = -1.0;
 						}
-
-						p = getPolyIndex(ds, a, intmjd, sec);
-						if(p < 0)
+						else if(ds->im[a] == 0)
 						{
-							printf("   %12.6f %12.9f", 0.0, 0.0);
+							/* print zeros in cases where there is no data */
+							v1 = v2 = 0.0;
 						}
 						else
 						{
-							double v1, v2;
+							const double *poly;
 
-							if(a >= ds->nAntenna)
+							switch(item)
 							{
-								v1 = v2 = -1.0;
-							}
-							else if(ds->im[a] == 0)
-							{
-								/* print zeros in cases where there is no data */
-								v1 = v2 = 0.0;
-							}
-							else
-							{
-								const double *poly;
+							case ItemDelay:
+								poly = ds->im[a][0][p].delay;
+								break;
+							case ItemAz:
+								poly = ds->im[a][0][p].az;
+								break;
+							case ItemEl:
+								poly = ds->im[a][0][p].elgeom;
+								break;
+							case ItemDry:
+								poly = ds->im[a][0][p].dry;
+								break;
+							case ItemWet:
+								poly = ds->im[a][0][p].wet;
+								break;
+							default:
+								fprintf(stderr, "Weird!\n");
 
-								switch(item)
-								{
-								case ItemDelay:
-									poly = ds->im[a][0][p].delay;
-									break;
-								case ItemAz:
-									poly = ds->im[a][0][p].az;
-									break;
-								case ItemEl:
-									poly = ds->im[a][0][p].elgeom;
-									break;
-								case ItemDry:
-									poly = ds->im[a][0][p].dry;
-									break;
-								case ItemWet:
-									poly = ds->im[a][0][p].wet;
-									break;
-								default:
-									fprintf(stderr, "Weird!\n");
-
-									exit(EXIT_FAILURE);
-								}
-
-								v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
-								v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
-
-								if(addClock && item == ItemDelay)
-								{
-									v1 += evaluateDifxAntennaClock(D->antenna+a, mjd);
-									v2 += evaluateDifxAntennaClockRate(D->antenna+a, mjd);
-								}
-
-								if(noAxis && item == ItemDelay)
-								{
-									const double c = 299.792458;	/* m/us */
-									double elev;			/* rad */
-									double axisOffset;		/* m */
-
-									axisOffset = D->antenna[a].offset[0];
-									elev = evaluatePoly(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec)*M_PI/180.0;
-
-									v1 -= axisOffset/c*cos(elev);
-									v2 += axisOffset/c*sin(elev)*evaluatePolyDeriv(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec)*M_PI/180.0;
-								}
+								exit(EXIT_FAILURE);
 							}
 
-							/* print to picosecond and femtosecond/sec precision */
-							printf("   %12.6f %12.9f", v1, v2);
+							v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+							v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+
+							if(addClock && item == ItemDelay)
+							{
+								v1 += evaluateDifxAntennaClock(D->antenna+a, mjd);
+								v2 += evaluateDifxAntennaClockRate(D->antenna+a, mjd);
+							}
+
+							if(noAxis && item == ItemDelay)
+							{
+								const double c = 299.792458;	/* m/us */
+								double elev;			/* rad */
+								double axisOffset;		/* m */
+
+								axisOffset = D->antenna[a].offset[0];
+								elev = evaluatePoly(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec)*M_PI/180.0;
+
+								v1 -= axisOffset/c*cos(elev);
+								v2 += axisOffset/c*sin(elev)*evaluatePolyDeriv(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec)*M_PI/180.0;
+							}
 						}
+
+						/* print to picosecond and femtosecond/sec precision */
+						printf("   %12.6f %12.9f", v1, v2);
 					}
-					
-					printf("\n");
 				}
+				
+				printf("\n");
 			}
 		}
-		else
-		{
-			for(p = 0; p < ds->nPoly; ++p)
-			{
-				const int N = (p == ds->nPoly-1) ? 16 : 15;
 
-				for(i = 0; i < N; ++i)
+		if(mjdFile != stdin)
+		{
+			fclose(mjdFile);
+		}
+	}
+
+	else
+	{
+		for(s = 0; s < D->nScan; ++s)
+		{
+			const DifxScan *ds;
+			const DifxConfig *dc;
+			int refAnt;	/* points to a valid antenna in this poly */
+			int p, i;
+
+			ds = D->scan + s;
+			dc = D->config + ds->configId;
+
+			printf("\n# scan %d of %d: source = %s\n", s+1, D->nScan, D->source[ds->phsCentreSrcs[0]].name);
+
+			if(!ds->im)
+			{
+				printf("#   No IM table for this scan\n");
+				++nNoIm;
+
+				continue;
+			}
+
+			for(refAnt = 0; refAnt < D->nAntenna; ++refAnt)
+			{
+				if(ds->im[refAnt])
+				{
+					break;
+				}
+			}
+			if(refAnt >= D->nAntenna)
+			{
+				/* Huh, no delays for any antennas...? */
+
+				printf("#   No delays\n");
+
+				continue;
+			}
+			if(perint)
+			{
+				double t;	/* time into scan, in seconds, initialized at tInt/2 */
+
+				for(t = 0.5*dc->tInt; t < ds->durSeconds; t += dc->tInt)
 				{
 					double mjd;
+					int intmjd;
+					double sec;
 
-					mjd = ds->im[refAnt][0][p].mjd + (ds->im[refAnt][0][p].sec + i*8)/86400.0;
+					mjd = ds->mjdStart + t/86400.0;
+					intmjd = (int)(mjd);
+					sec = (mjd - intmjd)*86400.0;
 
 					printf("%14.8f", mjd);
 
@@ -749,29 +666,35 @@ int main(int argc, char **argv)
 					{
 						for(a = 0; a < D->nAntenna; ++a)
 						{
-							double u, v, w;
-
-							if(ds->im[a] == 0)
+							p = getPolyIndex(ds, a, intmjd, sec);
+							if(p < 0)
 							{
-								u = v = w = 0.0;
+								printf("   %12.3f %12.3f %12.3f", 0.0, 0.0, 0.0);
 							}
 							else
 							{
-								u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, 8*i);
-								v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, 8*i);
-								w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, 8*i);
-							}
+								double u, v, w;
 
-							/* print to mm precision */
-							printf("   %12.3f %12.3f %12.3f", u, v, w); 
+								if(ds->im[a] == 0)
+								{
+									u = v = w = 0.0;
+								}
+								else
+								{
+									u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+									v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+									w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+								}
+
+								/* print to mm precision */
+								printf("   %12.3f %12.3f %12.3f", u, v, w); 
+							}
 						}
 					}
 					else
 					{
 						for(a = 0; a < D->nAntenna; ++a)
 						{
-							double v1, v2;
-
 							if(noAxis && D->antenna[a].mount != AntennaMountAltAz)
 							{
 								fprintf(stderr, "Unsupported option: --noaxis can only be used with alt-az mounts.\n");
@@ -780,70 +703,206 @@ int main(int argc, char **argv)
 								exit(0);
 							}
 
-							if(a >= ds->nAntenna)
+							p = getPolyIndex(ds, a, intmjd, sec);
+							if(p < 0)
 							{
-								v1 = v2 = -1.0;
-							}
-							else if(ds->im[a] == 0)
-							{
-								/* print zeros in cases where there is no data */
-								v1 = v2 = 0.0;
+								printf("   %12.6f %12.9f", 0.0, 0.0);
 							}
 							else
 							{
-								const double *poly;
+								double v1, v2;
 
-								switch(item)
+								if(a >= ds->nAntenna)
 								{
-								case ItemDelay:
-									poly = ds->im[a][0][p].delay;
-									break;
-								case ItemAz:
-									poly = ds->im[a][0][p].az;
-									break;
-								case ItemEl:
-									poly = ds->im[a][0][p].elgeom;
-									break;
-								case ItemDry:
-									poly = ds->im[a][0][p].dry;
-									break;
-								case ItemWet:
-									poly = ds->im[a][0][p].wet;
-									break;
-								default:
-									fprintf(stderr, "Weird!\n");
+									v1 = v2 = -1.0;
+								}
+								else if(ds->im[a] == 0)
+								{
+									/* print zeros in cases where there is no data */
+									v1 = v2 = 0.0;
+								}
+								else
+								{
+									const double *poly;
 
-									exit(EXIT_FAILURE);
+									switch(item)
+									{
+									case ItemDelay:
+										poly = ds->im[a][0][p].delay;
+										break;
+									case ItemAz:
+										poly = ds->im[a][0][p].az;
+										break;
+									case ItemEl:
+										poly = ds->im[a][0][p].elgeom;
+										break;
+									case ItemDry:
+										poly = ds->im[a][0][p].dry;
+										break;
+									case ItemWet:
+										poly = ds->im[a][0][p].wet;
+										break;
+									default:
+										fprintf(stderr, "Weird!\n");
+
+										exit(EXIT_FAILURE);
+									}
+
+									v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+									v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+
+									if(addClock && item == ItemDelay)
+									{
+										v1 += evaluateDifxAntennaClock(D->antenna+a, mjd);
+										v2 += evaluateDifxAntennaClockRate(D->antenna+a, mjd);
+									}
+
+									if(noAxis && item == ItemDelay)
+									{
+										const double c = 299.792458;	/* m/us */
+										double elev;			/* rad */
+										double axisOffset;		/* m */
+
+										axisOffset = D->antenna[a].offset[0];
+										elev = evaluatePoly(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec)*M_PI/180.0;
+
+										v1 -= axisOffset/c*cos(elev);
+										v2 += axisOffset/c*sin(elev)*evaluatePolyDeriv(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec)*M_PI/180.0;
+									}
 								}
 
-								v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, 8*i);
-								v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, 8*i);
-
-								if(addClock && item == ItemDelay)
-								{
-									v1 += evaluateDifxAntennaClock(D->antenna+a, mjd);
-									v2 += evaluateDifxAntennaClockRate(D->antenna+a, mjd);
-								}
-
-								if(noAxis && item == ItemDelay)
-								{
-									const double c = 299.792458;	/* m/us */
-									double elev;			/* rad */
-									double axisOffset;		/* m */
-
-									axisOffset = D->antenna[a].offset[0];
-									elev = evaluatePoly(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, 8*i)*M_PI/180.0;
-
-									v1 -= axisOffset/c*cos(elev);
-									v2 += axisOffset/c*sin(elev)*evaluatePolyDeriv(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, 8*i)*M_PI/180.0;
-								}
+								/* print to picosecond and femtosecond/sec precision */
+								printf("   %12.6f %12.9f", v1, v2);
 							}
-
-							/* print to picosecond and femtosecond/sec precision */
-							printf("   %12.6f %12.9f", v1, v2);
 						}
+						
+						printf("\n");
 					}
-					printf("\n");
+				}
+			}
+			else
+			{
+				for(p = 0; p < ds->nPoly; ++p)
+				{
+					const int N = (p == ds->nPoly-1) ? 16 : 15;
+
+					for(i = 0; i < N; ++i)
+					{
+						double mjd;
+
+						mjd = ds->im[refAnt][0][p].mjd + (ds->im[refAnt][0][p].sec + i*8)/86400.0;
+
+						printf("%14.8f", mjd);
+
+						if(item == ItemClock)
+						{
+							for(a = 0; a < D->nAntenna; ++a)
+							{
+								printf("   %12.8f %12.9f", 
+									evaluateDifxAntennaClock(D->antenna+a, mjd),
+									evaluateDifxAntennaClockRate(D->antenna+a, mjd));
+							}
+						}
+						else if(item == ItemUVW)
+						{
+							for(a = 0; a < D->nAntenna; ++a)
+							{
+								double u, v, w;
+
+								if(ds->im[a] == 0)
+								{
+									u = v = w = 0.0;
+								}
+								else
+								{
+									u = evaluatePoly(ds->im[a][0][p].u, ds->im[a][0][p].order+1, 8*i);
+									v = evaluatePoly(ds->im[a][0][p].v, ds->im[a][0][p].order+1, 8*i);
+									w = evaluatePoly(ds->im[a][0][p].w, ds->im[a][0][p].order+1, 8*i);
+								}
+
+								/* print to mm precision */
+								printf("   %12.3f %12.3f %12.3f", u, v, w); 
+							}
+						}
+						else
+						{
+							for(a = 0; a < D->nAntenna; ++a)
+							{
+								double v1, v2;
+
+								if(noAxis && D->antenna[a].mount != AntennaMountAltAz)
+								{
+									fprintf(stderr, "Unsupported option: --noaxis can only be used with alt-az mounts.\n");
+									fprintf(stderr, "Antenna %s has a %s mount type.\n", D->antenna[a].name, antennaMountTypeNames[D->antenna[a].mount]);
+
+									exit(0);
+								}
+
+								if(a >= ds->nAntenna)
+								{
+									v1 = v2 = -1.0;
+								}
+								else if(ds->im[a] == 0)
+								{
+									/* print zeros in cases where there is no data */
+									v1 = v2 = 0.0;
+								}
+								else
+								{
+									const double *poly;
+
+									switch(item)
+									{
+									case ItemDelay:
+										poly = ds->im[a][0][p].delay;
+										break;
+									case ItemAz:
+										poly = ds->im[a][0][p].az;
+										break;
+									case ItemEl:
+										poly = ds->im[a][0][p].elgeom;
+										break;
+									case ItemDry:
+										poly = ds->im[a][0][p].dry;
+										break;
+									case ItemWet:
+										poly = ds->im[a][0][p].wet;
+										break;
+									default:
+										fprintf(stderr, "Weird!\n");
+
+										exit(EXIT_FAILURE);
+									}
+
+									v1 = evaluatePoly(poly, ds->im[a][0][p].order+1, 8*i);
+									v2 = evaluatePolyDeriv(poly, ds->im[a][0][p].order+1, 8*i);
+
+									if(addClock && item == ItemDelay)
+									{
+										v1 += evaluateDifxAntennaClock(D->antenna+a, mjd);
+										v2 += evaluateDifxAntennaClockRate(D->antenna+a, mjd);
+									}
+
+									if(noAxis && item == ItemDelay)
+									{
+										const double c = 299.792458;	/* m/us */
+										double elev;			/* rad */
+										double axisOffset;		/* m */
+
+										axisOffset = D->antenna[a].offset[0];
+										elev = evaluatePoly(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, 8*i)*M_PI/180.0;
+
+										v1 -= axisOffset/c*cos(elev);
+										v2 += axisOffset/c*sin(elev)*evaluatePolyDeriv(ds->im[a][0][p].elgeom, ds->im[a][0][p].order+1, 8*i)*M_PI/180.0;
+									}
+								}
+
+								/* print to picosecond and femtosecond/sec precision */
+								printf("   %12.6f %12.9f", v1, v2);
+							}
+						}
+						printf("\n");
+					}
 				}
 			}
 		}
