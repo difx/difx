@@ -29,12 +29,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <getopt.h>
 #include "vdifio.h"
 
 const char program[] = "stripVDIF";
 const char author[]  = "Adam Deller <adeller@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20100217";
+const char version[] = "0.2";
+const char verdate[] = "20200514";
 
 static void usage()
 {
@@ -42,12 +43,19 @@ static void usage()
           author, verdate);
   fprintf(stderr, "A program to strip network headers from a VDIF format basebad data\n");
   fprintf(stderr, "file (e.g. captured from wireshark) and dump a pure VDIF stream.\n");
-  fprintf(stderr, "\nUsage: %s <VDIF input file> <VDIF output file> [skipbytesfront] [skipbytesback] [skipbytesinitial]\n", program);
-  fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
-  fprintf(stderr, "\n<VDIF output file> is the name of the VDIF file to read\n");
-  fprintf(stderr, "\n[skipbytesfront=54] is the number of bytes to skip over before each frame\n");
-  fprintf(stderr, "\n[skipbytesback=4] is the number of bytes to skip over after each frame\n");
-  fprintf(stderr, "\n[skipbytesinitial=28] is the number of bytes to skip over only once after opening the file\n");
+  fprintf(stderr, "Optional remove VDIF headers also\n");
+  fprintf(stderr, "\nUsage: %s <VDIF input file> <VDIF output file> [<skipbytesfront> [<skipbytesback> [<skipbytesinitial>]]]\n\n", program);
+  fprintf(stderr, "  <VDIF input file> is the name of the VDIF file to read\n");
+  fprintf(stderr, "  <VDIF output file> is the name of the VDIF file to read\n");
+  fprintf(stderr, "  <VDIF output file> is the name of the VDIF file to read\n");
+  fprintf(stderr, "  <skipbytesfront> is the number of bytes to skip over before each frame (optional, default 0)\n");
+  fprintf(stderr, "  <skipbytesback> is the number of bytes to skip over after each frame (optional, default 0)\n");
+  fprintf(stderr, "  <skipbytesinitial> is the number of bytes to skip over only once after opening the file (optional, default 0)\n");
+  fprintf(stderr, "Options:\n");
+  fprintf(stderr, "   -dropheader        Also remove VDIF header\n");
+  fprintf(stderr, "   -front <N>         Alternate to set -skipbytesfront\n");
+  fprintf(stderr, "   -back <N>          Alternate to set -skipbytesback\n");
+  fprintf(stderr, "   -initial <N>       Alternate to set -skipbytesinitial\n");
 }
 
 int main(int argc, char **argv)
@@ -60,76 +68,135 @@ int main(int argc, char **argv)
   long long framesread;
   vdif_header *header;
 
-  if(argc < 3 || argc > 6)
+  skipbytesfront   = 0;
+  skipbytesback    = 0;
+  skipbytesinitial = 0;
+  
+  int opt;
+  struct option options[] = {
+    {"dropheader", 0, 0, 'd'},  // Drop VDIF headers
+    {"front", 1, 0, 'f'},       // Drop VDIF headers
+    {"back", 1, 0, 'b'},        // Drop VDIF headers
+    {"initial", 1, 0, 'i'},     // Drop VDIF headers
+    {0, 0, 0, 0}
+  };
+  int dropHeaders = 0;
+  
+  while((opt = getopt_long_only(argc, argv, "hdf:b:i:", options, NULL)) != EOF) {
+    switch (opt) {
+    case 'd': // Strip VDIF headers entirely
+      dropHeaders = 1;
+      break;
+
+    case 'f': // -front
+      skipbytesfront = atoi(optarg);
+      break;
+
+    case 'b': // -back
+      skipbytesback = atoi(optarg);
+      break;
+
+    case 'i': // -initial
+      skipbytesinitial = atoi(optarg);
+      break;
+      
+    case 'h': // help
+      usage();
+      return EXIT_SUCCESS;
+    }
+  }
+
+  int narg = argc-optind;
+
+  printf("DEBUG: narg = %d.  optind = %d\n", narg, optind);
+
+  if(narg < 2 || narg > 5)
   {
     usage();
-
     return EXIT_FAILURE;
   }
 
-  skipbytesfront   = 54;
-  skipbytesback    = 4;
-  skipbytesinitial = 28;
-  if(argc > 3)
-    skipbytesfront = atoi(argv[3]);
-  if(argc > 4)
-    skipbytesback = atoi(argv[4]);
-  if(argc > 5)
-    skipbytesinitial = atoi(argv[5]);
+  if(narg > 2)
+    skipbytesfront = atoi(argv[optind + 2]);
+  if(narg > 4)
+    skipbytesback = atoi(argv[optind + 3]);
+  if(narg > 5)
+    skipbytesinitial = atoi(argv[optind + 4]);
   
-  input = fopen(argv[1], "r");
-  if(input == NULL)
-  {
-    fprintf(stderr, "Cannot open input file %s\n", argv[1]);
+  input = fopen(argv[optind], "r");
+  if (input == NULL) {
+    fprintf(stderr, "Cannot open input file %s\n", argv[optind]);
     exit(EXIT_FAILURE);
   }
 
-  output = fopen(argv[2], "w");
-  if(output == NULL)
-  {
-    fprintf(stderr, "Cannot open output file %s\n", argv[2]);
+  output = fopen(argv[optind+1], "w");
+  if (output == NULL) {
+    fprintf(stderr, "Cannot open output file %s\n", argv[optind+1]);
     exit(EXIT_FAILURE);
   }
 
   header = (vdif_header*)&buffer;
   framesread = 0;
   if(skipbytesinitial > 0)
-    readbytes = fread(buffer, 1, skipbytesinitial, input); //skip some initial wireshark bytes
+    fseek(input, skipbytesinitial, SEEK_SET);
+  //readbytes = fread(buffer, 1, skipbytesinitial, input); //skip some initial wireshark bytes
+
+  int first = 1;
   while(!feof(input)) {
-    if(skipbytesfront > 0)
-      readbytes = fread(buffer, 1, skipbytesfront, input); //skip the leading network frame header
+    if(skipbytesfront > 0) {
+      readbytes = fseek(input, skipbytesfront, SEEK_CUR);
+      //readbytes = fread(buffer, 1, skipbytesfront, input); //skip the leading network frame header
+      if (readbytes!=0) {
+	perror("Skipping bytes before frame\n");
+	exit(EXIT_FAILURE);
+      }
+    }
+    
     readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
     if (readbytes < VDIF_HEADER_BYTES)
       break;
-    stationid = getVDIFStationID(header);
-    bitspersample = getVDIFBitsPerSample(header);
-    numchannels = getVDIFNumChannels(header);
-    framebytes = getVDIFFrameBytes(header);
-    fprintf(stdout, "Station ID is %d, bitspersample is %d, numchannels is %d, framebytes is %d\n", stationid, bitspersample, numchannels, framebytes);
-    if(framebytes > MAX_VDIF_FRAME_BYTES) {
+    if (first) {
+      first = 0;
+      stationid = getVDIFStationID(header);
+      bitspersample = getVDIFBitsPerSample(header);
+      numchannels = getVDIFNumChannels(header);
+      framebytes = getVDIFFrameBytes(header);
+      fprintf(stdout, "Station ID is %d, bitspersample is %d, numchannels is %d, framebytes is %d\n", stationid, bitspersample, numchannels, framebytes);
+    }
+
+    if (framebytes > MAX_VDIF_FRAME_BYTES) {
       fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
       break;
     }
-    readbytes = fwrite(buffer, 1, VDIF_HEADER_BYTES, output); //write out the VDIF header
-    if(readbytes != VDIF_HEADER_BYTES) {
-      fprintf(stderr, "Problem writing %lldth VDIF header - only wrote %d / %d bytes\n", framesread, readbytes, VDIF_HEADER_BYTES);
-      break;
+    if (! dropHeaders) {
+      readbytes = fwrite(buffer, 1, VDIF_HEADER_BYTES, output); //write out the VDIF header
+      if (readbytes != VDIF_HEADER_BYTES) {
+	fprintf(stderr, "Problem writing %lldth VDIF header - only wrote %d / %d bytes\n", framesread, readbytes, VDIF_HEADER_BYTES);
+	break;
+      }
     }
+
     readbytes = fread(buffer, 1, framebytes-VDIF_HEADER_BYTES, input); //read the VDIF data segment
-    if(readbytes < framebytes-VDIF_HEADER_BYTES) {
+    if (readbytes < framebytes-VDIF_HEADER_BYTES) {
       fprintf(stderr, "Problem reading %lldth frame - only got %d / %d bytes\n", framesread, readbytes, framebytes-VDIF_HEADER_BYTES);
-      break;
+	break;
     }
     readbytes = fwrite(buffer, 1, framebytes-VDIF_HEADER_BYTES, output); //write out the VDIF data segment
-    if(readbytes < framebytes-VDIF_HEADER_BYTES) {
+    if (readbytes < framebytes-VDIF_HEADER_BYTES) {
       fprintf(stderr, "Problem writing %lldth frame - only wrote %d / %d bytes\n", framesread, readbytes, framebytes-VDIF_HEADER_BYTES);
       break;
     }
     framesread++;
-    if(skipbytesback > 0)
-      readbytes = fread(buffer, 1, skipbytesback, input); //skip the trailing network frame header
-  }
 
+    if (skipbytesback > 0) {
+      readbytes = fseek(input, skipbytesback, SEEK_CUR);
+      if (readbytes!=0) {
+	perror("Skipping bytes after frame\n");
+	exit(EXIT_FAILURE);
+      }
+      //readbytes = fread(buffer, 1, skipbytesback, input); //skip the trailing network frame header
+    }
+  }
   printf("Read and wrote %lld frames\n", framesread);
   fclose(input);
   fclose(output);
