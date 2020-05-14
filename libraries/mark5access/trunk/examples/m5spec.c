@@ -96,6 +96,8 @@ static void usage(const char *pgm)
 	printf("    -P         Do not compute cross pol terms\n\n");
 	printf("    -double\n");
 	printf("    -d         Double sideband (complex) data\n\n");
+	printf("    -nonorm\n");
+	printf("    -N         Do not normalise\n\n");
 	printf("    -bchan=<x>\n");
 	printf("    -b <x>     Start output at channel number <x> (0-based)\n\n");
 	printf("    -echan=<x>\n");
@@ -313,7 +315,8 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 }
 
 
-int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode, int doublesideband, int bchan, int echan)
+int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset,
+	 polmodetype polmode, int doublesideband, int nonorm, int bchan, int echan)
 {
 	struct mark5_stream *ms;
 	double **spec;
@@ -402,6 +405,13 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	}
 
 	f = ms->nchan*nchan/sum;
+	if (nonorm) {
+	  //printf("Norm Factor = %.3g\n", 1/f);
+	  //f *= unpacked*256;
+	  //printf("Updated Norm Factor = %.3g\n", 1/f);
+	  f = 1.0/unpacked/256.0;
+	}
+	
 	chanbw = ms->samprate/(2.0e6*nchan);
 	if(docomplex)
 	{
@@ -454,12 +464,14 @@ int main(int argc, char **argv)
 	int retval;
 	polmodetype polmode = VLBA;
 	int doublesideband = 0;
+	int nonorm = 0;
+	struct sigaction new_sigint_action;
 #if USEGETOPT
 	int opt;
-	struct sigaction new_sigint_action;
 	struct option options[] = {
 		{"version", 0, 0, 'V'}, // Version
 		{"double", 0, 0, 'd'}, // Double sideband complex
+		{"nonorm", 0, 0, 'N'}, // Don't normalise
 		{"dbbc", 0, 0, 'B'},  // DBBC channel ordering
 		{"nopol", 0, 0, 'P'}, // Don't compute the crosspol terms
 		{"help", 0, 0, 'h'},
@@ -468,7 +480,7 @@ int main(int argc, char **argv)
 		{0, 0, 0, 0}
 	};
 
-	while((opt = getopt_long_only(argc, argv, "VdBPhb:e:", options, NULL)) != EOF)
+	while((opt = getopt_long_only(argc, argv, "NVdBPhb:e:", options, NULL)) != EOF)
 	{
 		switch (opt) 
 		{
@@ -485,6 +497,11 @@ int main(int argc, char **argv)
 		case 'd': // Double sideband
 			doublesideband = 1;
 			printf("Assuming double sideband data\n");
+			break;
+
+		case 'N': // No normalisation
+			nonorm = 1;
+			printf("Not normalising\n");
 			break;
 
 		case 'V': // Version
@@ -604,7 +621,7 @@ int main(int argc, char **argv)
 		echan = nchan;
 	}
 
-	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, bchan, echan);
+	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, nonorm, bchan, echan);
 
 	return retval;
 }
