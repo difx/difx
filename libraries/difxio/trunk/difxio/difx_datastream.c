@@ -395,22 +395,20 @@ int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, c
 	/* Fill in the tone frequencies and on/off values */
 	for(t = 0; t < df->nTone; ++t)
 	{
-		int i, j, k;
+		int i, j;
 
 		i = df->tone[t];
 		if(df->sideband == 'U')
 		{
 			j = i;
-			k = i;
 		}
 		else
 		{
 			j = nRecTone - 1 - i;	/* reverse order of LSB tones */
-			k = -j;			/* count down from lowest tone for LSB tones */
 		}
 		if(j >= 0 && j < maxCount)
 		{
-			toneFreq[j] = lowest + k*dd->phaseCalIntervalMHz;
+			toneFreq[j] = lowest + i*dd->phaseCalIntervalMHz;
 		}
 	}
 
