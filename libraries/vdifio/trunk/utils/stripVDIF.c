@@ -108,8 +108,6 @@ int main(int argc, char **argv)
 
   int narg = argc-optind;
 
-  printf("DEBUG: narg = %d.  optind = %d\n", narg, optind);
-
   if(narg < 2 || narg > 5)
   {
     usage();
