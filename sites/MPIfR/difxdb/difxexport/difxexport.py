@@ -66,7 +66,7 @@ def getTransferFileCount(source, destination, options=""):
     
     matchTotal = re.findall(r'Number of files: (\d+)', remainder)
     totalCount = int(matchTotal[0])
-    mn = re.findall(r'Number of files transferred: (\d+)', remainder)
+    mn = re.findall(r'Number of .*? files transferred: (\d+)', remainder)
     fileCount = int(mn[0])
     
    # print "Number of files to be transferred: %d " % fileCount
