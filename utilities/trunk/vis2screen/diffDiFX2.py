@@ -5,8 +5,10 @@ import numpy
 from optparse import OptionParser
 
 helpstr = "diffDiFX2.py [options] <basename A> <basename B>\n\n"
-helpstr += "Compares visibility records in two DiFX output files. "
-helpstr += "Reports if the mean difference ever exceeds THRESHOLD."
+helpstr += "Compares visibility records in two .difx datasets.\n"
+helpstr += "Can handle datasets where antenna or frequency Ids are not numerically identical.\n"
+helpstr += "Inspects visibilities and reports if the mean difference ever exceeds THRESHOLD "
+helpstr += "or when indiviual channels differ by more than numerical error EPSILON."
 
 suffixes= ('.difx','.input','.calc','.im','.difxlog')
 
@@ -103,6 +105,8 @@ class MetaMapper:
 				m = mapping[j]
 				if (m>=0):
 					print('fq#%-2d %s --> fq#%-2d %s' % (j, A.metainfo.freqs[j].str(), m, B.metainfo.freqs[m].str()))
+		elif verbose:
+			print('Frep map A->B : identity map')
 
 		return mapping
 
@@ -121,8 +125,10 @@ class MetaMapper:
 					mapping[1][tIdA] = tIdB
 					break
 
-		if verbose:
-			print('Antenna map A->B: %s' % (str(mapping[1])))
+		if verbose and not trivial:
+				print('Antenna map A->B: %s' % (str(mapping[1])))
+		elif verbose:
+				print('Antenna map A->B: identity map')
 
 		if not trivial or A.metainfo.numtelescopes != B.metainfo.numtelescopes:
 			nmapped = sum(mp >= 0 for mp in mapping[1])
@@ -350,34 +356,35 @@ if __name__ == "__main__":
 
 			# Diffing
 			identicalViz = True
-			nonequalchanslist = []		
+			epsfailchanslist = []		
 			for j in range(len(vizA.vis)):
 				diff = vizA.vis[j] - vizB.vis[j]
 				if (epsilon > 0) and (abs(diff) > epsilon):
-					nonequalchanslist.append(j)
-				elif (threshold > 0) and (abs(diff)/abs(vizA.vis[j]) >= threshold):
-					nonequalchanslist.append(j)
+					epsfailchanslist.append(j)
 			refavg = numpy.mean(numpy.abs(vizA.vis))
 			vdiff = vizA.vis - vizB.vis
 			absdiffavg = numpy.mean(numpy.abs(vdiff))
 			meandiffavg = numpy.mean(vdiff)
-			if (absdiffavg/refavg >= threshold):
+
+			# Detect overall mismatch
+			if (absdiffavg/refavg > threshold):
 				print('THRESHOLD EXCEEDED: absolute difference %.4f%%, mean difference %.4f%% + i%-.4f%% on %s' % (100.0*absdiffavg/refavg, 100.0*numpy.real(meandiffavg)/refavg, 100.0*numpy.imag(meandiffavg)/refavg, tag))
 				identicalViz = False
-			if nonequalchanslist:
-				print('EPSILON EXCEEDED: numerically significant difference in %d out of %d channels on %s' % (len(nonequalchanslist),len(vizA.vis),tag))
-				identicalViz = False
 
-			# Show differences
-			if not identicalViz:
-				print('  Channels: %s' % (str(nonequalchanslist)))
-				if True: #if verbose:
+			# Show numerical mismatches
+			if len(epsfailchanslist) > 0:
+				print('EPSILON EXCEEDED: numerically significant difference in %d out of %d channels on %s' % (len(epsfailchanslist),len(vizA.vis),tag))
+				identicalViz = False
+				if verbose:
+					print('  Channels: %s' % (str(epsfailchanslist)))
 					prec = 7
-					for ch in nonequalchanslist:
+					for ch in epsfailchanslist:
 						print('    Ch %-3d   A: %s\n'
-                              '             B: %s' % (ch,
+							'             B: %s\n'
+							'             eps: %s' % (ch,
 							numpy.array2string(vizA.vis[ch], precision=prec),
-							numpy.array2string(vizB.vis[ch], precision=prec)))
+							numpy.array2string(vizB.vis[ch], precision=prec),
+							numpy.array2string(numpy.abs(vizA.vis[ch]-vizB.vis[ch]), precision=prec)))
 
 			if verbose and identicalViz:
 				print('Identical within numeric precision: %s' % (tag))
@@ -392,5 +399,6 @@ if __name__ == "__main__":
 
 	if filesIdentical:
 		sys.exit(0)
+
 	sys.exit(1)
 
