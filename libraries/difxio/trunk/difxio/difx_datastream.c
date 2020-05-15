@@ -410,7 +410,7 @@ int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, c
 		}
 		if(j >= 0 && j < maxCount)
 		{
-			toneFreq[j] = lowest + t*dd->phaseCalIntervalMHz;
+			toneFreq[j] = lowest + k*dd->phaseCalIntervalMHz;
 		}
 	}
 
