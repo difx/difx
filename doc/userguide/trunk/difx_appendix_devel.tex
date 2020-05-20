@@ -1,0 +1,120 @@
+\appendix
+
+\section{Internals for Developers}
+
+This appendix is not intended as a DiFX Developer Guide. Rather, this appendix documents a few complex internal details of DiFX source code in spots where the source code lacks Doxygen and other self-documentation and is not documented elsewhere either. Currently this appendix describes the data layout of a few key data areas in DiFX that are highly multidimensional.
+
+\subsection{Data Layout in  Mpifxcorr class Core}
+
+The most complex ``flat" arrays  in class Core are {\em threadscratchspace::threadcrosscorrs[]} and {\em processslot::results[]}. Although these are flat 1-D arrays of complex32 float data in memory, they contain concatenated data elements of non-constant size that internally have a high level of logical nesting (6-D).
+
+\subsubsection{Core threadcrosscorrs[]}
+
+The data array {\em threadcrosscorrs[]} does not contain contiguous spectra, but rather, stores scattered spectral slices of length xmacLength\,$\ge$\,1. A full cross spectrum at one DiFX freqency is reconstrictible by striding the array by NumBaselines * NumPulsarBins * Sum(BaselinePolpairs) * xmacLength.
+
+\begin{table}[!htp]
+\caption{Memory layout of {\em threadcrosscorrs[]} data\label{tab:A.threadcrosscorrs}}
+\begin{tabular}{|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|l|}
+\hline
+\multicolumn{16}{|l|}{Freq 0} \\
+\hline
+\multicolumn{8}{|l|}{Xmac 0} & \multicolumn{8}{l|}{Xmac 1} \\
+\hline
+\multicolumn{4}{|l|}{Baseline 0} & \multicolumn{4}{l|}{Baseline 1} & \multicolumn{4}{l|}{Baseline 0} & \multicolumn{4}{l|}{Baseline 1} \\
+\hline
+\multicolumn{2}{|l|}{\small{Pulsar Bin 0}} & \multicolumn{2}{l|}{\small{Bin 1}} &
+\multicolumn{2}{l|}{\small{Bin 0}} & \multicolumn{2}{l|}{\small{Bin 1}} &
+\multicolumn{2}{l|}{\small{Bin 0}} & \multicolumn{2}{l|}{\small{Bin 1}} &
+\multicolumn{2}{l|}{\small{Bin 0}} & \multicolumn{2}{l|}{\small{Bin 1}}
+\\
+\hline
+\footnotesize {Polpair 0} & \footnotesize {Polpair 1} &  \footnotesize {Polpair 0} & \footnotesize {Polpair 1} & 
+\footnotesize {Polpair 0} & \footnotesize {Polpair 1} &  \footnotesize {Polpair 0} & \footnotesize {Polpair 1} &
+\footnotesize {Polpair 0} & \footnotesize {Polpair 1} &  \footnotesize {Polpair 0} & \footnotesize {Polpair 1} & 
+\footnotesize {Polpair 0} & \footnotesize {Polpair 1} &  \footnotesize {Polpair 0} & \footnotesize {Polpair 1} \\
+\hline
+\scriptsize {Ch [0 1 2 3]} & \scriptsize {[0 1 2 3]} & \scriptsize {[0 1 2 3]} & \scriptsize {[0 1 2 3]} &
+\scriptsize {[0 1 2 3]} & \scriptsize {[0 1 2 3]} & \scriptsize {[0 1 2 3]} & \scriptsize {[0 1 2 3]} &
+\scriptsize {[4 5 6 7]} & \scriptsize {[4 5 6 7]} & \scriptsize {[4 5 6 7]} & \scriptsize {[4 5 6 7]} &
+\scriptsize {[4 5 6 7]} & \scriptsize {[4 5 6 7]} & \scriptsize {[4 5 6 7]} & \scriptsize {[4 5 6 7]} \\
+\hline
+\tiny{4 x \textless{}cf32\textgreater{}} & \tiny{4 x \textless{}cf32\textgreater{}} & \tiny{4 x \textless{}cf32\textgreater{}} & \tiny{4 x \textless{}cf32\textgreater{}} & 
+\tiny{4 x \textless{}cf32\textgreater{}} & \tiny{4 x \textless{}cf32\textgreater{}} & \tiny{4 x \textless{}cf32\textgreater{}} & \tiny{4 x \textless{}cf32\textgreater{}} & 
+\tiny{4 x \textless{}cf32\textgreater{}} & \tiny{4 x \textless{}cf32\textgreater{}} & \tiny{4 x \textless{}cf32\textgreater{}} & \tiny{4 x \textless{}cf32\textgreater{}} & 
+\tiny{4 x \textless{}cf32\textgreater{}} & \tiny{4 x \textless{}cf32\textgreater{}} & \tiny{4 x \textless{}cf32\textgreater{}} & \tiny{4 x \textless{}cf32\textgreater{}} \\
+\hline
+\end{tabular}
+\end{table}
+
+Channel numbers in the Table~\ref{tab:A.threadcrosscorrs} are an example and assume an xmacLength of 4 channels, and a length of raw un-averaged cross spectra of 8 channels. 
+
+\subsubsection{Core results[]}
+
+The results array contains up to six data areas (Table~\ref{tab:A.coreresults}). Not all of them are always present.
+
+\begin{table}[!htbp]
+\caption{Data areas in Core {\em results[]} \label{tab:A.coreresults}}
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+Cross Corrs & Baseline Weights & Decorrelation Factors & Autocorrs & Autocorr Weights & Phase Cal Data\\
+\hline
+\small{\textless{}K x cf32\textgreater} &
+\small{\textless{}L x f32\textgreater} &
+\small{\textless{}M x cf32\textgreater} &
+\small{\textless{}N x cf32\textgreater} &
+\small{\textless{}N x f32\textgreater} &
+\small{\textless{}P x cf32\textgreater} \\
+\hline
+\end{tabular}
+\end{table}
+
+The layout of most of the data areas in Core {\em results[]} is easily reverse engineered from the source code. The area that stores cross-correlation data (Cross Corrs) is  the most complex of these areas. The top level structure of that area  is illustrated in Table~\ref{tab:A.coreresults.crosscorrs}. The sub-elements (Cross Corr Elements) of that area are described in Table~\ref{tab:A.coreresults.crosscorrselement}. \\
+
+Helper indices into some areas of Core {\em results[]} are pre-calculated in class Configuration. Such helper indices are utilized by classes Core and Visibility to  locate shared data at a coarse level. For example, {\em coreresultbaselineoffset[freq][baseline]}  points to the starting  indices of whole Cross Corr Elements but not deeper. 
+
+After a coarse index lookup, manual iteration over the varying-length higher data dimensions is needed to pin down the final absolute index of the desired data of, say, one spectral channel.
+
+\begin{table}[!htp]
+\caption{Memory layout of Cross Corrs area within {\em results[]} data \label{tab:A.coreresults.crosscorrs}}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\multicolumn{2}{|l|}{Freq 0} & \multicolumn{2}{l|}{Freq 1} \\
+\hline
+Baseline 0 & Baseline 1 & Baseline 0 & Baseline 1 \\
+\hline
+\small{\textless{}Cross Corr Element\textgreater} & \small{\textless{}Cross Corr Element\textgreater} &
+\small{\textless{}Cross Corr Element\textgreater} & \small{\textless{}Cross Corr Element\textgreater} \\
+\small{at coreindex=0} & \small{at coreindex=crElemSize} & \small{at coreindex=2.crElemSize} & \small{at coreindex=3.crElemSize} \\
+\hline
+\end{tabular}
+\end{table}
+
+The size of one Core Result Element in complex32 float elements is the product of MaxConfigPhaseCenters * BinLoops * PolProducts * FreqChans / ChansToAverage.
+This size is not constant - some baselines may have fewer polarization products than other baselines, or the number of  channels may differ between DiFX frequencies.
+
+\begin{table}[!htp]
+\caption{Memory layout of  Cross Corr Elements in the Cross Corr area of within {\em results[]} data \label{tab:A.coreresults.crosscorrselement}}
+\begin{tabular}{|l|l|l|l|l|l|l|l|}
+\hline
+\multicolumn{4}{|l|}{Phase center 0} & \multicolumn{4}{l|}{Phase center 1} \\
+\hline
+\multicolumn{2}{|l|}{Pulsar bin 0} & \multicolumn{2}{l|}{Pulsar bin 1} & \multicolumn{2}{l|}{Pulsar bin 0} & \multicolumn{2}{l|}{Pulsar bin 1} \\
+\hline
+\small{Polpair 0} & \small{Polpair 1} & 
+\small{Polpair 0} & \small{Polpair 1} & 
+\small{Polpair 0} & \small{Polpair 1} & 
+\small{Polpair 0} & \small{Polpair 1} \\
+\hline
+\small{\textless{}spectrum\textgreater} & \small{\textless{}spectrum\textgreater} &
+\small{\textless{}spectrum\textgreater} & \small{\textless{}spectrum\textgreater} &
+\small{\textless{}spectrum\textgreater} & \small{\textless{}spectrum\textgreater} &
+\small{\textless{}spectrum\textgreater} & \small{\textless{}spectrum\textgreater} \\
+\hline
+\tiny{nchan x \textless{}cf32\textgreater{}} & \tiny{nchan x \textless{}cf32\textgreater{}} & 
+\tiny{nchan x \textless{}cf32\textgreater{}} & \tiny{nchan x \textless{}cf32\textgreater{}} & 
+\tiny{nchan x \textless{}cf32\textgreater{}} & \tiny{nchan x \textless{}cf32\textgreater{}} & 
+\tiny{nchan x \textless{}cf32\textgreater{}} & \tiny{nchan x \textless{}cf32\textgreater{}} \\
+\hline
+\end{tabular}
+\end{table}
+
