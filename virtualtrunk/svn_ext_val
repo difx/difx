@@ -9,6 +9,8 @@ libraries/vdifio		https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk
 libraries/codifio		https://svn.atnf.csiro.au/difx/libraries/codifio/trunk
 libraries/vex			https://svn.atnf.csiro.au/difx/libraries/vex/trunk
 libraries/dirlist		https://svn.atnf.csiro.au/difx/libraries/dirlist/trunk
+libraries/mark6meta		https://svn.atnf.csiro.au/difx/libraries/mark6meta/trunk
+libraries/mark6sg		https://svn.atnf.csiro.au/difx/libraries/mark6sg/trunk
 applications/calcif2		https://svn.atnf.csiro.au/difx/utilities/trunk/calcif2
 applications/calcserver		https://svn.atnf.csiro.au/difx/applications/calcserver/trunk
 applications/difx2fits		https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk
