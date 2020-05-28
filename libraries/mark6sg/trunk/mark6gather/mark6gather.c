@@ -38,6 +38,9 @@
 /* Macro to turn an expanded macro into a string */
 #define str(s) #s
 
+#define M6SG_PACKET_FORMAT_VDIF   0
+#define M6SG_PACKET_FORMAT_MARK5B 1
+#define M6SG_PACKET_FORMAT_UNK    2
 
 /* Note: this is actually defined in vdifio.h, but vdifio has mark6sg as dependency, so this just allows the small amount of local VDIF functionality to properly build */
 typedef struct vdif_header {
@@ -92,19 +95,6 @@ static inline int checkMark5BPacket(char *data)
 		return 0;
 	}
 }
-static inline int checkVdifPacket(char *data)
-{
-	unsigned char *udata;
-	udata = (unsigned char*)data;
-	if(udata[20] == 0xED && udata[21] == 0xFE && udata[22] == 0xAB && udata[23] == 0xAC)
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
-}
 static unsigned char filltest[8] = {0x44, 0x33, 0x22, 0x11, 0x44, 0x33, 0x22, 0x11};
 static inline int checkFillData(char *data)
 {
@@ -126,15 +116,15 @@ const char DefaultMark6Root[] = "/mnt/disks/*/*/data";
 
 const char *mark6PacketFormat(int formatId)
 {
-	if(formatId == 0)
+	if(formatId == M6SG_PACKET_FORMAT_VDIF)
 	{
 		return "VDIF";
 	}
-	else if(formatId == 1)
+	else if(formatId == M6SG_PACKET_FORMAT_MARK5B)
 	{
 		return "Mark5b";
 	}
-	else if(formatId == 2)
+	else if(formatId == M6SG_PACKET_FORMAT_UNK)
 	{
 		return "Unknown";
 	}
@@ -310,13 +300,17 @@ static ssize_t Mark6FileReadBlock(Mark6File *m6f, int slotIndex)
 
 		slot->index = 0;
 
-		if(!checkMark5BPacket(slot->data))
+		if(m6f->packetFormat == M6SG_PACKET_FORMAT_VDIF)
 		{
 			vh = (vdif_header *)(slot->data);
 			slot->frame = vdifFrame(vh);
 		}
 		else
 		{
+			if(!checkMark5BPacket(slot->data))
+			{
+				fprintf(stderr, "Error: Mark6FileReadBlock: file header claims data are Mark5B, yet frame header lacks Mark5B header magic\n");
+			}
 			slot->frame = mark5bFrame(slot->data);
 		}
 	}
@@ -499,6 +493,7 @@ int openMark6File(Mark6File *m6f, const char *filename)
 	m6f->readHeader.wb_size = m6f->maxBlockSize;
 	m6f->maxBlockSize = header.block_size;
 	m6f->packetSize = header.packet_size;
+	m6f->packetFormat = header.packet_format;
 	m6f->readBuffer = (char *)malloc(m6f->maxBlockSize-m6f->blockHeaderSize);
 	if(!m6f->readBuffer)
 	{
@@ -592,7 +587,7 @@ void printMark6File(const Mark6File *m6f)
 			printf("    Payload bytes = %d (bytes currently residing in core)\n", m6f->slot[s].payloadBytes);
 			printf("    Current block number = %d\n", m6f->slot[s].blockHeader.blocknum);
 			printf("    Current index within block = %d\n", m6f->slot[s].index);
-			if(m6f->packetSize == 5032)
+			if(m6f->packetFormat == M6SG_PACKET_FORMAT_VDIF)
 			{
 				printf("    Second = %d\n", (int)(m6f->slot[s].frame >> 24));
 				printf("    Frame in second = %d\n", (int)(m6f->slot[s].frame & 0xFFFFFF));
@@ -970,7 +965,7 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 		}
 		else
 		{
-			if(F->packetSize == 5032)
+			if(F->packetFormat == M6SG_PACKET_FORMAT_VDIF)
 			{
 				vdif_header *vh = (vdif_header *)(slot->data + slot->index);
 				slot->frame = vdifFrame(vh);

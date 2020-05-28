@@ -101,6 +101,7 @@ typedef struct
 	int maxBlockSize;			/* from Mark6Header */
 	int blockHeaderSize;			/* [bytes] from mark6BlockHeaderSize() */
 	int packetSize;				/* [bytes] from Mark6Header */
+	int packetFormat;			/* from Mark6Header; 0=vdif 1=mark5b */
 	struct stat stat;			/* stat, as read before file open */
 	int32_t block1, block2;			/* set at open: the first two block numbers in the file */
 
