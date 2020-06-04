@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2019 by Walter Brisken                             *
+ *   Copyright (C) 2015-2020 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -37,8 +37,8 @@
 #include "mark6gather.h"
 
 const char program[] = "mk6gather";
-const char version[] = "1.3";
-const char verdate[] = "20190607";
+const char version[] = "1.4";
+const char verdate[] = "20200603";
 
 const char defaultOutfile[] = "gather.out";
 
@@ -120,7 +120,6 @@ int main(int argc, char **argv)
 				else if(strcmp(argv[a], "-s") == 0 || strcmp(argv[a], "--skip") == 0)
 				{
 					skipBytes = atoll(argv[a+1]);
-					fprintf(stderr, "Warning: the --skip option of %s is still experimental\n", program);
 				}
 				else
 				{

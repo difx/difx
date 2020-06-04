@@ -3,7 +3,7 @@ Version 2.0.2
 * mk6gather: add command line arguments for output and verbosity
 * mk6gather: add command line argument for max bytes to copy
 * add "mk6cp" script that uses "cp"-like syntax
-* mk6gather: add "append" and "skip" options (still experimental)
+* mk6gather: add "append" (still experimental) and "skip" options
 * mark6gather seeking: fix for seek near start of file
 * mk6ls: add ability to match patterns (like ls does)
 * mk6ls: add faster option to get file size (--bytes or -b)
