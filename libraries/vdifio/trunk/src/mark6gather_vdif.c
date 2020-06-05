@@ -47,6 +47,7 @@ struct sumArgs
 	int endFrame;
 	int bufferSize;
 	int frameSize;
+	int framesPerSecond;
 	int epoch;
 	int nBit;
 };
@@ -59,6 +60,7 @@ static void *fileEndSummarizer(void *arg)
 	FILE *in;
 	unsigned char *buffer;
 	struct vdif_header *vh0;
+	int hasEDV3 = 0;        /* no VLBA headers found yet */
 	int i, N, rv;
 
 	F = S->m6f;
@@ -127,6 +129,23 @@ static void *fileEndSummarizer(void *arg)
 				S->endFrame = f;
 			}
 
+			if(vh->eversion == 3 && hasEDV3 == 0)
+			{
+				const vdif_edv3_header *edv3 = (const vdif_edv3_header *)vh0;
+				long long int sampRate;
+				int dataSize = S->frameSize - (vh->legacymode ? 16 : 32);
+
+				hasEDV3 = 1;
+
+				sampRate = edv3->samprate * 1000 * 2;   /* factor of 2 because header sample rate is complex */
+				if(edv3->samprateunits == 1)
+				{
+					sampRate *= 1000;
+				}
+
+				S->framesPerSecond = sampRate*S->nBit/(8LL*dataSize);
+			}
+
 			i += S->frameSize;
 		}
 		else
@@ -152,6 +171,7 @@ int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int 
 	int readBytes;
 	char hasThread[VDIF_MAX_THREAD_ID + 1];
 	struct vdif_header *vh0;	/* pointer to the prototype header */
+	int hasEDV3 = 0;        /* no VLBA headers found yet */
 	Mark6Gatherer *G;
 	struct sumArgs *S;
 	pthread_t *sumThread;
@@ -265,6 +285,23 @@ int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int 
 				sum->endFrame = f;
 			}
 
+			if(vh->eversion == 3 && hasEDV3 == 0)
+			{
+				const vdif_edv3_header *edv3 = (const vdif_edv3_header *)vh0;
+				long long int sampRate;
+				int dataSize = frameSize - (vh->legacymode ? 16 : 32);
+
+				hasEDV3 = 1;
+
+				sampRate = edv3->samprate * 1000 * 2;   /* factor of 2 because header sample rate is complex */
+				if(edv3->samprateunits == 1)
+				{
+					sampRate *= 1000;
+				}
+
+				sum->framesPerSecond = sampRate*sum->nBit/(8LL*dataSize);
+			}
+
 			i += frameSize;
 		}
 		else
@@ -315,6 +352,10 @@ int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int 
 		else if(S[f].endSecond == sum->endSecond && S[f].endFrame > sum->endFrame)
 		{
 			sum->endFrame = S[f].endFrame;
+		}
+		if(S[f].framesPerSecond > sum->framesPerSecond)
+		{
+			sum->framesPerSecond = S[f].framesPerSecond;
 		}
 	}
 
