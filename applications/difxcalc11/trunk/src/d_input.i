@@ -38,7 +38,7 @@
 !
 !  Maximum number of lines in the near-field object ephemeris
       Integer*4 NF_row 
-      Parameter (NF_row = 200)
+      Parameter (NF_row = 1000)
       COMMON/NFO/ SpTag, SpPos, SpVel, SpcIF, NumSpace, NumRows,        &
      &            SpName, SpFrame, SpOffset, t_offset, NF_model,        &
      &            NF_flag, dum1
