@@ -18,6 +18,8 @@ void usage()
 int main(int argc, char** argv)
 {
 	const int chunksize = 1*1024*1024;
+	const double min_binResolution_Hz = 10e3;
+
 	const char* format;
 	const char* infile;
 	int if_nr = 0;
@@ -28,7 +30,8 @@ int main(int argc, char** argv)
 	int done = 0;
 	int i, n;
 
-    struct mark5_stream *ms;
+
+	struct mark5_stream *ms;
 	mark5_float_complex **data_complex;
 	float **data_real;
 
@@ -61,7 +64,7 @@ int main(int argc, char** argv)
 	}
 
 	// Allocate PCal extractor
-	PCal::setMinFrequencyResolution(1e6);
+	PCal::setMinFrequencyResolution(min_binResolution_Hz);
 	if (ms->iscomplex) {
 		bw_hz = ms->samprate;
 	} else {

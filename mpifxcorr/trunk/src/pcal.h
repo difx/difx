@@ -184,7 +184,7 @@ class PCal {
        * for the PCalExtractorImplicitShift extractor type only.
        * @param spectral resolution in hertz
        */
-      static void setMinFrequencyResolution(double hz) { _min_freq_resolution_hz = hz; }
+      static void setMinFrequencyResolution(double hz) { PCal::_min_freq_resolution_hz = hz; }
 
       /**
        * Processes samples and accumulates the detected phase calibration tone vector.

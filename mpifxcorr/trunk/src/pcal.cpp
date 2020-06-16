@@ -150,6 +150,10 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
         No = (int)(fs / gcd(fs, (double)pcal_offset_hz));
         Np = (int)(fs / gcd(fs, pcal_spacing_hz));
         Nt = calcNumTones(bandwidth_hz, (double)pcal_offset_hz, pcal_spacing_hz);
+
+        // Consider user-specified minimum spectral resolution
+        while (fs/(2*No) > PCal::_min_freq_resolution_hz)
+            No *= 2;
     }
 
     if (PCAL_DEBUG)
@@ -165,11 +169,11 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
 
     // Currently only one extraction method implemented for complex data
     if (usecomplex) {
-        //ToDo: enable once better evaluated:
+        //ToDo: could enable the implicit method soon:
         //if ((No % Np) == 0)
-        //    return new PCalExtractorComplexImplicitShift (bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, lsb);
+        //    return new PCalExtractorComplexImplicitShift(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, lsb);
         //else
-        return new PCalExtractorComplex (bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, lsb);
+        return new PCalExtractorComplex(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, lsb);
     }
 
     // First tone in DC bin: smallest footprint extractor
@@ -891,19 +895,16 @@ uint64_t PCalExtractorComplex::getFinalPCal (cf32* out)
         size_t idx = n*step;
         if (idx >= (size_t)_N_bins)
             break;
-                                    // lsb tones come out in opposite
-                                    // order, and shifted by 1
-        if (_lsb)
-            {
+        if (_lsb) {
+            // lsb tones come out in opposite
+            // order, and shifted by 1
             int indlsb = (_N_bins - idx) % _N_bins;
             out[n].re = _cfg->dft_out[indlsb].re;
             out[n].im =-_cfg->dft_out[indlsb].im; // conjugate to get correct phase
-            }
-        else
-            {
+        } else {
             out[n].re = _cfg->dft_out[idx].re;
             out[n].im = _cfg->dft_out[idx].im;
-            }
+        }
     }
     return _samplecount;
 }
@@ -925,7 +926,7 @@ int pcal_offset_hz, const size_t sampleoffset)
     _estimatedbytes = 0;
 
     /* Try to meet minimum spectral resolution */
-    while (_fs_hz/(2*_N_bins) > _min_freq_resolution_hz)
+    while (_fs_hz/(2*_N_bins) > PCal::_min_freq_resolution_hz)
         _N_bins *= 2;
 
     /* Prep for FFT/DFT */
@@ -1110,7 +1111,7 @@ PCalExtractorComplexImplicitShift::PCalExtractorComplexImplicitShift(
     _cfg = new pcal_config_pimpl();
 
     /* Try to meet minimum spectral resolution */
-    while (_fs_hz/(2*_N_bins) > _min_freq_resolution_hz)
+    while (_fs_hz/(2*_N_bins) > PCal::_min_freq_resolution_hz)
         _N_bins *= 2;
 
     /* Prep for FFT/DFT */
@@ -1245,7 +1246,10 @@ uint64_t PCalExtractorComplexImplicitShift::getFinalPCal(cf32* out)
     cout << "PCalExtractorComplexImplicitShift::getFinalPCal phases are: ";
     for (int i = 0; i < _N_bins; i++)
     {
-        f32 phi = (180/M_PI)*std::atan2(_cfg->dft_out[i].im, _cfg->dft_out[i].re);
+        if (!_lsb)
+            f32 phi = (180/M_PI)*std::atan2(_cfg->dft_out[i].im, _cfg->dft_out[i].re);
+        else
+            f32 phi = (180/M_PI)*std::atan2(_cfg->dft_out[i].im, -_cfg->dft_out[i].re);
         cout << "p[" << i << "]=" << phi << " ";
     }
     cout << "deg\n";
@@ -1255,18 +1259,20 @@ uint64_t PCalExtractorComplexImplicitShift::getFinalPCal(cf32* out)
     size_t step = (size_t)(std::floor(double(_N_bins)*(_pcalspacing_hz/_fs_hz)));
     size_t offset = (size_t)(std::floor(double(_N_bins)*(_pcaloffset_hz/_fs_hz)));
     for (size_t n=0; n<(size_t)_N_tones; n++) {
-        ssize_t idx;
+        ssize_t bin = offset + n*step;
+        if (bin >= _N_bins)
+            break;
         if (_lsb) {
-            idx = offset + (_N_tones - n)*step; 
+            // lsb tones come out in opposite
+            // order, and shifted by 1
+            ssize_t binlsb = _N_bins - bin;
+            out[n].re = _cfg->dft_out[binlsb].re;
+            out[n].im = -_cfg->dft_out[binlsb].im; // conjugate to get correct phase
+            //cout << "cplxImpl::getFinalPCal() tone n=" << n << " DFT bin " << bin << " equiv. freq " << 1e-6*(double((_N_bins - bin)*_fs_hz)/_N_bins) << " MHz from low band edge\n";
         } else {
-            idx = offset + n*step;
-        }
-        if (idx < 0 || idx >= _N_bins) {
-            out[n].re = 0;
-            out[n].im = 0;
-        } else {
-            out[n].re = _cfg->dft_out[idx].re;
-            out[n].im = _cfg->dft_out[idx].im;
+            out[n].re = _cfg->dft_out[bin].re;
+            out[n].im = _cfg->dft_out[bin].im;
+            //cout << "cplxImpl::getFinalPCal() tone n=" << n << " DFT bin " << bin << " equiv. freq " << 1e-6*(double(bin*_fs_hz)/_N_bins) << " MHz from low band edge\n";
         }
     }
     return _samplecount;
