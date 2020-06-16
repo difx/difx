@@ -32,11 +32,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include "difx_input.h"
+#include "antenna_db.h"
 
 const char program[] = "tabulatedelays";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.7";
-const char verdate[] = "20200513";
+const char verdate[] = "20200616";
 
 void usage()
 {
@@ -380,10 +381,14 @@ int main(int argc, char **argv)
 	if(showPos > 0)
 	{
 		printf("\n");
-		printf("# Antenna positions (in meters) are as follows:\n");
+		printf("# Antenna positions (x, y, z,  lat, lon, alt, using meters and degrees) are as follows:\n");
 		for(a = 0; a < D->nAntenna; ++a)
 		{
-			printf("# ITRF POSITION %s %12.4f %12.4f %12.4f\n", D->antenna[a].name, D->antenna[a].X, D->antenna[a].Y, D->antenna[a].Z);
+			double lat, lon;	/* [rad] */
+			double alt;		/* [m] */
+
+			ecef2lla(&lat, &lon, &alt, D->antenna[a].X, D->antenna[a].Y, D->antenna[a].Z);
+			printf("# ITRF POSITION %s %12.4f %12.4f %12.4f  %10.8f %10.8f %6.4f\n", D->antenna[a].name, D->antenna[a].X, D->antenna[a].Y, D->antenna[a].Z, lat*180.0/M_PI, lon*180.0/M_PI, alt);
 		}
 	}
 
@@ -391,7 +396,8 @@ int main(int argc, char **argv)
 	{
 		while(!feof(mjdFile))
 		{
-			char line[20000];
+			const int MaxLineLength = 32000;
+			char line[MaxLineLength+1];
 			double mjd;
 			int intmjd;
 			double sec;
@@ -402,11 +408,12 @@ int main(int argc, char **argv)
 			int p;
 			int i;
 
-			rv = fgets(line, 19999, mjdFile);
+			rv = fgets(line, MaxLineLength, mjdFile);
 			if(!rv)
 			{
 				break;
 			}
+			line[MaxLineLength] = 0;
 			for(i = 0; line[i]; ++i)
 			{
 				if(line[i] == '#')
