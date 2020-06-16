@@ -165,6 +165,10 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
 
     // Currently only one extraction method implemented for complex data
     if (usecomplex) {
+        //ToDo: enable once better evaluated:
+        //if ((No % Np) == 0)
+        //    return new PCalExtractorComplexImplicitShift (bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, lsb);
+        //else
         return new PCalExtractorComplex (bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, lsb);
     }
 
@@ -1073,6 +1077,191 @@ uint64_t PCalExtractorImplicitShift::getFinalPCal(cf32* out)
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         size_t idx = offset + n*step;
         if (idx >= (size_t)_N_bins) {
+            out[n].re = 0;
+            out[n].im = 0;
+        } else {
+            out[n].re = _cfg->dft_out[idx].re;
+            out[n].im = _cfg->dft_out[idx].im;
+        }
+    }
+    return _samplecount;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+// DERIVED CLASS: extraction of PCal signals -
+//                complex samples with non-zero offset, FFT-implicit rotation possible
+//////////////////////////////////////////////////////////////////////////////////////
+
+PCalExtractorComplexImplicitShift::PCalExtractorComplexImplicitShift(
+    double bandwidth_hz,
+    double pcal_spacing_hz,
+    int pcal_offset_hz,
+    int lsb)
+{
+    /* Derive config */
+    _fs_hz          = bandwidth_hz;
+    _pcalspacing_hz = pcal_spacing_hz;
+    _pcaloffset_hz  = pcal_offset_hz;
+    _lsb            = lsb;
+    _N_bins         = (int)(_fs_hz / gcd(_fs_hz, _pcaloffset_hz));
+    _N_tones        = calcNumTones(bandwidth_hz, _pcaloffset_hz, _pcalspacing_hz);
+    _estimatedbytes = 0;
+
+    _cfg = new pcal_config_pimpl();
+
+    /* Try to meet minimum spectral resolution */
+    while (_fs_hz/(2*_N_bins) > _min_freq_resolution_hz)
+        _N_bins *= 2;
+
+    /* Prep for FFT/DFT */
+    int wbufsize = 0;
+    vecStatus s;
+    s = vectorInitDFTC_cf32(&_cfg->dftspec, _N_bins, vecFFT_NoReNorm, vecAlgHintAccurate, &wbufsize,  &_cfg->dftworkbuf);
+    if (s != vecNoErr)
+        csevere << startl << "Error in DFTInitAlloc in PCalExtractorComplexImplicitShift::PCalExtractorComplexImplicitShift.  _N_bins="
+                << _N_bins << " Error " << vectorGetStatusString(s) << endl;
+    _estimatedbytes += wbufsize;
+
+    /* Allocate twice the amount strictly necessary */
+    _cfg->pcal_complex = vectorAlloc_cf32(_N_bins * 2);
+    _cfg->dft_out      = vectorAlloc_cf32(_N_bins * 1);
+    _estimatedbytes   += _N_bins*4*(4+2+2);
+    this->clear();
+
+    if (PCAL_DEBUG)
+        cdebug << startl << "PCalExtractorComplexImplicitShift: _Ntones = " << _N_tones << ", _N_bins = " << _N_bins << ", wbufsize = " << wbufsize << endl;
+}
+
+
+PCalExtractorComplexImplicitShift::~PCalExtractorComplexImplicitShift()
+{
+    vectorFree(_cfg->pcal_complex);
+    vectorFree(_cfg->dft_out);
+    vectorFreeDFTC_cf32(_cfg->dftspec);
+    vectorFree(_cfg->dftworkbuf);
+    delete _cfg;
+}
+
+/**
+ * Clear the extracted and accumulated PCal data by setting it to zero.
+ */
+void PCalExtractorComplexImplicitShift::clear()
+{
+    _samplecount = 0;
+    _finalized   = false;
+    vectorZero_cf32(_cfg->pcal_complex, _N_bins * 2);
+}
+
+/**
+ * Adjust the sample offset.
+ *
+ * The extractor needs a time-continuous input sample stream. Samples
+ * are numbered 0...N according to their offset from the start of the
+ * stream. The stream can be split into smaller chunks that
+ * are added individually through several extractAndIntegrate() calls.
+ *
+ * If for some reason two chunks are not continuous in time,
+ * some internal indices need to be corrected by calling this
+ * function and specifying at what sample number the next
+ * chunk passed to extractAndIntegrate() starts.
+ *
+ * @param sampleoffset sample offset of chunk passed to next extractAndIntegrate() call
+ */
+void PCalExtractorComplexImplicitShift::adjustSampleOffset(const size_t sampleoffset)
+{
+    _cfg->pcal_index = sampleoffset % _N_bins;
+}
+
+/**
+ * Process a new chunk of time-continuous single channel data.
+ * Time-integrates the data into the internal result buffer.
+ *
+ * If this function is called several times to integrate additional data
+ * and these multiple pieces of data are not continuous in time,
+ * please see adjustSampleOffset().
+ *
+ * @param samples Chunk of the input signal consisting of 'float' samples
+ * @param len     Length of the input signal chunk
+ * @return true on success, false if results were frozen by calling getFinalPCal()
+ */
+bool PCalExtractorComplexImplicitShift::extractAndIntegrate(f32 const* samples, const size_t len)
+{
+    if (_finalized) {
+        cerror << startl << "PCalExtractorComplexImplicitShift::extractAndIntegrate on finalized class!" << endl;
+        return false;
+    }
+
+    cf32 const* src = (cf32 const*) samples;
+    cf32* dst = &(_cfg->pcal_complex[_cfg->pcal_index]);
+    size_t tail = (len % _N_bins);
+    size_t end  = len - tail;
+
+    /* This method is from Walter Brisken, it works perfectly for smallish 'len'
+     * and when offset and tone spacing have suitable properties.
+     * Instead of rotating the input to counteract the offset, we bin
+     * into a long vector with size of the offset repeat length (again *2 to avoid
+     * buffer wraps). After long-term integration, we copy desired FFT bins
+     * into PCal. The time-domain PCal can be derived from inverse FFT.
+     */
+
+    /* Process the first part that fits perfectly */
+    for (size_t n = 0; n < end; n+=_N_bins, src+=_N_bins) {
+        vectorAdd_cf32_I(src, /*srcdst*/dst, _N_bins);
+    }
+
+    /* Handle any samples that didn't fit */
+    if (tail != 0) {
+        vectorAdd_cf32_I(src, /*srcdst*/dst, tail);
+        _cfg->pcal_index = (_cfg->pcal_index + tail) % _N_bins;
+    }
+
+    /* Done! */
+    _samplecount += len;
+    return true;
+}
+
+/**
+ * Computes the final extraction result. No more sample data can be added.
+ * The PCal extraction results are copied into the specified output array.
+ *
+ * @param out Pointer to user PCal array with getLength() values
+ * @return number of samples that were integrated for the result
+ */
+uint64_t PCalExtractorComplexImplicitShift::getFinalPCal(cf32* out)
+{
+   vecStatus s;
+   invariant();
+
+   if (!_finalized)
+   {
+        _finalized = true;
+        s = vectorDFT_CtoC_cf32(_cfg->pcal_complex, _cfg->dft_out, _cfg->dftspec, _cfg->dftworkbuf);
+        if (s != vecNoErr)
+            csevere << startl << "Error in DFTFwd in PCalExtractorComplexImplicitShift::getFinalPCal " << vectorGetStatusString(s) << endl;
+    }
+
+    // Show all bin phases
+    #ifdef VERBOSE_UNIT_TEST
+    cout << "PCalExtractorComplexImplicitShift::getFinalPCal phases are: ";
+    for (int i = 0; i < _N_bins; i++)
+    {
+        f32 phi = (180/M_PI)*std::atan2(_cfg->dft_out[i].im, _cfg->dft_out[i].re);
+        cout << "p[" << i << "]=" << phi << " ";
+    }
+    cout << "deg\n";
+    #endif
+
+    /* Copy only the interesting bins */
+    size_t step = (size_t)(std::floor(double(_N_bins)*(_pcalspacing_hz/_fs_hz)));
+    size_t offset = (size_t)(std::floor(double(_N_bins)*(_pcaloffset_hz/_fs_hz)));
+    for (size_t n=0; n<(size_t)_N_tones; n++) {
+        ssize_t idx;
+        if (_lsb) {
+            idx = offset + (_N_tones - n)*step; 
+        } else {
+            idx = offset + n*step;
+        }
+        if (idx < 0 || idx >= _N_bins) {
             out[n].re = 0;
             out[n].im = 0;
         } else {

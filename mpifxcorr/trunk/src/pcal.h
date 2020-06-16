@@ -70,6 +70,7 @@ class PCalExtractorTrivial;
 class PCalExtractorShifting;
 class PCalExtractorImplicitShift;
 class PCalExtractorComplex;
+class PCalExtractorComplexImplicitShift;
 class PCalExtractorDummy; //NOTE added for testing
 class pcal_config_pimpl;
 
@@ -95,9 +96,11 @@ class PCal {
        * @param pcal_spacing_hz  Spacing of the PCal signal, comb spacing, typically 1e6 Hertz
        * @param pcal_offset_hz   Offset of the first PCal signal from 0Hz/DC, typically 10e3 Hertz
        * @param sampleoffset     Offset of the first sample as referenced to start of subintegration interval
+       * @param usecomplex       true iff recorded band is complex
+       * @param lsb              true iff recorded band is lower sideband
        * @return new PCal extractor class instance 
        */
-      static PCal* getNew (double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, const size_t sampleoffset, int usecomplex, int lsb);
+      static PCal* getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, const size_t sampleoffset, int usecomplex, int lsb);
 
      /**
       * Return number of tones that fit the band, including any
@@ -140,7 +143,7 @@ class PCal {
        * @param len     Length of the input signal chunk
        * @return true on success, false if results were frozen by calling getFinalPCal()
        */
-      virtual bool extractAndIntegrate   (f32 const* samples, const size_t len) = 0;
+      virtual bool extractAndIntegrate(f32 const* samples, const size_t len) = 0;
 
       /**
        * Get data-seconds contributing to the current PCal results.
@@ -226,6 +229,7 @@ class PCal {
    friend class PCalExtractorShifting;
    friend class PCalExtractorImplicitShift;
    friend class PCalExtractorComplex;
+   friend class PCalExtractorComplexImplicitShift;
 
    //NOTE added for testing
    friend class PCalExtractorDummy;
