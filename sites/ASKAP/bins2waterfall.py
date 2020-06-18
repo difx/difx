@@ -19,7 +19,7 @@ parser.add_argument("--imagesize", type=int, default=128, help="Size of the imag
 
 args = parser.parse_args()
 
-print args
+print(args)
 
 if len(sys.argv) < 2:
     parser.print_usage()
@@ -53,7 +53,7 @@ for stokes in polarisations:
     for i in range(startbin,nbins):
         inputimage = "{0}bin{1:02g}/TARGET.cube.{2}.image".format(prefix, i, stokes)
         runfile = "waterfall.py"
-        print inputimage
+        print(inputimage)
 
         # Get the max flux of the source from source images
         output = open(runfile, "w")
@@ -112,7 +112,7 @@ if args.rms:
         for i in range(nbins):
             noiseimage = "{0}bin{1:02g}/OFFSOURCE.cube.{2}.image".format(prefix, i, stokes)
             getnoise = "get_rms.py"
-            print noiseimage
+            print(noiseimage)
 
             # Get RMS from noise estimation images (using 75% of 512x512 image)
             noiseout = open(getnoise, "w")
