@@ -56,7 +56,7 @@ void usage(const char *pgm)
 	fprintf(stderr, "  --full\n");
 	fprintf(stderr, "  -f        Print full information for each file\n\n");
 	fprintf(stderr, "The following environment variables are used:\n");
-	fprintf(stderr, "  MARK6_ROOT : Where to look for Mark 6 datasets\n");
+	fprintf(stderr, "  MARK6_ROOT : Pattern to look up Mark 6 datasets\n");
 	fprintf(stderr, "               Default is /mnt/disks/*/*/data\n\n");
 }
 

@@ -49,9 +49,11 @@
 // Global library debug level
 int m_m6sg_dbglevel = 0;
 
-// Base directory
+// Base directories
 static char* mark6_sg_root_pattern = MARK6_SG_ROOT_PATTERN;
+static char* mark6_sg_meta_path = MARK6_SG_META_ROOT_PATH;
 static int mark6_sg_root_pattern_changed = 0;
+static int mark6_sg_meta_path_changed = 0;
 
 //////////////////////////////////////////////////////////////////////////////////////
 ////// Local Functions   /////////////////////////////////////////////////////////////
@@ -271,7 +273,7 @@ static int globerr(const char *path, int eerrno)
 /**
  * List all "scans" on the Mark6.
  * Internally this first assembles a list of all Mark6 scatter-gather
- * file recordings (e.g. all files in "/mnt/disks/[1-4]/[0-7]/"). It then
+ * file recordings (e.g. all files in "/mnt/disks/[1-4]/[0-7]/data/"). It then
  * builds a list of unique files based on the file name without file path.
  */
 int mark6_sg_list_all_scans(char*** uniquenamelist)
@@ -750,7 +752,7 @@ void mark6_sg_blocklist_store(int nfiles, const char** filenamelist, m6sg_blockm
 
 /**
  * Read the context of all Mark6 SG metadata files, i.e., the 'slist' (JSON) and 'group' (flat text)
- * files found under e.g. /mnt/disks/.meta/[1-4]/[0-7]/. Duplicate metadata entries are removed.
+ * files found under e.g. /mnt/disks/.meta/[1-4]/[0-7]/data/. Duplicate metadata entries are removed.
  * Produces a linked list of scanlist metadata entries. Allocates the required memory.
  * Returns the number of entries, or -1 on error.
  */
@@ -795,7 +797,7 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
         // and has a format like "2:KVN00500/32000/4/8:KVN00600/32000/4/8".
         memset(group_meta_str, 0, sizeof(group_meta_str));
         memset(tmppath, 0, sizeof(tmppath));
-        sprintf(tmppath, "/mnt/disks/.meta/%d/%d/group", group, gdisk);
+        sprintf(tmppath, "%s/%d/%d/group", mark6_sg_get_metapath(), group, gdisk);
         f = fopen(tmppath, "r");
         if (f != NULL)
         {
@@ -811,7 +813,7 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
 
         // Now read the 'slist' JSON metadata.
         memset(tmppath, 0, sizeof(tmppath));
-        sprintf(tmppath, "/mnt/disks/.meta/%d/%d/slist", group, gdisk);
+        sprintf(tmppath, "%s/%d/%d/slist", mark6_sg_get_metapath(), group, gdisk);
         f = fopen(tmppath, "r");
         if (f == NULL)
         {
@@ -998,4 +1000,31 @@ char* mark6_sg_set_rootpattern(const char* new_sg_root_pattern)
 const char* mark6_sg_get_rootpattern()
 {
     return mark6_sg_root_pattern;
+}
+
+/**
+ * Change the base path containing Mark6 metadata.
+ * The default is "/mnt/disks/.meta/"
+ */
+char* mark6_sg_set_metapath(const char* new_sg_meta_path)
+{
+    if (NULL != new_sg_meta_path)
+    {
+        if (0 != mark6_sg_meta_path_changed)
+        {
+            free(mark6_sg_meta_path);
+        }
+        mark6_sg_meta_path = strdup(new_sg_meta_path);
+        mark6_sg_meta_path_changed = 1;
+        return mark6_sg_root_pattern;
+    }
+    return NULL;
+}
+
+/**
+ * Return the currently specified Mark6 metadir path
+ */
+const char* mark6_sg_get_metapath()
+{
+    return mark6_sg_meta_path;
 }

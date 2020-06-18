@@ -1,3 +1,8 @@
+Version 2.0.3
+* Post DiFX-2.6
+* add env var MARK6_META_ROOT for entirely module-free playback
+* api: add getMark6Metapath(), mark6_sg_get/set_metapath()
+
 Version 2.0.2
 * Post DiFX-2.6
 * mk6gather: add command line arguments for output and verbosity

@@ -73,6 +73,8 @@ extern int mark6_sg_verbositylevel(int);
 extern int mark6_sg_collect_metadata(m6sg_slistmeta_t**);
 extern char* mark6_sg_set_rootpattern(const char* new_sg_root_pattern);
 extern const char* mark6_sg_get_rootpattern();
+extern char* mark6_sg_set_metapath(const char* new_sg_meta_path);
+extern const char* mark6_sg_get_metapath();
 
 #ifdef __cplusplus
 }

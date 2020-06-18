@@ -30,7 +30,8 @@
 #define MARK6_SG_DEFINEL__H
 
 #define MARK6_SG_MAXFILES           32
-#define MARK6_SG_ROOT_PATTERN       "/mnt/disks/[1-4]/[0-7]/"
+#define MARK6_SG_ROOT_PATTERN       "/mnt/disks/[1-4]/[0-7]/data/"
+#define MARK6_SG_META_ROOT_PATH     "/mnt/disks/.meta/"        // note: path and not wildcard
 #define MARK6_SG_VFS_MAX_OPEN_FILES 8192
 
 #endif

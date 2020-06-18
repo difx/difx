@@ -112,7 +112,7 @@ static inline int checkFillData(char *data)
 }
 
 const char DefaultMark6Root[] = "/mnt/disks/*/*/data";
-
+const char DefaultMark6Meta[] = "/mnt/disks/.meta/"; // path, not wildcard
 
 const char *mark6PacketFormat(int formatId)
 {
@@ -760,7 +760,7 @@ int addMark6GathererFiles(Mark6Gatherer *m6g, int nFile, char **fileList)
 
 				slot = fileList[i][11];
 				disk = fileList[i][13];
-				sprintf(msnname, "/mnt/disks/.meta/%c/%c/eMSN", slot, disk);
+				sprintf(msnname, "%s/%c/%c/eMSN", getMark6MetaRoot(), slot, disk);
 				fmsn = fopen(msnname, "r");
 				if(!fmsn)
 				{
@@ -1000,6 +1000,22 @@ const char *getMark6Root()
 		if(!root)
 		{
 			root = DefaultMark6Root;
+		}
+	}
+
+	return root;
+}
+
+const char *getMark6MetaRoot()
+{
+	static const char *root = 0;
+	
+	if(root == 0)
+	{
+		root = getenv("MARK6_META_ROOT");
+		if(!root)
+		{
+			root = DefaultMark6Meta;
 		}
 	}
 

@@ -163,6 +163,8 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count);
 
 const char *getMark6Root();
 
+const char *getMark6MetaRoot();
+
 int getMark6FileList(char ***fileList);
 
 int getMark6FileListWithSizes(char ***fileList, long long int **sizeList);
