@@ -759,13 +759,12 @@ if args.fscrunch:
         scrunch_ax0_diag.errorbar(centretimes[1:], pol_pa, yerr=pa_rms, fmt='ko', markersize=2)
         if args.unwrap:
             scrunch_ax0_diag.set_ylim(0,180)
-            scrunch_ax1_diag.errorbar(centretimes[1:], pol_pa_masked, yerr=pol_pa_rms_masked, fmt='ko', markersize=2, capsize=2)
-            scrunch_ax1_diag.set_ylabel("Position Angle (deg)")
-            if args.unwrap:
-                scrunch_ax1_diag.set_ylim(0,180)
-                scrunch_ax2_diag.legend()
-                scrunch_ax2_diag.set_xlabel("Time (ms)")
-                scrunch_ax2_diag.set_ylabel("Flux Density (Jy)")
+            scrunch_ax1_diag.set_ylim(0,180)
+        scrunch_ax1_diag.errorbar(centretimes[1:], pol_pa_masked, yerr=pol_pa_rms_masked, fmt='ko', markersize=2, capsize=2)
+        scrunch_ax1_diag.set_ylabel("Position Angle (deg)")
+        scrunch_ax2_diag.legend()
+        scrunch_ax2_diag.set_xlabel("Time (ms)")
+        scrunch_ax2_diag.set_ylabel("Flux Density (Jy)")
 
         # Publication plots
         scrunch_ax0.set_title('   '+frbtitletext)
@@ -773,12 +772,12 @@ if args.fscrunch:
         scrunch_ax0.set_ylabel("Position Angle (deg)")
         if args.unwrap:
             scrunch_ax0.set_ylim(0,180)
-            scrunch_ax1.legend()
-            scrunch_ax1.set_xlabel("Time (ms)")
-            scrunch_ax1.set_ylabel("Flux Density (Jy)")
-            scrunch_fig_diag.savefig("{0}-fscrunch.RMcorrected_diagnostic_RM{1}.png".format(src, label_rotmeas_save), bbox_inches = 'tight')
-            scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_delta-psi{2}_delta-t{3}_phi{4}.png".format(src, label_rotmeas_save, delta_psi, delta_t, phi), bbox_inches = 'tight')
-            scrunch_fig.clf()
+        scrunch_ax1.legend()
+        scrunch_ax1.set_xlabel("Time (ms)")
+        scrunch_ax1.set_ylabel("Flux Density (Jy)")
+        scrunch_fig_diag.savefig("{0}-fscrunch.RMcorrected_diagnostic_RM{1}.png".format(src, label_rotmeas_save), bbox_inches = 'tight')
+        scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_delta-psi{2}_delta-t{3}_phi{4}.png".format(src, label_rotmeas_save, delta_psi, delta_t, phi), bbox_inches = 'tight')
+        scrunch_fig.clf()
 
         # Plot isolated pulses if requested
         if args.isolate:
