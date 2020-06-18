@@ -61,10 +61,16 @@ void usage(void)
            "\n"
            "Usage: m6sg_gather  [ --list | <scanname> <destination | - > ]\n"
            "\n"
+           "Options:\n"
            "   --list         show a list of available scan names on the disks\n"
            "\n"
+           "Arguments:\n"
            "   <scanname>     is the name of the scan on the disks, without paths\n"
            "   <destination>  is the output directory or full output file name and path\n"
+           "\n"
+           "Environment variables:\n"
+           "    MARK6_ROOT       search path for Mark 6 data, with wildcards\n"
+           "    MARK6_META_ROOT  path containing Mark 6 metadata\n\n"
            "\n"
            "The scanname will be used as the name of the output file if the specified\n"
            "destination is a directory. The destination '-' outputs to stdout for piping.\n"
@@ -100,6 +106,10 @@ int main(int argc, char** argv)
     if (getenv("MARK6_ROOT") != NULL)
     {
         mark6_sg_set_rootpattern(getenv("MARK6_ROOT"));
+    }
+    if (getenv("MARK6_META_ROOT") != NULL)
+    {
+        mark6_sg_set_metapath(getenv("MARK6_META_ROOT"));
     }
     if (argc != 2 && argc != 3)
     {

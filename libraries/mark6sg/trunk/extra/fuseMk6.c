@@ -79,20 +79,23 @@ void usage(void)
 		"\n"
 		"Usage: fuseMk6 [-v] [-r \"pattern\"] <mountpoint>\n"
 		"\n"
-		"Presents Mark6 scatter-gather mode (SG) recordings as single files.\n"
-		"The SG disks are assumed to be already mounted (/mnt/disks/[1-4]/[0-7]/)\n"
+		"Provides access to Mark6 scatter-gather (SG) recordings as single sequential files.\n"
+		"The scattered data are gathered exactly as recorded. FuseMk6 does not perform\n"
+		"reordering of individual VDIF frames on the fly. If reordering is helpful, sometimes\n"
+		"the case for multi-threaded VDIF recordings, consider 'mark6gather' or 'vdifuse'.\n"
 		"\n"
-		"The Mark6 SG recording mode stripes data of a VLBI recording across multiple\n"
-                "files, each of them generally placed on its own disk or file system.\n"
-		"These SG files contain metadata and the actual VLBI data striped out in a\n"
-		"somewhat random time order. The fuseMk6 layer uses the 'libmark6sg' library\n"
-                "to hide the SG striping and metadata.\n"
-		"\n"
-                "Options:\n"
-                "   -v    verbose mode (puts fuseMk6 into 'foreground' mode),\n"
-                "         repeat to increase verbosity\n"
-                "   -r    set root pattern (default: \"%s\")\n\n",
-                MARK6_SG_ROOT_PATTERN
+		"Each Mark6 SG recording consists of VLBI scan data striped across multiple\n"
+		"files on separate disks of a module. Mark6 modules can be auto-mounted by the\n"
+		"mk5daemon service that is part of DiFX. FuseMk6 relies on the 'libmark6sg' library\n"
+		"to access the data in the files sequentially and presents them as a single file.\n\n"
+		"Options:\n"
+		"   -v    verbose mode (puts fuseMk6 into 'foreground' mode),\n"
+		"         repeat to increase verbosity\n"
+		"   -r    set root pattern (default: \"%s\")\n\n"
+		"Environment variables:\n"
+		"    MARK6_ROOT       search path for Mark 6 data, with wildcards\n"
+		"    MARK6_META_ROOT  path containing Mark 6 metadata\n\n",
+		MARK6_SG_ROOT_PATTERN
 	);
 }
 
@@ -464,6 +467,10 @@ int main(int argc, char *argv[])
 	{
 		m_root = strdup(getenv("MARK6_ROOT"));
 		mark6_sg_set_rootpattern(m_root);
+	}
+	if (getenv("MARK6_META_ROOT") != NULL)
+	{
+		mark6_sg_set_metapath(getenv("MARK6_META_ROOT"));
 	}
 	for (i=1; i<argc; i++)
 	{

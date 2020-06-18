@@ -52,7 +52,11 @@ void usage()
 		"libmark6sg library (not FUSE) into a single output file. A scan\n"
 		"name of test.vdif for example collects the scatter-gather file\n"
 		"fragments '%s/test.vdif'.\n\n"
-		"Specify -s to show copy progress.\n\n",
+		"Options:\n"
+		"    -s  show progress\n\n"
+		"Environment variables:\n"
+		"    MARK6_ROOT       search path for Mark 6 data, with wildcards\n"
+		"    MARK6_META_ROOT  path containing Mark 6 metadata\n\n",
 		m_root
 	);
 }
@@ -81,6 +85,10 @@ int main(int argc, char** argv)
 	{
 		m_root = strdup(getenv("MARK6_ROOT"));
 		mark6_sg_set_rootpattern(m_root);
+	}
+	if (getenv("MARK6_META_ROOT") != NULL)
+	{
+		mark6_sg_set_metapath(getenv("MARK6_META_ROOT"));
 	}
 	while ((optarg < argc) && (argv[optarg][0] == '-'))
 	{
