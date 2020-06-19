@@ -107,7 +107,10 @@ void VDIFMark6DataStream::openfile(int configindex, int fileindex)
     cwarn << startl << "Warning: Mark6 file " << datafilenames[configindex][fileindex] << " seems to have an incomplete set of files.  Your weights may suffer if this is true." << endl;
   }
 
-  cinfo << startl << "VDIF Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
+  if(datafilenames[configindex][fileindex][0] == '/')
+    cinfo << startl << "VDIF Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
+  else
+    cinfo << startl << "VDIF Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << " scattered over " << getMark6Root() << "/" << datafilenames[configindex][fileindex] << endl;
   strcpy(mark6activity.scanName, datafilenames[configindex][fileindex].c_str());
   sendMark6Activity(MARK6_STATE_OPEN, 0, 0.0, 0.0);
   bytecount = 0;
