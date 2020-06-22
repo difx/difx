@@ -41,7 +41,7 @@
       Parameter (NF_row = 1000)
       COMMON/NFO/ SpTag, SpPos, SpVel, SpcIF, NumSpace, NumRows,        &
      &            SpName, SpFrame, SpOffset, t_offset, NF_model,        &
-     &            NF_flag, dum1
+     &            NF_flag, dum1, DoStnPos
       Real*8 SpTag(NF_row,10), SpPos(NF_row,3,10), SpVel(NF_row,3,10),  &
      &       SpcIF(3), t_offset
       Integer*4 NumSpace, Numrows(10)
@@ -51,6 +51,7 @@
 ! Set default spacecraft frame to Earth Centered (geocentric) J2000.
 !     Parameter (SpFrame = 'ECJ2')
       Character*2 NF_flag, dum1
+      Integer*4 DoStnPos
 !
       COMMON /NFOspline/ ySPxp, ySPyp, ySPzp, ySPxv, ySPyv, ySPzv,      &
      &        y2SPxp, y2SPyp, y2SPzp, y2SPxv, y2SPyv, y2SPzv, xc,       &

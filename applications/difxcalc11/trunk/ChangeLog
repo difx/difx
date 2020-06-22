@@ -1,3 +1,8 @@
+11,0,2
+------
+* Add option to print the station J2000 positions to .im file
+  - these include EOP, earth deformation, axis offset
+
 11.0.1
 ------
 * Increase number of SPACECRAFT rows supported from 200 to 1000

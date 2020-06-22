@@ -35,7 +35,10 @@
      &   Vbase_f(Max_Epochs,Nstation1,Nstation2,Max_Source),              &
      &   Wbase_f(Max_Epochs,Nstation1,Nstation2,Max_Source),              &
      &   El_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source),              &
-     &   Az_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source)
+     &   Az_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source),              &
+     &   StaX_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source),            &
+     &   StaY_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source),            &
+     &   StaZ_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source)
       Character*20 Xsource
 ! ???????
 !???  Character*8 Site1(Max_base,Max_Epoch), Site2(Max_base,Max_Epoch)
@@ -46,7 +49,7 @@
 !
       COMMON / OUT_C /Delay_f, Rate_f, Atmdryd_f, Atmdryr_f,            &
      &       Atmwetd_f, Atmwetr_f, Ubase_f, Vbase_f, Wbase_f,           &
-     &       El_f, Az_f,                                                &
+     &       El_f, Az_f, StaX_f, StaY_f, StaZ_f,                        &
      &       Iymdhms_f, Numsite, Numbaseline, NumPhCenter,              &
      &       Site1, Site2, Xsource
 !

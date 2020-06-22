@@ -1199,6 +1199,7 @@
       t_offset = 0.D0
 !     NF_model = 'Sekido  '
       NF_model = 'Duev    '
+      DoStnPos = 0
       overwrite = 'no  '
       UVW = 'exact '
 !   Interval between Calc runs (default is every 24 seconds 
@@ -1277,6 +1278,10 @@
          Endif
          If (ch_cl(1:2) .eq. '-D' .or. ch_cl(1:6) .eq. '--Duev') Then
             NF_model = 'Duev    '
+            Go to 100
+         Endif
+         If (ch_cl(1:2) .eq. '-s' .or. ch_cl(1:6) .eq. '--stnpos') Then
+            DoStnPos = 1
             Go to 100
          Endif
          If (ch_cl(1:2) .eq. '-f') Then    ! force execution
@@ -1550,6 +1555,7 @@
 !    &  '  -v 3               Verbose: Much more printout.     ',//,    &
 !    &  '  --quiet ',/,                                                 &
 !    &  '  -q                 Be less verbose in operation.    ',//,    &
+     &  '  -s                 Write station J2000 positions.    ',//,   &
      &  '  -dry               DO NOT ADD dry atm delays.      '/,       &
      &  '                     (Default is to ADD dry atm.)     ',//,    &
      &  '  -wet               DO NOT ADD wet atm delays.      '/,       &

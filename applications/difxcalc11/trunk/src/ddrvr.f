@@ -922,6 +922,9 @@
        ATMwetr_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = Datmc_wmf(2,2)
        El_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = ELEV(2,1) * 57.295779512D0
        Az_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = AZ(2,1) * 57.295779512D0
+       StaX_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = -EPBASE(1,1)
+       StaY_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = -EPBASE(2,1)
+       StaZ_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = -EPBASE(3,1)
 !    Station 1 (usually the geocenter):
 !     If (Base_mode .ne. 'geocenter ') Then
 !      ATMdryd_f(IS1,Itime,Istation1,(Istation2-1),Isrc) = DATMC(1,1)
