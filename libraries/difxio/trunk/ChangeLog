@@ -12,6 +12,7 @@
 * fix incorrect FITS PCal tone freq due rounding error in >1 MHz spacing cases, found by L.Petrov
 * tabulatedelays: allow backing out axis offset effects, allow external file to provide list of MJDs
 * tabulatedelays: option added to print the antenna coordinates as comments in the output
+* read and write J2000 station position polynomials
 
 3.6.0
 * Post DiFX 2.5

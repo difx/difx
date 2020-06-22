@@ -177,6 +177,12 @@ int writeDifxIM(const DifxInput *D)
 					writeDifxLineArray2(out, "SRC %d ANT %d U (m)", i, a, scan->im[a][i][p].u, order+1);
 					writeDifxLineArray2(out, "SRC %d ANT %d V (m)", i, a, scan->im[a][i][p].v, order+1);
 					writeDifxLineArray2(out, "SRC %d ANT %d W (m)", i, a, scan->im[a][i][p].w, order+1);
+					if(scan->im[a][i][p].staX[0] != 0.0 || scan->im[a][i][p].staY[0] != 0.0 || scan->im[a][i][p].staZ[0] != 0.0)
+					{
+						writeDifxLineArray2(out, "SRC %d ANT %d STA X (m)", i, a, scan->im[a][i][p].staX, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d STA Y (m)", i, a, scan->im[a][i][p].staY, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d STA Z (m)", i, a, scan->im[a][i][p].staZ, order+1);
+					}
 					if(scan->imLM)
 					{
 						writeDifxLineArray2(out, "SRC %d ANT %d dDELAYdL", i, a, scan->imLM[a][i][p].dDelay_dl, order+1);

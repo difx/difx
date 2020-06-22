@@ -511,6 +511,9 @@ typedef struct
 	double u[MAX_MODEL_ORDER+1];		/* (m/sec^n) */
 	double v[MAX_MODEL_ORDER+1];		/* (m/sec^n) */
 	double w[MAX_MODEL_ORDER+1];		/* (m/sec^n) */
+	double staX[MAX_MODEL_ORDER+1];		/* (m) J2000 antenna location X coordinate */
+	double staY[MAX_MODEL_ORDER+1];		/* (m) J2000 antenna location Y coordinate */
+	double staZ[MAX_MODEL_ORDER+1];		/* (m) J2000 antenna location Z coordinate */
 } DifxPolyModel;
 
 typedef struct
