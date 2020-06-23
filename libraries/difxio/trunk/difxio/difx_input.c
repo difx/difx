@@ -2461,7 +2461,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	int order, interval;
 	enum AberCorr ac;
 	int *antennaMap;
-	const int smallRange = 20;
+	const int smallRange = 30;
 
 	if(!D)
 	{
@@ -2651,9 +2651,9 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d EL CORR", src, t, scan->im[a][src][p].elcorr, order+1, 0);
 					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d EL GEOM", src, t, scan->im[a][src][p].elgeom, order+1, 0);
 					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d PAR ANGLE", src, t, scan->im[a][src][p].parangle, order+1, 0);
-					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d STA X (m)", src, t, scan->im[a][src][p].staX, order+1, 0);
-					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d STA Y (m)", src, t, scan->im[a][src][p].staY, order+1, 0);
-					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d STA Z (m)", src, t, scan->im[a][src][p].staZ, order+1, 0);
+					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d STA X (m)", src, t, scan->im[a][src][p].staX, order+1, 1);
+					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d STA Y (m)", src, t, scan->im[a][src][p].staY, order+1, 1);
+					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d STA Z (m)", src, t, scan->im[a][src][p].staZ, order+1, 1);
 
 					/* the next three again are required */
 					r = parsePoly1(mp, r, "SRC %d ANT %d U (m)", src, t, scan->im[a][src][p].u, order+1);
