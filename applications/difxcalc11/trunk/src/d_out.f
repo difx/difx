@@ -210,6 +210,24 @@
            ISRC-1, J-1, Acoef(1), Acoef(2), Acoef(3), Acoef(4),       &
            Acoef(5), Acoef(6))
 !
+      ierr = fitPoly(Acoef, StaX6, %VAL(n), %VAL(m), %VAL(delta))
+      if (DoStnPos .eq. 1)                                              &
+        ierr = difxiowritepoly26(fd_out, "SRC %d ANT %d STA X (m):",    &
+           ISRC-1, J-1, Acoef(1), Acoef(2), Acoef(3), Acoef(4),        &
+           Acoef(5), Acoef(6))
+!
+      ierr = fitPoly(Acoef, StaY6, %VAL(n), %VAL(m), %VAL(delta))
+      if (DoStnPos .eq. 1)                                              &
+        ierr = difxiowritepoly26(fd_out, "SRC %d ANT %d STA Y (m):",    &
+           ISRC-1, J-1, Acoef(1), Acoef(2), Acoef(3), Acoef(4),        &
+           Acoef(5), Acoef(6))
+!
+      ierr = fitPoly(Acoef, StaZ6, %VAL(n), %VAL(m), %VAL(delta))
+      if (DoStnPos .eq. 1)                                              &
+        ierr = difxiowritepoly26(fd_out, "SRC %d ANT %d STA Z (m):",    &
+           ISRC-1, J-1, Acoef(1), Acoef(2), Acoef(3), Acoef(4),        &
+           Acoef(5), Acoef(6))
+!
       ierr = fitPoly(Acoef, Ubase6, %VAL(n), %VAL(m), %VAL(delta))
 !     If (IM_out .eq. 1)                                                &
         ierr = difxiowritepoly26(fd_out, "SRC %d ANT %d U (m):",        &
@@ -236,24 +254,6 @@
       Do L = 1, N
        Wbasecoef(J,L) = Acoef(L)
       Enddo
-!
-      ierr = fitPoly(Acoef, StaX6, %VAL(n), %VAL(m), %VAL(delta))
-      if (DoStnPos .eq. 1)                                              &
-        ierr = difxiowritepoly26(fd_out, "SRC %d ANT %d STA X (m):",    &
-           ISRC-1, J-1, Acoef(1), Acoef(2), Acoef(3), Acoef(4),        &
-           Acoef(5), Acoef(6))
-!
-      ierr = fitPoly(Acoef, StaY6, %VAL(n), %VAL(m), %VAL(delta))
-      if (DoStnPos .eq. 1)                                              &
-        ierr = difxiowritepoly26(fd_out, "SRC %d ANT %d STA Y (m):",    &
-           ISRC-1, J-1, Acoef(1), Acoef(2), Acoef(3), Acoef(4),        &
-           Acoef(5), Acoef(6))
-!
-      ierr = fitPoly(Acoef, StaZ6, %VAL(n), %VAL(m), %VAL(delta))
-      if (DoStnPos .eq. 1)                                              &
-        ierr = difxiowritepoly26(fd_out, "SRC %d ANT %d STA Z (m):",    &
-           ISRC-1, J-1, Acoef(1), Acoef(2), Acoef(3), Acoef(4),        &
-           Acoef(5), Acoef(6))
 !
       Enddo       ! Station loop
       Enddo    ! Source loop
