@@ -325,6 +325,7 @@ def regeneratev2d(inFile, antList):
 	# find all ANTENNA/DATASTREAM sections, inspect content and prepare modifications where applicable
 	antblocks = getv2dblock(linesin, 'ANTENNA')
 	for (ant,istart,istop,antcontent) in antblocks:
+		ant = ant.upper()
 		if ant not in antList:
 			continue
 		# Any DATASTREAM(s) referenced by ANTENNA?
