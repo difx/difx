@@ -36,8 +36,8 @@
 
 const char program[] = "tabulatedelays";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.7";
-const char verdate[] = "20200616";
+const char version[] = "0.8";
+const char verdate[] = "20200624";
 
 void usage()
 {
@@ -53,6 +53,7 @@ void usage()
 	printf("--dry      print dry atmosphere delay [us]\n\n");
 	printf("--wet      print wet atmosphere delay [us]\n\n");
 	printf("--uvw      print antenna u,v,w [m] instead of delay, rate\n\n");
+	printf("--xyz      print antenna x,y,z [m] (J2000) instead of delay, rate\n\n");
 	printf("--clock    print clock offset and rate instead of delay, rate\n\n");
 	printf("--perint   print values at the center of every integration rather than every 8s\n\n");
 	printf("--addclock include clock offset/rate in delay/rate values\n\n");
@@ -88,6 +89,7 @@ enum Item
 	ItemDry,
 	ItemWet,
 	ItemUVW,
+	ItemXYZ,
 	ItemClock
 };
 
@@ -207,6 +209,10 @@ int main(int argc, char **argv)
 			{
 				item = ItemUVW;
 			}
+			else if(strcmp(argv[a], "--xyz") == 0)
+			{
+				item = ItemXYZ;
+			}
 			else if(strcmp(argv[a], "--clock") == 0)
 			{
 				item = ItemClock;
@@ -245,7 +251,7 @@ int main(int argc, char **argv)
 					mjdFile = fopen(argv[a], "r");
 					if(mjdFile == 0)
 					{
-						fprintf(stderr, "Error: cannot open %s for read\n", argv[a]);
+						fprintf(stderr, "Error: cannot open %s for read.\n", argv[a]);
 
 						exit(EXIT_FAILURE);
 					}
@@ -253,7 +259,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				fprintf(stderr, "Unknown option %s\n", argv[a]);
+				fprintf(stderr, "Unknown option %s .\n", argv[a]);
 
 				exit(EXIT_FAILURE);
 			}
@@ -278,7 +284,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					fprintf(stderr, "cannot merge job %s\n", argv[a]);
+					fprintf(stderr, "Cannot merge job %s .\n", argv[a]);
 					deleteDifxInput(D1);
 					deleteDifxInput(D2);
 					D = 0;
@@ -294,14 +300,21 @@ int main(int argc, char **argv)
 
 	if(addClock && item != ItemDelay)
 	{
-		fprintf(stderr, "Error: The --addclock option only works when tabulating delays and rates\n");
+		fprintf(stderr, "Error: The --addclock option only works when tabulating delays and rates.\n");
+		
+		exit(EXIT_FAILURE);
+	}
+
+	if(noAxis && (item == ItemUVW || item == ItemXYZ))
+	{
+		fprintf(stderr, "Error: axis offset removal not possible in (U,V,W) or (X,Y,Z) mode at this time.\n");
 		
 		exit(EXIT_FAILURE);
 	}
 
 	if(!D)
 	{
-		fprintf(stderr, "Nothing to do!  Quitting.  Run with -h for help information\n");
+		fprintf(stderr, "Nothing to do!  Quitting.  Run with -h for help information.\n");
 
 		return EXIT_SUCCESS;
 	}
@@ -309,7 +322,7 @@ int main(int argc, char **argv)
 	D = updateDifxInput(D, 0);
 	if(!D)
 	{
-		fprintf(stderr, "Update failed: D == 0.  Quitting\n");
+		fprintf(stderr, "Update failed: D == 0.  Quitting.\n");
 		
 		return EXIT_FAILURE;
 	}
@@ -371,6 +384,10 @@ int main(int argc, char **argv)
 			printf("# %d. Antenna %d (%s) baseline U [m]\n", 2+3*a, a, D->antenna[a].name);
 			printf("# %d. Antenna %d (%s) baseline V [m]\n", 3+3*a, a, D->antenna[a].name);
 			printf("# %d. Antenna %d (%s) baseline W [m]\n", 4+3*a, a, D->antenna[a].name);
+		case ItemXYZ:
+			printf("# %d. Antenna %d (%s) J2000 X [m]\n", 2+3*a, a, D->antenna[a].name);
+			printf("# %d. Antenna %d (%s) J2000 Y [m]\n", 3+3*a, a, D->antenna[a].name);
+			printf("# %d. Antenna %d (%s) J2000 Z [m]\n", 4+3*a, a, D->antenna[a].name);
 		case ItemClock:
 			printf("# %d. Antenna %d (%s) clock offset [us]\n", 2+2*a, a, D->antenna[a].name);
 			printf("# %d. Antenna %d (%s) clock rate [us/s]\n", 3+2*a, a, D->antenna[a].name);
@@ -509,6 +526,35 @@ int main(int argc, char **argv)
 
 						/* print to mm precision */
 						printf("   %12.3f %12.3f %12.3f", u, v, w); 
+					}
+				}
+			}
+			else if(item == ItemXYZ)
+			{
+				for(a = 0; a < D->nAntenna; ++a)
+				{
+					p = getPolyIndex(ds, a, intmjd, sec);
+					if(p < 0)
+					{
+						printf("   %15.6f %15.6f %15.6f", 0.0, 0.0, 0.0);
+					}
+					else
+					{
+						double x, y, z;
+
+						if(ds->im[a] == 0)
+						{
+							x = y = z = 0.0;
+						}
+						else
+						{
+							x = evaluatePoly(ds->im[a][0][p].staX, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+							y = evaluatePoly(ds->im[a][0][p].staY, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+							z = evaluatePoly(ds->im[a][0][p].staZ, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+						}
+
+						/* print to um precision */
+						printf("   %15.6f %15.6f %15.6f", x, y, z); 
 					}
 				}
 			}
@@ -698,6 +744,35 @@ int main(int argc, char **argv)
 							}
 						}
 					}
+					else if(item == ItemXYZ)
+					{
+						for(a = 0; a < D->nAntenna; ++a)
+						{
+							p = getPolyIndex(ds, a, intmjd, sec);
+							if(p < 0)
+							{
+								printf("   %15.6f %15.6f %15.6f", 0.0, 0.0, 0.0);
+							}
+							else
+							{
+								double x, y, z;
+
+								if(ds->im[a] == 0)
+								{
+									x = y = z = 0.0;
+								}
+								else
+								{
+									x = evaluatePoly(ds->im[a][0][p].staX, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+									y = evaluatePoly(ds->im[a][0][p].staY, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+									z = evaluatePoly(ds->im[a][0][p].staZ, ds->im[a][0][p].order+1, sec - ds->im[a][0][p].sec);
+								}
+
+								/* print to um precision */
+								printf("   %15.6f %15.6f %15.6f", x, y, z); 
+							}
+						}
+					}
 					else
 					{
 						for(a = 0; a < D->nAntenna; ++a)
@@ -829,6 +904,27 @@ int main(int argc, char **argv)
 
 								/* print to mm precision */
 								printf("   %12.3f %12.3f %12.3f", u, v, w); 
+							}
+						}
+						else if(item == ItemXYZ)
+						{
+							for(a = 0; a < D->nAntenna; ++a)
+							{
+								double x, y, z;
+
+								if(ds->im[a] == 0)
+								{
+									x = y = z = 0.0;
+								}
+								else
+								{
+									x = evaluatePoly(ds->im[a][0][p].staX, ds->im[a][0][p].order+1, 8*i);
+									y = evaluatePoly(ds->im[a][0][p].staY, ds->im[a][0][p].order+1, 8*i);
+									z = evaluatePoly(ds->im[a][0][p].staZ, ds->im[a][0][p].order+1, 8*i);
+								}
+
+								/* print to um precision */
+								printf("   %15.6f %15.6f %15.6f", x, y, z); 
 							}
 						}
 						else
