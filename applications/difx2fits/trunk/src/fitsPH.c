@@ -587,6 +587,7 @@ static int parseDifxPulseCal(const char *line,
 	const DifxFreq *df;
 	const DifxDatastream *dd;
 	const DifxConfig *dc;
+	const DifxFreqSet *dfs;
 	int nt;		/* Max number of tones per band which equals number of tone records per rec band in the PCAL file */
 	int nRecBand, nIF, nRecTone;
 	double toneFreq[array_MAX_TONES];
@@ -759,6 +760,7 @@ static int parseDifxPulseCal(const char *line,
 	}
 
 	dc = D->config + *configId;
+	dfs = D->freqSet + dc->freqSetId;
 
 	dt = dc->tInt/(86400.0*2.001);  
 	if(D->scan[*scanId].mjdStart > mjd-dt || D->scan[*scanId].mjdEnd < mjd+dt)
@@ -784,6 +786,7 @@ static int parseDifxPulseCal(const char *line,
 		bandPol = DifxConfigGetPolId(dc, dd->recBandPolName[band]);
 
 		df = D->freq + recFreq;
+		// assert(nt == df->nTone);
 
 		/* this pol/band combination is not used.  Read all of the dummies from PCAL file */
 		for(tone = 0; tone < nt; ++tone)	/* nt is taken from line header and is max number of tones */
@@ -870,6 +873,21 @@ static int parseDifxPulseCal(const char *line,
 				{
 					for(i = 0; i < nIF; ++i)
 					{
+						if(dfs->IF[i].sideband == 'U')
+						{
+							/* ensure the IF does indeed contain the tone; one recFreq may have several IFs (zooms) and not all have this tone! */
+							if((toneFreq[tone] < dfs->IF[i].freq) || (toneFreq[tone] > (dfs->IF[i].freq + dfs->IF[i].bw)))
+							{
+								continue;
+							}
+						}
+						else
+						{
+							if((toneFreq[tone] < (dfs->IF[i].freq - dfs->IF[i].bw) || (toneFreq[tone] > dfs->IF[i].freq)))
+							{
+								continue;
+							}
+						}
 						if(df->sideband == 'U')
 						{
 							toneIndex = IFs[i]*nTone + toneCount;
