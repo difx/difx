@@ -1,3 +1,6 @@
+* rjc 2020.6.26
+* fix parallactic angle bug in first t303 record
+
 Version 1.6
 ~~~~~~~~~~~
 * Post DiFX-2.6

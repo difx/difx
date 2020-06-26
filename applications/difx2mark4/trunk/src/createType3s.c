@@ -289,8 +289,12 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     t303.u[l] = (**(D->scan[scanId].im+n)+j)->u[l];
                     t303.v[l] = (**(D->scan[scanId].im+n)+j)->v[l];
                     t303.w[l] = (**(D->scan[scanId].im+n)+j)->w[l];
+                    }
                                     // par. angle from calc program is NYI
-                    if (l == 0)
+                                    // separate loop so l=1 values defined for az & el
+                for (l=0; l<6; l++)
+                    {
+                    if (l == 0)     // for now, only constant term is non-zero
                         {
                                     // calculate geocentric latitude (rad)
                         geoc_lat = atan2 (D->antenna[n].Z,
@@ -299,11 +303,11 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // get declination for this source
                         sourceId = D->scan[scanId].pointingCentreSrc;
                         dec = D->source[sourceId].dec;
-                                    // evaluate az & el at midpoint of model interval
+                                    // evaluate az & el at midpoint of spline interval
                         el = M_PI / 180.0 * (t303.elevation[0]
-                                + 0.5 * D->scan[scanId].durSeconds * t303.elevation[1]);
+                                + 0.5 * t300.model_interval * t303.elevation[1]);
                         az = M_PI / 180.0 * (t303.azimuth[0]
-                                + 0.5 * D->scan[scanId].durSeconds * t303.azimuth[1]);
+                                + 0.5 * t300.model_interval * t303.azimuth[1]);
                                     // evaluate sin and cos of the local hour angle
                         sha = - cos(el) * sin(az) / cos(dec);
                         cha = (sin(el) - sin(geoc_lat) * sin(dec))
