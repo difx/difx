@@ -12,7 +12,7 @@
 
 void usage()
 {
-	printf("Usage: m5pcal_test <infile> <format> <if_nr> <spacing Hz> <offset from 0Hz in Hz> <0:usb|1:lsb>\n");
+	printf("Usage: m5pcal_test <infile> <format> <if_nr> <spacing Hz> <offset from 0Hz in Hz> <0|U:usb | 1|L:lsb>\n");
 }
 
 int main(int argc, char** argv)
@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 	if_nr = atoi(argv[3]);
 	pcal_interval_hz = atof(argv[4])*1e6;
 	pcal_offset_hz = (int)(atof(argv[5])*1e6);
-	lsb = (argv[6][0] == '1');
+	lsb = (argv[6][0] == '1') || (argv[6][0] == 'L');
 
 	// Open file
     ms = new_mark5_stream_absorb(
