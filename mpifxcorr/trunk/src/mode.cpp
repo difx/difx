@@ -899,15 +899,18 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
     if (usecomplex && usedouble)
     {
       if (config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
-	lofreq -= config->getDRecordedBandwidth(configindex, datastreamindex, i)/2.0;
+        lofreq -= config->getDRecordedBandwidth(configindex, datastreamindex, i)/2.0;
       } else {
-	lofreq += config->getDRecordedBandwidth(configindex, datastreamindex, i)/2.0;
+        lofreq += config->getDRecordedBandwidth(configindex, datastreamindex, i)/2.0;
       }
-    }
-
-    // For lower sideband complex data, the effective LO is at negative frequency, not positive
-    if (usecomplex && config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
-      lofreq = -lofreq;
+      // For lower sideband complex data, the effective LO is at negative frequency, not positive
+      if (usecomplex && config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
+        lofreq = -lofreq;
+      }
+    } else if(usecomplex) {
+      if (usecomplex && config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
+        //lofreq = -lofreq; // using -lofreq breaks Complex LSB (non-DSB!) fringes
+      }
     }
 
     switch(fringerotationorder) {
@@ -1217,27 +1220,28 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
               // All lower sideband bands need to be conjugated (achieved by taking the second half of the band for real-valued inputs)
               // Additionally for the complex-valued inputs, the order of the frequency channels is reversed so they need to be flipped
               // (for the double sideband case, in two halves, for the regular case, the whole thing)
-	      if (usecomplex) {
-		if (usedouble) {
-		  status = vectorConjFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels/2+1);
-		  status = vectorConjFlip_cf32(&fftd[recordedbandchannels/2]+1, &fftoutputs[j][subloopindex][recordedbandchannels/2]+1, recordedbandchannels/2-1);
-		} 
-                else {
-                  status = vectorConjFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
+              if (usecomplex) {
+                if (usedouble) {
+                  status = vectorConjFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels/2+1);
+                  status = vectorConjFlip_cf32(&fftd[recordedbandchannels/2]+1, &fftoutputs[j][subloopindex][recordedbandchannels/2]+1, recordedbandchannels/2-1);
+                } else {
+                  //status = vectorConjFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels); // removed; HOPS/AIPS shows this'd flip the spectrum to USB yet keeps LSB label -> no fringes
+                  status = vectorCopy_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels); // identical to DiFX 2.5.3
                 }
-	      } 
+              }
               else {
-		status = vectorCopy_cf32(&(fftd[recordedbandchannels]), fftoutputs[j][subloopindex], recordedbandchannels);
-	      }
+                status = vectorCopy_cf32(&(fftd[recordedbandchannels]), fftoutputs[j][subloopindex], recordedbandchannels);
+              }
             }
             else {
               // For upper sideband bands, normally just need to copy the fftd channels.
               // However for complex double upper sideband, the two halves of the frequency space are swapped, so they need to be swapped back
-	      if (usecomplex && usedouble) {
-		status = vectorCopy_cf32(fftd, &fftoutputs[j][subloopindex][recordedbandchannels/2], recordedbandchannels/2);
-		status = vectorCopy_cf32(&fftd[recordedbandchannels/2], fftoutputs[j][subloopindex], recordedbandchannels/2);
-	      } else 
-		status = vectorCopy_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
+              if (usecomplex && usedouble) {
+                status = vectorCopy_cf32(fftd, &fftoutputs[j][subloopindex][recordedbandchannels/2], recordedbandchannels/2);
+                status = vectorCopy_cf32(&fftd[recordedbandchannels/2], fftoutputs[j][subloopindex], recordedbandchannels/2);
+              } else {
+                status = vectorCopy_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
+              }
             }
             if(status != vecNoErr)
               csevere << startl << "Error copying FFT results!!!" << endl;
@@ -1249,6 +1253,7 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
 	// 1. The zero element corresponds to the lowest sky frequency.  That is:
 	//    fftoutputs[j][0] = Local Oscillator Frequency              (for Upper Sideband)
 	//    fftoutputs[j][0] = Local Oscillator Frequency - bandwidth  (for Lower Sideband)
+	//    fftoutputs[j][0] = Local Oscillator Frequency - bandwidth  (for Complex Lower Sideband)
 	//    fftoutputs[j][0] = Local Oscillator Frequency - bandwidth/2(for Complex Double Upper Sideband)
 	//    fftoutputs[j][0] = Local Oscillator Frequency - bandwidth/2(for Complex Double Lower Sideband)
 	// 
