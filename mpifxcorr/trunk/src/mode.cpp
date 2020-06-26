@@ -909,7 +909,7 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
       }
     } else if(usecomplex) {
       if (usecomplex && config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
-        //lofreq = -lofreq; // using -lofreq breaks Complex LSB (non-DSB!) fringes
+        lofreq = -lofreq; // note: using -lofreq breaks Complex LSB (non-DSB!) fringes for VGOS *assuming* VGOS RDBE-G indeed LSB like memos claim
       }
     }
 
@@ -1225,8 +1225,10 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
                   status = vectorConjFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels/2+1);
                   status = vectorConjFlip_cf32(&fftd[recordedbandchannels/2]+1, &fftoutputs[j][subloopindex][recordedbandchannels/2]+1, recordedbandchannels/2-1);
                 } else {
-                  //status = vectorConjFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels); // removed; HOPS/AIPS shows this'd flip the spectrum to USB yet keeps LSB label -> no fringes
-                  status = vectorCopy_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels); // identical to DiFX 2.5.3
+                  status = vectorConjFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
+                  // note: using vectorConjFlip_cf32() -lofreq breaks Complex LSB (non-DSB!) fringes for VGOS *assuming* VGOS RDBE-G indeed LSB like memos claim
+                  // whereas DiFX 2.5.3-style vectorCopy_cf32() with positive lofreq produces VGOS fringes:
+                  // status = vectorCopy_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
                 }
               }
               else {
