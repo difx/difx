@@ -12,7 +12,7 @@
 
 void usage()
 {
-	printf("Usage: m5pcal_test <infile> <format> <if_nr> <spacing Hz> <offset from 0Hz in Hz> <0|U:usb | 1|L:lsb>\n");
+	printf("Usage: m5pcal_test <infile> <format> <if_nr> <spacing Hz> <offset from 0Hz in Hz> <0,S:ssb | 1,D:dsb> <0,U:usb | 1,L:lsb>\n");
 }
 
 int main(int argc, char** argv)
@@ -26,10 +26,10 @@ int main(int argc, char** argv)
 	double bw_hz;
 	double pcal_interval_hz = 1e6;
 	int pcal_offset_hz = 0;
-	int lsb = 0;
+	int lsb = 0, ssb = 1;
 	int done = 0;
 	int i, n;
-
+    size_t sample_offset = 0;
 
 	struct mark5_stream *ms;
 	mark5_float_complex **data_complex;
@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 	PCal* pc;
 	cf32* tonedata;
 
-	if (argc != 7) {
+	if (argc != 8) {
 		usage();
 		return -1;
 	}
@@ -48,7 +48,8 @@ int main(int argc, char** argv)
 	if_nr = atoi(argv[3]);
 	pcal_interval_hz = atof(argv[4])*1e6;
 	pcal_offset_hz = (int)(atof(argv[5])*1e6);
-	lsb = (argv[6][0] == '1') || (argv[6][0] == 'L');
+	ssb = (argv[6][0] == '0') || (argv[6][0] == 'S');
+	lsb = (argv[7][0] == '1') || (argv[7][0] == 'L');
 
 	// Open file
     ms = new_mark5_stream_absorb(
@@ -71,11 +72,17 @@ int main(int argc, char** argv)
 		bw_hz = ms->samprate / 2;
 	}
 
-	pc = PCal::getNew(bw_hz, pcal_interval_hz, pcal_offset_hz, 0, ms->iscomplex, lsb);
+	Configuration::datasampling data_type = ms->iscomplex ? Configuration::COMPLEX : Configuration::REAL;
+	Configuration::complextype band_type = ssb ? Configuration::SINGLE : Configuration::DOUBLE;
+
+	pc = PCal::getNew(bw_hz, pcal_interval_hz, pcal_offset_hz, sample_offset, data_type, band_type, lsb);
 
 	tonedata = vectorAlloc_cf32(pc->getLength());
 
-	printf("Args: interval %lf Hz, offset %d Hz, lsb?:%d  file:complex=%d\n", pcal_interval_hz, pcal_offset_hz, lsb, ms->iscomplex);
+	printf("Args: interval %lf Hz, offset %d Hz, %s %s %s data\n", pcal_interval_hz, pcal_offset_hz,
+          ssb ? "SSB" : "DSB",
+          lsb ? "LSB" : " USB",
+          ms->iscomplex ? "complex" : "real");
 	printf("PCal extractor : length=%d nbins=%d\n", pc->getLength(), pc->getNBins());
 
 	// Read file

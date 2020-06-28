@@ -60,6 +60,7 @@
  ********************************************************************************************************/
 
 #include "architecture.h"
+#include "configuration.h" // for enums datasampling, complextype
 #include <cstddef>
 #include <cassert>
 #include <stdint.h>
@@ -100,7 +101,7 @@ class PCal {
        * @param lsb              true iff recorded band is lower sideband
        * @return new PCal extractor class instance 
        */
-      static PCal* getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, const size_t sampleoffset, int usecomplex, int lsb);
+      static PCal* getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, const size_t sampleoffset, Configuration::datasampling data_type, Configuration::complextype band_type, int lsb);
 
      /**
       * Return number of tones that fit the band, including any
@@ -216,6 +217,7 @@ class PCal {
       int _pcaloffset_hz;
       double _pcalspacing_hz;
       int _lsb;
+      int _ssb;
       int _N_bins;
       int _N_tones;
       bool _finalized;

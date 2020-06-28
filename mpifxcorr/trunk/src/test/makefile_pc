@@ -1,0 +1,20 @@
+
+OBJS = m5pcal_test.o ../pcal.o ../alert.o ../mathutil.o
+CXXFLAGS = -DIPP9 -I/cluster/intel/ipp/9.0.3.210//ipp/include -I.. -I../.. -DPCAL_DEBUG=1  -I/cluster/difx/devel/difx-revs/include -O3
+LDFLAGS = -Wl,-rpath,/cluster/intel/ipp/9.0.3.210//lib/intel64 -Wl,-rpath,/cluster/intel/ipp/9.0.3.210//ipp/lib/intel64 -L/cluster/intel/ipp/9.0.3.210//lib/intel64 -L/cluster/intel/ipp/9.0.3.210//ipp/lib/intel64 -L/cluster/intel/ipp/9.0.3.210//compiler/lib/intel64 -L/cluster/difx/devel/difx-revs/lib
+LDLIBS = -lipps -lippvm -lippcore -lmark5access -ldifxmessage
+
+all: m5pcal_test
+
+m5pcal_test: $(OBJS)
+	$(MPICXX) $^ -o m5pcal_test $(LDFLAGS) $(LDLIBS)
+
+%.o: %.cpp
+	$(MPICXX) $(CXXFLAGS) -c $< -o $@
+
+test: m5pcal_test
+	#./m5pcal_test  /data/TESTS/janw/complex_vdif/vo009_wf_009-1800.mk6gather.tId_1.vdif VDIFC_8192-2048-16-2  0 5.0 1.6 0
+	./m5pcal_test  /data/TESTS/janw/complex_vdif/vo009_wf_009-1800.mk6gather.tId_1.vdif VDIFC_8192-2048-16-2  0 5.0 0.4 1
+
+clean:
+	rm -f $(OBJS) m5pcal_test

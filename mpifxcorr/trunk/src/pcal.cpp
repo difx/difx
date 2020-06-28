@@ -133,12 +133,13 @@ double PCal::_min_freq_resolution_hz = 1e9;
  * @return new PCal extractor class instance
  */
 PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz,
-                   const size_t sampleoffset, int usecomplex, int lsb)
+                   const size_t sampleoffset, Configuration::datasampling data_type, Configuration::complextype band_type,
+                   int lsb)
 {
     int No, Np, Nt;
     double fs;
 
-    fs = usecomplex ? bandwidth_hz : 2.0 * bandwidth_hz;
+    fs = (data_type == Configuration::COMPLEX) ? bandwidth_hz : 2.0 * bandwidth_hz;
 
     if (pcal_offset_hz == -1)    // Test for flag value indicating no real tones
     {
@@ -168,12 +169,12 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
         return new PCalExtractorDummy(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, sampleoffset);
 
     // Currently only one extraction method implemented for complex data
-    if (usecomplex) {
+    if (data_type == Configuration::COMPLEX) {
         //ToDo: could enable the implicit method soon:
         //if ((No % Np) == 0)
-        //    return new PCalExtractorComplexImplicitShift(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, lsb);
+        //    return new PCalExtractorComplexImplicitShift(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, band_type, lsb);
         //else
-        return new PCalExtractorComplex(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, lsb);
+        return new PCalExtractorComplex(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, band_type, lsb);
     }
 
     // First tone in DC bin: smallest footprint extractor
@@ -704,6 +705,7 @@ uint64_t PCalExtractorShifting::getFinalPCal(cf32* out)
 PCalExtractorComplex::PCalExtractorComplex(double bandwidth_hz,
                                            double pcal_spacing_hz,
                                            int pcal_offset_hz,
+                                           Configuration::complextype band_type,
                                            int lsb)
 {
     pcal_spacing_hz = std::abs(pcal_spacing_hz);
@@ -713,6 +715,7 @@ PCalExtractorComplex::PCalExtractorComplex(double bandwidth_hz,
     _pcaloffset_hz   = pcal_offset_hz;
     _pcalspacing_hz  = pcal_spacing_hz;
     _lsb             = lsb;
+    _ssb             = (band_type == Configuration::SINGLE);
     _N_bins          = (int)(_fs_hz / gcd(_fs_hz, pcal_spacing_hz));
     _N_tones         = calcNumTones(bandwidth_hz, pcal_offset_hz, pcal_spacing_hz);
     _estimatedbytes  = 0;
@@ -893,6 +896,7 @@ uint64_t PCalExtractorComplex::getFinalPCal (cf32* out)
     size_t step = (size_t)(std::floor(_N_bins*(_pcalspacing_hz/_fs_hz)));
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         size_t idx = n*step;
+// TODO: for complex double upper sideband, the two halves of the frequency space are swapped, so they need to be swapped back
         if (idx >= (size_t)_N_bins)
             break;
         if (_lsb) {
@@ -1097,6 +1101,7 @@ PCalExtractorComplexImplicitShift::PCalExtractorComplexImplicitShift(
     double bandwidth_hz,
     double pcal_spacing_hz,
     int pcal_offset_hz,
+    Configuration::complextype band_type,
     int lsb)
 {
     /* Derive config */
@@ -1104,6 +1109,7 @@ PCalExtractorComplexImplicitShift::PCalExtractorComplexImplicitShift(
     _pcalspacing_hz = pcal_spacing_hz;
     _pcaloffset_hz  = pcal_offset_hz;
     _lsb            = lsb;
+    _ssb             = (band_type == Configuration::SINGLE);
     _N_bins         = (int)(_fs_hz / gcd(_fs_hz, _pcaloffset_hz));
     _N_tones        = calcNumTones(bandwidth_hz, _pcaloffset_hz, _pcalspacing_hz);
     _estimatedbytes = 0;
@@ -1262,6 +1268,7 @@ uint64_t PCalExtractorComplexImplicitShift::getFinalPCal(cf32* out)
         ssize_t bin = offset + n*step;
         if (bin >= _N_bins)
             break;
+// TODO: for complex double upper sideband, the two halves of the frequency space are swapped, so they need to be swapped back
         if (_lsb) {
             // lsb tones come out in opposite
             // order, and shifted by 1
