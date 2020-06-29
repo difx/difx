@@ -891,12 +891,20 @@ uint64_t PCalExtractorComplex::getFinalPCal (cf32* out)
             csevere << startl << "Error in DFTFwd in PCalExtractorComplex::getFinalPCal " << vectorGetStatusString(s) << endl;
     }
 
+    /* For DSB, DC is in the center bin. Revert to USB/LSB-like spectrum by swapping spectral halves. */
+    if(!_ssb) {
+        for (size_t n=0; n<_N_bins/2; n++) {
+            cf32 tmp = _cfg->dft_out[n];
+            _cfg->dft_out[n] = _cfg->dft_out[_N_bins - n - 1];
+            _cfg->dft_out[_N_bins - n - 1] = tmp;
+        }
+    }
+
     // Copy only the interesting bins.
     // Note the "DC" bin has phase info in 1st shifted tone, do not discard.
     size_t step = (size_t)(std::floor(_N_bins*(_pcalspacing_hz/_fs_hz)));
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         size_t idx = n*step;
-// TODO: for complex double upper sideband, the two halves of the frequency space are swapped, so they need to be swapped back
         if (idx >= (size_t)_N_bins)
             break;
         if (_lsb) {
@@ -904,7 +912,7 @@ uint64_t PCalExtractorComplex::getFinalPCal (cf32* out)
             // order, and shifted by 1
             int indlsb = (_N_bins - idx) % _N_bins;
             out[n].re = _cfg->dft_out[indlsb].re;
-            out[n].im =-_cfg->dft_out[indlsb].im; // conjugate to get correct phase
+            out[n].im =-_cfg->dft_out[indlsb].im; // conjugate to get correct phase; TODO: is conjugation needed for Lower DSB case as well?
         } else {
             out[n].re = _cfg->dft_out[idx].re;
             out[n].im = _cfg->dft_out[idx].im;
@@ -1261,6 +1269,15 @@ uint64_t PCalExtractorComplexImplicitShift::getFinalPCal(cf32* out)
     cout << "deg\n";
     #endif
 
+    /* For DSB, DC is in the center bin. Revert to USB/LSB-like spectrum by swapping spectral halves. */
+    if(!_ssb) {
+        for (size_t n=0; n<_N_bins/2; n++) {
+            cf32 tmp = _cfg->dft_out[n];
+            _cfg->dft_out[n] = _cfg->dft_out[_N_bins - n - 1];
+            _cfg->dft_out[_N_bins - n - 1] = tmp;
+        }
+    }
+
     /* Copy only the interesting bins */
     size_t step = (size_t)(std::floor(double(_N_bins)*(_pcalspacing_hz/_fs_hz)));
     size_t offset = (size_t)(std::floor(double(_N_bins)*(_pcaloffset_hz/_fs_hz)));
@@ -1268,13 +1285,12 @@ uint64_t PCalExtractorComplexImplicitShift::getFinalPCal(cf32* out)
         ssize_t bin = offset + n*step;
         if (bin >= _N_bins)
             break;
-// TODO: for complex double upper sideband, the two halves of the frequency space are swapped, so they need to be swapped back
         if (_lsb) {
             // lsb tones come out in opposite
             // order, and shifted by 1
             ssize_t binlsb = _N_bins - bin;
             out[n].re = _cfg->dft_out[binlsb].re;
-            out[n].im = -_cfg->dft_out[binlsb].im; // conjugate to get correct phase
+            out[n].im = -_cfg->dft_out[binlsb].im; // conjugate to get correct phase; TODO: is conjugation needed for Lower DSB case as well?
             //cout << "cplxImpl::getFinalPCal() tone n=" << n << " DFT bin " << bin << " equiv. freq " << 1e-6*(double((_N_bins - bin)*_fs_hz)/_N_bins) << " MHz from low band edge\n";
         } else {
             out[n].re = _cfg->dft_out[bin].re;
