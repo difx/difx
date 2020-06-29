@@ -106,8 +106,10 @@ int main(int argc, char** argv)
 		for (i = 0; i < pc->getLength(); i++) {
 			float phi = (180/M_PI)*std::atan2(tonedata[i].im, tonedata[i].re);
 			float amp = sqrt(tonedata[i].im*tonedata[i].im + tonedata[i].re*tonedata[i].re);
-			float freq = pcal_offset_hz + pcal_interval_hz * (lsb ? (pc->getLength() - i) : i);
-			printf("   tone %d : baseband %8.3f MHz : phase %+7.2f amp %6.2f\n", i, freq*1e-6, phi, amp);
+			float bbfreq = pcal_offset_hz + pcal_interval_hz * i;
+			double skyfreq = 1000.0 * pcal_interval_hz*1e6; // any
+			skyfreq = lsb ? (skyfreq - bbfreq) : (skyfreq + bbfreq);
+			printf("   tone %d : baseband %8.3f MHz  'sky' e.g. %8.3f MHz : phase %+7.2f amp %6.2f\n", i, bbfreq*1e-6, skyfreq*1e-6, phi, amp);
 		}
 		printf("\n");
 
