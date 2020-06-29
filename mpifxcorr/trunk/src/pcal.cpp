@@ -6,9 +6,12 @@
  *
  * The extractor factory chooses one out of three currently available methods for signal extraction.
  * The choice depends on the parameters which are:
- *   spacing: frequency step between one tone and the next
- *   offset:  frequency offset between the first tone and the band start at 0 Hz
- *            note that the first tone can be at DC; processing will discard it
+ *   spacing:   frequency step between one tone and the next
+ *   offset:    frequency offset between the first tone and the baseband signal start at 0 Hz
+ *              note that the first tone can be at DC; for real-valued signals that tone is discarded
+ *   data type: real-valued or complex-valued signal
+ *   band type: single sideband with LO at an edge, or double sideband with LO at the center
+ *   sideband:  only used for complex signals
  *
  * Spacing is assumed to be constant throughout the band.
  * A tone spacing is "integer" if it divides the sampling rate evenly
@@ -52,6 +55,7 @@
  * @license  GNU GPL v3
  *
  * Changelog:
+ *   29jun2020 - extended the support for extraction from complex samples
  *   18Mar2014 - added support for extraction from complex samples
  *   27Mar2012 - better count of tones in band, added corner cases like no tones in band, zero spacing
  *   05Oct2009 - added support for arbitrary input segment lengths

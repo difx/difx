@@ -1,16 +1,19 @@
 #ifndef _PCAL_H
 #define _PCAL_H
 /********************************************************************************************************
- * @file PCal.h
+ * @file PCal.cpp
  * Multi-tone Phase Cal Extraction
  *
  * @brief Extracts and integrates multi-tone phase calibration signal information from an input signal.
  *
  * The extractor factory chooses one out of three currently available methods for signal extraction.
  * The choice depends on the parameters which are:
- *   spacing: frequency step between one tone and the next
- *   offset:  frequency offset between the first tone and the band start at 0 Hz
- *            note that the first tone can be at DC; processing will discard it
+ *   spacing:   frequency step between one tone and the next
+ *   offset:    frequency offset between the first tone and the baseband signal start at 0 Hz
+ *              note that the first tone can be at DC; for real-valued signals that tone is discarded
+ *   data type: real-valued or complex-valued signal
+ *   band type: single sideband with LO at an edge, or double sideband with LO at the center
+ *   sideband:  only used for complex signals
  *
  * Spacing is assumed to be constant throughout the band.
  * A tone spacing is "integer" if it divides the sampling rate evenly
@@ -25,6 +28,13 @@
  *   the period (in N samples) of the lowest tone frequency. A r2c FFT of the time
  *   integrated segments gives the amplitude and phase of every tone. The 0th bin
  *   contains a tone but carries no phase information and is discarded.
+ *
+ * Shifting extractor:
+ *   When the offset is non-zero, the signal can be counter-rotated with a
+ *   precomputed complex sine to restore the offset back to zero. The basic
+ *   extractor is then applied.
+ *   After time integration a c2c FFT gives the amplitude and phase of every tone.
+ *   In this case the 0th bin contains meaningful phase info of the first shifted tone.
  *
  * Shifting extractor:
  *   When the offset is non-zero, the signal can be counter-rotated with a
@@ -54,8 +64,13 @@
  * @license  GNU GPL v3
  *
  * Changelog:
+ *   29jun2020 - extended the support for extraction from complex samples
+ *   18Mar2014 - added support for extraction from complex samples
+ *   27Mar2012 - better count of tones in band, added corner cases like no tones in band, zero spacing
  *   05Oct2009 - added support for arbitrary input segment lengths
- *   08oct2009 - added Briskens rotationless method
+ *   08Oct2009 - added Briskens rotationless method
+ *   02Nov2009 - added sub-subintegration sample offset, DFT for f-d results, tone bin copying to user buf
+ *   03Nov2009 - added unit test, included DFT in extractAndIntegrate_reference(), fix rotation direction
  *
  ********************************************************************************************************/
 
