@@ -860,11 +860,23 @@ os_chdir(topdir)
 if(dodoc):
     basedocdir = difxroot + '/doc/'
     make_doc_area(basedocdir)
-    os.chdir("mpifxcorr/" + difx_version)
-    if os.system("which doxygen") != 0:
-        print("No doxygen installed - skipping mpifxcorr documentation")
+    targetdir = "mpifxcorr/" + difx_version
+    if not os.path.exists(targetdir):
+        print("**** Could not find "+targetdir+", trying Trunk")
+        targetdir = targetdir = "mpifxcorr/" + '/trunk/'
+    if os.path.exists(targetdir):
+        print()
+        print()
+        print("************************************")
+        print("Building docs ", targetdir)
+        if os.system("which doxygen") != 0:
+            print("No doxygen installed - skipping mpifxcorr documentation")
+        else:
+            os.system("doxygen Doxyfile")
     else:
-        os.system("doxygen Doxyfile")
+        print()
+        print("******* Skipping "+targetdir)
+        print()
 
 ##### Check for errors and list if present ###############
 if (force and not errors == []):
