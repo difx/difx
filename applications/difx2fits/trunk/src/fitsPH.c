@@ -873,17 +873,17 @@ static int parseDifxPulseCal(const char *line,
 				{
 					for(i = 0; i < nIF; ++i)
 					{
-						if(dfs->IF[i].sideband == 'U')
+						if(dfs->IF[IFs[i]].sideband == 'U')
 						{
 							/* ensure the IF does indeed contain the tone; one recFreq may have several IFs (zooms) and not all have this tone! */
-							if((toneFreq[tone] < dfs->IF[i].freq) || (toneFreq[tone] > (dfs->IF[i].freq + dfs->IF[i].bw)))
+							if((toneFreq[tone] < dfs->IF[IFs[i]].freq) || (toneFreq[tone] > (dfs->IF[IFs[i]].freq + dfs->IF[IFs[i]].bw)))
 							{
 								continue;
 							}
 						}
 						else
 						{
-							if((toneFreq[tone] < (dfs->IF[i].freq - dfs->IF[i].bw) || (toneFreq[tone] > dfs->IF[i].freq)))
+							if((toneFreq[tone] < (dfs->IF[IFs[i]].freq - dfs->IF[IFs[i]].bw) || (toneFreq[tone] > dfs->IF[IFs[i]].freq)))
 							{
 								continue;
 							}
