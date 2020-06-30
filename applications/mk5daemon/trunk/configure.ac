@@ -62,7 +62,7 @@ AM_CONDITIONAL(WITH_MARK6META, $hasmark6meta)
 AM_CONDITIONAL(WITH_MARK6SG, $hasmark6sg)
 AM_CONDITIONAL(WITH_MARK6, $hasmark6)
 
-LIBS="${LIBS} ${STREAMSTOR_LIBS} ${VDIFIO_LIBS} ${MARK6SG_LIBS} `pkg-config --variable=StaticLibs difxmessage` `pkg-config --variable=StaticLibs mark5ipc` `pkg-config --variable=StaticLibs mark5access` `pkg-config --variable=StaticLibs mark6meta` `pkg-config --variable=StaticLibs mark6sg`"
+LIBS="${LIBS} ${STREAMSTOR_LIBS} ${VDIFIO_LIBS} ${MARK6SG_LIBS} ${M5ACCESS_LIBS} `pkg-config --variable=StaticLibs difxmessage` `pkg-config --variable=StaticLibs mark5ipc` `pkg-config --variable=StaticLibs mark5access` `pkg-config --variable=StaticLibs mark6meta` `pkg-config --variable=StaticLibs mark6sg`"
 CPPFLAGS="-D_LARGE_FILE_SOURCE -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 ${M5ACCESS_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK6META_CFLAGS} ${MARK5IPC_CFLAGS} ${VDIFIO_CFLAGS} ${STREAMSTOR_CFLAGS} ${CXXFLAGS} -O2 -Wall"
 CXXFLAGS="${CPPFLAGS}"
 
