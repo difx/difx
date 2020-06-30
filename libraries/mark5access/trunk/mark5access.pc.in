@@ -8,5 +8,5 @@ Name: mark5access
 Description: library to parse difx input and output files
 Requires: 
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lmark5access @MARK6SG_LIBS@
+Libs: -L${libdir} -lmark5access @MARK6SG_LIBS@ @CODIFIO_LIBS@
 Cflags: -I${includedir}
