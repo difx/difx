@@ -2,7 +2,7 @@
 
 #include "pcal.h"
 
-#include <complex.h>
+#include <complex>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +12,20 @@
 
 void usage()
 {
-	printf("Usage: m5pcal_test <infile> <format> <if_nr> <spacing Hz> <offset from 0Hz in Hz> <0,S:ssb | 1,D:dsb> <0,U:usb | 1,L:lsb>\n");
+	printf(
+		"\n"
+		"Usage: m5pcal_test [--conj] <infile> <format> <if_nr> <spacing Hz> <offset from 0Hz in Hz> <0,S:ssb | 1,D:dsb> <0,U:usb | 1,L:lsb>\n\n"
+		"Optional arguments:\n"
+		"   --conj   Conjugate the raw signal (invert the sideband) before phase-cal extraction. For complex data only.\n\n"
+		"Arguments:\n"
+		"   infile   Input file\n"
+		"   format   Data format for mark5access decoder library, <FORMAT>-<Mbps>-<nchan>-<nbit>\n"
+		"   if_nr    Zero based index of the IF from which to extract phase-cal\n"
+		"   spacing  Phase cal tone spacing in Hz\n"
+		"   offset   Phase cal tone offset from band edge; is translated into FFT bin number interally\n"
+		"   bandtype Either single sideband (0 or S), or double sideband (1 or D)\n"
+		"   sideband Either upper sideband (0 or U), or lower sideband (1 or L)\n\n"
+	);
 }
 
 int main(int argc, char** argv)
@@ -27,7 +40,8 @@ int main(int argc, char** argv)
 	double pcal_interval_hz = 1e6;
 	int pcal_offset_hz = 0;
 	int lsb = 0, ssb = 1;
-	int done = 0;
+	bool done = false;
+	bool conjugate = false;
 	int i, n;
     size_t sample_offset = 0;
 
@@ -38,9 +52,14 @@ int main(int argc, char** argv)
 	PCal* pc;
 	cf32* tonedata;
 
-	if (argc != 8) {
+	if (argc != 8 && argc != 9) {
 		usage();
 		return -1;
+	}
+
+	if (strcmp(argv[1], "--conj") == 0) {
+		conjugate = true;
+		argv++;
 	}
 
 	infile = argv[1];
@@ -79,10 +98,12 @@ int main(int argc, char** argv)
 
 	tonedata = vectorAlloc_cf32(pc->getLength());
 
-	printf("Args: interval %lf Hz, offset %d Hz, %s %s %s data\n", pcal_interval_hz, pcal_offset_hz,
-          ssb ? "SSB" : "DSB",
-          lsb ? "LSB" : " USB",
-          ms->iscomplex ? "complex" : "real");
+	printf("Args: interval %lf Hz, offset %d Hz, %s %s %s data %s\n", pcal_interval_hz, pcal_offset_hz,
+		ssb ? "SSB" : "DSB",
+		lsb ? "LSB" : " USB",
+		ms->iscomplex ? "complex" : "real",
+		ms->iscomplex && conjugate ? " conjugated to flip USB/LSB sense" : ""
+	);
 	printf("PCal extractor : length=%d nbins=%d\n", pc->getLength(), pc->getNBins());
 
 	// Read file
@@ -92,6 +113,11 @@ int main(int argc, char** argv)
 
 		if (ms->iscomplex) {
 			n = mark5_stream_decode_complex(ms, chunksize, data_complex);
+			if (conjugate) {
+				for (i = 0; i < n; i++) {
+					data_complex[if_nr][i] = std::conj(data_complex[if_nr][i]);
+				}
+			}
 			pc->extractAndIntegrate((float*)data_complex[if_nr], chunksize);
 		} else {
 			n = mark5_stream_decode(ms, chunksize, data_real);
