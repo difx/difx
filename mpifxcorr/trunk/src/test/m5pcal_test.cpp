@@ -94,7 +94,7 @@ int main(int argc, char** argv)
 	Configuration::datasampling data_type = ms->iscomplex ? Configuration::COMPLEX : Configuration::REAL;
 	Configuration::complextype band_type = ssb ? Configuration::SINGLE : Configuration::DOUBLE;
 
-	pc = PCal::getNew(bw_hz, pcal_interval_hz, pcal_offset_hz, sample_offset, data_type, band_type, lsb);
+	pc = PCal::getNew(bw_hz, pcal_interval_hz, pcal_offset_hz, sample_offset, data_type, band_type);
 
 	tonedata = vectorAlloc_cf32(pc->getLength());
 

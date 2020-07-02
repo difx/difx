@@ -257,7 +257,7 @@ class PCalExtractorImplicitShift : public PCal {
 
 class PCalExtractorComplexImplicitShift : public PCal {
    public:
-      PCalExtractorComplexImplicitShift(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, Configuration::complextype band_type, int lsb);
+      PCalExtractorComplexImplicitShift(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, Configuration::complextype band_type);
       ~PCalExtractorComplexImplicitShift();
    private:
      PCalExtractorComplexImplicitShift& operator= (const PCalExtractorComplexImplicitShift& o); /* no copy */
@@ -316,7 +316,7 @@ class PCalExtractorComplexImplicitShift : public PCal {
 
 class PCalExtractorComplex : public PCal {
    public:
-      PCalExtractorComplex(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, Configuration::complextype band_type, int lsb);
+      PCalExtractorComplex(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, Configuration::complextype band_type);
       ~PCalExtractorComplex();
    private:
       PCalExtractorComplex& operator= (const PCalExtractorComplex& o); /* no copy */

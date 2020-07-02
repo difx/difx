@@ -112,11 +112,11 @@ class PCal {
        * @param pcal_spacing_hz  Spacing of the PCal signal, comb spacing, typically 1e6 Hertz
        * @param pcal_offset_hz   Offset of the first PCal signal from 0Hz/DC, typically 10e3 Hertz
        * @param sampleoffset     Offset of the first sample as referenced to start of subintegration interval
-       * @param usecomplex       true iff recorded band is complex
-       * @param lsb              true iff recorded band is lower sideband
-       * @return new PCal extractor class instance 
+       * @param data_type        COMPLEX or REAL
+       * @param band_type        SINGLE (single sideband) or DOUBLE (dual sideband)
+       * @return new PCal extractor class instance
        */
-      static PCal* getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, const size_t sampleoffset, Configuration::datasampling data_type, Configuration::complextype band_type, int lsb);
+      static PCal* getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, const size_t sampleoffset, Configuration::datasampling data_type, Configuration::complextype band_type);
 
      /**
       * Return number of tones that fit the band, including any
@@ -231,7 +231,6 @@ class PCal {
       double _fs_hz;
       int _pcaloffset_hz;
       double _pcalspacing_hz;
-      int _lsb;
       int _ssb;
       int _N_bins;
       int _N_tones;
