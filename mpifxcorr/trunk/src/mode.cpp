@@ -430,7 +430,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
       PCal::setMinFrequencyResolution(1e6);
       extractor[i] = PCal::getNew(1e6*recordedbandwidth, 
                                   1e6*config->getDPhaseCalIntervalMHz(configindex, datastreamindex),
-                                  pcalOffset, 0, sampling, tcomplex, lsb);
+                                  pcalOffset, 0, sampling, tcomplex);
 
       estimatedbytes += extractor[i]->getEstimatedBytes();
 
