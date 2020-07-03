@@ -2347,7 +2347,6 @@ static int vdif_complex_decode_1channel_2bit_decimation1(struct mark5_stream *ms
 		data[0][o] = fcp[0];
 		o++;
 		data[0][o] = fcp[1];
-		o++;
 
 		if(i >= ms->databytes)
 		{
