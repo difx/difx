@@ -16,6 +16,22 @@
 
 #define FITS_WRITE_ARRAY(array, buffer, n)  { memcpy(buffer, (char *)((array)), n*sizeof((array)[0])); buffer += n*sizeof((array)[0]); }
 
+// Codes for STK_1 from AIPS Memo 114r section 2.6 table 6
+#define FITS_STOKES_UNDEFINED 0
+#define FITS_STOKES_I  1
+#define FITS_STOKES_Q  2
+#define FITS_STOKES_U  3
+#define FITS_STOKES_V  4
+#define FITS_STOKES_RR -1
+#define FITS_STOKES_LL -2
+#define FITS_STOKES_RL -3
+#define FITS_STOKES_LR -4
+#define FITS_STOKES_XX -5
+#define FITS_STOKES_YY -6
+#define FITS_STOKES_XY -7
+#define FITS_STOKES_YX -8
+
+
 /* Structs for describing FITS data types: */
 
 struct fitsBinTableColumn
