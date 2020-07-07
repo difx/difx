@@ -388,19 +388,19 @@ int VexSetup::getPolarizations() const
 		switch(it->second.pol)
 		{
 		case 'R':
-			rv |= 0x01;
+			rv |= DIFXIO_POL_R;
 			break;
 		case 'L':
-			rv |= 0x02;
+			rv |= DIFXIO_POL_L;
 			break;
 		case 'X':
-			rv |= 0x10;
+			rv |= DIFXIO_POL_X;
 			break;
 		case 'Y':
-			rv |= 0x20;
+			rv |= DIFXIO_POL_Y;
 			break;
 		default:
-			rv |= 0x100;	// Error/Unknown bit
+			rv |= DIFXIO_POL_ERROR;	// Error/Unknown bit
 		}
 	}
 
