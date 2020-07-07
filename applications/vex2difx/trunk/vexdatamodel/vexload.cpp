@@ -698,20 +698,23 @@ static int getModes(VexData *V, Vex *v)
 			}
 			if (no_defs)
 			{
+				std::cerr << "Note: Unable to find any .vex $IF, $FREQ, $BBC references for " << antName << " in mode " << modeDefName << ". The vex file might need editing." << std::endl;
 				continue;
 			}
 			if (!all_defs)
 			{
-				std::cerr << "Note: Unable to find a .vex $IF, $FREQ, or $BBC reference for " << antName << " in mode " << modeDefName << ". The .vex file might need modification." << std::endl;
+				std::cerr << "Note: Unable to find a .vex $IF, $FREQ, or $BBC reference for " << antName << " in mode " << modeDefName << ". The vex file might need editing." << std::endl;
 				continue;
 			}
 
-                        // drop all antennas without T_SAMPLE_RATE (behaviour of r8217 and earlier; now with the warning above)
-                        p = get_all_lowl(antName.c_str(), modeDefName, T_SAMPLE_RATE, B_FREQ, v);
-                        if(p == 0)
-                        {
-                                continue;
-                        }
+			// drop all antennas without T_SAMPLE_RATE (behaviour of r8217 and earlier; now with the warning above)
+			p = get_all_lowl(antName.c_str(), modeDefName, T_SAMPLE_RATE, B_FREQ, v);
+			if(p == 0)
+			{
+				//TODO uncomment the below warning some day; for VLBA it is "normal" (no error) that some stations lack 'sample_rate' when they did not observe and were just by default in the VEX
+				//std::cerr << "Note: Unable to find sample_rate in vex $BBC for " << antName << " in mode " << modeDefName << std::endl;
+				continue;
+			}
 
 			// if we made it this far the antenna is involved in this mode
 			VexSetup &setup = M->setups[V->getAntenna(a)->name];
