@@ -2382,7 +2382,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	if(access(D->job->imFile, F_OK) != 0 && strrchr(D->job->imFile, '/') != NULL)
 	{
 		const char* imFileName = strrchr(D->job->imFile, '/') + 1;
-		fprintf(stderr, "Warning: IM FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->imFile, imFileName);
+		//fprintf(stderr, "Warning: IM FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->imFile, imFileName); // commented out, vex2difx->calcif2 triggers this needlessly
 		memmove(D->job->imFile, imFileName, strlen(imFileName) + 1);
 	}
 	if(access(D->job->flagFile, F_OK) != 0 && strrchr(D->job->flagFile, '/') != NULL)
