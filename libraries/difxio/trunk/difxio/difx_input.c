@@ -719,13 +719,13 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D, const DifxParameters *
 	if(access(D->job->threadsFile, F_OK) != 0 && strrchr(D->job->threadsFile, '/') != NULL)
 	{
 		const char* threadsFileName = strrchr(D->job->threadsFile, '/') + 1;
-		fprintf(stderr, "Warning: CORE CONF FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->threadsFile, threadsFileName);
+		//fprintf(stderr, "Warning: CORE CONF FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->threadsFile, threadsFileName); // commented out, vex2difx->calcif2 triggers this needlessly
 		memmove(D->job->threadsFile, threadsFileName, strlen(threadsFileName) + 1);
 	}
 	if(access(D->job->outputFile, F_OK) != 0 && strrchr(D->job->outputFile, '/') != NULL)
 	{
 		const char* outputFileName = strrchr(D->job->outputFile, '/') + 1;
-		fprintf(stderr, "Warning: OUTPUT FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->outputFile, outputFileName);
+		//fprintf(stderr, "Warning: OUTPUT FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->outputFile, outputFileName); // commented out, vex2difx->calcif2 triggers this needlessly
 		memmove(D->job->outputFile, outputFileName, strlen(outputFileName) + 1);
 	}
 
