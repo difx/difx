@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "difxio/difx_input.h"
 #include "difxio/parsedifx.h"
 
@@ -709,6 +710,25 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D, const DifxParameters *
 		return 0;
 	}
 
+	if(access(D->job->calcFile, F_OK) != 0 && strrchr(D->job->calcFile, '/') != NULL)
+	{
+		const char* calcFileName = strrchr(D->job->calcFile, '/') + 1;
+		fprintf(stderr, "Warning: CALC FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->calcFile, calcFileName);
+		memmove(D->job->calcFile, calcFileName, strlen(calcFileName) + 1);
+	}
+	if(access(D->job->threadsFile, F_OK) != 0 && strrchr(D->job->threadsFile, '/') != NULL)
+	{
+		const char* threadsFileName = strrchr(D->job->threadsFile, '/') + 1;
+		fprintf(stderr, "Warning: CORE CONF FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->threadsFile, threadsFileName);
+		memmove(D->job->threadsFile, threadsFileName, strlen(threadsFileName) + 1);
+	}
+	if(access(D->job->outputFile, F_OK) != 0 && strrchr(D->job->outputFile, '/') != NULL)
+	{
+		const char* outputFileName = strrchr(D->job->outputFile, '/') + 1;
+		fprintf(stderr, "Warning: OUTPUT FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->outputFile, outputFileName);
+		memmove(D->job->outputFile, outputFileName, strlen(outputFileName) + 1);
+	}
+
 	return D;
 }	
 
@@ -796,6 +816,8 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 
 	for(i = 0; i < nPolycoFiles; ++i)
 	{
+		const char* polycoFile;
+
 		r = DifxParametersfind1(pp, r, "POLYCO FILE %d", i);
 		if(r < 0)
 		{
@@ -804,7 +826,16 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 
 			return -1;
 		}
-		r = loadPulsarPolycoFile(&dp->polyco, &dp->nPolyco, DifxParametersvalue(pp, r));
+
+		polycoFile = DifxParametersvalue(pp, r);
+		if(access(polycoFile, F_OK) != 0 && strrchr(polycoFile, '/') != NULL)
+		{
+			const char* polycoFileName = strrchr(polycoFile, '/') + 1;
+			fprintf(stderr, "Warning: POLYCO FILE '%s' could not be accessed, trying '%s'", polycoFile, polycoFileName);
+			polycoFile = polycoFileName;
+		}
+
+		r = loadPulsarPolycoFile(&dp->polyco, &dp->nPolyco, polycoFile);
 		if(r < 0)
 		{
 			deleteDifxParameters(pp);
@@ -931,6 +962,8 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 		/* pulsar stuff */
 		if(strcmp(DifxParametersvalue(ip, rows[9]), "TRUE") == 0)
 		{
+			const char* pulsarFile;
+
 			r = DifxParametersfind(ip, rows[9], "PULSAR CONFIG FILE");
 			if(r <= 0)
 			{
@@ -938,7 +971,15 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 
 				return 0;
 			}
-			dc->pulsarId = loadPulsarConfigFile(D, DifxParametersvalue(ip, r));
+			pulsarFile = DifxParametersvalue(ip, r);
+			if(access(pulsarFile, F_OK) != 0 && strrchr(pulsarFile, '/') != NULL)
+			{
+				const char* pulsarFileName = strrchr(pulsarFile, '/') + 1;
+				fprintf(stderr, "Warning: PULSAR CONFIG FILE '%s' could not be accessed, trying '%s'", pulsarFile, pulsarFileName);
+				pulsarFile = pulsarFileName;
+			}
+
+			dc->pulsarId = loadPulsarConfigFile(D, pulsarFile);
 			if(dc->pulsarId < 0)
 			{
 				return 0;
@@ -2332,6 +2373,25 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		D->job->flagFile[0] = 0;
 	}
 
+	if(access(D->job->vexFile, F_OK) != 0 && strrchr(D->job->vexFile, '/') != NULL)
+	{
+		const char* vexFileName = strrchr(D->job->vexFile, '/') + 1;
+		fprintf(stderr, "Warning: VEX FILE '%s' could not be accessed, trying local '%s'\n", D->job->vexFile, vexFileName);
+		memmove(D->job->vexFile, vexFileName, strlen(vexFileName) + 1);
+	}
+	if(access(D->job->imFile, F_OK) != 0 && strrchr(D->job->imFile, '/') != NULL)
+	{
+		const char* imFileName = strrchr(D->job->imFile, '/') + 1;
+		fprintf(stderr, "Warning: IM FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->imFile, imFileName);
+		memmove(D->job->imFile, imFileName, strlen(imFileName) + 1);
+	}
+	if(access(D->job->flagFile, F_OK) != 0 && strrchr(D->job->flagFile, '/') != NULL)
+	{
+		const char* flagFileName = strrchr(D->job->flagFile, '/') + 1;
+		fprintf(stderr, "Warning: FLAG FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->flagFile, flagFileName);
+		memmove(D->job->flagFile, flagFileName, strlen(flagFileName) + 1);
+	}
+
 	return D;
 }
 
@@ -3403,7 +3463,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	DifxParameters *ip, *cp, *mp;
 	DifxInput *D, *DSave;
 	char inputFile[DIFXIO_FILENAME_LENGTH];
-	const char *calcFile;
+//	const char *calcFile;
 	int r, v, l;
 
 	l = strlen(filePrefix);
@@ -3426,22 +3486,6 @@ DifxInput *loadDifxInput(const char *filePrefix)
 		return 0;
 	}
 
-	/* get .calc filename and open it. */
-	r = DifxParametersfind(ip, 0, "CALC FILENAME");
-	if(r < 0)
-	{
-		return 0;
-	}
-	calcFile = DifxParametersvalue(ip, r);
-
-	cp = newDifxParametersfromfile(calcFile);
-	if(!cp)
-	{
-		deleteDifxParameters(ip);
-		
-		return 0;
-	}
-
 	D = DSave = newDifxInput();
 
 	/* When creating a DifxInput via this function, there will always
@@ -3449,7 +3493,6 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	 */
 	D->job = newDifxJobArray(1);
 	D->nJob = 1;
-
 
 	v = snprintf(D->job->inputFile, DIFXIO_FILENAME_LENGTH, "%s", inputFile);
 	if(v >= DIFXIO_FILENAME_LENGTH)
@@ -3459,6 +3502,16 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	}
 
 	D = populateInput(D, ip);
+
+	/* get .calc filename and open it. */
+	cp = newDifxParametersfromfile(D->job->calcFile);
+	if(!cp)
+	{
+		deleteDifxParameters(ip);
+
+		return 0;
+	}
+
 	D = populateCalc(D, cp);
 	if (D)
 	{
