@@ -29,7 +29,7 @@
 #ifndef __DIFX2FITS_H__
 #define __DIFX2FITS_H__
 
-#include <difxio/difx_input.h>
+#include <difxio.h>
 #include "fits.h"
 
 #define array_MAX_BANDS		32
@@ -72,6 +72,7 @@ struct CommandLineOptions
 	double jobMatrixDeltaT; /* seconds */
 	char *primaryBand;	/* for VLITE */
 	char *historyFile;	/* if set, dump contents to FITS history */
+	int localdir; /* if 1, then , then files *.calc, *.im, *.difx etc are sought in the current working directory if the absolute path fails */
 	DifxMergeOptions mergeOptions;
 };
 

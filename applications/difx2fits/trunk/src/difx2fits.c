@@ -45,6 +45,7 @@ const double DefaultSniffInterval = 30.0;	/* sec */
 const double DefaultJobMatrixInterval = 20.0;	/* sec */
 const double DefaultDifxTsysInterval = 30.0;	/* sec */
 const double DefaultDifxPCalInterval = 30.0;	/* sec */
+const int    DefaultDifxLocalDir     = 0;
 
 /* FIXME: someday add option to specify EOP merge mode from command line */
 
@@ -146,6 +147,9 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --zero\n");
 	fprintf(stderr, "  -0                  Don't put visibility data in FITS file\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --localdir\n");
+	fprintf(stderr, "  -l                  Files *.calc, *.im, *.difx, *.flag etc are sought in current working directory\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --primary-band <pb> Add PRIBAND keyword with value <pb> to FITS file\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "%s responds to the following environment variables:\n", program);
@@ -174,6 +178,7 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts->jobMatrixDeltaT = DefaultJobMatrixInterval;
 	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
 	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
+	opts->localdir           = DefaultDifxLocalDir;
 
 	return opts;
 }
@@ -330,6 +335,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--skip-extra-autocorrs") == 0)
 			{
 				opts->skipExtraAutocorrs = 1;
+			}
+			else if(strcmp(argv[i], "--localdir") == 0 ||
+			        strcmp(argv[i], "-l") == 0)
+			{
+				opts->localdir = 1;
 			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
@@ -1211,6 +1221,9 @@ int main(int argc, char **argv)
 	{
 		return EXIT_FAILURE;
 	}
+
+	difxioSetOption(DIFXIO_OPT_VERBOSITY, &opts->verbose);
+	difxioSetOption(DIFXIO_OPT_LOCALDIR, &opts->localdir);
 
 	resetDifxInputCompatibilityStatistics();
 
