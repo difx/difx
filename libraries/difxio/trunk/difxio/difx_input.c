@@ -31,7 +31,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <libgen.h>
 #include "difxio/difx_input.h"
+#include "difxio/difx_options.h"
 #include "difxio/parsedifx.h"
 
 const int MaxFlags = 32000;
@@ -645,6 +647,71 @@ static int generateFreqSets(DifxInput *D)
 	return 0;
 }
 
+/* This function checks whether a given file/directory is accessible directly,
+ * or if not accessible, whether the given file might instead be found under
+ * the directory that an .input file resides in.
+ *
+ * @param filename Name to check
+ * @param inputFileName Name and path of the reference .input file
+ * @param extension Optional; default extension with dot (for example .difx or .calc)
+ * @return Convenience pointer identical to 'filename' parameter
+ */
+static const char* locateAltFilename(char* filename, const char* inputFileName, const char* extension)
+{
+	char altName[DIFXIO_FILENAME_LENGTH];
+	char *altPath, *basefile;
+	int v;
+
+	/* Check arguments; auto-determine file extension for printout purposes if unspecified */
+	if(filename && !extension)
+	{
+		extension = strrchr(filename, '.');
+	}
+	if(!filename || !inputFileName || !extension)
+	{
+		return filename;
+	}
+
+	/* When 'filename' file or directory exists we are all good */
+	if(access(filename, F_OK) == 0)
+	{
+		return filename;
+	}
+
+	/* When 'filename' does NOT exist, try looking it up under <path> of <path/basename.input> */
+	altPath = dirname(strdup(inputFileName)); // TODO: strdup() -> free() later?
+	basefile = basename(strdup(filename));
+	v = snprintf(altName, DIFXIO_FILENAME_LENGTH, "%s/%s", altPath, basefile);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		return filename;
+	}
+	if(access(altName, F_OK) == 0)
+	{
+		if(difxioOptions.tryLocalDir)
+		{
+			/* Permitted to replace 'filename' by 'altname' */
+			if(difxioOptions.verbosity > 1)
+			{
+				fprintf(stderr, "Info: %s file %s inaccessible, using %s instead due to user option --localdir\n", extension, filename, altName);
+			}
+			strncpy(filename, altName, DIFXIO_FILENAME_LENGTH-1);
+		}
+		else
+		{
+			fprintf(stderr, "loadDifxInput: cannot find referenced %s file %s, but found %s. If the latter file is what you want, use option --localdir\n",
+			        extension, filename, altName);
+		}
+	}
+	else
+	{
+		/* Even 'altName' not found. Nothing to do. */
+	}
+
+	/* Return possibly updated 'filename' */
+	return filename;
+}
+
 static DifxInput *parseDifxInputCommonTable(DifxInput *D, const DifxParameters *ip)
 {
 	const char commonKeys[][MAX_DIFX_KEY_LEN] =
@@ -710,23 +777,17 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D, const DifxParameters *
 		return 0;
 	}
 
-	if(access(D->job->calcFile, F_OK) != 0 && strrchr(D->job->calcFile, '/') != NULL)
+	if(access(D->job->calcFile, F_OK) != 0)
 	{
-		const char* calcFileName = strrchr(D->job->calcFile, '/') + 1;
-		fprintf(stderr, "Warning: CALC FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->calcFile, calcFileName);
-		memmove(D->job->calcFile, calcFileName, strlen(calcFileName) + 1);
+		locateAltFilename(D->job->calcFile, D->job->inputFile, ".calc");
 	}
-	if(access(D->job->threadsFile, F_OK) != 0 && strrchr(D->job->threadsFile, '/') != NULL)
+	if(access(D->job->threadsFile, F_OK) != 0)
 	{
-		const char* threadsFileName = strrchr(D->job->threadsFile, '/') + 1;
-		//fprintf(stderr, "Warning: CORE CONF FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->threadsFile, threadsFileName); // commented out, vex2difx->calcif2 triggers this needlessly
-		memmove(D->job->threadsFile, threadsFileName, strlen(threadsFileName) + 1);
+		locateAltFilename(D->job->threadsFile, D->job->inputFile, ".threads");
 	}
-	if(access(D->job->outputFile, F_OK) != 0 && strrchr(D->job->outputFile, '/') != NULL)
+	if(access(D->job->outputFile, F_OK) != 0)
 	{
-		const char* outputFileName = strrchr(D->job->outputFile, '/') + 1;
-		//fprintf(stderr, "Warning: OUTPUT FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->outputFile, outputFileName); // commented out, vex2difx->calcif2 triggers this needlessly
-		memmove(D->job->outputFile, outputFileName, strlen(outputFileName) + 1);
+		locateAltFilename(D->job->outputFile, D->job->inputFile, ".difx");
 	}
 
 	return D;
@@ -781,7 +842,7 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 {
 	DifxParameters *pp;
 	DifxPulsar *dp;
-	int i, r;
+	int i, r, v;
 	int nPolycoFiles;
 
 	if (!D)
@@ -816,7 +877,7 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 
 	for(i = 0; i < nPolycoFiles; ++i)
 	{
-		const char* polycoFile;
+		char polycoFile[DIFXIO_FILENAME_LENGTH];
 
 		r = DifxParametersfind1(pp, r, "POLYCO FILE %d", i);
 		if(r < 0)
@@ -827,12 +888,17 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 			return -1;
 		}
 
-		polycoFile = DifxParametersvalue(pp, r);
-		if(access(polycoFile, F_OK) != 0 && strrchr(polycoFile, '/') != NULL)
+		v = snprintf(polycoFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(pp, r));
+		if(v >= DIFXIO_FILENAME_LENGTH)
 		{
-			const char* polycoFileName = strrchr(polycoFile, '/') + 1;
-			fprintf(stderr, "Warning: POLYCO FILE '%s' could not be accessed, trying '%s'", polycoFile, polycoFileName);
-			polycoFile = polycoFileName;
+			fprintf(stderr, "File %s POLYCO FILE name is too long (%d > %d)\n", fileName, v, DIFXIO_FILENAME_LENGTH-1);
+
+			return -1;
+		}
+
+		if(access(polycoFile, F_OK) != 0)
+		{
+			locateAltFilename(polycoFile, D->job->inputFile, ".polyco");
 		}
 
 		r = loadPulsarPolycoFile(&dp->polyco, &dp->nPolyco, polycoFile);
@@ -915,7 +981,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 		"PHASED ARRAY"
 	};
 	const int N_CONFIG_ROWS = sizeof(configKeys)/sizeof(configKeys[0]);
-	int configId, r;
+	int configId, r, v;
 	int rows[N_CONFIG_ROWS];
 
 	if(!D || !ip)
@@ -962,7 +1028,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 		/* pulsar stuff */
 		if(strcmp(DifxParametersvalue(ip, rows[9]), "TRUE") == 0)
 		{
-			const char* pulsarFile;
+			char pulsarFile[DIFXIO_FILENAME_LENGTH];
 
 			r = DifxParametersfind(ip, rows[9], "PULSAR CONFIG FILE");
 			if(r <= 0)
@@ -971,12 +1037,18 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 
 				return 0;
 			}
-			pulsarFile = DifxParametersvalue(ip, r);
-			if(access(pulsarFile, F_OK) != 0 && strrchr(pulsarFile, '/') != NULL)
+
+			v = snprintf(pulsarFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(ip, r));
+			if(v >= DIFXIO_FILENAME_LENGTH)
 			{
-				const char* pulsarFileName = strrchr(pulsarFile, '/') + 1;
-				fprintf(stderr, "Warning: PULSAR CONFIG FILE '%s' could not be accessed, trying '%s'", pulsarFile, pulsarFileName);
-				pulsarFile = pulsarFileName;
+				fprintf(stderr, "File %s PULSAR CONFIG FILE name is too long (%d > %d)\n", D->job->inputFile, v, DIFXIO_FILENAME_LENGTH-1);
+
+				return 0;
+			}
+
+			if(access(pulsarFile, F_OK) != 0)
+			{
+				locateAltFilename(pulsarFile, D->job->inputFile, ".binconfig");
 			}
 
 			dc->pulsarId = loadPulsarConfigFile(D, pulsarFile);
@@ -2373,23 +2445,17 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		D->job->flagFile[0] = 0;
 	}
 
-	if(access(D->job->vexFile, F_OK) != 0 && strrchr(D->job->vexFile, '/') != NULL)
+	if(access(D->job->vexFile, F_OK) != 0)
 	{
-		const char* vexFileName = strrchr(D->job->vexFile, '/') + 1;
-		fprintf(stderr, "Warning: VEX FILE '%s' could not be accessed, trying local '%s'\n", D->job->vexFile, vexFileName);
-		memmove(D->job->vexFile, vexFileName, strlen(vexFileName) + 1);
+		locateAltFilename(D->job->vexFile, D->job->inputFile, ".vex");
 	}
-	if(access(D->job->imFile, F_OK) != 0 && strrchr(D->job->imFile, '/') != NULL)
+	if(access(D->job->imFile, F_OK) != 0)
 	{
-		const char* imFileName = strrchr(D->job->imFile, '/') + 1;
-		//fprintf(stderr, "Warning: IM FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->imFile, imFileName); // commented out, vex2difx->calcif2 triggers this needlessly
-		memmove(D->job->imFile, imFileName, strlen(imFileName) + 1);
+		locateAltFilename(D->job->imFile, D->job->inputFile, ".im");
 	}
-	if(access(D->job->flagFile, F_OK) != 0 && strrchr(D->job->flagFile, '/') != NULL)
+	if(access(D->job->flagFile, F_OK) != 0)
 	{
-		const char* flagFileName = strrchr(D->job->flagFile, '/') + 1;
-		fprintf(stderr, "Warning: FLAG FILENAME '%s' could not be accessed, trying local '%s'\n", D->job->flagFile, flagFileName);
-		memmove(D->job->flagFile, flagFileName, strlen(flagFileName) + 1);
+		locateAltFilename(D->job->flagFile, D->job->inputFile, ".flag");
 	}
 
 	return D;
