@@ -5,6 +5,7 @@ h_sources = \
 	difx_radioastron.h \
 	difx_tcal.h \
 	difx_write.h \
+	difx_options.h \
 	parsedifx.h \
 	parsevis.h
 c_sources = \
@@ -37,6 +38,7 @@ c_sources = \
 	difx_write_im.c \
 	difx_write_input.c \
 	difx_write_pulsar.c \
+	difx_options.c \
 	remap.c \
 	parsedifx.c \
 	parsevis.c
