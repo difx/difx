@@ -213,7 +213,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
 
         for (i=0; i<50; i++)
             {
-            pst[i] = strtok ((i>0) ? (char *) NULL : s, " :;");
+            pst[i] = strtok ((i>0) ? (char *) NULL : s, " :;\t\r\n");
             if (pst[i] == NULL)
                 break;
             }
