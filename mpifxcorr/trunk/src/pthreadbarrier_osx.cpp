@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2016 by Walter Brisken and Adam Deller             *
+ *   Copyright (C) 2007-2017 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -18,57 +18,66 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id$
-// $HeadURL: https://svn.atnf.csiro.au/difx/mpifxcorr/trunk/src/nativemk5.h $
+// $HeadURL: https://svn.atnf.csiro.au/difx/mpifxcorr/trunk/src/nativemk5.cpp $
 // $LastChangedRevision$
 // $Author$
 // $LastChangedDate$
 //
 //============================================================================
 
-#ifndef VDIFNETWORK_H
-#define VDIFNETWORK_H
-
-#include <pthread.h>
-#include <time.h>
-#include "mode.h"
-#include "datastream.h"
-#include "config.h"
-
-#include "vdiffile.h"
-#include <difxmessage.h>
-
+/* Pthread barriers are optional and not defined on OSX. This adds the functionality */
 #ifdef __APPLE__
+
 #include "pthreadbarrier_osx.h"
-#endif
 
-class VDIFNetworkDataStream : public VDIFDataStream
+#include <errno.h>
+
+int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count)
 {
-public:
-	VDIFNetworkDataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments);
-	virtual ~VDIFNetworkDataStream();
-	virtual void initialiseFile(int configindex, int fileindex);
-protected:
-	virtual int dataRead(int buffersegment);
-	static void *launchnetworkthreadfunction(void *self);
-	int readrawnetworkVDIF(int sock, char* ptr, int bytestoread, unsigned int* nread, int packetsize, int stripbytes);
-	void networkthreadfunction();
-	virtual void loopnetworkread();
+    if(count == 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    if(pthread_mutex_init(&barrier->mutex, 0) < 0)
+    {
+        return -1;
+    }
+    if(pthread_cond_init(&barrier->cond, 0) < 0)
+    {
+        pthread_mutex_destroy(&barrier->mutex);
+        return -1;
+    }
+    barrier->tripCount = count;
+    barrier->count = 0;
 
-private:
-	int readbufferslots;
-	unsigned int readbufferslotsize;
-	pthread_t networkthread;
-	pthread_mutex_t *networkthreadmutex;
-	pthread_barrier_t networkthreadbarrier;
-	bool networkthreadstop;
-	int lockstart, lockend, lastslot;
-	unsigned int endindex, muxindex;
-	int readbufferwriteslot;
-	double jobEndMJD;
+    return 0;
+}
 
-	// network parameters
-	int sock;
-	int skipbytes;		// number of bytes to trim off beginning of packets
-};
+int pthread_barrier_destroy(pthread_barrier_t *barrier)
+{
+    pthread_cond_destroy(&barrier->cond);
+    pthread_mutex_destroy(&barrier->mutex);
+    return 0;
+}
+int pthread_barrier_wait(pthread_barrier_t *barrier)
+{
+    pthread_mutex_lock(&barrier->mutex);
+    ++(barrier->count);
+    if(barrier->count >= barrier->tripCount)
+    {
+        barrier->count = 0;
+        pthread_cond_broadcast(&barrier->cond);
+        pthread_mutex_unlock(&barrier->mutex);
+        return 1;
+    }
+    else
+    {
+        pthread_cond_wait(&barrier->cond, &(barrier->mutex));
+        pthread_mutex_unlock(&barrier->mutex);
+        return 0;
+    }
+}
 
 #endif
+

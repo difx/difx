@@ -39,6 +39,10 @@
 #include <dirlist/dirlist.h>
 #endif
 
+#ifdef __APPLE__
+#include "pthreadbarrier_osx.h"
+#endif
+
 #include "mark5bfile.h"
 #include <difxmessage.h>
 
@@ -75,9 +79,6 @@ private:
 	unsigned int readbufferslotsize;
 	pthread_t mark5thread;
 	pthread_mutex_t *mark5threadmutex;
-#ifdef __APPLE__
-#include "pthreadbarrier.h"
-#endif
 	pthread_barrier_t mark5threadbarrier;
 	bool mark5xlrfail;
 	volatile bool mark5threadstop;
