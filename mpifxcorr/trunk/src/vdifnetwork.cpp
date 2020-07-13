@@ -194,7 +194,8 @@ void VDIFNetworkDataStream::networkthreadfunction()
 	int packetsize;				// for raw packets; reject all packets not this size
 	int stripbytes;				// for raw packets; strip this many bytes from beginning of RX packets
 
-	stripbytes = tcpwindowsizebytes/1024;
+// FIXME: add new param 'networkStripBytes' to v2d? Current mpifxcorr sets tcpwindowsize to 1024 times .input TCP WINDOW (KB), i.e. v2d UDP_MTU (or windowSize) get reintepreted here as bytes to strip, undocumented
+	stripbytes = abs(tcpwindowsizebytes/1024);
 	packetsize = config->getFrameBytes(0, streamnum) + stripbytes;
 
 	cinfo << startl << "stripbytes=" << stripbytes << " packetsize=" << packetsize << endl;
