@@ -29,13 +29,23 @@
 
 #include "datastream.h"
 
+#include <stdint.h>
+
 /**
-@class Mk5DataStream 
+@class Mk5DataStream
 @brief Datastream which can handle Mk5 formatted data
 
-This class manages a stream of data from a disk or memory, coarsely aligning it with the geocentre and sending segments of 
+This class manages a stream of data from a disk or memory, coarsely aligning it with the geocentre and sending segments of
 data to Core nodes for processing as directed by the FxManager.  Mk5Datastream overrides the LBA-style defaults and
 implements appropriate functionality for Mk5 formatted data
+
+Mk5DataStream handles MKIV, VLBA, VDIF, INTERLACEDVDIF, CODIF data from a file or network stream or a fake source.
+
+The similar class VDIFNetworkDataStream handles NETWORKSTREAM in INTERLACEDVDIF format only.
+
+When reading from the network the Mk5DataStream class expects either a TCP/IP stream with data frames,
+or an UDP/IP data stream. The UDP stream is expected to follow the VTP protocol, i.e., each UDP packet
+has a 64-bit packet sequence number preceding the payload data.
 
 @author Adam Deller
 */
@@ -102,10 +112,12 @@ protected:
   int lastconfig;
 
   // UDP values and statistics
+  typedef uint64_t vtp_psn64_t;
   int npacketperframe, udpsize;
   unsigned long packet_drop, packet_oo, packet_duplicate, npacket;
-  long udp_offset;
-  unsigned long long packet_sum, packet_head, packet_segmentstart;
+  ssize_t udp_offset;
+  unsigned long long packet_sum;
+  vtp_psn64_t packet_head, packet_segmentstart;
   double lasttime, udpstats_update;
   char *udp_buf, *invalid_buf;
   vector<bool> packets_arrived;

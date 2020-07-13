@@ -83,11 +83,11 @@ void Mk5DataStream::initialise()
   syncteststream = 0;
   udp_offset = 0;
   if (!readfromfile && !tcp) {
-    if (sizeof(long long)!=8) {
-      cfatal << startl << "DataStream assumes long long is 8 bytes, it is " << sizeof(long long) << " bytes - aborting!!!" << endl;
+    if (sizeof(vtp_psn64_t)!=8) {
+      cfatal << startl << "DataStream assumes long long is 8 bytes, it is " << sizeof(vtp_psn64_t) << " bytes - aborting!!!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
-    udpsize = abs(tcpwindowsizebytes/1024)-20-2*4-sizeof(long long); // IP header is 20 bytes, UDP is 4x2 bytes
+    udpsize = abs(tcpwindowsizebytes/1024)-20-2*4-sizeof(vtp_psn64_t); // RAW socket! IP header is 20 bytes, UDP is 4x2 bytes, 64-bit PSN (VTP protocol) is 8 bytes
     if (udpsize<=0) {
       cfatal << startl << "Datastream " << mpiid << ":" << " implied UDP packet size is negative - aborting!!!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
@@ -732,9 +732,9 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, unsigned in
     DataStream::readnetwork(sock, ptr, bytestoread, nread);
   } else { // UDP
     bool done, first;
-    unsigned int segmentsize;
-    long long packet_index, packet_segmentend, next_segmentstart=0, next_udpoffset=0;
-    unsigned long long sequence;
+    size_t segmentsize;
+    ssize_t packet_index, next_udpoffset=0;
+    vtp_psn64_t sequence, packet_segmentend, next_segmentstart=0;
     struct msghdr msg;
     struct iovec iov[2];
 //    unsigned int headerpackets;
@@ -836,7 +836,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, unsigned in
 
     first = 1;
     while (!done) {
-      int expectedsize = udpsize+sizeof(long long);
+      int expectedsize = udpsize+sizeof(vtp_psn64_t);
       nr = recvmsg(sock,&msg,MSG_WAITALL);
       if (nr==-1) { // Error reading socket
         if (errno == EINTR) continue;
@@ -864,7 +864,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, unsigned in
           // Resync
           packet_oo++;  // This could be duplicate but we cannot tell
           // Probably should decrease packet dropped count, maybe (it was not counted after all)
-        } else if (static_cast<long long>(sequence)==packet_segmentend) {
+        } else if (sequence==packet_segmentend) {
           //cinfo << startl << "**Segmentend " << packet_index << " (" << packet_segmentend << ")" << endl;
           int bytes;
           if (udp_offset==udpsize && segmentsize==1)
