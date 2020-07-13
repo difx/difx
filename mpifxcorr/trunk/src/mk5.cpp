@@ -687,17 +687,17 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
       lasttime = thistime;
 
       if (npacket==0) {
-	dropped = 0;
-	oo = 0;
+        dropped = 0;
+        oo = 0;
       } else {
-	dropped = (float)packet_drop*100.0/(float)(npacket+packet_drop);
-	oo = (float)packet_oo*100.0/(float)npacket;
+        dropped = (float)packet_drop*100.0/(float)(npacket+packet_drop);
+        oo = (float)packet_oo*100.0/(float)npacket;
       }
       rate = packet_sum/delta*8/1e6;
 
       cinfo << fixed << setprecision(2);
       cinfo << startl << "Packets=" << npacket << "  Dropped=" << dropped
-	    << "  Out-of-order=" << oo << "  Rate=" << rate << " Mbps" << endl;
+            << "  Out-of-order=" << oo << "  Rate=" << rate << " Mbps" << endl;
       // Should reset precision
 
       packet_drop = 0;
@@ -781,56 +781,55 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, unsigned in
       packet_index = (udp_offset-1)/udpsize;
       udp_offset = (udp_offset-1)%udpsize+1;
       if (packet_index<segmentsize) // Check not out of range
-	packets_arrived[packet_index] = true;
+        packets_arrived[packet_index] = true;
 
       if (bytestoread<udp_offset+packet_index*udpsize) {
-	if (packet_index>=segmentsize) {
+        if (packet_index>=segmentsize) {
+          if (udp_offset==udpsize)
+            next_segmentstart = packet_segmentend+1;
+          else
+            next_segmentstart = packet_segmentend;
 
-	  if (udp_offset==udpsize)
-	    next_segmentstart = packet_segmentend+1;
-	  else
-	    next_segmentstart = packet_segmentend;
+          next_udpoffset = udp_offset + packet_index*udpsize-bytestoread;
+          packet_drop+=segmentsize;
 
-	  next_udpoffset = udp_offset + packet_index*udpsize-bytestoread;
-	  packet_drop+=segmentsize;
+        } else if (packet_index==0) {
+          memcpy(ptr, udp_buf, bytestoread);
+          packet_sum += bytestoread;
+          npacket++;
+          udp_offset -= bytestoread;
+          if (udp_offset>0) {
+            memmove(udp_buf, udp_buf+bytestoread, udp_offset);
+            next_segmentstart = packet_segmentend;
+          } else {
+            next_segmentstart = packet_segmentend+1;
+          }
+          next_udpoffset = udp_offset;
 
-	} else if (packet_index==0) {
-	  memcpy(ptr, udp_buf, bytestoread);
-	  packet_sum += bytestoread;
-	  npacket++;
-	  udp_offset -= bytestoread;
-	  if (udp_offset>0) {
-	    memmove(udp_buf, udp_buf+bytestoread, udp_offset);
-	    next_segmentstart = packet_segmentend;
-	  } else {
-	    next_segmentstart = packet_segmentend+1;
-	  }
-	  next_udpoffset = udp_offset;
-
-	} else {
-	  int bytes = (bytestoread-udp_offset)%udpsize;
-	  memcpy(ptr+udp_offset+(packet_index-1)*udpsize, udp_buf, bytes);
-	  packet_sum += bytes;
-	  npacket++;
-	  memmove(udp_buf,udp_buf+bytes, udpsize-bytes);
-	  udp_offset = udpsize-bytes;
-	  next_segmentstart = packet_head;  // CHECK THIS IS CORRECT
-	}
-	done = 1;
+        } else {
+          int bytes = (bytestoread-udp_offset)%udpsize;
+          memcpy(ptr+udp_offset+(packet_index-1)*udpsize, udp_buf, bytes);
+          packet_sum += bytes;
+          npacket++;
+          memmove(udp_buf,udp_buf+bytes, udpsize-bytes);
+          udp_offset = udpsize-bytes;
+          next_segmentstart = packet_head;  // CHECK THIS IS CORRECT
+        }
+        done = 1;
 #warning "WFB: The next statement is fishy to me.  Shouldn't this be the actual number of bytes memcpyed"
-	*nread = bytestoread;
+        *nread = bytestoread;
 
       } else {
-	if (packet_index==0) { // Partial packet
-	  memcpy(ptr, udp_buf, udp_offset);
-	  packet_sum += udp_offset;
-	  npacket++;
-	} else {
-	  memcpy(ptr+udp_offset+(packet_index-1)*udpsize, udp_buf, udpsize);
-	  npacket++;
-	  packet_sum += udpsize;
-	}
-      } 
+        if (packet_index==0) { // Partial packet
+          memcpy(ptr, udp_buf, udp_offset);
+          packet_sum += udp_offset;
+          npacket++;
+        } else {
+          memcpy(ptr+udp_offset+(packet_index-1)*udpsize, udp_buf, udpsize);
+          npacket++;
+          packet_sum += udpsize;
+        }
+      }
     } else {
       udp_offset = udpsize;
     }
