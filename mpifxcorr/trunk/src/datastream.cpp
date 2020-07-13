@@ -243,7 +243,7 @@ void DataStream::execute()
 
   //get the first instruction on where to send data, and how much of it (three ints in a row - core index, seconds offset, ns offset)
   MPI_Irecv(receiveinfo, 4, MPI_INT, fxcorr::MANAGERID, MPI_ANY_TAG, MPI_COMM_WORLD, &msgrequest);
-  
+
   while(status == vecNoErr)
   {
     //check if its time to send some diagnostics
@@ -311,7 +311,7 @@ void DataStream::execute()
     }
   }
 
-  //wait on all the sends 
+  //wait on all the sends
   for(int i=0;i<numdatasegments;i++)
   {
     if(bufferinfo[i].numsent > 0)
@@ -362,7 +362,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   firstoffsetns = ((long long)offsetns) - static_cast<long long>(delayus1*1000);
   int64_t dataspanns = static_cast<int64_t>(bufferinfo[atsegment].numchannels*bufferinfo[atsegment].blockspersend*2*bufferinfo[atsegment].sampletimens + 0.5);
   if (bufferinfo[atsegment].sampling== Configuration::COMPLEX) dataspanns /=2;
-  
+
   foundok = foundok && model->calculateDelayInterpolator(scan, (double)offsetsec + ((double)offsetns + dataspanns)/1.0e9, 0.0, 0, config->getDModelFileIndex(bufferinfo[atsegment].configindex, streamnum), srcindex, 0, &delayus2);
   delayus2 -= intclockseconds*1000000;
   if(!foundok) {
@@ -372,7 +372,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   }
   lastoffsetns = (long long)offsetns + (long long)dataspanns + static_cast<long long>(-1000*delayus2 + 0.5);
   //cout << mpiid << ": delayus1 is " << delayus1 << ", delayus2 is " << delayus2 << endl;
-  if(lastoffsetns < 0)
+  if(lastoffsetns < 0) // FIXME: why not while(lastoffsetns < 0), or if(lastoffsetns<-2e9):error
   {
     offsetsec -= 1;
     firstoffsetns += 1000000000LL;
@@ -438,7 +438,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   //in case the atsegment has changed...
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] = scan;
 
-  //look at the segment we are in now - if we want to look wholly before this or the buffer segment is bad then 
+  //look at the segment we are in now - if we want to look wholly before this or the buffer segment is bad then
   //can't continue, fill control buffer with -1 and bail out
   if((scan < bufferinfo[atsegment].scan) || nsdifference < -bufferinfo[atsegment].nsinc)
   //if((scan < bufferinfo[atsegment].scan) || (offsetsec < bufferinfo[atsegment].scanseconds - 1) || ((offsetsec - bufferinfo[atsegment].scanseconds < 2) && ((offsetsec - bufferinfo[atsegment].scanseconds)*1000000000 + lastoffsetns - bufferinfo[atsegment].scanns < 0)))
@@ -1008,9 +1008,9 @@ void DataStream::loopfakeread()
       if(!isnewfile) //can unlock previous section immediately
       {
         //unlock the previous section
-	//cdebug << startl << "READTHREAD: loopfakeread: Unlock buffer " << (lastvalidsegment-1+numdatasegments)% numdatasegments << endl;
-        perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));    
-	if(perr != 0)
+        //cdebug << startl << "READTHREAD: loopfakeread: Unlock buffer " << (lastvalidsegment-1+numdatasegments)% numdatasegments << endl;
+        perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
+        if(perr != 0)
           csevere << startl << "Error (" << perr << ") in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
       }
 
@@ -1021,7 +1021,7 @@ void DataStream::loopfakeread()
       if(isnewfile) //had to wait before unlocking file
       {
         //unlock the previous section
-	//cdebug << startl << "READTHREAD: loopfileread: Unlock buffer " << (lastvalidsegment-1+numdatasegments)% numdatasegments << endl;
+        //cdebug << startl << "READTHREAD: loopfileread: Unlock buffer " << (lastvalidsegment-1+numdatasegments)% numdatasegments << endl;
         perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
         if(perr != 0)
           csevere << startl << "Error (" << perr << ") in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
@@ -1033,7 +1033,7 @@ void DataStream::loopfakeread()
       //if we need to, change the config
       int nextconfigindex = config->getScanConfigIndex(readscan);
       while(nextconfigindex < 0 && readscan < model->getNumScans()) {
-        readseconds = 0; 
+        readseconds = 0;
         nextconfigindex = config->getScanConfigIndex(++readscan);
       }
       if(readscan == model->getNumScans())
@@ -1047,7 +1047,7 @@ void DataStream::loopfakeread()
       {
         if(config->getScanConfigIndex(readscan) != bufferinfo[(lastvalidsegment + 1)%numdatasegments].configindex)
           updateConfig((lastvalidsegment + 1)%numdatasegments);
-        //if the datastreams for two or more configs are common, they'll all have the same 
+        //if the datastreams for two or more configs are common, they'll all have the same
         //files.  Therefore work with the lowest one
         int lowestconfigindex = bufferinfo[(lastvalidsegment+1)%numdatasegments].configindex;
         for(int i=config->getNumConfigs()-1;i>=0;i--)
@@ -1096,7 +1096,7 @@ void DataStream::loopnetworkread()
     csevere << startl << "Error in initial telescope readthread lock of outstandingsendlock!!!" << endl;
 
   //open the socket
-cinfo << startl << "DataStream::loopnetworkread(): running openstream" << endl;
+  cinfo << startl << "DataStream::loopnetworkread(): running openstream" << endl;
   openstream(portnumber, tcpwindowsizebytes);
 
   //start the first frame
@@ -1135,11 +1135,11 @@ cinfo << startl << "DataStream::loopnetworkread(): running openstream" << endl;
       if(!isnewfile) //can unlock immediately
       {
         //unlock the previous section
-	//cdebug << startl << "READTHREAD: loopnetworkread: A Unlock buffer " << (lastvalidsegment-1+numdatasegments)% numdatasegments << endl;
+        //cdebug << startl << "READTHREAD: loopnetworkread: A Unlock buffer " << (lastvalidsegment-1+numdatasegments)% numdatasegments << endl;
         perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
         if(perr != 0)
           csevere << startl << "Error (" << perr << ") in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
-      } 
+      }
 
       //do the read
       networkToMemory(lastvalidsegment, framebytesremaining);
@@ -1147,9 +1147,9 @@ cinfo << startl << "DataStream::loopnetworkread(): running openstream" << endl;
       if(isnewfile) //had to wait before unlocking
       {
         //unlock the previous section
-	//cdebug << startl << "READTHREAD: loopnetworkread: B Unlock buffer " << (lastvalidsegment-1+numdatasegments)% numdatasegments << endl;
+        //cdebug << startl << "READTHREAD: loopnetworkread: B Unlock buffer " << (lastvalidsegment-1+numdatasegments)% numdatasegments << endl;
         perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
-        if(perr != 0) 
+        if(perr != 0)
           csevere << startl << "Error (" << perr << ") in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
       }
 
@@ -1163,7 +1163,7 @@ cinfo << startl << "DataStream::loopnetworkread(): running openstream" << endl;
     }
   }
   closestream();
-  
+
   //cdebug << startl << "READTHREAD: loopnetworkread: Unlock buffer " << lastvalidsegment << endl;
   perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
   if(perr != 0)
@@ -1180,86 +1180,77 @@ cinfo << startl << "DataStream::loopnetworkread(): running openstream" << endl;
 int DataStream::openrawstream(const char *device)
 {
 #ifdef __linux__
-	int s, v;
-	struct ifreq ifr;
-	struct sockaddr_ll sll;
-	struct timeval tv;
+  int s, v;
+  struct ifreq ifr;
+  struct sockaddr_ll sll;
+  struct timeval tv;
 
-        socketnumber = 0;
+  socketnumber = 0;
 
-        // Note: this operation requires root permission or some equivalent on most systems
-	s = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+  // Note: this operation requires root permission or some equivalent on most systems
+  s = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 
-	if(s < 0)
-	{
-                cerror << startl << "DataStream::openrawstream: Cannot create socket" << endl;
+  if(s < 0)
+  {
+    cerror << startl << "DataStream::openrawstream: Cannot create socket" << endl;
+    return -1;
+  }
 
-                return -1;
-	}
+  strncpy(ifr.ifr_name, device, IFNAMSIZ);
+  if(ioctl(s, SIOCGIFINDEX, &ifr) == -1)
+  {
+    close(s);
+    cerror << startl << "DataStream::openrawstream: ioctl SIOCGIFINDEX failed on " << device << endl;
+    return -3;
+  }
 
-	strncpy(ifr.ifr_name, device, IFNAMSIZ);
-	if(ioctl(s, SIOCGIFINDEX, &ifr) == -1)
-	{
-		close(s);
+  /* is the interface up? */
+  ioctl(s, SIOCGIFFLAGS, &ifr);
+  if( (ifr.ifr_flags & IFF_UP) == 0)
+  {
+    close(s);
+    cerror << startl << "DataStream::openrawstream: interface " << device << " is not up." << endl;
+    return -5;
+  }
 
-                cerror << startl << "DataStream::openrawstream: ioctl SIOCGIFINDEX failed on " << device << endl;
+  /* set promisc flag -- sometimes this is needed.  Othertimes it doesn't seem to hurt */
+  ifr.ifr_flags |= IFF_PROMISC;
+  if(ioctl (s, SIOCSIFFLAGS, &ifr) == -1)
+  {
+    close(s);
+    cerror << startl << "DataStream::openrawstream: cannot enter PROMISC mode on device " << device << endl;
+    return -6;
+  }
 
-		return -3;
-	}
+  ioctl(s, SIOCGIFINDEX, &ifr);
 
-        /* is the interface up? */
-        ioctl(s, SIOCGIFFLAGS, &ifr);
-        if( (ifr.ifr_flags & IFF_UP) == 0)
-        {
-                close(s);
+  sll.sll_family = AF_PACKET;
+  sll.sll_ifindex = ifr.ifr_ifindex;
+  sll.sll_protocol = htons(ETH_P_ALL);
 
-                cerror << startl << "DataStream::openrawstream: interface " << device << " is not up." << endl;
+  v = bind(s, (struct sockaddr *)&sll, sizeof(sll));
+  if(v < 0)
+  {
+    close(s);
+    cerror << startl << "DataStream::openrawstream: bind failed on " << device << endl;
+    return -4;
+  }
 
-                return -5;
-        }
+  tv.tv_sec = 0;
+  tv.tv_usec = 100000;
+  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
-        /* set promisc flag -- sometimes this is needed.  Othertimes it doesn't seem to hurt */
-        ifr.ifr_flags |= IFF_PROMISC;
-        if(ioctl (s, SIOCSIFFLAGS, &ifr) == -1)
-        {
-                close(s);
+  int rawbufbytes;
+  rawbufbytes = 16*1024*1024;
+  setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *) &rawbufbytes, sizeof(rawbufbytes));
 
-                cerror << startl << "DataStream::openrawstream: cannot enter PROMISC mode on device " << device << endl;
-
-                return -6;
-        }
-
-        ioctl(s, SIOCGIFINDEX, &ifr);
-
-        sll.sll_family = AF_PACKET;
-        sll.sll_ifindex = ifr.ifr_ifindex;
-        sll.sll_protocol = htons(ETH_P_ALL);
-
-        v = bind(s, (struct sockaddr *)&sll, sizeof(sll));
-        if(v < 0)
-        {
-                close(s);
-
-                cerror << startl << "DataStream::openrawstream: bind failed on " << device << endl;
-
-                return -4;
-        }
-
-        tv.tv_sec = 0;
-        tv.tv_usec = 100000;
-        setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-
-        int rawbufbytes;
-        rawbufbytes = 16*1024*1024;
-        setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *) &rawbufbytes, sizeof(rawbufbytes));
-
-        socketnumber = s;
+  socketnumber = s;
 #else
-        cfatal << startl << "Raw socket support currently works only on Linux" << endl;
-        MPI_Abort(MPI_COMM_WORLD, 1);
+  cfatal << startl << "Raw socket support currently works only on Linux" << endl;
+  MPI_Abort(MPI_COMM_WORLD, 1);
 #endif
 
-	return 0;
+  return 0;
 }
 
 void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
@@ -1280,59 +1271,57 @@ void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
   if (tcp) { // TCP socket
     cinfo << startl << "Datastream " << mpiid << ": Creating a TCP socket on port " << portnumber << endl;
     /* Create a server to listen with */
-    serversock = socket(AF_INET,SOCK_STREAM,0); 
-    if (serversock==-1) 
+    serversock = socket(AF_INET,SOCK_STREAM,0);
+    if (serversock==-1)
       cerror << startl << "Cannot create eVLBI TCP socket" << endl;
 
     /* Set the TCP window size */
 
     if (tcpwindowsizebytes>0) {
       cinfo << startl << "Datastream " << mpiid << ": Set TCP window to " << int(tcpwindowsizebytes/1024) << " kB" << endl;
-      status = setsockopt(serversock, SOL_SOCKET, SO_RCVBUF,
-		 (char *) &tcpwindowsizebytes, sizeof(tcpwindowsizebytes));
+      status = setsockopt(serversock, SOL_SOCKET, SO_RCVBUF, (char *) &tcpwindowsizebytes, sizeof(tcpwindowsizebytes));
 
       if (status!=0) {
-	cerror << startl << "Datastream " << mpiid << ": Cannot set TCP socket RCVBUF" << endl;
-	close(serversock);
-      } 
+        cerror << startl << "Datastream " << mpiid << ": Cannot set TCP socket RCVBUF" << endl;
+        close(serversock);
+      }
 
       int window_size;
       socklen_t winlen = sizeof(window_size);
-      status = getsockopt(serversock, SOL_SOCKET, SO_RCVBUF,
-			  (char *) &window_size, &winlen);
+      status = getsockopt(serversock, SOL_SOCKET, SO_RCVBUF, (char *) &window_size, &winlen);
       if (status!=0) {
-	cerror << startl << "Datastream " << mpiid << ": Cannot get TCP socket RCVBUF" << endl;
+        cerror << startl << "Datastream " << mpiid << ": Cannot get TCP socket RCVBUF" << endl;
       }
       cinfo << startl << "Datastream " << mpiid << ": TCP window set to " << window_size/1024 << " bytes" << endl;
 
     }
-  } else { // UDP socket  
+  } else { // UDP socket
     cinfo << startl << "Datastream " << mpiid << ": Creating a UDP socket on port " << portnumber << endl;
-    serversock = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP); 
-    if (serversock==-1) 
+    serversock = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP);
+    if (serversock==-1)
       cerror << startl << "Cannot create eVLBI UDP socket" << endl;
     // Should exit here on error
 
     int udpbufbytes = 32*1024*1024;
-    status = setsockopt(serversock, SOL_SOCKET, SO_RCVBUF,
-			(char *) &udpbufbytes, sizeof(udpbufbytes));
-    
+    status = setsockopt(serversock, SOL_SOCKET, SO_RCVBUF, (char *) &udpbufbytes, sizeof(udpbufbytes));
+
     if (status!=0) {
       cerror << startl << "Datastream " << mpiid << ": Error setting UDP socket RCVBUF" << endl;
-	close(serversock);
-    } 
+      close(serversock);
+    }
   }
 
   status = bind(serversock, (struct sockaddr *)&server, sizeof(server));
   if (status!=0) {
     cerror << startl << "Datastream " << mpiid << ": Cannot bind eVLBI socket" << endl;
     close(serversock);
-  } 
-  
+  }
+
+  /* Accept incoming connections if TCP stream */
+
   if (tcp) { // TCP
 
-    /* We are willing to receive conections, using the maximum
-       back log of 1 */
+    /* We are willing to receive conections, using the maximum back log of 1 */
     status = listen(serversock,1);
     if (status!=0) {
       cerror << startl << "Datastream " << mpiid << ": Cannot bind TCP socket" << endl;
@@ -1361,7 +1350,7 @@ void DataStream::closestream()
   int status;
 
   status = close(socketnumber);
-  if (status!=0) 
+  if (status!=0)
     cerror << startl << "Cannot close eVLBI socket" << endl;
 }
 
@@ -1392,11 +1381,11 @@ uint64_t DataStream::openframe()
     cerror << startl << "Cannot read network header from eVLBI socket" << endl;
     return(0);
   }
-	
+
   // Read totalnumber of expected bytes and filename size
   memcpy(&framesize,  buf, sizeof(uint64_t));
   memcpy(&fnamesize,  buf+sizeof(uint64_t), sizeof(uint16_t));
-  
+
   framesize = framesize - LBA_HEADER_LENGTH;
 
   // Read filename then ignore it
@@ -1757,7 +1746,7 @@ void DataStream::openfile(int configindex, int fileindex)
     cinfo << startl << "Datastream " << mpiid << " is exiting because fileindex is " << fileindex << ", while confignumfiles is " << confignumfiles[configindex] << endl;
     return;
   }
-  
+
   dataremaining = true;
   if(input.fail())
     input.clear(); //get around EOF problems caused by peeking
@@ -1816,7 +1805,7 @@ void DataStream::initialiseFile(int configindex, int fileindex)
     input.read(headerbuffer, LBA_HEADER_LENGTH - bytes);
     cinfo << startl << "Processed a new style header, all info ignored except date/time" << endl;
   }
-  
+
   //cinfo << startl << "Datastream " << mpiid << " got the header " << inputline << " ok" << endl;
 
   //convert this date into MJD
@@ -1861,7 +1850,7 @@ void DataStream::diskToMemory(int buffersegment)
     nbytes -= tempbytes;
     // Don't increment consumed bytes as these were already counted from the last segment
     tempbytes=0;
-  } 
+  }
 
   //read some data
   input.read(readto, nbytes);
@@ -2020,14 +2009,14 @@ int DataStream::testForSync(int configindex, int buffersegment)
 
 int DataStream::checkData(int buffersegment)
 {
-  //No need to test 
+  //No need to test
   return 0;
 }
 
 void DataStream::waitForBuffer(int buffersegment)
 {
   int perr;
-//  double bufferfullfraction = double((buffersegment-1-atsegment+numdatasegments)%numdatasegments)/double(numdatasegments);
+  //  double bufferfullfraction = double((buffersegment-1-atsegment+numdatasegments)%numdatasegments)/double(numdatasegments);
   struct timespec abstime;
 
   fullbuffersegments = (buffersegment-1-atsegment+numdatasegments)%numdatasegments;
@@ -2036,13 +2025,13 @@ void DataStream::waitForBuffer(int buffersegment)
   bufferinfo[buffersegment].scan = readscan;
 
   //send a message once per pass through the buffer
-//  if(buffersegment == numdatasegments-1)
-//cverbose << startl << "Datastream databuffer is " << int(bufferfullfraction*100 + 0.5) << "% full (max " << int(100.0*double(numdatasegments-1)/double(numdatasegments)) << "%)" << endl;
+  //  if(buffersegment == numdatasegments-1)
+  //    cverbose << startl << "Datastream databuffer is " << int(bufferfullfraction*100 + 0.5) << "% full (max " << int(100.0*double(numdatasegments-1)/double(numdatasegments)) << "%)" << endl;
 
   //if we need to, change the config
   if(config->getScanConfigIndex(readscan) != bufferinfo[buffersegment].configindex)
     updateConfig(buffersegment);
-    
+
   //ensure all the sends from this index have actually been made
   while(bufferinfo[buffersegment].numsent > 0)
   {
