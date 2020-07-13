@@ -4,6 +4,7 @@ AM_CPPFLAGS = -I$(top_builddir)/src
 
 AM_FFLAGS = \
 	-ffree-form \
+	-fallow-argument-mismatch \
 	-I$(top_builddir)/src
 
 difxcalc_SOURCES = \
