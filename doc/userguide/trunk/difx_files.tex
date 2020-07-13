@@ -1840,8 +1840,8 @@ file		& $[$string$]$	&		& (none)	& a comma separated list of data files to corre
 filelist	& string	&		&		& a filename listing files for the DATA TABLE (see \S\ref{sec:filelist}) \\
 networkPort	& int		&		&		& the eVLBI network port to use. This forces NETWORK media \\
 		&		&		&		& type in {\tt .input} file \\
-windowSize	& int		&		&		& TCP window size for eVLBI. Set to $<0$ for UDP \\
-UDP\_MTU	& int		&		&		& same as setting windowSize to negative of value \\
+windowSize	& int		&		&		& TCP window size in kilobytes for eVLBI. Set to $<0$ in bytes for UDP \\
+UDP\_MTU	& int		&		&		& Same as setting windowSize to negative of value. For UDP INTERLACEDVDIF, value is the number of bytes to strip from UDP. \\
 vsn		& string	&		&		& override the Mark5 Module to be used \\
 zoom 		& string	&		&		& uses the global zoom configuration with matching name for \\
 		&		&		&		& this antenna; {\tt zoom=Zoom1} will match ZOOM block called {\tt Zoom1} \\
