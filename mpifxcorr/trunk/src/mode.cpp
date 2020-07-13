@@ -409,6 +409,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     kscratch = 0;
   }
   // Phase cal stuff
+  PCal::setMinFrequencyResolution(1e6);
   if(config->getDPhaseCalIntervalMHz(configindex, datastreamindex))
   {
     pcalresults = new cf32*[numrecordedbands];
@@ -416,26 +417,15 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     pcalnbins = new int[numrecordedbands];
     for(int i=0;i<numrecordedbands;i++)
     {
-      int pcalOffset,
-          lsb;
-      
       localfreqindex = conf->getDLocalRecordedFreqIndex(confindex, dsindex, i);
-
       pcalresults[i] = new cf32[conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex)];
-
-      pcalOffset = config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex);
-
-      lsb = config->getDRecordedLowerSideband(configindex, datastreamindex, localfreqindex);
-
-      PCal::setMinFrequencyResolution(1e6);
-      extractor[i] = PCal::getNew(1e6*recordedbandwidth, 
+      extractor[i] = PCal::getNew(1e6*recordedbandwidth,
                                   1e6*config->getDPhaseCalIntervalMHz(configindex, datastreamindex),
-                                  pcalOffset, 0, sampling, tcomplex);
-
-      estimatedbytes += extractor[i]->getEstimatedBytes();
-
+                                  config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex), 0,
+                                  sampling, tcomplex);
       if (extractor[i]->getLength() != conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex))
         csevere << startl << "Developer Error: configuration.cpp and pcal.cpp do not agree on the number of tones: " << extractor[i]->getLength() << " != " << conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex) << " ." << endl;
+      estimatedbytes += extractor[i]->getEstimatedBytes();
       pcalnbins[i] = extractor[i]->getNBins();
 //      if (pcalOffset>=0)
 //        cverbose << startl << "PCal extractor internally uses " << pcalnbins[i] << " spectral channels (" << (long)(1e3*recordedbandwidth/pcalnbins[i]) << " kHz/channel)" << endl;
@@ -909,7 +899,7 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
       }
     } else if(usecomplex) {
       if (usecomplex && config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
-        lofreq = -lofreq; // note: using -lofreq breaks Complex LSB (non-DSB!) fringes for VGOS *assuming* VGOS RDBE-G indeed LSB like memos claim
+        lofreq = -lofreq;
       }
     }
 
@@ -1227,8 +1217,11 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
                 } else {
                   status = vectorConjFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
                   // note: using vectorConjFlip_cf32() -lofreq breaks Complex LSB (non-DSB!) fringes for VGOS *assuming* VGOS RDBE-G indeed LSB like memos claim
-                  // whereas DiFX 2.5.3-style vectorCopy_cf32() with positive lofreq produces VGOS fringes:
-                  // status = vectorCopy_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
+                  // fix?: LSB fringes are restored at least for a synthetic fully correlated data set of Complex USB and Complex LSB data.
+                  //       The reversal has to be changed as below to retain DC in bin 0, producing not [ch1 ch2 ch3 ... DC] but instead [DC ch1 ch2 ch3 ...]
+                  // todo: validate fix on real world definitely-known-LSB data (evidenced by pcal tone positions etc), then uncomment the next lines:
+                  //status = vectorConjFlip_cf32(fftd+1, fftoutputs[j][subloopindex]+1, recordedbandchannels-1);
+                  //fftoutputs[j][subloopindex][0] = fftd[0];
                 }
               }
               else {
