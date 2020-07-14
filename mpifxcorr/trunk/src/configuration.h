@@ -322,6 +322,8 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].source != NETWORKSTREAM; }
   inline bool isFake(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].source == FAKESTREAM; }
+  inline bool isNetwork(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].source == NETWORKSTREAM; }
   inline bool isMkV(int datastreamindex) const
   {
     dataformat f;

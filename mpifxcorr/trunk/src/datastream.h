@@ -336,7 +336,7 @@ protected:
   int * confignumfiles;
   double a, b, c;
   long long consumedbytes, lastconsumedbytes;
-  bool readthreadstarted, keepreading, readfromfile, isfake, tcp, isnewfile;
+  bool readthreadstarted, keepreading, readfromfile, isfake, isnetwork, tcp, udp, raw, isnewfile;
   u8 * databuffer, *tempbuf;
   BUFOFFSET_T tempbytes;
   pthread_t readerthread;

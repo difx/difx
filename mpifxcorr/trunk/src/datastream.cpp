@@ -66,15 +66,31 @@ DataStream::DataStream(const Configuration * conf, int snum, int id, int ncores,
   switchedpower = 0;
   switchedpowerincrement = 4;  // by default look at 1/4 of the samples
   datamuxer = 0;
+  readfromfile = false;
   isnewfile = false;
   isfake = false;
+  isnetwork = false;
+  tcp = false;
+  udp = false;
+  raw = false;
 
+  // Early defaults that may change during ::initialise()
+  portnumber = config->getDPortNumber(0, streamnum);
+  tcpwindowsizebytes = config->getDTCPWindowSizeKB(0, streamnum)*1024;
+  readfromfile = config->isReadFromFile(0, streamnum);
+  isfake = config->isFake(0, streamnum);
+  isnetwork = config->isNetwork(0, streamnum);
   portnumber = config->getDPortNumber(0, streamnum);
   tcpwindowsizebytes = config->getDTCPWindowSizeKB(0, streamnum)*1024;
   ethernetdevice = config->getDEthernetDevice(0, streamnum);
-  tcp = 1;
-  if (tcpwindowsizebytes<0) {
-    tcp = 0;
+  if(isnetwork) {
+    if(!ethernetdevice.empty()) {
+      raw = true;
+    } else if(tcpwindowsizebytes < 0) {
+      udp = true;
+    } else {
+      tcp = true;
+    }
   }
 }
 
@@ -167,6 +183,19 @@ void DataStream::initialise()
   readnanoseconds = 0;
   readfromfile = config->isReadFromFile(currentconfigindex, streamnum);
   isfake = config->isFake(currentconfigindex, streamnum);
+  isnetwork = config->isNetwork(currentconfigindex, streamnum);
+  portnumber = config->getDPortNumber(currentconfigindex, streamnum);
+  tcpwindowsizebytes = config->getDTCPWindowSizeKB(currentconfigindex, streamnum)*1024;
+  ethernetdevice = config->getDEthernetDevice(currentconfigindex, streamnum);
+  if(isnetwork) {
+    if(!ethernetdevice.empty()) {
+      raw = true;
+    } else if(tcpwindowsizebytes < 0) {
+      udp = true;
+    } else {
+      tcp = true;
+    }
+  }
 
 #ifdef DIFX_STRICTMUTEX
   pthread_mutexattr_t mattr;
@@ -684,12 +713,16 @@ void DataStream::initialiseMemoryBuffer()
     if(perr != 0)
       csevere << startl << "Error in launching telescope readerthread!!!" << endl;
   }
-  else
+  else if(isnetwork)
   {
     //launch the network reader thread
     perr = pthread_create(&readerthread, &attr, DataStream::launchNewNetworkReadThread, (void *)(this));
     if(perr != 0)
       csevere << startl << "Error in launching telescope networkthread!!!" << endl;
+  }
+  else
+  {
+    csevere << startl << "Datastream misconfigured, neither file, fake, nor network!!!" << endl;
   }
 
   pthread_attr_destroy(&attr);
@@ -740,12 +773,20 @@ void DataStream::updateConfig(int segmentindex)
   /* in theory these parameters below can change but in practice that would lead to major complications.  In any case
    * they are initialized to values of the first configuration index here and are updated each time updateConfig is called
    */
+  readfromfile = config->isReadFromFile(bufferinfo[segmentindex].configindex, streamnum);
+  isfake = config->isFake(bufferinfo[segmentindex].configindex, streamnum);
+  isnetwork = config->isNetwork(bufferinfo[segmentindex].configindex, streamnum);
   portnumber = config->getDPortNumber(bufferinfo[segmentindex].configindex, streamnum);
   tcpwindowsizebytes = config->getDTCPWindowSizeKB(bufferinfo[segmentindex].configindex, streamnum)*1024;
   ethernetdevice = config->getDEthernetDevice(bufferinfo[segmentindex].configindex, streamnum);
-  tcp = 1;
-  if (tcpwindowsizebytes<0) {
-    tcp = 0;
+  if(isnetwork) {
+    if(!ethernetdevice.empty()) {
+      raw = true;
+    } else if(tcpwindowsizebytes < 0) {
+      udp = true;
+    } else {
+      tcp = true;
+    }
   }
 }
 
@@ -1293,9 +1334,8 @@ void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
         cerror << startl << "Datastream " << mpiid << ": Cannot get TCP socket RCVBUF" << endl;
       }
       cinfo << startl << "Datastream " << mpiid << ": TCP window set to " << window_size/1024 << " bytes" << endl;
-
     }
-  } else { // UDP socket
+  } else if(udp) { // UDP socket
     cinfo << startl << "Datastream " << mpiid << ": Creating a UDP socket on port " << portnumber << endl;
     serversock = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP);
     if (serversock==-1)
@@ -1309,6 +1349,10 @@ void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
       cerror << startl << "Datastream " << mpiid << ": Error setting UDP socket RCVBUF" << endl;
       close(serversock);
     }
+  } else if(raw) {
+      cfatal << startl << "Datastream " << mpiid << ": openstream() called to open a RAW socket, unsupported, use openrawstream() instead!" << endl;
+  } else {
+      cfatal << startl << "Datastream " << mpiid << ": openstream() called but Datastream not configured for TCP or UDP!" << endl;
   }
 
   status = bind(serversock, (struct sockaddr *)&server, sizeof(server));
@@ -1338,7 +1382,7 @@ void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
       close(serversock);
     }
     cinfo << startl << "Datastream " << mpiid << " got a connection from " << inet_ntoa(client.sin_addr) << endl;
-  } else {  // UDP
+  } else if(udp) {  // UDP
     socketnumber = serversock;
     cinfo << startl << "Datastream " << mpiid << ": Ready to receive UDP data" << endl;
   }
@@ -1932,6 +1976,7 @@ void DataStream::diskToMemory(int buffersegment)
     dataremaining = false;
   }
 }
+
 void DataStream::fakeToMemory(int buffersegment)
 {
   int previoussegment;
@@ -2076,4 +2121,5 @@ void DataStream::waitForSendComplete()
   else //already done!  can advance for next time
     waitsegment = (waitsegment + 1)%numdatasegments;
 }
+
 // vim: shiftwidth=2:softtabstop=2:expandtab

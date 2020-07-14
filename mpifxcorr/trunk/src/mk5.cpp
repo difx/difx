@@ -82,29 +82,33 @@ void Mk5DataStream::initialise()
 
   syncteststream = 0;
   udp_offset = 0;
-  if (!readfromfile && !tcp) {
+  if (udp || raw) {
+
     if (sizeof(vtp_psn64_t)!=8) {
-      cfatal << startl << "DataStream assumes long long is 8 bytes, it is " << sizeof(vtp_psn64_t) << " bytes - aborting!!!" << endl;
+      cfatal << startl << "DataStream assumes uint64_t is 8 bytes, it is " << sizeof(vtp_psn64_t) << " bytes - aborting!!!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
-    udpsize = abs(tcpwindowsizebytes/1024)-20-2*4-sizeof(vtp_psn64_t); // RAW socket! IP header is 20 bytes, UDP is 4x2 bytes, 64-bit PSN (VTP protocol) is 8 bytes
-    if (udpsize<=0) {
-      cfatal << startl << "Datastream " << mpiid << ":" << " implied UDP packet size is negative - aborting!!!" << endl;
+    if (sizeof(uint32_t)!=4) {
+      cfatal << startl << "DataStream assumes uint32_t is 4 bytes, it is " << sizeof(uint32_t) << " bytes - aborting!!!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
+
+    if (raw)
+      udpsize = abs(tcpwindowsizebytes/1024)-20-2*4-sizeof(vtp_psn64_t); // RAW socket! IP header is 20 bytes, UDP is 4x2 bytes, 64-bit PSN is 8 bytes, rest are payload
+    else
+      udpsize = abs(tcpwindowsizebytes/1024)-sizeof(vtp_psn64_t); // UDP socket; 64-bit PSN is 8 bytes, rest are payload
     udpsize &= ~ 0x7;  // Ensures udpsize multiple of 64 bits
+    if (udpsize<=0) {
+      cfatal << startl << "Datastream " << mpiid << ":" << " implied UDP packet size is zero or negative - aborting!!!" << endl;
+      MPI_Abort(MPI_COMM_WORLD, 1);
+    }
     packet_segmentstart = 0;
     packet_head = 0;
     udp_buf = new char[MAXPACKETSIZE];
     packets_arrived.resize(readbytes/udpsize+2);
 
-    if (sizeof(int)!=4) {
-      cfatal << startl << "DataStream assumes int is 4 bytes, it is " << sizeof(int) << " bytes - aborting!!!" << endl;
-      MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-
     invalid_buf = new char[udpsize];
-    unsigned int *tmp = (unsigned int*)invalid_buf;
+    uint32_t *tmp = (uint32_t*)invalid_buf;
     for (int i=0; i<udpsize/4; i++) {
       tmp[i] = FILL_PATTERN ;
     }
@@ -656,7 +660,7 @@ void Mk5DataStream::fakeToMemory(int buffersegment)
 
 void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaining)
 {
-  if (!tcp && udp_offset>readbytes) { // What does this do to networkToMemory - does packet head need updating
+  if ((udp || raw) && udp_offset>readbytes) { // What does this do to networkToMemory - does packet head need updating
     int skip = udp_offset-(udp_offset%readbytes);
     cinfo << startl << "DataStream " << mpiid << ": Skipping over " << skip/1024/1024 << " Mbytes" << endl;
     if (skip > readbytes)
@@ -675,7 +679,7 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
 
   // Print UDP packet statistics
 
-  if (!tcp && lasttime!=0.0) {
+  if ((udp || raw) && lasttime!=0.0) {
     // Print statistics.
     double delta, thistime;
     float dropped, oo, rate;
@@ -730,7 +734,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, unsigned in
 
   if (tcp) {
     DataStream::readnetwork(sock, ptr, bytestoread, nread);
-  } else { // UDP
+  } else { // UDP or Raw
     bool done, first;
     size_t segmentsize;
     ssize_t packet_index, next_udpoffset=0;
