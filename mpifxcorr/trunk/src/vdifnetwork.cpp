@@ -198,11 +198,11 @@ void VDIFNetworkDataStream::networkthreadfunction()
 	int packetsize;				// for raw packets; reject all packets not this size
 	int stripbytes;				// for raw packets; strip this many bytes from beginning of RX packets
 
-// FIXME: add new param 'networkStripBytes' to v2d? Current mpifxcorr sets tcpwindowsize to 1024 times .input TCP WINDOW (KB), i.e. v2d UDP_MTU (or windowSize) get reintepreted here as bytes to strip, undocumented
+// FIXME: add new param 'networkStripBytes' to v2d? Current mpifxcorr sets tcpwindowsize to 1024 times .input TCP WINDOW (KB); v2d UDP_MTU (or windowSize) gets reintepreted here as bytes to strip, documented but kind of misnomer for windowSize!
 	stripbytes = abs(tcpwindowsizebytes/1024);
 	packetsize = config->getFrameBytes(0, streamnum) + stripbytes;
-
-	cinfo << startl << "stripbytes=" << stripbytes << " packetsize=" << packetsize << endl;
+	if(raw)
+		cinfo << startl << "stripbytes=" << stripbytes << " packetsize=" << packetsize << endl;
 
 	for(;;)
 	{
@@ -227,12 +227,12 @@ void VDIFNetworkDataStream::networkthreadfunction()
 			int status;
 
 			// This is where the actual read from the network happens
-			if(ethernetdevice.empty())
+			if(tcp || udp)
 			{
 				// TCP or regular UDP
 				status = readnetwork(socketnumber, (char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes);
 			}
-			else
+			else if(raw)
 			{
 				// Raw socket or trimmed UDP
 				status = readrawnetworkVDIF(socketnumber, (char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes, packetsize, stripbytes);
@@ -324,7 +324,7 @@ void VDIFNetworkDataStream::initialiseFile(int configindex, int fileindex)
 	nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
 	inputframebytes = config->getFrameBytes(configindex, streamnum);
 	framespersecond = config->getFramesPerSecond(configindex, streamnum)/config->getDNumMuxThreads(configindex, streamnum);
-        bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
+	bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
 
 	nGap = framespersecond/4;	// 1/4 second gap of data yields a mux break
 	startOutputFrameNumber = -1;
@@ -346,12 +346,12 @@ void VDIFNetworkDataStream::initialiseFile(int configindex, int fileindex)
 	}
 
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, vm.outputFrameSize, config->getDDecimationFactor(configindex, streamnum), config->getDAlignmentSeconds(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
-        if(fanout != 1)
-        {
+	if(fanout != 1)
+	{
 		cfatal << startl << "Fanout is " << fanout << ", which is impossible; no choice but to abort!" << endl;
 
-                MPI_Abort(MPI_COMM_WORLD, 1);
-        }
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
 
 	cinfo << startl << "VDIFNetworkDataStream::initialiseFile format=" << formatname << endl;
 
@@ -426,7 +426,7 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 		lockend = n2;
 		pthread_mutex_lock(networkthreadmutex + (lockend % lockmod));
 	}
-	
+
 	if(lastslot == n2)
 	{
 		muxend = endindex;
@@ -524,7 +524,7 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 		{
 			bufferinfo[buffersegment].scanseconds += 86400;
 		}
-	
+
 		readnanoseconds = bufferinfo[buffersegment].scanns;
 		readseconds = bufferinfo[buffersegment].scanseconds;
 
@@ -657,19 +657,19 @@ void VDIFNetworkDataStream::loopnetworkread()
 		csevere << startl << "Error in initial readthread lock of outstandingsendlock!" << endl;
 	}
 
-	if(ethernetdevice.empty())
+	if(tcp || udp)
 	{
 		openstream(portnumber, tcpwindowsizebytes/1024);
 	}
-	else
+	else if(raw)
 	{
 		int v;
-		
+
 		v = openrawstream(ethernetdevice.c_str());
 		if(v < 0)
 		{
 			cfatal << startl << "Cannot open raw socket.  Perhaps root permission is required." << endl;
-			
+
 			MPI_Abort(MPI_COMM_WORLD, 1);
 		}
 	}

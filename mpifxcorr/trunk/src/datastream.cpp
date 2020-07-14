@@ -188,6 +188,7 @@ void DataStream::initialise()
   tcpwindowsizebytes = config->getDTCPWindowSizeKB(currentconfigindex, streamnum)*1024;
   ethernetdevice = config->getDEthernetDevice(currentconfigindex, streamnum);
   if(isnetwork) {
+    raw = udp = tcp = false;
     if(!ethernetdevice.empty()) {
       raw = true;
     } else if(tcpwindowsizebytes < 0) {
@@ -780,6 +781,7 @@ void DataStream::updateConfig(int segmentindex)
   tcpwindowsizebytes = config->getDTCPWindowSizeKB(bufferinfo[segmentindex].configindex, streamnum)*1024;
   ethernetdevice = config->getDEthernetDevice(bufferinfo[segmentindex].configindex, streamnum);
   if(isnetwork) {
+    raw = udp = tcp = false;
     if(!ethernetdevice.empty()) {
       raw = true;
     } else if(tcpwindowsizebytes < 0) {
