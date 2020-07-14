@@ -2881,6 +2881,10 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 		if(ms->Mbps > 0)
 		{
 			ms->samprate = ms->framesamples*(1000000000.0/ms->framens);
+			if(ms->framesperperiod == 0)
+			{
+				ms->framesperperiod = 1000000000.0/ms->framens;
+			}
 		}
 		else
 		{
@@ -2939,7 +2943,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 	/* see if we need to advance a small number of frames to make the
 	 * first one start at integer nanosec
 	 */
-	if(1000000000 % ms->framesperperiod > 0)
+	if((ms->framesperperiod > 0) && (1000000000 % ms->framesperperiod > 0))
 	{
 		k = ms->framesperperiod / (1000000000 % ms->framesperperiod);
 		if(ms->datawindow)
