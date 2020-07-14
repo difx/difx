@@ -41,6 +41,8 @@
 #include <endian.h>
 #endif
 
+static unsigned char VDIF_FILL_BYTES[4] = { 0x44, 0x33, 0x22, 0x11 };
+
 #include "mark5access/mark5_stream.h"
 
 static const float HiMag = OPTIMAL_2BIT_HIGH;
@@ -3885,6 +3887,22 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		ms->frame = ms->datawindow + ms->frameoffset;
 		ms->payload = ms->frame + ms->payloadoffset;
 
+		while(memcmp(ms->frame, VDIF_FILL_BYTES, sizeof(VDIF_FILL_BYTES)) == 0)
+		{
+			if((ms->frameoffset + 5*65536) >= ms->datawindowsize)
+			{
+				break;
+			}
+			ms->frameoffset += 8;
+			ms->frame = ms->datawindow + ms->frameoffset;
+			ms->payload = ms->frame + ms->payloadoffset;
+		}
+
+		if(memcmp(ms->frame, VDIF_FILL_BYTES, sizeof(VDIF_FILL_BYTES)) == 0)
+		{
+			fprintf(m5stderr, "Warning: mark5_format_vdif_init() may not have sufficient non-fill data to reliably determine VDIF properties\n");
+		}
+
 #ifdef WORDS_BIGENDIAN
 		/* Motorola byte order requires some fiddling */
 		headerbytes = ms->frame + 8;
@@ -3898,7 +3916,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		}
 #endif
 		headerbytes = ms->frame;
-		
+
 		if(headerbytes[3] & 0x40)	/* Legacy bit */
 		{
 			if(f->frameheadersize == 0)
