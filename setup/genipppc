@@ -4,7 +4,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 import platform as pf
 from sys import argv, exit, platform
-from string import split, lower
+#from string import split, lower
 from os import getenv, readlink
 from os.path import islink, join, dirname, isfile
 from re import search
@@ -25,7 +25,7 @@ def getippversion(path):
 	if islink(path):
 		path = join(dirname(path), readlink(path))
 # First try ippversion.h
-        ippheader = path+'/include/ippversion.h'
+	ippheader = path+'/include/ippversion.h'
 	if not isfile(ippheader):
 		ippheader = path+'/ipp/include/ippversion.h'
 		if not isfile(ippheader):
@@ -37,10 +37,10 @@ def getippversion(path):
 
 	if (ippheader==''):
 		print("Warning: ippversion.h not found, relying on IPP path ", path)
-		s = split(path, '/')
+		s = path.split('/')
 		possibilities = []
 		for part in s:
-			t = split(part, '.')
+			t = path.split('.')
 			if len(t) > 1:
 				possibilities.append(part)
 				if len(possibilities) < 1:
@@ -75,7 +75,7 @@ def getarch():
 	if bs != None and bs != "32" and bs != "64" and bs != "128":
 		print("Invalid DIFXBITS: " + bs)
 		bs = None
-        pybits = pf.architecture()[0][0:2]
+	pybits = pf.architecture()[0][0:2]
 	if bs == None:
 		print("Note: DIFXBITS was not set - used platform.architecture to determine that bits is " + pybits)
 		return int(pybits)
@@ -99,8 +99,8 @@ def genipppc(path, ippversion):
 		(path, ippversion) = getippversion(path)
 
 	ipparch = getarch()
-    
-	major = int(split(ippversion, '.')[0])
+
+	major = int(ippversion.split('.')[0])
 	out = open('ipp.pc', 'w')
 	out.write('base = %s\n' % path)
 	out.write('\n')
@@ -119,11 +119,11 @@ def genipppc(path, ippversion):
 			libdir = 'sharedlib'
 
 		if ipparch == 64 and platform != 'darwin' :
-                        out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lippsem64t -lguide -lippvmem64t -lippcoreem64t\n' % (libdir,libdir))
-                else:
+			out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lippsem64t -lguide -lippvmem64t -lippcoreem64t\n' % (libdir,libdir))
+		else:
 			out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lipps -lguide -lippvm -lippcore\n' % (libdir,libdir))
 
-                out.write('Cflags: -I${base}/include\n')
+		out.write('Cflags: -I${base}/include\n')
 
 	elif major == 7 or major == 8 or major == 9 or major == 2017 or major == 2018 or major == 2019 or major == 2020 or major == 2021:
         
