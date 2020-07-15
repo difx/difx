@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
+from __future__ import print_function
 import platform as pf
 from sys import argv, exit, platform
 from string import split, lower
@@ -13,11 +15,11 @@ verdate = '20131105'
 author  = 'Walter Brisken <wbrisken@nrao.edu>'
 
 def usage(prog):
-	print '\n%s ver. %s  %s  %s\n' % (program, version, verdate, author)
-	print 'Usage: %s [options] <ipp path> [<ipp version>]\n'
-	print 'options can include:'
-	print '  -h, --help     print help info\n'
-	print '<ipp path> is the install path of Intel Performance Primitives\n'
+	print('\n%s ver. %s  %s  %s\n' % (program, version, verdate, author))
+	print('Usage: %s [options] <ipp path> [<ipp version>]\n')
+	print('options can include:')
+	print('  -h, --help     print help info\n')
+	print('<ipp path> is the install path of Intel Performance Primitives\n')
 
 def getippversion(path):
 	if islink(path):
@@ -34,7 +36,7 @@ def getippversion(path):
 				ippheader = ''
 
 	if (ippheader==''):
-		print "Warning: ippversion.h not found, relying on IPP path ", path
+		print("Warning: ippversion.h not found, relying on IPP path ", path)
 		s = split(path, '/')
 		possibilities = []
 		for part in s:
@@ -42,44 +44,44 @@ def getippversion(path):
 			if len(t) > 1:
 				possibilities.append(part)
 				if len(possibilities) < 1:
-					print 'Sorry, cannot determine ipp version from path'
+					print('Sorry, cannot determine ipp version from path')
 					exit(0)
 					if len(possibilities) > 1:
-						print 'Guessing version == %s' % possibilities[-1]
+						print('Guessing version == %s' % possibilities[-1])
 
 						return (path, possibilities[-1])
 					
 	else:
-		print "Reading version from ", ippheader
+		print("Reading version from ", ippheader)
 		major = minor = None
 		for line in open(ippheader):
 			m = search('#define\s+IPP_VERSION_STR\s+"(\S+)"', line)
 			if (m != None):
-				print "Got version ", m.group(1)
+				print("Got version ", m.group(1))
 				return (path, m.group(1))
 			if (major == None):
 			    major = search('#define\s+IPP_VERSION_MAJOR\s+(\S+)', line)
 			if (minor == None):
 			    minor = search('#define\s+IPP_VERSION_MINOR\s+(\S+)', line)
 		if (major != None and minor != None):
-			print "Have version ", major.group(1) + "." + minor.group(1)
+			print("Have version ", major.group(1) + "." + minor.group(1))
 			return (path, major.group(1) + "." + minor.group(1))
-		print "Sorry, cannot find IPP_VERSION_STR in ", ippheader
+		print("Sorry, cannot find IPP_VERSION_STR in ", ippheader)
 		exit(0)
 	
 # fixme: possibly should use uname to get this information
 def getarch():
 	bs = getenv('DIFXBITS') 
 	if bs != None and bs != "32" and bs != "64" and bs != "128":
-		print "Invalid DIFXBITS: " + bs
+		print("Invalid DIFXBITS: " + bs)
 		bs = None
         pybits = pf.architecture()[0][0:2]
 	if bs == None:
-		print "Note: DIFXBITS was not set - used platform.architecture to determine that bits is " + pybits
+		print("Note: DIFXBITS was not set - used platform.architecture to determine that bits is " + pybits)
 		return int(pybits)
 	if int(bs) != int(pybits):
-		print "WARNING! DIFXBITS is " + bs + " but platform.architecture says number of bits is " + pybits
-		print "Assuming DIFXBITS was set correctly..."
+		print("WARNING! DIFXBITS is " + bs + " but platform.architecture says number of bits is " + pybits)
+		print("Assuming DIFXBITS was set correctly...")
 		return int(bs)
 	return int(bs)
 
@@ -89,7 +91,7 @@ def genipppc(path, ippversion):
 		path = getenv('IPPROOT')
 	# Still not set?
 	if path == None:
-		print 'Sorry, $IPPROOT not set and no path given'
+		print('Sorry, $IPPROOT not set and no path given')
 		return
 
 	# if no version actually supplied, try to guess from path
@@ -107,8 +109,8 @@ def genipppc(path, ippversion):
 	out.write('Requires:\n')
 	out.write('Version: %s\n' % ippversion)
 
-	print "Platform=", platform
-	print "ipparch=", ipparch
+	print("Platform=", platform)
+	print("ipparch=", ipparch)
 
 	if major == 6 or major == 5:
 		if platform == "darwin":
@@ -143,7 +145,7 @@ def genipppc(path, ippversion):
 			out.write('Cflags: -DIPP9 -I${base}/ipp/include\n')
             
 	else:
-		print 'Sorry, IPP %d not yet supported by this script\n' % major
+		print('Sorry, IPP %d not yet supported by this script\n' % major)
 
 	out.close()
 
@@ -157,7 +159,7 @@ for a in argv[1:]:
 			usage(argv[0])
 			exit(0)
 		else:
-			print 'Unrecognised option: %s .  See help with -h .' % a
+			print('Unrecognised option: %s .  See help with -h .' % a)
 			exit(0)
 	else:
 		if ipppath == '':
@@ -165,6 +167,6 @@ for a in argv[1:]:
 		elif ippversion == '':
 			ippversion = a
 		else:
-			print 'Unexpected parameter: %s .  See help with -h .' % a
+			print('Unexpected parameter: %s .  See help with -h .' % a)
 
 genipppc(ipppath, ippversion)
