@@ -4,17 +4,20 @@ AM_INIT_AUTOMAKE(CalcServer, 1.8, no-define)
 
 AM_SANITY_CHECK
 
+## gfortran v10 does not like some of this heritage code
+## the following test adds a flag to reduce many "errors"
+## to "warnings" but there are still a few left...
 AC_LANG(Fortran)
 AC_PROG_F77(gfortran)
 # test for gfortran -fallow-argument-mismatch option
 AC_LANG_ASSERT(Fortran)
-ac_fc_aam_FCFLAGS_save=$FCFLAGS
-FCFLAGS="$ac_fc_aam_FCFLAGS_save -fallow-argument-mismatch"
+ac_fc_aam_FFLAGS_save=$FFLAGS
+FFLAGS="$ac_fc_aam_FFLAGS_save -fallow-argument-mismatch"
 AC_COMPILE_IFELSE([[
       program junk
       end
 ]], [AC_MSG_NOTICE([FC accepts -fallow-argument-mismatch])],
-[FCFLAGS="$ac_fc_aam_FCFLAGS_save";
+[FFLAGS="$ac_fc_aam_FFLAGS_save";
 AC_MSG_WARN([FC does not accept -fallow-argument-mismatch])])
 rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 
