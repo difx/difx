@@ -2,7 +2,8 @@ bin_PROGRAMS = difxcalc
 
 AM_CPPFLAGS = -I$(top_builddir)/src
 
-#-fallow-argument-mismatch \
+#-fallow-argument-mismatch
+
 AM_FFLAGS = \
 	-ffree-form \
 	-I$(top_builddir)/src
