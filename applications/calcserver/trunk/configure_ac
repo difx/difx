@@ -1,0 +1,43 @@
+AC_INIT()
+
+AM_INIT_AUTOMAKE(CalcServer, 1.8, no-define)
+
+AM_SANITY_CHECK
+
+AC_LANG(Fortran)
+AC_PROG_F77(gfortran)
+# test for gfortran -fallow-argument-mismatch option
+AC_LANG_ASSERT(Fortran)
+ac_fc_aam_FCFLAGS_save=$FCFLAGS
+FCFLAGS="$ac_fc_aam_FCFLAGS_save -fallow-argument-mismatch"
+AC_COMPILE_IFELSE([[
+      program junk
+      end
+]], [AC_MSG_NOTICE([FC accepts -fallow-argument-mismatch])],
+[FCFLAGS="$ac_fc_aam_FCFLAGS_save";
+AC_MSG_WARN([FC does not accept -fallow-argument-mismatch])])
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+
+AC_LANG(C)
+AC_PROG_CC
+AC_LANG_ASSERT(C)
+AM_PROG_LIBTOOL
+AC_CHECK_LIB(m, sin,,)
+
+# rpc functionality was dropped from some flavors of linux;
+# tirpc provides the same API
+PKG_CHECK_MODULES(TIRPC, libtirpc,
+    [AC_MSG_NOTICE(libtirpc will be used in place of the traditional rpc)],
+    [AC_MSG_NOTICE(libtirpc was not found and this is not a problem unless);
+     AC_MSG_NOTICE(you are using a system that has no traditional rpc.)])
+CPPFLAGS="${CPPFLAGS} ${TIRPC_CFLAGS}"
+LIBS="${LIBS} ${TIRPC_LIBS}"
+
+AC_OUTPUT(Makefile \
+	startCalcServer \
+	src/Makefile \
+	calc9.1/Makefile \
+	init.d/calcserver \
+	systemd/calcserver.service \
+	data/Makefile
+)
