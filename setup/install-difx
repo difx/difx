@@ -99,6 +99,8 @@ Options:
                     "mpifxcorr", "difxfilterbank", "hops", "m6support",
                     "polconvert", "guiServer", "mk5daemon", "difx_monitor",
                     "datasim", "difxcalc11", "mark6sg", "mark6meta"]
+   --skip='...'    Does a normal build, but skips components in a comma
+                   separated list (drawn from the --doonly list).
 
    Remember, if you haven't signed up to the difx-users mailing list, please
    do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users.
@@ -119,7 +121,7 @@ try:
          "withpolconvert", "noinstall", "reconf", "noconf", "clean",
          "g77", "extraflags=", "makeflags=", "withmark6meta",
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine",
-         "doonly=" ])
+         "doonly=","skip=" ])
 except getopt.GetoptError as err:
     print(err)
     print(main.__doc__)
@@ -127,7 +129,7 @@ except getopt.GetoptError as err:
 
 if not 0 <= len(args) <= 0:
     print("Error: Wrong number of Arguments")
-    print (main.__doc__)
+    print(main.__doc__)
     sys.exit(2)
 
 # set defaults
@@ -214,6 +216,19 @@ def setOnlyComponents(only):
 				dopybindings = True
 		else:
 			raise RuntimeError("Unrecognized only component '%s'"%(a))
+def setSkipComponents(skip):
+        global components
+        array = skip.strip().split(',')
+        if(len(array)==0):
+                raise RuntimeError("--skip invoked without a list")
+        for a in array:
+                c = a.strip()
+                if(c in components):
+                        components[c] = False
+                        if(c == "python"):
+                                dopybindings = False
+                else:
+                        raise RuntimeError("Unknown skip component '%s'"%(a))
 
 # read options
 if len(opts) > 0:
@@ -279,6 +294,8 @@ if len(opts) > 0:
             force = True
         if o == "--doonly":
 	        setOnlyComponents(a)
+        if o == "--skip":
+	        setSkipComponents(a)
 
 ###### Get all relevant environment variables ###########
 print("************************************")
