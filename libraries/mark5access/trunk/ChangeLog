@@ -2,7 +2,9 @@ Version 1.5.5
 * All examples: Added support for new, generalised CODIF and VDIF naming scheme
 * Changed Mbps to a float, dealt with this by casting to int in legacy formats
 * m5d, mark5streamunpacker: harmonise the way CODIF and VDIF files are treated
-* format_codif, format_vdif: Fix calculation of frame granularity for CODIF (and VDIF, although that would never have been wrong)
+* format_codif, format_vdif: Fix calculation of frame granularity for CODIF (and VDIF,
+  although that would never have been wrong). Fix decoder for complex 1-channel 2-bit.
+  Cope with possible fill pattern data during format init.
 * m5spec: allow specification of bchan and echan to limit range of channels being printed
 * Remove broken/incomplete support for K5 format
 * Remove support for non-format "VDIFB"
