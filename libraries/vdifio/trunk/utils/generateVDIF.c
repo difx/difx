@@ -1,4 +1,3 @@
-
 #ifdef __APPLE__
 
 #define OSX
@@ -25,6 +24,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <inttypes.h>
 #include <string.h>
 #include <errno.h>
 #include <math.h>
@@ -44,15 +44,16 @@
 #include <ippcore.h>
 #include <ipps.h>
 
-#define DEFAULTTAP 64
+#define DEFAULTTAP 128
 
-IppsRandGaussState_32f *pRandGaussState;
-Ipp32f *scratch;
-Ipp32f phase;
+IppsRandGaussState_32f *pRandGaussState, *pRandGaussState2;
+Ipp32f *scratch=NULL, *scratch2=NULL;
+Ipp32f phase, phase2;
 Ipp32f *dly;
 Ipp8u *buf;
 IppsFIRSpec_32f *pSpec;
 IppsFIRSpec_32fc *pcSpec;
+Ipp32fc *dsb_mult;
 #else
 typedef unsigned char  Ipp8u;
 typedef unsigned short Ipp16u;
@@ -69,7 +70,6 @@ typedef Ipp16s         Ipp16f;
 
 #define SEED 48573
 
-
 double currentmjd();
 void mjd2cal(double mjd, int *day, int *month, int *year, double *ut);
 float gaussrand();
@@ -80,8 +80,10 @@ int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float
 void dayno2cal (int dayno, int year, int *day, int *month);
 double cal2mjd(int day, int month, int year);
 double tm2mjd(struct tm date);
-void generateData(float **data, int nframe, int sampesperframe, int nchan, int iscomplex, int bandwidth,
-		   float tone, float *mean, float *stdDev);
+
+void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int iscomplex, int nobandpass, int noise,
+		  int bandwidth, float tone, float amp, float tone2, float amp2, int lsb, int doublesideband, 
+		  float *mean, float *stdDev);
 
 #define MAXSTR        255
 #define BUFSIZE       256  // MB
@@ -90,11 +92,27 @@ void generateData(float **data, int nframe, int sampesperframe, int nchan, int i
 #define SMALLNEG        1
 #define MAXNEG          0
 
+typedef enum {FLOAT, FLOAT8, INT} data_type;
+
+#define IPPMALLOC(var,type,n)	                               \
+  var = ippsMalloc_ ## type(n);                                \
+  if (var==NULL) {                                             \
+    fprintf(stderr, "Error allocating %d bytes for %s at line %d\n", n, #var, __LINE__); \
+    exit(EXIT_FAILURE);                                        \
+  }                                                            \
+
+#define PRINTVARINT(var) printf("DEBUG: %s=%d\n", #var, var);
+#define PRINTVARUINT64(var) printf("DEBUG: %s=%" PRIu64 "\n", #var, var);
+#define PRINTVARFLOAT(var) printf("DEBUG: %s=%f\n", #var, var);
+
 int main (int argc, char * const argv[]) {
   char *filename, msg[MAXSTR], *header;
-  int i, frameperbuf, status, outfile, opt, tmp, headerBytes=0;
+  int i, frameperbuf, loopframes, status, outfile, opt, tmp, flipGroup, headerBytes=0;
   uint64_t nframe;
-  float **data, ftmp, stdDev, mean;
+  float **data, ftmp, *stdDev, *mean;
+  Ipp64f *taps64;
+  Ipp32f *taps;
+  Ipp32fc *tapsC;
   ssize_t nr;
   vdif_header vheader;
 #if USE_CODIFIO
@@ -102,12 +120,17 @@ int main (int argc, char * const argv[]) {
 #endif
   Ipp8u *framedata;
 
+  int memsize = BUFSIZE;
   int nbits = 2;
   int bandwidth = 64;
-  int nchan = 1;
+  int channels = 1;
   int ntap = DEFAULTTAP;
   int framesize = 8000;
   int iscomplex = 0;
+  int nobandpass = 0;
+  int noise = 0;
+  int lsb = 0;
+  int doublesideband = 0;
   int usecodif = 0;
   int year = -1;
   int month = -1;
@@ -115,11 +138,15 @@ int main (int argc, char * const argv[]) {
   int dayno = -1;
   double mjd = -1;
   float tone = 10;  // MHz
+  float tone2 = 0;  // MHz
+  float amp = 0.1;
+  float amp2 = 0.0;
   float duration = 0; // Seconds
   char *timestr = NULL;
 
   struct option options[] = {
-    {"bandwidth", 1, 0, 'b'},
+    {"bandwidth", 1, 0, 'w'},
+    {"channels", 1, 0, 'C'},
     {"day", 1, 0, 'd'},
     {"dayno", 1, 0, 'D'},
     {"month", 1, 0, 'm'},
@@ -128,13 +155,22 @@ int main (int argc, char * const argv[]) {
     {"time", 1, 0, 't'},
     {"framesize", 1, 0, 'F'},
     {"duration", 1, 0, 'l'},
+    {"amp", 1, 0, 'a'},
+    {"amp2", 1, 0, 'A'},
     {"tone", 1, 0, 'T'},
-    {"nchan", 1, 0, 'n'},
+    {"tone2", 1, 0, '2'},
     {"ntap", 1, 0, 'x'},
-    {"nbits", 1, 0, 'N'},
+    {"bufsize", 1, 0, 'B'},
+    {"nbits", 1, 0, 'b'},
+    {"bits", 1, 0, 'b'},
     {"complex", 0, 0, 'c'},
-#ifdef USEIPP
-    {"codifio", 0, 0, 'C'},
+    {"nobandpass", 0, 0, 'N'},
+    {"noise", 0, 0, 'n'},
+    {"doublesideband", 0, 0, 'G'},
+    {"lsb", 0, 0, 'L'},
+    {"help", 0, 0, 'h'},
+#if USE_CODIFIO
+    {"codifio", 0, 0, 'Z'},
 #endif
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
@@ -144,7 +180,7 @@ int main (int argc, char * const argv[]) {
   
   /* Read command line options */
   while (1) {
-    opt = getopt_long_only(argc, argv, "xb:d:m:M:y:t:n:c:T:hF:", options, NULL);
+    opt = getopt_long_only(argc, argv, "w:C:d:D:m:M:y:t:F:l:a:A:T:2:x:B:b:cNnZLh", options, NULL);
     if (opt==EOF) break;
     
 #define CASEINT(ch,var)                                     \
@@ -154,6 +190,11 @@ int main (int argc, char * const argv[]) {
       fprintf(stderr, "Bad %s option %s\n", #var, optarg);  \
     else                                                    \
       var = tmp;                                            \
+    break
+
+#define CASEBOOL(ch,var)                                    \
+  case ch:						    \
+    var = 1;						    \
     break
 
 #define CASEFLOAT(ch,var)                                   \
@@ -167,40 +208,51 @@ int main (int argc, char * const argv[]) {
     
     switch (opt) {
 
-      CASEINT('b', bandwidth);
+      CASEINT('w', bandwidth);
       CASEINT('d', day);
       CASEINT('D', dayno);
       CASEINT('m', month);
       CASEINT('M', mjd);
       CASEINT('y', year);
-      CASEINT('n', nchan);
-      CASEINT('N', nbits);
+      CASEINT('b', nbits);
       CASEINT('x', ntap);
       CASEINT('F', framesize);
+      CASEINT('C', channels);
+      CASEBOOL('c', iscomplex);
+      CASEBOOL('N', nobandpass);
+      CASEBOOL('n', noise);
+      CASEBOOL('L', lsb);
+      CASEBOOL('G', doublesideband);
+#if USE_CODIFIO
+      CASEBOOL('Z', usecodif);
+#endif
+      CASEFLOAT('B', memsize);
       CASEFLOAT('l', duration);
       CASEFLOAT('T', tone);
+      CASEFLOAT('2', tone2);
+      CASEFLOAT('a', amp);
+      CASEFLOAT('A', amp2);
 
       case 't':
 	timestr = strdup(optarg);
 	break;
 
-    case 'c':
-	iscomplex = 1;
-	break;
-#if USE_CODIFIO
-    case 'C':
-	usecodif = 1;
-	break;
-#endif
       case 'h':
 	printf("Usage: generateVDIF [options]\n");
-	printf("  -bandwidth <BANWIDTH>     Channel bandwidth in MHz (64)\n");
-	printf("  -n/-nchan <N>             Number of channels in stream\n");
-	printf("  -N/-nbits <N>             Number of bits/sample (default 2)\n");
+	printf("  -w/-bandwidth <BANWIDTH>  Channel bandwidth in MHz (64)\n");
+	printf("  -b/-nbits <N>             Number of bits/sample (default 2)\n");
+	printf("  -c/-complex               Generate complex data\n");
+	printf("  -C/-channels <N>          Number of if channels (default 1)\n");
 	printf("  -F/-framesize <FRAMESIZE> VDIF framesize\n");
-	printf("  -t/-duration <DURATION>   Length of output, in seconds\n");
+	printf("  -l/-duration <DURATION>   Length of output, in seconds\n");
 	printf("  -T/-tone <TONE>           Frequency (MHz) of tone to insert\n");
 	printf("  -ntap <TAPS>              Number of taps for FIR filter to create band shape\n");
+	printf("  -a/-amp <amp>             Amplitude of tone\n");
+	printf("  -A/-amp2 <amp2>d          Amplitude of second tone\n");
+	printf("  -T/-tone <TONE>           Frequency of tone (MHz)\n");
+	printf("  -2/-tone2 <TONE>          Frequency of second tone  (MHz)\n");
+	printf("  -n/-noise                 Include (correlated) noise\n");
+	printf("  -codif                    Generate CODIF data\n");
 	printf("  -day <DAY>                Day of month of start time (now)\n");
 	printf("  -month <MONTH>            Month of start time (now)\n");
 	printf("  -dayno <DAYNO>            Day of year of start time (now)\n");
@@ -216,7 +268,7 @@ int main (int argc, char * const argv[]) {
     }
   }
 
-  
+  int nchan = channels;
   if (argc==optind) {
     if (usecodif) {
       filename = strdup("Test.cdf");
@@ -226,17 +278,23 @@ int main (int argc, char * const argv[]) {
   } else {
     filename = strdup(argv[optind]);
   }
+
+  memsize *= 1024*1024;
   
   int cfact = 1;
   if (iscomplex) cfact = 2;
 
+  if (doublesideband && !iscomplex) {
+    fprintf(stderr, "Warning: Cannot use doublesideband on real data!!\n");
+    exit(1);
+  }
+  
   // Frame size and number of sampler/frame
-  int completesample = nchan*nbits*cfact;
+  int completesample = nbits*cfact*nchan;
 
   uint64_t samplerate = bandwidth*1e6*2/cfact;
   
   framesize = (framesize/8)*8; // Round framesize multiple of 8
-
   // need integral number of frames/sec
   uint64_t bytespersec = completesample*samplerate/8;
   // Need integral # frames/sec AND integral # completesamples/frame
@@ -253,111 +311,119 @@ int main (int argc, char * const argv[]) {
   int samplesperframe = framesize*8/completesample; // Treat Re/Im of complex as seperate samples
   int framespersec = bytespersec/framesize;
 
-  // Initialize memory
-  data = (Ipp32f**)malloc(nchan*sizeof(Ipp32f*));
-  if (data==NULL) {
-    perror("Memory allocation problem\n");
-    exit(1);
-  }
-  frameperbuf = BUFSIZE*1024*1024/(samplesperframe*sizeof(float)*cfact*(nchan+1));
+  frameperbuf = memsize/(samplesperframe*sizeof(float)*cfact*(nchan+1));
 
   if (duration==0) { // Just create BUFSIZE bytes
     nframe = frameperbuf;
   } else {
     nframe = duration*framespersec;
-    nframe = ((int)floor((float)nframe/(float)frameperbuf+0.5))*frameperbuf;
-    if (nframe==0) nframe = frameperbuf;
   }
 
+  if (tone2>0 && amp2==0) amp2=amp;
+
+  data = (Ipp32f**)malloc(nchan*sizeof(Ipp32f*));
+  if (data==NULL) {
+    perror("Memory allocation problem\n");
+    exit(1);
+  }
+  for (i=0; i<nchan; i++) {
+    IPPMALLOC(data[i], 32f, frameperbuf*samplesperframe*cfact);
+  }
+
+  if (doublesideband) {
+    IPPMALLOC(dsb_mult, 32fc, frameperbuf*samplesperframe);
+    for (i=0;i<frameperbuf*samplesperframe;i++) {
+      if (i%2) {
+	dsb_mult[i].re = -1;
+      } else {
+	dsb_mult[i].re = 1;
+      }
+      dsb_mult[i].im = 0;
+    }
+  }
+  
 #ifdef USEIPP
   int pRandGaussStateSize;
   ippsRandGaussGetSize_32f(&pRandGaussStateSize);
   pRandGaussState = (IppsRandGaussState_32f *)ippsMalloc_8u(pRandGaussStateSize);
-  ippsRandGaussInit_32f(pRandGaussState, 0.0, 1.0, SEED);
-  scratch = ippsMalloc_32f(frameperbuf*samplesperframe*cfact);
-  if (scratch==NULL) {
-    fprintf(stderr, "Error allocating memory\n");
-    exit(1);
+  ippsRandGaussInit_32f(pRandGaussState, 0.0, 1.0, time(NULL)); // Mean 0.0, RMS=1
+  if (noise) {
+    pRandGaussState2 = (IppsRandGaussState_32f *)ippsMalloc_8u(pRandGaussStateSize);
+    ippsRandGaussInit_32f(pRandGaussState2, 0.0, amp, SEED);  // Mean 0.0, RMS=amp
   }
-  phase = 0;
+
+  IPPMALLOC(scratch, 32f, frameperbuf*samplesperframe*cfact);
+  IPPMALLOC(scratch2, 32f, frameperbuf*samplesperframe*cfact); // TODO add contidional if not needed
+  phase = phase2 = 0;
+
   int specSize;
   int bufsize, bufsize2;
 
-  Ipp64f *taps64 = ippsMalloc_64f(ntap);
-  Ipp32f *taps = ippsMalloc_32f(ntap);
-  Ipp32fc *tapsC = ippsMalloc_32fc(ntap);
-  status = ippsFIRGenGetBufferSize(ntap, &bufsize);
-  if (status != ippStsNoErr) {
-    fprintf(stderr, "Error calling ippsFIRGenGetBufferSize (%s)\n", ippGetStatusString(status));
-    exit(1);
-  }
-  buf = ippsMalloc_8u(bufsize);
-  status = ippsFIRGenBandpass_64f(0.02, 0.48, taps64, ntap, ippWinHamming, ippTrue, buf);
-  if (status != ippStsNoErr) {
-    fprintf(stderr, "Error generating tap coefficients (%s)\n", ippGetStatusString(status));
-    exit(1);
-  }
-  ippsConvert_64f32f(taps64, taps, ntap);
+  if (!nobandpass) {
+    // Initialise FIR filter
+    IPPMALLOC(taps64, 64f, ntap);
+    IPPMALLOC(taps, 32f, ntap);
+    IPPMALLOC(tapsC, 32fc, ntap);
+    IPPMALLOC(dly, 32f, (ntap-1)*cfact); 
+    ippsZero_32f(dly, (ntap-1)*cfact);
 
-  // Real FIR filter
-  status = ippsFIRSRGetSize (ntap, ipp32f, &specSize, &bufsize);
-  if (status != ippStsNoErr) {
-    fprintf(stderr, "Error Getting filter initialisation sizes (%s)\n", ippGetStatusString(status));
-    exit(1);
-  }
-  pSpec = (IppsFIRSpec_32f*)ippsMalloc_8u(specSize);
-  status = ippsFIRSRInit_32f(taps, ntap, ippAlgAuto, pSpec);
-  if (status != ippStsNoErr) {
-    fprintf(stderr, "Error Initialising filter (%s)\n", ippGetStatusString(status));
-    exit(1);
-  }
+    status = ippsFIRGenGetBufferSize(ntap, &bufsize);
+    if (status != ippStsNoErr) {
+      fprintf(stderr, "Error calling ippsFIRGenGetBufferSize (%s)\n", ippGetStatusString(status));
+      exit(1);
+    }
+    IPPMALLOC(buf, 8u, bufsize);
+    status = ippsFIRGenBandpass_64f(0.02, 0.48, taps64, ntap, ippWinHamming, ippTrue, buf);
+    if (status != ippStsNoErr) {
+      fprintf(stderr, "Error generating tap coefficients (%s)\n", ippGetStatusString(status));
+      exit(1);
+    }
+    ippsConvert_64f32f(taps64, taps, ntap);
 
-  status = ippsFIRGenHighpass_64f(0.02, taps64, ntap, ippWinHamming, ippTrue, buf);
-  if (status != ippStsNoErr) {
-    fprintf(stderr, "Error generating tap coefficients (%s)\n", ippGetStatusString(status));
-    exit(1);
-  }
-  ippsFree(buf);
-  for (i=0; i<ntap; i++) {
-    tapsC[i].re = taps64[i];
-    tapsC[i].im = 0;
-  }
-  ippsFree(taps64);
+    // Real FIR filter
+    status = ippsFIRSRGetSize (ntap, ipp32f, &specSize, &bufsize);
+    if (status != ippStsNoErr) {
+      fprintf(stderr, "Error Getting filter initialisation sizes (%s)\n", ippGetStatusString(status));
+      exit(1);
+    }
+    pSpec = (IppsFIRSpec_32f*)ippsMalloc_8u(specSize);
+    status = ippsFIRSRInit_32f(taps, ntap, ippAlgAuto, pSpec);
+    if (status != ippStsNoErr) {
+      fprintf(stderr, "Error Initialising filter (%s)\n", ippGetStatusString(status));
+      exit(1);
+    }
 
+    status = ippsFIRGenHighpass_64f(0.02, taps64, ntap, ippWinHamming, ippTrue, buf);
+    if (status != ippStsNoErr) {
+      fprintf(stderr, "Error generating tap coefficients (%s)\n", ippGetStatusString(status));
+      exit(1);
+    }
+    for (i=0; i<ntap; i++) {
+      tapsC[i].re = taps64[i];
+      tapsC[i].im = 0;
+    }
+    ippsFree(taps64);
+    ippsFree(buf);
 
-  
-  // Complex FIR Filter
-  status = ippsFIRSRGetSize (ntap, ipp32fc, &specSize, &bufsize2);
-  if (status != ippStsNoErr) {
-    fprintf(stderr, "Error Getting filter initialisation sizes (%s)\n", ippGetStatusString(status));
-    exit(1);
-  }
-  pcSpec = (IppsFIRSpec_32fc*)ippsMalloc_8u(specSize);
-  status = ippsFIRSRInit_32fc(tapsC, ntap, ippAlgAuto, pcSpec);
-  if (status != ippStsNoErr) {
-    fprintf(stderr, "Error Initialising filter (%s)\n", ippGetStatusString(status));
-    exit(1);
-  }
+    // Complex FIR Filter
+    status = ippsFIRSRGetSize (ntap, ipp32fc, &specSize, &bufsize2);
+    if (status != ippStsNoErr) {
+      fprintf(stderr, "Error Getting filter initialisation sizes (%s)\n", ippGetStatusString(status));
+      exit(1);
+    }
+    pcSpec = (IppsFIRSpec_32fc*)ippsMalloc_8u(specSize);
+    status = ippsFIRSRInit_32fc(tapsC, ntap, ippAlgAuto, pcSpec);
+    if (status != ippStsNoErr) {
+      fprintf(stderr, "Error Initialising filter (%s)\n", ippGetStatusString(status));
+      exit(1);
+    }
 
-  if (bufsize2 > bufsize) bufsize = bufsize2;
-  buf = ippsMalloc_8u(bufsize);
-  dly = ippsMalloc_32f((ntap-1)*2); // *2 for complex - larger than necessary for real case
-  ippsZero_32f(dly, (ntap-1)*2);
+    if (bufsize2 > bufsize) bufsize = bufsize2;
+    IPPMALLOC(buf, 8u, bufsize);
+  }
 #endif
 
-  for (i=0;i<nchan;i++) {
-    data[i] = ippsMalloc_32f(frameperbuf*samplesperframe*cfact);
-    if (data[i]==NULL) {
-      perror("Trying to allocate memory");
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  framedata = ippsMalloc_8u(framesize);
-  if (framedata==NULL) {
-    perror("Trying to allocate memory");
-    exit(EXIT_FAILURE);
-  }
+  IPPMALLOC(framedata, 8u, framesize);
   ippsSet_8u('Z', framedata, framesize);
 
   double thismjd = currentmjd();
@@ -381,6 +447,8 @@ int main (int argc, char * const argv[]) {
   }
 
   mjd = cal2mjd(day, month, year)+ut;
+
+  memsize *= 1024*1024;
 
   if (usecodif) {
     int sampleblock = 8*8; // bits
@@ -436,6 +504,9 @@ int main (int argc, char * const argv[]) {
     setVDIFFrameMJDSec(&vheader, (uint64_t)floor(mjd*60*60*24));
     setVDIFFrameNumber(&vheader,0);
   }
+
+  mean = malloc(sizeof(float)*nchan);
+  stdDev = malloc(sizeof(float)*nchan);
   
   outfile = open(filename, OPENWRITEOPTIONS, S_IRWXU|S_IRWXG|S_IRWXO); 
   if (outfile==-1) {
@@ -443,28 +514,41 @@ int main (int argc, char * const argv[]) {
     perror(msg);
     exit(1);
   }
-  printf("writing %s\n", filename);
+  printf("Writing %s\n", filename);
 
   while (nframe>0) {
-    generateData(data, frameperbuf, samplesperframe, nchan, iscomplex, bandwidth, tone, &mean, &stdDev);
+    if (nframe>frameperbuf)
+      loopframes = frameperbuf;
+    else
+      loopframes = nframe;
+
     
-    for (i=0; i<frameperbuf; i++) {
+    generateData(data, loopframes, samplesperframe, nchan, iscomplex, nobandpass, noise, bandwidth, tone, amp, tone2, amp2, lsb, doublesideband, mean, stdDev);
+
+    for (int i=1;i<nchan;i++) {
+      mean[0] += mean[i];
+      stdDev[0] += stdDev[i];
+    }
+    mean[0] /= nchan;
+    stdDev[0] /= nchan;
+
+    for (i=0; i<loopframes; i++) {
 
       if (nbits==2) {
 	if (nchan==1) {
-	  status = pack2bit1chan(data, i*samplesperframe*cfact, framedata,  mean, stdDev, samplesperframe*cfact);
+	  status = pack2bit1chan(data, i*samplesperframe*cfact, framedata,  mean[0], stdDev[0], samplesperframe*cfact);
 	  if (status) exit(1);
 	} else {
-	  status = pack2bitNchan(data, nchan, i*samplesperframe*cfact, framedata,  mean, stdDev, samplesperframe*cfact);
+	  status = pack2bitNchan(data, nchan, i*samplesperframe*cfact, framedata,  mean[0], stdDev[0], samplesperframe*cfact);
 	  if (status) exit(1);
 	}
       } else if (nbits==8) {
-	status = pack8bitNchan(data, nchan, i*samplesperframe*cfact, framedata,  mean, stdDev, samplesperframe*cfact);
+	status = pack8bitNchan(data, nchan, i*samplesperframe*cfact, framedata,  mean[0], stdDev[0], samplesperframe*cfact);
       } else {
 	printf("Unsupported number of bits\n");
 	exit(1);
       }
-    
+
       nr = write(outfile, header, headerBytes);
       if (nr == -1) {
 	sprintf(msg, "Writing to %s:", filename);
@@ -495,11 +579,22 @@ int main (int argc, char * const argv[]) {
       nframe--;
     }
   }
+  close(outfile);
 
   free(filename);
-  close(outfile);
   if (timestr!=NULL) free(timestr);
-  
+  for (i=0; i<nchan; i++) ippsFree(data[i]);
+  free(data);
+  ippsFree(scratch);
+  if (scratch2!=NULL) ippsFree(scratch2);
+  if (!nobandpass) {
+    ippsFree(taps);
+    ippsFree(tapsC);
+    ippsFree(dly);
+    ippsFree(buf);
+    ippsFree(pSpec);
+    ippsFree(pcSpec);
+  }
   return(0);
 }
   
@@ -651,7 +746,7 @@ Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
     x = 127;
   else if (x<-127)
     x = -127;
-  return lrintf(x-0.5);
+  return lrintf(x);
 }
 
 
@@ -744,8 +839,9 @@ double tm2mjd(struct tm date) {
 
 #ifdef USEIPP
 
-void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan,
-		  int iscomplex, int bandwidth, float tone, float *mean, float *stdDev) {
+void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int iscomplex, int nobandpass,
+		  int noise, int bandwidth, float tone, float amp, float tone2, float amp2, int lsb, int doublesideband,
+		  float *mean, float *stdDev) {
   int i, n, nsamp, cfact;
   float s;
   Ipp32f thismean, thisStdDev;
@@ -754,40 +850,108 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan,
     cfact = 2;
   else
     cfact = 1;
+
+  if (doublesideband && !iscomplex) {
+    fprintf(stderr, "Error: Cannot do doublesideband on real data in %s\n", __FUNCTION__);
+    exit(1);
+  }
   
-  *mean = 0;
-  *stdDev = 0;
   nsamp = nframe*samplesperframe;
 
-  if (iscomplex) {
-    status = ippsTone_32fc((Ipp32fc*)scratch, nsamp, 0.1, tone/bandwidth, &phase, ippAlgHintFast);
-  } else {
-    status = ippsTone_32f(scratch, nsamp, 0.05, tone/(bandwidth*2), &phase, ippAlgHintFast);
+  if (!noise) {
+    printf("Generate Tone 1\n");
+    if (iscomplex) {
+      status = ippsTone_32fc((Ipp32fc*)scratch, nsamp, sqrt(amp), tone/bandwidth, &phase, ippAlgHintFast);
+    } else {
+      status = ippsTone_32f(scratch, nsamp, sqrt(amp), tone/(bandwidth*2), &phase, ippAlgHintFast);
+    }
+    if (status!=ippStsNoErr) {
+      fprintf(stderr, "Error generating tone (%s)\n", ippGetStatusString(status));
+      exit(1);
+    }
   }
-  if (status!=ippStsNoErr) {
-    fprintf(stderr, "Error generating tone (%s)\n", ippGetStatusString(status));
-    exit(1);
+
+  if (amp2>0 && tone2!=0.0) {
+    printf("Generate Tone 2\n");
+    if (iscomplex) {
+      status = ippsTone_32fc((Ipp32fc*)scratch2, nsamp, sqrt(amp2), tone2/bandwidth, &phase2, ippAlgHintFast);
+    } else {
+      status = ippsTone_32f(scratch2, nsamp, sqrt(amp2), tone2/(bandwidth*2), &phase2, ippAlgHintFast);
+    }
+    if (status!=ippStsNoErr) {
+      fprintf(stderr, "Error generating second tone (%s)\n", ippGetStatusString(status));
+      exit(1);
+    }
   }
 
   for (n=0; n<nchan; n++) {
-    status = ippsRandGauss_32f(data[n], nsamp*cfact, pRandGaussState);
-    status = ippsAdd_32f_I(scratch, data[n], nsamp);
+    mean[n] = 0;
+    stdDev[n] = 0;
 
-    if (iscomplex) {
-      ippsFIRSR_32fc((Ipp32fc*)data[n], (Ipp32fc*)data[n], nsamp, pcSpec, (Ipp32fc*)dly, (Ipp32fc*)dly,  buf);
-    } else {
-      ippsFIRSR_32f(data[n], data[n], nsamp, pSpec, dly, dly, buf);
+    status = ippsRandGauss_32f(data[n], nsamp*cfact, pRandGaussState);
+    if (status!=ippStsNoErr) {
+      fprintf(stderr, "Error generating Gaussian noise (%s)\n", ippGetStatusString(status));
+      exit(1);
     }
 
-    status = ippsMeanStdDev_32f(data[n], nsamp*cfact, &thismean, &thisStdDev, ippAlgHintFast);
-    *mean += thismean;
-    *stdDev += thisStdDev;
+    if (amp>0.0) {
+      if (noise) {
+	status = ippsRandGauss_32f(scratch, nsamp*cfact, pRandGaussState2);
+	if (status==ippStsNoErr) status = ippsAdd_32f_I(scratch, data[i], nsamp*cfact);
+	if (status!=ippStsNoErr) {
+	  fprintf(stderr, "Error generating Gaussian noise2 (%s)\n", ippGetStatusString(status));
+	  exit(1);
+	}
+      } else {
+	printf("Add Tone 1\n");
+	status = ippsAdd_32f_I(scratch, data[i], nsamp*cfact);
+	if (status!=ippStsNoErr) {
+	  fprintf(stderr, "Error adding tone (%s)\n", ippGetStatusString(status));
+	  exit(1);
+	}
+      }
+
+      if (amp2>0 && tone2!=0.0) {
+	printf("Add Tone 2\n");
+	status = ippsAdd_32f_I(scratch2, data[i], nsamp*cfact);
+	if (status!=ippStsNoErr) {
+	  fprintf(stderr, "Error adding second tone (%s)\n", ippGetStatusString(status));
+	  exit(1);
+	}
+      }
+    }
+
+    if (!nobandpass) {
+      if (iscomplex) {
+	status = ippsFIRSR_32fc((Ipp32fc*)data[n], (Ipp32fc*)data[n], nsamp, pcSpec, (Ipp32fc*)dly, (Ipp32fc*)dly,  buf);
+      } else {
+	status = ippsFIRSR_32f(data[n], data[n], nsamp, pSpec, dly, dly, buf);
+      }
+      if (status!=ippStsNoErr) {
+	fprintf(stderr, "Error applying FIR filter (%s) in %s\n", ippGetStatusString(status), __FUNCTION__);
+	exit(1);
+      }
+    }
+    
+    if (lsb) {
+      status = ippsConj_32fc_I((Ipp32fc*)data[n], nsamp*2/cfact);
+      if (status!=ippStsNoErr) {
+	fprintf(stderr, "Error in ippsConj_32fc (%s) in %s\n", ippGetStatusString(status), __FUNCTION__);
+	exit(1);
+      }
+    }
+
+    if (doublesideband) {
+      status = ippsMul_32fc_I(dsb_mult, (Ipp32fc*)data[n], nsamp);
+      if (status!=ippStsNoErr) {
+	fprintf(stderr, "Error in ippsMul_32fc (%s) in %s\n", ippGetStatusString(status), __FUNCTION__);
+	exit(1);
+      }
+    }
+    
+    status = ippsMeanStdDev_32f(data[n], nsamp*cfact, &mean[n], &stdDev[n], ippAlgHintFast);
   }
-  *mean /= nchan;
-  *stdDev /= nchan;
 }
-
-
 
 #else 
 void generateData(float **data, int nframe, int samplesperframe, int nchan,
@@ -816,3 +980,5 @@ void generateData(float **data, int nframe, int samplesperframe, int nchan,
   *stdDev /= nchan;
 }
 #endif
+
+
