@@ -859,7 +859,6 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
   nsamp = nframe*samplesperframe;
 
   if (!noise) {
-    printf("Generate Tone 1\n");
     if (iscomplex) {
       status = ippsTone_32fc((Ipp32fc*)scratch, nsamp, sqrt(amp), tone/bandwidth, &phase, ippAlgHintFast);
     } else {
@@ -872,7 +871,6 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
   }
 
   if (amp2>0 && tone2!=0.0) {
-    printf("Generate Tone 2\n");
     if (iscomplex) {
       status = ippsTone_32fc((Ipp32fc*)scratch2, nsamp, sqrt(amp2), tone2/bandwidth, &phase2, ippAlgHintFast);
     } else {
@@ -903,7 +901,6 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
 	  exit(1);
 	}
       } else {
-	printf("Add Tone 1\n");
 	status = ippsAdd_32f_I(scratch, data[i], nsamp*cfact);
 	if (status!=ippStsNoErr) {
 	  fprintf(stderr, "Error adding tone (%s)\n", ippGetStatusString(status));
@@ -912,7 +909,6 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
       }
 
       if (amp2>0 && tone2!=0.0) {
-	printf("Add Tone 2\n");
 	status = ippsAdd_32f_I(scratch2, data[i], nsamp*cfact);
 	if (status!=ippStsNoErr) {
 	  fprintf(stderr, "Error adding second tone (%s)\n", ippGetStatusString(status));
