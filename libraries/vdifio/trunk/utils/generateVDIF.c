@@ -124,6 +124,7 @@ int main (int argc, char * const argv[]) {
   int nbits = 2;
   int bandwidth = 64;
   int channels = 1;
+  int seed = 0;
   int ntap = DEFAULTTAP;
   int framesize = 8000;
   int iscomplex = 0;
@@ -166,6 +167,7 @@ int main (int argc, char * const argv[]) {
     {"complex", 0, 0, 'c'},
     {"nobandpass", 0, 0, 'N'},
     {"noise", 0, 0, 'n'},
+    {"seed", 1, 0, 's'},
     {"doublesideband", 0, 0, 'G'},
     {"lsb", 0, 0, 'L'},
     {"help", 0, 0, 'h'},
@@ -180,7 +182,7 @@ int main (int argc, char * const argv[]) {
   
   /* Read command line options */
   while (1) {
-    opt = getopt_long_only(argc, argv, "w:C:d:D:m:M:y:t:F:l:a:A:T:2:x:B:b:cNnZLh", options, NULL);
+    opt = getopt_long_only(argc, argv, "s:w:C:d:D:m:M:y:t:F:l:a:A:T:2:x:B:b:cNnZLh", options, NULL);
     if (opt==EOF) break;
     
 #define CASEINT(ch,var)                                     \
@@ -218,6 +220,7 @@ int main (int argc, char * const argv[]) {
       CASEINT('x', ntap);
       CASEINT('F', framesize);
       CASEINT('C', channels);
+      CASEINT('s', seed);
       CASEBOOL('c', iscomplex);
       CASEBOOL('N', nobandpass);
       CASEBOOL('n', noise);
@@ -252,6 +255,9 @@ int main (int argc, char * const argv[]) {
 	printf("  -T/-tone <TONE>           Frequency of tone (MHz)\n");
 	printf("  -2/-tone2 <TONE>          Frequency of second tone  (MHz)\n");
 	printf("  -n/-noise                 Include (correlated) noise\n");
+	printf("  -s/-seed                  Set seed of 'thermal' noise (default auto)\n");
+	printf("  -lsb                      Generate LSB data\n");
+	printf("  -doublesideband           Generate double sideband if complex (default single sideband)\n");
 	printf("  -codif                    Generate CODIF data\n");
 	printf("  -day <DAY>                Day of month of start time (now)\n");
 	printf("  -month <MONTH>            Month of start time (now)\n");
@@ -288,6 +294,8 @@ int main (int argc, char * const argv[]) {
     fprintf(stderr, "Warning: Cannot use doublesideband on real data!!\n");
     exit(1);
   }
+
+  if (seed=0) seed=time(NULL);
   
   // Frame size and number of sampler/frame
   int completesample = nbits*cfact*nchan;
@@ -346,7 +354,7 @@ int main (int argc, char * const argv[]) {
   int pRandGaussStateSize;
   ippsRandGaussGetSize_32f(&pRandGaussStateSize);
   pRandGaussState = (IppsRandGaussState_32f *)ippsMalloc_8u(pRandGaussStateSize);
-  ippsRandGaussInit_32f(pRandGaussState, 0.0, 1.0, time(NULL)); // Mean 0.0, RMS=1
+  ippsRandGaussInit_32f(pRandGaussState, 0.0, 1.0, seed); // Mean 0.0, RMS=1
   if (noise) {
     pRandGaussState2 = (IppsRandGaussState_32f *)ippsMalloc_8u(pRandGaussStateSize);
     ippsRandGaussInit_32f(pRandGaussState2, 0.0, amp, SEED);  // Mean 0.0, RMS=amp
@@ -842,7 +850,7 @@ double tm2mjd(struct tm date) {
 void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int iscomplex, int nobandpass,
 		  int noise, int bandwidth, float tone, float amp, float tone2, float amp2, int lsb, int doublesideband,
 		  float *mean, float *stdDev) {
-  int i, n, nsamp, cfact;
+  int n, nsamp, cfact;
   float s;
   Ipp32f thismean, thisStdDev;
   IppStatus status;
@@ -895,13 +903,13 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
     if (amp>0.0) {
       if (noise) {
 	status = ippsRandGauss_32f(scratch, nsamp*cfact, pRandGaussState2);
-	if (status==ippStsNoErr) status = ippsAdd_32f_I(scratch, data[i], nsamp*cfact);
+	if (status==ippStsNoErr) status = ippsAdd_32f_I(scratch, data[n], nsamp*cfact);
 	if (status!=ippStsNoErr) {
 	  fprintf(stderr, "Error generating Gaussian noise2 (%s)\n", ippGetStatusString(status));
 	  exit(1);
 	}
       } else {
-	status = ippsAdd_32f_I(scratch, data[i], nsamp*cfact);
+	status = ippsAdd_32f_I(scratch, data[n], nsamp*cfact);
 	if (status!=ippStsNoErr) {
 	  fprintf(stderr, "Error adding tone (%s)\n", ippGetStatusString(status));
 	  exit(1);
@@ -909,7 +917,7 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
       }
 
       if (amp2>0 && tone2!=0.0) {
-	status = ippsAdd_32f_I(scratch2, data[i], nsamp*cfact);
+	status = ippsAdd_32f_I(scratch2, data[n], nsamp*cfact);
 	if (status!=ippStsNoErr) {
 	  fprintf(stderr, "Error adding second tone (%s)\n", ippGetStatusString(status));
 	  exit(1);
@@ -930,7 +938,7 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
     }
     
     if (lsb) {
-      status = ippsConj_32fc_I((Ipp32fc*)data[n], nsamp*2/cfact);
+      status = ippsConj_32fc_I((Ipp32fc*)data[n], nsamp*cfact/2);
       if (status!=ippStsNoErr) {
 	fprintf(stderr, "Error in ippsConj_32fc (%s) in %s\n", ippGetStatusString(status), __FUNCTION__);
 	exit(1);
