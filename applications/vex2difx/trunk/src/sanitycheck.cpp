@@ -69,13 +69,13 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 		}
 		else
 		{
-			std::cerr << "Warning: both linear and circular polarizations are listed in the .vex file.  Very partial support exists for such modes within DiFX.  Use at your own risk!" << std::endl;
+			std::cerr << "Warning: both linear and circular polarizations are listed in the .vex file.  Mixed polarization mode is still considered experimental within DiFX.  Use at your own risk!" << std::endl;
 		}
 		++nWarn;
 	}
 	if(polarizations & DIFXIO_POL_ERROR)
 	{
-		std::cerr << "Error: the .vex file contains a polarization that is not R, L, X or Y.  Cannot proceed." << std::endl;
+		std::cerr << "Error: the .vex file contains a polarization that is not R, L, X, Y, H, or V.  Cannot proceed." << std::endl;
 		++nError;
 	}
 

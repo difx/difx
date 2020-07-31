@@ -51,7 +51,7 @@ int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol)
 int VexMode::getPols(char *pols) const
 {
 	int n=0;
-	bool L=false, R=false, X=false, Y=false;
+	bool L=false, R=false, X=false, Y=false, H=false, V=false;
 	std::vector<VexSubband>::const_iterator it;
 
 	for(it = subbands.begin(); it != subbands.end(); ++it)
@@ -71,6 +71,14 @@ int VexMode::getPols(char *pols) const
 		else if(it->pol == 'Y')
 		{
 			Y = true;
+		}
+		else if(it->pol == 'H')
+		{
+			H = true;
+		}
+		else if(it->pol == 'V')
+		{
+			V = true;
 		}
 		else
 		{
@@ -105,6 +113,18 @@ int VexMode::getPols(char *pols) const
 	if(Y)
 	{
 		*pols = 'Y';
+		++pols;
+		++n;
+	}
+	if(H)
+	{
+		*pols = 'H';
+		++pols;
+		++n;
+	}
+	if(V)
+	{
+		*pols = 'V';
 		++pols;
 		++n;
 	}

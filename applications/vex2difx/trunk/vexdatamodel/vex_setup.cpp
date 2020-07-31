@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <set>
 #include "vex_setup.h"
+#include <difxio/difx_input.h>
 
 float VexSetup::phaseCalIntervalMHz() const
 {
@@ -398,6 +399,12 @@ int VexSetup::getPolarizations() const
 			break;
 		case 'Y':
 			rv |= DIFXIO_POL_Y;
+			break;
+		case 'H':
+			rv |= DIFXIO_POL_H;
+			break;
+		case 'V':
+			rv |= DIFXIO_POL_V;
 			break;
 		default:
 			rv |= DIFXIO_POL_ERROR;	// Error/Unknown bit
