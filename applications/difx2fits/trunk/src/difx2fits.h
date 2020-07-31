@@ -72,7 +72,9 @@ struct CommandLineOptions
 	double jobMatrixDeltaT; /* seconds */
 	char *primaryBand;	/* for VLITE */
 	char *historyFile;	/* if set, dump contents to FITS history */
-	int localdir; /* if 1, then , then files *.calc, *.im, *.difx etc are sought in the current working directory if the absolute path fails */
+	int  antpol;            /* if 1, then polarization is determined by antenna */        
+	int  polxy2hv;          /* if 1, then polarization X/Y is transformed to H/V */
+	int  localdir;          /* if 1, then *.calc, *.im, and *.difx are sought in the same directory as *.input files */
 	DifxMergeOptions mergeOptions;
 };
 
