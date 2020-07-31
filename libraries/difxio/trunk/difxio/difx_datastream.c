@@ -104,6 +104,8 @@ DifxDatastream *newDifxDatastreamArray(int nDatastream)
 	for(s = 0; s < nDatastream; ++s)
 	{
 		dd[s].dataSource = DataSourceUnspecified;
+		dd[s].pol[0] = ' ';
+		dd[s].pol[1] = ' ';
 	}
 
 	return dd;

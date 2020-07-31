@@ -783,7 +783,7 @@ static int parseDifxPulseCal(const char *line,
 
 		localFqId = dd->recBandFreqId[band];
 		recFreq = dd->recFreqId[localFqId];
-		bandPol = DifxConfigGetPolId(dc, dd->recBandPolName[band]);
+		bandPol = DifxConfigGetPolId(D, dd->recBandPolName[band]);
 
 		df = D->freq + recFreq;
 		// assert(nt == df->nTone);
@@ -837,7 +837,7 @@ static int parseDifxPulseCal(const char *line,
 				static int nPolMatchError = 0;
 
 				++nPolMatchError;
-				if(nPolMatchError <= 20)
+				if(nPolMatchError <= 20 && D->AntPol ==  0)
 				{
 					printf("\nWarning: parseDifxPulseCal: polarization in PCAL file '%c' doesn't match expected '%c' for antenna %d, mjd %12.6f  slot=%d  bandPol=%d\n", P[0], D->polPair[bandPol], dd->antennaId, mjd, slot, bandPol);
 				}

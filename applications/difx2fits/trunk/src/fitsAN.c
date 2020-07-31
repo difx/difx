@@ -105,22 +105,24 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 	start = D->mjdStart - (int)D->mjdStart;
 	stop  = D->mjdStop  - (int)D->mjdStart; 
 
-	arrayId1 = 1;
-	switch(D->polPair[0])
-	{
-	case 'R':
-	case 'L':
-		polTypeA = 'R';
-		polTypeB = 'L';
-		break;
-	case 'X':
-	case 'Y':
-		polTypeA = 'X';
-		polTypeB = 'Y';
-		break;
-	default:
-		printf("Warning: fitsAN: I don't know how to handle polarization '%c'\n", D->polPair[0]);
-	}
+        if ( D->AntPol == 0 ){
+	     arrayId1 = 1;
+	     switch(D->polPair[0])
+	     {
+	     case 'R':
+	     case 'L':
+	     	polTypeA = 'R';
+	     	polTypeB = 'L';
+	     	break;
+	     case 'X':
+	     case 'Y':
+	     	polTypeA = 'X';
+	     	polTypeB = 'Y';
+	     	break;
+	     default:
+	     	printf("Warning: fitsAN: Cannot process polarization '%c'. Please use optiom --antpol.\n", D->polPair[0]);
+	     }
+        }
 	time = 0.5 * (stop + start);
 	timeInt = stop - start;
 	for(bandId = 0; bandId < nBand; ++bandId)
@@ -163,6 +165,34 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 			antId1 = antennaId + 1;	  /* FITS antId1 starts at 1 */
 			strcpypad(antName, D->antenna[antennaId].name, 8);
 
+	                if (  D->AntPol == 1 && D->nPolar > 1 ){
+		              if ( D->antenna[antennaId].pol[0] == 'R' || 
+                                   D->antenna[antennaId].pol[0] == 'L' || 
+                                   D->antenna[antennaId].pol[1] == 'R' || 
+                                   D->antenna[antennaId].pol[1] == 'L'  ){
+                                   polTypeA = 'R';
+                                   polTypeB = 'L';
+                              }
+		              if ( D->antenna[antennaId].pol[0] == 'X' || 
+                                   D->antenna[antennaId].pol[0] == 'Y' || 
+                                   D->antenna[antennaId].pol[1] == 'X' || 
+                                   D->antenna[antennaId].pol[1] == 'Y'  ){
+			           if ( D->polxy2hv == 0 ){
+                                        polTypeA = 'X';
+                                        polTypeB = 'Y';
+			           } else {
+                                        polTypeA = 'H';
+                                        polTypeB = 'V';
+                                   }
+                              }
+		              if ( D->antenna[antennaId].pol[0] == 'H' || 
+                                   D->antenna[antennaId].pol[0] == 'V' || 
+                                   D->antenna[antennaId].pol[1] == 'H' || 
+                                   D->antenna[antennaId].pol[1] == 'V'  ){
+                                   polTypeA = 'H';
+                                   polTypeB = 'V';
+                              }
+                        }
 			FITS_WRITE_ITEM (time, p_fitsbuf);
 			FITS_WRITE_ITEM (timeInt, p_fitsbuf);
 			FITS_WRITE_ARRAY(antName, p_fitsbuf, 8);
@@ -188,6 +218,5 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 
 	/* clean up and return */
 	free(fitsbuf);
-
 	return D;
 }

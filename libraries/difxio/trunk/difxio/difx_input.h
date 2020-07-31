@@ -67,7 +67,9 @@
 #define DIFXIO_POL_L			0x02
 #define DIFXIO_POL_X			0x10
 #define DIFXIO_POL_Y			0x20
-#define DIFXIO_POL_ERROR		0x100
+#define DIFXIO_POL_H			0x100
+#define DIFXIO_POL_V			0x200
+#define DIFXIO_POL_ERROR		0x1000
 #define DIFXIO_POL_RL			(DIFXIO_POL_R | DIFXIO_POL_L)
 #define DIFXIO_POL_XY			(DIFXIO_POL_X | DIFXIO_POL_Y)
 
@@ -307,7 +309,7 @@ typedef struct
 	double bw;		/* (MHz) */
 	char sideband;		/* U or L -- net sideband */
 	int nPol;		/* 1 or 2 */
-	char pol[2];		/* polarization codes (one per nPol) : L R X or Y. */
+	char pol[2];		/* polarization codes (one per nPol) : L R X Y, H or V. */
 	char rxName[DIFXIO_RX_NAME_LENGTH];
 } DifxIF;
 
@@ -436,6 +438,7 @@ typedef struct
 	double *clockOffsetDelta; /* (us) [freq] */
 	double *phaseOffset;	/* (degrees) [freq] */
 	double *freqOffset;	/* Freq offsets for each frequency in Hz */
+	char pol[2];            /* polarization codes (one per nPol) : L R X Y, H or V. */
 	
 	int nRecFreq;		/* number of freqs recorded in this datastream */
 	int nRecBand;		/* number of base band channels recorded */
@@ -476,6 +479,7 @@ typedef struct
 	double X, Y, Z;		/* telescope position, (m) */
 	double dX, dY, dZ;	/* telescope position derivative, (m/s) */
 	int spacecraftId;	/* -1 if not a spacecraft */
+	char pol[2];            /* polarization codes (one per nPol) : L R X Y, H or V. */
 	char shelf[DIFXIO_SHELF_LENGTH];  /* shelf location of module; really this should not be here! */
 } DifxAntenna;
 
@@ -679,6 +683,8 @@ typedef struct
 
 	int nIF;		/* maximum num IF across configs */
 	int nPol;		/* maximum num pol across configs */
+        int AntPol;             /* 1 for antenna defined polarizations */
+	int polxy2hv;           /* if 1, then polarization X/Y is transformed to H/V */
 	int doPolar;		/* 0 if not, 1 if so */
 	int nPolar;		/* nPol*(doPolar+1) */
 				/* 1 for single pol obs */
@@ -880,7 +886,7 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 	const DifxConfig *dc2, int ndc2, int *configIdRemap,
 	const int *baselineIdRemap, const int *datastreamIdRemap,
 	const int *pulsarIdRemap, int *ndc);
-int DifxConfigGetPolId(const DifxConfig *dc, char polName);
+int DifxConfigGetPolId(const DifxInput *D, char polName);
 int DifxConfigRecBand2FreqPol(const DifxInput *D, int configId,
 	int antennaId, int recBand, int *freqId, int *polId);
 int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar,

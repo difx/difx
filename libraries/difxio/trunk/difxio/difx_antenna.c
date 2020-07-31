@@ -148,6 +148,8 @@ DifxAntenna *newDifxAntennaArray(int nAntenna)
 	for(a = 0; a < nAntenna; ++a)
 	{
 		da[a].spacecraftId = -1;
+		da[a].pol[0] = " ";
+		da[a].pol[1] = " ";
 		for(i = 0;  i <MAX_MODEL_ORDER; ++i)
 		{
 			da[a].clockcoeff[i] = 0.0;
@@ -179,6 +181,7 @@ void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
         fprintf(fp, "    Site Type = %d = %s\n", da->siteType, antennaSiteTypeNames[da->siteType]);
 	fprintf(fp, "    Offset = %f, %f, %f m\n", da->offset[0], da->offset[1], da->offset[2]);
 	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
+        fprintf(fp, "    Polarization = %c %c\n", da->pol[0], da->pol[1]);
 	fprintf(fp, "    SpacecraftId = %d\n", da->spacecraftId);
 }
 

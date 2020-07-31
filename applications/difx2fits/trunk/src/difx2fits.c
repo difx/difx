@@ -45,7 +45,9 @@ const double DefaultSniffInterval = 30.0;	/* sec */
 const double DefaultJobMatrixInterval = 20.0;	/* sec */
 const double DefaultDifxTsysInterval = 30.0;	/* sec */
 const double DefaultDifxPCalInterval = 30.0;	/* sec */
-const int    DefaultDifxLocalDir     = 0;
+const int    DefaultDifxAntPol       = 0;	
+const int    DefaultDifxPolXY2HV     = 0;	
+const int    DefaultDifxLocalDir     = 0;	
 
 /* FIXME: someday add option to specify EOP merge mode from command line */
 
@@ -147,8 +149,12 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --zero\n");
 	fprintf(stderr, "  -0                  Don't put visibility data in FITS file\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --antpol            Use antenna-based polarization codes. Warning: fits-idi file will violate original specifcaitions and abide extended specifications.\n" );
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --polxy2hv          Convert XY polarziation codes to HV codes. Requires --antpol option\n" );
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --localdir\n");
-	fprintf(stderr, "  -l                  Files *.calc, *.im, *.difx, *.flag etc are sought in current working directory\n");
+	fprintf(stderr, "  -l                  *.calc, *.im, and *.difx are sought in the same directory as *.input files\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --primary-band <pb> Add PRIBAND keyword with value <pb> to FITS file\n");
 	fprintf(stderr, "\n");
@@ -178,7 +184,9 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts->jobMatrixDeltaT = DefaultJobMatrixInterval;
 	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
 	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
-	opts->localdir           = DefaultDifxLocalDir;
+	opts->antpol             = DefaultDifxAntPol; 
+	opts->polxy2hv           = DefaultDifxPolXY2HV; 
+	opts->localdir           = DefaultDifxLocalDir; 
 
 	return opts;
 }
@@ -335,6 +343,14 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--skip-extra-autocorrs") == 0)
 			{
 				opts->skipExtraAutocorrs = 1;
+			}
+			else if(strcmp(argv[i], "--antpol") == 0)
+			{
+				opts->antpol = 1;
+			}
+			else if(strcmp(argv[i], "--polxy2hv") == 0)
+			{
+				opts->polxy2hv = 1;
 			}
 			else if(strcmp(argv[i], "--localdir") == 0 ||
 			        strcmp(argv[i], "-l") == 0)
@@ -553,6 +569,12 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 
 		return 0;
 	}
+        if ( opts->polxy2hv == 1 && opts->antpol == 0 ){
+		printf("Error: Option --polxy2hv can be used only togeather with opts->antpol \n");
+		deleteCommandLineOptions(opts);
+
+		return 0;
+        }
 
 	/* if input file ends in .difx, trim it */
 	for(i = 0; i < opts->nBaseFile; ++i)
@@ -580,25 +602,30 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 
 	strcpy(keys->obscode, D->job->obsCode);
 	keys->no_stkd = D->nPolar;
-	switch(D->polPair[0])
-	{
-	case 'R':
-		keys->stk_1 = FITS_STOKES_RR;
-		break;
-	case 'L':
-		keys->stk_1 = FITS_STOKES_LL;
-		break;
-	case 'X':
-		keys->stk_1 = FITS_STOKES_XX;
-		break;
-	case 'Y':
-		keys->stk_1 = FITS_STOKES_YY;
-		break;
-	default:
-		fprintf(stderr, "Error: unknown polarization (%c)\n", D->polPair[0]);
+        if ( D->AntPol == 1 ){
+	     keys->stk_1 = -9;
+        } else {
+	  switch(D->polPair[0])
+	  {
+	  case 'R':
+	  	keys->stk_1 = -1;
+	  	break;
+	  case 'L':
+	  	keys->stk_1 = -2;
+	  	break;
+	  case 'X':
+	  	keys->stk_1 = -5;
+	  	break;
+	  case 'Y':
+	  	keys->stk_1 = -6;
+	  	break;
+	  default:
+	  	fprintf(stderr, "Error: unknown polarization (%c)\n", D->polPair[0]);
 
-		exit(EXIT_FAILURE);
+  		exit(EXIT_FAILURE);
+	  }
 	}
+
 	keys->no_band = D->nIF;
 	if(D->nIF > array_MAX_BANDS)
 	{
@@ -913,6 +940,8 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 
 			return 0;
 		}
+                Dset[i]->AntPol   = opts->antpol;
+                Dset[i]->polxy2hv = opts->polxy2hv;
 
 		Dset[i] = updateDifxInput(Dset[i], &opts->mergeOptions);
 
@@ -1066,18 +1095,20 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 
 	for(c = 0; c < D->nConfig; ++c)
 	{
-		if((D->config[c].polMask & DIFXIO_POL_RL) && (D->config[c].polMask & DIFXIO_POL_XY))
-		{
-			fprintf(stderr, "Error: both linear and circular polarizations are present.  This combination is unsupported by FITS.\n");
+	        if ( D->AntPol == 0 ){
+		   if((D->config[c].polMask & DIFXIO_POL_RL) && (D->config[c].polMask & DIFXIO_POL_XY))
+		   {
+			fprintf(stderr, "Error: both linear and circular polarizations are present.  This combination is still experimental. Use option --antpol if you need.\n");
 
 			return 0;
-		}
+		   }
 
-		if(D->config[c].polMask & DIFXIO_POL_ERROR)
-		{
-			fprintf(stderr, "Error: an unknown polarization (not R, L, X or Y) is present.  FITS cannot allow other types.\n");
+		   if(D->config[c].polMask & DIFXIO_POL_ERROR)
+		   {
+			fprintf(stderr, "Error: polarization ather than R, L, X or Y is present. Use option --antpol.\n");
 
 			return 0;
+		   }
 		}
 	}
 

@@ -394,6 +394,12 @@ int polMaskValue(char polName)
 		case 'Y':
 		case 'y':
 			return DIFXIO_POL_Y;
+		case 'H':
+		case 'h':
+			return DIFXIO_POL_H;
+		case 'V':
+		case 'v':
+			return DIFXIO_POL_V;
 		default:
 			return DIFXIO_POL_ERROR;
 	}
@@ -548,30 +554,40 @@ static int generateFreqSets(DifxInput *D)
 
 			return -1;
 		}
-		else if((dc->polMask & DIFXIO_POL_RL) && (dc->polMask & DIFXIO_POL_XY))
+		else if((dc->polMask & DIFXIO_POL_RL) && (dc->polMask & DIFXIO_POL_XY)  && D->AntPol ==  0 )
 		{
 			fprintf(stderr, "Warning: generateFreqSets: polMask = 0x%03x is unsupported!\n", dc->polMask);
 		}
 
 		/* populate polarization matrix for this configuration */
-		if(dc->polMask & DIFXIO_POL_R)
+		if(dc->polMask & DIFXIO_POL_R && dc->nPol < 2 )
 		{
 			dc->pol[dc->nPol] = 'R';
 			++dc->nPol;
 		}
-		if(dc->polMask & DIFXIO_POL_L)
+		if(dc->polMask & DIFXIO_POL_L && dc->nPol < 2 )
 		{
 			dc->pol[dc->nPol] = 'L';
 			++dc->nPol;
 		}
-		if(dc->polMask & DIFXIO_POL_X)
+		if(dc->polMask & DIFXIO_POL_X && dc->nPol < 2 )
 		{
 			dc->pol[dc->nPol] = 'X';
 			++dc->nPol;
 		}
-		if(dc->polMask & DIFXIO_POL_Y)
+		if(dc->polMask & DIFXIO_POL_Y && dc->nPol < 2 )
 		{
 			dc->pol[dc->nPol] = 'Y';
+			++dc->nPol;
+		}
+		if(dc->polMask & DIFXIO_POL_H && dc->nPol < 2 )
+		{
+			dc->pol[dc->nPol] = 'H';
+			++dc->nPol;
+		}
+		if(dc->polMask & DIFXIO_POL_V && dc->nPol < 2 )
+		{
+			dc->pol[dc->nPol] = 'V';
 			++dc->nPol;
 		}
 
@@ -1451,7 +1467,6 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 			return 0;
 		}
 		D->datastream[e].phaseCalIntervalMHz = atof(DifxParametersvalue(ip, r));
-
 		r = DifxParametersfind(ip, r+1, "NUM RECORDED FREQS");
 		if(r < 0)
 		{
@@ -1531,8 +1546,24 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 		for(i = 0; i < nRecBand; ++i)
 		{
 			int a;
+			char pol;
 
 			r = DifxParametersfind1(ip, r+1, "REC BAND %d POL", i);
+			pol = DifxParametersvalue(ip, r)[0];
+
+			if ( D->datastream[e].pol[0] == ' ' )
+                        {
+                             D->datastream[e].pol[0] = pol; 
+                        } 
+                        else if ( D->datastream[e].pol[0] != pol )
+                        {
+                             if ( D->datastream[e].pol[1] == ' ' )
+                             {
+                                  D->datastream[e].pol[1] =  pol;
+                             }
+                        }
+                        D->antenna[D->datastream[e].antennaId].pol[0] = D->datastream[e].pol[0];
+                        D->antenna[D->datastream[e].antennaId].pol[1] = D->datastream[e].pol[1];
 			if(r < 0)
 			{
 				fprintf(stderr, "Warning: parseDifxInputDatastreamTable: REC BAND %d POL not found\n", i);
@@ -2587,7 +2618,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	int order, interval;
 	enum AberCorr ac;
 	int *antennaMap;
-	const int smallRange = 30;
+	const int smallRange = 20;
 
 	if(!D)
 	{
@@ -2780,7 +2811,6 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d STA X (m)", src, t, scan->im[a][src][p].staX, order+1, 1);
 					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d STA Y (m)", src, t, scan->im[a][src][p].staY, order+1, 1);
 					parsePoly1_limited(mp, r, smallRange, "SRC %d ANT %d STA Z (m)", src, t, scan->im[a][src][p].staZ, order+1, 1);
-
 					/* the next three again are required */
 					r = parsePoly1(mp, r, "SRC %d ANT %d U (m)", src, t, scan->im[a][src][p].u, order+1);
 					if(r < 0)
@@ -3156,6 +3186,8 @@ static void setGlobalValues(DifxInput *D)
 	int hasL = 0;
 	int hasX = 0;
 	int hasY = 0;
+	int hasH = 0;
+	int hasV = 0;
 
 	if(!D)
 	{
@@ -3171,7 +3203,6 @@ static void setGlobalValues(DifxInput *D)
 	strcpy(D->polPair, "  ");
 
 	D->mjdStart = D->mjdStop = D->job->mjdStart;
-
 	for(jobId = 0; jobId < D->nJob; ++jobId)
 	{
 		double mjdStop;
@@ -3233,6 +3264,7 @@ static void setGlobalValues(DifxInput *D)
 			bw     = dfs->IF[i].bw;
 			pol[0] = dfs->IF[i].pol[0];
 			pol[1] = dfs->IF[i].pol[1];
+//  printf ( "difx_input-3140 i= %2d  pppp %d %f %c %c\n", i, nPol, bw, pol[0], pol[1] ); /* %%%%%%%%% */
 			if(D->doPolar)
 			{
 				nPol *= 2;
@@ -3241,6 +3273,7 @@ static void setGlobalValues(DifxInput *D)
 			{
 				D->nPolar = nPol;
 			}
+//  printf ( "difx_input-3148 ddd %d %d %d \n", dfs->IF[i].nPol, nPol, D->nPolar ); /* %%%%%%%%%%% */
 			if(D->chanBW < 0.0)
 			{
 				D->chanBW = bw;
@@ -3311,7 +3344,15 @@ static void setGlobalValues(DifxInput *D)
 	{
 		D->polPair[0] = 'Y';
 	}
+	if ( D->AntPol == 1 ){
+		D->polPair[0] = 'A';
+		if ( D->nPol > 1 ){
+		     D->polPair[1] = 'A';
+                }
+        }
+
 }
+
 
 /* returns zero on success, otherwise count of errors encountered */
 static int mergeDifxInputFreqSetsStrict(DifxInput *D)
@@ -3529,7 +3570,11 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	DifxParameters *ip, *cp, *mp;
 	DifxInput *D, *DSave;
 	char inputFile[DIFXIO_FILENAME_LENGTH];
-//	const char *calcFile;
+	char CalcInName[DIFXIO_FILENAME_LENGTH];
+	char ImInName[DIFXIO_FILENAME_LENGTH];
+	char OutputDirName[DIFXIO_FILENAME_LENGTH];
+	char OutputDirInName[DIFXIO_FILENAME_LENGTH];
+	const char *calcFile;
 	int r, v, l;
 
 	l = strlen(filePrefix);
@@ -3552,6 +3597,44 @@ DifxInput *loadDifxInput(const char *filePrefix)
 		return 0;
 	}
 
+	/* get .calc filename and open it. */
+	r = DifxParametersfind(ip, 0, "CALC FILENAME");
+	if(r < 0)
+	{
+		return 0;
+	}
+	calcFile = DifxParametersvalue(ip, r);
+        l = strlen(inputFile);  
+        if ( strcmp( inputFile + l - 6, ".input") == 0 ) {
+             strncpy ( CalcInName, inputFile, l - 6 );
+             CalcInName[l-6] = '\0';
+             strncat ( CalcInName, ".calc", DIFXIO_FILENAME_LENGTH-1 ) ;
+        } else {
+          strncpy ( CalcInName, calcFile, DIFXIO_FILENAME_LENGTH ); /* just in case if inputFile name is insane */
+        } 
+
+        if ( access( calcFile,   F_OK ) != 0  &&
+             access( CalcInName, F_OK ) == 0   ){
+//
+// --------- We cannot find Calc file as it is spefified in the *.input file,
+// --------- buf we found it in the input directory.
+//
+             if ( difxioGetOption(DIFXIO_OPT_LOCALDIR) == 0){            
+		  fprintf(stderr, "loadDifxInput: cannot find input Calc file %s, but found a Calc file %s. If the latter file is that you want, use option --localdir\n", 
+                          calcFile, CalcInName); 
+		  exit(EXIT_FAILURE);
+             }
+             calcFile = (char *) CalcInName ;
+        }
+        
+	cp = newDifxParametersfromfile(calcFile);
+	if(!cp)
+	{
+		deleteDifxParameters(ip);
+		
+		return 0;
+	}
+
 	D = DSave = newDifxInput();
 
 	/* When creating a DifxInput via this function, there will always
@@ -3568,19 +3651,32 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	}
 
 	D = populateInput(D, ip);
-
-	/* get .calc filename and open it. */
-	cp = newDifxParametersfromfile(D->job->calcFile);
-	if(!cp)
-	{
-		deleteDifxParameters(ip);
-
-		return 0;
-	}
-
 	D = populateCalc(D, cp);
 	if (D)
 	{
+                l = strlen(inputFile);  
+                if ( strcmp( inputFile + l - 6, ".input") == 0 ) {
+                     strncpy ( ImInName, inputFile, l - 6 );
+                     ImInName[l-6] = '\0';
+                     strncat ( ImInName, ".im", DIFXIO_FILENAME_LENGTH-1 ) ;
+                } else {
+                  strncpy ( ImInName, D->job->imFile, DIFXIO_FILENAME_LENGTH ); ; /* just in case if inputFile name is insane */
+                } 
+                if( access( D->job->imFile, F_OK ) != 0 &&
+                    access( ImInName,       F_OK ) == 0   ){
+//
+// ---------------- If the cannot find D->job->imFile file as it is spefified in the *.input file,
+// ---------------- Let us check, is the Interferometric Model file is located in the input directory.
+// ---------------- If yes, let us take if from there.
+//
+                    if ( difxioGetOption(DIFXIO_OPT_LOCALDIR) == 0){            
+		         fprintf(stderr, "loadDifxInput: cannot find input Im file %s, but found an Im file %s. If the latter file is that you want, use option --localdir\n", 
+                                 D->job->imFile, (char *) ImInName);
+		         exit(EXIT_FAILURE);
+                    }
+                    strncpy ( D->job->imFile, (char *) ImInName, DIFXIO_FILENAME_LENGTH );
+                }
+
 		mp = newDifxParametersfromfile(D->job->imFile);
 	}
 	else
@@ -3597,7 +3693,32 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	{
 		deleteDifxInput(DSave);
 	}
-	
+        if ( D ){
+             strncpy ( OutputDirName, D->job->outputFile, DIFXIO_FILENAME_LENGTH );
+             strncat ( OutputDirName, "/", DIFXIO_FILENAME_LENGTH-1 ) ;
+             l = strlen(inputFile);  
+             if ( strcmp( inputFile + l - 6, ".input") == 0 ) {
+                  strncpy ( OutputDirInName, inputFile, l - 6 );
+                  OutputDirInName[l-6] = '\0';
+                  strncat ( OutputDirInName, ".difx/", DIFXIO_FILENAME_LENGTH-1 ) ;
+             } else {
+               strncpy ( OutputDirInName, OutputDirName, DIFXIO_FILENAME_LENGTH ); /* just in case if inputFile name is insane */
+             } 
+             if( access( OutputDirName,   F_OK ) != 0 &&
+                 access( OutputDirInName, F_OK ) == 0  ){
+//
+// ------------- If the cannot find D->job->outputFile file as it is spefified in the *.input file,
+// ------------- Let us check, is the output file is located in the input directory.
+// ------------- If yes, let us take if from there.
+//
+                 if ( difxioGetOption(DIFXIO_OPT_LOCALDIR) == 0){            
+		      fprintf(stderr, "loadDifxInput: cannot find DIFX output directory %s, but found a DIFX output directory %s. If the latter file is that you want, use option --localdir\n", 
+                              D->job->outputFile, (char *) OutputDirName);
+		      exit(EXIT_FAILURE);
+                 }
+                 strncpy ( D->job->outputFile, (char *) OutputDirInName, DIFXIO_FILENAME_LENGTH );
+             }
+        }
 	deleteDifxParameters(ip);
 	deleteDifxParameters(cp);
 	deleteDifxParameters(mp);
@@ -3623,6 +3744,7 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 	DifxParameters *ip, *cp;
 	DifxInput *D, *DSave;
 	char inputFile[DIFXIO_FILENAME_LENGTH];
+	char CalcInName[DIFXIO_FILENAME_LENGTH];
 	const char *calcFile;
 	int r;
 	int l;
@@ -3660,6 +3782,22 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 	}
 
 	calcFile = DifxParametersvalue(ip, r);
+        if( access( calcFile, F_OK ) != 0 ){
+//
+// -------- If the cannot find Calc file as it is spefified in the *.input file,
+// -------- Let us check, is the Calc file is located in the input directory.
+// -------- If yes, let us take if from there.
+//
+            l = strlen(inputFile);  
+            if ( strcmp( inputFile + l - 6, ".input") == 0 ) {
+                 strncpy ( CalcInName, inputFile, l - 6 );
+                 CalcInName[l-6] = '\0';
+                 strncat ( CalcInName, ".calc", DIFXIO_FILENAME_LENGTH-1 ) ;
+            }
+            if( access( CalcInName, F_OK ) == 0 ){
+                calcFile = (char *) CalcInName ;
+            }
+        }
 
 	cp = newDifxParametersfromfile(calcFile);
 	if(!cp)

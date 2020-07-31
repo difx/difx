@@ -239,18 +239,35 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2)
 	return 1;
 }
 
-int DifxConfigGetPolId(const DifxConfig *dc, char polName)
+int DifxConfigGetPolId(const DifxInput *D, char polName)
 {
-	if(dc->pol[0] == polName)
-	{
+        if ( D->AntPol == 0 ){
+	     if(D->config->pol[0] == polName)
+    	     {
 		return 0;
-	}
-	if(dc->pol[1] == polName)
-	{
+	     }
+	     if(D->config->pol[1] == polName)
+	     {
 		return 1;
-	}
+	     }
 
-	return -1;
+	    return -1;
+        } else {
+          switch ( polName ){
+		case 'R':
+                      return 0;
+		case 'L':
+                      return 1;
+		case 'X':
+                      return 0;
+		case 'Y':
+                      return 1;
+		case 'H':
+                      return 0;
+		case 'V':
+                      return 1;
+          }
+        }
 }
 
 

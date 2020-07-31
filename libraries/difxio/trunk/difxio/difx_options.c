@@ -63,28 +63,18 @@ int difxioSetOption(int option_id, const void* value)
 	return -1;
 }
 
-int difxioGetOption(int option_id, void* value)
+int difxioGetOption(int option_id)
 {
 	switch(option_id)
 	{
 		case DIFXIO_OPT_VERBOSITY:
-			if(value)
-			{
-				*((int*)value) = difxioOptions.verbosity;
-				return 0;
-			}
-			break;
+		     return difxioOptions.verbosity;
 
 		case DIFXIO_OPT_LOCALDIR:
-			if(value)
-			{
-				*((int*)value) = difxioOptions.tryLocalDir;
-				return 0;
-			}
-			break;
+		     return difxioOptions.tryLocalDir;
 
 		default:
-			break;
+		     return -1;
 	}
 
 	return -1;
