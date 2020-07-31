@@ -1,3 +1,55 @@
+Commit 9637  2020.07.30
+
+* Support of three new options is added:
+  -l --localdir *.calc, *.im, and *.difx are sought in the same directory 
+  as *.input files. By default, difx assumes *.input files define full 
+  paths of *.calc, *.im, and *.difx, and if it does not find, it issues an 
+  error message and stops. This causes a problem if difx output is imported 
+  to another system. 
+  
+  Now if *.calc, *.im, or *.difx file specified in the *.input file, are
+  not found, difxio checks whether such a file exists in the same direction 
+  as the *.input file. If it finds it and option --localdir is applied, 
+  difxio takes it. If option --localdir is not used difxio writes a message 
+  stating that the file was not found, but there exists such a file in the 
+  same directory where the *.input is located, difxio suggests a user to 
+  use option --localdir, if the latter file is that the user wants, and 
+  stops with EXIT_FAILURE.
+  
+* Support of mixed mode polarization with --antpol option. Original FITS-IDI 
+  specifications provide no room for mixed mode observations. Specifications
+  have a finite hard-coded list of polarization combinations coded in
+  STK_1 parameter that runs from -8 to 4. When FITS-IDI specifications
+  were written, no mixed mode polarization observations were envisaged.
+  
+  A workaround is to support new value STK_1 -9 that refers to the polarization
+  code of each station defined Antenna1Feed1 Antenna2Feed1 parameters that 
+  were always exported to FITS-IDI. That scheme overcomes the limitation
+  of the original fits-idi specifications. The order of polarization 
+  combinations in a 2x2 visibility matrix: A1A1 A2A2 A1A2 A2A1. If some 
+  polarizations were not recorded, for instance R or L, at one of the 
+  antennas, the visibility is padded with zero. If the array had only
+  circ or linpol antennas and all Stokes parameters were correlated,
+  this scheme is equivalent to STK_1 -1 and STK_1 -5 respectively.
+   
+  By default, difx2fits refuses to process mixed mode polarization data.
+  When --antpol option is used, difx2fits sets STK_1 to -9 and process
+  the data.
+  
+  A sanity check allows only R, L, H, V, X, and Y polarization codes, 
+  but the list of allowed codes can be easily extended in the future,
+  if needed.
+
+* There are datasets that misleadingly label HV data as XY. XY polarization
+  according to the IAU convention has axes over right ascension and
+  declination axes that are fixed on the sky, while HV polarization
+  axes over the local horizontal and vertical direction are rotating
+  on the sky. Data reduction of HV and XY of data is quite different.
+  There are antennas with HV feeds and there are antennas with XY feeds.
+
+  Option --polxy2hv re-labels polarization XY to HV. This option works
+  only if --antpol is applied.
+
 Version 3.7.0
 * Post DiFX-2.6
 * python3 conversion: showcal, plotpcal, plotpcal2, gentcal, makefits

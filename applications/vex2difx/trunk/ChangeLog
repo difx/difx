@@ -1,3 +1,7 @@
+Commit 9636  2020.07.30
+
+* Support of polarization labels H and V is added.
+
 Version 2.7.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.6
