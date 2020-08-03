@@ -79,6 +79,7 @@ float gaussrand();
 int MeanStdDev(const float *src, int length, float *mean, float *StdDev);
 int pack2bit1chan(Ipp32f **in, int off, Ipp8u *out, float mean, float stddev, int len);
 int pack2bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len);
+int pack2bitNchan_complex(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len);
 int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len);
 void dayno2cal (int dayno, int year, int *day, int *month);
 double cal2mjd(int day, int month, int year);
@@ -354,6 +355,8 @@ int main (int argc, char * const argv[]) {
     IPPMALLOC(data[i], 32f, frameperbuf*samplesperframe*cfact);
   }
 
+  phase = phase2 = 0;
+
   if (doublesideband) {
     IPPMALLOC(dsb_mult, 32fc, frameperbuf*samplesperframe*cfact/2);
     for (i=0;i<frameperbuf*samplesperframe*cfact/2;i++) {
@@ -380,7 +383,6 @@ int main (int argc, char * const argv[]) {
   if (amp2>0 && tone2!=0.0) {
     IPPMALLOC(scratch2, 32f, frameperbuf*samplesperframe*cfact);
   }
-  phase = phase2 = 0;
   if (dohilbert) {
    int sizeSpec, sizeBuf;
 
@@ -580,7 +582,10 @@ int main (int argc, char * const argv[]) {
 	  status = pack2bit1chan(data, i*samplesperframe*cfact, framedata,  mean[0], stdDev[0], samplesperframe*cfact);
 	  if (status) exit(1);
 	} else {
-	  status = pack2bitNchan(data, nchan, i*samplesperframe*cfact, framedata,  mean[0], stdDev[0], samplesperframe*cfact);
+	  if (iscomplex)
+	    status = pack2bitNchan_complex(data, nchan, i*samplesperframe*cfact, framedata,  mean[0], stdDev[0], samplesperframe*cfact);
+	  else
+	    status = pack2bitNchan(data, nchan, i*samplesperframe*cfact, framedata,  mean[0], stdDev[0], samplesperframe*cfact);
 	  if (status) exit(1);
 	}
       } else if (nbits==8) {
@@ -757,6 +762,35 @@ int pack2bit1chan(Ipp32f **in, int off, Ipp8u *out, float mean, float stddev, in
   return 0;
 }
 
+int pack2bitNchan_complex(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len) {
+  int i, j, n, k, ch[4];
+  float maxposThresh, maxnegThresh;
+  
+  if (len*nchan%2!=0) {
+    printf("Can only pack multiple of 2 samples*channels!\n");
+    return(1);
+  }
+
+  maxposThresh = mean+stddev*0.95;
+  maxnegThresh = mean-stddev*0.95;
+
+  j = 0;
+  k = 0;
+  for (i=off;i<len+off;i+=2) {
+    for (n=0; n<nchan; n++) {
+      F2BIT(in[n][i],k);
+      k++;
+      F2BIT(in[n][i+1],k);
+      k++;
+      if (k==4) {
+	out[j] = (ch[0])|((ch[1]<<2) )|((ch[2]<<4) )|((ch[3]<<6));
+	j++;
+	k = 0;
+      }
+    }
+  }
+  return 0;
+}
 int pack2bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len) {
   // Should check 31bit "off" offset is enough bits
   int i, j, n, k, ch[4];
@@ -947,14 +981,12 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
 	  exit(1);
 	}
       } else {
-
 	status = ippsAdd_32f_I(scratch, data[n], nsamp*cfact);
 	if (status!=ippStsNoErr) {
 	  fprintf(stderr, "Error adding tone (%s)\n", ippGetStatusString(status));
 	  exit(1);
 	}
       }
-
       if (amp2>0 && tone2!=0.0) {
 	status = ippsAdd_32f_I(scratch2, data[n], nsamp*cfact);
 	if (status!=ippStsNoErr) {
