@@ -295,7 +295,7 @@ int main (int argc, char * const argv[]) {
     exit(1);
   }
 
-  if (seed=0) seed=time(NULL);
+  if (seed==0) seed=time(NULL);
   
   // Frame size and number of sampler/frame
   int completesample = nbits*cfact*nchan;
@@ -909,6 +909,7 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
 	  exit(1);
 	}
       } else {
+
 	status = ippsAdd_32f_I(scratch, data[n], nsamp*cfact);
 	if (status!=ippStsNoErr) {
 	  fprintf(stderr, "Error adding tone (%s)\n", ippGetStatusString(status));
