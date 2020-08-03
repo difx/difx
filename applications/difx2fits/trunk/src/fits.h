@@ -30,6 +30,7 @@
 #define FITS_STOKES_YY -6
 #define FITS_STOKES_XY -7
 #define FITS_STOKES_YX -8
+#define FITS_STOKES_AN_TABLE -9 // outside FITS-IDI spec; indicates that correct pols are in AN table (esp. when H,V)
 
 
 /* Structs for describing FITS data types: */

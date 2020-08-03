@@ -602,22 +602,22 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 
 	strcpy(keys->obscode, D->job->obsCode);
 	keys->no_stkd = D->nPolar;
-        if ( D->AntPol == 1 ){
-	     keys->stk_1 = -9;
-        } else {
+	if ( D->AntPol == 1 ){
+		keys->stk_1 = FITS_STOKES_AN_TABLE;
+	} else {
 	  switch(D->polPair[0])
 	  {
 	  case 'R':
-	  	keys->stk_1 = -1;
+	  	keys->stk_1 = FITS_STOKES_RR;
 	  	break;
 	  case 'L':
-	  	keys->stk_1 = -2;
+	  	keys->stk_1 = FITS_STOKES_LL;
 	  	break;
 	  case 'X':
-	  	keys->stk_1 = -5;
+	  	keys->stk_1 = FITS_STOKES_XX;
 	  	break;
 	  case 'Y':
-	  	keys->stk_1 = -6;
+	  	keys->stk_1 = FITS_STOKES_YY;
 	  	break;
 	  default:
 	  	fprintf(stderr, "Error: unknown polarization (%c)\n", D->polPair[0]);
