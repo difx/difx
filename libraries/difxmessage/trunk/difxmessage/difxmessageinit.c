@@ -201,7 +201,7 @@ int difxMessageInitFull(int mpiId, const char *identifier, const char *published
 	}
 
 	/* send a message to prime the network for multicast */
-	difxMessageSendDifxAlert("Initialized", DIFX_ALERT_LEVEL_VERBOSE);
+	//difxMessageSendDifxAlert("Initialized", DIFX_ALERT_LEVEL_VERBOSE);
 	
 	return 0;
 }
