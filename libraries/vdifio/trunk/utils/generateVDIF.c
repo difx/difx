@@ -48,11 +48,14 @@
 
 IppsRandGaussState_32f *pRandGaussState, *pRandGaussState2;
 Ipp32f *scratch=NULL, *scratch2=NULL;
+Ipp32fc *scratchHilbert=NULL;
 Ipp32f phase, phase2;
 Ipp32f *dly;
 Ipp8u *buf;
 IppsFIRSpec_32f *pSpec;
 IppsFIRSpec_32fc *pcSpec;
+IppsHilbertSpec* hSpec;
+Ipp8u* hBuffer;
 Ipp32fc *dsb_mult;
 #else
 typedef unsigned char  Ipp8u;
@@ -83,7 +86,7 @@ double tm2mjd(struct tm date);
 
 void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int iscomplex, int nobandpass, int noise,
 		  int bandwidth, float tone, float amp, float tone2, float amp2, int lsb, int doublesideband, 
-		  float *mean, float *stdDev);
+		  int hilbert, float *mean, float *stdDev);
 
 #define MAXSTR        255
 #define BUFSIZE       256  // MB
@@ -108,6 +111,7 @@ typedef enum {FLOAT, FLOAT8, INT} data_type;
 int main (int argc, char * const argv[]) {
   char *filename, msg[MAXSTR], *header;
   int i, frameperbuf, loopframes, status, outfile, opt, tmp, flipGroup, headerBytes=0;
+  int complexOutput;
   uint64_t nframe;
   float **data, ftmp, *stdDev, *mean;
   Ipp64f *taps64;
@@ -128,6 +132,7 @@ int main (int argc, char * const argv[]) {
   int ntap = DEFAULTTAP;
   int framesize = 8000;
   int iscomplex = 0;
+  int dohilbert = 0;
   int nobandpass = 0;
   int noise = 0;
   int lsb = 0;
@@ -138,7 +143,7 @@ int main (int argc, char * const argv[]) {
   int day = -1;
   int dayno = -1;
   double mjd = -1;
-  float tone = 10;  // MHz
+  float tone =  0;  // MHz
   float tone2 = 0;  // MHz
   float amp = 0.1;
   float amp2 = 0.0;
@@ -165,11 +170,13 @@ int main (int argc, char * const argv[]) {
     {"nbits", 1, 0, 'b'},
     {"bits", 1, 0, 'b'},
     {"complex", 0, 0, 'c'},
+    {"hilbert", 0, 0, 'H'},
     {"nobandpass", 0, 0, 'N'},
     {"noise", 0, 0, 'n'},
     {"seed", 1, 0, 's'},
     {"doublesideband", 0, 0, 'G'},
     {"lsb", 0, 0, 'L'},
+    {"hilbert", 0, 0, 'H'},
     {"help", 0, 0, 'h'},
 #if USE_CODIFIO
     {"codifio", 0, 0, 'Z'},
@@ -222,6 +229,7 @@ int main (int argc, char * const argv[]) {
       CASEINT('C', channels);
       CASEINT('s', seed);
       CASEBOOL('c', iscomplex);
+      CASEBOOL('H', dohilbert);
       CASEBOOL('N', nobandpass);
       CASEBOOL('n', noise);
       CASEBOOL('L', lsb);
@@ -258,6 +266,7 @@ int main (int argc, char * const argv[]) {
 	printf("  -s/-seed                  Set seed of 'thermal' noise (default auto)\n");
 	printf("  -lsb                      Generate LSB data\n");
 	printf("  -doublesideband           Generate double sideband if complex (default single sideband)\n");
+	printf("  -hilbert                  Generate real data and convert to complex via hilbert transform\n");
 	printf("  -codif                    Generate CODIF data\n");
 	printf("  -day <DAY>                Day of month of start time (now)\n");
 	printf("  -month <MONTH>            Month of start time (now)\n");
@@ -289,8 +298,14 @@ int main (int argc, char * const argv[]) {
   
   int cfact = 1;
   if (iscomplex) cfact = 2;
+  if (iscomplex && dohilbert) {
+    fprintf(stderr, "Warning: Cannot hilbery transform complex data. Disabling hilbert\n");
+    dohilbert = 0;
+  }
+  
+  complexOutput = iscomplex || dohilbert;
 
-  if (doublesideband && !iscomplex) {
+  if (doublesideband && !complexOutput) {
     fprintf(stderr, "Warning: Cannot use doublesideband on real data!!\n");
     exit(1);
   }
@@ -327,6 +342,7 @@ int main (int argc, char * const argv[]) {
     nframe = duration*framespersec;
   }
 
+  if (tone==0) tone = bandwidth/4;
   if (tone2>0 && amp2==0) amp2=amp;
 
   data = (Ipp32f**)malloc(nchan*sizeof(Ipp32f*));
@@ -339,8 +355,8 @@ int main (int argc, char * const argv[]) {
   }
 
   if (doublesideband) {
-    IPPMALLOC(dsb_mult, 32fc, frameperbuf*samplesperframe);
-    for (i=0;i<frameperbuf*samplesperframe;i++) {
+    IPPMALLOC(dsb_mult, 32fc, frameperbuf*samplesperframe*cfact/2);
+    for (i=0;i<frameperbuf*samplesperframe*cfact/2;i++) {
       if (i%2) {
 	dsb_mult[i].re = -1;
       } else {
@@ -361,8 +377,24 @@ int main (int argc, char * const argv[]) {
   }
 
   IPPMALLOC(scratch, 32f, frameperbuf*samplesperframe*cfact);
-  IPPMALLOC(scratch2, 32f, frameperbuf*samplesperframe*cfact); // TODO add contidional if not needed
+  if (amp2>0 && tone2!=0.0) {
+    IPPMALLOC(scratch2, 32f, frameperbuf*samplesperframe*cfact);
+  }
   phase = phase2 = 0;
+  if (dohilbert) {
+   int sizeSpec, sizeBuf;
+
+   IPPMALLOC(scratchHilbert, 32fc, frameperbuf*samplesperframe);
+   status = ippsHilbertGetSize_32f32fc(frameperbuf*samplesperframe, ippAlgHintNone, &sizeSpec, &sizeBuf);
+
+   hSpec = (IppsHilbertSpec*)ippMalloc(sizeSpec);
+   IPPMALLOC(hBuffer, 8u, sizeBuf);
+   status = ippsHilbertInit_32f32fc(frameperbuf*samplesperframe, ippAlgHintNone, hSpec, hBuffer);
+    if (status != ippStsNoErr) {
+      fprintf(stderr, "Error calling ippsHilbertInit (%s) (Line %d)\n", ippGetStatusString(status), __LINE__ -2);
+      exit(1);
+    }
+  }
 
   int specSize;
   int bufsize, bufsize2;
@@ -468,7 +500,8 @@ int main (int argc, char * const argv[]) {
     headerBytes = CODIF_HEADER_BYTES;
 
     // Need to calculate a couple of these values
-    status = createCODIFHeader(&cheader, framesize, 0, 0, nbits, nchan, sampleblock, 1, samplerate, iscomplex, "Tt");
+    status = createCODIFHeader(&cheader, framesize, 0, 0, nbits, nchan, sampleblock, 1, samplerate,
+			       complexOutput, "Tt");
     if (status!=CODIF_NOERROR) {
       printf("Error creating CODIF header. Aborting\n");
       exit(1);
@@ -491,7 +524,7 @@ int main (int argc, char * const argv[]) {
   } else {
     header = (char*)&vheader;
     headerBytes = VDIF_HEADER_BYTES;
-    status = createVDIFHeader(&vheader, framesize, 0, nbits, nchan, iscomplex, "Tt");
+    status = createVDIFHeader(&vheader, framesize, 0, nbits, nchan, complexOutput, "Tt");
     if (status!=VDIF_NOERROR) {
       printf("Error creating VDIF header. Aborting\n");
       exit(1);
@@ -531,7 +564,7 @@ int main (int argc, char * const argv[]) {
       loopframes = nframe;
 
     
-    generateData(data, loopframes, samplesperframe, nchan, iscomplex, nobandpass, noise, bandwidth, tone, amp, tone2, amp2, lsb, doublesideband, mean, stdDev);
+    generateData(data, loopframes, samplesperframe, nchan, iscomplex, nobandpass, noise, bandwidth, tone, amp, tone2, amp2, lsb, doublesideband, dohilbert, mean, stdDev);
 
     for (int i=1;i<nchan;i++) {
       mean[0] += mean[i];
@@ -595,6 +628,11 @@ int main (int argc, char * const argv[]) {
   free(data);
   ippsFree(scratch);
   if (scratch2!=NULL) ippsFree(scratch2);
+  if (dohilbert) {
+    ippsFree(scratchHilbert);
+    ippsFree(hBuffer);
+    ippFree(hSpec);
+  }
   if (!nobandpass) {
     ippsFree(taps);
     ippsFree(tapsC);
@@ -848,8 +886,8 @@ double tm2mjd(struct tm date) {
 #ifdef USEIPP
 
 void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int iscomplex, int nobandpass,
-		  int noise, int bandwidth, float tone, float amp, float tone2, float amp2, int lsb, int doublesideband,
-		  float *mean, float *stdDev) {
+		  int noise, int bandwidth, float tone, float amp, float tone2, float amp2, int lsb,
+		  int doublesideband, int hilbert, float *mean, float *stdDev) {
   int n, nsamp, cfact;
   float s;
   Ipp32f thismean, thisStdDev;
@@ -859,7 +897,7 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
   else
     cfact = 1;
 
-  if (doublesideband && !iscomplex) {
+  if (doublesideband && !(iscomplex || hilbert)) {
     fprintf(stderr, "Error: Cannot do doublesideband on real data in %s\n", __FUNCTION__);
     exit(1);
   }
@@ -937,6 +975,20 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
 	exit(1);
       }
     }
+
+    if (hilbert) {
+      int temp, hPhase = 0;
+      status = ippsHilbert_32f32fc(data[n], scratchHilbert, hSpec, hBuffer);
+      if (status!=ippStsNoErr) {
+	fprintf(stderr, "Error applying Hilbert function (%s) in %s\n", ippGetStatusString(status), __FUNCTION__);
+	exit(1);
+      }
+      status = ippsSampleDown_32fc(scratchHilbert, nsamp, (Ipp32fc*)data[n], &temp, 2, &hPhase);
+      if (status!=ippStsNoErr) {
+	fprintf(stderr, "Error applying ippsSampleDown (%s) in %s\n", ippGetStatusString(status), __FUNCTION__);
+	exit(1);
+      }
+    }
     
     if (lsb) {
       status = ippsConj_32fc_I((Ipp32fc*)data[n], nsamp*cfact/2);
@@ -947,7 +999,7 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
     }
 
     if (doublesideband) {
-      status = ippsMul_32fc_I(dsb_mult, (Ipp32fc*)data[n], nsamp);
+      status = ippsMul_32fc_I(dsb_mult, (Ipp32fc*)data[n], nsamp*cfact/2);
       if (status!=ippStsNoErr) {
 	fprintf(stderr, "Error in ippsMul_32fc (%s) in %s\n", ippGetStatusString(status), __FUNCTION__);
 	exit(1);
