@@ -206,7 +206,7 @@ extern const char eopMergeModeNames[][MAX_EOP_MERGE_MODE_STRING_LENGTH];
 /* keep this current with eopMergeModeNames[] in difx_antenna.c */
 enum ClockMergeMode
 {
-        ClockMergeModeStrict = 0,	/* here only allow merging if antenna clock (delay, rate, ...) matches exactly */
+	ClockMergeModeStrict = 0,	/* here only allow merging if antenna clock (delay, rate, ...) matches exactly */
 	ClockMergeModeLoose,		/* allow any antenna clocks i.e. do not split upon clock breaks, keep the first encountered clock data */
 
 	NumClockMergeModes		/* must remain as last entry */
@@ -886,7 +886,7 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 	const DifxConfig *dc2, int ndc2, int *configIdRemap,
 	const int *baselineIdRemap, const int *datastreamIdRemap,
 	const int *pulsarIdRemap, int *ndc);
-int DifxConfigGetPolId(const DifxInput *D, char polName);
+int DifxConfigGetPolId(const DifxInput *D, int configId, char polName);
 int DifxConfigRecBand2FreqPol(const DifxInput *D, int configId,
 	int antennaId, int recBand, int *freqId, int *polId);
 int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar,
