@@ -3344,12 +3344,15 @@ static void setGlobalValues(DifxInput *D)
 	{
 		D->polPair[0] = 'Y';
 	}
-	if ( D->AntPol == 1 ){
+
+	if(D->AntPol == 1)
+	{
 		D->polPair[0] = 'A';
-		if ( D->nPol > 1 ){
-		     D->polPair[1] = 'A';
-                }
-        }
+		if(D->nPol > 1)
+		{
+			D->polPair[1] = 'A';
+		}
+	}
 
 }
 
