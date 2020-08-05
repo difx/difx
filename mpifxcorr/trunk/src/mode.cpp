@@ -1215,13 +1215,13 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
                   status = vectorConjFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels/2+1);
                   status = vectorConjFlip_cf32(&fftd[recordedbandchannels/2]+1, &fftoutputs[j][subloopindex][recordedbandchannels/2]+1, recordedbandchannels/2-1);
                 } else {
-                  status = vectorConjFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
+                  //status = vectorConjFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
                   // note: using vectorConjFlip_cf32() -lofreq breaks Complex LSB (non-DSB!) fringes for VGOS *assuming* VGOS RDBE-G indeed LSB like memos claim
                   // fix?: LSB fringes are restored at least for a synthetic fully correlated data set of Complex USB and Complex LSB data.
                   //       The reversal has to be changed as below to retain DC in bin 0, producing not [ch1 ch2 ch3 ... DC] but instead [DC ch1 ch2 ch3 ...]
                   // todo: validate fix on real world definitely-known-LSB data (evidenced by pcal tone positions etc), then uncomment the next lines:
-                  //status = vectorConjFlip_cf32(fftd+1, fftoutputs[j][subloopindex]+1, recordedbandchannels-1);
-                  //fftoutputs[j][subloopindex][0] = fftd[0];
+                  status = vectorConjFlip_cf32(fftd+1, fftoutputs[j][subloopindex]+1, recordedbandchannels-1);
+                  fftoutputs[j][subloopindex][0] = fftd[0];
                 }
               }
               else {
