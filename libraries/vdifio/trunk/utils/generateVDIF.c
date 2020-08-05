@@ -568,7 +568,7 @@ int main (int argc, char * const argv[]) {
     
     generateData(data, loopframes, samplesperframe, nchan, iscomplex, nobandpass, noise, bandwidth, tone, amp, tone2, amp2, lsb, doublesideband, dohilbert, mean, stdDev);
 
-    for (int i=1;i<nchan;i++) {
+    for (i=1;i<nchan;i++) {
       mean[0] += mean[i];
       stdDev[0] += stdDev[i];
     }

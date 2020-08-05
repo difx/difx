@@ -88,7 +88,8 @@ typedef double    Ipp64f;
 #endif
 
 void MEMSET_64U(Ipp64u *src, Ipp64u val, int length) {
-  for (int i=0;i<length;i++) src[i] = val;
+  int i;
+  for (i=0;i<length;i++) src[i] = val;
 }
 
 #define DEBUG(x) 
@@ -311,13 +312,13 @@ int main (int argc, char * const argv[]) {
 	  }
 	  subsubmask = (1<<(nchan*2))-1;  // Mask for bits
 	  subsubmask <<= nchan*2;        // Shift it up for second time sample(s)
-	  for (int i=0; i<sampPerWord/2; i++) {
+	  for (i=0; i<sampPerWord/2; i++) {
 	    submask |= subsubmask<<(nchan*2*i*2);
 	  }
 	  MEMSET_64U((Ipp64u*)(mask+headersize), submask, datasize/8); // Set whole data frame to to this mask
 	}
 	// Now duplicate frame to whole buffer, skipping headers
-	for (int i=1; i<frameperbuf; i++) {
+	for (i=1; i<frameperbuf; i++) {
 	  MEMCOPY(mask+headersize, mask+headersize+framesize*i, datasize);
 	}
       } else {
