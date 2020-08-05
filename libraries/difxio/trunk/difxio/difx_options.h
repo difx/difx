@@ -45,7 +45,7 @@ typedef struct
 #define DIFXIO_OPT_LOCALDIR     1
 
 int difxioSetOption(int option_id, const void* value);
-int difxioGetOption(int option_id);
+int difxioGetOption(int option_id, void* value);
 
 extern DifxioOptions difxioOptions; // instantiated in difx_options.c
 

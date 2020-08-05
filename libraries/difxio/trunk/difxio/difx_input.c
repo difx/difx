@@ -3619,14 +3619,15 @@ DifxInput *loadDifxInput(const char *filePrefix)
 // --------- We cannot find Calc file as it is spefified in the *.input file,
 // --------- buf we found it in the input directory.
 //
-             if ( difxioGetOption(DIFXIO_OPT_LOCALDIR) == 0){            
-		  fprintf(stderr, "loadDifxInput: cannot find input Calc file %s, but found a Calc file %s. If the latter file is that you want, use option --localdir\n", 
-                          calcFile, CalcInName); 
-		  exit(EXIT_FAILURE);
-             }
-             calcFile = (char *) CalcInName ;
-        }
-        
+		if(difxioOptions.tryLocalDir == 0)
+		{
+			fprintf(stderr, "loadDifxInput: cannot find input Calc file %s, but found a Calc file %s. If the latter file is that you want, use option --localdir\n",
+				calcFile, CalcInName);
+			exit(EXIT_FAILURE);
+		}
+		calcFile = (char *) CalcInName ;
+	}
+
 	cp = newDifxParametersfromfile(calcFile);
 	if(!cp)
 	{
@@ -3669,13 +3670,14 @@ DifxInput *loadDifxInput(const char *filePrefix)
 // ---------------- Let us check, is the Interferometric Model file is located in the input directory.
 // ---------------- If yes, let us take if from there.
 //
-                    if ( difxioGetOption(DIFXIO_OPT_LOCALDIR) == 0){            
-		         fprintf(stderr, "loadDifxInput: cannot find input Im file %s, but found an Im file %s. If the latter file is that you want, use option --localdir\n", 
-                                 D->job->imFile, (char *) ImInName);
-		         exit(EXIT_FAILURE);
-                    }
-                    strncpy ( D->job->imFile, (char *) ImInName, DIFXIO_FILENAME_LENGTH );
-                }
+			if(difxioOptions.tryLocalDir == 0)
+			{
+				fprintf(stderr, "loadDifxInput: cannot find input Im file %s, but found an Im file %s. If the latter file is that you want, use option --localdir\n",
+					D->job->imFile, (char *) ImInName);
+				exit(EXIT_FAILURE);
+			}
+			strncpy ( D->job->imFile, (char *) ImInName, DIFXIO_FILENAME_LENGTH );
+		}
 
 		mp = newDifxParametersfromfile(D->job->imFile);
 	}
@@ -3711,14 +3713,15 @@ DifxInput *loadDifxInput(const char *filePrefix)
 // ------------- Let us check, is the output file is located in the input directory.
 // ------------- If yes, let us take if from there.
 //
-                 if ( difxioGetOption(DIFXIO_OPT_LOCALDIR) == 0){            
-		      fprintf(stderr, "loadDifxInput: cannot find DIFX output directory %s, but found a DIFX output directory %s. If the latter file is that you want, use option --localdir\n", 
-                              D->job->outputFile, (char *) OutputDirName);
-		      exit(EXIT_FAILURE);
-                 }
-                 strncpy ( D->job->outputFile, (char *) OutputDirInName, DIFXIO_FILENAME_LENGTH );
-             }
-        }
+			if(difxioOptions.tryLocalDir == 0)
+			{
+				fprintf(stderr, "loadDifxInput: cannot find DIFX output directory %s, but found a DIFX output directory %s. If the latter file is that you want, use option --localdir\n", 
+					D->job->outputFile, (char *) OutputDirName);
+				exit(EXIT_FAILURE);
+			}
+			strncpy ( D->job->outputFile, (char *) OutputDirInName, DIFXIO_FILENAME_LENGTH );
+		}
+	}
 	deleteDifxParameters(ip);
 	deleteDifxParameters(cp);
 	deleteDifxParameters(mp);

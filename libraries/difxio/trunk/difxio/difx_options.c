@@ -39,42 +39,47 @@ DifxioOptions difxioOptions = {
 
 int difxioSetOption(int option_id, const void* value)
 {
+	if(value == NULL)
+	{
+		return -1;
+	}
+
 	switch(option_id)
 	{
 		case DIFXIO_OPT_VERBOSITY:
-			if(value)
-			{
-				difxioOptions.verbosity = *((int*)value);
-				return 0;
-			}
-			break;
+			difxioOptions.verbosity = *((int*)value);
+			return 0;
 
 		case DIFXIO_OPT_LOCALDIR:
-			if(value)
-			{
-				difxioOptions.tryLocalDir = *((int*)value);
-				return 0;
-			}
-			break;
+			difxioOptions.tryLocalDir = *((int*)value);
+			return 0;
 
 		default:
 			break;
 	}
+
 	return -1;
 }
 
-int difxioGetOption(int option_id)
+int difxioGetOption(int option_id, void* value)
 {
+	if(value == NULL)
+	{
+		return -1;
+	}
+
 	switch(option_id)
 	{
 		case DIFXIO_OPT_VERBOSITY:
-		     return difxioOptions.verbosity;
+			*((int*)value) = difxioOptions.verbosity;
+			return 0;
 
 		case DIFXIO_OPT_LOCALDIR:
-		     return difxioOptions.tryLocalDir;
+			*((int*)value) = difxioOptions.tryLocalDir;
+			return 0;
 
 		default:
-		     return -1;
+			return -1;
 	}
 
 	return -1;
