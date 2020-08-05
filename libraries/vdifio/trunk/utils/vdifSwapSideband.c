@@ -50,6 +50,8 @@
   }
 
 #define MALLOC_8U(var, n) IPPMALLOC(var, 8u, n)
+#define FREE(x) ippsFree(x)
+
 
 #define ZERO_8U(dest, length)                   ippsZero_8u(dest, length)
 #define MEMSET_8U(dest, val, length)            ippsSet_8u(val, dest, length)
@@ -281,7 +283,7 @@ int main (int argc, char * const argv[]) {
       datasize = framesize-headersize;
       //if (isComplex) bits *=2;
 
-      free(buf);
+      FREE(buf);
       buf = NULL;
 
       frameperbuf = memsize/framesize;
