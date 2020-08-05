@@ -492,6 +492,8 @@ As the visibility file ({\tt .difx}) is read, any records that are all zero are 
 \item[] {\tt -n} or {\tt --no-model} : don't write model (ML) table
 \item[] {\tt -s} {\em scale} or {\tt --scale} {\em scale} : scale visibility data by {\em scale}
 \item[] {\tt -t} {\em interval} or {\tt --deltat} {\em interval} : generate {\tt .jobmatrix} file with time intervals of length {\em interval} seconds
+\item[] {\tt --difx-tsys-interval} {\em interval} : the Difx-derived tsys interval (sec) (default 30.0s averaging)
+\item[] {\tt --difx-pcal-interval} {\em interval} : the Difx-derived pcal interval (sec) (default 30.0s averaging)
 \item[] {\tt -S} or {\tt --sniff-all} : sniff all bins and phase centers, not just the first
 \item[] {\tt -T} {\em interval} or {\tt --sniff-time} {\em interval} : use {\em interval} as the sniffer time resolution
 \item[] {\tt -v} or {\tt --verbose} : increase verbosity of output; use twice or thrice to get even more
@@ -499,11 +501,15 @@ As the visibility file ({\tt .difx}) is read, any records that are all zero are 
 \item[] {\tt -k} or {\tt --keep-order} : don't sort the antennas by name
 \item[] {\tt -1} or {\tt --dont-combine} : make a separate FITS file for each input job
 \item[] {\tt -x} or {\tt --dont-sniff} : don't generate sniffer output files
+\item[] {\tt -0} or {\tt --zero} : don't put visibility data in FITS file
+\item[] {\tt --bin} {\em b} : Select on this pulsar bin number
 \item[] {\tt --phasecentre} {\em p} : (U.S.\ spelling okay too) Create a FITS file for all the {\em p}$^{\rm th}$ phase centers (default 0)
 \item[] {\tt --override-version} : ignore difx version clashes
 \item[] {\tt -m} {\em nJob} or {\tt --max-jobs} {\em nJob} : split into more FITS files after reaching {\em nJob} input files.
 \item[] {\tt --eop-merge-mode} {\em mode} : sets conditions for allowing jobs with different EOPs to be merged or not; options are {\tt strict} (default), {\tt drop}, {\tt relaxed}
 \item[] {\tt --clock-merge-mode} {\em mode} : sets conditions for allowing jobs with different clock models to be merged or not; options are {\tt strict} (default) or {\tt drop}
+\item[] {\tt --antpol} : use antenna-based polarization labels as in VEX. Note: fits-idi file will violate original specifications and abide extended specifications.
+\item[] {\tt --polxy2hv} : re-labels all polarizations XY to HV. Requires --antpol option. 
 \end{itemize}
 \item[] {\em baseFilename} is the prefix of the jobfile to convert; it is okay to use the {\tt .difx} filename instead
 \item[] {\em outFile} is the name of the {\tt FITS} file to produce; if not provided one will be made based on the project code
@@ -522,11 +528,19 @@ As the visibility file ({\tt .difx}) is read, any records that are all zero are 
 \item {\tt TCAL\_FILE} : if {\tt TCAL\_PATH} is not set, use the file pointed to by this env. var.
 \end{itemize}
 
+Unless adjusted with the {\tt --difx-pcal-interval} and {\tt --difx-tsys-interval} parameters, the respective PC and TY data will be time averaged to the default of 30 seconds. For geodetic
+VLBI or other observations with very short scans you may want to shorten the averaging time.
+
 Unless disabled with the {\tt --dont-sniff} or {\tt -x} flag, four ``sniffer'' output files ({\tt .acb}, {\tt .apd}, {\tt .wts} and {\tt .xcb}) will be written for each {\tt .FITS} file produced.  
 These files are used by {\tt difxsniff} and its associated programs to produce data plots that are used to assess data quality.
 
 Unless disabled by setting {\em interval} to a non-positive number with the {\tt -t} or {\tt --deltat} option, an output file with suffix {\tt .jobmatrix} will be produced. 
 This file contains an ASCII art diagram of which jobs contributed to each {\tt .FITS} file produced as a function of both time and antenna.
+
+Unless augmented with option {\tt --antpol} the produced FITS files are fully compliant with the original FITS-IDI specifications. In case of mixed mode polarization (XY against RL)
+or certain feed types (HV in particular) the option {\tt --antpol} allows to force output of noncompliant but polarization correct FITS files; FITS-IDI numerical parameter STK\_1 is set to
+the new value of -9, indicating to post-processing software that it should refer to the existing FITS-IDI character parameters Antenna1Feed1 and Antenna2Feed1 (populated from VEX)
+for the polarization details.
 
 If submitting a bug report for {\tt difx2fits}, please include in it the full output of {\tt difx2fits -v -v} and the {\tt .input} and {\tt .calc} files.
 
