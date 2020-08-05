@@ -315,11 +315,10 @@ int main (int argc, char * const argv[]) {
 	    submask |= subsubmask<<(nchan*2*i*2);
 	  }
 	  MEMSET_64U((Ipp64u*)(mask+headersize), submask, datasize/8); // Set whole data frame to to this mask
-
-	  // Now duplicate frame to whole buffer, skipping headers
-	  for (int i=1; i<frameperbuf; i++) {
-	    MEMCOPY(mask+headersize, mask+headersize+framesize*i, datasize);
-	  }
+	}
+	// Now duplicate frame to whole buffer, skipping headers
+	for (int i=1; i<frameperbuf; i++) {
+	  MEMCOPY(mask+headersize, mask+headersize+framesize*i, datasize);
 	}
       } else {
 	fprintf(stderr, "Error: Do not support %d bits at line %d\n", bits, __LINE__);
