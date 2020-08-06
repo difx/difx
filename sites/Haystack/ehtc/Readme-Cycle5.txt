@@ -1,7 +1,7 @@
 #
 ### Instructions for polconversion/packaging for <Observation>/<Band>
 #
-# This version is appropriate to Cycle5 (b1..b4)
+# This version is appropriate to Cycle5 (b1..b4) (2018 and later).
 # The template for this file is in:     $ehtc/Readme-Cycle5.txt
 # rename it to:  $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile
 #
@@ -13,7 +13,7 @@
 #  r${relv}         refers to the release name
 #
 # If there are MULTIPLE PROJECTS with SEPARATE QA2 DELIVERABLES for
-# each, you will need to manage two sets of QA2 calibrations using
+# each, you will need to manage the sets of QA2 calibrations using
 # QA2_proj logic variables.  I.e. you will have 2 or more passes of
 # setup and grinding using this file.  Final release is still by track.
 #
@@ -21,16 +21,19 @@
 # Once the fourfit control file is in hand, you can execute parts of
 # the file using true && { ... } or false && { ... } for partial runs.
 #
-# Post copies of this file and any grinding logs to $release/logs.
+# (lines with 3 hashes mark places where you should pay attention
+#  and/or paste things into this logfile.  The idea is then when done,
+#  the $comment file--see below--should produce a useful summary.)
+#
+# Post copies of this file and all grinding logs to $release/logs.
 #
 
 # ENVIRONMENT =====================
 # setup versioned tools -- very different per site
 # script that adds CASA 4.7.2 bin to PATH
 source ~/lib/casa.setup
-source /swc/difx/setup-DiFX-2.5.3.bash
+source /swc/difx/setup-DiFX-2.6.2.bash
 #source /swc/difx/setup-difx.bash
-#source /swc/difx/difx-root-YYmonDD/setup-difx.bash
 #source /swc/hops/hops.bash
 # Only if you had somehow previously set it up:
 # export HOPS_SETUP=false
@@ -40,7 +43,7 @@ source $DIFXROOT/bin/hops.bash
 export hays=/data-sc24/EHT_ARCHIVE/Hays_Output2
 export bonn=/data-sc24/EHT_ARCHIVE/Bonn_Output2
 #export dsvn=/swc/difx/difx-svn
-export dsvn=/swc/difx/difx-svn/master_tags/DiFX-2.5.3/
+export dsvn=/swc/difx/difx-svn/master_tags/DiFX-2.6.2/
 # site vars: script area, correlator work dir and release directory
 #export ehtc=/sites/Haystack/ehtc
 export ehtc=$dsvn/sites/Haystack/ehtc
@@ -61,7 +64,7 @@ export relv=?       # archive release name number
 export flab=''      # re-fourfitting version (if needed)
 export expn=3...    # HOPS exp # (from Mike Titus)
 
-# $dpfu is estimated from QA2 products, see one-time setup
+# $dpfu is estimated from QA2 products, see one-time setup below
 export dpfu=0.0308574
 # a list of stations in best order for polconvert plots
 export scmp='PV,MG,SW,AX,LM,SZ,GL,MM'
@@ -90,9 +93,9 @@ export ptar=$plab.APP_DELIVERABLES.tgz
 
 # see the tarball script for what this does, should be false
 export fitsname=false
-# If $work contains multiple jubs or unprocessed jobs, set this to true,
+# If $work contains multiple jobs or unprocessed jobs, set this to true,
 # which implicitly sets the -u flag on any use of $ehtc/ehtc-joblist.py.
-# If $work is more messed up than that, you're on your own.
+# If $work is more messed up than that, you're on your own for coping.
 export uniq=true    # or export uniq=false
 
 # other derived vars
@@ -263,7 +266,7 @@ $ehtc/est_manual_phases.py -c $ers.conf \
     -r second-root -s A,p,q,r,...
 grep ^if.station $ers.conf | sort | uniq -c
 #...
-# are all set up?
+### are all manual phases set up plausibly?  tell us what you think.
 # for r in $roots ; do fourfit -bA? -c $ers.conf $r & done ; wait
 # fplot */A[^A].B*
 
@@ -285,17 +288,16 @@ rm -rf ${jobs//input/*}
 #   ###  important messages that can be grepped out to make a summary
 #--------------------------------------------------------------------------
 # TODO list ======================
+# this command generates blocks of commands to insert here:
 # $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -L
-# be sure to adjust grind jobs to respect QA2_proj logic
+# but you must be sure to adjust these grind jobs to respect QA2_proj logic
 
 ###
 ### log of $ers commands goes here
 ###
 
-
-# you can launch as a remote job with:
-# cat *.logfile | ssh -2x host & disown
-# or on the processing host with:
+# once you have edited this file to run a block of grinding jobs
+# with appropriate true and false controls, you can launch with:
 # sh *.logfile & disown
 # (there should be only one *.logfile)
 #--------------------------------------------------------------------------
@@ -312,7 +314,7 @@ ls -l $release/logs
 $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -T | tee $ers-performance.txt
 cp -p $ers-performance.txt $release/logs
 
-# review PolConvert progress incrementally or when done:
+### review PolConvert progress incrementally or when done:
 summarizePolconvertLogs.py -s -c -g 0.5 -b 0.8
 # The -g and -b values set thresholds for
 # the line between good/poor and poor/bad; the defaults (0.3 and 0.6)

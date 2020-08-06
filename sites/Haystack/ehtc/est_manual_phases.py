@@ -28,7 +28,7 @@ def parseOptions():
     '''
     use = '%(prog)s [options]\n'
     use += '  Version '
-    use += '$Id: est_manual_phases.py.in 2891 2019-11-24 17:50:15Z gbc $'
+    use += '$Id: est_manual_phases.py 2988 2020-08-06 15:21:31Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     required = parser.add_argument_group('required options')
     flaggers = parser.add_argument_group('flag options')

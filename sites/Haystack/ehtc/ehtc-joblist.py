@@ -6,8 +6,6 @@
 #
 '''
 Script to parse a joblist and a vex file and produce lists of job numbers
-
-$Id: ehtc-joblist.py 2493 2018-08-11 22:06:50Z gbc $
 '''
 
 import argparse
@@ -33,7 +31,7 @@ def parseOptions():
     epi += ' try this: '
     epi += ' ehtc-joblist.py -i *.input -o *.vex.obs -p na -s 3C279 -R'
     use = '%(prog)s [options]\n'
-    use += '  Version $Id: ehtc-joblist.py 2493 2018-08-11 22:06:50Z gbc $'
+    use += '  Version $Id: ehtc-joblist.py 2989 2020-08-06 15:44:03Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     inputs = parser.add_argument_group('input options', inp)
     action = parser.add_argument_group('action options', act)
