@@ -134,7 +134,7 @@ int main (int argc, char * const argv[]) {
 
   int memsize = BUFSIZE;
   int offset = 0;
-  int concat = 0;
+  int doublesideband = 0;
   char outname[MAXSTR+1] = "";
   char outdir[MAXSTR+1] = "";
 
@@ -144,7 +144,7 @@ int main (int argc, char * const argv[]) {
     {"offset", 1, 0, 's'},
     {"skip", 1, 0, 's'},
     {"outfile", 1, 0, 'f'},
-    {"concat", 0, 0, 'c'},
+    {"doublesideband", 0, 0, 'd'},
     {"bufsize", 1, 0, 'm'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
@@ -176,7 +176,7 @@ int main (int argc, char * const argv[]) {
 
       CASEINT('s', offset);
       CASEINT('m', memsize);
-      CASEBOOL('c', concat);
+      CASEBOOL('d', doublesideband);
 
     case 'o':
       if (strlen(optarg)>MAXSTR) {
@@ -282,11 +282,15 @@ int main (int argc, char * const argv[]) {
       headersize = getVDIFHeaderBytes(header);
       framesize = getVDIFFrameBytes(header);
       datasize = framesize-headersize;
-      //if (isComplex) bits *=2;
 
       FREE(buf);
       buf = NULL;
 
+      if (doublesideband && !isComplex) {
+	fprintf(stderr, "Error: Doublesideband option only usable on complex data! Aborting\n");
+	exit(EXIT_FAILURE);
+      }
+      
       frameperbuf = memsize/framesize;
       bufsize = frameperbuf*framesize;
       if (frameperbuf==0) {
@@ -299,16 +303,35 @@ int main (int argc, char * const argv[]) {
       if (bits==2) {  // Need to create Mask
 	MALLOC_8U(mask, bufsize);
 	ZERO_8U(mask, bufsize);
-	if (isComplex) { // Invert each complex sample
+	if (doublesideband) {  // Check above ensures is complex)
+	  Ipp64u submask=0;
+	  if (nchan>8) {
+	    fprintf(stderr, "Error: Do not support nchan > 8 (Got %d) (line %d). Aborting\n", nchan, __LINE__);
+	    exit(EXIT_FAILURE);
+	  } else if (8 % nchan) {
+	    fprintf(stderr, "Error: Do not support nchan=%d (line %d). Must divide into 8. Aborting\n", nchan, __LINE__);
+	    exit(EXIT_FAILURE);
+	  }
+	  Ipp64u subsubmask = 0;
+	  for (i=0; i<nchan; i++) {
+	    subsubmask |= 0xF<<(4*i);
+	  }
+	  subsubmask <<= nchan*4;  // 4 bits per sample
+	  int sampPerWord = 64/4/nchan;
+	  for (i=0; i<sampPerWord/2; i++) {
+	    submask |= subsubmask<<(nchan*i*8);
+	  }
+	  MEMSET_64U((Ipp64u*)(mask+headersize), submask, datasize/8); // Set whole data frame to to this mask
+	} else if (isComplex) { // Invert each complex sample
 	  uint8_t  submask = 0xCC;
 	  MEMSET_8U(mask+headersize, submask, datasize);
+
 	} else {
 	  Ipp64u subsubmask, submask;
 	  int sampPerWord = 64/2/nchan;
 	  if (nchan>16) {
 	    fprintf(stderr, "Error: Do not support nchan=%d (line %d). Aborting\n", nchan, __LINE__);
-	    exit(EXIT_FAILURE);
-	    
+	    exit(EXIT_FAILURE);	    
 	  }
 	  subsubmask = (1<<(nchan*2))-1;  // Mask for bits
 	  subsubmask <<= nchan*2;        // Shift it up for second time sample(s)
@@ -317,6 +340,7 @@ int main (int argc, char * const argv[]) {
 	  }
 	  MEMSET_64U((Ipp64u*)(mask+headersize), submask, datasize/8); // Set whole data frame to to this mask
 	}
+
 	// Now duplicate frame to whole buffer, skipping headers
 	for (i=1; i<frameperbuf; i++) {
 	  MEMCOPY(mask+headersize, mask+headersize+framesize*i, datasize);
