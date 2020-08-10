@@ -23,6 +23,8 @@ you did something like this:
 and are applying this program to the data files to reduce them.
 The -n/-x min/max arguments are to cull for an interesting period.
 '''
+from __future__ import absolute_import
+from __future__ import print_function
 import re
 import os
 import sys
@@ -67,7 +69,7 @@ def process(o):
     '''
     Parse the file and return a list of data
     '''
-    print '# Processing',o.sc
+    print('# Processing',o.sc)
     # year 1, day 2, hour 3, min 4, sec 5, ns 6
     vex = r'([0-9]{4})y([0-9]{3})d([0-9]{2})h([0-9]{2})m([0-9]{2})s.([0-9]{9})'
     stamp_re = re.compile(r'[0-9]{5}:delta:ts ' + vex)
@@ -81,21 +83,21 @@ def process(o):
     for line in o.si.readlines():
         stamp = stamp_re.search(line)
         if stamp:
-            if (o.verb): print stamp.group(4),stamp.group(5),stamp.group(6),
+            if (o.verb): print(stamp.group(4),stamp.group(5),stamp.group(6), end=' ')
             time = (float(stamp.group(3))*3600.0 +
                     float(stamp.group(4))*60.0 +
                     float(stamp.group(5))*1.0 +
                     float(stamp.group(6))*1e-9)
         pcent = pcent_re.search(line)
         if pcent:
-            if (o.verb): print float(pcent.group(2))+float(pcent.group(3))
+            if (o.verb): print(float(pcent.group(2))+float(pcent.group(3)))
             high = float(pcent.group(2))+float(pcent.group(3))
             loww = float(pcent.group(1))+float(pcent.group(4))
             tilt = 100.0 * (
                 (float(pcent.group(1))+float(pcent.group(2))) /
                 (float(pcent.group(3))+float(pcent.group(4))) )
         if time >= 0.0 and high >= 0.0 and loww >= 0.0 and tilt >= 0.0:
-            if (o.verb): print time,high,loww
+            if (o.verb): print(time,high,loww)
             stats.append([time, high, loww, tilt])
             time = -1.0
             high = -1.0
@@ -111,7 +113,7 @@ def report(o, stats):
         if data[0] >= o.min and data[0] <= o.max:
             o.sr.write("%.9f %.4f %.4f %.4f\n" % (
                 data[0], data[1], data[2], data[3]))
-    print '# Wrote',o.sc + '.data'
+    print('# Wrote',o.sc + '.data')
 
 if __name__ == "__main__":
     o = parseOptions()
@@ -125,7 +127,7 @@ if __name__ == "__main__":
             report(o, stats)
             o.sr.close()
         else:
-            print 'dude',sc,'is not a file...'
+            print('dude',sc,'is not a file...')
 
 #
 # eof
