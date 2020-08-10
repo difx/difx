@@ -207,6 +207,11 @@ mb_win -0.008    0.008
 dr_win -0.000001 0.000001
 * adjustments follow
 EOF
+# add chan_ids directive appropriate to the band:
+$ehtc/alma-vex-defs.py -rchan -f213100.0 -sL -w58.0 >> $ers.bare  # b1
+$ehtc/alma-vex-defs.py -rchan -f215100.0 -sL -w58.0 >> $ers.bare  # b2
+$ehtc/alma-vex-defs.py -rchan -f227100.0 -sU -w58.0 >> $ers.bare  # b3
+$ehtc/alma-vex-defs.py -rchan -f229100.0 -sU -w58.0 >> $ers.bare  # b4
 cp -p $ers.bare $ers.conf
 # on later iterations you can re-use what you have available
 # ff_conf=`ls -t $corr/$exp/v${vers}*p*/$evs.conf | head -1`
