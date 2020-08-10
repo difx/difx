@@ -21,8 +21,9 @@ my $dotime = 0;
 my $help = 0;
 my $skip = 0;
 my $data = 0;
+my $thread = undef;
 
-GetOptions('once'=>\$once, 'check'=>\$check, 'help'=>\$help, 'skip=i'=>\$skip, 'data'=>\$data, 'time'=>\$dotime);
+GetOptions('once'=>\$once, 'check'=>\$check, 'help'=>\$help, 'skip=i'=>\$skip, 'data'=>\$data, 'time'=>\$dotime, 'thread=i'=>\$thread);
 
 my ($lastframe, $lastsec);
 
@@ -32,10 +33,11 @@ Usage: vdifheader.pl [options] <vdiffile>
 
 Options:
    -once          Print only the first header
-   -check         Do check frames increase monotonically with no gaps (single thread only?)
+   -check         Do check frames increase monotonically with no gaps (single thread only)
+   -thread <t>    In check mode, only check thread "t"
    -time          Print time of first and last frame
    -data          Decode data array
-   -skip <bytes>  Skip <bytes> bytes at the start of each file    
+   -skip <bytes>  Skip <bytes> bytes at the start of each file
    
 EOF
 }
@@ -45,6 +47,8 @@ foreach (@ARGV) {
   open(VDIF, $_) || die "Could not open $_: $!\n";
 
   print "Reading $_\n\n" if !$dotime;
+
+  my $frameCount = 0;
 
   my $first = 1;
   while (1) {
@@ -72,8 +76,6 @@ foreach (@ARGV) {
 
     print "-------------------\n" if (!$first && !$check && !$dotime);
     
-    #my $timestr = turn2str(fmod($seconds/60/60/24, 1.0));
-	
     my $mjd =  cal2mjd(1, ($refepoch%2)*6+1, 2000 + int($refepoch/2));
     $mjd += $seconds/(60*60*24);
     if ($dotime) {
@@ -83,7 +85,7 @@ foreach (@ARGV) {
       $date = sprintf("%02d/%02d/%04d", $day, $month, $year);
       $timestr = turn2str($ut);
     }
-    
+
     if ($dotime) {
       if ($first) {
 	my $fullpath = abs_path($_);
@@ -116,23 +118,26 @@ THREADID:    $threadid
 ANTID:       $antid
 EOF
     } else { # $check==True
-      if ($first) {
-	$lastsec = $seconds;
-	$lastframe = $frame;
-      } else {
-	if ($frame-$lastframe!=1) {
-	  if ($seconds==$lastsec) {
-	    printf("Skipped %d frames at $timestr/$lastframe--$frame\n", $frame-$lastframe-1);
-	  } elsif ($seconds-$lastsec==1) {
-	    if ($frame!=0) {
-	      printf("Skipped > %d frames at $timestr/$lastframe--$frame\n", $frame);
+      if (! defined $thread || $thread==$threadid) {
+	if ($first) {
+	  $first = 0;
+	  $lastsec = $seconds;
+	  $lastframe = $frame;
+	} else {
+	  if ($frame-$lastframe!=1) {
+	    if ($seconds==$lastsec) {
+	      printf("Skipped %d frames at $timestr/$lastframe--$frame  (Frame Count %d)\n", $frame-$lastframe-1, $frameCount);
+	    } elsif ($seconds-$lastsec==1) {
+	      if ($frame!=0) {
+		printf("Skipped > %d frames at $timestr/$lastframe--$frame (Frame Count %d)\n", $frame, $frameCount);
+	      }
+	    } else {
+	      printf("Skipped  %d seconds at $timestr (Frame Count %d)\n", $seconds-$lastsec, $frameCount);
 	    }
-	  } else {
-	    printf("Skipped  %d seconds at $timestr\n", $seconds-$lastsec);
 	  }
+	  $lastframe = $frame;
+	  $lastsec = $seconds;
 	}
-	$lastframe = $frame;
-	$lastsec = $seconds;
       }
     }
 
@@ -153,7 +158,7 @@ EOF
       }
     }
     last if ($once);
-    $first = 0;
+    $frameCount++;
   }
 }
 
