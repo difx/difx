@@ -173,11 +173,10 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
 
     // Currently only one extraction method implemented for complex data
     if (data_type == Configuration::COMPLEX) {
-        //ToDo: could enable the implicit method soon:
-        //if ((No % Np) == 0)
-        //    return new PCalExtractorComplexImplicitShift(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, band_type);
-        //else
-        return new PCalExtractorComplex(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, band_type);
+        if ((No % Np) == 0)
+            return new PCalExtractorComplexImplicitShift(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, band_type);
+        else
+            return new PCalExtractorComplex(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, band_type);
     }
 
     // First tone in DC bin: smallest footprint extractor
@@ -1248,6 +1247,7 @@ uint64_t PCalExtractorComplexImplicitShift::getFinalPCal(cf32* out)
    if (!_finalized)
    {
         _finalized = true;
+        vectorAdd_cf32_I(/*src*/&(_cfg->pcal_complex[_N_bins]), /*srcdst*/&(_cfg->pcal_complex[0]), _N_bins);
         s = vectorDFT_CtoC_cf32(_cfg->pcal_complex, _cfg->dft_out, _cfg->dftspec, _cfg->dftworkbuf);
         if (s != vecNoErr)
             csevere << startl << "Error in DFTFwd in PCalExtractorComplexImplicitShift::getFinalPCal " << vectorGetStatusString(s) << endl;
