@@ -107,10 +107,14 @@ int main(int argc, char** argv)
 	printf("PCal extractor : length=%d nbins=%d\n", pc->getLength(), pc->getNBins());
 
 	// Read file
+	ssize_t nsamples_total = 0;
 	while (!done) {
 
+		// Prepare for next extraction period
 		pc->clear();
+		pc->adjustSampleOffset(nsamples_total);
 
+		// Get data
 		if (ms->iscomplex) {
 			n = mark5_stream_decode_complex(ms, chunksize, data_complex);
 			if (conjugate) {
@@ -124,10 +128,11 @@ int main(int argc, char** argv)
 			pc->extractAndIntegrate(data_real[if_nr], chunksize);
 		}
 		done = (n <= 0);
+		nsamples_total += n;
 
+		// Extract pcal data
 		n = pc->getFinalPCal(tonedata);
-
-		printf("Decoded n = %d samples, pcal data are:\n", n);
+		printf("Extracted pcal from n = %d samples, final pcal data are:\n", n);
 
 		for (i = 0; i < pc->getLength(); i++) {
 			float phi = (180/M_PI)*std::atan2(tonedata[i].im, tonedata[i].re);
