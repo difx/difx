@@ -64,7 +64,7 @@ my  $vexScanCount = 0;
 #----------------------------------------------------------------------
 
 
-&GetOptions("help" => \$help, "mode=s" => \$mode,  "skip_empty" => \$skipEmpty, "exclude=s" => \$exclude, "vexfile=s" => \$VEXFILE, "jobmatrix=s" => \$MATRIXFILE) or &pirintUsage(); 
+&GetOptions("help" => \$help, "mode=s" => \$mode,  "skip_empty" => \$skipEmpty, "exclude=s" => \$exclude, "vexfile=s" => \$VEXFILE, "jobmatrix=s" => \$MATRIXFILE) or &printUsage(); 
 
 if ($help || $VEXFILE eq "" || $MATRIXFILE eq "")
 {
