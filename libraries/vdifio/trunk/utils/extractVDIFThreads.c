@@ -54,7 +54,7 @@ static void usage()
 int main(int argc, char **argv)
 {
   char buffer[MAX_VDIF_FRAME_BYTES*2];
-  char writebuffer[MAX_VDIF_FRAME_BYTES*(VDIF_MAX_THREAD_ID+1)];
+  char *writebuffer;
   char * pch;
   int threadids[VDIF_MAX_THREAD_ID+1];
   int writefull[VDIF_MAX_THREAD_ID+1];
@@ -76,6 +76,13 @@ int main(int argc, char **argv)
     verbose = 1;
   else
     verbose = 0;
+
+
+  writebuffer = malloc(MAX_VDIF_FRAME_BYTES*(VDIF_MAX_THREAD_ID+1));
+  if (writebuffer==NULL) {
+    fprintf(stderr, "Could not allocate %d kBytes\n", MAX_VDIF_FRAME_BYTES*(VDIF_MAX_THREAD_ID+1)/1024);
+    exit(EXIT_FAILURE);
+  }
 
   input = fopen(argv[1], "r");
   if(input == NULL)
