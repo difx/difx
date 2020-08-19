@@ -27,6 +27,8 @@ parser.add_argument('-s', '--sn', help="SN table version", type=int)
 parser.add_argument("-a", "-av", "--av", default=False, action="store_true", help="Average IFs")
 parser.add_argument("-r", "--rate", default=False, action="store_true", help="Do rate, not delay")
 parser.add_argument("-c", "--clip", help="Ignore values with magnitude greater than this in average", type=float)
+parser.add_argument("-p", "--precision", help="Precision for printing", type=int, default=2)
+parser.add_argument("--scale", help="Multiply values by this number", type=float, default=1)
 parser.add_argument('aipsfile', help="AIPS  file ")
 args = parser.parse_args()
 
@@ -35,6 +37,8 @@ if args.sn is not None: snversion = args.sn
 avgIf = args.av
 rate = args.rate
 clip = args.clip
+p = args.precision
+scale = args.scale
 
 if clip is not None: clip /= 1e9
 
@@ -91,14 +95,14 @@ for row in sntable:
                 rowDelay2 = [row.delay_2]
     else:
         if rate:
-            rowDelay1 = row.rate_1
+            rowDelay1 = row.rate_1 * scale
         else:
-            rowDelay1 = row.delay_1
+            rowDelay1 = row.delay_1 * scale
         if num_pol>1:
             if rate:
-                rowDelay2 = row.rate_2
+                rowDelay2 = row.rate_2 * scale
             else:
-                rowDelay2 = row.delay_2
+                rowDelay2 = row.delay_2 * scale
     for i in range(num_if):
         if abs(rowDelay1[i])>1 or (num_pol > 1 and abs(rowDelay2[i])>1): continue
         delays1[ant][i] += rowDelay1[i]
@@ -110,10 +114,8 @@ def strFlt(x, precision=None):
     if precision is None:
         return str(x)
     else:
-        return "{:.2f}".format(x)
-
-
-p = 2
+        fmt = "{{:.{}f}}".format(p)
+        return fmt.format(x)
 
 if avgIf:
     for ant in delays1:
@@ -135,7 +137,7 @@ if avgIf:
             delays1[ant][0] = delay/N*1e9
             
     for ant in sorted(delays1):
-        print ant, delays1[ant][0]
+        print ant, delays1[ant][0]*scale
 
 else:
 
@@ -143,7 +145,7 @@ else:
         if delaysN[ant]==0:
             print ant, 0
         else:
-            if num_pol>1: 
-                print ant, ','.join([strFlt(delays1[ant][i]/delaysN[ant]*1e9,p)+','+strFlt(delays2[ant][i]/delaysN[ant]*1e9,p) for i in range(num_if)])
+            if num_pol>1:
+                print ant, ','.join([strFlt(delays1[ant][i]/delaysN[ant]*1e9*scale,p)+','+strFlt(delays2[ant][i]/delaysN[ant]*1e9*scale,p) for i in range(num_if)])
             else:
-                print ant, ','.join([str(delays1[ant][i]/delaysN[ant]*1e9) for i in range(num_if)])
+                print ant, ','.join([strFlt(delays1[ant][i]/delaysN[ant]*1e9*scale,p) for i in range(num_if)])
