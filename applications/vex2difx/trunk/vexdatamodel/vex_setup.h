@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2020 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -49,6 +49,7 @@ public:
 	bool hasUniqueRecordChans() const;		// true if each channel's recordChan parameter is unique
 	void assignRecordChans();
 	double firstTuningForIF(const std::string &ifName) const;	// returns Hz
+	double averageTuningForIF(const std::string &ifName) const;	// returns Hz
 	double dataRateMbps() const;
 	void setPhaseCalInterval(float phaseCalIntervalMHz);
 	void setPhaseCalBase(float phaseCalBaseMHz);

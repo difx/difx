@@ -113,6 +113,7 @@ public:
 	bool hasData(const std::string &antName, const VexScan &scan) const;
 	int getPolarizations() const;
 	int getConvertedPolarizations() const;
+	bool isSX() const;
 
 	double obsStart() const { return exper.mjdStart; }
 	double obsStop() const { return exper.mjdStop; }

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2020 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -232,6 +232,19 @@ char VexChannel::bandCode() const
 	}
 
 	return '?';
+}
+
+// returns Hz
+double VexChannel::centerFreq() const
+{
+	if(bbcSideBand == 'U')
+	{
+		return bbcFreq + 0.5*bbcBandwidth;
+	}
+	else
+	{
+		return bbcFreq - 0.5*bbcBandwidth;
+	}
 }
 
 bool operator ==(const VexChannel &c1, const VexChannel &c2)

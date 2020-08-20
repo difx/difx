@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2018 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2020 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -41,6 +41,7 @@ public:
 	VexChannel() : recordChan(-1), subbandId(-1), bbcFreq(0.0), bbcBandwidth(0.0), bbcSideBand(' '), threadId(0) {}
 	void selectTones(float toneIntervalMHz, float toneBaseMHz, enum ToneSelection selection, double guardBandMHz);
 	char bandCode() const;
+	double centerFreq() const;		// returns Hz
 	friend bool operator ==(const VexChannel &c1, const VexChannel &c2);
 	friend bool operator <(const VexChannel &c1, const VexChannel &c2);
 	friend bool sameTuning(const VexChannel &c1, const VexChannel &c2);

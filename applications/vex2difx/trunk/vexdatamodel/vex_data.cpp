@@ -1431,6 +1431,57 @@ int VexData::getConvertedPolarizations() const
 	return rv;
 }
 
+bool VexData::isSX() const
+{
+	bool hasSX = false;
+	bool hasOther = false;
+
+	for(unsigned int modeNum = 0; modeNum < nMode(); ++modeNum)
+	{
+		const VexMode *mode = getMode(modeNum);
+
+		for(std::map<std::string,VexSetup>::const_iterator ssi = mode->setups.begin(); ssi != mode->setups.end(); ++ssi)
+		{
+			const VexSetup &setup = ssi->second;
+			bool hasS, hasX, hasElse;
+
+			hasS = hasX = hasElse = false;
+
+			for(std::map<std::string,VexIF>::const_iterator it = setup.ifs.begin(); it != setup.ifs.end(); ++it)
+			{
+				const VexIF &i = it->second;
+				double averageTune;	// (Hz)
+				
+				averageTune = setup.averageTuningForIF(i.name);
+
+				if(averageTune > 2.0e9 && averageTune < 3.9e9)
+				{
+					hasS = true;
+				}
+				else if(averageTune > 7.9e9 && averageTune < 11.9e9)
+				{
+					hasX = true;
+				}
+				else
+				{
+					hasElse = true;
+				}
+			}
+
+			if(hasX && hasS && !hasElse)
+			{
+				hasSX = true;
+			}
+			else
+			{
+				hasOther = true;
+			}
+		}
+	}
+
+	return hasSX & (!hasOther);
+}
+
 std::ostream& operator << (std::ostream &os, const VexData &x)
 {
 	int n = x.nSource();

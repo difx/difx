@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2020 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -94,6 +94,30 @@ double VexSetup::firstTuningForIF(const std::string &ifName) const	// return Hz
 	}
 
 	return tune;
+}
+
+double VexSetup::averageTuningForIF(const std::string &ifName) const      // return Hz
+{
+	double sum = 0.0;
+	int n = 0;
+
+	for(std::vector<VexChannel>::const_iterator ch=channels.begin(); ch != channels.end(); ++ch)
+	{
+		if(ch->ifName == ifName)
+		{
+			sum += ch->centerFreq();
+			++n;
+		}
+	}
+
+	if(n == 0)
+	{
+		return 0;
+	}
+	else
+	{
+		return sum/n;
+	}
 }
 
 double VexSetup::dataRateMbps() const
