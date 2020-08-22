@@ -22,6 +22,10 @@ VDIFMark5DataStream::~VDIFMark5DataStream()
 {
 }
 
+void VDIFMark5DataStream::startReaderThread()
+{
+}
+
 void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
 {
 }

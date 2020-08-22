@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2016 by Adam Deller and Walter Brisken             *
+ *   Copyright (C) 2006-2020 by Adam Deller and Walter Brisken             *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -55,9 +55,6 @@ VDIFMark6DataStream::VDIFMark6DataStream(const Configuration * conf, int snum, i
 {
 	cinfo << startl << "Starting VDIF Mark6 datastream." << endl;
 	mark6gather = 0;
-	mark6eof = false;
-	nSort = 20;
-	nGap = 100;
 }
 
 VDIFMark6DataStream::~VDIFMark6DataStream()
@@ -70,60 +67,163 @@ void VDIFMark6DataStream::closeMark6()
 {
 	if(mark6gather != 0)
 	{
-		sendMark6Activity(MARK6_STATE_CLOSE, bytecount, fmjd, mbyterate * 8.0);
+		sendMark6Activity(MARK6_STATE_CLOSE, bytecount, vdifmjd, mbyterate * 8.0);
 		closeMark6Gatherer(mark6gather);
 	}
 	mark6gather = 0;
-	mark6eof = false;
 }
 
 void VDIFMark6DataStream::openfile(int configindex, int fileindex)
 {
-  closeMark6();
+	closeMark6();
 
-  cverbose << startl << "Mark6 datastream " << mpiid << " is about to try and open file index " << fileindex << " of configindex " << configindex << endl;
-  if(fileindex >= confignumfiles[configindex]) //run out of files - time to stop reading
-  {
-    dataremaining = false;
-    keepreading = false;
-    cinfo << startl << "Mark6 datastream " << mpiid << " is exiting because fileindex is " << fileindex << ", while confignumfiles is " << confignumfiles[configindex] << endl;
-    return;
-  }
-  
-  dataremaining = true;
+	cinfo << startl << "Mark6 datastream " << mpiid << " is about to try and open file index " << fileindex << " of configindex " << configindex << endl;
+	if(fileindex >= confignumfiles[configindex]) //run out of files - time to stop reading
+	{
+		dataremaining = false;
+		keepreading = false;
+		cinfo << startl << "Mark6 datastream " << mpiid << " is exiting because fileindex is " << fileindex << ", while confignumfiles is " << confignumfiles[configindex] << endl;
+	
+		return;
+	}
 
-  mark6gather = openMark6GathererFromTemplate(datafilenames[configindex][fileindex].c_str());
+	dataremaining = true;
 
-  cverbose << startl << "mark6gather is " << mark6gather << endl;
-  if(mark6gather == 0)
-  {
-    cerror << startl << "Cannot open vdif mark6 data file " << datafilenames[configindex][fileindex] << endl;
-    dataremaining = false;
-    return;
-  }
+	mark6gather = openMark6GathererFromTemplate(datafilenames[configindex][fileindex].c_str());
 
-  if(isMark6GatherComplete(mark6gather) == 0)
-  {
-    cwarn << startl << "Warning: Mark6 file " << datafilenames[configindex][fileindex] << " seems to have an incomplete set of files.  Your weights may suffer if this is true." << endl;
-  }
+	cinfo << startl << "mark6gather is " << mark6gather << endl;
+	if(mark6gather == 0)
+	{
+		cerror << startl << "Cannot open vdif mark6 data file " << datafilenames[configindex][fileindex] << endl;
+		dataremaining = false;
+	
+		return;
+	}
 
-  if(datafilenames[configindex][fileindex][0] == '/')
-    cinfo << startl << "VDIF Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
-  else
-    cinfo << startl << "VDIF Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << " scattered over " << getMark6Root() << "/" << datafilenames[configindex][fileindex] << endl;
-  strcpy(mark6activity.scanName, datafilenames[configindex][fileindex].c_str());
-  sendMark6Activity(MARK6_STATE_OPEN, 0, 0.0, 0.0);
-  bytecount = 0;
-  lastbytecount = 0;
-  msgsenttime = time(0);
+	if(isMark6GatherComplete(mark6gather) == 0)
+	{
+		cwarn << startl << "Warning: Mark6 file " << datafilenames[configindex][fileindex] << " seems to have an incomplete set of files.  Your weights may suffer if this is true." << endl;
+	}
 
-  // change state of module to played
-  string cmd = "mk6state played " + datafilenames[configindex][fileindex];
-  system(cmd.c_str());
+	if(datafilenames[configindex][fileindex][0] == '/')
+	{
+		cinfo << startl << "VDIF Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
+	}
+	else
+	{
+		cinfo << startl << "VDIF Mark6 datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << " scattered over " << getMark6Root() << "/" << datafilenames[configindex][fileindex] << endl;
+	}
+	strcpy(mark6activity.scanName, datafilenames[configindex][fileindex].c_str());
+	sendMark6Activity(MARK6_STATE_OPEN, 0, 0.0, 0.0);
+	bytecount = 0;
+	lastbytecount = 0;
+	msgsenttime = time(0);
 
-  isnewfile = true;
-  //read the header and set the appropriate times etc based on this information
-  initialiseFile(configindex, fileindex);
+	// change state of module to played
+	string cmd = "mk6state played " + datafilenames[configindex][fileindex];
+	system(cmd.c_str());
+
+	isnewfile = true;
+	//read the header and set the appropriate times etc based on this information
+	initialiseFile(configindex, fileindex);
+}
+
+void VDIFMark6DataStream::closefile()
+{
+	if(mark6gather != 0)
+	{
+		closeMark6();
+	}
+}
+
+void VDIFMark6DataStream::startReaderThread()
+{
+	int perr;
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+	/* get some things set up */
+	readbufferwriteslot = 1;
+	lockSlot(readbufferwriteslot, 2);
+
+	perr = pthread_create(&readthread, &attr, VDIFMark6DataStream::launchreadthreadfunction, this);
+	pthread_attr_destroy(&attr);
+
+	if(perr)
+	{
+		cfatal << startl << "Cannot create the Mark6 reader thread!" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+	else
+	{
+		cinfo << startl << "VDIFMark6DataStream::startReaderThread() : starting VDIFMark6DataStream::launchreadthreadfunction ." << endl;
+	}
+}
+
+void VDIFMark6DataStream::readthreadfunction()
+{
+	bool endofscan = false;
+
+	// Lock for readbufferweriteslot=1 shall be set at this point by startReaderThread()
+cinfo << startl << "Starting Mark6 read thread" << endl;
+
+	while(keepreading && !endofscan)
+	{
+		int bytes, curslot;
+
+		bytes = mark6Gather(mark6gather, reinterpret_cast<char *>(readbuffer) + readbufferwriteslot*readbufferslotsize, readbufferslotsize);
+
+		if(bytes < readbufferslotsize)
+		{
+			lastslot = readbufferwriteslot;
+			endindex = lastslot*readbufferslotsize + bytes;	// No data in this slot from here to end
+			cinfo << startl << "At end of scan: shortening Mark6 read to only " << bytes << " bytes " << "(was " << readbufferslotsize << ")" << endl;
+			endofscan = true;
+		}
+
+		if(bytes > 0)
+		{
+			time_t now;
+			
+			bytecount += bytes;
+			now = time(0);
+			if(msgsenttime < now)
+			{
+				long long bytediff;
+
+				bytediff = bytecount - lastbytecount;
+				mbyterate = (float)bytediff / 1000000.0;
+				sendMark6Activity(MARK6_STATE_PLAY, bytecount, vdifmjd, mbyterate * 8.0);
+				msgsenttime = now;
+				lastbytecount = bytecount;
+			}
+		}
+
+		curslot = readbufferwriteslot;
+
+		++readbufferwriteslot;
+		if(readbufferwriteslot >= readbufferslots)
+		{
+			// Note: we always save slot 0 for wrap-around
+			readbufferwriteslot = 1;
+		}
+		lockSlot(readbufferwriteslot, 2);
+		unlockSlot(curslot, 2);
+	}
+	unlockAllSlots(2);
+
+	// No locks shall be set at this point
+}
+
+// this function needs to be rewritten for subclasses.
+void *VDIFMark6DataStream::launchreadthreadfunction(void *self)
+{
+	VDIFMark6DataStream *me = (VDIFMark6DataStream *)self;
+
+	me->readthreadfunction();
+
+	return 0;
 }
 
 void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
@@ -135,9 +235,9 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 	int muxFlags;
 	int rv;
 
-	long long dataoffset = 0;
+	off_t dataoffset = 0;
 	struct vdif_file_summary fileSummary;
-	int jumpseconds, currentdsseconds;
+	int currentdsseconds;
 
 	format = config->getDataFormat(configindex, streamnum);
 	sampling = config->getDSampling(configindex, streamnum);
@@ -224,17 +324,19 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 
 	// Here set readseconds to time since beginning of job
 	readseconds = 86400*(vdiffilesummarygetstartmjd(&fileSummary)-corrstartday) + vdiffilesummarygetstartsecond(&fileSummary)-corrstartseconds + intclockseconds;
-    if (fileSummary.framesPerSecond == 0)
-        {
-        fileSummary.framesPerSecond = 31250;
-        cwarn << startl << "mk6 framesPerSecond is unknown, setting to 31250" << endl;
-        }
+	if(fileSummary.framesPerSecond == 0)
+	{
+		fileSummary.framesPerSecond = framespersecond;
+	}
 
 	readnanoseconds = vdiffilesummarygetstartns(&fileSummary);
 	currentdsseconds = activesec + model->getScanStartSec(activescan, config->getStartMJD(), config->getStartSeconds());
 
 	if(currentdsseconds > readseconds+1)
 	{
+		int64_t jumpseconds;
+		int64_t n, d;	// numerator and demoninator of frame/payload size ratio
+
 		jumpseconds = currentdsseconds - readseconds;
 		if(activens < readnanoseconds)
 		{
@@ -243,11 +345,10 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 
 		// set byte offset to the requested time
 
-		int n, d;	// numerator and demoninator of frame/payload size ratio
 		n = fileSummary.frameSize;
 		d = fileSummary.frameSize - 32;
 
-		dataoffset = static_cast<long long>(jumpseconds*vdiffilesummarygetbytespersecond(&fileSummary)/d*n + 0.5);
+		dataoffset = static_cast<int64_t>(jumpseconds*vdiffilesummarygetbytespersecond(&fileSummary)/d) * n;
 
 		readseconds += jumpseconds;
 	}
@@ -255,460 +356,31 @@ void VDIFMark6DataStream::initialiseFile(int configindex, int fileindex)
 	// Now set readseconds to time since beginning of scan
 	readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
 	
-	// Advance into file if requested
 #if 0
+	// Seeking seems to work on the Mark6 side, but causes very long delay in DiFX getting started.  Not sure why.
 
-FIXME: get seeking working
-
-	if(fileSummary.firstFrameOffset + dataoffset > 0)
+	// Advance into file if requested
+	if(dataoffset > 0)
 	{
-		off_t seek_pos;
-		cverbose << startl << "Mark6 about to seek to byte " << fileSummary.firstFrameOffset << " plus jump " << dataoffset << " to get to the first wanted frame" << endl;
+		int rv;
 
-		seek_pos = mark6_sg_lseek(mark6gather, fileSummary.firstFrameOffset + dataoffset, SEEK_SET);
+		cinfo << startl << "Mark6 about to seek to byte " << dataoffset << " to get to the first wanted frame" << endl;
+		rv = seekMark6Gather(mark6gather, dataoffset);
+		cinfo << startl << "Mark6 seek finished with return value " << rv << endl;
 
-		if(seek_pos != fileSummary.firstFrameOffset + dataoffset)
+		if(rv < 0)
 		{
 			cinfo << startl << "File " << datafilenames[configindex][fileindex] << " ended before the currently desired time" << endl;
 			dataremaining = false;
-			closeMark6();
+			closefile();
 		}
 	}
 #endif
-}
 
+	lockstart = lockend = lastslot = -1;
 
-// This function does the actual file IO, readbuffer management, and VDIF multiplexing.  The result after each
-// call is, hopefully, readbytes of multiplexed data being put into buffer segment with potentially some 
-// read data left over in the read buffer ready for next time
-int VDIFMark6DataStream::dataRead(int buffersegment)
-{
-	unsigned char *destination;
-	int bytes, bytestoread;
-	long long bytediff;
-	int muxReturn;
-	unsigned int bytesvisible;
-	int rbs;
-	time_t now;
-
-	rbs = readbuffersize - (readbuffersize % inputframebytes);
-
-	destination = reinterpret_cast<unsigned char *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
-
-	// Bytes to read
-	bytes = rbs - readbufferleftover;
-
-	// if the file is exhausted, just multiplex any leftover data and return
-	if(mark6eof)
-	{
-		// If there is some data left over, just demux that and send it out
-		if(readbufferleftover > minleftoverdata)
-		{
-			vdifmux(destination, readbytes, readbuffer, readbufferleftover, &vm, startOutputFrameNumber, &vstats);
-			readbufferleftover = 0;
-			bufferinfo[buffersegment].validbytes = vstats.destUsed;
-
-			startOutputFrameNumber = -1;
-		}
-		else
-		{
-			// Really, this should not happen based, but just in case...
-			bufferinfo[buffersegment].validbytes = 0;
-		}
-		dataremaining = false;
-
-		return 0;
-	}
-
-	// execute the file read
-	bytestoread = bytes;
-	bytes = mark6Gather(mark6gather, reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytestoread);
-
-	if(bytes < bytestoread)
-	{
-		// file ran out
-		mark6eof = true;
-	}
-
-	if(bytestoread == 0)
-	{
-		cwarn << startl << "Weird: bytes to read is zero!" << endl;
-		mark6eof = true;
-	}
-
-	bytesvisible = readbufferleftover + bytes;
-
-	// multiplex and corner turn the data
-	muxReturn = vdifmux(destination, readbytes, readbuffer, bytesvisible, &vm, startOutputFrameNumber, &vstats);
-
-	if(muxReturn <= 0)
-	{
-		dataremaining = false;
-		bufferinfo[buffersegment].validbytes = 0;
-		readbufferleftover = 0;
-
-		if(muxReturn < 0)
-		{
-			cerror << startl << "vdifmux() failed with return code " << muxReturn << ", likely input buffer is too small!" << endl;
-		}
-		else
-		{
-			cinfo << startl << "vdifmux returned no data.  Assuming end of file." << endl;
-		}
-
-		return 0;
-	}
-
-	consumedbytes += bytes;
-	bufferinfo[buffersegment].validbytes = vstats.destUsed;
-	bufferinfo[buffersegment].readto = true;
-	if(bufferinfo[buffersegment].validbytes > 0)
-	{
-		// In the case of VDIF, we can get the time from the data, so use that just in case there was a jump
-		bufferinfo[buffersegment].scanns = (((vstats.startFrameNumber) % framespersecond) * 1000000000LL) / framespersecond;
-		// FIXME: warning! here we are assuming no leap seconds since the epoch of the VDIF stream. FIXME
-		// FIXME: below assumes each scan is < 86400 seconds long
-		bufferinfo[buffersegment].scanseconds = ((vstats.startFrameNumber / framespersecond) % 86400) + intclockseconds - corrstartseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
-		if(bufferinfo[buffersegment].scanseconds > 86400/2)
-		{
-			bufferinfo[buffersegment].scanseconds -= 86400;
-		}
-		else if(bufferinfo[buffersegment].scanseconds < -86400/2)
-		{
-			bufferinfo[buffersegment].scanseconds += 86400;
-		}
-
-		readnanoseconds = bufferinfo[buffersegment].scanns;
-		readseconds = bufferinfo[buffersegment].scanseconds;
-
-		bytecount += bytes;
-		now = time(0);
-		if(msgsenttime < now)
-		{
-			bytediff = bytecount - lastbytecount;
-			mbyterate = (float)bytediff / 1000000.0;
-			fmjd = corrstartday + (corrstartseconds + model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + static_cast<double>(readnanoseconds)/1000000000.0)/86400.0;
-			sendMark6Activity(MARK6_STATE_PLAY, bytecount, fmjd, mbyterate * 8.0);
-			msgsenttime = now;
-			lastbytecount = bytecount;
-		}
-
-		// look at difference in data frames consumed and produced and proceed accordingly
-		int deltaDataFrames = vstats.srcUsed/(nthreads*inputframebytes) - vstats.destUsed/(nthreads*(inputframebytes-VDIF_HEADER_BYTES) + VDIF_HEADER_BYTES);
-		if(deltaDataFrames == 0)
-		{
-			// We should be able to preset startOutputFrameNumber.  Warning: early use of this was frought with peril but things seem OK now.
-			startOutputFrameNumber = vstats.startFrameNumber + vstats.nOutputFrame;
-		}
-		else
-		{
-			if(deltaDataFrames < -10)
-			{
-				static int nGapWarn = 0;
-
-				++nGapWarn;
-				if( (nGapWarn & (nGapWarn - 1)) == 0)
-				{
-					cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nGapWarn << endl;
-				}
-			}
-			else if(deltaDataFrames > 10)
-			{
-				static int nExcessWarn = 0;
-
-				++nExcessWarn;
-				if( (nExcessWarn & (nExcessWarn - 1)) == 0)
-				{
-					cwarn << startl << "Data excess of " << (vstats.srcUsed-vstats.destUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nExcessWarn << endl;
-				}
-			}
-			startOutputFrameNumber = -1;
-		}
-	}
-	else
-	{
-		startOutputFrameNumber = -1;
-	}
-
-	readbufferleftover += (bytes - vstats.srcUsed);
-
-	if(readbufferleftover > 0)
-	{
-		memmove(readbuffer, readbuffer+vstats.srcUsed, readbufferleftover);
-	}
-	else if(readbufferleftover < 0)
-	{
-		cwarn << startl << "readbufferleftover = " << readbufferleftover << "; it should never be negative." << endl;
-
-		readbufferleftover = 0;
-	}
-	if(readbufferleftover <= minleftoverdata && mark6eof)
-	{
-		readbufferleftover = 0;
-
-		// here we've in one call both read all the remaining data from a file and multiplexed it all without leftovers
-		dataremaining = false;
-	}
-
-	return bytes;
-}
-
-void VDIFMark6DataStream::mark6ToMemory(int buffersegment)
-{
-	u32 *buf;
-
-	buf = reinterpret_cast<u32 *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
-
-	//do the buffer housekeeping
-	waitForBuffer(buffersegment);
-
-	// This function call abstracts away all the details.  The result is multiplexed data populating the 
-	// desired buffer segment.
-	dataRead(buffersegment);
-
-	// Update estimated read timing variables
-	readnanoseconds += (bufferinfo[buffersegment].nsinc % 1000000000);
-	readseconds += (bufferinfo[buffersegment].nsinc / 1000000000);
-	readseconds += readnanoseconds/1000000000;
-	readnanoseconds %= 1000000000;
-
-	if(vstats.destUsed == 0)
-	{
-		++invalidtime;
-	}
-	else
-	{
-		invalidtime = 0;
-	}
-
-	// did we just cross into next scan?
-	if(readseconds >= model->getScanDuration(readscan))
-	{
-		cinfo << startl << "mark6ToMemory: end of schedule scan " << readscan << " of " << model->getNumScans() << " detected" << endl;
-
-		// find next valid schedule scan
-		do
-		{
-			++readscan;
-		} while(readscan < model->getNumScans() && config->getScanConfigIndex(readscan));
-
-		cinfo << startl << "readscan incremented to " << readscan << endl;
-
-		if(readscan < model->getNumScans())
-		{
-			//if we need to, change the config
-			if(config->getScanConfigIndex(readscan) != bufferinfo[(lastvalidsegment + 1)%numdatasegments].configindex)
-			{
-				updateConfig((lastvalidsegment + 1)%numdatasegments);
-			}
-		}
-		else
-		{
-			// here we just crossed over the end of the job
-			cverbose << startl << "readscan==getNumScans -> keepreading=false" << endl;
-			
-			keepreading = false;
-
-			bufferinfo[(lastvalidsegment+1)%numdatasegments].scan = model->getNumScans()-1;
-			bufferinfo[(lastvalidsegment+1)%numdatasegments].scanseconds = model->getScanDuration(model->getNumScans()-1);
-			bufferinfo[(lastvalidsegment+1)%numdatasegments].scanns = 0;
-		}
-		cinfo << startl << "mark6ToMemory: starting schedule scan " << readscan << endl;
-	}
-
-	if(switchedpower && bufferinfo[buffersegment].validbytes > 0)
-	{
-		static int nt = 0;
-
-		++nt;
-
-                // feed switched power detector
-		if(nt % switchedpowerincrement == 0)
-		{
-			struct mark5_stream *m5stream = new_mark5_stream_absorb(
-				new_mark5_stream_memory(buf, bufferinfo[buffersegment].validbytes),
-				new_mark5_format_generic_from_string(formatname) );
-			if(m5stream)
-			{
-				mark5_stream_fix_mjd(m5stream, config->getStartMJD());
-				switchedpower->feed(m5stream);
-				delete_mark5_stream(m5stream);
-			}
-                }
-	}
-}
-
-void VDIFMark6DataStream::loopfileread()
-{
-	int perr;
-	int numread = 0;
-
-	//lock the outstanding send lock
-	perr = pthread_mutex_lock(&outstandingsendlock);
-	if(perr != 0)
-	{
-		csevere << startl << "Error in initial readthread lock of outstandingsendlock!" << endl;
-	}
-
-	//lock the first section to start reading
-	dataremaining = false;
-	keepreading = true;
-	while(!dataremaining && keepreading)
-	{
-cverbose << startl << "Mark6: opening file " << filesread[bufferinfo[0].configindex] << endl;
-		openfile(bufferinfo[0].configindex, filesread[bufferinfo[0].configindex]++);
-		if(!dataremaining && mark6gather != 0)
-		{
-			closeMark6();
-		}
-	}
-
-cverbose << startl << "Mark6: Opened first usable file" << endl;
-
-	if(keepreading)
-	{
-		mark6ToMemory(numread++);
-		mark6ToMemory(numread++);
-		lastvalidsegment = numread;
-		perr = pthread_mutex_lock(&(bufferlock[numread]));
-		if(perr != 0)
-		{
-			csevere << startl << "Error in initial readthread lock of first buffer section!" << endl;
-		}
-	}
-	else
-	{
-		csevere << startl << "Couldn't find any valid data; will be shutting down gracefully!" << endl;
-	}
-	readthreadstarted = true;
-	perr = pthread_cond_signal(&initcond);
-	if(perr != 0)
-	{
-		csevere << startl << "Datastream readthread error trying to signal main thread to wake up!" << endl;
-	}
-	if(keepreading)
-	{
-		mark6ToMemory(numread++);
-	}
-
-cverbose << startl << "Mark6: Opened first usable file" << endl;
-
-	while(keepreading && (bufferinfo[lastvalidsegment].configindex < 0 || filesread[bufferinfo[lastvalidsegment].configindex] <= confignumfiles[bufferinfo[lastvalidsegment].configindex]))
-	{
-		while(dataremaining && keepreading)
-		{
-			lastvalidsegment = (lastvalidsegment + 1)%numdatasegments;
-
-			//lock the next section
-			perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment]));
-			if(perr != 0)
-			{
-				csevere << startl << "Error in readthread lock of buffer section!" << lastvalidsegment << endl;
-			}
-
-			if(!isnewfile) //can unlock previous section immediately
-			{
-				//unlock the previous section
-				perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));    
-				if(perr != 0)
-				{
-					csevere << startl << "Error (" << perr << ") in readthread unlock of buffer section!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
-				}
-			}
-
-			//do the read
-			mark6ToMemory(lastvalidsegment);
-			numread++;
-
-			if(isnewfile) //had to wait before unlocking file
-			{
-				//unlock the previous section
-				perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
-				if(perr != 0)
-				{
-					csevere << startl << "Error (" << perr << ") in readthread unlock of buffer section!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
-				}
-			}
-			isnewfile = false;
-		}
-		if(keepreading)
-		{
-cverbose << startl << "keepreading is true" << endl;
-			closeMark6();
-
-			//if we need to, change the config
-			int nextconfigindex = config->getScanConfigIndex(readscan);
-			while(nextconfigindex < 0 && readscan < model->getNumScans())
-			{
-				readseconds = 0; 
-				nextconfigindex = config->getScanConfigIndex(++readscan);
-			}
-			if(readscan == model->getNumScans())
-			{
-				bufferinfo[(lastvalidsegment+1)%numdatasegments].scan = model->getNumScans()-1;
-				bufferinfo[(lastvalidsegment+1)%numdatasegments].scanseconds = model->getScanDuration(model->getNumScans()-1);
-				bufferinfo[(lastvalidsegment+1)%numdatasegments].scanns = 0;
-				keepreading = false;
-			}
-			else
-			{
-				if(config->getScanConfigIndex(readscan) != bufferinfo[(lastvalidsegment + 1)%numdatasegments].configindex)
-				{
-					updateConfig((lastvalidsegment + 1)%numdatasegments);
-				}
-				//if the datastreams for two or more configs are common, they'll all have the same 
-				//files.  Therefore work with the lowest one
-				int lowestconfigindex = bufferinfo[(lastvalidsegment+1)%numdatasegments].configindex;
-				for(int i=config->getNumConfigs()-1;i>=0;i--)
-				{
-					if(config->getDDataFileNames(i, streamnum) == config->getDDataFileNames(lowestconfigindex, streamnum))
-					lowestconfigindex = i;
-				}
-				openfile(lowestconfigindex, filesread[lowestconfigindex]++);
-				bool skipsomefiles = (config->getScanConfigIndex(readscan) < 0)?true:false;
-				while(skipsomefiles)
-				{
-					int nextscan = peekfile(lowestconfigindex, filesread[lowestconfigindex]);
-					if(nextscan == readscan || (nextscan == readscan+1 && config->getScanConfigIndex(nextscan) < 0))
-					{
-						openfile(lowestconfigindex, filesread[lowestconfigindex]++);
-					}
-					else
-					{
-						skipsomefiles = false;
-					}
-				}
-			}
-		}
-	}
-	if(mark6gather != 0)
-	{
-		closeMark6();
-	}
-	if(numread > 0)
-	{
-		perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
-		if(perr != 0)
-		{
-			csevere << startl << "Error (" << perr << ") in readthread unlock of buffer section!" << lastvalidsegment << endl;
-		}
-	}
-
-	//unlock the outstanding send lock
-	perr = pthread_mutex_unlock(&outstandingsendlock);
-	if(perr != 0)
-	{
-		csevere << startl << "Error (" << perr << ") in readthread unlock of outstandingsendlock!" << endl;
-	}
-
-	if(lastvalidsegment >= 0)
-	{
-		cverbose << startl << "Datastream readthread is exiting! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
-	}
-	else
-	{
-		cverbose << startl << "Datastream readthread is exiting, after not finding any data at all!" << endl;
-	}
+	// cause reading thread to go ahead and start filling buffers
+	startReaderThread();
 }
 
 int VDIFMark6DataStream::sendMark6Activity(enum Mark6State state, long long position, double dataMJD, float rate)

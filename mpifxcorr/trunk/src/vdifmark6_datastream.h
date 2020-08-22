@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2016 by Adam Deller and Walter Brisken             *
+ *   Copyright (C) 2006-2020 by Adam Deller and Walter Brisken             *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -55,9 +55,17 @@ public:
   VDIFMark6DataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments);
   virtual ~VDIFMark6DataStream();
   virtual void openfile(int configindex, int fileindex);
+  virtual void closefile();
   int sendMark6Activity(enum Mark6State mark6state, long long position, double dataMJD, float rate);
 
 protected:
+
+  virtual void startReaderThread();
+
+  virtual void readthreadfunction();
+
+  static void *launchreadthreadfunction(void *self);
+
  /** 
   * Reads in the header information from a Mk5 formatted file and sets the current segment time information accordingly
   * @param configindex The config index at the current time
@@ -65,24 +73,16 @@ protected:
   */
   virtual void initialiseFile(int configindex, int fileindex);
 
-  virtual int dataRead(int buffersegment);
-
-  virtual void mark6ToMemory(int buffersegment);
-
-  virtual void loopfileread();
-
 private:
   void closeMark6();
 
   DifxMessageMark6Activity mark6activity;
 
   Mark6Gatherer *mark6gather;  /* structure for Mark6 file gathering */
-  bool mark6eof;  /* if true, current file has been exhausted */
   long long bytecount;
   long long lastbytecount;
   time_t msgsenttime;
   float mbyterate;
-  double fmjd;
 };
 
 #endif

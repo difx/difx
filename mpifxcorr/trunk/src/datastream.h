@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2016 by Adam Deller                                *
+ *   Copyright (C) 2006-2020 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -197,6 +197,11 @@ protected:
   * @param fileindex The number of the file to be opened
   */
   virtual void openfile(int configindex, int fileindex);
+
+ /**
+  * Attempts to close the active file, if open
+  */
+  virtual void closefile();
 
  /** 
   * Attempts to open the specified file and peeks at what scan it belongs to

@@ -16,7 +16,9 @@ Version 2.7
 * can compile again without mark6 libraries
 * Remove experimental support for shared memory datastream -- it never worked
 * startdifx: add --wait option to wait until job start time before beginning
-* Post DiFX-2.6
+* Disable (and probably break) Mark5-based interlaced VDIF
+* Update File and Mark6 datastreams for interlaced VDIF to improve multiplexing
+  - TODO: Set nGap to fraction of second rather than fixed number of frames?
 
 Version 2.6
 ~~~~~~~~~~~

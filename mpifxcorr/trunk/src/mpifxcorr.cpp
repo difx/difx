@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2019 by Adam Deller                                *
+ *   Copyright (C) 2006-2020 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -45,7 +45,6 @@
 #include "vdiffile.h"
 #include "vdifnetwork.h"
 #include "vdiffake.h"
-#include "vdifmark5.h"
 #ifdef HAVE_MARK6SG
 #include "mark5bmark6_datastream.h"
 #include "vdifmark6_datastream.h"
@@ -441,9 +440,6 @@ int main(int argc, char *argv[])
         stream = new Mark5BMark6DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
         cverbose << startl << "Opening Mark5BMark6DataStream" << endl;
 #endif
-      } else if(config->isVDIFMark5(datastreamnum)) {
-        stream = new VDIFMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
-        cverbose << startl << "Opening VDIFMark5DataStream" << endl;
       } else if(config->isVDIFNetwork(datastreamnum)) {
         stream = new VDIFNetworkDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
         cverbose << startl << "Opening VDIFNetworkDataStream" << endl;

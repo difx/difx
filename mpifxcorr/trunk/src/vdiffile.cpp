@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2019 by Adam Deller and Walter Brisken             *
+ *   Copyright (C) 2006-2020 by Adam Deller and Walter Brisken             *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -24,21 +24,23 @@
 // $LastChangedDate$
 //
 //============================================================================
+
 #include <cmath>
 #include <cstring>
-#include <mpi.h>
 #include <iomanip>
+#include <unistd.h>
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <mpi.h>
 #include "config.h"
 #include "alert.h"
 #include "vdiffile.h"
 #include "mode.h"
 
-#include <unistd.h>
-
+// Uncomment below if the read buffer locks are to be debugged
+// #define DEBUGLOCKS
 
 /* TODO: 
    - make use of activesec and activescan
@@ -50,8 +52,9 @@
 VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
  : DataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
 {
-	//each data buffer segment contains an integer number of frames, because thats the way config determines max bytes
-	lastconfig = -1;
+	int perr;
+
+	cinfo << startl << "Starting VDIF datastream." << endl;
 
 	// switched power output assigned a name based on the datastream number (MPIID-1)
 	int spf_Hz = conf->getDSwitchedPowerFrequency(id-1);
@@ -71,15 +74,22 @@ VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int
 	startOutputFrameNumber = -1;
 	memset(&vm, 0, sizeof(vm));
 
+	nGapWarn = 0;
+	nExcessWarn = 0;
+
+
 	// Make read buffer a bit bigger than a data segment size so extra bytes can be filtered out 
 	// The excess should be limited to avoid large memory moves of extra data
 	// But the amount of excess should be large enough to encompass all reasonable amounts of interloper data
 	// Here we give 20% overhead plus 8 MB, just to be on the safe side...
 
-	readbuffersize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*5LL/4LL+8000000LL;
-	readbuffersize -= (readbuffersize % 8); // make it a multiple of 8 bytes
+	readbufferslots = 8;
+
+	readbufferslotsize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*21LL/10LL;
+	readbufferslotsize -= (readbufferslotsize % conf->getFrameBytes(0, streamnum));	// always read in chunks of frame size
+	readbuffersize = readbufferslots * readbufferslotsize;
 	readbufferleftover = 0;
-	readbuffer = 0;	// to be allocated via initialize();
+	readbuffer = new unsigned char[readbuffersize];
 
 	estimatedbytes += readbuffersize;
 
@@ -90,6 +100,7 @@ VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int
 	nthreads = 0; // no threads identified yet
 	threads = 0;  // null pointer indicating not yet initialized
 	invalidtime = 0;
+	vdifmjd = 0.0;
 
 	samplingtype = Configuration::REAL;
 	filecheck = Configuration::getFileCheckLevel();
@@ -98,10 +109,43 @@ VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int
 		cwarn << startl << "env var DIFX_FILE_CHECK_LEVEL was set to " << getenv("DIFX_FILE_CHECK_LEVEL") << " which is not a legal value.  Assuming NONE." << endl;
 		filecheck = Configuration::FILECHECKNONE;
 	}
+
+	jobEndMJD = conf->getStartMJD() + (conf->getStartSeconds() + conf->getExecuteSeconds() + 1)/86400.0;
+
+	// Initialize some read thread related variables
+	lockstart = lockend = lastslot = -2;
+	lockmod = readbufferslots - 1;
+	endindex = 0;
+
+	readthreadmutex = new pthread_mutex_t[readbufferslots];
+	slotMutexOwner = new int[readbufferslots];
+	perr = 0;
+	for(int m = 0; m < readbufferslots; ++m)
+	{
+		if(perr == 0)
+		{
+			perr = pthread_mutex_init(readthreadmutex + m, 0);
+		}
+		slotMutexOwner[m] = 0;
+	}
+	if(perr != 0)
+	{
+		cfatal << startl << "Cannot create the reader thread mutexes!" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
 }
 
 VDIFDataStream::~VDIFDataStream()
 {
+	keepreading = false;	// probably this never needs to be made explicit
+
+	for(int m = 0; m < readbufferslots; ++m)
+	{
+		pthread_mutex_destroy(readthreadmutex + m);
+	}
+	delete [] readthreadmutex;
+	delete [] slotMutexOwner;
+
 	cinfo << startl << "VDIF multiplexing statistics: nValidFrame=" << vstats.nValidFrame << " nInvalidFrame=" << vstats.nInvalidFrame << " nDiscardedFrame=" << vstats.nDiscardedFrame << " nWrongThread=" << vstats.nWrongThread << " nSkippedByte=" << vstats.nSkippedByte << " nFillByte=" << vstats.nFillByte << " nDuplicateFrame=" << vstats.nDuplicateFrame << " bytesProcessed=" << vstats.bytesProcessed << " nGoodFrame=" << vstats.nGoodFrame << " nCall=" << vstats.nCall << endl;
 	if(vstats.nWrongThread > 0)
 	{
@@ -135,10 +179,180 @@ VDIFDataStream::~VDIFDataStream()
 	}
 }
 
-void VDIFDataStream::initialise()
+void VDIFDataStream::lockSlot(int slot, int processNum)
 {
-	readbuffer = new unsigned char[readbuffersize];
-	DataStream::initialise();
+	int s = slot % lockmod;
+
+#ifdef DEBUGLOCKS
+	cinfo << startl << "lockSlot(" << slot << ", " << processNum << ") : lock status: ";
+	for(int i = 0; i < readbufferslots; ++i)
+	{
+		cinfo << slotMutexOwner[i];
+	}
+	cinfo << endl;
+#endif
+	if(slot < 0 || slot >= readbufferslots)
+	{
+		csevere << startl << "lockSlot(" << slot << ", " << processNum << ") : slot out of bounds; lockstart=" << lockstart << " lockend=" << lockend << endl;
+	}
+	if(slotMutexOwner[s] == processNum)
+	{
+		csevere << startl << "lockSlot(" << slot << ", " << processNum << ") : slot already owned by " << slotMutexOwner[s] << "; lockstart=" << lockstart << " lockend=" << lockend << endl;
+	}
+#ifdef DEBUGLOCKS
+	else if(slotMutexOwner[s] != 0)
+	{
+		cinfo << startl << "lockSlot(" << slot << ", " << processNum << ") : will wait for " << slotMutexOwner[s] << " to unlock" << endl;
+	}
+#endif
+
+	pthread_mutex_lock(readthreadmutex + s);
+
+	slotMutexOwner[s] = processNum;
+
+}
+
+void VDIFDataStream::unlockSlot(int slot, int processNum)
+{
+	int s = slot % lockmod;
+#ifdef DEBUGLOCKS
+	int nLeft = 0;
+
+	cinfo << startl << "unlockSlot(" << slot << ", " << processNum << ") : lock status: ";
+	for(int i = 0; i < readbufferslots; ++i)
+	{
+		cinfo << slotMutexOwner[i];
+		if(slotMutexOwner[i] == processNum && i != s)
+		{
+			++nLeft;
+		}
+	}
+	cinfo << endl;
+	if(nLeft == 0)
+	{
+		csevere << startl << "unlockSlot(" << slot << ", " << processNum << ") : process unlocking last lock; lockstart=" << lockstart << " lockend=" << lockend << endl;
+	}
+#endif
+	if(slot < 0 || slot >= readbufferslots)
+	{
+		csevere << startl << "unlockSlot(" << slot << ", " << processNum << ") : slot out of bounds; lockstart=" << lockstart << " lockend=" << lockend << endl;
+	}
+	if(slotMutexOwner[s] == 0)
+	{
+		csevere << startl << "unlockSlot(" << slot << ", " << processNum << ") : slot not locked; lockstart=" << lockstart << " lockend=" << lockend << endl;
+	}
+	else if(slotMutexOwner[s] != processNum)
+	{
+		csevere << startl << "unlockSlot(" << slot << ", " << processNum << ") : slot owned by " << slotMutexOwner[s] << "; lockstart=" << lockstart << " lockend=" << lockend << endl;
+	}
+
+	slotMutexOwner[s] = 0;
+
+	pthread_mutex_unlock(readthreadmutex + s);
+}
+
+void VDIFDataStream::unlockAllSlots(int processNum)
+{
+#ifdef DEBUGLOCKS
+	int n = 0;
+#endif
+
+	for(int i = 0; i < readbufferslots; ++i)
+	{
+		if(slotMutexOwner[i] == processNum)
+		{
+			slotMutexOwner[i] = 0;
+			pthread_mutex_unlock(readthreadmutex + i);
+#ifdef DEBUGLOCKS
+			++n;
+#endif
+		}
+	}
+#ifdef DEBUGLOCKS
+	cinfo << startl << "unlockAllSlots(" << processNum << ") : " << n << " slots unlocked" << endl;
+#endif
+}
+
+// this function needs to be rewritten for subclasses.
+void VDIFDataStream::startReaderThread()
+{
+	int perr;
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+	/* get some things set up */
+	readbufferwriteslot = 1;
+	lockSlot(readbufferwriteslot, 2);
+
+	perr = pthread_create(&readthread, &attr, VDIFDataStream::launchreadthreadfunction, this);
+	pthread_attr_destroy(&attr);
+
+	if(perr)
+	{
+		cfatal << startl << "Cannot create the file reader thread!" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+	else
+	{
+		cinfo << startl << "VDIFDataStream::startReaderThread() : starting VDIFDataStream::launchreadthreadfunction ." << endl;
+	}
+}
+
+// This function is launched once per scan to read data and fill the read buffer.  Reading always begins into slot 1.
+void VDIFDataStream::readthreadfunction()
+{
+	bool endofscan = false;
+
+	// Lock for readbufferweriteslot=1 shall be set at this point by startReaderThread()
+
+	while(keepreading && !endofscan)
+	{
+		int bytes, curslot;
+
+		if(input.eof())
+		{
+			bytes = 0;
+		}
+		else
+		{
+			input.read(reinterpret_cast<char *>(readbuffer) + readbufferwriteslot*readbufferslotsize, readbufferslotsize);
+			bytes = input.gcount();
+		}
+
+		if(bytes < readbufferslotsize)
+		{
+			lastslot = readbufferwriteslot;
+			endindex = lastslot*readbufferslotsize + bytes; // No data in this slot from here to end
+			cverbose << startl << "At end of scan: shortening read to only " << bytes << " bytes " << "(was " << readbufferslotsize << ")" << endl;
+			endofscan = true;
+		}
+		
+		curslot = readbufferwriteslot;
+
+		++readbufferwriteslot;
+		if(readbufferwriteslot >= readbufferslots)
+		{
+			// Note: we always save slot 0 for wrap-around
+			readbufferwriteslot = 1;
+		}
+		lockSlot(readbufferwriteslot, 2);
+		unlockSlot(curslot, 2);
+	}
+	unlockAllSlots(2);
+	
+	// No locks shall be set at this point
+}
+
+// this function needs to be rewritten for subclasses.
+void *VDIFDataStream::launchreadthreadfunction(void *self)
+{
+	VDIFDataStream *me = (VDIFDataStream *)self;
+cinfo << startl << "VDIFDataStream::launchreadthreadfunction" << endl;
+
+	me->readthreadfunction();
+
+	return 0;
 }
 
 int VDIFDataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
@@ -332,7 +546,6 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
-
 	if(nrecordedbands > nthreads)
 	{
 		int nBandPerThread = nrecordedbands/nthreads;
@@ -362,6 +575,7 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 	}
 
 	/* Note: the following fanout concept is an explicit one and is not relevant to VDIF in any way */
+
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, vm.outputFrameSize, config->getDDecimationFactor(configindex, streamnum), config->getDAlignmentSeconds(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
 	if(fanout != 1)
 	{
@@ -369,7 +583,7 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
-	cinfo << startl << "VDIFDataStream::initialiseFile format=" << formatname << endl;
+	cinfo << startl << "VDIFDataStream::initialiseFile post-vmux format=" << formatname << endl;
 
 	// Here we need to open the file, read the start time, jump if necessary, and if past end of file, dataremaining = false.  Then set readseconds...
 
@@ -438,6 +652,11 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 	{
 		cverbose << startl << "Not doing peek/seek on file due to setting of DIFX_FILE_CHECK_LEVEL env var." << endl;
 	}
+
+	lockstart = lockend = lastslot = -1;
+
+	// cause reading thread to go ahead and start filling buffers
+	startReaderThread();
 }
 
 int VDIFDataStream::testForSync(int configindex, int buffersegment)
@@ -446,58 +665,84 @@ int VDIFDataStream::testForSync(int configindex, int buffersegment)
 	return 0;
 }
 
-
 // This function does the actual file IO, readbuffer management, and VDIF multiplexing.  The result after each
 // call is, hopefully, readbytes of multiplexed data being put into buffer segment with potentially some 
 // read data left over in the read buffer ready for next time
 int VDIFDataStream::dataRead(int buffersegment)
 {
-	unsigned char *destination;
-	int bytes;
+	// Note: here readbytes is actually the length of the buffer segment, i.e., the amount of data wanted to be "read" by calling processes. 
+	// In this threaded approach the actual size of reads off files, Mark5/Mark6 modules (as implemented in readthreadfunction() ) is generally larger.
+
+	unsigned char *destination = reinterpret_cast<unsigned char *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
+	int n1, n2;	/* slot number range of data to be processed.  Either n1==n2 or n1+1==n2 */
+	unsigned int muxend;
+	int bytesvisible;
 	int muxReturn;
-	unsigned int bytesvisible;
 
-	destination = reinterpret_cast<unsigned char *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
-
-	if(input.eof())
+	if(lockstart < -1)
 	{
-		bytes = 0;
+		csevere << startl << "dataRead lockstart=" << lockstart << " muxindex=" << muxindex << " readbufferslotsize=" << readbufferslotsize << " endindex=" << endindex << " lastslot=" << lastslot << endl;
+	}
+
+	if(lockstart == -1)
+	{
+		// first decoding of scan
+		muxindex = readbufferslotsize;	// start at beginning of slot 1 (second slot)
+		lockstart = lockend = 1;
+		lockSlot(lockstart);
+	}
+
+	n1 = muxindex / readbufferslotsize;
+	if(lastslot >= 0 && muxindex + readbytes > endindex && muxindex < endindex)
+	{
+		// here fewer than readbytes remain so make sure n2 gets set properly
+		n2 = (endindex - 1) / readbufferslotsize;
 	}
 	else
 	{
-		// Bytes to read
-		bytes = readbuffersize - readbufferleftover;
+		n2 = (muxindex + readbytes*2 - 1) / readbufferslotsize;
 	}
 
-	// if the file is exhausted, just multiplex any leftover data and return
-	if(bytes > 0)
+	// note: it should be impossible for n2 >= readbufferslots because a previous memmove and slot shuffling should have prevented this.
+	if(n2 >= readbufferslots)
 	{
-		// execute the file read
-		input.clear();
+		csevere << startl << "dataRead n2=" << n2 << " >= readbufferslots=" << readbufferslots << " muxindex=" << muxindex << " readbufferslotsize=" << readbufferslotsize << " n1=" << n1 << " n2=" << n2 << " endindex=" << endindex << " lastslot=" << lastslot << endl;
+	}
 
-		input.read(reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytes);
-		bytes = input.gcount();
-
-		bytesvisible = readbufferleftover + bytes;
+	while(lockend < n2)
+	{
+		++lockend;
+		lockSlot(lockend);
+	}
+	
+	// muxend contains the last valid buffer read index (minus 1)
+	if(lastslot == n2)
+	{
+		muxend = endindex;
 	}
 	else
 	{
-		bytesvisible = readbufferleftover;
+		muxend = (n2+1)*readbufferslotsize;
 	}
 
-	if(bytesvisible <= 0)
+	if(muxend <= muxindex)
 	{
-		dataremaining = false;
+		csevere << startl << "Weird: muxend=" << muxend << " <= muxindex=" << muxindex << ": this should never be!  readbufferslots=" << readbufferslots << " readbufferslotsize=" << readbufferslotsize << " n1=" << n1 << " n2=" << n2 << " endindex=" << endindex << " lastslot=" << lastslot << endl;
+
 		bufferinfo[buffersegment].validbytes = 0;
-		readbufferleftover = 0;
+		bufferinfo[buffersegment].readto = true;
 
-		cinfo << startl << "bytesvisible == 0.  Assuming end of file." << endl;
+		// Note that this exit strategy likely will hang mpifxcorr
+
+		dataremaining = false;
 
 		return 0;
 	}
 
+	bytesvisible = muxend - muxindex;
+
 	// multiplex and corner turn the data
-	muxReturn = vdifmux(destination, readbytes, readbuffer, bytesvisible, &vm, startOutputFrameNumber, &vstats);
+	muxReturn = vdifmux(destination, readbytes, readbuffer+muxindex, bytesvisible, &vm, startOutputFrameNumber, &vstats);
 
 	if(muxReturn <= 0)
 	{
@@ -507,6 +752,7 @@ int VDIFDataStream::dataRead(int buffersegment)
 
 		if(muxReturn < 0)
 		{
+			unlockSlot(lockend);
 			cerror << startl << "vdifmux() failed with return code " << muxReturn << ", likely input buffer is too small!" << endl;
 		}
 		else
@@ -517,16 +763,19 @@ int VDIFDataStream::dataRead(int buffersegment)
 		return 0;
 	}
 
-	consumedbytes += bytes;
 	bufferinfo[buffersegment].validbytes = vstats.destUsed;
 	bufferinfo[buffersegment].readto = true;
+	consumedbytes += vstats.srcUsed;
 	if(bufferinfo[buffersegment].validbytes > 0)
 	{
+		vdifmjd = getVDIFFrameDMJD((const vdif_header *)(readbuffer+muxindex), vm.inputFramesPerSecond);
+
 		// In the case of VDIF, we can get the time from the data, so use that just in case there was a jump
-		bufferinfo[buffersegment].scanns = (((vstats.startFrameNumber) % framespersecond) * 1000000000LL) / framespersecond;
+		bufferinfo[buffersegment].scanns = ((vstats.startFrameNumber % framespersecond) * 1000000000LL) / framespersecond;
 		// FIXME: warning! here we are assuming no leap seconds since the epoch of the VDIF stream. FIXME
 		// FIXME: below assumes each scan is < 86400 seconds long
-		bufferinfo[buffersegment].scanseconds = ((vstats.startFrameNumber / framespersecond) % 86400) + intclockseconds - corrstartseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
+		bufferinfo[buffersegment].scan = readscan;
+		bufferinfo[buffersegment].scanseconds = (vstats.startFrameNumber / framespersecond)%86400 + intclockseconds - corrstartseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
 		if(bufferinfo[buffersegment].scanseconds > 86400/2)
 		{
 			bufferinfo[buffersegment].scanseconds -= 86400;
@@ -535,34 +784,29 @@ int VDIFDataStream::dataRead(int buffersegment)
 		{
 			bufferinfo[buffersegment].scanseconds += 86400;
 		}
-
+	
 		readnanoseconds = bufferinfo[buffersegment].scanns;
 		readseconds = bufferinfo[buffersegment].scanseconds;
 
 		// look at difference in data frames consumed and produced and proceed accordingly
 		int deltaDataFrames = vstats.srcUsed/(nthreads*inputframebytes) - vstats.destUsed/(nthreads*(inputframebytes-VDIF_HEADER_BYTES) + VDIF_HEADER_BYTES);
-
-		if(deltaDataFrames == 0)
+		if(abs(deltaDataFrames) < vm.nSort)
 		{
 			// We should be able to preset startOutputFrameNumber.  Warning: early use of this was frought with peril but things seem OK now.
 			startOutputFrameNumber = vstats.startFrameNumber + vstats.nOutputFrame;
 		}
 		else
 		{
-			if(deltaDataFrames < -10)
+			if(deltaDataFrames < -(vm.nSort+10))
 			{
-				static int nGapWarn = 0;
-
 				++nGapWarn;
 				if( (nGapWarn & (nGapWarn - 1)) == 0)
 				{
-					cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nGapWarn << endl;
+					cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nGapWarn << " deltaDataFrames=" << deltaDataFrames << endl;
 				}
 			}
-			else if(deltaDataFrames > 10)
+			else if(deltaDataFrames > (vm.nSort+10))
 			{
-				static int nExcessWarn = 0;
-
 				++nExcessWarn;
 				if( (nExcessWarn & (nExcessWarn - 1)) == 0)
 				{
@@ -574,34 +818,73 @@ int VDIFDataStream::dataRead(int buffersegment)
 	}
 	else
 	{
+		cwarn << startl << "validbytes == 0" << endl;
 		startOutputFrameNumber = -1;
 	}
 
-	readbufferleftover += (bytes - vstats.srcUsed);
+	muxindex += vstats.srcUsed;
 
-	if(readbufferleftover > 0)
+	if(lastslot == n2 && (muxindex+minleftoverdata > endindex || bytesvisible < readbytes / 4) )
 	{
-		memmove(readbuffer, readbuffer+vstats.srcUsed, readbufferleftover);
-	}
-	else if(readbufferleftover < 0)
-	{
-		cwarn << startl << "readbufferleftover = " << readbufferleftover << "; it should never be negative." << endl;
-
-		readbufferleftover = 0;
-	}
-	if(readbufferleftover <= minleftoverdata && input.eof())
-	{
-		if(readbufferleftover > 0)
-		{
-			cwarn << startl << "Stopping decoding with " << readbufferleftover << " bytes remaining to be decoded.  minleftoverdata = " << minleftoverdata << endl;
-		}
-		readbufferleftover = 0;
-
-		// here we've in one call both read all the remaining data from a file and multiplexed it all without leftovers
+		// end of useful data for this scan
+		cinfo << startl << "End of data for scan; bytesProcessed=" << vstats.bytesProcessed << " nGoodFrame=" << vstats.nGoodFrame << " nCall=" << vstats.nCall << endl;
 		dataremaining = false;
+		unlockAllSlots();
+		lockstart = lockend = -2;
+	}
+	else if(muxindex == readbufferslotsize*readbufferslots) // special case where the buffer was used up exactly
+	{
+		cinfo << startl << "In special case where full buffer was used up exactly" << endl;
+
+		// start again at the beginning of slot 1
+		muxindex = readbufferslotsize;
+
+		// need to acquire lock for first slot
+		lockSlot(1);
+
+		// unlock existing locks
+		while(lockstart < readbufferslots)
+		{
+			unlockSlot(lockstart);
+			++lockstart;
+		}
+
+		lockstart = 1;
+		lockend = 1;
+	}
+	else
+	{
+		int n3;
+		// note:  in all cases n2 = n1 or n1+1, n3 = n1 or n1+1 and n3 = n2 or n2+1
+		// i.e., n3 >= n2 >= n1 and n3-n1 <= 1
+
+		n3 = muxindex / readbufferslotsize;
+		while(lockstart < n3 && lockstart < lockend)
+		{
+			unlockSlot(lockstart);
+			++lockstart;
+		}
+
+		if(lockstart == readbufferslots - 1 && lastslot != readbufferslots - 1)
+		{
+			// Here it is time to move the data in the last slot to slot 0
+			// Geometry: |  slot 0  |  slot 1  |  slot 2  |  slot 3  |  slot 4  |  slot 5  |
+			// Before:   |          |dddddddddd|          |          |          |      dddd|
+			// After:    |      dddd|dddddddddd|          |          |          |          |
+
+			// Note! No need change locks here as slot 0 and slot readbufferslots - 1 share a lock
+
+			lockstart = 0;
+
+			int newstart = muxindex % readbufferslotsize;
+			memmove(readbuffer + newstart, readbuffer + muxindex, readbuffersize-muxindex);
+			muxindex = newstart;
+
+			lockend = 0;
+		}
 	}
 
-	return bytes;
+	return 0;
 }
 
 void VDIFDataStream::diskToMemory(int buffersegment)
@@ -638,10 +921,17 @@ void VDIFDataStream::diskToMemory(int buffersegment)
 		keepreading = false;
 		dataremaining = false;
 		cinfo << startl << "diskToMemory: end of executeseconds reached.  stopping." << endl;
+
+		if(lockstart >= 0)
+		{
+			unlockAllSlots();
+			pthread_join(readthread, 0);
+			lockstart = lockend = -2;
+		}
 	}
 
 	// did we just cross into next scan?
-	if(readseconds >= model->getScanDuration(readscan))
+	if(readseconds >= model->getScanDuration(readscan) && keepreading)
 	{
 		cinfo << startl << "diskToMemory: end of schedule scan " << readscan << " of " << model->getNumScans() << " detected" << endl;
 
@@ -651,8 +941,6 @@ void VDIFDataStream::diskToMemory(int buffersegment)
 			++readscan;
 		} while(readscan < model->getNumScans() && config->getScanConfigIndex(readscan));
 
-		cinfo << startl << "readscan incremented to " << readscan << endl;
-
 		if(readscan < model->getNumScans())
 		{
 			//if we need to, change the config
@@ -660,6 +948,7 @@ void VDIFDataStream::diskToMemory(int buffersegment)
 			{
 				updateConfig((lastvalidsegment + 1)%numdatasegments);
 			}
+			cinfo << startl << "diskToMemory: starting schedule scan " << readscan << endl;
 		}
 		else
 		{
@@ -667,12 +956,19 @@ void VDIFDataStream::diskToMemory(int buffersegment)
 			cverbose << startl << "readscan==getNumScans -> keepreading=false" << endl;
 			
 			keepreading = false;
+			
+			if(lockstart >= 0)
+			{
+				unlockAllSlots();
+				pthread_join(readthread, 0);
+				lockstart = lockend = -2;
+			}
 
 			bufferinfo[(lastvalidsegment+1)%numdatasegments].scan = model->getNumScans()-1;
 			bufferinfo[(lastvalidsegment+1)%numdatasegments].scanseconds = model->getScanDuration(model->getNumScans()-1);
 			bufferinfo[(lastvalidsegment+1)%numdatasegments].scanns = 0;
+			cinfo << startl << "diskToMemory: no more scans" << endl;
 		}
-		cinfo << startl << "diskToMemory: starting schedule scan " << readscan << endl;
 	}
 
 	if(switchedpower && bufferinfo[buffersegment].validbytes > 0)
@@ -694,173 +990,5 @@ void VDIFDataStream::diskToMemory(int buffersegment)
 				delete_mark5_stream(m5stream);
 			}
                 }
-	}
-}
-
-void VDIFDataStream::loopfileread()
-{
-	int perr;
-	int numread = 0;
-
-	//lock the outstanding send lock
-	perr = pthread_mutex_lock(&outstandingsendlock);
-	if(perr != 0)
-	{
-		csevere << startl << "Error in initial readthread lock of outstandingsendlock!" << endl;
-	}
-
-	//lock the first section to start reading
-	dataremaining = false;
-	keepreading = true;
-	while(!dataremaining && keepreading)
-	{
-		openfile(bufferinfo[0].configindex, filesread[bufferinfo[0].configindex]++);
-		if(!dataremaining)
-		{
-			input.close();
-		}
-	}
-
-	if(keepreading)
-	{
-		diskToMemory(numread++);
-		diskToMemory(numread++);
-		lastvalidsegment = numread;
-		perr = pthread_mutex_lock(&(bufferlock[numread]));
-		if(perr != 0)
-		{
-			csevere << startl << "Error in initial readthread lock of first buffer section!" << endl;
-		}
-	}
-	else
-	{
-		csevere << startl << "Couldn't find any valid data; will be shutting down gracefully!" << endl;
-	}
-	readthreadstarted = true;
-	perr = pthread_cond_signal(&initcond);
-	if(perr != 0)
-	{
-		csevere << startl << "Datastream readthread error trying to signal main thread to wake up!" << endl;
-	}
-	if(keepreading)
-	{
-		diskToMemory(numread++);
-	}
-
-	while(keepreading && (bufferinfo[lastvalidsegment].configindex < 0 || filesread[bufferinfo[lastvalidsegment].configindex] <= confignumfiles[bufferinfo[lastvalidsegment].configindex]))
-	{
-		while(dataremaining && keepreading)
-		{
-			lastvalidsegment = (lastvalidsegment + 1)%numdatasegments;
-
-			//lock the next section
-			perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment]));
-			if(perr != 0)
-			{
-				csevere << startl << "Error in readthread lock of buffer section!" << lastvalidsegment << endl;
-			}
-
-			if(!isnewfile) //can unlock previous section immediately
-			{
-				//unlock the previous section
-				perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));    
-				if(perr != 0)
-				{
-					csevere << startl << "Error (" << perr << ") in readthread unlock of buffer section!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
-				}
-			}
-
-			//do the read
-			diskToMemory(lastvalidsegment);
-			numread++;
-
-			if(isnewfile) //had to wait before unlocking file
-			{
-				//unlock the previous section
-				perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
-				if(perr != 0)
-				{
-					csevere << startl << "Error (" << perr << ") in readthread unlock of buffer section!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
-				}
-			}
-			isnewfile = false;
-		}
-		if(keepreading)
-		{
-cverbose << startl << "keepreading is true" << endl;
-			input.close();
-
-			//if we need to, change the config
-			int nextconfigindex = config->getScanConfigIndex(readscan);
-			while(nextconfigindex < 0 && readscan < model->getNumScans())
-			{
-				readseconds = 0; 
-				nextconfigindex = config->getScanConfigIndex(++readscan);
-			}
-			if(readscan == model->getNumScans())
-			{
-				bufferinfo[(lastvalidsegment+1)%numdatasegments].scan = model->getNumScans()-1;
-				bufferinfo[(lastvalidsegment+1)%numdatasegments].scanseconds = model->getScanDuration(model->getNumScans()-1);
-				bufferinfo[(lastvalidsegment+1)%numdatasegments].scanns = 0;
-				keepreading = false;
-			}
-			else
-			{
-				if(config->getScanConfigIndex(readscan) != bufferinfo[(lastvalidsegment + 1)%numdatasegments].configindex)
-				{
-					updateConfig((lastvalidsegment + 1)%numdatasegments);
-				}
-				//if the datastreams for two or more configs are common, they'll all have the same 
-				//files.  Therefore work with the lowest one
-				int lowestconfigindex = bufferinfo[(lastvalidsegment+1)%numdatasegments].configindex;
-				for(int i=config->getNumConfigs()-1;i>=0;i--)
-				{
-					if(config->getDDataFileNames(i, streamnum) == config->getDDataFileNames(lowestconfigindex, streamnum))
-					lowestconfigindex = i;
-				}
-				openfile(lowestconfigindex, filesread[lowestconfigindex]++);
-				bool skipsomefiles = (config->getScanConfigIndex(readscan) < 0)?true:false;
-				while(skipsomefiles)
-				{
-					int nextscan = peekfile(lowestconfigindex, filesread[lowestconfigindex]);
-					if(nextscan == readscan || (nextscan == readscan+1 && config->getScanConfigIndex(nextscan) < 0))
-					{
-						openfile(lowestconfigindex, filesread[lowestconfigindex]++);
-					}
-					else
-					{
-						skipsomefiles = false;
-					}
-				}
-			}
-		}
-	}
-	if(input.is_open())
-	{
-		input.close();
-	}
-	if(numread > 0)
-	{
-		perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
-		if(perr != 0)
-		{
-			csevere << startl << "Error (" << perr << ") in readthread unlock of buffer section!" << lastvalidsegment << endl;
-		}
-	}
-
-	//unlock the outstanding send lock
-	perr = pthread_mutex_unlock(&outstandingsendlock);
-	if(perr != 0)
-	{
-		csevere << startl << "Error (" << perr << ") in readthread unlock of outstandingsendlock!" << endl;
-	}
-
-	if(lastvalidsegment >= 0)
-	{
-		cverbose << startl << "Datastream readthread is exiting! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
-	}
-	else
-	{
-		cverbose << startl << "Datastream readthread is exiting, after not finding any data at all!" << endl;
 	}
 }

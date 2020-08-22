@@ -3,13 +3,11 @@ mark5_files = \
 	mark5utils.cpp \
 	nativemk5.cpp \
 	mark5bmark5.cpp \
-	vdifmark5.cpp \
 	watchdog.cpp
 else
 mark5_files = \
 	nativemk5_stubs.cpp \
-	mark5bmark5_stubs.cpp \
-	vdifmark5_stubs.cpp
+	mark5bmark5_stubs.cpp
 endif
 
 if WITH_MARK6SG

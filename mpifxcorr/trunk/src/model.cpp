@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Adam Deller                                     *
+ *   Copyright (C) 2009-2020 by Adam Deller                                *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at  http://cira.ivec.org/dokuwiki/doku.php/difx/documentation for     *
@@ -793,6 +793,18 @@ bool Model::readPolynomialSamples(istream * calcinput)
           }
           if(key.find("PAR") != string::npos) { //look for optional "PAR ANGLE" parallactic angle specification
             polyok = polyok && fillPolyRow(scantable[i].parang[j][k][l], line, polyorder+1);
+            config->getinputkeyval(input, &key, &line);
+          }
+          if(key.find("STA X") != string::npos) { //look for optional "STA X" station position in J2000
+            // Do nothing with it...
+            config->getinputkeyval(input, &key, &line);
+          }
+          if(key.find("STA Y") != string::npos) { //look for optional "STA Y" station position in J2000
+            // Do nothing with it...
+            config->getinputkeyval(input, &key, &line);
+          }
+          if(key.find("STA Z") != string::npos) { //look for optional "STA Z" station position in J2000
+            // Do nothing with it...
             config->getinputkeyval(input, &key, &line);
           }
           polyok = polyok && fillPolyRow(scantable[i].u[j][k][l], line, polyorder+1);
