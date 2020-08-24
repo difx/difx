@@ -29,11 +29,20 @@ exportDir="EXPORT"
 filesDir="FILES"
 snrDir = "SNR"
 versionPrefix="v"
+
+geoFTPServer = "ivs.bkg.bund.de"
     
 def ftpDownload(url, remotePath,localPath):
+
     ftp = ftplib.FTP(url, 'anonymous', 'anonymous')
     ftp.set_pasv(1)
-    filelist = ftp.nlst(remotePath)
+    filelist = []
+
+    try:
+      filelist = ftp.nlst(remotePath)
+    #except ftplib.error_perm, resp:
+    except ftplib.error_temp as e:
+        print (e)
 
     for remotefile in filelist:
         file = os.path.basename(remotefile)
@@ -167,10 +176,10 @@ def expPrepare(code):
         # get geodetic files
         if not os.path.exists(filesDir):
             os.mkdir(filesDir)
-        ftpDownload("cddis.gsfc.nasa.gov", "/vlbi/ivsdata/aux/%s/%s/*.log" % (year, lower(code)),filesDir)
-        ftpDownload("cddis.gsfc.nasa.gov", "/vlbi/ivsdata/aux/%s/%s/*.skd" % (year, lower(code)),filesDir)
-        ftpDownload("cddis.gsfc.nasa.gov", "/vlbi/ivsdata/aux/%s/%s/*.vex" % (year, lower(code)),filesDir)
-        ftpDownload("cddis.gsfc.nasa.gov", "/vlbi/ivsdata/aux/%s/%s/*.txt" % (year, lower(code)),filesDir)
+        ftpDownload(geoFTPServer, "/pub/vlbi/ivsdata/aux/%s/%s/*.log" % (year, lower(code)),filesDir)
+        ftpDownload(geoFTPServer, "/pub/vlbi/ivsdata/aux/%s/%s/*.skd" % (year, lower(code)),filesDir)
+        ftpDownload(geoFTPServer, "/pub/vlbi/ivsdata/aux/%s/%s/*.vex" % (year, lower(code)),filesDir)
+        ftpDownload(geoFTPServer, "/pub/vlbi/ivsdata/aux/%s/%s/*.txt" % (year, lower(code)),filesDir)
         
 
     return
