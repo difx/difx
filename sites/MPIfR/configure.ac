@@ -1,4 +1,4 @@
-AC_INIT([mpifr_site], [2.6] )
+AC_INIT([mpifr_site], [2.7] )
 
 
 AM_INIT_AUTOMAKE
@@ -11,5 +11,6 @@ AC_OUTPUT([ \
 	difxdb/prepDifx/Makefile \
 	misc/getObsFiles/Makefile \
 	misc/datacheckers/Makefile \
-	hops/Makefile
+	hops/Makefile \
+	mark6/Makefile
 ])
