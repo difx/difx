@@ -242,7 +242,7 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 				f = cfg.freqs[confq]
 				fstr = "%.6f MHz %3s at %.6f MHz" % (f.bandwidth, 'LSB' if f.lsb else 'USB', f.freq)
 				print((" "*2*indent) + "fq %3d bw %s" % (confq, fstr))
-
+		print((" "*1*indent) + "%d outputbands in total" % (nfreqs))
 		print("")
 
 if __name__ == "__main__":
