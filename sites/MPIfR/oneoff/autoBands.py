@@ -466,12 +466,12 @@ class Autobands:
 				outputbands['flow'].append(foutstart)
 				outputbands['inputs'].append([[foutstart, self.outputbw]])
 				if self.verbosity > 1:
-					print ('Autobands::outputbands()    adding %.6f MHz bw from span %d @ %.6f MHz to fq %.6f MHz' % (self.outputbw,span,(foutstart-f0)*1e-6,foutstart))
+					print ('Autobands::outputbands()    case 1 adding %10.6f MHz bw from span %3d @ %10.6f MHz to fq %10.6f MHz' % (self.outputbw*1e-6,span,(foutstart-f0)*1e-6,foutstart*1e-6))
 				foutstart += self.outputbw
 
 			# Generate band in Case 2 : pieces of span(s) for a later complete band, patch over to next span(s)
 			bw_remain = f1 - foutstart
-			if (bw_remain) > 0 and self.detectedspans['continued'][span]:
+			if (bw_remain > 0) and self.detectedspans['continued'][span]:
 
 				# If overlap in rec bands at least at one antenna, may
 				# try a slight shift to begin at a more 'integer' MHz
@@ -493,7 +493,7 @@ class Autobands:
 					bw_utilized = min(bw_needed, bw_remain)
 					bw_needed -= bw_utilized
 					if self.verbosity > 1:
-						print ('Autobands::outputbands()    case 2 adding %10.6f MHz bw from span %d @ %.6f MHz to fq %10.6f MHz, remain %10.6f MHz' % (bw_utilized*1e-6,span,(slicestartfreq-f0)*1e-6,foutstart*1e-6,bw_needed*1e-6))
+						print ('Autobands::outputbands()    case 2 adding %10.6f MHz bw from span %3d @ %10.6f MHz to fq %10.6f MHz, remain %10.6f MHz' % (bw_utilized*1e-6,span,(slicestartfreq-f0)*1e-6,foutstart*1e-6,bw_needed*1e-6))
 					bw_inputs.append([slicestartfreq, bw_utilized])
 					slicestartfreq += bw_utilized
 					bw_remain = f1 - slicestartfreq
