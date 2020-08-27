@@ -30,9 +30,9 @@
 #define EXP_CODE_LEN 4
 #define NUMFILS 500                 // max number of type 1 output files
 #define MAGLIM 10000.0              // threshold magnitude for vis. rejection
-#define MAX_FPPAIRS 5000            // dimensioned for b-lines x chans x pol_prods
-#define MAX_DFRQ 200                // allowed max number of *DiFX* frequencies
-#define NVRMAX 4000000              // max # of vis records
+#define MAX_FPPAIRS 10000           // dimensioned for b-lines x chans x pol_prods
+#define MAX_DFRQ 800                // allowed max number of *DiFX* frequencies
+#define NVRMAX 8000000              // max # of vis records
 
 enum booleans {FALSE, TRUE};
 
