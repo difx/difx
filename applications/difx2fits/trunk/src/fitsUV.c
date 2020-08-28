@@ -356,16 +356,17 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentr
 	dv->mjdLastRecord = (double *)calloc(D->nAntenna, sizeof(double));
 
 	/* check for polarization confusion */
-        if ( D->AntPol == 0 ){
-   	     if( ( (polMask & DIFXIO_POL_RL) != 0 && (polMask & DIFXIO_POL_XY) != 0 ) || 
-	           (polMask & DIFXIO_POL_ERROR) != 0 ||
-	           (polMask == 0) )
-	      {
-		fprintf(stderr, "Error: bad polarization combinations : %x\n", polMask);
-		deleteDifxVis(dv);
+	if(D->AntPol == 0)
+	{
+		if(isMixedPolMask(polMask) ||
+			(polMask & DIFXIO_POL_ERROR) != 0 ||
+			(polMask == 0))
+		{
+			fprintf(stderr, "Error: bad polarization combinations : %x\n", polMask);
+			deleteDifxVis(dv);
 
-		return 0;
-	      }
+			return 0;
+		}
 
 	      if(polMask & DIFXIO_POL_R)
 	      {

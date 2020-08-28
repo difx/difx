@@ -1095,20 +1095,21 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 
 	for(c = 0; c < D->nConfig; ++c)
 	{
-	        if ( D->AntPol == 0 ){
-		   if((D->config[c].polMask & DIFXIO_POL_RL) && (D->config[c].polMask & DIFXIO_POL_XY))
-		   {
-			fprintf(stderr, "Error: both linear and circular polarizations are present.  This combination is still experimental. Use option --antpol if you need.\n");
+		if (D->AntPol == 0)
+		{
+			if(isMixedPolMask(D->config[c].polMask))
+			{
+				fprintf(stderr, "Error: both linear and circular polarizations are present. This combination is still experimental. Use option --antpol if you need.\n");
 
-			return 0;
-		   }
+				return 0;
+			}
 
-		   if(D->config[c].polMask & DIFXIO_POL_ERROR)
-		   {
-			fprintf(stderr, "Error: polarization ather than R, L, X or Y is present. Use option --antpol.\n");
+			if(D->config[c].polMask & DIFXIO_POL_ERROR)
+			{
+				fprintf(stderr, "Error: polarization ather than R, L, X or Y is present. Use option --antpol.\n");
 
-			return 0;
-		   }
+				return 0;
+			}
 		}
 	}
 

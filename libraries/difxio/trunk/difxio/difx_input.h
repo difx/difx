@@ -72,6 +72,7 @@
 #define DIFXIO_POL_ERROR		0x1000
 #define DIFXIO_POL_RL			(DIFXIO_POL_R | DIFXIO_POL_L)
 #define DIFXIO_POL_XY			(DIFXIO_POL_X | DIFXIO_POL_Y)
+#define DIFXIO_POL_HV			(DIFXIO_POL_H | DIFXIO_POL_V)
 
 #define DIFXIO_DEFAULT_POLY_ORDER	5
 #define DIFXIO_DEFAULT_POLY_INTERVAL	120
@@ -1040,6 +1041,7 @@ void DifxInputSetThreads(DifxInput *D, int nThread);
 int DifxInputLoadThreads(DifxInput *D);
 int DifxInputWriteThreads(const DifxInput *D);
 int polMaskValue(char polName);
+int isMixedPolMask(const int polmask);
 void resetDifxInputCompatibilityStatistics();
 unsigned int printDifxInputCompatibilityStatistics(int verbose);
 

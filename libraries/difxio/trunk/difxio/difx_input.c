@@ -405,6 +405,26 @@ int polMaskValue(char polName)
 	}
 }
 
+int isMixedPolMask(const int polmask)
+{
+	int poltypeCount = 0;
+
+	if (polmask & DIFXIO_POL_RL)
+	{
+		poltypeCount++;
+	}
+	if (polmask & DIFXIO_POL_XY)
+	{
+		poltypeCount++;
+	}
+	if (polmask & DIFXIO_POL_HV)
+	{
+		poltypeCount++;
+	}
+
+	return (poltypeCount > 1);
+}
+
 /* This function populates the DifxFreqSet array
  * @param D DifxInput object
  * @return -1 in case of error, 0 otherwise
@@ -550,13 +570,13 @@ static int generateFreqSets(DifxInput *D)
 
 		if(dc->polMask & DIFXIO_POL_ERROR || dc->polMask == 0)
 		{
-			fprintf(stderr, "Error: generateFreqSets: polMask = 0x%03x is unsupported!\n", dc->polMask);
+			fprintf(stderr, "Error: generateFreqSets: polMask = 0x%03x is unsupported by FITS-IDI!\n", dc->polMask);
 
 			return -1;
 		}
-		else if((dc->polMask & DIFXIO_POL_RL) && (dc->polMask & DIFXIO_POL_XY)  && D->AntPol ==  0 )
+		else if(isMixedPolMask(dc->polMask & DIFXIO_POL_RL) && D->AntPol == 0)
 		{
-			fprintf(stderr, "Warning: generateFreqSets: polMask = 0x%03x is unsupported!\n", dc->polMask);
+			fprintf(stderr, "Warning: generateFreqSets: polMask = 0x%03x is unsupported by FITS-IDI!\n", dc->polMask);
 		}
 
 		/* populate polarization matrix for this configuration */
