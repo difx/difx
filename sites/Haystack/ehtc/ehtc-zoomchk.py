@@ -19,7 +19,7 @@ def parseOptions():
     des = parseOptions.__doc__
     epi = ''
     use = '%(prog)s [options] [input_file [...]]\n  Version'
-    use += '$Id: ehtc-zoomchk.py 2316 2018-05-15 18:28:21Z gbc $'
+    use += '$Id: ehtc-zoomchk.py 2795 2019-08-02 13:39:23Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     # essential options
     parser.add_argument('-v', '--verbose', dest='verb',
