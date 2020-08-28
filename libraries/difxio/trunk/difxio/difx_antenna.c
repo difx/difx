@@ -148,8 +148,8 @@ DifxAntenna *newDifxAntennaArray(int nAntenna)
 	for(a = 0; a < nAntenna; ++a)
 	{
 		da[a].spacecraftId = -1;
-		da[a].pol[0] = " ";
-		da[a].pol[1] = " ";
+		da[a].pol[0] = ' ';
+		da[a].pol[1] = ' ';
 		for(i = 0;  i <MAX_MODEL_ORDER; ++i)
 		{
 			da[a].clockcoeff[i] = 0.0;
