@@ -25,17 +25,25 @@
 #============================================================================
 
 
+#$FINALS_SITE = "https://cddis.nasa.gov/archive";
+$FINALS_SITE = "ftp://gdc.cddis.eosdis.nasa.gov";
+$FINALS_PATH = "vlbi/gsfc/ancillary/solve_apriori";
 $FINALS_FILE = "usno_finals.erp";
-$FINALS_URL = "ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/$FINALS_FILE";
+$FINALS_URL = "$FINALS_SITE/$FINALS_PATH/$FINALS_FILE";
+# previously:
+#$FINALS_URL = "ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/$FINALS_FILE";
+
+# lip service to anon ftp security
+if (not exists $ENV{EMAIL_ADDR}) { &printUsage && die("\n"); }
 
 $eopCount = 0;
 $eopSuffix = "";
 
 if ($#ARGV < 1)
 {
-	&printUsage && die("\n");
+        &printUsage && die("\n");
 }
-	
+        
 $date = $ARGV[0];
 $numEop = $ARGV[1];
 if ($#ARGV == 2)
@@ -46,15 +54,15 @@ if ($#ARGV == 2)
 # split date into year and doy, calculate julian date
 if ($date =~ /(\d{4})-(\d+)/)
 {
-	$year = $1;
-	$doy = $2;
-	#print "year: $year $doy\n";
-	#$jdate = &calcJD($year,$doy, 23, 59, 59);
-	$jdate = &calcJD($year,$doy, 0, 0, 0);
+        $year = $1;
+        $doy = $2;
+        #print "year: $year $doy\n";
+        #$jdate = &calcJD($year,$doy, 23, 59, 59);
+        $jdate = &calcJD($year,$doy, 0, 0, 0);
 }
 else
 {
-	&printUsage && die("\n");
+        &printUsage && die("\n");
 }
 
 
@@ -72,16 +80,16 @@ elsif ($jdate > 2457203.5)
 # 30. Jun 2012
 elsif ($jdate > 2456109.5) 
 {
-	$TAIUTC = 35;
+        $TAIUTC = 35;
 }
 else
 {
-	$TAIUTC = 34;
+        $TAIUTC = 34;
 }
 
 # get the solution file
 system ("rm $FINALS_FILE");
-system ("wget $FINALS_URL");
+system ("curl -u anonymous:$ENV{EMAIL_ADDR} --ftp-ssl $FINALS_URL > $FINALS_FILE");
 sleep(1);
 
 open(INFILE, $FINALS_FILE) || die("Could not open file: $FINALS_FILE");
@@ -92,41 +100,41 @@ print OUTFILE  "\$EOP;\n";
 # parse the file
 while (<INFILE>)
 {
-	# skip comment lines
-	if ($_ =~ /#/)
-	{
-		next;
-	}
+        # skip comment lines
+        if ($_ =~ /#/)
+        {
+                next;
+        }
 
-	@fields = split(/\s+/, $_);
+        @fields = split(/\s+/, $_);
 
-	# check if first column contains a valid JD
-	if ($fields[0] =~ /\d+\.\d+/)
-	{	
+        # check if first column contains a valid JD
+        if ($fields[0] =~ /\d+\.\d+/)
+        {       
 
-		if (($fields[0] ge $jd) && ($eopCount < $numEop))
-		{
-			#print "$eopCount $numEop\n";
-			#print "0:$fields[0] 1:$fields[1] 2:$fields[2] 3:$fields[3]\n";
+                if (($fields[0] ge $jd) && ($eopCount < $numEop))
+                {
+                        #print "$eopCount $numEop\n";
+                        #print "0:$fields[0] 1:$fields[1] 2:$fields[2] 3:$fields[3]\n";
 
-			$xWobble = $fields[1] / 10.0;
-			$yWobble = $fields[2] /10.0;
-			$ut1utc  = $fields[3]  / 1e6 + $TAIUTC; 
-			$eopDay = $doy + $eopCount;
+                        $xWobble = $fields[1] / 10.0;
+                        $yWobble = $fields[2] /10.0;
+                        $ut1utc  = $fields[3]  / 1e6 + $TAIUTC; 
+                        $eopDay = $doy + $eopCount;
 
-			print OUTFILE "  def EOP$eopDay$eopSuffix;\n";
-			print OUTFILE "    TAI-UTC= $TAIUTC sec;\n";
-			print OUTFILE "    A1-TAI= 0 sec;\n";
-			print OUTFILE "    eop_ref_epoch=$year" . "y$eopDay" . "d;\n";
-			print OUTFILE "    num_eop_points=1;\n";
-			print OUTFILE "    eop_interval=24 hr;\n";
-			printf OUTFILE ("    ut1-utc  = %.6f sec;\n", $ut1utc);
-			printf OUTFILE ("    x_wobble = %.6f asec;\n", $xWobble);
-			printf OUTFILE ("    y_wobble = %.6f asec;\n", $yWobble);
-			print OUTFILE "  enddef;\n";
-			$eopCount += 1;
-		}
-	}
+                        print OUTFILE "  def EOP$eopDay$eopSuffix;\n";
+                        print OUTFILE "    TAI-UTC= $TAIUTC sec;\n";
+                        print OUTFILE "    A1-TAI= 0 sec;\n";
+                        print OUTFILE "    eop_ref_epoch=$year" . "y$eopDay" . "d;\n";
+                        print OUTFILE "    num_eop_points=1;\n";
+                        print OUTFILE "    eop_interval=24 hr;\n";
+                        printf OUTFILE ("    ut1-utc  = %.6f sec;\n", $ut1utc);
+                        printf OUTFILE ("    x_wobble = %.6f asec;\n", $xWobble);
+                        printf OUTFILE ("    y_wobble = %.6f asec;\n", $yWobble);
+                        print OUTFILE "  enddef;\n";
+                        $eopCount += 1;
+                }
+        }
 }
 
 print "Output written to EOP.txt\n";
@@ -160,16 +168,19 @@ sub printUsage
 {
         print "----------------------------------------------------------------------\n";
         print " Script to obtain EOP values from this URL:\n";
-	print " $FINALS_URL\n";
-	print " The EOPS are reformated to a format that can be used in the vex file \n";
+        print " $FINALS_URL\n";
+        print " The EOPS are reformated to a format that can be used in the vex file.\n";
         print "----------------------------------------------------------------------\n";
-        print "\nUsage: $0 yyyy-doy numEOP [EOPsuffix]\n\n";
+        print "\nUsage: EMAIL_ADDR=you\@domain $0 yyyy-doy numEOP [EOPsuffix]\n\n";
         print "yyyy-doy: the year and day-of-year of the first EOP value to obtain\n";
         print "numEOP:  the number of EOPs to get\n";
-        print "if provided, EOPsuffix will be appended to the EOP def name.\n";
-        print "output will be written to EOP.txt\n\n";
+        print "EOPsuffix: (optional) is appended to the EOP def name.\n";
+        print "output will be written to EOP.txt and the usno_finals.erp saved.\n\n";
         print "----------------------------------------------------------------------\n";
-	exit;
+        print "The script uses anonymous ftp which requires a valid user email which\n";
+        print "must be supplied via an environment variable EMAIL_ADDR\n";
+        print "----------------------------------------------------------------------\n";
+        exit;
 }
 
 
