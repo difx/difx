@@ -57,6 +57,11 @@ def parseOptions():
         metavar='FILE', default='',
         help='difx2mark4 station code file augmented with a column'
             + ' of number of polarizations per station')
+    inputs.add_argument('-x', '--usev2x', dest='usev2x',
+        action='store_true', default=False,
+        help='allow use of VEX2XML in input processing, this is a '
+            + 'different path to gathering information not yet '
+            + 'thoroughly tested and thus should not be used')
     action.add_argument('-A', '--antennas', dest='antennas',
         action='store_true', default=False,
         help='provide a list of antennas')
@@ -477,7 +482,7 @@ def adjustOptions(o):
         tcmd = 'type VEX2XML >/dev/null'
         if not o.verb: tcmd = tcmd + ' 2>&1'
         rc = os.system(tcmd)
-        if rc == 0: doParseVex(o)
+        if rc == 0 and o.usev2x: doParseVex(o)
         if o.vextree:
             doFindProj(o)
             doFindSrcs(o)
@@ -681,12 +686,22 @@ def doGroups(o, doLabels):
         else:                                                    clss = 'cal'
         ans.add(':'.join([proj,targ,clss]))
     if doLabels:
-        print 'false && { # start with a short job'
+        #print 'false && { # start with a short job'
+        last='zippo'
+        print '# The tests with exit are a reminder to make adjustments above'
         for a in sorted(list(ans)):
             proj,targ,clss = a.split(':')
+            if proj != last and last != 'zippo':
+                print '}'
+            if proj != last:
+                print '[ -z "$QA2_' + proj + '" ] && echo QA2 error && exit 1'
+                print '$QA2_' + proj + ' && {'
+                print '  echo processing QA2_' + proj + ' job block.'
             exprt=('  export proj=%s targ=%s class=%s' % tuple(a.split(':')))
             print  '%-54s    label=%s-%s' % (exprt,proj,targ)
-            print  '  nohup $ehtc/ehtc-jsgrind.sh < /dev/null > $label-$subv.log 2>&1'
+            print ('  nohup $ehtc/ehtc-jsgrind.sh < /dev/null ' +
+                '> $label-$subv.log 2>&1' )
+            last = proj
         print '}'
     else:
         for a in sorted(list(ans)):

@@ -65,7 +65,9 @@ export flab=''      # re-fourfitting version (if needed)
 export expn=3...    # HOPS exp # (from Mike Titus)
 
 # $dpfu is estimated from QA2 products, see one-time setup below
+# it must be coordinated with the other correlator
 export dpfu=0.0308574
+
 # a list of stations in best order for polconvert plots
 export scmp='PV,MG,SW,AX,LM,SZ,GL,MM'
 # number of parallel grinds to schedule (< number physical cores)
@@ -173,13 +175,21 @@ for pc in $plst; do
 echo -n 'CHECK: ' $opts '== ' ; cat $pc.README.DRIVEPOLCONVERT
 done
 
-# for every QA2 package, estimate a common $dpfu forr the campaign
+# for every QA2 package, estimate a common $dpfu for the campaign
 # dpfu (degrees / flux unit) appears in the ANTAB files and it is a
 # somewhat arbitrary choice.  $pcal.APP.artifacts is a link to find tables
-ln -s $pcal.qa2-diagnostics $pcal.APP.artifacts
-casa --nologger --nologfile -c $DIFXROOT/share/polconvert/DPFU_scanner.py
+for pc in $plst; do
+  rm -f *.APP.artifacts
+  ln -s $pc.qa2-diagnostics $pc.APP.artifacts
+  ls -l $pc.APP.artifacts
+  casa --nologger --nologfile -c $DIFXROOT/share/polconvert/DPFU_scanner.py
+done 2>&1 | tee dpfu-scanner.log
 # when you are done with this remove it as, DPFU_scanner expects only one
-rm $pcal.APP.artifacts
+rm -f *.APP.artifacts
+
+# Note and paste values here for each track, and after discussion
+# with the other correlator, update the dpfu= assignment above.
+grep Average dpfu-scanner.log | sed 's/^/### /'
 
 # pull in the experiment codes
 cp -p $ehtc/ehtc-template.codes $exp.codes
@@ -207,7 +217,7 @@ mb_win -0.008    0.008
 dr_win -0.000001 0.000001
 * adjustments follow
 EOF
-# add chan_ids directive appropriate to the band:
+# add chan_ids directive appropriate to the band, comment out the others:
 $ehtc/alma-vex-defs.py -rchan -f213100.0 -sL -w58.0 >> $ers.bare  # b1
 $ehtc/alma-vex-defs.py -rchan -f215100.0 -sL -w58.0 >> $ers.bare  # b2
 $ehtc/alma-vex-defs.py -rchan -f227100.0 -sU -w58.0 >> $ers.bare  # b3
@@ -246,12 +256,16 @@ cp -p $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile $release/logs
 # pick the scans to use based on greps from *jobs*
 ### available stations: ...
 awk '{print $5}' $ers-jobs-map.txt | tr '-' \\012 | sort | uniq -c
+awk '{print $5}' $ers-jobs-map.txt | tr '-' \\012 | sort | uniq | tr \\012 ' '
 ### types of baselines: ...
 awk '{print $5}' $ers-jobs-map.txt | sort | uniq -c
-# and set jobs and target accordingly
+# and set jobs and target for the fewest scans on strong targets for pcals
 target=...
 jobs=`echo $exp-$vers-${subv}_{,}.input` ; echo $jobs
 
+# reminder: for multi-project tracks you will need to update
+# $opts and $pcal using the QA_* logic variables above.
+# --override-version  on difx2mark4 should not be necessary
 prepolconvert.py -v -k -s $dout $jobs
 drivepolconvert.py -v $opts -l $pcal $jobs
 for j in $jobs ;\

@@ -11,37 +11,46 @@ import os
 import re
 import subprocess
 import sys
+import textwrap
 
 def parseOptions():
-    des = '''
-    This script is designed to create a fourfit control file
-    from one bright fringe.  The defaults are appropriate for
-    the EHT mixed-pol ALMA case where there are strong XL and XR
-    fringes which allow the phase offset for the reference
-    station to be measured.  The script is intended to be
-    adaptable to other applications.
-    '''
-    epi = '''
+    des = textwrap.dedent('''\
+    This script is designed to create a fourfit control file from one bright
+    fringe.  The defaults are appropriate to the normal EHTC case with the
+    polconverted ALMA products.  With the -X argument it is appropriate to
+    the pre-polconverted ALMA case (here there are strong XL and XR fringes
+    which allow the phase offset for the reference station to be measured).
+
+    The script is intended to be adaptable to other applications with some
+    appropriate choices for the optional arguments.
+    ''')
+    epi = textwrap.dedent('''\
     Typical usage requires just the name of the control file
-    to build and the root file to use:
-    est_manual_phases.py -r 3597/No0049/3C279.zlwmcz -c sample.conf
-    '''
+    to build, the root file to use, and the list of stations:
+
+    est_manual_phases.py -r 3597/No0049/3C279.zlwmcz -c sample.conf -s A,...
+    ''')
     use = '%(prog)s [options]\n'
     use += '  Version '
-    use += '$Id: est_manual_phases.py 2988 2020-08-06 15:21:31Z gbc $'
-    parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
+    use += '$Id: est_manual_phases.py 3047 2020-09-02 14:12:38Z gbc $'
+    parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     required = parser.add_argument_group('required options')
     flaggers = parser.add_argument_group('flag options')
     dbugging = parser.add_argument_group('debugging options')
     optional = parser.add_argument_group('tuning options')
+    whatelse = parser.add_argument_group('finally')
     required.add_argument('-c', '--control', dest='control',
         metavar='FILE', default='', required=True,
         help='Name of fourfit control file to create/update. '
             + 'Variations of the name will be used and created in the '
-            + 'process; see the --tidy option')
+            + 'process; see the --prune option')
     required.add_argument('-r', '--rootfile', dest='rootfile',
         metavar='FILE', default='', required=True,
         help='Fourfit root file for fringe-finder scan to work with')
+    required.add_argument('-s', '--sites', dest='sites',
+        metavar='LIST', default='A,L,Z,S,R,P,J,C,X,Y', required=True,
+        help='Comma separated list of stations to process')
     #
     flaggers.add_argument('-v', '--verbose', dest='verb',
         action='store_true', default=False,
@@ -64,9 +73,6 @@ def parseOptions():
         action='store_true', default=False,
         help='Print out the defaults and exit.')
     #
-    optional.add_argument('-s', '--sites', dest='sites',
-        metavar='LIST', default='A,L,Z,S,R,P,J,C,X,Y',
-        help='Comma separated list of stations to process')
     optional.add_argument('-q', '--sequence', dest='sequence',
         metavar='LIST', default='8,1,1',
         help='Sequence of est_pc_manual directives')
@@ -79,10 +85,13 @@ def parseOptions():
     optional.add_argument('-a', '--additional', dest='additional',
         action='store_true', default=False,
         help='If set, just do the phase/delay on the site list.')
-    optional.add_argument('arguments', nargs='*',
+    #
+    whatelse.add_argument('arguments', nargs='*',
         help='Any remaining command-line arguments are treated '
             + 'as control file global directives.  Comments may be included: '
-            + '* starts a comment and @ is translated into a newline')
+            + '* starts a comment and @ is translated into a newline. '
+            + 'Note that this replaces the elements of default control '
+            + 'file that is used only if no control file exists.')
     o = parser.parse_args()
     # non-arguments to pass around in the package
     o.site = {}
