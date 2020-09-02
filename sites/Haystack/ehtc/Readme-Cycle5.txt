@@ -353,8 +353,8 @@ grep -l SEVERE *pol*/casa*/*output |\
 grep -l 'was NOT polconverted properly' *polcon*/casa-logs/*output |\
     cut -d_ -f2 | cut -d. -f1 | tr \\012 ' '
 polconversions=`cat $ers-jobs-map.txt | grep -v do.not | wc -l`
-allifsplots=`ls -l $ers*polcon*/*TS/ALL*png | wc -l`
-antabfiles=`ls -l $ers*polcon*/*ANTAB | wc -l`
+allifsplots=`ls -l $evs*polcon*/*TS/ALL*png | wc -l`
+antabfiles=`ls -l $evs*polcon*/*ANTAB | wc -l`
 [ $polconversions -eq $allifsplots ] || { echo -n '### missing plots ';
     echo $polconversions -ne $allifsplots '(polconversions ne allifplots)' ; }
 [ $polconversions -eq $antabfiles ] || { echo -n '### missing antabfiles ';
@@ -367,7 +367,7 @@ for j in `cat $ers-jobs-map.txt | grep -v do.not | awk '{print $1}'`
 fplot $ers-*-4fit.$expn.save/$doyhhmm/A[^A].B.*
 
 # if comparisons are available (with previous releases)
-compare-baselines-v6.pl -n 10000 -f -x AL \
+compare-baselines-v6.pl -n 10000 -m 10 -f -x AL \
     -a ...4fit.$expn.save/*.alist -b ...4fit.$expn.save/*.alist
 
 # verify that fits files are missing what is sensible
