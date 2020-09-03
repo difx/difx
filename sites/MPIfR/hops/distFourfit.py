@@ -285,7 +285,7 @@ if __name__ == "__main__":
 
 	handler.setFourfitWrapper(args.fourfitwrapper)
 	handler.setFourfitControlFile(args.controlfile)
-	handler.setMaxNodes(args.maxnodes)
+	handler.setMaxNodes(int(args.maxnodes))
 	handler.setMachines(nodepool.machines())
 
 	jobs = handler.generateJobs(expt_path, antennaSubset)
