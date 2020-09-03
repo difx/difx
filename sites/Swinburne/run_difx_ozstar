@@ -1,0 +1,33 @@
+1. Create run script
+
+In order to run difx in interactive or batch mode a script has been prepared that will create a shell script "run.sh" which can be submitted or run interactivly.  It is located here: /fred/oz168/mdutka/testdata/rdv70/setup_run.py
+
+Here are a few examples of running the script. The default setup file is located here /fred/oz168/mdutka/setup/setup_difx and the default number of processes matches the rdv70 example.  The number of processes depends on the number of antennas in your experiment in the following way:
+
+numprocesses = numantennas + 2
+
+
+Create run script using defaults:
+./setup_run.py example_1
+  
+Create run script specifying a difx setup file and number of processes. 
+./setup_run.py --difx_setup /fred/oz168/mdutka/setup/setup_difx --numprocesses 8 example_1
+
+print usage help for the script 
+
+./setup_run.py -h
+
+
+2. Run "run.sh in interactive mode
+
+This command will provide an interactive terminal where you can run "run.sh".  In this example 32 cores have been allocated for 30 minutes and we've allocated 64 gigabytes of memory.   
+sinteractive --ntasks=32 --time=30:00 --cpus-per-task=1 --mem-per-cpu=2000
+
+Once an interactive session has been assinged simply run run.sh
+./run.sh
+
+3. Submit "run.sh" as batch job using the same options
+
+sbatch --ntasks=32 --time=30:00 --cpus-per-task=1 --mem-per-cpu=2000 run.sh
+
+
