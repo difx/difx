@@ -214,10 +214,10 @@ class JobDispatch:
 				subdir,baseline = job
 				host = hosts[i]
 
-				ssh = ["/usr/bin/ssh", "-t", host, "cd", cwd, ";"]
-				prog = [self._fourfit]
-				ffargs = self._fourfitopts + ['-c', self._controlfile, '-b', baseline, subdir]
-				cmd = ssh + prog + ffargs
+				ssh = ["/usr/bin/ssh", "-t", host]
+				cdwork = ["cd", cwd]
+				fourfit = [self._fourfit] + self._fourfitopts + ['-c', self._controlfile, '-b', baseline, subdir]
+				cmd = ssh + cdwork + ['&&'] + fourfit
 
 				print ('Fitting %s %s on %s' % (subdir,baseline,host))
 				jobs.append([subdir,baseline,host,cmd])
@@ -232,12 +232,11 @@ class JobDispatch:
 				print (cmd)
 			return
 
-		devnull = open(os.devnull, 'w')
 		processes = {}
 		processdetails = {}
 		for job in joblist:
 			cmd = job[-1]
-			p = subprocess.Popen(cmd, stdin=None, stdout=devnull, stderr=subprocess.STDOUT, close_fds=True, shell=False)
+			p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False)
 			processdetails[p.pid] = '%s:%s on %s' % (job[0],job[1],job[2])
 			processes[p.pid] = p
 
@@ -249,7 +248,8 @@ class JobDispatch:
 				rc = processes[pid].poll()
 				if rc is not None:
 					(s,rc) = processes[pid].communicate()
-					print ('Finished %s\n' % (processdetails[pid]))
+					self._cleanTerm()
+					print ('Finished %s, %d remain\n' % (processdetails[pid], len(processes)-1), flush=True)
 					completed[pid] = 1
 			if len(completed) > 0:
 				for pid in completed.keys():
@@ -257,7 +257,13 @@ class JobDispatch:
 					del processdetails[pid]
 			time.sleep(1)
 
-		devnull.close()
+		self._cleanTerm()
+		print('Done')
+
+	def _cleanTerm(self):
+		'''Reset terminal. Workaround for SSH+popen() which mess up the local terminal such that print() newlines cease to work'''
+		p = subprocess.Popen(["/usr/bin/stty", "sane"], stdin=None, stdout=None, stderr=None, close_fds=True, shell=False)
+		p.communicate()
 
 ################################################################################################################
 
