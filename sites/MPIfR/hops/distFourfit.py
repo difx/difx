@@ -249,7 +249,7 @@ class JobDispatch:
 				if rc is not None:
 					(s,rc) = processes[pid].communicate()
 					self._cleanTerm()
-					print ('Finished %s, %d remain\n' % (processdetails[pid], len(processes)-1), flush=True)
+					print ('Finished %s, %d remain\n' % (processdetails[pid], len(processes) - len(completed)), flush=True)
 					completed[pid] = 1
 			if len(completed) > 0:
 				for pid in completed.keys():
