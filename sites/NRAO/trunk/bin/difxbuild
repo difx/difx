@@ -13,8 +13,8 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '0.76'
-verdate = '20191009'
+version = '0.78'
+verdate = '20200904'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -22,7 +22,7 @@ difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 pythonProgram = 'python2'
 openmpiVersion = 'https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.4.tar.bz2'       
 pgplotVersion = '5.2'
-schedVersion = '11.5'
+schedVersion = '11.6'
 schedUpdate = ''
 skedVersion = '2013jan23'
 m4Version = '1.4.16'
@@ -1864,6 +1864,7 @@ components['DIFX-2.5.2'] = versionReplace(components['DIFX-2.5'], "DiFX-2.5", "D
 components['DIFX-2.5.3'] = versionReplace(components['DIFX-2.5'], "DiFX-2.5", "DiFX-2.5.3")
 
 components['DIFX-2.6.1'] = versionReplace(components['DIFX-2.6'], "DiFX-2.6", "DiFX-2.6.1")
+components['DIFX-2.6.2'] = versionReplace(components['DIFX-2.6'], "DiFX-2.6", "DiFX-2.6.2")
 
 
 # commands each have the following elements:
@@ -2964,7 +2965,7 @@ def sched(origComps, params, args, verbose, pretend):
 		exit(0)
 		
 	arch = platform.machine()
-	schedSrcFile = 'sched_%s%s.tar.gz' % (schedVersion, schedUpdate)
+	schedSrcFile = 'sched-%s%s.tar.gz' % (schedVersion, schedUpdate)
 	schedUrl = 'ftp://ftp.aoc.nrao.edu/pub/sched/sched_%s/%s' % (schedVersion, schedSrcFile)
 	difxBase = environ['DIFX_BASE'] + '/'
 	archDir = environ['DIFX_ARCH_ROOT'] + '/'
@@ -2985,8 +2986,8 @@ def sched(origComps, params, args, verbose, pretend):
 	rv = ftpFile(schedUrl, tarDir, schedSrcFile, args, verbose, pretend)
 	if rv < 0:
 		tarOptions = '--strip-components 1'
-		schedSrcFile = 'sched_%s%s.tgz' % (schedVersion, schedUpdate)
-		schedUrl = 'ftp://ftp.aoc.nrao.edu/pub/sched/sched_%s/%s' % (schedVersion, schedSrcFile)
+		schedSrcFile = 'sched-%s%s.tgz' % (schedVersion, schedUpdate)
+		schedUrl = 'ftp://ftp.aoc.nrao.edu/pub/sched/sched-%s/%s' % (schedVersion, schedSrcFile)
 		rv = ftpFile(schedUrl, tarDir, schedSrcFile, args, verbose, pretend)
 		if rv < 0:
 			print 'Cannot download sched'
