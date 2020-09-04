@@ -1,28 +1,39 @@
 #!/usr/bin/python3
 '''
-Usage: distFourfit.py [-c <controlfile>] [-n <max nr of nodes>]
-                      [-m difx_machines] [-f <fourfit wrapper script>]
+Usage: distFourfit.py [-c <controlfile>] [-F <frequency group] [-n <max nr of nodes>]
+                      [-m <difx_machines>] [-f <fourfit wrapper script>]
                       <expt_root>
 
-Runs fourfit using control file (default: cf_1234) on all scans
-located under ./<expt_root>/. Fourfit is invoked over a warpper
-script that sets up HOPS environment vars and launches fourfit.
+Runs fourfit on all baselines of the scans located under ./<expt_root>/. 
+Fourfit is executed in parallel, one instance fitting one baseline of one scan.
+The fourfit instances are distributed over the cluster nodes.
 
-Fourfit is executed in parallel as multiple processes with one
-fourfit instance per baseline per scan, distributed over CPUs
-and cluster nodes.
+Options:
+   -c <controlfile>      HOPS fourfit control file to use for fringe fitting
+   -F <frequency group>  Frequeny group to process, e.g., S
+   -n <max nr of nodes>  Integer number, how many nodes to use at most
+   -m <difx_machines>    DiFX machines file to use. NB: DiFX format, not MPI machinesfile.
+                         The default is $DIFX_MACHINES when available.
+   -f <wrapper>          Wrapper script that sets up HOPS environment and calls fourfit
+                         The simplest wrapper script would be
+                           <</cluster/hops/fourfit_dtrunk>>
+                           source /data/cluster/difx/DiFX-trunk_64/setup_difx
+                           fourfit $@
 
-NB: currently nodes node02..node32 are used. In a later version,
-    support might be added for a $DIFX_MACHINES machine file.
-
-(C) 2019 Jan Wagner
+Required arguments:
+   <expt_root>           The HOPS Mark4 top-level folder; experiment directory.
 '''
 
 import argparse
 import glob, os, sys, time
 import subprocess
+
 # Note: mpi4py is not used as it needs CentOS openmpi but the MPIfR
 #       cluster runs a custom built Gemmatix/GxHive OpenMPI...
+#
+# Todo: add logging, but: (1) popen() PIPE hangs as too much output, 
+#       (2) fourfit has no --logfile <fn> option
+#       -> use " |& tee <scan_baseline.log> ", despite producing a clutter of thousands (IVS..) of log files?
 
 from difxfile.difxmachines import DifxMachines
 from typing import List, Set
@@ -32,11 +43,14 @@ from typing import List, Set
 DEFAULT_FOURFIT = '/cluster/hops/fourfit_dtrunk'
 DEFAULT_FOURFIT_OPTS = ['-m0', '-u']
 DEFAULT_CF = 'cf_1234'
-DEFAULT_MAX_HOSTS = 20
+DEFAULT_FREQ_GROUP = ''
+DEFAULT_MAX_HOSTS = 80
+CPU_PER_NODE = 4
 
-parser = argparse.ArgumentParser(add_help=False, description='Run fourfit on multiple nodes in parallel')
+parser = argparse.ArgumentParser(add_help=False, description='Runs fourfit on all baselines of the scans located under ./<expt_root>/')
 parser.add_argument('-h', '--help',        help='Help', action='store_true')
 parser.add_argument('-a', '--ant',         help='Fit only baselines to these antenna(s). Comma separated 1-letter codes.', dest='antennas', default='')
+parser.add_argument('-F', '--fgroup',      dest='freqgroup', help='Frequeny group to process, e.g., S', default=DEFAULT_FREQ_GROUP)
 parser.add_argument('-f', '--fourfit',     dest='fourfitwrapper', help='Fourfit setup and invocation script to use', default=DEFAULT_FOURFIT)
 parser.add_argument('-c', '--controlfile', dest='controlfile', help='Fourfit control file to use for fringe fitting', default=DEFAULT_CF)
 parser.add_argument('-n', '--maxnodes',    dest='maxnodes', help='Run at most n nodes', default=DEFAULT_MAX_HOSTS)
@@ -115,10 +129,13 @@ class ExperimentDirAnalyzer:
 			baselines.add(fn[:2])
 		return baselines
 
-	def listScanFittedBaselines(self, scandir: str, doAuto=False) -> Set[str]:
+	def listScanFittedBaselines(self, scandir: str, doAuto=False, freqgroup='?') -> Set[str]:
 		'''Return a list of already fringe fitted baselines in subdirectory. Example: ['AX', 'AL', 'AS', 'SX', 'LX', 'SL']'''
 		baselines = set()
-		for fpath in glob.glob(scandir + '/' + '??.?.*'):
+		if len(freqgroup) is not 1:
+			freqgroup = '?'
+		globpattern = scandir + '/' + '??.' + freqgroup + '.*'
+		for fpath in glob.glob(globpattern):
 			fn = os.path.split(os.path.basename(fpath))[-1]
 			if (fn[0] == fn[1]) and not doAuto:
 				pass
@@ -128,13 +145,13 @@ class ExperimentDirAnalyzer:
 				baselines.add(fn[:2])
 		return baselines
 
-	def generateFourfitJobs(self, exptroot: str):
+	def generateFourfitJobs(self, exptroot: str, freqgroup: str=''):
 		'''Make a job list: list of (subdir,baseline) tuples'''
 		jobs = []
 		Ncompleted = 0
 		for scan in self.listScans(exptroot):
 			blines = self.listScanBaselines(scan)
-			completed = self.listScanFittedBaselines(scan)
+			completed = self.listScanFittedBaselines(scan, freqgroup=freqgroup)
 			blines = list(blines - completed)
 			jobs += zip([scan]*len(blines), blines)
 			Ncompleted += len(completed)
@@ -159,17 +176,29 @@ class JobDispatch:
 		self._fourfit = fourfit
 		self._controlfile = hopscf
 		self._fourfitopts = fourfitopts
+		self._freqgroupname = ''
+		self._freqgrouparg = ''
 		self._machines = []
 		self._maxnodes = 1
 
-	def setFourfitWrapper(self, wrapperpath):
+	def setFourfitWrapper(self, wrapperpath: str):
 		self._fourfit = wrapperpath
 
-	def setFourfitControlFile(self, controlfile):
+	def setFourfitControlFile(self, controlfile: str):
 		self._controlfile = controlfile
 
-	def setFourfitOptions(self, fourfitopts):
+	def setFourfitOptions(self, fourfitopts: str):
 		self._fourfitopts = fourfitopts
+
+	def setFreqGroup(self, freqgroupname: str):
+		if len(freqgroupname) > 1:
+			print("Unexpected frequency group '%s', longer than 1 character" % (freqgroupname))
+		else:
+			self._freqgroupname = freqgroupname
+			if len(freqgroupname) == 0:
+				self._freqgrouparg = ''
+			else:
+				self._freqgrouparg = ":" + self._freqgroupname
 
 	def setMaxNodes(self, N=20):
 		self._maxnodes = N
@@ -193,7 +222,7 @@ class JobDispatch:
 		analyzer = ExperimentDirAnalyzer()
 		if antennaSubset:
 		    analyzer.limitToAntennas(antennaSubset)
-		jobs = analyzer.generateFourfitJobs(exptroot)
+		jobs = analyzer.generateFourfitJobs(exptroot, self._freqgroupname)
 		return jobs
 
 	def executeJobs(self, jobs):
@@ -201,14 +230,14 @@ class JobDispatch:
 		Executes a list of fourfit jobs in parallel.
 		The task is split into a series of smaller jobs if necessary.
 		'''
-		hosts = self._machines
+		hosts = self._machines * CPU_PER_NODE  # todo: some better approach to this!
 		Jmax = min(len(hosts), self._maxnodes)
 		cwd = os.getcwd()
 
 		jobblocks = self._group(jobs, Jmax)
 		for block in jobblocks:
 
-			jobs = []
+			subjobs = []
 			for job in block:
 				i = block.index(job)
 				subdir,baseline = job
@@ -216,13 +245,13 @@ class JobDispatch:
 
 				ssh = ["/usr/bin/ssh", "-t", host]
 				cdwork = ["cd", cwd]
-				fourfit = [self._fourfit] + self._fourfitopts + ['-c', self._controlfile, '-b', baseline, subdir]
+				fourfit = [self._fourfit] + self._fourfitopts + ['-c', self._controlfile, '-b', baseline + self._freqgrouparg, subdir]
 				cmd = ssh + cdwork + ['&&'] + fourfit
 
 				print ('Fitting %s %s on %s' % (subdir,baseline,host))
-				jobs.append([subdir,baseline,host,cmd])
+				subjobs.append([subdir,baseline,host,cmd])
 
-			self._runJobgroup(jobs)
+			self._runJobgroup(subjobs)
 
 	def _runJobgroup(self, joblist, dryrun=False):
 		'''Launch jobs in parallel and wait for their completion'''
@@ -241,6 +270,7 @@ class JobDispatch:
 			processes[p.pid] = p
 
 		while processes:
+
 			completed = {}
 			for pid in processes.keys():
 				if pid in completed:
@@ -249,13 +279,13 @@ class JobDispatch:
 				if rc is not None:
 					(s,rc) = processes[pid].communicate()
 					self._cleanTerm()
-					print ('Finished %s, %d remain\n' % (processdetails[pid], len(processes) - len(completed)), flush=True)
+					print ('Finished %s, %d remain\n' % (processdetails[pid], len(processes) - len(completed) - 1), flush=True)
 					completed[pid] = 1
+
 			if len(completed) > 0:
 				for pid in completed.keys():
 					del processes[pid]
 					del processdetails[pid]
-			time.sleep(1)
 
 		self._cleanTerm()
 		print('Done')
@@ -269,13 +299,13 @@ class JobDispatch:
 
 if __name__ == "__main__":
 
-	nodepool = MachineList()
-	handler = JobDispatch()
-
 	args = parser.parse_args(sys.argv[1:])
 	if args.help or len(args.expt_root) != 1:
 		print(__doc__)
 		sys.exit(0)
+
+	nodepool = MachineList()
+	handler = JobDispatch()
 
 	if args.difxmachinesfile:
 		nodepool.loadMachines(difxmachinesfile)
@@ -285,6 +315,7 @@ if __name__ == "__main__":
 
 	handler.setFourfitWrapper(args.fourfitwrapper)
 	handler.setFourfitControlFile(args.controlfile)
+	handler.setFreqGroup(args.freqgroup)
 	handler.setMaxNodes(int(args.maxnodes))
 	handler.setMachines(nodepool.machines())
 
@@ -294,4 +325,3 @@ if __name__ == "__main__":
 	# tidy up the terminal again, messed up by subprocess.Popen() before
 	p = subprocess.Popen(["/usr/bin/stty", "sane"], stdin=None, stdout=None, stderr=None, close_fds=True, shell=False)
 	p.communicate()
-
