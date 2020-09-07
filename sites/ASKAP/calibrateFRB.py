@@ -30,7 +30,9 @@ parser.add_option("-f", "--flux", type=float, default=9.5, # 0407 flux
 parser.add_option("-i", "--imagecube", default=False, action="store_true",
                   help="Image the FRB in chunks (i.e., make a cube)")
 parser.add_option("--dirtyonly", default=False, action="store_true",
-                  help="Just make a dirty image, no cleaning")
+                  help="Just make a dirty image, cube")
+parser.add_option("--dirtymfs", default=False, action="store_true",
+                  help="Just make a dirty image, mfs")
 parser.add_option("--calibrateonly", default=False, action="store_true",
                   help="Only generate the calibration files, don't do anything with target")
 parser.add_option("--targetonly", default=False, action="store_true",
@@ -424,6 +426,8 @@ if not options.calibrateonly:
     polarisations = options.pols.split(',')
     if options.dirtyonly:
         polarisations = ["I"]
+    if options.dirtymfs:
+        polarisations = ["I"]
     if options.imagecube:
         # Do the cube
         for pol in polarisations:
@@ -453,6 +457,11 @@ if not options.calibrateonly:
                 imname = "TARGET.cube.dirim.{0}".format(pol)
                 os.system("rm -rf {0}.*".format(imname))
                 casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['1arcsec', '1arcsec'], stokes='{3}', specmode='cube', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=-1, deconvolver='multiscale', weighting='natural', niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields))
+
+            elif options.dirtymfs:
+                imname = "TARGET.mfs.dirim.{0}".format(pol)
+                os.system("rm -rf {0}.*".format(imname))
+                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['1arcsec', '1arcsec'], stokes='{3}', specmode='mfs', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=-1, deconvolver='multiscale', weighting='natural', niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields))
 
             # Default: produce a cleaned image
             else:
