@@ -456,16 +456,16 @@ if not options.calibrateonly:
             if options.dirtyonly:
                 imname = "TARGET.cube.dirim.{0}".format(pol)
                 os.system("rm -rf {0}.*".format(imname))
-                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['1arcsec', '1arcsec'], stokes='{3}', specmode='cube', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=-1, deconvolver='multiscale', weighting='natural', niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields))
+                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='cube', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=-1, deconvolver='multiscale', weighting='natural', niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields, options.pixelsize))
 
             elif options.dirtymfs:
                 imname = "TARGET.mfs.dirim.{0}".format(pol)
                 os.system("rm -rf {0}.*".format(imname))
-                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['1arcsec', '1arcsec'], stokes='{3}', specmode='mfs', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=-1, deconvolver='multiscale', weighting='natural', niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields))
+                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='mfs', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=-1, deconvolver='multiscale', weighting='natural', niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields,options.pixelsize))
 
             # Default: produce a cleaned image
             else:
-                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['1arcsec', '1arcsec'], stokes='{3}', specmode='cube', width={4}, gridder='widefield', wprojplanes=-1, pblimit=-1, deconvolver='multiscale', weighting='natural', niter=100, cycleniter=100, mask={5}, savemodel='modelcolumn', phasecenter={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, maskstr, phasecenter, outlierfields))
+                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='cube', width={4}, gridder='widefield', wprojplanes=-1, pblimit=-1, deconvolver='multiscale', weighting='natural', niter=100, cycleniter=100, mask={5}, savemodel='modelcolumn', phasecenter={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, maskstr, phasecenter, outlierfield, options.pixelsizes))
 
             casaout.close()
             os.system("chmod 775 imagescript.py")
