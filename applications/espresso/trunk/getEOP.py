@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -25,7 +25,7 @@
 # May 2019: New download site.
 #
 # EOP/ut1 data from:
-# "ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori"
+# ftp://gdc.cddis.eosdis.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/
 #
 
 from __future__ import print_function, division
@@ -33,9 +33,14 @@ import sys
 import time
 import os
 import optparse
-import urllib2
 #import requests
+import ftplib
 import espressolib
+#try:
+#    import urllib2
+#except:
+#    sys.stderr.write(
+#            "urllib2 module not available, you must use local (-l) mode\n")
 
 
 def get_leapsec(leapsec_page, target_jd):
@@ -49,6 +54,19 @@ def get_leapsec(leapsec_page, target_jd):
         else:
             tai_utc = int(float(line[38:49]))
     return tai_utc
+
+
+def ftpget(url, directory, filename):
+    """Return contents of a file on and ftp-ssl site"""
+    contents = []
+    ftps = ftplib.FTP_TLS(url)
+    # login and encrypt connection
+    ftps.login()
+    ftps.prot_p()
+    ftps.cwd(directory)
+    ftps.retrlines("RETR {:s}".format(filename), contents.append)
+
+    return contents
 
 
 usage = """%prog <date>
@@ -95,19 +113,25 @@ if (target_jd < 2444055.5):
 # fetch EOP data
 leapsec_page = None
 if not options.local:
-    gsfc_url = "ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/"
-    eop_url = gsfc_url + "usno_finals.erp"
-    leapsec_url = gsfc_url + "ut1ls.dat"
+    #gsfc_url = "ftp://cddis.gsfc.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/"
+    #eop_url = gsfc_url + "usno_finals.erp"
+    #leapsec_url = gsfc_url + "ut1ls.dat"
+    gsfc_url = "gdc.cddis.eosdis.nasa.gov"
+    eop_dir = "vlbi/gsfc/ancillary/solve_apriori/"
+    eop_filename = "usno_finals.erp"
+    leapsec_filename = "ut1ls.dat"
 
-    sys.stderr.write("Fetching EOP data from {:s}\n".format(eop_url))
+    sys.stderr.write("Fetching EOP data from {:s}\n".format(gsfc_url))
     #eop_page = requests.get(eop_url, verify=options.verify).content.split("\n")
-    eop_page = urllib2.urlopen(eop_url).readlines()
+    #eop_page = urllib2.urlopen(eop_url).readlines()
+    eop_page = ftpget(gsfc_url, eop_dir, eop_filename)
 
     sys.stderr.write(
-            "Fetching leap second data from {:s}\n".format(leapsec_url))
+            "Fetching leap second data from {:s}\n".format(gsfc_url))
     #leapsec_page = requests.get(
-    #        leapsec_url, verify=options.verify).content.split("\n")
-    leapsec_page = urllib2.urlopen(leapsec_url).readlines()
+    #       leapsec_url, verify=options.verify).content.split("\n")
+    #leapsec_page = urllib2.urlopen(leapsec_url).readlines()
+    leapsec_page = ftpget(gsfc_url, eop_dir, leapsec_filename)
     print ("{:s} EOPs downloaded at {:s}".format(
             comment, time.strftime("%Y-%m-%d %H:%M:%S (%z)")))
 else:
