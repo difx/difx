@@ -95,7 +95,7 @@ then
     if [ `expr "$CurPath" ':' ".*$NewItem\$"` -eq '0'  -a \
          `expr "$CurPath" ':' ".*$NewItem\:.*"` -eq '0' ]
     then
-        eval $Path="$NewItem"\:"$CurPath"
+        eval $Path=\"$NewItem\:$CurPath\"
     fi
 else
     eval export $Path="$NewItem"
