@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import sys, os, struct, time, math
 import parseDiFX
 from optparse import OptionParser
@@ -73,7 +73,7 @@ nchan       = []
 mjd         = []
 seconds     = []
 for filename in args:
-    difxinputs.append(open(filename))
+    difxinputs.append(open(filename, 'rb'))
     freqindex.append(0)
     nchan.append(0)
     baseline.append(0)
@@ -98,7 +98,7 @@ while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
     for i in range(numfiles):
         baseline[i] = nextheader[i][0]
         freqindex[i] = nextheader[i][5]
-        nchan[i] = freqs[freqindex[i]].numchan/freqs[freqindex[i]].specavg
+        nchan[i] = freqs[freqindex[i]].numchan // freqs[freqindex[i]].specavg
         mjd[i] = nextheader[i][1]
         seconds[i] = nextheader[i][2]
         if nchan[i] > maxchannels:
