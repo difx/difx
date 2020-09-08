@@ -32,7 +32,7 @@ def usage():
         print '\n%s - ver. %s - %s - %s\n' % (program, version, author, verdate)
         print 'A program used to initialize a module in a mark6 unit.\n'
         print 'usage : %s <slot number> <module serial number>\n' % program
-        print 'Module serial number is in ccc%nnnn format.\n'
+        #print 'Module serial number is in ccc%nnnn format.\n'
 
 def unmount(slot):
   # unmount all partitions for slot
@@ -169,7 +169,7 @@ if slot not in [1, 2, 3, 4]:
 
 msn = sys.argv[2]
 
-if len(msn) != 8 or not msn[4:8].isdigit():
+if len(msn) != 8:
   usage()
   exit(1)
 
