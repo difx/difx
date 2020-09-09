@@ -28,6 +28,13 @@ do
     out=$hm-`date +%Y%m%d`.png
     echo Host-Module: $hm ' -> ' $out
 
+    regex='.*-hammer-([0-9]{4})([0-9]{2})([0-9]{2}).*'
+
+    if [[ $l =~ $regex ]]
+    then
+      logdate="${BASH_REMATCH[1]}-${BASH_REMATCH[2]}-${BASH_REMATCH[2]}"
+    fi
+
     reqwrite=`(echo scale=4;echo 2 \* 8224 / 32 / 8)|bc -lq`
 
     grep 'write$' $l |\
@@ -54,13 +61,13 @@ do
     set key below
     set xlabel 'file count'
     set ylabel 'Rate (MB/s)'
-    set title "$hm RW Performance, WorstWrite/Required = $margin, $fraclow"
+    set title "$hm ($logdate) RW Performance, WorstWrite/Required = $margin, $fraclow"
     set term png notransparent large size 960,640
     set output '$png'
 ....EOF
 
     n=0
-    pc='plot [][50:200]'
+    pc='plot'
     pd=$data
     sls='ls 1'
     als='ls 2'
@@ -80,6 +87,9 @@ do
     echo "$minread w l $als title 'min read $minread', \\" >> $gnu
     echo "$reqwrite w l $rls title 'req write $reqwrite'" >> $gnu
     echo 'set output' >> $gnu
+    echo "set autoscale x " >> $gnu
+    echo "set autoscale ymax " >> $gnu
+    echo "set yrange [50:]  " >> $gnu
 
     gnuplot $gnu
 
