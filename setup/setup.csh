@@ -22,6 +22,8 @@ setenv MPICXX $DIFXMPIDIR/bin/mpicxx
 ####### USE GFORTRAN IN PREFERENCE TO G77? ##
 ####### Comment out if not desired ##########
 setenv USEGFORTRAN "yes"
+# you may need this for calcserver,difxcalc11
+# setenv FFLAGS "-fallow-argument-mismatch"
 
 ####### PERL VERSION/SUBVERSION #############
 set perlver="5"

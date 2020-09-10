@@ -20,6 +20,8 @@ export MPICXX="${DIFXMPIDIR}"/bin/mpicxx
 ####### USE GFORTRAN IN PREFERENCE TO G77? ##
 ####### Comment out if not desired ##########
 export USEGFORTRAN="yes"
+# you may need this for calcserver,difxcalc11
+# export FFLAGS=-fallow-argument-mismatch
 
 ####### PERL VERSION/SUBVERSION #############
 perlver="5"
