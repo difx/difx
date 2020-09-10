@@ -37,6 +37,7 @@ parser.add_argument("--phi", type=float, default=0.0, help="The phase offset der
 parser.add_argument("--unwrap", default=False, action="store_true", help="Set if there is clear phase wrapping in the FRB PA")
 parser.add_argument("--subband", default=False, action="store_true", help="Set to subband the data into numsub subbands")
 parser.add_argument("--numsub", type=int, default=None, help="Number of subbands to divide the data into")
+parser.add_argument("--firstlook", default=False, action="store_true", help="Set if only doing a first look run (i.e., no calibration, etc.)")
 
 args = parser.parse_args()
 
@@ -120,45 +121,46 @@ if args.isolate:
 starttime = 0
 endtime = nbins*res
 
-# Define RM correction parameters
-if hasattr(args, "rotmeas"):
-    rotmeas = args.rotmeas # The RM measured using the data; for single RM data
-else: rotmeas = 0
-print("RM = {0}".format(rotmeas))
-label_rotmeas = str(rotmeas) + "rad/s^2"
-label_rotmeas_save = str(rotmeas)
-if args.multi_rotmeas: # The RMs measured using the data; for multiple RM data
-    # Get the RMs and convert to floats
-    multi_rotmeas_str = args.multi_rotmeas.split(',')
-    num_RMs = len(multi_rotmeas_str)
-    RM_indx = np.arange(num_RMs)
-    multi_rotmeas = [0.0] + [np.float(multi_rotmeas_str[i]) for i in RM_indx] + [0.0]
-    # Get RM for plot label and figure saving
-    label_rotmeas = ''
-    label_rotmeas_save = ''
-    for i in np.arange(len(multi_rotmeas_str)):
-        if i > 0:
-            label_rotmeas += ','
-            label_rotmeas_save += '_'
-        label_rotmeas += multi_rotmeas_str[i]
-        label_rotmeas_save += multi_rotmeas_str[i]
-    print("RM plot label: {0}".format(label_rotmeas))
-    # Get the starts for each chunk of data to be de-rotated and make floats in list
-    rm_bins_str = args.rm_bins_starts.split(',')
-    num_rm_bins = len(rm_bins_str)
-    rm_bins_indx = np.arange(num_rm_bins)
-    rm_bins_starts = [np.float(rm_bins_str[i]) for i in rm_bins_indx]
-    # Pad the end with the number of time bins + 1 in order to have a correct index range for later
-    rm_bins_starts += [nbins+1.0]
-    print("RMs chosen for each pulse: {0}".format(multi_rotmeas))
-    print("Start bins for each RM: {0}".format(rm_bins_starts))
-dynspec_rmcorrected = {}
-fscrunch_rmcorrected = {}
+if not args.firstlook:
+    # Define RM correction parameters
+    if hasattr(args, "rotmeas"):
+        rotmeas = args.rotmeas # The RM measured using the data; for single RM data
+    else: rotmeas = 0
+    print("RM = {0}".format(rotmeas))
+    label_rotmeas = str(rotmeas) + "rad/s^2"
+    label_rotmeas_save = str(rotmeas)
+    if args.multi_rotmeas: # The RMs measured using the data; for multiple RM data
+        # Get the RMs and convert to floats
+        multi_rotmeas_str = args.multi_rotmeas.split(',')
+        num_RMs = len(multi_rotmeas_str)
+        RM_indx = np.arange(num_RMs)
+        multi_rotmeas = [0.0] + [np.float(multi_rotmeas_str[i]) for i in RM_indx] + [0.0]
+        # Get RM for plot label and figure saving
+        label_rotmeas = ''
+        label_rotmeas_save = ''
+        for i in np.arange(len(multi_rotmeas_str)):
+            if i > 0:
+                label_rotmeas += ','
+                label_rotmeas_save += '_'
+                label_rotmeas += multi_rotmeas_str[i]
+                label_rotmeas_save += multi_rotmeas_str[i]
+                print("RM plot label: {0}".format(label_rotmeas))
+                # Get the starts for each chunk of data to be de-rotated and make floats in list
+                rm_bins_str = args.rm_bins_starts.split(',')
+                num_rm_bins = len(rm_bins_str)
+                rm_bins_indx = np.arange(num_rm_bins)
+                rm_bins_starts = [np.float(rm_bins_str[i]) for i in rm_bins_indx]
+                # Pad the end with the number of time bins + 1 in order to have a correct index range for later
+                rm_bins_starts += [nbins+1.0]
+                print("RMs chosen for each pulse: {0}".format(multi_rotmeas))
+                print("Start bins for each RM: {0}".format(rm_bins_starts))
+                dynspec_rmcorrected = {}
+                fscrunch_rmcorrected = {}
 
-# Polarisation calibration parameters
-delta_psi = args.delta_psi # radians
-delta_t = args.delta_t # nanoseconds
-phi = args.phi # radians
+    # Polarisation calibration parameters
+    delta_psi = args.delta_psi # radians
+    delta_t = args.delta_t # nanoseconds
+    phi = args.phi # radians
 
 # Define number of subbands if requested
 if args.subband:
@@ -268,293 +270,294 @@ plt.figure(fig.number)
 plt.close('all')
 
 
-#####################################################################################
+if not args.firstlook:
+    #####################################################################################
 
-# POLARISATION CORRECTIONS
+    # POLARISATION CORRECTIONS
 
-#####################################################################################
+    #####################################################################################
 
-# POLARISATION CALIBRATION
+    # POLARISATION CALIBRATION
 
-q_calibrated = -dynspec["Q"]*np.cos(delta_psi) - ( (dynspec["U"]*np.cos(phi + 2*np.pi*freqs_ghz*delta_t) - dynspec["V"]*np.sin(phi + 2*np.pi*freqs_ghz*delta_t)) * np.sin(delta_psi) )
-u_calibrated = -dynspec["Q"]*np.sin(delta_psi) + ( (dynspec["U"]*np.cos(phi + 2*np.pi*freqs_ghz*delta_t) - dynspec["V"]*np.sin(phi + 2*np.pi*freqs_ghz*delta_t)) * np.cos(delta_psi) )
-v_calibrated = dynspec["U"]*np.sin(phi + 2*np.pi*freqs_ghz*delta_t) + dynspec["V"]*np.cos(phi + 2*np.pi*freqs_ghz*delta_t)
+    q_calibrated = -dynspec["Q"]*np.cos(delta_psi) - ( (dynspec["U"]*np.cos(phi + 2*np.pi*freqs_ghz*delta_t) - dynspec["V"]*np.sin(phi + 2*np.pi*freqs_ghz*delta_t)) * np.sin(delta_psi) )
+    u_calibrated = -dynspec["Q"]*np.sin(delta_psi) + ( (dynspec["U"]*np.cos(phi + 2*np.pi*freqs_ghz*delta_t) - dynspec["V"]*np.sin(phi + 2*np.pi*freqs_ghz*delta_t)) * np.cos(delta_psi) )
+    v_calibrated = dynspec["U"]*np.sin(phi + 2*np.pi*freqs_ghz*delta_t) + dynspec["V"]*np.cos(phi + 2*np.pi*freqs_ghz*delta_t)
 
-# Save the calibrated dynamic spectra
-np.savetxt("{0}-imageplane-dynspectrum-calibrated.stokesI.txt".format(src), dynspec["I"])
-np.savetxt("{0}-imageplane-dynspectrum-calibrated.stokesQ.txt".format(src), q_calibrated)
-np.savetxt("{0}-imageplane-dynspectrum-calibrated.stokesU.txt".format(src), u_calibrated)
-np.savetxt("{0}-imageplane-dynspectrum-calibrated.stokesV.txt".format(src), v_calibrated)
+    # Save the calibrated dynamic spectra
+    np.savetxt("{0}-imageplane-dynspectrum-calibrated.stokesI.txt".format(src), dynspec["I"])
+    np.savetxt("{0}-imageplane-dynspectrum-calibrated.stokesQ.txt".format(src), q_calibrated)
+    np.savetxt("{0}-imageplane-dynspectrum-calibrated.stokesU.txt".format(src), u_calibrated)
+    np.savetxt("{0}-imageplane-dynspectrum-calibrated.stokesV.txt".format(src), v_calibrated)
 
-# Check the output of the delay and phase offset corrections
-del_phase_offset_arg = phi + 2*np.pi*freqs_ghz*delta_t
-del_ph_fig, del_ph_ax = plt.subplots(figsize=(7,7))
-del_ph_ax.plot(freqs_ghz,del_phase_offset_arg)
-del_ph_ax.set_ylabel("delay and phase offset (radians)")
-del_ph_ax.set_xlabel("frequency (GHz)")
-plt.tight_layout()
-plt.savefig('{0}-delay_phase_offset_delta-psi{1}_delta-t{2}_phi{3}.png'.format(src, delta_psi, delta_t, phi))
-
-# Plotting the calibrated dynamic spectra
-combinedfig_cal, combinedaxs_cal = plt.subplots(4, 1, sharex=True, sharey=True, figsize=(4.5,15))
-# Save the multipanel plot
-combinedfig_cal.suptitle(frbtitletext, x=0.25, y=0.99)
-combinedaxs_cal[3].set_xlabel("Time (ms)")
-for i in range(4):
-    combinedaxs_cal[i].set_ylabel("Frequency (MHz)")
-    if i==0:
-        combinedaxs_cal[i].title.set_text("\n Stokes I")
-    else:
-        combinedaxs_cal[i].title.set_text("Stokes "+["I","Q","U","V"][i])
-combinedaxs_cal[0].title.set_text("\n Stokes I")
-combinedaxs_cal[0].imshow(dynspec["I"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
-combinedaxs_cal[1].imshow(q_calibrated[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
-combinedaxs_cal[2].imshow(u_calibrated[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
-combinedaxs_cal[3].imshow(v_calibrated[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
-plt.figure(combinedfig_cal.number)
-plt.tight_layout()
-plt.savefig("{0}-multipanel-dynspectrum_calibrated_delta-psi{1}_delta-t{2}_phi{3}.png".format(src, delta_psi, delta_t, phi))
-combinedfig_cal.clf()
-plt.figure(fig.number)
-plt.close('all')
-
-# CORRECTING FOR FARADAY ROTATION
-
-# Calculate the total linear polarisation
-p_qu = np.sqrt(q_calibrated**2 + u_calibrated**2)
-
-# Calculate the polarisation position angle
-pa = 0.5*np.arctan2(u_calibrated,q_calibrated)
-
-# Wavelength squared
-c = const.c.value # speed of light in m/s
-lambda_sq = (c/(freqs*1e6))**2
-lambda_cen_sq = lambda_sq[int(np.floor(len(lambda_sq)/2))]
-print("lambda^2: {0}".format(lambda_sq))
-print("lambda^2 centre: {0}".format(lambda_cen_sq))
-# If multiple RMs are supplied
-if args.multi_rotmeas:
-    # Make array of RM values for each slice of data
-    k = 0
-    rot_measures = np.zeros(nbins)
-    for num_bin in np.arange(nbins):
-        if num_bin >= rm_bins_starts[k]-1:
-            k += 1
-        rot_measures[num_bin] = multi_rotmeas[k]
-    # Calculate the change required for PA correction and perform correction (referenced to the centre of the band)
-    rm_angle = (rot_measures[:, None] * lambda_sq) - (rot_measures[:, None] * lambda_cen_sq)
-# If only one RM is provided
-else:
-    # Derotating using the measured RM (referenced to the centre of the band)
-    rm_angle = (rotmeas * lambda_sq) - (rotmeas * lambda_cen_sq)
-
-# Apply corrections to Stokes Q and U
-dynspec_rmcorrected["Q"] = q_calibrated*np.cos(2*rm_angle) + u_calibrated*np.sin(2*rm_angle) 
-dynspec_rmcorrected["U"] = u_calibrated*np.cos(2*rm_angle) - q_calibrated*np.sin(2*rm_angle)
-dynspec_rmcorrected["I"] = np.copy(dynspec["I"])
-dynspec_rmcorrected["V"] = np.copy(v_calibrated)
-#dynspec_rmcorrected["XX"] = np.copy(dynspec["XX"])
-#dynspec_rmcorrected["YY"] = np.copy(dynspec["YY"])
-
-# Plot to confirm that the sign of the RM is correct:
-# Set figure size
-pol_fig, pol_ax = plt.subplots(figsize=(7,7))
-
-print("U: {0}".format(dynspec["U"]))
-print("RM corrected U: {0}".format(dynspec_rmcorrected["U"]))
-print("RM corrected Q: {0}".format(dynspec_rmcorrected["Q"]))
-print("I: {0}".format(dynspec_rmcorrected["I"]))
-
-# Calculate U/I and Q/I ratios to determine the correct RM sign
-if args.isolate:
-    if args.rms:
-        U_on_I = dynspec_rmcorrected["U"][1:] / dynspec_rmcorrected["I"][1:]
-        Q_on_I = dynspec_rmcorrected["Q"][1:] / dynspec_rmcorrected["I"][1:]
-        print("U/I: {0}".format(U_on_I))
-        print("Q/I: {0}".format(Q_on_I))
-        print("U/I from {0} to {1}: {2}".format(binstart, binstop, U_on_I[binstart:binstop]))
-        print("Q/I from {0} to {1}: {2}".format(binstart, binstop, Q_on_I[binstart:binstop]))
-        print("U/I shape: {0}".format(U_on_I.shape))
-        print("Q/I shape: {0}".format(Q_on_I.shape))
-        U_on_I[dynspec_rmcorrected["I"][1:] < 3*dynrms["I"][1:]] = 0
-        Q_on_I[dynspec_rmcorrected["I"][1:] < 3*dynrms["I"][1:]] = 0
-        print("U/I post threshold: {0}".format(U_on_I[binstart:binstop]))
-        print("Q/I post threshold: {0}".format(Q_on_I[binstart:binstop]))
-
-# Time scrunch the U/I and Q/I ratios to plot the ratios vs. frequency
-tscrunch_I = np.mean(dynspec_rmcorrected["I"][1:], 0)
-tscrunch_U = np.mean(dynspec_rmcorrected["U"][1:], 0)
-tscrunch_Q = np.mean(dynspec_rmcorrected["Q"][1:], 0)
-tscrunch_U_on_I = tscrunch_U / tscrunch_I
-tscrunch_Q_on_I = tscrunch_Q / tscrunch_I
-
-pol_ax.imshow(dynspec_rmcorrected["Q"][:,startchan:endchan].transpose(), cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
-pol_ax.set_xlabel("Time (ms)")
-pol_ax.set_ylabel("Frequency (MHz)")
-plt.tight_layout()
-plt.savefig('{0}-RMcorrected.stokesQ.RM{2}.png'.format(src, stokes, label_rotmeas_save))
-
-pol_ax.imshow(dynspec_rmcorrected["U"][:,startchan:endchan].transpose(), cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
-pol_ax.set_xlabel("Time (ms)")
-pol_ax.set_ylabel("Frequency (MHz)")
-plt.tight_layout()
-plt.savefig('{0}-RMcorrected.stokesU.RM{2}.png'.format(src, stokes, label_rotmeas_save))
-
-if args.pulse_number is None:
-    pulse_number = '_all'
-
-if args.isolate:
-    pol_slice_fig, pol_slice_ax = plt.subplots(figsize=(7,7))
-    pol_slice_ax.imshow(U_on_I[:,startchan:endchan].transpose(), cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
-    pol_slice_ax.set_xlabel("Time (ms)")
-    pol_slice_ax.set_ylabel("Frequency (MHz)")
+    # Check the output of the delay and phase offset corrections
+    del_phase_offset_arg = phi + 2*np.pi*freqs_ghz*delta_t
+    del_ph_fig, del_ph_ax = plt.subplots(figsize=(7,7))
+    del_ph_ax.plot(freqs_ghz,del_phase_offset_arg)
+    del_ph_ax.set_ylabel("delay and phase offset (radians)")
+    del_ph_ax.set_xlabel("frequency (GHz)")
     plt.tight_layout()
-    pol_slice_fig.savefig('{0}-RMcorrected.stokesQ_on_I.RM{2}.pulse{3}.png'.format(src, stokes, label_rotmeas_save, pulse_number))
+    plt.savefig('{0}-delay_phase_offset_delta-psi{1}_delta-t{2}_phi{3}.png'.format(src, delta_psi, delta_t, phi))
 
-    pol_slice_ax.imshow(U_on_I[:,startchan:endchan].transpose(), cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
-    pol_slice_ax.set_xlabel("Time (ms)")
-    pol_slice_ax.set_ylabel("Frequency (MHz)")
-    plt.tight_layout()
-    pol_slice_fig.savefig('{0}-RMcorrected.stokesU_on_I.RM{2}.pulse{3}.png'.format(src, stokes, label_rotmeas_save, pulse_number))
+    # Plotting the calibrated dynamic spectra
+    combinedfig_cal, combinedaxs_cal = plt.subplots(4, 1, sharex=True, sharey=True, figsize=(4.5,15))
+    # Save the multipanel plot
+    combinedfig_cal.suptitle(frbtitletext, x=0.25, y=0.99)
+    combinedaxs_cal[3].set_xlabel("Time (ms)")
+    for i in range(4):
+        combinedaxs_cal[i].set_ylabel("Frequency (MHz)")
+        if i==0:
+            combinedaxs_cal[i].title.set_text("\n Stokes I")
+        else:
+            combinedaxs_cal[i].title.set_text("Stokes "+["I","Q","U","V"][i])
+            combinedaxs_cal[0].title.set_text("\n Stokes I")
+            combinedaxs_cal[0].imshow(dynspec["I"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+            combinedaxs_cal[1].imshow(q_calibrated[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+            combinedaxs_cal[2].imshow(u_calibrated[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+            combinedaxs_cal[3].imshow(v_calibrated[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+            plt.figure(combinedfig_cal.number)
+            plt.tight_layout()
+            plt.savefig("{0}-multipanel-dynspectrum_calibrated_delta-psi{1}_delta-t{2}_phi{3}.png".format(src, delta_psi, delta_t, phi))
+            combinedfig_cal.clf()
+            plt.figure(fig.number)
+            plt.close('all')
 
-# Plot the full calibrated dynamic spectra for the RM corrected data
-combinedfig_calrm, combinedaxs_calrm = plt.subplots(4, 1, sharex=True, sharey=True, figsize=(4.5,15))
-# Save the multipanel plot
-combinedfig_calrm.suptitle(frbtitletext, x=0.25, y=0.99)
-combinedaxs_calrm[3].set_xlabel("Time (ms)")
-for i in range(4):
-    combinedaxs_calrm[i].set_ylabel("Frequency (MHz)")
-    if i==0:
-        combinedaxs_calrm[i].title.set_text("\n Stokes I")
-    else:
-        combinedaxs_calrm[i].title.set_text("Stokes "+["I","Q","U","V"][i])
-combinedaxs_calrm[0].title.set_text("\n Stokes I")
-combinedaxs_calrm[0].imshow(dynspec_rmcorrected["I"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
-combinedaxs_calrm[1].imshow(dynspec_rmcorrected["Q"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
-combinedaxs_calrm[2].imshow(dynspec_rmcorrected["U"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
-combinedaxs_calrm[3].imshow(dynspec_rmcorrected["V"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
-plt.figure(combinedfig_calrm.number)
-plt.tight_layout()
-plt.savefig("{0}-multipanel-dynspectrum_calibrated_RMcorrected{1}delta-psi{2}_delta-t{3}_phi{4}.png".format(src, label_rotmeas_save, delta_psi, delta_t, phi))
-combinedfig_calrm.clf()
-plt.figure(fig.number)
-plt.close('all')
+    # CORRECTING FOR FARADAY ROTATION
 
-if args.isolate:
+    # Calculate the total linear polarisation
+    p_qu = np.sqrt(q_calibrated**2 + u_calibrated**2)
+
+    # Calculate the polarisation position angle
+    pa = 0.5*np.arctan2(u_calibrated,q_calibrated)
+
+    # Wavelength squared
+    c = const.c.value # speed of light in m/s
+    lambda_sq = (c/(freqs*1e6))**2
+    lambda_cen_sq = lambda_sq[int(np.floor(len(lambda_sq)/2))]
+    print("lambda^2: {0}".format(lambda_sq))
+    print("lambda^2 centre: {0}".format(lambda_cen_sq))
+    # If multiple RMs are supplied
+    if args.multi_rotmeas:
+        # Make array of RM values for each slice of data
+        k = 0
+        rot_measures = np.zeros(nbins)
+        for num_bin in np.arange(nbins):
+            if num_bin >= rm_bins_starts[k]-1:
+                k += 1
+                rot_measures[num_bin] = multi_rotmeas[k]
+                # Calculate the change required for PA correction and perform correction (referenced to the centre of the band)
+                rm_angle = (rot_measures[:, None] * lambda_sq) - (rot_measures[:, None] * lambda_cen_sq)
+                # If only one RM is provided
+            else:
+                # Derotating using the measured RM (referenced to the centre of the band)
+                rm_angle = (rotmeas * lambda_sq) - (rotmeas * lambda_cen_sq)
+
+    # Apply corrections to Stokes Q and U
+    dynspec_rmcorrected["Q"] = q_calibrated*np.cos(2*rm_angle) + u_calibrated*np.sin(2*rm_angle) 
+    dynspec_rmcorrected["U"] = u_calibrated*np.cos(2*rm_angle) - q_calibrated*np.sin(2*rm_angle)
+    dynspec_rmcorrected["I"] = np.copy(dynspec["I"])
+    dynspec_rmcorrected["V"] = np.copy(v_calibrated)
+    #dynspec_rmcorrected["XX"] = np.copy(dynspec["XX"])
+    #dynspec_rmcorrected["YY"] = np.copy(dynspec["YY"])
+
+    # Plot to confirm that the sign of the RM is correct:
+    # Set figure size
+    pol_fig, pol_ax = plt.subplots(figsize=(7,7))
+
+    print("U: {0}".format(dynspec["U"]))
+    print("RM corrected U: {0}".format(dynspec_rmcorrected["U"]))
+    print("RM corrected Q: {0}".format(dynspec_rmcorrected["Q"]))
+    print("I: {0}".format(dynspec_rmcorrected["I"]))
+
+    # Calculate U/I and Q/I ratios to determine the correct RM sign
+    if args.isolate:
+        if args.rms:
+            U_on_I = dynspec_rmcorrected["U"][1:] / dynspec_rmcorrected["I"][1:]
+            Q_on_I = dynspec_rmcorrected["Q"][1:] / dynspec_rmcorrected["I"][1:]
+            print("U/I: {0}".format(U_on_I))
+            print("Q/I: {0}".format(Q_on_I))
+            print("U/I from {0} to {1}: {2}".format(binstart, binstop, U_on_I[binstart:binstop]))
+            print("Q/I from {0} to {1}: {2}".format(binstart, binstop, Q_on_I[binstart:binstop]))
+            print("U/I shape: {0}".format(U_on_I.shape))
+            print("Q/I shape: {0}".format(Q_on_I.shape))
+            U_on_I[dynspec_rmcorrected["I"][1:] < 3*dynrms["I"][1:]] = 0
+            Q_on_I[dynspec_rmcorrected["I"][1:] < 3*dynrms["I"][1:]] = 0
+            print("U/I post threshold: {0}".format(U_on_I[binstart:binstop]))
+            print("Q/I post threshold: {0}".format(Q_on_I[binstart:binstop]))
+
     # Time scrunch the U/I and Q/I ratios to plot the ratios vs. frequency
-    threshold_time_average_indx = [np.where(np.mean(dynspec_rmcorrected["I"][binstart:binstop], 0) > args.threshold_factor*np.mean(dynrms["I"][binstart:binstop], 0))]
-    print("Time average threshold indices: {0}".format(threshold_time_average_indx))
-    print("Stokes I at said indices: {0}".format([dynspec_rmcorrected["I"][binstart:binstop][i][tuple(threshold_time_average_indx)] for i in np.arange(binstop-binstart)]))
-    tscrunch_I_isolated = np.mean([dynspec_rmcorrected["I"][binstart:binstop][i][tuple(threshold_time_average_indx)] for i in np.arange(binstop-binstart)], 0)[0]
-    print("Stokes I time scrunched (above 2.5sigma threshold): {0}; length of array: {1}".format(tscrunch_I_isolated, len(tscrunch_I_isolated)))
-    tscrunch_U_isolated = np.mean([dynspec_rmcorrected["U"][binstart:binstop][i][tuple(threshold_time_average_indx)] for i in np.arange(binstop-binstart)], 0)[0]
-    print("Stokes U time scrunched (above 2.5sigma threshold): {0}; length of array: {1}".format(tscrunch_U_isolated, len(tscrunch_U_isolated)))
-    tscrunch_Q_isolated = np.mean([dynspec_rmcorrected["Q"][binstart:binstop][i][tuple(threshold_time_average_indx)] for i in np.arange(binstop-binstart)], 0)[0]
-    print("Stokes Q time scrunched (above 2.5sigma threshold): {0}; length of array: {1}".format(tscrunch_Q_isolated, len(tscrunch_Q_isolated)))
-    tscrunch_U_on_I_isolated = tscrunch_U_isolated / tscrunch_I_isolated
-    print("tscrunched U/I isolated: {0}".format(tscrunch_U_on_I_isolated))
-    tscrunch_Q_on_I_isolated = tscrunch_Q_isolated / tscrunch_I_isolated
-    print("tscrunched Q/I isolated: {0}".format(tscrunch_Q_on_I_isolated))
+    tscrunch_I = np.mean(dynspec_rmcorrected["I"][1:], 0)
+    tscrunch_U = np.mean(dynspec_rmcorrected["U"][1:], 0)
+    tscrunch_Q = np.mean(dynspec_rmcorrected["Q"][1:], 0)
+    tscrunch_U_on_I = tscrunch_U / tscrunch_I
+    tscrunch_Q_on_I = tscrunch_Q / tscrunch_I
 
-    # Define good frequencies and lambda squared for thresholded time-averaged data
-    freqs_threshold = freqs[tuple(threshold_time_average_indx)][0]
-    print("Thresholded frequencies: {0}".format(freqs_threshold))
-    lambda_sq_threshold = lambda_sq[tuple(threshold_time_average_indx)][0]
-    print("Thresholded wavelengths: {0}".format(lambda_sq_threshold))
+    pol_ax.imshow(dynspec_rmcorrected["Q"][:,startchan:endchan].transpose(), cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
+    pol_ax.set_xlabel("Time (ms)")
+    pol_ax.set_ylabel("Frequency (MHz)")
+    plt.tight_layout()
+    plt.savefig('{0}-RMcorrected.stokesQ.RM{2}.png'.format(src, stokes, label_rotmeas_save))
 
-    # Fit the line to determine the flattest U/I and Q/I
-    best_UonI_fit_coefs, best_UonI_fit_stats = P.polyfit(freqs_threshold, tscrunch_U_on_I_isolated, 1, full=True)
-    print("U/I coefs: {0}".format(best_UonI_fit_coefs))
-    print("U/I stats: {0}".format(best_UonI_fit_stats))
-    UonI_fit_line = best_UonI_fit_coefs[0] + best_UonI_fit_coefs[1]*freqs_threshold
+    pol_ax.imshow(dynspec_rmcorrected["U"][:,startchan:endchan].transpose(), cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
+    pol_ax.set_xlabel("Time (ms)")
+    pol_ax.set_ylabel("Frequency (MHz)")
+    plt.tight_layout()
+    plt.savefig('{0}-RMcorrected.stokesU.RM{2}.png'.format(src, stokes, label_rotmeas_save))
 
-    best_QonI_fit_coefs, best_QonI_fit_stats = P.polyfit(freqs_threshold, tscrunch_Q_on_I_isolated, 1, full=True)
-    print("Q/I coefs: {0}".format(best_QonI_fit_coefs))
-    print("Q/I stats: {0}".format(best_QonI_fit_stats))
-    QonI_fit_line = best_QonI_fit_coefs[0] + best_QonI_fit_coefs[1]*freqs_threshold
+    if args.pulse_number is None:
+        pulse_number = '_all'
 
-# FIXME: add weighting to fit using rms
-    # Get corrected polarisation position angle for tscrunched data
-    pol_pa_tscrunched = 0.5*np.arctan2(tscrunch_U_isolated, tscrunch_Q_isolated)*180/np.pi
-    pa_pre_rm_correction = 0.5*np.arctan2(np.mean(u_calibrated[binstart:binstop], 0), np.mean(q_calibrated[binstart:binstop], 0))
-    pol_pa_coefs, pol_pa_stats = P.polyfit(lambda_sq_threshold, pol_pa_tscrunched, 1, full=True)
-    print("PA coefs: {0}".format(pol_pa_coefs))
-    print("PA stats: {0}".format(pol_pa_stats))
-    pol_pa_fit_line = pol_pa_coefs[0] + pol_pa_coefs[1]*lambda_sq_threshold
+    if args.isolate:
+        pol_slice_fig, pol_slice_ax = plt.subplots(figsize=(7,7))
+        pol_slice_ax.imshow(U_on_I[:,startchan:endchan].transpose(), cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
+        pol_slice_ax.set_xlabel("Time (ms)")
+        pol_slice_ax.set_ylabel("Frequency (MHz)")
+        plt.tight_layout()
+        pol_slice_fig.savefig('{0}-RMcorrected.stokesQ_on_I.RM{2}.pulse{3}.png'.format(src, stokes, label_rotmeas_save, pulse_number))
 
-    pa_fig, pa_ax = plt.subplots(figsize=(7,7))
-    pa_ax.plot(lambda_sq,pa_pre_rm_correction, '.')
-    pa_ax.legend(["pulse {0}".format(pulse_number)])
-    pa_ax.set_ylabel("PA (rad)")
-    pa_ax.set_xlabel("lambda^2")
-    pa_fig.savefig('{0}-PA_pre-RMcorrection_pulse{1}.png'.format(src, pulse_number), bbox_inches = 'tight')
+        pol_slice_ax.imshow(U_on_I[:,startchan:endchan].transpose(), cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,endfreq,startfreq], aspect='auto')
+        pol_slice_ax.set_xlabel("Time (ms)")
+        pol_slice_ax.set_ylabel("Frequency (MHz)")
+        plt.tight_layout()
+        pol_slice_fig.savefig('{0}-RMcorrected.stokesU_on_I.RM{2}.pulse{3}.png'.format(src, stokes, label_rotmeas_save, pulse_number))
 
-    uq_on_i_fig = plt.figure(figsize=(7,9))
-    uq_on_i_ax0 = plt.subplot2grid((12,3), (0,0), rowspan=4, colspan=3)
-    uq_on_i_ax1 = plt.subplot2grid((12,3), (4,0), rowspan=4, colspan=3, sharex=uq_on_i_ax0)
-    uq_on_i_ax2 = plt.subplot2grid((12,3), (8,0), rowspan=4, colspan=3)
-    plt.setp(uq_on_i_ax0.get_xticklabels(), visible=False)
-    uq_on_i_fig.subplots_adjust(hspace=0)
-    uq_on_i_ax0.tick_params(axis='x', direction='in')
+    # Plot the full calibrated dynamic spectra for the RM corrected data
+    combinedfig_calrm, combinedaxs_calrm = plt.subplots(4, 1, sharex=True, sharey=True, figsize=(4.5,15))
+    # Save the multipanel plot
+    combinedfig_calrm.suptitle(frbtitletext, x=0.25, y=0.99)
+    combinedaxs_calrm[3].set_xlabel("Time (ms)")
+    for i in range(4):
+        combinedaxs_calrm[i].set_ylabel("Frequency (MHz)")
+        if i==0:
+            combinedaxs_calrm[i].title.set_text("\n Stokes I")
+        else:
+            combinedaxs_calrm[i].title.set_text("Stokes "+["I","Q","U","V"][i])
+            combinedaxs_calrm[0].title.set_text("\n Stokes I")
+            combinedaxs_calrm[0].imshow(dynspec_rmcorrected["I"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+            combinedaxs_calrm[1].imshow(dynspec_rmcorrected["Q"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+            combinedaxs_calrm[2].imshow(dynspec_rmcorrected["U"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+            combinedaxs_calrm[3].imshow(dynspec_rmcorrected["V"][:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+            plt.figure(combinedfig_calrm.number)
+            plt.tight_layout()
+            plt.savefig("{0}-multipanel-dynspectrum_calibrated_RMcorrected{1}delta-psi{2}_delta-t{3}_phi{4}.png".format(src, label_rotmeas_save, delta_psi, delta_t, phi))
+            combinedfig_calrm.clf()
+            plt.figure(fig.number)
+            plt.close('all')
 
-    uq_on_i_ax0.plot(freqs_threshold, tscrunch_U_on_I_isolated, '.')
-    uq_on_i_ax0.plot(freqs_threshold, UonI_fit_line, '-')
-    uq_on_i_ax1.plot(freqs_threshold, tscrunch_Q_on_I_isolated, '.')
-    uq_on_i_ax1.plot(freqs_threshold, QonI_fit_line, '-')
-    uq_on_i_ax2.plot(lambda_sq_threshold, pol_pa_tscrunched, '.')
-    uq_on_i_ax2.plot(lambda_sq_threshold, pol_pa_fit_line, '-')
-    uq_on_i_ax0.legend(["RM={0} pulse {1}".format(label_rotmeas, pulse_number)])
-    uq_on_i_ax1.legend(["RM={0} pulse {1}".format(label_rotmeas, pulse_number)])
-    uq_on_i_ax2.legend(["RM={0} pulse {1}".format(label_rotmeas, pulse_number)])
-    uq_on_i_ax1.set_xlabel("Frequency")
-    uq_on_i_ax0.set_ylim(-1.5, 1.5)
-    uq_on_i_ax1.set_ylim(-1.5, 1.5)
-    uq_on_i_ax0.set_ylabel("U/I")
-    uq_on_i_ax1.set_ylabel("Q/I")
-    uq_on_i_ax2.set_xlabel("lambda^2")
-    uq_on_i_ax2.set_ylabel("PA (deg)")
-    uq_on_i_fig.savefig('{0}-RMcorrected.stokesUQonI_RMeq{1}_pulse{2}.png'.format(src, label_rotmeas_save, pulse_number), bbox_inches = 'tight')
+    if args.isolate:
+        # Time scrunch the U/I and Q/I ratios to plot the ratios vs. frequency
+        threshold_time_average_indx = [np.where(np.mean(dynspec_rmcorrected["I"][binstart:binstop], 0) > args.threshold_factor*np.mean(dynrms["I"][binstart:binstop], 0))]
+        print("Time average threshold indices: {0}".format(threshold_time_average_indx))
+        print("Stokes I at said indices: {0}".format([dynspec_rmcorrected["I"][binstart:binstop][i][tuple(threshold_time_average_indx)] for i in np.arange(binstop-binstart)]))
+        tscrunch_I_isolated = np.mean([dynspec_rmcorrected["I"][binstart:binstop][i][tuple(threshold_time_average_indx)] for i in np.arange(binstop-binstart)], 0)[0]
+        print("Stokes I time scrunched (above 2.5sigma threshold): {0}; length of array: {1}".format(tscrunch_I_isolated, len(tscrunch_I_isolated)))
+        tscrunch_U_isolated = np.mean([dynspec_rmcorrected["U"][binstart:binstop][i][tuple(threshold_time_average_indx)] for i in np.arange(binstop-binstart)], 0)[0]
+        print("Stokes U time scrunched (above 2.5sigma threshold): {0}; length of array: {1}".format(tscrunch_U_isolated, len(tscrunch_U_isolated)))
+        tscrunch_Q_isolated = np.mean([dynspec_rmcorrected["Q"][binstart:binstop][i][tuple(threshold_time_average_indx)] for i in np.arange(binstop-binstart)], 0)[0]
+        print("Stokes Q time scrunched (above 2.5sigma threshold): {0}; length of array: {1}".format(tscrunch_Q_isolated, len(tscrunch_Q_isolated)))
+        tscrunch_U_on_I_isolated = tscrunch_U_isolated / tscrunch_I_isolated
+        print("tscrunched U/I isolated: {0}".format(tscrunch_U_on_I_isolated))
+        tscrunch_Q_on_I_isolated = tscrunch_Q_isolated / tscrunch_I_isolated
+        print("tscrunched Q/I isolated: {0}".format(tscrunch_Q_on_I_isolated))
 
-    # Calculate and plot L pre-cal and post-cal for time-averaged pulse slice
-    l_precal = np.sqrt(np.mean(dynspec["Q"][binstart:binstop],0)**2 + np.mean(dynspec["U"][binstart:binstop],0)**2)
-    l_postcal = np.sqrt(np.mean(q_calibrated[binstart:binstop],0)**2 + np.mean(u_calibrated[binstart:binstop],0)**2)
+        # Define good frequencies and lambda squared for thresholded time-averaged data
+        freqs_threshold = freqs[tuple(threshold_time_average_indx)][0]
+        print("Thresholded frequencies: {0}".format(freqs_threshold))
+        lambda_sq_threshold = lambda_sq[tuple(threshold_time_average_indx)][0]
+        print("Thresholded wavelengths: {0}".format(lambda_sq_threshold))
 
-    l_fig = plt.figure(figsize=(7,9))
-    l_ax0 = plt.subplot2grid((8,3), (0,0), rowspan=4, colspan=3)
-    l_ax1 = plt.subplot2grid((8,3), (4,0), rowspan=4, colspan=3, sharex=uq_on_i_ax0)
-    plt.setp(l_ax0.get_xticklabels(), visible=False)
-    l_fig.subplots_adjust(hspace=0)
-    l_ax0.tick_params(axis='x', direction='in')
+        # Fit the line to determine the flattest U/I and Q/I
+        best_UonI_fit_coefs, best_UonI_fit_stats = P.polyfit(freqs_threshold, tscrunch_U_on_I_isolated, 1, full=True)
+        print("U/I coefs: {0}".format(best_UonI_fit_coefs))
+        print("U/I stats: {0}".format(best_UonI_fit_stats))
+        UonI_fit_line = best_UonI_fit_coefs[0] + best_UonI_fit_coefs[1]*freqs_threshold
 
-    l_ax0.plot(freqs, l_precal, '.')
-    l_ax1.plot(freqs, l_postcal, '.')
-    l_ax0.legend(["pulse {1} pre-cal".format(label_rotmeas, pulse_number)])
-    l_ax1.legend(["pulse {1} post-cal".format(label_rotmeas, pulse_number)])
-    l_ax1.set_xlabel("Frequency")
-    l_ax0.set_ylabel("L amplitude")
-    l_ax1.set_ylabel("L amplitude")
-    l_fig.savefig('{0}-L_pre-post-cal_pulse{1}.png'.format(src, pulse_number), bbox_inches = 'tight')
+        best_QonI_fit_coefs, best_QonI_fit_stats = P.polyfit(freqs_threshold, tscrunch_Q_on_I_isolated, 1, full=True)
+        print("Q/I coefs: {0}".format(best_QonI_fit_coefs))
+        print("Q/I stats: {0}".format(best_QonI_fit_stats))
+        QonI_fit_line = best_QonI_fit_coefs[0] + best_QonI_fit_coefs[1]*freqs_threshold
 
-l_precal_dynspec = np.sqrt(dynspec["Q"]**2 + dynspec["U"]**2)
-l_postcal_dynspec = np.sqrt(q_calibrated**2 + u_calibrated**2)
+    # FIXME: add weighting to fit using rms
+        # Get corrected polarisation position angle for tscrunched data
+        pol_pa_tscrunched = 0.5*np.arctan2(tscrunch_U_isolated, tscrunch_Q_isolated)*180/np.pi
+        pa_pre_rm_correction = 0.5*np.arctan2(np.mean(u_calibrated[binstart:binstop], 0), np.mean(q_calibrated[binstart:binstop], 0))
+        pol_pa_coefs, pol_pa_stats = P.polyfit(lambda_sq_threshold, pol_pa_tscrunched, 1, full=True)
+        print("PA coefs: {0}".format(pol_pa_coefs))
+        print("PA stats: {0}".format(pol_pa_stats))
+        pol_pa_fit_line = pol_pa_coefs[0] + pol_pa_coefs[1]*lambda_sq_threshold
 
-l_dynspec_fig, l_dynspec_ax = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(4.5,15))
-l_dynspec_fig.suptitle(frbtitletext, x=0.25, y=0.99)
-l_dynspec_ax[1].set_xlabel("Time (ms)")
-for i in range(2):
-    l_dynspec_ax[i].set_ylabel("Frequency (MHz)")
-    if i==0:
-        l_dynspec_ax[i].title.set_text("\n Pre-cal")
-    else:
-        l_dynspec_ax[i].title.set_text("\n Post-cal")
-l_dynspec_ax[0].imshow(l_precal_dynspec[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
-l_dynspec_ax[1].imshow(l_postcal_dynspec[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
-plt.figure(l_dynspec_fig.number)
-plt.tight_layout()
-plt.savefig("{0}-L_pre-post-cal_dynspec.png".format(src), bbox_inches = 'tight')
-l_dynspec_fig.clf()
-plt.figure(fig.number)
-plt.close('all')
+        pa_fig, pa_ax = plt.subplots(figsize=(7,7))
+        pa_ax.plot(lambda_sq,pa_pre_rm_correction, '.')
+        pa_ax.legend(["pulse {0}".format(pulse_number)])
+        pa_ax.set_ylabel("PA (rad)")
+        pa_ax.set_xlabel("lambda^2")
+        pa_fig.savefig('{0}-PA_pre-RMcorrection_pulse{1}.png'.format(src, pulse_number), bbox_inches = 'tight')
+
+        uq_on_i_fig = plt.figure(figsize=(7,9))
+        uq_on_i_ax0 = plt.subplot2grid((12,3), (0,0), rowspan=4, colspan=3)
+        uq_on_i_ax1 = plt.subplot2grid((12,3), (4,0), rowspan=4, colspan=3, sharex=uq_on_i_ax0)
+        uq_on_i_ax2 = plt.subplot2grid((12,3), (8,0), rowspan=4, colspan=3)
+        plt.setp(uq_on_i_ax0.get_xticklabels(), visible=False)
+        uq_on_i_fig.subplots_adjust(hspace=0)
+        uq_on_i_ax0.tick_params(axis='x', direction='in')
+
+        uq_on_i_ax0.plot(freqs_threshold, tscrunch_U_on_I_isolated, '.')
+        uq_on_i_ax0.plot(freqs_threshold, UonI_fit_line, '-')
+        uq_on_i_ax1.plot(freqs_threshold, tscrunch_Q_on_I_isolated, '.')
+        uq_on_i_ax1.plot(freqs_threshold, QonI_fit_line, '-')
+        uq_on_i_ax2.plot(lambda_sq_threshold, pol_pa_tscrunched, '.')
+        uq_on_i_ax2.plot(lambda_sq_threshold, pol_pa_fit_line, '-')
+        uq_on_i_ax0.legend(["RM={0} pulse {1}".format(label_rotmeas, pulse_number)])
+        uq_on_i_ax1.legend(["RM={0} pulse {1}".format(label_rotmeas, pulse_number)])
+        uq_on_i_ax2.legend(["RM={0} pulse {1}".format(label_rotmeas, pulse_number)])
+        uq_on_i_ax1.set_xlabel("Frequency")
+        uq_on_i_ax0.set_ylim(-1.5, 1.5)
+        uq_on_i_ax1.set_ylim(-1.5, 1.5)
+        uq_on_i_ax0.set_ylabel("U/I")
+        uq_on_i_ax1.set_ylabel("Q/I")
+        uq_on_i_ax2.set_xlabel("lambda^2")
+        uq_on_i_ax2.set_ylabel("PA (deg)")
+        uq_on_i_fig.savefig('{0}-RMcorrected.stokesUQonI_RMeq{1}_pulse{2}.png'.format(src, label_rotmeas_save, pulse_number), bbox_inches = 'tight')
+
+        # Calculate and plot L pre-cal and post-cal for time-averaged pulse slice
+        l_precal = np.sqrt(np.mean(dynspec["Q"][binstart:binstop],0)**2 + np.mean(dynspec["U"][binstart:binstop],0)**2)
+        l_postcal = np.sqrt(np.mean(q_calibrated[binstart:binstop],0)**2 + np.mean(u_calibrated[binstart:binstop],0)**2)
+
+        l_fig = plt.figure(figsize=(7,9))
+        l_ax0 = plt.subplot2grid((8,3), (0,0), rowspan=4, colspan=3)
+        l_ax1 = plt.subplot2grid((8,3), (4,0), rowspan=4, colspan=3, sharex=uq_on_i_ax0)
+        plt.setp(l_ax0.get_xticklabels(), visible=False)
+        l_fig.subplots_adjust(hspace=0)
+        l_ax0.tick_params(axis='x', direction='in')
+
+        l_ax0.plot(freqs, l_precal, '.')
+        l_ax1.plot(freqs, l_postcal, '.')
+        l_ax0.legend(["pulse {1} pre-cal".format(label_rotmeas, pulse_number)])
+        l_ax1.legend(["pulse {1} post-cal".format(label_rotmeas, pulse_number)])
+        l_ax1.set_xlabel("Frequency")
+        l_ax0.set_ylabel("L amplitude")
+        l_ax1.set_ylabel("L amplitude")
+        l_fig.savefig('{0}-L_pre-post-cal_pulse{1}.png'.format(src, pulse_number), bbox_inches = 'tight')
+
+    l_precal_dynspec = np.sqrt(dynspec["Q"]**2 + dynspec["U"]**2)
+    l_postcal_dynspec = np.sqrt(q_calibrated**2 + u_calibrated**2)
+
+    l_dynspec_fig, l_dynspec_ax = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(4.5,15))
+    l_dynspec_fig.suptitle(frbtitletext, x=0.25, y=0.99)
+    l_dynspec_ax[1].set_xlabel("Time (ms)")
+    for i in range(2):
+        l_dynspec_ax[i].set_ylabel("Frequency (MHz)")
+        if i==0:
+            l_dynspec_ax[i].title.set_text("\n Pre-cal")
+        else:
+            l_dynspec_ax[i].title.set_text("\n Post-cal")
+            l_dynspec_ax[0].imshow(l_precal_dynspec[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+            l_dynspec_ax[1].imshow(l_postcal_dynspec[:,startchan:endchan].transpose(), origin='lower', cmap=plt.cm.inferno, interpolation='none', extent=[starttime,endtime,startfreq,endfreq], aspect='auto')
+            plt.figure(l_dynspec_fig.number)
+            plt.tight_layout()
+            plt.savefig("{0}-L_pre-post-cal_dynspec.png".format(src), bbox_inches = 'tight')
+            l_dynspec_fig.clf()
+            plt.figure(fig.number)
+            plt.close('all')
 
 
 #####################################################################################
@@ -584,6 +587,10 @@ if args.fscrunch:
     scrunch_fig.subplots_adjust(hspace=0)
     scrunch_ax0.tick_params(axis='x', direction='in')
 
+    if args.firstlook:
+        # Set up figure and axes for first look plot
+        scrunch_fig_firstlook,scrunch_ax_firstlook = plt.subplots(figsize=(7,9))
+
     # Set up figure and axes for isolated pulse plot
     isolate_scrunch_fig = plt.figure(figsize=(7,9))
     isolate_scrunch_ax0 = plt.subplot2grid((7,3), (0,0), rowspan=2, colspan=3)
@@ -607,9 +614,10 @@ if args.fscrunch:
 
     for stokes in args.pols.split(','):
 
-        fscrunch_rmcorrected[stokes] = np.mean(dynspec_rmcorrected[stokes], 1)
-        np.savetxt("{0}-imageplane-fscrunch-spectrum.calibrated.RMcorrected.stokes{1}.txt".format(src, stokes), fscrunch_rmcorrected[stokes])
-        print("Frequency scrunched data size: {0}".format(fscrunch_rmcorrected[stokes].shape))
+        if not args.firstlook:
+            fscrunch_rmcorrected[stokes] = np.mean(dynspec_rmcorrected[stokes], 1)
+            np.savetxt("{0}-imageplane-fscrunch-spectrum.calibrated.RMcorrected.stokes{1}.txt".format(src, stokes), fscrunch_rmcorrected[stokes])
+            print("Frequency scrunched data size: {0}".format(fscrunch_rmcorrected[stokes].shape))
 
         # Subband the data and scrunch if requested
         if args.subband:
@@ -637,7 +645,11 @@ if args.fscrunch:
             plotlinestyle=':'
 
         print(stokes)
-        amp_jy = fscrunch_rmcorrected[stokes][:] * 10000/res
+
+        if args.firstlook:
+            amp_jy = fscrunch[stokes][:] * 10000/res
+        else:
+            amp_jy = fscrunch_rmcorrected[stokes][:] * 10000/res
 
         # Log scale fit of Stokes I over specified range
         if stokes == "I":
@@ -668,6 +680,10 @@ if args.fscrunch:
             scrunch_ax2_diag.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
             # Publication plot
             scrunch_ax1.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
+
+            if args.firstlook:
+                scrunch_ax_firstlook.errorbar(centretimes, amp_jy, yerr=rms_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5, capsize=2, elinewidth=2)
+                print("Making first look averaged plot with error bars....")
 
             # If isolated pulse plot is requested
             if args.isolate:
@@ -701,273 +717,290 @@ if args.fscrunch:
                     scrunch_log_ax.plot(centretimes[logstarts[comp]:logstops[comp]], amp_jy[logstarts[comp]:logstops[comp]], label="Stokes "+stokes+" (used for fit of comp {})".format(comp+1), color=colfitrange, linestyle=plotlinestyle)
                     scrunch_log_ax.plot(centretimes, np.e**amp_fit[comp], label='fit: comp {}'.format(comp+1), color=colfit, linestyle=plotlinestyle, linewidth=1.5)
 
-    if args.rms:
-        # Get new, corrected polarisation position angle for fscrunched data
-        pol_pa = 0.5*np.arctan2(fscrunch_rmcorrected["U"][1:], fscrunch_rmcorrected["Q"][1:])*180/np.pi
-        total_linear_pol_flux_meas = np.sqrt(fscrunch_rmcorrected["Q"][1:]**2 + fscrunch_rmcorrected["U"][1:]**2)
-        # Calculate a noise threshold for masking the polarisation position angle plot
-        sigma_I = np.sqrt((fscrunchrms["Q"][1:]**2 + fscrunchrms["U"][1:]**2)/2)
-        threshold_factor=args.threshold_factor
+            if args.firstlook:
+                scrunch_ax_firstlook.plot(centretimes, amp_jy, label=stokes, color=col, linestyle=plotlinestyle, linewidth=1.5)
+                print("Making first look averaged plot sans error bars....")
 
-        # Correct for phase wrapping:
-        if args.unwrap:
-            for i in np.arange(len(pol_pa)):
-                if pol_pa[i] < 0: pol_pa[i]+=180
+    if not args.firstlook:
+        if args.rms:
+            # Get new, corrected polarisation position angle for fscrunched data
+            pol_pa = 0.5*np.arctan2(fscrunch_rmcorrected["U"][1:], fscrunch_rmcorrected["Q"][1:])*180/np.pi
+            total_linear_pol_flux_meas = np.sqrt(fscrunch_rmcorrected["Q"][1:]**2 + fscrunch_rmcorrected["U"][1:]**2)
+            # Calculate a noise threshold for masking the polarisation position angle plot
+            sigma_I = np.sqrt((fscrunchrms["Q"][1:]**2 + fscrunchrms["U"][1:]**2)/2)
+            threshold_factor=args.threshold_factor
 
-        # Check that sigma_I above and fscrunchrms["I"] are roughly equivalent
-        sigma_I_fig = plt.figure(figsize=(7,7))
-        sigma_I_ax0 = plt.subplot2grid((9,3), (0,0), rowspan=5, colspan=3)
-        sigma_I_ax1 = plt.subplot2grid((9,3), (5,0), rowspan=4, colspan=3, sharex=sigma_I_ax0)
-        sigma_I_ax0.plot(centretimes[1:], sigma_I*10000/res, label="sigma_I_Q,U")
-        sigma_I_ax0.plot(centretimes[1:], (fscrunchrms["I"][1:]*10000/res), label="sigma_I_image")
-        sigma_I_ax1.plot(centretimes[1:], (fscrunchrms["I"][1:]*10000/res)-(sigma_I*10000/res), label="sigma_I_image - sigma_I_Q,U")
-        sigma_I_ax0.legend()
-        sigma_I_ax0.set_xlabel("Time (ms)")
-        sigma_I_ax0.set_ylabel("Jy")
-        sigma_I_ax1.legend()
-        sigma_I_ax1.set_xlabel("Time (ms)")
-        sigma_I_ax1.set_ylabel("Jy")
-        sigma_I_fig.savefig("sigma_I_image_vs_QU_diagnostic.png".format(src), bbox_inches = 'tight')
+            # Correct for phase wrapping:
+            if args.unwrap:
+                for i in np.arange(len(pol_pa)):
+                    if pol_pa[i] < 0: pol_pa[i]+=180
 
-        # Removing bias from L_measured (i.e., the total linear polarisation flux):
-        # Set L_true = sqrt( (L_meas / sigma_I)^2 - sigma_I ) for L_meas/sigma_I > 1.57 and 0 otherwise,
-        # following Everett, J. E.; Weisberg, J. M. 2001 (Sec. 3.2)
-        total_linear_pol_flux_true = np.zeros(len(total_linear_pol_flux_meas))
-        total_linear_pol_flux_true[total_linear_pol_flux_meas / sigma_I > 1.57] = (np.sqrt( (total_linear_pol_flux_meas/sigma_I)**2 - 1)*sigma_I)[total_linear_pol_flux_meas / sigma_I > 1.57]
-        print("sigma: {0}".format(sigma_I))
-        print("L_meas / sigma: {0}".format(total_linear_pol_flux_meas/sigma_I))
-        print("L_meas: {0}".format(total_linear_pol_flux_meas))
-        print("L_true: {0}".format(total_linear_pol_flux_true))
-        # Prepare the arrays for masking
-        pol_pa_to_mask = np.ma.array(pol_pa)
-        # Mask values below threshold_factor x sigma_I
-        pol_pa_masked = np.ma.masked_where(total_linear_pol_flux_true < threshold_factor*sigma_I, pol_pa_to_mask)
-        pol_pa_masked = np.ma.masked_where(total_linear_pol_flux_true == 0, pol_pa_masked)
-        print("PA masked: {0}".format(pol_pa_masked))
+            # Check that sigma_I above and fscrunchrms["I"] are roughly equivalent
+            sigma_I_fig = plt.figure(figsize=(7,7))
+            sigma_I_ax0 = plt.subplot2grid((9,3), (0,0), rowspan=5, colspan=3)
+            sigma_I_ax1 = plt.subplot2grid((9,3), (5,0), rowspan=4, colspan=3, sharex=sigma_I_ax0)
+            sigma_I_ax0.plot(centretimes[1:], sigma_I*10000/res, label="sigma_I_Q,U")
+            sigma_I_ax0.plot(centretimes[1:], (fscrunchrms["I"][1:]*10000/res), label="sigma_I_image")
+            sigma_I_ax1.plot(centretimes[1:], (fscrunchrms["I"][1:]*10000/res)-(sigma_I*10000/res), label="sigma_I_image - sigma_I_Q,U")
+            sigma_I_ax0.legend()
+            sigma_I_ax0.set_xlabel("Time (ms)")
+            sigma_I_ax0.set_ylabel("Jy")
+            sigma_I_ax1.legend()
+            sigma_I_ax1.set_xlabel("Time (ms)")
+            sigma_I_ax1.set_ylabel("Jy")
+            sigma_I_fig.savefig("sigma_I_image_vs_QU_diagnostic.png".format(src), bbox_inches = 'tight')
 
-        pa_rms = (180/np.pi) * (np.sqrt( ((fscrunch_rmcorrected["Q"][1:]**2 * fscrunchrms["U"][1:]**2) + (fscrunch_rmcorrected["U"][1:]**2 *fscrunchrms["Q"][1:]**2))/(4*(fscrunch_rmcorrected["Q"][1:]**2 + fscrunch_rmcorrected["U"][1:]**2)**2) ))
-        print("PA rms: {0}".format(pa_rms))
-        pol_pa_rms_to_mask = np.ma.array(pa_rms)
-        pol_pa_rms_masked = np.ma.masked_where(total_linear_pol_flux_true < threshold_factor*sigma_I, pol_pa_rms_to_mask)
-        pol_pa_rms_masked = np.ma.masked_where(total_linear_pol_flux_true == 0, pol_pa_rms_masked)
+            # Removing bias from L_measured (i.e., the total linear polarisation flux):
+            # Set L_true = sqrt( (L_meas / sigma_I)^2 - sigma_I ) for L_meas/sigma_I > 1.57 and 0 otherwise,
+            # following Everett, J. E.; Weisberg, J. M. 2001 (Sec. 3.2)
+            total_linear_pol_flux_true = np.zeros(len(total_linear_pol_flux_meas))
+            total_linear_pol_flux_true[total_linear_pol_flux_meas / sigma_I > 1.57] = (np.sqrt( (total_linear_pol_flux_meas/sigma_I)**2 - 1)*sigma_I)[total_linear_pol_flux_meas / sigma_I > 1.57]
+            print("sigma: {0}".format(sigma_I))
+            print("L_meas / sigma: {0}".format(total_linear_pol_flux_meas/sigma_I))
+            print("L_meas: {0}".format(total_linear_pol_flux_meas))
+            print("L_true: {0}".format(total_linear_pol_flux_true))
+            # Prepare the arrays for masking
+            pol_pa_to_mask = np.ma.array(pol_pa)
+            # Mask values below threshold_factor x sigma_I
+            pol_pa_masked = np.ma.masked_where(total_linear_pol_flux_true < threshold_factor*sigma_I, pol_pa_to_mask)
+            pol_pa_masked = np.ma.masked_where(total_linear_pol_flux_true == 0, pol_pa_masked)
+            print("PA masked: {0}".format(pol_pa_masked))
 
-        # Save PA values and uncertainties
-        #FIXME np.savetxt("{0}-PAs.txt".format(src), (pol_pa_masked,pol_pa_rms_masked))
+            pa_rms = (180/np.pi) * (np.sqrt( ((fscrunch_rmcorrected["Q"][1:]**2 * fscrunchrms["U"][1:]**2) + (fscrunch_rmcorrected["U"][1:]**2 *fscrunchrms["Q"][1:]**2))/(4*(fscrunch_rmcorrected["Q"][1:]**2 + fscrunch_rmcorrected["U"][1:]**2)**2) ))
+            print("PA rms: {0}".format(pa_rms))
+            pol_pa_rms_to_mask = np.ma.array(pa_rms)
+            pol_pa_rms_masked = np.ma.masked_where(total_linear_pol_flux_true < threshold_factor*sigma_I, pol_pa_rms_to_mask)
+            pol_pa_rms_masked = np.ma.masked_where(total_linear_pol_flux_true == 0, pol_pa_rms_masked)
 
-        # Diagnostic plots
-        scrunch_ax1_diag.set_title('   '+frbtitletext)
-        scrunch_ax0_diag.errorbar(centretimes[1:], pol_pa, yerr=pa_rms, fmt='ko', markersize=2)
-        if args.unwrap:
-            scrunch_ax0_diag.set_ylim(0,180)
-            scrunch_ax1_diag.set_ylim(0,180)
-        scrunch_ax1_diag.errorbar(centretimes[1:], pol_pa_masked, yerr=pol_pa_rms_masked, fmt='ko', markersize=2, capsize=2)
-        scrunch_ax1_diag.set_ylabel("Position Angle (deg)")
-        scrunch_ax2_diag.legend()
-        scrunch_ax2_diag.set_xlabel("Time (ms)")
-        scrunch_ax2_diag.set_ylabel("Flux Density (Jy)")
+            # Save PA values and uncertainties
+            #FIXME np.savetxt("{0}-PAs.txt".format(src), (pol_pa_masked,pol_pa_rms_masked))
 
-        # Publication plots
-        scrunch_ax0.set_title('   '+frbtitletext)
-        scrunch_ax0.errorbar(centretimes[1:], pol_pa_masked, yerr=pol_pa_rms_masked, fmt='ko', markersize=2, capsize=2)
-        scrunch_ax0.set_ylabel("Position Angle (deg)")
-        if args.unwrap:
-            scrunch_ax0.set_ylim(0,180)
-        scrunch_ax1.legend()
-        scrunch_ax1.set_xlabel("Time (ms)")
-        scrunch_ax1.set_ylabel("Flux Density (Jy)")
-        scrunch_fig_diag.savefig("{0}-fscrunch.RMcorrected_diagnostic_RM{1}.png".format(src, label_rotmeas_save), bbox_inches = 'tight')
-        scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_delta-psi{2}_delta-t{3}_phi{4}.png".format(src, label_rotmeas_save, delta_psi, delta_t, phi), bbox_inches = 'tight')
-        scrunch_fig.clf()
+            # Diagnostic plots
+            scrunch_ax1_diag.set_title('   '+frbtitletext)
+            scrunch_ax0_diag.errorbar(centretimes[1:], pol_pa, yerr=pa_rms, fmt='ko', markersize=2)
+            if args.unwrap:
+                scrunch_ax0_diag.set_ylim(0,180)
+                scrunch_ax1_diag.set_ylim(0,180)
+                scrunch_ax1_diag.errorbar(centretimes[1:], pol_pa_masked, yerr=pol_pa_rms_masked, fmt='ko', markersize=2, capsize=2)
+                scrunch_ax1_diag.set_ylabel("Position Angle (deg)")
+                scrunch_ax2_diag.legend()
+                scrunch_ax2_diag.set_xlabel("Time (ms)")
+                scrunch_ax2_diag.set_ylabel("Flux Density (Jy)")
 
-        # Plot isolated pulses if requested
-        if args.isolate:
-            isolate_scrunch_ax0.set_title('   '+frbtitletext)
-            isolate_scrunch_ax0.errorbar(centretimes[binstart:binstop], pol_pa_masked[binstart:binstop], yerr=pol_pa_rms_masked[binstart:binstop], fmt='ko', markersize=2, capsize=2)
-            isolate_scrunch_ax0.set_ylabel("Position Angle (deg)")
-            isolate_scrunch_ax1.legend()
-            isolate_scrunch_ax1.set_xlabel("Time (ms)")
-            isolate_scrunch_ax1.set_ylabel("Flux Density (Jy)")
-            isolate_scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_pulse{2}_delta-psi{3}_delta-t{4}_phi{5}.png".format(src, label_rotmeas_save, pulse_number, delta_psi, delta_t, phi), bbox_inches = 'tight')
-            isolate_scrunch_fig.clf()
+            # Publication plots
+            scrunch_ax0.set_title('   '+frbtitletext)
+            scrunch_ax0.errorbar(centretimes[1:], pol_pa_masked, yerr=pol_pa_rms_masked, fmt='ko', markersize=2, capsize=2)
+            scrunch_ax0.set_ylabel("Position Angle (deg)")
+            if args.unwrap:
+                scrunch_ax0.set_ylim(0,180)
+                scrunch_ax1.legend()
+                scrunch_ax1.set_xlabel("Time (ms)")
+                scrunch_ax1.set_ylabel("Flux Density (Jy)")
+                scrunch_fig_diag.savefig("{0}-fscrunch.RMcorrected_diagnostic_RM{1}.png".format(src, label_rotmeas_save), bbox_inches = 'tight')
+                scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_delta-psi{2}_delta-t{3}_phi{4}.png".format(src, label_rotmeas_save, delta_psi, delta_t, phi), bbox_inches = 'tight')
+                scrunch_fig.clf()
+
+            # Plot isolated pulses if requested
+            if args.isolate:
+                isolate_scrunch_ax0.set_title('   '+frbtitletext)
+                isolate_scrunch_ax0.errorbar(centretimes[binstart:binstop], pol_pa_masked[binstart:binstop], yerr=pol_pa_rms_masked[binstart:binstop], fmt='ko', markersize=2, capsize=2)
+                isolate_scrunch_ax0.set_ylabel("Position Angle (deg)")
+                isolate_scrunch_ax1.legend()
+                isolate_scrunch_ax1.set_xlabel("Time (ms)")
+                isolate_scrunch_ax1.set_ylabel("Flux Density (Jy)")
+                isolate_scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_pulse{2}_delta-psi{3}_delta-t{4}_phi{5}.png".format(src, label_rotmeas_save, pulse_number, delta_psi, delta_t, phi), bbox_inches = 'tight')
+                isolate_scrunch_fig.clf()
+
+        else:
+            # Publication plots
+            scrunch_ax0.set_title('   '+frbtitletext)
+            if args.unwrap:
+                scrunch_ax0.set_ylim(0,180)
+                scrunch_ax1.legend()
+                scrunch_ax1.set_xlabel("Time (ms)")
+                scrunch_ax1.set_ylabel("Flux Density (Jy)")
+                scrunch_fig_diag.savefig("{0}-fscrunch.RMcorrected_diagnostic_RM{1}.png".format(src, label_rotmeas_save), bbox_inches = 'tight')
+                scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_delta-psi{2}_delta-t{3}_phi{4}.png".format(src, label_rotmeas_save, delta_psi, delta_t, phi), bbox_inches = 'tight')
+                scrunch_fig.clf()
+
+            # Plot isolated pulses if requested
+            if args.isolate:
+                isolate_scrunch_ax0.set_title('   '+frbtitletext)
+                isolate_scrunch_ax1.legend()
+                isolate_scrunch_ax1.set_xlabel("Time (ms)")
+                isolate_scrunch_ax1.set_ylabel("Flux Density (Jy)")
+                isolate_scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_pulse{2}_delta-psi{3}_delta-t{4}_phi{5}.png".format(src, label_rotmeas_save, pulse_number, delta_psi, delta_t, phi), bbox_inches = 'tight')
+                isolate_scrunch_fig.clf()
+
+        # Log plots
+        scrunch_log_ax.set_title('   '+frbtitletext)
+        scrunch_log_ax.legend()
+        scrunch_log_ax.set_xlabel("Time (ms)")
+        scrunch_log_ax.set_ylabel("Flux Density (Jy)")
+        scrunch_log_ax.set_ylim(top=max_value_log_plot)
+        scrunch_log_fig.savefig("{0}-fscrunch.RMcorrected_logscale_pulse{1}_RM{2}.png".format(src, pulse_number, label_rotmeas_save), bbox_inches = 'tight')
+        scrunch_log_fig.clf()
+
+        scrunch_i_fig, scrunch_i_ax = plt.subplots(figsize=(7,7))
+        col='k'
+        plotlinestyle=':'
+        amp_jy = fscrunch_rmcorrected["I"][:] * 10000/res
+        if args.rms:
+            rms_jy = fscrunchrms["I"][:] * 10000/res
+            scrunch_i_ax.errorbar(centretimes,amp_jy,yerr=rms_jy, label="I", capsize=2, elinewidth=2)
+        else:
+            scrunch_i_ax.plot(centretimes,amp_jy,label="I")
+            scrunch_i_ax.set_xlabel("Time (ms)")
+            scrunch_i_ax.set_ylabel("Flux Density (Jy)")
+            scrunch_i_ax.legend()
+            scrunch_i_fig.savefig("{0}-fscrunch.RMcorrected.stokesI_delta-psi{1}_delta-t{2}_phi{3}.png".format(src, delta_psi, delta_t, phi), bbox_inches = 'tight')
+            scrunch_i_fig.clf()
+
+        # POLARISATION FRACTIONS:
+
+        if args.rms:
+            # Total intensity
+            I = fscrunch_rmcorrected["I"][1:] * 10000/res
+            I_rms = fscrunchrms["I"][1:] * 10000/res
+
+            # Total linearly polarised flux
+            L = total_linear_pol_flux_true * 10000/res
+            print("L true (Jy): {0}".format(L))
+            # Prepare the arrays for masking
+            L_to_mask = np.ma.array(L)
+            # Mask inf values
+            L_masked = np.ma.masked_where(L == 0, L_to_mask)
+            print("L true masked (Jy): {0}".format(L_masked))
+            L_rms = np.sqrt(( ((fscrunch_rmcorrected["Q"][1:]*10000/res)**2 * (fscrunchrms["Q"][1:]*10000/res)**2) + ((fscrunch_rmcorrected["U"][1:]*10000/res)**2 * (fscrunchrms["U"][1:]*10000/res)**2)) / L_masked**2)
+            print("L_rms: {0}".format(L_rms))
+            # Prepare the arrays for masking
+            I_to_mask = np.ma.array(I)
+            I_rms_to_mask = np.ma.array(I_rms)
+            # Mask inf values
+            I_masked = np.ma.masked_where(L == 0, I_to_mask)
+            I_rms_masked = np.ma.masked_where(L == 0, I_rms_to_mask)
+            print("I: {0}".format(I_masked))
+            print("I_rms: {0}".format(I_rms_masked))
+            print("Q_rms {0}: ".format(fscrunchrms["Q"]*10000/res))
+
+            # Total circularly polarised flux
+            V = fscrunch_rmcorrected["V"][1:] * 10000/res
+            V_rms = fscrunchrms["V"][1:] * 10000/res
+            # Prepare the arrays for masking
+            V_to_mask = np.ma.array(V)
+            V_rms_to_mask = np.ma.array(V_rms)
+            # Mask zero values
+            V_masked = np.ma.masked_where(L == 0, V_to_mask)
+            V_rms_masked = np.ma.masked_where(L == 0, V_rms_to_mask)
+
+            # Total polarised flux
+            P = np.sqrt(L_masked**2 + V_masked**2)
+            P_rms = np.sqrt( ((L_masked**2 * L_rms**2) + (V_masked**2 * V_rms_masked**2)) / (L_masked**2 + V_masked**2) )
+
+            # Plot the polarisations
+            if args.isolate:
+                pulse_num = ".pulse{0}".format(args.pulse_number)
+                pol_fig, pol_ax = plt.subplots(figsize=(7,7))
+                pol_ax.set_title('   '+frbtitletext)
+                pol_ax.errorbar(centretimes[binstart:binstop], I[binstart:binstop], label="I", yerr=I_rms[binstart:binstop], linestyle='-', color='k', linewidth=1.5, elinewidth=2, capsize=2)
+                pol_ax.errorbar(centretimes[binstart:binstop], V[binstart:binstop], label="V", yerr=V_rms[binstart:binstop], linestyle=':', color='#01665e', linewidth=1.5, elinewidth=2, capsize=2)
+                pol_ax.errorbar(centretimes[binstart:binstop], L[binstart:binstop], label="L", yerr=L_rms[binstart:binstop], linestyle='--', color='#8c510a', linewidth=1.5, elinewidth=2, capsize=2)
+                pol_ax.errorbar(centretimes[binstart:binstop], P[binstart:binstop], label="P", yerr=P_rms[binstart:binstop], linestyle='-.', color='#d8b365', linewidth=1.5, elinewidth=2, capsize=2)
+                pol_ax.set_xlabel("Time (ms)")
+                pol_ax.set_ylabel("Flux density (Jy)")
+                pol_ax.legend(loc='upper right')
+                pol_fig.savefig("{0}-polarisation.fluxes.RM{1}{2}.png".format(src, label_rotmeas_save, pulse_num), bbox_inches = 'tight')
+                pol_fig.clf()
+
+                # Weighted average total intensity and rms
+                I_weighted_avg = np.sum(I_masked[binstart:binstop]*I_masked[binstart:binstop]) / np.sum(I_masked[binstart:binstop])
+                I_weighted_avg_rms = np.sqrt( np.sum( I_rms_masked[binstart:binstop]**2 * I_masked[binstart:binstop]**2 )) / np.sum(I_masked[binstart:binstop])
+
+                # Calculate the weighted average signal and noise for total linear polarisation
+                L_weighted_avg = np.sum(L_masked[binstart:binstop]*I_masked[binstart:binstop]) / np.sum(I_masked[binstart:binstop])
+                L_weighted_avg_rms = np.sqrt( np.sum(L_rms[binstart:binstop]**2 * I_masked[binstart:binstop]**2 )) / np.sum(I_masked[binstart:binstop])
+
+                # Calculate the weighted average signal and noise for total circular polarisation
+                V_weighted_avg = np.sum(V_masked[binstart:binstop]*I_masked[binstart:binstop]) / np.sum(I_masked[binstart:binstop])
+                V_weighted_avg_rms = np.sqrt( np.sum(V_rms_masked[binstart:binstop]**2 * I_masked[binstart:binstop]**2 )) / np.sum(I_masked[binstart:binstop])
+
+                # Calculate the weighted average signal and noise for total polarisation
+                P_weighted_avg = np.sum(P[binstart:binstop]*I_masked[binstart:binstop]) / np.sum(I_masked[binstart:binstop])
+                P_weighted_avg_rms = np.sqrt( np.sum(P_rms[binstart:binstop]**2 * I_masked[binstart:binstop]**2 )) / np.sum(I_masked[binstart:binstop])
+
+                # Total fraction of polarised flux using the de-biased L_true; the full array for plotting and the weighted averages
+                P_on_I = P / I_masked
+                P_on_I_rms = np.sqrt(P_rms**2 + ((P_on_I)**2 * I_rms_masked**2)) / I_masked
+                print("P/I rms: {0}".format(P_on_I_rms))
+                P_on_I_weighted_avg = P_weighted_avg / I_weighted_avg
+                P_on_I_weighted_avg_rms = np.sqrt(P_weighted_avg_rms**2 + ((P_weighted_avg/I_weighted_avg)**2 * I_weighted_avg_rms**2)) / I_weighted_avg
+                # Total fraction of linearly polarised flux using the de-biased L_true and the weighted averages
+                L_on_I = L_masked / I_masked
+                print("L/I: {0}".format(L_on_I))
+                L_on_I_rms = np.sqrt((L_rms**2) + (((L_masked/I_masked)**2) * (I_rms_masked**2))) / I_masked
+                print("L/I rms: {0}".format(L_on_I_rms))
+                L_on_I_weighted_avg = L_weighted_avg / I_weighted_avg
+                L_on_I_weighted_avg_rms = np.sqrt(L_weighted_avg_rms**2 + ((L_weighted_avg/I_weighted_avg)**2 * I_weighted_avg_rms**2)) / I_weighted_avg
+                # Total fraction of circularly polarised flux and the weighted averages
+                V_on_I = V / I
+                print("V/I: {0}".format(V_on_I))
+                V_on_I_rms = np.sqrt(V_rms**2 + ((V/I)**2 * I_rms**2)) / I
+                V_on_I_masked = V / I
+                V_on_I_rms_masked = np.sqrt(V_rms_masked**2 + ((V_masked/I_masked)**2 * I_rms_masked**2)) / I_masked
+                print("V/I rms: {0}".format(V_on_I_rms))
+                V_on_I_weighted_avg = V_weighted_avg / I_weighted_avg
+                V_on_I_weighted_avg_rms = np.sqrt(V_weighted_avg_rms**2 + ((V_weighted_avg/I_weighted_avg)**2 * I_weighted_avg_rms**2)) / I_weighted_avg
+
+                # Print out polarisations and fractions for sanity check
+                print("P weighted average: {0}".format(P_weighted_avg))
+                print("L weighted average: {0}".format(L_weighted_avg))
+                print("V weighted average: {0}".format(V_weighted_avg))
+                print("I weighted average: {0}".format(I_weighted_avg))
+                print("P/I weighted average: {0} +/- {1}".format(P_on_I_weighted_avg, P_on_I_weighted_avg_rms))
+                print("L/I weighted average: {0} +/- {1}".format(L_on_I_weighted_avg, L_on_I_weighted_avg_rms))
+                print("V/I weighted average: {0} +/- {1}".format(V_on_I_weighted_avg, V_on_I_weighted_avg_rms))
+
+
+                # Plot the polarisation fractions
+                polfrac_fig, polfrac_ax = plt.subplots(figsize=(7,7))
+                polfrac_ax.set_title('   '+frbtitletext)
+                polfrac_ax.errorbar(centretimes[binstart:binstop], V_on_I[binstart:binstop]*100, yerr=V_on_I_rms[binstart:binstop]*100, label="V/I", linestyle=':', color='#01665e', linewidth=1.5, elinewidth=2, capsize=2)
+                polfrac_ax.errorbar(centretimes[binstart:binstop], P_on_I[binstart:binstop]*100, yerr=P_on_I_rms[binstart:binstop]*100, label="P/I", linestyle='-.', color='#d8b365', linewidth=1.5, elinewidth=2, capsize=2)
+                polfrac_ax.errorbar(centretimes[binstart:binstop], L_on_I[binstart:binstop]*100, yerr=L_on_I_rms[binstart:binstop]*100, label="L/I", linestyle='--', color='#8c510a', linewidth=1.5, elinewidth=2, capsize=2)
+                polfrac_ax.set_xlabel("Time (ms)")
+                polfrac_ax.set_ylabel("Degree of polarisation")
+                polfrac_ax.legend()
+                polfrac_ax.set_ylim(-50,150)
+                polfrac_ax.set_xlim(centretimes[binstart],centretimes[binstop])
+                polfrac_fig.savefig("{0}-polarisation.fractions_diagnostic.pulse{1}_delta-psi{2}_delta-t{3}_phi{4}.png".format(src, pulse_number, delta_psi, delta_t, phi), bbox_inches = 'tight')
+                polfrac_fig.clf()
+
+                # Get total fractional polarisations (integrated across the sub pulses using the weighted sum;
+                # weight each time bin by the total intensity and then sum the result; these quantities are used
+                # to calculate a pulse-averaged polarisation fractions)
+                print("Bin start and stop for pulse {0}: {1},{2}".format(pulse_number, binstart, binstop))
+                print("Pulse {0} integrated from {1} ms to {2} ms".format(pulse_number, binstart*res, binstop*res))
+                P_on_I_weighted_avg_total = P_on_I_weighted_avg * 100
+                P_on_I_weighted_avg_total_rms = P_on_I_weighted_avg_rms * 100
+                print("Total weighted average P/I over pulse {0}: {1} +/- {2}".format(pulse_number, P_on_I_weighted_avg_total, P_on_I_weighted_avg_total_rms))
+                L_on_I_weighted_avg_total = L_on_I_weighted_avg * 100
+                L_on_I_weighted_avg_total_rms = L_on_I_weighted_avg_rms * 100
+                print("Total weighted average L/I over pulse {0}: {1} +/- {2}".format(pulse_number, L_on_I_weighted_avg_total, L_on_I_weighted_avg_total_rms))
+                V_on_I_weighted_avg_total = V_on_I_weighted_avg * 100
+                V_on_I_weighted_avg_total_rms = V_on_I_weighted_avg_rms * 100
+                print("Total weighted average V/I over pulse {0}: {1} +/- {2}".format(pulse_number, V_on_I_weighted_avg_total, V_on_I_weighted_avg_total_rms))
 
     else:
-        # Publication plots
-        scrunch_ax0.set_title('   '+frbtitletext)
-        if args.unwrap:
-            scrunch_ax0.set_ylim(0,180)
-        scrunch_ax1.legend()
-        scrunch_ax1.set_xlabel("Time (ms)")
-        scrunch_ax1.set_ylabel("Flux Density (Jy)")
-        scrunch_fig_diag.savefig("{0}-fscrunch.RMcorrected_diagnostic_RM{1}.png".format(src, label_rotmeas_save), bbox_inches = 'tight')
-        scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_delta-psi{2}_delta-t{3}_phi{4}.png".format(src, label_rotmeas_save, delta_psi, delta_t, phi), bbox_inches = 'tight')
-        scrunch_fig.clf()
+    # Will run if args.firstlook is set
 
-        # Plot isolated pulses if requested
-        if args.isolate:
-            isolate_scrunch_ax0.set_title('   '+frbtitletext)
-            isolate_scrunch_ax1.legend()
-            isolate_scrunch_ax1.set_xlabel("Time (ms)")
-            isolate_scrunch_ax1.set_ylabel("Flux Density (Jy)")
-            isolate_scrunch_fig.savefig("{0}-fscrunch.RMcorrected_RM{1}_pulse{2}_delta-psi{3}_delta-t{4}_phi{5}.png".format(src, label_rotmeas_save, pulse_number, delta_psi, delta_t, phi), bbox_inches = 'tight')
-            isolate_scrunch_fig.clf()
+        # First look plots
+        scrunch_ax_firstlook.set_title('   '+frbtitletext)
+        scrunch_ax_firstlook.legend()
+        scrunch_ax_firstlook.set_xlabel("Time (ms)")
+        scrunch_ax_firstlook.set_ylabel("Flux Density (Jy)")
+        scrunch_fig_firstlook.savefig("{0}-fscrunch.first.look.png".format(src), bbox_inches = 'tight')
+        scrunch_fig_firstlook.clf()
 
-    # Log plots
-    scrunch_log_ax.set_title('   '+frbtitletext)
-    scrunch_log_ax.legend()
-    scrunch_log_ax.set_xlabel("Time (ms)")
-    scrunch_log_ax.set_ylabel("Flux Density (Jy)")
-    scrunch_log_ax.set_ylim(top=max_value_log_plot)
-    scrunch_log_fig.savefig("{0}-fscrunch.RMcorrected_logscale_pulse{1}_RM{2}.png".format(src, pulse_number, label_rotmeas_save), bbox_inches = 'tight')
-    scrunch_log_fig.clf()
-
-    scrunch_i_fig, scrunch_i_ax = plt.subplots(figsize=(7,7))
-    col='k'
-    plotlinestyle=':'
-    amp_jy = fscrunch_rmcorrected["I"][:] * 10000/res
-    if args.rms:
-        rms_jy = fscrunchrms["I"][:] * 10000/res
-        scrunch_i_ax.errorbar(centretimes,amp_jy,yerr=rms_jy, label="I", capsize=2, elinewidth=2)
-    else:
-        scrunch_i_ax.plot(centretimes,amp_jy,label="I")
-    scrunch_i_ax.set_xlabel("Time (ms)")
-    scrunch_i_ax.set_ylabel("Flux Density (Jy)")
-    scrunch_i_ax.legend()
-    scrunch_i_fig.savefig("{0}-fscrunch.RMcorrected.stokesI_delta-psi{1}_delta-t{2}_phi{3}.png".format(src, delta_psi, delta_t, phi), bbox_inches = 'tight')
-    scrunch_i_fig.clf()
-
-    # POLARISATION FRACTIONS:
-
-    if args.rms:
-        # Total intensity
-        I = fscrunch_rmcorrected["I"][1:] * 10000/res
-        I_rms = fscrunchrms["I"][1:] * 10000/res
-
-        # Total linearly polarised flux
-        L = total_linear_pol_flux_true * 10000/res
-        print("L true (Jy): {0}".format(L))
-        # Prepare the arrays for masking
-        L_to_mask = np.ma.array(L)
-        # Mask inf values
-        L_masked = np.ma.masked_where(L == 0, L_to_mask)
-        print("L true masked (Jy): {0}".format(L_masked))
-        L_rms = np.sqrt(( ((fscrunch_rmcorrected["Q"][1:]*10000/res)**2 * (fscrunchrms["Q"][1:]*10000/res)**2) + ((fscrunch_rmcorrected["U"][1:]*10000/res)**2 * (fscrunchrms["U"][1:]*10000/res)**2)) / L_masked**2)
-        print("L_rms: {0}".format(L_rms))
-        # Prepare the arrays for masking
-        I_to_mask = np.ma.array(I)
-        I_rms_to_mask = np.ma.array(I_rms)
-        # Mask inf values
-        I_masked = np.ma.masked_where(L == 0, I_to_mask)
-        I_rms_masked = np.ma.masked_where(L == 0, I_rms_to_mask)
-        print("I: {0}".format(I_masked))
-        print("I_rms: {0}".format(I_rms_masked))
-        print("Q_rms {0}: ".format(fscrunchrms["Q"]*10000/res))
-
-        # Total circularly polarised flux
-        V = fscrunch_rmcorrected["V"][1:] * 10000/res
-        V_rms = fscrunchrms["V"][1:] * 10000/res
-        # Prepare the arrays for masking
-        V_to_mask = np.ma.array(V)
-        V_rms_to_mask = np.ma.array(V_rms)
-        # Mask zero values
-        V_masked = np.ma.masked_where(L == 0, V_to_mask)
-        V_rms_masked = np.ma.masked_where(L == 0, V_rms_to_mask)
-
-        # Total polarised flux
-        P = np.sqrt(L_masked**2 + V_masked**2)
-        P_rms = np.sqrt( ((L_masked**2 * L_rms**2) + (V_masked**2 * V_rms_masked**2)) / (L_masked**2 + V_masked**2) )
-
-        # Plot the polarisations
-        if args.isolate:
-            pulse_num = ".pulse{0}".format(args.pulse_number)
-            pol_fig, pol_ax = plt.subplots(figsize=(7,7))
-            pol_ax.set_title('   '+frbtitletext)
-            pol_ax.errorbar(centretimes[binstart:binstop], I[binstart:binstop], label="I", yerr=I_rms[binstart:binstop], linestyle='-', color='k', linewidth=1.5, elinewidth=2, capsize=2)
-            pol_ax.errorbar(centretimes[binstart:binstop], V[binstart:binstop], label="V", yerr=V_rms[binstart:binstop], linestyle=':', color='#01665e', linewidth=1.5, elinewidth=2, capsize=2)
-            pol_ax.errorbar(centretimes[binstart:binstop], L[binstart:binstop], label="L", yerr=L_rms[binstart:binstop], linestyle='--', color='#8c510a', linewidth=1.5, elinewidth=2, capsize=2)
-            pol_ax.errorbar(centretimes[binstart:binstop], P[binstart:binstop], label="P", yerr=P_rms[binstart:binstop], linestyle='-.', color='#d8b365', linewidth=1.5, elinewidth=2, capsize=2)
-            pol_ax.set_xlabel("Time (ms)")
-            pol_ax.set_ylabel("Flux density (Jy)")
-            pol_ax.legend(loc='upper right')
-            pol_fig.savefig("{0}-polarisation.fluxes.RM{1}{2}.png".format(src, label_rotmeas_save, pulse_num), bbox_inches = 'tight')
-            pol_fig.clf()
-
-            # Weighted average total intensity and rms
-            I_weighted_avg = np.sum(I_masked[binstart:binstop]*I_masked[binstart:binstop]) / np.sum(I_masked[binstart:binstop])
-            I_weighted_avg_rms = np.sqrt( np.sum( I_rms_masked[binstart:binstop]**2 * I_masked[binstart:binstop]**2 )) / np.sum(I_masked[binstart:binstop])
-
-            # Calculate the weighted average signal and noise for total linear polarisation
-            L_weighted_avg = np.sum(L_masked[binstart:binstop]*I_masked[binstart:binstop]) / np.sum(I_masked[binstart:binstop])
-            L_weighted_avg_rms = np.sqrt( np.sum(L_rms[binstart:binstop]**2 * I_masked[binstart:binstop]**2 )) / np.sum(I_masked[binstart:binstop])
-
-            # Calculate the weighted average signal and noise for total circular polarisation
-            V_weighted_avg = np.sum(V_masked[binstart:binstop]*I_masked[binstart:binstop]) / np.sum(I_masked[binstart:binstop])
-            V_weighted_avg_rms = np.sqrt( np.sum(V_rms_masked[binstart:binstop]**2 * I_masked[binstart:binstop]**2 )) / np.sum(I_masked[binstart:binstop])
-
-            # Calculate the weighted average signal and noise for total polarisation
-            P_weighted_avg = np.sum(P[binstart:binstop]*I_masked[binstart:binstop]) / np.sum(I_masked[binstart:binstop])
-            P_weighted_avg_rms = np.sqrt( np.sum(P_rms[binstart:binstop]**2 * I_masked[binstart:binstop]**2 )) / np.sum(I_masked[binstart:binstop])
-
-            # Total fraction of polarised flux using the de-biased L_true; the full array for plotting and the weighted averages
-            P_on_I = P / I_masked
-            P_on_I_rms = np.sqrt(P_rms**2 + ((P_on_I)**2 * I_rms_masked**2)) / I_masked
-            print("P/I rms: {0}".format(P_on_I_rms))
-            P_on_I_weighted_avg = P_weighted_avg / I_weighted_avg
-            P_on_I_weighted_avg_rms = np.sqrt(P_weighted_avg_rms**2 + ((P_weighted_avg/I_weighted_avg)**2 * I_weighted_avg_rms**2)) / I_weighted_avg
-            # Total fraction of linearly polarised flux using the de-biased L_true and the weighted averages
-            L_on_I = L_masked / I_masked
-            print("L/I: {0}".format(L_on_I))
-            L_on_I_rms = np.sqrt((L_rms**2) + (((L_masked/I_masked)**2) * (I_rms_masked**2))) / I_masked
-            print("L/I rms: {0}".format(L_on_I_rms))
-            L_on_I_weighted_avg = L_weighted_avg / I_weighted_avg
-            L_on_I_weighted_avg_rms = np.sqrt(L_weighted_avg_rms**2 + ((L_weighted_avg/I_weighted_avg)**2 * I_weighted_avg_rms**2)) / I_weighted_avg
-            # Total fraction of circularly polarised flux and the weighted averages
-            V_on_I = V / I
-            print("V/I: {0}".format(V_on_I))
-            V_on_I_rms = np.sqrt(V_rms**2 + ((V/I)**2 * I_rms**2)) / I
-            V_on_I_masked = V / I
-            V_on_I_rms_masked = np.sqrt(V_rms_masked**2 + ((V_masked/I_masked)**2 * I_rms_masked**2)) / I_masked
-            print("V/I rms: {0}".format(V_on_I_rms))
-            V_on_I_weighted_avg = V_weighted_avg / I_weighted_avg
-            V_on_I_weighted_avg_rms = np.sqrt(V_weighted_avg_rms**2 + ((V_weighted_avg/I_weighted_avg)**2 * I_weighted_avg_rms**2)) / I_weighted_avg
-
-            # Print out polarisations and fractions for sanity check
-            print("P weighted average: {0}".format(P_weighted_avg))
-            print("L weighted average: {0}".format(L_weighted_avg))
-            print("V weighted average: {0}".format(V_weighted_avg))
-            print("I weighted average: {0}".format(I_weighted_avg))
-            print("P/I weighted average: {0} +/- {1}".format(P_on_I_weighted_avg, P_on_I_weighted_avg_rms))
-            print("L/I weighted average: {0} +/- {1}".format(L_on_I_weighted_avg, L_on_I_weighted_avg_rms))
-            print("V/I weighted average: {0} +/- {1}".format(V_on_I_weighted_avg, V_on_I_weighted_avg_rms))
-
-
-            # Plot the polarisation fractions
-            polfrac_fig, polfrac_ax = plt.subplots(figsize=(7,7))
-            polfrac_ax.set_title('   '+frbtitletext)
-            polfrac_ax.errorbar(centretimes[binstart:binstop], V_on_I[binstart:binstop]*100, yerr=V_on_I_rms[binstart:binstop]*100, label="V/I", linestyle=':', color='#01665e', linewidth=1.5, elinewidth=2, capsize=2)
-            polfrac_ax.errorbar(centretimes[binstart:binstop], P_on_I[binstart:binstop]*100, yerr=P_on_I_rms[binstart:binstop]*100, label="P/I", linestyle='-.', color='#d8b365', linewidth=1.5, elinewidth=2, capsize=2)
-            polfrac_ax.errorbar(centretimes[binstart:binstop], L_on_I[binstart:binstop]*100, yerr=L_on_I_rms[binstart:binstop]*100, label="L/I", linestyle='--', color='#8c510a', linewidth=1.5, elinewidth=2, capsize=2)
-            polfrac_ax.set_xlabel("Time (ms)")
-            polfrac_ax.set_ylabel("Degree of polarisation")
-            polfrac_ax.legend()
-            polfrac_ax.set_ylim(-50,150)
-            polfrac_ax.set_xlim(centretimes[binstart],centretimes[binstop])
-            polfrac_fig.savefig("{0}-polarisation.fractions_diagnostic.pulse{1}_delta-psi{2}_delta-t{3}_phi{4}.png".format(src, pulse_number, delta_psi, delta_t, phi), bbox_inches = 'tight')
-            polfrac_fig.clf()
-
-            # Get total fractional polarisations (integrated across the sub pulses using the weighted sum;
-            # weight each time bin by the total intensity and then sum the result; these quantities are used
-            # to calculate a pulse-averaged polarisation fractions)
-            print("Bin start and stop for pulse {0}: {1},{2}".format(pulse_number, binstart, binstop))
-            print("Pulse {0} integrated from {1} ms to {2} ms".format(pulse_number, binstart*res, binstop*res))
-            P_on_I_weighted_avg_total = P_on_I_weighted_avg * 100
-            P_on_I_weighted_avg_total_rms = P_on_I_weighted_avg_rms * 100
-            print("Total weighted average P/I over pulse {0}: {1} +/- {2}".format(pulse_number, P_on_I_weighted_avg_total, P_on_I_weighted_avg_total_rms))
-            L_on_I_weighted_avg_total = L_on_I_weighted_avg * 100
-            L_on_I_weighted_avg_total_rms = L_on_I_weighted_avg_rms * 100
-            print("Total weighted average L/I over pulse {0}: {1} +/- {2}".format(pulse_number, L_on_I_weighted_avg_total, L_on_I_weighted_avg_total_rms))
-            V_on_I_weighted_avg_total = V_on_I_weighted_avg * 100
-            V_on_I_weighted_avg_total_rms = V_on_I_weighted_avg_rms * 100
-            print("Total weighted average V/I over pulse {0}: {1} +/- {2}".format(pulse_number, V_on_I_weighted_avg_total, V_on_I_weighted_avg_total_rms))
 
 else: print("Done!")
 
