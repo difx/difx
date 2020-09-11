@@ -59,8 +59,8 @@ const int MaxConnections = 8;
 
 #define MAX_COMMAND_SIZE		768
 #define MAX_FILENAME_SIZE		PATH_MAX
-#define N_BANK				2
-#define N_DRIVE				8
+#define N_BANK				4 /* max number of banks(slots); 2 in Mark5, 4 in Mark6 */
+#define N_DRIVE				8 /* max number of drives per slot */
 #define MAX_MACLIST_LENGTH		16
 #define MAX_USERID_LENGTH		32
 #define MK5DAEMON_HOSTNAME_LENGTH	32
