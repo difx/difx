@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -29,7 +29,7 @@ from __future__ import print_function, division
 import sys
 import os
 import re
-import json
+import simplejson as json
 
 try:
     exper = sys.argv[1]

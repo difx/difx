@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -36,9 +36,9 @@ import numpy
 # Force matplotlib to not use any Xwindows backend if X display not available.
 # This doesn't work if there was an X forward but ssh is no longer listening -
 # can happen under screen. Deal with that later if initiating the plot fails.
-if "DISPLAY" not in os.environ.keys():
-    sys.stderr.write("Warning: no display available\n")
-    matplotlib.use("Agg")
+#if "DISPLAY" not in os.environ.keys():
+#    sys.stderr.write("Warning: no display available\n")
+#    matplotlib.use("Agg")
 from matplotlib import pyplot
 
 

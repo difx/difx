@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -29,8 +29,8 @@ import sys
 import optparse
 import multiprocessing
 from multiprocessing import Process, Queue
-from Queue import Empty
-import json
+import queue
+import simplejson as json
 import espressolib
 
 
@@ -46,7 +46,7 @@ def remote_command(inputq, outputq):
             command = str()
             if disk_query == "du":
                 # ignores directories smaller than 1MB
-                command = "ssh -q MACHINE 'du -t 1m -l -S -c -B 1G DATA_AREA'"
+                command = "ssh -q MACHINE 'du -t 1m -L -l -S -c -B 1G DATA_AREA'"
                 #command = "du -c -B 1G DATA_AREA"
             elif disk_query == "df":
                 command = "ssh -q MACHINE 'df -P -B 1G DATA_AREA'"
@@ -60,9 +60,10 @@ def remote_command(inputq, outputq):
             proc = subprocess.Popen(
                     command, shell=True, stdout=subprocess.PIPE)
             output = proc.communicate()[0]
-            #print output
+            #print (output)
             outputq.put([machine, data_area, output])
-        except Empty:
+            #print (outputq.qsize())
+        except queue.Empty:
             break
     #return output
 
@@ -109,10 +110,12 @@ except:
     sys.stderr.write("Problem with file: {:s}\n".format(difx_machines))
     raise 
 
-# run two processes per available cpu (the work is all being done remotely)
-nproc = multiprocessing.cpu_count()*2
+#global outputq
+# run up to two processes per available cpu (the work is all being done
+# remotely)
+nproc = min(multiprocessing.cpu_count()*2, 16)
 diskreport = dict()
-disk_queries = []
+#disk_queries = []
 disk_queries = ["du", "df"]
 for disk_query in disk_queries:
     # do the disk queries in parallel
@@ -137,8 +140,12 @@ for disk_query in disk_queries:
         #sys.stderr.write( str(p.pid) + "\n" )
         p.join()
 
-    while not outputq.empty():
+    #print ("outputq.size:", outputq.qsize())
+    #print ("inputq.size:", inputq.qsize())
+    while outputq.qsize() > 0:
         machine, data_area, output = outputq.get()
+        #print (machine, data_area)
+        #print ("output", output)
         if machine not in diskreport.keys():
             diskreport[machine] = dict()
         if data_area not in diskreport[machine].keys():
@@ -146,7 +153,7 @@ for disk_query in disk_queries:
         if disk_query == "du":
             #diskreport[machine][data_area]["du"] = (output.split("\n"))
             diskreport[machine][data_area]["du"] = []
-            for directory in output.split("\n")[0:-1]:
+            for directory in output.split(b"\n")[0:-1]:
                 du_output = directory.split()
                 du_output[0] = int(du_output[0])
                 diskreport[machine][data_area]["du"].append(du_output)

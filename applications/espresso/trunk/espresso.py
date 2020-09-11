@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -35,6 +35,7 @@ import pprint
 import getpass
 import psutil
 import espressolib
+import datetime
 
 
 def run_vex2difx(v2dfilename, vex2difx_options):
@@ -135,9 +136,10 @@ def make_new_runfiles(
         line = re.sub(r"{TIME}", jobtime, line)
         line = re.sub(r"{DIFX_MESSAGE_PORT}", difx_message_port, line)
         line = re.sub(r"{NTASKS-PER-NODE}", ntasks_per_node, line)
+        line = re.sub(r"{DIFXLOGNAME}", get_difxlogname(outdir, jobname), line)
         print (line, end="")
     fileinput.close()
-    os.chmod(runfile, 0775)
+    os.chmod(runfile, 0o775)
 
     threadfilename = jobname + ".threads"
     shutil.copy(expname + ".threads", threadfilename)
@@ -145,6 +147,10 @@ def make_new_runfiles(
     machinesfilename = jobname + ".machines"
     shutil.copy(expname + ".machines", machinesfilename)
 
+def get_difxlogname(outdir, jobname):
+    """Return difx log file name"""
+
+    return outdir + "/" + jobname + ".difxlog"
 
 def predict_speedup(tops, joblen):
     """Placeholder for future idea - could be complicated"""
@@ -157,7 +163,7 @@ def parse_joblistfile(joblistfilename, set_speedup=None):
     """Get the full list of jobs from the joblist file
 
     Return a dictionary. Keys are the job names. For each jobname record a list
-    of stations under key 'stations' and a list of job length under key
+    of stations under key 'stations' and the job length under key
     'joblen'
     """
 
@@ -184,6 +190,7 @@ def parse_joblistfile(joblistfilename, set_speedup=None):
         days, hours, minutes, seconds = espressolib.daysToDhms(job_time)
         joblist[jobname]["jobtime"] = (
                 "{0:02d}:{1:02d}:{2:02d}".format(hours, minutes, seconds))
+        joblist[jobname]["joblen"] = (joblen*60*24)
 
     return joblist
 
@@ -266,7 +273,7 @@ def plot_speedup(logfiles, outdir, expname):
             speedup_files])
     speedup = subprocess.Popen(
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            shell=True)
+            shell=True, encoding="utf-8")
     return speedup
 
 
@@ -341,105 +348,51 @@ def wait_for_file(filename):
     print (filename, "found!")
 
 
-def batchq_slurm(jobnames):
-    """Make sure the squeue format accommodates the full job name"""
-
-    longest = 0
-    for jobname in jobnames:
-        if len(jobname) > longest:
-            longest = len(jobname)
-    squeue_format = "%8i %8u %.{:d}j %.19S %.19e %.10L %.5D %.10Q".format(
-            longest+3)
-    batch_q = 'squeue -o "{0:s}" -n'.format(squeue_format)
-    return batch_q
-
-
-def check_batch(jobnames):
-    """Determine batch commands to use based on environment"""
-
-    if espressolib.which("sbatch"):
-        batch_launch = "sbatch"
-        batch_q = batchq_slurm(jobnames)
-        batch_cancel = "scancel -n"
-        batch_sep = ","
-    elif espressolib.which("qstat"):
-        batch_launch = "qsub"
-        batch_q = "qstat"
-        batch_cancel = "canceljob"
-        batch_sep = " "
-    else:
-        raise Exception("No sbatch or qsub found in path!")
-
-    return batch_launch, batch_q, batch_cancel, batch_sep
-
-
-def get_jobids(jobnames, batchenv):
-    """PBS commands only take job ids, not job names. Must translate. Slurm
-    commands can use the job names, so no translation required"""
-
-    jobids = []
-    if batchenv == "sbatch":
-        jobids = jobnames
-    elif batchenv == "qsub":
-        for jobname in jobnames:
-            jobid = None
-            while not jobid:
-                # try repeatedly in case slow to report
-                command = "qselect -N {0}".format(jobname)
-                jobid = subprocess.Popen(
-                        command, stdout=subprocess.PIPE,
-                        shell=True).communicate()[0]
-                jobid = jobid.strip()
-            jobids.append(jobid)
-
-    return jobids
+#def get_jobids(jobnames, batchenv):
+#    """PBS commands only take job ids, not job names. Must translate. Slurm
+#    commands can use the job names, so no translation required"""
+#
+#    jobids = []
+#    if batchenv == "sbatch":
+#        jobids = jobnames
+#    elif batchenv == "qsub":
+#        for jobname in jobnames:
+#            jobid = None
+#            while not jobid:
+#                # try repeatedly in case slow to report
+#                command = "qselect -N {0}".format(jobname)
+#                jobid = subprocess.Popen(
+#                        command, stdout=subprocess.PIPE,
+#                        shell=True).communicate()[0]
+#                jobid = jobid.strip()
+#            jobids.append(jobid)
+#
+#    return jobids
 
 
 def run_batch(corrjoblist, outdir):
     """Run jobs in a batch environment"""
 
-    # get the batch commands for the slurm or pbs
-    batch_launch, batch_q, batch_cancel, batch_sep = check_batch(
-            corrjoblist.keys())
-
-    # start the correlator log
-    errormon_log = "./log"
-    print ("starting errormon2 in the background")
-    try:
-        os.remove(errormon_log)
-        print ("removed old", errormon_log)
-    except:
-        pass
-    errormon2 = subprocess.Popen("errormon2", env=espresso_env)
-    #errormon2 = subprocess.Popen('errormon2 2>&1| grep ' + jobname, shell=True)
-
-    # make the log file have a unique name by *moving* the 'log' created by
-    # errormon2 to a file name derived from this passname.
-    # This log file will receive all log messages from jobs spawned by this
-    # espresso session. Will divide into separate jobs at end.
-    pass_logfilename = passname + ".difxlog"
-    try:
-        wait_for_file(errormon_log)
-        time.sleep(1)
-        print ("renaming log to", pass_logfilename)
-        shutil.move("./log", pass_logfilename)
-    except:
-        print (errormon_log, "not found! No difxlog will be produced")
+    jobnames = sorted(corrjoblist.keys())
+    jobids = []
+    # get the batch commands
+    batch = espressolib.batchenv(jobnames)
 
     # submit all the jobs to the batch scheduler
-    for jobname in sorted(corrjoblist.keys()):
+    for jobname in jobnames:
         try:
-            runfile = "{0} ./run_{1}".format(batch_launch, jobname)
+            runfile = "{0} ./run_{1}".format(batch.launch, jobname)
             print ("starting the correlator with:", runfile)
-            subprocess.check_call(
-                    runfile, shell=True, stdout=sys.stdout, env=espresso_env)
+            jobid = subprocess.Popen(
+                    runfile, shell=True, stdout=subprocess.PIPE,
+                    encoding="utf-8").communicate()[0]
+            jobids.append(str(jobid).strip())
         except:
             pass
 
     # Just wait until the jobs have completed. Operator hits ^C to progress.
     # Enter will provide queue report.
-    jobids = get_jobids(sorted(corrjoblist.keys()), batch_launch)
-    queue_command = " ".join([batch_q, batch_sep.join(jobids)])
+    #jobids = get_jobids(sorted(corrjoblist.keys()), batch_launch)
     while True:
         try:
             #command = ['squeue', '-u', '$USER']
@@ -449,26 +402,27 @@ def run_batch(corrjoblist, outdir):
                 print (open(operator_log).read())
             except:
                 pass
-            running_jobs = print_queue(queue_command, jobids)
+            print (time.asctime())
+            running_jobs = print_queue(batch.q, jobnames)
             if running_jobs:
-                raw_input(
+                input(
                         "Jobs submitted - hit ^C to cancel jobs."
-                        " Hit return to see list of running jobs.")
+                        " Hit return to see status of jobs.\n")
             else:
                 print ()
                 print ("-" * 78)
-                print ("All jobs completed:", " ".join(jobids))
+                print ("All jobs completed:", " ".join(jobnames))
                 time.sleep(1)
                 break
         except KeyboardInterrupt:
-            for jobname in jobids:
-                command = " ".join([batch_cancel, jobname])
+            for jobid in jobids:
+                command = " ".join([batch.cancel, jobid])
                 print (command)
                 subprocess.check_call(command, stdout=sys.stdout, shell=True)
             break
         except:
             # qstat (PBS) on an empty queue will throw an error which we catch
-            # here.
+            # here (along with any other unexpected exceptions).
             print ("jobs", " ".join([jobids]), "complete")
             break
 
@@ -477,18 +431,73 @@ def run_batch(corrjoblist, outdir):
     bad_jobs = []
     job_errors = []
     errors = []
-    for jobname in sorted(corrjoblist.keys()):
-        # we're finished with the logs..
-        os.kill(errormon2.pid, 9)
+    speedups = {}
+    for jobid, jobname in zip(jobids, jobnames):
+
         #time.sleep(1)
-        job_ok, job_errors = write_difxlog(pass_logfilename, outdir, jobname)
+        job_logfilename = get_difxlogname(outdir, jobname)
+        if os.path.exists(job_logfilename):
+            job_ok, job_errors = chk_difxlog(open(job_logfilename).readlines())
+            job_errors = [
+                    "{:s}: {:s}".format(jobname, err) for err in job_errors]
+        else:
+            job_ok = False
+            job_errors = [job_logfilename + " does not exist\n"]
         if job_ok:
             good_jobs.append(jobname)
         else:
             bad_jobs.append(jobname)
         errors += job_errors
 
-    return good_jobs, bad_jobs, errors
+        if batch.stats is not None:
+            # print the user stats
+            job_status = "Incomplete"
+            if job_ok:
+                job_status = "Complete"
+            jobinfo = "{:s} {:.2f}m {:s}\n{:s} ({:d})\n".format(
+                    jobname, corrjoblist[jobname]["joblen"], job_status,
+                    corrjoblist[jobname]["stations"],
+                    len(corrjoblist[jobname]["stations"].split()))
+            joblen = corrjoblist[jobname]["joblen"]
+            speedup_measured = write_usage_stats(
+                    batch, jobid, jobname, jobinfo, joblen, outdir)
+            speedups[jobname] = speedup_measured
+
+    return good_jobs, bad_jobs, errors, speedups
+
+
+def write_usage_stats(
+        batch, jobid, jobname, jobinfo, joblen, outdir):
+    """Print some stats on node usage and speedup factor"""
+
+    usage_stats = get_usage_stats(batch.stats, jobid)
+    usage_filename = outdir+"/"+jobname+".usage"
+    usage_file = open(usage_filename, "w")
+    usage_file.write(jobinfo)
+    #usage_file.write(str(corrjoblist[jobname]) + "\n")
+
+    # calculate the speedup
+    speedup_measured, speedup_measured_wait = batch.speedup(
+            jobid, joblen)
+    usage_file.write("Speedup: {:.2f}\n".format(speedup_measured))
+    usage_file.write("Speedup (inc. wait): {:.2f}\n".format(
+            speedup_measured_wait))
+    usage_file.write(usage_stats)
+    usage_file.close()
+
+    return speedup_measured
+
+
+def get_usage_stats(batch_stats, jobid):
+    """Get usage stats from the batch scheduler"""
+
+    command = batch_stats.format(jobid)
+    #print (command)
+    usage_stats = subprocess.Popen(
+            command, stdout=subprocess.PIPE, shell=True,
+            encoding="utf-8").communicate()[0]
+    
+    return usage_stats
 
 
 def set_difx_message_port(start_port=50201):
@@ -514,43 +523,56 @@ def set_difx_message_port(start_port=50201):
 
 
 def write_difxlog(log_in, outdir, jobname):
-    """Extract log entries for a given job and write to standard file"""
+    """Extract log entries for a given job and write to standard file
+    
+    Also check for errors and incomplete jobs
+    """
 
-    logfilename = outdir + jobname + ".difxlog"
-    logfiles.append(jobname + ".difxlog")
-    logfile = open(logfilename, "w")
+    logfilename = get_difxlogname(outdir, jobname)
+    #logfiles.append(logfilename)
+    logfile = open(outdir+"/"+logfilename, "w")
     print ("filtering the log file and copying to", logfile.name)
     #shutil.copy2('log', logfile)
     log_lines = filter_log(log_in, jobname)
+    logfile.write(log_lines)
+    logfile.close()
+    job_errors = []
+    job_ok, job_errors = chk_difxlog(log_lines)
+
+    return job_ok, job_errors
+
+
+def chk_difxlog(logfile):
+    """Check for errors and shutdown messages in a difx log file."""
+
     job_finish = False
     job_errors = []
-    for line in log_lines:
-        logfile.write(line)
+    for line in logfile:
         if "BYE" in line:
             job_finish = True
         elif "ERROR" in line:
             job_errors.append(line)
-    logfile.close()
 
     job_ok = False
     if job_finish and not job_errors:
         job_ok = True
     if not job_finish:
-        job_errors.append(jobname + " did not finish")
+        job_errors.append(jobname + " did not finish\n")
 
     return job_ok, job_errors
 
 
-def print_queue(queue_command, jobids):
+def print_queue(queue_command, jobnames):
     """Print status of jobs in batch queue"""
 
     #print queue_command
     running_jobs = []
     queue_info = subprocess.Popen(
-            queue_command, stdout=subprocess.PIPE, shell=True).communicate()[0]
+            queue_command, stdout=subprocess.PIPE, shell=True,
+            encoding="utf-8").communicate()[0]
     print (queue_info)
     print ("Completed jobs: ", end="")
-    for jobname in jobids:
+    for jobname in jobnames:
         if jobname not in queue_info:
             print (jobname, end=" ")
         else:
@@ -558,26 +580,8 @@ def print_queue(queue_command, jobids):
     print ()
     return running_jobs
 
-def get_options():
+def get_options(usage):
 # parse the options
-    usage = """%prog <jobname>
-    will:
-    run vex2difx
-    correct the output file name
-    run calcif2
-    move previous correlator job to backup directory
-    copy model information to correlator data area
-    start errormon2
-    start the correlator!
-    quit errormon2 and copy the log file to the output directory
-    accept an operator comment for storing with the output
-    send an email to the operator (if authorised)
-
-<jobname> may be a space separated list.
-<jobname> may also include a python regular expression after the '_' in the job
-name to match multiple jobs. (The job name up to the '_' must be given
-explicitly)
-"""
 
     parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
     parser.add_option(
@@ -649,15 +653,34 @@ explicitly)
     parser.add_option(
             "--ntasks_per_node",
             type="int", dest="ntasks_per_node", default=None,
-            help="Number of MPI processes per node. This is for testing"
-            " purposes on batch systems only!")
+            help="Number of MPI processes per node.")
     
     (options, args) = parser.parse_args()
     return options, args
 
 
 # Main program start.
-options, args = get_options()
+usage = """%prog <jobname>
+    will:
+    run vex2difx
+    correct the output file name
+    run calcif2
+    move previous correlator job to backup directory
+    copy model information to correlator data area
+    start errormon2
+    start the correlator!
+    quit errormon2 and copy the log file to the output directory
+    accept an operator comment for storing with the output
+    produce some usage stats
+    send an email to the operator (if authorised)
+
+<jobname> may be a space separated list.
+<jobname> may also include a python regular expression after the '_' in the job
+name to match multiple jobs. (The job name up to the '_' must be given
+explicitly)
+"""
+
+options, args = get_options(usage)
 
 if options.testjob and options.clockjob:
     raise Exception("Don't use both -t and -c together!")
@@ -666,9 +689,20 @@ if len(args) < 1 and not options.expt_all:
     parser.print_help()
     parser.error("Give job name(s)")
 
-# multiple tasks per node only makes sense with computehead=true
-if options.ntasks_per_node > 1:
-    options.computehead = True
+
+# ntasks_per_node defaults 2 if using head node for compute, or 1 if not.
+# Can be overridden with the options switch.
+if options.ntasks_per_node is not None:
+    assert isinstance(options.ntask_per_node, int), (
+            "--ntasks_per_node must be an integer")
+    ntasks_per_node = options.ntasks_per_node 
+    # multiple tasks per node only makes sense with computehead=true
+    if ntasks_per_node > 1:
+        options.computehead = True
+elif options.computehead:
+    ntasks_per_node = 2
+else:
+    ntasks_per_node = 1
 
 # Determine the name of the correlator pass from the first jobname or the -a
 # switch
@@ -686,7 +720,7 @@ if "-" in passname:
 
 operator_log = passname + "_comment.txt"
 try:
-    raw_input(
+    input(
             "\nHit return, then enter an operator comment, minimally:"
             " PROD/CLOCK/TEST/FAIL")
     fill_operator_log(operator_log)
@@ -702,7 +736,7 @@ user = str()
 emailserver = ()
 while get_email:
     try:
-        user = raw_input(
+        user = input(
                 "Enter *gmail* address and password for notifications"
                 " (or return to ignore):\n")
         if user:
@@ -733,7 +767,7 @@ if not options.novex:
 
 vex2difx_options = ""
 if options.clockjob or options.testjob or options.force:
-    vex2difx_options = " -f "
+    vex2difx_options = "-f"
 
 #if not options.nofilelist:
 #    # re-generate file lists before full production runs, just in case
@@ -860,24 +894,19 @@ if binconfigfilename:
 print ("\n")
 
 if not options.nopause:
-    raw_input("Press return to initiate the correlator job or ^C to quit")
+    input("Press return to initiate the correlator job or ^C to quit")
 
 # set the $DIFX_MESSAGE_PORT as late as possible in the processing to avoid
 # clashes with other espresso invocations
-difx_message_port = set_difx_message_port(50201)
-espresso_env = os.environ.copy()
-espresso_env["DIFX_MESSAGE_PORT"] = str(difx_message_port)
-os.environ["DIFX_MESSAGE_PORT"] = str(difx_message_port)
+#difx_message_port = set_difx_message_port(50201)
+#espresso_env = os.environ.copy()
+#espresso_env["DIFX_MESSAGE_PORT"] = str(difx_message_port)
+difx_message_port = os.environ.get("DIFX_MESSAGE_PORT", 50201)
+#espresso_env["DIFX_MESSAGE_PORT"] = difx_message_port
 
 # create the mpi files for each job
 for jobname in sorted(corrjoblist.keys()):
     # run lbafilecheck to get the new machines and .threads files
-
-    ntasks_per_node = 1
-    if options.ntasks_per_node:
-        ntasks_per_node = options.ntasks_per_node
-    elif (not options.interactive) and options.computehead:
-        ntasks_per_node = 2
 
     datafilename = expname + ".datafiles"
     run_lbafilecheck(
@@ -899,27 +928,24 @@ for jobname in sorted(corrjoblist.keys()):
             jobname, expname, jobtime, str(difx_message_port),
             str(ntasks_per_node))
 
-logfiles = []
+#logfiles = []
 
 # run each job
 good_jobs = []
 bad_jobs = []
 job_errors = []
+speedups = []
 try:
     if options.interactive:
         good_jobs, bad_jobs, job_errors = run_interactive(corrjoblist, outdir)
     else:
-        good_jobs, bad_jobs, job_errors = run_batch(corrjoblist, outdir)
+        good_jobs, bad_jobs, job_errors, speedups = run_batch(
+                corrjoblist, outdir)
 finally:
-
-    ## kill the difxwatch process (kill -INT so it cleans itself up)
-    #if difxwatch:
-    #    # if no difxwatch was started because one was already running then this
-    #    # does nothing
-    #    os.kill(difxwatch.pid, 2)
 
     # plot the speedup factor (this forks a process - must clean up later)
     try:
+        logfiles = [get_difxlogname(outdir, job) for job in corrjoblist.keys()]
         speedup = plot_speedup(logfiles, outdir, passname)
     except:
         print ("Could not plot speedup factor!")
@@ -936,16 +962,19 @@ finally:
             print ("No notification email sent")
 
     # and enter an operator comment
-    raw_input(
+    input(
             "\nHit return, then update the operator comment, minimally:"
             " PROD/CLOCK/TEST/FAIL")
     fill_operator_log(operator_log)
     for jobname in corrjoblist.keys():
         operator_joblog = outdir + jobname + ".comment.txt"
-        shutil.copy2(operator_log, operator_joblog)
+        try:
+            shutil.copy2(operator_log, operator_joblog)
+        except:
+            sys.stderr.write("{:s} not copied!\n".format(operator_log))
 
     # print accumulated errors to screen for reference
-    print ("Log errors:\n", "".join(job_errors))
+    print ("Log errors:\n", "".join(job_errors), "\n")
 
     # clean up the forked plot process
     try:
@@ -957,12 +986,17 @@ finally:
         print ("Speedup plot not complete!")
 
     #if not options.clockjob and not options.testjob:
-    print ("Successful jobs:")
-    print (" ".join(good_jobs))
-    print ("Jobs that may need re-doing:")
+    print ("Successful jobs (speedup):")
+    print (" ".join(
+        ["{:s} ({:.1f})".format(job, speedups.get(job,0.)) 
+        for job in good_jobs]))
+    print ("\nJobs that may need re-doing:")
     if bad_jobs:
         #switches = [switch for switch in sys.argv[1:] if switch != "-a"]
         #print ("espresso.py", " ".join(switches+bad_jobs))
-        print ("espresso.py", " ".join(bad_jobs))
+        print (" ".join(
+            ["{:s} ({:.1f})".format(job, speedups.get(job,0.)) 
+                for job in bad_jobs]))
+        print ("\nespresso.py", " ".join(bad_jobs))
     else:
         print ("None")

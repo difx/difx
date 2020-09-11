@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -60,7 +60,8 @@ def makefilelists(
             stderr=subprocess.PIPE).communicate()
     #filelist = pexpect.run(command)
     #filelist = filelist.split('\r\n')
-    filelist = filelist.split("\n")
+    filelist = filelist.decode("utf-8").split("\n")
+    error1 = error1.decode("utf-8")
     filelist.pop()
     filelist = sorted(filelist, key=sortbyfilename)
     for filename in filelist:
@@ -88,11 +89,11 @@ def makefilelists(
     #command = " ".join(
     #       ["ssh", machine, chk_vlbi, os.getcwd() + os.sep + TEMPFILE.name])
     command = " ".join([chk_vlbi, opt, os.getcwd() + os.sep + TEMPFILE.name])
-    #print filelist
     filelist, error2 = subprocess.Popen(
             command, shell=True, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE).communicate()
-    filelist = filelist.split("\n")
+    filelist = filelist.decode("utf-8").split("\n")
+    error2 = error2.decode("utf-8")
     filelist.pop()
     nbad = 0
     for file in filelist:
@@ -181,7 +182,7 @@ def write_run(expname, np, nthreads, options):
         RUNFILE.write(" $DIFXROOT/bin/mpifxcorr {JOBNAME}.input\n")
         RUNFILE.close()
     try:
-        os.chmod(runfilename, 0775)
+        os.chmod(runfilename, 0o775)
     except:
         print ("could not change permissions of", runfilename)
 

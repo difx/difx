@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -29,7 +29,10 @@ import fcntl
 import smtplib
 import sys
 from email.mime.text import MIMEText
-import mx.DateTime
+#import mx.DateTime
+import astropy.time
+import datetime
+import subprocess
 
 
 def get_corrhosts(hostsfilename):
@@ -184,24 +187,25 @@ def openlock(filename):
     return lockedfile
 
 
-def mjd2vex(indate):
-    """converts indate from mjd to vex or vice versa. Deprecated: use
-convertdate instead"""
+#def mjd2vex(indate):
+#    """converts indate from mjd to vex or vice versa. Deprecated: use
+#convertdate instead"""
+#
+#    vexformat = "%Yy%jd%Hh%Mm%Ss"
+#    try:
+#        outdate = mx.DateTime.strptime(indate, vexformat).mjd
+#    except:
+#        try:
+#            gregdate = mx.DateTime.DateTimeFromMJD(float(indate))
+#            outdate = gregdate.strftime(vexformat)
+#        except:
+#            raise Exception(
+#                    "Accepts dates only in VEX format,"
+#                    " e.g. 2010y154d12h45m52s, or MJD")
+#
+#    return outdate
 
-    vexformat = "%Yy%jd%Hh%Mm%Ss"
-    try:
-        outdate = mx.DateTime.strptime(indate, vexformat).mjd
-    except:
-        try:
-            gregdate = mx.DateTime.DateTimeFromMJD(float(indate))
-            outdate = gregdate.strftime(vexformat)
-        except:
-            raise Exception(
-                    "Accepts dates only in VEX format,"
-                    " e.g. 2010y154d12h45m52s, or MJD")
-
-    return outdate
-
+#class TimeVLBA(Time
 
 def convertdate(indate, outformat="mjd"):
     """converts between DiFX date formats (mjd, vex, iso, vlba)
@@ -220,9 +224,12 @@ def convertdate(indate, outformat="mjd"):
     # so use our own format
     vexformat = "%Yy%jd%Hh%Mm%Ss"
     vlbaformat = "%Y%b%d-%H:%M:%S"
-    isoformat = "%Y-%m-%dT%H:%M:%S"
+    #isoformat = "%Y-%m-%dT%H:%M:%S"
     # date only part of ISO8601
-    isoformat_d = "%Y-%m-%d"
+    #isoformat_d = "%Y-%m-%d"
+
+    if outformat == "iso":
+        outformat = "isot"
 
     # vex format can truncate from the right, have 2 digits for the year, and
     # decimal seconds
@@ -243,19 +250,27 @@ def convertdate(indate, outformat="mjd"):
         if "." in indate:
             vexformat_in = vexformat_in.replace("s", ".%fs")
 
-    timeformats = [vexformat_in, vlbaformat, isoformat, isoformat_d]
+    # built-in formats
+    timeformats1 = ["mjd", "iso", "isot"]
+    # strftime formats
+    timeformats2 = [vexformat_in, vlbaformat]
 
     # convert the input time to a datetime
 
     date = None
-    try:
+    for timeformat in timeformats1:
+        try:
         # MJD?
-        date = mx.DateTime.DateTimeFromMJD(float(indate))
-    except ValueError:
-        # other formats
-        for timeformat in timeformats:
+            if timeformat == "mjd":
+                indate = float(indate)
+            date = astropy.time.Time(indate, format=timeformat)
+        except ValueError:
+            continue
+    if date is None:
+        for timeformat in timeformats2:
             try:
-                date = mx.DateTime.strptime(indate, timeformat)
+                date = datetime.datetime.strptime(indate, timeformat)
+                date = astropy.time.Time(date)
                 break
             except ValueError:
                 pass
@@ -264,14 +279,15 @@ def convertdate(indate, outformat="mjd"):
         raise Exception(
                 "Accepts dates only in MJD, Vex, VLBA or ISO8601 formats")
 
-    if outformat == "mjd":
-        outdate = date.mjd
-    elif outformat == "iso":
-        outdate = date.strftime(isoformat)
+    if outformat in ["mjd", "isot"]:
+        date.format = outformat
+        outdate = date.value
     elif outformat == "vlba":
-        outdate = date.strftime(vlbaformat).upper()
+        date.format = "datetime"
+        outdate = datetime.datetime.strftime(date.value, vlbaformat).upper()
     elif outformat == "vex":
-        outdate = date.strftime(vexformat)
+        date.format = "datetime"
+        outdate = datetime.datetime.strftime(date.value, vexformat)
     else:
         raise Exception(
                 "Output format not recognised, choose from: mjd, vex, iso or"
@@ -368,3 +384,132 @@ class Msg_Filter:
 
     def fileno(self):
         self._file.fileno()
+
+
+def dhms2sec(time_in):
+    """convert [DD-[HH:]]MM:SS to secs"""
+
+    sec = 0
+    time_split = time_in.split(":")
+    sec = int(time_split.pop())
+    sec += int(time_split.pop())*60
+    if time_split:
+        dayhour = time_split[0].split("-")
+        sec += int(dayhour.pop())*3600
+        if dayhour:
+           sec += int(dayhour[0])*3600*24
+
+    return sec
+
+
+class batchenv:
+    """Set the batch commands to use. SLURM and PBS are in principle both
+    supported but PBS has not been tested in a long time. Everyone uses SLURM
+    now, right?
+    
+    If automatic detection does not work, can explicitly call self.set_style
+    with either 'slurm' or 'pbs' as argument.
+    """
+
+    def __init__(self, jobnames): 
+        self._jobnames = jobnames
+        if which("sbatch"):
+            self.set_style("slurm")
+        elif which("qsub"):
+            self.set_style("pbs")
+        else:
+            sys.stderr.write(
+                    "No sbatch or qsub found in path."
+                    " You can call self.set_style explicitly\n"
+                    )
+        return
+
+    def set_style(self, style):
+        """Set the batch style - either 'slurm' or 'pbs'"""
+
+        self.launch = None
+        self.cancel = None
+        self.stats = None
+        self.q = None
+        self.speedup = None
+
+        self._style = style
+        self._set_commands()
+        return
+
+    def _set_commands(self):
+        """Set the batch commands for either SLURM or PBS
+
+        PBS version probably broken right now - let me know if anyone still
+        uses it
+        """
+
+        if self._style == "slurm":
+            self.launch = "sbatch --parsable --export=ALL"
+            #self.cancel = "scancel -n"
+            self.cancel = "scancel"
+            self.stats = ("sacct -j {:s} -X --format "
+                "JobName%-15,JobId,elapsed,NNodes,Time,Reserved")
+            self.q = self._batchq_slurm(self._jobnames)
+            self.speedup = self._slurm_speedup
+        elif self._style == "pbs":
+            self.launch = "qsub"
+            self.cancel = "canceljob"
+            self.q = " ".join(["qstat", " ".join(self._jobnames)])
+            self.stats = None
+            self.speedup = self._pbs_speedup
+        else:
+            #raise Exception("No sbatch or qsub found in path!")
+            sys.stderr.write(
+                    "Batch environment '{:s}' unknown.\n".format(self._style)
+                    )
+        return
+
+    def _slurm_speedup(self, jobid, joblen):
+        """Run an sacct command and parse the output to calculate job
+        speedup
+        """
+    
+        speedup = 0.
+        speedup_wait = 0.
+        try:
+            command = "sacct -j {:s} -X --format ElapsedRaw -P -n".format(
+                    jobid)
+            elapsed = subprocess.Popen(
+                    command, stdout=subprocess.PIPE,
+                    shell=True).communicate()[0]
+            elapsed = int(elapsed)
+            command = "sacct -j {:s} -X --format Reserved -P -n".format(jobid)
+            #print(command)
+            reserved = subprocess.Popen(
+                    command, stdout=subprocess.PIPE,
+                    shell=True).communicate()[0]
+            reserved = dhms2sec(reserved)
+            speedup = joblen*60./elapsed
+            speedup_wait = joblen*60./(elapsed+reserved)
+        except:
+            speedup = 0.0
+            speedup_wait = 0.0
+    
+        return speedup, speedup_wait
+
+    def _pbs_speedup(self, jobid, joblen):
+        """Don't know how to do this yet"""
+        return 0.0, 0.0
+
+    def _batchq_slurm(self, jobnames):
+        """Return a SLURM queue command for the current jobs. 
+        
+        Make sure the squeue format accommodates the full job name"""
+    
+        longest = 0
+        batch_q = None
+        for jobname in jobnames:
+            if len(jobname) > longest:
+                longest = len(jobname)
+        squeue_format = (
+                "%8i %8u %.{:d}j %.3t %.19S %.19e %.10L %.5D %.10Q".format(
+                longest+3))
+        batch_q = 'squeue -o "{0:s}" -n {1:s}'.format(
+                squeue_format, ",".join(jobnames))
+        return batch_q

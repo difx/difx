@@ -23,6 +23,7 @@
 # Takes dates in MJD, VEX, ISO8601 or VLBA format.
 # October 2017: change to use requests module. Optional vex output.
 # May 2019: New download site.
+# Sep 2020: Use encrypted ftp.
 #
 # EOP/ut1 data from:
 # ftp://gdc.cddis.eosdis.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/
@@ -57,7 +58,7 @@ def get_leapsec(leapsec_page, target_jd):
 
 
 def ftpget(url, directory, filename):
-    """Return contents of a file on and ftp-ssl site"""
+    """Return contents of a file on an ftp-ssl site"""
     contents = []
     ftps = ftplib.FTP_TLS(url)
     # login and encrypt connection
@@ -82,10 +83,10 @@ parser.add_option(
         dest="local", action="store_true", default=False,
         help="Take EOPs from local $DIFX_EOPS and $DIFX_UT1LS files instead of"
         " web")
-parser.add_option(
-        "--noverify",
-        dest="verify", action="store_false", default=True,
-        help="Disable HTTPS certificate checking (at own risk!)")
+#parser.add_option(
+#        "--noverify",
+#        dest="verify", action="store_false", default=True,
+#        help="Disable HTTPS certificate checking (at own risk!)")
 
 (options, args) = parser.parse_args()
 
@@ -184,8 +185,7 @@ for nlines, line in enumerate(eop_page):
     if (line[0] == "#"):
         continue
     # split the line on whitespace and convert to floats
-    eop_fields = line.split()
-    eop_fields = [float(field) for field in eop_fields]
+    eop_fields = [float(field) for field in line.split()]
     # print an EOP line if we're within 3 days of the target day
     if (abs(eop_fields[0] - target_jd) < 3):
         neop += 1

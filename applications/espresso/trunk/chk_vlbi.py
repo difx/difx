@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -29,7 +29,8 @@ import sys
 import re
 import subprocess
 import optparse
-import mx.DateTime
+#import mx.DateTime
+import datetime
 import espressolib
 
 
@@ -66,14 +67,14 @@ def lbafile_timerange(filename, header):
         headerformat = "%Y%m%d:%H%M%S"
         vexformat = "%Yy%jd%Hh%Mm%Ss"
 
-        startdate = mx.DateTime.strptime(headerdate, headerformat)
+        startdate = datetime.datetime.strptime(headerdate, headerformat)
         vexstarttime = startdate.strftime(vexformat)
 
         # calculate the length of the file in seconds
         filesize = os.path.getsize(filename)
         filelength = lba_file_length(filesize, parsehead)
 
-        enddate = startdate + mx.DateTime.RelativeDateTime(seconds=filelength)
+        enddate = startdate + datetime.timedelta(0, filelength, 0)
         vexendtime = enddate.strftime(vexformat)
 
     return vexstarttime, vexendtime
@@ -82,8 +83,8 @@ def lbafile_timerange(filename, header):
 def vsib_header(filename):
     """Extract vsib header from LBA format file"""
 
-    FILE = open(filename)
-    header = FILE.read(4096).split("\n")
+    FILE = open(filename, "r+b")
+    header = FILE.read(4096).decode("utf-8").split("\n")
 
     return header
 
@@ -202,6 +203,8 @@ def check_file(infile, m5bopts):
                         command, shell=True, stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE).communicate()
                 #sys.stderr.write(error)
+                stdout = stdout.decode("utf-8")
+                error = error.decode("utf-8")
                 m5_output = stdout.split("\n")
                 m5format = parse_m5findformats(m5_output)
                 command = " ".join([m5time, infile, m5format])
@@ -290,7 +293,9 @@ def fix_filelist(outfilelist):
 def timesort(filelist):
     """sort a list of files in order of start time"""
 
-    filelist = sorted(filelist, key=lambda x: x[1])
+    # allow None values to be in the list. Form a tuple of (bool='is not None',
+    # value). 
+    filelist = sorted(filelist, key=lambda x: (x[1] is not None, x[1]))
     return filelist
 
 
@@ -328,6 +333,7 @@ if __name__ == "__main__":
         outfile = check_file(infile, m5bopts)
         outfilelist.append(outfile)
 
+    #print (outfilelist)
     outfilelist = timesort(outfilelist)
 
     # fix up the list for printing
