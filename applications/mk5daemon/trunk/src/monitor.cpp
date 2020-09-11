@@ -151,14 +151,18 @@ void handleMark6Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	strncpy(D->vsns[0], G->body.mark6status.msn1, 8);
 	D->vsns[0][8] = 0;
-	strncpy(D->vsns[1], G->body.mk5status.vsnB, 8);
+	strncpy(D->vsns[1], G->body.mark6status.msn2, 8);
 	D->vsns[1][8] = 0;
+	strncpy(D->vsns[2], G->body.mark6status.msn3, 8);
+	D->vsns[2][8] = 0;
+	strncpy(D->vsns[3], G->body.mark6status.msn4, 8);
+	D->vsns[3][8] = 0;
 
-	if(G->body.mk5status.state == MARK5_STATE_OPENING ||
-	   G->body.mk5status.state == MARK5_STATE_OPEN ||
-	   G->body.mk5status.state == MARK5_STATE_PLAY ||
-	   G->body.mk5status.state == MARK5_STATE_GETDIR ||
-	   G->body.mk5status.state == MARK5_STATE_GOTDIR)
+	if(G->body.mark6status.state == MARK6_STATE_OPENING ||
+	   G->body.mark6status.state == MARK6_STATE_OPEN ||
+	   G->body.mark6status.state == MARK6_STATE_PLAY ||
+	   G->body.mark6status.state == MARK6_STATE_GETDIR ||
+	   G->body.mark6status.state == MARK6_STATE_GOTDIR)
 	{
 		if(D->process == PROCESS_NONE)
 		{
@@ -170,7 +174,7 @@ void handleMark6Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 		D->lastMpifxcorrUpdate = time(0);
 	}
 
-	if(G->body.mk5status.state == MARK5_STATE_CLOSE)
+	if(G->body.mark6status.state == MARK6_STATE_CLOSE)
 	{
 		D->process = PROCESS_NONE;
 		Logger_logData(D->log, "mpifxcorr finished\n");
