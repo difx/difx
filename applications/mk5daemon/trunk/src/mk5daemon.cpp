@@ -503,6 +503,10 @@ void deleteMk5Daemon(Mk5Daemon *D)
 	signalDie = 0;
 	if(D)
 	{
+                // unmount all mark6 disks
+                if (D->isMk6)
+                    D->mark6->cleanUp();
+
 		D->dieNow = 1;
 		Mk5Daemon_stopMonitor(D);
 		Mk5Daemon_stopVSIS(D);
@@ -1242,13 +1246,13 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	ofstream out("my_log");
-	clog.rdbuf(out.rdbuf());
+	//ofstream out("my_log");
+	//clog.rdbuf(out.rdbuf());
         if(options.isMk6)
         {
 
 #ifdef HAS_MARK6META
-		clog << "test" << endl;
+	//	clog << "test" << endl;
 		D->mark6 = new Mark6();
 #else
 		fprintf(stderr, "Error: mark6 option provided but Mark6 support is not compiled in.\n");
@@ -1302,7 +1306,7 @@ int main(int argc, char **argv)
                                 // check for new modules on a mark6
                                 if(options.isMk6)
                                 {
-clog << "pre poll" << endl;
+//clog << "pre poll" << endl;
                                     try
                                     {
                                         D->mark6->pollDevices();
@@ -1312,6 +1316,10 @@ clog << "pre poll" << endl;
                                     {
                                         cerr << "No valid Mark6 metadata found, retrying again later. The error was: " << ex.what() << endl;   
                                     }
+				    catch(...)
+				    {
+					cout << "error" << endl;
+				    }
                                 }
                                     //D->mark6.pollDevices();
 			}
