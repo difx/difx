@@ -204,6 +204,14 @@ def getConfig(cfgfilename):
 			phases = [math.radians(float(v)) for v in cfgparser.get('phases_deg', str(station)).split(',')]
 			phasors = numpy.exp([1j*eta for eta in phases])
 			cfg['adhoc_phasors'][station] = phasors
+
+	# Params for quicker debug/test
+	cfg['dbg_drop_antennas'] = None
+	if cfgparser.has_section('debug'):
+		if cfgparser.has_option('debug', 'drop_antennas'):
+			cfg['dbg_drop_antennas'] = cfgparser.get('debug', 'drop_antennas').split(',')
+
+
 	return cfg
 
 
@@ -637,6 +645,10 @@ def stitchVisibilityfile(basename,cfg,writeMetaOnly=False):
 				seconds_report_prev = seconds
 				print ("at %d %12.7f, %.3f seconds from start" % (mjd,seconds,dTstart))
 				print ("\033[F\033[F")
+
+		if cfg['dbg_drop_antennas'] and ant1name in cfg['dbg_drop_antennas'] or ant2name in cfg['dbg_drop_antennas']:
+			nskipped += 1
+			continue
 
 		# Remap the frequency reference
 		out_freqindex = freqindex
