@@ -668,6 +668,9 @@ supported.
     polconvert to v1.7.5 (mostly minor bug fixes and robustifications)
 \end{enumerate}
 
+DiFX 2.5.3 was released on March 28, 2019.
+
+
 \section{DiFX 2.6.1}
 
 \subsection{New features}
@@ -724,6 +727,83 @@ supported.
 \item difx\_monitor won't compile with IPP $\ge 9$
 \end{enumerate}
 
+DiFX 2.6.1 was released on August 28, 2019.
+
+
+\section{DiFX~2.6.2}
+
+\subsection{New features}
+\begin{enumerate}
+\item Python parseDiFX package added
+\end{enumerate}
+
+\subsection{Updates}
+\begin{enumerate}
+\item HOPS updated to version 3.21
+\item PolConvert updated to version 1.7.8
+\item Former FTP access to CDDIS servers changed to FTP-SSL (geteop.pl)
+\end{enumerate}
+
+\subsection{Bug fixes}
+\begin{enumerate}
+\item mpifxcorr: Fix correlation of Complex LSB data, restore fringes. Note: DiFX 2.5.x and 2.6.1 treated Complex LSB as if Complex USB, while Trunk prior to r9647 05aug2020 treated LSB nearly correctly except for a off-by-one channel bug
+\item difx2mark4: Fix seg-fault in createType3s.c when a station has only a single entry in the PCAL file
+\item difx2mark4: Remove unneeded debugging statement (calling d2m4\_pcal\_dump\_record())
+\item difx2mark4: Update createType3s.c to add support for DiFX PCAL files generated from station data where each data-stream thread resides in a separate file (multi-datastream support). This separates the code reading the PCAL files from the code filling the type-3 records so that tone records from multiple data streams can be merged before populating the type-309s
+\item difx2mark4: Update createType3s.c to remove support for DiFX version-0 PCAL files
+\item difx2mark4: Add support for 10 MHz p-cal tone spacing (needed by VGOS at Yebes)
+\item difx2mark4: Significantly increase hardcoded array sizes (difx2mark4.h: NVRMAX 8M, MAX\_FPPAIRS 10k, MAX\_DFRQ 800) as required for EHT2018
+\item difx2mark4: Fix a bounds check, permit tabs in VEX file
+\item difx2fits: Fix FITS PH table having missing or superfluous pcal records when one correlates multi-datastream antennas, or not all recorded frequencies, or multiple zooms per recorded frequency
+\item mark6gather: Fix poor weights in native Mark6 correlation for VDIF frame sizes not equal to 5032 bytes
+\item difxio: Fix PCal tone frequency rounding bug on some platforms
+\item difxio: Cope with recorded bands that lack PCal tones, e.g., 200 MHz PCal spacing of KVN with say 32 MHz recorded bands
+\item calc11: Dave Gordon provided ocean loading params at EHT stations
+\item calc11: Increased the number of field rows supported in .calc files
+\item vex2difx: Fix internal merge of SamplingType (real, complex) when info found in VEX and/or v2d file
+\item Minor changes to oms2v2d and vexpeek
+\item More IPP versions supported
+\item Minor issues with vis2screen fixed
+\item Fixed build failure with gcc defaults
+\item Python3 support in many/most places
+\end{enumerate}
+
+\subsection{Caveats}
+\begin{enumerate}
+\item difx2mark4: Some LSB-LSB baselines do not get converted in mixed-sideband correlation setups (DiFX 2.6.1, 2.6.2); if affected, use difx2mark4 2.5.3 with –override-version. A bugfix is pending for DiFX 2.6.3 later this year.
+\item difx2mark4: Performance regression with p-cal files, conversion of p-cal data may take noticeably longer than before
+\item calcserver and difxcalc11: With the latest versions of gfortran (10.1 or newer) you will need to uncomment the line with -fallow-argument-mismatch line in the environment setup in order to compile. Users who do this should be alert to possible issues.
+\end{enumerate}
+
+DiFX 2.6.2 was released on September 11, 2020.
+
+
+
+%%%%  Future releases:
+%
+%  \section{DiFX <version>}
+%
+%  \subsection{New features}
+%     \begin{enumerate}
+%     \item <Description>
+%     \end{enumerate}
+% 
+%  \subsection{Bug fixes}
+%     \begin{enumerate}
+%     \item <component>: <Description of fix>
+%     \end{enumerate}
+%  \subsection{Caveats}
+%     \begin{enumerate}
+%     \item <Description of caveat>
+%     \end{enumerate}
+%
+%  \section{Features left to implement}
+%
+% DiFX <version> was released on <Month Day, Year>.
+%
+%%%%
+
+
 
 \section{Features left to implement}
 
@@ -733,7 +813,6 @@ Here is a list of other features to add to DiFX that are not directly tied to an
 \item Pulsar bins with proper output format
 \item Space VLBI support
 \end{enumerate}
-
 
 
 \subsection{DiFX and AIPS}
