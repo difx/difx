@@ -1858,10 +1858,10 @@ loOffsets 	& $[$float$]$	& Hz 		&		& adds LO offsets to each recorded frequency 
 tcalFreq	& int		& Hz		& 0 		& enables switched power detection at specified frequency \\
 phaseCalInt	& int		& MHz 		& 1		& zero turns off phase cal extraction, positive value is \\
 		&		&		&		& the interval between tones to be extracted \\
-toneGuard	& float		& MHz 		& 0.125 of bw	& when using toneSelectionsmartormostdon't select tones \\
+toneGuard	& float		& MHz 		& 0.125 of bw	& when using toneSelection {\em smart} or {\em most} don't select tones \\
 		&		&		&		& within this range of band edge, if possible \\
-toneSelection	& string			& {\tt smart}	& tone selection algorithm; see below \\
-sampling	& string			& {\tt REAL}	& set to {\tt COMPLEX} for complex sampled data \\
+toneSelection & string  &		& {\tt smart}	& tone selection algorithm; see below \\
+sampling	& string	&		& {\tt REAL}	& set to {\tt COMPLEX} for complex sampled data \\
 fake		& bool		&		& False		& enable a fake data source \\
 \hline
 \hline
