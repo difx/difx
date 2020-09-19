@@ -145,7 +145,7 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const Difx
 
 		for(f = 0; f < D1->nFreq; ++f)
 		{
-			if(isSameDifxFreq(D1->freq + f, D2->freq + f) == 0)
+			if(isSameDifxFreq(D1->freq + f, D2->freq + f, D1->AllPcalTones) == 0)
 			{
 				++difxInputCompatibilityStatistics[DifxInputCompatibilityFreqSet];
 
@@ -292,6 +292,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxM
 	D->nInChan = D1->nInChan;
 	D->nOutChan = D1->nOutChan;
 	D->AntPol   = D1->AntPol;
+	D->AllPcalTones = D1->AllPcalTones;
 	D->polxy2hv = D1->polxy2hv;
 	if(D1->visBufferLength > D2->visBufferLength)
 	{
@@ -328,7 +329,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxM
 
 	/* merge DifxFreq table */
 	D->freq = mergeDifxFreqArrays(D1->freq, D1->nFreq,
-		D2->freq, D2->nFreq, freqIdRemap, &(D->nFreq));
+		D2->freq, D2->nFreq, freqIdRemap, &(D->nFreq), D->AllPcalTones);
 
 	/* merge DifxDatastream table */
 	D->datastream = mergeDifxDatastreamArrays(D1->datastream, 

@@ -1,3 +1,14 @@
+Commit 9???  2020.09.18
+
+* Support of a new options is added:
+  -A --all-pcal-tones. When applied, all phase calibration tones within 
+  recorded band are put in the output file overriding the tone selection
+  defined in difx input files.
+
+  Added statistics of printing skipped records.
+
+  Added additinal debugging statements with verbose > 3.
+
 Commit 9637  2020.07.30
 
 * Support of three new options is added:

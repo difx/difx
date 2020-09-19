@@ -75,6 +75,7 @@ struct CommandLineOptions
 	int  antpol;            /* if 1, then polarization is determined by antenna */        
 	int  polxy2hv;          /* if 1, then polarization X/Y is transformed to H/V */
 	int  localdir;          /* if 1, then *.calc, *.im, and *.difx are sought in the same directory as *.input files */
+	int  allpcaltones;      /* if 1, then all phase calibration tones are extactred */
 	DifxMergeOptions mergeOptions;
 };
 

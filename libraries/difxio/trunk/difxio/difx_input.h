@@ -286,8 +286,6 @@ typedef struct
 	enum ClockMergeMode clockMergeMode;
 } DifxMergeOptions;
 
-
-
 /* Straight from DiFX frequency table */
 typedef struct
 {
@@ -310,7 +308,7 @@ typedef struct
 	double bw;		/* (MHz) */
 	char sideband;		/* U or L -- net sideband */
 	int nPol;		/* 1 or 2 */
-	char pol[2];		/* polarization codes (one per nPol) : L R X Y, H or V. */
+	char pol[2];		/* polarization codes (one per nPol) : L R X Y H or V. */
 	char rxName[DIFXIO_RX_NAME_LENGTH];
 } DifxIF;
 
@@ -686,6 +684,7 @@ typedef struct
 	int nPol;		/* maximum num pol across configs */
         int AntPol;             /* 1 for antenna defined polarizations */
 	int polxy2hv;           /* if 1, then polarization X/Y is transformed to H/V */
+	int AllPcalTones;       /* if 1, then all phase calibration tomes are extracted */
 	int doPolar;		/* 0 if not, 1 if so */
 	int nPolar;		/* nPol*(doPolar+1) */
 				/* 1 for single pol obs */
@@ -740,11 +739,11 @@ void deleteDifxFreqArray(DifxFreq *df, int nFreq);
 void printDifxFreq(const DifxFreq *df);
 void fprintDifxFreq(FILE *fp, const DifxFreq *df);
 int isSameDifxFreqToneSet(const DifxFreq *df1, const DifxFreq *df2);
-int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2);
+int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2, int AllPcalTones);
 int isDifxIFInsideDifxFreq(const DifxIF *di, const DifxFreq *df);
 void copyDifxFreq(DifxFreq *dest, const DifxFreq *src);
 int simplifyDifxFreqs(DifxInput *D);
-DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1, const DifxFreq *df2, int ndf2, int *freqIdRemap, int *ndf);
+DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1, const DifxFreq *df2, int ndf2, int *freqIdRemap, int *ndf, int AllPcalTones);
 int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df);
 
 /* DifxFreqSet functions */
@@ -790,7 +789,7 @@ void DifxDatastreamAllocZoomBands(DifxDatastream *dd, int nZoomBand);
 void DifxDatastreamAllocPhasecalTones(DifxDatastream *dd, int nTones);
 int DifxDatastreamGetPhasecalRange(const DifxDatastream *dd, const DifxFreq *df, double* lowest, double* highest);
 void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, const DifxFreq *df);
-int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, const DifxFreq *df, int maxCount);
+int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, const DifxFreq *df, int maxCount, int AllPcalTones);
 void deleteDifxDatastreamInternals(DifxDatastream *dd);
 void deleteDifxDatastreamArray(DifxDatastream *dd, int nDatastream);
 void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd);

@@ -165,23 +165,41 @@ int isSameDifxFreqToneSet(const DifxFreq *df1, const DifxFreq *df2)
 	return 1;
 }
 
-int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2)
+int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2, int AllPcalTones )
 {
-	if(df1->freq       == df2->freq &&
-	   df1->bw         == df2->bw   &&
-	   df1->sideband   == df2->sideband &&
-	   df1->specAvg    == df2->specAvg &&
-	   df1->nChan      == df2->nChan &&
-	   df1->overSamp   == df2->overSamp &&
-	   df1->decimation == df2->decimation &&
-	   isSameDifxFreqToneSet(df1, df2) )
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
+        if ( AllPcalTones == 0 ){
+	     if(df1->freq       == df2->freq &&
+	        df1->bw         == df2->bw   &&
+	        df1->sideband   == df2->sideband &&
+	        df1->specAvg    == df2->specAvg &&
+	        df1->nChan      == df2->nChan &&
+	        df1->overSamp   == df2->overSamp &&
+	        df1->decimation == df2->decimation &&
+	        isSameDifxFreqToneSet(df1, df2) )
+	     {
+		     return 1;
+	     }
+	     else
+	     {
+		     return 0;
+	     }
+        }
+        else {
+	     if(df1->freq       == df2->freq &&
+	        df1->bw         == df2->bw   &&
+	        df1->sideband   == df2->sideband &&
+	        df1->specAvg    == df2->specAvg &&
+	        df1->nChan      == df2->nChan &&
+	        df1->overSamp   == df2->overSamp &&
+	        df1->decimation == df2->decimation )
+	     {
+		     return 1;
+	     }
+	     else
+	     {
+		     return 0;
+	     }
+        }
 }
 
 int isDifxIFInsideDifxFreq(const DifxIF *di, const DifxFreq *df)
@@ -444,7 +462,7 @@ int simplifyDifxFreqs(DifxInput *D)
 
 		for(f1 = 0; f1 < f; ++f1)
 		{
-			if(isSameDifxFreq(D->freq+f, D->freq+f1))
+			if(isSameDifxFreq(D->freq+f, D->freq+f1, D->AllPcalTones) )
 			{
 				break;
 			}
@@ -523,7 +541,7 @@ int simplifyDifxFreqs(DifxInput *D)
 /* @brief merge two DifxFreq tables into an new one.  freqIdRemap will contain the
  * mapping from df2's old freq entries to that of the merged set
  */
-DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1, const DifxFreq *df2, int ndf2, int *freqIdRemap, int *ndf)
+DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1, const DifxFreq *df2, int ndf2, int *freqIdRemap, int *ndf, int AllPcalTones)
 {
 	DifxFreq *df;
 	int i, j;
@@ -535,7 +553,7 @@ DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1, const DifxFreq *df2
 	{
 		for(i = 0; i < ndf1; ++i)
 		{
-			if(isSameDifxFreq(df1 + i, df2 + j))
+			if(isSameDifxFreq(df1 + i, df2 + j, AllPcalTones))
 			{
 				freqIdRemap[j] = i;
 				break;

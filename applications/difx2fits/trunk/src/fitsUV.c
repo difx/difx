@@ -786,7 +786,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	{
 		if(verbose > 2)
 		{
-			printf("Freq not used: freqId = %d.  Skipping record.\n", freqId);
+			printf("Freq not used: freqId= %d freqSetId= %d configId= %d, ind= %d.  Skipping record.\n", freqId, config->freqSetId, configId, dfs->freqId2IF[freqId] );
 		}
 
 		return SKIPPED_RECORD;
@@ -1191,13 +1191,15 @@ static int storevis(DifxVis *dv)
 	return 0;
 }
 
-static int readvisrecord(DifxVis *dv, int verbose, int skipextraautocorrs)
+static int readvisrecord(DifxVis *dv, int verbose, int skipextraautocorrs, int* nSkipped_recs )
 {
 	/* blank array */
 	memset(dv->weight, 0, dv->nFreq*dv->D->nPolar*sizeof(float));
 	memset(dv->data, 0, dv->nData*sizeof(float));
 
 	dv->changed = 0;
+
+        *nSkipped_recs = 0;
 
 	while(dv->changed == 0 || dv->changed == SKIPPED_RECORD)
 	{
@@ -1213,6 +1215,10 @@ static int readvisrecord(DifxVis *dv, int verbose, int skipextraautocorrs)
 		if(dv->changed == HEADER_READ_ERROR)
 		{
 			return -1;
+		}
+		if(dv->changed == SKIPPED_RECORD)
+		{
+			(*nSkipped_recs)++;
 		}
 	}
 
@@ -1240,6 +1246,8 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	int nTrans = 0;
 	int nWritten = 0;
 	int nOld = 0;
+	int nSkipped = 0;
+	int nSkipped_recs;
 	double mjd, bestmjd;
 	DifxVis **dvs;
 	DifxVis *dv;
@@ -1461,7 +1469,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			fprintf(stdout, "Priming, dv=%d/%d\n", dvId, nDifxVis);
 		}
-		readvisrecord(dvs[dvId], opts->verbose, opts->skipExtraAutocorrs);
+		readvisrecord(dvs[dvId], opts->verbose, opts->skipExtraAutocorrs, &nSkipped_recs);
 		if(opts->verbose > 3)
 		{
 			fprintf(stdout, "Done priming DifxVis objects\n");
@@ -1553,6 +1561,9 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 			fitsWriteBinRow(out, (char *)dv->record);
 			++nWritten;
 		}
+		if ( dv->changed == SKIPPED_RECORD){
+		     ++nSkipped;
+                }
 		if(dv->changed < 0)
 		{
 			deleteDifxVis(dv);
@@ -1575,9 +1586,13 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 				return 0;
 			}
 
-			readvisrecord(dv, opts->verbose, opts->skipExtraAutocorrs);
+			readvisrecord(dv, opts->verbose, opts->skipExtraAutocorrs, &nSkipped_recs);
+			nSkipped = nSkipped + nSkipped_recs;
 		}
 	}
+        if ( opts->verbose > 2 ){
+             printf ( "      dv->D->nConfig= %d\n", dv->D->nConfig );
+        }
 
 	printf("      %d invalid records dropped\n", nInvalid);
 	printf("      %d flagged records dropped\n", nFlagged);
@@ -1585,6 +1600,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	printf("      %d negative weight records\n", nNegWeight);
 	printf("      %d scan boundary records dropped\n", nTrans);
 	printf("      %d out-of-time-range records dropped\n", nOld);
+	printf("      %d records skipped\n", nSkipped);
 	printf("      %d records written\n", nWritten);
 	printf("      FITS MJD range: %12.6f to %12.6f\n", firstMJD, lastMJD);
 	if(opts->verbose > 1)

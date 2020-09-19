@@ -372,13 +372,13 @@ void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, const DifxFreq *df
  * For LSBs the flags in toneFreq[] are returned descending in frequency.
  * This is the order in which they are written out by mpifxcorr in the pcal file.
  *
- * Return the number of tones extracted by DiFX.
+ * Return the number of tones extracted by DiFX. Not all these tones may be exporrted to FITS-IDI
  */
-int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, const DifxFreq *df, int maxCount)
+int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, const DifxFreq *df, int maxCount, int AllPcalTones)
 {
 	double lowest, highest;
 	int nRecTone=0;
-	int t;
+	int i, j, t;
 
 	for(t = 0; t < maxCount; ++t)
 	{
@@ -393,26 +393,41 @@ int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, c
 
 	/* Get number of tones, and lowest/highest in-band non-DC tone frequencies */
 	nRecTone = DifxDatastreamGetPhasecalRange(dd, df, &lowest, &highest);
-
 	/* Fill in the tone frequencies and on/off values */
-	for(t = 0; t < df->nTone; ++t)
-	{
-		int i, j;
-
-		i = df->tone[t];
-		if(df->sideband == 'U')
+	if ( AllPcalTones == 0 ){
+	     /* Use the phase cal tones specified in the difx input files */
+	     for(t = 0; t < df->nTone; ++t)
+	     {
+     		i = df->tone[t];
+		     if(df->sideband == 'U')
+		     {
+			     j = i;
+		     }
+		     else
+		     {
+			     j = nRecTone - 1 - i;	/* reverse order of LSB tones */
+		     }
+		     if(j >= 0 && j < maxCount)
+		     {
+			     toneFreq[j] = lowest + i*dd->phaseCalIntervalMHz;
+		     }
+	     }
+        } 
+        else
+        {
+	     /* Use all the phase cal tones regardless what is in the difx input files */
+	     for( t = 0; t < nRecTone; ++t)
+	     {
+		if ( df->sideband == 'U')
 		{
-			j = i;
+		    toneFreq[t] = lowest  + t*dd->phaseCalIntervalMHz;
 		}
 		else
 		{
-			j = nRecTone - 1 - i;	/* reverse order of LSB tones */
+		    toneFreq[t] = highest - t*dd->phaseCalIntervalMHz;
 		}
-		if(j >= 0 && j < maxCount)
-		{
-			toneFreq[j] = lowest + i*dd->phaseCalIntervalMHz;
-		}
-	}
+	     }
+        } 
 
 	return nRecTone;
 }

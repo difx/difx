@@ -815,7 +815,7 @@ static int parseDifxPulseCal(const char *line,
 			/* set up pcal information for this recFreq (only up to nRecTones)*/
 			/* nRecTone is simply the number of tones that fall within the recorded band */
 			/* not all of them may be desired. */
-			nRecTone = DifxDatastreamGetPhasecalTones(toneFreq, dd, df, nt);
+			nRecTone = DifxDatastreamGetPhasecalTones(toneFreq, dd, df, nt, D->AllPcalTones);
 
 			nSkip = 0;				/* number of tones skipped because they weren't selected in the .input file */
 			if(nRecTone <= tone)

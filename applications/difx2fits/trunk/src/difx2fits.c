@@ -48,6 +48,7 @@ const double DefaultDifxPCalInterval = 30.0;	/* sec */
 const int    DefaultDifxAntPol       = 0;	
 const int    DefaultDifxPolXY2HV     = 0;	
 const int    DefaultDifxLocalDir     = 0;	
+const int    DefaultAllPcalTones     = 0;	
 
 /* FIXME: someday add option to specify EOP merge mode from command line */
 
@@ -156,6 +157,9 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --localdir\n");
 	fprintf(stderr, "  -l                  *.calc, *.im, and *.difx are sought in the same directory as *.input files\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --all-pcal-tones\n");
+	fprintf(stderr, "  -A                  Extract all phase calibration tones\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --primary-band <pb> Add PRIBAND keyword with value <pb> to FITS file\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "%s responds to the following environment variables:\n", program);
@@ -187,6 +191,7 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts->antpol             = DefaultDifxAntPol; 
 	opts->polxy2hv           = DefaultDifxPolXY2HV; 
 	opts->localdir           = DefaultDifxLocalDir; 
+	opts->allpcaltones       = DefaultAllPcalTones;
 
 	return opts;
 }
@@ -356,6 +361,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			        strcmp(argv[i], "-l") == 0)
 			{
 				opts->localdir = 1;
+			}
+			else if(strcmp(argv[i], "--all-pcal-tones") == 0 ||
+			        strcmp(argv[i], "-A") == 0)
+			{
+				opts->allpcaltones = 1;
 			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
@@ -940,8 +950,9 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 
 			return 0;
 		}
-                Dset[i]->AntPol   = opts->antpol;
-                Dset[i]->polxy2hv = opts->polxy2hv;
+                Dset[i]->AntPol       = opts->antpol;
+                Dset[i]->polxy2hv     = opts->polxy2hv;
+                Dset[i]->AllPcalTones = opts->allpcaltones;
 
 		Dset[i] = updateDifxInput(Dset[i], &opts->mergeOptions);
 
