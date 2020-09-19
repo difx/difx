@@ -432,11 +432,10 @@ int isMixedPolMask(const int polmask)
 static int generateFreqSets(DifxInput *D)
 {
 	int configId;
-        int verbose;          
+	int verbose;
 	int *freqIsUsed;
-	int k;
 
-        difxioGetOption(DIFXIO_OPT_VERBOSITY, &verbose);
+	difxioGetOption(DIFXIO_OPT_VERBOSITY, &verbose);
 	freqIsUsed = (int *)calloc(D->nFreq+1, sizeof(int));
 	freqIsUsed[D->nFreq] = -1;
 
@@ -629,19 +628,21 @@ static int generateFreqSets(DifxInput *D)
 		/* Then actually build it */
 		dfs->IF = newDifxIFArray(dfs->nIF);
 		dfs->nIF = 0;	/* zero and recount */
-                if ( verbose > 3 ){ 
-                      printf ( "difx_input(generateFreqSets): D->nFreq= %d\n", D->nFreq );
-                } 
+		if(verbose > 3)
+		{
+			printf("difx_input(generateFreqSets): D->nFreq= %d\n", D->nFreq);
+		}
 		for(fqId = 0; fqId < D->nFreq; ++fqId)
 		{
 			int i;
 
 			if(freqIsUsed[fqId] <= 0)
 			{
-                           if ( verbose > 3 ){ 
-                                printf ( "difx_input(generateFreqSets):  frId= %4d  not used        \n", fqId  );       	       	     
-                           }
-			   continue;
+				if(verbose > 3)
+				{
+					printf("difx_input(generateFreqSets):  frId= %4d  not used        \n", fqId);
+				}
+				continue;
 			}
 
 			for(i = 0; i < dfs->nIF; ++i)
@@ -650,7 +651,7 @@ static int generateFreqSets(DifxInput *D)
 					(D->freq[fqId].sideband == 'U' && D->freq[fqId].freq == dfs->IF[i].freq) ||
 					(D->freq[fqId].sideband == 'L' && D->freq[fqId].freq == dfs->IF[i].freq + dfs->IF[i].bw) ))
 				{
-				     break;
+					break;
 				}
 			}
 			if(i < dfs->nIF)
@@ -680,16 +681,16 @@ static int generateFreqSets(DifxInput *D)
 
 				++dfs->nIF;
 			}
-                        if ( verbose > 3 ){ 
-                             printf ( "difx_input(generateFreqSets):  frId= %4d  i= %4d  configId= %2d dfs->freqId2IF[fqId]= %4d  dfs->nIF= %4d\n", 
-                                       fqId, i, configId, dfs->freqId2IF[fqId], dfs->nIF );       	       	 
-                        }
+			if(verbose > 3)
+			{
+				printf ( "difx_input(generateFreqSets):  frId= %4d  i= %4d  configId= %2d dfs->freqId2IF[fqId]= %4d  dfs->nIF= %4d\n", fqId, i, configId, dfs->freqId2IF[fqId], dfs->nIF );
+			}
 		}
 
 		/* Set reference frequency to the bottom edge of the first frequency */
 		D->refFreq = dfs->IF[0].freq;
 	}
-      
+
 	free(freqIsUsed);
 
 	/* Set reference frequency to the bottom edge of the first frequency */
@@ -3220,8 +3221,6 @@ static void setGlobalValues(DifxInput *D)
 	int hasL = 0;
 	int hasX = 0;
 	int hasY = 0;
-	int hasH = 0;
-	int hasV = 0;
 
 	if(!D)
 	{
@@ -3406,7 +3405,7 @@ static int mergeDifxInputFreqSetsStrict(DifxInput *D)
 
 		for(newFreqSetId = 0; newFreqSetId < n; ++newFreqSetId)
 		{
-			if(isSameDifxFreqSet(D, newdfs + newFreqSetId, D->freqSet + freqSetId))
+			if(isSameDifxFreqSet(newdfs + newFreqSetId, D->freqSet + freqSetId))
 			{
 				/* match -- no need to make new entry, but need to rewire any configs that reference this one */
 				break;
@@ -4359,40 +4358,44 @@ int DifxInputGetMaxTones(const DifxInput *D)
 	int maxTones = 0;
 	double lowest, highest;
 
-	if ( D->AllPcalTones == 0 ){
-             /* A case when we use the tones defined in the difx input file */
-	     for(d = 0; d < D->nDatastream; ++d)
-	     {
-		     int f;
+	if(D->AllPcalTones == 0)
+	{
+		/* A case when we use the tones defined in the difx input file */
+		for(d = 0; d < D->nDatastream; ++d)
+		{
+			int f;
 
-     		if(D->datastream[d].phaseCalIntervalMHz == 0)
-		     {
-			     continue;
-		     }
-		     for(f = 0; f < D->datastream[d].nRecFreq; ++f)
-		     {
-			     int fd;
+			if(D->datastream[d].phaseCalIntervalMHz == 0)
+			{
+				continue;
+			}
+			for(f = 0; f < D->datastream[d].nRecFreq; ++f)
+			{
+				int fd;
 
-     			fd = D->datastream[d].recFreqId[f];
-			     if (fd < 0)
-			     {
-				     break;
-			     }
-			     if(D->freq[fd].nTone > maxTones)
-			     {
-				     maxTones = D->freq[fd].nTone;
-			     }
-		     }
-	     }
+				fd = D->datastream[d].recFreqId[f];
+				if(fd < 0)
+				{
+					break;
+				}
+				if(D->freq[fd].nTone > maxTones)
+				{
+					maxTones = D->freq[fd].nTone;
+				}
+			}
+		}
         } 
-        else {
-             /* A case when we use all the tones */
-	     for(d = 0; d < D->nDatastream; ++d){
-	         nTones = DifxDatastreamGetPhasecalRange ( &(D->datastream[d]), 
-                                                           &(D->freq[D->datastream[d].recFreqId[0]]), 
-                                                           &lowest, &highest );
-                 if ( nTones > maxTones ){ maxTones = nTones; }
-             }
+        else
+	{
+		/* A case when we use all the tones */
+		for(d = 0; d < D->nDatastream; ++d)
+		{
+			nTones = DifxDatastreamGetPhasecalRange(D->datastream + d, &(D->freq[D->datastream[d].recFreqId[0]]), &lowest, &highest);
+			if(nTones > maxTones)
+			{
+				maxTones = nTones;
+			}
+		}
 	}
 
 	return maxTones;

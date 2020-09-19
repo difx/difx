@@ -253,12 +253,12 @@ static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, d
 	{
 		double state[6], range;
 		long double jd;
-		char jdstr[24];
+		char jdstr[28];
 		double et;
 		
 		/* time to evaluate ephemeris */
 		jd = 2400000.5 + ds->pos[p].mjd + ds->pos[p].fracDay + ephemClockError/86400.0;
-		sprintf(jdstr, "JD %18.12Lf", jd);
+		sprintf(jdstr, "JD %18.12Lf UTC", jd);
 		str2et_c(jdstr, &et);
 
 		/* 399 is the earth geocenter */

@@ -292,8 +292,8 @@ typedef struct
 	double freq;		/* (MHz) */
 	double bw;		/* (MHz) */
 	char sideband;		/* U or L -- net sideband */
-        int nChan;
-	int specAvg;            /* This is averaging within mpifxcorr  */
+	int nChan;
+	int specAvg;		/* This is averaging within mpifxcorr  */
 	int overSamp;
 	int decimation;
 	int nTone;		/* Number of pulse cal tones */
@@ -418,10 +418,10 @@ typedef struct
 	char dataFormat[DIFXIO_FORMAT_LENGTH];   /* e.g., VLBA, MKIV, ... */
 
 	enum SamplingType dataSampling; /* REAL or COMPLEX */
-	int nFile;              /* number of files */
-        char **file;            /* list of files to correlate (if not VSN) */
+	int nFile;		/* number of files */
+	char **file;		/* list of files to correlate (if not VSN) */
 	char networkPort[DIFXIO_ETH_DEV_SIZE]; /* eVLBI port for this datastream */
-	int windowSize;         /* eVLBI TCP window size */
+	int windowSize;		/* eVLBI TCP window size */
 	int quantBits;		/* quantization bits */
 	int dataFrameSize;	/* (bytes) size of formatted data frame */
 	enum DataSource dataSource;	/* MODULE, FILE, NET, other? */
@@ -429,15 +429,15 @@ typedef struct
 	float phaseCalIntervalMHz;/* 0 if no phase cal extraction, otherwise extract every tone and retain tones selected elsewhere */
 	float phaseCalBaseMHz;	/* propagated from VEX1.5 but unused for now */
 	int tcalFrequency;	/* 0 if no switched power extraction to be done.  =80 for VLBA */
-	int nRecTone;     /* number of pcal tones in the *recorded* baseband*/
-	int *recToneFreq; /* Frequency of each pcal tone in the *recorded* baseband in MHz */
-	int *recToneOut;  /* bool Recorded pcal written out?*/
+	int nRecTone;		/* number of pcal tones in the *recorded* baseband*/
+	int *recToneFreq;	/* Frequency of each pcal tone in the *recorded* baseband in MHz */
+	int *recToneOut;	/* bool Recorded pcal written out?*/
 
 	double *clockOffset;	/* (us) [freq] */
 	double *clockOffsetDelta; /* (us) [freq] */
 	double *phaseOffset;	/* (degrees) [freq] */
 	double *freqOffset;	/* Freq offsets for each frequency in Hz */
-	char pol[2];            /* polarization codes (one per nPol) : L R X Y, H or V. */
+	char pol[2];		/* polarization codes (one per nPol) : L R X Y, H or V. */
 	
 	int nRecFreq;		/* number of freqs recorded in this datastream */
 	int nRecBand;		/* number of base band channels recorded */
@@ -446,7 +446,7 @@ typedef struct
 	int *recBandFreqId;	/* [recband] index to recFreqId[] */
 	char *recBandPolName;	/* [recband] Polarization name (R, L, X or Y) */
 
-        int nZoomFreq;		/* number of "zoom" freqs (within recorded freqs) for this datastream */
+	int nZoomFreq;		/* number of "zoom" freqs (within recorded freqs) for this datastream */
 	int nZoomBand;		/* number of zoom subbands */
 	int *nZoomPol;		/* [zoomfreq] */
 	int *zoomFreqId;	/* [zoomfreq] index to DifxFreq table */
@@ -552,17 +552,17 @@ typedef struct
 	double mjdStart;			/* (day) */
 	double mjdEnd;				/* (day) */
 	int startSeconds;			/* Since model reference (top of calc file) */
-	int durSeconds; 			/* Duration of the scan */
-        char identifier[DIFXIO_NAME_LENGTH];	/* Usually a zero-based number */
+	int durSeconds;				/* Duration of the scan */
+	char identifier[DIFXIO_NAME_LENGTH];	/* Usually a zero-based number */
 	char obsModeName[DIFXIO_NAME_LENGTH];	/* Identifying the "mode" of observation */
 	int maxNSBetweenUVShifts;		/* Maximum interval until data must be shifted/averaged */
 	int maxNSBetweenACAvg;			/* Maximum interval until autocorrelations are sent/averaged */
-        int pointingCentreSrc;  		/* index to source array */
-        int nPhaseCentres;      		/* Number of correlation centres */
-        int phsCentreSrcs[MAX_PHS_CENTRES]; 	/* indices to source array */
+	int pointingCentreSrc;			/* index to source array */
+	int nPhaseCentres;			/* Number of correlation centres */
+	int phsCentreSrcs[MAX_PHS_CENTRES];	/* indices to source array */
 	int orgjobPhsCentreSrcs[MAX_PHS_CENTRES];/* indices to the source array from the original (pre-merged) job */
 	int jobId;				/* 0, 1, ... nJob-1 */
-        int configId;           		/* to determine freqId */
+	int configId;				/* to determine freqId */
 	int nAntenna;
 	int nPoly;
 	DifxPolyModel ***im;	/* indexed by [ant][src][poly] */
@@ -682,9 +682,9 @@ typedef struct
 
 	int nIF;		/* maximum num IF across configs */
 	int nPol;		/* maximum num pol across configs */
-        int AntPol;             /* 1 for antenna defined polarizations */
-	int polxy2hv;           /* if 1, then polarization X/Y is transformed to H/V */
-	int AllPcalTones;       /* if 1, then all phase calibration tomes are extracted */
+	int AntPol;		/* 1 for antenna defined polarizations */
+	int polxy2hv;		/* if 1, then polarization X/Y is transformed to H/V */
+	int AllPcalTones;	/* if 1, then all phase calibration tomes are extracted */
 	int doPolar;		/* 0 if not, 1 if so */
 	int nPolar;		/* nPol*(doPolar+1) */
 				/* 1 for single pol obs */
@@ -694,8 +694,8 @@ typedef struct
 	int quantBits;		/* 0 if different in configs; or 1 or 2 */
 	char polPair[4];	/* "  " if different in configs */
 	int dataBufferFactor;
-        int nDataSegments;
-        enum OutputFormatType outputFormat;
+	int nDataSegments;
+	enum OutputFormatType outputFormat;
 
 	int nCore;		/* from the .threads file, or zero if no file */
 	int *nThread;		/* [coreId]: how many threads to use on each core */
