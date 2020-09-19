@@ -1294,7 +1294,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			int nDifxAntennaTones;
 			int freqSetId;
 			int originalDsIds[maxDatastreams];
-			int originalDsId = -1, currentDsId = -1;
+			int originalDsId = -1;
 			int nds;	// number of datastreams for this antenna for this job
 			int d;
 
@@ -1481,15 +1481,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							if(originalDsId < 0)
 							{
 								continue;	/* to next line in file */
-							}
-
-							if(D->job[jobId].datastreamIdRemap)
-							{
-								currentDsId = D->job[jobId].datastreamIdRemap[originalDsId];
-							}
-							else
-							{
-								currentDsId = originalDsId;
 							}
 
 							mjdRecord = time - refDay + (int)(D->mjdStart);

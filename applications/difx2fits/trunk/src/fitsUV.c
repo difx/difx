@@ -368,22 +368,22 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentr
 			return 0;
 		}
 
-	      if(polMask & DIFXIO_POL_R)
-	      {
-		      dv->polStart = -1;
-	      }
-	      else if(polMask & DIFXIO_POL_L)
-	      {
-		      dv->polStart = -2;
-	      }
-	      else if(polMask & DIFXIO_POL_X)
-	      {
-		      dv->polStart = -5;
-	      }
-	      else /* must be YY only! who would do that? */
-	      {
-		      dv->polStart = -6;
-	      }
+		if(polMask & DIFXIO_POL_R)
+		{
+			dv->polStart = -1;
+		}
+		else if(polMask & DIFXIO_POL_L)
+		{
+			dv->polStart = -2;
+		}
+		else if(polMask & DIFXIO_POL_X)
+		{
+			dv->polStart = -5;
+		}
+		else /* must be YY only! who would do that? */
+		{
+			dv->polStart = -6;
+		}
 	}
 
 	/* room for input vis record: 3 for real, imag, weight */
@@ -469,65 +469,77 @@ void deleteDifxVis(DifxVis *dv)
 static int getPolProdId(const DifxVis *dv, const char *polPair)
 {
 	const char polSeq[8][4] = {"RR", "LL", "RL", "LR", "XX", "YY", "XY", "YX"};
-	const char pol1st[3][2] = {"R", "X", "H"};
-	const char pol2nd[3][2] = {"L", "Y", "V"};
-        int p, ind_1st, ind_2nd;
+	const char pol1st[3] = {'R', 'X', 'H'};
+	const char pol2nd[3] = {'L', 'Y', 'V'};
+	int p, ind_1st, ind_2nd;
 
-        if ( dv->D->AntPol == 0){
-	     for(p = 0; p < 8; ++p)
-	     {
-		     if(strncmp(polPair, polSeq[p], 2) == 0)
-		     {
-			     p = (p+1) + dv->polStart;
-			     
-			     if(p < 0 || p >= dv->D->nPolar)
-			     {
-				     return -1;
-			     }
-			     else
-			     {
-				     return p;
-			     }
-		     }
-             }
-	 } else 
-         {
+	if(dv->D->AntPol == 0)
+	{
+		for(p = 0; p < 8; ++p)
+		{
+			if(strncmp(polPair, polSeq[p], 2) == 0)
+			{
+				p = (p+1) + dv->polStart;
+
+				if(p < 0 || p >= dv->D->nPolar)
+				{
+					return -1;
+				}
+				else
+				{
+					return p;
+				}
+			}
+		}
+	}
+	else
+	{
 //
 // --------- Case of antenna-based polarizaiton (dv->D->AntPol == 0)
 // --------- Polarization order: A1A2  B1B2  A1B2  A2B1, where
 // --------- 1,2 are aNtenna indices and 
 // --------- A is the 1st polarization, B is the 2nd polarization
 //
-             ind_1st = 0;
-             ind_2nd = 0;
-	     p = -2; /* intialize with the error code */
-             for ( p = 0; p < 3; ++p ){
-                   if ( strncmp ( polPair,   pol1st[p], 1 ) == 0 ){ 
-                        ind_1st = 1;
-                   }
-                   if ( strncmp ( polPair+1, pol1st[p], 1 ) == 0 ){ 
-                        ind_2nd = 1;
-                   }
-                   if ( strncmp ( polPair,   pol2nd[p], 1 ) == 0 ){ 
-                        ind_1st = 2;
-                   }
-                   if ( strncmp ( polPair+1, pol2nd[p], 1 ) == 0 ){ 
-                        ind_2nd = 2;
-                   }
-             }
-             if ( ind_1st == 1 && ind_2nd == 1 ){
-                  p = 0;
-             }
-             if ( ind_1st == 2 && ind_2nd == 2 ){
-                  p = 1;
-             }
-             if ( ind_1st == 1 && ind_2nd == 2 ){
-                  p = 2;
-             }
-             if ( ind_1st == 2 && ind_2nd == 1 ){
-                  p = 3;
-             }
-	     return p;
+		ind_1st = 0;
+		ind_2nd = 0;
+		p = -2; /* intialize with the error code */
+		for(p = 0; p < 3; ++p)
+		{
+			if(polPair[0] == pol1st[p])
+			{
+				ind_1st = 1;
+			}
+			if(polPair[1] == pol1st[p])
+			{
+				ind_2nd = 1;
+			}
+			if(polPair[0] == pol2nd[p])
+			{
+				ind_1st = 2;
+			}
+			if(polPair[1] == pol2nd[p])
+			{
+				ind_2nd = 2;
+			}
+		}
+		if(ind_1st == 1 && ind_2nd == 1)
+		{
+			p = 0;
+		}
+		if(ind_1st == 2 && ind_2nd == 2)
+		{
+			p = 1;
+		}
+		if(ind_1st == 1 && ind_2nd == 2)
+		{
+			p = 2;
+		}
+		if(ind_1st == 2 && ind_2nd == 1)
+		{
+			p = 3;
+		}
+
+		return p;
 	}
 	
 	return -2;
@@ -558,8 +570,8 @@ static double evalPoly(const double *p, int n, double x)
 /* Auxilliary debugging routine for printing the contents of visilibity record */
 void UVfitsDump(const DifxVis *dv)
 {
-        int a1, a2, i,j,k,m;
-	int startChan, stopChan;
+	int a1, a2, i,j,k,m;
+	int startChan;
 	double utcmin, utcmax;
 	const double eps = 0.01;
 	char *str;
@@ -567,39 +579,52 @@ void UVfitsDump(const DifxVis *dv)
 
 	D = dv->D;
 	startChan = D->startChan;
-	stopChan = startChan + D->nOutChan*D->specAvg;
 
 	a1 = dv->record->baseline % 256 - 1;
 	a2 = dv->record->baseline / 256 - 1;
 
-        m=dv->nFreq*dv->D->nPolar;
+	m=dv->nFreq*dv->D->nPolar;
 
-        str = getenv("difx2fits_uvfits_dump_utcmin");
-	if ( str == NULL ){
-	     utcmin = 0.0;
-	} else { utcmin = atof(str); 
-        }
-        str = getenv("difx2fits_uvfits_dump_utcmax");
-	if ( str == NULL ){
-	     utcmin = 8640000;
-	} else { utcmax = atof(str); 
-        }
-        if ( dv->record->utc*86400.0 < utcmax + eps  && dv->record->utc*86400.0 > utcmin - eps){
-             printf ( "UV head utc: %9.7f ista %1d %1d fi %3d pol %1d start: %d stop: %d nfreq: %3d npol: %1d ncha: %4d nd: %8d wei %f scale: %g\n", 
-                      dv->record->utc*86400.0, a1, a2, dv->record->freqId1, dv->polId, 
-                      startChan, startChan, dv->nFreq, dv->D->nPolar, dv->D->nOutChan, 
-                      dv->nData, dv->record->data[0], dv->scale[a1]*dv->scale[a2] );
-            printf ( "UV head2 dv->D->nInChan %d dv->nComplex: %d dv->baseline: %d m= %3d \n", 
-                     dv->D->nInChan, dv->nComplex, dv->baseline, m );
-    	    for(i = 0; i < dv->nFreq; ++i){
-	        for(j = 0; j < dv->D->nOutChan; ++j){
-	            for(k = 0; k < dv->D->nPolar; ++k){
-                         printf ( "UV mjd: %5.0f utc: %9.3f sta: %1d %1d If: %2d Ic: %3d Ip: %1d vis: %14.7e, %14.7e \n", 
-                                   dv->record->jd - 2400000.5, dv->record->utc*86400.0, a1, a2, i, j, k, 
-                                   dv->record->data[m]/dv->scale[a1]/dv->scale[a2]/dv->recweight, 
-                                   -dv->record->data[m+1]/dv->scale[a1]/dv->scale[a2]/dv->recweight );
-                         m=m+2;
-        }}}}
+	str = getenv("DIFX2FITS_UVFITS_DUMP_UTCMIN");
+	if(!str)
+	{
+		utcmin = 0.0;
+	}
+	else
+	{
+		utcmin = atof(str);
+	}
+	str = getenv("DIFX2FITS_UVFITS_DUMP_UTCMAX");
+	if(!str)
+	{
+		utcmax = 8640000;
+	}
+	else
+	{
+		utcmax = atof(str);
+	}
+	if(dv->record->utc*86400.0 < utcmax + eps  && dv->record->utc*86400.0 > utcmin - eps)
+	{
+		printf("UV head utc: %9.7f ista %1d %1d fi %3d pol %1d start: %d stop: %d nfreq: %3d npol: %1d ncha: %4d nd: %8d wei %f scale: %g\n",
+			dv->record->utc*86400.0, a1, a2, dv->record->freqId1, dv->polId,
+			startChan, startChan, dv->nFreq, dv->D->nPolar, dv->D->nOutChan,
+			dv->nData, dv->record->data[0], dv->scale[a1]*dv->scale[a2]);
+		printf("UV head2 dv->D->nInChan %d dv->nComplex: %d dv->baseline: %d m= %3d \n", dv->D->nInChan, dv->nComplex, dv->baseline, m);
+		for(i = 0; i < dv->nFreq; ++i)
+		{
+			for(j = 0; j < dv->D->nOutChan; ++j)
+			{
+				for(k = 0; k < dv->D->nPolar; ++k)
+				{
+					printf("UV mjd: %5.0f utc: %9.3f sta: %1d %1d If: %2d Ic: %3d Ip: %1d vis: %14.7e, %14.7e \n",
+						dv->record->jd - 2400000.5, dv->record->utc*86400.0, a1, a2, i, j, k,
+						dv->record->data[m]/dv->scale[a1]/dv->scale[a2]/dv->recweight,
+						-dv->record->data[m+1]/dv->scale[a1]/dv->scale[a2]/dv->recweight);
+					m=m+2;
+				}
+			}
+		}
+	}
 }
 int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 {
@@ -634,7 +659,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 		{
 			return NEXT_FILE_ERROR;
 		}
-                v = fread(&(sync), sizeof(int), 1, dv->in);
+		v = fread(&(sync), sizeof(int), 1, dv->in);
 	}
 	++dv->nRec;
 
@@ -670,23 +695,23 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 			v += fread(&bin, sizeof(int), 1, dv->in);
 			v += fread(&weight, sizeof(double), 1, dv->in);
 			v += fread(uvw, sizeof(double), 3, dv->in);
-                        if(v != headerFields)
-                        {
+			if(v != headerFields)
+			{
 				fprintf(stderr, "Error parsing header: %d fields read; %d expected.\n", v, headerFields);
 
 				return HEADER_READ_ERROR;
-                        }
+			}
 			if(verbose > 3)
 			{
 				fprintf(stdout, "Read a vis from baseline %d\n", configBaselineId);
 			}
-                }
-                else //dunno what to do
-                {
-                        fprintf(stderr, "Error parsing header: got a sync of %x and version of %d\n", sync, binHeaderVersion);
-                        
+		}
+		else //dunno what to do
+		{
+			fprintf(stderr, "Error parsing header: got a sync of %x and version of %d\n", sync, binHeaderVersion);
+
 			return HEADER_READ_ERROR;
-                }
+		}
 	}
 	else
 	{
@@ -869,7 +894,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 			{
 				//printf("About to look at the actual im object\n");
 				im1 = scan->im[antId1][dv->phaseCentre + 1];
-	                        im2 = scan->im[antId2][dv->phaseCentre + 1];
+				im2 = scan->im[antId2][dv->phaseCentre + 1];
 				//printf("Got the im structures - they are %p and %p\n", im1, im2);
 				if(!(im1 && im2))
 				{
@@ -933,21 +958,21 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	
 	if(dv->polId < 0 || dv->polId >= dv->D->nPolar)
 	{
-                if(configBaselineId % 257 == 0 && skipextraautocorrs)
-                {
-                        // Silently ignore e.g. LL autocorrelations in an RR-only correlation
-                        return SKIPPED_RECORD;
-                }
-                else
-                {
-		        fprintf(stderr, "Baseline %d: Parameter problem: polId should be in [0, %d), was %d; polPair was '%s'\n", dv->baseline, dv->D->nPolar, dv->polId, polPair);
-                        if(configBaselineId % 257 == 0) //Tell the user how to get around this problem
-                        {
-                            fprintf(stderr, "This polarisation error was generated by an autocorrelation.  To skip autocorrelations which don't correspond to any computed cross-correlations, re-run difx2fits with --skip-extra-autocorrs\n");
-                        }
+		if(configBaselineId % 257 == 0 && skipextraautocorrs)
+		{
+			// Silently ignore e.g. LL autocorrelations in an RR-only correlation
+			return SKIPPED_RECORD;
+		}
+		else
+		{
+			fprintf(stderr, "Baseline %d: Parameter problem: polId should be in [0, %d), was %d; polPair was '%s'\n", dv->baseline, dv->D->nPolar, dv->polId, polPair);
+			if(configBaselineId % 257 == 0) //Tell the user how to get around this problem
+			{
+				fprintf(stderr, "This polarisation error was generated by an autocorrelation.  To skip autocorrelations which don't correspond to any computed cross-correlations, re-run difx2fits with --skip-extra-autocorrs\n");
+			}
 
-		        return POL_ID_ERROR;
-                }
+			return POL_ID_ERROR;
+		}
 	}
 
 	/* don't read weighted data into unweighted slot */
@@ -1539,12 +1564,15 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 			{
 				feedJobMatrix(jobMatrix, dv->record, dv->jobId);
 			}
-                        str = getenv("difx2fits_uvfits_dump");
-			if ( str != NULL ){
-                             if ( strncpy(str,"yes",4) ){
-                                  UVfitsDump( dv ); 
-                             }
-                        }
+
+			str = getenv("DIFX2FITS_UVFITS_DUMP");
+			if(!str)
+			{
+				if(strncpy(str, "yes", 4))
+				{
+					UVfitsDump(dv);
+				}
+			}
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, dv->record);
 #endif
@@ -1561,9 +1589,10 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 			fitsWriteBinRow(out, (char *)dv->record);
 			++nWritten;
 		}
-		if ( dv->changed == SKIPPED_RECORD){
-		     ++nSkipped;
-                }
+		if(dv->changed == SKIPPED_RECORD)
+		{
+			++nSkipped;
+		}
 		if(dv->changed < 0)
 		{
 			deleteDifxVis(dv);
@@ -1590,9 +1619,10 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 			nSkipped = nSkipped + nSkipped_recs;
 		}
 	}
-        if ( opts->verbose > 2 ){
-             printf ( "      dv->D->nConfig= %d\n", dv->D->nConfig );
-        }
+	if(opts->verbose > 2)
+	{
+		printf("      dv->D->nConfig= %d\n", dv->D->nConfig);
+	}
 
 	printf("      %d invalid records dropped\n", nInvalid);
 	printf("      %d flagged records dropped\n", nFlagged);
