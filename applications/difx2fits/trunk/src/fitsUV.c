@@ -1566,7 +1566,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 			}
 
 			str = getenv("DIFX2FITS_UVFITS_DUMP");
-			if(!str)
+			if(str)
 			{
 				if(strncpy(str, "yes", 4))
 				{
