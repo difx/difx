@@ -505,8 +505,11 @@ void deleteMk5Daemon(Mk5Daemon *D)
 	{
                 // unmount all mark6 disks
                 if (D->isMk6)
+#ifdef HAS_MARK6META
                     D->mark6->cleanUp();
-
+#else
+                fprintf(stderr, "Mark6 cleanup requested, but not linked.\n");
+#endif
 		D->dieNow = 1;
 		Mk5Daemon_stopMonitor(D);
 		Mk5Daemon_stopVSIS(D);
@@ -1108,11 +1111,11 @@ int main(int argc, char **argv)
     int highSock;
     int v;
     int halfSwapMonInterval;
-    int halfLoadMonInterval;
     int pid;
     int status;
 
 #ifdef HAVE_XLRAPI_H
+    int halfLoadMonInterval;
     time_t firstTime;
     int ok = 0;	/* FIXME: combine with D->ready? */
     int justStarted = 1;
@@ -1124,7 +1127,7 @@ int main(int argc, char **argv)
             isMk5 = 0;
     }
 #else
-    int isMk5 = 0;
+    // int isMk5 = 0;
 #endif
 
     try
@@ -1226,9 +1229,9 @@ int main(int argc, char **argv)
 	lastTime = time(0);
 
 	halfSwapMonInterval = D->swapMonInterval/2 + 3;
-	halfLoadMonInterval = D->loadMonInterval/2;
 
 #ifdef HAVE_XLRAPI_H
+	halfLoadMonInterval = D->loadMonInterval/2;
 	firstTime = lastTime;
 
 	v = initWatchdog();
