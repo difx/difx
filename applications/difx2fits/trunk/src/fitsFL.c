@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2020 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -61,10 +61,9 @@ enum
 
 static int parseFlag(char *line, char *antName, double timeRange[2], char *reason, int *recBand, int *chanRange)
 {
-	int l;
 	int n;
 
-	n = sscanf(line, "%s%lf%lf%d%d%d%n", antName, timeRange+0, timeRange+1, recBand, chanRange+0, chanRange+1, &l);
+	n = sscanf(line, "%s%lf%lf%d%d%d", antName, timeRange+0, timeRange+1, recBand, chanRange+0, chanRange+1);
 
 	if(n < 4)
 	{
@@ -77,8 +76,8 @@ static int parseFlag(char *line, char *antName, double timeRange[2], char *reaso
 		chanRange[1] = 0;
 	}
 
-	copyQuotedString(reason, line+l, 40);
-	
+	copyQuotedString(reason, line, 40);
+
 	return 1;
 }
 
@@ -165,7 +164,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 		{
 			break;
 		}
-			
+
 		/* ignore possible comment lines */
 		if(line[0] == '#')
 		{

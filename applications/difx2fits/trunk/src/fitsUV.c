@@ -568,7 +568,7 @@ static double evalPoly(const double *p, int n, double x)
 }
 	
 /* Auxilliary debugging routine for printing the contents of visilibity record */
-void UVfitsDump(const DifxVis *dv)
+static void UVfitsDump(const DifxVis *dv)
 {
 	int a1, a2, i,j,k,m;
 	int startChan;

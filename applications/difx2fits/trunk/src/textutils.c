@@ -6,7 +6,7 @@
 void copyQuotedString(char *dest, const char *src, int n)
 {
 	int i = 0;
-	
+
 	dest[0] = 0;
 
 	if(*src == 0)
@@ -16,7 +16,7 @@ void copyQuotedString(char *dest, const char *src, int n)
 	while(*src != '\'')
 	{
 		src++;
-		if(!*src)
+		if(*src == 0)
 		{
 			return;
 		}
@@ -31,7 +31,7 @@ void copyQuotedString(char *dest, const char *src, int n)
 		{
 			return;
 		}
-		if(!*src)
+		if(*src == 0)
 		{
 			*dest = 0;
 			return;
@@ -39,7 +39,7 @@ void copyQuotedString(char *dest, const char *src, int n)
 		src++;
 	}
 	*dest = 0;
-	for(; i < n; i++)
+	for(; i < n; ++i)
 	{
 		*dest = ' ';
 		dest++;
