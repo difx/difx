@@ -1111,11 +1111,11 @@ int main(int argc, char **argv)
     int highSock;
     int v;
     int halfSwapMonInterval;
+    int halfLoadMonInterval;
     int pid;
     int status;
 
 #ifdef HAVE_XLRAPI_H
-    int halfLoadMonInterval;
     time_t firstTime;
     int ok = 0;	/* FIXME: combine with D->ready? */
     int justStarted = 1;
@@ -1229,9 +1229,9 @@ int main(int argc, char **argv)
 	lastTime = time(0);
 
 	halfSwapMonInterval = D->swapMonInterval/2 + 3;
+	halfLoadMonInterval = D->loadMonInterval/2;
 
 #ifdef HAVE_XLRAPI_H
-	halfLoadMonInterval = D->loadMonInterval/2;
 	firstTime = lastTime;
 
 	v = initWatchdog();
