@@ -40,8 +40,8 @@
 #include <vexdatamodel.h>
 
 const std::string program("vexpeek");
-const std::string version("0.11");
-const std::string verdate("20200323");
+const std::string version("0.12");
+const std::string verdate("20200923");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -59,12 +59,13 @@ void usage(const char *pgm)
 	std::cout << "  -f or --format : add data format to output" << std::endl;
 	std::cout << "  -b or --bands : print list of band codes" << std::endl;
 	std::cout << "  -s or --scans : print list of scans and their stations" << std::endl;
+	std::cout << "  -r or --sources : print list of sources and their coordinates" << std::endl;
 	std::cout << "  -u or --diskusage : print disk usage (GB)" << std::endl;
 	std::cout << "  -m or --modules : print disk modules used (from TAPELOG_OBS)" << std::endl;
 	std::cout << "  -c or --coords : print station coordinates" << std::endl;
 	std::cout << "  -a or --all : print summary, bands, scans, and modules" << std::endl;
 	std::cout << std::endl;
-	std::cout << "  -B, -S, -M and/or -C can be used to add one of these sections to the output." << std::endl;
+	std::cout << "  -B, -S, -M -R and/or -C can be used to add one of these sections to the output." << std::endl;
 	std::cout << std::endl;
 }
 
@@ -239,20 +240,49 @@ void scanList(const VexData *V)
 		for(std::map<std::string,Interval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
 		{
 			currStations.push_back(it->first);
-			if (std::find(allStations.begin(), allStations.end(), it->first) == allStations.end())
+			if(std::find(allStations.begin(), allStations.end(), it->first) == allStations.end())
 			{
 				allStations.push_back(it->first);
 			}
 		}
-		for (std::vector<std::string>::iterator it = allStations.begin(); it != allStations.end(); ++it)
+		for(std::vector<std::string>::iterator it = allStations.begin(); it != allStations.end(); ++it)
 		{
 			std::string ant = "--";
-			if (std::find(currStations.begin(), currStations.end(), *it) != currStations.end())
+			if(std::find(currStations.begin(), currStations.end(), *it) != currStations.end())
 			{
 				ant = *it;
 			}
 			std::cout << std::setw(3) << ant << " ";
 		}
+		std::cout << std::endl;
+	}
+}
+
+void sourceList(const VexData *V)
+{
+	for(unsigned int s = 0; s < V->nSource(); ++s)
+	{
+		const VexSource *source = V->getSource(s);
+		std::cout << std::left << std::setw(VexSource::MAX_SRCNAME_LENGTH) << source->defName << " ";
+		std::cout.precision(12);
+		std::cout << std::left << std::setw(16) << source->ra << " " << std::left << std::setw(17) << source->dec;
+		if(!source->sourceType1.empty())
+		{
+			std::cout << " " << source->sourceType1;
+			if(!source->sourceType2.empty())
+			{
+				std::cout << " " << source->sourceType2;
+			}
+		}
+		if(!source->sourceNames.empty())
+		{
+			std::cout << " :";
+			for(std::vector<std::string>::const_iterator it = source->sourceNames.begin(); it != source->sourceNames.end(); ++it)
+			{
+				std::cout << " " << *it;
+			}
+		}
+
 		std::cout << std::endl;
 	}
 }
@@ -347,6 +377,7 @@ int main(int argc, char **argv)
 	int verbose = 0;
 	int doBandList = 0;
 	int doScanList = 0;
+	int doSourceList = 0;
 	int doFormat = 0;
 	int doUsage = 0;
 	int doModules = 0;
@@ -396,6 +427,12 @@ int main(int argc, char **argv)
 			++doScanList;
 			doSummary = 0;
 		}
+		else if(strcmp(argv[a], "-r") == 0 ||
+		        strcmp(argv[a], "--sources") == 0)
+		{
+			++doSourceList;
+			doSummary = 0;
+		}
 		else if(strcmp(argv[a], "-m") == 0 ||
 			strcmp(argv[a], "--modules") == 0)
 		{
@@ -418,6 +455,11 @@ int main(int argc, char **argv)
 		{
 			++doScanList;
 		}
+		else if(strcmp(argv[a], "-R") == 0 ||
+		        strcmp(argv[a], "--Sources") == 0)
+		{
+			++doSourceList;
+		}
 		else if(strcmp(argv[a], "-M") == 0 ||
 			strcmp(argv[a], "--Modules") == 0)
 		{
@@ -433,6 +475,7 @@ int main(int argc, char **argv)
 		{
 			++doBandList;
 			++doScanList;
+			++doSourceList;
 			++doModules;
 			++doCoords;
 		}
@@ -496,6 +539,10 @@ int main(int argc, char **argv)
 	if(doBandList)
 	{
 		bandList(V);
+	}
+	if(doSourceList)
+	{
+		sourceList(V);
 	}
 	if(doScanList)
 	{

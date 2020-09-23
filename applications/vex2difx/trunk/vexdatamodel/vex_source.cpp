@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2020 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -47,4 +47,10 @@ std::ostream& operator << (std::ostream &os, const VexSource &x)
 		"\n  dec=" << x.dec << std::endl;
 
 	return os;
+}
+
+void VexSource::setSourceType(const char *t1, const char *t2)
+{
+	sourceType1 = t1 ? t1 : "";
+	sourceType2 = t2 ? t2 : "";
 }

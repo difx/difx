@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2019 by Walter Brisken                             *
+ *   Copyright (C) 2009-2020 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -42,7 +42,7 @@
 #include "../vex/vex_parse.h"
 
 // maximum number of defined IFs
-#define MAX_IF 32
+#define MAX_IF 64
 
 using namespace std;
 
@@ -58,10 +58,10 @@ static void fixOhs(std::string &str)
 	unsigned int i;
 
 	// The format of Mark5/6 disk packs is name&number where name
-    // is a four character string for mark5 and a 3 character stream for
-	// mark6.  The delimiter for mark5 is a + or a - while the mark5 uses
-    // the % sign.  This method fixes any zeroes that happen to be in the
-    // name section by turning them to capital O's.
+	// is a four character string for Mark5 and a 3 character stream for
+	// Mark6.  The delimiter for Mark5 is a + or a - while the Mark5 uses
+	// the % sign.  This method fixes any zeroes that happen to be in the
+	// name section by turning them to capital O's.
 
 	for(i = 0; i < str.length(); ++i)
 	{
@@ -478,22 +478,32 @@ static int getSources(VexData *V, Vex *v)
 		S->defName = src;
 		if(strlen(src) > VexSource::MAX_SRCNAME_LENGTH)
 		{
-			std::cerr << "Source name " << src << " is longer than " << 
-			VexSource::MAX_SRCNAME_LENGTH << "  characters!" << std::endl;
+			std::cerr << "Source name " << src << " is longer than " << VexSource::MAX_SRCNAME_LENGTH << "  characters!" << std::endl;
 			++nWarn;
 		}
 
-		for(p = (char *)get_source_lowl(src, T_SOURCE_NAME, v);
-		    p != 0;
-		    p = (char *)get_source_lowl_next())
+		for(p = (char *)get_source_lowl(src, T_SOURCE_NAME, v); p; p = (char *)get_source_lowl_next())
 		{
 			S->sourceNames.push_back(std::string(p));
 			if(strlen(p) > VexSource::MAX_SRCNAME_LENGTH)
 			{
-				std::cerr << "Source name " << src << " is longer than " <<
-				VexSource::MAX_SRCNAME_LENGTH << "  characters!" << std::endl;
+				std::cerr << "Source name " << src << " is longer than " << VexSource::MAX_SRCNAME_LENGTH << "  characters!" << std::endl;
 				++nWarn;
 			}
+		}
+
+		p = (char *)get_source_lowl(src, T_SOURCE_TYPE, v);
+		if(p)
+		{
+			int link, name;
+			char *arg1 = 0, *arg2 = 0, *units = 0;
+
+			vex_field(T_SOURCE_TYPE, p, 1, &link, &name, &arg1, &units); // first field
+			vex_field(T_SOURCE_TYPE, p, 2, &link, &name, &arg2, &units); // second field
+
+			// Install the orbit parameters into the source
+
+			S->setSourceType(arg1, arg2);
 		}
 
 		p = (char *)get_source_lowl(src, T_RA, v);
@@ -683,8 +693,8 @@ static int getModes(VexData *V, Vex *v)
 			bbc2ifName.clear();
 			ch2tracks.clear();
 
-                        // see if the antenna is in this mode
-                        // oddly, not trivial, the vex parser is unable to list all antennas in a mode
+			// see if the antenna is in this mode
+			// oddly, not trivial, the vex parser is unable to list all antennas in a mode
 			// assume that if an antenna is supposed to be in Mode then it must have $IF, $BBC, $FREQ
 			std::vector<void*> reqrefs;
 			reqrefs.push_back( get_all_lowl(antName.c_str(), modeDefName, T_IF_DEF, B_IF, v) );
@@ -745,6 +755,7 @@ static int getModes(VexData *V, Vex *v)
 				if(p2count >= MAX_IF)
 				{
 					std::cerr << "Developer error: Value of MAX_IF is too small in vexload.cpp, instance 1" << std::endl;
+
 					exit(0);
 				}
 				p2array[p2count++] = p;
@@ -820,25 +831,10 @@ static int getModes(VexData *V, Vex *v)
 				if(p2count >= MAX_IF)
 				{
 					std::cerr << "Developer error: Value of MAX_IF is too small in vexload.cpp, instance 2" << std::endl;
+
 					exit(0);
 				}
 				p2 = p2array[p2count++];
-#if 0
-				if(!p2)
-				{
-					// check if this is a VLBA antenna; these require the comments for proper
-					// observe-time operation, so exit in that case
-					if(isVLBA(antName))
-					{
-						static bool first = true;
-						if(first)
-						{
-							std::cerr << "Warning: VLBA antenna detected, but no comment for if_def; can't do switching" << std::endl;
-							first = false;
-						}
-					}
-				}
-#endif
 
 				// carry comment forward as it might contain information about IF
 				vex_field(T_COMMENT, p2, 1, &link, &name, &value, &units);
@@ -1028,9 +1024,9 @@ static int getModes(VexData *V, Vex *v)
 							}
 							else
 							{
-								if(stream.nBit==0)
+								if(stream.nBit == 0)
 								{
-									nBit=2;
+									nBit = 2;
 								}
 								else
 								{
@@ -1194,7 +1190,7 @@ static int getModes(VexData *V, Vex *v)
 					exit(EXIT_FAILURE);
 				}
 
-				if(bandwidth -  stream.sampRate/2 < -1e-6)
+				if(bandwidth - stream.sampRate/2 < -1e-6)
 				{
 					// Note: this is tested in a sanity check later.  This behavior is not always desirable.
 					bandwidth = stream.sampRate/2;
@@ -1231,11 +1227,17 @@ static int getModes(VexData *V, Vex *v)
 				++nRecordChan;
 			}
 
-			if(stream.nRecordChan == 0)     // then use the number of that we just counted out
+			if(stream.nRecordChan == 0)	// then use the number of that we just counted out
 			{
 				if(stream.nThread > 1)
 				{
-					// FIXME: test that nThread divies into nRecordChan
+					// Test that nThread divides into nRecordChan
+					if(nRecordChan % stream.nThread != 0)
+					{
+						std::cerr << "Error: " << modeDefName << " antenna " << antName << " number of threads (" << stream.nThread << ") does not divide into number of record channels (" << nRecordChan << ")." << std::endl;
+
+						exit(EXIT_FAILURE);
+					}
 				}
 				stream.nRecordChan = nRecordChan;
 			}

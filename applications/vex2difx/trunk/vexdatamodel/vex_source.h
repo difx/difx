@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2020 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -39,12 +39,17 @@ class VexSource
 public:
 	VexSource() : ra(0.0), dec(0.0), calCode(' ') {}
 	bool hasSourceName(const std::string &name) const;
+	void setSourceType(const char *t1, const char *t2);
 
 	std::string defName;			// in the "def ... ;" line in Vex
+	std::string sourceType1;
+	std::string sourceType2;
 	
 	std::vector<std::string> sourceNames;	// from source_name statements
 	double ra;		// (rad)
 	double dec;		// (rad)
+	// FIXME: add "ref_coord_frame" value here (e.g., J2000)
+
 	char calCode;
 
 	static const unsigned int MAX_SRCNAME_LENGTH = 12;

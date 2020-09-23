@@ -20,6 +20,10 @@ Version 2.7.0
 * oms2v2d: use "difxcalc" for VLBA observing with sched 11.6 and newer
 * Support of polarization labels H and V is added.  (Commit 9636  2020.07.30)
 * Function isSX() added -- true if all modes in a file are pure S/X
+* Add option to vexpeek to print list of sources
+  - List is indexed by "vex def" name.  Assigned source name(s), if present, will
+    be listed after a colon on the source line.
+  - RA and Dec listed in radians as second and third columns.
 
 Version 2.6.0
 ~~~~~~~~~~~~~
