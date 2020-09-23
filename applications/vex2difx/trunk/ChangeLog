@@ -24,6 +24,7 @@ Version 2.7.0
   - List is indexed by "vex def" name.  Assigned source name(s), if present, will
     be listed after a colon on the source line.
   - RA and Dec listed in radians as second and third columns.
+* vexpeek: extend "doTime" option to apply to scan lists
 
 Version 2.6.0
 ~~~~~~~~~~~~~

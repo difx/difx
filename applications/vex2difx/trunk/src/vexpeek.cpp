@@ -57,6 +57,7 @@ void usage(const char *pgm)
 	std::cout << "  -h or --help : print help info and quit" << std::endl;
 	std::cout << "  -v or --verbose : print entire vextables structure of vexfile" << std::endl;
 	std::cout << "  -f or --format : add data format to output" << std::endl;
+	std::cout << "  -t or --doTime : add detailed time data to some output" << std::endl;
 	std::cout << "  -b or --bands : print list of band codes" << std::endl;
 	std::cout << "  -s or --scans : print list of scans and their stations" << std::endl;
 	std::cout << "  -r or --sources : print list of sources and their coordinates" << std::endl;
@@ -253,6 +254,24 @@ void scanList(const VexData *V)
 				ant = *it;
 			}
 			std::cout << std::setw(3) << ant << " ";
+		}
+		std::cout << std::endl;
+	}
+}
+
+void scanListWithTimes(const VexData *V)
+{
+	for(unsigned int s = 0; s < V->nScan(); ++s)
+	{
+		const VexScan *scan = V->getScan(s);
+		std::cout << std::left << std::setw(8) << scan->defName << " ";
+		std::cout << std::left << std::setw(12) << scan->sourceDefName << " ";
+		std::cout << std::left << std::setw(12) << scan->modeDefName << "   ";
+
+		std::cout.precision(14);
+		for(std::map<std::string,Interval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+		{
+			std::cout << it->first << " " << it->second.mjdStart << " " << it->second.mjdStop << "  ";
 		}
 		std::cout << std::endl;
 	}
@@ -546,7 +565,14 @@ int main(int argc, char **argv)
 	}
 	if(doScanList)
 	{
-		scanList(V);
+		if(doTime)
+		{
+			scanListWithTimes(V);
+		}
+		else
+		{
+			scanList(V);
+		}
 	}
 	if(doModules)
 	{
