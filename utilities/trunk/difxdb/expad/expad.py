@@ -34,8 +34,8 @@ import datetime
 import ttk
 from optparse import OptionParser
 from Tkinter import *
-from tkinter.multilistbox import *
-from tkinter.DatePicker import DatePicker
+from tkinter_difx.multilistbox import *
+from tkinter_difx.DatePicker import DatePicker
 from string import  upper
 
 from difxdb.model import model

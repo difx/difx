@@ -53,7 +53,7 @@ from collections import deque
 from sqlalchemy import *
 #from Tkinter import *
 import Tkconstants, tkFileDialog
-from tkinter.multilistbox import *
+from tkinter_difx.multilistbox import *
 from functools import partial
 
 # minimum database schema version required by comedia
