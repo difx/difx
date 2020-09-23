@@ -9,6 +9,8 @@ Fourfit is executed in parallel, one instance fitting one baseline of one scan.
 The fourfit instances are distributed over the cluster nodes.
 
 Options:
+   -h, --help            Help
+   -r, --refringe        Fit baselines even with existing fringe fits
    -c <controlfile>      HOPS fourfit control file to use for fringe fitting
    -F <frequency group>  Frequeny group to process, e.g., S
    -n <max nr of nodes>  Integer number, how many nodes to use at most
@@ -29,7 +31,7 @@ import glob, os, sys, time
 import subprocess
 
 # Note: mpi4py is not used as it needs CentOS openmpi but the MPIfR
-#       cluster runs a custom built Gemmatix/GxHive OpenMPI...
+#       cluster runs a custom built Gemmantics/GxHive OpenMPI...
 #
 # Todo: add logging, but: (1) popen() PIPE hangs as too much output, 
 #       (2) fourfit has no --logfile <fn> option
@@ -49,12 +51,13 @@ CPU_PER_NODE = 4
 
 parser = argparse.ArgumentParser(add_help=False, description='Runs fourfit on all baselines of the scans located under ./<expt_root>/')
 parser.add_argument('-h', '--help',        help='Help', action='store_true')
-parser.add_argument('-a', '--ant',         help='Fit only baselines to these antenna(s). Comma separated 1-letter codes.', dest='antennas', default='')
+parser.add_argument('-r', '--refringe',    dest='refringe', action='store_true', help='Fit baselines even with existing fringe fits')
+parser.add_argument('-a', '--ant',         help='Fit only baselines to these antenna(s) given by comma separated 1-letter codes.', dest='antennas', default='')
 parser.add_argument('-F', '--fgroup',      dest='freqgroup', help='Frequeny group to process, e.g., S', default=DEFAULT_FREQ_GROUP)
-parser.add_argument('-f', '--fourfit',     dest='fourfitwrapper', help='Fourfit setup and invocation script to use', default=DEFAULT_FOURFIT)
-parser.add_argument('-c', '--controlfile', dest='controlfile', help='Fourfit control file to use for fringe fitting', default=DEFAULT_CF)
-parser.add_argument('-n', '--maxnodes',    dest='maxnodes', help='Run at most n nodes', default=DEFAULT_MAX_HOSTS)
-parser.add_argument('-m', '--difxmachines',dest='difxmachinesfile', help='Get machines from DiFX machines file', default='')
+parser.add_argument('-f', '--fourfit',     dest='fourfitwrapper', help='Fourfit setup and invocation script to use (default: %(default)s)', default=DEFAULT_FOURFIT)
+parser.add_argument('-c', '--controlfile', dest='controlfile', help='Fourfit control file to use for fringe fitting (default: %(default)s)', default=DEFAULT_CF)
+parser.add_argument('-n', '--maxnodes',    dest='maxnodes', help='Run at most n nodes (default: %(default)d)', default=DEFAULT_MAX_HOSTS)
+parser.add_argument('-m', '--difxmachines',dest='difxmachinesfile', help='Get machines from a DiFX machines file', default='')
 parser.add_argument('expt_root', nargs='*')
 
 ################################################################################################################
@@ -97,6 +100,21 @@ class MachineList:
 	def machines(self):
 		return self._machines
 
+
+################################################################################################################
+
+class Job:
+	'''
+	Container for job info. Single baseline fringe fit task.
+	'''
+	def __init__(self, scan: str, baseline: str, host: str = None, shellcommand: str = None):
+		self.completed = False
+		self.pid = None
+		self.scan = scan
+		self.baseline = baseline
+		self.host = host
+		self.shellcommand = shellcommand
+		self.description = ''
 
 ################################################################################################################
 
@@ -145,31 +163,12 @@ class ExperimentDirAnalyzer:
 				baselines.add(fn[:2])
 		return baselines
 
-	def generateFourfitJobs(self, exptroot: str, freqgroup: str=''):
-		'''Make a job list: list of (subdir,baseline) tuples'''
-		jobs = []
-		Ncompleted = 0
-		for scan in self.listScans(exptroot):
-			blines = self.listScanBaselines(scan)
-			completed = self.listScanFittedBaselines(scan, freqgroup=freqgroup)
-			blines = list(blines - completed)
-			jobs += zip([scan]*len(blines), blines)
-			Ncompleted += len(completed)
-		print('Fourfit jobs: %d new, %d previously completed' % (len(jobs), Ncompleted))
-		return jobs
-
-
 ################################################################################################################
 
 class JobDispatch:
 	'''
-	Launch all jobs across the list of hosts in MachineList.
-
-	If there are more jobs than hosts, a smaller group of jobs is
-	launched first. Upone completion the next group is launched.
-
- 	Currently, the slowest fourfit in a group becomes the bottleneck; a more
-	dynamic approach with an idle hosts pool fed by pending tasks is ToDo.
+	Generates a list of jobs from not yet fringe fitted baselines in an experiment.
+	Dispatches individual jobs across hosts in a MachineList.
 	'''
 
 	def __init__(self, fourfit=DEFAULT_FOURFIT, hopscf=DEFAULT_CF, fourfitopts=DEFAULT_FOURFIT_OPTS):
@@ -215,80 +214,101 @@ class JobDispatch:
 				end = last
 			yield L[i:end]
 
-	def generateJobs(self, exptroot: str, antennaSubset=None):
+	def generateJobs(self, exptroot: str, antennaSubset=None, refringe=False):
 		'''
 		Split the set of scans+baselines under experiment dir into a series of small jobs that run in parallel
 		'''
+		jobs = []
 		analyzer = ExperimentDirAnalyzer()
+
 		if antennaSubset:
 		    analyzer.limitToAntennas(antennaSubset)
-		jobs = analyzer.generateFourfitJobs(exptroot, self._freqgroupname)
+
+		Ncompleted = 0
+		for scan in analyzer.listScans(exptroot):
+			blines = analyzer.listScanBaselines(scan)
+			completed = analyzer.listScanFittedBaselines(scan, freqgroup=self._freqgroupname)
+			if not refringe:
+				blines = list(blines - completed)
+			Ncompleted += len(completed)
+			for bline in blines:
+				j = Job(scan, bline)
+				jobs.append(j)
+
+		print('Fourfit jobs: %d new, %d previously completed' % (len(jobs), Ncompleted))
 		return jobs
 
 	def executeJobs(self, jobs):
 		'''
 		Executes a list of fourfit jobs in parallel.
-		The task is split into a series of smaller jobs if necessary.
+		The jobs are fed into idle computing nodes.
 		'''
-		hosts = self._machines * CPU_PER_NODE  # todo: some better approach to this!
-		Jmax = min(len(hosts), self._maxnodes)
+
 		cwd = os.getcwd()
+		idlehosts = self._machines * CPU_PER_NODE  # todo: some better approach to this!
 
-		jobblocks = self._group(jobs, Jmax)
-		for block in jobblocks:
+		processes = {}	# <PID>:<job> dictionary of running processes
+		jobnr = 0		# tail end of Jobs queue 
+		ncompleted = 0
 
-			subjobs = []
-			for job in block:
-				i = block.index(job)
-				subdir,baseline = job
-				host = hosts[i]
+		while ncompleted < len(jobs):
+
+			# Capacity
+			nrunning = len(processes)
+			nidle = len(idlehosts)
+
+			# If there is idle capacity, launch one new job and remove host from idle list
+			if nidle > 0 and nrunning < self._maxnodes and jobnr < len(jobs):
+
+				job = jobs[jobnr]
+				host = idlehosts.pop(0)
 
 				ssh = ["/usr/bin/ssh", "-t", host]
 				cdwork = ["cd", cwd]
-				fourfit = [self._fourfit] + self._fourfitopts + ['-c', self._controlfile, '-b', baseline + self._freqgrouparg, subdir]
-				cmd = ssh + cdwork + ['&&'] + fourfit
+				fourfit = [self._fourfit] + self._fourfitopts + ['-c', self._controlfile, '-b', job.baseline + self._freqgrouparg, job.scan]
 
-				print ('Fitting %s %s on %s' % (subdir,baseline,host))
-				subjobs.append([subdir,baseline,host,cmd])
+				job.shellcommand = ssh + cdwork + ['&&'] + fourfit
+				job.host = host
+				job.description = '%s:%s on %s' % (job.scan, job.baseline, job.host)
 
-			self._runJobgroup(subjobs)
+				print ('Fitting %s' % (job.description))
+				proc = self._launchJob(jobs[jobnr])
+				processes[job.pid] = {'process':proc, 'job':job}
 
-	def _runJobgroup(self, joblist, dryrun=False):
-		'''Launch jobs in parallel and wait for their completion'''
-		if dryrun:
-			for job in joblist:
-				cmd = job[-1]
-				print (cmd)
-			return
+				jobnr += 1
 
-		processes = {}
-		processdetails = {}
-		for job in joblist:
-			cmd = job[-1]
-			p = subprocess.Popen(cmd, stdin=None, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False)
-			processdetails[p.pid] = '%s:%s on %s' % (job[0],job[1],job[2])
-			processes[p.pid] = p
+				continue
 
-		while processes:
-
+			# Look for any completed jobs to remove
 			completed = {}
 			for pid in processes.keys():
-				if pid in completed:
-					continue
-				rc = processes[pid].poll()
+				rc = processes[pid]['process'].poll()
 				if rc is not None:
-					(s,rc) = processes[pid].communicate()
+					(s,rc) = processes[pid]['process'].communicate()
 					self._cleanTerm()
-					print ('Finished %s, %d remain\n' % (processdetails[pid], len(processes) - len(completed) - 1), flush=True)
-					completed[pid] = 1
+					ncompleted += 1
+					print ('Finished %s, %d remain' % (processes[pid]['job'].description, len(jobs) - ncompleted), flush=True)
+					completed[pid] = pid
 
-			if len(completed) > 0:
-				for pid in completed.keys():
-					del processes[pid]
-					del processdetails[pid]
+			# Insert hosts of completed jobs back into the idle hosts pool
+			for pid in completed.keys():
+				completedJob = processes[pid]['job']
+				idlehosts.append(completedJob.host)
+				del processes[pid]
 
 		self._cleanTerm()
 		print('Done')
+
+
+	def _launchJob(self, job, dryrun=False):
+		'''Launch subprocess and return the process ID'''
+		if dryrun:
+			p = subprocess.Popen(["/usr/bin/hostname"], stdin=None, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False)
+		else:
+			p = subprocess.Popen(job.shellcommand, stdin=None, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False)
+		job.pid = p.pid
+		self._cleanTerm()
+		return p
 
 	def _cleanTerm(self):
 		'''Reset terminal. Workaround for SSH+popen() which mess up the local terminal such that print() newlines cease to work'''
@@ -302,6 +322,7 @@ if __name__ == "__main__":
 	args = parser.parse_args(sys.argv[1:])
 	if args.help or len(args.expt_root) != 1:
 		print(__doc__)
+		parser.print_help()
 		sys.exit(0)
 
 	nodepool = MachineList()
@@ -319,7 +340,7 @@ if __name__ == "__main__":
 	handler.setMaxNodes(int(args.maxnodes))
 	handler.setMachines(nodepool.machines())
 
-	jobs = handler.generateJobs(expt_path, antennaSubset)
+	jobs = handler.generateJobs(expt_path, antennaSubset, args.refringe)
 	handler.executeJobs(jobs)
 
 	# tidy up the terminal again, messed up by subprocess.Popen() before
