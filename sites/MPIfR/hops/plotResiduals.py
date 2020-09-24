@@ -106,8 +106,8 @@ for alist in args.alistFile:
 
 		fringerate = float(rate)*float(freq)*1e-3
 		#print (date, st1, st2, scan, rate, fringerate)
-		if fringerate > args.maxFr:
-			print ("Warning: fringe rate > %e found: FR=%e bline=%s%s at %s " % (args.maxFr, fringerate, st1, st2, date))
+		if abs(fringerate) > abs(args.maxFr):
+			print ("Warning: abs. fringe rate > %e found: FR=%e bline=%s%s at %s " % (args.maxFr, fringerate, st1, st2, date))
 
 		if st1 in rates.keys():
 			rates[st1] = numpy.append(rates[st1], float(rate))
