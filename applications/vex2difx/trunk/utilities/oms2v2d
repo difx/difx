@@ -268,7 +268,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 		out.write('delayModel = difxcalc\n\n')
 
 	if nrt or filebased or (datacopyFormat != None) or (evlbiType != None):
-		machineString = 'swc000, swc001, swc002, swc003, swc004, swc005, swc006, swc007, swc007, swc009, swc010'
+		machineString = 'swc000, swc001, swc002, swc003, swc004, swc005, swc006, swc007, swc008, swc009, swc010'
 		out.write('machines = %s\n' % machineString);
 		out.write('nCore = 10\n')
 		out.write('nThread = 12\n\n')
