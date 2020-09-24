@@ -1,5 +1,5 @@
 /***************************************************************************
- *  Copyright (C) 2015-2019 by Walter Brisken                              *
+ *  Copyright (C) 2015-2020 by Walter Brisken                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -145,6 +145,8 @@ Mark6Gatherer *newMark6Gatherer();
 Mark6Gatherer *openMark6Gatherer(int nFile, char **fileList);
 
 off_t getMark6GathererFileSize(const Mark6Gatherer *m6g);
+
+off_t getMark6GathererSourceFileSize(const Mark6Gatherer *m6g);
 
 /* pass, e.g., /mnt/disks/?/?/data/exp1_stn1_scan1.vdif */
 Mark6Gatherer *openMark6GathererFromTemplate(const char *fileTemplate);

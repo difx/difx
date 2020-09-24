@@ -1,5 +1,5 @@
 /***************************************************************************
- *  Copyright (C) 2015-2019 by Walter Brisken                              *
+ *  Copyright (C) 2015-2020 by Walter Brisken                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -43,35 +43,51 @@
 #define M6SG_PACKET_FORMAT_UNK    2
 
 /* Note: this is actually defined in vdifio.h, but vdifio has mark6sg as dependency, so this just allows the small amount of local VDIF functionality to properly build */
-typedef struct vdif_header {
-   uint32_t seconds : 30;
-   uint32_t legacymode : 1;
-   uint32_t invalid : 1;
+typedef struct vdif_header
+{
+	uint32_t seconds : 30;
+	uint32_t legacymode : 1;
+	uint32_t invalid : 1;
 
-   uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+	uint32_t frame : 24;
+	uint32_t epoch : 6;
+	uint32_t unassigned : 2;
 
-   uint32_t framelength8 : 24;  // Frame length (including header) divided by 8 
-   uint32_t nchan : 5;
-   uint32_t version : 3;
+	uint32_t framelength8 : 24;  // Frame length (including header) divided by 8 
+	uint32_t nchan : 5;
+	uint32_t version : 3;
 
-   uint32_t stationid : 16;
-   uint32_t threadid : 10;
-   uint32_t nbits : 5;
-   uint32_t iscomplex : 1;
+	uint32_t stationid : 16;
+	uint32_t threadid : 10;
+	uint32_t nbits : 5;
+	uint32_t iscomplex : 1;
 
-   uint32_t extended1 : 24;
-   uint32_t eversion : 8;
+	uint32_t extended1 : 24;
+	uint32_t eversion : 8;
 
-   uint32_t extended2;
-   uint32_t extended3;
-   uint32_t extended4;
+	uint32_t extended2;
+	uint32_t extended3;
+	uint32_t extended4;
 } vdif_header;
 
-static inline int getVDIFFrameEpochSecOffset(const vdif_header *header) { return (int)header->seconds; }
-static inline int getVDIFFrameNumber(const vdif_header *header) { return (int)header->frame; }
-static inline uint64_t vdifFrame(vdif_header *vh) { return ((uint64_t)(getVDIFFrameEpochSecOffset(vh)) << 24LL) | getVDIFFrameNumber(vh); }
+const char DefaultMark6Root[] = "/mnt/disks/*/*/data";
+const char DefaultMark6Meta[] = "/mnt/disks/.meta/"; // path, not wildcard
+
+static inline int getVDIFFrameEpochSecOffset(const vdif_header *header)
+{
+	return (int)header->seconds;
+}
+
+static inline int getVDIFFrameNumber(const vdif_header *header)
+{
+	return (int)header->frame;
+}
+
+static inline uint64_t vdifFrame(vdif_header *vh)
+{
+	return ((uint64_t)(getVDIFFrameEpochSecOffset(vh)) << 24LL) | getVDIFFrameNumber(vh); 
+}
+
 static inline uint64_t mark5bFrame(char *data)
 {
 	unsigned char *udata;
@@ -82,6 +98,7 @@ static inline uint64_t mark5bFrame(char *data)
 	nFrame = (udata[5] * 256) + udata[4];
 	return ((uint64_t)(second) << 24LL) | nFrame; 
 }
+
 static inline int checkMark5BPacket(char *data)
 {
 	unsigned char *udata;
@@ -95,11 +112,13 @@ static inline int checkMark5BPacket(char *data)
 		return 0;
 	}
 }
-static unsigned char filltest[8] = {0x44, 0x33, 0x22, 0x11, 0x44, 0x33, 0x22, 0x11};
+
 static inline int checkFillData(char *data)
 {
+	const unsigned char filltest[8] = { 0x44, 0x33, 0x22, 0x11, 0x44, 0x33, 0x22, 0x11 };
 	unsigned char *udata;
 	int i;
+
 	udata = (unsigned char*)data;
 	for(i = 0; i < 16; i++)
 	{
@@ -108,11 +127,9 @@ static inline int checkFillData(char *data)
 			return 1;
 		}
 	}
+
 	return 0;
 }
-
-const char DefaultMark6Root[] = "/mnt/disks/*/*/data";
-const char DefaultMark6Meta[] = "/mnt/disks/.meta/"; // path, not wildcard
 
 const char *mark6PacketFormat(int formatId)
 {
@@ -193,7 +210,7 @@ static int getFirstBlocks(Mark6File *m6f)
 		}
 	}
 
-	v = fseeko(m6f->in, offset + size , SEEK_SET);
+	v = fseeko(m6f->in, offset + size, SEEK_SET);
 	if(v != 0)
 	{
 		return -4;
@@ -224,13 +241,15 @@ static void *mark6Reader(void *arg)
 
 		pthread_barrier_wait(&m6f->readBarrier);
 
-		if (!corrupted)
+		if(!corrupted)
 		{
 			v = fread(&m6f->readHeader, m6f->blockHeaderSize, 1, m6f->in);
 			if(v == 1)
 			{
-				int nrd = m6f->readHeader.wb_size - m6f->blockHeaderSize;
-				if ((nrd <= 0) || (nrd > (m6f->maxBlockSize - m6f->blockHeaderSize)))
+				int nrd;
+				
+				nrd = m6f->readHeader.wb_size - m6f->blockHeaderSize;
+				if(nrd <= 0 || nrd > m6f->maxBlockSize - m6f->blockHeaderSize)
 				{
 					fprintf(stderr, "Warning: corrupt scatter-gather file! Size %d of current block exceeds maxBlockSize %d\n", m6f->readHeader.wb_size, m6f->maxBlockSize);
 					memset(m6f->readBuffer, 0xFF, m6f->maxBlockSize - m6f->blockHeaderSize);
@@ -250,11 +269,10 @@ static void *mark6Reader(void *arg)
 
 		pthread_barrier_wait(&m6f->readBarrier);
 
-		if (m6f->stopReading)
+		if(m6f->stopReading)
 		{
 			break;
 		}
-
 	}
 
 	return 0;
@@ -630,6 +648,27 @@ off_t getMark6GathererFileSize(const Mark6Gatherer *m6g)
 
 	for(i = 0; i < m6g->nFile; ++i)
 	{
+		Mark6File *m6f;
+		int64_t blockSize;
+		int64_t n;
+
+		m6f = m6g->mk6Files + i;
+		blockSize = m6f->maxBlockSize - ((m6f->maxBlockSize-m6f->blockHeaderSize) % m6f->packetSize);
+		n = (m6f->stat.st_size - sizeof(Mark6Header))/blockSize;
+
+		size += n*(blockSize-m6f->blockHeaderSize);
+	}
+
+	return size;
+}
+
+off_t getMark6GathererSourceFileSize(const Mark6Gatherer *m6g)
+{
+	off_t size = 0;
+	int i;
+
+	for(i = 0; i < m6g->nFile; ++i)
+	{
 		size += m6g->mk6Files[i].stat.st_size;
 	}
 
@@ -915,20 +954,13 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 
 	while(n < count)
 	{
+		int v;
 		int f, s, fileIndex, slotIndex;
-		uint64_t lowestFrame = 0;
+		uint64_t lowestFrame;
 		Mark6File *F;
 		Mark6BufferSlot *slot;
-		
-		for(s = 0; s < MARK6_BUFFER_SLOTS; ++s)
-		{
-			// after file is completely read, do not skip unread slots
-			if(m6g->mk6Files[0].slot[s].frame > 0)
-			{
-				lowestFrame = m6g->mk6Files[0].slot[s].frame+1;
-				break;
-			}
-		}
+
+		lowestFrame = 0;
 		fileIndex = -1;
 		slotIndex = -1;
 
@@ -936,7 +968,7 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 		{
 			for(s = 0; s < MARK6_BUFFER_SLOTS; ++s)
 			{
-				if(m6g->mk6Files[f].slot[s].payloadBytes > 0 && m6g->mk6Files[f].slot[s].frame < lowestFrame)
+				if(m6g->mk6Files[f].slot[s].payloadBytes > 0 && (fileIndex < 0 || m6g->mk6Files[f].slot[s].frame < lowestFrame))
 				{
 					lowestFrame = m6g->mk6Files[f].slot[s].frame;
 					fileIndex = f;
@@ -944,6 +976,7 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 				}
 			}
 		}
+
 		if(fileIndex < 0)
 		{
 			return n;
@@ -952,11 +985,26 @@ int mark6Gather(Mark6Gatherer *m6g, void *buf, size_t count)
 		F = &m6g->mk6Files[fileIndex];
 		slot = F->slot + slotIndex;
 		// don't gather fill data
-		if(checkFillData(slot->data + slot->index) == 0)
+		v = checkFillData(slot->data + slot->index);
+		if(v == 0)
 		{
 			memcpy(buf, slot->data + slot->index, m6g->packetSize);
 			buf += m6g->packetSize;
 			n += m6g->packetSize;
+		}
+		else
+		{
+			static int count = 0;
+
+			if(count < 10)
+			{
+				printf("Fill data encountered: %d bytes\n", v);
+				if(count == 9)
+				{
+					printf("Further fill data notices will not be printed.\n");
+				}
+			}
+			++count;
 		}
 		slot->index += m6g->packetSize;
 		if(slot->index >= slot->payloadBytes)
