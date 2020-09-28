@@ -4,10 +4,15 @@
 # will be happy with polconvert output.  As an option, the files
 # may be moved to a new location.
 #
+# Py2/3 compatible via python-modernize and __future__ imports.
+# PolConvert itself still requires a Py2 version of CASA (5.x)
+#
 '''
 preconvert.py -- a program to prepare for the PolConvert step
 '''
 
+from __future__ import absolute_import
+from __future__ import print_function
 import argparse
 import os
 import re
@@ -71,9 +76,9 @@ def checkOptions(o):
     Check that options make sense, and other startup items.
     '''
     if o.jobs != '':
-        raise Exception, 'Sorry, not yet supported'
+        raise Exception('Sorry, not yet supported')
     if o.exp != '':
-        raise Exception, 'Sorry, not yet supported'
+        raise Exception('Sorry, not yet supported')
     # or else build a list of input files and put it in o.nargs
     o.srcdir = os.path.abspath(o.srcdir)
     o.dstdir = os.path.abspath(o.dstdir)
@@ -85,12 +90,12 @@ def do_save(o, src, dst):
     if src == dst:
         tmp = src + '.' + o.orig
         if os.path.exists(tmp):
-            if o.verb: print('Backup copy already exists: ' + tmp)
+            if o.verb: print(('Backup copy already exists: ' + tmp))
         else:
             if os.path.exists(src):
                 os.rename(src, tmp)
             else:
-                if o.verb: print('No source file to save: ' + src)
+                if o.verb: print(('No source file to save: ' + src))
         src = tmp
     if os.path.exists(dst):
         if o.clobber:
@@ -99,13 +104,13 @@ def do_save(o, src, dst):
             else:
                 os.unlink(dst)
         else:
-            raise Exception, 'refusing to overwrite %s with %s' % (dst, src)
+            raise Exception('refusing to overwrite %s with %s' % (dst, src))
     return src
 
 def do_input(o, src, dst):
     'editing input %s\n    to output %s\n    to fix pols (X/Y->L/R) and paths'
     src = do_save(o, src, dst)
-    if o.verb: print do_input.__doc__ % (src,dst)
+    if o.verb: print(do_input.__doc__ % (src,dst))
     inp = open(src, 'r')
     out = open(dst, 'w')
     for line in inp.readlines():
@@ -127,7 +132,7 @@ def do_input(o, src, dst):
 def do_pathfix(o, src, dst):
     'editing input %s\n    to output %s\n    to relocate paths'
     src = do_save(o, src, dst)
-    if o.verb: print do_pathfix.__doc__ % (src,dst)
+    if o.verb: print(do_pathfix.__doc__ % (src,dst))
     inp = open(src, 'r')
     out = open(dst, 'w')
     for line in inp.readlines():
@@ -141,13 +146,13 @@ def do_copy(o, src, dst):
     'copying %s  %s\n    to output %s\n    which is used unmodified'
     src = do_save(o, src, dst)
     if os.path.isfile(src):
-        if o.verb: print do_copy.__doc__ % ('file', src, dst)
+        if o.verb: print(do_copy.__doc__ % ('file', src, dst))
         shutil.copy(src, dst)
-        os.chmod(dst, 0644)
+        os.chmod(dst, 0o644)
     else:
-        if o.verb: print do_copy.__doc__ % (' dir', src, dst)
+        if o.verb: print(do_copy.__doc__ % (' dir', src, dst))
         shutil.copytree(src, dst)
-        os.chmod(dst, 0755)
+        os.chmod(dst, 0o755)
 
 #
 # enter here to do the work
@@ -156,12 +161,12 @@ if __name__ == '__main__':
     o = parseOptions()
     checkOptions(o)
     for jobin in o.nargs:
-        if o.verb: print 'Copying files for job ' + jobin
-        else:      print jobin
+        if o.verb: print('Copying files for job ' + jobin)
+        else:      print(jobin)
         try:
             job,suf = jobin.split('.')
         except:
-            raise Exception, 'This is not an input file: %s' % jobin
+            raise Exception('This is not an input file: %s' % jobin)
         for suf in o.suffices.split(','):
             src = "%s/%s.%s" % (o.srcdir, job, suf)
             dst = "%s/%s.%s" % (o.dstdir, job, suf)

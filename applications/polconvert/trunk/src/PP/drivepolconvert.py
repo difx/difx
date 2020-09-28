@@ -3,10 +3,15 @@
 # Script to drive PolConvert at the correlators intended for
 # less CASA-aware users.
 #
+# Py2/3 compatible via python-modernize and __future__ imports.
+# PolConvert itself still requires a Py2 version of CASA (5.x)
+#
 '''
 drivepolconvert.py -- a program to drive the polconvert process
 '''
 
+from __future__ import absolute_import
+from __future__ import print_function
 import argparse
 import datetime
 import glob
@@ -162,8 +167,8 @@ def calibrationChecks(o):
     Check that required files are present.
     '''
     if o.label == '':
-        raise Exception, 'A label (-l) is required to proceed'
-    if o.verb: print 'Using label %s' % o.label
+        raise Exception('A label (-l) is required to proceed')
+    if o.verb: print('Using label %s' % o.label)
     o.constXYadd = 'False'
     o.conlabel = o.label
     o.callabel = o.label
@@ -211,11 +216,11 @@ def calibrationChecks(o):
     else:               # supply via environment variable
         o.qal = os.environ['QA2TABLES'].split(',')
     if len(o.qal) < 7:
-        raise Exception, 'at least 7 QA2 tables are required, see --qa2 option'
+        raise Exception('at least 7 QA2 tables are required, see --qa2 option')
     keys = ['a', 'c', 'd', 'b', 'g', 'p', 'x', 'y']
     o.qa2_dict = dict(zip(keys,o.qal))
     if o.nodt:
-        print 'nodt option is', o.nodt
+        print('nodt option is', o.nodt)
         o.qa2_dict['d'] = 'NONE'
     for key in o.qa2_dict:
         d = 'programmer-error'
@@ -225,15 +230,15 @@ def calibrationChecks(o):
             d = ('%s.' + o.qa2_dict[key]) % o.callabel
         if not os.path.exists(d) or not os.path.isdir(d):
             if key == 'd' and d == 'NONE':
-                if o.verb: print 'Skipping D Terms as requested'
+                if o.verb: print('Skipping D Terms as requested')
             else:
-                raise Exception, 'Required directory %s is missing' % d
+                raise Exception('Required directory %s is missing' % d)
         elif o.verb:
-            print 'Calibration table %s is present' % d
+            print('Calibration table %s is present' % d)
     if o.gainmeth != 'T' and o.gainmeth != 'G':
-        raise Exception, 'Illegal gainmeth %s' % o.gainmeth
+        raise Exception('Illegal gainmeth %s' % o.gainmeth)
     if o.avgtime < 0:
-        raise Exception, 'The gain average time must be non-negative'
+        raise Exception('The gain average time must be non-negative')
 
 def inputRelatedChecks(o):
     '''
@@ -244,10 +249,10 @@ def inputRelatedChecks(o):
     expchk = set()
     jobset = set()
     if len(o.nargs) < 1:
-        raise Exception, 'No input files to work on...this is pointless'
+        raise Exception('No input files to work on...this is pointless')
     for j in o.nargs:
         if not os.path.exists(j):
-            raise Exception, 'Input file %s is missing' % j
+            raise Exception('Input file %s is missing' % j)
         js = j.split('_')
         ee = js[0]
         expchk.add(ee)
@@ -255,22 +260,22 @@ def inputRelatedChecks(o):
         jobset.add(jss[0])
         jsbe = ee + '_' + jss[0] + '.input'
         if j != jsbe:
-            raise Exception, 'Input file %s not %s' % (j, jsbe)
+            raise Exception('Input file %s not %s' % (j, jsbe))
     if len(expchk) > 1 or len(expchk) == 0:
-        raise Exception, ('Only one experiment may be processed ' +
-            'but %d are present: %s') % (len(expchk), ','.join(expchk))
+        raise Exception(('Only one experiment may be processed ' +
+            'but %d are present: %s') % (len(expchk), ','.join(expchk)))
     if o.exp == '': o.exp = expchk.pop()
-    if o.verb: print 'Processing experiment %s' % o.exp
+    if o.verb: print('Processing experiment %s' % o.exp)
     if len(jobset) < 1:
-        raise Exception, 'No job inputs to process (%d)' % len(jobset)
+        raise Exception('No job inputs to process (%d)' % len(jobset))
     djobs = list(jobset)
     djobs.sort()
     o.jobnums = djobs
-    o.djobs = str(map(str,o.jobnums))
+    o.djobs = str(list(map(str,o.jobnums)))
     o.nargs = []
     # make sure o.nargs is co-ordered with o.jobnums for reference
     for jn in o.jobnums: o.nargs.append(o.exp + '_' + jn + '.input')
-    if o.verb: print 'Processing jobs "%s"\n(%s)' % (o.djobs,str(o.nargs))
+    if o.verb: print('Processing jobs "%s"\n(%s)' % (o.djobs,str(o.nargs)))
 
 def runRelatedChecks(o):
     '''
@@ -282,11 +287,11 @@ def runRelatedChecks(o):
         o.output = o.exp + '.pc-casa-output'
     if os.path.exists(o.input):
         os.rename(o.input, o.input + '.save')
-        print '(Warning, input file %s.save was destroyed.)' % o.input
+        print('(Warning, input file %s.save was destroyed.)' % o.input)
     if os.path.exists(o.output):
         os.rename(o.output, o.output + '.save')
-        print '(Warning, output file %s.save was destroyed.)' % o.output
-    if o.verb: print 'Input/output files are %s/%s' % (o.input, o.output)
+        print('(Warning, output file %s.save was destroyed.)' % o.output)
+    if o.verb: print('Input/output files are %s/%s' % (o.input, o.output))
 
     if 'DIFXCASAPATH' in os.environ:
         o.casa = '%s/casa' % os.environ['DIFXCASAPATH']
@@ -296,11 +301,11 @@ def runRelatedChecks(o):
         msg = 'from "casa"'
     if o.verb: cmd = 'type %s'
     else:      cmd = 'type %s 1>/dev/null 2>/dev/null'
-    if o.verb: print 'CASA executable is %s (%s)' % (o.casa,msg)
+    if o.verb: print('CASA executable is %s (%s)' % (o.casa,msg))
 
     if o.run:
         if os.system(cmd % o.casa):
-            raise Exception, 'CASA does not appear to be in your path'
+            raise Exception('CASA does not appear to be in your path')
 
 def checkOptions(o):
     '''
@@ -321,9 +326,9 @@ def runPrePolconvert(o):
     for ii in o.nargs: cmd += ' ' + ii
     cmd += ' > prepol.log 2>&1'
     if o.verb:
-        print 'Running ' + cmd
+        print('Running ' + cmd)
     if os.system(cmd):
-        raise Exception, 'Error while running prepolconvert, see prepol.log'
+        raise Exception('Error while running prepolconvert, see prepol.log')
 
 def deduceZoomIndicies(o):
     '''
@@ -336,7 +341,7 @@ def deduceZoomIndicies(o):
     '''
     # Todo: fix for the case antenna needing work isn't telescope 0/AA
     sitelist = o.sites.split(',')
-    if o.verb: print 'Sitelist is',sitelist
+    if o.verb: print('Sitelist is',sitelist)
     o.remotelist = []
     o.remotename = []
     o.remote_map = []
@@ -377,14 +382,14 @@ def deduceZoomIndicies(o):
             issue = True
             for jn in o.jobnums:
                 if '_' + str(jn) + '.input' in jobin:
-                    print 'ALMA not in',jobin,', skipping (',jn,')'
+                    print('ALMA not in',jobin,', skipping (',jn,')')
                     o.jobnums.remove(jn)
                     issue = False
                     break
-            if issue: raise Exception, 'Unable to purge job ' + jobin
+            if issue: raise Exception('Unable to purge job ' + jobin)
             else:     continue
         else:
-            print 'Found ALMA in',jobin,almaline.rstrip()
+            print('Found ALMA in',jobin,almaline.rstrip())
             newargs.append(jobin)
             # workout plot ant for this job
             plotant = -1
@@ -397,26 +402,26 @@ def deduceZoomIndicies(o):
             o.remotelist.append(plotant)
             antmap = {}
 
-        if o.verb: print 'Zoom bands %s..%s from %s' % (zfir, zfin, jobin)
+        if o.verb: print('Zoom bands %s..%s from %s' % (zfir, zfin, jobin))
         if len(cfrq) < 1:
-            raise Exception, 'Very odd, no frequencies in input file ' + jobin
+            raise Exception('Very odd, no frequencies in input file ' + jobin)
         cfrq.sort()
         zfirst.add(zfir)
         zfinal.add(zfin)
-        mfqlst.add(cfrq[len(cfrq)/2])
+        mfqlst.add(cfrq[len(cfrq)//2])
 
     o.nargs = newargs
     # o.jobnums is also synchronized
     # and o.nargs should be synchronized with o.remotelist
     # o.remotename and o.remote_map are just for readable diagnostics below
     # and we resync o.djobs here
-    o.djobs = str(map(str,o.jobnums))
+    o.djobs = str(list(map(str,o.jobnums)))
     if len(zfirst) != 1 or len(zfinal) != 1:
         if o.zmchk:
-            raise Exception, ('Encountered ambiguities in zoom freq ranges: ' +
+            raise Exception('Encountered ambiguities in zoom freq ranges: ' +
                 'first is ' + str(zfirst) + ' and final is ' + str(zfinal))
         elif o.verb:
-            print 'global zoom first',str(zfirst),'and final',str(zfinal)
+            print('global zoom first',str(zfirst),'and final',str(zfinal))
     if len(zfirst) > 0 and len(zfinal) > 0:
         o.zfirst = int(sorted(list(zfirst))[0])  # int(zfirst.pop())
         o.zfinal = int(sorted(list(zfinal))[-1]) # int(zfinal.pop())
@@ -424,33 +429,33 @@ def deduceZoomIndicies(o):
         o.zfirst = -1
         o.zfinal = -2
     if (len(o.nargs) > 0) and o.verb:
-        print 'Zoom freq. indices %d..%d found in \n  %s..%s' % (
-            o.zfirst, o.zfinal, o.nargs[0], o.nargs[-1])
+        print('Zoom freq. indices %d..%d found in \n  %s..%s' % (
+            o.zfirst, o.zfinal, o.nargs[0], o.nargs[-1]))
     elif o.verb:
-        print 'Not going to be doing any real work after this: No jobs'
+        print('Not going to be doing any real work after this: No jobs')
     # Report on remote peer for polconvert plot diagnostics
     if (len(o.remotelist) != len(o.nargs)): o.remotelist = []
     if o.verb:
         for j,r,s,m in map(lambda x,y,z,w:(x,y,z,w),
             o.nargs, o.remotelist, o.remotename, o.remote_map):
-            print "%s<->%s(%s) %s" % (j,s,r,m)
-        print 'Remote list len is',len(o.remotelist),'index is',o.remote
-        if o.remote == -1: print '(index of -1 means "not used")'
-        print 'Remote list is',o.remotelist,'(indices start at 1)'
-        print 'Jobs now',o.djobs
+            print("%s<->%s(%s) %s" % (j,s,r,m))
+        print('Remote list len is',len(o.remotelist),'index is',o.remote)
+        if o.remote == -1: print('(index of -1 means "not used")')
+        print('Remote list is',o.remotelist,'(indices start at 1)')
+        print('Jobs now',o.djobs)
     # If the user supplied a band, check that it agrees
-    print 'mfqlst is', mfqlst
+    print('mfqlst is', mfqlst)
     if len(mfqlst) == 1:
         medianfreq = float(mfqlst.pop())
     elif len(mfqlst) > 1:
-        print ('Input files have disparate frequency structures:\n' +
-            '  Median frequencies: ' + str(mfqlst) + '\n')
+        print(('Input files have disparate frequency structures:\n' +
+            '  Median frequencies: ' + str(mfqlst) + '\n'))
         mfqlist = list(mfqlst)
         medianfreq = float(mfqlist[len(mfqlist)/2])
-        print 'Using the median of medians: ', medianfreq
+        print('Using the median of medians: ', medianfreq)
     else:
-        print 'No median frequency, so no idea about medianband'
-        print 'Leaving it up to PolConvert to sort out'
+        print('No median frequency, so no idea about medianband')
+        print('Leaving it up to PolConvert to sort out')
         return
     # finally the diagnostic message
     if   medianfreq <  90000.0: medianband = '3 (GMVA)'
@@ -459,8 +464,8 @@ def deduceZoomIndicies(o):
     elif medianfreq < 228100.0: medianband = 'b3 (Cycle4 6[USB]Lo)'
     elif medianfreq < 230100.0: medianband = 'b4 (Cycle4 6[USB]Hi)'
     else:                       medianband = '??? band 7 ???'
-    print 'Working with band %s based on median freq (%f)' % (
-            medianband, medianfreq)
+    print('Working with band %s based on median freq (%f)' % (
+            medianband, medianfreq))
 
 def plotPrep(o):
     '''
@@ -468,7 +473,7 @@ def plotPrep(o):
     '''
     if o.fringe > o.zfinal+1-o.zfirst:
         o.fringe = o.zfinal+1-o.zfirst
-        print 'Revising number of fringed channels to %d' % o.fringe
+        print('Revising number of fringed channels to %d' % o.fringe)
     if o.fringe == 0:
         o.doPlot = ['#','','#','#']
         o.remote = -1
@@ -483,8 +488,8 @@ def plotPrep(o):
             o.flist += ',(%d*len(doIF)/%d)' % (ii, o.fringe)
     if o.remote == o.ant:
         o.remote = o.ant + 1
-        print 'Shifting baseline from %d-%d to %d-%d' % (
-            o.ant, o.remote - 1, o.ant, o.remote)
+        print('Shifting baseline from %d-%d to %d-%d' % (
+            o.ant, o.remote - 1, o.ant, o.remote))
 
 def getInputTemplate():
     '''
@@ -568,7 +573,7 @@ def createCasaInput(o, joblist, caldir, workdir):
     processing as well as the parallel processing case.
     '''
     oinput = workdir + '/' + o.input
-    if o.verb: print 'Creating CASA input file\n  ' + oinput
+    if o.verb: print('Creating CASA input file\n  ' + oinput)
     if o.xyadd != '': userXY = ''
     else:             userXY = '#'
     if o.test:   dotest = 'True'
@@ -594,9 +599,9 @@ def createCasaInputSingle(o):
     working directory, sequentially.
     '''
     if createCasaInput(o, o.djobs, '.', '.'):
-        if o.verb: print 'Created %s for single-threaded execution' % o.input
+        if o.verb: print('Created %s for single-threaded execution' % o.input)
     else:
-        print 'Problem creating',o.input
+        print('Problem creating',o.input)
         o.run = False
 
 def createCasaCommand(o, job, workdir):
@@ -611,7 +616,7 @@ def createCasaCommand(o, job, workdir):
     basecmd = o.exp + '.' + job + '.pc-casa-command'
     cmdfile = workdir + '/' + basecmd
     os.mkdir(workdir + '/casa-logs')
-    cmd = map(str,range(14))
+    cmd = list(map(str,range(14)))
     cmd[0]  = '#!/bin/sh'
     cmd[1]  = '[ -f killcasa ] && exit 0'
     cmd[2]  = 'cd ' + workdir + ' && echo "starting" > ./status || exit 1'
@@ -645,11 +650,11 @@ def createCasaInputParallel(o):
     script file.  The working directory (in the other case) was
     created in runpolconvert after the execution.
     '''
-    if o.verb: print 'Creating CASA work dirs and input files ' + o.input
+    if o.verb: print('Creating CASA work dirs and input files ' + o.input)
     o.workdirs = {}
     o.workcmds = {}
     if checkDifxSaveDirsError(o, True):
-        raise Exception, 'Fix these *.difx or *.save dirs issues'
+        raise Exception('Fix these *.difx or *.save dirs issues')
     o.now = datetime.datetime.now()
     remotelist = o.remotelist
     o.remotelist = []
@@ -657,7 +662,7 @@ def createCasaInputParallel(o):
         savename = o.exp + '_' + job
         workdir = o.now.strftime(savename + '.polconvert-%Y-%m-%dT%H.%M.%S')
         os.mkdir(workdir)
-        odjobs = str(map(str,[job]))
+        odjobs = str(list(map(str,[job])))
         o.remote = rem
         if createCasaInput(o, odjobs, '..', workdir):
             cmdfile = createCasaCommand(o, job, workdir)
@@ -665,7 +670,7 @@ def createCasaInputParallel(o):
             o.workcmds[job] = cmdfile
             # print '--- created working dir with inputs for job %s ---' % job
         else:
-            print '*** unable to create workdir or input for job %s ***' % job
+            print('*** unable to create workdir or input for job %s ***' % job)
 
 def removeTrash(o, misc):
     '''
@@ -674,9 +679,9 @@ def removeTrash(o, misc):
     '''
     for m in misc:
         if os.path.exists(m):
-            print 'Removing prior garbage ',m
+            print('Removing prior garbage ',m)
             os.system('rm -rf %s' % m)
-    print 'Removing prior ipython & casa logs'
+    print('Removing prior ipython & casa logs')
     os.system('rm -f ipython-*.log casa*.log')
 
 def checkDifxSaveDirsError(o, vrb):
@@ -691,8 +696,8 @@ def checkDifxSaveDirsError(o, vrb):
         if os.path.exists(save): saved.append(save)
         if not os.path.exists(swin): swine.append(swin)
     if (len(saved) > 0 or len(swine) > 0):
-        if vrb and len(swine) > 0: print 'These are missing (get them):',swine
-        if vrb and len(saved) > 0: print 'These are present (nuke them):',saved
+        if vrb and len(swine) > 0: print('These are missing (get them):',swine)
+        if vrb and len(saved) > 0: print('These are present (nuke them):',saved)
         return True
     return False
 
@@ -702,7 +707,7 @@ def doFinalRunCheck(o):
     is high, so we check for this last bit of operator fatigue
     '''
     if o.run and checkDifxSaveDirsError(o, o.run):
-        print '\n\n### Disabling Run so you can fix the issue\n'
+        print('\n\n### Disabling Run so you can fix the issue\n')
         o.run=False
 
 def executeCasa(o):
@@ -730,22 +735,22 @@ def executeCasa(o):
         doFinalRunCheck(o)
     if o.run:
         if os.system(cmd1):
-            raise Exception, 'That which cannot fail (rm -f), failed'
+            raise Exception('That which cannot fail (rm -f), failed')
         if o.verb:
-            print 'Note, ^C will not stop CASA (or polconvert).'
-            print 'If it appears to hang, use kill -9 and then'
-            print '"touch killcasa" to allow normal cleanup.'
-            print 'Follow CASA run with:\n  tail -n +1 -f %s\n' % (o.output)
+            print('Note, ^C will not stop CASA (or polconvert).')
+            print('If it appears to hang, use kill -9 and then')
+            print('"touch killcasa" to allow normal cleanup.')
+            print('Follow CASA run with:\n  tail -n +1 -f %s\n' % (o.output))
         rc = os.system(cmd2)
         if rc:
             if os.path.exists('killcasa'):
-                print 'Removing killcasa'
+                print('Removing killcasa')
                 os.unlink('killcasa')
-                print 'Proceeding with remaining cleanup'
+                print('Proceeding with remaining cleanup')
             else:
-                raise Exception, 'CASA execution "failed" with code %d' % (rc)
+                raise Exception('CASA execution "failed" with code %d' % (rc))
         if o.verb:
-            print 'Success!  See %s for output' % o.output
+            print('Success!  See %s for output' % o.output)
         logerr = False
         mscerr = False
         for m in misc:
@@ -753,53 +758,53 @@ def executeCasa(o):
                 cmd6 += '[ -f %s ] && mv %s casa-logs ;' % (m,m)
         if os.system(cmd3 + ' ; ' + cmd4 + ' ; ' + cmd5):
             logerr = True
-        elif os.system(cmd6):
+        if os.system(cmd6):
             mscerr = True
-        elif o.verb:
-            print 'Swept CASA logs to ' + casanow
-        if logerr: print '  There was a problem collecting CASA logs'
-        if mscerr: print '  There was a problem collecting misc trash'
+        if o.verb:
+            print('Swept CASA logs to ' + casanow)
+        if logerr: print('  There was a problem collecting CASA logs')
+        if mscerr: print('  There was a problem collecting misc trash')
         jl = open('casa-logs/%s.joblist'%o.exp, 'w')
         o.nargs.sort()
         for jb in o.nargs: jl.write(jb + '\n')
         jl.close()
         os.rename('casa-logs', casanow)
-        print 'Completed job list is in %s/%s.joblist' % (casanow,o.exp)
-        if o.verb: print 'Review CASA run with:\n  tail -n +1 %s/%s\n' % (
-            casanow, o.output)
+        print('Completed job list is in %s/%s.joblist' % (casanow,o.exp))
+        if o.verb: print('Review CASA run with:\n  tail -n +1 %s/%s\n' % (
+            casanow, o.output))
     else:
         for m in misc:
             cmd6 += '[ -f %s ] && mv %s casa-logs ;' % (m,m)
-        print ''
-        print 'You can run casa manually with input from ' + o.input
-        print 'Or just do what this script would do now, viz: '
-        print '    ' + cmd1
-        print '    ' + cmd2 + ' &'
-        print '    tail -n +1 -f ' + o.output
-        print '    ' + cmd3
-        print '    ' + cmd4
-        print '    ' + cmd5
-        print '    ' + cmd6
-        print '    mv casa-logs ' + casanow
-        print ''
+        print('')
+        print('You can run casa manually with input from ' + o.input)
+        print('Or just do what this script would do now, viz: ')
+        print('    ' + cmd1)
+        print('    ' + cmd2 + ' &')
+        print('    tail -n +1 -f ' + o.output)
+        print('    ' + cmd3)
+        print('    ' + cmd4)
+        print('    ' + cmd5)
+        print('    ' + cmd6)
+        print('    mv casa-logs ' + casanow)
+        print('')
     if o.test:
-        print ''
-        print 'The *.difx and *.save directories should have identical'
-        print 'contents, and you will need to remove *.save to continue'
-        print 'additional test runs on the same jobs.'
-        print ''
+        print('')
+        print('The *.difx and *.save directories should have identical')
+        print('contents, and you will need to remove *.save to continue')
+        print('additional test runs on the same jobs.')
+        print('')
 
 def convertOneScan(o,job,wdr,cmd):
     '''
     Process one scan for this job as laid out in wdr using cmd
     '''
-    print ' job', job, 'in', wdr
+    print(' job', job, 'in', wdr)
     # sanity check
     if o.checkdir:
         os.chdir(wdr)
-        print ' job', job, 'is', os.path.basename(os.getcwd())
+        print(' job', job, 'is', os.path.basename(os.getcwd()))
         os.chdir('..')
-    print ' job', job, 'w/', cmd
+    print(' job', job, 'w/', cmd)
     # either doit or just vet the thread machinery
     if o.run: os.system(wdr + '/' + cmd)
     else: os.system('/usr/bin/sleep 10')
@@ -815,7 +820,7 @@ def launchNewScanWorker(o, where):
     cmd = o.workcmds.pop(job)
     th = threading.Thread(target=convertOneScan,args=(o,job,wdr,cmd))
     o.workbees.append(th)
-    print 'Spawning thread',th.name,'on job', job,where
+    print('Spawning thread',th.name,'on job', job,where)
     th.start()
     time.sleep(o.sleeper)
 
@@ -826,19 +831,19 @@ def waitForNextWorker(o):
     drop to zero and then we are done.  Need to consider how to kill
     this beast.
     '''
-    print 'Please wait for all processing threads to complete'
+    print('Please wait for all processing threads to complete')
     while True:
         for th in o.workbees:
-            if th.isAlive():
+            if th.is_alive():
                 time.sleep(o.sleeper)
             else: # it finished
                 o.workbees.remove(th)
                 if len(o.workdirs) > 0:
                     launchNewScanWorker(o, '(recycled)')
                 else:
-                    print 'Have',len(o.workbees),'threads still running'
+                    print('Have',len(o.workbees),'threads still running')
                     if len(o.workbees) == 0:
-                        print 'Done! -- all CASA workers have finished'
+                        print('Done! -- all CASA workers have finished')
                         return
 
 def executeThreads(o):
@@ -850,7 +855,7 @@ def executeThreads(o):
     remaining scans as thread slots become available
     '''
     if len(o.workdirs) == 0:
-        print 'Golly, gee, it seems we have no work to do...moving on.'
+        print('Golly, gee, it seems we have no work to do...moving on.')
         return
     while len(o.workdirs) > 0 and len(o.workbees) < o.parallel:
         launchNewScanWorker(o, '(original)')
@@ -861,26 +866,26 @@ def reportWorkTodo(o):
     Give the user a hint of what happened.
     '''
     if len(o.workdirs) > 0:
-        print 'Several jobs were not processed:'
+        print('Several jobs were not processed:')
         for job in o.workdirs:
-            print ' job', job, 'in', o.workdirs[job]
-            print ' job', job, 'w/', o.workcmds[job]
+            print(' job', job, 'in', o.workdirs[job])
+            print(' job', job, 'w/', o.workcmds[job])
     pcdirstamps = o.now.strftime('*.polconvert-%Y-%m-%dT%H.%M.%S')
-    print 'Results are in',pcdirstamps
+    print('Results are in',pcdirstamps)
     pcdirs = glob.glob(pcdirstamps)
     pclogs = glob.glob(pcdirstamps+'/PolConvert.log')
     if len(pcdirs) == len(o.jobnums):
-        print 'The number of polconvert dirs (%d) is correct.' % len(pcdirs)
+        print('The number of polconvert dirs (%d) is correct.' % len(pcdirs))
     else:
-        print 'Error: %d workdirs and %d jobs'%(len(pcdirs),len(o.jobnums))
+        print('Error: %d workdirs and %d jobs'%(len(pcdirs),len(o.jobnums)))
     if len(pclogs) == len(o.jobnums):
-        print 'The number of polconvert log files (%d) is correct.' % (
-            len(pclogs))
+        print('The number of polconvert log files (%d) is correct.' % (
+            len(pclogs)))
     else:
-        print 'Error: %d polconvert log files and %d jobs'%(
-            len(pclogs),len(o.jobnums))
+        print('Error: %d polconvert log files and %d jobs'%(
+            len(pclogs),len(o.jobnums)))
     if o.verb:
-        for pc in pcdirs: print '   ',pc
+        for pc in pcdirs: print('   ',pc)
     print('drivepolconvert is finished.\n')
 
 def executeCasaParallel(o):
@@ -892,19 +897,19 @@ def executeCasaParallel(o):
     '''
     if not o.run:
         if len(o.workdirs) > 0:
-            print 'CASA commands and working directories have been prepared.'
-            print 'You can execute the jobs manually, with these commands:'
+            print('CASA commands and working directories have been prepared.')
+            print('You can execute the jobs manually, with these commands:')
             for job in o.workdirs:
                 wdir = o.workdirs[job]
                 ccmd = o.workcmds[job]
-                print '  pushd',wdir,'; ./'+ccmd,'& popd'
+                print('  pushd',wdir,'; ./'+ccmd,'& popd')
             return
         else:
-            print 'There are no jobs to be run at this point, move on.'
+            print('There are no jobs to be run at this point, move on.')
     if o.verb:
-        print 'Driving %d parallel CASA jobs' % (o.parallel)
-        print '  Touch "killcasa" to terminate prematurely.'
-        print '  (Current CASA jobs will continue until done.)'
+        print('Driving %d parallel CASA jobs' % (o.parallel))
+        print('  Touch "killcasa" to terminate prematurely.')
+        print('  (Current CASA jobs will continue until done.)')
     try:
         o.workbees = []
         o.sleeper = 1
@@ -915,14 +920,14 @@ def executeCasaParallel(o):
         if o.parallel > 0:
             executeThreads(o)
     except KeyboardInterrupt:   #^C
-        print ', Shutting down...'
-        print 'You may need to use ps to find and kill some stuck'
-        print 'processes in a few minutes if they are still running'
+        print(', Shutting down...')
+        print('You may need to use ps to find and kill some stuck')
+        print('processes in a few minutes if they are still running')
     except KeyError:
-        print 'Developer screwup...'
+        print('Developer screwup...')
         raise
     except Exception:
-        print 'Some other problem...'
+        print('Some other problem...')
         raise
     finally:
         try:
