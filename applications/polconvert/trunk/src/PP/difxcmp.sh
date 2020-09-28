@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # script to assist reconciliation with a difx trunk
+# note that with py3, bzr is brz.
 #
 [ -z "$bzr" ] && bzr=/home/gbc/PolConvert/trunk
 [ -z "$dfx" ] && dfx=/swc/difx/difx-svn/applications/polconvert/trunk/src
@@ -79,6 +80,11 @@ do
       dget  -- diff and cp files different
 
     The wildcards *  PP/* TOP/* (or combinations) are useful 
+    The hierarchy locations may be adjusted with:
+      bzr=/home/gbc/PolConvert/trunk
+      dfx=/swc/difx/difx-svn/applications/polconvert/trunk/src
+    
+    With Py3, brz replaces bzr.
 ....EOF
     exit 1
     ;;
