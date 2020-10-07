@@ -645,6 +645,7 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
     int noI = -1;
     for (ii=0; ii<nIFplot; ii++){
       sprintf(message,"POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i",IFs2Plot[ii]+1);
+      printf("Writing %s\n", message);
       plotFile[ii] = fopen(message,"wb");
       if (IFs2Plot[ii]>=0 && IFs2Plot[ii]<nnu){
          fwrite(&nchans[IFs2Plot[ii]],sizeof(int),1,plotFile[ii]);

@@ -822,7 +822,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
   if plotAnt in linAntIdx:
-    printMsg("WARNING: Plotting may involve autocorrelations. \nThis has not been fully tested!") 
+    printMsg("WARNING: Plotting will involve autocorrelations. \nThis has not been fully tested!") 
 
 #########################################
 
@@ -1137,8 +1137,10 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
  
 
   if plotAnt not in calAnts:
-    printError("ERROR! Reference antenna is NOT in list of calibratable antennas!")
-
+    if (doSolve>=0):
+      printError("ERROR! plotAnt/Reference antenna is NOT in list of calibratable antennas!")
+    else:
+      printMsg("plotAnt (%d) is not in antenna list, so plots will be missing" % plotAnt)
 
 
   if type(feedRotation) is not list:
@@ -1835,7 +1837,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     printMsg("POLCONVERT CALLED WITH: %s"%str(PC_Params))
       
 
-  didit = PC.PolConvert(nALMATrue, doIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdxTrue, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, doAmpNorm, PrioriGains, metadata, soucoords, antcoords, antmounts, isLinear,calfield,timerangesArr[int(spw)],UseAutoCorrs,DEBUG)
+  # plotAnt is no longer used by PC.PolConvert(), but is required by doSolve
+  # the second argument is "PC:PolConvert::plIF" and controls whether the huge binary fringe files are written.
+  didit = PC.PolConvert(nALMATrue, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdxTrue, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, doAmpNorm, PrioriGains, metadata, soucoords, antcoords, antmounts, isLinear,calfield,timerangesArr[int(spw)],UseAutoCorrs,DEBUG)
 
   printMsg("\n###\n### Done with PolConvert (status %d).\n###" % (didit))
 
@@ -2113,6 +2117,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
          
 
      return [minGains,FLIP]   
+   # end of Levenberg-Marquardt minimizer of the GCPFF problem
 
 
 
@@ -2154,7 +2159,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
 
-# ESTIMATE RATES FOR ALL STATIONS (PLOTANT IS THE REFERENCE):
+# ESTIMATE RATES FOR ALL STATIONS (plotAnt IS THE [plotting] REFERENCE):
 
     dropAnt = calAnts.index(plotAnt)
     rateAnts = calAnts[:dropAnt] + calAnts[dropAnt+1:]
@@ -2260,6 +2265,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
         CGains['XYadd'][antcodes[calant-1]].append(np.copy(-180./np.pi*np.angle(CrossGain)))
         CGains['XYratio'][antcodes[calant-1]].append(cp.copy(1./np.abs(CrossGain)))
+    # end of if BP else MBD MODE:
 
 
 
@@ -2304,10 +2310,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
    else:
     printMsg("\n\n  doSolve can ONLY work with the source was compiled with DO_SOLVE=True\n  PLEASE, RECOMPILE!\n\n")
 
-  else:
+  else:  # if doSolve >= 0.0:
 
+    printMsg("\n\n  doSolve was not requested\n\n")
     CGains = {'aPrioriXYGain':PrioriGains}
 
+  # end of doSolve if...else
 
 
 
@@ -2339,9 +2347,13 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
 # PLOT FRINGES:
+  if plotAnt not in calAnts:
+   didit = 1
+   printMsg("plotAnt not in calAnts, so skipping plots")
 
+  # didit is returned from PC, and if nonzero will have terminated above.
   if plotFringe and didit==0:
-
+   printMsg("proceding to fringe plots with plotAnt %d..." % plotAnt)
 
 
    fig = pl.figure(figsize=(12,6))
@@ -2749,6 +2761,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   else:
 
       printMsg('NO DATA TO PLOT!') 
+# end of plotting
 
 
 
@@ -2760,6 +2773,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   ofile = open('PolConvert.XYGains.dat','w')
   pk.dump(CGains,ofile)
   ofile.close()
+  printMsg('PolConvert.XYGains.dat was written with CGains' + str(CGains.keys()))
   return CGains   # RETURN!
 
 
