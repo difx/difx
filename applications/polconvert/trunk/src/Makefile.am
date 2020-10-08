@@ -23,7 +23,7 @@ ScriptCopies = runpolconvert.py README.POLCONVERT \
 BuiltSources = $(PolConvertSources) $(PostPolScripts)
 
 bin_SCRIPTS = PP/prepolconvert.py PP/drivepolconvert.py \
-	PP/checkpolconvert.py
+	PP/checkpolconvert.py PP/comparepolconvert.py
 pkgdata_DATA = _PolConvert.so \
 	_getAntInfo.so _PolGainSolve.so _XPCal.so \
 	PP/runpolconvert.py task_polconvert.py polconvert.xml \

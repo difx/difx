@@ -4,9 +4,11 @@
 # note that with py3, bzr is brz.
 #
 [ -z "$bzr" ] && bzr=/home/gbc/PolConvert/trunk
-[ -z "$dfx" ] && dfx=/swc/difx/difx-svn/applications/polconvert/trunk/src
-[ -n "$bzr" -a -d "$bzr" ] || echo define bzr to source
-[ -n "$dfx" -a -d "$dfx" ] || echo define dfx to destination
+[ -z "$DFX" ] && DFX=/swc/difx/difx-svn
+[ -z "$dfx" ] && dfx=$DFX/applications/polconvert/trunk/src
+[ -n "$bzr" -a -d "$bzr" ] || echo define bzr source trunk with \$bzr=...
+[ -n "$DFX" -a -d "$DFX" ] || echo define DiFX source trunk with \$DFX=...
+[ -n "$dfx" -a -d "$dfx" ] || echo define full path to DiFX pc src \$dfx=...
 
 action=${1-'help'} ; shift
 
@@ -82,7 +84,8 @@ do
     The wildcards *  PP/* TOP/* (or combinations) are useful 
     The hierarchy locations may be adjusted with:
       bzr=/home/gbc/PolConvert/trunk
-      dfx=/swc/difx/difx-svn/applications/polconvert/trunk/src
+      DFX=/swc/difx/
+      dfx=\$DFX/difx-svn/applications/polconvert/trunk/src
     
     With Py3, brz replaces bzr.
 ....EOF
