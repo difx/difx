@@ -451,7 +451,7 @@ pcqk)
     do
       content="$content ${j}*/polconvert.history"
       content="$content ${j}*polconvert*/*MATRIX"
-      content="$content ${j}*polconvert*/*PEAKS"
+      #content="$content ${j}*polconvert*/*PEAKS"
       content="$content ${j}*polconvert*/*PLOTS"
       content="$content ${j}*polconvert*/*GAINS"
       content="$content ${j}*polconvert*/*ANTAB"
