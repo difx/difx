@@ -10,7 +10,9 @@ import re
 #master_tag = True
 master_tag = False
 
-def main():
+###############################################################################
+# this function was once called main() but really it was only for help.
+def help(options=False, envivars=False, examples=False):
     """
 Build and Install DiFX
 
@@ -27,7 +29,17 @@ but stop if any errors are encountered (e.g. if something fails to build).
 For the standard libraries and applications, build-difx will try to run
 autoreconf first.  If this fails, step by step configuration will be tried.
 
-Options:
+Remember, if you haven't signed up to the difx-users mailing list,
+please do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users.
+
+For help with the (large number of options):
+
+    install-difx --help-options
+    """
+    if options:
+        print("""
+The install-difx options are:
+
 -f --force         Carry on regardless of any errors (all failed commands
                    will be listed at the end.)
 
@@ -92,8 +104,7 @@ Options:
 
    --doonly='...'  Will only build the components specified in the list ...,
                    where ... is a comma-separated list of sub-packages in
-                   ["perl",
-                    "difxio", "difxmessage", "mark5access", "vdifio",
+                   ["perl", "difxio", "difxmessage", "mark5access", "vdifio",
                     "calcif2", "difx2profile", "misc","vis2screen",
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
                     "mpifxcorr", "difxfilterbank", "hops", "m6support",
@@ -102,34 +113,78 @@ Options:
    --skip='...'    Does a normal build, but skips components in a comma
                    separated list (drawn from the --doonly list).
 
-   Remember, if you haven't signed up to the difx-users mailing list, please
-   do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users.
-    """
-    pass
+   --newver='...'  changes the source directory used on a per component
+                   basis (from what would otherwise be used).  This comma
+                   separated list (of changes) should contain ':' paired
+                   component name and new version.  Usually the new version
+                   code lies on a branch somewhere, rather than 'trunk'
+""")
+    if envivars:
+        print("""
+The following environment variables are essential to the build process.
+They are usually set up if you source the "setup-difx.bash" script (which
+must perhaps be adapted to your local circumstances):
+
+    DIFX_VERSION    master tag "DiFX-2.6.2", &c., or "trunk" for developers
+    DIFXROOT        absolute path to specify where the build products
+                    are to be installed.  If you build outside of the
+                    source tree, you may then remove the build directory
+    MPICXX          used to specify the C++ MPI-enabled compiler
+    IPPROOT         path to the IPP tools, used to create the ipp.pc
+                    pkgconfig file.
+    PKG_CONFIG_PATH where pkg-config should find .pc files.  This script
+                    sets it to a directory within the build area which is
+                    prepended to what is supplied by the environment.
+
+Optional variables:
+    PGPLOTDIR       for the tools that require it, the location of the
+                    PGPLOT installed tools.
+
+    DIFX_REPLDIR_PATH allows a replacement to the normal choice for the
+                    directory in which to build, perhaps with different
+                    compilation options set.  See the script for details.
+
+The following environment variables are no longer used by this script,
+but exceptions will be raised if they are missing.  (The configure process
+that this script invokes may make use of these.)
+
+    DIFXBITS    required by genipp
+    IPPLIB32    required by (deprecated) pulseprofile
+    IPPLIB64    required by (deprecated) pulseprofile
+""")
+    if examples:
+        print("""
+For example Haystack usually builds with:
+
+    path-to-setup/install-difx -v --ipp --cache=difx-config-cache \
+        --reconf --force --withhops --withm6support --withpolconvert
+
+""")
 
 ###############################################################################
 # Parse command line options and arguments
 # When adding an option or argument
 #  * Make sure a default is set
-#  * Make sure it is documented in main.__doc__
+#  * Make sure it is documented in help.__doc__
 ###############################################################################
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "fhv",
         ["force", "help", "verb",
+         "help-options", "help-environment", "help-examples",
          "mk5daemon", "withmonitor", "withdatasim", "perl", "withfb",
          "withhops", "withm6support", "withguiserver", "withpython",
          "withpolconvert", "noinstall", "reconf", "noconf", "clean",
          "g77", "extraflags=", "makeflags=", "withmark6meta",
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine",
-         "doonly=","skip=" ])
+         "doonly=", "skip=", "newver=", ])
 except getopt.GetoptError as err:
     print(err)
-    print(main.__doc__)
+    print(help.__doc__)
     sys.exit(2)
 
 if not 0 <= len(args) <= 0:
     print("Error: Wrong number of Arguments")
-    print(main.__doc__)
+    print(help.__doc__)
     sys.exit(2)
 
 # set defaults
@@ -207,7 +262,8 @@ def setOnlyComponents(only):
 	setNormalComponentsFalse()
 	array = only.strip().split(',')
 	if(len(array)==0):
-		raise RuntimeError("Could not find components to build in only argument '%s'"%only)
+		raise RuntimeError( "Could not find components to build " +
+                    "in only argument '%s'"%only)
 	for a in array:
 		c = a.strip()
 		if(c in components):
@@ -215,7 +271,8 @@ def setOnlyComponents(only):
 			if(c == "python"):
 				dopybindings = True
 		else:
-			raise RuntimeError("Unrecognized only component '%s'"%(a))
+                        if (c != ''): raise RuntimeError(
+                            "Unrecognized only component '%s'" % (a))
 def setSkipComponents(skip):
         global components
         array = skip.strip().split(',')
@@ -230,14 +287,40 @@ def setSkipComponents(skip):
                 else:
                         raise RuntimeError("Unknown skip component '%s'"%(a))
 
+adjustments=dict()
+def newVersionComponents(changes):
+        global components
+        adjusts = changes.strip().split(',')
+        if(len(adjusts)==0):
+                raise RuntimeError("--newver invoked without a list")
+        for a in adjusts:
+            try:
+                com,ver = a.split(':')
+            except:
+                raise RuntimeError("elements must be pairs of component:path")
+            if(com in components):
+                adjustments[com] = ver
+            else:
+                raise RuntimeError("%s is not a component"%com)
+
+
 # read options
 if len(opts) > 0:
     for o, a in opts:
         if o in ("-f", "--force"):
             force = True
         if o in ("-h", "--help"):
-            print(main.__doc__)
-            sys.exit(2)
+            print(help.__doc__)
+            sys.exit(0)
+        if o == "--help-options":
+            help(options=True)
+            sys.exit(0)
+        if o == "--help-environment":
+            help(envivars=True)
+            sys.exit(0)
+        if o == "--help-examples":
+            help(examples=True)
+            sys.exit(0)
         if o in ("-v", "--verb"):
             verb = True
         if o == "--mk5daemon":
@@ -296,6 +379,8 @@ if len(opts) > 0:
 	        setOnlyComponents(a)
         if o == "--skip":
 	        setSkipComponents(a)
+        if o == "--newver":
+                newVersionComponents(a)
 
 ###### Get all relevant environment variables ###########
 print("************************************")
@@ -312,12 +397,14 @@ libdir = difxroot + '/lib/'
 pkgdir = difxroot + '/lib/pkgconfig/'
 incdir = difxroot + '/include/'
 ipproot = os.environ.get('IPPROOT')
-ipplib32 = os.environ.get('IPPLIB32')
-ipplib64 = os.environ.get('IPPLIB64')
 mpicxx = os.environ.get('MPICXX')
 pgplotdir = os.environ.get('PGPLOTDIR')
-difxbits = os.environ.get('DIFXBITS')
 platform = sys.platform
+
+### these do not seem to be used by the script directly
+difxbits = os.environ.get('DIFXBITS')
+ipplib32 = os.environ.get('IPPLIB32')
+ipplib64 = os.environ.get('IPPLIB64')
 
 if(extraflags is not None):
     ###### Get all relevant environment variables ###########
@@ -336,7 +423,7 @@ if not master_tag:
     if os.environ.get('DIFX_VERSION') == None:
         print("You must have already source'd setup.bash/setup.csh!")
         print("DIFX_VERSION was undefined - aborting compilation")
-        raise RuntimeError
+        raise RuntimeError("DIFX_VERSION undefined")
     difx_version = os.environ.get('DIFX_VERSION')
     if difx_version != "trunk":
         difx_version = "branches/" + difx_version
@@ -422,6 +509,30 @@ if components["difx_monitor"]:
 if components["datasim"]:
     apptargets.append(["datasim", difx_version, True,True,True,False])
 
+for key in adjustments:
+    todo = True
+    if todo:
+      for lib in libtargets:
+        if lib[0] == key:
+            lib[1] = adjustments[key]
+            print("Using version %s of component %s" % (lib[1],lib[0]))
+            todo = False
+    if todo:
+      for util in utiltargets:
+        if util[0] == key:
+            util[1] = adjustments[key]
+            print("Using version %s of component %s" % (util[1],util[0]))
+            todo = False
+    if todo:
+      for app in apptargets:
+        if app[0] == key:
+            app[1] = adjustments[key]
+            print("Using version %s of component %s" % (app[1],app[0]))
+            todo = False
+    if todo:
+        raise RuntimeError(
+            "Adjustment of %s to %s was not made" % (key,adjustments[key]))
+
 # a navigation aid
 def os_chdir(dir):
     os.chdir(dir)
@@ -449,6 +560,7 @@ pkg_config_path += ":" + os.environ.get('PKG_CONFIG_PATH')
 os.environ['PKG_CONFIG_PATH'] = pkg_config_path
 
 # source dir build starts in 'setup' of the svn tree and topdir of master_tag
+# inbdir is set True when the build directory differs from the source dir
 if blddir == topdir + '/setup':
     if verb:
         print()
@@ -541,10 +653,12 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
             if cache != 'none':
                 configstring += "-CXX"
             configstring += " CXX=" + mpicxx
-        if dopybindings and check_configureAC_has(cfp+"/configure.ac", "enable-python"):
-            configstring += " --enable-python "
-        if dopybindings and check_configureAC_has(cfp+"/configure.ac", "with-python"):
-            configstring += " --with-python "
+        if dopybindings and check_configureAC_has(
+            cfp+"/configure.ac", "enable-python"):
+                configstring += " --enable-python "
+        if dopybindings and check_configureAC_has(
+            cfp+"/configure.ac", "with-python"):
+                configstring += " --with-python "
         run(configstring)
 
     run(MAKEcommand + target)
@@ -563,11 +677,12 @@ def check_configureAC_has(cfpath, key):
 
 ###### Subroutine to set up documentation area ##########
 def make_doc_area(basedocdir):
+    print("\n**** publishing doco-index ****\n")
     if not os.path.exists(basedocdir):
         os.mkdir(basedocdir)
     print("cp -f %s/doco-index.html %s/index.html" % (startdir, basedocdir))
-    os.system("cp -f %s/doco-index.html %s/index.html" % (startdir, basedocdir))
-
+    os.system(
+        "cp -f %s/doco-index.html %s/index.html" % (startdir, basedocdir))
 
 ###### Work ##########################################
 
@@ -874,9 +989,31 @@ for utiltarget in utiltargets:
 os_chdir(topdir)
 
 ##### Make documentation #################################
+def make_doc_dirs(basedocdir, targetdir):
+    os_chdir(targetdir)
+    cfp = os.getcwd()
+    blp = cfp.replace(topdir, blddir)
+    blp = blp.replace(repldir, blddir)
+    if not os.path.exists(blp):
+        os.makedirs(blp)
+        print("++> " + blp + " was created")
+    os_chdir(blp)
+    return(cfp, blp)
+
+def run_doxygen(basedocdir, targetdir):
+    if inbdir:
+        cfp,blp = make_doc_dirs(basedocdir, targetdir)
+        if verb:
+            print('src:  ' + cfp + '\nbld:  ', blp + '\nroot: ', basedocdir)
+            print("cp -f %s/Doxyfile %s" % (cfp, blp))
+        os.system("cp -f %s/Doxyfile %s" % (cfp, blp))
+    os.system("doxygen Doxyfile")
+
 if(dodoc):
     basedocdir = difxroot + '/doc/'
     make_doc_area(basedocdir)
+    if not os.path.exists(basedocdir):
+        raise Exception("Unable to set up doc area '%s'" % basedocdir)
     targetdir = "mpifxcorr/" + difx_version
     if not os.path.exists(targetdir):
         print("**** Could not find "+targetdir+", trying Trunk")
@@ -885,11 +1022,13 @@ if(dodoc):
         print()
         print()
         print("************************************")
-        print("Building docs ", targetdir)
+        print("Building docs from ", targetdir, "with", end="  ")
+        sys.stdout.flush()
         if os.system("which doxygen") != 0:
             print("No doxygen installed - skipping mpifxcorr documentation")
         else:
-            os.system("doxygen Doxyfile")
+            run_doxygen(basedocdir, targetdir)
+        ### build the user manual from doc/userguide
     else:
         print()
         print("******* Skipping "+targetdir)
@@ -907,6 +1046,8 @@ if (force and not errors == []):
 else:
     print("Done!")
 
-##### Remind people to sign up to difx-users! ############
-print("\nRemember, if you haven't signed up to the difx-users mailing list, please")
-print("do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users.")
+##### Remind people as is done in the help above! ############
+print('''
+Remember, if you haven't signed up to the difx-users mailing list,
+please do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users.
+''')
