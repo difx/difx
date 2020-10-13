@@ -103,7 +103,8 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 	inputfile = basename + '.input'
 	difx = parseDiFX.DiFXFile(inputfile)
 	if not difx.isvalid():
-		parser.error("Couldn't parse input file " + inputfile + " correctly")
+		print("Couldn't parse input file " + inputfile + " correctly")
+		return
 	cfg = difx.metainfo
 
 	# Print out the full frequency table
