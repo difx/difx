@@ -47,7 +47,7 @@ class InputFile:
         self.numoutputfreqs, self.outputfreqs = self.determine_outputfreqs()
         self.version = self.determine_version() # TODO: currently relies on baseline table infos, make independent of that
         self.valid = self.numfreqs >= 1 and self.numtelescopes >= 1 and \
-            self.numdatastreams >= 1 and self.numbaselines >= 1
+            self.numdatastreams >= 1 and self.numbaselines >= 0
 
     def isvalid(self):
         return self.valid
