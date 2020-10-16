@@ -570,6 +570,7 @@ if not args.firstlook:
 if args.fscrunch:
     print("fscrunching...")
     centretimes = np.arange(starttime+res/2.0, endtime, res)
+    print("Number of time bins: {0}".format(len(centretimes)))
     # Setup figure and axes for diagnostic plot
     scrunch_fig_diag = plt.figure(figsize=(7,11))
     scrunch_ax0_diag = plt.subplot2grid((10,3), (0,0), rowspan=2, colspan=3)
@@ -662,7 +663,8 @@ if args.fscrunch:
             if numlogfits > 1:
                 print("Multiple log fit ranges selected")
             for comp in np.arange(numlogfits):
-                print("Log Fit Component {0}: bins {1} - {2}".format(comp+1, logstarts[comp], logstops[comp]))            
+                print("Log Fit Component {0}: bins {1} - {2}".format(comp+1, logstarts[comp], logstops[comp]))
+                print(len(centretimes[logstarts[comp]:logstops[comp]]),len(np.log(amp_jy[logstarts[comp]:logstops[comp]])))
                 poly_coeffs[comp] = np.polyfit(centretimes[logstarts[comp]:logstops[comp]], np.log(amp_jy[logstarts[comp]:logstops[comp]]), deg=1)
                 print("Stokes I log fit coefficients: {}".format(poly_coeffs[comp]))
                 amp_fit[comp] = centretimes*poly_coeffs[comp][0] + poly_coeffs[comp][1]
