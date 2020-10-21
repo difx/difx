@@ -6,6 +6,7 @@ Version 2.0.3
   - new function getMark6GathererSourceFileSize() allows previous behavior.
 * mark6Gather() : fix bug which sometimes caused one or more blocks from end of a gather to be ignored. 
   - with this fix, and with the above getMark6GathererFileSize() change, the resultant file sizes should be in accord.
+* mark6Gather() : seeks bigger than NDISK*2^31 were broken.  Now seem fixed.
 
 Version 2.0.2
 * Post DiFX-2.6

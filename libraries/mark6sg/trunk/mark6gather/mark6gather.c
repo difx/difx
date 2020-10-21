@@ -342,8 +342,8 @@ static void *mark6Seeker(void *arg)
 {
 	struct seekArgs *S = (struct seekArgs *)arg;
 	off_t pos;
-	int blockSize;
-	int targetBlock;
+	long long int blockSize;
+	long long int targetBlock;
 	int slotIndex;
 	int i;
 	size_t v;
