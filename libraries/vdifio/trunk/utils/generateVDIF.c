@@ -50,6 +50,7 @@ IppsRandGaussState_32f *pRandGaussState, *pRandGaussState2;
 Ipp32f *scratch=NULL, *scratch2=NULL;
 Ipp32fc *scratchHilbert=NULL;
 Ipp32f phase, phase2;
+#ifdef IPP9
 Ipp32f *dly;
 Ipp8u *buf;
 IppsFIRSpec_32f *pSpec;
@@ -69,6 +70,7 @@ typedef __INT64        Ipp64s;
 typedef __UINT64       Ipp64u;
 typedef double         Ipp64f;
 typedef Ipp16s         Ipp16f;
+#endif
 #endif
 
 #define SEED 48573
@@ -345,7 +347,7 @@ int main (int argc, char * const argv[]) {
 
   if (tone==0) tone = bandwidth/4;
   if (tone2>0 && amp2==0) amp2=amp;
-
+#ifdef IPP9
   data = (Ipp32f**)malloc(nchan*sizeof(Ipp32f*));
   if (data==NULL) {
     perror("Memory allocation problem\n");
@@ -400,6 +402,7 @@ int main (int argc, char * const argv[]) {
 
   int specSize;
   int bufsize, bufsize2;
+#endif
 
   if (!nobandpass) {
     // Initialise FIR filter
@@ -971,7 +974,7 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
       fprintf(stderr, "Error generating Gaussian noise (%s)\n", ippGetStatusString(status));
       exit(1);
     }
-
+#ifdef IPP9
     if (amp>0.0) {
       if (noise) {
 	status = ippsRandGauss_32f(scratch, nsamp*cfact, pRandGaussState2);
@@ -995,7 +998,7 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
 	}
       }
     }
-
+#endif
     if (!nobandpass) {
       if (iscomplex) {
 	status = ippsFIRSR_32fc((Ipp32fc*)data[n], (Ipp32fc*)data[n], nsamp, pcSpec, (Ipp32fc*)dly, (Ipp32fc*)dly,  buf);
