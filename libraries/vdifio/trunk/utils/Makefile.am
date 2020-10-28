@@ -34,8 +34,8 @@ endif
 
 if USE_IPP 
   bin_PROGRAMS += generateVDIF
-  bin_PROGRAMS += vdifLinear2circular	
-  bin_PROGRAMS += vdifSwapSideband
+# bin_PROGRAMS += vdifLinear2circular	
+# bin_PROGRAMS += vdifSwapSideband
 endif
 
 noinst_PROGRAMS = \
@@ -117,8 +117,8 @@ generateVDIF_SOURCES = \
 	generateVDIF.c
 
 if USE_IPP 
-  vdifLinear2circular_LDADD = $(IPP_LIBS) $(LDADD)
-  vdifSwapSideband_LDADD = $(IPP_LIBS) $(LDADD)
+# vdifLinear2circular_LDADD = $(IPP_LIBS) $(LDADD)
+# vdifSwapSideband_LDADD = $(IPP_LIBS) $(LDADD)
 endif
 
 if USE_CODIFIO
