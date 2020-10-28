@@ -20,6 +20,8 @@ export MPICXX="${DIFXMPIDIR}"/bin/mpicxx
 ####### USE GFORTRAN IN PREFERENCE TO G77? ##
 ####### Comment out if not desired ##########
 export USEGFORTRAN="yes"
+# you may need this for calcserver,difxcalc11
+# export FFLAGS=-fallow-argument-mismatch
 
 ####### PERL VERSION/SUBVERSION #############
 perlver="5"
@@ -95,7 +97,7 @@ then
     if [ `expr "$CurPath" ':' ".*$NewItem\$"` -eq '0'  -a \
          `expr "$CurPath" ':' ".*$NewItem\:.*"` -eq '0' ]
     then
-        eval $Path="$NewItem"\:"$CurPath"
+        eval $Path=\"$NewItem\:$CurPath\"
     fi
 else
     eval export $Path="$NewItem"
