@@ -67,13 +67,13 @@ if test ${HAVE_MARK6SG} = true; then
 fi
 
 
-AC_ARG_WITH([generateVDIF],
-    AS_HELP_STRING([--with-generateVDIF], [Enable generate VDIF]))
-if test "x${with_generateVDIF}" == "xyes"; then
-    AM_CONDITIONAL([WITH_GENERATEVDIF], [true])
-else
-    AM_CONDITIONAL([WITH_GENERATEVDIF], [false])
-fi
+dnl AC_ARG_WITH([generateVDIF],
+dnl     AS_HELP_STRING([--with-generateVDIF], [Enable generate VDIF]))
+dnl if test "x${with_generateVDIF}" == "xyes"; then
+dnl     AM_CONDITIONAL([WITH_GENERATEVDIF], [true])
+dnl else
+dnl     AM_CONDITIONAL([WITH_GENERATEVDIF], [false])
+dnl fi
 
 dnl **********************************************************
 dnl **** Set path for Intel Performance Primitive library ****
@@ -85,6 +85,7 @@ if test "x$enable_ipp" = xno; then
         ipp_enabled=0
 fi
 PKG_CHECK_MODULES(IPP, ipp, [AC_DEFINE([HAVE_IPP], 1, [1=has IPP])], ipp_enabled=0)
+AM_CONDITIONAL(USE_IPP, $ipp_enabed)
 AC_SUBST(ipp_enabled)
 dnl **********************************************************
 
