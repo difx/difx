@@ -106,18 +106,19 @@ volatile int sig_received = 0;
 
 const char program[] = "vdifSwapSideband";
 const char author[]  = "Chris Phillips <Chris.Phillips@csiro.au>";
-const char version[] = "0.1";
+const char version[] = "0.2";
 const char verdate[] = "20200803";
 
 static void usage()
 {
   fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
-  fprintf(stderr, "A program select a subset of channels from a VDIF file. Assumes all threads have the same # channels\n");
-  fprintf(stderr, "\nUsage: %s -o <Output directory> <VDIF input file> [<VDIF output file> ...]\n", program);
+  fprintf(stderr, "A program to swap sideband of ALL channels in a VDIF file\n");
+  fprintf(stderr, "\nUsage: %s [Options] <VDIF input file> [<VDIF output file> ...]\n", program);
   fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
-  fprintf(stderr, "\n<Output directory> is the name of a directory to write all the files to\n");
   fprintf(stderr, "\nOptions:\n");
-  fprintf(stderr, "\n-skip <bytes>    Skip <bytes> bytes a the start of each file\n");
+  fprintf(stderr, "\n  -o <Output directory>   Name of a directory to write all the files to (required if multiple input files)\n");
+  fprintf(stderr,   "  -f <Output filename>    Name of output file (only valid if single input file\n");
+  fprintf(stderr,   "  -skip <bytes>           Skip <bytes> bytes a the start of each file\n");
 }
 
 int main (int argc, char * const argv[]) {
