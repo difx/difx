@@ -34,10 +34,13 @@
 //
 //============================================================================
 
-#include <stdio.h>
 #include <glob.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define MARK6_SG_MAXFILES 32
 
@@ -76,6 +79,9 @@ int main(int argc, char** argv)
 
     struct file_header_tag fhdr[MARK6_SG_MAXFILES];
     struct wb_header_tag   bhdr[MARK6_SG_MAXFILES];
+    off_t offset[MARK6_SG_MAXFILES];
+    off_t file_size[MARK6_SG_MAXFILES];
+    off_t blocknum[MARK6_SG_MAXFILES];
 
     nfiles = argc - 1;
 
@@ -88,21 +94,46 @@ int main(int argc, char** argv)
     for (i=0; i<nfiles; i++)
     {
         size_t nrd;
+        struct stat st;
+
+        offset[i] = 0;
+        blocknum[i] = -1;
 
         f[i] = fopen(argv[i+1], "r");
         if (!f[i])
         {
-            printf("Error: Could not open %s.\n", argv[i+1]);
+            fprintf(stderr, "Error: Could not open %s.\n", argv[i+1]);
             return 0;
         }
+
         nrd = fread(&fhdr[i], sizeof(struct file_header_tag), 1, f[i]);
-	if (nrd != 1)
-	{
-	    printf("Error: could not read block size in %s.\n", argv[i+1]);
-	    return 0;
-	}
-        printf("File %d block size %d\n", i, fhdr[i].block_size);
+        if (nrd != 1)
+        {
+            fprintf(stderr, "Error: could not read block size in %s.\n", argv[i+1]);
+            return 0;
+        }
+        if (fhdr[i].sync_word != 0xfeed6666)
+        {
+            fprintf(stderr, "Warning: file header of file %d has unexpected sync word %08x\n", i, fhdr[i].sync_word);
+        }
+
+        nrd = stat(argv[i+1], &st);
+        if (nrd != 0)
+        {
+           file_size[i] = (off_t)-1;
+           fprintf(stderr, "Warning: could not stat() file %d for file size\n", i);
+        }
+        else
+        {
+           file_size[i] = st.st_size;
+        }
+
+        fprintf(stderr, "File header of file %d: version %d, block size %d, packet_format %d, packet_size %d\n",
+            i, fhdr[i].version, fhdr[i].block_size, fhdr[i].packet_format, fhdr[i].packet_size
+        );
     }
+
+    printf("# <fileNr> <offset> <wb_size> <blocknr>\n");
 
     while (!done)
     {
@@ -110,21 +141,45 @@ int main(int argc, char** argv)
         {
             size_t nrd;
 
+            memset(&bhdr[i], 0, sizeof(struct wb_header_tag));
             nrd = fread(&bhdr[i], sizeof(struct wb_header_tag), 1, f[i]);
             if (feof(f[i]))
             {
-                printf("File %d EOF\n", i);
+                fprintf(stderr, "File %d EOF\n", i);
                 done = 1;
                 continue;
             }
-	    else if (nrd != 1)
-	    {
-	        printf("Error: file %d read error, but not EOF\n", i);
-		done = 1;
-		continue;
-	    }
+            else if (nrd != 1)
+            {
+                fprintf(stderr, "Error: file %d read error, but not EOF\n", i);
+                done = 1;
+                continue;
+            }
+
+            printf("%d %ld %u %u\n", i, offset[i], bhdr[i].wb_size, bhdr[i].blocknum);
+
+            if (bhdr[i].wb_size != fhdr[i].block_size && offset[i] < (file_size[i] - fhdr[i].block_size))
+            {
+                fprintf(stderr,
+                    "ERROR: file %d at offset %ld: mismatch in current wb_size %u vs. file block_size %u : blk %u, previous blk %u\n",
+                    i, offset[i], bhdr[i].wb_size, fhdr[i].block_size, bhdr[i].blocknum, blocknum[i]
+                );
+
+                do
+                {
+                   memset(&bhdr[i], 0, sizeof(struct wb_header_tag));
+                   nrd = fread(&bhdr[i], sizeof(struct wb_header_tag), 1, f[i]);
+                } while (nrd > 0 && bhdr[i].wb_size != fhdr[i].block_size);
+
+                fprintf(stderr,
+                    "  resync: candidate header with wb_size %u blk %d found off by +%ld from de-sync position %ld\n",
+                    bhdr[i].wb_size, bhdr[i].blocknum, ftello(f[i]) - offset[i] - sizeof(struct wb_header_tag), offset[i]
+                );
+            }
+
             fseek(f[i], bhdr[i].wb_size - sizeof(struct wb_header_tag), SEEK_CUR);
-            printf("File %d block size %d has nr %d\n", i, bhdr[i].wb_size, bhdr[i].blocknum);
+            offset[i] = ftello(f[i]);
+            blocknum[i] = bhdr[i].blocknum;
         }
     }
 
