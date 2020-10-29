@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 """
 Patch DiFX/CALC .im file delay polynomials using RadioAstron closed-loop correction files.
 
@@ -630,11 +630,11 @@ def areTimerangesMatched(startA, stopA, startB, stopB, granularity_secs=1.024):
 	'''
 	t0 = startA - timedelta(microseconds=granularity_secs*1e6)
 	t1 = stopA + timedelta(microseconds=granularity_secs*1e6)
- 	if (startB >= t0 and stopB <= t1):
+	if (startB >= t0 and stopB <= t1):
 		return True
 	t0 = startB - timedelta(microseconds=granularity_secs*1e6)
 	t1 = stopB + timedelta(microseconds=granularity_secs*1e6)
- 	if (startA >= t0 and stopA <= t1):
+	if (startA >= t0 and stopA <= t1):
 		return True
 	return False
 
