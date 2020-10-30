@@ -19,7 +19,7 @@ __license__ = 'GNU GPL 3'
 __version__ = '1.0.0'
 
 
-def convertASCPolyFile(filename: str):
+def convertASCPolyFile(filename: str, sign: int = -1):
 
 	dly = PolySet(filename, coeffscale=1e6)
 	outfilename = filename + '.matlab'
@@ -35,7 +35,7 @@ def convertASCPolyFile(filename: str):
 		sec_of_year_stop = (poly.tstop - ref_time).total_seconds()
 		data = [sec_of_year_start, sec_of_year_stop]
 		for coeff in poly.coeffs:
-			data.append(coeff[0]) # note: coeffs are {[dim0] x order} for time delay poly, and {[dim0,dim1,dim2] x order} for uvw coordinates poly
+			data.append(sign*coeff[0]) # note: coeffs are {[dim0] x order} for time delay poly, and {[dim0,dim1,dim2] x order} for uvw coordinates poly
 		datastr = ' '.join(map(str,data))
 		outfile.write(datastr + '\n')
 
