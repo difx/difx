@@ -1,8 +1,9 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
 """
 Patch DiFX/CALC .im file delay polynomials using RadioAstron closed-loop correction files.
 
-usage: raPatchClosedloop.py [-h] [-a ANTENNA] [-P FRIFILE_PIMA]
+Short usage: raPatchClosedloop.py [-h] [-a ANTENNA] [-P FRIFILE_PIMA]
                             [-R REFANT_PIMA] [-r DDLYRATE] [-t DTSHIFT]
                             [-N MAXORDER]
                             dlypolyfile [imfiles [imfiles ...]]
@@ -11,11 +12,13 @@ usage: raPatchClosedloop.py [-h] [-a ANTENNA] [-P FRIFILE_PIMA]
 from __future__ import print_function, division
 from datetime import datetime, timedelta
 from calendar import timegm
-import math, sys, time
-import argparse
-from datetime import datetime, timedelta
-import math
-import sys
+import argparse, math, sys, time
+
+__author__ = 'Jan Wagner (MPIfR)'
+__copyright__ = 'Copyright 2019, MPIfR'
+__license__ = 'GNU GPL 3'
+__version__ = '1.0.1'
+
 
 SCALE_DELAY = 1e6	# scaling to get from RA_C_COH.TXT units (secs) to .im units (usec)
 SCALE_UVW = 1		# scaling to get from RA_C_COH_uvw.txt units (m?) to .im units (m)
