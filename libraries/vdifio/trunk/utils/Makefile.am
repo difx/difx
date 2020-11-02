@@ -113,18 +113,22 @@ vdif2to8_SOURCES = \
 vdifChanSelect_SOURCES = \
 	vdifChanSelect.c
 
+
+if USE_IPP 
+
 generateVDIF_SOURCES = \
 	generateVDIF.c
 
-if USE_IPP 
+vdifSwapSideband_SOURCES = \
+	vdifSwapSideband.c
+
 # vdifLinear2circular_LDADD = $(IPP_LIBS) $(LDADD)
   vdifSwapSideband_LDADD = $(IPP_LIBS) $(LDADD)
-endif
-
 if USE_CODIFIO
   generateVDIF_LDADD = $(IPP_LIBS) $(LDADD) $(CODIFIO_LIBS)
 else
   generateVDIF_LDADD = $(IPP_LIBS) $(LDADD)
+endif
 endif
 
 vmux_SOURCES = \
