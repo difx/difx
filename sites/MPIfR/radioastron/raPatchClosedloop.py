@@ -121,7 +121,7 @@ class PolyCoeffs:
 		for dim in range(self.dims):
 			v = 0.0
 			for k in range(self.Ncoeffs):
-				v += self.coeffs[k][dim]*math.pow(t_sec,k)
+				v += self.coeffs[k][dim]*math.pow(t_sec/self.coeffscale,k)
 			polyval.append(v)
 		return polyval
 
@@ -190,7 +190,7 @@ class PolyCoeffs:
 		# print (self.Ncoeffs, binom_nk)
 
 		# Precompute dt^n for n=0..Ncoeff
-		dt = dt * self.coeffscale
+		dt = dt / self.coeffscale
 		dtpow = [math.pow(dt,n) for n in range(self.Ncoeffs+1)]
 
 		# Shift the polynomial. Need to shift each poly/dimension (dly: 1D, uvw: 3D).
@@ -251,19 +251,27 @@ class PolySet:
 		T = mjd_t0 + timedelta(days=MJD) + timedelta(seconds=sec)
 		return T
 
-	def lookupPolyFor(self,MJD,sec):
+	def lookupPolyFor(self,MJD,sec,interval_sec=0,allowShift=True):
 		"""
 		Lookup up poly that has start time identical to the given MJD and second-of-day
 		"""
 		tlookup = self.datetimeFromMJDSec(MJD,sec)
+		last = self.piecewisePolys[-1]
 		for poly in self.piecewisePolys:
 			if poly.tstart == tlookup:
 				return poly
-			if poly.tstart < tlookup and poly.tstop > tlookup:
+			if (poly.tstart < tlookup and tlookup < poly.tstop) or (poly.tstart < (tlookup + timedelta(seconds=interval_sec)) and (tlookup + timedelta(seconds=interval_sec)) < poly.tstop):
+				if poly==last:
+					print('Last2')
 				dt = (tlookup - poly.tstart).total_seconds()
-				print ('Error: Time %d MJD %d sec (%s) not at start but rather %d seconds into RA poly.' % (MJD,sec,str(tlookup),dt))
-				print ('       Poly time-shift not supported yet!')
-				return None
+				if allowShift and (abs(dt) < interval_sec/2 or poly == last):
+					print('Info: Time shifting poly coeffs by %+d seconds to get %s into RA poly %s--%s.' % (dt,str(tlookup),str(poly.tstart),str(poly.tstop)))
+					poly.timeshift(dt)
+					return poly
+				elif not allowShift:
+					print ('Error: Time %d MJD %d sec (%s) is %+d seconds from RA poly %s--%s.' % (MJD,sec,str(tlookup),dt,str(poly.tstart),str(poly.tstop)))
+			# todo: when times are mismatched, very last poly is not used, need some workaround
+		print ('Error: No suitable polynomial found for %s' % (str(tlookup)))
 		return None
 
 	def add(self, corrections):
@@ -809,7 +817,7 @@ def patchImFile(basename, dlypolys, uvwpolys, antname='GT'):
 			(polystart,polystop,mjd,sec) = blkpoly
 
 			# Get the matching Closed Loop polynomial coeffs sets
-			dp = dlypolys.lookupPolyFor(mjd,sec)
+			dp = dlypolys.lookupPolyFor(mjd,sec,im_poly_interval_s)
 			# uvwp = uvwpolys.lookupPolyFor(mjd,sec)
 			if dp == None: # or uvwp == None:
 				T = dlypolys.datetimeFromMJDSec(mjd,sec)
