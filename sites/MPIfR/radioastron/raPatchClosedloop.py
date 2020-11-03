@@ -17,7 +17,7 @@ import argparse, math, sys, time
 __author__ = 'Jan Wagner (MPIfR)'
 __copyright__ = 'Copyright 2019, MPIfR'
 __license__ = 'GNU GPL 3'
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 
 
 SCALE_DELAY = 1e6	# scaling to get from RA_C_COH.TXT units (secs) to .im units (usec)
