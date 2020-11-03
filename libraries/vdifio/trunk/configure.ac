@@ -94,6 +94,11 @@ if test ${ipp_enabled} = 1; then
         FFT_LIBS="${IPP_LIBS} ${LIBS}"
         CFLAGS="${CFLAGS} ${IPP_CFLAGS}"
 fi
+# detect older IPP: -DIPP9 ends up in CFLAGS via IPP_CFLAGS
+AM_CONDITIONAL([OLD_IPP], [test `expr "${IPP_CFLAGS}" : '.*-DIPP9.*'` -eq 0])
+if [test x"$OLD_IPP_TRUE" = x] ; then
+    AC_MSG_NOTICE([*** your IPP version is ancient ***])
+fi
 
 # Add codif support to a handful of the utilities
 PKG_CHECK_MODULES(CODIFIO, codifio, [HAVE_CODIFIO=1],  [HAVE_CODIFIO=0])

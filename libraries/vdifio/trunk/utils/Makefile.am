@@ -32,7 +32,8 @@ if USE_MARK6SG
   bin_PROGRAMS += mk6vmux
 endif
 
-if USE_IPP 
+#if USE_IPP 
+if !OLD_IPP
   bin_PROGRAMS += generateVDIF
 # bin_PROGRAMS += vdifLinear2circular	
   bin_PROGRAMS += vdifSwapSideband
@@ -114,7 +115,8 @@ vdifChanSelect_SOURCES = \
 	vdifChanSelect.c
 
 
-if USE_IPP 
+# not needed here
+#if USE_IPP 
 
 generateVDIF_SOURCES = \
 	generateVDIF.c
@@ -129,7 +131,7 @@ if USE_CODIFIO
 else
   generateVDIF_LDADD = $(IPP_LIBS) $(LDADD)
 endif
-endif
+#endif
 
 vmux_SOURCES = \
 	vmux.c
