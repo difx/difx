@@ -121,7 +121,7 @@ class PolyCoeffs:
 		for dim in range(self.dims):
 			v = 0.0
 			for k in range(self.Ncoeffs):
-				v += self.coeffs[k][dim]*math.pow(t_sec/self.coeffscale,k)
+				v += self.coeffs[k][dim]*math.pow(t_sec,k)
 			polyval.append(v)
 		return polyval
 
@@ -190,7 +190,6 @@ class PolyCoeffs:
 		# print (self.Ncoeffs, binom_nk)
 
 		# Precompute dt^n for n=0..Ncoeff
-		dt = dt / self.coeffscale
 		dtpow = [math.pow(dt,n) for n in range(self.Ncoeffs+1)]
 
 		# Shift the polynomial. Need to shift each poly/dimension (dly: 1D, uvw: 3D).
@@ -266,7 +265,10 @@ class PolySet:
 				dt = (tlookup - poly.tstart).total_seconds()
 				if allowShift and (abs(dt) < interval_sec/2 or poly == last):
 					print('Info: Time shifting poly coeffs by %+d seconds to get %s into RA poly %s--%s.' % (dt,str(tlookup),str(poly.tstart),str(poly.tstop)))
+					# y0 = poly.eval(dt)
 					poly.timeshift(dt)
+					# y1 = poly.eval(0)
+					# print(y0,y1)
 					return poly
 				elif not allowShift:
 					print ('Error: Time %d MJD %d sec (%s) is %+d seconds from RA poly %s--%s.' % (MJD,sec,str(tlookup),dt,str(poly.tstart),str(poly.tstop)))
