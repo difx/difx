@@ -17,7 +17,7 @@ import argparse, math, sys, time
 __author__ = 'Jan Wagner (MPIfR)'
 __copyright__ = 'Copyright 2019, MPIfR'
 __license__ = 'GNU GPL 3'
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 
 
 SCALE_DELAY = 1e6	# scaling to get from RA_C_COH.TXT units (secs) to .im units (usec)
@@ -49,6 +49,7 @@ parser.add_argument('-R', '--refant', default='GBT-VLBA', dest='refant_pima', he
 parser.add_argument('-r', '--drate', default=0.0, dest='ddlyrate', help='Residual delay rate [s/s] to add to dly polynomial')
 parser.add_argument('-t', '--dt', default=0.0, dest='dtshift', help='Time shift the polynomials p_i(t) to p_i(t+dt) by dt seconds via changing the polynomial coefficients')
 parser.add_argument('-N', '--maxorder', default=12, dest='maxorder', help='Maximum polynomial order; higher coeffs if present are set to zero i.e. the polynomials are truncated')
+parser.add_argument('-V', '--version', action='version', version='%(prog)s {version}'.format(version=__version__))
 parser.add_argument('dlypolyfile', nargs='?', help='Input file with delay polynomials (dly_polys.txt)')
 parser.add_argument('imfiles', nargs='*', help='Input DiFX/CALC .im file(s) to patch; <basename_1.im> ...')
 
@@ -259,20 +260,29 @@ class PolySet:
 		for poly in self.piecewisePolys:
 			if poly.tstart == tlookup:
 				return poly
-			if (poly.tstart < tlookup and tlookup < poly.tstop) or (poly.tstart < (tlookup + timedelta(seconds=interval_sec)) and (tlookup + timedelta(seconds=interval_sec)) < poly.tstop):
-				if poly==last:
-					print('Last2')
-				dt = (tlookup - poly.tstart).total_seconds()
-				if allowShift and (abs(dt) < interval_sec/2 or poly == last):
-					print('Info: Time shifting poly coeffs by %+d seconds to get %s into RA poly %s--%s.' % (dt,str(tlookup),str(poly.tstart),str(poly.tstop)))
-					# y0 = poly.eval(dt)
-					poly.timeshift(dt)
-					# y1 = poly.eval(0)
-					# print(y0,y1)
-					return poly
-				elif not allowShift:
-					print ('Error: Time %d MJD %d sec (%s) is %+d seconds from RA poly %s--%s.' % (MJD,sec,str(tlookup),dt,str(poly.tstart),str(poly.tstop)))
-			# todo: when times are mismatched, very last poly is not used, need some workaround
+
+		toffsets = []
+		for poly in self.piecewisePolys:
+			dt_to_start = (tlookup - poly.tstart).total_seconds()
+			dt_to_stop = (tlookup - poly.tstop).total_seconds()
+			toffsets.append(dt_to_start)
+		absoffsets = [abs(dt) for dt in toffsets]
+
+		closest = absoffsets.index(min(absoffsets))
+		poly = self.piecewisePolys[closest]
+		dt = toffsets[closest]
+
+		if dt <= interval_sec:
+			if allowShift:
+				print('Info: Time shifting poly coeffs by %+d seconds to get %s into RA poly %s--%s.' % (dt,str(tlookup),str(poly.tstart),str(poly.tstop)))
+				# y0 = poly.eval(dt)
+				poly.timeshift(dt)
+				# y1 = poly.eval(0)
+				# print(y0,y1)
+				return poly
+			else:				
+				print ('Error: Time %d MJD %d sec (%s) is %+d seconds from RA poly %s--%s.' % (MJD,sec,str(tlookup),dt,str(poly.tstart),str(poly.tstop)))
+
 		print ('Error: No suitable polynomial found for %s' % (str(tlookup)))
 		return None
 
@@ -604,24 +614,31 @@ def imSumPolyCoeffs(telescope_id,lines,polystart,polystop,dpoly,uvwpoly,sign=-1,
 				# Keep the CALC9 0th coeff but adjust for ASC poly drift and user delta-rate drift
 				if baseOffsets==None:
 					baseOffsets = {}
+
+				#if sourcenr not in baseOffsets:
+				#	# Remember starting points of CALC9 and ASC dly offsets
+				#	polydlydelta = P.eval(float(P.interval))[0] - P.eval(0.0)[0]
+				#	baseOffsets[sourcenr] = [oldcoeffs[0], polydlydelta]
+				#	newcoeffs[0] = oldcoeffs[0]
+				#else:
+				#	# Adjust CALC9 dly offset to be contiguous across different polys
+				#	#newcoeffs[0] = oldcoeffs[0]  # old method, copy 1:1, will introduce clock jumps!
+				#	newcoeffs[0] = baseOffsets[sourcenr][0] + sign*baseOffsets[sourcenr][1]
+				#	polydlydelta = P.eval(float(P.interval))[0] - P.eval(0.0)[0]
+				#	baseOffsets[sourcenr] = [newcoeffs[0], polydlydelta]
+
 				if sourcenr not in baseOffsets:
 					# Remember starting points of CALC9 and ASC dly offsets
-					polydlydelta = P.eval(float(P.interval))[0] - P.eval(0.0)[0]
-					baseOffsets[sourcenr] = [oldcoeffs[0], polydlydelta]
+					baseOffsets[sourcenr] = sign*C[0] - oldcoeffs[0]
 					newcoeffs[0] = oldcoeffs[0]
 				else:
 					# Adjust CALC9 dly offset to be contiguous across different polys
 					#newcoeffs[0] = oldcoeffs[0]  # old method, copy 1:1, will introduce clock jumps!
-					newcoeffs[0] = baseOffsets[sourcenr][0] + sign*baseOffsets[sourcenr][1]
-					polydlydelta = P.eval(float(P.interval))[0] - P.eval(0.0)[0]
-					baseOffsets[sourcenr] = [newcoeffs[0], polydlydelta]
+					newcoeffs[0] = sign*C[0] - baseOffsets[sourcenr]  # use new coeff, but shifted to start from very first CALC9 delay
 
 				# Copy high-order ASC poly coeffs
 				for k in range(1,N):
 					newcoeffs[k] = sign*C[k]
-
-				# Debug printout for Matlab/octave
-				# print (sourcenr, newcoeffs, oldcoeffs[0], polydlydelta)
 
 			newcoeffs_str = ' '.join(['%.16e\t ' % v for v in newcoeffs])
 			newline = '%s:  %s' % (key.strip(),newcoeffs_str)
