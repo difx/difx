@@ -375,7 +375,7 @@ dxin)
     tarname=${exp}-${relv}-$subv-$label-dxin.tar
     $nuke && rm -f $workdir/$tarname && rm -f $destdir/$tarname &&
              rm -f $workdir/logs/$tarname.log
-    content1='*.flist* *.v2d* *.joblist* *codes *vex.obs'
+    content1='*.flist* *.filelist* *.v2d* *.joblist* *codes *vex.obs'
     content2=''
     for j in $jobs
     do

@@ -12,6 +12,8 @@
 #  $ehtc/ehtc-jsgrind.sh #true true
 #
 [ -z "$exp"   ] && { echo exp   must be defined ; exit 1 ; }
+[ -z "$evs"   ] && { echo evs   must be defined ; exit 1 ; }
+[ -z "$ers"   ] && { echo ers   must be defined ; exit 1 ; }
 [ -z "$expn"  ] && { echo expn  must be defined ; exit 1 ; }
 [ -z "$opts"  ] && { echo opts  must be defined with options for polconvert ;
     exit 1 ; }
@@ -26,6 +28,7 @@
 [ -z "$targ"  ] && { echo targ  must be defined ; exit 1 ; }
 [ -z "$dout"  ] && { echo dout  must be defined ; exit 1 ; }
 [ -z "$proj"  ] && { echo proj  must be defined ; exit 1 ; }
+[ -z "$release"  ] && { echo release must be defined ; exit 1 ; }
 
 # apply joblist -u flag
 [ -z "$uniq"  ] && uniq=false
