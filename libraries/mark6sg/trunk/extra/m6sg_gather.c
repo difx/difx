@@ -208,14 +208,15 @@ int main(int argc, char** argv)
             break;
         }
 
-        nwr = fwrite(buf, nrd, 1, fdout);
-	if (nwr != nrd)
-	{
+        nwr = fwrite(buf, 1, nrd, fdout);
+        if (nwr != nrd)
+        {
+fprintf(stderr, "nrd=%zd nwr=%zd\n", nrd, nwr);
             fprintf(stderr, "Write error (disk full?)\n");
             fprintf(stderr, "  %zd bytes written\n", ncopied + nwr);
             fprintf(stderr, "  %zd bytes remained to be written\n", nremain - nwr);
             break;
-	}
+        }
         nremain -= nrd;
         ncopied += nrd;
 
