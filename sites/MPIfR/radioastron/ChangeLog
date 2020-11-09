@@ -1,0 +1,26 @@
+
+ChangeLog of raPatchClosedloop.py
+
+v103
+
+  - Clock jumps in the ASC polys are retained; these jumps are 
+    typically 1-2 microseconds, occuring between each 60s polynomial segment.
+    This may be closer to what ASC intended (provided that these jumps exist on purpose in ASC data)
+
+v102
+
+ -  When there is no ASC poly to matche the time range of an DiFX/CALC9 .im poly record,
+    the nearest-in-time ASC poly is used. It is shifted ("extended") into the .im poly time range.
+
+    Note 1: Time shifting the coefficients will yield a worse model - but still better than nothing.
+    Note 2: Extrapolation/reinterpolation is not possible, because ASC polynomial segments are discontinuous.
+
+v101
+
+  - Removes clock jumps in ASC polys
+    The first generated .im poly retains the 0th order coeff (delay) from DiFX/CALC9,
+    higher order coefficients are copied from the ASC delay poly file.
+    The second and later .im polys have a 0th order coeff equal to that of the 
+    first poly plus the cumulative delay-deltas of each ASC polynomial.
+
+  - Adds code (unused) for time-shifting of ASC poly coefficients
