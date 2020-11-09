@@ -7,9 +7,12 @@ v103
     typically 1-2 microseconds, occuring between each 60s polynomial segment.
     This may be closer to what ASC intended (provided that these jumps exist on purpose in ASC data)
 
+  - Fixes a corner case when nearest-in-time poly selection is needed (ASC vs CALC9 time range mismatch),
+    namely now the very last poly is not ignored, but is included in the new .im
+
 v102
 
- -  When there is no ASC poly to matche the time range of an DiFX/CALC9 .im poly record,
+ -  When there is no ASC poly to match the time range of an DiFX/CALC9 .im poly record,
     the nearest-in-time ASC poly is used. It is shifted ("extended") into the .im poly time range.
 
     Note 1: Time shifting the coefficients will yield a worse model - but still better than nothing.
