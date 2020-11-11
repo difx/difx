@@ -467,8 +467,8 @@ int main(int argc, char * const argv[]) {
   printf("Using MJD=%.4f\n", mjd);
 
   
-  datarate = numchan*bits*bandwidth*2/numthread; // Mbps (per thread if nthread>1), assuming Nyquist
-  printf("Datarate is %d Mbps/thread\n", datarate);
+  datarate = numchan*bits*bandwidth*2; // Mbps (per thread if nthread>1), assuming Nyquist
+  printf("Datarate is %d Mbps\n", datarate*numthread);
 
   if (udp.enabled) {
     if (mode==LBADR) {
