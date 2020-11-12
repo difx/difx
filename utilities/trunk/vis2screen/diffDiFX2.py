@@ -180,6 +180,14 @@ class DiFXAPSet:
 		return zip(self.headers, self.offsets)
 
 
+	def getVisibilityOffset(self, n):
+		return self.offsets[n]
+
+
+	def getVisibilityHeader(self, n):
+		return self.headers[n]
+
+
 	def scanCurrentAP(self) -> int:
 		self.headers = []
 		self.offsets = []
@@ -210,12 +218,12 @@ class DiFXAPSet:
 		return isSimilar	
 	
 
-	def findMatchingHeader(self, hdr: parseDiFX.VisibilityHeader) -> int:
+	def findMatchingHeaderIndex(self, hdr: parseDiFX.VisibilityHeader) -> int:
 		if (hdr == None):
 			return -1
 		for n in range(len(self.headers)):
 			if self.__compareHeader(hdr, self.headers[n]):
-				return self.offsets[n]
+				return n
 		return -1
 
 
@@ -327,13 +335,15 @@ if __name__ == "__main__":
 
 			# Look up record from file B
 			hdrB_expect = metamap.remapHeader(hdrA)
-			offsetB = apsB.findMatchingHeader(hdrB_expect)
-			if (offsetB < 0):
+			hdrB_index = apsB.findMatchingHeaderIndex(hdrB_expect)
+			if (hdrB_index < 0):
 				if warnundiffable:
 					print('NOT FOUND: no counterpart for record in B: %s-%s/%d fq %d/%s MJD %d sec %7.2f' % (
 						A.metainfo.telescopes[hdrA.antenna1-1].name, A.metainfo.telescopes[hdrA.antenna2-1].name,
 						hdrA.baseline, hdrA.freqindex, hdrA.polpair, hdrA.mjd, hdrA.seconds))
 				continue
+			hdrB = apsB.getVisibilityHeader(hdrB_index)
+			offsetB = apsB.getVisibilityOffset(hdrB_index)
 
 			# Load the full data
 			vizA = apsA.loadRecord(offsetA)
@@ -353,6 +363,11 @@ if __name__ == "__main__":
 			if len(vizA.vis) != len(vizB.vis):
 				print('NUMBER OF CHANNELS DIFFER: A:%d B:%d on %s' % (len(vizA.vis),len(vizB.vis),tag))
 				continue
+
+			# Compare weights
+			relDiff = numpy.abs(hdrA.weight - hdrB.weight)
+			if relDiff > threshold:
+				print('WEIGHT MISMATCH: weights A:%.5f B:%.5f differ by %.4f%% on %s' % (hdrA.weight,hdrB.weight,relDiff*100,tag))
 
 			# Diffing
 			identicalViz = True
@@ -387,7 +402,7 @@ if __name__ == "__main__":
 							numpy.array2string(numpy.abs(vizA.vis[ch]-vizB.vis[ch]), precision=prec)))
 
 			if verbose and identicalViz:
-				print('Identical within numeric precision: %s' % (tag))
+				print('Visibilities identical within numeric precision: %s' % (tag))
 
 			filesIdentical = filesIdentical and identicalViz
 
