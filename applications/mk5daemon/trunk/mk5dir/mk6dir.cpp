@@ -33,6 +33,8 @@ const char author[]  = "Mark Wainright <mwainrig@nrao.edu>";
 const char version[] = "0.2";
 const char verdate[] = "20190604";
 
+// FIXME: module groups are not supported; use VSN of specified slot, but look up groups in '/mnt/disks/.meta/<slot>/*/group', pass those slots as integer 1/2/3/4/12/34/1234 to processMark6ScansSlot()
+
 static void usage(const char *pgm)
 {
 	printf("%s ver. %s  %s  %s\n\n", program, version, author, verdate);

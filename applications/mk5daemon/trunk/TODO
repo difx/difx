@@ -33,3 +33,7 @@ mk5map
 * add to docs
 * option to pass station code
 * put DMS back in
+
+mk6dir
+~~~~~~
+* support module groups instead of single slots; avoid mixing together identically named scans on slot groups 12 and 34 (EHT VLBI)
