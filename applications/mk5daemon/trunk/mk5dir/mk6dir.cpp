@@ -107,7 +107,7 @@ void summarizeFile(const char *fileName, const char* filePattern, char *vsn, cha
 		return;
 	}
 
-	r = summarizevdifmark6(&sum, fileName, 0);
+	r = summarizevdifmark6(&sum, filePattern, 0);
 
 	if(r < 0)
 	{
