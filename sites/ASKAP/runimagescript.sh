@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to run the CASA call for converting the UVFITS file of the calibrator and target data to CASA Measurement Sets
+# Script to run the CASA imaging from calibratefrb.py
 
 module purge
 module load casa/5.6.2
