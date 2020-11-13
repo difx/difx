@@ -1,11 +1,24 @@
 
 ChangeLog of raPatchClosedloop.py
 
+v104
+
+  - Time shifted polys: for time-shifted ASC polys the behaviour reverts to v102 (remove delay discontinuities).
+    For useable-as-is ASC polys the behaviour remains as in v103 (retain initial delay of each ASC poly segment,
+    re-referenced only once to CALC9).
+
+    This attempts to remove the small discontinuities (<5ns) that are worsened (5..50ns) due to "incorrectly"
+    extending the delay model of each poly segment beyond its region of validity. While the final model is smoother,
+    it is not more correct either. 
+
+    Which method - if any - works better (v102, v103, v104) when ASC and CALC9 times are not matching
+    needs to be determined experimentally. The optimal approach would be for ASC to always provide polynomial
+    data on a CALC9-consistent time grid.
+
 v103
 
-  - Clock jumps in the ASC polys are retained; these jumps are 
-    typically 1-2 microseconds, occuring between each 60s polynomial segment.
-    This may be closer to what ASC intended (provided that these jumps exist on purpose in ASC data)
+  - Clock jumps in the ASC polys are retained; these are typ. <10 nanoseconds between each 60s polynomial segment.
+    Retaining the tiny jumps may be closer to what ASC intended (provided that these jumps exist on purpose in ASC data)
 
   - Fixes a corner case when nearest-in-time poly selection is needed (ASC vs CALC9 time range mismatch),
     namely now the very last poly is not ignored, but is included in the new .im
