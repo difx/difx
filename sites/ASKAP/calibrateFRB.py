@@ -33,6 +33,12 @@ parser.add_option("--dirtyonly", default=False, action="store_true",
                   help="Just make a dirty image, cube")
 parser.add_option("--dirtymfs", default=False, action="store_true",
                   help="Just make a dirty image, mfs")
+parser.add_option("--cleanmfs", default=False, action="store_true",
+                  help="Make a clean image, mfs")
+parser.add_option("--imagename", default="TARGET",
+                  help="The name of the image files for the cleaned MFS images. Default: TARGET")
+parser.add_option("--exportfits", default=False, action="store_true",
+                  help="Export image as FITS file")
 parser.add_option("--spwrange", type=str, default="''", help="The spw range used for imaging if selected. CASA format: '0:0~42' for spectral window 0, channels 0 to 42. Default is all channels.")
 parser.add_option("--calibrateonly", default=False, action="store_true",
                   help="Only generate the calibration files, don't do anything with target")
@@ -456,22 +462,35 @@ if not options.calibrateonly:
 
             # If desired, produce the only the dirty image
             if options.dirtyonly:
-                imname = "TARGET.cube.dirim.{0}".format(pol)
+                imagename = "TARGET.cube.dirim.{0}".format(pol)
                 os.system("rm -rf {0}.*".format(imname))
                 casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='cube', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='natural', niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields, pixelsize))
 
             elif options.dirtymfs:
-                imname = "TARGET.mfs.dirim.{0}".format(pol)
+                imagename = "TARGET.mfs.dirim.{0}".format(pol)
                 os.system("rm -rf {0}.*".format(imname))
                 casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='mfs', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='natural', niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields, pixelsize))
 
-            # Default: produce a cleaned image
+            elif options.cleanmfs:
+                imagename = options.imagename
+                os.system("rm -rf {0}.*".format(imname))
+                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='mfs', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='natural', niter=100, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields, pixelsize))
+
+            # Default: produce a cleaned cube image
             else:
                 casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='cube', width={4}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='natural', niter=5000, cycleniter=100, mask={5}, savemodel='modelcolumn', phasecenter={6}, outlierfile={7}, spw={9})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, maskstr, phasecenter, outlierfields, pixelsize, options.spwrange))
 
             casaout.close()
             os.system("chmod 775 imagescript.py")
             os.system("runimagescript.sh")
+
+            # If desired, also export the image as a FITS file
+            if options.exportfits:
+                casaout = open("exportfits.py", "w")
+                casaout.write('exportfits(imagename="{0}.im",fitsimage="{0}.FITS")\n'.format(imagename))
+                casaout.close()
+                os.system("chmod 775 exportfits.py")
+                os.system("runexportfits.sh")
     
             # If desired, also make the JMFIT output
             if options.imagejmfit:
