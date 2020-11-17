@@ -473,8 +473,8 @@ if not options.calibrateonly:
 
             elif options.cleanmfs:
                 imagename = options.imagename
-                os.system("rm -rf {0}.*".format(imname))
-                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='mfs', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='natural', niter=100, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields, pixelsize))
+                os.system("rm -rf {0}.*".format(imagename))
+                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{7}arcsec', '{7}arcsec'], stokes='{3}', specmode='mfs', phasecenter={4}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='natural', niter=100, mask={5}, outlierfile={6}, savemodel='modelcolumn')".format(targetmsfilename, imagename, imsize, pol, phasecenter, maskstr, outlierfields, pixelsize))
 
             # Default: produce a cleaned cube image
             else:
@@ -487,7 +487,7 @@ if not options.calibrateonly:
             # If desired, also export the image as a FITS file
             if options.exportfits:
                 casaout = open("exportfits.py", "w")
-                casaout.write('exportfits(imagename="{0}.im",fitsimage="{0}.FITS")\n'.format(imagename))
+                casaout.write('exportfits(imagename="{0}.image",fitsimage="{0}.FITS")\n'.format(imagename))
                 casaout.close()
                 os.system("chmod 775 exportfits.py")
                 os.system("runexportfits.sh")
