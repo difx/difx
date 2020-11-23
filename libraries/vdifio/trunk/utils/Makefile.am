@@ -25,6 +25,7 @@ bin_PROGRAMS = \
 	splitVDIFbygap \
 	vdif2to8 \
 	vdifChanSelect \
+	vdifSplitThread \
 	vmux \
 	vsum 
 
@@ -114,6 +115,9 @@ vdif2to8_SOURCES = \
 
 vdifChanSelect_SOURCES = \
 	vdifChanSelect.c
+
+vdifSplitThread_SOURCES = \
+	vdifSplitThread.c
 
 generateVDIF_SOURCES = \
 	generateVDIF.c
