@@ -1,0 +1,25 @@
+TEST DIFX using "Synthetic" data
+
+In this directory is a script to use "generateVDIF" do create fake VDIF data
+with a variety of differenr properties (real, complex, USB, LSB etc). Then the
+files can be cross correlated to check DIFX is properly handling the different
+setups. The "location" of the antenna is quite close together to result in a
+small (but non-zero) fringe rate. This will result in a slowly varying phase.
+
+createData.sh will generate the data. By default it will use 20min, but this
+can be reduced to speed up generation time. Do not increase beyond 1200 sec.
+
+run-all.sh will run DIFX 7 times for a bunch of different combinations and
+generate an IDI-FITS file. No attempt is made to compare the correlated data.
+
+The specfic tests are:
+
+run-usb.sh			2 real USB real sets
+run-lsb.sh			2 real, USB vs LSB
+run-usb-complex.sh		Real USB vs complex single sideband (USB)
+run-lsb-complex.sh		Real USB vs complex single sideband (LSB)
+run-usb-dsb.sh			Real USB vs complex double sideband (USB)
+run-lsb-dsb.sh			Real USB vs complex double sideband (LSB)
+run-complex-complex.sh		Complex USB vs Complex USB (single sindeband)
+
+
