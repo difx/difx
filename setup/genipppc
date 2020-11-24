@@ -139,7 +139,7 @@ def genipppc(path, ippversion):
 				out.write(" -liomp5")
 			out.write("\n")
 
-		if major == 7:
+		if major == 7 or major == 8:
 			out.write('Cflags: -I${base}/ipp/include\n')
 		else:
 			out.write('Cflags: -DIPP9 -I${base}/ipp/include\n')
