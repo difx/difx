@@ -9,7 +9,7 @@ then
     TSP="tsp"
 fi
 
-export DURATION=100
+export DURATION=1200
 
 export SEED1=38573
 export SEED2=58573
