@@ -1,0 +1,43 @@
+
+vex=test-usb-dsb.vex
+
+maxLength = 86400
+maxGap = 86400
+maxSize =  1000000
+minLength=1
+
+dataBufferFactor = 256
+nDataSegments = 64
+tweakIntTime = true
+
+antennas = T1, T2
+
+threadsFile = threads
+nCore = 1
+nThread = 15
+startSeries = 0
+
+SETUP default
+{
+  nChan=4096
+  tInt=1
+}
+
+ANTENNA T1 {
+ clockOffset = 0
+ phaseCalInt = 0
+ file = TEST1.vdif
+}
+
+ANTENNA T2 {
+ clockOffset = 0
+ phaseCalInt = 0
+ file = TEST2-dsb-usb.vdif
+}
+
+# EOPs downloaded at 2020-07-25 18:48:46 (+1000)
+EOP 58946 { xPole=0.056100 yPole=0.409450 tai_utc=37 ut1_utc=-0.230025 }
+EOP 58947 { xPole=0.056700 yPole=0.410030 tai_utc=37 ut1_utc=-0.231634 }
+EOP 58948 { xPole=0.057490 yPole=0.410990 tai_utc=37 ut1_utc=-0.233215 }
+EOP 58949 { xPole=0.058030 yPole=0.412040 tai_utc=37 ut1_utc=-0.234641 }
+EOP 58950 { xPole=0.058440 yPole=0.412980 tai_utc=37 ut1_utc=-0.235786 }

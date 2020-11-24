@@ -1,0 +1,274 @@
+VEX_rev = 1.5;
+*    SCHED vers: Release 11.4.  March 14, 2015
+*    VEX/SCHED:  1.5.87
+*    Other versions: Sched:  11.4  Plot: 1.06  JPL-ephem: 1.01
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = test;
+*                                                      +------------+
+*                         PI revision number:          |    1.0000  |
+*                                                      +------------+
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def test;
+     exper_name = test;
+     exper_description = "Test DIFX Complex correlaton";
+     PI_name = "Chris Phillips";
+     PI_email = vlbiobs@atnf.csiro.au;
+*    address:   ATNF
+*                
+*                
+*                
+*    phone:     000
+*    during obs: 
+*    fax:        
+*
+*    year, doy: 2020, 100
+*    date     : Thu  9 Apr 2020
+*    MJD      : 58948
+     exper_nominal_start=2020y100d07h00m00s;
+     exper_nominal_stop=2020y100d07h10m00s;
+*
+     target_correlator = LBA;
+*
+*    integr_time    :     2.000 s
+*    number_channels:    32
+*    number_antenna :  6
+*    cross_polarize : No
+*    weight_func    : UNIFORM
+*    distrib_medium : DAT
+*    distrib_format : FITS
+*    source_pos_cat : STANDARD
+*    distribute_to  : 
+*                     Chris Phillips
+*                     ATNF
+*
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def test;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = 2400.00MHz1x4MHz#01:T1;
+     ref $FREQ = 2400.00MHz1x4MHz#02:T2;
+     ref $IF = LO@2000MHzRPolNoTone:T1;
+     ref $IF = LO@1600MHzRPolNoTone:T2;
+     ref $BBC = 1BBCs:T1:T2;
+* Track lines replaced my addVDIF.pl Sat Jul 25 18:36:14 2020
+*     ref $TRACKS = LBA_.1Ch2bit1to1:T1:T2;
+     ref $TRACKS = VDIF.1Ch2bit:T1;
+     ref $TRACKS = VDIFC.1Ch2bit:T2;
+     ref $HEAD_POS = LBAVoid:T1:T2;
+     ref $ROLL = NoRoll:T1:T2;
+     ref $PASS_ORDER = LBADummy:T1:T2;
+     ref $PHASE_CAL_DETECT = NoDetect:T1:T2;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def T1;
+     ref $SITE = TEST1;
+     ref $ANTENNA = TEST1;
+* DAS ref replaced my addVDIF.pl Sat Jul 25 18:36:14 2020
+*     ref $DAS = 1LBA+NONE<LBADR;
+     ref $DAS = VDIF;
+enddef;
+*
+def T2;
+     ref $SITE = TEST2;
+     ref $ANTENNA = TEST2;
+* DAS ref replaced my addVDIF.pl Sat Jul 25 18:36:14 2020
+*     ref $DAS = 1LBA+NONE<LBADR;
+     ref $DAS = VDIF;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def TEST1;
+     site_type = fixed;
+     site_name = TEST1;
+     site_ID = T1;
+*    elev=  252.02 long=-149:33:53. lat=-30:18:46.4
+     site_position =-4751639.85972 m: 2791700.35670 m:-3200491.11339 m;
+     site_velocity = -0.030990   m/yr: -0.004580   m/yr:  0.042030  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 1997y001d;
+     site_position_epoch =   50449;
+enddef;
+*
+def TEST2;
+     site_type = fixed;
+     site_name = TEST2;
+     site_ID = T2;
+*    elev=  867.32 long=-149:05:58. lat=-31:16:04.1
+     site_position =-4751600.85972 m: 2791700.35670 m:-3200550.11339 m;
+     site_velocity = -0.030990   m/yr: -0.004580   m/yr:  0.042030  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 1997y051d;
+     site_position_epoch =   50499;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def TEST1;
+     axis_type = az : el;
+     antenna_motion = el :  20.0 deg/min :  3 sec;  *    0.222 deg/sec/sec
+     antenna_motion = az :  40.0 deg/min :  3 sec;  *    0.222 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*
+def TEST2;
+     axis_type = az : el;
+     antenna_motion = el :  19.0 deg/min :  3 sec;  *    0.222 deg/sec/sec
+     antenna_motion = az :  38.0 deg/min :  3 sec;  *    0.222 deg/sec/sec
+     axis_offset =    0.00000 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+* Extra DAS ref by addVDIF.pl Sat Jul 25 18:36:14 2020
+*
+def VDIF;
+     record_transport_type = VDIF;
+     electronics_rack_type = VDIF;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*
+def 1LBA+NONE<LBADR;
+     record_transport_type = S2;
+     electronics_rack_type = LBA;
+     number_drives = 1;
+     headstack = 1 :            : 0 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def TEST;
+     source_name = TEST;
+*    this source had calibrator code:  
+     ra = 01h00m00.0000000s; dec = -80d00'00.000000"; ref_coord_frame = J2000;
+*    ra = 00h59m04.9284830s; dec = -80d16'08.848900"; ref_coord_frame = B1950;
+*    ra = 01h00m15.1372283s; dec = -79d53'34.228672"; ref_coord_frame = Date;
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def 2400.00MHz1x4MHz#01;
+* mode =  1    stations =T1
+     sample_rate =   8.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  200.00 MHz : U :   4.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+enddef;
+*
+def 2400.00MHz1x4MHz#02;
+* mode =  1    stations =T2
+     sample_rate =   8.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  204.00 MHz : L :   4.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*x
+def LO@2000MHzRPolNoTone;
+* mode =  1    stations =T1
+     if_def = &IF_2N : 2N : R :  2000.00 MHz : U ; * PCall off!   0.0   0.0  NA     0 NA
+enddef;
+*
+def LO@1600MHzRPolNoTone;
+* mode =  1    stations =T2
+     if_def = &IF_2N : 2N : R :  1600.00 MHz : U ; * PCall off!   0.0   0.0  NA     0 NA
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 1BBCs;
+* mode =  1    stations =T1:T2
+     BBC_assign = &BBC01 :  1 : &IF_2N;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def NoDetect;
+* mode =  1    stations =T1:T2
+     phase_cal_detect = &NoCal;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+* Extra Tracks added by addVDIF.pl Sat Jul 25 18:36:14 2020
+*
+*
+def VDIF.1Ch2bit;
+  track_frame_format = VDIF/8032/2;
+  fanout_def = A : &CH01 : sign : 1 : 00;
+  fanout_def = A : &CH01 : mag  : 1 : 01;
+enddef;
+*
+*
+def VDIFC.1Ch2bit;
+  track_frame_format = VDIFD/8032/2;
+  fanout_def = A : &CH01 : sign : 1 : 00;
+  fanout_def = A : &CH01 : mag  : 1 : 01;
+enddef;
+*
+*
+def LBA_.1Ch2bit1to1;
+* mode =  1    stations =T1:T2
+*    format = LBA, and fan-out = 1
+*    mode requires   8.00Mb/s/tr; stations using disks
+     S2_data_source = VLBA;
+     S2_recording_mode = none;
+     fanout_def =   : &CH01 : sign : 1:  0;
+     fanout_def =   : &CH01 :  mag : 1:  1;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def LBAVoid;
+* mode =  1    stations =T1:T2
+*     Head positions irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def LBADummy;
+* mode =  1    stations =T1:T2
+* LBA masquerading as S2 needs a dummy value
+     S2_group_order = 0;
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =T1:T2
+*    barrel-roll set to 'roll_off', so reverse-roll by  0 (1 head)
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment test    
+* Test DIFX Complex correlaton                                            
+scan No0001;
+     start=2020y100d07h00m00s; mode=test; source=TEST;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=T1:    0 sec:  1200 sec:    0.000 GB:   0 :       : 1;
+     station=T2:    0 sec:  1200 sec:    0.000 GB:   0 :       : 1;
+endscan;
