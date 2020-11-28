@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 # vim: tabstop=8 softtabstop=8 shiftwidth=8 noexpandtab
 
@@ -13,8 +13,8 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '1.00'
-verdate = '20201128'
+version = '0.78'
+verdate = '20200904'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -247,7 +247,7 @@ def getippversion(path):
 			ippheader = ''
 
 	if (ippheader==''):
-		print('Warning: ippversion.h not found, relying on IPP path %s' % path)
+		print "Warning: ippversion.h not found, relying on IPP path ", path
 		s = path.split('/')
 		possibilities = []
 		for part in s:
@@ -255,30 +255,29 @@ def getippversion(path):
 			if len(t) > 1:
 				possibilities.append(part)
 				if len(possibilities) < 1:
-					print('Sorry, cannot determine ipp version from path')
+					print 'Sorry, cannot determine ipp version from path'
 					exit(0)
 					if len(possibilities) > 1:
-						print('Guessing version == %s' % possibilities[-1])
+						print 'Guessing version == %s' % possibilities[-1]
 
 						return possibilities[-1]
 					
 	else:
-		print('Reading version from %s' % ippheader)
+		print "Reading version from ", ippheader
 		major = minor = None
 		for line in open(ippheader):
 			m = re.search('#define\s+IPP_VERSION_STR\s+"(\S+)"', line)
 			if m != None:
-				print('Got version %s' % m.group(1))
+				print "Got version ", m.group(1)
 				return m.group(1)
 			if major == None:
 				major = re.search('#define\s+IPP_VERSION_MAJOR\s+(\S)', line)
 			if minor == None:
 				minor = re.search('#define\s+IPP_VERSION_MINOR\s+(\S)', line)
 		if (major != None and minor != None):
-			ver = major.group(1) + '.' + minor.group(1)
-			print('Have version %s' % ver)
-			return ver
-		print('Sorry, cannot find IPP_VERSION_STR in %s' % ippheader)
+			print "Have version ", major.group(1) + "." + minor.group(1)
+			return major.group(1) + "." + minor.group(1)
+		print "Sorry, cannot find IPP_VERSION_STR in ", ippheader
 		exit(0)
 	
 # fixme: possibly should use uname to get this information
@@ -287,7 +286,7 @@ def getarch():
 	if bs != None:
 		return int(bs)
 	else:
-		print('Warning: defaulting to 64 bit assumption')
+		print 'Warning: defaulting to 64 bit assumption'
 		return 64
 
 # one must have cwd set to the $IPPROOT directory before entering here
@@ -297,13 +296,13 @@ def genipppc(path):
 
 	G = glob('%s/lib*/pkgconfig/*ipp*.pc' % ippRoot)
 	if len(G) == 1:
-		print('An IPP pc file was found: %s' % G[0])
+		print 'An IPP pc file was found: %s' % G[0]
 		system('cp %s ./ipp.pc' % G[0])
 		return
 
 	ippversion = getippversion(path)
 	if ippversion == None:
-		print('\nSorry: no IPP found in %s.\n\nMust quit.\n' % path)
+		print '\nSorry: no IPP found in %s.\n\nMust quit.\n' % path
 		exit(0)
 
 	ipparch = getarch()
@@ -341,7 +340,7 @@ def genipppc(path):
 		out.write('Cflags: -I${base}/ipp/include\n')
 
 	else:
-		print('Sorry, IPP %d not yet supported by this script\n' % major)
+		print 'Sorry, IPP %d not yet supported by this script\n' % major
 		exit(0)
 	out.close()
 
@@ -350,10 +349,10 @@ def execute(cmd, verbose, pretend):
 	global nExecute
 	nExecute += 1
 	if pretend:
-		print('[%d] In: %s\n[%d] Pretending: %s\n' % (nExecute, getcwd(), nExecute, cmd))
+		print '[%d] In: %s\n[%d] Pretending: %s\n' % (nExecute, getcwd(), nExecute, cmd)
 		v = 0
 	else:
-		print('[%d] In: %s\n[%d] Executing: %s\n' % (nExecute, getcwd(), nExecute, cmd))
+		print '[%d] In: %s\n[%d] Executing: %s\n' % (nExecute, getcwd(), nExecute, cmd)
 		v = system(cmd)
 	
 	return v
@@ -364,9 +363,9 @@ def checkDirs(comps, dir, args):
 		path = dir + comp[0] + '/'
 		if not isdir(path):
 			if 'ok' in args:
-				print('Warning: %s does not exist.  Skipping.' % path)
+				print 'Warning: %s does not exist.  Skipping.' % path
 			else:
-				print('Error: %s does not exist.  Stopping.' % path)
+				print 'Error: %s does not exist.  Stopping.' % path
 		else:
 			okComps.append(comp)
 
@@ -384,9 +383,9 @@ def checkFiles(comps, dir, fileName, args):
 		file = dir + comp[0] + '/' + fileName
 		if not isfile(file):
 			if 'ok' in args:
-				print('Warning: %s does not exist.  Skipping.' % file)
+				print 'Warning: %s does not exist.  Skipping.' % file
 			else:
-				print('Error: %s does not exist.  Stopping.' % file)
+				print 'Error: %s does not exist.  Stopping.' % file
 		else:
 			okComps.append(comp)
 
@@ -417,7 +416,7 @@ def filterComponentsOrig(origComps, args):
 			comps.append(c)
 	if len(comps) == 0:
 		if 'cwd' in args:
-			print("Error: cannot build in local directory: don't know where I am!")
+			print "Error: cannot build in local directory: don't know where I am!"
 		else:
 			comps = origComps
 
@@ -432,7 +431,7 @@ def filterComponents(origComps, args):
 	nBad = 0
 	for a in args:
 		if not a in legalArgs:
-			print('Unrecognized argument: %s' % a)
+			print "Unrecognized argument: %s" % a
 			nBad += 1
 	if nBad > 0:
 		exit(0)
@@ -1878,23 +1877,23 @@ components['DIFX-2.6.2'] = versionReplace(components['DIFX-2.6'], "DiFX-2.6", "D
 # ]
 
 def list(comps, params, args, verbose, pretend):
-	print('Components being managed for %s are:' % environ['DIFX_VERSION'])
+	print 'Components being managed for %s are:' % environ['DIFX_VERSION']
 	for c in comps:
-		print('  %s' % c[0])
-	print()
+		print '  %s' % c[0]
+	print ''
 
 def default(comps, params, args, verbose, pretend):
 	execute('rm %s/bin/setup_difx' % environ['DIFX_BASE'], verbose, pretend)
 	if isfile('%s/bin/setup_difx' % environ['DIFX_BASE']):
-		print('Error: could not unlink existing DiFX version')
+		print 'Error: could not unlink existing DiFX version'
 		exit(2)
 	execute('ln -f -s %s/setup_difx %s/bin' % (environ['DIFXROOT'], environ['DIFX_BASE']), verbose, pretend)
 	if not isfile('%s/bin/setup_difx' % environ['DIFX_BASE']):
-		print('Error: could not link new DiFX version.  NO version is default now!')
+		print 'Error: could not link new DiFX version.  NO version is default now!'
 		exit(2)
 	writeinitfile(verbose, pretend)
-	print('New default version of DiFX selected.')
-	print('Make sure ". %s/bin/setup_difx" is in your .bashrc file' % environ['DIFX_BASE'])
+	print 'New default version of DiFX selected.'
+	print 'Make sure ". %s/bin/setup_difx" is in your .bashrc file' % environ['DIFX_BASE']
 
 def splitequals(strg):
 	p = strg.find('=')
@@ -1907,7 +1906,7 @@ def writeinitfile(verbose, pretend):
 	initdir = environ['DIFX_BASE'] + '/init.d'
 	initfile = initdir + '/nrao-difx'
 	execute('mkdir -p %s' % initfile, verbose, pretend)
-	print('Writing init file: %s' % initfile)
+	print 'Writing init file: %s' % initfile
 	out = open(initfile, 'w')
 	out.write('#!/bin/sh\n')
 	out.write('#\n')
@@ -1987,7 +1986,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 	setupFileName = 'setup_difx'
 	requiredConfigParams = ['difxbase', 'version', 'headnode']
 	if not isfile(params['ConfigFile']):
-		print('Error: bootstrapping needs the specified configuration file, %s, to exist.' % params['ConfigFile'])
+		print 'Error: bootstrapping needs the specified configuration file, %s, to exist.' % params['ConfigFile']
 		return
 
 	difxMessageGroup = defaultDifxMessageGroup
@@ -2008,45 +2007,45 @@ def bootstrap(comps, params, args, verbose, pretend):
 				if t[0] == 'env':
 					env.append([t[1].strip(), s[1].strip()])
 				else:
-					print('Error: line %s is not understood' % c)
+					print 'Error: line %s is not understood' % c
 					return
 			else:
-				print('Error: line %s is not understood' % c)
+				print 'Error: line %s is not understood' % c
 				return
 
 	# check for required parameters:
 	ok = True
 	for r in requiredConfigParams:
 		if not r in config.keys():
-			print('Error: config file lacks parameter %s\n' % r)
+			print 'Error: config file lacks parameter %s\n' % r
 			ok = False
 	if not ok:
 		return
 
 	if config['version'] not in components.keys():
-		print('Error: version must be one of ', components.keys())
+		print 'Error: version must be one of ', components.keys()
 		return
 
 	independentArchs = False
-	if 'independentarchs' in config:
+	if config.has_key('independentarchs'):
 		if config['independentarchs'][0].upper() in ['1', 'T', 'Y']:
 			independentArchs = True
 
-	if 'symlinkdir' in config:
+	if config.has_key('symlinkdir'):
 		symlinkdir = config['symlinkdir']
 	else:
 		symlinkdir = None
 
-	if 'difxmessagegroup' in config:
+	if config.has_key('difxmessagegroup'):
 		difxMessageGroup = config['difxmessagegroup']
 	
-	if 'difxmessageport' in config:
+	if config.has_key('difxmessageport'):
 		difxMessagePort = int(config['difxmessageport'])
 		if difxMessagePort < 1024 or difxMessagePort > 65535:
-			print('Error: difxmessageport must be in range [1024..65535]')
+			print 'Error: difxmessageport must be in range [1024..65535]'
 			return
 
-	if 'label' in config:
+	if config.has_key('label'):
 		label = config['label']
 	else:
 		label = config['version']
@@ -2056,17 +2055,17 @@ def bootstrap(comps, params, args, verbose, pretend):
 		config['root'] = config['difxbase'] + '/' + label
 	
 	if verbose > 0:
-		print('Config:')
+		print 'Config:'
 		for c in config.keys():
-			print('  %s = %s' % (c, config[c]))
-		print('Environment:')
+			print '  %s = %s' % (c, config[c])
+		print 'Environment:'
 		for e in env:
-			print('  %s = %s' % (e[0], e[1]))
+			print '  %s = %s' % (e[0], e[1])
 
 	if 1:
 		setupFile = config['root'] + '/' + setupFileName
 		if verbose > 0:
-			print('Writing setup file %s' % setupFile)
+			print 'Writing setup file %s' % setupFile
 
 		dirPath = '%s/directories' % config['difxbase']
 		initPath = '%s/init.d' % config['difxbase']
@@ -2083,24 +2082,24 @@ def bootstrap(comps, params, args, verbose, pretend):
 
 		# make entry for primary architecture, which is assumed to be the one where bootstrapping is done
 		# unless overridden by primaryarch parameter
-		if 'primaryarch' in config:
+		if config.has_key('primaryarch'):
 			primaryarch = config['primaryarch']
 		else:
 			primaryarch = platform.machine()
 		platforms[primaryarch] = []
 
 		for i in range(1, 10):
-			if not ('altplatform%d' % i) in config:
+			if not config.has_key('altplatform%d' % i):
 				break
 			for suffix in ['host', 'arch', 'test']:
-				if not ('altplatform%d%s' % (i, suffix)) in config:
-					print('Error: altplatform%d%s is not set.' % (i, suffix))
+				if not config.has_key('altplatform%d%s' % (i, suffix)):
+					print 'Error: altplatform%d%s is not set.' % (i, suffix)
 					exit(0)
 			aarch = config['altplatform%darch' % i]
 			if not aarch in platforms:
 				platforms[aarch] = []
 			platforms[aarch].append([config['altplatform%d' % i], config['altplatform%dtest' % i]])
-			if ('altplatform%dhost' % i) in config:
+			if config.has_key('altplatform%dhost' % i):
 				if i > 1:
 					platformhostsStr += ','
 				platformhostsStr += config['altplatform%dhost' % i]
@@ -2110,29 +2109,29 @@ def bootstrap(comps, params, args, verbose, pretend):
 			mcaPath = '%s/%s/etc/' % (config['difxbase'], p)
 			mcaFile = '%s/openmpi-mca-params.conf' % mcaPath
 			mca = ''
-			if ('mca%s' % p) in config:
+			if config.has_key('mca%s' % p):
 				mca = config['mca%s' % p].split(';')
-			elif 'mca' in config:
+			elif config.has_key('mca'):
 				mca = config['mca'].split(';')
 			if mca != '':
-				print('Making %s' % mcaFile)
+				print 'Making %s' % mcaFile
 				execute('mkdir -p %s' % mcaPath, verbose, pretend)
 				out = open(mcaFile, 'w')
 				for m in mca:
 					out.write('%s\n' % m)
 				out.close()
 			elif isfile(mcaFile):
-				print('*** Removing obsolete file %s (actually moving to /tmp/%s.mca) ***' % (mcaFile, p))
+				print '*** Removing obsolete file %s (actually moving to /tmp/%s.mca) ***' % (mcaFile, p)
 				execute('mv %s /tmp/%s.mca' % (mcaFile, p), verbose, pretend)
 
 		ipproot = {}	# indexed by arch
 		for a in platforms.keys():
-			if ('ipproot'+a) in config:
+			if config.has_key('ipproot'+a):
 				ipproot[a] = config['ipproot'+a]
-			elif 'ipproot' in config:
+			elif config.has_key('ipproot'):
 				ipproot[a] = config['ipproot']
 			else:
-				print('Error: no ipproot set for architecture %s' % a)
+				print 'Error: no ipproot set for architecture %s' % a
 				ipproot = {}
 				break
 		if len(ipproot) == 0:
@@ -2145,7 +2144,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 					pyPath[arch] = '$DIFX_ARCH_ROOT/lib64/python%s/site-packages' % pyVer
 				else:
 					pyPath[arch] = '$DIFX_ARCH_ROOT/lib/python%s/site-packages' % pyVer
-			if ('pythonpath%s' % arch) in config:
+			if config.has_key('pythonpath%s' % arch):
 				pyPath[arch] = config['pythonpath%s' % arch]
 
 		if ipproot[arch] != 'none':
@@ -2164,20 +2163,20 @@ def bootstrap(comps, params, args, verbose, pretend):
 		else:
 			ippLdPath = ':${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}'
 
-		if 'pathextra' in config:
+		if config.has_key('pathextra'):
 			pathExtra = ':%s' % config['pathextra']
 		else:
 			pathExtra = ''
-		if 'prepathextra' in config:
+		if config.has_key('prepathextra'):
 			prepathExtra = '%s:' % config['prepathextra']
 		else:
 			prepathExtra = ''
 		execPath = '${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:${DIFX_BASE}/bin'
-		if 'ldextra' in config:
+		if config.has_key('ldextra'):
 			ldExtra = ':%s' % config['ldextra']
 		else:
 			ldExtra = ''
-		if 'preldextra' in config:
+		if config.has_key('preldextra'):
 			preldExtra = '%s:' % config['preldextra']
 		else:
 			preldExtra = ''
@@ -2187,7 +2186,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out = open(runscript, 'w')
 		out.write('#!/bin/bash\n\n')
 		out.write('. %s\n' % setupFile)
-		if 'wrapper' in wrapper:
+		if config.has_key('wrapper'):
 			out.write('%s ' % config['wrapper'])
 		out.write('mpifxcorr $@\n')
 		out.close()
@@ -2260,21 +2259,21 @@ def bootstrap(comps, params, args, verbose, pretend):
 					out.write('  export DIFXROOT=%s\n' % config['root'])
 			else:
 				out.write('  fi\n')
-			if arch in pyPath:
+			if pyPath.has_key(arch):
 				out.write('  export PYTHONPATH=%s:%s/lib/python\n' % (pyPath[arch], config['root']))
 			m += 1
 					
 		out.write('fi\n')
 		out.write('export DIFX_SRC=%s/src\n' % config['root'])
 		out.write('export X11LIBS=-lX11\n')
-		if 'calcserver' in config:
+		if config.has_key('calcserver'):
 			calcserver = config['calcserver']
 		else:
 			calcserver = config['headnode']
 		out.write('export CALC_SERVER=%s\n' % calcserver)
 		out.write('export DIFX_HEAD_NODE=%s\n' % config['headnode'])
 		out.write('export DIFX_BASE=%s\n' % config['difxbase'])
-		if 'cflags' in config:
+		if config.has_key('cflags'):
 			cflags = config['cflags']
 		else:
 			cflags = '-O2 -Wall -march=core2'
@@ -2292,7 +2291,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		if len(platformhostsStr) > 0:
 			out.write('export PLATFORM_HOSTS=%s\n' % platformhostsStr)
 
-		if 'svn' in config:
+		if config.has_key('svn'):
 			out.write('export DIFX_SVN_VERSION=%s' % config['svn'])
 		else:
 			out.write('unset DIFX_SVN_VERSION')
@@ -2307,7 +2306,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write("alias src='cd ${DIFX_SRC}'\n")
 		out.write("alias bld='cd ${DIFXROOT}/build'\n")
 
-		if 'sched' in config:
+		if config.has_key('sched'):
 			if config['sched'][0].upper() in ['1', 'Y', 'T']:
 				out.write('export SCHED=${DIFX_ARCH_ROOT}/sched\n')
 
@@ -2328,16 +2327,16 @@ def bootstrap(comps, params, args, verbose, pretend):
 		execute('cp %s %s/bootstrap/"%s.%s.%s"' % (setupFile, config['difxbase'], setupFile.split('/')[-1], asctime(), version), verbose, pretend)
 
 		if isfile('%s/.openmpi/mca-params.conf' % environ['HOME']):
-			print('*** Warning: you have a .openmpi/mca-params.conf file in your home directory.')
-			print('*** This may interfere with platform-wide mca file(s) installed with difxbuild.')
+			print '*** Warning: you have a .openmpi/mca-params.conf file in your home directory.'
+			print '*** This may interfere with platform-wide mca file(s) installed with difxbuild.'
 
-		print('\nBootstrap complete.  Now source %s and continue with svn.\n' % setupFile)
+		print '\nBootstrap complete.  Now source %s and continue with svn.\n' % setupFile
 
 
 def svnupdate(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
-		print('No components selected.  Did you mean to append "all" to the command line?\n')
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
 		return
 	srcDir = environ['DIFX_SRC'] + '/'
 	if not isdir(srcDir):
@@ -2347,12 +2346,12 @@ def svnupdate(origComps, params, args, verbose, pretend):
 
 	badRepositories = []
 
-	if 'DIFX_SVN_VERSION' in environ:
+	if environ.has_key('DIFX_SVN_VERSION'):
 		svnRev = '-r %s' % environ['DIFX_SVN_VERSION']
 	else:
 		svnRev = ''
 
-	if 'SVN_USER' in environ:
+	if environ.has_key('SVN_USER'):
 		user = '--username %s' % environ['SVN_USER']
 	else:
 		user = ''
@@ -2360,7 +2359,7 @@ def svnupdate(origComps, params, args, verbose, pretend):
 	for comp in comps:
 		path = srcDir + comp[0] + '/'
 		if verbose > 0:
-			print('Looking in: %s' % path)
+			print 'Looking in: %s' % path
 		if isdir(path):
 			url = popen('svn info %s | grep URL' % path, 'r').readlines()[0].strip().split()[-1]
 
@@ -2379,10 +2378,10 @@ def svnupdate(origComps, params, args, verbose, pretend):
 			execute(cmd, verbose, pretend)
 	
 	if len(badRepositories) > 0:
-		print('Error: the following components\' svn URLS don\'t match:')
+		print 'Error: the following components\' svn URLS don\'t match:'
 		for b in badRepositories:
-			print('  %s' % b)
-		print('Please remove these directories and try again taking care to preserve any local changes you may have made')
+			print '  %s' % b
+		print 'Please remove these directories and try again taking care to preserve any local changes you may have made'
 	elif updatePaths != '':
 		chdir(srcDir)
 		cmd = 'svn update %s %s %s' % (svnRev, user, updatePaths)
@@ -2391,7 +2390,7 @@ def svnupdate(origComps, params, args, verbose, pretend):
 def fromtar(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
-		print('No components selected.  Did you mean to append "all" to the command line?\n')
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
 		return
 	srcDir = environ['DIFX_SRC'] + '/'
 	if not isdir(srcDir):
@@ -2400,7 +2399,7 @@ def fromtar(origComps, params, args, verbose, pretend):
 
 	distDir = environ['DIFXROOT'] + '/dist/'
 	if not isdir(distDir):
-		print('Error: %s does not exist so no dist files can be found.' % distDir)
+		print 'Error: %s does not exist so no dist files can be found.' % distDir
 		exit(0)
 
 	for comp in comps:
@@ -2408,30 +2407,30 @@ def fromtar(origComps, params, args, verbose, pretend):
 		if len(tars) > 0:
 			tars.sort()
 			tarFile = tars[-1]
-			print('Found %d matches for %s.  Installing %s' % (len(tars), comp[0], tarFile))
+			print 'Found %d matches for %s.  Installing %s' % (len(tars), comp[0], tarFile)
 			cmd = 'tar zxf %s' % tarFile
 			execute('rm -rf %s' % comp[0], verbose, pretend)
 			execute(cmd, verbose, pretend)
 			newDir = tarFile[:-7].split('/')[-1]
 			execute('ln -f -s %s %s' % (newDir, comp[0]), verbose, pretend)
 		else:
-			print('No matching .tar.gz files found in %s for %s' % (distDir, comp[0]))
+			print 'No matching .tar.gz files found in %s for %s' % (distDir, comp[0])
 
 
 def debian(origComps, params, args, verbose, pretend):
 	debComponents = 'libexpat1-dev autoconf automake pkg-config libtool-bin subversion g++ gfortran libx11-dev libgsl2 libgsl-dev libfftw3-bin libfftw-dev libudev-dev bison flex openssh-server'
-	print('Using apt to install some things.  Your sudo password may be needed.')
+	print 'Using apt to install some things.  Your sudo password may be needed.'
 	cmd = 'sudo apt-get install %s' % debComponents
 	execute(cmd, verbose, pretend)
 
 def svnstatus(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
-		print('No components selected.  Did you mean to append "all" to the command line?\n')
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
 		return
 	srcDir = environ['DIFX_SRC'] + '/'
 	if not isdir(srcDir):
-		print('Top level source directory %s does not exist.\n' % srcDir)
+		print 'Top level source directory %s does not exist.\n' % srcDir
 		
 	for comp in comps:
 		path = srcDir + comp[0] + '/'
@@ -2443,12 +2442,12 @@ def svnstatus(origComps, params, args, verbose, pretend):
 def autotool(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
-		print('No components selected.  Did you mean to append "all" to the command line?\n')
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
 		return
 	srcDir = environ['DIFX_SRC'] + '/'
 	okComps = checkDirs(comps, srcDir, args)
 	if verbose > 1:
-		print('Autotooling: %s' % componentList(okComps))
+		print 'Autotooling: %s' % componentList(okComps)
 	for comp in okComps:
 		path = srcDir + comp[0] + '/'
 		chdir(path)
@@ -2472,7 +2471,7 @@ def build(origComps, params, args, verbose, pretend):
 	else:
 		comps = filterComponents(origComps, args)
 		if len(comps) == 0:
-			print('No components selected.  Did you mean to append "all" to the command line?\n')
+			print 'No components selected.  Did you mean to append "all" to the command line?\n'
 			return
 	buildDir = environ['DIFXROOT'] + '/build/'
 	pkgDir = environ['DIFXROOT'] + '/lib/pkgconfig/'
@@ -2487,11 +2486,11 @@ def build(origComps, params, args, verbose, pretend):
 		if not isfile(pkgDir+'/ipp.pc') and len(environ['IPPROOT']) > 0:
 			if not 'noipp' in args:
 				if verbose > 1:
-					print('Generating ipp.pc')
+					print 'Generating ipp.pc'
 				chdir(pkgDir)
 				genipppc(environ['IPPROOT'])
 		if verbose > 1:
-			print('Building: %s' % componentList(okComps))
+			print 'Building: %s' % componentList(okComps)
 		if not isdir(buildDir):
 			execute('mkdir -p %s' % buildDir, verbose, pretend)
 		for comp in okComps:
@@ -2516,7 +2515,7 @@ def build(origComps, params, args, verbose, pretend):
 			buildPath = buildDir + comp[0] + '/'
 			buildFlags = comp[2]
 			if 'pgplot' in buildFlags and not haspgplot:
-				print('Not building %s because pgplot was not successfully built' % comp[0])
+				print 'Not building %s because pgplot was not successfully built' % comp[0]
 				continue
 			if not isdir(buildPath):
 				execute('mkdir -p %s' % buildPath, verbose, pretend)
@@ -2528,15 +2527,15 @@ def build(origComps, params, args, verbose, pretend):
 				if 'spice' in buildFlags:
 					spiceRoot = archRoot + 'cspice/'
 					if isfile(spiceRoot+'lib/cspice.a'):
-						print('Spice library found!')
+						print 'Spice library found!'
 						configureExtras += ' --with-spice-root=' + spiceRoot
 					else:
-						print('Spice library %slib/cspice.a not found' % spiceRoot)
+						print 'Spice library %slib/cspice.a not found' % spiceRoot
 						if 'strict' in args:
-							print('Bailing')
+							print 'Bailing'
 							exit(2)
 						else:
-							print('Continuing anyway')
+							print 'Continuing anyway'
 				if 'CFLAGS' in environ:
 					envCFLAGS = environ['CFLAGS']
 				else:
@@ -2559,7 +2558,7 @@ def build(origComps, params, args, verbose, pretend):
 			if v == 0:
 				v = execute('make install', verbose, pretend)
 			if v != 0:
-				print('\n*** Error building %s ***\n' % comp[0])
+				print '\n*** Error building %s ***\n' % comp[0]
 				return 
 			chdir(srcDir+comp[0])
 			if(getcwd() == srcDir+comp[0]):
@@ -2575,7 +2574,7 @@ def makedist(origComps, params, args, verbose, pretend):
 	else:
 		comps = filterComponents(origComps, args)
 		if len(comps) == 0:
-			print('No components selected.  Did you mean to append "all" to the command line?\n')
+			print 'No components selected.  Did you mean to append "all" to the command line?\n'
 			return
 	buildDir = environ['DIFXROOT'] + '/build/'
 	pkgDir = environ['DIFXROOT'] + '/lib/pkgconfig/'
@@ -2593,11 +2592,11 @@ def makedist(origComps, params, args, verbose, pretend):
 		if not isfile(pkgDir+'/ipp.pc') and len(environ['IPPROOT']) > 0:
 			if not 'noipp' in args:
 				if verbose > 1:
-					print('Generating ipp.pc')
+					print 'Generating ipp.pc'
 				chdir(pkgDir)
 				genipppc(environ['IPPROOT'])
 		if verbose > 1:
-			print('Packaging: %s' % componentList(okComps))
+			print 'Packaging: %s' % componentList(okComps)
 		if not isdir(buildDir):
 			execute('mkdir -p %s' % buildDir, verbose, pretend)
 		for comp in okComps:
@@ -2605,10 +2604,10 @@ def makedist(origComps, params, args, verbose, pretend):
 			buildPath = buildDir + comp[0] + '/'
 			buildFlags = comp[2]
 			if 'nodist' in buildFlags:
-				print('Not packaging %s because of the nodist flag')
+				print 'Not packaging %s because of the nodist flag'
 				continue
 			if 'pgplot' in buildFlags and not haspgplot:
-				print('Not packaging %s because pgplot was not successfully built' % comp[0])
+				print 'Not packaging %s because pgplot was not successfully built' % comp[0]
 				continue
 			if not isdir(buildPath):
 				execute('mkdir -p %s' % buildPath, verbose, pretend)
@@ -2622,15 +2621,15 @@ def makedist(origComps, params, args, verbose, pretend):
 				if 'spice' in buildFlags:
 					spiceRoot = archRoot + 'cspice/'
 					if isfile(spiceRoot+'lib/cspice.a'):
-						print('Spice library found!')
+						print 'Spice library found!'
 						configureExtras += ' --with-spice-root=' + spiceRoot
 					else:
-						print('Spice library %slib/cspice.a not found' % spiceRoot)
+						print 'Spice library %slib/cspice.a not found' % spiceRoot
 						if 'strict' in args:
-							print('Bailing')
+							print 'Bailing'
 							exit(2)
 						else:
-							print('Continuing anyway')
+							print 'Continuing anyway'	
 				cmd = '%s/configure --prefix=${DIFXROOT}%s' % (srcPath, configureExtras)
 				execute(cmd, verbose, pretend)
 			
@@ -2640,7 +2639,7 @@ def makedist(origComps, params, args, verbose, pretend):
 				cmd += ' distdir=%s-r%s' % (comp[0], svnrev)
 			v = execute(cmd, verbose, pretend)
 			if v != 0:
-				print('\n*** Error packaging %s ***\n' % comp[0])
+				print '\n*** Error packaging %s ***\n' % comp[0]
 				return 
 			execute('mv -f *.tar.gz %s' % distDir, verbose, pretend)
 			chdir(srcDir+comp[0])
@@ -2648,14 +2647,14 @@ def makedist(origComps, params, args, verbose, pretend):
 def rebuild(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
-		print('No components selected.  Did you mean to append "all" to the command line?\n')
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
 		return
 	buildDir = environ['DIFXROOT'] + '/build/'
 	srcDir = environ['DIFX_SRC'] + '/'
 	bldLog = environ['DIFXROOT'] + '/buildlog'
 	okComps = checkFiles(comps, buildDir, 'Makefile', args)
 	if verbose > 1:
-		print('Rebuilding: %s' % componentList(okComps))
+		print 'Rebuilding: %s' % componentList(okComps)
 	for comp in okComps:
 		if comp[0] == 'gui':	# an oddball special case
 			jarDir = '%s/jar' % environ['DIFXROOT']
@@ -2681,7 +2680,7 @@ def rebuild(origComps, params, args, verbose, pretend):
 			if v == 0:
 				v = execute('make install', verbose, pretend)
 			if v != 0:
-				print('\n*** Error rebuilding %s ***\n' % comp[0])
+				print '\n*** Error rebuilding %s ***\n' % comp[0]
 				return
 			chdir(srcDir+comp[0])
 			if(getcwd() == srcDir+comp[0]):
@@ -2694,12 +2693,12 @@ def rebuild(origComps, params, args, verbose, pretend):
 def dist(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
-		print('No components selected.  Did you mean to append "all" to the command line?\n')
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
 		return
 	buildDir = environ['DIFXROOT'] + '/build/'
 	okComps = checkFiles(comps, buildDir, 'Makefile', args)
 	if verbose > 1:
-		print('Rebuilding: %s' % componentList(okComps))
+		print 'Rebuilding: %s' % componentList(okComps)
 	distDir = environ['DIFXROOT'] + '/dist/'
 	if not isdir(distDir):
 		execute('mkdir -p %s' % distDir, verbose, pretend)
@@ -2711,14 +2710,14 @@ def dist(origComps, params, args, verbose, pretend):
 			cmd = 'make dist'
 			v = execute(cmd, verbose, pretend)
 			if v != 0:
-				print('\n*** make dist error for %s ***\n' % comp[0])
+				print '\n*** make dist error for %s ***\n' % comp[0]
 				return
 			execute('mv -f *.tar.gz %s' % distDir, verbose, pretend)
 
 def pbuild(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
-		print('No components selected for parallel rebuild')
+		print 'No components selected for parallel rebuild'
 		return
 	verb = ''
 	for i in range(1, verbose):
@@ -2735,7 +2734,7 @@ def clean(origComps, params, args, verbose, pretend):
 	okComps = checkFiles(comps, buildDir, 'Makefile', args)
 	okComps.reverse()	# best done in reverse for reasons of dependency
 	if verbose > 1:
-		print('make clean in: %s' % componentList(okComps))
+		print 'make clean in: %s' % componentList(okComps)
 	for comp in okComps:
 		buildPath = buildDir + comp[0] + '/'
 		if isdir(buildPath):
@@ -2748,7 +2747,7 @@ def clean(origComps, params, args, verbose, pretend):
 def pclean(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
-		print('No components selected for parallel clean')
+		print 'No components selected for parallel clean'
 		return
 	verb = ''
 	for i in range(1, verbose):
@@ -2765,7 +2764,7 @@ def uninstall(origComps, params, args, verbose, pretend):
 	okComps = checkFiles(comps, buildDir, 'Makefile', args)
 	okComps.reverse()	# best done in reverse for reasons of dependency
 	if verbose > 1:
-		print('Uninstalling: %s' % componentList(okComps))
+		print 'Uninstalling: %s' % componentList(okComps)
 	for comp in okComps:
 		buildPath = buildDir + comp[0] + '/'
 		if isdir(buildPath):
@@ -2773,17 +2772,17 @@ def uninstall(origComps, params, args, verbose, pretend):
 			execute('make uninstall', verbose, pretend)
 
 def remove(origComps, params, args, verbose, pretend):
-	print('Feature not yet implemented')
+	print 'Feature not yet implemented'
 
 def ftpFile(url, tarDir, srcFile, args, verbose, pretend):
 	if isfile(tarDir + srcFile):
-		print('%s file already downloaded.  Will not download again' % srcFile)
+		print '%s file already downloaded.  Will not download again' % srcFile
 		return 0
 	wgetOptions = ''
 	if 'nopassive' in args:
 		wgetOptions = wgetOptions + ' --no-passive-ftp'
 	else:
-		print('* NOTE: if FTP hangs, try again with the nopassive argument added to the difxbuild command line')
+		print '* NOTE: if FTP hangs, try again with the nopassive argument added to the difxbuild command line'
 	if not isdir(tarDir):
 		execute('mkdir -p %s' % tarDir, verbose, pretend)
 	chdir(tarDir)
@@ -2893,14 +2892,14 @@ def gpstk(origComps, params, args, verbose, pretend):
 	
 	gpstkSrcDir = '%s/GPSTk-%s' % (archSrcDir, gpstkVersion)
 	if isdir(gpstkSrcDir):
-		print('Stopping because %s exists' % gpstkSrcDir)
+		print 'Stopping because %s exists' % gpstkSrcDir
 		return
 	
 	chdir(archSrcDir)
 	execute('tar zxvf %s/%s' % (tarDir, gpstkSrcFile), verbose, pretend)
 
 	chdir(gpstkSrcDir)
-	print('\nNow building gpstk.  THIS CAN TAKE A LONG TIME!\n')
+	print '\nNow building gpstk.  THIS CAN TAKE A LONG TIME!\n'
 	execute('/bin/sh build.sh -e -i %s' % archDir, verbose, pretend)
 
 
@@ -2931,7 +2930,7 @@ def gpstk(origComps, params, args, verbose, pretend):
 def sked(origComps, params, args, verbose, pretend):
 
 	if not len(popen('which gfortran').readlines()) > 0:
-		print('sked compilation currently (and maybe ultimately) only works on gfortran systems')
+		print 'sked compilation currently (and maybe ultimately) only works on gfortran systems'
 		exit(0)
 
 	arch = platform.machine()
@@ -2948,7 +2947,7 @@ def sked(origComps, params, args, verbose, pretend):
 	
 	skedSrcDir = '%s/sked-%s' % (archSrcDir, skedVersion)
 	if isdir(skedSrcDir):
-		print('Stopping because %s exists' % skedSrcDir)
+		print 'Stopping because %s exists' % skedSrcDir
 		return
 	
 	chdir(archSrcDir)
@@ -2962,7 +2961,7 @@ def sked(origComps, params, args, verbose, pretend):
 def sched(origComps, params, args, verbose, pretend):
 
 	if not len(popen('which gfortran').readlines()) > 0:
-		print('sched compilation currently (and maybe ultimately) only works on gfortran systems')
+		print 'sched compilation currently (and maybe ultimately) only works on gfortran systems'
 		exit(0)
 		
 	arch = platform.machine()
@@ -2972,7 +2971,7 @@ def sched(origComps, params, args, verbose, pretend):
 	archDir = environ['DIFX_ARCH_ROOT'] + '/'
 	tarDir = difxBase + 'tar/'
 	if environ['SCHED'] != '%s/sched' % archDir:
-		print('Error: make sure env var SCHED is set to %s/sched first!' % archDir)
+		print 'Error: make sure env var SCHED is set to %s/sched first!' % archDir
 
 	spiceDownloadFile = 'toolkit.tar.Z'
 	if arch == 'x86_64':
@@ -2991,7 +2990,7 @@ def sched(origComps, params, args, verbose, pretend):
 		schedUrl = 'ftp://ftp.aoc.nrao.edu/pub/sched/sched-%s/%s' % (schedVersion, schedSrcFile)
 		rv = ftpFile(schedUrl, tarDir, schedSrcFile, args, verbose, pretend)
 		if rv < 0:
-			print('Cannot download sched')
+			print 'Cannot download sched'
 			exit(0)
 	ftpFile(spiceUrl, tarDir, spiceSrcFile, args, verbose, pretend)
 	if not isfile(tarDir + spiceSrcFile):
@@ -3001,7 +3000,7 @@ def sched(origComps, params, args, verbose, pretend):
 
 	schedDir = '%s/sched-%s' % (archDir, schedVersion)
 	if isdir(schedDir):
-		print('Stopping because %s exists' % schedDir)
+		print 'Stopping because %s exists' % schedDir
 		return
 	execute('mkdir -p %s' % schedDir, verbose, pretend)
 
@@ -3028,8 +3027,8 @@ def sched(origComps, params, args, verbose, pretend):
 	execute('cp %s/bin/sched %s/bin' % (schedDir, archDir), verbose, pretend)
 	
 def pyx(origComps, params, args, verbose, pretend):
-	if not 'PYTHONPATH' in environ:
-		print('Need PYTHONPATH env var set.')
+	if not environ.has_key('PYTHONPATH'):
+		print 'Need PYTHONPATH env var set.'
 		return
 	pythonPath = environ['PYTHONPATH'].split(':')[0]
 	if not isdir(pythonPath):
@@ -3047,7 +3046,7 @@ def pyx(origComps, params, args, verbose, pretend):
 	
 	pyxSrcDir = '%s/PyX-%s' % (archSrcDir, pyxVersion)
 	if isdir(pyxSrcDir):
-		print('Stopping because %s exists' % pyxSrcDir)
+		print 'Stopping because %s exists' % pyxSrcDir
 		return
 	
 	chdir(archSrcDir)
@@ -3060,8 +3059,8 @@ def pyx(origComps, params, args, verbose, pretend):
 		execute('python setup.py install --prefix=%s/../../..' % pythonPath, verbose, pretend)
 
 def psycopg(origComps, params, args, verbose, pretend):
-	if not 'PYTHONPATH' in config:
-		print('Need PYTHONPATH env var set.')
+	if not environ.has_key('PYTHONPATH'):
+		print 'Need PYTHONPATH env var set.'
 		return
 	pythonPath = environ['PYTHONPATH'].split(':')[0]
 	if not isdir(pythonPath):
@@ -3081,7 +3080,7 @@ def psycopg(origComps, params, args, verbose, pretend):
 	
 	psycopgSrcDir = '%s/psycopg2-%s' % (archSrcDir, psycopgVersion)
 	if isdir(psycopgSrcDir):
-		print('Stopping because %s exists' % psycopgSrcDir)
+		print 'Stopping because %s exists' % psycopgSrcDir
 		return
 	
 	chdir(archSrcDir)
@@ -3093,7 +3092,7 @@ def psycopg(origComps, params, args, verbose, pretend):
 def difxipp(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
 	if arch != 'x86_64':
-		print('difxipp is only available for x86_64.')
+		print 'difxipp is only available for x86_64.'
 		return
 	archDir = environ['DIFX_ARCH_ROOT'] + '/'
 	archSrcDir = archDir + 'src/'
@@ -3110,9 +3109,9 @@ def difxipp(origComps, params, args, verbose, pretend):
 
 	# get ipp version -- this is a bit fragile...
 	ippVersion = open('configure.ac').readline().split(',')[1].strip()[1:-1]
-	print('\nIPP version will be %s' % ippVersion)
+	print '\nIPP version will be %s' % ippVersion
 	ippPrefix = '%sx86_64/ipp-%s' % (difxBase, ippVersion)
-	print('\nYou will want to put "ipproot = %s" in your .bootstrap files.\n' % ippPrefix)
+	print '\nYou will want to put "ipproot = %s" in your .bootstrap files.\n' % ippPrefix
 
 	for cmd in ['aclocal', 'autoconf', 'automake -a -c', './configure --prefix=%s' % ippPrefix, 'make', 'make install']:
 		execute(cmd, verbose, pretend)
@@ -3132,7 +3131,7 @@ def libevent(origComps, params, args, verbose, pretend):
 	
 	libeventSrcDir = '%s/libevent-%s-stable' % (archSrcDir, libeventVersion)
 	if isdir(libeventSrcDir):
-		print('Stopping because %s exists' % libeventSrcDir)
+		print 'Stopping because %s exists' % libeventSrcDir
 		return
 	
 	chdir(archSrcDir)
@@ -3157,7 +3156,7 @@ def expat(origComps, params, args, verbose, pretend):
 	
 	expatSrcDir = '%s/expat-%s' % (archSrcDir, expatVersion)
 	if isdir(expatSrcDir):
-		print('Stopping because %s exists' % expatSrcDir)
+		print 'Stopping because %s exists' % expatSrcDir
 		return
 	
 	chdir(archSrcDir)
@@ -3182,7 +3181,7 @@ def libmicrohttpd(origComps, params, args, verbose, pretend):
 	
 	mhdSrcDir = '%s/libmicrohttpd-%s' % (archSrcDir, libmicrohttpdVersion)
 	if isdir(mhdSrcDir):
-		print('Stopping because %s exists' % mhdSrcDir)
+		print 'Stopping because %s exists' % mhdSrcDir
 		return
 	
 	chdir(archSrcDir)
@@ -3244,7 +3243,7 @@ def pgplot(origComps, params, args, verbose, pretend):
 	if v == 0:
 		execute('make cpg', verbose, pretend)
 	if v != 0:
-		print('\n*** Error building pgplot ***\n')
+		print '\n*** Error building pgplot ***\n'
 		return 
 	linkDir = archDir + '/lib'
 	if not isdir(linkDir):
@@ -3256,7 +3255,7 @@ def pgplot(origComps, params, args, verbose, pretend):
 def fuseMk5(origComps, params, args, verbose, pretend):
 	v = execute('pkg-config --libs streamstor', verbose, pretend)
 	if v != 0:
-		print('\nStopping because streamstor package is not installed.\n')
+		print '\nStopping because streamstor package is not installed.\n'
 		return
 
 	arch = platform.machine()
@@ -3273,7 +3272,7 @@ def fuseMk5(origComps, params, args, verbose, pretend):
 
 	fm5Dir = archSrcDir + 'fuseMk5A'
 	if not isdir(fm5Dir):
-		print('Stopping because fuseMk5 code must not have downloaded correctly.')
+		print 'Stopping because fuseMk5 code must not have downloaded correctly.'
 		return
 	chdir(fm5Dir)
 	# modify makefile
@@ -3289,25 +3288,25 @@ def fuseMk5(origComps, params, args, verbose, pretend):
 def extra(origComps, params, args, verbose, pretend):
 	packages = ['psycopg', 'pgplot', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat', 'libmicrohttpd', 'fuseMk5', 'difxipp']
 	if len(args) < 1:
-		print('The "extra" option allows installation of optional software.\n')
-		print('Usage 1: difxbuild [options] extra [package(s)]\n')
-		print('Usage 2: difxbuild extra list\n')
+		print 'The "extra" option allows installation of optional software.\n'
+		print 'Usage 1: difxbuild [options] extra [package(s)]\n'
+		print 'Usage 2: difxbuild extra list\n'
 		return
 
 	if args == ['list']:
-		print('Extra packages to be installed can include the following:')
+		print 'Extra packages to be installed can include the following:'
 		for pkg in packages:
-			print('  %s' % pkg)
-		print()
+			print '  %s' % pkg
+		print ''
 		return
 
 	bad = False
 	for pkg in args:
 		if not pkg in packages:
-			print('Error: %s is not a known package' % pkg)
+			print 'Error: %s is not a known package' % pkg
 			bad = True
 	if bad:
-		print('\nExiting\n')
+		print '\nExiting\n'
 		return
 
 	if 'autotools' in args:
@@ -3371,7 +3370,7 @@ def openmpi(origComps, params, args, verbose, pretend):
 
 	if len(args) > 0:
 		if not isfile(args[0]):
-			print('Error: %s is not a file!' % args[0])
+			print 'Error: %s is not a file!' % args[0]
 			exit(2)
 		execute('cp -n %s %s' % (args[0], tarDir), verbose, pretend)
 		openmpiTarFile = args[0].split('/')[-1]
@@ -3379,10 +3378,10 @@ def openmpi(origComps, params, args, verbose, pretend):
 		if openmpiVersion[0:4] == 'http':
 			openmpiTarFile = openmpiVersion.split('/')[-1]
 			openmpiWeb = openmpiVersion[0:(-len(openmpiTarFile)-1)]
-			print('Getting %s from %s' % (openmpiTarFile, openmpiWeb))
+			print 'Getting %s from %s' % (openmpiTarFile, openmpiWeb)
 			download = True
 			if isfile(tarDir+openmpiTarFile):
-				print('There is an existing openmpi tar file at %s' % (tarDir+openmpiTarFile))
+				print 'There is an existing openmpi tar file at %s' % (tarDir+openmpiTarFile)
 				download = False
 			if download:
 				chdir(tarDir)
@@ -3391,7 +3390,7 @@ def openmpi(origComps, params, args, verbose, pretend):
 			openmpiWeb = 'http://www.open-mpi.org/software/ompi/v%s/downloads' % openmpiVersion
 			openmpiFiles = popen('wget %s/md5sums.txt -O -' % openmpiWeb, 'r').readlines()
 			if len(openmpiFiles) < 1:
-				print("I'm confused: cannot find openmpi source files from %s" % openmpiWeb)
+				print "I'm confused: cannot find openmpi source files from %s" % openmpiWeb
 				return
 			goodsum = openmpiFiles[0].strip().split()[0]
 			openmpiTarFile = openmpiFiles[0].strip().split()[1]
@@ -3400,17 +3399,17 @@ def openmpi(origComps, params, args, verbose, pretend):
 			if isfile(tarDir+openmpiTarFile):
 				sum = popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline().split()[0]
 				if sum != goodsum:
-					print('Old or corrupt file %s.  File is being moved to /tmp' % (tarDir+openmpiTarFile))
+					print 'Old or corrupt file %s.  File is being moved to /tmp' % (tarDir+openmpiTarFile)
 					execute('mv %s%s /tmp' % (tarDir, openmpiTarFile), verbose, pretend)
 				else:
-					print('Existing file %s%s looks OK' % (tarDir, openmpiTarFile))
+					print 'Existing file %s%s looks OK' % (tarDir, openmpiTarFile)
 					download = False
 			if download:
 				chdir(tarDir)
 				execute('wget %s/%s' % (openmpiWeb, openmpiTarFile), verbose, pretend)
 				sum = popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline().split()[0]
 				if sum != goodsum:
-					print('Newly downloaded file %s%s does not match expected md5sum %s' % (openmpiWeb, openmpiTarFile, goodsum))
+					print 'Newly downloaded file %s%s does not match expected md5sum %s' % (openmpiWeb, openmpiTarFile, goodsum)
 					return
 	
 	srcFileExt = openmpiTarFile.split('.')[-1]
@@ -3423,7 +3422,7 @@ def openmpi(origComps, params, args, verbose, pretend):
 
 	openmpiSrcDir = cpuSrcDir + popen('tar t%sf %s%s' % (td, tarDir, openmpiTarFile), 'r').readline().strip()
 	if isdir(openmpiSrcDir):
-		print('%s already untarred in %s; assuming this is a good copy' % (openmpiTarFile, cpuSrcDir))
+		print '%s already untarred in %s; assuming this is a good copy' % (openmpiTarFile, cpuSrcDir)
 	else:
 		chdir(cpuSrcDir)
 		execute('tar %sxvf %s%s' % (td, tarDir, openmpiTarFile), verbose, pretend)
@@ -3434,7 +3433,7 @@ def openmpi(origComps, params, args, verbose, pretend):
 		v = execute('make install', verbose, pretend)
 		execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  OpenMPI %s >> %s' % (openmpiTarFile, bldLog), verbose, pretend)
 	if v != 0:
-		print('\n*** Error building openmpi ***\n')
+		print '\n*** Error building openmpi***\n'
 		return 
 
 def update_difxbuild(origComps, params, args, verbose, pretend):
@@ -3442,12 +3441,12 @@ def update_difxbuild(origComps, params, args, verbose, pretend):
 	chdir('/tmp')
 	execute('rm -f difxbuild', verbose, pretend)
 	execute('wget %s' % difxbuildUrl, verbose, pretend)
-	print('Current version = %s' % version)
+	print 'Current version = %s' % version
 	newVersion = popen('%s /tmp/difxbuild --version' % pythonProgram, 'r').readlines()[0].strip()
-	print('New version = %s' % newVersion)
-	print()
+	print 'New version = %s' % newVersion
+	print 
 	if newVersion <= version and not '--force' in args:
-		print('difxbuild up to date; no need to update')
+		print 'difxbuild up to date; no need to update'
 	else:
 		execute('chmod +x /tmp/difxbuild', verbose, pretend)
 		chdir(dir)
@@ -3456,7 +3455,7 @@ def update_difxbuild(origComps, params, args, verbose, pretend):
 		else:
 			execute('cp /tmp/difxbuild `which difxbuild`', verbose, pretend)
 
-		print('difxbuild updated.  Please confirm with --version')
+		print 'difxbuild updated.  Please confirm with --version'
 
 
 command_list = \
@@ -3673,78 +3672,78 @@ def run_command(commandName, args, verbose, pretend):
 		hasEnviron = True
 		hasParams = True
 		for e in command[2]:
-			if not e in environ:
-				print('Env. Var. %s needs to be set' % e)
+			if not environ.has_key(e):
+				print 'Env. Var. %s needs to be set' % e
 				hasEnviron = False
 		nParam = len(command[3])
 		params = {}
 		if len(args) < nParam:
-			print('Two few arguments provided')
+			print 'Two few arguments provided'
 			hasParams = False
 		else:
 			for i in range(nParam):
 				params[command[3][i]] = args[i]
 		if hasEnviron and hasParams:
 			if verbose > 1:
-				print('  params=', params)
-				print('  extras=', args[nParam:])
-				print('  pretend=', pretend)
-				print('  verbose=', verbose)
-				print()
-			print('=== Running command: %s ===\n' % command[0])
+				print '  params=', params
+				print '  extras=', args[nParam:]
+				print '  pretend=', pretend
+				print '  verbose=', verbose
+				print ''
+			print '=== Running command: %s ===\n' % command[0]
 			if command[0] == 'bootstrap':
 				comps = []
 			else:
 				comps = components[environ['DIFX_VERSION']]
 			command[4](comps, params, args[nParam:], verbose, pretend)
 			if pretend:
-				print('\n*** PRETEND MODE WAS USED ***\n')
+				print '\n*** PRETEND MODE WAS USED ***\n'
 		else:
-			print('Not going to run.')
+			print 'Not going to run.'
 			
 	else:
-		print('Command "%s" not recognized.  Seek help.' % commandName)
+		print 'Command "%s" not recognized.  Seek help.' % commandName
 
 
 def usage(prog):
-	print('\n%s ver. %s  %s  %s\n' % (program, version, author, verdate))
-	print('usage:  %s [options] <command> [<command arguments>]\n' % prog)
-	print('Options include:\n')
-	print('  -h or --help')
-	print('       print this help and exit\n')
-	print('  -d or --documentation')
-	print('       print the in-line documentation\n')
-	print('  -t or --todo')
-	print('       print developer\'s to-do list\n')
-	print('  -v or --verbose')
-	print('       be more verbose\n')
-	print('  -V or --version')
-	print('       print version and exit\n')
-	print('  -q or --quiet')
-	print('       be less verbose\n')
-	print('  -p or --pretend')
-	print('       go through all the steps but don\'t actually do anything\n')
-	print('The possible commands are:\n')
+	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
+	print 'usage:  %s [options] <command> [<command arguments>]\n' % prog
+	print 'Options include:\n'
+	print '  -h or --help'
+	print '       print this help and exit\n'
+	print '  -d or --documentation'
+	print '       print the in-line documentation\n'
+	print '  -t or --todo'
+	print '       print developer\'s to-do list\n'
+	print '  -v or --verbose'
+	print '       be more verbose\n'
+	print '  -V or --version'
+	print '       print version and exit\n'
+	print '  -q or --quiet'
+	print '       be less verbose\n'
+	print '  -p or --pretend'
+	print '       go through all the steps but don\'t actually do anything\n'
+	print 'The possible commands are:\n'
 	for command in commands:
 		extras = ''
 		for c in command[3]:
 			extras = extras + ' <' + c + '>'
-		print('%s%s' % (command[0], extras))
-		print('  %s\n' % command[1])
+		print '%s%s' % (command[0], extras)
+		print '  %s\n' % command[1]
 	
-	print('\nCurrently the following key variables are set:')
+	print '\nCurrently the following key variables are set:'
 	vars = ['DIFXROOT', 'DIFX_BASE', 'DIFX_ARCH_ROOT']
 	for v in vars:
-		if v in environ:
-			print('%s = %s' % (v, environ[v]))
+		if environ.has_key(v):
+			print '%s = %s' % (v, environ[v])
 		else:
-			print('%s is unset' % v)
+			print '%s is unset' % v
 
-	print("\nRemember, if you haven't signed up to the difx-users mailing list, please")
-	print("do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users.")
+	print "\nRemember, if you haven't signed up to the difx-users mailing list, please"
+	print "do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users."
 
 def checkPythonVersion():
-	if not 'PYTHONPATH' in environ:
+	if not environ.has_key('PYTHONPATH'):
 		return
 	pythonPath = environ['PYTHONPATH'].split(':')[0]
 
@@ -3754,8 +3753,8 @@ def checkPythonVersion():
 def main():
 	try:
 		opts, args = getopt.getopt(argv[1:], "hdqvpVt", ["help", "documentation", "quiet", "verbose", "pretend", "version", "todo"])
-	except getopt.GetoptError as err:
-		print('%s\n' % str(err))
+	except getopt.GetoptError, err:
+		print '%s\n' % str(err)
 		usage(argv[0])
 		exit(2)
 	verbose = 1
@@ -3764,7 +3763,7 @@ def main():
 		if o in ['-v', '--verbose']:
 			verbose += 1
 		elif o in ['-V', '--version']:
-			print(version)
+			print version
 			exit(0)
 		elif o in ['-q', '--quiet']:
 			verbose -= 1
@@ -3772,10 +3771,10 @@ def main():
 			usage(argv[0])
 			exit(0)
 		elif o in ['-d', '--documentation']:
-			print(documentation)
+			print documentation
 			exit(0)
 		elif o in ['-t', '--todo']:
-			print(todo_list)
+			print todo_list
 			exit(0)
 		elif o in ['-p', '--pretend']:
 			pretend = True
@@ -3788,16 +3787,16 @@ def main():
 	
 		checkPythonVersion()
 
-		if not 'DIFX_VERSION' in environ:
-			print('Env. Var. DIFX_VERSION needs to be set')
+		if not environ.has_key('DIFX_VERSION'):
+			print 'Env. Var. DIFX_VERSION needs to be set'
 			exit(2)
-		if not environ['DIFX_VERSION'] in components:
-			print('This script is not set up to handle version %s' % environ['DIFX_VERSION'])
+		if not components.has_key(environ['DIFX_VERSION']):
+			print 'This script is not set up to handle version %s' % environ['DIFX_VERSION']
 			exit(2)
 
 	run_command(args[0], args[1:], verbose, pretend)
-	print("\nRemember, if you haven't signed up to the difx-users mailing list, please")
-	print("do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users.")
+	print "\nRemember, if you haven't signed up to the difx-users mailing list, please"
+	print "do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users."
 
 #----
 
