@@ -42,9 +42,10 @@ static int usage (const char *pgm)
     fprintf (stderr, "It assumed that SWIN format visibility file(s) "
         "to be converted live\n");
     fprintf (stderr, "in directory <baseFilename>.difx/\n");
-    fprintf (stderr, "\nIt is also assumed that the following 3 additional "
+    fprintf (stderr, "\nIt is also assumed that the following 4 additional "
         "files exist:\n");
     fprintf (stderr, "  <baseFilename>.input    DiFX input file\n");
+    fprintf (stderr, "  <baseFilename>.calc     DiFX calc file\n");
     fprintf (stderr, "  <baseFilename>.im       Polynomial model and UVW\n");
     fprintf (stderr, "  <expFilename>.vex       Vex file for this expt.\n");
     fprintf (stderr, "where <expFilename> is <baseFilename w/o _<#> suffix\n");
