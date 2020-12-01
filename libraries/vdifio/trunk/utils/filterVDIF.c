@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken                                  *
+ *   Copyright (C) 2015-2020 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,8 +35,8 @@
 
 const char program[] = "filterVDIF";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20150709";
+const char version[] = "0.2";
+const char verdate[] = "20201201";
 
 static void usage(const char *pgm)
 {
@@ -118,6 +118,7 @@ int main(int argc, char **argv)
 	int threadMap[VDIF_MAX_THREAD_ID+1];	// set to 1 if the thread is to be saved, zero otherwise
 	int threadCount[VDIF_MAX_THREAD_ID+1];	// count of threads found in the file (for end report)
 	int t;
+	int lastSec = -1;
 	size_t s;
 
 	if(argc != 4)
@@ -202,7 +203,11 @@ int main(int argc, char **argv)
 	do
 	{
 		t = getVDIFThreadID(V);
-		if(threadMap[t])
+		if(lastSec == 0)
+		{
+			lastSec = V->seconds;
+		}
+		if(threadMap[t] && V->seconds >= lastSec)
 		{
 			s = fwrite(data, 1, frameSize, out);
 			if(s != frameSize)
@@ -214,6 +219,7 @@ int main(int argc, char **argv)
 
 				return EXIT_FAILURE;
 			}
+			lastSec = V->seconds;
 		}
 		++threadCount[t];
 

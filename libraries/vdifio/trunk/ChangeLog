@@ -8,6 +8,7 @@ Version 1.5
 * vdifspec: allow passing of bchan and echan to m5spec
 * python2 -> python3
 * new utility: splitVDIFbygap : breaks a VDIF file into multiple based on time gaps
+* filterVDIF: discard frames that had seconds less than previous frames
 
 Version 1.4
 ~~~~~~~~~~~

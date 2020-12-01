@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2018 Walter Brisken                                *
+ *   Copyright (C) 2013-2020 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -641,7 +641,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			continue;
 		}
 
-		if (firstGoodByte < 0)
+		if(firstGoodByte < 0)
 		{
 			firstGoodByte = i;
 		}
@@ -1017,9 +1017,9 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		stats->startFrameNumber = startFrameNumber;
 
 		/* Catch cases where vmux got out of sync (e.g. too many fill-pattern frames or invalid frames in the input) */
-		if (stats->nOutputFrame == 0 || bytesProcessed == 0 || firstGoodByte < 0 || (nSequentialUnprocessable >= nSort))
+		if(stats->nOutputFrame == 0 || bytesProcessed == 0 || firstGoodByte < 0 || (nSequentialUnprocessable >= nSort))
 		{
-			if (getHighestFrameNumber(src, srcSize, vm) < 0)
+			if(getHighestFrameNumber(src, srcSize, vm) < 0)
 			{
 				stats->startFrameNumber += (srcSize / vm->inputFrameSize) / vm->nThread + 1;
 			}
