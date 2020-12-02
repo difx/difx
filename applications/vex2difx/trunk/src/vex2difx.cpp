@@ -741,7 +741,8 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 					bl->dsA = ds1;
 					bl->dsB = ds1;
 
-					DifxBaselineAllocFreqs(bl, D->datastream[ds1].nRecFreq);
+					// Allocate enough space for worst case possibility
+					DifxBaselineAllocFreqs(bl, D->datastream[ds1].nRecFreq + D->datastream[ds1].nZoomFreq);
 
 					nFreq = 0; // this counts the actual number of freqs
 
