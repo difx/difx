@@ -21,6 +21,7 @@
 #endif
 
 #include <iomanip>
+#include <vector>
 #include <sys/types.h>
 #include <dirent.h>
 #include <errno.h>
@@ -37,6 +38,9 @@ int main(int argc, char *argv[])
   char polpair[3];
   char buffer[100];
   double uvw[3];
+  const int default_config = 0;
+  int phasecenter = 0;
+  vector<int> frequencies;
 
   njobs = argc-1;
   if(njobs < 1) {
@@ -49,19 +53,32 @@ int main(int argc, char *argv[])
     cout << "Processing file " << i << "/" << njobs << endl;
 
     config = new Configuration(argv[i], 0);
-    if(config->getNumConfigs() > 1 || !config->pulsarBinOn(0) || config->scrunchOutputOn(0)) {
+    if(config->getNumConfigs() > 1 || !config->pulsarBinOn(default_config) || config->scrunchOutputOn(default_config)) {
       cerr << "Error - must be a single config with pulsar binning on - aborting!" << endl;
       return EXIT_FAILURE;
     }
 
+    frequencies.clear();
+    for(int fq=0; fq<config->getFreqTableLength(); fq++) {
+      if(config->isFrequencyUsed(default_config,fq)){
+         frequencies.push_back(fq);
+      }
+    }
+
+    if(frequencies.size()==0) {
+        cerr << "Error - the .input file " << argv[i] << " had no frequencies output by any baselines - aborting!" << endl;
+        return EXIT_FAILURE;
+    }
+
     if(i==1) {
-      nbins = config->getNumPulsarBins(0);
-      nchannels = config->getFNumChannels(0)/config->getFChannelsToAverage(0);
+      nbins = config->getNumPulsarBins(default_config);
+      nchannels = config->getFNumChannels(frequencies.at(0))/config->getFChannelsToAverage(frequencies.at(0));
       if(nbins <= 0) {
         cerr << "Error - the first .input file had no pulsar bins - aborting!" << endl;
         return EXIT_FAILURE;
       }
-      for(int j=1;j<config->getFreqTableLength();j++) {
+      for(int k=1;k<frequencies.size();k++) {
+        const int j = frequencies.at(k);
         if(config->getFNumChannels(j)/config->getFChannelsToAverage(j) != nchannels) {
           cerr << "Error - input file " << i << " has different numbers of channels "
                << "(expected " << nchannels << ", got " << config->getFNumChannels(j)/config->getFChannelsToAverage(j) << ") "
@@ -81,7 +98,8 @@ int main(int argc, char *argv[])
       visibilities = new float[2*nchannels];
     }
     else {
-      for(int j=0;j<config->getFreqTableLength();j++) {
+      for(int k=0;k<frequencies.size();k++) {
+        const int j = frequencies.at(k);
         if(config->getFNumChannels(j)/config->getFChannelsToAverage(j) != nchannels) {
           cerr << "Error - input file " << i << " has different numbers of channels "
                << "(expected " << nchannels << ", got " << config->getFNumChannels(j)/config->getFChannelsToAverage(j) << ") "
@@ -90,8 +108,8 @@ int main(int argc, char *argv[])
         }
       }
     }
-    if (config->getNumPulsarBins(0) != nbins) {
-      cerr << "Number of bins for file " << i << " (" << config->getNumPulsarBins(0) << ") does not match initial (" << nbins << ") - aborting" << endl;
+    if (config->getNumPulsarBins(default_config) != nbins) {
+      cerr << "Number of bins for file " << i << " (" << config->getNumPulsarBins(default_config) << ") does not match initial (" << nbins << ") - aborting" << endl;
       return EXIT_FAILURE;
     }
     startmjd = config->getStartMJD();
@@ -105,7 +123,7 @@ int main(int argc, char *argv[])
     double vissum = 0.0;
     for(int b=0;b<nbins;b++)
     {
-      sprintf(buffer, "/DIFX_%05d_%06d.s0000.b%04d", config->getStartMJD(), config->getStartSeconds(), b);
+      sprintf(buffer, "/DIFX_%05d_%06d.s%04d.b%04d", config->getStartMJD(), config->getStartSeconds(), phasecenter, b);
       difxfile = config->getOutputFilename() + string(buffer);
       cout << "About to open file " << difxfile << endl;
 
