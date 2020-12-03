@@ -20,9 +20,11 @@
 #include <config.h>
 #endif
 
+#include <cstdlib>
 #include <iomanip>
 #include <vector>
 #include <sys/types.h>
+#include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
 #include <math.h>
@@ -41,10 +43,22 @@ int main(int argc, char *argv[])
   const int default_config = 0;
   int phasecenter = 0;
   vector<int> frequencies;
+  int opt;
 
-  njobs = argc-1;
+  while ((opt = getopt(argc,argv,"hp:")) != EOF) {
+    switch(opt) {
+      case 'p':
+         phasecenter = atoi(optarg);
+         break;
+      default:
+         cerr << "invoke with difx2profile [-p <phasecenter nr>] <.input file 1> [.input file 2] ... [.input file n]" << endl;
+         return EXIT_FAILURE;
+    }
+  }
+
+  njobs = argc-optind;
   if(njobs < 1) {
-    cerr << "invoke with difx2profile <.input file 1> [.input file 2] ... [.input file n]" << endl;
+    cerr << "invoke with difx2profile [-p <phasecenter nr>] <.input file 1> [.input file 2] ... [.input file n]" << endl;
     return EXIT_FAILURE;
   }
 
@@ -52,7 +66,7 @@ int main(int argc, char *argv[])
   for(int i=1;i<=njobs;i++) {
     cout << "Processing file " << i << "/" << njobs << endl;
 
-    config = new Configuration(argv[i], 0);
+    config = new Configuration(argv[optind+i-1], 0);
     if(config->getNumConfigs() > 1 || !config->pulsarBinOn(default_config) || config->scrunchOutputOn(default_config)) {
       cerr << "Error - must be a single config with pulsar binning on - aborting!" << endl;
       return EXIT_FAILURE;
@@ -66,7 +80,7 @@ int main(int argc, char *argv[])
     }
 
     if(frequencies.size()==0) {
-        cerr << "Error - the .input file " << argv[i] << " had no frequencies output by any baselines - aborting!" << endl;
+        cerr << "Error - the .input file " << argv[optind+i-1] << " had no frequencies output by any baselines - aborting!" << endl;
         return EXIT_FAILURE;
     }
 
