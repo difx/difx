@@ -327,7 +327,11 @@ def get_datastreamtable_info(inputfile):
             val, lines = nextinputline(lines[1:])
             datastreams[-1].recfreqindex.append(int(val))
             val, lines = nextinputline(lines[1:])
-            datastreams[-1].recclockoffset.append(float(val))
+            if ':' not in val:
+                datastreams[-1].recclockoffset.append(float(val))
+            else:
+                # extended 'f1p1:f1p2delta' syntax, ignore the delta -- TODO: store it somewhere?
+                datastreams[-1].recclockoffset.append(float(val.split(':')[0]))
             val, lines = nextinputline(lines[1:])
             datastreams[-1].recfreqoffset.append(float(val))
             val, lines = nextinputline(lines[1:])
