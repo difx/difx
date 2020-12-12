@@ -37,8 +37,8 @@ from os.path import isfile, isdir
 from os import umask, popen, system
 
 program = 'oms2v2d'
-version = '1.11'
-verdate = '20200331'
+version = '1.12'
+verdate = '20201212'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -215,6 +215,14 @@ def isNew(fn):
 				n += 1
 	return (n > 0)
 
+def dropzeros(s):
+	ss = s.strip('0')
+	if ss[-1] == '.':
+		ss += '0'
+	if ss[0] == '.':
+		ss = '0' + ss
+	return ss
+
 def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, verbose):
 	machineMap = {'BR':'swc001', 'FD':'swc002', 'HN':'swc003', 'KP':'swc004', 'LA':'swc005', 'MK':'swc006', 'NL':'swc007', 'OV':'swc008', 'PT':'swc009', 'SC':'swc010', 'Y':'swc011', 'GB':'swc012'}
 	machineMapEVLBI = {'BR':'swc011', 'FD':'swc012', 'HN':'swc013', 'KP':'swc014', 'LA':'swc015', 'MK':'swc016', 'NL':'swc017', 'OV':'swc018', 'PT':'swc019', 'SC':'swc020', 'Y':'swc009', 'GB':'swc008'}
@@ -295,7 +303,13 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 			machine = getMachineFromFilelist(filelistFile)
 			if machine == None:
 				machine = machineMap[s]
-			extra += 'filelist=%s machine=%s ' % (filelistFile, machine)
+			if evlbiType == 'split':
+				dsInfo = 'filelist=%s machine=%s ' % (filelistFile, machine)
+				if evlbiType == 'split':
+					dsInfo += 'frameSize=1032 '
+				dsData.append(dsInfo)
+			else:
+				extra += 'filelist=%s machine=%s ' % (filelistFile, machine)
 		elif evlbiType != None:
 			for d in range(nStream):
 				dsInfo = 'file=/tmp/vlitebuf%d/%%now.vdif%% machine=%s ' % (d, machineMapEVLBI[s])
@@ -328,11 +342,11 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 	out.write('{\n')
 
 	if 'TIME_AVERAGE' in corr:
-		out.write('  tInt = %s\n' % corr['TIME_AVERAGE'][0])
+		out.write('  tInt = %s\n' % dropzeros(corr['TIME_AVERAGE'][0]))
 
 	if specAvg != -1 and nFFT !=-1:
-		out.write('  fftSpecRes = %10.8f\n' % (bw/(nFFT//2)))
-		out.write('  specRes = %10.8f\n' % (bw/(nFFT//(2*specAvg))))
+		out.write('  fftSpecRes = %s\n' % dropzeros('%10.8f' % (bw/(nFFT//2))))
+		out.write('  specRes = %s\n' % dropzeros('%10.8f' % (bw/(nFFT//(2*specAvg)))))
 	if 'POLARIZATION' in corr:
 		out.write('  doPolar = %s\n' % doPolar)
 	if nFFT > 256:
@@ -425,6 +439,8 @@ elif isfile(prefix + '.vex'):
 		vexFile = prefix + '.vex.preobs'
 	else:
 		vexFile = prefix + '.vex.obs'
+elif isfile(prefix + '.vex.obs'):
+	vexFile = prefix + '.vex.obs'
 else:
 	print('No vex file found here.  It should be called %s.vex or %s.vex.preobs.' % (prefix, prefix))
 	if force:

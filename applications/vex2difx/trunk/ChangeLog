@@ -25,6 +25,7 @@ Version 2.7.0
     be listed after a colon on the source line.
   - RA and Dec listed in radians as second and third columns.
 * vexpeek: extend "doTime" option to apply to scan lists
+* oms2v2d: some improvements for special cases, don't print unneeded zeros
 
 Version 2.6.0
 ~~~~~~~~~~~~~
