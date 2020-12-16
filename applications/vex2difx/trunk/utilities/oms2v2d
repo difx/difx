@@ -37,8 +37,8 @@ from os.path import isfile, isdir
 from os import umask, popen, system
 
 program = 'oms2v2d'
-version = '1.12'
-verdate = '20201212'
+version = '1.13'
+verdate = '20201216'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -64,12 +64,14 @@ def usage(pgm):
 	print('  -e       make .v2d file for vlitebuf-based evlbi\n')
 	print('  --split')
 	print('  -s       make .v2d file for vlitebuf-based evlbi w/ 1032 byte frames\n')
+	print('  --profile')
+	print('  -p       generate .v2d for profile mode\n')
 	print('  --dual')
-	print('  -D       configure for two datastreams\n');
+	print('  -D       configure for two datastreams\n')
 	print('  --quad')
-	print('  -Q       configure for four datastreams\n');
+	print('  -Q       configure for four datastreams\n')
 	print('  --oct')
-	print('  -O       configure for eight datastreams\n');
+	print('  -O       configure for eight datastreams\n')
 	print('  --quiet')
 	print('  -q       be less verbose\n')
 	print('<oms file> is a .oms file produced by sched\n')
@@ -82,7 +84,7 @@ def readOMS(filename, verbose):
 	data = open(filename).readlines()
 	section = []
 	current = {}
-	n = 0;
+	n = 0
 	minbw = 1.0e9
 	maxbw = 0.0
 	spaces = ''
@@ -99,7 +101,7 @@ def readOMS(filename, verbose):
 			key = d[0:p].strip()
 			if len(key) < 1:
 				print('Illegal line [%d] : %s' % (n, d))
-				exit(0);
+				exit(0)
 			value = d[p+1:].strip()
 		if key == 'BEGIN':
 			section.append( (value, current) )
@@ -141,7 +143,7 @@ def readOMS(filename, verbose):
 
 	if len(section) > 0:
 		print('Error: unmatched BEGIN')
-		exit(0);
+		exit(0)
 	
 	current['MINBW'] = minbw
 	current['MAXBW'] = maxbw
@@ -223,7 +225,7 @@ def dropzeros(s):
 		ss = '0' + ss
 	return ss
 
-def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, verbose):
+def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, profile, verbose):
 	machineMap = {'BR':'swc001', 'FD':'swc002', 'HN':'swc003', 'KP':'swc004', 'LA':'swc005', 'MK':'swc006', 'NL':'swc007', 'OV':'swc008', 'PT':'swc009', 'SC':'swc010', 'Y':'swc011', 'GB':'swc012'}
 	machineMapEVLBI = {'BR':'swc011', 'FD':'swc012', 'HN':'swc013', 'KP':'swc014', 'LA':'swc015', 'MK':'swc016', 'NL':'swc017', 'OV':'swc018', 'PT':'swc019', 'SC':'swc020', 'Y':'swc009', 'GB':'swc008'}
 	corr = oms['CORRELATOR_PARAMETERS'][0]
@@ -252,7 +254,9 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 		if specAvg == 0:
 			specAvg = 1
 	
-	if 'POLARIZATION' in corr:
+	if profile:
+		doPolar = 'False'
+	elif 'POLARIZATION' in corr:
 		if corr['POLARIZATION'][0] == 'NO':
 			doPolar = 'False'
 		else:
@@ -277,10 +281,16 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 
 	if nrt or filebased or (datacopyFormat != None) or (evlbiType != None):
 		machineString = 'swc000, swc001, swc002, swc003, swc004, swc005, swc006, swc007, swc008, swc009, swc010'
-		out.write('machines = %s\n' % machineString);
+		out.write('machines = %s\n' % machineString)
 		out.write('nCore = 10\n')
 		out.write('nThread = 12\n\n')
 		out.write('singleScan = True\n\n')
+
+	if profile:
+		out.write('# profile mode selected:\n')
+		out.write('mode = profile\n')
+		out.write('startSeries = 100\n')
+		out.write('minSubarray = 1\n\n')
 
 	for s in oms['SOURCE_INFO']:
 		srcParams = ''
@@ -321,7 +331,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 			if datacopyAntennaSetup == None:
 				print('Warning: data for antenna %s not found.  Skipping.  You will need to update the antenna list in the .v2d file.' % s)
 				out.write('# ANTENNA %s -- Data not found\n' % s)
-				continue;
+				continue
 			extra += datacopyAntennaSetup
 		for ds in dsData:
 			out.write('DATASTREAM %s%d { %s}\n' % (s, nds, ds))
@@ -366,6 +376,7 @@ print('')
 inFile = ''
 force = False
 stop = False
+profile = False
 nrt = False	# near real time mode
 filebased = False
 datacopyFormat = None
@@ -394,6 +405,8 @@ for a in argv[1:]:
 			evlbiType = 'vlite'
 		elif a in ['-s', '--split']:
 			evlbiType = 'split'
+		elif a in ['-p', '--profile']:
+			profile = True
 		elif a in ['-D', '--dual']:
 			nStream = 2
 		elif a in ['-Q', '--quad']:
@@ -463,4 +476,4 @@ if isfile(v2dFile):
 
 oms = readOMS(omsFile, verbose)
 
-writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, verbose)
+writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, profile, verbose)

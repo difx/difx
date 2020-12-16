@@ -26,6 +26,7 @@ Version 2.7.0
   - RA and Dec listed in radians as second and third columns.
 * vexpeek: extend "doTime" option to apply to scan lists
 * oms2v2d: some improvements for special cases, don't print unneeded zeros
+* oms2v2d: add "profile" mode
 
 Version 2.6.0
 ~~~~~~~~~~~~~
