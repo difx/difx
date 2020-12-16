@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 '''
-Usage: plotVexChannels.py <vexfile.vex> [<freqName> <freqName> ...]
+Usage: plotVexChannels.py <vexfile.vex|.vex.obs> [<v2dfile.v2d>] [<freqName> <freqName> ...]
 
 Plots a sky frequency view of all channels in the $FREQ blocks of
 the specified VEX file. The $FREQ blocks to be displayed can be
@@ -10,9 +10,12 @@ The produced plot indicates sideband orientation in the standard way.
 The channel number is shown in the middle of each channel 'trapezoid'.
 This number reflects the order of chan_def appearance in the VEX file,
 it does not currently utilize the chan_def channel tags such as &CH01.
+
+If a v2d file is specified and contains ZOOM band definitions, the
+respective zoom frequency ranges will be shown underlaid in the plot.
 '''
 
-import math, fractions, os, sys
+import math, fractions, os, re, sys
 import vex  # same as utilized by autozooms module
 
 try:
@@ -28,7 +31,7 @@ except:
 __title__ = "plotVexChannels - A graphical overview of channels in a VEX file"
 __author__ = "Jan Wagner"
 __license__ = "GNU GPL v3"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __copyright__ = "(C) 2020 by Jan Wagner, MPIfR"
 
 
@@ -125,9 +128,56 @@ class VexChannels:
 		self.freqBlockNames = self.freqBlocks.keys()
 
 
-	def plotFreqchannelWedge(self, ax, yy, height, channel, fstart, fstop, fsideband, color=[109.0/255,155.0/255,194.0/255]):
+class ZoomFreqs:
 
-		bw = fstop-fstart
+	def __init__(self, verbosity=0):
+		self.verbosity = verbosity
+		self.clear()
+
+	def clear(self):
+		self.zoomBlocks = {}
+		self.zoomBlockNames = []
+		self.zoomBlockLowestFreq = {}
+
+	def loadV2D(self, v2dfilename):
+		"""Add all zoom setups (whether actually used or not!) from a v2d file"""
+
+		f = open(v2dfilename, 'r')
+		lines = f.readlines()
+		f.close()
+
+		lines = [line.split('#')[0].strip() for line in lines]
+		lines = [re.sub('\s+',' ',line).strip() for line in lines]
+		lines = [line for line in lines if len(line)>0]
+		n = 0
+
+		currZoomBlock = ''
+		channelList = []
+
+		for line in lines:
+			if line.startswith("ZOOM"):
+				currZoomBlock = line.split()[1]
+				self.zoomBlocks[currZoomBlock] = []
+				self.zoomBlockLowestFreq[currZoomBlock] = 1e99
+			if 'addZoomFreq' in line and 'freq@' in line:
+				r = line.find('freq@')
+				args = re.split(r'[@/]', line[r:])  # example: ['freq', '86268.000000', 'bw', '32.000000', 'noparent', 'true']
+				fqEntry = VexFreq(float(args[1]), float(args[1])+float(args[3]), +1)
+				self.zoomBlocks[currZoomBlock].append(fqEntry)
+				self.zoomBlockLowestFreq[currZoomBlock] = min(self.zoomBlockLowestFreq[currZoomBlock], fqEntry.flow)
+
+		self.zoomBlockNames = self.zoomBlocks.keys()
+
+
+class Charting:
+
+	def __init__(self, verbosity=0):
+		self.verbosity = verbosity
+
+
+	def plotFreqchannelWedge(self, ax, yy, height, channelID, channel, color=[109.0/255,155.0/255,194.0/255]):
+
+		bw = channel.fhigh-channel.flow
 		hh = height/2
 		top_pinch = 0.075
 		slant = 0.40
@@ -137,48 +187,70 @@ class VexChannels:
 
 		# clockwise points (x,y) in a trapezoid/wedge,
 		# starting from bottom left:
-		x = [fstart,fstop,fstop-top_pinch*bw,fstart+top_pinch*bw]
-		if fsideband > 0:
+		x = [channel.flow,channel.fhigh,channel.fhigh-top_pinch*bw,channel.flow+top_pinch*bw]
+		if channel.sideband > 0:
 			y = [yy-hh, yy-hh, yy+(1-slant)*hh, yy+hh]
 		else:
 			y = [yy-hh, yy-hh, yy+hh, yy+(1-slant)*hh]
 		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color))
 
-		ax.text(fstart + bw/4, yy-height/4, str(channel), fontsize=10)
+		ax.text(channel.flow + bw/4, yy-height/4, str(channelID), fontsize=10)
 
 
-	def visualize(self, fqNameSubset=None, flow=None, fhigh=None, id=None, axis=[], startmarker=ord('a')):
+	def plotZoomChannelBar(self, ax, ymin, ymax, channel, color=[255.0/255,152.0/255,143.0/255]):
+		x = [channel.flow, channel.fhigh, channel.fhigh, channel.flow]
+		y = [ymin, ymin, ymax, ymax]
+		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='white', facecolor=color, alpha=0.3))
 
-		allFreqs = self.freqBlockNames
+
+	def visualize(self, vexChannels, zoomChannels=None, fqNameSubset=None):
+
+		allFreqs = vexChannels.freqBlockNames
 		wedgeheight = 0.5	# height of USB/LSB direction wedge in plot
 
 		minfreq = 1e99
 		maxfreq = -1e99
-		if fqNameSubset:
-			numFreqs = len(fqNameSubset)
-		else:
-			numFreqs = len(allFreqs)
 
-		fig, ax = plt.subplots()
-		fig.set_facecolor('white')
-		cmap = colormaps.get_cmap(name='winter', lut=(numFreqs+1))
-
-		ylevel = 1
+		# Count freqs to plot
+		selectedFreqs = []
 		for freq in allFreqs:
-
 			if fqNameSubset and freq not in fqNameSubset:
 				if self.verbosity > 0:
 					print ('Skipping %s that is not in user specified freq name subset' % (freq))
 				continue
+			selectedFreqs.append(freq)
 
-			minfreq = min(minfreq, self.freqBlockLowestFreq[freq])
-			maxfreq = max(maxfreq, self.freqBlockHighestFreq[freq])
+		numFreqs = len(selectedFreqs)
+		if numFreqs < 1:
+			print("No frequency blocks were plotted out of %s" % (str(allFreqs)))
+			return
 
-			channels = self.freqBlocks[freq]
+		# Colors
+		fig, ax = plt.subplots()
+		fig.set_facecolor('white')
+		cmap = colormaps.get_cmap(name='winter', lut=(numFreqs+1))
+
+		# Zoom bands
+		ymin, ymax = 0, numFreqs+1
+		if zoomChannels:
+			for zoomblock in zoomChannels.zoomBlockNames:
+				zooms = zoomChannels.zoomBlocks[zoomblock]
+				for zoom_nr in range(0,len(zooms)): 
+					self.plotZoomChannelBar(ax, ymin, ymax, zooms[zoom_nr])
+				ax.text(zoomChannels.zoomBlockLowestFreq[zoomblock], ymin+0.5, 'v2d ZOOM "' + str(zoomblock) + '"', fontsize=10, alpha=0.8)
+
+		# VEX channels
+		ylevel = 1
+		for freq in selectedFreqs:
+
+			minfreq = min(minfreq, vexChannels.freqBlockLowestFreq[freq])
+			maxfreq = max(maxfreq, vexChannels.freqBlockHighestFreq[freq])
+
+			channels = vexChannels.freqBlocks[freq]
 			lowest_ch_freq = 1e99
 			for channel_nr in range(0,len(channels)):
 				channel = channels[channel_nr]
-				self.plotFreqchannelWedge(ax, ylevel, wedgeheight, channel_nr, channel.flow, channel.fhigh, channel.sideband, color=cmap(allFreqs.index(freq)))
+				self.plotFreqchannelWedge(ax, ylevel, wedgeheight, channel_nr, channel, color=cmap(allFreqs.index(freq)))
 				lowest_ch_freq = min(lowest_ch_freq, channel.flow)
 			ax.text(lowest_ch_freq, ylevel+1.10*wedgeheight/2, 'VEX ' + str(freq), fontsize=10, fontweight='bold')
 
@@ -197,7 +269,7 @@ class VexChannels:
 		plt.grid(True, which='both', axis='x')
 
 		plt.xlabel('Frequency (MHz)')
-		plt.title('Frequency Definitions in VEX file %s' % (self.vexFileName))
+		plt.title('Frequency Definitions in VEX file %s' % (vexChannels.vexFileName))
 
 		plt.show()
 
@@ -209,8 +281,16 @@ if __name__ == "__main__":
 		usage()
 		sys.exit(0)
 
-	vexfile = sys.argv[1]
-	subset = [fqname for fqname in sys.argv[2:]]
+	subset = []
+	v2dfile = None
+	vexfile = None
+	for n in range(1,len(sys.argv)):
+		if sys.argv[n].endswith('.vex.obs') or sys.argv[n].endswith('.vex'):
+			vexfile = sys.argv[n]
+		elif sys.argv[n].endswith('.v2d'):
+			v2dfile = sys.argv[n]
+		else:
+			subset.append(sys.argv[n])
 
 	# Help/Version?
 	if sys.argv[1]=='-h' or sys.argv[1]=='--help':
@@ -219,11 +299,19 @@ if __name__ == "__main__":
 	if sys.argv[1]=='-v' or sys.argv[1]=='--version':
 		print(__version__)
 		sys.exit(1)
+	if not vexfile:
+		print('Please specify a VEX file')
+		sys.exit(1)
 
+	# Containers
+	vx = VexChannels(verbosity=0)
+	zf = ZoomFreqs(verbosity=0)
+	chart = Charting(verbosity=4)
 
-	# Load vex file(s)
-	a = VexChannels(verbosity=0)
-	a.loadVEX(vexfile)
+	# Load vex file and v2d file if any
+	vx.loadVEX(vexfile)
+	if v2dfile:
+		zf.loadV2D(v2dfile)
 
 	# Plot
-	a.visualize(fqNameSubset=subset)
+	chart.visualize(vx, zoomChannels=zf, fqNameSubset=subset)
