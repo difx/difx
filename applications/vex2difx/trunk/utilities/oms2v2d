@@ -476,3 +476,6 @@ if isfile(v2dFile):
 oms = readOMS(omsFile, verbose)
 
 writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, profile, verbose)
+
+if evlbiType != None:
+	print('\nNOTE: if running in eVLBI mode for VLBA, consider using fiberLock.py to ensure routine network monitornig is turned off\n\n')
