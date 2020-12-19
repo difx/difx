@@ -27,6 +27,7 @@ Version 2.7.0
 * vexpeek: extend "doTime" option to apply to scan lists
 * oms2v2d: some improvements for special cases, don't print unneeded zeros
 * oms2v2d: add "profile" mode
+* oms2v2d: some improvements for real-time correlation
 
 Version 2.6.0
 ~~~~~~~~~~~~~

@@ -37,8 +37,8 @@ from os.path import isfile, isdir
 from os import umask, popen, system
 
 program = 'oms2v2d'
-version = '1.13'
-verdate = '20201216'
+version = '1.14'
+verdate = '20201218'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -227,7 +227,6 @@ def dropzeros(s):
 
 def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, profile, verbose):
 	machineMap = {'BR':'swc001', 'FD':'swc002', 'HN':'swc003', 'KP':'swc004', 'LA':'swc005', 'MK':'swc006', 'NL':'swc007', 'OV':'swc008', 'PT':'swc009', 'SC':'swc010', 'Y':'swc011', 'GB':'swc012'}
-	machineMapEVLBI = {'BR':'swc011', 'FD':'swc012', 'HN':'swc013', 'KP':'swc014', 'LA':'swc015', 'MK':'swc016', 'NL':'swc017', 'OV':'swc018', 'PT':'swc019', 'SC':'swc020', 'Y':'swc009', 'GB':'swc008'}
 	corr = oms['CORRELATOR_PARAMETERS'][0]
 
 	if verbose > 0:
@@ -274,7 +273,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 	out.write('vex = %s\n\n' % vexFile)
 	out.write('antennas = %s\n\n' % stnString)
 
-	if nrt or (datacopyFormat != None) or (evlbiType != None):
+	if filebased:
 		out.write('delayModel = difxcalc+met\n\n')
 	elif isNew(vexFile):
 		out.write('delayModel = difxcalc\n\n')
@@ -322,7 +321,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 				extra += 'filelist=%s machine=%s ' % (filelistFile, machine)
 		elif evlbiType != None:
 			for d in range(nStream):
-				dsInfo = 'file=/tmp/vlitebuf%d/%%now.vdif%% machine=%s ' % (d, machineMapEVLBI[s])
+				dsInfo = 'file=/tmp/vlitebuf%d/%%now.vdif%% machine=%s ' % (d, machineMap[s])
 				if evlbiType == 'split':
 					dsInfo += 'frameSize=1032 '
 				dsData.append(dsInfo)
