@@ -103,7 +103,7 @@ int vdifreaderOpen(const struct vdif_file_summary *sum, struct vdif_file_reader 
 
 	if(sum == NULL || rd == NULL)
 	{
-		return -1;
+		return EVDIFNULLINPUT;
 	}
 
 	rd->details = *sum;
@@ -121,13 +121,13 @@ int vdifreaderOpen(const struct vdif_file_summary *sum, struct vdif_file_reader 
 
 	if(rd->fd[0] == NULL)
 	{
-		return -1;
+		return EVDIFNULLINPUT;
 	}
 
 	// Helper buffers
 	resyncbuffer_ = (unsigned char *)malloc(resyncbuffersize_);
 	fillpattern_ = (unsigned char*)malloc(2*rd->details.frameSize);
-	for(n = 0; n < 2*rd->details.frameSize; n++)
+	for(n = 0; n < 2*rd->details.frameSize; ++n)
 	{
 		// Filler int32 0x11223344 : int8 0x44 0x33 0x22 0x11
 		unsigned char v = 4 - (n % 4);
@@ -155,12 +155,13 @@ int vdifreaderOpen(const struct vdif_file_summary *sum, struct vdif_file_reader 
 int vdifreaderClose(struct vdif_file_reader *rd)
 {
 	int n;
-	if (rd == NULL)
+
+	if(rd == NULL)
 	{
-		return -1;
+		return EVDIFNULLINPUT;
 	}
 
-	for (n=0; n<rd->details.nThread; n++)
+	for(n = 0; n < rd->details.nThread; ++n)
 	{
 		fclose(rd->fd[n]);
 	}
@@ -191,12 +192,13 @@ size_t vdifreaderSeek(struct vdif_file_reader *rd, size_t offset)
 size_t vdifreaderRead(struct vdif_file_reader *rd, void *buf, size_t count)
 {
 	size_t nrd = 0, nremain = count;
-	if (rd == NULL || buf == NULL || rd->eof || count == 0)
+	
+	if(rd == NULL || buf == NULL || rd->eof || count == 0)
 	{
 		return 0;
 	}
 
-	while (nrd < count)
+	while(nrd < count)
 	{
 		int threadIdx = (((size_t)rd->virtualoffset) / (size_t)rd->details.frameSize) % rd->details.nThread;
 		int inframeoffset = ((size_t)rd->virtualoffset) % ((size_t)rd->details.frameSize);
@@ -240,20 +242,18 @@ int vdifreaderStats(const struct vdif_file_reader *rd, struct vdif_file_reader_s
 {
 	int n;
 	off_t minOffset;
-	if (rd == NULL || st == NULL)
+	
+	if(rd == NULL || st == NULL)
 	{
-		return -1;
+		return EVDIFNULLINPUT;
 	}
 
 	// File offsets, in units of frames
 	st->nThread = rd->details.nThread;
-	for (n=0; n<rd->details.nThread; n++)
+	for(n = 0; n < rd->details.nThread; ++n)
 	{
 		off_t offset = ftello(rd->fd[n]);
-		if (offset == -1)
-		{
-			return -1;
-		}
+		
 		offset -= rd->firstframeoffset;
 		offset /= rd->details.frameSize;
 		st->threadOffsets[n] = offset;
@@ -400,33 +400,43 @@ static int vdifreader_estimate_fps(struct vdif_file_reader *rd)
 	struct vdif_header vh;
 	int ndiscarded = 0;
 	int fps = 1;
+	off_t seeked;
 
 	// Max expected FPS: assume 16 Gbps at current frame size (max the Mark6 can cope with)
 	const int max_fps = (rd->details.nThread + 1) * 16e9 / (8.0 * (rd->details.frameSize - sizeof(vdif_header)));
 
 	// Go to beginnig of file
 	off_t orig_pos;
+
 	orig_pos = ftello(rd->fd[0]);
-	fseeko(rd->fd[0], 0, SEEK_SET);
+	seeked = fseeko(rd->fd[0], 0, SEEK_SET);
+	if(seeked < 0)
+	{
+		return EVDIFCANTSEEK;
+	}
 
 	// Check frame nrs until 'fps' stops incrementing
-	while (++ndiscarded < max_fps)
+	while(++ndiscarded < max_fps)
 	{
 		// Get frame header
-		if (vdifreader_advance_to_valid_frame(rd, 0, &vh) < 0)
+		if(vdifreader_advance_to_valid_frame(rd, 0, &vh) < 0)
 		{
 			break;
 		}
 
 		// Track peak frame number
-		if (getVDIFFrameNumber(&vh) >= fps)
+		if(getVDIFFrameNumber(&vh) >= fps)
 		{
 			fps = getVDIFFrameNumber(&vh) + 1;
 			ndiscarded = 0;
 		}
 
 		// Skip to next frame
-		fseeko(rd->fd[0], getVDIFFrameBytes(&vh), SEEK_CUR);
+		seeked = fseeko(rd->fd[0], getVDIFFrameBytes(&vh), SEEK_CUR);
+		if(seeked < 0)
+		{
+			return EVDIFCANTSEEK;
+		}
 
 		//fprintf(stderr, "ndisc=%d fps=%d fnr=%d max_fps=%d fsz=%d\n", ndiscarded, fps, getVDIFFrameNumber(&vh), max_fps,  rd->details.frameSize );
 	}
@@ -462,7 +472,7 @@ static int vdifreader_advance_to_valid_frame(struct vdif_file_reader *rd, int th
 	while(1)
 	{
 		// Get frame at current position
-		if(vdifreader_peek_frame(rd, threadIdx, &vh) <0)
+		if(vdifreader_peek_frame(rd, threadIdx, &vh) < 0)
 		{
 			return -1;
 		}
@@ -695,7 +705,7 @@ static size_t vdifreader_reposition_all(struct vdif_file_reader *rd, size_t offs
 	rd->virtualoffset = 0;
 
 	// Move to a valid frame in each VDIF thread
-	for (n=0; n<rd->details.nThread; n++)
+	for(n = 0; n < rd->details.nThread; n++)
 	{
 		memset(&rd->currheader[n], 0, sizeof(vdif_header));
 		rd->feof[n] = 0;
@@ -717,9 +727,11 @@ static int vdifreader_check_eof(struct vdif_file_reader *rd)
 {
 	int eof = 1;
 	int n;
-	for (n=0; n<rd->details.nThread; n++)
+	
+	for(n = 0; n < rd->details.nThread; ++n)
 	{
 		eof = eof && rd->feof[n];
 	}
+
 	return eof;
 }

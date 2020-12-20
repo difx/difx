@@ -124,7 +124,7 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 	{
 		fprintf(stderr, "Error: configurevdifmux: cannot run vdifmux on more than %d threads; %d requested.\n", (int)sizeof(vm->goodMask)*8, nThread);
 
-		return -3;
+		return EVDIFTOOMANYTHREADS;
 	}
 
 	if(flags & VDIF_MUX_FLAG_COMPLEX)
@@ -142,7 +142,7 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 	{
 		fprintf(stderr, "No corner turner implemented for %d threads and %d bits\n", nThread, nBit);
 		
-		return -1;
+		return EVDIFNOCORNERTURNER;
 	}
 
 	vm->inputFrameSize = inputFrameSize;
@@ -200,7 +200,7 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 		{
 			fprintf(stderr, "Error: illegal thread Id: %d ; needs to be within 0..%d, inclusive.\n", threadIds[i], VDIF_MAX_THREAD_ID);
 			
-			return -2;
+			return EVDIFTHREADOUTOFRANGE;
 		}
 		vm->chanIndex[threadIds[i]] = i;
 	}
@@ -218,21 +218,21 @@ int setvdifmuxinputchannels(struct vdif_mux *vm, int inputChannelsPerThread)
 	{
 		fprintf(stderr, "Error: setvdifmuxinputchannels called with null vdif_mux structure\n");
 
-		return -1;
+		return EVDIFNULLINPUT;
 	}
 
 	if(inputChannelsPerThread <= 0)
 	{
 		fprintf(stderr, "Error: setvdifmuxinputchannels called with %d channels per thread\n", inputChannelsPerThread);
 
-		return -2;
+		return EVDIFTHREADOUTOFRANGE;
 	}
 
 	if(inputChannelsPerThread > 1 && vm->fanoutFactor > 1)
 	{
 		fprintf(stderr, "Error: setvdifmuxinputchannels: cannot have both inputChannelsPerThread and FanoutFactor > 1\n");
 		
-		return -3;
+		return EVDIFBADINPUT;
 	}
 
 	vm->inputChannelsPerThread = inputChannelsPerThread;
@@ -245,7 +245,7 @@ int setvdifmuxinputchannels(struct vdif_mux *vm, int inputChannelsPerThread)
 	{
 		fprintf(stderr, "No corner turner implemented for %d threads and %d bits\n", vm->nThread, nBit);
 		
-		return -1;
+		return EVDIFNOCORNERTURNER;
 	}
 
 	return 0;
@@ -258,28 +258,28 @@ int setvdifmuxfanoutfactor(struct vdif_mux *vm, int fanoutFactor)
 	{
 		fprintf(stderr, "Error: setvdifmuxfanoutfactor called with null vdif_mux structure\n");
 
-		return -1;
+		return EVDIFNULLINPUT;
 	}
 
 	if(fanoutFactor < 1)
 	{
 		fprintf(stderr, "Error: setvdifmuxfanoutfactor given out of range input value: %d.\n", fanoutFactor);
 
-		return -2;
+		return EVDIFBADINPUT;
 	}
 
 	if(vm->inputChannelsPerThread > 1 && fanoutFactor > 1)
 	{
 		fprintf(stderr, "Error: setvdifmuxfanoutfactor: cannot have both inputChannelsPerThread=%d and FanoutFactor=%d > 1\n", vm->inputChannelsPerThread, fanoutFactor);
 		
-		return -3;
+		return EVDIFBADINPUT;
 	}
 
 	if(vm->nThread % fanoutFactor != 0)
 	{
 		fprintf(stderr, "Error: setvidfmuxfanoutfactor: fanoutFactor=%d does not divide nThread=%d\n", fanoutFactor, vm->nThread);
 
-		return -4;
+		return EVDIFBADINPUT;
 	}
 
 	vm->fanoutFactor = fanoutFactor;
@@ -584,7 +584,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		startFrameNumber = getLowestFrameNumber(src, srcSize, vm);
 		if(startFrameNumber < 0)
 		{
-			return -3;
+			return EVDIFBADFRAMENUMBER;
 		}
 	}
 
@@ -1035,7 +1035,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		++stats->nCall;
 	}
 
-	if (bytesProcessed > firstGoodByte)
+	if(bytesProcessed > firstGoodByte)
 	{
 		return bytesProcessed;
 	}

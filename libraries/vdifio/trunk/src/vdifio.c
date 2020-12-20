@@ -39,6 +39,44 @@
 
 #define VDIF_VERSION 0
 
+const char *VDIFErrorMessage(int errorCode)
+{
+	switch(errorCode)
+	{
+	case EVDIFFAIL:
+		return "Operation failed.";
+	case EVDIFCANTOPEN:
+		return "File cannot be opened.";
+	case EVDIFCANTSEEK:
+		return "Cannot seek into file.";
+	case EVDIFCANTSTAT:
+		return "Cannot execute stat().";
+	case EVDIFCANTMALLOC:
+		return "Malloc failed.";
+	case EVDIFSHORTREAD:
+		return "Read was shorter than expected.";
+	case EVDIFBUFFERSMALL:
+		return "Too little data to examine.";
+	case EVDIFCANTGETFRAMESIZE:
+		return "Cannot determine frame size.";
+	case EVDIFCANTGETFRAMEOFFSET:
+		return "Cannot determine frame offset.";
+	case EVDIFTOOMANYTHREADS:
+		return "Too many threads.";
+	case EVDIFNOCORNERTURNER:
+		return "Required corner turner is not implemented.";
+	case EVDIFTHREADOUTOFRANGE:
+		return "Thread number is out of range.";
+	case EVDIFNULLINPUT:
+		return "A required function parameter is null.";
+	case EVDIFBADINPUT:
+		return "Illegal set of inputs provided.";
+	case EVDIFBADFRAMENUMBER:
+		return "Determined frame number is invalid.";
+	default:
+		return "<Unknown error code>";
+	}
+}
 
 int createVDIFHeader(vdif_header *header, int dataarraylength, int threadid, int bits, int nchan,
 		      int iscomplex, char stationid[3]) {
