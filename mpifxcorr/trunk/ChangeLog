@@ -19,6 +19,7 @@ Version 2.7
 * Disable (and probably break) Mark5-based interlaced VDIF
 * Update File and Mark6 datastreams for interlaced VDIF to improve multiplexing
   - TODO: Set nGap to fraction of second rather than fixed number of frames?
+* VDIF file reading: don't bail if seeking fails, just don't perform file checking
 
 Version 2.6
 ~~~~~~~~~~~

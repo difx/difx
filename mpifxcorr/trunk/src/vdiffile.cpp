@@ -591,60 +591,66 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 	{
 		// First we get a description of the contents of the purported VDIF file and exit if it looks like not VDIF at all
 		rv = summarizevdiffile(&fileSummary, datafilenames[configindex][fileindex].c_str(), inputframebytes);
-		if(rv < 0)
+		if(rv == EVDIFCANTSEEK)	// if seeking is the problem, just don't do the file check
+		{
+			cwarn << startl << "VDIFDataStream::initialiseFile: seek failed.  Continuing but without file check and without ability to jump to starting point in file" << endl;
+		}
+		else if(rv < 0)	// other kinds of errors: treat as fatal.
 		{
 			cwarn << startl << "VDIFDataStream::initialiseFile: summary of file " << datafilenames[configindex][fileindex] << " resulted in error code " << rv << ".  This does not look like valid VDIF data." << endl;
 			dataremaining = false;
 
 			return;
 		}
-
-		// Put file information into log stream
-		vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2000000LL*nrecordedbands/nthreads));
-		snprintvdiffilesummary(fileSummaryString, MaxSummaryLength, &fileSummary);
-		cinfo << startl << fileSummaryString << endl;
-
-		// If verbose...
-		printvdiffilesummary(&fileSummary);
-
-		// Here set readseconds to time since beginning of job
-		readseconds = 86400*(vdiffilesummarygetstartmjd(&fileSummary)-corrstartday) + vdiffilesummarygetstartsecond(&fileSummary)-corrstartseconds + intclockseconds;
-		readnanoseconds = vdiffilesummarygetstartns(&fileSummary);
-		currentdsseconds = activesec + model->getScanStartSec(activescan, config->getStartMJD(), config->getStartSeconds());
-
-		if(currentdsseconds > readseconds+1)
+		else	// file check succeeded.  try to jump to correct starting point in file
 		{
-			jumpseconds = currentdsseconds - readseconds;
-			if(activens < readnanoseconds)
+			// Put file information into log stream
+			vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2000000LL*nrecordedbands/nthreads));
+			snprintvdiffilesummary(fileSummaryString, MaxSummaryLength, &fileSummary);
+			cinfo << startl << fileSummaryString << endl;
+
+			// If verbose...
+			printvdiffilesummary(&fileSummary);
+
+			// Here set readseconds to time since beginning of job
+			readseconds = 86400*(vdiffilesummarygetstartmjd(&fileSummary)-corrstartday) + vdiffilesummarygetstartsecond(&fileSummary)-corrstartseconds + intclockseconds;
+			readnanoseconds = vdiffilesummarygetstartns(&fileSummary);
+			currentdsseconds = activesec + model->getScanStartSec(activescan, config->getStartMJD(), config->getStartSeconds());
+
+			if(currentdsseconds > readseconds+1)
 			{
-				jumpseconds--;
+				jumpseconds = currentdsseconds - readseconds;
+				if(activens < readnanoseconds)
+				{
+					jumpseconds--;
+				}
+
+				// set byte offset to the requested time
+
+				int n, d;	// numerator and demoninator of frame/payload size ratio
+				n = fileSummary.frameSize;
+				d = fileSummary.frameSize - 32;
+
+				dataoffset = static_cast<long long>(jumpseconds*vdiffilesummarygetbytespersecond(&fileSummary)/d*n + 0.5);
+
+				readseconds += jumpseconds;
 			}
 
-			// set byte offset to the requested time
-
-			int n, d;	// numerator and demoninator of frame/payload size ratio
-			n = fileSummary.frameSize;
-			d = fileSummary.frameSize - 32;
-
-			dataoffset = static_cast<long long>(jumpseconds*vdiffilesummarygetbytespersecond(&fileSummary)/d*n + 0.5);
-
-			readseconds += jumpseconds;
-		}
-
-		// Now set readseconds to time since beginning of scan
-		readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
-		
-		// Advance into file if requested
-		if(fileSummary.firstFrameOffset + dataoffset > 0)
-		{
-			cverbose << startl << "About to seek to byte " << fileSummary.firstFrameOffset << " plus jump " << dataoffset << " to get to the first wanted frame" << endl;
-
-			input.seekg(fileSummary.firstFrameOffset + dataoffset, ios_base::beg);
-			if(input.peek() == EOF)
+			// Now set readseconds to time since beginning of scan
+			readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
+			
+			// Advance into file if requested
+			if(fileSummary.firstFrameOffset + dataoffset > 0)
 			{
-				cinfo << startl << "File " << datafilenames[configindex][fileindex] << " ended before the currently desired time" << endl;
-				dataremaining = false;
-				input.clear();
+				cverbose << startl << "About to seek to byte " << fileSummary.firstFrameOffset << " plus jump " << dataoffset << " to get to the first wanted frame" << endl;
+
+				input.seekg(fileSummary.firstFrameOffset + dataoffset, ios_base::beg);
+				if(input.peek() == EOF)
+				{
+					cinfo << startl << "File " << datafilenames[configindex][fileindex] << " ended before the currently desired time" << endl;
+					dataremaining = false;
+					input.clear();
+				}
 			}
 		}
 	}
