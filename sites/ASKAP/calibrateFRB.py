@@ -40,6 +40,8 @@ parser.add_option("--imagename", default="TARGET",
 parser.add_option("--exportfits", default=False, action="store_true",
                   help="Export image as FITS file")
 parser.add_option("--spwrange", type=str, default="''", help="The spw range used for imaging if selected. CASA format: '0:0~42' for spectral window 0, channels 0 to 42. Default is all channels.")
+parser.add_option("--weighting", type=str, default="natural", help="The weighting used to do the tclean. Options: 'natural', 'uniform', and 'briggs'")
+parser.add_option("--robust", type=float, default=2.0, help="Used if --weighting is set to 'briggs'; CASA default is 0.5. -2.0 maps to uniform weighting and +2.0 maps to natural weighting (used as default here).")
 parser.add_option("--calibrateonly", default=False, action="store_true",
                   help="Only generate the calibration files, don't do anything with target")
 parser.add_option("--targetonly", default=False, action="store_true",
@@ -50,6 +52,12 @@ parser.add_option("-j", "--imagejmfit", default=False, action="store_true",
                   help="Jmfit the individual slices of the cube")
 parser.add_option("--cpasspoly", default=10, type=int,
                   help="Number of polynomial terms in CPASS")
+parser.add_option("--iono", default=False, action="store_true",
+                  help="Set if you wish to run ionosphere correction using correct_iono from vlbatasks")
+parser.add_option("--tecordir", default='', type=str,
+                  help="TECOR directory containing IONEX files; set if using --iono")
+parser.add_option("--follow", default=0.2, type=float,
+                  help="Sets what source the ionoshpere is following; e.g., 1 follows the Sun. Set if using --iono")
 parser.add_option("-a", "--averagechannels", type=int, default=24,
                   help="Number of channels to average together per cube slice")
 parser.add_option("-F", "--flagfile", default="", 
@@ -205,6 +213,16 @@ if xpolmodelfile != "":
         vlbatasks.clcor_pang(caldata, clversion)
     if not options.calibrateonly:
         vlbatasks.clcor_pang(targetdata, clversion)
+    clversion = clversion + 1
+
+# Run TECOR to get ionospheric corrections
+if options.iono:
+    tecordirectory = options.tecordir
+    follow = options.follow
+    if not options.targetonly:
+        vlbatasks.correct_iono(caldata, tecordirectory, clversion, follow=follow)
+    if not options.calibrateonly:
+        vlbatasks.correct_iono(targetdata, tecordirectory, clversion, follow=follow)
     clversion = clversion + 1
 
 # Run FRING
@@ -464,21 +482,21 @@ if not options.calibrateonly:
             if options.dirtyonly:
                 imagename = "TARGET.cube.dirim.{0}".format(pol)
                 os.system("rm -rf {0}.*".format(imname))
-                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='cube', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='natural', niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields, pixelsize))
+                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='cube', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='{9}', robust={10} niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields, pixelsize, options.weighting, options.robust))
 
             elif options.dirtymfs:
                 imagename = "TARGET.mfs.dirim.{0}".format(pol)
                 os.system("rm -rf {0}.*".format(imname))
-                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='mfs', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='natural', niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields, pixelsize))
+                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='mfs', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='{9}', robust={10}, niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields, pixelsize, options.weighting, options.robust))
 
             elif options.cleanmfs:
                 imagename = options.imagename
                 os.system("rm -rf {0}.*".format(imagename))
-                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{7}arcsec', '{7}arcsec'], stokes='{3}', specmode='mfs', phasecenter={4}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='natural', niter=100, mask={5}, outlierfile={6}, savemodel='modelcolumn')".format(targetmsfilename, imagename, imsize, pol, phasecenter, maskstr, outlierfields, pixelsize))
+                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{7}arcsec', '{7}arcsec'], stokes='{3}', specmode='mfs', phasecenter={4}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='{8}', robust={9}, niter=100, mask={5}, outlierfile={6}, savemodel='modelcolumn')".format(targetmsfilename, imagename, imsize, pol, phasecenter, maskstr, outlierfields, pixelsize, options.weighting, options.robust))
 
             # Default: produce a cleaned cube image
             else:
-                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='cube', width={4}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='natural', niter=5000, cycleniter=100, mask={5}, savemodel='modelcolumn', phasecenter={6}, outlierfile={7}, spw={9})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, maskstr, phasecenter, outlierfields, pixelsize, options.spwrange))
+                casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='cube', width={4}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='{9}', robust={10}, niter=5000, cycleniter=100, mask={5}, savemodel='modelcolumn', phasecenter={6}, outlierfile={7}, spw={9})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, maskstr, phasecenter, outlierfields, pixelsize, options.spwrange, options.weighting, options.robust))
 
             casaout.close()
             os.system("chmod 775 imagescript.py")
