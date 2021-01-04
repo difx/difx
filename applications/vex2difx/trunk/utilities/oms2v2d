@@ -37,8 +37,8 @@ from os.path import isfile, isdir
 from os import umask, popen, system
 
 program = 'oms2v2d'
-version = '1.14'
-verdate = '20201218'
+version = '1.15'
+verdate = '20210104'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -321,7 +321,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 				extra += 'filelist=%s machine=%s ' % (filelistFile, machine)
 		elif evlbiType != None:
 			for d in range(nStream):
-				dsInfo = 'file=/tmp/vlitebuf%d/%%now.vdif%% machine=%s ' % (d, machineMap[s])
+				dsInfo = 'file=/tmp/vlitebuf_%02d/%%now.vdif%% machine=%s ' % (d, machineMap[s])
 				if evlbiType == 'split':
 					dsInfo += 'frameSize=1032 '
 				dsData.append(dsInfo)
