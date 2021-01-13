@@ -2840,7 +2840,7 @@ int main(int argc, char **argv)
 
 	if(v2dFile.size() > DIFX_MESSAGE_PARAM_LENGTH-2)
 	{
-		//job numbers into the tens of thousands will be truncated in difxmessage.  Better warn the user.
+		// job numbers into the tens of thousands will be truncated in difxmessage.  Better warn the user.
 		cout << "Filename " << v2dFile << " is too long - its job name might be truncated by difxmessage!" << endl;
 		cout << "You are strongly encouraged to choose a shorter .v2d name (root shorter than 26 characters)" << endl;
 	}
@@ -2921,7 +2921,6 @@ int main(int argc, char **argv)
 	system(command.c_str());
 
 	V = loadVexFile(P->vexFile, &nWarn);
-
 	if(!V)
 	{
 		cerr << "Error: cannot load vex file: " << P->vexFile << endl;
@@ -2973,6 +2972,7 @@ int main(int argc, char **argv)
 		const std::string &corrSetupName = P->findSetup(scan->defName, scan->sourceDefName, scan->modeDefName);
 		CorrSetup *corrSetup = P->getNonConstCorrSetup(corrSetupName);
 		const VexMode *mode = V->getModeByDefName(scan->modeDefName);
+
 		if(!mode)
 		{
 			continue;
@@ -3059,7 +3059,6 @@ int main(int argc, char **argv)
 		}
 	}
 	
-
 	if(nError > 0)
 	{
 		cerr << endl;
@@ -3132,7 +3131,6 @@ int main(int argc, char **argv)
 
 	if(verbose > 3)
 	{
-
 		cout << "Pre-job making events:" << endl;
 		printEventList(events);
 	}
@@ -3242,7 +3240,7 @@ int main(int argc, char **argv)
 
 	cout << endl;
 
-	if(nJob>0)
+	if(nJob > 0)
 	{
 		return EXIT_SUCCESS;
 	}

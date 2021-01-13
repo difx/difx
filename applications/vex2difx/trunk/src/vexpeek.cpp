@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2020 by Walter Brisken and Jan Wagner              *
+ *   Copyright (C) 2009-2021 by Walter Brisken and Jan Wagner              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,10 +38,11 @@
 #include <fstream>
 #include <iomanip>
 #include <vexdatamodel.h>
+#include "testvex.h"
 
 const std::string program("vexpeek");
-const std::string version("0.12");
-const std::string verdate("20200923");
+const std::string version("0.13");
+const std::string verdate("20210113");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -346,45 +347,6 @@ void antCoords(const VexData *V)
 
 	std::cout.precision(p);
 	std::cout << std::scientific;
-}
-
-int testVex(const std::string &vexFile)
-{
-	const int MaxLineLength=128;
-	std::ifstream is;
-	char s[MaxLineLength];
-
-	is.open(vexFile.c_str());
-	if(is.fail())
-	{
-		std::cerr << "Error: vex2difx cannot open " << vexFile << std::endl;
-
-		return -1;
-	}
-
-	is.getline(s, MaxLineLength);
-	if(is.eof())
-	{
-		std::cerr << "Error: unexpected end of file: " << vexFile << std::endl;
-
-		return -2;
-	}
-
-	if(strncmp(s, "$EXPER ", 7) == 0)
-	{
-		std::cerr << "Error: " << vexFile << " looks like a sked input file and is not vex formatted." << std::endl;
-
-		return -3;
-	}
-
-	if(strncmp(s, "VEX", 3) != 0)
-	{
-		std::cerr << "Error: " << vexFile << " is not a vex file." << std::endl;
-
-		return -4;
-	}
-
-	return 0;
 }
 
 int main(int argc, char **argv)

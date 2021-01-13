@@ -2,7 +2,8 @@ AM_CPPFLAGS = -I$(top_srcdir)/vexdatamodel
 
 bin_PROGRAMS = \
 	vexpeek \
-	vex2difx
+	vex2difx \
+	vex2v2d
 
 LDADD = \
 	$(top_builddir)/vexdatamodel/libvexdatamodel.la \
@@ -35,7 +36,14 @@ vex2difx_SOURCES = \
 	timeutils.h \
 	vex2difx.cpp
 
+vex2v2d_SOURCES = \
+	testvex.h \
+	testvex.cpp \
+	vex2v2d.cpp
+
 vexpeek_SOURCES = \
+	testvex.h \
+	testvex.cpp \
 	timeutils.h \
 	timeutils.cpp \
 	vexpeek.cpp
