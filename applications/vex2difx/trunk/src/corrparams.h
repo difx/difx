@@ -173,6 +173,8 @@ public:
 	std::set<int> recorderIds;	// List of recorder ids to associate with this datastream
 	enum DataSource dataSource;
 	enum SamplingType dataSampling;
+	std::set<int> threadsAbsent;	// Threads that are configured from vex file but expected not to be in the data stream itself
+	std::set<int> threadsIgnore;	// Threads that are expected to be present in the data stream but should not be correlated
 
 	int startBand;		// within the antenna's baseband channels (defined in vex order), where does this datastream start? [0-based]; -1 indicates not initialized
 	int nBand;		// number of baseband channels provided by this datastream

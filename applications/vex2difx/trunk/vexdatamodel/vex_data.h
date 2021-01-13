@@ -104,6 +104,8 @@ public:
 	bool setFormat(const std::string &modeName, const std::string &antName, int dsId, const std::string &formatName);
 	void setStreamBands(const std::string &modeName, const std::string &antName, int dsId, int nBand, int startBand);
 	void setStreamFrameSize(const std::string &modeName, const std::string &antName, int dsId, int frameSize);
+	void setStreamThreadsAbsent(const std::string &modeName, const std::string &antName, int dsId, const std::set<int> &threadsAbsent);
+	void setStreamThreadsIgnore(const std::string &modeName, const std::string &antName, int dsId, const std::set<int> &threadsIgnore);
 	double getEarliestScanStart() const;
 	double getLatestScanStop() const;
 	void generateRecordChans();

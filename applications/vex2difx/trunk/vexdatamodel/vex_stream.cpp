@@ -648,6 +648,36 @@ std::ostream& operator << (std::ostream &os, const VexStream &x)
 			os << *it;
 		}
 	}
+	if(!x.threadsAbsent.empty())
+	{
+		for(std::set<int>::const_iterator it = x.threadsAbsent.begin(); it != x.threadsAbsent.end(); ++it)
+		{
+			if(it == x.threadsAbsent.begin())
+			{
+				os << ", threadsAbsent=";
+			}
+			else
+			{
+				os << ",";
+			}
+			os << *it;
+		}
+	}
+	if(!x.threadsIgnore.empty())
+	{
+		for(std::set<int>::const_iterator it = x.threadsIgnore.begin(); it != x.threadsIgnore.end(); ++it)
+		{
+			if(it == x.threadsIgnore.begin())
+			{
+				os << ", threadsIgnore=";
+			}
+			else
+			{
+				os << ",";
+			}
+			os << *it;
+		}
+	}
 	os << "]";
 	
 	return os;

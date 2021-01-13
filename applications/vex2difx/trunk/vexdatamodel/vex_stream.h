@@ -33,6 +33,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <set>
 #include <difxio.h>
 #include <regex.h>
 
@@ -84,6 +85,8 @@ public:
 	unsigned int VDIFFrameSize;	// size of one logical block of data
 	bool singleThread;		// true for single thread VDIF
 	std::vector<int> threads;	// ordered list of threads for VDIF
+	std::set<int> threadsAbsent;	// threads that are expected to be absent in the data
+	std::set<int> threadsIgnore;	// threads that are expected to be present but should not be correlated
 	enum DataFormat format;
 	enum SamplingType dataSampling;	// Real or Complex
 	enum DataSource dataSource;

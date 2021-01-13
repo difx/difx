@@ -965,6 +965,22 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 	{
 		ss >> tSys;
 	}
+	else if(key == "threadsAbsent" || key == "threadAbsent")
+	{
+		int t;
+
+		ss >> t;
+		threadsAbsent.insert(t);
+std::cout << "ABSENT: " << t << " " << threadsAbsent.size() << std::endl;
+	}
+	else if(key == "threadsIgnore" || key == "threadIgnore")
+	{
+		int t;
+
+		ss >> t;
+		threadsIgnore.insert(t);
+std::cout << "IGNORE: " << t << std::endl;
+	}
 	else
 	{
 		std::cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << std::endl; 
@@ -1022,6 +1038,28 @@ int DatastreamSetup::merge(const DatastreamSetup *dss)
 		std::cerr << "Error: conflicting formats: " << format << " != " << dss->format << std::endl;
 
 		return -2;
+	}
+
+	if(threadsAbsent.empty())
+	{
+		threadsAbsent = dss->threadsAbsent;
+	}
+	else if(!dss->threadsAbsent.empty())
+	{
+		std::cerr << "Error: conflicting threadsAbsent lists" << std::endl;
+
+		return -7;	
+	}
+
+	if(threadsIgnore.empty())
+	{
+		threadsIgnore = dss->threadsIgnore;
+	}
+	else if(!dss->threadsIgnore.empty())
+	{
+		std::cerr << "Error: conflicting threadsIgnore lists" << std::endl;
+
+		return -8;	
 	}
 
 	if(dataSampling != dss->dataSampling)
@@ -3202,6 +3240,24 @@ std::ostream& operator << (std::ostream &os, const DatastreamSetup &x)
 	{
 		os << "  machine=" << x.machine << std::endl;
 	}
+	if(!x.threadsAbsent.empty())
+	{
+		os << "  threadsAbsent =";
+		for(std::set<int>::const_iterator t = x.threadsAbsent.begin(); t != x.threadsAbsent.end(); ++t)
+		{
+			os << " " << *t;
+		}
+		os << std::endl;
+	}
+	if(!x.threadsIgnore.empty())
+	{
+		os << "  threadsIgnore =";
+		for(std::set<int>::const_iterator t = x.threadsIgnore.begin(); t != x.threadsIgnore.end(); ++t)
+		{
+			os << " " << *t;
+		}
+		os << std::endl;
+	}
 
 	os << "}" << std::endl;
 
@@ -3327,6 +3383,13 @@ std::ostream& operator << (std::ostream &os, const CorrParams &x)
 		for(std::vector<AntennaSetup>::const_iterator as = x.antennaSetups.begin(); as != x.antennaSetups.end(); ++as)
 		{
 			os << std::endl;
+			if(!as->datastreamSetups.empty())
+			{
+				for(std::vector<DatastreamSetup>::const_iterator ds =as->datastreamSetups.begin(); ds != as->datastreamSetups.end(); ++ds)
+				{
+					os << *ds;
+				}
+			}
 			os << *as;
 		}
 	}

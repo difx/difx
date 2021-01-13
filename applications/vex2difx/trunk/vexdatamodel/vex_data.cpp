@@ -1295,6 +1295,60 @@ void VexData::setStreamFrameSize(const std::string &modeName, const std::string 
 	}
 }
 
+void VexData::setStreamThreadsAbsent(const std::string &modeName, const std::string &antName, int dsId, const std::set<int> &threadsAbsent)
+{
+	int modeId = getModeIdByDefName(modeName);
+
+	if(modeId >= 0)
+	{
+		VexMode &M = modes[modeId];
+		std::map<std::string,VexSetup>::iterator it = M.setups.find(antName);
+		if(it != M.setups.end())
+		{
+			it->second.streams[dsId].threadsAbsent = threadsAbsent;
+		}
+		else
+		{
+			std::cerr << "Developer error: setStreamThreadsAbsent being called with antName = " << antName << " which is not found in mode " << modeName << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+	}
+	else
+	{
+		std::cerr << "Developer error: setStreamThreadsAbsent being called with modeName = " << modeName << " which returned modeId " << modeId << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
+}
+
+void VexData::setStreamThreadsIgnore(const std::string &modeName, const std::string &antName, int dsId, const std::set<int> &threadsIgnore)
+{
+	int modeId = getModeIdByDefName(modeName);
+
+	if(modeId >= 0)
+	{
+		VexMode &M = modes[modeId];
+		std::map<std::string,VexSetup>::iterator it = M.setups.find(antName);
+		if(it != M.setups.end())
+		{
+			it->second.streams[dsId].threadsIgnore = threadsIgnore;
+		}
+		else
+		{
+			std::cerr << "Developer error: setStreamThreadsIgnore being called with antName = " << antName << " which is not found in mode " << modeName << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+	}
+	else
+	{
+		std::cerr << "Developer error: setStreamThreadsIgnore being called with modeName = " << modeName << " which returned modeId " << modeId << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
+}
+
 double VexData::getEarliestScanStart() const
 {
 	double start = 1000000.0;
