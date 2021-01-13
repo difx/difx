@@ -30,6 +30,7 @@ Version 2.7.0
 * oms2v2d: some improvements for real-time correlation
 * Restore capability to override a non-VDIF format with a VDIF format
 * Implement "threadsAbsent" DATASTREAM parameter to specify VDIF threads that were identified in the .vex file but not in the recorded data
+* Implement "threadsIgnore" DATASTREAM parameter to specify VDIF threads that are present but should not be correlated
 
 Version 2.6.0
 ~~~~~~~~~~~~~

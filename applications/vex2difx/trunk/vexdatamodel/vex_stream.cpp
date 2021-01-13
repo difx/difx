@@ -562,6 +562,20 @@ bool VexStream::recordChanAbsent(int recChan) const
 	return threadsAbsent.count(threads[ti]);
 }
 
+bool VexStream::recordChanIgnore(int recChan) const
+{
+	int ti;			// index to thread array
+
+	if(threads.empty())	// ignore concept is tied to threads at this time
+	{
+		return false;
+	}
+
+	ti = recChan * threads.size() / nRecordChan;
+
+	return threadsIgnore.count(threads[ti]);
+}
+
 void VexStream::setFanout(int fan)
 {
 	fanout = fan;

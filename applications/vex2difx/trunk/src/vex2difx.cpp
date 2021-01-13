@@ -579,6 +579,12 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 			D->datastream[dsId].recBandFreqId[streamPresentChan] = getBand(bandMap, fqId);
 			D->datastream[dsId].recBandPolName[streamPresentChan] = subband.pol;
 
+			// Mark threads to be ignored by changing polarization to lower case
+			if(stream.recordChanIgnore(streamRecChan))
+			{
+				D->datastream[dsId].recBandPolName[streamPresentChan] += ('a'-'A');
+			}
+
 			++streamPresentChan;
 		}
 	}
@@ -780,6 +786,11 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 							continue;
 						}
 
+						if(islower(D->datastream[ds1].recBandPolName[f]))
+						{
+							continue;
+						}
+
 						DifxBaselineAllocPolProds(bl, nFreq, 4);
 
 						n1 = DifxDatastreamGetRecBands(D->datastream+ds1, freqId, a1p, a1c);
@@ -953,7 +964,6 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 							nFreq = 0; // this counts the actual number of freqs
 
-							// Note: eventually we need to loop over all datastreams associated with this antenna!
 							for(int f = 0; f < D->datastream[ds1].nRecFreq; ++f)
 							{
 								bool zoom2 = false;	// did antenna 2 zoom band make match? 
@@ -969,6 +979,11 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									continue;
 								}
 								if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(freqId) != blockedfreqids[a2].end())
+								{
+									continue;
+								}
+
+								if(islower(D->datastream[ds1].recBandPolName[f]))
 								{
 									continue;
 								}
@@ -995,6 +1010,11 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										{
 											continue;
 										}
+										if(islower(D->datastream[ds2].recBandPolName[f2]))
+										{
+											continue;
+										}
+
 										if(D->freq[altFreqId].sideband == 'L')
 										{
 											altlowedgefreq -= D->freq[altFreqId].bw;
@@ -1612,6 +1632,32 @@ static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int
 	}
 
 	return true;
+}
+
+static int fixDatastreamTable(DifxInput *D)
+{
+	int nFix = 0;
+
+	if(D && D->nDatastream > 0)
+	{
+		int dd;
+
+		for(dd = 0; dd < D->nDatastream; ++dd)
+		{
+			int r;
+
+			for(r = 0; r < D->datastream[dd].nRecFreq; ++r)
+			{
+				if(islower(D->datastream[dd].recBandPolName[r]))
+				{
+					D->datastream[dd].recBandPolName[r] += ('A' - 'a');
+					++nFix;
+				}
+			}
+		}
+	}
+
+	return nFix;
 }
 
 static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const std::list<Event> &events, const Shelves &shelves, int verbose, ofstream *of, int nDigit, char ext, int strict)
@@ -2386,6 +2432,9 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 	{
 		cerr << "Warning: no correlatable baselines were found." << endl;
 	}
+
+	// Make sure all polarizations are capitalized before writing
+	fixDatastreamTable(D);
 
 	// Merge identical table entries
 	simplifyDifxFreqs(D);

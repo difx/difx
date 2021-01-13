@@ -77,7 +77,8 @@ public:
 	int snprintDifxFormatName(char *outString, int maxLength) const;
 	int dataFrameSize() const;
 	size_t nPresentChan() const;	// Looks through listed channels and excludes those that are in the threadsAbsent set
-	bool recordChanAbsent(int recChan) const;
+	bool recordChanAbsent(int recChan) const;	// return true if this record channel is not in the data stream
+	bool recordChanIgnore(int recChan) const;	// return true if this record channel should not be correlated
 
 	double sampRate;		// [Hz]
 	unsigned int nBit;		// bits per sample
