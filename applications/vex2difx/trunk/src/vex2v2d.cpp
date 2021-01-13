@@ -41,9 +41,38 @@ const char version[] = "0.1";
 const char verdate[] = "20210113";
 const char author[] = "Walter Brisken";
 
+const double defaultTInt = 2.0;		// [sec]
+const double defaultSpecRes = 0.25;	// [MHz]
+
 void usage(const char *pgm)
 {
 	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
+	fprintf(stderr, "Usage: %s [options] <vexFile> [ <tInt> [ <specRes> ] ]\n\n", pgm);
+	fprintf(stderr, "<vexFile> is the full path to the vex file\n\n");
+	fprintf(stderr, "<tInt> is the integration time (seconds).  Default = %f\n\n", defaultTInt);
+	fprintf(stderr, "<specRes> is the spectral resolution (MHz).  Default = %f\n\n", defaultSpecRes);
+	fprintf(stderr, "options can be one or more of the following:\n\n");
+	fprintf(stderr, "  --help\n");
+	fprintf(stderr, "  -h       print this help info and quit\n\n");
+	fprintf(stderr, "  --verbose\n");
+	fprintf(stderr, "  -v       be more verbose in execution\n\n");
+	fprintf(stderr, "  --nopolar\n");
+	fprintf(stderr, "  -n       don't form cross-polar products\n\n");
+	fprintf(stderr, "  --polar\n");
+	fprintf(stderr, "  -p       form cross-polar products [default]\n\n");
+	fprintf(stderr, "  --machines\n");
+	fprintf(stderr, "  -m       add information about VLBA machines and threads\n\n");
+	fprintf(stderr, "  --split\n");
+	fprintf(stderr, "  -s       specify the format as VLBA1032\n\n");
+	fprintf(stderr, "  --VDIF\n");
+	fprintf(stderr, "  -V       specify the format as VLBA5032\n\n");
+	fprintf(stderr, "  --file\n");
+	fprintf(stderr, "  -F       set up for file-based correlation\n\n");
+	fprintf(stderr, "  --force\n");
+	fprintf(stderr, "  -f       force execution, even if output file already exists\n\n");
+	fprintf(stderr, "  -2       set up for two datastreams per antenna\n\n");
+	fprintf(stderr, "  -4       set up for four datastreams per antenna\n\n");
+	fprintf(stderr, "  -8       set up for eight datastreams per antenna\n\n");
 }
 
 const char *getDatastreamMachine(const std::string &ant)
@@ -98,7 +127,7 @@ const char *getDatastreamMachine(const std::string &ant)
 	}
 }
 
-int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, bool doMachines, bool doSplit, bool doFilelist)
+int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, bool doMachines, int vdifFrameSize, bool doFilelist)
 {
 	FILE *out;
 	unsigned int nAntenna = V->nAntenna();
@@ -107,12 +136,12 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 	std::string lexper = V->getExper()->name;
 	Lower(lexper);
 
-	if(doSplit || doFilelist)
+	if(vdifFrameSize > 0 || doFilelist || nDatastream > 1)
 	{
 		doDatastreams = true;
 	}
 
-	if(outFile == 0)	// assume stdout
+	if(outFile == 0 || outFile[0] == 0)	// assume stdout
 	{
 		out = stdout;
 	}
@@ -160,8 +189,17 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 	for(unsigned int a = 0; a < nAntenna; ++a)
 	{
 		const VexAntenna *A = V->getAntenna(a);
+		const char *machine;
 		std::string lname = A->name;
 		Lower(lname);
+		machine = getDatastreamMachine(A->name);
+
+		if(doMachines && machine == 0)
+		{
+			fprintf(stderr, "Error: Machine mode was used for unsupported antenna: %s\n", A->name.c_str());
+
+			exit(EXIT_FAILURE);
+		}
 
 		if(doDatastreams)
 		{
@@ -169,34 +207,43 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 			{
 				fprintf(out, "\n");
 			}
-			fprintf(out, "DATASTREAM %s0 {", A->name.c_str());
-			if(doSplit)
+			for(int d = 0; d < nDatastream; ++d)
 			{
-				fprintf(out, " format=VDIF1032");
+				fprintf(out, "DATASTREAM %s%d {", A->name.c_str(), d);
+				if(vdifFrameSize > 0)
+				{
+					fprintf(out, " format=VDIF%d", vdifFrameSize);
+				}
+				if(doFilelist)
+				{
+					if(nDatastream > 1)
+					{
+						fprintf(out, " filelist=%s.%s%d.filelist", lexper.c_str(), lname.c_str(), d);
+					}
+					else
+					{
+						fprintf(out, " filelist=%s.%s.filelist", lexper.c_str(), lname.c_str());
+					}
+				}
+				if(doMachines)
+				{
+					fprintf(out, " machine=%s", machine);
+				}
+				fprintf(out, " }\n");
 			}
-			if(doFilelist)
-			{
-				fprintf(out, " filelist=%s.%s.filelist", lexper.c_str(), lname.c_str());
-			}
-			fprintf(out, " }\n");
 		}
 
 		fprintf(out, "ANTENNA %s { toneSelection=smart", A->name.c_str());
-		if(doMachines)
+		if(doMachines && !doDatastreams)
 		{
-			const char *machine;
-
-			machine = getDatastreamMachine(A->name);
-			if(machine == 0)
-			{
-				fprintf(stderr, "Error: Machine mode was used for unsupported antenna: %s\n", A->name.c_str());
-
-				exit(EXIT_FAILURE);
-			}
 			fprintf(out, " machine=%s", machine);
-			if(doDatastreams)
+		}
+		if(doDatastreams)
+		{
+			fprintf(out, " datastreams");
+			for(int d = 0; d < nDatastream; ++d)
 			{
-				fprintf(out, " datastreams=%s0", A->name.c_str());
+				fprintf(out, "%c%s%d", (d == 0 ? '=' : ','), A->name.c_str(), d);
 			}
 		}
 	
@@ -229,16 +276,18 @@ int main(int argc, char **argv)
 	int v;
 	unsigned int nWarn = 0;
 	const char *vexFile = 0;
-	char outFile[PATH_MAX];
+	char outFile[PATH_MAX] = "";
 	char *ext;
 	int verbose = 0;
-	double tInt = 0.0;
-	double specRes = 0.0;
+	double tInt = 0.0;		// [sec]
+	double specRes = 0.0;		// [MHz]
 	bool force = false;
 	bool doPolar = true;
 	bool doMachines = false;
-	bool doSplit = false;
 	bool doFilelist = false;
+	bool doStdout = false;
+	int nDatastream = 1;
+	int vdifFrameSize = 0;
 
 	for(a = 1; a < argc; ++a)
 	{
@@ -253,6 +302,10 @@ int main(int argc, char **argv)
 		        strcmp(argv[a], "--verbose") == 0)
 		{
 			++verbose;
+		}
+		else if(strcmp(argv[a], "-") == 0)
+		{
+			doStdout = true;
 		}
 		else if(strcmp(argv[a], "-n") == 0 ||
 		        strcmp(argv[a], "--nopolar") == 0)
@@ -272,12 +325,29 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[a], "-s") == 0 ||
 		        strcmp(argv[a], "--split") == 0)
 		{
-			doSplit = true;
+			vdifFrameSize = 1032;
+		}
+		else if(strcmp(argv[a], "-V") == 0 ||
+		        strcmp(argv[a], "--VDIF") == 0)
+		{
+			vdifFrameSize = 5032;
 		}
 		else if(strcmp(argv[a], "-F") == 0 ||
 		        strcmp(argv[a], "--file") == 0)
 		{
 			doFilelist = true;
+		}
+		else if(strcmp(argv[a], "-2") == 0)
+		{
+			nDatastream = 2;
+		}
+		else if(strcmp(argv[a], "-4") == 0)
+		{
+			nDatastream = 4;
+		}
+		else if(strcmp(argv[a], "-8") == 0)
+		{
+			nDatastream = 8;
 		}
 		else if(strcmp(argv[a], "-f") == 0 ||
 		        strcmp(argv[a], "--force") == 0)
@@ -316,26 +386,29 @@ int main(int argc, char **argv)
 
 		return EXIT_FAILURE;
 	}
-	strcpy(outFile, vexFile);
-	ext = strstr(outFile, ".vex");
-	if(!ext)
+	if(!doStdout)
 	{
-		fprintf(stderr, "Error: the input filename should contain '.vex'\n");
+		strcpy(outFile, vexFile);
+		ext = strstr(outFile, ".vex");
+		if(!ext)
+		{
+			fprintf(stderr, "Error: the input filename should contain '.vex'\n");
 
-		return EXIT_FAILURE;
+			return EXIT_FAILURE;
+		}
+		strcpy(ext, ".v2d");
 	}
-	strcpy(ext, ".v2d");
 
 	if(tInt <= 0.0)
 	{
-		tInt = 2.0;
+		tInt = defaultTInt;
 
 		fprintf(stderr, "Setting tInt to default value of %f\n", tInt);
 	}
 
 	if(specRes <= 0.0)
 	{
-		specRes = 0.25;
+		specRes = defaultSpecRes;
 
 		fprintf(stderr, "Setting specRes to default value of %f\n", specRes);
 	}
@@ -356,15 +429,18 @@ int main(int argc, char **argv)
 		std::cout << std::endl;
 	}
 
-	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, doMachines, doSplit, doFilelist);
+	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, doMachines, vdifFrameSize, doFilelist);
 
-	if(v == EXIT_SUCCESS)
+	if(outFile[0])
 	{
-		fprintf(stderr, "\nOutput written to %s\n\n", outFile);
-	}
-	else
-	{
-		fprintf(stderr, "\nAn error occurred.\n\n");
+		if(v == EXIT_SUCCESS)
+		{
+			fprintf(stderr, "\nOutput written to %s\n\n", outFile);
+		}
+		else
+		{
+			fprintf(stderr, "\nAn error occurred.\n\n");
+		}
 	}
 
 	delete(V);
