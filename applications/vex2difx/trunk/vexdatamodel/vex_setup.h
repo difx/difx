@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2020 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -56,7 +56,8 @@ public:
 	void selectTones(enum ToneSelection selection, double guardBandMHz);
 	bool usesFormat(enum VexStream::DataFormat format) const;
 	size_t nStream() const { return streams.size(); }
-	size_t nRecordChan() const;
+	size_t nRecordChan() const;		/* number of channels presumed to have been recorded, per vex file */
+	size_t nPresentChan() const;		/* number of channels thought to be present in the actual data (c.f. threadsAbsent) */
 	unsigned int getBits() const;
 	unsigned int getMinBits() const;
 	unsigned int getMaxBits() const;

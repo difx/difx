@@ -57,7 +57,7 @@ using namespace std;
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20191112");
+const string verdate("20210112");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -492,9 +492,15 @@ static int getToneSetId(vector<vector<unsigned int> > &toneSets, const vector<un
 	return toneSets.size() - 1;
 }
 
+// The information feeding this function (.vex and .v2d) considers a recorded channel to be one that was intended to be recorded.
+// Due to possible thread filtering in VDIF, the number of actually present channels could be less.
+// It is this number of present channels that is reported in the .input files as "recorded channels", so some room for confusion here.
+
+// FIXME: the name "startBand" is confusing.  
 static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<unsigned int> >& toneSets, const VexMode *mode, const string &antName, unsigned int startBand, const VexSetup &setup, const VexStream &stream, const CorrSetup *corrSetup, enum V2D_Mode v2dMode)
 {
 	vector<pair<int,int> > bandMap;
+	int streamPresentChan = 0;	// "present channel" index
 
 	if(mode == 0)
 	{
@@ -511,18 +517,17 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		
 		exit(EXIT_FAILURE);
 	}
-	unsigned int nRecordChan = stream.nRecordChan;
 
 	stream.snprintDifxFormatName(D->datastream[dsId].dataFormat, DIFXIO_FORMAT_LENGTH);
 	D->datastream[dsId].dataFrameSize = stream.dataFrameSize();
 	D->datastream[dsId].quantBits = stream.nBit;
-	DifxDatastreamAllocBands(D->datastream + dsId, nRecordChan);
+	DifxDatastreamAllocBands(D->datastream + dsId, stream.nPresentChan());
 
-	for(unsigned int i = 0; i < nRecordChan; ++i)
+	for(unsigned int i = 0; i < stream.nRecordChan; ++i)
 	{
 		if(i + startBand >= setup.channels.size())
 		{
-			cerr << "Error: in setting format parameters, the number of provided channels was less than that expected.  This is for antenna " << antName << ".  In this particular case, " << setup.channels.size() << " were found but " << nRecordChan << " were expected." << endl;
+			cerr << "Error: in setting format parameters, the number of provided channels was less than that expected.  This is for antenna " << antName << ".  In this particular case, " << setup.channels.size() << " were found but " << stream.nRecordChan << " were expected." << endl;
 			break;
 		}
 
@@ -534,22 +539,28 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 			exit(EXIT_FAILURE);
 		}
 
-		int r = ch->recordChan;
-		if(r >= 0)
+		int setupRecChan = ch->recordChan;
+		if(setupRecChan >= 0)
 		{
 			unsigned int toneSetId, fqId;
 			const VexSubband& subband = mode->subbands[ch->subbandId];
+			int streamRecChan;
 
-			r -= startBand;
-			if(r < 0 || r >= D->datastream[dsId].nRecBand)
+			streamRecChan = setupRecChan - startBand;
+			if(streamRecChan < 0 || streamRecChan >= stream.nRecordChan)
 			{
-				cerr << "Error: setFormat: index to record channel=" << r << " is out of range.  antName=" << antName << " mode=" << mode->defName << endl;
+				cerr << "Error: setFormat: index to stream record channel=" << streamRecChan << " is out of range.  antName=" << antName << " mode=" << mode->defName << endl;
 				cerr << "nRecBand = " << D->datastream[dsId].nRecBand << endl;
 				cerr << "startBand = " << startBand << endl;
 				cerr << "subband = " << mode->subbands[ch->subbandId] << endl;
-				cerr << "nRecordChan = " << nRecordChan << "  i = " << i << endl;
+				cerr << "nRecordChan = " << stream.nRecordChan << "  i = " << i << "  streamRecChan = " << streamRecChan << "  streamPresentChan = " << streamPresentChan << endl;
 
 				exit(EXIT_FAILURE);
+			}
+
+			if(stream.recordChanAbsent(streamRecChan))
+			{
+				continue;
 			}
 			
 			if(v2dMode == V2D_MODE_PROFILE || setup.phaseCalIntervalMHz() == 0)
@@ -563,9 +574,12 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 			}
 			
 			fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand, corrSetup->FFTSpecRes, corrSetup->outputSpecRes, 1, 0, toneSetId);	// 0 means not zoom band
-			
-			D->datastream[dsId].recBandFreqId[r] = getBand(bandMap, fqId);
-			D->datastream[dsId].recBandPolName[r] = subband.pol;
+
+			// index into the difxio datastream object arrays is by "present band"
+			D->datastream[dsId].recBandFreqId[streamPresentChan] = getBand(bandMap, fqId);
+			D->datastream[dsId].recBandPolName[streamPresentChan] = subband.pol;
+
+			++streamPresentChan;
 		}
 	}
 	DifxDatastreamAllocFreqs(D->datastream + dsId, bandMap.size());
@@ -575,7 +589,14 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		D->datastream[dsId].nRecPol[j]   = bandMap[j].second;
 	}
 
-	return nRecordChan;
+	if(streamPresentChan != stream.nPresentChan())
+	{
+		cerr << "Developer error: setFormat: inconsistent number of present channels.  antName=" << antName << " mode=" << mode->defName << endl;
+
+		exit(EXIT_FAILURE);
+	}
+
+	return streamPresentChan;
 }
 
 static void populateRuleTable(DifxInput *D, const CorrParams *P)

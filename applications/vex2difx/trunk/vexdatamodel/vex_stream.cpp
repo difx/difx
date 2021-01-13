@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2018 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -522,6 +522,46 @@ bool VexStream::isVDIFFormat() const
 	return ::isVDIFFormat(format);
 }
 
+size_t VexStream::nPresentChan() const
+{
+	size_t n;
+	
+	if(threads.empty())
+	{
+		n = nRecordChan;
+	}
+	else
+	{
+		n = threads.size();
+
+		for(std::vector<int>::const_iterator it = threads.begin(); it != threads.end(); ++it)
+		{
+			if(threadsAbsent.count(*it) > 0)
+			{
+				--n;
+			}
+		}
+
+		n = n * nRecordChan / threads.size();	/* assuming multi-channel per thread, this scales number of present threads to number of present channels */
+	}
+
+	return n;
+}
+
+bool VexStream::recordChanAbsent(int recChan) const
+{
+	int ti;			// index to thread array
+
+	if(threads.empty())	// absent concept does not apply
+	{
+		return false;
+	}
+
+	ti = recChan * threads.size() / nRecordChan;
+
+	return threadsAbsent.count(threads[ti]);
+}
+
 void VexStream::setFanout(int fan)
 {
 	fanout = fan;
@@ -552,9 +592,12 @@ int VexStream::snprintDifxFormatName(char *outString, int maxLength) const
 			fn << "INTERLACEDVDIF";
 			for(std::vector<int>::const_iterator it = threads.begin(); it != threads.end(); ++it)
 			{
-				fn << sep;
-				fn << *it;
-				sep = ':';
+				if(threadsAbsent.count(*it) == 0)	// exclude any elements of threadsAbsent set
+				{
+					fn << sep;
+					fn << *it;
+					sep = ':';
+				}
 			}
 			
 			n = snprintf(outString, maxLength, "%s", fn.str().c_str());

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2020 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -245,6 +245,18 @@ size_t VexSetup::nRecordChan() const
 	for(std::vector<VexStream>::const_iterator it = streams.begin(); it != streams.end(); ++it)
 	{
 		rc += it->nRecordChan;
+	}
+
+	return rc;
+}
+
+size_t VexSetup::nPresentChan() const
+{
+	size_t rc = 0;
+
+	for(std::vector<VexStream>::const_iterator it = streams.begin(); it != streams.end(); ++it)
+	{
+		rc += it->nPresentChan();
 	}
 
 	return rc;

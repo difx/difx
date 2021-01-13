@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -76,6 +76,8 @@ public:
 	void setFanout(int fan);
 	int snprintDifxFormatName(char *outString, int maxLength) const;
 	int dataFrameSize() const;
+	size_t nPresentChan() const;	// Looks through listed channels and excludes those that are in the threadsAbsent set
+	bool recordChanAbsent(int recChan) const;
 
 	double sampRate;		// [Hz]
 	unsigned int nBit;		// bits per sample

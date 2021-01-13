@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -221,13 +221,10 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 						++nError;
 					}
 
-#if 0
 					if(B && !A)
 					{
-						std::cerr << "Error: cannot change format to VDIF from any other non-VDIF format (antenna " << as->vexName << ") with the .v2d file.  You need to change the .vex file." << std::endl;
-						++nError;
+						std::cerr << "Note: changing from non-VDIF to VDIF format for antenna " << as->vexName << ".  Check the results carefully." << std::endl;
 					}
-#endif
 
 					v = V->setFormat(M->defName, it->first, ds, DS.format);
 				}
