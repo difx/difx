@@ -38,7 +38,7 @@
 
 const char program[] = "vex2v2d";
 const char version[] = "0.1";
-const char verdate[] = "20210113";
+const char verdate[] = "20210114";
 const char author[] = "Walter Brisken";
 
 const double defaultTInt = 2.0;		// [sec]
@@ -68,8 +68,12 @@ void usage(const char *pgm)
 	fprintf(stderr, "  -V       specify the format as VLBA5032\n\n");
 	fprintf(stderr, "  --file\n");
 	fprintf(stderr, "  -F       set up for file-based correlation\n\n");
+	fprintf(stderr, "  --vlitebuf\n");
+	fprintf(stderr, "  -b       configure for reading from vlitebuf FUSE filesystems\n\n");
 	fprintf(stderr, "  --force\n");
 	fprintf(stderr, "  -f       force execution, even if output file already exists\n\n");
+	fprintf(stderr, "  --threadsAbsent=<list>\n");
+	fprintf(stderr, "           specify that comma separated <list> of threads is absent from datastreams\n\n");
 	fprintf(stderr, "  -2       set up for two datastreams per antenna\n\n");
 	fprintf(stderr, "  -4       set up for four datastreams per antenna\n\n");
 	fprintf(stderr, "  -8       set up for eight datastreams per antenna\n\n");
@@ -127,7 +131,7 @@ const char *getDatastreamMachine(const std::string &ant)
 	}
 }
 
-int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, bool doMachines, int vdifFrameSize, bool doFilelist)
+int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, bool doMachines, int vdifFrameSize, bool doFilelist, bool doVlitebuf, const char *threadsAbsent)
 {
 	FILE *out;
 	unsigned int nAntenna = V->nAntenna();
@@ -136,7 +140,7 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 	std::string lexper = V->getExper()->name;
 	Lower(lexper);
 
-	if(vdifFrameSize > 0 || doFilelist || nDatastream > 1)
+	if(vdifFrameSize > 0 || nDatastream > 1)
 	{
 		doDatastreams = true;
 	}
@@ -177,6 +181,7 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 		fprintf(out, "nThread = 4\n\n");
 	}
 	fprintf(out, "delayModel = difxcalc\n\n");
+	fprintf(out, "singleScan = true\n\n");
 
 	for(unsigned int s = 0; s < nSource; ++s)
 	{
@@ -225,25 +230,48 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 						fprintf(out, " filelist=%s.%s.filelist", lexper.c_str(), lname.c_str());
 					}
 				}
+				else if(doVlitebuf)
+				{
+					fprintf(out, " file=/tmp/vlitebuf_%02d/%%now.vdif%%", d);
+				}
 				if(doMachines)
 				{
 					fprintf(out, " machine=%s", machine);
+				}
+				if(threadsAbsent && threadsAbsent[0])
+				{
+					fprintf(out, " threadsAbsent=%s", threadsAbsent);
 				}
 				fprintf(out, " }\n");
 			}
 		}
 
 		fprintf(out, "ANTENNA %s { toneSelection=smart", A->name.c_str());
-		if(doMachines && !doDatastreams)
-		{
-			fprintf(out, " machine=%s", machine);
-		}
 		if(doDatastreams)
 		{
 			fprintf(out, " datastreams");
 			for(int d = 0; d < nDatastream; ++d)
 			{
 				fprintf(out, "%c%s%d", (d == 0 ? '=' : ','), A->name.c_str(), d);
+			}
+		}
+		else
+		{
+			if(doFilelist)
+			{
+				fprintf(out, " filelist=%s.%s.filelist", lexper.c_str(), lname.c_str());
+			}
+			else if(doVlitebuf)
+			{
+				fprintf(out, " file=/tmp/vlitebuf_00/%%now.vdif%%");
+			}
+			if(doMachines)
+			{
+				fprintf(out, " machine=%s", machine);
+			}
+			if(threadsAbsent && threadsAbsent[0])
+			{
+				fprintf(out, " threadsAbsent=%s", threadsAbsent);
 			}
 		}
 	
@@ -286,8 +314,10 @@ int main(int argc, char **argv)
 	bool doMachines = false;
 	bool doFilelist = false;
 	bool doStdout = false;
+	bool doVlitebuf = false;
 	int nDatastream = 1;
 	int vdifFrameSize = 0;
+	const char *threadsAbsent = 0;
 
 	for(a = 1; a < argc; ++a)
 	{
@@ -336,6 +366,15 @@ int main(int argc, char **argv)
 		        strcmp(argv[a], "--file") == 0)
 		{
 			doFilelist = true;
+		}
+		else if(strcmp(argv[a], "-b") == 0 ||
+		        strcmp(argv[a], "--vlitebuf") == 0)
+		{
+			doVlitebuf = true;
+		}
+		else if(strncmp(argv[a], "--threadsAbsent=", 16) == 0)
+		{
+			threadsAbsent = argv[a]+16;
 		}
 		else if(strcmp(argv[a], "-2") == 0)
 		{
@@ -399,6 +438,13 @@ int main(int argc, char **argv)
 		strcpy(ext, ".v2d");
 	}
 
+	if(doVlitebuf && doFilelist)
+	{
+		fprintf(stderr, "Error: cannot simultaneously support vlitebuf and filelists\n");
+
+		return EXIT_FAILURE;
+	}
+
 	if(tInt <= 0.0)
 	{
 		tInt = defaultTInt;
@@ -429,7 +475,7 @@ int main(int argc, char **argv)
 		std::cout << std::endl;
 	}
 
-	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, doMachines, vdifFrameSize, doFilelist);
+	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, doMachines, vdifFrameSize, doFilelist, doVlitebuf, threadsAbsent);
 
 	if(outFile[0])
 	{
