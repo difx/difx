@@ -38,7 +38,7 @@
 
 const char program[] = "vex2v2d";
 const char version[] = "0.1";
-const char verdate[] = "20210114";
+const char verdate[] = "20210117";
 const char author[] = "Walter Brisken";
 
 const double defaultTInt = 2.0;		// [sec]
@@ -73,7 +73,9 @@ void usage(const char *pgm)
 	fprintf(stderr, "  --force\n");
 	fprintf(stderr, "  -f       force execution, even if output file already exists\n\n");
 	fprintf(stderr, "  --threadsAbsent=<list>\n");
-	fprintf(stderr, "           specify that comma separated <list> of threads is absent from datastreams\n\n");
+	fprintf(stderr, "           specify that comma-separated <list> of threads is absent from datastreams\n\n");
+	fprintf(stderr, "  --dropAntennas=<list>\n");
+	fprintf(stderr, "           specify that comma-separated <list> of antennas should be excluded\n\n");
 	fprintf(stderr, "  -2       set up for two datastreams per antenna\n\n");
 	fprintf(stderr, "  -4       set up for four datastreams per antenna\n\n");
 	fprintf(stderr, "  -8       set up for eight datastreams per antenna\n\n");
@@ -131,7 +133,7 @@ const char *getDatastreamMachine(const std::string &ant)
 	}
 }
 
-int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, bool doMachines, int vdifFrameSize, bool doFilelist, bool doVlitebuf, const char *threadsAbsent)
+int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, bool doMachines, int vdifFrameSize, bool doFilelist, bool doVlitebuf, const char *threadsAbsent, const char *dropAntennas)
 {
 	FILE *out;
 	unsigned int nAntenna = V->nAntenna();
@@ -164,6 +166,10 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 	for(unsigned int a = 0; a < nAntenna; ++a)
 	{
 		const VexAntenna *A = V->getAntenna(a);
+		if(dropAntennas && strstr(dropAntennas, A->name.c_str()) != 0)
+		{
+			continue;
+		}
 		if(a == 0)
 		{
 			fprintf(out, " %s", A->name.c_str());
@@ -172,6 +178,10 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 		{
 			fprintf(out, ", %s", A->name.c_str());
 		}
+	}
+	if(dropAntennas)
+	{
+		fprintf(out, "    # excluded antennas: %s", dropAntennas);
 	}
 	fprintf(out, "\n\n");
 	if(doMachines)
@@ -318,6 +328,7 @@ int main(int argc, char **argv)
 	int nDatastream = 1;
 	int vdifFrameSize = 0;
 	const char *threadsAbsent = 0;
+	const char *dropAntennas = 0;
 
 	for(a = 1; a < argc; ++a)
 	{
@@ -375,6 +386,10 @@ int main(int argc, char **argv)
 		else if(strncmp(argv[a], "--threadsAbsent=", 16) == 0)
 		{
 			threadsAbsent = argv[a]+16;
+		}
+		else if(strncmp(argv[a], "--dropAntennas=", 15) == 0)
+		{
+			dropAntennas = argv[a]+15;
 		}
 		else if(strcmp(argv[a], "-2") == 0)
 		{
@@ -475,7 +490,7 @@ int main(int argc, char **argv)
 		std::cout << std::endl;
 	}
 
-	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, doMachines, vdifFrameSize, doFilelist, doVlitebuf, threadsAbsent);
+	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, doMachines, vdifFrameSize, doFilelist, doVlitebuf, threadsAbsent, dropAntennas);
 
 	if(outFile[0])
 	{
