@@ -478,15 +478,15 @@ if not options.calibrateonly:
                 outlierfields = '[]'
                 os.system("rm -rf {0}.*".format(imagename))
 
-            # If desired, produce the only the dirty image
+            # If desired, produce only the dirty image
             if options.dirtyonly:
                 imagename = "TARGET.cube.dirim.{0}".format(pol)
-                os.system("rm -rf {0}.*".format(imname))
+                os.system("rm -rf {0}.*".format(imagename))
                 casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='cube', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='{9}', robust={10} niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields, pixelsize, options.weighting, options.robust))
 
             elif options.dirtymfs:
                 imagename = "TARGET.mfs.dirim.{0}".format(pol)
-                os.system("rm -rf {0}.*".format(imname))
+                os.system("rm -rf {0}.*".format(imagename))
                 casaout.write("tclean(vis='{0}', imagename='{1}', imsize={2}, cell=['{8}arcsec', '{8}arcsec'], stokes='{3}', specmode='mfs', width={4}, phasecenter={5}, gridder='widefield', wprojplanes=-1, pblimit=1e-6, deconvolver='multiscale', weighting='{9}', robust={10}, niter=0, mask={6}, outlierfile={7})".format(targetmsfilename, imagename, imsize, pol, options.averagechannels, phasecenter, maskstr, outlierfields, pixelsize, options.weighting, options.robust))
 
             elif options.cleanmfs:
