@@ -165,7 +165,7 @@ bool loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandDa
 
 			if(v != 0)
 			{
-				std::cerr << "Error: cannot get filelist data from " << fileName << ".  The file is not in a recognized format."  << std::endl;
+				std::cerr << "Error: cannot get filelist data from " << fileName << ".  The file is not in a recognized format or it contains invalid MJD times."  << std::endl;
 
 				return false;
 			}
