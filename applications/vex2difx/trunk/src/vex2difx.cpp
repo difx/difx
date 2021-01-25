@@ -978,10 +978,10 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								{
 									continue;
 								}
-								if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(freqId) != blockedfreqids[a2].end())
-								{
-									continue;
-								}
+								//if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(freqId) != blockedfreqids[a2].end())
+								//{
+								//	continue;
+								//}
 
 								if(islower(D->datastream[ds1].recBandPolName[f]))
 								{
