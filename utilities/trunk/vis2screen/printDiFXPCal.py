@@ -49,7 +49,7 @@ def printTones(pcfile,datastreamId,toneIndices):
 	rows_total = df.shape[0]
 
 	if toneIndices is None:
-		toneIndices = range(ds_num_channels*ds_tones_per_channel)
+		toneIndices = range(max(ds_num_channels)*ds_tones_per_channel)
 
 	# Remove tone indices that aren't present in data.
 	# Reinterpret any large indices as a frequency (MHz) and try to find the corresponding tone.
