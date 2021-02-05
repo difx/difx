@@ -20,6 +20,7 @@ Version 2.7
 * Update File and Mark6 datastreams for interlaced VDIF to improve multiplexing
   - TODO: Set nGap to fraction of second rather than fixed number of frames?
 * VDIF file reading: don't bail if seeking fails, just don't perform file checking
+* startdifx: when run with --wait, skip jobs whose end time has passed
 
 Version 2.6
 ~~~~~~~~~~~

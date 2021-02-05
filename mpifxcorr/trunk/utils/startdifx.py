@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2019 by Walter Brisken and Helge Rottmann          *
+#   Copyright (C) 2008-2021 by Walter Brisken and Helge Rottmann          *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '3.0.1'
-VERDATE = '20191226'
+VERSION = '3.0.2'
+VERDATE = '20210205'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -681,6 +681,7 @@ def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMes
 		intmjd = 0
 		sec = 0.0
 		data = open(fileBase + '.input').readlines()
+		dur = 0.0
 		for d in data:
 			s = d.strip().split()
 			if len(s) != 3:
@@ -690,8 +691,17 @@ def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMes
 					intmjd = int(s[2])
 				elif s[1] == 'SECONDS:':
 					sec = float(s[2])
+			if d[:19] == 'EXECUTE TIME (SEC):':
+				dur = float(d[19:].strip())
 		mjd = intmjd + sec/86400.0
-		curmjd = time()/86400.0 + 40587.0
+		end = mjd + dur/86400.0
+		now = time()
+		curmjd = now/86400.0 + 40587.0
+
+		if curmjd > end:
+			print('Skipping job %s because its end time has passed.' % fileBase)
+			return None 
+
 		dt = (mjd - curmjd)*86400.0
 		if dt < 0.0:
 			dt = 0.0
