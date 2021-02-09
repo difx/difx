@@ -94,7 +94,7 @@ do
     ( echo '' ; echo '' ) >> $tag.out
     awk -v decimate=1 "$awks" $p >> $tag.out
     ndx=$(($ndx + 1))
-    map=`ls *jobs-map.txt`
+    map=`ls *jobs-map.txt 2>&-` || map='no-such-file'
     [ -f "$map" ] && {
         job=`echo $p | cut -d_ -f2 | cut -d. -f1`
         tit[$ndx]="tit '"`awk '$1 == '$job' {print $3}' $map`"($job)'"
@@ -141,7 +141,8 @@ do
     idx=$(($idx + 1))
 done
 # plot
-starter="plot $plotrange '$tag.out'"
+[ -z "$limits" ] && limits='[][]'
+starter="plot $limits $plotrange '$tag.out'"
 idx=1
 while [ $ndx -ge $idx ]
 do

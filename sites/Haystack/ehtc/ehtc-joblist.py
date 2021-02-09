@@ -31,7 +31,7 @@ def parseOptions():
     epi += ' try this: '
     epi += ' ehtc-joblist.py -i *.input -o *.vex.obs -p na -s 3C279 -R'
     use = '%(prog)s [options]\n'
-    use += '  Version $Id: ehtc-joblist.py 3048 2020-09-02 15:03:00Z gbc $'
+    use += '  Version $Id: ehtc-joblist.py 3057 2020-09-04 15:39:09Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     inputs = parser.add_argument_group('input options', inp)
     action = parser.add_argument_group('action options', act)
@@ -118,6 +118,11 @@ def parseOptions():
     select.add_argument('-u', '--uniq', dest='uniq',
         action='store_true', default=False,
         help='Restrict jobs to a uniq set of largest job numbers')
+    select.add_argument('-a', '--autos', dest='autos',
+        action='store_true', default=False,
+        help='If you are not using exhaustiveAutocorrs=True, set this. ' +
+            'In counting the fringes, crosscorrelations between datastreams ' +
+            'will increase the count of expected fringes.')
     tester.add_argument('-V', '--Vex', dest='vex',
         metavar='VEXTIME', default='',
         help='convert a Vex Time into MJD (and exit)')
@@ -732,7 +737,7 @@ def doReportLostScans(o):
             name, o.lostscans[name][1], o.lostscans[name][3])
     print
 
-def prodDict(verb, codefile):
+def prodDict(verb, codefile, autos):
     '''
     Open the file and calculate the number of fringes for all
     possible baseline product combinations.
@@ -750,12 +755,14 @@ def prodDict(verb, codefile):
             pass
     if verb: print 'station',spol
     if verb: print 'scodes',sdic
+    # collect in bpol[ref+rem] the number of polarizations correlated
     for ref in spol:
         for rem in spol:
             if spol[ref] > 0 and spol[rem] > 0:
-                if ref == rem:  # auto
+                # exhaustiveAutocorrs=True will need else clause
+                if ref == rem and autos:
                     bpol[ref+rem] = spol[ref]
-                else:           # cross
+                else:
                     bpol[ref+rem] = spol[ref]*spol[rem]
     if verb: print 'baseline',bpol
     cf.close()
@@ -802,7 +809,7 @@ def doCheck(o):
     '''
     doLostScans(o)
     if len(o.lostscans) > 0: doReportLostScans(o)
-    o.scodes, o.blproddict = prodDict(o.verb, o.codes)
+    o.scodes, o.blproddict = prodDict(o.verb, o.codes, o.autos)
     for jn in o.cabbage:
         antennas = o.cabbage[jn][2]
         vexinfo = o.cabbage[jn][3]

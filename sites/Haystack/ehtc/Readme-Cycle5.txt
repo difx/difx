@@ -359,9 +359,11 @@ antabfiles=`ls -l $evs*polcon*/*ANTAB | wc -l`
     echo $polconversions -ne $allifsplots '(polconversions ne allifplots)' ; }
 [ $polconversions -eq $antabfiles ] || { echo -n '### missing antabfiles ';
     echo $polconversions -ne $antabfiles '(polconversions ne $antabfiles)' ; }
+# generate a list of what is missing (2>&1 >/dev/null captures stderr only)
 for j in `cat $ers-jobs-map.txt | grep -v do.not | awk '{print $1}'`
     do ls *$j*/*ANTAB *$j*/*TS/A*png 2>&1 >/dev/null | sed 's/^/### /' ; done
-# and paste ### lines here
+# paste ### lines here -- these are the jobs missing plots or antabs --
+# ideally these should be investigated and resolved.
 
 # Examine some of the 4fit fringes on questionable cases with
 fplot $ers-*-4fit.$expn.save/$doyhhmm/A[^A].B.*
