@@ -189,7 +189,7 @@ def check_file(infile, m5bopts):
             error = str()
             m5bsum_out, error = subprocess.Popen(
                     command, shell=True, stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE).communicate()
+                    stderr=subprocess.PIPE, encoding="utf-8").communicate()
             starttime_m5, endtime_m5 = m5bsum_out.split()[1:3]
             starttime = espressolib.convertdate(float(starttime_m5), "vex")
             endtime = espressolib.convertdate(float(endtime_m5), "vex")
@@ -201,7 +201,7 @@ def check_file(infile, m5bopts):
                 command = " ".join([m5findformats, infile])
                 stdout, error = subprocess.Popen(
                         command, shell=True, stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE).communicate()
+                        stderr=subprocess.PIPE, encoding="utf-8").communicate()
                 #sys.stderr.write(error)
                 stdout = stdout.decode("utf-8")
                 error = error.decode("utf-8")
@@ -210,7 +210,7 @@ def check_file(infile, m5bopts):
                 command = " ".join([m5time, infile, m5format])
                 starttime_m5, error = subprocess.Popen(
                         command, shell=True, stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE).communicate()
+                        stderr=subprocess.PIPE, encoding="utf-8").communicate()
                 #sys.stderr.write(error)
 
                 lastsample = 1000000
@@ -219,7 +219,7 @@ def check_file(infile, m5bopts):
                         [m5time, infile, m5format, str(filesize-lastsample)])
                 endtime_m5, error = subprocess.Popen(
                         command, shell=True, stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE).communicate()
+                        stderr=subprocess.PIPE, encoding="utf-8").communicate()
                 #sys.stderr.write(error)
 
                 starttime = m5_to_vextime(starttime_m5)

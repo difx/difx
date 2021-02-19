@@ -447,7 +447,7 @@ def run_batch(corrjoblist, outdir):
             good_jobs.append(jobname)
         else:
             bad_jobs.append(jobname)
-        errors += job_errors
+        errors += job_errors[0:10]
 
         if batch.stats is not None:
             # print the user stats

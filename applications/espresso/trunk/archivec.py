@@ -140,12 +140,12 @@ for filename in os.listdir(os.curdir):
         # deal with this later in its own tar file
         continue
     if filename == "test":
-        print ("skipping", filename)
         # ignore this one
+        print ("skipping", filename)
         continue
     if re.match(r"\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d", filename):
-        print ("skipping", filename)
         # ignore these (old, superseded jobs).
+        print ("skipping", filename)
         continue
 
     # certain file names never get tarred
@@ -164,7 +164,7 @@ for filename in os.listdir(os.curdir):
         notar = True
 
     if (os.path.exists(fileWithPath) and notar):
-        # transfer this large file without tarring
+        # transfer this large (or special) file without tarring
         transfer.append(re.escape(fileWithPath))
         publish.append(filename)
     else:

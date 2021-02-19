@@ -57,7 +57,7 @@ def get_leapsec(leapsec_page, target_jd):
     return tai_utc
 
 
-def ftpget(url, directory, filename):
+def ftps_get(url, directory, filename):
     """Return contents of a file on an ftp-ssl site"""
     contents = []
     ftps = ftplib.FTP_TLS(url)
@@ -125,14 +125,14 @@ if not options.local:
     sys.stderr.write("Fetching EOP data from {:s}\n".format(gsfc_url))
     #eop_page = requests.get(eop_url, verify=options.verify).content.split("\n")
     #eop_page = urllib2.urlopen(eop_url).readlines()
-    eop_page = ftpget(gsfc_url, eop_dir, eop_filename)
+    eop_page = ftps_get(gsfc_url, eop_dir, eop_filename)
 
     sys.stderr.write(
             "Fetching leap second data from {:s}\n".format(gsfc_url))
     #leapsec_page = requests.get(
     #       leapsec_url, verify=options.verify).content.split("\n")
     #leapsec_page = urllib2.urlopen(leapsec_url).readlines()
-    leapsec_page = ftpget(gsfc_url, eop_dir, leapsec_filename)
+    leapsec_page = ftps_get(gsfc_url, eop_dir, leapsec_filename)
     print ("{:s} EOPs downloaded at {:s}".format(
             comment, time.strftime("%Y-%m-%d %H:%M:%S (%z)")))
 else:
