@@ -32,6 +32,7 @@ Version 2.7.0
 * Implement "threadsAbsent" DATASTREAM parameter to specify VDIF threads that were identified in the .vex file but not in the recorded data
 * Implement "threadsIgnore" DATASTREAM parameter to specify VDIF threads that are present but should not be correlated
 * Add vex2v2d -- a tool to create a skeleton (and possibly final) .v2d file based on the contents of a .vex file
+* vexpeek: new scan summary mode: --scans2
 
 Version 2.6.0
 ~~~~~~~~~~~~~

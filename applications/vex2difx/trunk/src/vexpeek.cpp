@@ -41,8 +41,8 @@
 #include "testvex.h"
 
 const std::string program("vexpeek");
-const std::string version("0.13");
-const std::string verdate("20210113");
+const std::string version("0.14");
+const std::string verdate("20210219");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -61,6 +61,7 @@ void usage(const char *pgm)
 	std::cout << "  -t or --doTime : add detailed time data to some output" << std::endl;
 	std::cout << "  -b or --bands : print list of band codes" << std::endl;
 	std::cout << "  -s or --scans : print list of scans and their stations" << std::endl;
+	std::cout << "        --scans2 : print list of scans with bands and times" << std::endl;
 	std::cout << "  -r or --sources : print list of sources and their coordinates" << std::endl;
 	std::cout << "  -u or --diskusage : print disk usage (GB)" << std::endl;
 	std::cout << "  -m or --modules : print disk modules used (from TAPELOG_OBS)" << std::endl;
@@ -278,6 +279,39 @@ void scanListWithTimes(const VexData *V)
 	}
 }
 
+// print: ScanName SourceName Band NAntenna startMJD stopMJD
+void scan2List(const VexData *V)
+{
+	std::set<char> bands;
+
+	for(unsigned int s = 0; s < V->nScan(); ++s)
+	{
+		const VexScan *scan = V->getScan(s);
+		const VexMode *M = V->getModeByDefName(scan->modeDefName);
+		std::cout << std::left << std::setw(8) << scan->defName << " ";
+		std::cout << std::left << std::setw(12) << scan->sourceDefName << " ";
+
+		bands.clear();
+		for(std::map<std::string,VexSetup>::const_iterator s = M->setups.begin(); s != M->setups.end(); ++s)
+		{
+			for(std::vector<VexChannel>::const_iterator v = s->second.channels.begin(); v != s->second.channels.end(); ++v)
+			{
+				bands.insert(v->bandCode());
+			}
+		}
+
+		for(std::set<char>::const_iterator b=bands.begin(); b != bands.end(); ++b)
+		{
+			std::cout << *b;
+		}
+
+		std::cout << " " << scan->stations.size() << " ";
+
+		std::cout.precision(14);
+		std::cout << scan->mjdStart << " " << scan->mjdStop << std::endl;
+	}
+}
+
 void sourceList(const VexData *V)
 {
 	for(unsigned int s = 0; s < V->nSource(); ++s)
@@ -358,6 +392,7 @@ int main(int argc, char **argv)
 	int verbose = 0;
 	int doBandList = 0;
 	int doScanList = 0;
+	int doScan2List = 0;
 	int doSourceList = 0;
 	int doFormat = 0;
 	int doUsage = 0;
@@ -406,6 +441,11 @@ int main(int argc, char **argv)
 		        strcmp(argv[a], "--scans") == 0)
 		{
 			++doScanList;
+			doSummary = 0;
+		}
+		else if(strcmp(argv[a], "--scans2") == 0)
+		{
+			++doScan2List;
 			doSummary = 0;
 		}
 		else if(strcmp(argv[a], "-r") == 0 ||
@@ -535,6 +575,10 @@ int main(int argc, char **argv)
 		{
 			scanList(V);
 		}
+	}
+	if(doScan2List)
+	{
+		scan2List(V);
 	}
 	if(doModules)
 	{
