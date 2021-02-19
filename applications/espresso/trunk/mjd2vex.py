@@ -56,4 +56,4 @@ if outformat is None:
 outformat = outformat.lower()
 
 for indate in args:
-    print (espressolib.convertdate(indate, outformat))
+    print (espressolib.convertdate(indate, outformat, strict=False))

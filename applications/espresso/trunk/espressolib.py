@@ -207,7 +207,7 @@ def openlock(filename):
 
 #class TimeVLBA(Time
 
-def convertdate(indate, outformat="mjd"):
+def convertdate(indate, outformat="mjd", strict=True):
     """converts between DiFX date formats (mjd, vex, iso, vlba)
 
     Example formats:
@@ -276,8 +276,11 @@ def convertdate(indate, outformat="mjd"):
                 pass
 
     if date is None:
-        raise Exception(
-                "Accepts dates only in MJD, Vex, VLBA or ISO8601 formats")
+        if strict:
+            raise Exception(
+                    "Accepts dates only in MJD, Vex, VLBA or ISO8601 formats")
+        else:
+            return indate
 
     if outformat in ["mjd", "isot"]:
         date.format = outformat
@@ -290,8 +293,8 @@ def convertdate(indate, outformat="mjd"):
         outdate = datetime.datetime.strftime(date.value, vexformat)
     else:
         raise Exception(
-                "Output format not recognised, choose from: mjd, vex, iso or"
-                " vlba")
+                "Output format not recognised, choose from: mjd, vex, iso "
+                " or vlba")
 
     return outdate
 
@@ -477,13 +480,13 @@ class batchenv:
                     jobid)
             elapsed = subprocess.Popen(
                     command, stdout=subprocess.PIPE,
-                    shell=True).communicate()[0]
+                    shell=True, encoding="utf-8").communicate()[0]
             elapsed = int(elapsed)
             command = "sacct -j {:s} -X --format Reserved -P -n".format(jobid)
             #print(command)
             reserved = subprocess.Popen(
                     command, stdout=subprocess.PIPE,
-                    shell=True).communicate()[0]
+                    shell=True, encoding="utf-8").communicate()[0]
             reserved = dhms2sec(reserved)
             speedup = joblen*60./elapsed
             speedup_wait = joblen*60./(elapsed+reserved)
