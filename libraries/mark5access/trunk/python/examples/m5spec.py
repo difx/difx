@@ -56,7 +56,7 @@ def m5spec(fn, fmt, fout, T_int_ms, nfft, offset, sameScale=True):
 	print ('Averaging a total of %u DFTs, each with %u points, for a %f millisecond time average.' % (nint,nfft,Tint*1e3))
 
 	# Collection of vectors for mark5access decode() raw sample output data
-        pdata = m5lib.helpers.make_decoder_array(ms, nfft, dtype=ctypes.c_float)
+	pdata = m5lib.helpers.make_decoder_array(ms, nfft, dtype=ctypes.c_float)
 
 	# Result arrays
 	ch_data = [ctypes.cast(pdata[ii],ctypes.POINTER(ctypes.c_float*nfft)) for ii in range(dms.nchan)]
