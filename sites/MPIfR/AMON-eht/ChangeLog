@@ -1,0 +1,5 @@
+
+Version 1.4b
+ - Branched off from Yuriis AMON 1.4b release by jwagner@mpifr.de
+ - Modified scan name handling to support the EHT (and partly, geodetic)
+   scan naming style of 'doy-hhmm'

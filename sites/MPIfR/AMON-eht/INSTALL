@@ -1,0 +1,23 @@
+
+Include amon.py in your path and run:
+
+   amon.py <.alist file name>  <.vex file name>
+
+Alternatively without setting up paths use wrapper script amon.sh,
+which also copies the default amon_config when no custom config is present
+in the current working directory:
+
+   amon.sh <.alist file name>  <.vex file name>
+
+
+To run, this version of AMON must include the following files (all files except amon.py
+are placed in two subdirectories, amon_lib and amon_config):
+
+amon.py                                                                  main script
+amon_lib: amon_lib.py, vex_parser_lib.py, plt_lbls_lib.py, __init__.py   libraries
+
+amon_config/amon_config.txt                                              the configuration file
+amon_config/amon_help.txt (this name can be changed in the config file)  this help file
+amon_config/eht_codes     (this name can be changed in the config file)  one letter - two letter
+                                                                         antenna code
+                                                                         correspondence file
