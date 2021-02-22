@@ -1,14 +1,14 @@
 from ctypes import *
 
-STRING = c_char_p
 _libraries = {}
 _libraries['libvdifio.so'] = CDLL('libvdifio.so')
+STRING = c_char_p
 
 
-VDIFHeaderPrintLevelShort = 2
-VDIFHeaderPrintLevelHex = 0
 VDIFHeaderPrintLevelColumns = 1
 VDIFHeaderPrintLevelLong = 3
+VDIFHeaderPrintLevelShort = 2
+VDIFHeaderPrintLevelHex = 0
 class vdif_header(Structure):
     pass
 uint32_t = c_uint32
@@ -207,6 +207,9 @@ vdif_edv4_header._fields_ = [
 
 # values for enumeration 'VDIFHeaderPrintLevel'
 VDIFHeaderPrintLevel = c_int # enum
+VDIFErrorMessage = _libraries['libvdifio.so'].VDIFErrorMessage
+VDIFErrorMessage.restype = STRING
+VDIFErrorMessage.argtypes = [c_int]
 createVDIFHeader = _libraries['libvdifio.so'].createVDIFHeader
 createVDIFHeader.restype = c_int
 createVDIFHeader.argtypes = [POINTER(vdif_header), c_int, c_int, c_int, c_int, c_int, STRING]
@@ -481,8 +484,9 @@ __all__ = ['configurevdifmux', 'vdifreaderStats',
            'setVDIFNumChannels', 'VDIFHeaderPrintLevelShort',
            'vdif_edv4_header', 'determinevdifframesize',
            'summarizevdiffile', 'setVDIFFrameMJDSec',
-           'setvdifmuxfanoutfactor', 'vdif_edv1_header', '_IO_lock_t',
-           'resetvdiffilesummary', 'setVDIFFrameMJD', '__time_t',
+           'setvdifmuxfanoutfactor', 'vdif_edv1_header',
+           'VDIFErrorMessage', 'resetvdiffilesummary',
+           'setVDIFFrameMJD', '__time_t',
            'VDIFHeaderPrintLevelColumns', 'setVDIFFrameBytes',
            'incrementVDIFHeader', 'vdif_edv2_header_generic',
            'printVDIFHeader', 'vdif_mux', 'uint_fast32_t', 'uint16_t',
@@ -491,5 +495,5 @@ __all__ = ['configurevdifmux', 'vdifreaderStats',
            'VDIFHeaderPrintLevelLong', '_IO_FILE',
            'testvdifcornerturners', 'uint32_t', 'vdifreaderClose',
            'printvdifmux', 'VDIFHeaderPrintLevel', 'uint64_t',
-           'createVDIFHeader', 'setvdifmuxinputchannels',
-           'setVDIFEpochTime']
+           'createVDIFHeader', '_IO_lock_t',
+           'setvdifmuxinputchannels', 'setVDIFEpochTime']
