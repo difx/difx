@@ -21,10 +21,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <mark5access/mark6gather_mark5b.h>
-#include <vdifio.h>
 #include <mark6sg/mark6gather.h>
+#include <vdifio.h>
 #include <mark6gather_vdif.h>
+#include <mark6gather_mark5b.h>
 #include <difxmessage.h>
 #include "config.h"
 

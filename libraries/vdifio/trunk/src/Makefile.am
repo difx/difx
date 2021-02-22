@@ -1,7 +1,7 @@
 
 if USE_MARK6SG
-mark6sg_h_sources = mark6gather_vdif.h
-mark6sg_c_sources = mark6gather_vdif.c
+mark6sg_h_sources = mark6gather_vdif.h mark6gather_mark5b.h
+mark6sg_c_sources = mark6gather_vdif.c mark6gather_mark5b.c
 else
 mark6sg_h_sources =
 mark6sg_c_sources =
@@ -14,6 +14,7 @@ sources = \
 	dateutils.c \
 	dateutils.h \
 	vdifbuffer.c \
+	mark5bfile.c \
 	vdiffile.c \
 	vdiffilereader.c \
 	vdifio.c \

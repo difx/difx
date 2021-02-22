@@ -24,6 +24,7 @@
 #include <glob.h>
 #include <mark6sg/mark6gather.h>
 #include "mark6gather_mark5b.h"
+#include "vdifio.h"
 
 /* Macro to turn an expanded macro into a string */
 #define str(s) #s

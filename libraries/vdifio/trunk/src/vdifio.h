@@ -46,6 +46,7 @@ extern "C" {
 
 #define VDIF_SUMMARY_MAX_THREADS	256
 #define VDIF_SUMMARY_FILE_LENGTH	256
+#define MARK5B_SUMMARY_FILE_LENGTH  256
 
 #define VDIF_NOERROR			0
 #define VDIF_ERROR			1
@@ -505,6 +506,72 @@ int vdiffilesummarygetstartmjd(const struct vdif_file_summary *sum);
 static inline int vdiffilesummarygetbytespersecond(const struct vdif_file_summary *sum) { return sum->frameSize*sum->framesPerSecond; }
 
 int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int frameSize);
+
+
+/* *** implemented in mark5bfile.h */
+
+struct mark5b_file_summary
+{
+    char fileName[MARK5B_SUMMARY_FILE_LENGTH];
+    long long fileSize; /* [bytes] */
+    int nBit;       /* defaults to 2 */
+    int nChannel;       /* 0 if not known */
+    int framesPerSecond;    /* set to 0 if not known; default = 25600 */
+    int startDay;       /* [MJD] or [MJD%1000] from earliest valid frame */
+    int startSecond;    /* from earliest valid frame */
+    int startFrame;     /* from earliest valid frame */
+    int endDay;     /* from last frame */
+    int endSecond;      /* from last frame */
+    int endFrame;       /* from last frame */
+    int firstFrameOffset;   /* bytes to get to first valid frame */
+};
+
+void resetmark5bfilesummary(struct mark5b_file_summary *sum);
+
+void printmark5bfilesummary(const struct mark5b_file_summary *sum);
+
+void snprintmark5bfilesummary(char *str, int maxLength, const struct mark5b_file_summary *sum);
+
+static inline int mark5bfilesummarygetstartmjd(const struct mark5b_file_summary *sum)
+{
+	return sum->startDay;
+}
+
+static inline int mark5bfilesummarygetstartsecond(const struct mark5b_file_summary *sum)
+{
+	return sum->startSecond;
+}
+
+static inline int mark5bfilesummarygetstartns(const struct mark5b_file_summary *sum)
+{
+	return (int)((long long)(sum->startFrame)*1000000000LL/sum->framesPerSecond);
+}
+
+static inline void mark5bfilesummarysettotalbandwidth(struct mark5b_file_summary *sum, int bandwidthMHz)
+{
+	sum->framesPerSecond = bandwidthMHz*25*sum->nBit;
+}
+
+static inline void mark5bfilesummarysetbits(struct mark5b_file_summary *sum, int nBit)
+{
+	sum->nBit = nBit;
+}
+
+/* returns Mbps */
+static inline int mark5bfilesummarygetbitrate(const struct mark5b_file_summary *sum)
+{
+	return (sum->framesPerSecond*2)/25;
+}
+
+int determinemark5bframeoffset(const unsigned char *buffer, int bufferSize);
+
+int determinelastmark5bframeoffset(const unsigned char *buffer, int bufferSize);
+
+int summarizemark5bfile(struct mark5b_file_summary *sum, const char *fileName);
+
+void mark5bfilesummaryfixmjd(struct mark5b_file_summary *sum, int mjd);
+
+void mark5bfilesummaryfixmjdtoday(struct mark5b_file_summary *sum);
 
 
 /* *** implemented in vdiffilereader.c *** */

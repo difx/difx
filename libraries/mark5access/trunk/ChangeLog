@@ -9,6 +9,9 @@ Version 1.5.5
 * Remove broken/incomplete support for K5 format
 * Remove support for non-format "VDIFB"
 * m5fold: change all printf() to fprintf(stderr, ) so piping is clean
+* Moved snprintmark5bfilesummary() into vdifio library that already offers snprintvdiffilesummary()
+* Moved m5bsum into vdifio library that already has similar vsum utility
+* Moved mark6gather_mark5b into vdifio that already has similar mark6gather_vdif api
 * Post DiFX-2.6
 
 Version 1.5.4

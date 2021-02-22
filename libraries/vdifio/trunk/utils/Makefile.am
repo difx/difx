@@ -27,6 +27,7 @@ bin_PROGRAMS = \
 	vdifChanSelect \
 	vdifSplitThreads \
 	vmux \
+	m5bsum \
 	vsum 
 
 if USE_MARK6SG
@@ -136,6 +137,9 @@ endif
 
 vmux_SOURCES = \
 	vmux.c
+
+m5bsum_SOURCES = \
+	m5bsum.c
 
 vsum_SOURCES = \
 	vsum.c

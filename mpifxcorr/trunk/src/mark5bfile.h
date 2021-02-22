@@ -28,7 +28,7 @@
 #define Mark5BFILE_H
 
 #include <mark5access/mark5bfix.h>
-#include <mark5access/mark5bfile.h>
+#include <vdifio.h>
 #include "datastream.h"
 
 /**

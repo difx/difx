@@ -28,13 +28,13 @@
 //============================================================================
 
 #include "config.h"
+#include "vdifio.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/stat.h>
 #include <time.h>
-#include "mark5bfile.h"
 
 #define MARK5B_FRAME_SIZE	10016
 #define MARK5B_HEADER_SIZE	16

@@ -34,13 +34,12 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <sys/socket.h>
-#include <mark5access/mark5bfile.h>
-#include <mark5access/mark6gather_mark5b.h>
+#include <mark6gather_mark5b.h>
 #include "config.h"
 #include "alert.h"
 #include "mode.h"
 #include "mark5bmark6_datastream.h"
-
+#include "mark5bfile.h"
 
 
 /* TODO: 
