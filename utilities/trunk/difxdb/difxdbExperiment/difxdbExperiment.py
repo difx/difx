@@ -28,6 +28,7 @@
 
 import os
 import sys
+import argparse
 from difxdb.difxdbconfig import DifxDbConfig
 from difxdb.model.dbConnection import Schema, Connection
 from difxdb.business.experimentaction import *
@@ -36,7 +37,6 @@ from difxfile.difxdir import DifxDir
 from operator import  attrgetter
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
-__prog__ = os.path.basename(__file__)
 __build__= "$Revision$"
 __date__ ="$Date$"
 __lastAuthor__="$Author$"
@@ -55,11 +55,21 @@ def printUsage():
 
 if __name__ == "__main__":
     
-    
-    if (len(sys.argv) != 2):
-        printUsage()
-    
-    expCode = upper(sys.argv[1])
+    epilog = "NOTE: %(prog)s requires the DIFXROOT environment variable to be defined."
+    epilog += "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf."
+    epilog += "If the configuration is not found a sample one will be created for you."
+
+    version =" %s %s ((last changes by %s)" % (__build__, __author__, __lastAuthor__)
+
+    parser =argparse.ArgumentParser(description="Obtain VLBI experiment information stored in difxdb", epilog = epilog)
+
+    parser.add_argument('expcode', type=str, help="the code of the experiment")
+    parser.add_argument('--version', action='version', version="%(prog)s" + version)
+    parser.add_argument('--show-export', dest="showExport", action='store_true', default=False, help="show the exported files of this experiment.")
+
+    args = parser.parse_args()
+
+    expCode = args.expcode
     try:
         if (os.getenv("DIFXROOT") == None):
             sys.exit("Error: DIFXROOT environment must be defined.")
@@ -90,7 +100,7 @@ if __name__ == "__main__":
 
 	types = ""
 	for expType in experiment.types:
-		types += expType.type
+		types += expType.type + " "
 
 	print "---------------------------------------"
 	print "Summary information for %s" % (expCode)
@@ -106,6 +116,15 @@ if __name__ == "__main__":
 	sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
 	for module in sortedModules:
 		print module.stationCode,  module.vsn, module.slot.location
+
+        if (args.showExport):
+          if (len(experiment.exportFiles) > 0  ):
+            print "---------------------------------------------------------------------------"
+            print "Exported files (filename, path, checksum)"
+            print "---------------------------------------------------------------------------"
+          for export in experiment.exportFiles:
+            print ("%s %s %s" %(export.filename, export.exportPath, export.checksum ))
+
     except Exception as e:
        
         sys.exit(e)
