@@ -4,9 +4,10 @@ try:
     import ctypeslib.h2xml as h2xml
     import ctypeslib.xml2py as xml2py
     import ctypeslib.codegen as codegen
+    HAVE_CTYPESLIB = True
 except:
-    print ('Error: required Python ctypeslib module not installed!')
-    sys.exit(-1)
+    print ('Warning: Python ctypeslib not installed, cannot re-generate bindings. Will use bindings provided in repository.')
+    HAVE_CTYPESLIB = False
 
 try:
     from setuptools import setup
@@ -103,7 +104,7 @@ def build_ctypes():
         print ('Error: ctypeslib did not extract function names. For old ctypeslib might need a patch.')
         sys.exit(-1)
 
-if 'build' in sys.argv:
+if HAVE_CTYPESLIB and 'build' in sys.argv:
     build_ctypes()
 
 setup(
