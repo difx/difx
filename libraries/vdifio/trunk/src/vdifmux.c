@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <time.h>
-#include "vdifio.h"
+#include <vdifio.h>
 #include "config.h"
 
 

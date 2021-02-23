@@ -1,4 +1,12 @@
 
+if USE_MARK6SG
+mark6sg_h_sources = mark6gather_mark5b.h
+mark6sg_c_sources = mark6gather_mark5b.c
+else
+mark6sg_h_sources =
+mark6sg_c_sources =
+endif
+
 if USE_CODIFIO
 codif_c_sources = format_codif.c
 else
@@ -6,10 +14,13 @@ codif_c_sources = format_codif_stubs.c
 endif
 
 h_sources = \
+        $(mark6sg_h_sources) \
 	mark5_stream.h \
-	mark5bfix.h
+	mark5bfix.h \
+	mark5bfile.h
 
 c_sources = \
+        $(mark6sg_c_sources) \
 	mark5_stream.c \
 	mark5_stream_file.c \
 	mark5_stream_memory.c \
@@ -24,7 +35,8 @@ c_sources = \
 	$(codif_c_sources) \
 	blanker_none.c \
 	blanker_mark5.c \
-	mark5bfix.c
+	mark5bfix.c \
+	mark5bfile.c
 
 library_includedir = $(includedir)/mark5access
 library_include_HEADERS = $(h_sources)

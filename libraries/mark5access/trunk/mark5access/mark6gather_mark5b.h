@@ -29,7 +29,7 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "vdifio.h"
+#include "mark5bfile.h"
 
 /* scan name should be the template file to match */
 int summarizemark5bmark6(struct mark5b_file_summary *sum, const char *scanName);

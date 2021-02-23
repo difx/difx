@@ -32,7 +32,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <vdifio.h>
+#include "../mark5access/mark5bfile.h"
 
 const char program[] = "m5bsum";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";

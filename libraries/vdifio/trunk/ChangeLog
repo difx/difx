@@ -10,8 +10,6 @@ Version 1.5
 * new utility: splitVDIFbygap : breaks a VDIF file into multiple based on time gaps
 * filterVDIF: discard frames that had seconds less than previous frames
 * introduce #define'd error codes for some common functions
-* relocate mark5access:mark5bfile API into vdifio to be consistent with vdifio:vdiffile
-* relocate mark5access:mark6gather_mark5b API into vdifio to be consistent with vdifio:mark6gather_vdif
 
 Version 1.4
 ~~~~~~~~~~~
