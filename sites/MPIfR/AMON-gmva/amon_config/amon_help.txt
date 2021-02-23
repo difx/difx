@@ -1,0 +1,416 @@
+                               ********************************
+                               * AMON v.1.3b HELP INFORMATION *
+                               ********************************
+
+####################################################################################################
+                                     WHAT IS THIS PROGRAM?
+
+AMON (Alist MONitor) is a GUI tool to facilitate analysis of large VLBI experiments. It visualizes
+information from .vex and .alist files and acts as a launching platform for fourfit plots.
+
+Copyright (c) Yurii Pidopryhora & Max Planck Institute for Radio Astronomy (2018).
+
+Please address all inquiries to Yurii Pidopryhora at yurii@mpifr-bonn.mpg.de or yuretzius@gmail.com 
+ 
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation. This program is distributed
+in the hope that it will be useful, but WITHOUT ANY WARRANTY, see the GNU General Public License for
+more details.
+                 
+####################################################################################################
+                                      RUNNING THE SCRIPT:
+
+python amon.py <.alist file name>  <.vex file name>
+
+python amon.py <.vex file name> (will display only inactive elements based on .vex)  
+
+python amon.py (displays only this part of the help)   
+
+Python 2.7 or later is assumed, this version WON'T run with Python 3. 
+Standard Python libraries required for this script are: sys, os, shutil, subprocess, 
+                                                        numpy, matplotlib, Tkinter.
+They are typically included in most Python distributions.
+
+Many important features of this program will work only if hops fplot and gs are available. 
+
+To run, this version of AMON must include the following files (all files except amon.py
+are placed in two subdirectories, amon_lib and amon_config):
+
+amon.py                                                                  main script
+amon_lib: amon_lib.py, vex_parser_lib.py, plt_lbls_lib.py, __init__.py   libraries
+amon_config/amon_config.txt                                              the configuration file
+amon_config/amon_help.txt (this name can be changed in the config file)  this help file
+amon_config/gmva_codes (this name can be changed in the config file)     one letter - two letter
+                                                                         antenna code
+                                                                         correspondence file        
+      
+####################################################################################################
+                                    CONFIG FILE DESCRIPTION
+
+General rules: * All lines of this file should be set correctly before launching the GUI for
+                 everything to work properly.
+               * Most lines need to be set only once for a particular setup, but at least one
+                 (the path to the fourfit results) need to be changed for every new experiment. 
+               * Symbol # is used for commenting, everything following it in any line is ignored.
+               * If the line is empty, contains only spaces or the first meaningful symbol in it
+                 (after a number of spaces) is #, it is read as an empty string.
+               * The meaningful value(s) may be preceded or separated by any number of spaces,
+                 the spaces are ignored.
+
+lines 01-02:                can contain anything, reserved for the header
+
+lines 03-14:  deal with the specific .alist file configuration, the numbers listed here correspond
+              to one particular version (v.3?) of alist. You need to set them only once for
+              a specific .alist version you are using. If you are unsure, just open one of your
+              .alist files and count which column is for what characterictic.
+              NOTE: THE COLUMN NUMBERING STARTS WITH 0
+
+------------------------------------------ .alist config -------------------------------------------
+line 03:       3   # (single int) number of title lines in the .alist file 
+line 04:       8   # (single int) column no. for scan name/number                       e.g. No0013
+line 05:      13   # (single int) column no. for source name                            e.g. BLLAC
+line 06:      14   # (single int) column no. for baseline                               e.g. XY
+line 07:      15   # (single int) column no. for fringe quality and error code (if any) e.g. 9G 
+line 08:      17   # (single int) column no. for polarization                           e.g. RR
+line 09:      20   # (single int) column no. for SNR                                    e.g. 8.965
+line 10:      24   # (single int) column no. for SBD (single-band delay) in usec        e.g. 0.036 
+line 11:      27   # (single int) column no. for delay rate in psec/sec                 e.g. 0.112
+
+              information from the next three columns is needed to reconstruct
+              fplot file names, which typically look like XP.W.19.zymnxc
+line 12:       1   # (single int) column no. for the file extension                     e.g. zymnxc
+line 13:       3   # (single int) column no. for the file number                        e.g. 19
+line 14:      16   # (single int) column no. for the band and no. of channels           e.g. W08
+----------------------------------------------------------------------------------------------------
+
+line 15:      1800 1050 # (two ints) horizontal and vertical GUI window size in pixels
+                        It can be anything in reasonable limits, i.e. less than the screen
+                        resolution of your monitor, but large enough to fit all the GUI controls.
+                        At this moment there is no fool-proofing of these parameters, so if you
+                        give negative or zero values, you just crush the script.
+
+line 16:      0.1 # (single float) SBD (single-band delay) threshold for "bad" values in usec.
+                    This is important only for the SBD view mode, in which the color of each
+                    element is based on how far the residual SBD of this element is from zero.
+                    When the absolute value of SBD exceeds this threshold, value of 0 is assigned
+                    to the element, corresponding to bright red ("bad"). When the value is below
+                    the threshold, it is mapped to the scale of 1-9 (corresponding colors: dark red
+                    ("worse") - brown ("better") - green ("good") - bright green ("the best").
+ 
+line 17:      0.3 # (single float) DRATE (delay rate) threshold for "bad" values in ps/sec.
+                    Same as SBD threshold, only for the DRATE view mode.
+
+line 18: amon_config/gmva_codes    # (string) one-letter to two-letter antenna code file
+line 19: amon_config/amon_help.txt # (string) this help file
+                  You can change the file names of these files to anything you like, but the name of
+                  the actual files and entries in lines 18-19 must correspond to each other. Curren
+                  setup assumes that the files are in the amon_config subdir of the launch dir, but
+                  you can also provide an absolute or relative path to the files,
+                  e. g. /amon/amon_files/amon_help.txt
+
+line 20: 100 50 # (two ints) horizontal and vertical help window size
+                  Note: this is TEXT size (in font-12 symbols, not pixels!). Since the width
+                  depends on formatting of this text file, it is not recommended to change the
+                  horizontal size (unless you like to reformat this whole text). But feel free to
+                  change the vertical size to anything that suits you.
+                  At this moment there is no fool-proofing of these parameters, so if you
+                  give negative or zero values, you just crush the script.
+
+line 21: /Exps/c172c/v1/1234/  # (string) path to the dir with the fourfit output
+                               THE MOST IMPORTANT parameter to set and the easiest to forget.
+                               If you want to use the fplot viewing feature you MUST provide here
+                               the absolute or the relative path to the directory with all the
+                               fplot files (i. e. with scan-name dirs like No0001, No0002 etc.
+                               each containing file names like XP.W.19.zymnxc).
+
+
+line 22: /cluster/hops/x86_64-3.17/bin/ # (string) path to the hops script directory with fplot.
+                                        This needs to be set only once for your particular hops
+                                        installation. The fplot viewing feature won't work unless
+                                        you point it to the right directory, containing fplot
+                                        script.
+
+line 23: Eb t #(any number of strings separated by spaces) Excluded ants in one- or two-letter code
+              This line may be empty or contain any number of strings. If one or more of them
+              corresponds to a one- or two-letter designation in the antenna code file, such
+              antenna(s) will be excluded from viewing. If this line is empty or contains no valid
+              antenna designations, all baselines based on antenna list in the .vex file will be
+              plotted.
+              This feature allows to define any convenient subset of antennas for viewing.
+
+lines 24-... Can contain anything. You can use them to make notes of the particular viewing session
+             or save the paths to experiments you often revisit.  
+                 
+####################################################################################################
+                                    GUI DESCRIPTION AND CONTROLS:
+
+                                          GUI main field
+
+When the GUI opens (please, be patient, it takes several seconds to open or refresh each view
+because several thousand buttons are being generated), you see a large grid of "elements" of
+different colors. Horizontal rows correspond to different scans, each labeled at the extreme left
+and extreme right with the scan number and source name (e.g. 0006:3C454.3). Vertical columns
+correspond to baseline-polarization instances. Baselines are labeled (at the extreme top and
+extreme bottom of the field) by two letters, one for each antenna of the baseline, e.g. BG for
+Ef-Gb baseline or fl for Fd-La. Two-letter codes must be the same as in the vex file, but one-letter
+codes used by AMON are defined in the included antenna code file, so they can be easily changed.
+There are two columns for each baseline, the left one for the "left" polarization and the right one
+for the "right". In the default parallel hands view "left" is LL and "right" is RR. If you switch
+to the cross hands view, "left" becomes LR and "right" RL. You can always check the scan,
+source, baseline and polarization information for each element (along with other useful info,
+see below for the full description) by hovering the mouse pointer over it and reading the "status"
+line at the bottom of the GUI.
+
+If there are many scans and baselines, the whole view may be larger than the GUI size. In this case
+you can use vertical (at the right) and horizontal (at the bottom) scroll bars to navigate around
+the field.
+
+                            Opening fplots and saving their pdf copies
+                                 ( element buttons and [PDF copy] )
+
+By pressing each "active" element (i.e. raised and with any color other than white or blue)
+you open a separate window with the standard fourfit's fplot for this correlation. You can open as
+many windows as you like and, when no longer needed, either close them in the usual way or leave
+in the background: all of them will be automatically closed after the GUI is closed.
+If you check the box [PDF copy] at the bottom right, each time when you click an active element
+not only a view of the fplot is opened, but also a pdf hard copy of this plot is saved in the
+current directory, with the unique name like c172c_No0006_3C454.3_XY_LL.pdf based on the experiment
+name, scan number, source, baseline and polarization. 
+
+                                             Controls
+
+                                             [REPLOT]
+
+There are 5 main controls (all at the top of the GUI) and the check box at the bottom right that
+define the current view. Note, that whatever changes you make using these controls happen ONLY
+AFTER you push the [REPLOT] button at the top right.
+
+                                [MODE:] FRINGE. XPOL, SBD, DRATE
+
+The leftmost [MODE:] switch selects one of four view modes of AMON. In each of these modes
+the same elements are displayed, but they are colored differently. For all modes each active
+element is assigned an integer value in the range 0-9 and colored in accordance with this value
+(0 is bright red, 9 is bright green and 1-9 are different shades of colors ranging from dark red
+to dark green, the greener -- the larger, the redder -- the smaller). If fourfit generated
+an error code, its designation is depicted over the element, the same in all modes, even if element
+is inactive. You can find the description of all the fourfit errors and their letter codes below.
+
+Elements present in the .vex file, but not in .alist (i.e. not observed, not correlated or not
+run through fourfit) are shown as white and inactive. You can still read their basic info.
+If you launch AMON with only .vex, but not .alist file, all elements are displayed like this.
+See below about a different kind of inactive elements -- light blue colored.
+
+                                            FRINGE
+
+The default viewing mode. For the FRINGE mode the 0-9 value is just the fringe quality code
+assigned by fourfit. It simply shows which elements have fringes and how good they are.
+
+                                             XPOL
+
+The XPOL is the messiest one, here the value is based on comparison of the SNR in parallel hands to
+SNR in cross hands. In the parallel hands view first we calculate the ratio of the SNR of the
+element to the average of the cross-hands SNRs. I.e. for a LL element we calculate
+SNR_LL/(0.5(SNR_LR+SNR_RL)). In the cross-hands view we calculate the ratio to the average of
+parallel hands SNRs. I.e. for a LR element we calculate SNR_LR/(0.5(SNR_LL+SNR_RR)). But also
+a number of exceptions is handled. If in the reference view (i.e. cross-hands for parallel and
+vice versa) only one fringe exists, we care only about it. E.g. in the example above, if there
+is a fringe for LR, but not in RL, we calculate SNR_LL/SNR_LR. The same applies if both reference
+fringes exist, but one SNR is 3 times larger than the other -- we only care about the reference
+element with the largest SNR.
+
+After the ratio is calculated, it is compared with the range [1.15, 5] and logarithmically mapped
+to 0-9, i. e. if the ratio is less than 1.15, the value is 0, if more than 5 -- it is 9, and the
+values 1-8 are logarithmically distributed in between.
+
+One more important special case is considered: if there are no cross-hands fringes, but at least
+one parallel fringe, both LR and RL get 0, and the one or both LL/RR elements with fringe get 9;
+similarly, if there are no parralel-hands fringes, but at least one cross fringe, both LL and RR
+get 0, and the one or both LR/RL elements with fringe get 9.   
+
+Despite this long and complicated description, using it is very simple: ideally in the parallel
+hands view all elements with non-zero fringe codes should be green or greenish, in the cross-hands
+view -- the opposite, all should be red or reddish. If an antenna consistently shows red elements
+in XPOL parallel hands, but green elements in in XPOL cross hands, it should be investigated,
+there is something wrong with its polarization setup. 
+
+                                          SBD and DRATE 
+
+Both these modes are based on the same principle: the value of the residual single-band delay or
+delay rate of the element is compared with the reference value set in the config file.
+If the SBD or DRATE exceed the reference value (of course, in absolute value, signs are ignored),
+they get 0, values very close to zero get 9 and the rest is linearly mapped to 1-8, with
+larger, "greener" values corresponding to SBD or DRATE being closer to zero.
+
+These views allow to spot problems with clocks for a particular antenna and in general the
+reliability of determined fringes.
+
+                                  [Ref. Ant.:] ALL, <antennas>
+
+The second from the left switch. Allows to either choose all antennas, or to pick one antenna
+and display only the baselines to it.
+
+                                       [Pol.:] LL RR, LR RL
+
+The third from the left switch. Allows to switch between parallel-hands and cross-hands views.
+
+
+                                      [Src.:] ALL, <sources>
+
+The fourth from the left switch. Allows to either choose all scans, or to pick only scans
+where one particular source was observed.  
+
+
+                           [Top row (0-XXX):] <int in the allowed range>
+
+This control is often disabled, displaying [Top row (disabled):] 0. It becomes active only if
+the number of elements is so large, that the GUI is not able to display them all. Then it displays
+only a number of the scans starting from the first one. To view more, one needs to enter a number
+in the displayed allowed range (if you enter something else, it is automatically adjusted). E.g.
+to view the last scans one needs to enter the largest number. This number IS NOT the scan number,
+it is just related to the total number of rows in the experiment.
+                                             
+                                         [require fringe]
+
+Finally, the [require fringe] check box at the bottom right (checked by default) marks with cyan
+and renders inactive all elements, for which fourfit fringe quality was determined to be 0,
+i.e. no fringe found. This is especially important in the modes other than FRINGE, because
+for them this filters out many elements that are "red" for the trivial reasons.
+
+You can uncheck this box either if you want to access the fplots for elements with no fringe
+detected or if you prefer red color for "no fringe" designation in the FRINGE view.
+
+
+                                           [PRINT PDF]
+        [Print Size:] small A4L, normal A4L, large A4L, small A4P, normal A4P, large A4P
+
+These controls (bottom left and third from the right) allow you to save your current field view
+for posterity. Depending on the size of the field one or more pdf pages are generated and merged
+into one file. For a large experiment and large printing size the number of pages may be quite
+large and generating and merging them takes some time, please be patient. During the "printing"
+the GUI is inactive, but you can follow the progress of this operation by looking at messages
+displayed in the terminal window.
+
+Each page is essentially a replica a part of the GUI main field, and all of them together allow to
+reconstruct the whole field, with the same scan labels left and right, same baseline labels top and
+bottom, and same element colors.
+
+Two important exceptions:
+
+1) the size of a scan label is limited to 13 symbols, so if the source name is long, it will be
+   truncated when printed;
+
+2) if the row limitation is in force, regulated by the [Top row (0 - XXX):] control, it is ignored,
+   ALL the rows that should have been present in the current view without the row limitation WILL
+   be printed.
+
+You can choose out of 6 printing formats, all A4, three in landscape (A4L) and three in portrait
+(A4P) orientation. "small", "normal" and "large" describe the printed element size. Here is
+a table of how many scans and baselines can be fit into one page for each of these formats
+
+                max no. scans per page       max no. baselines per page
+
+small  A4L             46                                42
+normal A4L             36                                32
+large  A4L             31                                27
+small  A4P             69                                26
+normal A4P             52                                19
+large  A4P             47                                17
+
+The default printing format is "small A4L" since it is usually the most efficient. But be mindful
+that any row or column that exceeds the maximum number of rows/columns for the current page is
+pushed to the next one and sometimes this leads to just one or two rows/columns "hanging" in
+separate pages. In this case one should consider switching the printing format. Of course, the
+portrait orientation is preferable for cases with few baselines but lots of scans (like when a
+reference antenna is chosen) and landscape -- with few scans and lots of baselines (like when only
+one source is chosen).
+
+Each printed page has a title like "AMON v.1.2a: [FRINGE] c172c Rf ant: Ef, src: 0716+714, ||.",
+defining the AMON version and view mode used, experiment name, reference antenna, source and
+parallel or cross-hands. If there are more than one page, page info is added, like
+"Pg#2: rw=2, cl=1." It lists the page number in the merged multi-page pdf and, most importantly,
+page row and column position in the whole field of view. This means that if you wish to reconstruct
+the field, you need to put each page into its designated row and column position on a large table
+surface.
+
+                                              [HELP]
+
+Just displays this help file and linked to it current antenna code file and config file in a
+separate window.
+
+####################################################################################################
+                                     STATUS LINES AT THE BOTTOM:
+
+They display information for a particular element. You can access it by hovering the mouse pointer
+over the element. The color of the element being accessed is changed to yellow.
+       
+If the element is "white", i.e. its information is based only on the .vex file:
+               
+First line: experiment name, scan number, source, baseline, polarization, timestamp
+
+Second line: blank.
+
+If the element is "colored", i.e. its information is based on both .vex and .alist file:
+
+First line: experiment name, scan number, source, baseline, polarization, timestamp,
+            fringe quality (0-9), error code, fplot location (scan dir and file name)
+
+Second line: four SNR values for all the polarizations of this combination of scan and baseline,
+             (in the order LL|RR LR|RL), residual single-band delay in usec, and residual delay rate
+             in psec/sec.   
+
+####################################################################################################
+                                         ELEMENT COLORS:
+
+WHITE (unclickable button):   Present in the .vex file, but not in the .alist, i. e. not observed,
+                              not correlated or not processed with Fourfit.
+                               
+CYAN  (unclickable button):   Flagged. Fourfit fringe quality code is 0 and the option "require
+                              fringes" is checked, so this element is rendered inactive.   
+                               
+YELLOW                        Mouse pointer at this element, its properties are displayed at the
+                              two bottom "status lines" of the main GUI window.
+                               
+MAGENTA                       Can only happen in XPOL mode and indicates NaN. This means that the
+                              cross-polarization "strength" calculation failed because one or more
+                              parallel or cross-polarization correlation results (LL, RR, LR, RL)
+                              for this scan and baseline are not present in this dataset.
+                               
+BRIGHT RED                    Corresponds to 0 values, the "worst".
+
+BRIGHT GREEN                  Corresponds to 9 values, the "best".
+
+DARK RED, BROWN, DARK GREEN   Correspond to values 1-8,
+(8 different shades)          more red -- lower, "worse",
+                              more green -- higher, "better".
+                               
+####################################################################################################
+                                FOURFIT LETTER ERROR CODES:
+                      
+These are displayed on each element, for which Fourfit generated an error.                      
+
+B   Interpolation error
+D   No data in one or more frequency channels.
+E   Maximum fringe amplitude at the edge of SBD, MBD, or rate window.
+F   Fork problem in processing.
+G   Fringe amp in a channel is <.5 times mean amp (only if SNR > 20).
+H   Low phase-cal amplitude in one or more channels.
+N   No valid correlator data.
+
+####################################################################################################
+                          TWO OR MORE CORRELATION JOBS FOR ONE SCAN:
+
+Sometimes one scan can be broken into two correlation jobs. If during the reading of .alist
+AMON finds the same scan-baseline combination for two correlations, it generates two
+scan designations (e.g. 0225#1:3C454.3 and 0225#2:3C454.3) and displays them as if they were
+two different scans, with separate links to correlation results, fplot files etc.
+Vex-only ("white") elements are not duplicated, they stay assigned only to the first of these scans
+(since the second one was not really scheduled).
+
+If the same scan-baseline combination is found corresponding to 3 or more correlations, only
+the first two will be prepared for visualization, for the others lots of scary warnings with
+lots of exclamation marks will be issued during the initialization stage.    
+
+####################################################################################################
+                      CURRENT ONE-LETTER - TWO-LETTER ANTENNA CONVERSION
+
+(linked directly from the included antenna code file)

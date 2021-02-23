@@ -1,0 +1,49 @@
+You can unpack AMON anywhere in your directory structure and run it directly.
+
+####################################################################################################
+                                     WHAT IS THIS PROGRAM?
+
+AMON (Alist MONitor) is a GUI tool to facilitate analysis of large VLBI experiments. It visualizes
+information from .vex and .alist files and acts as a launching platform for fourfit plots.
+
+Copyright (c) Yurii Pidopryhora & Max Planck Institute for Radio Astronomy (2018).
+
+Please address all inquiries to Yurii Pidopryhora at yurii@mpifr-bonn.mpg.de or yuretzius@gmail.com 
+ 
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU
+General Public License as published by the Free Software Foundation. This program is distributed
+in the hope that it will be useful, but WITHOUT ANY WARRANTY, see the GNU General Public License for
+more details.
+
+####################################################################################################
+                                      RUNNING THE SCRIPT:
+
+python amon.py <.alist file name>  <.vex file name>
+
+python amon.py <.vex file name> (will display only inactive elements based on .vex)  
+
+python amon.py (displays only this part of the help)   
+
+Python 2.7 or later is assumed, this version WON'T run with Python 3. 
+Standard Python libraries required for this script are: sys, os, shutil, subprocess, 
+                                                        numpy, matplotlib, Tkinter.
+They are typically included in most Python distributions.
+
+Many important features of this program will work only if hops fplot and gs are available. 
+
+To run, this version of AMON must include the following files (all files except amon.py
+are placed in two subdirectories, amon_lib and amon_config):
+
+amon.py                                                                  main script
+amon_lib: amon_lib.py, vex_parser_lib.py, plt_lbls_lib.py, __init__.py   libraries
+amon_config/amon_config.txt                                              the configuration file
+amon_config/amon_help.txt (this name can be changed in the config file)  this help file
+amon_config/gmva_codes (this name can be changed in the config file)     one letter - two letter
+                                                                         antenna code
+                                                                         correspondence file        
+      
+####################################################################################################
+
+Please refer to amon_config/amon_help.txt for detailed information on AMON.
+
+

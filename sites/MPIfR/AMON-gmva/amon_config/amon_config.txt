@@ -1,0 +1,25 @@
+### this is the main config file for alist_parser.py (first two lines can say anything, they are ignored)
+### everything after #-symbols is also ignored, if the line starts with # or space or just empty, empty string is returned
+3                                   # no. of title lines in the alist format (3 in normal, 4 in v6) -- DISABLED SINCE VERSION 1.4b
+8                                   # scan no. (NoXXXX) column number -- COLUMN NUMBERING STARTS WITH 0
+13                                  # source name (BLLAC) column number
+14                                  # baseline (XY) column number
+15                                  # fringe quality and error (9 or 9G) column number 
+17                                  # polarization (RR) column number
+20                                  # SNR column number
+24                                  # SBD column number
+27                                  # DRATE column number
+1                                   # filecode (zymnxc)
+3                                   # filenumb (in filenames like XP.W.19.zymnxc)
+16                                  # band letter code and number of channels (W08) -- need this for the files!
+1800 1050                           # 1200 600 / 1800 1050 horizontal and vertical root window size
+0.06                                # SBD threshold for "bad", usec
+0.3                                 # DRATE threshold for "bad", ps/sec
+amon_config/gmva_codes              # one-letter to two-letter antenna code translation file
+amon_config/amon_help.txt           # help file
+100 50                              # horizontal and vertical help window size (in fontsize = 12 SYMBOLS, not dots!)
+1234                                # path from the current dir to the dir with the fourfit output (i. e. with No0001 etc. dirs). If current dir, put empty space
+/cluster/hops/x86_64-3.17/bin/      # path to the hops script directory
+Eb Na Pv                            # antennas (in one- or two-letter coding) which will be ignored if present in .vex or .alist files
+36                                  # ref. freq. column number, e. g. 86140.000 (MHz)
+###### reading stops before this line, you can write anything after it #################
