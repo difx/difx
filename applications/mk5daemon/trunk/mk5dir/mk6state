@@ -195,7 +195,7 @@ for disk in range(8):
             permcmd = ["chmod", "777", "/mnt/disks/" + slot + "/" + str(disk) + "/data"]
             rc = subprocess.call(permcmd)
             # change ownership of data directory
-            ownercmd = ["sudo", "chown", "root:nmstaff", "/mnt/disks/" + slot + "/" + str(disk) + "/data"]
+            ownercmd = ["sudo", "chown", "root:nmstaff", "/mnt/disks/" + slot + "/" + str(disk) + "/data"] ## FIXME? nonstandard ownership; Haystack cplane uses 775 and root:mark6, EHT modules oper:mark6
             rc = subprocess.call(ownercmd)
             # remove old data directory and do not wait for subprocess
             rmdircmd = ["rm", "-rf", "/mnt/disks/" + slot + "/" + str(disk) + "/data-remove"]
