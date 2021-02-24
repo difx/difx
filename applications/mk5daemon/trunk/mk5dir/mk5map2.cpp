@@ -303,6 +303,7 @@ static int mk5map2(char *vsn, uint64_t begin, uint64_t end, enum Mark5ReadMode r
 	buffer = (unsigned char *)malloc(BufferLength);
 	b32 = (uint32_t *)buffer;
 
+	firstSecond = -1;
 	lastFormat = -1;
 	lastSecond = -1;
 	lastBegin = 0;
