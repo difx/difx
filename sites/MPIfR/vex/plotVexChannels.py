@@ -280,6 +280,7 @@ class Charting:
 		if numFreqs < 1:
 			print("No frequency blocks were plotted out of %s" % (str(allFreqs)))
 			return
+		print("Showing VEX $FREQ blocks %s" % (str(selectedFreqs)))
 
 		# Colors
 		fig, ax = plt.subplots()
@@ -293,7 +294,7 @@ class Charting:
 				zooms = zoomChannels.zoomBlocks[zoomblock]
 				for zoom_nr in range(0,len(zooms)): 
 					self.plotZoomChannelBar(ax, ymin, ymax, zooms[zoom_nr])
-				ax.text(zoomChannels.zoomBlockLowestFreq[zoomblock], ymin+0.5, 'v2d ZOOM "' + str(zoomblock) + '"', fontsize=10, alpha=0.8)
+				ax.text(zoomChannels.zoomBlockLowestFreq[zoomblock], ymin+0.25, 'v2d ZOOM "' + str(zoomblock) + '"', fontsize=10, alpha=0.8)
 
 		# Outputbands; generally identical to zooms
 		if outputBands:
