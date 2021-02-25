@@ -150,6 +150,7 @@
 #define vectorAddProduct_cf32(src1, src2, accumulator, length)              ippsAddProduct_32fc(src1, src2, accumulator, length)
 
 #define vectorConj_cf32(src, dest, length)                                  ippsConj_32fc(src, dest, length)
+#define vectorConj_cf32_I(srcdest, length)                                  ippsConj_32fc_I(srcdest, length)
 #define vectorConjFlip_cf32(src, dest, length)                              ippsConjFlip_32fc(src, dest, length)
 
 #define vectorCopy_u8(src, dest, length)                                    ippsCopy_8u(src, dest, length)
