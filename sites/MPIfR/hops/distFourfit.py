@@ -289,12 +289,16 @@ class JobDispatch:
 					ncompleted += 1
 					print ('Finished %s, %d remain' % (processes[pid]['job'].description, len(jobs) - ncompleted), flush=True)
 					completed[pid] = pid
+				else:
+					processes[pid]['process'].communicate(input=b'\n')
 
 			# Insert hosts of completed jobs back into the idle hosts pool
 			for pid in completed.keys():
 				completedJob = processes[pid]['job']
 				idlehosts.append(completedJob.host)
 				del processes[pid]
+
+			time.sleep(0.1)
 
 		self._cleanTerm()
 		print('Done')
@@ -303,9 +307,9 @@ class JobDispatch:
 	def _launchJob(self, job, dryrun=False):
 		'''Launch subprocess and return the process ID'''
 		if dryrun:
-			p = subprocess.Popen(["/usr/bin/hostname"], stdin=None, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False)
+			p = subprocess.Popen(["/usr/bin/hostname"], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False)
 		else:
-			p = subprocess.Popen(job.shellcommand, stdin=None, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False)
+			p = subprocess.Popen(job.shellcommand, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=False)
 		job.pid = p.pid
 		self._cleanTerm()
 		return p
