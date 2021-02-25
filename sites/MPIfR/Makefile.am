@@ -9,6 +9,5 @@ SUBDIRS = \
 	mark6 \
 	vdif \
 	hops \
+	noema \
 	vex
-
-

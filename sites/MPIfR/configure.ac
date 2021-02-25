@@ -15,7 +15,9 @@ AC_OUTPUT([ \
 	misc/getObsFiles/Makefile \
 	misc/datacheckers/Makefile \
 	hops/Makefile \
+	mark5/m5tone/Makefile \
 	mark6/Makefile \
+	noema/Makefile \
 	vdif/Makefile \
 	vex/Makefile
 ])
