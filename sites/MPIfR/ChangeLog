@@ -1,3 +1,9 @@
+Version 2.7
+~~~~~~~~~~~
+* Add a copy of modifyVDIF from https://bitbucket.org/jwagner313/kvnvdiftools/ 
+  Option '--conj' to complex-conjugate the Complex VDIF sample data
+* Add noema-vex-defs.py generator script for VEX $FREQ section of Phased NOEMA
+* Add AMON 1.4b GMVA and EHT
 
 Version 2.6
 ~~~~~~~~~~~

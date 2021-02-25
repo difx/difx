@@ -1,4 +1,14 @@
-SUBDIRS = difxdb/difxarchive difxdb/difxexport difxdb/prepDifx hops misc/getObsFiles misc/datacheckers mark6 vex
 
+SUBDIRS = \
+	difxdb/difxarchive \
+	difxdb/difxexport \
+	difxdb/prepDifx \
+	misc/getObsFiles \
+	misc/datacheckers \
+	mark5/m5tone \
+	mark6 \
+	vdif \
+	hops \
+	vex
 
 
