@@ -1,10 +1,16 @@
 
-Python ctypes bindings for VDIFIO
+# Python ctypes bindings for VDIFIO
 
-Requires the ctypes and ctypeslib packages, e.g., in Debian: 
+# To re-build Python bindings from the C header files you
+# need the ctypes and ctypeslib packages from Debian Squeeze (on Mark6): 
+#
+# A patch is likely needed for ctypeslib sub module codegenerator.py,
+# see the difx mark5access library python directory for the patch.
+#
+# If ctypeslib is not available a pre-built (possibly out of sync)
+# set of Python bindings is used instead.
+
 aptitude install python-ctypes python-ctypeslib
 
 python setup.py build
 python setup.py install
-
-
