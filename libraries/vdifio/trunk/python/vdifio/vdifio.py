@@ -5,10 +5,10 @@ _libraries['libvdifio.so'] = CDLL('libvdifio.so')
 STRING = c_char_p
 
 
-VDIFHeaderPrintLevelColumns = 1
-VDIFHeaderPrintLevelLong = 3
-VDIFHeaderPrintLevelShort = 2
 VDIFHeaderPrintLevelHex = 0
+VDIFHeaderPrintLevelShort = 2
+VDIFHeaderPrintLevelLong = 3
+VDIFHeaderPrintLevelColumns = 1
 class vdif_header(Structure):
     pass
 uint32_t = c_uint32
