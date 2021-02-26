@@ -13,6 +13,8 @@ EXTRA_DIST = \
 	examples/m5tone.py \
 	patch/codegenerator.patch
 
+bin_SCRIPTS = examples/m5spec.py examples/m5stat.py examples/m5tone.py
+
 # Makefile.am to combine autotools and Python setuptools.
 # Based on https://blog.kevin-brown.com/programming/2014/09/24/combining-autotools-and-setuptools.html
 
@@ -22,6 +24,8 @@ all-local:
 
 install-exec-local:
 	mkdir -p $(DESTDIR)$(prefix)/lib/python/ 
+	mkdir -p $(DESTDIR)$(prefix)/bin/ 
+	cp -av $(bin_SCRIPTS)  $(DESTDIR)$(prefix)/bin/
 	$(PYTHON) $(srcdir)/setup.py install \
 	--prefix $(DESTDIR)$(prefix) --install-lib=$(DESTDIR)$(prefix)/lib/python/
 # TODO: DiFX uses peculiar location, not the standard site-packages, need to choose lib vs lib64 below
