@@ -1,3 +1,20 @@
+Commit 9???  2021.02.28
+
+* Forced sorting job files chronologically in fitsPH for processing
+  phase calibration. Out of order jobs may result in loosing phase 
+  calibration file.
+
+* Changed the logic of handling pcal and cablecal files. The original
+  logic stopped processing loop for a given antenna given job at 
+  earliest the either pcal file or the cable cal file (if exists)
+  reached the end. If cable calibration file was truncated, phase 
+  calibration was lost beyond that epoch. The new logic continues 
+  the loop for phase calibration processing after the end of cable 
+  calibration file.
+
+* Added support of environment variable DIFX_USE_CABLE_CAL. If set 
+  to zero, cable calibration files are ignored.
+
 Commit 9???  2020.09.18
 
 * Support of a new options is added:

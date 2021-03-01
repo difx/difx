@@ -34,6 +34,7 @@
 #include "difx2fits.h"
 #include "other.h"
 #include "util.h"
+#define  FITSPH_DEBUG 0
 
 const float pcaltiny = 1e-10;
 
@@ -1018,13 +1019,15 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	double windowDuration=0.0, dumpWindow=0.0;
 	FILE *inTSM=0;	/* file pointer for TSM-derived (VLBA classic) pulse cal data */
 	FILE *inDifx=0;	/* file pointer for DiFX-derived pulse cal data */
-	char *rv;
+	char *rv, *rv_cable;
 	int year, month, day;
 	/* The following are 1-based indices for FITS format */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
 	char **pcalSourceFile;	/* [antId] : points to non-DiFX source of pcal information */
 	int pcalExists = 0;
 	int firstDsId;
+	int *jobxref;
+	int use_cable_cal;
 
 	char antName[DIFXIO_NAME_LENGTH];
 
@@ -1047,6 +1050,19 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	nBand = D->nIF;
 	nPol = D->nPol;
 	scanId = -1;
+/*
+* ----- Check DIFX_USE_CABLE_CAL whether to use cable cal. Default: to use (1). 
+* ----- if DIFX_USE_CABLE_CAL is not 1, then not to use.
+*/
+        use_cable_cal = 1; 
+        const char* use_cable_cal_str = getenv("DIFX_USE_CABLE_CAL");
+        if ( use_cable_cal_str != NULL ){
+             use_cable_cal = atoi ( (char *) use_cable_cal_str );
+        }
+        rv       = NULL;
+        rv_cable = NULL;
+
+        jobxref = malloc ( D->nJob * sizeof(scanId) );
 
 	mjd2dayno((int)(D->mjdStart), &refDay);
 	mjd2date((int)(D->mjdStart), &year, &month, &day);
@@ -1200,7 +1216,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 	{
 		int maxDifxTones;	/* maximum number of tones expected for any job on a given antenna, summed over all datastreams */
-		int jobId;
+		int jobId, jobIdUnsorted;
 
 		maxDifxTones = 0;
 
@@ -1252,8 +1268,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			}
 		}
 
-		if(pcalSourceFile[antennaId])
+		if(pcalSourceFile[antennaId]  && use_cable_cal == 1 )
 		{
+/*
+* --------------------- Open cable calibration file
+*/
 			inTSM = fopen(pcalSourceFile[antennaId], "r");
 			if(inTSM == 0)
 			{
@@ -1285,7 +1304,13 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		printf(" %s", D->antenna[antennaId].name);
 		fflush(stdout);
 
-		for(jobId = 0; jobId < D->nJob; ++jobId)
+/*
+* ------------- Generate the cross-reference table jobxref in order to
+* ------------- process jobs in the chronological orer
+*/
+                v = sortjobpcal ( D, antennaId, jobxref );
+
+		for(jobIdUnsorted = 0; jobIdUnsorted < D->nJob; ++jobIdUnsorted)
 		{
 			glob_t globBuffer;
 			int nDifxFile = 0;
@@ -1301,6 +1326,18 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			printf(".");
 			fflush(stdout);
 
+                        jobId = jobxref[jobIdUnsorted]; /* Get sorted Job Id index */
+                        if ( FITSPH_DEBUG > 0 ){
+                             printf ( "%s line %4d D->antenna[antennaId].name: %s jobIdUnsorted: %d jobId: %d use_cable_cal: %d inTSM: %d \n", 
+                                       __FILE__, __LINE__, D->antenna[antennaId].name, jobIdUnsorted, jobId, use_cable_cal, inTSM );
+                        }
+                        if ( jobId < 0 ){
+/*
+* -------------------------- Antenna antennaId did not observe in this job and did not 
+* -------------------------- produce a phase calibration file to parse
+*/
+                             break;
+                        }
 			nds = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(originalDsIds, D, antennaId, jobId, maxDatastreams);
 
 			if(nds <= 0)
@@ -1349,6 +1386,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				}
 
 				v = glob2(__FUNCTION__, globPattern, 0, 0, &globBuffer);
+/*
+* ----------------------------- Sort PCAL files chronologically
+*/
+                                v = glob2_sort_pcal_files( &globBuffer);
 				nDifxFile = globBuffer.gl_pathc;
 
 				if(nDifxFile == 0)	/* no files found */
@@ -1414,6 +1455,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						}
 						else 
 						{
+                                                        if ( FITSPH_DEBUG > 1 ){
+                                                             printf ( "%s line %4d %.64s \n", __FILE__, __LINE__, line );
+                                                        }
 							n = sscanf(line, "%31s", antName);
 							if(n != 1 || strcmp(antName, D->antenna[antennaId].name))
 							{
@@ -1540,7 +1584,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							}
 						}
 					}
-					else if(jobId == D->nJob-1)
+					else if(jobIdUnsorted == D->nJob-1)
 					{
 						/* end of last job reached */
 						doDump = 1;
@@ -1578,9 +1622,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						{
 							while(nextCableTime < dumpTime || lineCableScanId < 0)
 							{
-								rv = fgets(line, MaxLineLength, inTSM);
-								if(!rv)
+								rv_cable = fgets(line, MaxLineLength, inTSM);
+								if(!rv_cable)
 								{
+							                cableCalOut = 0.0;
 									break;	/* to out of cablecal search */
 								}
 									
@@ -1804,6 +1849,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}	/* end antenna loop */
 
 	free(fitsbuf);
+	free(jobxref);
 
 	for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 	{

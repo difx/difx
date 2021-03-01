@@ -496,8 +496,8 @@ static int getPolProdId(const DifxVis *dv, const char *polPair)
 	{
 //
 // --------- Case of antenna-based polarizaiton (dv->D->AntPol == 0)
-// --------- Polarization order: A1A2  B1B2  A1B2  A2B1, where
-// --------- 1,2 are aNtenna indices and 
+// --------- Polarization order: A1A2  B1B2  A1B2  B1A2, where
+// --------- 1,2 are antenna indices and 
 // --------- A is the 1st polarization, B is the 2nd polarization
 //
 		ind_1st = 0;
@@ -609,17 +609,20 @@ static void UVfitsDump(const DifxVis *dv)
 			dv->record->utc*86400.0, a1, a2, dv->record->freqId1, dv->polId,
 			startChan, startChan, dv->nFreq, dv->D->nPolar, dv->D->nOutChan,
 			dv->nData, dv->record->data[0], dv->scale[a1]*dv->scale[a2]);
-		printf("UV head2 dv->D->nInChan %d dv->nComplex: %d dv->baseline: %d m= %3d \n", dv->D->nInChan, dv->nComplex, dv->baseline, m);
+		printf("UV head2 dv->D->nInChan %d dv->nComplex: %d dv->baseline: %d dv->record->baseline: %d m= %3d \n", dv->D->nInChan, dv->nComplex, dv->baseline, dv->record->baseline, m);
 		for(i = 0; i < dv->nFreq; ++i)
 		{
 			for(j = 0; j < dv->D->nOutChan; ++j)
 			{
 				for(k = 0; k < dv->D->nPolar; ++k)
 				{
-					printf("UV mjd: %5.0f utc: %9.3f sta: %1d %1d If: %2d Ic: %3d Ip: %1d vis: %14.7e, %14.7e \n",
+//					printf("UV mjd: %5.0f utc: %9.3f sta: %1d %1d If: %2d Ic: %3d Ip: %1d vis: %14.7e, %14.7e \n",
+//						dv->record->jd - 2400000.5, dv->record->utc*86400.0, a1, a2, i, j, k,
+//						dv->record->data[m]/dv->scale[a1]/dv->scale[a2]/dv->recweight,
+//						-dv->record->data[m+1]/dv->scale[a1]/dv->scale[a2]/dv->recweight);
+					printf("UV MJD: %5.0f utc: %9.3f sta: %1d %1d If: %2d Ic: %3d Ip: %1d vis: %14.7e, %14.7e \n",
 						dv->record->jd - 2400000.5, dv->record->utc*86400.0, a1, a2, i, j, k,
-						dv->record->data[m]/dv->scale[a1]/dv->scale[a2]/dv->recweight,
-						-dv->record->data[m+1]/dv->scale[a1]/dv->scale[a2]/dv->recweight);
+						dv->record->data[m], dv->record->data[m+1]);
 					m=m+2;
 				}
 			}

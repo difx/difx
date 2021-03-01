@@ -40,4 +40,8 @@ int glob2(const char *label, const char *pattern, int flags, int errfunc(const c
 
 int globcase(const char *label, const char *match, char *fileName);
 
+int glob2_sort_pcal_files( glob_t *pglob);
+
+int sortjobpcal ( const DifxInput *D, int antennaId, int *jobxref );
+
 #endif
