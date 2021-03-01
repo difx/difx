@@ -689,7 +689,7 @@ uint64_t PCalExtractorShifting::getFinalPCal(cf32* out)
 
     // Copy only the interesting bins.
     // Note the "DC" bin has phase info in 1st shifted tone, do not discard.
-    size_t step = (size_t)(std::floor(_N_bins*(_pcalspacing_hz/_fs_hz)));
+    size_t step = (size_t)(std::floor(double(_N_bins)*_pcalspacing_hz/_fs_hz));
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         size_t idx = n*step;
         if (idx >= (size_t)_N_bins) { break; }
@@ -905,7 +905,7 @@ uint64_t PCalExtractorComplex::getFinalPCal (cf32* out)
 
     // Copy only the interesting bins.
     // Note the "DC" bin has phase info in 1st shifted tone, do not discard.
-    size_t step = (size_t)(std::floor(_N_bins*(_pcalspacing_hz/_fs_hz)));
+    size_t step = (size_t)(std::floor(double(_N_bins)*_pcalspacing_hz/_fs_hz));
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         size_t idx = n*step;
         if (idx >= (size_t)_N_bins)
