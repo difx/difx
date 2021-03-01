@@ -1084,8 +1084,11 @@ uint64_t PCalExtractorImplicitShift::getFinalPCal(cf32* out)
     #endif
 
     /* Copy only the interesting bins */
-    size_t step = (size_t)(std::floor(double(_N_bins)*(_pcalspacing_hz/_fs_hz)));
-    size_t offset = (size_t)(std::floor(double(_N_bins)*(_pcaloffset_hz/_fs_hz)));
+    size_t step = (size_t)(std::floor(double(_N_bins)*_pcalspacing_hz/_fs_hz));
+    size_t offset = (size_t)(std::floor(double(_N_bins)*_pcaloffset_hz/_fs_hz));
+    if (PCAL_DEBUG)
+        cdebug << startl << "PCalExtractorImplicitShift::getFinalPCal spacing_hz=" << _pcalspacing_hz << " off_hz=" << _pcaloffset_hz << " nbins=" << _N_bins << " fs_hz=" << _fs_hz << " cpy_step=" << step << " cpy_off=" << offset << endl;
+
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         size_t idx = offset + n*step;
         if (idx >= (size_t)_N_bins) {
@@ -1274,8 +1277,11 @@ uint64_t PCalExtractorComplexImplicitShift::getFinalPCal(cf32* out)
     }
 
     /* Copy only the interesting bins */
-    size_t step = (size_t)(std::floor(double(_N_bins)*(_pcalspacing_hz/_fs_hz)));
-    size_t offset = (size_t)(std::floor(double(_N_bins)*(_pcaloffset_hz/_fs_hz)));
+    size_t step = (size_t)(std::floor(double(_N_bins)*_pcalspacing_hz/_fs_hz));
+    size_t offset = (size_t)(std::floor(double(_N_bins)*_pcaloffset_hz/_fs_hz));
+    if (PCAL_DEBUG)
+        cdebug << startl << "PCalExtractorComplexImplicitShift::getFinalPCal spacing_hz=" << _pcalspacing_hz << " off_hz=" << _pcaloffset_hz << " nbins=" << _N_bins << " fs_hz=" << _fs_hz << " cpy_step=" << step << " cpy_off=" << offset << endl;
+
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         ssize_t bin = offset + n*step;
         if (bin >= _N_bins)
@@ -1459,9 +1465,11 @@ uint64_t PCalExtractorDummy::getFinalPCal(cf32* out)
 
 /* Example:
 
-   g++ -m64 -DUNIT_TEST -DPCAL_DEBUG -DARCH=INTEL -Wall -O3 -I$IPPROOT/include/ -pthread -I.. \
+   $MPICXX -m64 -DUNIT_TEST -DPCAL_DEBUG -DARCH=INTEL -Wall -O3 -pthread \
+       -I$IPPROOT/ipp/include/ -I.. -I$DIFXROOT/include/ \
        pcal.cpp mathutil.cpp -o test \
-       -L$IPPROOT/sharedlib -L$IPPROOT/lib -L$IPPROOT/lib/intel64/ -lipps -lippvm -lippcore
+       -L$IPPROOT/ipp/sharedlib -L$IPPROOT/ipp/lib -L$IPPROOT/ipp/lib/intel64/ \
+       -lipps -lippvm -lippcore
 
    Usage:   ./test <auto> | < <samplecount> <bandwidthHz> <spacingHz> <offsetHz> <sampleoffset> [<class>] >
   ./test 32000 16e6 1e6 510e3 0
@@ -1477,8 +1485,8 @@ uint64_t PCalExtractorDummy::getFinalPCal(cf32* out)
 void print_32f(const f32* v, const size_t len);
 void print_32fc(const cf32* v, const size_t len);
 void print_32fc_phase(const cf32* v, const size_t len);
-void compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step);
-void test_pcal_case(long samplecount, long bandwidth, long offset, long spacing, long sampleoffset, const char* extname);
+bool compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step);
+bool test_pcal_case(long samplecount, long bandwidth, long offset, long spacing, long sampleoffset, const char* extname);
 void test_pcal_auto();
 
 int main(int argc, char** argv)
@@ -1531,39 +1539,93 @@ void test_pcal_auto()
    struct tcase_t {
       long bandwidth, offset, spacing;
       const char* mode;
+      const char* info;
    };
    tcase_t cases[] = {
       // BW   1st tone  spacing
-      { 16e6,       0,      1e6,   "auto" },
-      { 16e6,       0,      1e6,   "implicit" }, // fails, could be made to work
-      {  3e6,       0,      2e6,   "auto" },
-      { 16e6,    10e3,      1e6,   "auto" },
-      { 16e6,    10e3,      3e6,   "auto" },
-      { 16e6,    10e3,      5e6,   "auto" },
-      { 16e6,       0,      5e6,   "auto" },
-      { 16e6,       0,      5e6,   "implicit" }, // fails, could be made to work (merger of implicit&trivial)
-      {  1e6,    10e3,      5e6,   "auto" },
-      {  1e6,    10e3,        0,   "auto" },
-      {  1e6,       0,        0,   "auto" },
-      {  1e6,     2e6,        0,   "auto" },
-      { 32e3,     2e6,    100e3,   "auto" },
+      { 16e6,       0,      1e6,   "auto",     "" },
+      { 16e6,       0,      1e6,   "implicit", "(start at DC, implicit; ought to fail)" },
+      {  3e6,       0,      2e6,   "auto",     "2" },
+      {  8e6,  2.01e6,      5e6,   "auto",     "IVS Ny-Alesund 5 MHz" },
+      {  8e6,  2.01e6,     10e6,   "auto",     "IVS'ish but 10 MHz" },
+      { 16e6,    10e3,      1e6,   "auto",     "3" },
+      { 16e6,    10e3,      3e6,   "auto",     "spacing 3 MHz" },
+      { 16e6,    10e3,      5e6,   "auto",      "4" },
+      { 16e6,       0,      5e6,   "auto",     "5" },
+      { 16e6,       0,      5e6,   "implicit", "(start at DC, implicit; ought to fail)" },
+      { 16e6,    10e3,      5e6,   "implicit", "6" },
+      {  1e6,    10e3,      5e6,   "auto",     "7" },
+      { 32e6,   990e3,      1e6,   "auto",     "IVS'ish LSB 10kHz offset" },
+      { 32e6,  1.01e6,      5e6,   "auto",     "VGOS-like, tuning xxxx.01 MHz" },
+      { 32e6,  2.01e6,      5e6,   "auto",     "VGOS-like, tuning xxxx.01 MHz" },
+      { 32e6,     3e6,      5e6,   "auto",     "VGOS-like but 3 MHz spacing" },
+      { 32e6,   0.6e6,      5e6,   "auto",     "VGOS tuning xxxx.04 MHz USB 0.6" },
+      { 32e6,   1.6e6,      5e6,   "auto",     "VGOS tuning xxxx.04 MHz USB 1.6" },
+      { 32e6,   2.6e6,      5e6,   "auto",     "VGOS tuning xxxx.04 MHz USB 2.6" },
+      { 32e6,   3.6e6,      5e6,   "auto",     "VGOS tuning xxxx.04 MHz USB 3.6" },
+      { 32e6,   4.6e6,      5e6,   "auto",     "VGOS tuning xxxx.04 MHz USB 4.6" },
+      { 32e6,   0.4e6,      5e6,   "auto",     "VGOS tuning xxxx.04 MHz LSB	0.4" },
+      { 32e6,   1.4e6,      5e6,   "auto",     "VGOS tuning xxxx.04 MHz LSB	1.4" },
+      { 32e6,   2.4e6,      5e6,   "auto",     "VGOS tuning xxxx.04 MHz LSB	2.4" },
+      { 32e6,   3.4e6,      5e6,   "auto",     "VGOS tuning xxxx.04 MHz LSB	3.4" },
+      { 32e6,   4.4e6,      5e6,   "auto",     "VGOS tuning xxxx.04 MHz LSB	4.4" },
+      { 32e6,  5.01e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.01 MHz" },
+      { 32e6,     3e6,     10e6,   "auto",     "VGOS Yebes 10M, but 3 MHz spacing" },
+      { 32e6,   0.6e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz USB 0.6" },
+      { 32e6,   1.6e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz USB 1.6" },
+      { 32e6,   2.6e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz USB 2.6" },
+      { 32e6,   3.6e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz USB 3.6" },
+      { 32e6,   4.6e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz USB 4.6" },
+      { 32e6,   5.6e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz USB 5.6" },
+      { 32e6,   6.6e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz USB 6.6" },
+      { 32e6,   7.6e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz USB 7.6" },
+      { 32e6,   8.6e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz USB 8.6" },
+      { 32e6,   9.6e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz USB 9.6" },
+      { 32e6,   0.4e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz LSB 0.4" },
+      { 32e6,   1.4e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz LSB 1.4" },
+      { 32e6,   2.4e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz LSB 2.4" },
+      { 32e6,   3.4e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz LSB 3.4" },
+      { 32e6,   4.4e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz LSB 4.4" },
+      { 32e6,   5.4e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz LSB 5.4" },
+      { 32e6,   6.4e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz LSB 6.4" },
+      { 32e6,   7.4e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz LSB 7.4" },
+      { 32e6,   8.4e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz LSB 8.4" },
+      { 32e6,   9.4e6,     10e6,   "auto",     "VGOS Yebes 10M, tuning xxxx.40 MHz LSB 9.4" },
+      { 128e6,   30e6,    200e6,   "auto",     "KVN" },
+      { 512e6,   30e6,    200e6,   "auto",     "KVN" },
    };
 
    /* Go through test cases; doesn't yet check PASS/FAIL automatically though! */
    int Ncases = sizeof(cases) / sizeof(struct tcase_t);
+   int failed[Ncases], Nfailed = 0;
    for (int i = 0; i < Ncases; i++) {
-      test_pcal_case(samplecount, cases[i].bandwidth, cases[i].offset, cases[i].spacing, sampleoffset, cases[i].mode);
+      cerr << "Auto case #" << i << " : " << cases[i].info << std::endl;
+      bool ok = test_pcal_case(samplecount, cases[i].bandwidth, cases[i].offset, cases[i].spacing, sampleoffset, cases[i].mode);
+      if (!ok)
+      {
+          failed[Nfailed] = i;
+          ++Nfailed;
+      }
+   }
+
+   cerr << "Passed " << (Ncases-Nfailed) << " cases, failed " << Nfailed << " cases." << std::endl;
+   for (int i = 0; i < Nfailed; i++)
+   {
+      cerr << "Failed case #" << failed[i] << " : " << cases[failed[i]].info << std::endl;
    }
 
    return;
 }
 
-void test_pcal_case(long samplecount, long bandwidth, long offset, long spacing, long sampleoffset, const char* extname)
+bool test_pcal_case(long samplecount, long bandwidth, long offset, long spacing, long sampleoffset, const char* extname)
 {
    bool sloping_reference_data = true;
    bool skip_some_data = true;
+   bool passed = false;
    uint64_t usedsamplecount;
-   int usecomplex = 0;  // real tests only for now
+
+   Configuration::datasampling data_type = Configuration::REAL; // real tests only for now
+   Configuration::complextype band_type = Configuration::SINGLE;
 
    const float tone_phase_start = -90.0f;
    const float tone_phase_slope = 5.0f;
@@ -1582,7 +1644,7 @@ void test_pcal_case(long samplecount, long bandwidth, long offset, long spacing,
       extractor = new PCalExtractorDummy(bandwidth, spacing, offset, sampleoffset);
    } else {
       cerr << "Using pcal extractor factory to select suitable extractor\n";
-      extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset, usecomplex);
+      extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset, data_type, band_type);
       using_auto = true;
    }
    if (!using_auto) {
@@ -1648,7 +1710,7 @@ void test_pcal_case(long samplecount, long bandwidth, long offset, long spacing,
    cerr << "final PCal data:\n";
    // print_32fc(out, numtones_extracted);
    // print_32fc_phase(out, numtones_extracted);
-   compare_32fc_phase(out, numtones_extracted, expected_start, expected_slope);
+   passed = compare_32fc_phase(out, numtones_extracted, expected_start, expected_slope);
 
    /* Comparison with the (poorer) "reference" extracted result */
    if (0) {
@@ -1667,7 +1729,7 @@ void test_pcal_case(long samplecount, long bandwidth, long offset, long spacing,
    vectorFree(out);
    vectorFree(ref);
    delete extractor;
-   return;
+   return passed;
 }
 
 void print_32f(const f32* v, const size_t len) {
@@ -1686,7 +1748,8 @@ void print_32fc_phase(const cf32* v, const size_t len) {
    cerr << "deg\n";
 }
 
-void compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step) {
+bool compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step)
+{
    bool pass = true;
    const float merr = 0.1;
    int num_suspicious = 0;
@@ -1713,7 +1776,8 @@ void compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step) {
       }
       angle += step;
    }
-   cerr << "Extracted versus expected:\n" << ((pass) ? "PASS\n" : "FAIL (or PASS but missed phase ambiguity)\n") << "\n";
+   cerr << "Extracted versus expected:\n" << ((pass) ? "PASS\n" : "\u001b[31mFAIL\u001b[0m (or PASS but missed phase ambiguity)\n") << "\n";
+   return pass;
 }
 
 #endif
