@@ -94,7 +94,9 @@ using namespace std;
 #else
     #undef PCAL_DEBUG
     #define PCAL_DEBUG 1
+    #define PCAL_ENA_BUGGY_OFFSETS 0 // 1: disables fixes r9944&9946, allowing to check which (new) test cases would have failed
 #endif
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // IMPL class: implementation specific storage and variables
@@ -689,7 +691,11 @@ uint64_t PCalExtractorShifting::getFinalPCal(cf32* out)
 
     // Copy only the interesting bins.
     // Note the "DC" bin has phase info in 1st shifted tone, do not discard.
+#if PCAL_ENA_BUGGY_OFFSETS
+    size_t step = (size_t)(std::floor(_N_bins*(_pcalspacing_hz/_fs_hz)));
+#else
     size_t step = (size_t)(std::floor(double(_N_bins)*_pcalspacing_hz/_fs_hz));
+#endif
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         size_t idx = n*step;
         if (idx >= (size_t)_N_bins) { break; }
@@ -905,7 +911,11 @@ uint64_t PCalExtractorComplex::getFinalPCal (cf32* out)
 
     // Copy only the interesting bins.
     // Note the "DC" bin has phase info in 1st shifted tone, do not discard.
+#if PCAL_ENA_BUGGY_OFFSETS
+    size_t step = (size_t)(std::floor(_N_bins*(_pcalspacing_hz/_fs_hz)));
+#else
     size_t step = (size_t)(std::floor(double(_N_bins)*_pcalspacing_hz/_fs_hz));
+#endif
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         size_t idx = n*step;
         if (idx >= (size_t)_N_bins)
@@ -1084,8 +1094,13 @@ uint64_t PCalExtractorImplicitShift::getFinalPCal(cf32* out)
     #endif
 
     /* Copy only the interesting bins */
+#if PCAL_ENA_BUGGY_OFFSETS
+    size_t step = (size_t)(std::floor(double(_N_bins)*(_pcalspacing_hz/_fs_hz)));
+    size_t offset = (size_t)(std::floor(double(_N_bins)*(_pcaloffset_hz/_fs_hz)));
+#else
     size_t step = (size_t)(std::floor(double(_N_bins)*_pcalspacing_hz/_fs_hz));
     size_t offset = (size_t)(std::floor(double(_N_bins)*_pcaloffset_hz/_fs_hz));
+#endif
     if (PCAL_DEBUG)
         cdebug << startl << "PCalExtractorImplicitShift::getFinalPCal spacing_hz=" << _pcalspacing_hz << " off_hz=" << _pcaloffset_hz << " nbins=" << _N_bins << " fs_hz=" << _fs_hz << " cpy_step=" << step << " cpy_off=" << offset << endl;
 
@@ -1277,8 +1292,13 @@ uint64_t PCalExtractorComplexImplicitShift::getFinalPCal(cf32* out)
     }
 
     /* Copy only the interesting bins */
+#if PCAL_ENA_BUGGY_OFFSETS
+    size_t step = (size_t)(std::floor(double(_N_bins)*(_pcalspacing_hz/_fs_hz)));
+    size_t offset = (size_t)(std::floor(double(_N_bins)*(_pcaloffset_hz/_fs_hz)));
+#else
     size_t step = (size_t)(std::floor(double(_N_bins)*_pcalspacing_hz/_fs_hz));
     size_t offset = (size_t)(std::floor(double(_N_bins)*_pcaloffset_hz/_fs_hz));
+#endif
     if (PCAL_DEBUG)
         cdebug << startl << "PCalExtractorComplexImplicitShift::getFinalPCal spacing_hz=" << _pcalspacing_hz << " off_hz=" << _pcaloffset_hz << " nbins=" << _N_bins << " fs_hz=" << _fs_hz << " cpy_step=" << step << " cpy_off=" << offset << endl;
 
@@ -1459,21 +1479,22 @@ uint64_t PCalExtractorDummy::getFinalPCal(cf32* out)
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-// UNIT TEST (NON-AUTOMATED, MANUAL VISUAL CHECK)
+// UNIT TEST (SEMI-AUTOMATED, MANUAL VISUAL CHECK, PASS/FAIL SUMMARY AT END OF 'auto'matic RUN)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 #ifdef UNIT_TEST
 
-/* Example:
+/*
+  Compiling:
+    edit Makefile.am
+        bin_PROGRAMS = mpifxcorr neuteredmpifxcorr pcaltest
+        pcaltest_SOURCES = pcal.cpp mathutil.cpp
+        pcaltest_CXXFLAGS = -DUNIT_TEST -DPCAL_DEBUG
+    make -j
 
-   $MPICXX -m64 -DUNIT_TEST -DPCAL_DEBUG -DARCH=INTEL -Wall -O3 -pthread \
-       -I$IPPROOT/ipp/include/ -I.. -I$DIFXROOT/include/ \
-       pcal.cpp mathutil.cpp -o test \
-       -L$IPPROOT/ipp/sharedlib -L$IPPROOT/ipp/lib -L$IPPROOT/ipp/lib/intel64/ \
-       -lipps -lippvm -lippcore
-
-   Usage:   ./test <auto> | < <samplecount> <bandwidthHz> <spacingHz> <offsetHz> <sampleoffset> [<class>] >
-  ./test 32000 16e6 1e6 510e3 0
-  ./test 32000 16e6 200e6 4e6 0
+   Usage:
+     ./pcaltest <auto> | < <samplecount> <bandwidthHz> <spacingHz> <offsetHz> <sampleoffset> [<class>] >
+     ./pcaltest 32000 16e6 1e6 510e3 0
+     ./pcaltest 32000 16e6 200e6 4e6 0
 */
 
 #include <cmath>
@@ -1503,6 +1524,7 @@ int main(int argc, char** argv)
       cerr << "\nUsage:   " << argv[0] << " <auto> | < <samplecount> <bandwidthHz> <spacingHz> <offsetHz> <sampleoffset> [<class>] >\n"
            << "Example: " << argv[0] << " 32000 16e6 1e6 510e3 0 implicit\n\n"
            << "Options:\n"
+           << "           auto         : run through internal automatic set of various test cases\n\n"
            << "           samplecount  : number of test samples to generate\n"
            << "           bandwidthHz  : bandwidth of test signal (half the sampling rate)\n"
            << "           spacingHz    : spacing of PCal tones in Hz\n"
@@ -1553,8 +1575,21 @@ void test_pcal_auto()
       { 16e6,       0,      1e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "" },
       { 16e6,       0,      1e6,   Configuration::REAL, Configuration::SINGLE, "implicit", "(start at DC, implicit; ought to fail)" },
       {  3e6,       0,      2e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "" },
-      {  8e6,  2.01e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS Ny-Alesund 5 MHz" },
-      {  8e6,  2.01e6,     10e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS'ish but 10 MHz" },
+      {  8e6,  0.01e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS Ny-Alesund 5 MHz, 0.01" },
+      {  8e6,  1.01e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS Ny-Alesund 5 MHz, 1.01" },
+      {  8e6,  2.01e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS Ny-Alesund 5 MHz, 2.01" },
+      {  8e6,  3.01e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS Ny-Alesund 5 MHz, 3.01" },
+      {  8e6,  4.01e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS Ny-Alesund 5 MHz, 4.01" },
+      {  8e6,  0.01e6,     10e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS'ish but 10 MHz, 0.01" },
+      {  8e6,  1.01e6,     10e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS'ish but 10 MHz, 1.01" },
+      {  8e6,  2.01e6,     10e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS'ish but 10 MHz, 2.01" },
+      {  8e6,  3.01e6,     10e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS'ish but 10 MHz, 3.01" },
+      {  8e6,  4.01e6,     10e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS'ish but 10 MHz, 4.01" },
+      {  8e6,  5.01e6,     10e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS'ish but 10 MHz, 5.01" },
+      {  8e6,  6.01e6,     10e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS'ish but 10 MHz, 6.01" },
+      {  8e6,  7.01e6,     10e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS'ish but 10 MHz, 7.01" },
+      {  8e6,  8.01e6,     10e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS'ish but 10 MHz, 8.01" },
+      {  8e6,  9.01e6,     10e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS'ish but 10 MHz, 9.01" },
       { 16e6,    10e3,      1e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "" },
       { 16e6,    10e3,      3e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "spacing 3 MHz" },
       { 16e6,    10e3,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "" },
@@ -1562,9 +1597,11 @@ void test_pcal_auto()
       { 16e6,       0,      5e6,   Configuration::REAL, Configuration::SINGLE, "implicit", "(start at DC, implicit; ought to fail)" },
       { 16e6,    10e3,      5e6,   Configuration::REAL, Configuration::SINGLE, "implicit", "" },
       {  1e6,    10e3,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "" },
-      { 32e6,   990e3,      1e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS'ish LSB 10kHz offset" },
-      { 32e6,  1.01e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "VGOS-like, tuning xxxx.01 MHz" },
-      { 32e6,  2.01e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "VGOS-like, tuning xxxx.01 MHz" },
+      {  8e6,   990e3,      1e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS xxxx.99 MHz LSB 10kHz offset" },
+      {  8e6,    10e3,      1e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "IVS xxxx.99 MHz USB 10kHz offset" },
+      { 32e6,  0.01e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "VGOS-like 5 MHz but tuning xxxx.01 MHz USB, 0.01" },
+      { 32e6,  1.01e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "VGOS-like 5 MHz but tuning xxxx.01 MHz USB, 1.01" },
+      { 32e6,  2.01e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "VGOS-like 5 MHz but tuning xxxx.01 MHz USB, 2.01" },
       { 32e6,     3e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "VGOS-like but 3 MHz spacing" },
       { 32e6,   0.6e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "VGOS tuning xxxx.04 MHz USB 0.6" },
       { 32e6,   1.6e6,      5e6,   Configuration::REAL, Configuration::SINGLE, "auto",     "VGOS tuning xxxx.04 MHz USB 1.6" },
