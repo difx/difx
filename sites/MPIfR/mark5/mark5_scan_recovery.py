@@ -9,20 +9,17 @@ Mark6 module after which scans can be extracted directly via e.g.
   $ sudo chmod a+rx /dev/sd{c,d,e,r,s,t,u}
   $ mark5_scan_recovery.py /dev/sd{c,d,e,r,s,t,u}
 
-If the Mark5 module had PATA drives one could use eight USB-PATA dongles
+If the Mark5(A) module had PATA drives one could use eight USB-PATA dongles
 or PCIe 1xIDE cards and access them directly, as above, or alternatively
 use  'dd if=/dev/<blkdevice> of=disk0.img bs=16M'  or similar to store
 drive content as disk images first and then extract scans via e.g.
 
-  $ mark5_scan_recovery.py /data/raw/MPI+1200/disk{0,1,4,5,6,7}.raw
+  $ mark5_scan_recovery.py --mark5a /data/raw/MPI+1200/disk{0,1,4,5,6,7}.raw
 
 This script supports recordings on modules that were only partially
-populated at recording time, and/or where some disk(s) may have failed later. 
+populated at recording time, and/or where some disk(s) may have failed later.
 The recovered scans are copied to files under a new directory ./recovered/
 located under the current working directory.
-
-Note: For Mark5A disks, change isMark5BC=True to False in this script.
-      Currently no command line option.
 '''
 
 __version__ = "1.0.2"
@@ -33,8 +30,6 @@ import ctypes
 import os, sys, string
 from contextlib import contextmanager
 from socket import create_connection
-
-isMark5BC = True ## TODO: cmd line arg? or autodetect?
 
 debug = False
 Nmaxdisks = 8             # expected nr of disks
@@ -296,10 +291,11 @@ def module_offset_to_file(mod_offset_, inputs_):
 ##############################################################################################
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("inputfile",
                         help="Input file to read data blocks from",
                         nargs="+")
+    parser.add_argument('--mark5a', default=False, action='store_true', help='Raw data are from a Mark5A module, rather than 5B/5C')
     parser.add_argument('--version', action='version', version=__version__)
     opts = parser.parse_args()
 
@@ -309,14 +305,13 @@ if __name__ == "__main__":
         print (str(e))
 
     rawsources = [open(filename, "rb") for filename in opts.inputfile]
-    if isMark5BC:
-        scans = get_scans_mark5bc(rawsources)
-    else:
+    if opts.mark5a:
         scans = get_scans_mark5a(rawsources)
+    else:
+        scans = get_scans_mark5bc(rawsources)
     inputs = analyze_disks(rawsources)
     Nscans = len(scans)
 
-    output = open('tmp', 'wb')
     nfilled = 0
     linearoffset = 0
     currscan = 0
@@ -365,6 +360,6 @@ if __name__ == "__main__":
         previous_sequence_number = number
 
         # reporting
-        if (number % 1000) == 0:
+        if (number % 1000) == 0 and currscan >= 0 and currscan < len(scans):
             scanlen = scans[currscan]['stop'] - scans[currscan]['start']
             print (scans[currscan]['name'], linearoffset, scans[currscan]['stop'], '%.1f%%' % (100.0*(linearoffset-scans[currscan]['start'])/scanlen))
