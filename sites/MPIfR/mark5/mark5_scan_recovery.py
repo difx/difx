@@ -1,11 +1,28 @@
 #!/usr/bin/env python
 '''
-Tries to recover data from files (or block devices) containing data of the
-individual disks from a StreamStor Mark5B/5C disk pack.
+Recovers VLBI recordings from raw disk images or directly from block
+devices (/dev/sd*/) of disks of a broken StreamStor Mark5A/B/C module.
 
-Supports modules that were only partially populated at recording time and where
-some disk(s) have failed later. Recovered scans are copied to files under a new
-directory ./recovered/ located under the current working directory.
+If the Mark5 module had SATA drives these can be relocated into an empty
+Mark6 module after which scans can be extracted directly via e.g.
+
+  $ sudo chmod a+rx /dev/sd{c,d,e,r,s,t,u}
+  $ mark5_scan_recovery.py /dev/sd{c,d,e,r,s,t,u}
+
+If the Mark5 module had PATA drives one could use eight USB-PATA dongles
+or PCIe 1xIDE cards and access them directly, as above, or alternatively
+use  'dd if=/dev/<blkdevice> of=disk0.img bs=16M'  or similar to store
+drive content as disk images first and then extract scans via e.g.
+
+  $ mark5_scan_recovery.py /data/raw/MPI+1200/disk{0,1,4,5,6,7}.raw
+
+This script supports recordings on modules that were only partially
+populated at recording time, and/or where some disk(s) may have failed later. 
+The recovered scans are copied to files under a new directory ./recovered/
+located under the current working directory.
+
+Note: For Mark5A disks, change isMark5BC=True to False in this script.
+      Currently no command line option.
 '''
 
 __version__ = "1.0.2"
@@ -349,4 +366,5 @@ if __name__ == "__main__":
 
         # reporting
         if (number % 1000) == 0:
-            print (scans[currscan]['name'], linearoffset, scans[currscan]['stop'], '%.1f%%' % (100.0*(linearoffset-scans[currscan]['start'])/scans[currscan]['stop']))
+            scanlen = scans[currscan]['stop'] - scans[currscan]['start']
+            print (scans[currscan]['name'], linearoffset, scans[currscan]['stop'], '%.1f%%' % (100.0*(linearoffset-scans[currscan]['start'])/scanlen))
