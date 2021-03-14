@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '3.0.2'
-VERDATE = '20210205'
+VERSION = '3.0.3'
+VERDATE = '20210313'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -674,25 +674,40 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 
 	return None
 
+def waitMJD(mjd):
+	mjd_unix0 = 40587.0	# MJD at timestamp = 0
+	target = (mjd - mjd_unix0)*86400.0
+	now = time()
+	totalWait = target - now
+	if totalWait < 0:
+		return totalWait
+	print('Wait time is %d seconds.' % int(totalWait))
+	while True:
+		now = time()
+		if now >= target:
+			break
+		delta = target - now
+		print('Waiting %d more seconds...' % int(delta), end='\r')
+		sleep(1)
+	print('The wait is over.          ')
+	return totalWait
+
 
 def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, useLocalHead, machinesCache, restartSeconds, wait):
 	
 	if wait > 0:
 		intmjd = 0
 		sec = 0.0
-		data = open(fileBase + '.input').readlines()
 		dur = 0.0
+		data = open(fileBase + '.input').readlines()
 		for d in data:
-			s = d.strip().split()
-			if len(s) != 3:
-				continue
-			if s[0] == 'START':
-				if s[1] == 'MJD:':
-					intmjd = int(s[2])
-				elif s[1] == 'SECONDS:':
-					sec = float(s[2])
-			if d[:19] == 'EXECUTE TIME (SEC):':
-				dur = float(d[19:].strip())
+			s = d.strip().split(':')
+			if s[0] == 'START MJD':
+				intmjd = int(s[1].strip())
+			elif s[0] == 'START SECONDS':
+				sec = float(s[1].strip())
+			elif s[0] == 'EXECUTE TIME (SEC)':
+				dur = float(s[1].strip())
 		mjd = intmjd + sec/86400.0
 		end = mjd + dur/86400.0
 		now = time()
@@ -702,14 +717,7 @@ def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMes
 			print('Skipping job %s because its end time has passed.' % fileBase)
 			return None 
 
-		dt = (mjd - curmjd)*86400.0
-		if dt < 0.0:
-			dt = 0.0
-		if wait > 1:
-			dt += wait
-		if dt > 0.0:
-			print('Waiting %3.1f seconds before starting job' % dt)
-			sleep(dt);
+		waitMJD(mjd + wait/86400.0)
 
 	savedEnvironment = updateEnvironment(fileBase+'.input.env')
 	if useStartMessage:
