@@ -49,6 +49,9 @@ public:
 	int getBits() const;
 	int getMinBits() const;
 	int getMaxBits() const;
+	int zBits() const;		// returns zero if not consistent
+	int zRecordChan() const;	// returns zero if not consistent
+	double zBandwidth() const;	// [Hz] channel bandwidth, or zero if not consistent
 	int getMinSubbands() const;
 	int nRecordChan(const std::string &antName) const;
 	int nStream() const;

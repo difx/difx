@@ -201,6 +201,90 @@ int VexMode::getMaxBits() const
 	return maxBit;
 }
 
+// returns zero if number of bits differs across channels or antennas
+int VexMode::zBits() const
+{
+	unsigned int maxBit = 0;
+	unsigned int minBit = 0;
+	std::map<std::string,VexSetup>::const_iterator it;
+
+	for(it = setups.begin(); it != setups.end(); ++it)
+	{
+		unsigned int mb;
+		
+		mb = it->second.getMaxBits();
+		if(mb > 0 && (mb > maxBit || maxBit == 0))
+		{
+			maxBit = mb;
+		}
+
+		mb = it->second.getMinBits();
+		if(mb > 0 && (mb < minBit || minBit == 0))
+		{
+			minBit = mb;
+		}
+	}
+
+	if(maxBit == minBit)
+	{
+		return maxBit;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+// returns zero if not consistent
+int VexMode::zRecordChan() const
+{
+	unsigned int nRecChan = 0;
+
+	for(std::map<std::string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++ it)
+	{
+		if(nRecChan == 0)
+		{
+			nRecChan = it->second.nRecordChan();
+		}
+		else if(nRecChan != it->second.nRecordChan())
+		{
+			return 0;
+		}
+	}
+
+	return nRecChan;
+}
+
+// [Hz] channel bandwidth, or zero if not consistent
+double VexMode::zBandwidth() const
+{
+	double sampleRate = 0.0;
+
+	for(std::map<std::string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++ it)
+	{
+		double s1, s2;
+
+		s1 = it->second.getLowestSampleRate();
+		s2 = it->second.getHighestSampleRate();
+
+		if(s1 != s2)
+		{
+			return 0.0;
+		}
+		if(sampleRate == 0.0)
+		{
+			sampleRate = s1;
+		}
+		else if(sampleRate != s1)
+		{
+			return 0.0;
+		}
+	}
+
+	return sampleRate/2.0;	
+}
+
+
 int VexMode::getMinSubbands() const
 {
 	int minSubbands = 0;

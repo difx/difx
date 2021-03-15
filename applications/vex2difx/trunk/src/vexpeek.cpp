@@ -41,8 +41,8 @@
 #include "testvex.h"
 
 const std::string program("vexpeek");
-const std::string version("0.14");
-const std::string verdate("20210219");
+const std::string version("0.15");
+const std::string verdate("20210315");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -62,6 +62,7 @@ void usage(const char *pgm)
 	std::cout << "  -b or --bands : print list of band codes" << std::endl;
 	std::cout << "  -s or --scans : print list of scans and their stations" << std::endl;
 	std::cout << "        --scans2 : print list of scans with bands and times" << std::endl;
+	std::cout << "                 - include twice to see nChan, nBit and bandwidth as well" << std::endl;
 	std::cout << "  -r or --sources : print list of sources and their coordinates" << std::endl;
 	std::cout << "  -u or --diskusage : print disk usage (GB)" << std::endl;
 	std::cout << "  -m or --modules : print disk modules used (from TAPELOG_OBS)" << std::endl;
@@ -280,7 +281,7 @@ void scanListWithTimes(const VexData *V)
 }
 
 // print: ScanName SourceName Band NAntenna startMJD stopMJD
-void scan2List(const VexData *V)
+void scan2List(const VexData *V, int level)
 {
 	std::set<char> bands;
 
@@ -308,7 +309,14 @@ void scan2List(const VexData *V)
 		std::cout << " " << scan->stations.size() << " ";
 
 		std::cout.precision(14);
-		std::cout << scan->mjdStart << " " << scan->mjdStop << std::endl;
+		std::cout << scan->mjdStart << " " << scan->mjdStop;
+
+		if(level > 1)
+		{
+			std::cout << " " << M->zRecordChan() << " " << M->zBits() << " " << (M->zBandwidth()/1000000.0);
+		}
+
+		std::cout << std::endl;
 	}
 }
 
@@ -578,7 +586,7 @@ int main(int argc, char **argv)
 	}
 	if(doScan2List)
 	{
-		scan2List(V);
+		scan2List(V, doScan2List);
 	}
 	if(doModules)
 	{
