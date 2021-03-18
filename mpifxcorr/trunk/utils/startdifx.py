@@ -702,12 +702,15 @@ def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMes
 		data = open(fileBase + '.input').readlines()
 		for d in data:
 			s = d.strip().split(':')
-			if s[0] == 'START MJD':
-				intmjd = int(s[1].strip())
-			elif s[0] == 'START SECONDS':
-				sec = float(s[1].strip())
-			elif s[0] == 'EXECUTE TIME (SEC)':
-				dur = float(s[1].strip())
+			if len(s) > 1:
+				k = s[0].strip()
+				v = s[1].strip()
+				if k == 'START MJD':
+					intmjd = int(v)
+				elif k == 'START SECONDS':
+					sec = float(v)
+				elif k == 'EXECUTE TIME (SEC)':
+					dur = float(v)
 		mjd = intmjd + sec/86400.0
 		end = mjd + dur/86400.0
 		now = time()
