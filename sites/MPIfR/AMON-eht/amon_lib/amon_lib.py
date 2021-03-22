@@ -496,9 +496,13 @@ def load_data_alist_vex(alistfilename, vexfilename, launch_path): # alistfilenam
         #linecounter += 1
       while (line != "\n" and line != ""):
         try:
-            baseline = line.split()[baseline_col]
+          if (line[0] == '*'):
+            # print('Unexpected comment line encountered after header lines, ignoring it: %s' % (line.strip()))
+            line = mainf.readline()
+            continue
+          baseline = line.split()[baseline_col]
         except:
-            print('Could not split for col %d of line: %s' % (baseline_col,line))
+          print('Could not split for col %d of line: %s' % (baseline_col,line))
         if baseline[0] != baseline[1] and baseline[0] not in ants_to_ignore and baseline[1] not in ants_to_ignore: # ignore autocorr or ignoret ant if present
           scan_name = line.split()[scan_num_col]
           source = line.split()[source_col]
@@ -572,6 +576,10 @@ def load_data_alist_vex(alistfilename, vexfilename, launch_path): # alistfilenam
         line = mainf.readline()
         #linecounter += 1
       while (line != "\n" and line != ""):
+        if (line[0] == '*'):
+          # print('Unexpected comment line encountered after header lines, ignoring it: %s' % (line.strip()))
+          line = mainf.readline()
+          continue
         baseline = line.split()[baseline_col]
         if baseline[0] != baseline[1] and baseline[0] not in ants_to_ignore and baseline[1] not in ants_to_ignore: # ignore autocorr or ignored ant if present
           scan = line.split()[scan_num_col]
