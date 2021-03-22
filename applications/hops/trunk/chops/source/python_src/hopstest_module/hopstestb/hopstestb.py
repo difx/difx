@@ -394,11 +394,12 @@ def get_polarization_products_present(corel_filename):
     #number of 'cross-corr' channels
     nindex = corr.t100.contents.nindex
     for n in list(range(0,nindex)):
-        ref_chan_id = str( (corr.index[n].t101[0].ref_chan_id).decode() )
-        rem_chan_id = str( (corr.index[n].t101[0].rem_chan_id).decode() )
-        refpol = ref_chan_id[-1:].upper()
-        rempol = rem_chan_id[-1:].upper()
-        pp_set.add(refpol+rempol)
+        if corr.index[n].t101:
+            ref_chan_id = str( (corr.index[n].t101[0].ref_chan_id).decode() )
+            rem_chan_id = str( (corr.index[n].t101[0].rem_chan_id).decode() )
+            refpol = ref_chan_id[-1:].upper()
+            rempol = rem_chan_id[-1:].upper()
+            pp_set.add(refpol+rempol)
     return list(pp_set)
 
 def get_required_pol_products(ff_pp_option):

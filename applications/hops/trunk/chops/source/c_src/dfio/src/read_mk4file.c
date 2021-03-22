@@ -24,7 +24,7 @@ int
 read_mk4file (FILE *fp,
               char **ptr)
     {
-    int nb;
+    size_t nb;
     int fd;
     size_t size;
     struct stat file_status;
@@ -57,7 +57,7 @@ read_mk4file (FILE *fp,
                                         /* Did it go OK? */
     if (nb != size)
         {
-        msg ("Error, expected %u bytes, read %d bytes", 2, size, nb);
+        msg ("Error, expected %zu bytes, read %zu bytes", 2, size, nb);
         return (-1);
         }
 

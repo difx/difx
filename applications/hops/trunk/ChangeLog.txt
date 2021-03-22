@@ -1,4 +1,642 @@
 ------------------------------------------------------------------------
+r3202 | barrettj | 2021-03-03 17:09:44 -0500 (Wed, 03 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/hops.bash.in
+
+revert hops.bash pythonpath
+
+------------------------------------------------------------------------
+r3201 | barrettj | 2021-03-03 17:09:44 -0500 (Wed, 03 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   A /trunk/chops/source/python_src/scripts/select_bandpols.py.in (from /trunk/chops/source/python_src/vpal_module/vpal/select_bandpols.py:3200)
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am
+   M /trunk/chops/source/python_src/vpal_module/vpal/__init__.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/phasecal.py
+   D /trunk/chops/source/python_src/vpal_module/vpal/select_bandpols.py
+   M /trunk/configure.ac
+
+tweak select_bandpols installation
+
+------------------------------------------------------------------------
+r3200 | dhoak | 2021-03-03 10:34:53 -0500 (Wed, 03 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/hops.bash.in
+
+adding vpal folder to PYTHONPATH; this has worked through a bit of testing, should be a robust solution
+
+------------------------------------------------------------------------
+r3198 | dhoak | 2021-03-02 18:06:32 -0500 (Tue, 02 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am
+   M /trunk/chops/source/python_src/vpal_module/vpal/select_bandpols.py
+
+edits to select_bandpols, install executable
+
+------------------------------------------------------------------------
+r3181 | gbc | 2021-02-04 12:48:56 -0500 (Thu, 04 Feb 2021) | 1 line
+Changed paths:
+   D /trunk/app
+   D /trunk/inc
+   D /trunk/lib
+   D /trunk/man
+
+removing empty dirs for a plan that did not happen
+
+------------------------------------------------------------------------
+r3178 | gbc | 2021-01-26 10:37:40 -0500 (Tue, 26 Jan 2021) | 1 line
+Changed paths:
+   D /trunk/scripts/phorc
+
+purging some other dead end
+
+------------------------------------------------------------------------
+r3177 | gbc | 2021-01-26 10:32:28 -0500 (Tue, 26 Jan 2021) | 1 line
+Changed paths:
+   D /trunk/bnw
+
+removing something started, but not to continue
+
+------------------------------------------------------------------------
+r3175 | barrettj | 2021-01-25 13:03:40 -0500 (Mon, 25 Jan 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/ffres2pcp.py.in
+
+fix the opts
+
+------------------------------------------------------------------------
+r3174 | barrettj | 2021-01-25 13:03:40 -0500 (Mon, 25 Jan 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/ffres2pcp.py.in
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/ffres2pcp_lib.py
+
+adding user parameters to control channel discard threshold/tolerance for ffres2pcp
+
+------------------------------------------------------------------------
+r3165 | dhoak | 2020-12-04 17:39:14 -0500 (Fri, 04 Dec 2020) | 1 line
+Changed paths:
+   A /trunk/chops/source/python_src/vpal_module/vpal/phasecal.py
+   A /trunk/chops/source/python_src/vpal_module/vpal/select_bandpols.py
+
+Added python scripts from L Benkevitch proxy-cable-cal
+
+------------------------------------------------------------------------
+r3157 | gbc | 2020-11-12 09:10:17 -0500 (Thu, 12 Nov 2020) | 1 line
+Changed paths:
+   A /trunk/data/ff_testdata/testdata/cmp-2843.pdf
+
+py sample comparision
+
+------------------------------------------------------------------------
+r3156 | gbc | 2020-11-12 09:05:50 -0500 (Thu, 12 Nov 2020) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   A /trunk/data/ff_testdata/chk_ps2pdf.sh
+
+added a chk_ps2pdf
+
+------------------------------------------------------------------------
+r3155 | gbc | 2020-11-12 08:46:32 -0500 (Thu, 12 Nov 2020) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_ff_2843.sh
+
+rosemary woods
+
+------------------------------------------------------------------------
+r3153 | barrettj | 2020-11-04 15:26:01 -0500 (Wed, 04 Nov 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/vex/include/vex.h
+   M /trunk/include/vex.h
+
+bumping up MAXSCANS from 2048 to 8192
+
+------------------------------------------------------------------------
+r3144 | barrettj | 2020-10-26 10:49:05 -0400 (Mon, 26 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/mk4util/include/fileset.h
+   M /trunk/include/fileset.h
+
+bumping up MAXFSET size from 3k to 10k
+
+------------------------------------------------------------------------
+r3143 | barrettj | 2020-10-26 09:14:15 -0400 (Mon, 26 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/afio/src/corelname.c
+   M /trunk/chops/source/c_src/afio/src/fringename.c
+   M /trunk/sub/afio/corelname.c
+   M /trunk/sub/afio/fringename.c
+
+fix extent number limitation in afio library, bump from 999 to 9999
+
+------------------------------------------------------------------------
+r3141 | barrettj | 2020-10-22 23:27:00 -0400 (Thu, 22 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/mk4util/include/fileset.h
+   M /trunk/chops/source/c_src/mk4util/src/check_name.c
+   M /trunk/include/fileset.h
+   M /trunk/sub/util/check_name.c
+
+loosening restrictions on the number of digits in a file extent_no in check_name.c from 3 to 4
+
+------------------------------------------------------------------------
+r3139 | gbc | 2020-10-21 15:49:41 -0400 (Wed, 21 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/Makefile.am
+   M /trunk/doc/future/hops-development/Makefile.am
+   M /trunk/doc/future/hops-spec/Makefile.am
+
+eliminated spurious rebuilds for docs
+
+------------------------------------------------------------------------
+r3138 | barrettj | 2020-10-21 15:05:07 -0400 (Wed, 21 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/mk4util/include/fileset.h
+   M /trunk/include/fileset.h
+
+bumping up MAXFSET from 1000 to 2000 for some monster mixed-mode scans
+
+------------------------------------------------------------------------
+r3137 | barrettj | 2020-10-21 15:05:07 -0400 (Wed, 21 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+
+fix indentation
+
+------------------------------------------------------------------------
+r3128 | violetp | 2020-10-13 17:30:07 -0400 (Tue, 13 Oct 2020) | 1 line
+Changed paths:
+   A /trunk/doc/fourfit/Makefile.in
+
+Replace unnecessary reference to scp with cp.
+
+------------------------------------------------------------------------
+r3127 | violetp | 2020-10-13 17:20:07 -0400 (Tue, 13 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/Makefile.am
+
+Replace scp reference with cp.
+
+------------------------------------------------------------------------
+r3114 | gbc | 2020-10-06 10:56:02 -0400 (Tue, 06 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/fourfit_users_manual.tex
+   M /trunk/doc/future/hops-development/hops-development.tex
+   M /trunk/doc/future/hops-spec/hops-spec.tex
+
+use batchmode
+
+------------------------------------------------------------------------
+r3113 | gbc | 2020-10-06 10:26:05 -0400 (Tue, 06 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/doc/readme.txt
+
+removed old instructions
+
+------------------------------------------------------------------------
+r3096 | gbc | 2020-10-02 12:02:45 -0400 (Fri, 02 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/doc/fourfit/Makefile.am
+   M /trunk/doc/texlive-list.txt
+
+got ff man to build
+
+------------------------------------------------------------------------
+r3092 | gbc | 2020-10-01 19:42:24 -0400 (Thu, 01 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   M /trunk/doc/doxy/Makefile.am
+   A /trunk/doc/doxy/hops-aedit.doxy.in (from /trunk/doc/doxy/hops-include.doxy.in:3091)
+   A /trunk/doc/doxy/hops-alist.doxy.in (from /trunk/doc/doxy/hops-include.doxy.in:3091)
+
+added aedit and alist
+
+------------------------------------------------------------------------
+r3091 | gbc | 2020-10-01 18:19:33 -0400 (Thu, 01 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/doc/doxy/Makefile.am
+   A /trunk/doc/doxy/hops-include.doxy.in (from /trunk/doc/doxy/hops-sub.doxy.in:3090)
+
+added includes
+
+------------------------------------------------------------------------
+r3090 | gbc | 2020-10-01 18:02:29 -0400 (Thu, 01 Oct 2020) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   M /trunk/doc/Makefile.am
+   A /trunk/doc/doxy
+   A /trunk/doc/doxy/Makefile.am
+   A /trunk/doc/doxy/hops-fourfit.doxy.in (from /trunk/doc/hops-fourfit.doxy.in:3089)
+   A /trunk/doc/doxy/hops-sub.doxy.in (from /trunk/doc/hops-sub.doxy.in:3089)
+   D /trunk/doc/hops-fourfit.doxy.in
+   D /trunk/doc/hops-sub.doxy.in
+
+migrated doxygen stuff to its own dir
+
+------------------------------------------------------------------------
+r3089 | gbc | 2020-10-01 10:48:39 -0400 (Thu, 01 Oct 2020) | 1 line
+Changed paths:
+   D /trunk/foo
+
+test
+
+------------------------------------------------------------------------
+r3088 | gbc | 2020-10-01 10:48:14 -0400 (Thu, 01 Oct 2020) | 1 line
+Changed paths:
+   A /trunk/foo
+
+test
+
+------------------------------------------------------------------------
+r3085 | gbc | 2020-09-28 18:26:21 -0400 (Mon, 28 Sep 2020) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+notice awk and csh for help, require fftw
+
+------------------------------------------------------------------------
+r3078 | gbc | 2020-09-24 15:06:41 -0400 (Thu, 24 Sep 2020) | 3 lines
+Changed paths:
+   M /trunk/vex2xml/Makefile.am
+
+removed some of the things that were needlessly being installed.
+
+
+
+------------------------------------------------------------------------
+r3077 | gbc | 2020-09-24 14:13:33 -0400 (Thu, 24 Sep 2020) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   M /trunk/doc/Makefile.am
+   A /trunk/doc/hops-fourfit.doxy.in
+   A /trunk/doc/hops-sub.doxy.in
+   D /trunk/doc/hops.doxy
+   M /trunk/doc/readme.txt
+   A /trunk/doc/texlive-list.txt
+
+got doxygen going
+
+------------------------------------------------------------------------
+r3072 | gbc | 2020-09-22 09:04:46 -0400 (Tue, 22 Sep 2020) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+
+ fixed up some margin notes
+
+------------------------------------------------------------------------
+r3068 | gbc | 2020-09-18 18:19:58 -0400 (Fri, 18 Sep 2020) | 1 line
+Changed paths:
+   M /trunk/doc/future/hops-development/designdetails.tex
+   M /trunk/doc/future/hops-development/designoutline.tex
+   M /trunk/doc/future/hops-development/hops-development.tex
+   M /trunk/doc/future/hops-spec/hops-spec.tex
+
+made a few comments
+
+------------------------------------------------------------------------
+r3067 | gbc | 2020-09-18 18:00:15 -0400 (Fri, 18 Sep 2020) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+   M /trunk/doc/future/Makefile.am
+   A /trunk/doc/future/hops-spec/Makefile.am
+   M /trunk/doc/future/hops-spec/hops-spec.tex
+
+made some comments
+
+------------------------------------------------------------------------
+r3051 | gbc | 2020-09-03 13:00:03 -0400 (Thu, 03 Sep 2020) | 3 lines
+Changed paths:
+   M /trunk/scripts/compare-baselines-v6.pl
+
+Added selection for freq group/number of channels.
+
+
+
+------------------------------------------------------------------------
+r3046 | gbc | 2020-09-02 10:11:29 -0400 (Wed, 02 Sep 2020) | 1 line
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+once again, with feeling
+
+------------------------------------------------------------------------
+r3044 | gbc | 2020-09-02 09:33:51 -0400 (Wed, 02 Sep 2020) | 1 line
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+added an explanatory comment
+
+------------------------------------------------------------------------
+r3039 | barrettj | 2020-08-24 11:02:45 -0400 (Mon, 24 Aug 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+
+fix out-of-bounds error in hopstestb
+
+------------------------------------------------------------------------
+r3038 | barrettj | 2020-08-24 10:30:09 -0400 (Mon, 24 Aug 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/pcc_plotting_utils.py
+
+add Helge's bugfix for when viridis colormap is not present in matplotlib api
+
+------------------------------------------------------------------------
+r3030 | gbc | 2020-08-20 17:25:56 -0400 (Thu, 20 Aug 2020) | 1 line
+Changed paths:
+   M /trunk/ompi/test.sh
+
+trying some verbosity and --noprefix
+
+------------------------------------------------------------------------
+r3027 | gbc | 2020-08-20 16:26:50 -0400 (Thu, 20 Aug 2020) | 1 line
+Changed paths:
+   M /trunk/ompi/configure.ac
+   A /trunk/ompi/hops_ompi.h.in
+   M /trunk/ompi/readme.sh
+   M /trunk/ompi/test.sh
+
+build for multiple versions
+
+------------------------------------------------------------------------
+r3013 | gbc | 2020-08-18 11:19:01 -0400 (Tue, 18 Aug 2020) | 1 line
+Changed paths:
+   M /trunk/ompi/test.sh
+
+tried a few things, but no luck
+
+------------------------------------------------------------------------
+r3009 | gbc | 2020-08-17 11:58:37 -0400 (Mon, 17 Aug 2020) | 1 line
+Changed paths:
+   M /trunk/ompi/test.sh
+
+added hello
+
+------------------------------------------------------------------------
+r3008 | gbc | 2020-08-17 11:27:50 -0400 (Mon, 17 Aug 2020) | 1 line
+Changed paths:
+   A /trunk/ompi/readme.sh (from /trunk/ompi/readme.txt:3007)
+   D /trunk/ompi/readme.txt
+
+renamed for clarity
+
+------------------------------------------------------------------------
+r3007 | gbc | 2020-08-17 11:27:37 -0400 (Mon, 17 Aug 2020) | 1 line
+Changed paths:
+   M /trunk/ompi/Makefile.am
+   M /trunk/ompi/readme.txt
+
+allow some tidiness
+
+------------------------------------------------------------------------
+r3004 | gbc | 2020-08-17 08:49:52 -0400 (Mon, 17 Aug 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/plot_data_dir.c
+
+matching chops change
+
+------------------------------------------------------------------------
+r3000 | gbc | 2020-08-16 12:05:21 -0400 (Sun, 16 Aug 2020) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/plot_data_dir.c
+
+eliminate spurious error message
+
+------------------------------------------------------------------------
+r2976 | barrettj | 2020-05-22 15:36:37 -0400 (Fri, 22 May 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/Makefile.am
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   M /trunk/chops/source/python_src/tests/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am
+   M /trunk/configure.ac
+
+add checks for extra python modules
+
+------------------------------------------------------------------------
+r2974 | barrettj | 2020-05-21 15:02:31 -0400 (Thu, 21 May 2020) | 1 line
+Changed paths:
+   A /trunk/chops/source/c_src/afio/Makefile.am.cmake
+   A /trunk/chops/source/c_src/applications/aedit/Makefile.am.cmake
+   A /trunk/chops/source/c_src/applications/alist/Makefile.am.cmake
+   A /trunk/chops/source/c_src/applications/fourfit/Makefile.am.cmake
+   A /trunk/chops/source/c_src/dfio/Makefile.am.cmake
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am.cmake
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am.cmake
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am.cmake
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am.cmake
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am.cmake
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am.cmake
+   A /trunk/chops/source/c_src/mk4util/Makefile.am.cmake
+   A /trunk/chops/source/c_src/vex/Makefile.am.cmake
+
+change names of Makefile.am.in to Makefile.am.cmake to better indicate their use
+
+------------------------------------------------------------------------
+r2973 | barrettj | 2020-05-21 15:02:30 -0400 (Thu, 21 May 2020) | 1 line
+Changed paths:
+   D /trunk/chops/source/c_src/afio/Makefile.am.in
+   D /trunk/chops/source/c_src/applications/aedit/Makefile.am.in
+   D /trunk/chops/source/c_src/applications/alist/Makefile.am.in
+   D /trunk/chops/source/c_src/applications/fourfit/Makefile.am.in
+   D /trunk/chops/source/c_src/dfio/Makefile.am.in
+   D /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am.in
+   D /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am.in
+   D /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am.in
+   D /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am.in
+   D /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am.in
+   D /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am.in
+   D /trunk/chops/source/c_src/mk4util/Makefile.am.in
+   D /trunk/chops/source/c_src/vex/Makefile.am.in
+
+change names of Makefile.am.in to Makefile.am.cmake to better indicate their use
+
+------------------------------------------------------------------------
+r2972 | barrettj | 2020-05-21 15:02:29 -0400 (Thu, 21 May 2020) | 1 line
+Changed paths:
+   M /trunk/chops/cmake/chopsDefaults.cmake
+
+change name of cmake configurable Makefile.am.in to Makefile.am.cmake in macro
+
+------------------------------------------------------------------------
+r2971 | barrettj | 2020-05-21 14:55:45 -0400 (Thu, 21 May 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/mk4_module/mk4b/mk4b.py
+   M /trunk/chops/source/python_src/tests/Makefile.am
+   M /trunk/chops/source/python_src/tests/test_harness.sh.in
+   A /trunk/chops/source/python_src/tests/test_mk4b.py
+
+adding a test to ensure the the chops c-libraries are built correctly
+
+------------------------------------------------------------------------
+r2970 | barrettj | 2020-05-21 14:55:45 -0400 (Thu, 21 May 2020) | 1 line
+Changed paths:
+   M /trunk/chops/CMakeLists.txt
+
+minor change
+
+------------------------------------------------------------------------
+r2968 | gbc | 2020-05-20 18:02:59 -0400 (Wed, 20 May 2020) | 12 lines
+Changed paths:
+   A /trunk/chops/source/c_src/afio/Makefile.am.in (from /trunk/chops/source/c_src/afio/Makefile.am.in:2964)
+   A /trunk/chops/source/c_src/applications/aedit/Makefile.am.in (from /trunk/chops/source/c_src/applications/aedit/Makefile.am.in:2964)
+   A /trunk/chops/source/c_src/applications/alist/Makefile.am.in (from /trunk/chops/source/c_src/applications/alist/Makefile.am.in:2964)
+   A /trunk/chops/source/c_src/applications/fourfit/Makefile.am.in (from /trunk/chops/source/c_src/applications/fourfit/Makefile.am.in:2964)
+   A /trunk/chops/source/c_src/dfio/Makefile.am.in (from /trunk/chops/source/c_src/dfio/Makefile.am.in:2964)
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am.in (from /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am.in:2964)
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am.in (from /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am.in:2964)
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am.in (from /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am.in:2964)
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am.in (from /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am.in:2964)
+   A /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am.in (from /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am.in:2964)
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am.in (from /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am.in:2964)
+   A /trunk/chops/source/c_src/mk4util/Makefile.am.in (from /trunk/chops/source/c_src/mk4util/Makefile.am.in:2964)
+   A /trunk/chops/source/c_src/vex/Makefile.am.in (from /trunk/chops/source/c_src/vex/Makefile.am.in:2964)
+   A /trunk/chops/source/python_src/ffcontrol_module/Makefile.am.in (from /trunk/chops/source/python_src/ffcontrol_module/Makefile.am.in:2964)
+   A /trunk/chops/source/python_src/hopstest_module/Makefile.am.in (from /trunk/chops/source/python_src/hopstest_module/Makefile.am.in:2964)
+   A /trunk/chops/source/python_src/mk4_module/Makefile.am.in (from /trunk/chops/source/python_src/mk4_module/Makefile.am.in:2964)
+   A /trunk/chops/source/python_src/vex_module/Makefile.am.in (from /trunk/chops/source/python_src/vex_module/Makefile.am.in:2964)
+   A /trunk/chops/source/python_src/vpal_module/Makefile.am.in (from /trunk/chops/source/python_src/vpal_module/Makefile.am.in:2964)
+
+actually have an obscure purpose:
+
+	Actually, while those aren't in active use by automake itself,
+	they are the input files I made for the chops cmake build system
+	to take and configure into the automake Makefile.am files (yes
+	it is silly to build the automake files using cmake, but it
+	was less work than doing it by hand for each module).  While I
+	haven't used them lately, they are still useful if I ever need to
+	re-generate the automake Makefile.am files from scratch, though
+	admittedly this probably won't happen anytime in the near future.
+
+
+
+------------------------------------------------------------------------
+r2967 | gbc | 2020-05-20 15:13:05 -0400 (Wed, 20 May 2020) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+trivial change to force reconfig
+
+------------------------------------------------------------------------
+r2966 | gbc | 2020-05-20 15:10:05 -0400 (Wed, 20 May 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am
+
+cleaned up the clean-up rules
+
+------------------------------------------------------------------------
+r2965 | gbc | 2020-05-20 14:18:51 -0400 (Wed, 20 May 2020) | 1 line
+Changed paths:
+   D /trunk/chops/source/c_src/afio/Makefile.am.in
+   D /trunk/chops/source/c_src/applications/aedit/Makefile.am.in
+   D /trunk/chops/source/c_src/applications/alist/Makefile.am.in
+   D /trunk/chops/source/c_src/applications/fourfit/Makefile.am.in
+   D /trunk/chops/source/c_src/dfio/Makefile.am.in
+   D /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am.in
+   D /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am.in
+   D /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am.in
+   D /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am.in
+   D /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am.in
+   D /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am.in
+   D /trunk/chops/source/c_src/mk4util/Makefile.am.in
+   D /trunk/chops/source/c_src/vex/Makefile.am.in
+   D /trunk/chops/source/python_src/ffcontrol_module/Makefile.am.in
+   D /trunk/chops/source/python_src/hopstest_module/Makefile.am.in
+   D /trunk/chops/source/python_src/mk4_module/Makefile.am.in
+   D /trunk/chops/source/python_src/vex_module/Makefile.am.in
+   D /trunk/chops/source/python_src/vpal_module/Makefile.am.in
+
+removing things that do not deserve to live
+
+------------------------------------------------------------------------
+r2963 | gbc | 2020-05-19 11:01:24 -0400 (Tue, 19 May 2020) | 1 line
+Changed paths:
+   M /trunk/Makefile.am
+
+disable changelog outside of the cluster
+
+------------------------------------------------------------------------
+r2962 | gbc | 2020-05-19 10:44:03 -0400 (Tue, 19 May 2020) | 5 lines
+Changed paths:
+   M /trunk/Makefile.am
+   M /trunk/configure.ac
+   M /trunk/hops.bash.in
+
+Renamed 'hopes' to 'chops' and adjusted various automake
+variables accordingly.  A helpful message to the user is
+now provided if --enable-hopes is tried.
+
+
+
+------------------------------------------------------------------------
+r2960 | gbc | 2020-05-15 16:44:12 -0400 (Fri, 15 May 2020) | 1 line
+Changed paths:
+   A /trunk/bnw
+   A /trunk/bnw/doc
+   A /trunk/bnw/inc
+   A /trunk/bnw/lib
+   A /trunk/bnw/py
+   A /trunk/bnw/src
+
+placeholder
+
+------------------------------------------------------------------------
+r2957 | barrettj | 2020-05-07 15:38:31 -0400 (Thu, 07 May 2020) | 1 line
+Changed paths:
+   A /trunk/doc/future/hops-spec
+   A /trunk/doc/future/hops-spec/code
+   A /trunk/doc/future/hops-spec/code/data_objects.cxx
+   A /trunk/doc/future/hops-spec/code/data_objects.hh
+   A /trunk/doc/future/hops-spec/code/data_operators.hh
+   A /trunk/doc/future/hops-spec/code/visibilities.hh
+   A /trunk/doc/future/hops-spec/hops-spec.bib
+   A /trunk/doc/future/hops-spec/hops-spec.pdf
+   A /trunk/doc/future/hops-spec/hops-spec.tex
+
+dumping rough draft on hops spec into docs
+
+------------------------------------------------------------------------
+r2951 | barrettj | 2020-03-30 22:39:51 -0400 (Mon, 30 Mar 2020) | 1 line
+Changed paths:
+   M /trunk/chops/source/Makefile.am
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am
+
+removing unecessary Makefile.am deletion fron install target in chops/pythons modules, as suggested by Jan W.
+
+------------------------------------------------------------------------
+r2942 | gbc | 2020-03-11 17:20:42 -0400 (Wed, 11 Mar 2020) | 1 line
+Changed paths:
+   M /trunk/Copyright
+
+updated copyright
+
+------------------------------------------------------------------------
+r2939 | gbc | 2020-03-03 14:34:02 -0500 (Tue, 03 Mar 2020) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+version bump to 3.22
+
+------------------------------------------------------------------------
+r2937 | gbc | 2020-03-03 14:26:41 -0500 (Tue, 03 Mar 2020) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+oops, patch for difx build
+
+------------------------------------------------------------------------
 r2929 | barrettj | 2020-02-06 15:07:31 -0500 (Thu, 06 Feb 2020) | 1 line
 Changed paths:
    M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/fit_vbp.c

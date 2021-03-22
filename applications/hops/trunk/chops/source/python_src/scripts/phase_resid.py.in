@@ -222,7 +222,13 @@ def main():
             ax.set_title(plottitle)
             ax.set_ylabel('Phase (degrees)')
 
-            cmap = cmx.get_cmap('viridis')
+
+            maps = plt.colormaps()
+            if 'viridis' not in maps:
+                cmap = cmx.get_cmap(maps[0])
+            else:
+                cmap = cmx.get_cmap('viridis')
+
             normalize = mcolors.Normalize(vmin=min(z_list), vmax=max(z_list))
 
             count = 0

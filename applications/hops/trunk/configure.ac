@@ -6,8 +6,8 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.21, gbc@haystack.mit.edu)
-AM_INIT_AUTOMAKE([foreign -Wno-extra-portability subdir-objects])
+AC_INIT(hops, 3.22, gbc@haystack.mit.edu)
+AM_INIT_AUTOMAKE([foreign -Wno-extra-portability subdir-objects no-dependencies])
 
 AC_CONFIG_SRCDIR([hops.bash.in])
 AC_CONFIG_HEADERS([hops_config.h])
@@ -69,6 +69,12 @@ AC_SUBST(HOPS_ARCH,$HOPS_ARCH)
 
 #
 # Collected top-level enable/disable
+# AC_ARG_ENABLE(FEATURE, HELP-STRING, [ACTION-IF-GIVEN], [ACTION-IF-NOT-GIVEN])
+# ACTION-IF-GIVEN refers to any of these:
+#   --enable-FEATURE=yes or
+#   --enable-FEATURE -> enableval=$enable_FEATURE and enable_FEATURE=yes
+#   --disable-FEATURE -> enableval=$enable_FEATURE and enable_FEATURE=no
+#   --disable-FEATURE=anything turns into enable_FEATURE=no
 #
 AC_ARG_ENABLE(hops,
     AS_HELP_STRING([--disable-hops], [disables the post-processing tools]),
@@ -78,10 +84,28 @@ AC_ARG_ENABLE(vex2xml,
     AS_HELP_STRING([--enable-vex2xml], [enable VEX2XML tool]),
     [], [enable_vex2xml=yes])
 AC_GBC_NOTICE([enable_vex2xml is --$enable_vex2xml--])
+AC_ARG_ENABLE(antlr4,
+    AS_HELP_STRING([--enable-antlr4], [enable Antlr4 used by vex2xml]),
+    [], [enable_antlr4=no])
+AC_GBC_NOTICE([enable_antlr4 is --$enable_antlr4--])
+###
+AC_ARG_ENABLE(chops,
+    AS_HELP_STRING([--disable-chops], [disables the vgos-processing tools]),
+    [], [enable_chops=yes])
+AC_GBC_NOTICE([enable_chops is --$enable_chops--])
+# this one is obsolete and confusing, so die and explain.
 AC_ARG_ENABLE(hopes,
-    AS_HELP_STRING([--disable-hopes], [disable enhanced development]),
-    [disable_hopes=yes], [disable_hopes=no])
-AC_GBC_NOTICE([disable_hopes is --$disable_hopes--])
+    AS_HELP_STRING([--disable-hopes], [obsolete flag, do not use]),
+    [AC_MSG_ERROR([
+
+    The flag you used (--enable/disable-hopes) is obsolete and should not
+    be used.  The VGOS tools are enabled by default in this distribution.
+    If for some reason you do not want them, use:
+
+      --disable-chops
+
+    ], [2]) ], [])
+###
 AC_ARG_ENABLE(checks,
     AS_HELP_STRING([--disable-checks], [disables some sanity checking]),
     [], [enable_checks=yes])
@@ -108,28 +132,31 @@ if [test x$enable_hops = xyes] ; then
 else
     have_hops=false
 fi
-
-#
-# Control the new HOP(Enhanced)S toolchain
-#
-AC_ARG_VAR(USE_HOPES, [variable to indicate if we have hopes])
-if [test x$disable_hopes = xno] ; then
-    HPESDIR='chops'
-    have_hopes=true
-    USE_HOPES=true
-    AC_GBC_NOTICE([%%% have_hopes is $have_hopes (optional)])
-else
-    HPESDIR=''
-    have_hopes=false
-    USE_HOPES=false
-    # no comment
-fi
-
-AC_SUBST(HPESDIR)
-AM_CONDITIONAL(HAVE_HOPES, $have_hopes)
-
 AC_GBC_NOTICE([%%% have_hops is $have_hops (required)])
 AM_CONDITIONAL(HAVE_HOPS, $have_hops)
+
+#
+# Control the new CHOPS tools for VGOS
+#
+AC_ARG_VAR(USE_CHOPS, [variable to indicate if we have chops])
+if [test x$enable_chops = xyes] ; then
+    CHOPDIR='chops'
+    have_chops=true
+    USE_CHOPS=true
+    AC_GBC_NOTICE([%%% have_chops is $have_chops (needed for VGOS)])
+else
+    CHOPDIR=''
+    have_chops=false
+    USE_CHOPS=false
+    # no comment
+fi
+AC_SUBST(CHOPDIR)
+AM_CONDITIONAL(HAVE_CHOPS, $have_chops)
+
+# for help
+AC_PROG_AWK
+AC_PATH_PROG(HAVE_CSH, [csh], [have_csh=true] [have_csh=false])
+AC_GBC_NOTICE([%%% have awk at [$AWK] and csh was found on [$PATH]])
 
 have_devel=false
 ### option disabled
@@ -205,22 +232,52 @@ AC_PATH_PROGS(PERL, perl, /bin/false)
 #AC_PATH_PROGS(PYTHON, python, /bin/false)
 AM_PATH_PYTHON([2.4],,[:])
 
+# all the python tests should end up in an m4 test...
 if [test "$PYTHON" != : -a "$pythondir" != ""] ; then
+    # set defaults
+    have_python=true
+    extra_pass=0
     #check for package 'future'
     pyfuture_test=`$PYTHON -c "import future" 2>/dev/null; echo $?`
     if [test "$pyfuture_test" = 0 ]; then
-        have_python=true
-        AC_GBC_NOTICE([found python requirements.])
+        extra_pass="${extra_pass}1"
+        AC_GBC_NOTICE([@@@ found python future requirement:  $extra_pass])
     else
-        AC_GBC_NOTICE(
-            [python package future missing, python tools will not be built.])
         have_python=false
+        AC_GBC_NOTICE([%%% Python has no future here:  $extra_pass])
     fi
-else
-    AC_GBC_NOTICE([python missing, python tools will not be built.])
-    have_python=false
+    #check for package 'numpy'
+    pynumpy_test=`$PYTHON -c "import numpy" 2>/dev/null; echo $?`
+    if [test "$pynumpy_test" = 0 ]; then
+        extra_pass=${extra_pass}2
+        AC_GBC_NOTICE([@@@ found python numpy requirement:  $extra_pass])
+    fi
+    #check for package 'scipy'
+    pyscipy_test=`$PYTHON -c "import scipy" 2>/dev/null; echo $?`
+    if [test "$pyscipy_test" = 0 ]; then
+        extra_pass=${extra_pass}3
+        AC_GBC_NOTICE([@@@ found python scipy requirement:  $extra_pass])
+    fi
+    #check for package 'matplotlib'
+    pymatplotlib_test=`$PYTHON -c "import matplotlib" 2>/dev/null; echo $?`
+    if [test "$pymatplotlib_test" = 0 ]; then
+        extra_pass=${extra_pass}4
+        AC_GBC_NOTICE([@@@ found python matplotlib requirement:  $extra_pass])
+    fi
+    AC_GBC_NOTICE([@@@ extra_pass is $extra_pass])
+    if [test "${extra_pass}" = '01234' ] ; then
+        have_python_extra=true
+        AC_GBC_NOTICE([%%% Python has all extras:  $extra_pass])
+    else
+        have_python_extra=false
+        AC_MSG_WARN([
+            You are missing one or more python packages that are
+            needed for the VGOS Python scripts.  Install these
+            and try again: future, numpy, scipy, and matplotlib.])
+    fi
 fi
 AM_CONDITIONAL([HAVE_PYTHON], [$have_python])
+AM_CONDITIONAL([HAVE_PYTHON_EXTRA], [$have_python_extra])
 
 # .so on linux, .dylib on darwin
 # libtool machinery on macos appears to define LT_SHARED_EXT as .dylib
@@ -265,6 +322,30 @@ AC_SUBST(VXMLDIR)
 AM_CONDITIONAL([HAVE_JAVAS], [$have_javas])
 AM_CONDITIONAL(HAVE_VEX2XML, [$have_vex2xml])
 AC_GBC_NOTICE([%%% have_vex2xml is $have_vex2xml (optional)])
+
+# only useful for vex2xml
+if [test x$enable_antlr4 = xyes -a x$enable_devel = xyes ] ; then
+    AC_MSG_WARN([note that the antlr4 grammer is broken....])
+    ANTLR4SRC=src4
+    ANTLR4LIB=lib4
+    ANTLR4VER=4.8
+    APACHECLI=1.4
+else
+#   AC_MSG_ERROR([you can only ask for antlr4 with --enable-devel], 1)
+    if [test x$enable_antlr4 = xyes ] ; then
+        AC_MSG_ERROR([you can only ask for antlr4 with --enable-devel])
+    fi
+    ANTLR4SRC=src
+    ANTLR4LIB=lib
+    ANTLR4VER=3.5.2
+    APACHECLI=1.2
+fi
+AC_SUBST(ANTLR4SRC)
+AC_SUBST(ANTLR4LIB)
+AC_SUBST(ANTLR4VER)
+AC_SUBST(APACHECLI)
+antlermsg="$ANTLR4SRC/$ANTLR4LIB/$ANTLR4VER/$APACHECLI"
+AC_GBC_NOTICE([%%% antlr src/lib/ver/cli: "$antlermsg" (developmental)])
 
 # Checks for libraries.
 AC_CHECK_LIB(m, floorl)
@@ -649,10 +730,12 @@ AC_SUBST(OMPIDIR)
 AM_CONDITIONAL(HAVE_OMPI, [test $have_ompi = true])
 
 have_docs=false
+have_doxy=false
 DOCSDIR=''
 ### option disabled
 AC_SUBST(DOCSDIR)
 AM_CONDITIONAL(HAVE_DOCS, [test $have_docs = true])
+AM_CONDITIONAL(HAVE_DOXY, [test $have_doxy = true])
 
 have_difx=false
 ### option disabled
@@ -678,6 +761,8 @@ if [test x$enable_checks = xyes] ; then
 	AC_MSG_ERROR([halted because of PGPLOT issues], 3)
     elif [test x$have_png = xfalse -a x$need_png = xrequired] ; then
 	AC_MSG_ERROR([halted because of PNG issues], 4)
+    elif [test x$hasfftw = xfalse] ; then
+        AC_MSG_ERROR([halted because FFTW is missing], 5)
     else
 	AC_GBC_BANNER([Configure passes sanity checks.])
     fi
@@ -759,7 +844,7 @@ if [ "$have_hops" = true ] ; then
     fi
 fi
 
-# this was development, but now available
+# this was under development, but is now available by default
 if [ "$have_vex2xml" = true ] ; then
     AC_CONFIG_FILES([vex2xml/Makefile])
 fi
@@ -770,7 +855,7 @@ fi
 # And any HOP(Enhanced)S toys.
 # aka CHOPS (chopped up HOPS).
 #
-if [ "$have_hopes" = true ] ; then
+if [ "$have_chops" = true ] ; then
     AC_CONFIG_FILES([
      chops/Makefile
      chops/source/Makefile
@@ -794,36 +879,36 @@ if [ "$have_hopes" = true ] ; then
     AC_CONFIG_FILES([chops/hops_checksum.sh], [chmod +x chops/hops_checksum.sh])
     AC_CONFIG_FILES([chops/run_checksum.sh], [chmod +x chops/run_checksum.sh])
 
-    if [ $have_python = "true" ] ; then
-        AC_CONFIG_FILES( chops/source/python_src/Makefile )
-        AC_CONFIG_FILES( chops/source/python_src/mk4_module/Makefile )
-        AC_CONFIG_FILES( chops/source/python_src/hopstest_module/Makefile )
-        AC_CONFIG_FILES( chops/source/python_src/ffcontrol_module/Makefile )
-        AC_CONFIG_FILES( chops/source/python_src/vpal_module/Makefile )
-        AC_CONFIG_FILES( chops/source/python_src/vex_module/Makefile )
-        AC_CONFIG_FILES( chops/source/python_src/scripts/Makefile )
-        AC_CONFIG_FILES( chops/source/python_src/tests/Makefile )
-        AC_CONFIG_FILES( [chops/source/python_src/mk4_module/setup.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/hopstest_module/setup.py] )
-        AC_CONFIG_FILES(
-            [chops/source/python_src/hopstest_module/hopstestsuiteb.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/ffcontrol_module/setup.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/vpal_module/setup.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/vex_module/setup.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/scripts/pcc_generate.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/scripts/pcc_select.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/scripts/pcc_plot.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/scripts/vgoscf_generate.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/scripts/phase_resid.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/scripts/batch_fourfit.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/scripts/ffres2pcp.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/scripts/fourphase.py] )
-        AC_CONFIG_FILES( [chops/source/python_src/scripts/summarize_report.py])
-        AC_CONFIG_FILES( [chops/source/python_src/tests/test_harness.sh],
-            [chmod +x chops/source/python_src/tests/test_harness.sh] )
-        AC_DEFINE_UNQUOTED([PYTHON_SITE_PREFIX], ["$pythondir"],
-            [Python install dir])
-    fi
+    # These need to be configured, whether used or not.
+    AC_CONFIG_FILES( chops/source/python_src/Makefile )
+    AC_CONFIG_FILES( chops/source/python_src/mk4_module/Makefile )
+    AC_CONFIG_FILES( chops/source/python_src/hopstest_module/Makefile )
+    AC_CONFIG_FILES( chops/source/python_src/ffcontrol_module/Makefile )
+    AC_CONFIG_FILES( chops/source/python_src/vpal_module/Makefile )
+    AC_CONFIG_FILES( chops/source/python_src/vex_module/Makefile )
+    AC_CONFIG_FILES( chops/source/python_src/scripts/Makefile )
+    AC_CONFIG_FILES( chops/source/python_src/tests/Makefile )
+    AC_CONFIG_FILES( [chops/source/python_src/mk4_module/setup.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/hopstest_module/setup.py] )
+    AC_CONFIG_FILES(
+        [chops/source/python_src/hopstest_module/hopstestsuiteb.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/ffcontrol_module/setup.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/vpal_module/setup.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/vex_module/setup.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/pcc_generate.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/pcc_select.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/pcc_plot.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/vgoscf_generate.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/phase_resid.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/batch_fourfit.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/ffres2pcp.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/fourphase.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/summarize_report.py])
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/select_bandpols.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/tests/test_harness.sh],
+        [chmod +x chops/source/python_src/tests/test_harness.sh] )
+    AC_DEFINE_UNQUOTED([PYTHON_SITE_PREFIX], ["$pythondir"],
+        [Python install dir])
 
 fi
 

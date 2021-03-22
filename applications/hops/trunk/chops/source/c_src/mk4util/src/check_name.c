@@ -153,8 +153,8 @@ check_name(char *name, fstruct *f_info)
                                         /* Filenumbers only for type 2's in mk4 */
     if ((filenum != NULL) && (f_info->type == 2))
         {
-        l = strlen(filenum);                            /* File #, e.g. (1-999) */
-        if ((l == 0) || (l > 3)) errcode |= BADFNUM;
+        l = strlen(filenum);                            /* File #, e.g. (1-9999) */
+        if ((l == 0) || (l > 4)) errcode |= BADFNUM;
         l--;
         for ( ; l >= 0; l--)
             if (! isdigit (filenum[l])) errcode |= BADFNUM;

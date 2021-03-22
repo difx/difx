@@ -60,6 +60,8 @@ class Configuration( report_lib.JsonSerializableObject ):
         self.dtec_nominal_error = 0.1 #empirically determined factor for search function
         self.sigma_cut_factor = 3.0 #cut phase corrections which are further from the mean than sigma*sigma_cut_factor, use 0.0 to disable
         self.use_progress_ticker = True
+        self.nchannel_discard_threshold = 5
+        self.channel_discard_tolerance = 15.0
 
     def export_json(self):
         return self.__dict__
@@ -323,7 +325,10 @@ def compute_vgos_network_reference_station_pc_phases(single_baseline_pp_collecti
 ################################################################################
 
 
-def generate_station_phase_corrections(SingleBaselinePolarizationProductCollection_list, target_station, network_reference_station, dtec_tolerance=1.0, network_reference_station_pol='X'):
+def generate_station_phase_corrections(SingleBaselinePolarizationProductCollection_list, target_station, \
+    network_reference_station, dtec_tolerance=1.0, network_reference_station_pol='X', \
+    discard_tolerance=15, nchannel_discard_threshold=5):
+
     """ function to generate pc_phases for station in an experiment
     from a list of selected scans (gathered into SingleScanBaselineCollection) """
 
@@ -346,7 +351,7 @@ def generate_station_phase_corrections(SingleBaselinePolarizationProductCollecti
                 if sbpp.is_complete() and sbpp.get_dtec_max_deviation() < dtec_tolerance:
                     #first take care of any network reference station pc corrections we can generate from this scan/baseline (only if VGOS mode)
                     if network_reference_station_pol == 'X' and bl[0] == network_reference_station:
-                        ref_st_pc = compute_vgos_network_reference_station_pc_phases(sbpp, network_reference_station)
+                        ref_st_pc = compute_vgos_network_reference_station_pc_phases(sbpp, network_reference_station,)
                         stpy = network_reference_station + "_" + "Y"
                         station_pc_phases[stpy].merge(ref_st_pc)
                     #now take care of the remote station corrections for this scan/baseline
@@ -502,7 +507,7 @@ def generate_pc_phases(config_obj, report_data_obj=None):
     all_station_pc_phases = dict()
     for target in target_stations:
         blc_subset = select_collection_subset(blc_list, target, netref_station, dtec_nom, max_num_scans)
-        pc_phases = generate_station_phase_corrections(blc_subset, target, netref_station, dtec_tolerance, netref_pol)
+        pc_phases = generate_station_phase_corrections(blc_subset, target, netref_station, dtec_tolerance, netref_pol, config_obj.channel_discard_tolerance, config_obj.nchannel_discard_threshold)
         for key, val in list(pc_phases.items()):
             if key in all_station_pc_phases:
                 all_station_pc_phases[key].merge(val)

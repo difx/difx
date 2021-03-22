@@ -3,7 +3,7 @@
 
 #include "fstruct.h"
 
-#define MAXFSET 1000
+#define MAXFSET 10000
 
 struct fileset
     {
@@ -12,7 +12,7 @@ struct fileset
     char	    scanname[32];	/* Part of directory name */
     char	    rootname[40];	/* Stripped of directory information */
     short	    maxfile;		/* Biggest file number enountered */
-    fstruct	    file[1000];		/* Files belonging to fileset */
+    fstruct	    file[MAXFSET];	/* Files belonging to fileset */
     };
 
 #endif

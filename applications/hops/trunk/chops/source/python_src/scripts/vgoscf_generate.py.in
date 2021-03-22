@@ -46,6 +46,8 @@ def main():
     parser.add_argument('-o', '--output-filename', dest='output_filename', help='specify the name of the generated control file', default='')
     parser.add_argument('-a', '--averaging-scan-limit', type=int, dest='averaging_scan_limit', help='limit the number of scans used in averaging, use 0 to disable, default=10', default=10)
     parser.add_argument('-t', '--toggle-run-info', action='store_false', dest='toggle_dump_info', help='do not append control file with information about how this program was called', default=True)
+    parser.add_argument('-y', '--nchannel-discard-threshold', type=int, dest='nchannel_discard_threshold', help='specify number of channels allowed to be flagged before discarding this entire scan', default=5)
+    parser.add_argument('-z', '--channel-discard-tolerance', type=float, dest='channel_discard_tolerance', help='allowable channel phase error (deg) before it is flagged', default=15.0)
 
 
     args = parser.parse_args()
@@ -144,6 +146,8 @@ def main():
     ffres2pcp_conf.start_scan_limit = start_scan_limit
     ffres2pcp_conf.stop_scan_limit = stop_scan_limit
     ffres2pcp_conf.use_progress_ticker = args.use_progress_ticker
+    ffres2pcp_conf.nchannel_discard_threshold = args.nchannel_discard_threshold
+    ffres2pcp_conf.channel_discard_tolerance = args.channel_discard_tolerance
     ffres2pcp_output_control_filename = os.path.join( os.path.abspath(work_dir), "cf_" + exp_name + "_" + ref_station + rem_stations + "_pcphases" )
     vpal.ffres2pcp_lib.generate_ffres2pcp_control_file(ffres2pcp_conf, ffres2pcp_output_control_filename)
 

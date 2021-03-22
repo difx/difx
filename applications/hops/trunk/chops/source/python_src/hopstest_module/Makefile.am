@@ -2,20 +2,23 @@
 # $Id$
 #
 
-if HAVE_PYTHON
-
 SRC_FILES = hopstestb/__init__.py \
 	hopstestb/hopstestb.py
 
 EXTRA_DIST = $(SRC_FILES) setup.py.in
 
+if HAVE_PYTHON
+
 dist_bin_SCRIPTS =  hopstestsuiteb.py
 
 all-local:
 	(mkdir -p ./build)
-	(rsync $(srcdir)/ -a .)
+	(rsync -av --exclude 'Makefile.*' $(srcdir)/ .)
 	(chmod -R u+rwx .)
 	($(PYTHON) setup.py build --verbose)
+
+clean-local:
+	rm -rf ./build
 
 install-exec-local:
 	($(PYTHON) setup.py install \

@@ -2,8 +2,6 @@
 # $Id$
 #
 
-if HAVE_PYTHON
-
 SRC_FILES = vpal/__init__.py \
 	vpal/utility.py \
 	vpal/ffres2pcp_lib.py \
@@ -13,16 +11,23 @@ SRC_FILES = vpal/__init__.py \
 	vpal/pcc_delay_fitting.py \
 	vpal/pcc_plotting_utils.py \
 	vpal/fringe_file_manipulation.py \
+	vpal/phasecal.py \
 	vpal/processing.py
-
 
 EXTRA_DIST = $(SRC_FILES) setup.py.in
 
+if HAVE_PYTHON
+
 all-local:
 	(mkdir -p ./build)
-	(rsync $(srcdir)/ -a .)
+	(rsync -av --exclude 'Makefile.*' --exclude *.swp \
+		  --exclude CMake* --exclude deprecated_modules \
+		  $(srcdir)/ .)
 	(chmod -R u+rwx .)
 	($(PYTHON) setup.py build --verbose)
+
+clean-local:
+	rm -rf ./build vpal deprecated_modules
 
 install-exec-local:
 	($(PYTHON) setup.py install \

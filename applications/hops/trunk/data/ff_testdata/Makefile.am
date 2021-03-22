@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 2875 2019-10-09 14:44:35Z barrettj $
+# $Id: Makefile.am 3156 2020-11-12 14:05:50Z gbc $
 #
 
 #AUTOMAKE_OPTIONS = serial-tests 
@@ -108,7 +108,7 @@ TESTS = chk_ff_2836.sh chk_ff_2843.sh chk_ff_3372.sh chk_ff_3413.sh \
 	chk_fourmer.sh chk_frmrsrch.sh chk_hdlinks.sh \
 	chk_min_weight.sh chk_notches.sh
 if HAVE_HSEARCH
-TESTS += chk_flagging.sh chk_ff_dump.sh
+TESTS += chk_flagging.sh chk_ff_dump.sh chk_ps2pdf.sh
 endif
 #XFAIL_TESTS = ...
 if HAVE_PYTHON
@@ -129,7 +129,7 @@ EXTRA_DIST = $(expdata)
 dist_check_SCRIPTS = chk_env.sh $(TESTS)
 
 CLEANFILES = *.ps *.oifhak aedit.in *.out *.alist *.cofit *.coavg cf* *.avg \
-	     hopstestsuite.py
+	     hopstestsuite.py *.pdf
 
 clean-local:
 	rm -rf DD 2843 3365 path datadir pdd2843 pdd3365 pdd3372*

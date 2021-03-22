@@ -17,6 +17,7 @@ $opts{'m'} = 0;
 $opts{'n'} = 1000000;
 $opts{'r'} = 0;
 $opts{'s'} = 'NONE';
+$opts{'g'} = 'NONE';
 $opts{'w'} = 0;
 $opts{'f'} = 0;
 $opts{'d'} = 0;
@@ -37,6 +38,7 @@ where the options are
   -q  polarization 2
 
   -s  target source                           [default: all]
+  -g  group                                   [default: all]
 
   -r  reverse sense of second baseline        [default: NO]
   -w  alias mbd difference into ambig window  [default: NO]
@@ -50,13 +52,16 @@ The flag option -f appends . if scans are equal length
                            1 if scan 1 is longer
                            2 if scan 2 is longer.
 
+The group option restricts to freq#channels (B32, S06, X08 or similar).
+
 Version: $program_version
 ";
 
 if ( $#ARGV < 0 || $ARGV[0] eq "--help" ) { print "$USAGE"; exit(0); }
 
-getopts('a:b:x:y:m:n:p:q:rs:wfd',\%opts);
-my ($alist,$alist2,$base1,$base2,$minsnr,$maxsnr,$reverse_second,$targetpol1,$targetpol2,$targetsource,$aliasmbddiff,$flaglength,$skipdifferentlength);
+getopts('a:b:x:y:m:n:p:q:rs:g:wfd',\%opts);
+my ($alist,$alist2,$base1,$base2,$minsnr,$maxsnr,$reverse_second,$targetpol1,
+    $targetpol2,$targetsource,$targetgroup,$aliasmbddiff,$flaglength,$skipdifferentlength);
 $alist=$opts{'a'};
 $alist2=$opts{'b'};
 $base1=$opts{'x'};
@@ -67,6 +72,7 @@ $reverse_second=$opts{'r'};
 $targetpol1=$opts{'p'};
 $targetpol2=$opts{'q'};
 $targetsource=$opts{'s'};
+$targetgroup=$opts{'g'};
 $aliasmbddiff=$opts{'w'};
 $flaglength=$opts{'f'};
 $skipdifferentlength=$opts{'d'};
@@ -82,7 +88,7 @@ $= = 9999;
 open (FILIN,$alist);
 my (@entry,@scandir,@expno,@baseline,@ref,@rem,@sbd,@mbd,@drate,@ambig);
 my (@time,@source,@amp,@snr,@phase,@band,@segtime,@tphase,$i,@day,@pol);
-my (@doyhhmmss,@length);
+my (@doyhhmmss,@length,@group);
 $i = 0;
 while (<FILIN>) {
     chomp;
@@ -108,6 +114,7 @@ while (<FILIN>) {
     $baseline[$i]  = $entry[14];
     $ref[$i]       = substr($entry[14],0,1);
     $rem[$i]       = substr($entry[14],1,1);
+    $group[$i]     = $entry[16];
     $pol[$i]       = $entry[17];
     $amp[$i]       = $entry[19];
     $snr[$i]       = $entry[20];
@@ -125,7 +132,7 @@ open (FILIN,$alist2);
 my (@scandir2,@expno2,@baseline2,@ref2,@rem2,@sbd2,@mbd2,@drate2,@ambig2);
 my (@time2,@source2,@amp2,@snr2,@phase2,@band2,@segtime2,@tphase2,$i2,@day2);
 my (@altbaseline2,@pol2,@flag2);
-my (@doyhhmmss2,@length2);
+my (@doyhhmmss2,@length2,@group2);
 $i2 = 0;
 while (<FILIN>) {
     chomp;
@@ -151,6 +158,7 @@ while (<FILIN>) {
     $baseline2[$i2]  = $entry[14];
     $ref2[$i2]       = substr($entry[14],0,1);
     $rem2[$i2]       = substr($entry[14],1,1);
+    $group2[$i2]     = $entry[16];
     $pol2[$i2]       = $entry[17];
     $amp2[$i2]       = $entry[19];
     $snr2[$i2]       = $entry[20];
@@ -183,6 +191,7 @@ my ($j,$k);
 my ($sbdiff,$mbdiff,$dratediff,$ampratio,$phasediff);
 my ($nmatch,$avgsbdiff,$avgmbdiff,$avgdratediff,$tphasediff);
 
+print "*\n* 1 is $alist\n* 2 is $alist2\n*\n";
 format STDOUT_TOP =
 *                 Band Bl Band Bl   sbd       mbd        drate   amp     phase tphase   amp     amp   tphase tphase     snr       snr   scan  pols
 *HMMSS Source      1   1   2   2    diff      diff       diff    ratio   diff   diff     1       2      1      2         1         2    hhmm  1  2
@@ -210,6 +219,7 @@ for ($j = 0; $j < $i; $j++){
             ($snr2[$k] >= $minsnr) &&
             ($snr[$j] <= $maxsnr) &&
             ($snr2[$k] <= $maxsnr) &&
+            ((($group[$j] eq $targetgroup)&&($group2[$k] eq $targetgroup)) || ($targetgroup eq 'NONE')) &&
             (($source[$j] eq $targetsource) || ($targetsource eq 'NONE'))){
 	    $sbdiff = $sbd2[$k]-$sbd[$j];
 	    $mbdiff = $mbd2[$k]-$mbd[$j];

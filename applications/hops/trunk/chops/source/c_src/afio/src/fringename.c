@@ -43,7 +43,7 @@ fringename(fringesum *fsumm)
         }
                                                 /* Check inputs */
     if (fsumm->expt_no < 0) bad = TRUE;
-    if (fsumm->extent_no < 0 || fsumm->extent_no > 999) bad = TRUE;
+    if (fsumm->extent_no < 0 || fsumm->extent_no > 9999) bad = TRUE;
     if (bad)
         {
         msg ("Bad experiment or extent number (%d/%d)", 3, fsumm->expt_no,

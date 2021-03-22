@@ -36,7 +36,8 @@ int make_postplot (struct scan_struct *root,
     extern char *sprint_char_arr();
     struct stat file_status;
     struct tm *gmtime();
-    int nb, fd, size, filesize;
+    int fd;
+    size_t nb, size, filesize;
     int rc;
     FILE *fp;
     char *pplot, *showpage, *end, trailer[1024];
@@ -47,7 +48,7 @@ int make_postplot (struct scan_struct *root,
     strcpy(ps_file, P_tmpdir "/fourfit_XXXXXX");
     close(mkstemp(ps_file));
     msg ("Temporary postscript filename = '%s'", 0, ps_file);
-    
+
                                         // insert graphs into postscript file image
     rc = generate_graphs (root, pass, fringename, ps_file, &tickinc);
     if (rc)
@@ -76,7 +77,7 @@ int make_postplot (struct scan_struct *root,
         }
     filesize = file_status.st_size;
                                         /* Add 50,000 to allow for text */
-    size = filesize + 50000;
+    size = filesize + (size_t)50000;
                                         /* Allocate memory for type_221 record */
     if ((*t221 = (struct type_221 *)malloc (size)) == NULL)
         {
@@ -97,7 +98,7 @@ int make_postplot (struct scan_struct *root,
                                         /* Did it go OK? */
     if (nb != filesize)
         {
-        msg ("Error, expected %d bytes, read %d bytes", 2, filesize, nb);
+        msg ("Error, expected %zu bytes, read %zu bytes", 2, filesize, nb);
         return (-1);
         }
                                         /* Tidy up */

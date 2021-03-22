@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# $Id: chk_ff_2843.sh 1032 2015-01-23 14:24:03Z gbc $
+# $Id: chk_ff_2843.sh 3155 2020-11-12 13:46:32Z gbc $
 #
 # canonical test suite for fourfit
 #
@@ -15,7 +15,8 @@ export DATADIR=`cd $srcdir/testdata; pwd`
 rm -f ff-2843.ps
 $verb && echo \
 fourfit -t -d diskfile:ff-2843.ps -b AI:S \\ && echo \
-    $DATADIR/2843/321-1701_0552+398/0552+398.oifhak
+    $DATADIR/2843/321-1701_0552+398/0552+398.oifhak \\ && echo \
+    set start -3
 
 # AIT
 fourfit -t -d diskfile:ff-2843.ps -b AI:S \

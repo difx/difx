@@ -43,7 +43,7 @@ corelname (corelsum *csumm)
         }
                                                 /* Check inputs */
     if (csumm->expt_no < 0) bad = TRUE;
-    if (csumm->extent_no < 0 || csumm->extent_no > 999) bad = TRUE;
+    if (csumm->extent_no < 0 || csumm->extent_no > 9999) bad = TRUE;
     if (bad)
         {
         msg ("Bad experiment or extent number (%d/%d)", 3, csumm->expt_no,

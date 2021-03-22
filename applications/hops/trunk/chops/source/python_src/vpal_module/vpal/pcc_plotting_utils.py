@@ -333,7 +333,12 @@ class ProxyCableDelayFitPlotter(object):
                     y_arr.extend([c.imag for c in phasor_measurements])
                     z_arr.extend( [x[0]/scale_freq]*len(phasor_measurements) )
 
-                cmap = cmx.get_cmap('viridis')
+                maps = plt.colormaps()
+                if ('viridis' not in maps):
+                    cmap = cmx.get_cmap(maps[0])
+                else:
+                    cmap = cmx.get_cmap('viridis')
+
                 normalize = mcolors.Normalize(vmin=min(z_arr), vmax=max(z_arr))
                 colors = [cmap(normalize(value)) for value in z_arr]
 

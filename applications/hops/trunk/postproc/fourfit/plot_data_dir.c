@@ -720,6 +720,7 @@ void dump_plot_data2dir(struct type_dump *dump)
     if (rv < 0 && errno == ENOENT) {
         rv = mkdir(outdir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         if (rv < 0) perror("dump_plot_data2dir:mkdir");
+        errno = 0;
     } else if (rv < 0) {
         perror("dump_plot_data2dir:stat");
     }

@@ -24,8 +24,9 @@
 int
 read_file (FILE *fp)
     {
-    int nb;
-    int fd, size;
+    size_t nb;
+    int fd;
+    size_t size;
     struct stat file_status;
     char *ptr;
     extern char *vexstart, *vexend;
@@ -58,7 +59,7 @@ read_file (FILE *fp)
 					/* Did it go OK? */
     if (nb != size)
 	{
-	msg ("Error, expected %d bytes, read %d bytes", 2, size, nb);
+	msg ("Error, expected %zu bytes, read %zu bytes", 2, size, nb);
 	return (-1);
 	}
 

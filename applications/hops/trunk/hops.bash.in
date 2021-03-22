@@ -2,7 +2,7 @@
 #
 # (Ba)sh startup
 #
-# $Id: hops.bash.in 2621 2018-12-11 20:57:44Z gbc $
+# $Id: hops.bash.in 3202 2021-03-03 22:09:44Z barrettj $
 #
 # Version @VERSION@
 #
@@ -139,11 +139,7 @@ hops_pythondir=$pythondir
 	LD_LIBRARY_PATH=${Libp}:$LD_LIBRARY_PATH
     [ -d "@DIFXLIBS@" ] &&
 	LD_LIBRARY_PATH=@DIFXLIBS@:$LD_LIBRARY_PATH
-    if [ "@USE_HOPES@" = true ]; then
-    LD_LIBRARY_PATH=@libdir@:$LD_LIBRARY_PATH
-    else
     LD_LIBRARY_PATH=@libdir@/hops:$LD_LIBRARY_PATH
-    fi
     export LD_LIBRARY_PATH
 
     [ -z "$PYTHONPATH" ] && PYTHONPATH=@pkgpythondir@ ||

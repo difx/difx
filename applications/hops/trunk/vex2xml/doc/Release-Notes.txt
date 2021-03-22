@@ -3,11 +3,26 @@ antlr-3.5-complete.jar
     a copy of which is to be found in Antlr-LICENSE-ver3.txt.
     See http://www.antlr3.org for sources and more information.
 
+antlr-4.8-complete.jar
+    is distributed (binary) under the terms of the BSD license,
+    a copy of which is to be found in Antlr-LICENSE-ver4.txt.
+    See https://www.antlr.org/ for sources and more information.
+
 commons-cli-1.2.jar
     is distributed (binary) under the terms of the Apache license,
     a copy of which is to be found in Apache-LICENSE-ver2.0.txt.
     See https://commons.apache.org/proper/commons-cli for sources
     and more information.
+
+commons-cli-1.4.jar
+    is distributed (binary) under the terms of the Apache license,
+    a copy of which is to be found in Apache-cli-1.4-LICENSE.txt.
+    See https://commons.apache.org/proper/commons-cli for sources
+    and more information.
+
+Changes for release 1.2 following 1.1:
+    added version info: <vex2xml_rev>1.2</vex2xml_rev>
+    adapted to use Antlr 4.8...
 
 Changes for release 1.1 following 1.0:
     added version info: <vex2xml_rev>1.1</vex2xml_rev>

@@ -39,7 +39,8 @@ int
 read_mk4corel (char *filename,
                struct mk4_corel *corel)
     {
-    int i, n, idx, ap, totbytes, type, bytes, size, rec_id, version;
+    int i, n, idx, ap, type, size, rec_id, version;
+    size_t totbytes, bytes;
     int lags, blocks, idx_list[MAXIND], nidx, index_val;
     int require_power_two = is_power_two_required();
     void *alloc_ptr;
@@ -250,9 +251,9 @@ read_mk4corel (char *filename,
         }
 
     if (totbytes != bytes)
-        msg ("Last record in '%s' truncated; expected %d got %d bytes",
+        msg ("Last record in '%s' truncated; expected %zu got %zu bytes",
                 2, filename, bytes, totbytes);
 
-    msg ("read_mk4corel read %d bytes from %s", -1, totbytes, filename);
+    msg ("read_mk4corel read %zu bytes from %s", -1, totbytes, filename);
     return (0);
     }
