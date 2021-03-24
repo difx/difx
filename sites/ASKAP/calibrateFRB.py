@@ -54,6 +54,8 @@ parser.add_option("--cpasspoly", default=10, type=int,
                   help="Number of polynomial terms in CPASS")
 parser.add_option("--iono", default=False, action="store_true",
                   help="Set if you wish to run ionosphere correction using correct_iono from vlbatasks")
+parser.add_option("--zaptargetcl", default=False, action="store_true",
+                  help="Zap CL version 1 of the target data and regenerate with INDXR")
 parser.add_option("--tecordir", default='', type=str,
                   help="TECOR directory containing IONEX files; set if using --iono")
 parser.add_option("--follow", default=0.2, type=float,
@@ -155,6 +157,9 @@ if options.targetonly:
 if not options.calibrateonly:
     targetdata = vlbatasks.zapAndCreateUVData("CRAFTTARG", "UVDATA", aipsdisk, 1)
     vlbatasks.fitld_corr(options.target, targetdata, [], '', 0.0001)
+    if options.zaptargetcl:
+        targetdata.table('CL', 1).zap()
+        vlbatasks.indxr(targetdata)
     if options.uvsrt:
         sortedtargetdata = vlbatasks.zapAndCreateUVData("CRAFTTARG", "UVSRT", aipsdisk, 1)
         vlbatasks.uvsrt(targetdata, sortedtargetdata)
