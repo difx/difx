@@ -100,6 +100,7 @@ amon_config/gmva_codes (this name can be changed in the config file)     one let
 
 global mode_set, ref_ant, start_row, pol_choice, source_choice, print_size_choice, do_PRF, do_FR # variables, set by GUI tools
 global frame_buttons, Can1 # redrawable canvas and frame in it
+global active_canvas_props
 global labels, baselines, fringes, errors # displayed main data
 global labels_main, baselines_main, fringes_main, errors_main # immutable main data
 global no_rows, no_columns # changing size of the displayed main data
@@ -491,6 +492,7 @@ def redraw(frame, size):
   global need_entry, start_row, max_disp_rows
   global labels, baselines, fringes, errors
   global no_rows, no_columns
+  global active_canvas_props
   # new display cut
   frame_buttons.destroy()
   Can1.destroy()
@@ -502,6 +504,8 @@ def redraw(frame, size):
   config_entry()
   no_elem = fill_w_buttons(frame_buttons, labels, baselines, fringes, errors, pol_choice, codesdict)
   #print('\nNumber of elements created in this display:', no_elem,'\n')
+  # remember the settings that were used to draw the canvas, so that PDF export uses the correct labels etc
+  active_canvas_props = {'mode_set':mode_set, 'do_FR':do_FR, 'ref_ant':ref_ant, 'source_choice':source_choice, 'pol_choice':pol_choice}
 
 ###################### PDF PRINT PART ####################################################
 ##########################################################################################
@@ -616,44 +620,44 @@ def merge_pdfs(pdffilelist, mergedfilename):
 def print_canvas():
   #### print file name construction
   prt_file_name = vex_exp_name+'_'
-  prt_file_name += keys_by_value(menuMODE_translate, mode_set)[0]+'_'
-  if not do_FR:
+  prt_file_name += keys_by_value(menuMODE_translate, active_canvas_props['mode_set'])[0]+'_'
+  if not active_canvas_props['do_FR']:
     prt_file_name += 'NF_'
-  if not ref_ant:
+  if not active_canvas_props['ref_ant']:
     prt_file_name += 'AllAnt_'
   else:
-    prt_file_name += 'RfAnt_' + codesdict[ref_ant] +'_'
-  if not pol_choice:
+    prt_file_name += 'RfAnt_' + codesdict[active_canvas_props['ref_ant']] +'_'
+  if not active_canvas_props['pol_choice']:
     prt_file_name += 'LLRR_'
   else:
     prt_file_name += 'LRRL_'
-  if not source_choice:
+  if not active_canvas_props['source_choice']:
     prt_file_name += 'AllSrc'
   else:
-    prt_file_name += source_choice
+    prt_file_name += active_canvas_props['source_choice']
   #### end of print file name construction
   #### constructing the plot title
   title_main = 'AMON v.' + AMON_VERSION+': '
-  title_main+='[' + keys_by_value(menuMODE_translate, mode_set)[0]
-  if not do_FR: title_main+=' NF'
+  title_main+='[' + keys_by_value(menuMODE_translate, active_canvas_props['mode_set'])[0]
+  if not active_canvas_props['do_FR']: title_main+=' NF'
   title_main+='] '
   title_main+=vex_exp_name
-  if ref_ant:
-    title_main+=' Rf ant: ' + codesdict[ref_ant]
+  if active_canvas_props['ref_ant']:
+    title_main+=' Rf ant: ' + codesdict[active_canvas_props['ref_ant']]
   else:
     title_main+=' ALL ant'
-  if source_choice:
-    title_main+=', src: ' + source_choice
+  if active_canvas_props['source_choice']:
+    title_main+=', src: ' + active_canvas_props['source_choice']
   else:
     title_main+=', ALL src'
-  if pol_choice:
+  if active_canvas_props['pol_choice']:
     title_main+=', XX. '
   else:
     title_main+=', ||. '
   ##### end of the plot title contruction
   ##### erray preparation for print
   labels_pr, baselines_pr, fringes_pr, errors_pr = \
-    aml.keep_only_some_elements_PRINT(ref_ant, source_choice, labels_main, baselines_main, fringes_main, errors_main)
+    aml.keep_only_some_elements_PRINT(active_canvas_props['ref_ant'], active_canvas_props['source_choice'], labels_main, baselines_main, fringes_main, errors_main)
   ### how many pages needed?
   lblcanv = lbl.LabelCanvas(print_size_choice, 'dummy')
   numb_vert_pages = int(np.ceil(len(labels_pr)/lblcanv.size[0]))
@@ -750,6 +754,7 @@ do_FR = 1
 fplots_viewed = 0
 tempfilenamelist=[]
 gsprocesses = []
+active_canvas_props = {'mode_set':mode_set, 'do_FR':do_FR, 'ref_ant':ref_ant, 'source_choice':source_choice, 'pol_choice':pol_choice}
 
 #### a fancier way to display antennas in the menu: both one- and two-letter codes
 antennas_disp = [_+' '+codesdict[_] for _ in antennas]
