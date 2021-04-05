@@ -37,8 +37,8 @@
 #include "testvex.h"
 
 const char program[] = "vex2v2d";
-const char version[] = "0.1";
-const char verdate[] = "20210117";
+const char version[] = "0.2";
+const char verdate[] = "20210405";
 const char author[] = "Walter Brisken";
 
 const double defaultTInt = 2.0;		// [sec]
@@ -76,6 +76,8 @@ void usage(const char *pgm)
 	fprintf(stderr, "           specify that comma-separated <list> of threads is absent from datastreams\n\n");
 	fprintf(stderr, "  --dropAntennas=<list>\n");
 	fprintf(stderr, "           specify that comma-separated <list> of antennas should be excluded\n\n");
+	fprintf(stderr, "  --1bit=<list>\n");
+	fprintf(stderr, "           specify that comma-separated <list> of antennas has 1 bit per sample\n\n");
 	fprintf(stderr, "  -2       set up for two datastreams per antenna\n\n");
 	fprintf(stderr, "  -4       set up for four datastreams per antenna\n\n");
 	fprintf(stderr, "  -8       set up for eight datastreams per antenna\n\n");
@@ -133,7 +135,7 @@ const char *getDatastreamMachine(const std::string &ant)
 	}
 }
 
-int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, bool doMachines, int vdifFrameSize, bool doFilelist, bool doVlitebuf, const char *threadsAbsent, const char *dropAntennas)
+int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, bool doMachines, int vdifFrameSize, bool doFilelist, bool doVlitebuf, const char *threadsAbsent, const char *dropAntennas, const char *oneBitAntennas)
 {
 	FILE *out;
 	unsigned int nAntenna = V->nAntenna();
@@ -142,7 +144,7 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 	std::string lexper = V->getExper()->name;
 	Lower(lexper);
 
-	if(vdifFrameSize > 0 || nDatastream > 1)
+	if(vdifFrameSize > 0 || nDatastream > 1 || oneBitAntennas != 0)
 	{
 		doDatastreams = true;
 	}
@@ -208,12 +210,22 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 		std::string lname = A->name;
 		Lower(lname);
 		machine = getDatastreamMachine(A->name);
+		int bits;
 
 		if(doMachines && machine == 0)
 		{
 			fprintf(stderr, "Error: Machine mode was used for unsupported antenna: %s\n", A->name.c_str());
 
 			exit(EXIT_FAILURE);
+		}
+
+		bits = 2;
+		if(oneBitAntennas)
+		{
+			if(strcasestr(oneBitAntennas, A->name.c_str()) != 0)
+			{
+				bits = 1;
+			}
 		}
 
 		if(doDatastreams)
@@ -225,9 +237,13 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 			for(int d = 0; d < nDatastream; ++d)
 			{
 				fprintf(out, "DATASTREAM %s%d {", A->name.c_str(), d);
-				if(vdifFrameSize > 0)
+				if(vdifFrameSize > 0 || bits > 0)
 				{
-					fprintf(out, " format=VDIF%d", vdifFrameSize);
+					int f, b;
+					
+					f = vdifFrameSize > 0 ? vdifFrameSize : 5032;
+					b = bits > 0 ? bits : 2;
+					fprintf(out, " format=VDIF/%d/%d", f, b);
 				}
 				if(doFilelist)
 				{
@@ -329,6 +345,7 @@ int main(int argc, char **argv)
 	int vdifFrameSize = 0;
 	const char *threadsAbsent = 0;
 	const char *dropAntennas = 0;
+	const char *oneBitAntennas = 0;
 
 	for(a = 1; a < argc; ++a)
 	{
@@ -390,6 +407,10 @@ int main(int argc, char **argv)
 		else if(strncmp(argv[a], "--dropAntennas=", 15) == 0)
 		{
 			dropAntennas = argv[a]+15;
+		}
+		else if(strncmp(argv[a], "--1bit=", 7) == 0)
+		{
+			oneBitAntennas = argv[a]+7;
 		}
 		else if(strcmp(argv[a], "-2") == 0)
 		{
@@ -490,7 +511,7 @@ int main(int argc, char **argv)
 		std::cout << std::endl;
 	}
 
-	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, doMachines, vdifFrameSize, doFilelist, doVlitebuf, threadsAbsent, dropAntennas);
+	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, doMachines, vdifFrameSize, doFilelist, doVlitebuf, threadsAbsent, dropAntennas, oneBitAntennas);
 
 	if(outFile[0])
 	{
