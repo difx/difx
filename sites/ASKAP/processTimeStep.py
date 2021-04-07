@@ -16,6 +16,7 @@ parser.add_argument("-c", "--correctfpgadelays", default=False, action="store_tr
 parser.add_argument("-S", "--suppress", default=False, action="store_true", help="Don't create FITS file")
 parser.add_argument("-B", "--beam", help="Correlate a specific beam: blank means both")
 parser.add_argument("--card", default="", help="Correlate only a specific card; blank means all")
+parser.add_argument("--fpga", default="", help="Correlate only a specific fpga; blank means all")
 parser.add_argument("-k", "--keep", default=False, action="store_true", help="Keep existing codif files")
 parser.add_argument("-s", "--snoopylog", help="Snoopy log file, default blank, if not default will use this to correlate on-pulse")
 parser.add_argument("--slurm", default=False, action="store_true", help="Use slurm batch jobs rather than running locally")
@@ -78,7 +79,10 @@ for a in antennadirs:
             print a + "/" + args.beam + " doesn't exist, aborting"
             sys.exit()
     for b in beamdirs:
-        vcraftfiles = glob.glob(b + "/*[ac]" + args.card + "*vcraft")
+        if args.fpga == "":
+            vcraftfiles = glob.glob(b + "/*[ac]" + args.card + "*vcraft")
+        else:
+            vcraftfiles = glob.glob(b + "/*[ac]" + args.card + "_f" + args.fpga + "*vcraft")
         
         if len(vcraftfiles) > 0:
             examplefiles = sorted(vcraftfiles)
