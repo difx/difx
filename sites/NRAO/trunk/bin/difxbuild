@@ -2187,7 +2187,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out = open(runscript, 'w')
 		out.write('#!/bin/bash\n\n')
 		out.write('. %s\n' % setupFile)
-		if 'wrapper' in wrapper:
+		if 'wrapper' in config:
 			out.write('%s ' % config['wrapper'])
 		out.write('mpifxcorr $@\n')
 		out.close()
