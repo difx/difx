@@ -6,6 +6,11 @@
  * to allow unique identification of an antenna based on location, so ~1 meter accuracy
  * is all that should be assumed
  */
+
+/* Sources of information (incomplete):
+ *
+ * https://ivscc.gsfc.nasa.gov/technology/vgos-sites.html
+ */
 AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays? */
 {
 	{ "AGGO",           "AGGO",      2765116.7009,  -4449233.7840,  -3626420.5633,  6.0 },		/* ITRF2014, 2019d solution */
@@ -100,7 +105,7 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 	{ "NRAO 20m",       "NRAO20",     883772.4123,  -4924385.6260,   3944042.5492,  20.0 },		/* ITRF2014, 2019d solution */
 	{ "NRAO 85-1",      "NRAO85_1",   883555.2130,  -4924490.9278,   3943962.0221,  25.0 },		/* ITRF2014, 2019d solution */
 	{ "NRAO 85-3",      "NRAO85_3",   882325.2253,  -4925138.0268,   3943397.7393,  25.0 },		/* ITRF2014, 2019d solution */
-	{ "Ny Alesund 13S", "NYALES13S", 1201071.41854,   252129.5366,   6238022.33843, 13.0 },
+	{ "Ny Alesund 13S", "NYALES13S", 1201071.41854,   252129.5366,   6238022.33843, 13.2 },
 	{ "Ny Alesund",     "NYALES20",  1202462.4209,    252734.5625,   6237766.2835,  20.0 },		/* ITRF2014, 2019d solution */
 	{ "Ogasawara",      "VERAOGSW", -4491068.6486,   3481545.0064,   2887399.6888,  20.0 },
 	{ "O'Higgins",      "OHIGGINS",  1525833.4537,  -2432463.6962,  -5676174.4977,  10.0 },		/* ITRF2014, 2019d solution */
@@ -155,13 +160,26 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 	{ "Zelenchukskya",  "ZELENCHK",  3451207.3892,   3060375.5196,   4391915.1199,  32.0 },		/* ITRF2014, 2019d solution */
 	{ "", "", 0.0, 0.0, 0.0, 0.0 },	/* this must terminate the list */
 
-	/* Known Missing: 
-		Nyalesund 13N VGOS
-		Fort Davis VGOS
-		Seshan VGOS
-		Tianma VGOS
+	/* Known Missing:
+		Hartebeesthoek VGOS 13.2m
+		Nyalesund 13N VGOS 13.2m
+		Gran Canaria VGOS 13.2m
+		Flores VGOS 13.2m
+		McDonald VGOS 12m
+		Matera VGIS
+		Seshan VGOS 13m
+		Tianma VGOS 13m
+		Urumqi VGOS 13.2m
+		Jilin VGOS 13m
+		Kashi VGOS 13m
+		Sanya VGOS 13m
+		Tahiti VGOS 12.0m
+		TNRT (Thailand)
+		Thailand VGOS
+		Badary VGOS 13.2m
+		Svetloe VGOS 13.2m
+		Zelenchukskya VGOS 13.2m
 		Evpatoria
-		"ZELRT13V"
 	 */
 };
 

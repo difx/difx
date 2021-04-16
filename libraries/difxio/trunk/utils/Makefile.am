@@ -20,6 +20,7 @@ bin_PROGRAMS = \
 	calcderiv \
 	computetotals \
 	difxcalculator \
+	difxfilelist \
 	tabulatedelays
 
 avgDiFX_SOURCES = \
@@ -33,6 +34,9 @@ computetotals_SOURCES = \
 
 difxcalculator_SOURCES = \
 	difxcalculator.c
+
+difxfilelist_SOURCES = \
+	difxfilelist.c
 
 if WITH_GSL
 reducepoly_SOURCES = \
