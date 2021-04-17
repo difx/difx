@@ -390,7 +390,7 @@ def getvexantennamodlists(vexobsfile, startTime):
     if not ok:
         exit(1)
     # harmless lack of info
-    if len(antennaModuleList) is 0:
+    if len(antennaModuleList) == 0:
         print("no antennas with mark6 modules found, nothing more to do, exiting")
         exit(0)
     return (experName,antennaModuleList,modList)
@@ -476,7 +476,7 @@ def getDatastreamsFromInputFile(inputfile, verbose):
         for inputLine in input:
                 s = inputLine.split(':')
                 if len(s) < 2:
-                        continue;
+                        continue
                 key = s[0].strip()
                 keyparts = key.split()
                 value = s[1].strip()
@@ -805,8 +805,8 @@ if __name__ == "__main__":
         usage = getUsage()
 
         parser = OptionParser(version=version, usage=usage)
-        parser.add_option("-v", "--verbose", action="count", dest="verbose", default=0, help="increase verbosity level");
-        #parser.add_option("-o", "--overheadcores", dest="overheadcores", type="int", default=1, help="set overheadcores, default = 1");
+        parser.add_option("-v", "--verbose", action="count", dest="verbose", default=0, help="increase verbosity level")
+        #parser.add_option("-o", "--overheadcores", dest="overheadcores", type="int", default=1, help="set overheadcores, default = 1")
         parser.add_option("-m", "--machines", dest="machinesfile", default="", help="use MACHINESFILE instead of $DIFX_MACHINES")
         parser.add_option("-n", "--nothreads", dest="dothreads", action="store_false", default=True, help="don't write a .threads file")
         parser.add_option("-d", "--difxdb", dest="usedifxdb", action="store_true", default=False, help="use difxdb to obtain data location")

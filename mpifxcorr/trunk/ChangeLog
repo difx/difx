@@ -22,6 +22,8 @@ Version 2.7
 * VDIF file reading: don't bail if seeking fails, just don't perform file checking
 * startdifx: when run with --wait, skip jobs whose end time has passed
 * startdifx: when run with --wait, count down time to start
+* startdifx: support --checkfiles option: look at file content for compliance
+* add "--version" support to some utilities
 
 Version 2.6
 ~~~~~~~~~~~

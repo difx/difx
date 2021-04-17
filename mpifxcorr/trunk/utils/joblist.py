@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2019 by Walter Brisken                             *
+#   Copyright (C) 2008-2021 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -33,13 +33,18 @@ from sys import argv, exit
 from glob import glob
 
 program = 'joblist'
-version = '1.6'
-verdate = '20191114'
+version = '1.7'
+verdate = '20210417'
 author  = 'Walter Brisken'
 
 showstatus = 1
 
+def printVersion():
+	print('%s ver. %s   %s %s' % (program, version, verdate, author))
+
 def usage():
+	print('')
+	printVersion()
 	print('\n%s ver. %s   %s %s' % (program, version, verdate, author))
 	print('\nA program to list information about DiFX job files\n')
 	print('Usage: [options] [<dir 1> [<dir 2> [ ... ] ] ]\n')
@@ -47,6 +52,7 @@ def usage():
 	print('      listed.  If no directory is listed, the current directory is assumed.\n')
 	print('options can include:')
 	print('   -h or --help  : print this usage information\n')
+	print('   --version     : print version info and quit\n')
 	print('\nThe characters printed within [ ] indicated the following:')
 	print('  c  .calc       model parameters and others')
 	print('  m  .machines   MPI input file -- cluster configuration')
@@ -199,8 +205,11 @@ if len(argv) == 1:
 else:
 	for a in argv[1:]:
 		if a[0] == '-':
-			if a == '-h' or a == '--help':
+			if a in ['-h', '--help']:
 				usage()
+			elif a == '--version':
+				printVersion()
+				exit(0)
 		else:
 			paths.append(a)
 

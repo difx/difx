@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '3.0.3'
-VERDATE = '20210313'
+VERSION = '3.0.4'
+VERDATE = '20210417'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -63,8 +63,11 @@ delayModelOptions = getenv("DIFX_CALC_OPTIONS")
 
 verbose = 0
 
+def getVersion():
+	return '%s ver. %s  %s  %s' % (PROGRAM, VERSION, VERDATE, AUTHOR)
+
 def getUsage():
-	usage =  '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
+	usage =  '\n%s\n' % getVersion()
 	usage += 'A program to simplify the launching of mpifxcorr.\n'
 	usage += 'It can also cause model and FITS to be made.\n\n'
 	usage += 'Usage: startdifx [options] [<start delay>] <input1> [<input2> [ ... ] ]\n'
@@ -692,9 +695,30 @@ def waitMJD(mjd):
 	print('The wait is over.          ')
 	return totalWait
 
-
-def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, useLocalHead, machinesCache, restartSeconds, wait):
+def checkFiles(fileBase, level):
+	nBad = 0
+	cmd = 'difxfilelist %s' % fileBase
+	filedata = popen(cmd).readlines()
+	for f in filedata:
+		s = f.split()
+		if 'VDIF' in s[3].upper():
+			levels = { 1: '--short', 2: '', 3: '--full' }
+			cmd = 'checkVDIF %s --bits %s --framesize %s %s' % (levels[level], s[4], s[5], s[2])
+			print('\nChecking file: %s' % cmd)
+			rv = system(cmd)
+			if rv != 0:
+				print('\nFile %s appears to have a problem.  Correlation will likely fail.' % s[2])
+				nBad += 1
+		# FIXME: add other file check options here as they are implemented
 	
+	if nBad > 0:
+		exit(0)
+
+def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, useLocalHead, machinesCache, restartSeconds, wait, checkfiles):
+	
+	if checkfiles != None:
+		checkFiles(fileBase, checkfiles)
+
 	if wait > 0:
 		intmjd = 0
 		sec = 0.0
@@ -735,6 +759,11 @@ def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMes
 # main starts here
 #------------------
 
+# FIXME: add this to optParser???
+if '--version' in argv:
+	print(getVersion())
+	exit(0)
+
 restartSeconds = 0.0
 fileBaseList = []
 cwd = getcwd()
@@ -751,6 +780,7 @@ optParser.set_defaults(machinesPolicy=2, useStartMessage=False, deletePolicy=0, 
 optParser.add_option("-A", "--agent", dest="agent", action="store", type="string", help="call mpirun through this agent with filebase as only argument")
 optParser.add_option("-g", "--genmachines", dest="machinesPolicy", action="store_const", const=2, help="will run genmachines even if not needed [default]")
 optParser.add_option("-a", "--automachines", dest="machinesPolicy", action="store_const", const=1, help="will run genmachines if needed")
+optParser.add_option("-c", "--checkfiles", dest="checkfiles", action="count", help="do a sanity check on the files to correlate (only for some formats)")
 optParser.add_option("-n", "--nomachines", dest="machinesPolicy", action="store_const", const=0, help="will not run genmachines, even if needed")
 optParser.add_option("-M", "--machines-file", dest="machinesFile", action="store", type="string", help="use supplied machines file instead of one based on job name")
 optParser.add_option("-m", "--message", dest="useStartMessage", action="store_true", help="start difx via DifxStartMessage")
@@ -782,7 +812,7 @@ except:
 	start = 0
 
 if options.agent: agent = options.agent
-	
+
 # loop over all arguments
 fb = None
 runJobList = False
@@ -842,8 +872,7 @@ if nBad > 0:
 dcp = getenv("DIFX_CALC_PROGRAM")
 if dcp != None:
 	delayModelProgram = dcp
-	print('Environment variable DIFX_CALC_PROGRAM was set, so')
-	print('Using specified calc program: %s' % delayModelProgram)
+	print('Environment variable DIFX_CALC_PROGRAM was set, so using specified calc program: %s' % delayModelProgram)
 	print('')
 
 for fileBase in fileBaseList:
@@ -855,8 +884,9 @@ for fileBase in fileBaseList:
 		print("Job name %s is too long and will be skipped!" % fileBase)
 		exit(1)
 
+	# FIXME: maybe change the run() to take 'options' directly rather than splatter them into the arg list
 	v = run(fileBase, options.machinesPolicy, options.deletePolicy, options.makeModel, options.override, options.useStartMessage, 
-		options.useLocalHead, machinesCache, restartSeconds, options.wait)
+		options.useLocalHead, machinesCache, restartSeconds, options.wait, options.checkfiles)
 
 	if v != None:
 		sendMessage(fileBase, 'ABORTED', v)

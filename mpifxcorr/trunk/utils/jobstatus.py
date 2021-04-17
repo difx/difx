@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2019 by Walter Brisken                             *
+#   Copyright (C) 2008-2021 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -35,12 +35,16 @@ import os
 import stat
 
 program = 'jobstatus'
-version = '1.2'
-verdate = '20191114'
+version = '1.3'
+verdate = '20210417'
 author  = 'Walter Brisken'
 
+def printVersion():
+	print('%s ver. %s   %s %s' % (program, version, verdate, author))
+
 def usage():
-	print('\n%s ver. %s   %s %s' % (program, version, verdate, author))
+	print('')
+	printVersion()
 	print('\nA program to list the status of DiFX job files\n')
 	print('Usage: [options] [<dir 1> [<dir 2> [ ... ] ] ]\n')
 	print('<dir> is a directory containing .input files.  Many directories can be')
@@ -179,8 +183,11 @@ if len(argv) == 1:
 else:
 	paths = []
 	for a in argv:
-		if a == '-h' or a == '--help':
+		if a in ['-h', '--help']:
 			usage()
+		elif a == '--version':
+			printVersion()
+			exit(0)
 		elif a[0] == '-':
 			print('Unknown option %s .  Quitting' % a)
 			exit(0)
