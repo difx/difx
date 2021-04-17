@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2019 by Walter Brisken                             *
+ *   Copyright (C) 2013-2021 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,8 +35,8 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.11";
-const char verdate[] = "20191031";
+const char version[] = "0.12";
+const char verdate[] = "20210417";
 
 const int defaultChunkSize = 10000000;
 const int defaultNGap = 100;
@@ -65,9 +65,16 @@ void sigintHandler(int i)
 	die = 1;
 }
 
+static void printVersion()
+{
+	fprintf(stderr, "%s ver. %s  %s  %s\n", program, version, author, verdate);
+}
+
 void usage(const char *pgm)
 {
-	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
+	fprintf(stderr, "\n");
+	printVersion();
+	fprintf(stderr, "\n");
 	fprintf(stderr, "Usage: %s [options] <inputFile> <inputFrameSize> <framesPerSecond>\n   <threadList> <outputFile> [<offset> [<chunkSize>] ]\n", pgm);
 	fprintf(stderr, "\nA program to take a multi-thread VDIF file and multiplex into\n"
 			"a multi-channel, single thread file.  <thread list> should be\n"
@@ -84,6 +91,7 @@ void usage(const char *pgm)
 	fprintf(stderr, "Options can include:\n");
 	fprintf(stderr, "  --help\n");
 	fprintf(stderr, "  -h        Print this help info and quit\n\n");
+	fprintf(stderr, "  --version Print version info and quit\n\n");
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v        Increase verbosity\n\n");
 	fprintf(stderr, "  --quiet\n");
@@ -132,7 +140,8 @@ int main(int argc, char **argv)
 	const int MaxThreads=128;
 	unsigned char *src;
 	unsigned char *dest;
-	FILE *in, *out;
+	FILE *in = 0;
+	FILE *out;
 	struct vdif_file_reader reader;
 	struct vdif_file_reader_stats readerstats;
 	int useStdin = 0;
@@ -179,6 +188,12 @@ int main(int argc, char **argv)
 			if(strcmp(argv[a], "-h") == 0 || strcmp(argv[a], "--help") == 0)
 			{
 				usage(argv[0]);
+
+				return EXIT_SUCCESS;
+			}
+			else if(strcmp(argv[a], "--version") == 0)
+			{
+				printVersion();
 
 				return EXIT_SUCCESS;
 			}
@@ -412,7 +427,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Error encountered in seek to position %lld\n", (long long)offset);
 				fclose(in);
 
-                return EXIT_FAILURE;
+                		return EXIT_FAILURE;
 			}
 		}
 	}
@@ -480,6 +495,7 @@ int main(int argc, char **argv)
 	if(n != VDIF_HEADER_BYTES)
 	{
 		fprintf(stderr, "Error reading first header.  Only %d of %d bytes were read\n", n, VDIF_HEADER_BYTES);
+
 		return EXIT_FAILURE;
 	}
 	leftover = VDIF_HEADER_BYTES;

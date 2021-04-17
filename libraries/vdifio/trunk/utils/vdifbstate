@@ -4,15 +4,19 @@
 
 program = 'vdifbstate'
 author  = 'Walter Brisken'
-version = '0.3'
-verdate = '20191110'
+version = '0.4'
+verdate = '20210417'
 
 from os import system
 from sys import exit, argv
 
+def printVersion():
+	print('%s ver. %s  %s  %s' % (program, version, author, verdate))
 
 def usage():
-	print('\n%s ver. %s  %s  %s\n' % (program, version, author, verdate))
+	print('')
+	printVersion()
+	print('')
 	print('A VDIF state counter for multi-thread VDIF data.  Uses vmux')
 	print('and m5bstate to do the heavy lifting.\n')
 	print('Usage : %s <infile> <frame size> <data rate> <threadlist> <nframes> [<offset>]\n' % program)
@@ -22,6 +26,10 @@ def usage():
 	print('  <nframes> is the number of frames to bstate-erize\n')
 	print('  <offset> is number of bytes into file to start decoding\n')
 	print('Note: Only works on 2-bit real data for now...\n')
+
+if '--version' in argv:
+	printVersion()
+	exit()
 
 if len(argv) < 6:
 	usage()

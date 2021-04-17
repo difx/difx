@@ -10,6 +10,8 @@ Version 1.5
 * new utility: splitVDIFbygap : breaks a VDIF file into multiple based on time gaps
 * filterVDIF: discard frames that had seconds less than previous frames
 * introduce #define'd error codes for some common functions
+* new utility: checkVDIF : look at VDIF file and look for issues
+* Add support for command line option "--version" to some of the utilities
 
 Version 1.4
 ~~~~~~~~~~~

@@ -7,6 +7,7 @@ LDADD = \
 
 bin_PROGRAMS = \
 	stripVDIF \
+	checkVDIF \
 	captureUDPVDIF \
 	multi2singlethreadVDIF \
 	padVDIF \
@@ -58,6 +59,9 @@ mk6vmux_SOURCES = \
 
 stripVDIF_SOURCES = \
 	stripVDIF.c
+
+checkVDIF_SOURCES = \
+	checkVDIF.c
 
 peekVDIF_SOURCES = \
 	peekVDIF.c
