@@ -27,6 +27,9 @@ def parse_args(args: []):
 	parser.add_argument('-f', '--lo1', dest='lo1', metavar='GHz', default='221.100', help='frequency of 1st LO (GMVA 92.101, EHT 221.100; default: %(default)s)')
 	parser.add_argument('-F', '--lo2', dest='lo2', metavar='GHz', default='7.744', help='frequency of 2nd LO (default: %(default)s)')
 	parser.add_argument('-r', dest='recorders', default='1,2,3,4', help='list of recorder ID numbers (default: %(default)s), for GMVA2021 use 5')
+	parser.add_argument('--if', '-i', dest='do_vex_if', action='store_true', help='also output VEX $IF section')
+	parser.add_argument('--bbc', '-b', dest='do_vex_bbc', action='store_true', help='also output VEX $BBC section')
+	# todo? : parser.add_argument('--v2d', '-v', dest='do_v2d', action='store_true', help='also output v2d ANTENNA, DATASTREAM sections')
 
 	return parser.parse_args(args)
 
@@ -185,6 +188,34 @@ class NoemaVexFreqGenerator:
 		print('enddef;')
 
 
+	def generateIF(self, lo1_GHz=None):
+
+		ref_lo = 85.5
+
+		if lo1_GHz is not None and lo1_GHz > 0:
+			ref_lo = lo1_GHz
+		elif self.lo1_GHz is not None and self.lo1_GHz > 0:
+			ref_lo = self.lo1_GHz
+
+		print('')
+		print('$IF;')
+		print('def IF_NN; * station Nn')
+		print('    if_def = &IF_RCP : A1 : R : %.2f MHz : U ;' % (ref_lo*1e3))
+		print('    if_def = &IF_LCP : B1 : R : %.2f MHz : U ;' % (ref_lo*1e3))
+		print('enddef;')
+
+
+	def generateBBC(self):
+
+		print('')
+		print('$BBC;')
+		print('def BBC_NN; * station Nn')
+		print('    BBC_assign = &BBC01 :  1 : &IF_RCP;')
+		print('    BBC_assign = &BBC02 :  1 : &IF_LCP;')
+		print('enddef;')
+
+
+
 if __name__ == "__main__":
 
 	opts = parse_args(sys.argv[1:])
@@ -199,3 +230,8 @@ if __name__ == "__main__":
 	labels = EHTBandLabels()
 	gen = NoemaVexFreqGenerator(labels)
 	gen.generate(lo1, lo2, recorders)
+
+	if opts.do_vex_if:
+		gen.generateIF()
+	if opts.do_vex_bbc:
+		gen.generateBBC()
