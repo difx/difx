@@ -26,7 +26,7 @@ def parse_args(args: []):
 	parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 	parser.add_argument('-f', '--lo1', dest='lo1', metavar='GHz', default='221.100', help='frequency of 1st LO (GMVA 92.101, EHT 221.100; default: %(default)s)')
 	parser.add_argument('-F', '--lo2', dest='lo2', metavar='GHz', default='7.744', help='frequency of 2nd LO (default: %(default)s)')
-	parser.add_argument('-r', dest='recorders', default='1,2,3,4', help='list of recorder ID numbers (default: %(default)s)')
+	parser.add_argument('-r', dest='recorders', default='1,2,3,4', help='list of recorder ID numbers (default: %(default)s), for GMVA2021 use 5')
 
 	return parser.parse_args(args)
 
@@ -174,6 +174,13 @@ class NoemaVexFreqGenerator:
 			subblock(True, False, range(16,32), 'L')
 			print('%s* Recorder 4, slot 4, USB-Inner, LCP, subbands 32-47' % (self.indent))
 			subblock(True, False, range(32,48), 'L')
+
+		if 5 in recorders:
+
+			print('%s* Recorder 5, slot 1, LSB-Inner, RCP, subbands 16-47' % (self.indent))
+			subblock(False, False, range(16,32), 'R')
+			print('%s* Recorder 5, slot 2, LSB-Inner, RCP, subbands 16-47' % (self.indent))
+			subblock(False, False, range(16,32), 'L')
 
 		print('enddef;')
 
