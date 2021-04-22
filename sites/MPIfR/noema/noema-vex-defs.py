@@ -179,7 +179,7 @@ class NoemaVexFreqGenerator:
 
 			print('%s* Recorder 5, slot 1, LSB-Inner, RCP, subbands 16-47' % (self.indent))
 			subblock(False, False, range(16,32), 'R')
-			print('%s* Recorder 5, slot 2, LSB-Inner, RCP, subbands 16-47' % (self.indent))
+			print('%s* Recorder 5, slot 2, LSB-Inner, LCP, subbands 16-47' % (self.indent))
 			subblock(False, False, range(16,32), 'L')
 
 		print('enddef;')
