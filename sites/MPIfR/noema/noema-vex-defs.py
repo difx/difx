@@ -17,6 +17,8 @@ import sys
 __author__ = "Jan Wagner (MPIfR)"
 __version__ = "1.0.1"
 
+NOEMA_PFB_BANDWIDTH_MHZ = 64.0
+
 
 def parse_args(args: []):
 
@@ -62,12 +64,17 @@ class EHTBandLabels:
 			BandLabel('b4',228.100,230.148)
 		]
 
-	def lookUp(self, freq_GHz):
-		label = ''
+	def lookUp(self, freq_GHz, sideband='U'):
+		labels = []
+		if 'U' in sideband.upper():
+			f0,f1 = freq_GHz, freq_GHz + NOEMA_PFB_BANDWIDTH_MHZ*1e-3
+		else:
+			f0,f1 = freq_GHz - NOEMA_PFB_BANDWIDTH_MHZ*1e-3, freq_GHz
 		for band in self.bands:
-			if band.isContained(freq_GHz):
-				label = band.getName()
-		return label
+			if band.isContained(f0) or band.isContained(f1):
+				labels.append(band.getName())
+		full_labels = ','.join(labels)
+		return full_labels
 
 
 class NoemaVexFreqGenerator:
@@ -79,7 +86,7 @@ class NoemaVexFreqGenerator:
 	def __init__(self, bandlabels=EHTBandLabels()):
 		self.lo1_GHz, self.lo2_GHz = 0, 0
 		self.recorders = []
-		self.bw_MHz = 64
+		self.bw_MHz = NOEMA_PFB_BANDWIDTH_MHZ
 		self.pol2bbcnr = {'R':1, 'L':2, 'H':1, 'V':2}
 		self.indent = '   '
 		self.bandlabels = bandlabels
@@ -124,7 +131,7 @@ class NoemaVexFreqGenerator:
 		def subblock(usb, outer, subbands, polzn):
 			channelblock = self.__generate_block(rxUsb=usb, outer=outer, subbands=subbands)
 			for idx,(freq_MHz,sideband) in enumerate(channelblock):
-				bandlabel = self.bandlabels.lookUp(freq_MHz*1e-3)
+				bandlabel = self.bandlabels.lookUp(freq_MHz*1e-3,sideband)
 				self.__print_chan_def(freq_MHz, sideband, idx + self.nvexchannels, polzn, bandlabel)
 			self.nvexchannels += len(subbands)
 
@@ -180,9 +187,9 @@ class NoemaVexFreqGenerator:
 
 		if 5 in recorders:
 
-			print('%s* Recorder 5, slot 1, LSB-Inner, RCP, subbands 16-47' % (self.indent))
+			print('%s* Recorder 5, slot 1, LSB-Inner, RCP, subbands 16-31' % (self.indent))
 			subblock(False, False, range(16,32), 'R')
-			print('%s* Recorder 5, slot 2, LSB-Inner, LCP, subbands 16-47' % (self.indent))
+			print('%s* Recorder 5, slot 2, LSB-Inner, LCP, subbands 16-31' % (self.indent))
 			subblock(False, False, range(16,32), 'L')
 
 		print('enddef;')
