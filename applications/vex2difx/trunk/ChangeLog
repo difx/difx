@@ -33,6 +33,7 @@ Version 2.7.0
 * Implement "threadsIgnore" DATASTREAM parameter to specify VDIF threads that are present but should not be correlated
 * Add vex2v2d -- a tool to create a skeleton (and possibly final) .v2d file based on the contents of a .vex file
 * vexpeek: new scan summary mode: --scans2; add --scans2 twice to command line for nChan, nBit, Bandwidth info
+* oms2v2d: force max length to be 3200 (sec)
 
 Version 2.6.0
 ~~~~~~~~~~~~~
