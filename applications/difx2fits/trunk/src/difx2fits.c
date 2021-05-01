@@ -101,7 +101,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  -i       <interval> Set the Difx-derived tsys interval (sec) (default %3.1f)\n", DefaultDifxTsysInterval);
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --difx-pcal-interval\n");
-	fprintf(stderr, "           <interval> Set the Difx-derived pcal interval (sec) (default %3.1f)\n", DefaultDifxPCalInterval);
+	fprintf(stderr, "           <interval> Set the Difx-derived pcal interval (sec) (default %3.1f), 0 means to average over a whole scan\n", DefaultDifxPCalInterval);
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --phaseCentre <p>\n");
 	fprintf(stderr, "  --phasecenter <p>   Create a fits file for all the " "<p>th phase centres (default 0)\n");

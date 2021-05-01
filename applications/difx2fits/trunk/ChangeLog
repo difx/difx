@@ -1,3 +1,16 @@
+Commit 10003 2021.04.30
+
+* Fixed a bug: presence of bad values in pcal file forced difx2calc to
+  bypass affected pcal record entirely. As a results difx2fits did not
+  dump pcal, and lost pcal at the affected station of a given job.
+
+* Added extra check to ensure difx2fits does not skip dumping accumulated
+  pcal phases and amplitudes.
+
+* Added a new feature in difx2fts: if --difx-pcal-interval 0, then
+  phase calibration phase and amplitude is averaged over an entire scan.
+
+
 Commit 9???  2021.02.28
 
 * Forced sorting job files chronologically in fitsPH for processing
