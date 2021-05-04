@@ -137,7 +137,7 @@ struct fblock_tag
                                     // conv2date.c
 void conv2date (double, struct date *);
                                     // createRoot.c
-int createRoot (DifxInput *, struct fblock_tag *, int, int, char *, char *, 
+int createRoot (DifxInput *, struct fblock_tag *, int, int, char *, char *, char *, 
                 struct stations *, struct CommandLineOptions *, char *);
 char getband (double);
                                     // createType1s.c

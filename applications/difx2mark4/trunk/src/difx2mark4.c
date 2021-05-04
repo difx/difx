@@ -436,7 +436,7 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
                                 // create root from vex file
     startJobId = *jobId;
     printf ("    Generating root file\n");
-    if (createRoot (D, fblock, startJobId, scanId, path, rcode, stns, opts, rootname) < 0)
+    if (createRoot (D, fblock, startJobId, scanId, node, path, rcode, stns, opts, rootname) < 0)
         {
         fprintf (stderr, "Could not create root file\n");
         return -1;

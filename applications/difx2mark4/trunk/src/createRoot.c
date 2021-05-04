@@ -15,6 +15,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                 struct fblock_tag *pfb, // ptr to filled-in fblock table
                 int jobId,
                 int scanId,
+                char *node_name,        // actual node name, not 2-part path
                 char *node,             // directory for output fileset
                 char *rcode,            // 6 letter root suffix
                 struct stations *stns,  // station-relevant information
@@ -803,6 +804,16 @@ int createRoot (DifxInput *D,           // difx input structure pointer
             else if (strncmp (extra_lines[i], " bocf_period", 12) == 0)
                 {
                 fake_bocf_period(buff, D->config + configId);
+                fputs (buff, fout);
+                }
+            else if (strncmp (extra_lines[i], " def 1234_std;", 14) == 0)
+                {
+                sprintf (buff, " def %s_std;\n", node_name);
+                fputs (buff, fout);
+                }
+            else if (strncmp (extra_lines[i], " corr_exp#   = 1234;", 20) == 0)
+                {
+                sprintf (buff, " corr_exp#   = %s;\n", node_name);
                 fputs (buff, fout);
                 }
             else

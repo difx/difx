@@ -197,7 +197,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             }
         printf ("      created type 3 output file %s\n", outname);
                                     // all files need a type 000 record
-        strcpy (t000.date, "2001001-123456");
+        strcpy (t000.date, "2001001-123456"); // FIXME: use real corrdate as in new_type1.c? or document why this strange fixed date is correct.
         strcpy (t000.name, outname);
         fwrite (&t000, sizeof (t000), 1, fout);
 
