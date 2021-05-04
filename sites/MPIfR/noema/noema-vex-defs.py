@@ -26,6 +26,7 @@ def parse_args(args: []):
 
 	parser = argparse.ArgumentParser(description=__doc__, add_help=True, formatter_class=argparse.RawDescriptionHelpFormatter)
 	parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
+	parser.add_argument('--all-basebands', dest='do_full_polyfix_overview', action='store_true', help='Do not output VLBI recorder specific channels but rather the entire 2 x 128 ch x 64 MHz set of PolyFix channels')
 	parser.add_argument('-f', '--lo1', dest='lo1', metavar='GHz', default='221.100', help='frequency of 1st LO (GMVA 92.101, EHT 221.100; default: %(default)s)')
 	parser.add_argument('-F', '--lo2', dest='lo2', metavar='GHz', default='7.744', help='frequency of 2nd LO (default: %(default)s)')
 	parser.add_argument('-r', dest='recorders', default='1,2,3,4', help='list of recorder ID numbers (default: %(default)s), for GMVA2021 use 5')
@@ -195,6 +196,36 @@ class NoemaVexFreqGenerator:
 		print('enddef;')
 
 
+	def generateAllSubbands(self, lo1_GHz, lo2_GHz=7740.0):
+		'''
+		Generate a VEX section of all four NOEMA PolyFix basebands in one polarization.
+		This is much wider than used for VLBI, but can help visualize tuning and channel placements on sky.
+		'''
+		def labeledSubblock(usb, outer, subbands):
+			channelblock = self.__generate_block(rxUsb=usb, outer=outer, subbands=subbands)
+			for idx,(freq_MHz,sideband) in enumerate(channelblock):
+				bandlabel = self.bandlabels.lookUp(freq_MHz*1e-3,sideband)
+				self.__print_chan_def(freq_MHz, sideband, idx + self.nvexchannels, 'L', bandlabel)
+			self.nvexchannels += len(subbands)
+
+		self.lo1_GHz, self.lo2_GHz = lo1_GHz, lo2_GHz
+		self.nvexchannels = 1
+
+		print('def FREQ_Nn; * derived for on lo1=%.3f lo2=%.3f GHz' % (lo1_GHz, lo2_GHz))
+		print('%ssample_rate = %.1f Ms/sec;  * (2bits/sample)' % (self.indent, 2*self.bw_MHz))
+
+		for rxUsb in [False,True]:
+			baseband_listing_order = [False,True] if rxUsb else [True,False]
+			for outer_baseband in baseband_listing_order:
+				for startingSubband in [0,16,32,48]:
+					endingSubband = startingSubband + 16
+					basebandLabel = 'outer' if outer_baseband else 'inner'
+					print('%s* RX USB=%s, Baseband_Side=%s, any polzn, subbands %d-%d' % (self.indent, rxUsb, basebandLabel, startingSubband, endingSubband-1))
+					labeledSubblock(rxUsb, outer_baseband, range(startingSubband,endingSubband))
+
+		print('enddef;')
+
+
 	def generateIF(self, lo1_GHz=None):
 
 		ref_lo = 85.5
@@ -236,7 +267,11 @@ if __name__ == "__main__":
 
 	labels = EHTBandLabels()
 	gen = NoemaVexFreqGenerator(labels)
-	gen.generate(lo1, lo2, recorders)
+
+	if opts.do_full_polyfix_overview:
+		gen.generateAllSubbands(lo1, lo2)
+	else:
+		gen.generate(lo1, lo2, recorders)
 
 	if opts.do_vex_if:
 		gen.generateIF()
