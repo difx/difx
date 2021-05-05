@@ -8,11 +8,11 @@ from os.path import isfile, isdir
 from os import getcwd, system
 
 program = 'difxcopy'
-version = '0.5'
+version = '0.6'
 author  = 'Walter Brisken'
-verdate = '20191110'
+verdate = '20210505'
 
-fileTypes = ['input', 'calc', 'flag']
+fileTypes = ['input', 'calc', 'flag', 'machines', 'threads']
 
 def usage(prog):
 	prefixes = ''

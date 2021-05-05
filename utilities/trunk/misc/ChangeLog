@@ -4,6 +4,7 @@ Version 2.7
 * python3
 * difxcopy and mvdifxhere now belong here
 * python programs: store locally as .py, rename on install
+* difxcopy: add threads and machines files to list of files to copy
 * Post DiFX 2.6
 
 Version 2.5
