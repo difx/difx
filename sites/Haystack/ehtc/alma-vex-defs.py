@@ -13,10 +13,10 @@ def deal_with_opts():
     This script generates some VEX fragments useful for correlating
     experiments involving ALMA.  The arguments supply information,
     and the normal response is to provide shell variable assignments
-    with some appropriate VEX or V2D information.  The report option
-    is one of:
+    with some appropriate VEX or V2D information.
+    The report option --report <item> (-r<item>) is one of:
 
-    help        which provides some
+    help        which provides this list
     vars        which outputs everything as shell variables
     alma        which outputs the ALMA versions of things
     ptwo        which outputs the non-ALMA compatible versions
