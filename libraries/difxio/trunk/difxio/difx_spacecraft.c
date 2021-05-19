@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken                             *
+ *   Copyright (C) 2008-2021 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -80,6 +80,8 @@ DifxSpacecraft *dupDifxSpacecraftArray(const DifxSpacecraft *src, int n)
 			dest[s].axisVectors = (RadioastronAxisVectors *)calloc(dest[s].nPoint, sizeof(RadioastronAxisVectors));
 			memcpy(dest[s].axisVectors, src[s].axisVectors, dest[s].nPoint*sizeof(RadioastronAxisVectors));
 		}
+		strncpy(dest[s].ephemFile, src[s].ephemFile, DIFXIO_FILENAME_LENGTH);
+		strncpy(dest[s].ephemObject, src[s].ephemObject, DIFXIO_NAME_LENGTH);
 	}
 
 	return dest;
@@ -125,6 +127,8 @@ void fprintDifxSpacecraft(FILE *fp, const DifxSpacecraft *ds)
 	{
 		fprintf(fp, "    Name = %s\n", ds->name);
 		fprintf(fp, "    Num points = %d\n", ds->nPoint);
+		fprintf(fp, "    Ephemeris file = %s\n", ds->ephemFile);
+		fprintf(fp, "    Ephemeris object id = %s\n", ds->ephemObject);
 	}
 }
 
@@ -550,6 +554,9 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 
 	/* TODO: add mechanism to just load in state vectors */
 
+	strncpy(ds->ephemFile, ephemFile, DIFXIO_FILENAME_LENGTH);
+	strncpy(ds->ephemObject, objectName, DIFXIO_NAME_LENGTH);
+
 	l = strlen(ephemFile);
 	if(l > 4 && strcmp(ephemFile+l-4, ".bsp") == 0)
 	{
@@ -573,6 +580,8 @@ static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)
 	dest->nPoint = src->nPoint;
 	dest->pos = (sixVector *)calloc(dest->nPoint, sizeof(sixVector));
 	memcpy(dest->pos, src->pos, dest->nPoint*sizeof(sixVector));
+	strncpy(dest->ephemFile, src->ephemFile, DIFXIO_FILENAME_LENGTH);
+	strncpy(dest->ephemObject, src->ephemObject, DIFXIO_NAME_LENGTH);
 }
 
 static void mergeSpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src1, const DifxSpacecraft *src2)
@@ -701,7 +710,7 @@ DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1, const D
 }
 
 
-static void evalPoly(long double poly[4], long double t, long double *V)
+static void evalPoly4(long double poly[4], long double t, long double *V)
 {
 	*V = poly[0] + t*(poly[1] + t*(poly[2] + t*poly[3]));
 }
@@ -751,19 +760,19 @@ int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd, si
 	xPoly[0] = pos[r0].X;
 	xPoly[1] = pos[r0].dX*deltat;
 	xPoly[2] = -3.0L*(pos[r0].X-pos[r1].X) - (2.0L*pos[r0].dX+pos[r1].dX)*deltat;
-	xPoly[3] =  2.0L*(pos[r0].X-pos[r1].X) + (    pos[r0].dX+pos[r1].dX)*deltat;
+	xPoly[3] =  2.0L*(pos[r0].X-pos[r1].X) + (     pos[r0].dX+pos[r1].dX)*deltat;
 	yPoly[0] = pos[r0].Y;
 	yPoly[1] = pos[r0].dY*deltat;
 	yPoly[2] = -3.0L*(pos[r0].Y-pos[r1].Y) - (2.0L*pos[r0].dY+pos[r1].dY)*deltat;
-	yPoly[3] =  2.0L*(pos[r0].Y-pos[r1].Y) + (    pos[r0].dY+pos[r1].dY)*deltat;
+	yPoly[3] =  2.0L*(pos[r0].Y-pos[r1].Y) + (     pos[r0].dY+pos[r1].dY)*deltat;
 	zPoly[0] = pos[r0].Z;
 	zPoly[1] = pos[r0].dZ*deltat;
 	zPoly[2] = -3.0L*(pos[r0].Z-pos[r1].Z) - (2.0L*pos[r0].dZ+pos[r1].dZ)*deltat;
-	zPoly[3] =  2.0L*(pos[r0].Z-pos[r1].Z) + (    pos[r0].dZ+pos[r1].dZ)*deltat;
+	zPoly[3] =  2.0L*(pos[r0].Z-pos[r1].Z) + (     pos[r0].dZ+pos[r1].dZ)*deltat;
 
-	evalPoly(xPoly, t, &X);
-	evalPoly(yPoly, t, &Y);
-	evalPoly(zPoly, t, &Z);
+	evalPoly4(xPoly, t, &X);
+	evalPoly4(yPoly, t, &Y);
+	evalPoly4(zPoly, t, &Z);
 
 #if 0
 	/* linear interpolation of velocity gives smoother results than
@@ -836,6 +845,14 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 			writeDifxLine(out, "FRAME", ds[i].frame);
 		}
 		writeDifxLine1(out, "SPACECRAFT %d NAME", i, ds[i].name);
+		if(ds[i].ephemFile[0])
+		{
+			writeDifxLine1(out, "SPACECRAFT %d EPHEM", i, ds[i].ephemFile);
+		}
+		if(ds[i].ephemObject[0])
+		{
+			writeDifxLine1(out, "SPACECRAFT %d ID", i, ds[i].ephemObject);
+		}
 		writeDifxLineInt1(out, "SPACECRAFT %d ROWS", i, ds[i].nPoint);
 		if(ds[i].axisVectors == 0 || ds[i].timeFrameOffset == 0)
 		{

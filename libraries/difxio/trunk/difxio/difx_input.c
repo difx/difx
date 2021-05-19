@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2017 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2007-2021 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -2418,6 +2418,16 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 				return 0;
 			}
 			snprintf(D->spacecraft[s].name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, rows[0]));
+			row = DifxParametersfind1(cp, rows[0], "SPACECRAFT %d EPHEM", s);
+			if(row > 0)
+			{
+				snprintf(D->spacecraft[s].ephemFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+			}
+			row = DifxParametersfind1(cp, rows[0], "SPACECRAFT %d ID", s);
+			if(row > 0)
+			{
+				snprintf(D->spacecraft[s].ephemObject, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+			}
 			D->spacecraft[s].nPoint = atoi(DifxParametersvalue(cp, rows[1]));
 			D->spacecraft[s].pos = (sixVector *)calloc(D->spacecraft[s].nPoint, sizeof(sixVector));
 

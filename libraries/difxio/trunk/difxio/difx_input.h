@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2018 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2007-2021 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -598,6 +598,8 @@ typedef struct
 	RadioastronTimeFrameOffset *timeFrameOffset;	/* array of time frame offsets*/
 	RadioastronAxisVectors *axisVectors;		/* array of axis vectors */
 	char frame[DIFXIO_NAME_LENGTH];			/* coordinate frame */
+	char ephemFile[DIFXIO_FILENAME_LENGTH];		/* ephemeris file */
+	char ephemObject[DIFXIO_NAME_LENGTH];		/* object id */
 } DifxSpacecraft;
 
 typedef struct
