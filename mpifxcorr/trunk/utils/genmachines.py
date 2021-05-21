@@ -39,7 +39,8 @@ import struct
 import subprocess
 import signal
 import sys
-from optparse import OptionParser
+#from optparse import OptionParser
+import argparse
 from xml.parsers import expat
 from copy import deepcopy
 from ast import literal_eval
@@ -90,22 +91,6 @@ def convertDateString2Mjd(dateStr):
     else:
         print('invalid date string', dateStr)
         return datetime(1900, 1, 1, 0, 0)
-
-def getUsage():
-        """
-        Compile usage text for OptionParser
-        """
-        usage = "%prog [options] [<input1> [<input2>] ...]\n"
-        usage += '\n<input> is a DiFX .input file.'
-        usage += '\nA program to find required Mark5 modules and write the machines file'
-        usage += '\nappropriate for a particular DiFX job.'
-        usage += '\n\nNote: %prog respects the following environment variables:'
-        usage +=  '\nDIFX_MACHINES: required, unless -m option is given. -m overrides DIFX_MACHINES.'
-        usage +=  '\nDIFX_GROUP: if not defined a default of %s will be used.' % defaultDifxMessageGroup
-        usage +=  '\nDIFX_PORT: if not defined a default of %s will be used.' % defaultDifxMessagePort
-        usage +=  '\nSee http://cira.ivec.org/dokuwiki/doku.php/difx/clusterdef for documentation on the machines file format'
-        
-        return(usage)
 
 class MessageParser:
     """
@@ -440,7 +425,7 @@ def adjustMark6datastreams(datastreams, inputfile, verbose, startTime):
                         # if antenna found in antenna module list, replace filename with module
                         antmodfound = False
                         for antmod in antennaModuleList:
-                            if ant == antmod[0]:
+                            if ant == antmod[0] and i < msnlen:
                                 antmodfound = True
                                 if antmod[1] not in stream.msn:
                                     if verbose > 0:
@@ -448,6 +433,7 @@ def adjustMark6datastreams(datastreams, inputfile, verbose, startTime):
                                     stream.msn[i] = antmod[1]
                                     i += 1
                                 else:
+                                    ### TODO: tidy this up, altering list (msn.pop(i)) in loop not so good!
                                     stream.msn.pop(i)
                                     msnlen -= 1
                         if antmodfound is False:
@@ -755,7 +741,7 @@ def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
                         print('  %s' % n)
 
         if len(incomplete) > 0:
-                if options.ignoreIncompleteModules == False:
+                if args.ignoreIncompleteModules == False:
                         ok = False
                 print('Incomplete modules:')
                 for i in incomplete:
@@ -802,37 +788,39 @@ if __name__ == "__main__":
         # catch ctrl+c
         signal.signal(signal.SIGINT, signalHandler)
 
-        usage = getUsage()
+        epilog = '\n\nNote: %(prog)s respects the following environment variables:'
+        epilog +=  '\nDIFX_MACHINES: required, unless -m option is given. -m overrides DIFX_MACHINES.'
+        epilog +=  '\nDIFX_GROUP: if not defined a default of %s will be used.' % defaultDifxMessageGroup
+        epilog +=  '\nDIFX_PORT: if not defined a default of %s will be used.' % defaultDifxMessagePort
+        epilog +=  '\nSee https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/clusterdef for documentation on the machines file format'
 
-        parser = OptionParser(version=version, usage=usage)
-        parser.add_option("-v", "--verbose", action="count", dest="verbose", default=0, help="increase verbosity level")
-        #parser.add_option("-o", "--overheadcores", dest="overheadcores", type="int", default=1, help="set overheadcores, default = 1")
-        parser.add_option("-m", "--machines", dest="machinesfile", default="", help="use MACHINESFILE instead of $DIFX_MACHINES")
-        parser.add_option("-n", "--nothreads", dest="dothreads", action="store_false", default=True, help="don't write a .threads file")
-        parser.add_option("-d", "--difxdb", dest="usedifxdb", action="store_true", default=False, help="use difxdb to obtain data location")
-        parser.add_option("--ignore-incomplete-module", dest="ignoreIncompleteModules", action="store_true", default=True, help="Proceed even when Mark6 modules are found to be incomplete.")
+        description = 'A program to write the machines file appropriate for a particular DiFX job.'
 
-        (options, args) = parser.parse_args()
+        parser = argparse.ArgumentParser(epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter,description=description)
+  
+        parser.add_argument("-v", "--verbose", action="count", dest="verbose", default=0, help="increase verbosity level");
+        parser.add_argument("-m", "--machines", dest="machinesfile", default="", help="use MACHINESFILE instead of $DIFX_MACHINES")
+        parser.add_argument("-n", "--nothreads", dest="dothreads", action="store_false", default=True, help="don't write a .threads file")
+        parser.add_argument("-d", "--difxdb", dest="usedifxdb", action="store_true", default=False, help="use difxdb to obtain data location")
+        parser.add_argument("--ignore-incomplete-module", dest="ignoreIncompleteModules", action="store_true", default=True, help="Proceed even when Mark6 modules are found to be incomplete.")
+        parser.add_argument("input",  nargs='+', help= "DiFX inputs file(s)")
+        
+        args = parser.parse_args()
 
-        if len(args) == 0:
-                parser.print_usage()
-                sys.exit(1)
-
-        #overheadcores = options.overheadcores
         overheadcores = 0
-        verbose = options.verbose
-        dothreads = options.dothreads
-        useDifxDb = options.usedifxdb
+        verbose = args.verbose
+        dothreads = args.dothreads
+        useDifxDb = args.usedifxdb
 
         # assign the cluster definition file
-        if len(options.machinesfile) == 0:
+        if len(args.machinesfile) == 0:
                 try:
                         machinesfile = environ['DIFX_MACHINES']
                 except:
                         print ('DIFX_MACHINES environment has to be set. Use -m option instead')
                         sys.exit(1)
         else:
-                machinesfile = options.machinesfile
+                machinesfile = args.machinesfile
 
 
         # check that cluster definition file exist
@@ -843,7 +831,7 @@ if __name__ == "__main__":
                 umask(2)
 
         # list of input files to process
-        files = args
+        files = args.input
 
         quit = False
         for f in files:
