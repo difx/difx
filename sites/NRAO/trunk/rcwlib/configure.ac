@@ -1,6 +1,6 @@
 AC_INIT([rcwlib], [0.99], [Craig Walker <cwalker@nrao.edu>])
 
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
 
 AM_SANITY_CHECK
 AC_LANG_FORTRAN77
