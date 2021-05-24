@@ -13,8 +13,8 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '1.00'
-verdate = '20201128'
+version = '1.01'
+verdate = '20210524'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -31,7 +31,7 @@ automakeVersion = '1.11.6'
 libtoolVersion = '2.4'
 pkgconfigVersion = '0.28'
 pyxVersion = '0.12.1'	#http://sourceforge.net/projects/pyx/files/pyx/0.12.1/PyX-0.12.1.tar.gz
-gpstkVersion = '2.10.6'
+gpstkVersion = '2.12.2'
 libeventVersion = '2.0.21'
 expatVersion = '2.1.0'
 libmicrohttpdVersion = '0.9.35'
@@ -2419,7 +2419,7 @@ def fromtar(origComps, params, args, verbose, pretend):
 
 
 def debian(origComps, params, args, verbose, pretend):
-	debComponents = 'libexpat1-dev autoconf automake pkg-config libtool-bin subversion g++ gfortran libx11-dev libgsl2 libgsl-dev libfftw3-bin libfftw-dev libudev-dev bison flex openssh-server'
+	debComponents = 'libexpat1-dev autoconf automake pkg-config libtool-bin subversion g++ gfortran libx11-dev libgsl23 libgsl-dev libfftw3-bin libfftw3-dev libudev-dev make bison flex openssh-server libcairo2 libcairo2-dev libcfitsio-bin libcfitsio-dev libevent-dev libcurl4-openssl-dev libfuse-dev'
 	print('Using apt to install some things.  Your sudo password may be needed.')
 	cmd = 'sudo apt-get install %s' % debComponents
 	execute(cmd, verbose, pretend)
@@ -2901,7 +2901,7 @@ def gpstk(origComps, params, args, verbose, pretend):
 
 	chdir(gpstkSrcDir)
 	print('\nNow building gpstk.  THIS CAN TAKE A LONG TIME!\n')
-	execute('/bin/sh build.sh -e -i %s' % archDir, verbose, pretend)
+	execute('bash build.sh -e -x -i %s' % archDir, verbose, pretend)
 
 
 	if False:
