@@ -42,19 +42,12 @@ static double arrayGMST(int mjd)
 	double cent;
 	double daysj;
 	double gmstc[4];
-	/* double sidvel[3]; */
 	int igstmn;
 
 	gmstc[0] = 24110.548410;
 	gmstc[1] = 8640184.8128660;
 	gmstc[2] = 0.0931040;
 	gmstc[3] = -6.2e-6;
-
-	/*
-	sidvel[0] = 1.0027379093507950;
-	sidvel[1] = 5.9006e-11;
-	sidvel[2] = -5.9e-15;
-	*/
 
 	daysj = mjd - mjd2000 + 0.5;
 
@@ -64,7 +57,7 @@ static double arrayGMST(int mjd)
 
 	igstmn = gstmn / (2.0*M_PI);
 	gstmn = gstmn - (double)igstmn * (2.0*M_PI);
-	if (gstmn < 0.0)
+	if(gstmn < 0.0)
 	{
 		gstmn += (2.0*M_PI);
 	}

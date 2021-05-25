@@ -814,7 +814,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	{
 		if(verbose > 2)
 		{
-			printf("Freq not used: freqId= %d freqSetId= %d configId= %d, ind= %d.  Skipping record.\n", freqId, config->freqSetId, configId, dfs->freqId2IF[freqId] );
+			printf("Freq not used: freqId= %d freqSetId= %d configId= %d, ind= %d.  Skipping record.\n", freqId, config->freqSetId, configId, dfs->freqId2IF[freqId]);
 		}
 
 		return SKIPPED_RECORD;
@@ -1219,7 +1219,7 @@ static int storevis(DifxVis *dv)
 	return 0;
 }
 
-static int readvisrecord(DifxVis *dv, int verbose, int skipextraautocorrs, int* nSkipped_recs )
+static int readvisrecord(DifxVis *dv, int verbose, int skipextraautocorrs, int *nSkipped_recs)
 {
 	/* blank array */
 	memset(dv->weight, 0, dv->nFreq*dv->D->nPolar*sizeof(float));
@@ -1325,7 +1325,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		}
 		else
 		{
-			if (opts->profileMode == 1)
+			if(opts->profileMode == 1)
 			{
 				printf("  Pulsar auto-correlation files\n");	
 			}

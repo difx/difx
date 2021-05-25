@@ -150,9 +150,9 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --zero\n");
 	fprintf(stderr, "  -0                  Don't put visibility data in FITS file\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  --antpol            Use antenna-based polarization codes. Warning: fits-idi file will violate original specifcaitions and abide extended specifications.\n" );
+	fprintf(stderr, "  --antpol            Use antenna-based polarization codes. Warning: fits-idi file will violate original specifcaitions and abide extended specifications.\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  --polxy2hv          Convert XY polarziation codes to HV codes. Requires --antpol option\n" );
+	fprintf(stderr, "  --polxy2hv          Convert XY polarziation codes to HV codes. Requires --antpol option\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --localdir\n");
 	fprintf(stderr, "  -l                  *.calc, *.im, and *.difx are sought in the same directory as *.input files\n");
@@ -401,16 +401,16 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				else if(strcmp(argv[i], "--eop-merge-mode") == 0)
 				{
 					++i;
-					if (strcmp(argv[i], "strict") == 0)
+					if(strcmp(argv[i], "strict") == 0)
 					{
 						opts->mergeOptions.eopMergeMode = EOPMergeModeStrict;
 					}
-					else if (strcmp(argv[i], "drop") == 0)
+					else if(strcmp(argv[i], "drop") == 0)
 					{
 						opts->mergeOptions.eopMergeMode = EOPMergeModeLoose;
 						fprintf(stderr, "\nWarning: using mode that drops all EOPs, allowing merging of files including incompatible EOP values.\n\n");
 					}
-					else if (strcmp(argv[i], "relaxed") == 0)
+					else if(strcmp(argv[i], "relaxed") == 0)
 					{
 						opts->mergeOptions.eopMergeMode = EOPMergeModeRelaxed;
 					}
@@ -425,11 +425,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				else if(strcmp(argv[i], "--clock-merge-mode") == 0)
 				{
 					++i;
-					if (strcmp(argv[i], "strict") == 0)
+					if(strcmp(argv[i], "strict") == 0)
 					{
 						opts->mergeOptions.clockMergeMode = ClockMergeModeStrict;
 					}
-					else if (strcmp(argv[i], "drop") == 0)
+					else if(strcmp(argv[i], "drop") == 0)
 					{
 						opts->mergeOptions.clockMergeMode = ClockMergeModeLoose;
 						fprintf(stderr, "\nWarning: using mode that drops all Antenna clock entries other than the first, allowing merging of files including antenna clock breaks values.\n\n");
@@ -583,7 +583,8 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 
 		return 0;
 	}
-        if ( opts->polxy2hv == 1 && opts->antpol == 0 ){
+        if(opts->polxy2hv == 1 && opts->antpol == 0)
+	{
 		printf("Error: Option --polxy2hv can be used only togeather with opts->antpol \n");
 		deleteCommandLineOptions(opts);
 
@@ -616,28 +617,31 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 
 	strcpy(keys->obscode, D->job->obsCode);
 	keys->no_stkd = D->nPolar;
-	if ( D->AntPol == 1 ){
+	if(D->AntPol == 1)
+	{
 		keys->stk_1 = FITS_STOKES_AN_TABLE;
-	} else {
-	  switch(D->polPair[0])
-	  {
-	  case 'R':
-	  	keys->stk_1 = FITS_STOKES_RR;
-	  	break;
-	  case 'L':
-	  	keys->stk_1 = FITS_STOKES_LL;
-	  	break;
-	  case 'X':
-	  	keys->stk_1 = FITS_STOKES_XX;
-	  	break;
-	  case 'Y':
-	  	keys->stk_1 = FITS_STOKES_YY;
-	  	break;
-	  default:
-	  	fprintf(stderr, "Error: unknown polarization (%c)\n", D->polPair[0]);
+	}
+	else
+	{
+		switch(D->polPair[0])
+		{
+		case 'R':
+			keys->stk_1 = FITS_STOKES_RR;
+			break;
+		case 'L':
+			keys->stk_1 = FITS_STOKES_LL;
+			break;
+		case 'X':
+			keys->stk_1 = FITS_STOKES_XX;
+			break;
+		case 'Y':
+			keys->stk_1 = FITS_STOKES_YY;
+			break;
+		default:
+			fprintf(stderr, "Error: unknown polarization (%c)\n", D->polPair[0]);
 
-  		exit(EXIT_FAILURE);
-	  }
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	keys->no_band = D->nIF;
@@ -1110,7 +1114,7 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 
 	for(c = 0; c < D->nConfig; ++c)
 	{
-		if (D->AntPol == 0)
+		if(D->AntPol == 0)
 		{
 			if(isMixedPolMask(D->config[c].polMask))
 			{
