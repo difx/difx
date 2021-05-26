@@ -22,7 +22,7 @@ static char *find_end(char *buffer, char *text);
 static char *quote();
 
 static int ref=0;
-static trailing=0;
+static int trailing=0;
 int lines=1;
 static int version=1;
 %}
@@ -303,7 +303,7 @@ static struct llist *lit()
 /* skip to ';' */
 
   inch=input();
-  while(inch !=EOF & inch != ';' && inch != '\0') {
+  while(inch != EOF && inch != ';' && inch != '\0') {
     if(inch == '\n')
       lines++;
     else if(NULL == strchr(" \t\r",inch))

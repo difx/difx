@@ -1569,7 +1569,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 									// FIXME: it seems the shrinking causes seg faults.  
 		if(P->exhaustiveAutocorrs)
 		{
-			config->nBaseline += 2*nDatastream; // worst case if every datastream has a corresponding partner
+			config->nBaseline += 2*nDatastream;		// worst case if every datastream has a corresponding partner
 		}
 	}
 
@@ -2424,7 +2424,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 
 	// Make baseline table
 	globalBandwidth = populateBaselineTable(D, P, corrSetup, blockedfreqids);
-	if(globalBandwidth < 0)	// Implies conflicting frequencies found
+	if(globalBandwidth < 0)	// Implies conflicting bandwidths found
 	{
 		cerr << "Warning: differing correlation channel bandwidths found.  You can correlate this data, but won't be able to convert to FITS!" << endl;
 	}

@@ -18,7 +18,7 @@ AC_PROG_CXX
 
 AM_SANITY_CHECK
 
-AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
+AC_SEARCH_LIBS([sqrt], [m])
 
 #AC_CONFIG_MACRO_DIR([m4])
  
