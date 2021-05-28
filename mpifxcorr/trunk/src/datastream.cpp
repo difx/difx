@@ -73,6 +73,7 @@ DataStream::DataStream(const Configuration * conf, int snum, int id, int ncores,
   tcp = false;
   udp = false;
   raw = false;
+  lastvalidsegment = 0;
 
   // Early defaults that may change during ::initialise()
   portnumber = config->getDPortNumber(0, streamnum);
