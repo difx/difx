@@ -74,7 +74,7 @@ for targetdate in args:
 
     # fetch atca summary data
     url = atca_url_template.format(startdate, enddate, year)
-    atca_summary = requests.get(url).content.split("\n")
+    atca_summary = requests.get(url).content.decode("utf-8").split("\n")
 
     # parse the summary page
     refant_pad = None
