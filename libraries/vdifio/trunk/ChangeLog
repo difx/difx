@@ -12,6 +12,7 @@ Version 1.5
 * introduce #define'd error codes for some common functions
 * new utility: checkVDIF : look at VDIF file and look for issues
 * Add support for command line option "--version" to some of the utilities
+* Slight improvement in human readable output from printvdiffilesummary, as used by vsum
 
 Version 1.4
 ~~~~~~~~~~~

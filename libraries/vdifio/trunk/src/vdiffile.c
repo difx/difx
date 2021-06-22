@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2020 Walter Brisken                                *
+ *   Copyright (C) 2013-2021 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -61,10 +61,10 @@ void printvdiffilesummary(const struct vdif_file_summary *sum)
 		}
 	}
 	printf("\n");
-	printf("  frame size = %d bytes\n", sum->frameSize);
+	printf("  frame size = %d bytes (includes header)\n", sum->frameSize);
 	if(sum->framesPerSecond > 0)
 	{
-		printf("  frame rate = %d per second\n", sum->framesPerSecond);
+		printf("  frame rate = %d per thread per second\n", sum->framesPerSecond);
 	}
 	else
 	{
