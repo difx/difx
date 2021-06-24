@@ -956,6 +956,12 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								continue;
 							}
 
+							if (config->nBaseline >= D->nBaseline)
+							{
+								std::cerr << "Developer error: populateBaselineTable: trying to add " << config->nBaseline+1 << "th baseline for DS " << ds1 << " x " << ds2 << ", but pre-allocated only D->nBaseline=" << D->nBaseline << ": skipping!" << std::endl;
+								continue;
+							}
+
 							bl->dsA = ds1;
 							bl->dsB = ds2;
 
