@@ -28,11 +28,14 @@
 //============================================================================
 
 #include <cstdio>
+#include <string.h>
 
 char *fgetsNoCR(char *line, int MaxLineLength, FILE *in)
 {
 	char *v;
 	unsigned int i;
+
+	memset(line, 0, MaxLineLength);
 
 	v = fgets(line, MaxLineLength, in);
 	if(!v)
