@@ -1,2 +1,9 @@
-*1.0 
+1.1
+* Use Band ID from VEX FREQ section as the band name if present
+* Create obsolete HEAD_POS, PASS_ORDER if not present in input VEX
+* Retain the VEX CLOCK entries as-is by default
+* New cmd line option --zero-clocks (-z) to enable earlier behaviour, i.e.,
+  replace VEX CLOCKs with clock_early at first scan and delay, rate of zero
+
+1.0 
 * Initial version

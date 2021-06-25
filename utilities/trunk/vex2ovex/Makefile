@@ -164,7 +164,7 @@ AUTOHEADER = ${SHELL} /cluster/difx/DiFX-trunk_64/svn/utilities/trunk/vex2ovex/m
 AUTOMAKE = ${SHELL} /cluster/difx/DiFX-trunk_64/svn/utilities/trunk/vex2ovex/missing automake-1.13
 AWK = gawk
 CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"vex2ovex\" -DPACKAGE_TARNAME=\"vex2ovex\" -DPACKAGE_VERSION=\"1.0\ \" -DPACKAGE_STRING=\"vex2ovex\ 1.0\ \" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DPACKAGE=\"vex2ovex\" -DVERSION=\"1.0\ \"
+DEFS = -DPACKAGE_NAME=\"vex2ovex\" -DPACKAGE_TARNAME=\"vex2ovex\" -DPACKAGE_VERSION=\"1.1\ \" -DPACKAGE_STRING=\"vex2ovex\ 1.1\ \" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DPACKAGE=\"vex2ovex\" -DVERSION=\"1.1\ \"
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
@@ -181,15 +181,15 @@ MKDIR_P = /usr/bin/mkdir -p
 PACKAGE = vex2ovex
 PACKAGE_BUGREPORT = 
 PACKAGE_NAME = vex2ovex
-PACKAGE_STRING = vex2ovex 1.0 
+PACKAGE_STRING = vex2ovex 1.1 
 PACKAGE_TARNAME = vex2ovex
 PACKAGE_URL = 
-PACKAGE_VERSION = 1.0 
+PACKAGE_VERSION = 1.1 
 PATH_SEPARATOR = :
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = 
-VERSION = 1.0 
+VERSION = 1.1 
 abs_builddir = /cluster/difx/DiFX-trunk_64/svn/utilities/trunk/vex2ovex
 abs_srcdir = /cluster/difx/DiFX-trunk_64/svn/utilities/trunk/vex2ovex
 abs_top_builddir = /cluster/difx/DiFX-trunk_64/svn/utilities/trunk/vex2ovex
