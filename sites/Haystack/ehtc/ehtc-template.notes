@@ -12,7 +12,7 @@ J Mm	JCMT                # starting cy5
 K Kt	Kitt Peak           # cy5; conflict in ns-codes needs to be resolved
 L Lm	LMT                 # cy4 cy5 onwards
 M Nq	NOEMA Single        # cy5 onwards
-N Na	NOEMA Phased        # cy5 onwards
+N Nn	NOEMA Phased        # cy7 onwards
 P Pv	Pico Veleta         # cy5; conflict in ns-codes needs to be resolved
 R Sr	SMA Redundant       # cy4 cy5 onwards
 S Sm	SMA Phased          # cy4
