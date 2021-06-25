@@ -189,6 +189,7 @@ def printFreq():
 	count = 0
 	for i in range(index["FREQ"]["start"],index["FREQ"]["stop"]+1):
 
+		# 'chan_def = : 3480.40 MHz : L : 32.000 MHz : &Ch01 : &BBC01 : &L_cal;'
 		match = re.match("chan_def\s*=\s*:{0,1}\s*(\d+\.\d+)\s+(.*)", content[i])
 		if match:
 			freq = float(match.group(1))
@@ -204,7 +205,18 @@ def printFreq():
 
 			out.write("chan_def = %s%d : &%s :%f %s\n" % (selBand, count, selBand, freq,match.group(2)) )
 			continue
-				
+
+		# 'chan_def = &X : 3480.40 MHz : L : 32.000 MHz : &Ch01 : &BBC01 : &L_cal;'
+		match = re.match("chan_def\s*=\s*&(.)\s*:{0,1}\s*(\d+\.\d+)\s+(.*)", content[i])
+		if match:
+			bandref = str(match.group(1))
+			freq = float(match.group(2))
+			rest = str(match.group(3))
+			count += 1
+
+			out.write("chan_def = %s%d : &%s : %f %s\n" % (bandref, count, bandref, freq, rest))
+			continue
+
 		out.write(content[i])
 
 def printIf():
