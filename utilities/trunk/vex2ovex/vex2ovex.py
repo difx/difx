@@ -96,6 +96,7 @@ def printExper():
 		if content[i].startswith("target_correlator"):
 			continue
 		out.write(content[i])
+
 def printMode():
 	''' 
 	Prints the MODE section
@@ -105,6 +106,7 @@ def printMode():
 		if content[i].find("$PROCEDURE") != -1:
 			continue
 		out.write(content[i])
+
 def printStation():
 	''' 
 	Prints the STATION section
@@ -122,6 +124,7 @@ def printStation():
 			continue
 			
 		out.write(content[i])
+
 def printSite():
 	''' 
 	Prints the SITE section
@@ -151,6 +154,7 @@ def printSite():
 			out.write("mk4_site_ID = %s;\n" % codes[station])
 			continue
 		out.write(content[i])
+
 def printAntenna():
 	''' 
 	Prints the ANTENNA section
@@ -160,6 +164,7 @@ def printAntenna():
 		if content[i].startswith("axis_offset"):
 			continue
 		out.write(content[i])
+
 def printDas():
 	''' 
 	Prints the DAS section
@@ -170,13 +175,13 @@ def printDas():
 		if content[i].startswith("def") or content[i].startswith("enddef"):
 			out.write(content[i])
 
-
 def printSource():
 	''' 
 	Prints the SOURCE section
 	'''
 	for i in range(index["SOURCE"]["start"],index["SOURCE"]["stop"]+1):
 		out.write(content[i])
+
 def printFreq():
 	''' 
 	Prints the FREQ section
@@ -238,15 +243,27 @@ def printPassOrder():
 	''' 
 	Prints the PASS_ORDER section
 	'''
-	for i in range(index["PASS_ORDER"]["start"],index["PASS_ORDER"]["stop"]+1):
-		out.write(content[i])
+	if "PASS_ORDER" in index:
+		for i in range(index["PASS_ORDER"]["start"],index["PASS_ORDER"]["stop"]+1):
+			out.write(content[i])
+	else:
+		print("Warning: vex-file lacks the (obsolete) PASS_ORDER sectiong, adding a dummy into ovex-file for downstream compatibility.")
+		out.write("$PASS_ORDER;\n");
+		out.write("def DiskVoid;\n");
+		out.write("enddef;\n");
 
 def printHeadPos():
 	''' 
 	Prints the HEAD_POS section
 	'''
-	for i in range(index["HEAD_POS"]["start"],index["HEAD_POS"]["stop"]+1):
-		out.write(content[i])
+	if "HEAD_POS" in index:
+		for i in range(index["HEAD_POS"]["start"],index["HEAD_POS"]["stop"]+1):
+			out.write(content[i])
+	else:
+		print("Warning: vex-file lacks the (obsolete) HEAD_POS sectiong, adding a dummy into ovex-file for downstream compatibility.")
+		out.write("$HEAD_POS;\n");
+		out.write("def DiskVoid;\n");
+		out.write("enddef;\n");
 
 def printRoll():
 	''' 
@@ -254,13 +271,15 @@ def printRoll():
 	'''
 	for i in range(index["ROLL"]["start"],index["ROLL"]["stop"]+1):
 		out.write(content[i])
+
 def printSched():
 	''' 
 	Prints the SCHED section
 	'''
 	for i in range(index["SCHED"]["start"],index["SCHED"]["stop"]+1):
 		out.write(content[i])
-def printClock():
+
+def printClock(preserveClocks=True):
 	''' 
 	Prints the CLOCK section
 	'''
@@ -268,19 +287,23 @@ def printClock():
 
 	# determine the start time of the first scan
 	for i in range(index["SCHED"]["start"],index["SCHED"]["stop"]+1):
-		match = re.match("start\s*=\s*(.*);\s*mode.*", content[i])
+		# match = re.match("start\s*=\s*(.*);\s*mode.*", content[i])
+		match = re.match("start\s*=\s*(.*);", content[i])
 		if match:
 			startTime = match.group(1)
 			break
 
 	out.write("$CLOCK;\n")
-	for i in range(index["CLOCK"]["start"],index["CLOCK"]["stop"]+1):
-		#match = re.match("def\s(.*)\s*;\s+clock_early.*", content[i])
-		match = re.match("def\s(.*?)\s*;", content[i])
-		if match:
-#  def Az; clock_early=2015y085d00h00m :   0.0 usec :2015y085d00h00m0s : 0 ; enddef;
-			out.write("def %s; clock_early=%s : 0.0 usec :%s : 0; enddef; \n" % ( match.group(1), startTime, startTime ))
-			continue
+	for i in range(index["CLOCK"]["start"]+1,index["CLOCK"]["stop"]+1):
+		if preserveClocks:
+			out.write(content[i])
+		else:
+			#match = re.match("def\s(.*)\s*;\s+clock_early.*", content[i])
+			match = re.match("\s*def\s(.*?)\s*;", content[i])
+			if match:
+				#  def Az; clock_early=2015y085d00h00m :   0.0 usec :2015y085d00h00m0s : 0 ; enddef;
+				out.write("def %s; clock_early=%s : 0.0 usec :%s : 0; enddef;\n" % ( match.group(1), startTime, startTime ))
+				continue
 
 def printEop():
 	''' 
@@ -288,8 +311,6 @@ def printEop():
 	'''
 	for i in range(index["EOP"]["start"],index["EOP"]["stop"]+1):
 		out.write(content[i])
-
-
 
 def parseVex():
 	'''
@@ -384,6 +405,8 @@ if __name__ == "__main__":
 		    help='the name of the output ovex file')
 	parser.add_argument('-c', "--codes" , type=argparse.FileType('r'), dest="codes",
 		    help='the name of the file containing the mappings of one letter to two letter station codes. For format of the mapping file see below.')
+	parser.add_argument('-z', "--zero-clocks" , dest="doZeroClocks", action='store_true',
+		    help='instead of copying the VEX $CLOCK section, set offsets and delays to zero and use the time of the first scan.')
 	parser.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 
 	args = parser.parse_args()
@@ -420,7 +443,7 @@ if __name__ == "__main__":
 	printHeadPos()
 	printRoll()
 	printSched()
-	printClock()
+	printClock(preserveClocks=not args.doZeroClocks)
 	printEop()
 
 
