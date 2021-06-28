@@ -13,6 +13,7 @@ Version 1.5
 * new utility: checkVDIF : look at VDIF file and look for issues
 * Add support for command line option "--version" to some of the utilities
 * Slight improvement in human readable output from printvdiffilesummary, as used by vsum
+* vdif file summary (as used by vsum) would under-report length of a scan if file size < 80MB and datarate < 320 Mbps; fixed
 
 Version 1.4
 ~~~~~~~~~~~
