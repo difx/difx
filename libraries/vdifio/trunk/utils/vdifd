@@ -26,7 +26,7 @@ def usage():
 	print('  <n> is the number of samples per channel to decode\n')
 	print('  <offset> optionally jump into input file by this many bytes\n')
 	print('  <nbit> is number of bits per sample (default is 2)\n')
-	print('Note: Only works on 2-bit real data for now...\n')
+	print('Note: Only tested on 1-bit and 2-bit real data...\n')
 
 if '--version' in argv:
 	printVersion()
