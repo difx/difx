@@ -4,8 +4,8 @@
 
 program = 'vdifd'
 author  = 'Walter Brisken'
-version = '0.6'
-verdate = '20210417'
+version = '0.7'
+verdate = '20210628'
 
 from os import system
 from sys import exit, argv
@@ -43,13 +43,13 @@ threadlist = argv[4]
 nt = len(threadlist.split(','))
 n = int(argv[5])
 if len(argv) > 6:
-	nbit = int(argv[6])
+	offset = int(argv[6])
 else:
-	nbit = 2
+	offset = 2
 if len(argv) > 7:
-	offset = int(argv[7])
+	nbit = int(argv[7])
 else:
-	offset = 0
+	nbit = 0
 
 nc = 1
 while(nc < nt):

@@ -35,8 +35,8 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.12";
-const char verdate[] = "20210417";
+const char version[] = "0.13";
+const char verdate[] = "20210628";
 
 const int defaultChunkSize = 10000000;
 const int defaultNGap = 100;
@@ -110,6 +110,8 @@ void usage(const char *pgm)
 	fprintf(stderr, "  -s <s>    Set the max sort horizon in frames to <s> [default = %d]\n\n", defaultNSort);
 	fprintf(stderr, "  --zero\n");
 	fprintf(stderr, "  -z        Set nGap and nSort to 0 (same as '-g 0 -s 0')\n\n");
+	fprintf(stderr, "  --1bit\n");
+	fprintf(stderr, "  -1        Force to operate on 1-bit data streams\n\n");
 	fprintf(stderr, "Note: as of version 0.5 this program supports multi-channel multi-thread input data.\n\n");
 }
 
@@ -221,6 +223,10 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-a") == 0 || strcmp(argv[a], "--align") == 0)
 			{
 				prealign = 1;
+			}
+			else if(strcmp(argv[a], "-1") == 0 || strcmp(argv[a], "--1bit") == 0)
+			{
+				bitsPerSample = 1;
 			}
 			else if(a < argc - 1 && (strcmp(argv[a], "-g") == 0 || strcmp(argv[a], "--gap") == 0))
 			{
