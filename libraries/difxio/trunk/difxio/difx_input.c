@@ -576,7 +576,7 @@ static int generateFreqSets(DifxInput *D)
 
 			return -1;
 		}
-		else if(isMixedPolMask(dc->polMask & DIFXIO_POL_RL) && D->AntPol == 0)
+		else if(isMixedPolMask(dc->polMask) && D->AntPol == 0)
 		{
 			fprintf(stderr, "Warning: generateFreqSets: polMask = 0x%03x is unsupported by FITS-IDI!\n", dc->polMask);
 		}
