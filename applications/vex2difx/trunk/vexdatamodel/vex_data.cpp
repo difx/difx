@@ -974,7 +974,6 @@ void VexData::setCanonicalVDIF(const std::string &modeName, const std::string &a
 			{
 				if(sit->format == VexStream::FormatVDIF && sit->nThread != sit->nRecordChan)
 				{
-					sit->nBit = 2;
 					sit->nThread = sit->nRecordChan;
 					sit->singleThread = false;
 					sit->threads.clear();

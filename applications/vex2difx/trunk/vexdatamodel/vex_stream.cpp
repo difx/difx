@@ -126,7 +126,7 @@ bool VexStream::Init()
         v = regcomp(&matchType9, "^(CODIF[A-Z]*)/([1-9]+[0-9]*)/([1-9]+[0-9]*)/([1-9]+[0-9]*)$", REG_EXTENDED);
         if(v != 0)
         {
-                std::cerr << "Developer Error: VexStream::Init(): compiling matchType2 failed" << std::endl;
+                std::cerr << "Developer Error: VexStream::Init(): compiling matchType9 failed" << std::endl;
 
                 exit(EXIT_FAILURE);
         }
@@ -307,7 +307,6 @@ bool VexStream::parseFormatString(const std::string &formatName)
 
 	nThread = 0;
 	singleThread = false;
-
 
 	for(int df = 0; df < NumDataFormats; ++df)
 	{
