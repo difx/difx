@@ -26,7 +26,7 @@
 
 from __future__ import division
 
-from .Common import parse_output_header, M_SYNC_WORD
+from .Common import parse_output_header, make_output_header_v1, M_SYNC_WORD
 
 class VisibilityHeader:
 
@@ -56,6 +56,7 @@ class VisibilityHeader:
         if len(h) < 12:
             self.clear()
             return False
+        self.all = h
         self.raw = h[-1]
         self.syncword = M_SYNC_WORD
         self.baseline, self.mjd, self.seconds = h[0:3]
@@ -68,6 +69,22 @@ class VisibilityHeader:
         self.antenna2 = self.baseline % 256
         self.antenna1 = (self.baseline - self.antenna2) // 256
         return True
+
+    def tobinary(self):
+        h = self.all
+        h[0:3] = self.baseline, self.mjd, self.seconds
+        h[3:6] = self.configindex, self.srcindex, self.freqindex
+        h[6] = self.polpair
+        h[7] = self.pulsarbin
+        h[8] = self.weight
+        h[9:12] = self.u, self.v, self.w
+        binaryheader = make_output_header_v1(h)
+
+        self.raw = binaryheader
+        self.all = h
+        self.all.append(binaryheader)
+
+        return binaryheader
 
     def isvalid(self):
         return self.syncword == M_SYNC_WORD
