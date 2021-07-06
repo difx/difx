@@ -644,6 +644,9 @@ int createRoot (DifxInput *D,           // difx input structure pointer
             fprintf (fout, "  def ant%02d;\n", n);
             i = -1;
             j = 0;
+            ik = -1;
+            k = -1;
+
                                     // search through fblock for all ref to this antenna
             while (pfb[++i].stn[0].ant >= 0)
                 if (pfb[i].stn[0].ant == n || pfb[i].stn[1].ant == n)
@@ -681,7 +684,14 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                     j++;
                     }
                 
-            fprintf (fout, "    sample_rate = %5.1f Ms/sec;\n", 2.0 * pfb[ik].stn[k].bw);
+            if (ik != -1 && k != -1)
+                {
+                fprintf (fout, "    sample_rate = %5.1f Ms/sec;\n", 2.0 * pfb[ik].stn[k].bw);
+                }
+                else
+                {
+                fprintf (fout, "    * antenna data not found in this scan\n");
+                }
             fprintf (fout, "  enddef;\n");
             }
         fprintf (fout, "$BBC;\n");
