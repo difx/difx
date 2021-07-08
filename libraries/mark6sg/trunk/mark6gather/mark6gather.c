@@ -520,6 +520,16 @@ int openMark6File(Mark6File *m6f, const char *filename)
 		return -5;
 	}
 
+	if(m6f->packetSize == 0 || m6f->maxBlockSize <= 16)
+	{
+		// TODO: try harder to figure out packetSize?
+		// There are a few rare test recordings that have packet_size=0 block_size=8 in the file header,
+		// their actual blocks have proper wb_size, but the "modulo by zero packet_size" in this library leads to segfaults.
+		deallocateMark6File(m6f);
+
+		return -7;
+	}
+
 	if(getFirstBlocks(m6f) < 0)
 	{
 		deallocateMark6File(m6f);
