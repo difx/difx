@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2020 by Walter Brisken and Chris Phillips          *
+ *   Copyright (C) 2010-2021 by Walter Brisken and Chris Phillips          *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,14 +31,15 @@
 #include <complex.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <signal.h>
 #include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5fold";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.7";
-const char verdate[] = "20200114";
+const char version[] = "1.8";
+const char verdate[] = "20210709";
 
 const int ChunkSize = 10000;
 
@@ -75,7 +76,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "         if negative, the conversion to true power is not performed\n\n");
 	fprintf(stderr, "  <nint> is the number of %d sample chunks to work on\n\n", ChunkSize);
 	fprintf(stderr, "  <freq> [Hz] -- the inverse of the period to be folded\n\n");
-	fprintf(stderr, "  <outfile> is the name of the output file\n\n");
+	fprintf(stderr, "  <outfile> is the name of the output file, or - for stdout\n\n");
 	fprintf(stderr, "  <offset> is number of bytes into file to start decoding\n\n");
 	fprintf(stderr, "Example: look for the 80 Hz switched power:\n\n");
 	fprintf(stderr, "  m5fold 2bit.data.vlba VLBA1_1-128-8-2 128 10000 80 switched_power.out\n\n");
@@ -131,7 +132,11 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 		docorrection = 0;
 	}
 
-	mark5_stream_print(ms);
+	
+	if(strcmp(outfile, "-") != 0)
+	{
+		mark5_stream_print(ms);
+	}
 
 	if(ms->iscomplex) 
 	{
@@ -141,13 +146,20 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 
 	sampnum = (long long)((double)ms->ns*(double)ms->samprate*1.0e-9 + 0.5);
 
-	out = fopen(outfile, "w");
-	if(!out)
+	if(strcmp(outfile, "-") == 0)
 	{
-		fprintf(stderr, "Error: cannot open %s for write\n", outfile);
-		delete_mark5_stream(ms);
+		out = stdout;
+	}
+	else
+	{
+		out = fopen(outfile, "w");
+		if(!out)
+		{
+			fprintf(stderr, "Error: cannot open %s for write\n", outfile);
+			delete_mark5_stream(ms);
 
-		return EXIT_FAILURE;
+			return EXIT_FAILURE;
+		}
 	}
 
 	R = nbin*freq/ms->samprate;
@@ -293,7 +305,10 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 		free(cdata);
 	}
 
-	fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
+	if(out != stdout)
+	{
+		fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
+	}
 
 	/* normalize */
 	for(k = 0; k < nbin; ++k)
@@ -330,7 +345,10 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 		fprintf(out, "\n");
 	}
 
-	fclose(out);
+	if(out != stdout)
+	{
+		fclose(out);
+	}
 
 	for(i = 0; i < nif; ++i)
 	{

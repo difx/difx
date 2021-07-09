@@ -9,6 +9,7 @@ Version 1.5.5
 * Remove broken/incomplete support for K5 format
 * Remove support for non-format "VDIFB"
 * m5fold: change all printf() to fprintf(stderr, ) so piping is clean
+* m5fold: allow outfile to be - to imply stdout; this makes output quiet
 * Post DiFX-2.6
 
 Version 1.5.4
