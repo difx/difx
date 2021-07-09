@@ -44,6 +44,7 @@ make
 %{_bindir}/m5fold
 %{_bindir}/m5pcal
 %{_bindir}/m5spec
+%{_bindir}/m5subband
 %{_bindir}/m5test
 %{_bindir}/m5time
 %{_bindir}/m5tsys
@@ -53,6 +54,7 @@ make
 %{_bindir}/test_mark5_stream
 %{_bindir}/test_unpacker
 %{_bindir}/zerocorr
+%{_bindir}/zerocorr_makeconfig
 %{_includedir}/mark5access.h
 %{_includedir}/mark5access/mark5_stream.h
 %{_includedir}/mark5access/mark5bfile.h
