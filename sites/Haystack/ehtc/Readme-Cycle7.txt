@@ -287,12 +287,15 @@ roots=`cd $expn ; ls */$target*` ; echo $roots
 # that should be fit (relative to A as first station).
 # Refer to the station codes file for the 2-letter to 1-letter codes.
 cd $expn ; cp ../$ers.conf .
-$ehtc/est_manual_phases.py -c $ers.conf \
+$ehtc/est_manual_phases.py -c $ers.conf -v \
     -r first-root -s A,x,y,z,...
 grep ^if.station $ers.conf | sort | uniq -c
-$ehtc/est_manual_phases.py -c $ers.conf \
+$ehtc/est_manual_phases.py -c $ers.conf -v \
     -r second-root -s A,p,q,r,...
 grep ^if.station $ers.conf | sort | uniq -c
+# The -v option turns on some progress so that you monitor progress.
+# It will declare some steps not done if full convergence is not
+# reached...this is generally not a problem.
 #...
 ### are all manual phases set up plausibly?  tell us what you think.
 for r in $roots ; do fourfit -bA? -c $ers.conf $r & done ; wait
