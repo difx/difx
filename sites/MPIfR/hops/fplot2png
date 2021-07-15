@@ -46,7 +46,7 @@ function processScandir () {
 				scan=$(basename $file)
 				echo "processing $path baseline $bl1-$bl2"
 				out="${path}-${bl1}${bl2}_${num}"
-				fplot -d ../$out.png $file
+				GS_OPTIONS=-sOutputFile="../$out.png" GS_DEVICE=png16m fplot $file < /dev/urandom > /dev/null 2>&1
 			fi
 		fi
 	done
