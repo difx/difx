@@ -665,8 +665,11 @@ off_t getMark6GathererFileSize(const Mark6Gatherer *m6g)
 		m6f = m6g->mk6Files + i;
 		blockSize = m6f->maxBlockSize - ((m6f->maxBlockSize-m6f->blockHeaderSize) % m6f->packetSize);
 		n = (m6f->stat.st_size - sizeof(Mark6Header))/blockSize;
-
-		size += n*(blockSize-m6f->blockHeaderSize);
+		if(((m6f->stat.st_size - sizeof(Mark6Header)) % blockSize) != 0)
+		{
+			n += 1;
+		}
+		size += m6f->stat.st_size - sizeof(Mark6Header) - (n * m6f->blockHeaderSize);
 	}
 
 	return size;
