@@ -72,7 +72,7 @@ export dpfu=0.0308574   # band6
 
 # a list of stations in best order for polconvert plots
 #xport scmp='PV,MG,SW,AX,LM,SZ,GL,MM'
-export scmp='AX,MM,MG,GL,PV,SW,LM,SZ'
+export scmp='AX,MM,MG,GL,PV,SW,LM,SZ,KT,NN'
 # number of parallel grinds to schedule (< number physical cores)
 export npar=15
 # number of polconvert fringe plots to make
@@ -395,9 +395,12 @@ cat $ers-fits-missing.txt | sed 's/^/### /'
 # Final steps ======================
 # generate some summary aedit pdfs
 $ehtc/ehtc-aeditjob.sh all
+[ `cat $ers-$expn.errors|wc -l` = "37" ] || echo check alist generation
 cp -p $ers-$expn-*-time.pdf $release/logs
+cp -p $ers-$expn.alist  $release/logs
 
 # verify that the per-scan antabs are in agreement with the QA2 estimates:
+# environment variables decimation, plotrange, dayoffset may be needed
 for pc in $plst
 do  $ehtc/ehtc-antab.sh $subv $pc $ers true
     cp -p $ers-$pc-antab.pdf $release/logs ; done

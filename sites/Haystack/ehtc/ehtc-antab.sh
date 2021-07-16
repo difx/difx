@@ -5,6 +5,7 @@
 # set defaults
 [ -z "$decimation" ] && decimation=20
 [ -z "$plotrange"  ] && plotrange='[][0:10]'
+[ -z "$dayoffset"  ] && dayoffset=1
 # help human
 USAGE="$0 band pcal prod [true|false] [polconvert ANTAB files]
 
@@ -25,6 +26,7 @@ you need make some adjustments for understanding the plot or producing
 different versions (default values are given):
     decimation=$decimation      use one value in this many
     plotrange=$plotrange        Hours and Tsys for gnuplot
+    dayoffset=$dayoffset        offset in days for QA2 ANTAB files
 The plotrange defaults to [][0:10] allowing for nominal Tsys performance.
 "
 # parse arguments
@@ -62,10 +64,6 @@ eval `awk 'NR==1{print $4;exit}' $qart`  # defines DPFU
 [ $# -gt 0 ] || { echo no ANTAB files found to process ; exit 3 ; }
 
 # use awk for processing of the antab files
-# the penultimate line is a backwards compatibility bug for a version
-# of the QA2 deliverable which was tied to days from Jan 1 2017, rather
-# than day of current year--it can probably be deleted going forwards
-# as that bug was fixed.
 awks='
 decimate && NR>6 && (NR)%'$decimation' != 0 {next;}
 NR < 4 {next;}
@@ -75,9 +73,12 @@ NR>6 && substr($2,3,1) ~/:/ {dy=$1;hr=substr($2,1,2);mn=substr($2,4,8);}
 NR>6 && NF==3 {loc=$3;hic=$3}
 NR>6 && NF>3 {loc=0.0;nlo=0; for(c=3; c<NL;c++){loc+=$c;nlo++;} loc = loc/nlo;}
 NR>6 && NF>3 {hic=0.0;nhi=0; for(c=NL;c<NF;c++){hic+=$c;nhi++;} hic = hic/nhi;}
-NR>6 && dy > 365 {dy=dy - 365;}
-NR>6 {printf("%.8f  %.4f %.4f\n", (dy+hr/24.0+mn/1440.0),loc, hic);}
+NR>6 {printf("%.8f  %.4f %.4f\n", (dsq+dy+hr/24.0+mn/1440.0),loc, hic);}
 '
+# there was originally a bug that has since been fixed that required
+# NR>6 && dy > dpy {dy=dy - dpy;}
+# prior to the printf.  However, there is a new bug following a leap year.
+# Until that is sorted out dsq is needed....
 
 # build a data file; the first file being the QA2 estimate (color 0)
 # and the rest are polconvert tables; in the process gather info for
@@ -86,14 +87,14 @@ NR>6 {printf("%.8f  %.4f %.4f\n", (dy+hr/24.0+mn/1440.0),loc, hic);}
 declare -a tit
 qlines=`cat $qart | wc -l`
 [ "$qlines" -gt 7 ] &&
-    awk -v decimate=0 "$awks" $qart > $tag.out || {
+    awk -v decimate=0 -v dsq=$dayoffset "$awks" $qart > $tag.out || {
     echo 'nan nan nan' > $tag.out && echo 'nan nan nan' >> $tag.out ; }
 ndx=0
 tit[0]="tit 'QA2 $band = $bb'"
 for p
 do
     ( echo '' ; echo '' ) >> $tag.out
-    awk -v decimate=1 "$awks" $p >> $tag.out
+    awk -v decimate=1 -v dsq=0 "$awks" $p >> $tag.out
     ndx=$(($ndx + 1))
     map=`ls *jobs-map.txt 2>&-` || map='no-such-file'
     [ -f "$map" ] && {

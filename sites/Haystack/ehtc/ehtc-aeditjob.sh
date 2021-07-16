@@ -7,8 +7,13 @@ export DATADIR=`pwd`
 export DISPLAY=''
 alist=${1-'no-such-alist'}
 lab=${2-''}
+# this invocation (as in the Readme) makes one alist of all
 [ "$alist" = 'all' -a -n "$ers" -a -n "$expn" ] && {
-    cat */*.alist | grep -v '^*' | sort -k12 > $ers-$expn.alist
+    # provide a header
+    first=`ls -1 */*.alist | head -1`
+    head -4 $first > $ers-$expn.alist
+    # and all the data, DOY-HHMMSS sorted, and then by BL and pol
+    cat */*.alist | grep -v '^*' | sort -k12 -k15 -k18 >> $ers-$expn.alist
     exec $0 $ers-$expn.alist $ers-$expn- > $ers-$expn.errors 2>&1
 }
 [ -f "$alist" ] || { echo no such alist $alist; exit 1; }
