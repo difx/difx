@@ -73,7 +73,8 @@ void summarizeFile(const char *fileName, const char* filePattern, char *vsn, cha
 {
     uint64_t filesize;
     uint64_t datasize = 0;
-    uint32_t blocksize;
+    uint64_t blocksize;
+    uint64_t maxblocksize;
     int packetformat;
     int packetsize;
     int m6headersize;
@@ -113,7 +114,7 @@ void summarizeFile(const char *fileName, const char* filePattern, char *vsn, cha
         {
             fread(readbuf, 1, READBUF_SIZE, fp);
             m6header = (Mark6Header*)readbuf;
-            blocksize = m6header->block_size;
+            maxblocksize = m6header->block_size;
             packetformat = m6header->packet_format;
 	    packetsize = m6header->packet_size;
 	    m6blockheadersize = mark6BlockHeaderSize(m6header->version);
@@ -228,8 +229,13 @@ void summarizeFile(const char *fileName, const char* filePattern, char *vsn, cha
 
             stat(pattern, &st);
             filesize = st.st_size;
+	    blocksize = maxblocksize - ((maxblocksize - m6blockheadersize) % packetsize);
 	    numblocks = (filesize - m6headersize) / blocksize;
-	    datasizeinfile = (blocksize - m6blockheadersize) * numblocks;
+	    if(((filesize - m6headersize) % blocksize) != 0)
+	    {
+	        numblocks += 1;
+	    }
+	    datasizeinfile = filesize - m6headersize - (m6blockheadersize * numblocks);
             datasize += datasizeinfile;
             fclose(fp);
         }
