@@ -641,7 +641,7 @@ def runDirect(fileBase, machinesCache, restartSeconds):
         if difxLabel == None or difxLabel == '':
                 difxProgram = 'mpifxcorr'
         else:
-                difxProgram = '/cluster/difx/runmpifxcorr.' + difxLabel
+                difxProgram = 'runmpifxcorr.' + difxLabel
         print("difxProgram: %s" % (difxProgram))
 
         if restartSeconds > 0.0:
