@@ -33,7 +33,7 @@ from socket import create_connection
 
 debug = False
 Nmaxdisks = 8             # expected nr of disks
-usedir_offset = 11272704  # location of user dir before from EOF
+userdir_offset = 11272704 # location of user dir before from EOF
 block_size = 2**16-8      # StreamStor hardware block size, without 8-byte block header
 outdir = './recovered/'
 
@@ -141,7 +141,7 @@ def get_scans_mark5a(inputs_):
     udirinfo = UserDirMark5A()
     for input in inputs_:
         if input == None: continue
-        input.seek(-usedir_offset, 2)
+        input.seek(-userdir_offset, 2)
         input.readinto(udirinfo)
         if udirinfo.numscans > MK5A_DIR_MAXSCANS:
             continue
@@ -182,7 +182,7 @@ def get_scans_mark5bc(inputs_):
     scan = UserDirMark5BCEntry()
     for input in inputs_:
         if input == None: continue
-        input.seek(-usedir_offset, 2)
+        input.seek(-userdir_offset, 2)
         input.readinto(udir)
         print('Module has VSN %s' % (udir.VSN))
         for n in range(8192):
