@@ -638,17 +638,18 @@ int main(int argc, char * const argv[]) {
       currentthread++;
       if (currentthread == numthread) {
         currentthread = 0;
+	udp.sequence++;
 	mjd = getVDIFFrameDMJD(&vdif_headers[currentthread], framepersec);
       }
 
     } else if (mode==CODIF) {
+      nextCODIFHeader(&codif_headers[currentthread], framepersec);
       currentthread++;
       if (currentthread == numthread) {
         currentthread = 0;
-	nextCODIFHeader(&codif_headers[currentthread], framepersec);
+	udp.sequence++;
 	mjd = getCODIFFrameDMJD(&codif_headers[currentthread], framepersec);
       }
-
     }
   }
 
