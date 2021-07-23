@@ -102,7 +102,6 @@ int main(int argc, char * const argv[]) {
   int complex=0;  /* Use complex sampling, if VDIF */
   float rate = 0; /* Limit read/write to this data rate - UDP only*/
   float updatetime = 1; /* 1 second update by default */
-  float filetime = 10; /* 1 second "files" */
   double duration = 60; /* 1min by default */
   char hostname[MAXSTR+1] = ""; /* Host name to send data to */
   char timestr[MAXSTR] = "";
@@ -130,14 +129,13 @@ int main(int argc, char * const argv[]) {
     {"window", 1, 0, 'w'},
     {"blocksize", 1, 0, 'S'},
     {"framesize", 1, 0, 'F'},
-    {"filetime", 1, 0, 'f'},
     {"udp", 1, 0, 'U'},
     {"rate", 1, 0, 'r'},
     {"sleep", 1, 0, 's'},
     {"usleep", 1, 0, 's'},
+    {"nthread", 1, 0, 'T'},
     {"nchan", 1, 0, 'n'},
     {"bits", 1, 0, 'b'},
-    {"nthread", 1, 0, 'T'},
     {"firstthread", 1, 0, 'Z'},
     {"drop", 1, 0, 'j'},
     {"codif", 0, 0, 'c'},
@@ -159,7 +157,7 @@ int main(int argc, char * const argv[]) {
   
   /* Read command line options */
   while (1) {
-    opt = getopt_long_only(argc, argv, "cCr:n:DVvd:mhH:f:b:", 
+    opt = getopt_long_only(argc, argv, "T:cCr:n:DVvd:mhH:f:b:", 
 			   options, NULL);
     if (opt==EOF) break;
 
@@ -171,14 +169,6 @@ int main(int argc, char * const argv[]) {
 	fprintf(stderr, "Bad blocksize option %s\n", optarg);
       else 
 	bufsize = ftmp * 1024;
-     break;
-
-    case 'f':
-      status = sscanf(optarg, "%d", &tmp);
-      if (status!=1 || tmp==0)
-	fprintf(stderr, "Bad filesize option %s\n", optarg);
-      else 
-	filetime = tmp;
      break;
 
     case 'w':
@@ -503,7 +493,7 @@ int main(int argc, char * const argv[]) {
   mjdsec = llround(mjd*24*60*60);
   for (i=0;i<numthread;i++) {
     if (mode==VDIF) {
-      status = createVDIFHeader(&vdif_headers[i], bufsize-header_bytes, i+firstthread, bits, numchan, complex, "Tt");
+      status = createVDIFHeader(&vdif_headers[i], bufsize, i+firstthread, bits, numchan, complex, "Tt");
       if (status!=VDIF_NOERROR) {
 	fprintf(stderr, "Error creating vdif header (%d)\n", status);
 	exit(1);
@@ -511,7 +501,7 @@ int main(int argc, char * const argv[]) {
       setVDIFEpochMJD(&vdif_headers[i],lround(floor(mjd)));
       setVDIFFrameMJDSec(&vdif_headers[i], mjdsec);
     } else {
-      status = createCODIFHeader(&codif_headers[i], bufsize-header_bytes, i+firstthread, 0, bits, numchan,
+      status = createCODIFHeader(&codif_headers[i], bufsize, i+firstthread, 0, bits, numchan,
 				 sampleblocklength, 1, totalsamples, complex, "Tt");
       if (status!=CODIF_NOERROR) {
 	fprintf(stderr, "Error creating codif header (%d)\n", status);
@@ -554,9 +544,9 @@ int main(int argc, char * const argv[]) {
   char start[] = "AAAA        AAAA";
   char end[] = "ZZZZ        ZZZZ";
 
-  memcpy(buf+header_bytes, start, sizeof(start));
-  memcpy(buf+bufsize-sizeof(end), end, sizeof(end));
-  for (i=header_bytes+sizeof(start);i<bufsize-sizeof(end);i++) {
+  memcpy(buf, start, strlen(start));
+  memcpy(buf+bufsize-strlen(end), end, strlen(end));
+  for (i=strlen(start);i<bufsize-strlen(end);i++) {
     buf[i] = (char)(i%256);
   }
 
@@ -620,6 +610,8 @@ int main(int argc, char * const argv[]) {
       status = netsend(sock, &msg, iovect, &udp);
       if (status) exit(1);
       bwrote += framebytes;
+    } else {
+      udp.sequence++;
     }
     t2 = tim();
 
@@ -638,7 +630,6 @@ int main(int argc, char * const argv[]) {
       currentthread++;
       if (currentthread == numthread) {
         currentthread = 0;
-	udp.sequence++;
 	mjd = getVDIFFrameDMJD(&vdif_headers[currentthread], framepersec);
       }
 
@@ -647,7 +638,6 @@ int main(int argc, char * const argv[]) {
       currentthread++;
       if (currentthread == numthread) {
         currentthread = 0;
-	udp.sequence++;
 	mjd = getCODIFFrameDMJD(&codif_headers[currentthread], framepersec);
       }
     }
@@ -800,13 +790,13 @@ int netsend(int sock,  struct msghdr *msg, struct iovec *iovect, udp *udp) {
     if (udp->usleep>0) {
       my_usleep(udp);
     }
-
+    udp->sequence++;
   } else {
     int status;
   
     status = tcpsend(sock, iovect[0].iov_base, iovect[0].iov_len);
     if (status) return(status);
-    status = tcpsend(sock, iovect[0].iov_base, iovect[0].iov_len);
+    status = tcpsend(sock, iovect[1].iov_base, iovect[1].iov_len);
     if (status) return(status);
   }
   return(0);
