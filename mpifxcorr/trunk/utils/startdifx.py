@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '3.0.4'
-VERDATE = '20210417'
+VERSION = '3.0.5'
+VERDATE = '20210724'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -572,14 +572,19 @@ def runMessage(fileBase, machinesCache, restartSeconds):
         if np <= 0:
                 return 'Error: %s.machines not found' % fileBase
 
+        if options.commentStart != None:
+                print(options.commentStart.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
         sendStartMessage(fileBase, difxLabel, options.useLocalHead, restartSeconds)
+        if options.commentEnd != None:
+                print(options.commentEnd.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
 
         return None
 
 # Start difx directly with mpirun
 def runDirect(fileBase, machinesCache, restartSeconds):
 
-        print(options)
+        if verbose > 1:
+                print(options)
         difxVersion, difxLabel = testDifxVersion(fileBase, options.override)
 
         identifier = fileBase.split('/')[-1]
@@ -625,7 +630,10 @@ def runDirect(fileBase, machinesCache, restartSeconds):
                 return 'Error: %s.machines not found' % fileBase
 
         # check before proceeding
-        cmd = 'checkmpifxcorr %s.input' % fileBase
+        if verbose == 0:
+                cmd = 'checkmpifxcorr -q %s.input' % fileBase
+        else:
+                cmd = 'checkmpifxcorr %s.input' % fileBase
         if verbose > 1:
                 print('Executing: %s' % cmd)
         if system(cmd):
@@ -642,7 +650,8 @@ def runDirect(fileBase, machinesCache, restartSeconds):
                 difxProgram = 'mpifxcorr'
         else:
                 difxProgram = 'runmpifxcorr.' + difxLabel
-        print("difxProgram: %s" % (difxProgram))
+        if verbose > 1:	
+                print("difxProgram: %s" % (difxProgram))
 
         if restartSeconds > 0.0:
                 restartOption = ' -r%f' % restartSeconds
@@ -657,11 +666,18 @@ def runDirect(fileBase, machinesCache, restartSeconds):
         sendMessage(fileBase, 'Spawning', 'Spawning %d processes' % np)
         if verbose > 0:
                 print('Executing: ', cmd)
+        if options.commentStart != None:
+                print(options.commentStart.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
         t0 = time()
-        system(cmd)
+        if options.logFile != None:
+                system(cmd + " >> " + options.logFile + " 2>&1")
+        else:
+                system(cmd)
         t1 = time()
         if verbose > 0:
                 print('Elapsed time (s) =', t1-t0)
+        if options.commentEnd != None:
+                print(options.commentEnd.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
         groupId = getenv('DIFX_GROUP_ID')
         if groupId != None:
                 cmd = 'chown :%s %s.difx/*' % (groupId, fileBase)
@@ -717,7 +733,7 @@ def checkFiles(fileBase, level):
         if nBad > 0:
                 exit(0)
 
-def run(fileBase,  machinesCache, restartSeconds):
+def run(fileBase, machinesCache, restartSeconds):
         
         if options.checkfiles != None:
                 checkFiles(fileBase, options.checkfiles)
@@ -786,6 +802,7 @@ optParser.add_option("-a", "--automachines", dest="machinesPolicy", action="stor
 optParser.add_option("-c", "--checkfiles", dest="checkfiles", action="count", help="do a sanity check on the files to correlate (only for some formats)")
 optParser.add_option("-n", "--nomachines", dest="machinesPolicy", action="store_const", const=0, help="will not run genmachines, even if needed")
 optParser.add_option("-M", "--machines-file", dest="machinesFile", action="store", type="string", help="use supplied machines file instead of one based on job name")
+optParser.add_option("-L", "--log-file", dest="logFile", action="store", type="string", help="capture stderr and stdout and write to specified file")
 optParser.add_option("-m", "--message", dest="useStartMessage", action="store_true", help="start difx via DifxStartMessage")
 optParser.add_option("-f", "--force", dest="deletePolicy", action="store_const", const=1, help="force running even if output file exists")
 optParser.add_option("-d", "--dont-calc", dest="makeModel", action="store_false", help="will not calculate delay model, even if needed")
@@ -796,6 +813,8 @@ optParser.add_option("-q", "--quiet", dest="quiet", action="count", help="be qui
 optParser.add_option("-w", "--wait", dest="wait", action="count", help="wait until job start time before launching")
 optParser.add_option("-l", "--localhead", dest="useLocalHead", action="store_true", help="use the current host as the head node. Overrides DIFX_HEAD_NODE.")
 optParser.add_option("--override-version", dest="override", action="store_true", help="ignore difx version differences")
+optParser.add_option("--comment-start", dest="commentStart", action="store", help="a string to print just before starting each job")
+optParser.add_option("--comment-end", dest="commentEnd", action="store", help="a string to print just after each job ends")
 
 # parse the command line. Options will be stored in the options list. Leftover arguments will be stored in the args list
 (options, args) = optParser.parse_args()
@@ -869,14 +888,18 @@ for fileBase in fileBaseList:
                 print('Error: %s.input not found (or not a regular file)' % fileBase)
                 nBad += 1
 
+if options.logFile != None:
+        print('All command line output is being redirected to log file %s' % options.logFile)
+
 if nBad > 0:
         exit(1)
 
 dcp = getenv("DIFX_CALC_PROGRAM")
 if dcp != None:
         delayModelProgram = dcp
-        print('Environment variable DIFX_CALC_PROGRAM was set, so using specified calc program: %s' % delayModelProgram)
-        print('')
+        if verbose > 0:
+                print('Environment variable DIFX_CALC_PROGRAM was set, so using specified calc program: %s' % delayModelProgram)
+                print('')
 
 for fileBase in fileBaseList:
         a = fileBase.rfind("/")
@@ -887,7 +910,7 @@ for fileBase in fileBaseList:
                 print("Job name %s is too long and will be skipped!" % fileBase)
                 exit(1)
 
-        v = run(fileBase,  machinesCache, restartSeconds)
+        v = run(fileBase, machinesCache, restartSeconds)
 
         if v != None:
                 sendMessage(fileBase, 'ABORTED', v)

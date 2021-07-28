@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2020 by Adam Deller                                *
+ *   Copyright (C) 2009-2021 by Adam Deller                                *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at  http://cira.ivec.org/dokuwiki/doku.php/difx/documentation for     *
@@ -565,15 +565,22 @@ bool Model::readSpacecraftData(istream * input)
   for(int i=0;i<numspacecraft;i++) {
     config->getinputkeyval(input, &key, &line);
     if(key.find("FRAME") != string::npos) { //look for the FRAME line, skip it if present
-      config->getinputline(input, &spacecrafttable[i].name, "SPACECRAFT ", i);
+      config->getinputkeyval(input, &key, &line);
     }
-    else {
-      if(key.find("SPACECRAFT ", i) == string::npos) {
-        cerror << startl << "Went looking for SPACECRAFT " << i << " NAME (or maybe FRAME), but got " << key << endl;
-      }
+    if(key.find("SPACECRAFT ", i) == string::npos && key.find("NAME", i) == string::npos) {
+      cerror << startl << "Went looking for SPACECRAFT " << i << " NAME (or maybe FRAME), but got " << key << endl;
     }
     spacecrafttable[i].name = line;
-    config->getinputline(input, &line, "SPACECRAFT ", i);
+    config->getinputkeyval(input, &key, &line);
+    if(key.find("EPHEM") != string::npos) { //look for the EPHEM line, skip it if present
+      config->getinputkeyval(input, &key, &line);
+    }
+    if(key.find("ID") != string::npos) { //look for the ID line, skip it if present
+      config->getinputkeyval(input, &key, &line);
+    }
+    if(key.find("SPACECRAFT ", i) == string::npos && key.find("ROWS", i) == string::npos) {
+      cerror << startl << "Went looking for SPACECRAFT " << i << " ROWS, but got " << key << endl;
+    }
     spacecrafttable[i].numsamples = atoi(line.c_str());
     spacecrafttable[i].samplemjd = new double[spacecrafttable[i].numsamples];
     spacecrafttable[i].x  = new double[spacecrafttable[i].numsamples];

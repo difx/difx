@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2016 by Adam Deller                                *
+ *   Copyright (C) 2006-2021 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -45,6 +45,7 @@ void usage(const char *pgm)
   cerr << "  -i : print messages with level INFO and worse" << endl;
   cerr << "  -v : print messages with level VERBOSE and worse" << endl;
   cerr << "  -d : print messages with level DEBUG and worse" << endl;
+  cerr << "  -q : produce no output if no problems are found" << endl;
   cerr << endl;
 }
  
@@ -81,6 +82,7 @@ int main(int argc, char *argv[])
   int msglevel = DIFX_ALERT_LEVEL_WARNING;
   int nFile = 0;
   int nBad = 0;
+  int verbose = 1;
   Configuration * config;
 
   if(argc < 2)
@@ -126,6 +128,10 @@ int main(int argc, char *argv[])
     {
       msglevel = DIFX_ALERT_LEVEL_DEBUG;
     }
+    else if(strcmp(argv[a], "-q") == 0)
+    {
+      verbose -= 1;
+    }
     else 
     {
       if(nFile == 0)
@@ -146,7 +152,10 @@ int main(int argc, char *argv[])
       }
       else
       {
-        cout << "No errors with input file " << argv[a] << endl;
+        if(verbose > 0)
+	{
+          cout << "No errors with input file " << argv[a] << endl;
+	}
       }
       cout << endl;
     }

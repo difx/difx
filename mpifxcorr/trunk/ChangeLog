@@ -24,6 +24,9 @@ Version 2.7
 * startdifx: when run with --wait, count down time to start
 * startdifx: support --checkfiles option: look at file content for compliance
 * add "--version" support to some utilities
+* checkmpifxcorr: option to quiet output if no errors found
+* startdifx: --log-file , --comment-start , and --comment-end options added
+* model.cpp: update to reflect two optional .calc file rows supported by difxio
 
 Version 2.6
 ~~~~~~~~~~~
