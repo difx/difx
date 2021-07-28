@@ -21,6 +21,8 @@ nantabs=0 ; for pc in $plst ; do nantabs=$(($nantabs + 1)) ; done
 logcount=`ls -1 $release/logs/${ers}* | grep -v packaging | wc -l`
 $verb && echo $logcount files in $release/logs
 expected=$((14 + $nantabs))
+# alist is released starting Cycle7
+[ -f $release/logs/$ers-$expn.alist ] && expected=$(($expected + 1))
 [ "$logcount" -eq $expected ] || {
     # files: (1+) $ers-*-antab.pdf, (2-5) $ers-amp|drate|sbd|snd-time.pdf
     #        (6-9) $ers-*-map.txt,  (10) $ers.conf
