@@ -91,6 +91,7 @@
       Real*8 Delay6(10), Atmdry6(10), Atmwet6(10), Ubase6(10),          &
      &       Vbase6(10), Wbase6(10), Acoef(10), delta, El6(10), Az6(10)
       Real*8 StaX6(10), StaY6(10), StaZ6(10)
+      Real*8 StaXt6(10), StaYt6(10), StaZt6(10)
 
       Real*8 JDY2K
       Real*8 Delcoef(40      ,10), Atmdrycoef(40      ,10),             &
@@ -173,6 +174,9 @@
            StaX6(K)   = StaX_f(1,K,1,J,ISRC)
            StaY6(K)   = StaY_f(1,K,1,J,ISRC)
            StaZ6(K)   = StaZ_f(1,K,1,J,ISRC)
+           StaXt6(K)  = StaXt_f(1,K,1,J,ISRC)
+           StaYt6(K)  = StaYt_f(1,K,1,J,ISRC)
+           StaZt6(K)  = StaZt_f(1,K,1,J,ISRC)
           Enddo
 !
 !    Send to C routine fitPoly to compute polynomial coefficients
@@ -224,6 +228,24 @@
 !
       ierr = fitPoly(Acoef, StaZ6, %VAL(n), %VAL(m), %VAL(delta))
       if (DoStnPos .eq. 1)                                              &
+        ierr = difxiowritepoly26(fd_out, "SRC %d ANT %d STA Z (m):",    &
+           ISRC-1, J-1, Acoef(1), Acoef(2), Acoef(3), Acoef(4),        &
+           Acoef(5), Acoef(6))
+!
+      ierr = fitPoly(Acoef, StaXt6, %VAL(n), %VAL(m), %VAL(delta))
+      if (DoStnPos .eq. 2)                                              &
+        ierr = difxiowritepoly26(fd_out, "SRC %d ANT %d STA X (m):",    &
+           ISRC-1, J-1, Acoef(1), Acoef(2), Acoef(3), Acoef(4),        &
+           Acoef(5), Acoef(6))
+!
+      ierr = fitPoly(Acoef, StaYt6, %VAL(n), %VAL(m), %VAL(delta))
+      if (DoStnPos .eq. 2)                                              &
+        ierr = difxiowritepoly26(fd_out, "SRC %d ANT %d STA Y (m):",    &
+           ISRC-1, J-1, Acoef(1), Acoef(2), Acoef(3), Acoef(4),        &
+           Acoef(5), Acoef(6))
+!
+      ierr = fitPoly(Acoef, StaZt6, %VAL(n), %VAL(m), %VAL(delta))
+      if (DoStnPos .eq. 2)                                              &
         ierr = difxiowritepoly26(fd_out, "SRC %d ANT %d STA Z (m):",    &
            ISRC-1, J-1, Acoef(1), Acoef(2), Acoef(3), Acoef(4),        &
            Acoef(5), Acoef(6))

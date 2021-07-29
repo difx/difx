@@ -1,6 +1,8 @@
 11.0.3
 ------
 * Allow to build outside the DiFX environment
+* Add option to print the station ITRF positions to .im file
+  - these include EOP, earth deformation, axis offset
 
 11.0.2
 ------

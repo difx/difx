@@ -105,6 +105,8 @@
      &       SITHEIGHT(2), RTTOCF(3,3,2), GEOLAT(2), STAR12dt(3,2),     &
      &       AXTILT(2,2), ROTAXIS(3,3,2), OPTLcoef(6,2), STAR12(3,2),   &
      &       WOBXds, WOBYds, OPTLOADP(3,2), OPTLOADV(3,2)
+      Real*8 WBP(3)
+      Real*8 WBQ(3)
       Real*8 R1(3), R2(3), R1dt(3), R2dt(3), R1mag, R2mag, R1magdt,     &
      &       R2magdt, T0_T1, STARff(3), RIGHT_ASC, DECLINATION,         &
      &       R1_TDB(3), R2_TDB(3), R1mag_TDB, R2mag_TDB, Site2_TDB(3)
@@ -719,6 +721,13 @@
 !     write(6,239) SITEV
  239  format(' Site velocities:',/,3D26.16,/,3D26.16)
 !
+      WBP(1) = SITEP(1,2)
+      WBP(2) = SITEP(2,2)
+      WBP(3) = SITEP(3,2)
+
+      WBQ(1) = R2K6(1,1,1)*WBP(1)+R2K6(2,1,1)*WBP(2)+R2K6(3,1,1)*WBP(3)
+      WBQ(2) = R2K6(1,2,1)*WBP(1)+R2K6(2,2,1)*WBP(2)+R2K6(3,2,1)*WBP(3)
+      WBQ(3) = R2K6(1,3,1)*WBP(1)+R2K6(2,3,1)*WBP(2)+R2K6(3,3,1)*WBP(3)
 !
       DO Isrc = 1, (NumPhCntr+1)           ! Start of source/phase center loop
 !
@@ -922,9 +931,12 @@
        ATMwetr_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = Datmc_wmf(2,2)
        El_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = ELEV(2,1) * 57.295779512D0
        Az_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = AZ(2,1) * 57.295779512D0
-       StaX_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = -EPBASE(1,1)
-       StaY_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = -EPBASE(2,1)
-       StaZ_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = -EPBASE(3,1)
+       StaX_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = WBP(1)
+       StaY_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = WBP(2)
+       StaZ_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = WBP(3)
+       StaXt_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = WBQ(1)
+       StaYt_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = WBQ(2)
+       StaZt_f(IS2,Itime,Istation1,(Istation2-1),Isrc) = WBQ(3)
 !    Station 1 (usually the geocenter):
 !     If (Base_mode .ne. 'geocenter ') Then
 !      ATMdryd_f(IS1,Itime,Istation1,(Istation2-1),Isrc) = DATMC(1,1)

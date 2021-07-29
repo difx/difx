@@ -36,6 +36,9 @@
      &   Wbase_f(Max_Epochs,Nstation1,Nstation2,Max_Source),              &
      &   El_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source),              &
      &   Az_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source),              &
+     &   StaXt_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source),           &
+     &   StaYt_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source),           &
+     &   StaZt_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source),           &
      &   StaX_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source),            &
      &   StaY_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source),            &
      &   StaZ_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source)
@@ -50,6 +53,7 @@
       COMMON / OUT_C /Delay_f, Rate_f, Atmdryd_f, Atmdryr_f,            &
      &       Atmwetd_f, Atmwetr_f, Ubase_f, Vbase_f, Wbase_f,           &
      &       El_f, Az_f, StaX_f, StaY_f, StaZ_f,                        &
+     &       StaXt_f, StaYt_f, StaZt_f,                                 &
      &       Iymdhms_f, Numsite, Numbaseline, NumPhCenter,              &
      &       Site1, Site2, Xsource
 !

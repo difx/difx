@@ -1280,6 +1280,10 @@
             NF_model = 'Duev    '
             Go to 100
          Endif
+         If (ch_cl(1:2) .eq. '-n' .or. ch_cl(1:6) .eq. '--stntrf') Then
+            DoStnPos = 2
+            Go to 100
+         Endif
          If (ch_cl(1:2) .eq. '-s' .or. ch_cl(1:6) .eq. '--stnpos') Then
             DoStnPos = 1
             Go to 100
@@ -1556,6 +1560,7 @@
 !    &  '  --quiet ',/,                                                 &
 !    &  '  -q                 Be less verbose in operation.    ',//,    &
      &  '  -s                 Write station J2000 positions.    ',//,   &
+     &  '  -n                 Write station ITRF positions.    ',//,   &
      &  '  -dry               DO NOT ADD dry atm delays.      '/,       &
      &  '                     (Default is to ADD dry atm.)     ',//,    &
      &  '  -wet               DO NOT ADD wet atm delays.      '/,       &
