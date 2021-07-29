@@ -61,6 +61,7 @@ difxcalc_SOURCES = \
 	dstrt.f \
 	dscan.f \
 	fitpoly_.c \
+	poly.h \
 	hardisp.f \
 	nfmodel.f \
 	nfstrm.f
