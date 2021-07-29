@@ -1,4 +1,8 @@
-11,0,2
+11.0.3
+------
+* Allow to build outside the DiFX environment
+
+11.0.2
 ------
 * Add option to print the station J2000 positions to .im file
   - these include EOP, earth deformation, axis offset

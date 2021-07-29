@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2021 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,8 +33,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <gsl/gsl_multifit.h>
-#include "difxio.h"	/* only needed for MAX_MODEL_ORDER */
 #include "poly.h"
+
+#define MAX_MODEL_ORDER 12
 
 /* Implement a specific variant of Neville's algorithm for equally spaced
  * data.  The expansion is about x=0 and the input data points are 

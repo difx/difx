@@ -1,4 +1,4 @@
-AC_INIT([difxcalc], [11.0.2], [David Gordon at NASA Goddard])
+AC_INIT([difxcalc], [11.0.3], [David Gordon at NASA Goddard])
 
 AM_INIT_AUTOMAKE([foreign])
 
