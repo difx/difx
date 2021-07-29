@@ -13,8 +13,8 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '1.01'
-verdate = '20210524'
+version = '1.02'
+verdate = '20210730'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -588,7 +588,7 @@ component_difxcalc11_trunk = \
 [ \
 	'difxcalc11', \
 	'https://svn.atnf.csiro.au/difx/applications/difxcalc11/trunk', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+	['aclocal', 'autoconf', 'automake'] \
 ]
 
 component_autozoom_trunk = \
