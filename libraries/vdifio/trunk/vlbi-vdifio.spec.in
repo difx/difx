@@ -33,7 +33,6 @@ make
 %{_libdir}/libvdifio.so.0.0.0
 %{_libdir}/pkgconfig/vdifio.pc
 %{_includedir}/vdifio.h
-%{_includedir}/vdifmark6.h
 %{_bindir}/stripVDIF
 %{_bindir}/captureUDPVDIF
 %{_bindir}/multi2singlethreadVDIF

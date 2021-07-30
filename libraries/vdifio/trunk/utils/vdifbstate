@@ -4,8 +4,8 @@
 
 program = 'vdifbstate'
 author  = 'Walter Brisken'
-version = '0.4'
-verdate = '20210417'
+version = '0.5'
+verdate = '20210730'
 
 from os import system
 from sys import exit, argv
@@ -25,7 +25,7 @@ def usage():
 	print('  <data rate> is the stream data rate (Mbps)\n')
 	print('  <nframes> is the number of frames to bstate-erize\n')
 	print('  <offset> is number of bytes into file to start decoding\n')
-	print('Note: Only works on 2-bit real data for now...\n')
+	print('Note: Only works on 2-bit (real or complex) data for now...\n')
 
 if '--version' in argv:
 	printVersion()
