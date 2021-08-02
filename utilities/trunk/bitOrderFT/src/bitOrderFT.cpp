@@ -266,10 +266,18 @@ int main(int argc, char* argv[]) {
             // switch tracks 6 <> 10  and 8 <> 12
            // changing limit of y will allow exclusiong of header 
            for (long yy=160;yy<deinterlaced_framelength;++yy) {
+                deinterlaced_frame_copy[4][yy] = deinterlaced_frame[8][yy];
+                deinterlaced_frame_copy[8][yy] = deinterlaced_frame[4][yy];
                 deinterlaced_frame_copy[6][yy] = deinterlaced_frame[10][yy];
                 deinterlaced_frame_copy[10][yy] = deinterlaced_frame[6][yy];
-                deinterlaced_frame_copy[8][yy] = deinterlaced_frame[12][yy];
-                deinterlaced_frame_copy[12][yy] = deinterlaced_frame[8][yy];
+
+                deinterlaced_frame_copy[36][yy] = deinterlaced_frame[40][yy];
+                deinterlaced_frame_copy[40][yy] = deinterlaced_frame[36][yy];
+                deinterlaced_frame_copy[38][yy] = deinterlaced_frame[42][yy];
+                deinterlaced_frame_copy[42][yy] = deinterlaced_frame[38][yy];
+
+
+
            }
                         
             //int test_1 = deinterlaced_frame_copy[6][0] & 0x1;
