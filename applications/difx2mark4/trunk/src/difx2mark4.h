@@ -48,6 +48,7 @@ struct CommandLineOptions
     int pretend;
     double scale;
     int verbose;
+    int localdir;
     /* some overrides */
     int specAvg;
     int doalldifx;

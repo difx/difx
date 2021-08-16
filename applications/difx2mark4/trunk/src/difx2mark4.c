@@ -24,6 +24,7 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <difxio.h>
 #include "difx2mark4.h"
 #include "../config.h"
 
@@ -57,7 +58,7 @@ static int usage (const char *pgm)
     fprintf (stderr, "  -h or --help              Print this help message\n\n"); 
     fprintf (stderr, "  -v or --verbose           Be verbose.  -v -v for more!\n\n");
     fprintf (stderr, "  -d or --difx              Run on all .difx files in directory\n\n");
-    fprintf (stderr, "  --override-version        Ignore difx versions\n\n");
+    fprintf (stderr, "  -o or --override-version  Ignore difx versions\n\n");
     fprintf (stderr, "  -e or --experiment-number Set the experiment number (default 1234)\n");
     fprintf (stderr, "                            Must be a four-digit number\n\n");
     fprintf (stderr, "  -k or --keep-order        don't sort antenna order\n\n");
@@ -69,6 +70,8 @@ static int usage (const char *pgm)
     fprintf (stderr, "                            via a file with lines of the form:   X Xx\n");
     fprintf (stderr, "  -g <freq-groups>          include data only from these freq groups\n");
     fprintf (stderr, "  -w <bandwidth in MHz>     include data only for this bandwidth\n");
+    fprintf (stderr, "  -l or --localdir          allow *.calc, *.im and *.difx to be found\n");
+    fprintf (stderr, "                            in the same directory as *.input files\n");
     fprintf (stderr, "\n");
 
     return 0;
@@ -116,6 +119,10 @@ int main(int argc, char **argv)
     opts = parseCommandLine (argc, argv);
     if(opts == 0)
         return 0;
+
+    /* pass along the desire */
+    difxioSetOption(DIFXIO_OPT_VERBOSITY, &(opts->verbose));
+    difxioSetOption(DIFXIO_OPT_LOCALDIR, &(opts->localdir));
 
     /* merge as many jobs as possible and process */
     for(;;)
@@ -545,7 +552,8 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
                 {
                 opts->keepOrder = 1;
                 }
-            else if (strcmp (argv[i], "--override-version") == 0)
+            else if (strcmp (argv[i], "--override-version") == 0 ||
+                     strcmp (argv[i], "-o") == 0)
                 {
                 opts->overrideVersion = 1;
                 }
@@ -637,6 +645,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
                     {
                     i++;
                     strncpy(opts->scodeFile, argv[i], PATH_MAX-1);
+                    }
+                else if(strcmp (argv[i], "--localdir") == 0 ||
+                        strcmp (argv[i], "-l") == 0)
+                    {
+                    opts->localdir = 1;
                     }
                 else
                     {
