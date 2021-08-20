@@ -1,4 +1,4 @@
-AC_INIT([python], [1.1])
+AC_INIT([python], [1.2])
 
 AM_INIT_AUTOMAKE([foreign])
 
@@ -11,4 +11,5 @@ AC_OUTPUT([ \
 	difxutil/Makefile \
 	tkinter/Makefile \
 	parseDiFX/Makefile \
+	difxplot/Makefile \
 ])

@@ -1,0 +1,4 @@
+###python requirements for difxplot
+###Install with pip install -r requirements.txt
+numpy
+pyqtgraph
