@@ -28,7 +28,7 @@ bin_PROGRAMS = \
 	vdifChanSelect \
 	vdifSplitThreads \
 	vmux \
-	vsum 
+	vsum
 
 if USE_MARK6SG
   bin_PROGRAMS += mk6vmux
@@ -38,7 +38,7 @@ if USE_IPP
 if !OLD_IPP
   bin_PROGRAMS += generateVDIF
 endif
-# bin_PROGRAMS += vdifLinear2circular	
+  bin_PROGRAMS += vdifLinear2circular	
   bin_PROGRAMS += vdifSwapSideband
 endif
 
@@ -129,7 +129,7 @@ generateVDIF_SOURCES = \
 vdifSwapSideband_SOURCES = \
 	vdifSwapSideband.c
 
-# vdifLinear2circular_LDADD = $(IPP_LIBS) $(LDADD)
+vdifLinear2circular_LDADD = $(IPP_LIBS) $(LDADD)
 
 vdifSwapSideband_LDADD = $(IPP_LIBS) $(LDADD)
 if USE_CODIFIO
