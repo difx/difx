@@ -213,16 +213,3 @@ def read_vis(difxin, exp_info):
     vis = numpy.frombuffer(difxin.read(8*nchan), dtype='complex64')
     vis_obj = Vis(seconds, baseline, polpair, nchan, vis, freqindex, exp_info)
     return vis_obj
-
-
-def plot_vis(vis, axis):
-    """Plots the visibilies:"""
-    xs = numpy.arange(vis.freqLow,vis.freqHigh,(vis.freqHigh-vis.freqLow)/vis.nchan)
-    if vis.polpair == 'RR':
-        axis['Phases'][vis.freqIndex*2].setData(xs, vis.getPhases())
-        axis['Amps'][vis.freqIndex*2].setData(xs, vis.getAmps())
-        axis['Lags'][vis.freqIndex*2].setData(xs, vis.getLags())
-    elif vis.polpair == 'LL':
-        axis['Phases'][vis.freqIndex*2+1].setData(xs, vis.getPhases())
-        axis['Amps'][vis.freqIndex*2+1].setData(xs, vis.getAmps())
-        axis['Lags'][vis.freqIndex*2+1].setData(xs, vis.getLags())
