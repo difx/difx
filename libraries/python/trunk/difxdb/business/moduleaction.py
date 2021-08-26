@@ -137,4 +137,20 @@ def getScanCount(session, vsn):
         return
     
     return(module.numScans)
+
+def retire(session, moduleId):
+    '''
+    Sets the retired field for a module and removes the module from its slot
+    '''
+    try:
+    	module=getModuleById(session, moduleId)
+	module.retired = 1
+	module.slot = None
+	session.commit()
+	session.flush()
+
+    except:
+    	return
+    	
+
     
