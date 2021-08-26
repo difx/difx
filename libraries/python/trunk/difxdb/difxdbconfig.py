@@ -25,7 +25,12 @@
 #============================================================================
 __author__="Helge Rottmann"
 
-import ConfigParser
+import sys
+if sys.version_info < (3, 0):
+    import ConfigParser as configparser
+else:
+    import configparser
+
 import os
 
 class DifxDbConfig(object):
@@ -40,7 +45,7 @@ class DifxDbConfig(object):
         '''
         
         self.configFile = configFile
-        self.config = ConfigParser.RawConfigParser()
+        self.config = configparser.RawConfigParser()
         
         if (not os.path.isfile(configFile)):
             if (create):

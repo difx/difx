@@ -96,6 +96,8 @@ def addQueueItem(session, job, expCode, passName):
         
     session.add(queueItem)
     session.commit()
+    session.refresh(queueItem)
+    return(queueItem.id)
     
     
 def deleteQueueItem(session, queueItem):

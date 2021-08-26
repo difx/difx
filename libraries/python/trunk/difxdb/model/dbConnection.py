@@ -99,13 +99,13 @@ class Schema(object):
             'releasedByUser':relation(User, primaryjoin=self.experimentTable.c.releasedByUserID==self.userTable.c.id, uselist = False, lazy="subquery"), \
             'types':relation(ExperimentType, secondary=self.experimentAndTypeTable, primaryjoin=self.experimentAndTypeTable.c.experimentID==self.experimentTable.c.id, secondaryjoin=self.experimentAndTypeTable.c.experimentTypeID==self.experimentTypeTable.c.id, foreign_keys = [self.experimentAndTypeTable.c.experimentID, self.experimentAndTypeTable.c.experimentTypeID], lazy="subquery")}) 
 
-	mapper(Module, self.moduleTable, properties={'experiments': relation(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID], backref=backref('modules'))}) 
-	mapper(Slot, self.slotTable,properties={'module': relation(Module, uselist = False, backref=backref('slot', uselist=False))})
+        mapper(Module, self.moduleTable, properties={'experiments': relation(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID], backref=backref('modules'))}) 
+        mapper(Slot, self.slotTable,properties={'module': relation(Module, uselist = False, backref=backref('slot', uselist=False))})
         mapper(VersionHistory, self.versionHistoryTable)
         mapper(User, self.userTable)
         mapper(ExperimentType, self.experimentTypeTable)
         mapper(ExperimentStatusHistory, self.experimentStatusHistoryTable)
-	mapper(FileData, self.fileDataTable, properties={'experiment': relation(Experiment, backref=backref('fileData'))})
+        mapper(FileData, self.fileDataTable, properties={'experiment': relation(Experiment, backref=backref('fileData'))})
         #mapper(ExportFile, self.exportFileTable, properties={'experiment': relation(Experiment, uselist = False, backref=backref('exportFiles', uselist=False))})
         mapper(ExportFile, self.exportFileTable, properties={'experiment': relation(Experiment, backref=backref('exportFiles'))})
 
