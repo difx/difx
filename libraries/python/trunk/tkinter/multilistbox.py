@@ -24,9 +24,13 @@
 # $LastChangedDate$
 #
 #============================================================================
-from Tkinter import *
+import sys
+
+if sys.version_info < (3, 0):
+     from Tkinter import *
+else:
+     from tkinter import *
 import copy
-from string import strip
 
 class ListboxColumn(object):
     
@@ -125,8 +129,8 @@ class MultiListbox(Frame):
         sb = Scrollbar(frame, orient=VERTICAL, command=self._scroll)
         sb.grid(row=3, column=colNum, sticky=W+N+S)
         self.lists[0]['yscrollcommand']=sb.set
-	if enableSearch:
-		btnClearSearch.grid(row=2, column=colNum, sticky=W+N+S)
+        if enableSearch:
+                btnClearSearch.grid(row=2, column=colNum, sticky=W+N+S)
 
         sb.bind('<Button-4>', lambda e, s=self: s._scroll(SCROLL, -1, UNITS))
         sb.bind('<Button-5>', lambda e, s=self: s._scroll(SCROLL, 1, UNITS))
@@ -151,7 +155,7 @@ class MultiListbox(Frame):
                 # check column search filters
                 if col in self.searchEntries:
                     filter = self.searchEntries[col].get()
-                    if (filter in strip(colValue)):
+                    if (filter in colValue.strip()):
                         match += 1
                 
                     
@@ -164,13 +168,13 @@ class MultiListbox(Frame):
                         colValue = str(dataRow[col])
                     self.lists[col].insert(END, colValue)
             
-	self.origData = copy.deepcopy(self.get(0,END))
+        self.origData = copy.deepcopy(self.get(0,END))
             
             
         
    def _clearSearchEvent(self, Event):
         
-        for widget in self.colmapping.keys():
+        for widget in list(self.colmapping.keys()):
             if widget.__class__.__name__ == "Entry":        
                 widget.delete(0,END)
                 
@@ -194,7 +198,7 @@ class MultiListbox(Frame):
 
 
       if direction == 1:
-	  reverse = False
+          reverse = False
       else: 
           reverse = True
 
@@ -204,13 +208,13 @@ class MultiListbox(Frame):
       rowcount = len(tableData)
 
       #remove old sort indicators if it exists
-      for widget in self.colmapping.keys():
+      for widget in list(self.colmapping.keys()):
           if widget.__class__.__name__ == "Button":
               
             lab = widget.cget('text')
 
-            if lab[0]==u"\u2191": widget.config(text=lab[1:])
-            if lab[0]==u"\u2193": widget.config(text=lab[1:])
+            if lab[0]=="\u2191": widget.config(text=lab[1:])
+            if lab[0]=="\u2193": widget.config(text=lab[1:])
 
       btnLabel = button.cget('text')
       
@@ -219,13 +223,13 @@ class MultiListbox(Frame):
          tableData = self.origData
       else:
          
-         if direction==1: button.config(text=u"\u2191" + btnLabel)
-         else: button.config(text=u"\u2193" + btnLabel)
+         if direction==1: button.config(text="\u2191" + btnLabel)
+         else: button.config(text="\u2193" + btnLabel)
 
-	 if self.columns[col].numeric:
-		 tableData = sorted (tableData, reverse=reverse, key=lambda x: 0.0 if x[col]=="" else float(x[col]))
+         if self.columns[col].numeric:
+                 tableData = sorted (tableData, reverse=reverse, key=lambda x: 0.0 if x[col]=="" else float(x[col]))
          else:
-		tableData = sorted (tableData, reverse=reverse, key=lambda x:(x[col]))
+                tableData = sorted (tableData, reverse=reverse, key=lambda x:(x[col]))
 
       #clear widget
       self.delete(0,END)
@@ -256,7 +260,7 @@ class MultiListbox(Frame):
 
    def _scroll(self, *args):
       for l in self.lists:
-         apply(l.yview, args)
+         l.yview(*args)
       return 'break'
 
    def curselection(self):
@@ -271,9 +275,10 @@ class MultiListbox(Frame):
 
    def get(self, first, last=None):
       result = []
+      print (self.lists)
       for l in self.lists:
           result.append(l.get(first,last))
-      if last: return apply(map, [None] + result)
+      if last: return list(map(*[None] + result))
       return result
 
    def index(self, index):
@@ -322,7 +327,7 @@ class MultiListbox(Frame):
          
    def bindEvent(self, sequence, function):
        
-       for widget in self.colmapping.keys():
+       for widget in list(self.colmapping.keys()):
           if widget.__class__.__name__ == "Listbox":
               widget.bind(sequence, function)
               
@@ -339,11 +344,11 @@ if __name__ == '__main__':
    col3 = ListboxColumn("column 3",20)
    
    Label(tk, text='MultiListbox').grid(row=0, column=0)
-   mlb = MultiListbox(tk, col1, col2, col3)
+   mlb = MultiListbox(tk, 10, col1, col2, col3)
    
 
-   for zeile in xrange(100):
-      mlb.append((zeile,  zeile,  'row %s' % zeile))
+  # for zeile in range(100):
+  #    mlb.append((zeile,  zeile,  'row %s' % zeile))
    
    mlb.update()
    mlb.grid(row=1)
