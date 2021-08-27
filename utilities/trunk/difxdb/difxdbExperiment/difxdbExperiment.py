@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python3
 # coding: latin-1
 
 #===========================================================================
@@ -42,12 +42,12 @@ __date__ ="$Date$"
 __lastAuthor__="$Author$"
 
 def printUsage():
-    print "%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__)
-    print "A program to print summary information for an experiment.\n"
-    print "Usage: %s <experiment_code>\n\n"  % __prog__
-    print "NOTE: %s requires the DIFXROOT environment variable to be defined." % __prog__
-    print "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf."
-    print "If the configuration is not found a sample one will be created for you."
+    print(("%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__)))
+    print("A program to print summary information for an experiment.\n")
+    print("Usage: %s <experiment_code>\n\n"  % __prog__)
+    print("NOTE: %s requires the DIFXROOT environment variable to be defined." % __prog__)
+    print("The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf.")
+    print("If the configuration is not found a sample one will be created for you.")
 
     
     sys.exit(1)
@@ -92,38 +92,38 @@ if __name__ == "__main__":
         dbConn = Schema(connection)
         session = dbConn.session()
         
-	try:
-		experiment = getExperimentByCode(session, expCode)
-	except:
-		raise Exception("Unknown experiment")
-		sys.exit
+        try:
+                experiment = getExperimentByCode(session, expCode)
+        except:
+                raise Exception("Unknown experiment")
+                sys.exit
 
-	types = ""
-	for expType in experiment.types:
-		types += expType.type + " "
+        types = ""
+        for expType in experiment.types:
+                types += expType.type + " "
 
-	print "---------------------------------------"
-	print "Summary information for %s" % (expCode)
-	print "---------------------------------------"
-	print "Number:\t\t%d" % (experiment.number)
-	print "Type:\t\t%s" % (types)
-	print "Analyst:\t%s" % (experiment.user.name)
-	print "Status:\t\t%s" % (experiment.status.experimentstatus)
-	print "Comment:\t\t%s" % (experiment.comment)
-	print "---------------------------------------"
-	print "Modules (see file TAPELOG_OBS for details)"
+        print("---------------------------------------")
+        print("Summary information for %s" % (expCode))
+        print("---------------------------------------")
+        print("Number:\t\t%d" % (experiment.number))
+        print("Type:\t\t%s" % (types))
+        print("Analyst:\t%s" % (experiment.user.name))
+        print("Status:\t\t%s" % (experiment.status.experimentstatus))
+        print("Comment:\t\t%s" % (experiment.comment))
+        print("---------------------------------------")
+        print("Modules (see file TAPELOG_OBS for details)")
 
-	sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
-	for module in sortedModules:
-		print module.stationCode,  module.vsn, module.slot.location
+        sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
+        for module in sortedModules:
+                print(module.stationCode,  module.vsn, module.slot.location)
 
         if (args.showExport):
           if (len(experiment.exportFiles) > 0  ):
-            print "---------------------------------------------------------------------------"
-            print "Exported files (filename, path, checksum)"
-            print "---------------------------------------------------------------------------"
+            print("---------------------------------------------------------------------------")
+            print("Exported files (filename, path, checksum)")
+            print("---------------------------------------------------------------------------")
           for export in experiment.exportFiles:
-            print ("%s %s %s" %(export.filename, export.exportPath, export.checksum ))
+            print(("%s %s %s" %(export.filename, export.exportPath, export.checksum )))
 
     except Exception as e:
        
