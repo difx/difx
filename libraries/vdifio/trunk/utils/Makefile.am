@@ -37,8 +37,8 @@ endif
 if USE_IPP 
 if !OLD_IPP
   bin_PROGRAMS += generateVDIF
-endif
   bin_PROGRAMS += vdifLinear2circular	
+endif
   bin_PROGRAMS += vdifSwapSideband
 endif
 
