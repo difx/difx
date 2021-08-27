@@ -539,9 +539,9 @@ This has been reduced to 32 frames and seems to work fine for all bandwidths now
 
 \item mark5access
 \begin{itemize}
-\item Support for "d2k" mode in Mark5B format (swapped sign and mag bits).
+\item Support for ``d2k'' mode in Mark5B format (swapped sign and mag bits).
 \item fixmark5b() function fixed for case that fill pattern is seen at the 1 second transition.
-\item Make use of the TVG bit as an "invalid frame" indicator for Mark5B data.
+\item Make use of the TVG bit as an ``invalid frame'' indicator for Mark5B data.
 \item m5bstate: support complex sampled data
 \end{itemize}
 
@@ -669,6 +669,61 @@ supported.
 \end{enumerate}
 
 DiFX 2.5.3 was released on March 28, 2019.
+
+\section{DiFX 2.5.4}
+
+\subsection{New features}
+
+\begin{enumerate}
+\item HOPS updated to 3.22
+\item Vex2difx and difxio
+\begin{itemize}
+  \item permit H and V polarization labels (but need trunk difx2fits if these are to be propagated into “enhanced” FITS-IDI)
+  \item support the v2d parameter 'exhaustiveAutocorrs'
+  \item support Mark6 MSNs i.e. MSNs that contain '\%'
+\end{itemize}
+\item Difx2mark4
+\begin{itemize}
+  \item support PCal data from multi-datastream correlation
+  \item option '-e expt\_nr' additionally propagates the experiment number into the generated root files
+  \item backported the options -w for mixed-bandwidth data, and -g for filtering freq groups
+\end{itemize}
+\item Genmachines updated to support Mark6 host auto-detection
+\item Includes copies of more recent utilities: packHops.py, distFourfit.py, fplot2pdf, plotResiduals.py
+\end{enumerate}
+
+\subsection{Bug fixes}
+
+\begin{enumerate}
+\item Mark6 native playback fixed to support other than VLBA VDIF recording
+\item Vdifio
+\begin{itemize}
+  \item fix excessively long station name printout in printVDIFheader
+  \item fix to mk6gather to not crop a scan
+  \item resync code extended with further VDIF frame sizes that are common in VGOS
+\end{itemize}
+\item Mpifxcorr fix for complex data (VDIFC) PCal extraction for bands with other than 16 tones
+\item Mpifxcorr fix for IVS-related 5/10MHz pcal issue specific to those channels where first pcal is at baseband 2.01 MHz
+\item Difx2mark4
+\begin{itemize}
+  \item fix count of total bands and polarizations for multi datastream datasets, solving an issue in HOPS post-processing
+  \item fix parallactic angle calculation error in first t303 record
+  \item fix to permit Tab characters in VEX
+\end{itemize}
+\item Mpifxcorr no longer segfaults after ``exiting gracefully'' message upon missing data files
+\item Tkinter add-on package renamed from tkinter to kinter\_difx to avoid name collision
+\item Install-difx now works under Python 3 and supports the option –withmark6meta
+\item Startdifx no longer piles up difxlog processes
+\end{enumerate}
+
+\subsection{Caveats}
+
+Support for Complex VDIF is incomplete in 2.5.3 and 2.5.4, both treat Complex VDIF LSB as USB data. This handling was retained in 2.5.4
+for VGOS compatibility reasons in order to have all-LSB(-mislabeled) data products, and avoid postprocessing issues with
+mixed USB and LSB data products. One should not correlate any actual Complex VDIF LSB recordings - this produces no fringes.
+The issue affects only VDIFC (complex VDIF), not VDIF nor other formats.
+
+DiFX 2.5.4 was released on August 27, 2021.
 
 
 \section{DiFX 2.6.1}
