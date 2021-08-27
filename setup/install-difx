@@ -112,6 +112,8 @@ The install-difx options are:
                     "datasim", "difxcalc11", "mark6sg", "mark6meta"]
    --skip='...'    Does a normal build, but skips components in a comma
                    separated list (drawn from the --doonly list).
+   --also='...'    Does a normal build, but adds components in a comma
+                   separated list (drawn from the --doonly list).
 
    --newver='...'  changes the source directory used on a per component
                    basis (from what would otherwise be used).  This comma
@@ -176,7 +178,7 @@ try:
          "withpolconvert", "noinstall", "reconf", "noconf", "clean",
          "g77", "extraflags=", "makeflags=", "withmark6meta",
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine",
-         "doonly=", "skip=", "newver=", ])
+         "doonly=", "skip=", "also=", "newver=", ])
 except getopt.GetoptError as err:
     print(err)
     print(help.__doc__)
@@ -286,6 +288,19 @@ def setSkipComponents(skip):
                                 dopybindings = False
                 else:
                         raise RuntimeError("Unknown skip component '%s'"%(a))
+def setAlsoComponents(also):
+        global components
+        array = also.strip().split(',')
+        if(len(array)==0):
+                raise RuntimeError("--also invoked without a list")
+        for a in array:
+                c = a.strip()
+                if(c in components):
+                        components[c] = True
+                        if(c == "python"):
+                                dopybindings = True
+                else:
+                        raise RuntimeError("Unknown also component '%s'"%(a))
 
 adjustments=dict()
 def newVersionComponents(changes):
@@ -379,6 +394,8 @@ if len(opts) > 0:
 	        setOnlyComponents(a)
         if o == "--skip":
 	        setSkipComponents(a)
+        if o == "--also":
+	        setAlsoComponents(a)
         if o == "--newver":
                 newVersionComponents(a)
 
