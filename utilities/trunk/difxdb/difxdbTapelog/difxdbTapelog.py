@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python3
 # coding: latin-1
 
 #===========================================================================
@@ -36,7 +36,6 @@ from difxdb.model import model
 from difxfile.difxdir import DifxDir
 from difxfile.difxfilelist import DifxFilelist
 from operator import  attrgetter
-from string import upper,lower
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
@@ -45,12 +44,12 @@ __date__ ="$Date$"
 __lastAuthor__="$Author$"
 
 def printUsage():
-    print "%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__)
-    print "A program to construct the TAPELOG_OBS section from all modules in the database belonging to an experiment.\n"
-    print "Usage: %s <experiment_code>\n\n"  % __prog__
-    print "NOTE: %s requires the DIFXROOT and MARK5_DIR_PATH environment variables to be defined." % __prog__
-    print "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf."
-    print "If the configuration is not found a sample one will be created for you."
+    print("%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__))
+    print("A program to construct the TAPELOG_OBS section from all modules in the database belonging to an experiment.\n")
+    print("Usage: %s <experiment_code>\n\n"  % __prog__)
+    print("NOTE: %s requires the DIFXROOT and MARK5_DIR_PATH environment variables to be defined." % __prog__)
+    print("The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf.")
+    print("If the configuration is not found a sample one will be created for you.")
 
     
     sys.exit(1)
@@ -87,79 +86,79 @@ if __name__ == "__main__":
         dbConn = Schema(connection)
         session = dbConn.session()
         
-	try:
-		experiment = getExperimentByCode(session, expCode)
-	except:
-		raise Exception("Unknown experiment")
-		sys.exit
+        try:
+                experiment = getExperimentByCode(session, expCode)
+        except:
+                raise Exception("Unknown experiment")
+                sys.exit
 
-	sum = 0
-	count = 0
-	station = 0
+        sum = 0
+        count = 0
+        station = 0
         lastStationCode = ""
-	if (experiment is not None):
+        if (experiment is not None):
                 sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
-		print "$TAPELOG_OBS;"
-		
-		
-		for module in sortedModules:
-			error = 0
-			if module.stationCode != lastStationCode:
-				if station != 0:
-					print "enddef;"
-					
-				print "def " + upper(module.stationCode[0]) + lower(module.stationCode[1]) + ";"
+                print("$TAPELOG_OBS;")
+                
+                
+                for module in sortedModules:
+                        error = 0
+                        if module.stationCode != lastStationCode:
+                                if station != 0:
+                                        print("enddef;")
+                                        
+                                print("def " + module.stationCode[0].upper() + module.stationCode[1].lower() + ";")
 
-				lastStationCode = module.stationCode
-				count = 0
-				station += 1
+                                lastStationCode = module.stationCode
+                                count = 0
+                                station += 1
 
-			try:
-				dirFile = None
-				if isMark6(module.vsn):
-					dirFile = DifxFilelist(os.getenv("MARK5_DIR_PATH"), module.vsn)
-				else:
-					dirFile = DifxDir(os.getenv("MARK5_DIR_PATH"), module.vsn)
-			except Exception as e:
-				error +=1
-				sys.stderr.write("%s\n" % e)
+                        try:
+                                dirFile = None
+                                if isMark6(module.vsn):
+                                        dirFile = DifxFilelist(os.getenv("MARK5_DIR_PATH"), module.vsn)
+                                else:
+                                        dirFile = DifxDir(os.getenv("MARK5_DIR_PATH"), module.vsn)
+                        except Exception as e:
+                                error +=1
+                                sys.stderr.write("%s\n" % e)
 
-			#print dirFile.getExperimentStopDatetime(upper(expCode)), dirFile.getExperimentStartDatetime(upper(expCode))
+                        #print dirFile.getExperimentStopDatetime(expCode.upper()), dirFile.getExperimentStartDatetime(expCode.upper())
 
-			start = "UNKNOWN"
-			stop =  "UNKNOWN"
+                        start = "UNKNOWN"
+                        stop =  "UNKNOWN"
 
-			if not dirFile is None:
-			    if not dirFile.getExperimentStartDatetime(upper(expCode)):
-				    start = "UNKNOWN"
-			    else:
-				    try:
-					    start = dirFile.getExperimentStartDatetime(upper(expCode)).strftime("%Yy%jd%Hh%Mm%Ss")
-				    except:
-					    print "WARNING: Error parsing {}".format(dirFile.getFilename())
-					    error += 1
-					    start = "UNKNOWN"
-					    #sys.exit("Error parsing {}".format(dirFile.getFilename()))
-			    if not dirFile.getExperimentStopDatetime(upper(expCode)) is not None:
-				    stop = "UNKNOWN"
-			    else:
-				    try:
-					    stop = dirFile.getExperimentStopDatetime(upper(expCode)).strftime("%Yy%jd%Hh%Mm%Ss")
-				    except:
-					    #sys.exit("Error parsing {}".format(dirFile.getFilename()))
-					    print "WARNING: Error parsing {}".format(dirFile.getFilename())
-					    error += 1
-					    stop =  "UNKNOWN"
-			
-			if error == 0:
-			    print "VSN=%d :  %s :   %s : %s ;" % (count, module.vsn, start,stop)
-			else:
-			    print "#CHECK .dir file : VSN=%d :  %s :   %s : %s ;" % (count, module.vsn, start,stop)
-			count += 1
+                        if not dirFile is None:
+                            if not dirFile.getExperimentStartDatetime(expCode.upper()):
+                                    start = "UNKNOWN"
+                            else:
+                                    try:
+                                            start = dirFile.getExperimentStartDatetime(expCode.upper()).strftime("%Yy%jd%Hh%Mm%Ss")
+                                    except:
+                                            print("WARNING: Error parsing {}".format(dirFile.getFilename()))
+                                            error += 1
+                                            start = "UNKNOWN"
+                                            #sys.exit("Error parsing {}".format(dirFile.getFilename()))
+                            if not dirFile.getExperimentStopDatetime(expCode.upper()) is not None:
+                                    stop = "UNKNOWN"
+                            else:
+                                    try:
+                                            stop = dirFile.getExperimentStopDatetime(expCodei.upper()).strftime("%Yy%jd%Hh%Mm%Ss")
+                                    except:
+                                            #sys.exit("Error parsing {}".format(dirFile.getFilename()))
+                                            print("WARNING: Error parsing {}".format(dirFile.getFilename()))
+                                            error += 1
+                                            stop =  "UNKNOWN"
+                        
+                        if error == 0:
+                            print("VSN=%d :  %s :   %s : %s ;" % (count, module.vsn, start,stop))
+                        else:
+                            print("#CHECK .dir file : VSN=%d :  %s :   %s : %s ;" % (count, module.vsn, start,stop))
+                        count += 1
 
 
-		if station > 0:
-			print "enddef;"
+                if station > 0:
+                        print("enddef;")
         
     
     except Exception as e:
