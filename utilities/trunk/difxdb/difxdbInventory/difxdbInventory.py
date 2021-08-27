@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 # coding: latin-1
 
 #===========================================================================
@@ -35,7 +35,6 @@ from difxdb.business.experimentaction import *
 from difxdb.business.filedataaction import *
 from difxdb.model import model
 from operator import  attrgetter
-from string import strip
 import argparse 
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
@@ -64,71 +63,71 @@ def usage():
 
 def listFiles(session):
 
-	files = getFileData(session)
-	sumScans = 0
-	sumSizes = 0
-	relCount = 0
-	relSizes = 0
-	for file in files:
-	    skip = False
-	    exp = getExperimentById(session, file.experimentID)
-	    typeStr = ""
-	    if file.numScans == 0 and file.size == 0:
-		continue
+        files = getFileData(session)
+        sumScans = 0
+        sumSizes = 0
+        relCount = 0
+        relSizes = 0
+        for file in files:
+            skip = False
+            exp = getExperimentById(session, file.experimentID)
+            typeStr = ""
+            if file.numScans == 0 and file.size == 0:
+                continue
 
-	    if args.type is not None:
-		skip = True
+            if args.type is not None:
+                skip = True
 
-		for type in exp.types:
-		    typeStr += type.type + " "
-		    if strip(type.type) in args.type:
-			skip = False
-			break
-	    if skip:
-		continue
+                for type in exp.types:
+                    typeStr += type.type + " "
+                    if type.type.strip() in args.type:
+                        skip = False
+                        break
+            if skip:
+                continue
 
-	    if isExperimentReleased(session, exp.code):
-		releaseStr = "*"
-		relCount += 1
-		relSizes += file.size
-	    else:
-		releaseStr = " "
+            if isExperimentReleased(session, exp.code):
+                releaseStr = "*"
+                relCount += 1
+                relSizes += file.size
+            else:
+                releaseStr = " "
 
-	    sumScans +=  file.numScans
-	    sumSizes += file.size
-	    print releaseStr, exp.code, file.stationCode, typeStr, file.numScans, file.size, file.location
+            sumScans +=  file.numScans
+            sumSizes += file.size
+            print (releaseStr, exp.code, file.stationCode, typeStr, file.numScans, file.size, file.location)
 
-	print "--------------------------------------------------"
-	print "Total data volume: %f TB in %d scans" % (sumSizes / 1e12, sumScans)
-	if relCount > 0:
-	    print "Total releasable data volume %f TB" % (relSizes / 1e12)
-	print "--------------------------------------------------"
-	
+        print ("--------------------------------------------------")
+        print ("Total data volume: %f TB in %d scans" % (sumSizes / 1e12, sumScans))
+        if relCount > 0:
+            print ("Total releasable data volume %f TB" % (relSizes / 1e12))
+        print ("--------------------------------------------------")
+        
 def  listSlots(session):
 
-	slots = getAllSlots(session)	
+        slots = getAllSlots(session)    
 
-	print "----------------------------------"
-	print "Slot  VSN"
-	print "----------------------------------"
-	count = 0
-	empties = 0
-	for slot in slots:
-		count += 1
-		if not slot.module:
-			vsn = ""
-			empties += 1
-		else:
-			vsn = slot.module.vsn
+        print ("----------------------------------")
+        print ("Slot  VSN")
+        print ("----------------------------------")
+        count = 0
+        empties = 0
+        for slot in slots:
+                count += 1
+                if not slot.module:
+                        vsn = ""
+                        empties += 1
+                else:
+                        vsn = slot.module.vsn
 
-		print slot.location, vsn
-	
+                print (slot.location, vsn)
+        
 
-	print "--------------------------------------------------"
-	print "Total number of slots: %d" % count
-	print "Filled/Empty: %d / %d" % (count-empties, empties)
-	print "--------------------------------------------------"
-	return
+        print ("--------------------------------------------------")
+        print ("Total number of slots: %d" % count)
+        print ("Filled/Empty: %d / %d" % (count-empties, empties))
+        print ("--------------------------------------------------")
+        return
 
 if __name__ == "__main__":
     
@@ -163,11 +162,11 @@ if __name__ == "__main__":
         dbConn = Schema(connection)
         session = dbConn.session()
 
-	if not args.filesOnly:
-		listSlots(session)
-	if not args.modulesOnly:
-	    	listFiles(session)
-	exit(0)
+        if not args.filesOnly:
+                listSlots(session)
+        if not args.modulesOnly:
+                listFiles(session)
+        exit(0)
 
     
 
