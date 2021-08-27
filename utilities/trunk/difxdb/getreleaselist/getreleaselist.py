@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python3
 # coding: latin-1
 
 #===========================================================================
@@ -47,9 +47,9 @@ __lastAuthor__="$Author$"
 
 def getUsage():
 
-	usage = "%prog [options] [<experiment1> [<experiment2>] ...]\n\n"
-	usage += '\nA program to list all releasable modules.'
-	usage += '\nOptionally one or more experiment codes can be given in order'
+        usage = "%prog [options] [<experiment1> [<experiment2>] ...]\n\n"
+        usage += '\nA program to list all releasable modules.'
+        usage += '\nOptionally one or more experiment codes can be given in order'
         usage += '\nto limit output to modules associated with these experiment(s).'
         usage += '\nFor possibilties to further filter the results please consult the options below.\n\n'
         usage += 'NOTE: The program requires the DIFXROOT environment to be defined.\n'
@@ -61,8 +61,8 @@ def printLine(module):
 
     info = ""
     if module.numScans == None:
-	info = "This module has never been scanned. Confirm contents before releasing." 
-    print "%4s %8s %4s %5s %5s %s" % (module.slot.location, module.vsn, module.stationCode, module.datarate, module.capacity, info)
+        info = "This module has never been scanned. Confirm contents before releasing." 
+    print("%4s %8s %4s %5s %5s %s" % (module.slot.location, module.vsn, module.stationCode, module.datarate, module.capacity, info))
     
     
 
@@ -110,7 +110,7 @@ if __name__ == "__main__":
             try:
                 experiment = getExperimentByCode(session, code)
             except:
-                print "Unknown experiment %s" % code
+                print("Unknown experiment %s" % code)
                 continue
                     
             expCodes.add(experiment.code)
@@ -161,15 +161,15 @@ if __name__ == "__main__":
             totalCapacity += slot.module.capacity
             moduleCount += 1 
         
-	# sort experiments alphabetically
-	expCodes = sorted(expCodes)
+        # sort experiments alphabetically
+        expCodes = sorted(expCodes)
 
         if (options.extended):
             for code in expCodes:
 
-                print "\n------"
-                print code
-                print "------"
+                print("\n------")
+                print(code)
+                print("------")
                 for module in modules:
                     moduleExpCodes = []
                     for experiment in module.experiments:
@@ -179,20 +179,20 @@ if __name__ == "__main__":
                         printLine(module)
             
             if (len(orphanModules) > 0):
-                print "\n------"
-                print "No exp."
-                print "------"
+                print("\n------")
+                print("No exp.")
+                print("------")
                 
                 for module in orphanModules:
                     printLine(module)
             
 
         
-        print "\n-------"
-        print "Summary"
-        print "-------"
-        print "Number of modules: %d" % (moduleCount)
-        print "Total capacity: %d" % (totalCapacity)
+        print("\n-------")
+        print("Summary")
+        print("-------")
+        print("Number of modules: %d" % (moduleCount))
+        print("Total capacity: %d" % (totalCapacity))
         
         sys.exit(0)
     
