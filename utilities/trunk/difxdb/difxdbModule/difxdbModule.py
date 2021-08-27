@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python3
 # coding: latin-1
 
 #===========================================================================
@@ -51,9 +51,9 @@ def printUsage():
     return usage
 
 def printSummary():
-    print "Slot:    %s" % module.slot.location
-    print "Station: %s" % module.stationCode
-    print "Scans:   %s" % module.numScans
+    print("Slot:    %s" % module.slot.location)
+    print("Station: %s" % module.stationCode)
+    print("Scans:   %s" % module.numScans)
 
 
 if __name__ == "__main__":
@@ -68,8 +68,8 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
    
     if (len(args) != 1):
-	parser.print_help()
-	sys.exit(1)
+        parser.print_help()
+        sys.exit(1)
     
     vsn = args[0]
 
@@ -95,28 +95,28 @@ if __name__ == "__main__":
         dbConn = Schema(connection)
         session = dbConn.session()
 
-	# check if module exists in the DB
+        # check if module exists in the DB
         if (moduleExists(session,vsn)):
             module = getModuleByVSN(session, vsn)
         else:
-            print "Unknown"
-	    sys.exit(0)
-	    
-	# check for options
-	summary = True
-	if (options.slot == True):
-            print module.slot.location
+            print("Unknown")
+            sys.exit(0)
+            
+        # check for options
+        summary = True
+        if (options.slot == True):
+            print(module.slot.location)
             summary = False
-	if (options.station == True):
-            print module.stationCode
+        if (options.station == True):
+            print(module.stationCode)
             summary = False
-	if (options.numScans == True):
-            print module.numScans
+        if (options.numScans == True):
+            print(module.numScans)
             summary = False
 
-	if summary == True:
-	    printSummary()
-	
+        if summary == True:
+            printSummary()
+        
         
     
     except Exception as e:
