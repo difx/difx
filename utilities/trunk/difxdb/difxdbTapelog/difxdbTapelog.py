@@ -37,11 +37,11 @@ from difxfile.difxdir import DifxDir
 from difxfile.difxfilelist import DifxFilelist
 from operator import  attrgetter
 
-__author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
+__author__ = "Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
+__build__ = "$Revision$"
+__date__ = "$Date$"
+__lastAuthor__ = "$Author$"
 
 def printUsage():
     print("%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__))
@@ -134,7 +134,7 @@ if __name__ == "__main__":
                             else:
                                     try:
                                             start = dirFile.getExperimentStartDatetime(expCode.upper()).strftime("%Yy%jd%Hh%Mm%Ss")
-                                    except:
+                                    except Exception as e:
                                             print("WARNING: Error parsing {}".format(dirFile.getFilename()))
                                             error += 1
                                             start = "UNKNOWN"
@@ -143,8 +143,8 @@ if __name__ == "__main__":
                                     stop = "UNKNOWN"
                             else:
                                     try:
-                                            stop = dirFile.getExperimentStopDatetime(expCodei.upper()).strftime("%Yy%jd%Hh%Mm%Ss")
-                                    except:
+                                            stop = dirFile.getExperimentStopDatetime(expCode.upper()).strftime("%Yy%jd%Hh%Mm%Ss")
+                                    except Exception as e:
                                             #sys.exit("Error parsing {}".format(dirFile.getFilename()))
                                             print("WARNING: Error parsing {}".format(dirFile.getFilename()))
                                             error += 1
