@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python3
 # coding: latin-1
 
 #===========================================================================
@@ -40,12 +40,12 @@ __date__ ="$Date$"
 __lastAuthor__="$Author$"
 
 def printUsage():
-    print "%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__)
-    print "A program to get the location of a disk module\n"
-    print "Usage: %s <VSN>\n\n"  % __prog__
-    print "%s requires the DIFXROOT environment to be defined." % __prog__
-    print "The program will read the database configuration from difxdb.ini located under $DIFXROOT/conf."
-    print "If the configuration is not found a sample one will be created for you."
+    print("%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__))
+    print("A program to get the location of a disk module\n")
+    print("Usage: %s <VSN>\n\n"  % __prog__)
+    print("%s requires the DIFXROOT environment to be defined." % __prog__)
+    print("The program will read the database configuration from difxdb.ini located under $DIFXROOT/conf.")
+    print("If the configuration is not found a sample one will be created for you.")
 
     
     sys.exit(1)
@@ -82,9 +82,9 @@ if __name__ == "__main__":
         if (moduleExists(session,vsn)):
             module = getModuleByVSN(session, vsn)
         
-            print module.slot.location
+            print(module.slot.location)
         else:
-            print "Unknown"
+            print("Unknown")
         
         
     
