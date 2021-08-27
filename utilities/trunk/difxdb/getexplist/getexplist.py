@@ -1,4 +1,4 @@
-#! /usr/bin/env python2
+#! /usr/bin/env python3
 # coding: latin-1
 
 #===========================================================================
@@ -47,8 +47,8 @@ __lastAuthor__="$Author: HelgeRottmann $"
 
 def getUsage():
 
-	usage = "%prog [options] ]\n\n"
-	usage += '\nA program to list all experiments stored in the database.'
+        usage = "%prog [options] ]\n\n"
+        usage += '\nA program to list all experiments stored in the database.'
         usage += 'NOTE: The program requires the DIFXROOT environment to be defined.\n'
         usage += "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf.\n"
         usage += "If the configuration is not found a sample one will be created for you at this location.\n"
@@ -58,9 +58,9 @@ def printLine(exp):
 
     dateCreated = ""
     if exp.dateCreated is not None:
-	dateCreated = exp.dateCreated.date()
-    print "%4s %9s %12s %20s" % (exp.number, exp.code, dateCreated,
-exp.status.experimentstatus)
+        dateCreated = exp.dateCreated.date()
+    print("%4s %9s %12s %20s" % (exp.number, exp.code, dateCreated,
+exp.status.experimentstatus))
     
     
 
@@ -102,19 +102,19 @@ if __name__ == "__main__":
         
         expCount = 0;
         experiments = getExperiments(session)
-	sortedExps = sorted(experiments, key=attrgetter('number'))
-	
-	
-	print "----------------------------------------------------------------"
-    	print "%4s %9s %12s %20s" % ("Num.", "Code", "Date created", "Status")
-	print "----------------------------------------------------------------"
+        sortedExps = sorted(experiments, key=attrgetter('number'))
+        
+        
+        print("----------------------------------------------------------------")
+        print("%4s %9s %12s %20s" % ("Num.", "Code", "Date created", "Status"))
+        print("----------------------------------------------------------------")
         for exp in sortedExps:
-		expCount +=1
-		printLine(exp)
+                expCount +=1
+                printLine(exp)
 
-	print "----------------------------------------------------------------"
-	print "Total: " ,expCount , " experiments"
-	print "----------------------------------------------------------------"
+        print("----------------------------------------------------------------")
+        print("Total: " ,expCount , " experiments")
+        print("----------------------------------------------------------------")
         
         sys.exit(0)
     
