@@ -73,7 +73,9 @@ class AverageVis:
         try:
             with open(self.exp_info.input_file_base+'.fringe', 'wt') as fout:
                 fout.write(f"Source: {self.exp_info.source_name}\n")
+                fout.write(f"Frequency: {self.exp_info.freq_range[0]}\n")
                 baseline_names = [b[0].name + "-" + b[1].name for b in self.plot.baselines]
+                fout.write(f"MJD: {self.vis_arr[baseline_names[0]][0][0][0].mjd+self.vis_arr[baseline_names[0]][0][0][0].seconds/86400.0}\n") 
                 for bl in baseline_names:
                     for freq in range(self.exp_info.numfreqs):
                         for pol in range(2):
@@ -93,7 +95,7 @@ class AverageVis:
 
 class Vis:
     """Initializes a vis storing all correlated data and describing products"""
-    def __init__(self, seconds, baseline, polpair, nchan, vis, freq_index, exp_info):
+    def __init__(self, mjd, seconds, baseline, polpair, nchan, vis, freq_index, exp_info):
         """
         Inputs
         ------
@@ -104,6 +106,7 @@ class Vis:
         - nchan: (lag) channels
         - vis: list of complex data
         """
+        self.mjd = int(mjd)
         self.seconds = int(seconds)
         self.baseline = int(baseline)
         self.polpair = polpair
@@ -206,10 +209,10 @@ def read_vis(difxin, exp_info):
 
     seconds = header[2]
     baseline = header[0]
-#    mjd = header[1]
+    mjd = header[1]
     freqindex = header[5]
     polpair = header[6]
     nchan = int(exp_info.freqs[freqindex].numchan/exp_info.freqs[freqindex].specavg)
     vis = numpy.frombuffer(difxin.read(8*nchan), dtype='complex64')
-    vis_obj = Vis(seconds, baseline, polpair, nchan, vis, freqindex, exp_info)
+    vis_obj = Vis(mjd, seconds, baseline, polpair, nchan, vis, freqindex, exp_info)
     return vis_obj
