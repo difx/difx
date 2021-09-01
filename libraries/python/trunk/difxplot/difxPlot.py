@@ -49,10 +49,17 @@ class PlotDifx:
         self.plot_instance.view.show()  # move this?
         with open(self.difx_in, "rb") as self.fin:
             plotter_outp = self.run_plotter()
+        print(f"Writing fringes? {self.write_fringes}")
         if self.write_fringes:
             self.averager.write_aver_all()
         if plotter_outp:
-            self.__init__(self.potential_new_file, self.refant, self.aver, self.live, self.ncols)
+            #open a new file (and close old)
+            print("Opening next file, {}".format(self.potential_new_file))
+            self.plot_instance.app.exit(0)
+            self.plot_instance.win.close()
+            self.plot_instance.view.close()
+            del self.plot_instance
+            self.__init__(self.potential_new_file, self.refant, self.aver, self.live, self.ncols, self.write_fringes)
 
 
     def run_plotter(self):
@@ -85,11 +92,6 @@ class PlotDifx:
     def check_for_new_file(self):
         """check if difx has opened a new file in series _01 _02 etc"""
         if os.path.exists(self.potential_new_file+".difx"):
-            print("Opening next file, {}".format(self.potential_new_file))
-            self.plot_instance.app.exit(0)
-            self.plot_instance.win.close()
-            self.plot_instance.view.close()
-            del self.plot_instance
             return True
         return False
 
