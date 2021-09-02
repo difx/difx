@@ -30,6 +30,8 @@
 # The "normal" SLURM mechanism of using jobsteps is unsuited as it will always execute in 
 # exclusive mode when using jobsteps which will prevent starting of multiple DiFX jobs in
 # parallel.
+# Execute with startdifx -A difxslurm ...
+#============================================================================
 
 # make sure salloc is started in background
 set -m
@@ -80,7 +82,7 @@ stepcount=`echo $jobsteps | tr -cd ':' | wc -c | tr -d ' '`
 # speedup = scanDuration / correlationDuration   (desirable: 40)
 # np = numDS * dataRate * speedup / 85
 
-np=`difxresource.py -r 85 $job.input | tail -1`
+np=`difxresource -r 85 $job.input | tail -1`
 nodes=$(((np+threads-1)/threads))
 
 #echo $np
