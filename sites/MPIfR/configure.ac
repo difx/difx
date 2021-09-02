@@ -14,6 +14,7 @@ AC_OUTPUT([ \
 	difxdb/prepDifx/Makefile \
 	misc/getObsFiles/Makefile \
 	misc/datacheckers/Makefile \
+	misc/difxslurm/Makefile \
 	hops/Makefile \
 	mark5/m5tone/Makefile \
 	mark6/Makefile \

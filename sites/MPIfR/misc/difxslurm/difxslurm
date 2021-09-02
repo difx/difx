@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+#===========================================================================
+# Copyright (C) 2021  Max-Planck-Institut für Radioastronomie, Bonn, Germany
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id$
+# $HeadURL$
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
+#
+#============================================================================
+
+# Shell script to allow starting of heterogeneous DiFX jobs through the SLURM batch scheduler.
+# DiFX jobs will be heterogeneous when containing e.g. mark5 and/or mark5 playback units or
+# if a specific head node is required.
+# The "normal" SLURM mechanism of using jobsteps is unsuited as it will always execute in 
+# exclusive mode when using jobsteps which will prevent starting of multiple DiFX jobs in
+# parallel.
+
+# make sure salloc is started in background
+set -m
+
+# make sure slurm job gets canceled on SIGINT
+trap cleanExit SIGINT
+
+function cleanExit {
+    scancel $JOB_ID
+    kill -9 $PID
+    echo "done"
+    exit
+}
+
+path=`dirname $1`
+job=`basename $1`
+
+# Specific settings (adjust for your cluster)
+partition=correlator
+threads=19
+
+
+cd $path
+# generate .machine file (datastreams only)
+genmachines --nocompute $job.input
+mv $job.machines $job.dsmachines
+
+# parse the .dsmachines file and
+# contruct slurm jobsteps
+# for all datastream processes
+jobsteps=""
+mkfifo mypipe
+sort $job.dsmachines | uniq -c > mypipe &
+
+while read count node
+do
+   jobsteps+=" -p $partition --ntasks=$count --nodes=1 --nodelist=$node :"
+   #echo    $count $node
+done < mypipe
+rm mypipe
+
+jobsteps="${jobsteps::-1}"
+stepcount=`echo $jobsteps | tr -cd ':' | wc -c | tr -d ' '`
+((stepcount++))
+
+# TODO: calculate resource requirements
+# Each thread can roughly do 85Mbps
+# speedup = scanDuration / correlationDuration   (desirable: 40)
+# np = numDS * dataRate * speedup / 85
+
+np=`difxresource.py -r 85 $job.input | tail -1`
+nodes=$(((np+threads-1)/threads))
+
+#echo $np
+#echo $jobsteps
+
+echo "Using $nodes compute nodes with $threads threads to process this job"
+
+#write the slurm batch file
+#echo "HOSTFILE=$job.machines" > $job.slurm
+#echo "cat $job.dsmachines > \$HOSTFILE" >> $job.slurm
+#echo "srun --pack-group=$stepcount hostname -s >> \$HOSTFILE" >> $job.slurm
+#echo "numtasks=\`cat \$HOSTFILE | wc -l\`" >> $job.slurm
+#echo "mpirun -np \$numtasks --hostfile \$HOSTFILE $DIFX_MPIRUNOPTIONS /cluster/difx/runmpifxcorr.$DIFX_VERSION $job.input" >> $job.slurm
+#chmod u+x $job.slurm
+#
+
+# construct the hostfile
+HOSTFILE=$job.machines
+cat $job.dsmachines > $HOSTFILE
+cnodes=`srun -p correlator --cpus-per-task=$threads --ntasks-per-node=1 --nodes=$nodes  hostname -s`
+
+cnodelist=`echo $cnodes | sed 's/ /,/g'`
+echo $cnodes | sed 's/ /\n/g' >> $HOSTFILE
+
+numtasks=`cat $HOSTFILE | wc -l`
+
+rm -f /tmp/$job
+# make dummy allocation
+salloc -J $job $jobsteps : -p correlator --cpus-per-task=$threads --ntasks-per-node=1 --nodelist=$cnodelist &> /tmp/$job &
+echo $jobsteps
+
+sleep 1
+# get pid of salloc process
+PID=$!
+
+JOB_ID=""
+# parse salloc output to see whether resources have been granted
+# salloc: job 10912 queued and waiting for resources
+regGrant='salloc: Granted job allocation ([0-9]+)'
+regQueue='salloc: job ([0-9]+) queued'
+START=0
+echo "Waiting for SLURM resource allocation"
+while [ $START -eq 0 ]
+do
+    while read l; do
+        # allocation granted
+        if [[ $l =~ $regGrant ]]; then
+            #JOB_ID=${BASH_REMATCH[1]}
+            START=1
+            break
+        fi
+        #alocation queued
+        if [[ $l =~ $regQueue ]]; then
+            JOB_ID=${BASH_REMATCH[1]}
+            echo $JOB_ID > $job.slurmid
+        fi 
+    done < /tmp/$job
+done
+
+echo "Granted job allocation" $JOB_ID
+mpirun -np $numtasks --hostfile $HOSTFILE $DIFX_MPIRUNOPTIONS /cluster/difx/runmpifxcorr.$DIFX_VERSION $job.input
+
+cleanExit
+

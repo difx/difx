@@ -5,6 +5,7 @@ SUBDIRS = \
 	difxdb/prepDifx \
 	misc/getObsFiles \
 	misc/datacheckers \
+	misc/difxslurm \
 	mark5/m5tone \
 	mark6 \
 	vdif \
