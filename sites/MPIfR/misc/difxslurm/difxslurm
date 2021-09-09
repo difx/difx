@@ -102,7 +102,7 @@ echo "Using $nodes compute nodes with $threads threads to process this job"
 # construct the hostfile
 HOSTFILE=$job.machines
 cat $job.dsmachines > $HOSTFILE
-cnodes=`srun -p correlator --cpus-per-task=$threads --ntasks-per-node=1 --nodes=$nodes  hostname -s`
+cnodes=`srun -p correlator --constraint=compute --cpus-per-task=$threads --ntasks-per-node=1 --nodes=$nodes  hostname -s`
 
 cnodelist=`echo $cnodes | sed 's/ /,/g'`
 echo $cnodes | sed 's/ /\n/g' >> $HOSTFILE
