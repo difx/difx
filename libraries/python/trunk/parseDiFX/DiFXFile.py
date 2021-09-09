@@ -62,7 +62,7 @@ class DiFXFile:
 
         difxfileslist = glob.glob(glob_pattern)
         if len(difxfileslist) <= 0:
-            print ('Warning: no visibility data file found in %s!' % (glob_pattern))
+            print(('Warning: no visibility data file found in %s!' % (glob_pattern)))
         else:
             self.difxfilename = difxfileslist[0]
             self.difxfile = open(self.difxfilename, 'rb')

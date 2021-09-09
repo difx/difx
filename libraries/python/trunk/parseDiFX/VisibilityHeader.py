@@ -24,7 +24,7 @@
 #
 #============================================================================
 
-from __future__ import division
+
 
 from .Common import parse_output_header, make_output_header_v1, M_SYNC_WORD
 

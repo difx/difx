@@ -42,7 +42,7 @@ def parse_output_header(input):
         return toreturn
     if struct.unpack("I", buffer)[0] != M_SYNC_WORD:
         if buffer != "BASE": #Some weird stuff.  Return empty
-            print ("Non-recognised sync word: ascii " + buffer + ", binary %x" % (struct.unpack("I", buffer)[0]))
+            print(("Non-recognised sync word: ascii " + buffer + ", binary %x" % (struct.unpack("I", buffer)[0])))
             return toreturn
         #Must be the old style file.  Suck it up.
         orgbuffer += buffer
