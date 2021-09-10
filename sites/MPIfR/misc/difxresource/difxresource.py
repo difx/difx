@@ -40,9 +40,16 @@ rate["FILE"]=16000.0
 maxNodes = 68
 maxThreads = 39
 
-parser = argparse.ArgumentParser(description='Estimate DiFX processing requirements.')
+description = "A program to estimate the number of openmpi processes required to process a DiFX job at the fastest possible speed.\n"
+description += "The estimate is done by relating the maximum possible processing datarate based on the\n"
+description += "types of datastreams of the job to the maximum processing rate of a single thread.\n"
+description += "Note that these are based on empirical determination and must be adapted to the individual cluster specifications.\n"
+description += "Returns the number of compute processes."
+
+parser = argparse.ArgumentParser(description=description)
 #parser.add_argument('-s', '--speedup', required=False, type=float, help='desired speedup-factor (scan duration/processing duration)')
 parser.add_argument('-r', '--rate', required=True, type=float, help='processing rate of the cluster nodes [Mbps per thread]')
+parser.add_argument('--all', default=False, action='store_true', help='return all processes head/datastream/compute.')
 
 parser.add_argument('inputfile', help='the DiFX input file.')
 
@@ -98,6 +105,8 @@ numProcs = int(ceil(totalDataRate * maxSpeedup / args.rate))
 if numProcs > maxNodes*maxThreads:
   numProcs = maxNodes*maxThreads
 
-#print ("{} {}/{}/{} {} {}".format(numDS, numDsFile, numDsM5, numDsM6, totalDataRate, maxSpeedup))
-print(numProcs)
-    
+if args.all:
+    print("{}/{}/{}".format(1,numDS,numProcs))
+else:
+    print(numProcs)
+
