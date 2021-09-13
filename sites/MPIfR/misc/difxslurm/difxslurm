@@ -49,15 +49,41 @@ function cleanExit {
 path=`dirname $1`
 job=`basename $1`
 
+
 # Specific settings (adjust for your cluster)
 partition=correlator
 threads=19
 
-
 cd $path
+
+if [ ! -f $job.input ]; then
+    echo "ERROR: $job.input does not exist"
+    exit 2 
+fi
+if [ ! -f $job.machines ]; then
+    echo "ERROR: $job.machines does not exist"
+    exit 2 
+fi
+# Determine required resources
+# Each thread can roughly do 85Mbps
+# speedup = scanDuration / correlationDuration  
+# np = numDS * dataRate * speedup / 85
+
+out=`difxresource -r 85 --all $job.input | tail -1`
+
+if [[ $out =~ ^([0-9])/([0-9]+)/([0-9]+) ]]; 
+then 
+  numDS=${BASH_REMATCH[2]}
+  np=${BASH_REMATCH[3]}
+else 
+  echo "ERROR: difxresource illegal output format ($out). Exiting"; 
+  exit 2 
+fi
+nodes=$(((np+threads-1)/threads))
+#echo $np $nodes
+
 # generate .machine file (datastreams only)
-genmachines --nocompute $job.input
-mv $job.machines $job.dsmachines
+head -n $((numDS+=1)) $job.machines > $job.dsmachines
 
 # parse the .dsmachines file and
 # contruct slurm jobsteps
@@ -77,13 +103,6 @@ jobsteps="${jobsteps::-1}"
 stepcount=`echo $jobsteps | tr -cd ':' | wc -c | tr -d ' '`
 ((stepcount++))
 
-# TODO: calculate resource requirements
-# Each thread can roughly do 85Mbps
-# speedup = scanDuration / correlationDuration   (desirable: 40)
-# np = numDS * dataRate * speedup / 85
-
-np=`difxresource -r 85 $job.input | tail -1`
-nodes=$(((np+threads-1)/threads))
 
 #echo $np
 #echo $jobsteps
@@ -112,7 +131,7 @@ numtasks=`cat $HOSTFILE | wc -l`
 rm -f /tmp/$job
 # make dummy allocation
 salloc -J $job $jobsteps : -p correlator --cpus-per-task=$threads --ntasks-per-node=1 --nodelist=$cnodelist &> /tmp/$job &
-echo $jobsteps
+#echo $jobsteps
 
 sleep 1
 # get pid of salloc process
