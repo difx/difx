@@ -203,8 +203,12 @@ class Vis:
 
 def read_vis(difxin, exp_info):
     """Read in a chunk of a difx file"""
-    header = parseDiFX.parse_output_header(difxin)
-    if len(header) == 0:
+    try:
+        header = parseDiFX.parse_output_header(difxin)
+        if len(header) == 0:
+            return False
+    except TypeError:
+        #The header is likely malformed (half written)
         return False
 
     seconds = header[2]

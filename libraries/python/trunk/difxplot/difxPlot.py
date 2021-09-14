@@ -49,7 +49,6 @@ class PlotDifx:
         self.plot_instance.view.show()  # move this?
         with open(self.difx_in, "rb") as self.fin:
             plotter_outp = self.run_plotter()
-        print(f"Writing fringes? {self.write_fringes}")
         if self.write_fringes:
             self.averager.write_aver_all()
         if plotter_outp:
