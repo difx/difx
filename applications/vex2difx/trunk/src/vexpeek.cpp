@@ -41,8 +41,8 @@
 #include "testvex.h"
 
 const std::string program("vexpeek");
-const std::string version("0.15");
-const std::string verdate("20210315");
+const std::string version("0.16");
+const std::string verdate("20210914");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -63,6 +63,7 @@ void usage(const char *pgm)
 	std::cout << "  -s or --scans : print list of scans and their stations" << std::endl;
 	std::cout << "        --scans2 : print list of scans with bands and times" << std::endl;
 	std::cout << "                 - include twice to see nChan, nBit and bandwidth as well" << std::endl;
+	std::cout << "  --scans=<ant> : print list of scans for antenna <ant>" << std::endl;
 	std::cout << "  -r or --sources : print list of sources and their coordinates" << std::endl;
 	std::cout << "  -u or --diskusage : print disk usage (GB)" << std::endl;
 	std::cout << "  -m or --modules : print disk modules used (from TAPELOG_OBS)" << std::endl;
@@ -280,6 +281,27 @@ void scanListWithTimes(const VexData *V)
 	}
 }
 
+void scanListByAntenna(const VexData *V, const char *ant)
+{
+	for(unsigned int s = 0; s < V->nScan(); ++s)
+	{
+		const VexScan *scan = V->getScan(s);
+
+		std::cout.precision(14);
+		for(std::map<std::string,Interval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+		{
+			if(strcasecmp(ant, it->first.c_str()) == 0)
+			{
+				std::cout << std::left << std::setw(8) << scan->defName << " ";
+				std::cout << std::left << std::setw(12) << scan->sourceDefName << " ";
+				std::cout << std::left << std::setw(12) << scan->modeDefName << "   ";
+				std::cout << it->first << " " << it->second.mjdStart << " " << it->second.mjdStop;
+				std::cout << std::endl;
+			}
+		}
+	}
+}
+
 // print: ScanName SourceName Band NAntenna startMJD stopMJD
 void scan2List(const VexData *V, int level)
 {
@@ -409,6 +431,7 @@ int main(int argc, char **argv)
 	int doCoords = 0;
 	int a;
 	const char *fileName = 0;
+	const char *scanAnt = 0;
 
 	for(a = 1; a < argc; ++a)
 	{
@@ -478,6 +501,11 @@ int main(int argc, char **argv)
 		        strcmp(argv[a], "--Bands") == 0)
 		{
 			++doBandList;
+		}
+		else if(strncmp(argv[a], "--scans=", 8) == 0 && argv[a][8] != 0)
+		{
+			++doScanList;
+			scanAnt = argv[a]+8;
 		}
 		else if(strcmp(argv[a], "-S") == 0 ||
 		        strcmp(argv[a], "--Scans") == 0)
@@ -575,7 +603,11 @@ int main(int argc, char **argv)
 	}
 	if(doScanList)
 	{
-		if(doTime)
+		if(scanAnt != 0)
+		{
+			scanListByAntenna(V, scanAnt);
+		}
+		else if(doTime)
 		{
 			scanListWithTimes(V);
 		}

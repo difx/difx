@@ -576,6 +576,12 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 			fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand, corrSetup->FFTSpecRes, corrSetup->outputSpecRes, 1, 0, toneSetId);	// 0 means not zoom band
 
 			// index into the difxio datastream object arrays is by "present band"
+// FIXME: Major bug to fix: in cases (such as vt031a) where the track map is not monotone increasing,
+// the final ordering of channels is incorrect.  Likely solution is to ensure we perform the "record chan" loop
+// in "track" (or "thread") order. 
+
+// As a hint to a possible fix, the next two lines give the correct behavior when streamPresentChan -> streamRecChan,
+// but this breaks the new functionality.
 			D->datastream[dsId].recBandFreqId[streamPresentChan] = getBand(bandMap, fqId);
 			D->datastream[dsId].recBandPolName[streamPresentChan] = subband.pol;
 
