@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '3.0.5'
-VERDATE = '20210724'
+VERSION = '3.0.6'
+VERDATE = '20210914'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -53,6 +53,7 @@ from glob import glob
 from copy import deepcopy
 from xml.parsers import expat
 from optparse import OptionParser
+import argparse
 import socket
 import struct
 import signal
@@ -66,24 +67,14 @@ verbose = 0
 def getVersion():
         return '%s ver. %s  %s  %s' % (PROGRAM, VERSION, VERDATE, AUTHOR)
 
-def getUsage():
-        usage =  '\n%s\n' % getVersion()
-        usage += 'A program to simplify the launching of mpifxcorr.\n'
-        usage += 'It can also cause model and FITS to be made.\n\n'
-        usage += 'Usage: startdifx [options] [<start delay>] <input1> [<input2> [ ... ] ]\n'
-        usage += 'or:    startdifx [options] [<start delay>] <joblist> \n\n'
-        usage += '<start delay> is an optional delay (seconds) to add to the job start time\n'
-        usage += '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
-        usage += '<joblist> as created by vex2difx (.joblist extension required)\n'
-        usage += '\nThis program responds to the following environment variables:\n'
-        usage += 'DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT can be used to override\n'
-        usage += 'the default group/port of %s/%d\n' % (defaultgroup, defaultport)
-        usage += 'DIFX_HEAD_NODE must name the correlation head node (only with the -m option).\n'
-        usage += 'DIFX_MPIRUNOPTIONS can be used to pass options to the mpirun command.\n'
-        usage += 'DIFX_CALC_PROGRAM can be used to change the delay model program\n'
-        usage += '(the default is %s, but difxcalc can be used).\n' % defaultDelayModelProgram
-        usage += 'DIFX_CALC_OPTIONS can be used to override options to the delay model program.\n'
-        return(usage)
+def epilog():
+    epilog = '\nThis program responds to the following environment variables:\n'
+    epilog += 'DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT can be used to override the default group/port of %s/%d\n' % (defaultgroup, defaultport)
+    epilog += 'DIFX_HEAD_NODE must name the correlation head node (only with the -m option).\n'
+    epilog += 'DIFX_MPIRUNOPTIONS can be used to pass options to the mpirun command.\n'
+    epilog += 'DIFX_CALC_PROGRAM can be used to change the delay model program (the default is %s, but difxcalc can be used).\n' % defaultDelayModelProgram
+    epilog += 'DIFX_CALC_OPTIONS can be used to override options to the delay model program.\n'
+    return (epilog)
 
 class Parser:
 
@@ -500,10 +491,10 @@ def doMachines(fileBase, machinesPolicy, cache):
                                 localHeadString = ""
 
                                 extraOpts = ""
-                                if options.difxdb:
+                                if args.difxdb:
                                         extraOpts += " -d "
-                                if options.machinesFile != "":
-                                        extraOpts += " -m %s " % (options.machinesFile)
+                                if args.machinesFile != "":
+                                        extraOpts += " -m %s " % (args.machinesFile)
 
                                 cmd = '%s %s %s.input' % (genmachines, extraOpts, fileBase)
                                 if verbose > 1:
@@ -534,7 +525,7 @@ def handler(signum, frame):
 # Start difx with DifxStartMessage
 def runMessage(fileBase, machinesCache, restartSeconds):
 
-        difxVersion, difxLabel = testDifxVersion(fileBase, options.override)
+        difxVersion, difxLabel = testDifxVersion(fileBase, args.override)
 
         identifier = fileBase.split('/')[-1]
 
@@ -542,12 +533,12 @@ def runMessage(fileBase, machinesCache, restartSeconds):
                 return 'Error: input file %s.input not found' % fileBase
         
         if not isfile(fileBase+'.im'):
-                if options.makeModel and isfile(fileBase+'.calc'):
+                if args.makeModel and isfile(fileBase+'.calc'):
                         if delayModelOptions != None and len(delayModelOptions) > 0:
                                 calcOptions = delayModelOptions
                         else:
                                 calcOptions = ""
-                                if options.override:
+                                if args.override:
                                         calcOptions += "--override-version "
                                 for i in range(verbose):
                                         calcOptions += "-v "
@@ -559,7 +550,7 @@ def runMessage(fileBase, machinesCache, restartSeconds):
                 if not isdir(fileBase+'.difx'):
                         print('Warning: restartSeconds = %d and no existing output!' % restartSeconds)
         elif isdir(fileBase+'.difx') or isfile(fileBase+'.difx'):
-                if options.deletePolicy == 1:
+                if args.force :
                         if verbose > 0:
                                 print('Removing %s.difx' % fileBase)
                         sendMessage(fileBase, 'Info', 'Deleting %s.difx' % fileBase)
@@ -568,15 +559,15 @@ def runMessage(fileBase, machinesCache, restartSeconds):
                         print('Warning: output file %s.difx exists' % fileBase)
                         return 
         
-        np = doMachines(fileBase, options.machinesPolicy, machinesCache)
+        np = doMachines(fileBase, args.machinesPolicy, machinesCache)
         if np <= 0:
                 return 'Error: %s.machines not found' % fileBase
 
-        if options.commentStart != None:
-                print(options.commentStart.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
-        sendStartMessage(fileBase, difxLabel, options.useLocalHead, restartSeconds)
-        if options.commentEnd != None:
-                print(options.commentEnd.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
+        if args.commentStart != None:
+                print(args.commentStart.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
+        sendStartMessage(fileBase, difxLabel, args.useLocalHead, restartSeconds)
+        if args.commentEnd != None:
+                print(args.commentEnd.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
 
         return None
 
@@ -584,8 +575,8 @@ def runMessage(fileBase, machinesCache, restartSeconds):
 def runDirect(fileBase, machinesCache, restartSeconds):
 
         if verbose > 1:
-                print(options)
-        difxVersion, difxLabel = testDifxVersion(fileBase, options.override)
+                print(args)
+        difxVersion, difxLabel = testDifxVersion(fileBase, args.override)
 
         identifier = fileBase.split('/')[-1]
 
@@ -598,12 +589,12 @@ def runDirect(fileBase, machinesCache, restartSeconds):
                 return 'Error: input file %s.input not found' % fileBase
         
         if not isfile(fileBase+'.im'):
-                if options.makeModel and isfile(fileBase+'.calc'):
+                if args.makeModel and isfile(fileBase+'.calc'):
                         if delayModelOptions != None and len(delayModelOptions) > 0:
                             calcOptions = delayModelOptions
                         else:
                             calcOptions = ""
-                            if options.override:
+                            if args.override:
                                     calcOptions += "--override-version "
                             for i in range(verbose):
                                     calcOptions += "-v "
@@ -615,7 +606,7 @@ def runDirect(fileBase, machinesCache, restartSeconds):
                 if not isdir(fileBase+'.difx'):
                         print('Warning: restartSeconds = %d and no existing output!' % restartSeconds)
         elif isdir(fileBase+'.difx') or isfile(fileBase+'.difx'):
-                if options.deletePolicy == 1:
+                if args.force:
                         if verbose > 0:
                                 print('Removing %s.difx' % fileBase)
                         sendMessage(fileBase, 'Info', 'Deleting %s.difx' % fileBase)
@@ -625,7 +616,7 @@ def runDirect(fileBase, machinesCache, restartSeconds):
                         return
         
         # generate machine file
-        np = doMachines(fileBase, options.machinesPolicy, machinesCache)
+        np = doMachines(fileBase, args.machinesPolicy, machinesCache)
         if np <= 0:
                 return 'Error: %s.machines not found' % fileBase
 
@@ -666,18 +657,18 @@ def runDirect(fileBase, machinesCache, restartSeconds):
         sendMessage(fileBase, 'Spawning', 'Spawning %d processes' % np)
         if verbose > 0:
                 print('Executing: ', cmd)
-        if options.commentStart != None:
-                print(options.commentStart.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
+        if args.commentStart != None:
+                print(args.commentStart.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
         t0 = time()
-        if options.logFile != None:
-                system(cmd + " >> " + options.logFile + " 2>&1")
+        if args.logFile != None:
+                system(cmd + " >> " + args.logFile + " 2>&1")
         else:
                 system(cmd)
         t1 = time()
         if verbose > 0:
                 print('Elapsed time (s) =', t1-t0)
-        if options.commentEnd != None:
-                print(options.commentEnd.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
+        if args.commentEnd != None:
+                print(args.commentEnd.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
         groupId = getenv('DIFX_GROUP_ID')
         if groupId != None:
                 cmd = 'chown :%s %s.difx/*' % (groupId, fileBase)
@@ -735,10 +726,10 @@ def checkFiles(fileBase, level):
 
 def run(fileBase, machinesCache, restartSeconds):
         
-        if options.checkfiles != None:
-                checkFiles(fileBase, options.checkfiles)
+        if args.checkfiles != None:
+                checkFiles(fileBase, args.checkfiles)
 
-        if options.wait > 0:
+        if args.wait > 0:
                 intmjd = 0
                 sec = 0.0
                 dur = 0.0
@@ -763,10 +754,10 @@ def run(fileBase, machinesCache, restartSeconds):
                         print('Skipping job %s because its end time has passed.' % fileBase)
                         return None 
 
-                waitMJD(mjd + options.wait/86400.0)
+                waitMJD(mjd + args.wait/86400.0)
 
         savedEnvironment = updateEnvironment(fileBase+'.input.env')
-        if options.useStartMessage:
+        if args.useStartMessage:
                 rv = runMessage(fileBase, machinesCache, restartSeconds)
         else:
                 rv = runDirect(fileBase, machinesCache, restartSeconds)
@@ -778,11 +769,6 @@ def run(fileBase, machinesCache, restartSeconds):
 # main starts here
 #------------------
 
-# FIXME: add this to optParser???
-if '--version' in argv:
-        print(getVersion())
-        exit(0)
-
 restartSeconds = 0.0
 fileBaseList = []
 cwd = getcwd()
@@ -791,54 +777,51 @@ updateMpiOptions()
 
 signal.signal(signal.SIGINT, handler)
 
-usage = getUsage()
-optParser = OptionParser(version="%prog " + VERSION , usage=usage)
+parser = argparse.ArgumentParser(description="A program to simplify the launching of mpifxcorr.", epilog=epilog(), formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument("-A", "--agent", type=str, default="", help="call mpirun through this agent with filebase as only argument")
+group = parser.add_mutually_exclusive_group()
+group.add_argument("-g", "--genmachines", dest="machinesPolicy", action="store_const", const=2, default=2, help="will run genmachines even if not needed [default]")
+group.add_argument("-a", "--automachines", dest="machinesPolicy", action="store_const", const=1, help="will run genmachines if needed")
+group.add_argument("-n", "--nomachines", dest="machinesPolicy", action="store_const", const=0, help="will not run genmachines, even if needed")
+parser.add_argument("-c", "--checkfiles", action="count", help="do a sanity check on the files to correlate (only for some formats).")
+parser.add_argument("-M", "--machines-file", dest="machinesFile", action="store", type=str, default="", help="use supplied machines file instead of one based on job name")
+parser.add_argument("-L", "--log-file", dest="logFile", action="store", type=str, help="capture stderr and stdout and write to specified file")
+parser.add_argument("-m", "--message", dest="useStartMessage", action="store_true", help="start difx via DifxStartMessage")
+parser.add_argument("-f", "--force", action="store_true", help="force running even if output file exists")
+parser.add_argument("-d", "--dont-calc", dest="makeModel", action="store_false", help="will not calculate delay model, even if needed")
+parser.add_argument("-D", "--difxdb", dest="difxdb", action="store_true", help="make use of difxdb to obtain module location")
+parser.add_argument("-F", "--fits", dest="makeFits", action="store_true", help="generate 1 fits file per job at end of each job")
+parser.add_argument("-v", "--verbose", action="count", default=0, help="send more output to the screen and difxlog file (use -v -v for extra info)")
+parser.add_argument("-q", "--quiet", action="count", default=0, help="be quieter")
+parser.add_argument("-w", "--wait",  action="count", default=0, help="wait until job start time before launching")
+parser.add_argument("-l", "--localhead", dest="useLocalHead", action="store_true", help="use the current host as the head node. Overrides DIFX_HEAD_NODE.")
+parser.add_argument("--override-version", dest="override", action="store_true", help="ignore difx version differences")
+parser.add_argument("--comment-start", dest="commentStart", action="store", help="a string to print just before starting each job")
+parser.add_argument("--comment-end", dest="commentEnd", action="store", help="a string to print just after each job ends")
+parser.add_argument('--version', action='version', version=getVersion())
+parser.add_argument('delay', type=str, nargs='?', help='an optional delay (seconds) to add to the job start time')
+parser.add_argument('input', type=str, nargs='+', help='the list of DiFX .input files to process. Alternatively a DiFX .joblist file can be given.')
 
-optParser.set_defaults(machinesPolicy=2, useStartMessage=False, deletePolicy=0, makeModel=True, difxdb=False, makeFits=False, verbose=0, quiet=0, wait=0, useLocalHead=False, override=False, machinesFile="")
+args = parser.parse_args()
 
-optParser.add_option("-A", "--agent", dest="agent", action="store", type="string", help="call mpirun through this agent with filebase as only argument")
-optParser.add_option("-g", "--genmachines", dest="machinesPolicy", action="store_const", const=2, help="will run genmachines even if not needed [default]")
-optParser.add_option("-a", "--automachines", dest="machinesPolicy", action="store_const", const=1, help="will run genmachines if needed")
-optParser.add_option("-c", "--checkfiles", dest="checkfiles", action="count", help="do a sanity check on the files to correlate (only for some formats)")
-optParser.add_option("-n", "--nomachines", dest="machinesPolicy", action="store_const", const=0, help="will not run genmachines, even if needed")
-optParser.add_option("-M", "--machines-file", dest="machinesFile", action="store", type="string", help="use supplied machines file instead of one based on job name")
-optParser.add_option("-L", "--log-file", dest="logFile", action="store", type="string", help="capture stderr and stdout and write to specified file")
-optParser.add_option("-m", "--message", dest="useStartMessage", action="store_true", help="start difx via DifxStartMessage")
-optParser.add_option("-f", "--force", dest="deletePolicy", action="store_const", const=1, help="force running even if output file exists")
-optParser.add_option("-d", "--dont-calc", dest="makeModel", action="store_false", help="will not calculate delay model, even if needed")
-optParser.add_option("-D", "--difxdb", dest="difxdb", action="store_true", help="make use of difxdb to obtain module location")
-optParser.add_option("-F", "--fits", dest="makeFits", action="store_true", help="generate 1 fits file per job at end of each job")
-optParser.add_option("-v", "--verbose", dest="verbose", action="count", help="send more output to the screen and difxlog file (use -v -v for extra info)")
-optParser.add_option("-q", "--quiet", dest="quiet", action="count", help="be quieter")
-optParser.add_option("-w", "--wait", dest="wait", action="count", help="wait until job start time before launching")
-optParser.add_option("-l", "--localhead", dest="useLocalHead", action="store_true", help="use the current host as the head node. Overrides DIFX_HEAD_NODE.")
-optParser.add_option("--override-version", dest="override", action="store_true", help="ignore difx version differences")
-optParser.add_option("--comment-start", dest="commentStart", action="store", help="a string to print just before starting each job")
-optParser.add_option("--comment-end", dest="commentEnd", action="store", help="a string to print just after each job ends")
-
-# parse the command line. Options will be stored in the options list. Leftover arguments will be stored in the args list
-(options, args) = optParser.parse_args()
-
-verbose = options.verbose - options.quiet
-
-if len(args) < 1:
-        optParser.print_help()
-        exit(1)
+verbose = args.verbose - args.quiet
 
 # parse arguments
+joblist = args.input
 try:
         # check if start delay parameter was given
-        restartSeconds = float(args[0])
-        start = 1
+        if args.delay:
+          restartSeconds = float(args.delay)
 except:
-        start = 0
+        joblist = args.delay.split(" ")  + args.input
+        print (joblist)
 
-if options.agent: agent = options.agent
+if args.agent: agent = args.agent
 
 # loop over all arguments
 fb = None
 runJobList = False
-for a in args[start:]:
+for a in joblist:
         # check for extension
         if a[-6:] == '.input':
                 fb = a[:-6]
@@ -872,12 +855,12 @@ if len(fileBaseList) < 1:
         optParser.error("ERROR: At least one .input or .joblist file must be given.")
 
 # verify that machinesfile exists
-if options.machinesFile != "" and  isfile(options.machinesFile) == False:
-        print("ERROR: The machines file (%s) does not exist" % options.machinesFile)
+if args.machinesFile != "" and  isfile(args.machinesFile) == False:
+        print("ERROR: The machines file (%s) does not exist" % args.machinesFile)
         exit(1)
 
 headNode = getenv('DIFX_HEAD_NODE')
-if options.useStartMessage and options.useLocalHead == False and headNode == None:
+if args.useStartMessage and args.useLocalHead == False and headNode == None:
         print("ERROR: Environment variable DIFX_HEAD_NODE must be defined.")
         print("Alternatively  you can use the -l option in case mk5daemon -H is running locally on this host.")
         exit(1)
@@ -888,8 +871,8 @@ for fileBase in fileBaseList:
                 print('Error: %s.input not found (or not a regular file)' % fileBase)
                 nBad += 1
 
-if options.logFile != None:
-        print('All command line output is being redirected to log file %s' % options.logFile)
+if args.logFile != None:
+        print('All command line output is being redirected to log file %s' % args.logFile)
 
 if nBad > 0:
         exit(1)
@@ -916,5 +899,5 @@ for fileBase in fileBaseList:
                 sendMessage(fileBase, 'ABORTED', v)
                 print(v)
                 exit(1)
-        elif options.makeFits == True:
+        elif args.makeFits == True:
                 system('%s %s %s.FITS' % (difx2fits, fileBase, fileBase))
