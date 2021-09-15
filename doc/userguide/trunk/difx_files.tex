@@ -1250,6 +1250,10 @@ The baseline table has multiple entries, each one corresponding to a pair of ant
 For each of {\em nBaseline} baseline entries, {\em nFreq} sub-bands are processed, and for each a total of {\em nProd} polarization products are formed.
 Indexes for each of these dimensions are {\em b}, {\em f} and {\em p} respectively, each starting count at 0.
 Within the DiFX context, all baselines must have the same {\em nFreq} and {\em nProd}, though this is not a requirement of {\tt mpifxcorr} in general.
+Each of the {\em nFreq} sub-bands specifies a pair of (possibly identical) datastream table bands to correlate.
+The global frequency table index of that product is by default identical to some index that one band out of the datastream table band pair ultimately refers to.
+Under DiFX~2.7 that target frequency can be specified explicitly and is interpreted as a spectral placement directive -- which target frequency
+the sub-band shall contribute data to. One or more sub-bands can refer to the same target frequency index.
 
 \begin{center}
 \begin{tabular}{l l l}
@@ -1261,6 +1265,7 @@ BASELINE ENTRIES & integer $\ge 1$ & number of entries in table, {\em nBaseline}
 D/STREAM A INDEX {\em b} & integer $\ge 0$ & datastream table index of first antenna \\
 D/STREAM B INDEX {\em b} & integer $\ge 0$ & datastream table index of second antenna \\
 NUM FREQS {\em b} & integer $\ge 1$ & number of frequencies on this baseline, {\em nFreq$_\mathit{b}$} \\
+(TARGET FREQ {\em b} & integer $\ge 0$ & index to frequency table) \\
 POL PRODUCTS {\em b}/{\em f} & integer $\ge 1$ & number of polarization products, {\em nProd$_\mathit{b}$} \\
 D/STREAM A BAND {\em p} & integer $\ge 0$ & index to frequency array in datastream table \\
 D/STREAM B BAND {\em p} & integer $\ge 0$ & same as abovem, but for antenna {\tt B}, not {\tt A} \\
