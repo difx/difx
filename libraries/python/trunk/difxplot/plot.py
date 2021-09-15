@@ -1,13 +1,16 @@
 """Contains the plotting classes for difxPlot.py"""
+import os
 import itertools
+from time import sleep
 from copy import deepcopy
 from pyqtgraph.Qt import QtGui
 import numpy
 import pyqtgraph as pg
+from difxplot.vis import read_vis, AverageVis
+from difxplot.util import InputDetail, check_for_difx_file
 
 class RefantNotFound(Exception):
     """refant not found"""
-
 
 class Plot:
     """Base plotting class"""
@@ -246,3 +249,95 @@ class PlotRefSplit(Plot):
             axis["Phases"][vis.freq_index * 2 + 1].setData(xs, vis.phases())
             axis["Amps"][vis.freq_index * 2 + 1].setData(xs, vis.amps())
             axis["Lags"][vis.freq_index * 2 + 1].setData(xs, vis.lags)
+
+class PlotDifx:
+    """Plots a difx file."""
+    def __init__(self, input_base, wait_for_file=False, refant=False, aver=1, live=False, ncols=4, write_fringes = False):
+        self.fin = None
+        self.input_base = input_base
+        self.refant = refant
+        self.aver = aver
+        self.averager = None
+        self.live = live
+        self.ncols = ncols
+        self.write_fringes = write_fringes
+        self.exp_info = InputDetail(input_base)
+        self.difx_in = check_for_difx_file(self.input_base)
+        if not self.difx_in:
+            if wait_for_file:
+                while not self.difx_in:
+                    sleep(0.2)
+                    self.difx_in = check_for_difx_file(self.input_base)
+            else:
+                print(f"DiFX file {self.input_base}.difx does not exist?")
+                return
+        self.plot_instance = self.choose_plot()
+        self.potential_new_file = "{}_{:0{pad}}".format(input_base.split("_")[0], (int(input_base.split("_")[1])+1), pad=len(input_base.split("_")[1]))
+        self.plot()
+
+    def choose_plot(self):
+        """Chooses the plot type depending on if a refant is set and if S/X mode or similar is used"""
+        if self.refant:
+            #if there's more than a 50% difference between min and max F we split the band into two plots:
+            if self.exp_info.freq_range[0]/self.exp_info.freq_range[1] < 0.5:
+                plot = PlotRefSplit(self.exp_info, self.refant)
+            else:
+                plot = PlotRef(self.exp_info, self.refant)
+        else:
+            if self.exp_info.freq_range[0]/self.exp_info.freq_range[1] < 0.5:
+                plot = PlotAllSplit(self.exp_info)
+            else:
+                plot = PlotAll(self.exp_info)
+        return plot
+
+    def plot(self):
+        """Starts plotting"""
+        print(f"Opening {self.difx_in}")
+        self.averager = AverageVis(self.exp_info, self.aver, self.plot_instance)
+        self.plot_instance.view.show()  # move this?
+        with open(self.difx_in, "rb") as self.fin:
+            plotter_outp = self.run_plotter()
+        if self.write_fringes:
+            self.averager.write_aver_all()
+        if plotter_outp:
+            #open a new file (and close old)
+            print("Opening next file, {}".format(self.potential_new_file))
+            self.plot_instance.app.exit(0)
+            self.plot_instance.win.close()
+            self.plot_instance.view.close()
+            del self.plot_instance
+            self.__init__(self.potential_new_file, self.refant, self.aver, self.live, self.ncols, self.write_fringes)
+
+
+    def run_plotter(self):
+        """Main loop for file read/plot"""
+        first_eof = True
+        while True:
+            if not self.plot_instance.view.isVisible():
+                print("Window closed - exiting")
+                return False
+            current_vis = read_vis(self.fin, self.exp_info)
+            if not current_vis:
+                if self.live:
+                    if first_eof:
+                        print("Waiting for more data")
+                        first_eof=False
+                        print("EOF")
+                    sleep(0.1)
+                    if self.check_for_new_file():
+                        return True
+                    pg.QtGui.QApplication.processEvents()
+                    continue
+                print("EOF")
+                break
+            if current_vis.is_auto_corr() or current_vis.polpair in ["RL", "LR"]:
+                continue
+            self.averager.handle(current_vis)
+        QtGui.QApplication.instance().exec_()
+        return False
+
+    def check_for_new_file(self):
+        """check if difx has opened a new file in series _01 _02 etc"""
+        if os.path.exists(self.potential_new_file+".difx"):
+            return True
+        return False
