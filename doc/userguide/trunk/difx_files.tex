@@ -1996,6 +1996,9 @@ calCode	& $[$char$]$	&	& one or more calibration code to select with this rule \
 mode	& $[$string$]$	&	& one or more modes as defined in the vex file to select with this rule \\
 setup	& string	&	& The name of the SETUP section to use, or SKIP if this rule describes scans \\
 	&		&	& not to correlate \\
+outputBandwidth & float        & MHz & Target bandwidth for auto-determined bands. Enables outputband mode. DiFX~2.7. \\
+addOutputBand   & $[$string$]$ &     & Explicit outputband definition. Enables outputband mode. DiFX~2.7. \\
+	&		&	& freq\@1810.0/bw\@4.0 \\
 \hline
 \hline
 \end{tabular}
