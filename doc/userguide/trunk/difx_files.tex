@@ -1815,7 +1815,7 @@ addPhaseCentre		& string	&       &		& contains info on a source to add; see belo
 To add additional phase centers, add one or more ``addPhaseCentre'' parameters to the source setup.
 In the parameter, the RA and dec must be provided.
 A name and/or calibrator code can be added as well.
-For example: {\tt addPhaseCentre=name\@1010-1212/RA\@10:10:21.1/Dec\@-12:12:00.34} .
+For example: {\tt addPhaseCentre=name@1010-1212/RA@10:10:21.1/Dec@-12:12:00.34} .
 
 
 An antenna section allows properties of an individual antenna, such as position, name, or clock/LO offsets, to be adjusted. 
@@ -1853,7 +1853,7 @@ vsn		& string	&		&		& override the Mark5 Module to be used \\
 zoom 		& string	&		&		& uses the global zoom configuration with matching name for \\
 		&		&		&		& this antenna; {\tt zoom=Zoom1} will match ZOOM block called {\tt Zoom1} \\
 addZoomFreq	& string	&		&		& adds a zoom band with specified freq/bw as shown: \\
-		&		&		&		& freq\@1810.0/bw\@4.0$[$/specAvg\@4$][$/noparent\@false$]$ \\
+		&		&		&		& freq@1810.0/bw@4.0$[$/specAvg@4$][$/noparent@false$]$ \\
 freqClockOffs	& $[$float$]$	& microsec	&		& adds clock offsets to each recorded frequency using the format: \\
 		&		&		&		& {\tt freqClockOffs=}{\em f1,f2,f3,f4}; must be same length as \\
 		&		&		&		& number of recorded freqs, first value must be zero \\
@@ -1998,7 +1998,7 @@ setup	& string	&	& The name of the SETUP section to use, or SKIP if this rule de
 	&		&	& not to correlate \\
 outputBandwidth & float        & MHz & Target bandwidth for auto-determined bands. Enables outputband mode. DiFX~2.7. \\
 addOutputBand   & $[$string$]$ &     & Explicit outputband definition. Enables outputband mode. DiFX~2.7. \\
-	&		&	& freq\@1810.0/bw\@4.0 \\
+	&		&	& freq@1810.0/bw@4.0 \\
 \hline
 \hline
 \end{tabular}
