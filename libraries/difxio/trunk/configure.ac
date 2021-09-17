@@ -1,6 +1,6 @@
-AC_INIT([difxio], [3.7.0], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([difxio],[3.7.0],[Walter Brisken <wbrisken@nrao.edu>])
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 #shared library versioning
 LIBRARY_VERSION=0:0:0
@@ -26,7 +26,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign])
 
 AC_PROG_CC
-AC_PROG_LIBTOOL
+LT_INIT
 AM_SANITY_CHECK
 
 AC_ARG_WITH(spice-root, [  --with-spice-root=ROOT
@@ -80,7 +80,7 @@ fi
 version=AC_PACKAGE_VERSION
 AC_SUBST(version)
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 	Makefile \
 	difxio.pc \
 	difxio.spec \
@@ -88,4 +88,4 @@ AC_OUTPUT([
 	tests/Makefile \
 	utils/Makefile \
 ])
-
+AC_OUTPUT

@@ -1,6 +1,6 @@
 AC_INIT([dirlist], [0.2], [Walter Brisken <wbrisken@nrao.edu>])
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 #shared library versioning
 LIBRARY_VERSION=0:0:0
@@ -26,7 +26,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign])
 
 AC_PROG_CXX
-AC_PROG_LIBTOOL
+LT_INIT
 AM_SANITY_CHECK
 
 AC_LANG(C++)
@@ -34,10 +34,11 @@ AC_LANG(C++)
 version=AC_PACKAGE_VERSION
 AC_SUBST(version)
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 	Makefile \
 	dirlist.pc \
 	src/Makefile \
 	tests/Makefile \
 	utils/Makefile \
 ])
+AC_OUTPUT

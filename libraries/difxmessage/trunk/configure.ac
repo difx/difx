@@ -1,6 +1,6 @@
 AC_INIT([difxmessage], [2.7.0], [Walter Brisken <wbrisken@nrao.edu>])
 
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 #shared library versioning
 LIBRARY_VERSION=0:0:0
@@ -30,7 +30,7 @@ AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_PROG_CC
-AC_PROG_LIBTOOL
+LT_INIT
 AM_SANITY_CHECK
 
 dnl **********************************************************
@@ -51,7 +51,7 @@ dnl **********************************************************
 
 LIBS=${EXPAT_LIBS}
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 	Makefile \
 	difxmessage.pc \
 	mark5ipc.pc \
@@ -60,3 +60,4 @@ AC_OUTPUT([
 	mark5ipc/Makefile \
 	utils/Makefile
 ])
+AC_OUTPUT

@@ -16,7 +16,7 @@ else
 fi
 autoconf
 autoheader
-automake -a -c
+automake -acf
 
 ./configure --prefix=$DIFXROOT
 

@@ -8,7 +8,7 @@ if [ -z $DIFXROOT ]; then
     exit 1
 fi
 
-aclocal -I m4
+aclocal
 if [[ "$OSTYPE" == "darwin"* ]]; then
     glibtoolize --copy --force
 else
@@ -16,7 +16,7 @@ else
 fi
 autoconf
 autoheader
-automake -a -c
+automake -a
 
 ./configure --prefix=$DIFXROOT
 

@@ -1,5 +1,5 @@
 AC_INIT([difx2fits], [3.7.0], [Walter Brisken <wbrisken@nrao.edu>])
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 AC_C_BIGENDIAN
 
@@ -39,8 +39,9 @@ fi
 
 
 
-AC_OUTPUT([ \
+AC_CONFIG_FILES([ \
 	Makefile \
 	src/Makefile \
 	utils/Makefile \
 ])
+AC_OUTPUT

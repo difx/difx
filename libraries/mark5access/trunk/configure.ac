@@ -1,6 +1,6 @@
 AC_INIT([mark5access], [1.5.5], [Walter Brisken <wbrisken@nrao.edu>])
 
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 
 AC_C_BIGENDIAN
 
@@ -31,7 +31,7 @@ AC_SYS_LARGEFILE
 AC_PATH_PROG([PYTHON],[python])
 AC_PROG_CC
 AM_PROG_CC_C_O
-AM_PROG_LIBTOOL
+LT_INIT
 AM_SANITY_CHECK
 
 AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
@@ -95,7 +95,7 @@ fi
 version=AC_PACKAGE_VERSION
 AC_SUBST(version)
 
-AC_OUTPUT([ \
+AC_CONFIG_FILES([ \
 	Makefile \
 	mark5access.pc \
 	vlbi-mark5access.spec \
@@ -105,4 +105,5 @@ AC_OUTPUT([ \
 	doc/Makefile \
         python/Makefile \
 ])
+AC_OUTPUT
 
