@@ -464,7 +464,7 @@ static char *quote()
       }
     }
     if(inch == 0) {
-      yyerror("Null byte specified at line %d\n",lines);
+      yyerror("Null byte specified\n");
     }
     buffer[count++] = inch;
     if(count >= max_size) {
@@ -474,7 +474,7 @@ static char *quote()
     inch = input();
   }
   if(inch == EOF || inch == '\n') {
-    yyerror("Unterminated string at line %d\n",lines);
+    yyerror("Unterminated string");
   }
   buffer[count]='\0';
   if(strlen(buffer) > 128) {

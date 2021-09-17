@@ -1,5 +1,5 @@
 AC_INIT([vex2difx], [2.7.0], [Walter Brisken <wbrisken@nrao.edu>])
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 AC_C_BIGENDIAN
  
@@ -10,9 +10,9 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_CC
 AC_PROG_F77
 AC_PROG_CPP
-AC_PROG_LIBTOOL
+LT_INIT
 AC_PROG_YACC
-AM_PROG_LEX
+AC_PROG_LEX(yywrap)
 AM_SANITY_CHECK
 AC_PROG_CXX
 
@@ -30,10 +30,11 @@ LIBS="${LEXLIB} ${LIBS} ${DIFXIO_LIBS} ${DIRLIST_LIBS}"
 CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${DIRLIST_CFLAGS}"
 CXXFLAGS="${CFLAGS}"
 
-AC_OUTPUT([ \
+AC_CONFIG_FILES([ \
 	Makefile \
 	vex/Makefile \
 	vexdatamodel/Makefile \
 	src/Makefile \
 	utilities/Makefile \
 ])
+AC_OUTPUT
