@@ -306,7 +306,7 @@ class PlotDifx:
             self.plot_instance.win.close()
             self.plot_instance.view.close()
             del self.plot_instance
-            self.__init__(self.potential_new_file, self.refant, self.aver, self.live, self.ncols, self.write_fringes)
+            self.__init__(self.potential_new_file, True, self.refant, self.aver, self.live, self.ncols, self.write_fringes)
 
 
     def run_plotter(self):
