@@ -3,18 +3,21 @@ YACC=bison
 YFLAGS=-d -y
 LEX=flex
 OBJECTS=vex.o vexf.o vexf_put.o vex.yy.o vex_util.o print_vex.o vex_get.o vex_put.o
-#CC=gcc -O -fnested-functions  # Enable this os gcc complains about nested functions
+#CC=gcc -O -fnested-functions  # Enable this if gcc complains about nested functions
 CC=gcc -O
 #
 CFLAGS=-fPIC -arch x86_64 -arch i386
 #
 
-default: libvex.a libvex.dylib
+default: y.tab.h libvex.a libvex.dylib
+
+.NOTPARALLEL: y.tab.h
 
 libvex.a: $(OBJECTS)
 	touch $@
 	rm -f $@
 	ar -qc $@ $(OBJECTS)
+	rm -f vex.c vex.yy.c
 
 libvex.dylib: $(OBJECTS)
 	gcc -dynamiclib -single_module  -o $@ $(OBJECTS) -ll -install_name $(DIFXROOT)/lib/libvex.dylib
@@ -34,7 +37,7 @@ vex_put.o:	y.tab.h
 vexf.o:		y.tab.h
 
 clean:
-	-@rm -f *.o libvex.a libvex.dylib
+	-@rm -f *.o libvex.a *~ libvex.dylib y.tab.c y.tab.h
 dist:
 	make clean
 	tar zhcvf vex.tar.gz Makefile *.c *.h *.l *.y

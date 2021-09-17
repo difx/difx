@@ -1,3 +1,20 @@
+#ifdef YYPARSE_PARAM
+#if defined __STDC__ || defined __cplusplus
+int yyparse (void *YYPARSE_PARAM);
+#else
+int yyparse ();
+#endif
+#else /* ! YYPARSE_PARAM */
+#if defined __STDC__ || defined __cplusplus
+int yyparse (void);
+#else
+int yyparse ();
+#endif
+#endif /* ! YYPARSE_PARAM */
+
+int yylex();
+void yyerror(const char*);
+
 /* structure declarations */
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
@@ -9,10 +26,6 @@
 // $LastChangedDate$
 //
 //============================================================================
-
-int yyparse();
-int yylex();
-void yyerror(const char *s);
 
 struct llist {
   struct llist *next;
@@ -348,9 +361,6 @@ struct vlba_frmtr_sys_trk {
 
 typedef struct vlba_frmtr_sys_trk Vlba_frmtr_sys_trk;
 
-void end_def();
-void create_ref(char *str, char *str2);
-
 /* prototypes */
 
 struct llist     *add_list(struct llist *start,void *ptr);
@@ -525,7 +535,7 @@ void *
 get_global_lowl(int primitive_in, int statement_in, struct vex *vex_in);
 
 void *
- get_global_lowl_next();
+get_global_lowl_next();
 
 struct llist *
 find_block(int block,struct vex *vex);
@@ -600,7 +610,7 @@ get_literal_def(struct vex *vex_in);
 Llist *
 find_literal(Llist *defs);
 
-void
+char *
 get_all_literals(struct llist *literals, char *str[]);
 
 void *
@@ -615,466 +625,460 @@ get_literals(Llist **lowls_literal, char *station_in,
 
 int vex_open(char *name, struct vex **vex);
 
-void
+void *
 create_vex(); /* (int screen_or_file) * zero(0) or one(1) resp.*/
 
-void
+void *
 create_block(char *str);
 
-void
+void *
 create_def(char *str);
 
-void
+void *
 create_qref(char *str, char *str2);
 
-void
+void *
 create_qref_qualifier(char *str);
 
-void
+void *
 create_external_ref(char *str, char *str2, char *str3);
 
-void
+void *
 create_version(char *str);
 
-void
+void *
 create_scan(char *str);
 
-void
-end_scan();
-  
-void
+void *
 create_comment(char *str, char *str2);
 
-void
+void *
 create_list(char *str);
 
-void
+void *
 create_list_value(char *str);
 
-void
+void *
 create_dlist(char *str, char *str2);
 
-void
+void *
 create(char *key, char *str);
 
-void
+void *
 create_value(char *key, char *str);
 
-void
+void *
 create_unit_value(char *key, char *str, char *str2);
 /*---------------------------------------------------------------------------*/
 /* SCHEDULE block builders                                                   */
 /*---------------------------------------------------------------------------*/
-void
+void *
 create_start(char *str);
 
-void
+void *
 create_mode(char *str);
 
-void
+void *
 create_source(char *str);
 
-void
+void *
 create_scan_list(char *str, char *str2);
 
-void
+void *
 create_station(char *str, char *str2, char *str3, char *str4,
 	       char *str5, char *str6, char *str7, char *str8,
 	       char *str9);
 
-void
+void *
 create_station_drive_list(char *str);
 
-void
+void *
 create_data_transfer(char *str, char *str2, char *str3, char *str4,
 		     char *str5, char *str6, char *str7, char *str8);
 
 /*---------------------------------------------------------------------------*/
 /* ANTENNA block builders                                                    */
 /*---------------------------------------------------------------------------*/
-void
+void *
 create_antenna_diam(char *str, char *str2);
 
-void
+void *
 create_axis_type(char *str, char *str2);
 
-void
+void *
 create_axis_offset(char *str, char *str2);
 
-void
+void *
 create_antenna_motion(char *str, char *str2, char *str3, char *str4,
 		       char *str5);
 
-void
+void *
 create_pointing_sector(char *str, char *str2, char *str3, char *str4,
 		       char *str5, char *str6, char *str7, char *str8,
 		       char *str9, char *str10, char *str11);
 /*---------------------------------------------------------------------------*/
 /* BBC block builders                                                        */
 /*---------------------------------------------------------------------------*/
-void
+void *
 create_bbc_assign(char *str, char *str2, char *str3);
 /*---------------------------------------------------------------------------*/
 /* CLOCK block builders                                                      */
 /*---------------------------------------------------------------------------*/
-void
+void *
 create_clock(char *str, char *str2, char *str3, char *str4, char *str5);
 /*---------------------------------------------------------------------------*/
 /* DAS block builders                                                        */
 /*---------------------------------------------------------------------------*/
-void
+void *
 create_record_transport_type(char *str);
 
-void
+void *
 create_electronics_rack_type(char *str);
 
-void
+void *
 create_number_drives(char *str);
 
-void
+void *
 create_headstack(char *str, char *str2, char *str3);
 
-void
+void *
 create_record_density(char *str, char *str2);
 
-void
+void *
 create_tape_length(char *str, char *str2, char *str3, char *str4);
 
-void
+void *
 create_recording_system_id(char *str);
 
-void
+void *
 create_tape_motion(char *str, char *str2, char *str3, char *str4,
                    char *str5, char *str6, char *str7);
-void
+void *
 create_tape_control(char *str);
 /*---------------------------------------------------------------------------*/
 /* EOP block builders                                                        */
 /*---------------------------------------------------------------------------*/
-void
+void *
 create_tai_utc(char *str, char *str2);
 
-void
+void *
 create_a1_tai(char *str, char *str2);
 
-void
+void *
 create_eop_ref_epoch(char *str);
 
-void
+void *
 create_num_eop_points(char *str);
 
-void
+void *
 create_eop_interval(char *str, char *str2);
 
-void
+void *
 create_ut1_utc(char *str, char *str2);
 
-void
+void *
 create_x_wobble(char *str, char *str2);
 
-void
+void *
 create_y_wobble(char *str, char *str2);
 
-void
+void *
 create_nut_ref_epoch(char *str);
 
-void
+void *
 create_num_nut_points(char *str);
 
-void
+void *
 create_nut_interval(char *str, char *str2);
 
-void
+void *
 create_delta_psi(char *str, char *str2);
 
-void
+void *
 create_delta_eps(char *str, char *str2);
 
-void
+void *
 create_nut_model(char *str);
 /*---------------------------------------------------------------------------*/
 /* EXPER block builders                                                      */
 /*---------------------------------------------------------------------------*/
-void
+void *
 create_exper_num(char *str);
 
-void
+void *
 create_exper_name(char *str);
 
-void
+void *
 create_exper_description(char *str);
 
-void
+void *
 create_exper_nominal_start(char *str);
 
-void
+void *
 create_exper_nominal_stop(char *str);
 
-void
+void *
 create_pi_name(char *str);
 
-void
+void *
 create_pi_email(char *str);
 
-void
+void *
 create_contact_name(char *str);
 
-void
+void *
 create_contact_email(char *str);
 
-void
+void *
 create_scheduler_name(char *str);
 
-void
+void *
 create_scheduler_email(char *str);
 
-void
+void *
 create_target_correlator(char *str);
 /*---------------------------------------------------------------------------*/
 /* FREQ block builders */
 /*---------------------------------------------------------------------------*/
-void
+void *
 create_chan_def(char *str, char *str2, char *str3, char *str4,
 		char *str5, char *str6, char *str7, char *str8,
 		char *str9);
 
-void
+void *
 create_chan_def_states(char *str);
 
-void
+void *
 create_sample_rate(char *str, char *str2);
 
-void
+void *
 create_bits_per_sample(char *str);
 
-void
+void *
 create_switching_cycle(char *str);
 
-void
+void *
 create_cycle(char *str, char *str2);
 
 /*---------------------------------------------------------------------------*/
 /* SITE block builders */
 /*---------------------------------------------------------------------------*/
-void
+void *
 create_site_station(char *str, char *str2, char *str3, char *str4,
 		    char *str5, char *str6);
 
-void
+void *
 create_list_value2(char *str);
 
-void
+void *
 create_unit_value2(char *key, char *str, char *str2);
 
 /*-------------------------------------------------------------------*/
 /* HEAD_POS block builders                                           */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_headstack_reference(char *str);
 
-void 
-create_headstack_pos(char *str, char *str2);
-
-void
+void *
 create_position(char *str, char *str2);
 /*-------------------------------------------------------------------*/
 /* IF block builders                                                 */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_if_def(char *str, char *str2, char *str3, char *str4,
 	      char *str5, char *str6, char *str7, char *str8,
 	      char *str9, char *str10, char *str11);
 /*-------------------------------------------------------------------*/
 /* PASS_ORDER block builders                                         */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_pass_order(char *str);
 
-void
+void *
 create_s2_group_order(char *str);
 /*-------------------------------------------------------------------*/
 /* PHASE_CAL_DETECT block builders                                   */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_phase_cal_detect(char *str);
 
-void
+void *
 create_phase_cal_detect_list(char *str);
 /*-------------------------------------------------------------------*/
 /* PROCEDURE block builders                                          */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_tape_change(char *str, char *str2);
 
-void
+void *
 create_headstack_motion(char *str, char *str2);
 
-void
+void *
 create_new_source_command(char *str, char *str2);
 
-void
+void *
 create_new_tape_setup(char *str, char *str2);
 
-void
+void *
 create_setup_always(char *str, char *str2, char *str3);
 
-void
+void *
 create_parity_check(char *str, char *str2, char *str3);
 
-void
+void *
 create_tape_prepass(char *str, char *str2, char *str3);
 
-void
+void *
 create_preob_cal(char *str, char *str2, char *str3, char *str4);
 
-void
+void *
 create_midob_cal(char *str, char *str2, char *str3, char *str4);
 
-void
+void *
 create_postob_cal(char *str, char *str2, char *str3, char *str4);
 
-void
+void *
 create_procedure_name_prefix(char *str);
 /*-------------------------------------------------------------------*/
 /* ROLL block builders                                               */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_roll(char *str);
 
-void
+void *
 create_roll_reinit_period(char *str, char *str2);
 
-void
+void *
 create_roll_inc_period(char *str);
 
-void
+void *
 create_roll_def(char *str);
 /*-------------------------------------------------------------------*/
 /* SCHEDULING_PARAMS block builders     using literals               */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_literal(char *str);
 /*-------------------------------------------------------------------*/
 /* SEFD_MODEL block builders                                         */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_sefd_model(char *str);
 
-void
+void *
 create_sefd(char *str, char *str2, char *str3);
 
-void
+void *
 create_sefd_model_parameter(char *str);
 /*-------------------------------------------------------------------*/
 /* SITE block builders                                               */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_site_name(char *str);
 
-void
+void *
 create_site_type(char *str);
 
-void
+void *
 create_site_ID(char *str);
 
-void
+void *
 create_site_position(char *str, char *str2, char *str3, char *str4,
 		     char *str5, char *str6);
 
-void
+void *
 create_site_position_epoch(char *str);
 
-void
+void *
 create_site_position_ref(char *str);
 
-void
+void *
 create_site_velocity(char *str, char *str2, char *str3, char *str4,
 		     char *str5, char *str6);
 
-void
+void *
 create_horizon_map(char *str, char *str2);
 
-void
+void *
 create_horizon_map_az();
 
-void
+void *
 create_horizon_map_el();
 
-void
+void *
 create_horizon_map_list(char *str);
 
-void
+void *
 create_zen_atmos(char *str, char *str2);
 
-void
+void *
 create_ocean_load_vert(char *str, char *str2, char *str3, char *str4);
 
-void
+void *
 create_ocean_load_horiz(char *str, char *str2, char *str3, char *str4);
 
-void
+void *
 create_occupation_code(char *str);
 
-void
+void *
 create_inclination(char *str, char *str2);
 
-void
+void *
 create_eccentricity(char *str);
 
-void
+void *
 create_arg_perigee(char *str, char *str2);
 
-void
+void *
 create_ascending_node(char *str, char *str2);
 
-void
+void *
 create_mean_anomaly(char *str, char *str2);
 
-void
+void *
 create_semi_major_axis(char *str, char *str2);
 
-void
+void *
 create_mean_motion(char *str);
 
-void
+void *
 create_orbit_epoch(char *str);
 /*-------------------------------------------------------------------*/
 /* SOURCE block builders                                             */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_source_type(char *str, char *str2);
 
-void
+void *
 create_source_name(char *str);
 
-void
+void *
 create_ra(char *str);
 
-void
+void *
 create_IAU_name(char *str);
 
-void
+void *
 create_dec(char *str);
 
-void
+void *
 create_ref_coord_frame(char *str);
 
-void
+void *
 create_source_position_ref(char *str);
 
-void
+void *
 create_source_position_epoch(char *str);
 
-void
+void *
 create_ra_rate(char *str, char *str2);
 
-void
+void *
 create_dec_rate(char *str, char *str2);
 
-void
+void *
 create_velocity_wrt_LSR(char *str, char *str2);
 
-void
+void *
 create_source_model(char *str, char *str2, char *str3, char *str4,
 		    char *str5, char *str6, char *str7, char *str8,
 		    char *str9, char *str10, char *str11, char *str12,
@@ -1082,51 +1086,63 @@ create_source_model(char *str, char *str2, char *str3, char *str4,
 /*-------------------------------------------------------------------*/
 /* TAPELOG_OBS block builders                                        */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_vsn(char *str, char *str2, char *str3, char *str4);
 /*-------------------------------------------------------------------*/
 /* TRACKS block builders                                             */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_fanin_def(char *str, char *str2, char *str3);
 
-void
+void *
 create_fanin_def_list(char *str);
 
-void
+void *
 create_fanout_def_subpass(char *str);
 
-void
+void *
 create_fanout_def_headstack(char *str);
 
-void
+void *
 create_fanout_trksID_list(char *str);
 
-/*void
+/*void *
 create_fanout_bitstream_list(char *str, char *str2);*/
-void
+void *
 create_fanout_bitstream_list(char *str);
 
-void
+void *
 create_track_frame_format(char *str);
 
-void
+void *
 create_data_modulation(char *str);
 
-void
+void *
 create_vlba_frmtr_sys_trk(char *str, char *str2, char *str3, char *str4);
 
-void
+void *
 create_vlba_trnsprt_sys_trk(char *str, char *str2);
 
-void
+void *
 create_s2_recording_mode(char *str);
 
-void
+void *
 create_s2_data_source(char *str, char *str2, char *str3);
 
+void * 
+end_def();
+
+void *
+create_ref(char *str, char *str2);
+
+void *
+end_scan();
+
+void *
+create_headstack_pos(char *str, char *str2);
+
 /*--------------------------- TEST PILOT ----------------------------*/
-void
+void *
 create_test(struct llist *start, char *str);
 
 FILE *fp;

@@ -146,7 +146,7 @@ FILE *fp;
  *                                                                    *
  *********************************************************************/
 /*-------------------------------------------------------------------*/
-void
+void *
 create_vex(char *str) /* str = filename) */
 {
   /* Get the last block_listing produced */
@@ -206,9 +206,10 @@ create_vex(char *str) /* str = filename) */
   scan_flag =0;
   in_def_flag=0;
   in_scan_flag=0;
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_block(char *str)
 {
   char *block_id;
@@ -252,9 +253,10 @@ create_block(char *str)
   block_id=(char *)strdup(str);
   blk=block2int(block_id);
   block_flag = 1;
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_def(char *str)
 {
   if (in_def_flag)
@@ -271,9 +273,10 @@ create_def(char *str)
   def_str=(char *)strdup(str);
   def_flag = 1;
   in_def_flag= 1;
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 end_def()
 {
   if (in_def_flag)
@@ -286,9 +289,11 @@ end_def()
   qref_flag=0;
   def_str=NULL;
   in_def_flag = 0;
+  return(NULL);
 }
+
 /*-------------------------------------------------------------------*/
-void
+void *
 create_ref(char *str, char *str2)
 {
   char *primitive,*keyword;
@@ -301,16 +306,18 @@ create_ref(char *str, char *str2)
 		       keyword,
 		       NULL)));
   qref_flag = 1;
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_qref(char *str, char *str2)
 {
   string[0]=(char *)strdup(str);
   string[1]=(char *)strdup(str2);
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_qref_qualifier(char *str)
 {
   char *blockname,*keyword;
@@ -333,9 +340,10 @@ create_qref_qualifier(char *str)
                            q_list)));
       q_list=NULL;
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_external_ref(char *str, char *str2, char *str3)
 {
   char *primitive,*keyword,*ext_file;
@@ -347,9 +355,10 @@ create_external_ref(char *str, char *str2, char *str3)
 				 make_external(ext_file,
                                  block2int(primitive),
                                  keyword)));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_version(char *str)
 {
   char *version_number;
@@ -360,9 +369,10 @@ create_version(char *str)
 			  make_lowl(T_VEX_REV, 
 			  make_dvalue(version_number,NULL)));
   b_list=NULL;
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_scan(char *str)
 {
 
@@ -382,9 +392,10 @@ create_scan(char *str)
   scan_str=(char *)strdup(str);
   scan_flag = 1;
   in_scan_flag = 1;
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 end_scan()
 {
 
@@ -399,9 +410,10 @@ end_scan()
   q_list=NULL;
   scan_str=NULL;
   in_scan_flag = 0;
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_comment(char *str, char *str2)
 {
   char *comment;
@@ -428,38 +440,42 @@ create_comment(char *str, char *str2)
 				     comment));
     }
 
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
 /* SCHEDULE block builders                                           */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_start(char *str)
 {
   char *scan_start;
 
   scan_start=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_START,scan_start));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_mode(char *str)
 {
   char *scan_mode;
 
   scan_mode=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_MODE,scan_mode));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_source(char *str)
 {
   char *scan_source;
 
   scan_source=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_SOURCE,scan_source));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_station(char *str, char *str2, char *str3, char *str4,
 	       char *str5, char *str6, char *str7, char *str8,
 	       char *str9)
@@ -474,9 +490,10 @@ create_station(char *str, char *str2, char *str3, char *str4,
   string[7] = (char *)strdup(str8);
   string[8] = (char *)strdup(str9);
   q_list=NULL;
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_station_drive_list(char *str)
 {
   char *station_key;
@@ -519,10 +536,10 @@ create_station_drive_list(char *str)
 				     q_list)));
       q_list=NULL;
     }
-
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_data_transfer(char *str, char *str2, char *str3, char *str4,
 		     char *str5, char *str6, char *str7, char *str8)
 {
@@ -555,11 +572,12 @@ create_data_transfer(char *str, char *str2, char *str3, char *str4,
 			             data_transfer_stop_units),
 			 data_transfer_options)));
   q_list=NULL;
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
 /* ANTENNA block builders                                            */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_antenna_diam(char *str, char *str2)
 {
   char *diam_value,*diam_units;
@@ -577,9 +595,10 @@ create_antenna_diam(char *str, char *str2)
       qref_list = add_list(qref_list,make_lowl(T_ANTENNA_DIAM,
 				     make_dvalue(diam_value,diam_units)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_axis_type(char *str, char *str2)
 {
   char *axis_type_az,*axis_type_el;
@@ -598,9 +617,10 @@ create_axis_type(char *str, char *str2)
 				     make_axis_type(axis_type_az,
 				     axis_type_el)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_axis_offset(char *str, char *str2)
 {
   char *axis_offset_value,*axis_offset_units;
@@ -619,9 +639,10 @@ create_axis_offset(char *str, char *str2)
 				     make_dvalue(axis_offset_value,
                                      axis_offset_units)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_antenna_motion(char *str, char *str2, char *str3, char *str4,
 	      char *str5)
 {
@@ -651,10 +672,10 @@ create_antenna_motion(char *str, char *str2, char *str3, char *str4,
 				     make_dvalue(slew_value,slew_units),
 				     make_dvalue(settle_value,settle_units))));
   }
-
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_pointing_sector(char *str, char *str2, char *str3, char *str4,
 		       char *str5, char *str6, char *str7, char *str8,
 		       char *str9, char *str10, char *str11)
@@ -713,11 +734,12 @@ create_pointing_sector(char *str, char *str2, char *str3, char *str4,
 				     make_dvalue(hilimit2_value,
 						 hilimit2_units))));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
 /* BBC block builders                                                */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_bbc_assign(char *str, char *str2, char *str3)
 {
   char *bbc_id, *bbc_physical_id, *bbc_if_id;
@@ -740,11 +762,12 @@ create_bbc_assign(char *str, char *str2, char *str3)
 				   make_dvalue(bbc_physical_id,NULL),
 				   bbc_if_id)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
 /* CLOCK block builders                                              */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_clock(char *str, char *str2, char *str3, char *str4, char *str5)
 {
   char *valid_from, *clock_early_value, *clock_early_units,
@@ -812,11 +835,12 @@ create_clock(char *str, char *str2, char *str3, char *str4, char *str5)
 				         make_dvalue(rate,NULL))));
 	}
     }  
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
 /* DAS block builders                                                */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_record_transport_type(char *str)
 {
   char *s1;
@@ -831,9 +855,10 @@ create_record_transport_type(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_RECORD_TRANSPORT_TYPE,s1));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_electronics_rack_type(char *str)
 {
   char *s1;
@@ -848,9 +873,10 @@ create_electronics_rack_type(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_ELECTRONICS_RACK_TYPE,s1));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_number_drives(char *str)
 {
   char *s1;
@@ -866,9 +892,10 @@ create_number_drives(char *str)
       qref_list = add_list(qref_list,make_lowl(T_NUMBER_DRIVES,
 		  		     make_dvalue(s1,NULL)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_headstack(char *str, char *str2, char *str3)
 {
   char *headstack, *rw, *drive_offset;
@@ -889,9 +916,10 @@ create_headstack(char *str, char *str2, char *str3)
 				     rw,
 				     make_dvalue(drive_offset,NULL))));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_record_density(char *str, char *str2)
 {
   char *type, *speed;
@@ -908,9 +936,10 @@ create_record_density(char *str, char *str2)
       qref_list = add_list(qref_list,make_lowl(T_RECORD_DENSITY,
 					       make_dvalue(type,speed)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_tape_length(char *str, char *str2, char *str3, char *str4)
 {
   char *dur_value, *dur_units, *speed, *tape;
@@ -942,9 +971,10 @@ create_tape_length(char *str, char *str2, char *str3, char *str4)
                                      speed,
 				     make_dvalue(tape,NULL))));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_recording_system_id(char *str)
 {
   char *s1;
@@ -960,9 +990,10 @@ create_recording_system_id(char *str)
       qref_list = add_list(qref_list,make_lowl(T_RECORDING_SYSTEM_ID,
 		 		     make_dvalue(s1,NULL)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_tape_motion(char *str, char *str2, char *str3, char *str4,
                    char *str5, char *str6, char *str7)
 {
@@ -1012,9 +1043,10 @@ create_tape_motion(char *str, char *str2, char *str3, char *str4,
 				         make_dvalue(s6,s7))));
 	}
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_tape_control(char *str)
 {
   char *s1;
@@ -1029,11 +1061,12 @@ create_tape_control(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_TAPE_CONTROL,s1));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
 /* EOP block builders                                                */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_tai_utc(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1051,9 +1084,10 @@ create_tai_utc(char *str, char *str2)
       qref_list = add_list(qref_list,make_lowl(T_TAI_UTC,
 				     make_dvalue(s1,s2)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_a1_tai(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1071,9 +1105,10 @@ create_a1_tai(char *str, char *str2)
       qref_list = add_list(qref_list,make_lowl(T_A1_TAI,
 				     make_dvalue(s1,s2)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_eop_ref_epoch(char *str)
 {
   char *s1;
@@ -1088,9 +1123,10 @@ create_eop_ref_epoch(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_EOP_REF_EPOCH,s1));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_num_eop_points(char *str)
 {
   char *s1;
@@ -1106,9 +1142,10 @@ create_num_eop_points(char *str)
       qref_list = add_list(qref_list,make_lowl(T_NUM_EOP_POINTS,
 				     make_dvalue(s1,NULL)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_eop_interval(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1126,9 +1163,10 @@ create_eop_interval(char *str, char *str2)
       qref_list = add_list(qref_list,make_lowl(T_EOP_INTERVAL,
 				     make_dvalue(s1,s2)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_ut1_utc(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1146,9 +1184,10 @@ create_ut1_utc(char *str, char *str2)
       qref_list = add_list(qref_list,make_lowl(T_UT1_UTC, q_list));
       q_list=NULL;
     }
+  return(NULL);
 } 
 /*-------------------------------------------------------------------*/
-void
+void *
 create_x_wobble(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1166,9 +1205,10 @@ create_x_wobble(char *str, char *str2)
       qref_list = add_list(qref_list,make_lowl(T_X_WOBBLE, q_list));
       q_list=NULL;
     }
+  return(NULL);
 } 
 /*-------------------------------------------------------------------*/
-void
+void *
 create_y_wobble(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1186,9 +1226,10 @@ create_y_wobble(char *str, char *str2)
       qref_list = add_list(qref_list,make_lowl(T_Y_WOBBLE, q_list));
       q_list=NULL;
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_nut_ref_epoch(char *str)
 {
   char *s1;
@@ -1203,9 +1244,10 @@ create_nut_ref_epoch(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_NUT_REF_EPOCH,s1));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_num_nut_points(char *str)
 {
   char *s1;
@@ -1221,9 +1263,10 @@ create_num_nut_points(char *str)
       qref_list = add_list(qref_list,make_lowl(T_NUM_NUT_POINTS,
 				     make_dvalue(s1,NULL)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_nut_interval(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1241,9 +1284,10 @@ create_nut_interval(char *str, char *str2)
       qref_list = add_list(qref_list,make_lowl(T_NUT_INTERVAL,
 				     make_dvalue(s1,s2)));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_delta_psi(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1260,9 +1304,10 @@ create_delta_psi(char *str, char *str2)
       qref_list = add_list(qref_list,make_lowl(T_DELTA_PSI, q_list));
       q_list=NULL;
     }
+  return(NULL);
 } 
 /*-------------------------------------------------------------------*/
-void
+void *
 create_delta_eps(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1279,9 +1324,10 @@ create_delta_eps(char *str, char *str2)
       qref_list = add_list(qref_list,make_lowl(T_DELTA_EPS, q_list));
       q_list=NULL;
     }
+  return(NULL);
 } 
 /*-------------------------------------------------------------------*/
-void
+void *
 create_nut_model(char *str)
 {
   char *s1;
@@ -1296,11 +1342,12 @@ create_nut_model(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_NUT_MODEL,s1));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
 /* EXPER block builders                                              */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_exper_name(char *str)
 {
   char *s1;
@@ -1315,9 +1362,10 @@ create_exper_name(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_EXPER_NAME,s1));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_exper_num(char *str)
 {
   char *s1;
@@ -1333,9 +1381,10 @@ create_exper_num(char *str)
       qref_list = add_list(qref_list,make_lowl(T_EXPER_NUM,
                                      make_dvalue(s1,NULL)));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_exper_description(char *str)
 {
   char *s1;
@@ -1350,9 +1399,10 @@ create_exper_description(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_EXPER_DESCRIPTION,s1));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_exper_nominal_start(char *str)
 {
   char *s1;
@@ -1367,9 +1417,10 @@ create_exper_nominal_start(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_EXPER_NOMINAL_START,s1));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_exper_nominal_stop(char *str)
 {
   char *s1;
@@ -1384,9 +1435,10 @@ create_exper_nominal_stop(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_EXPER_NOMINAL_STOP,s1));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_pi_name(char *str)
 {
   char *s1;
@@ -1401,9 +1453,10 @@ create_pi_name(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_PI_NAME,s1));
     }
+  return(NULL);
 }
 /*---------------------------------------------------------------------------*/
-void
+void *
 create_pi_email(char *str)
 {
   char *s1;
@@ -1418,9 +1471,10 @@ create_pi_email(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_PI_EMAIL,s1));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_contact_name(char *str)
 {
   char *s1;
@@ -1435,9 +1489,10 @@ create_contact_name(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_CONTACT_NAME,s1));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_contact_email(char *str)
 {
   char *s1;
@@ -1452,9 +1507,10 @@ create_contact_email(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_CONTACT_EMAIL,s1));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_scheduler_name(char *str)
 {
   char *s1;
@@ -1469,9 +1525,10 @@ create_scheduler_name(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_SCHEDULER_NAME,s1));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_scheduler_email(char *str)
 {
   char *s1;
@@ -1486,9 +1543,10 @@ create_scheduler_email(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_SCHEDULER_EMAIL,s1));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_target_correlator(char *str)
 {
   char *s1;
@@ -1503,11 +1561,12 @@ create_target_correlator(char *str)
       s1=(char *)strdup(str);
       qref_list = add_list(qref_list,make_lowl(T_TARGET_CORRELATOR,s1));
     }
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
 /* FREQ block builders                                               */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_chan_def(char *str, char *str2, char *str3, char *str4,
 	        char *str5, char *str6, char *str7, char *str8,
 		char *str9)
@@ -1528,9 +1587,10 @@ create_chan_def(char *str, char *str2, char *str3, char *str4,
   string[6] = (char *)strdup(str7);
   string[7] = (char *)strdup(str8);
   string[8] = (char *)strdup(str9);
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_chan_def_states(char *str)
 {
   char *s1, *s2, *s3, *s4, *s5, *s6, *s7, *s8, *s9, *s10;
@@ -1582,9 +1642,10 @@ create_chan_def_states(char *str)
 	  q_list=NULL;
 	}
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_sample_rate(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1602,9 +1663,10 @@ create_sample_rate(char *str, char *str2)
       qref_list = add_list(qref_list,make_lowl(T_SAMPLE_RATE,
 				     make_dvalue(s1,s2)));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_bits_per_sample(char *str)
 {
   char *s1;
@@ -1620,16 +1682,17 @@ create_bits_per_sample(char *str)
       qref_list = add_list(qref_list,make_lowl(T_BITS_PER_SAMPLE,
 				     make_dvalue(s1,NULL)));
     }
-
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_switching_cycle(char *str)
 {
   string[0] = (char *)strdup(str);
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_cycle(char *str, char *str2)
 {
   char *s1,*s2, *s3;
@@ -1649,17 +1712,19 @@ create_cycle(char *str, char *str2)
 			  	     q_list)));
       q_list=NULL;
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
 /* HEAD_POS block builders                                           */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_headstack_reference(char *str)
 {
   string[0] = (char *)strdup(str);
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_headstack_pos(char *str, char *str2)
 {
   char *s1,*s2, *s3;
@@ -1681,11 +1746,12 @@ create_headstack_pos(char *str, char *str2)
 				     q_list)));
       q_list=NULL;
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
 /* IF block builders                                                 */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_if_def(char *str, char *str2, char *str3, char *str4,
 	      char *str5, char *str6, char *str7, char *str8,
 	      char *str9, char *str10, char *str11)
@@ -1751,11 +1817,12 @@ create_if_def(char *str, char *str2, char *str3, char *str4,
 				     make_dvalue(s9,s10),
 					s11)));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
 /* PASS_ORDER block builders                                         */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_pass_order(char *str)
 {
   char *s1;
@@ -1771,9 +1838,10 @@ create_pass_order(char *str)
       qref_list = add_list(qref_list,make_lowl(T_PASS_ORDER, q_list));
       q_list=NULL;
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_s2_group_order(char *str)
 {
   char *s1;
@@ -1789,18 +1857,20 @@ create_s2_group_order(char *str)
       qref_list = add_list(qref_list,make_lowl(T_S2_GROUP_ORDER, q_list));
       q_list=NULL;
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
 /* PHASE_CAL_DETECT block builders                                   */
 /*-------------------------------------------------------------------*/
 /*-------------------------------------------------------------------*/
-void
+void *
 create_phase_cal_detect(char *str)
 {
   string[0] = (char *)strdup(str);
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_phase_cal_detect_list(char *str)
 {
   char *s1, *s2;
@@ -1819,11 +1889,12 @@ create_phase_cal_detect_list(char *str)
 				     q_list)));
       q_list=NULL;
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
 /* PROCEDURE block builders                                          */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_tape_change(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1832,9 +1903,10 @@ create_tape_change(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_TAPE_CHANGE,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_headstack_motion(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1843,9 +1915,10 @@ create_headstack_motion(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_HEADSTACK_MOTION,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_new_source_command(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1854,9 +1927,10 @@ create_new_source_command(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_NEW_SOURCE_COMMAND,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_new_tape_setup(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1865,9 +1939,10 @@ create_new_tape_setup(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_NEW_TAPE_SETUP,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_setup_always(char *str, char *str2, char *str3)
 {
   char *s1,*s2,*s3;
@@ -1878,9 +1953,10 @@ create_setup_always(char *str, char *str2, char *str3)
   qref_list = add_list(qref_list,make_lowl(T_SETUP_ALWAYS,
 				 make_setup_always(s1,
 				 make_dvalue(s2,s3))));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_parity_check(char *str, char *str2, char *str3)
 {
   char *s1,*s2,*s3;
@@ -1891,9 +1967,10 @@ create_parity_check(char *str, char *str2, char *str3)
   qref_list = add_list(qref_list,make_lowl(T_PARITY_CHECK,
 				 make_parity_check(s1,
 				 make_dvalue(s2,s3))));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_tape_prepass(char *str, char *str2, char *str3)
 {
   char *s1,*s2,*s3;
@@ -1904,9 +1981,10 @@ create_tape_prepass(char *str, char *str2, char *str3)
   qref_list = add_list(qref_list,make_lowl(T_TAPE_PREPASS,
 				 make_tape_prepass(s1,
 				 make_dvalue(s2,s3))));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_preob_cal(char *str, char *str2, char *str3, char *str4)
 {
   char *s1,*s2,*s3,*s4;
@@ -1918,9 +1996,10 @@ create_preob_cal(char *str, char *str2, char *str3, char *str4)
   qref_list = add_list(qref_list,make_lowl(T_PREOB_CAL,
 				 make_preob_cal(s1,
 				 make_dvalue(s2,s3),s4)));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_midob_cal(char *str, char *str2, char *str3, char *str4)
 {
   char *s1,*s2,*s3,*s4;
@@ -1932,9 +2011,10 @@ create_midob_cal(char *str, char *str2, char *str3, char *str4)
   qref_list = add_list(qref_list,make_lowl(T_MIDOB_CAL,
 				 make_midob_cal(s1,
 				 make_dvalue(s2,s3),s4)));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_postob_cal(char *str, char *str2, char *str3, char *str4)
 {
   char *s1,*s2,*s3,*s4;
@@ -1946,29 +2026,32 @@ create_postob_cal(char *str, char *str2, char *str3, char *str4)
   qref_list = add_list(qref_list,make_lowl(T_POSTOB_CAL,
 				 make_postob_cal(s1,
 				 make_dvalue(s2,s3),s4)));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_procedure_name_prefix(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_PROCEDURE_NAME_PREFIX,s1));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
 /* ROLL block builders                                               */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_roll(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_ROLL,s1));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_roll_reinit_period(char *str, char *str2)
 {
   char *s1,*s2;
@@ -1977,9 +2060,10 @@ create_roll_reinit_period(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_ROLL_REINIT_PERIOD,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_roll_inc_period(char *str)
 {
   char *s1;
@@ -1987,10 +2071,10 @@ create_roll_inc_period(char *str)
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_ROLL_INC_PERIOD,
 				 make_dvalue(s1,NULL)));
-
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_roll_def(char *str)
 {
   char *s1;
@@ -2006,11 +2090,12 @@ create_roll_def(char *str)
       qref_list = add_list(qref_list,make_lowl(T_ROLL_DEF, q_list));
       q_list=NULL;
     }
+  return(NULL);
 }
 /* -------------------------------------------------------------------*/
 /* SCHEDULING_PARAMS block builders     using literals               */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_literal(char *str)
 {
   char *s1;
@@ -2026,28 +2111,31 @@ create_literal(char *str)
       qref_list = add_list(qref_list,make_lowl(T_LITERAL, q_list));
       q_list=NULL;
     }
+  return(NULL);
 } 
 /*-------------------------------------------------------------------*/
 /* SEFD_MODEL block builders                                         */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_sefd_model(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_SEFD_MODEL,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_sefd(char *str, char *str2, char *str3)
 {
   string[0] = (char *)strdup(str);
   string[1] = (char *)strdup(str2);
   string[2] = (char *)strdup(str3);
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_sefd_model_parameter(char *str)
 {
   char *s1, *s2, *s3, *s4;
@@ -2069,38 +2157,42 @@ create_sefd_model_parameter(char *str)
 				     q_list)));
       q_list=NULL;
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
 /* SITE block builders                                               */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_site_name(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_SITE_NAME,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_site_type(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_SITE_TYPE,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_site_ID(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_SITE_ID,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_site_position(char *str, char *str2, char *str3, char *str4,
 		     char *str5, char *str6)
 {
@@ -2116,27 +2208,30 @@ create_site_position(char *str, char *str2, char *str3, char *str4,
 				 make_site_position(make_dvalue(s1,s2),
 				 make_dvalue(s3,s4),
 				 make_dvalue(s5,s6))));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_site_position_epoch(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_SITE_POSITION_EPOCH,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_site_position_ref(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_SITE_POSITION_REF,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_site_velocity(char *str, char *str2, char *str3, char *str4,
 		     char *str5, char *str6)
 {
@@ -2153,9 +2248,10 @@ create_site_velocity(char *str, char *str2, char *str3, char *str4,
 				 make_dvalue(s1,s2),
 				 make_dvalue(s3,s4),
 				 make_dvalue(s5,s6))));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_horizon_map(char *str, char *str2)
 {
   char *s1, *s2;
@@ -2163,23 +2259,26 @@ create_horizon_map(char *str, char *str2)
   s1=(char *)strdup(str);
   s2=(char *)strdup(str2);
   q_list = add_list(q_list,make_dvalue(s1,s2));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_horizon_map_az()
 {
   qref_list = add_list(qref_list,make_lowl(T_HORIZON_MAP_AZ, q_list));
   q_list=NULL;
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_horizon_map_el()
 {
   qref_list = add_list(qref_list,make_lowl(T_HORIZON_MAP_EL, q_list));
   q_list=NULL;
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_zen_atmos(char *str, char *str2)
 {
   char *s1, *s2;
@@ -2188,9 +2287,10 @@ create_zen_atmos(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_ZEN_ATMOS,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_ocean_load_vert(char *str, char *str2, char *str3, char *str4)
 {
   char *s1, *s2, *s3, *s4;
@@ -2203,9 +2303,10 @@ create_ocean_load_vert(char *str, char *str2, char *str3, char *str4)
 				 make_ocean_load_vert(
 				 make_dvalue(s1,s2),
 				 make_dvalue(s3,s4))));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_ocean_load_horiz(char *str, char *str2, char *str3, char *str4)
 {
   char *s1, *s2, *s3, *s4;
@@ -2218,18 +2319,20 @@ create_ocean_load_horiz(char *str, char *str2, char *str3, char *str4)
 				 make_ocean_load_horiz(
                                  make_dvalue(s1,s2),
 				 make_dvalue(s3,s4))));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_occupation_code(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_OCCUPATION_CODE,s1));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_inclination(char *str, char *str2)
 {
   char *s1, *s2;
@@ -2238,9 +2341,10 @@ create_inclination(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_INCLINATION,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_eccentricity(char *str)
 {
   char *s1;
@@ -2248,10 +2352,10 @@ create_eccentricity(char *str)
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_ECCENTRICITY,
 				 make_dvalue(s1,NULL)));
-
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_arg_perigee(char *str, char *str2)
 {
   char *s1, *s2;
@@ -2260,9 +2364,10 @@ create_arg_perigee(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_ARG_PERIGEE,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_ascending_node(char *str, char *str2)
 {
   char *s1, *s2;
@@ -2271,9 +2376,10 @@ create_ascending_node(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_ASCENDING_NODE,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_mean_anomaly(char *str, char *str2)
 {
   char *s1, *s2;
@@ -2282,9 +2388,10 @@ create_mean_anomaly(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_MEAN_ANOMALY,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_semi_major_axis(char *str, char *str2)
 {
   char *s1, *s2;
@@ -2293,9 +2400,10 @@ create_semi_major_axis(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_SEMI_MAJOR_AXIS,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_mean_motion(char *str)
 {
   char *s1;
@@ -2303,21 +2411,22 @@ create_mean_motion(char *str)
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_MEAN_MOTION,
 				 make_dvalue(s1,NULL)));
-
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_orbit_epoch(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_ORBIT_EPOCH,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
 /* SOURCE block builders                                             */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_source_type(char *str, char *str2)
 {
   char *s1, *s2;
@@ -2334,72 +2443,80 @@ create_source_type(char *str, char *str2)
     }
   qref_list = add_list(qref_list,make_lowl(T_SOURCE_TYPE,q_list));
   q_list=NULL;
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_source_name(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_SOURCE_NAME,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_ra(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_RA,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_IAU_name(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_IAU_NAME,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_dec(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_DEC,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_ref_coord_frame(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_REF_COORD_FRAME,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_source_position_ref(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_SOURCE_POSITION_REF,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_source_position_epoch(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_SOURCE_POSITION_EPOCH,s1));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_ra_rate(char *str, char *str2)
 {
   char *s1, *s2;
@@ -2408,9 +2525,10 @@ create_ra_rate(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_RA_RATE,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_dec_rate(char *str, char *str2)
 {
   char *s1, *s2;
@@ -2419,9 +2537,10 @@ create_dec_rate(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_DEC_RATE,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_velocity_wrt_LSR(char *str, char *str2)
 {
   char *s1, *s2;
@@ -2430,9 +2549,10 @@ create_velocity_wrt_LSR(char *str, char *str2)
   s2=(char *)strdup(str2);
   qref_list = add_list(qref_list,make_lowl(T_VELOCITY_WRT_LSR,
 				 make_dvalue(s1,s2)));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_source_model(char *str, char *str2, char *str3, char *str4,
 		    char *str5, char *str6, char *str7, char *str8,
 		    char *str9, char *str10, char *str11, char *str12,
@@ -2464,11 +2584,12 @@ create_source_model(char *str, char *str2, char *str3, char *str4,
 				 make_dvalue(s8,s9),
 				 make_dvalue(s10,s11),
 				 make_dvalue(s12,s13))));
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
 /* TAPELOG_OBS block builders                                        */
 /*-------------------------------------------------------------------*/
-void
+void *
 create_vsn(char *str, char *str2, char *str3, char *str4)
 {
   char *s1, *s2, *s3, *s4;
@@ -2480,22 +2601,24 @@ create_vsn(char *str, char *str2, char *str3, char *str4)
   qref_list = add_list(qref_list,make_lowl(T_VSN,
 				 make_vsn(make_dvalue(s1,NULL),
 				 s2,s3,s4)));
+  return(NULL);
 }  
 
 /*-------------------------------------------------------------------*/
 /* TRACKS block builders                                             */
 /*-------------------------------------------------------------------*/
 /*-------------------------------------------------------------------*/
-void
+void *
 create_fanin_def(char *str, char *str2, char *str3)
 {
 
   string[0] = (char *)strdup(str);
   string[1] = (char *)strdup(str2);
   string[2] = (char *)strdup(str3);
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_fanin_def_list(char *str)
 {
   char *s1, *s2, *s3, *s4, *s5;
@@ -2517,21 +2640,24 @@ create_fanin_def_list(char *str)
 				     q_list)));
       q_list=NULL;
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_fanout_def_subpass(char *str)
 {
   string[0] = (char *)strdup(str);
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_fanout_def_headstack(char *str)
 {
   string[1] = (char *)strdup(str);
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_fanout_bitstream_list(char *str)
 {
   char *s1;
@@ -2541,9 +2667,10 @@ create_fanout_bitstream_list(char *str)
       s1=(char *)strdup(str);
       q_list = add_list(q_list,s1);
     }  
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_fanout_trksID_list(char *str)
 {
   char *s1, *s2, *s3;
@@ -2566,27 +2693,30 @@ create_fanout_trksID_list(char *str)
       q_list=NULL;
       q2_list=NULL;
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_track_frame_format(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_TRACK_FRAME_FORMAT,s1));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_data_modulation(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_DATA_MODULATION,s1));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_vlba_frmtr_sys_trk(char *str, char *str2, char *str3, char *str4)
 {
   char *s1, *s2, *s3, *s4;
@@ -2614,9 +2744,10 @@ create_vlba_frmtr_sys_trk(char *str, char *str2, char *str3, char *str4)
                                      make_dvalue(s3,NULL),
                                      make_dvalue(s4,NULL))));
     }
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_vlba_trnsprt_sys_trk(char *str, char *str2)
 {
   char *s1, *s2;
@@ -2627,18 +2758,20 @@ create_vlba_trnsprt_sys_trk(char *str, char *str2)
   q_list = add_list(q_list,make_dvalue(s2,NULL));
   qref_list = add_list(qref_list,make_lowl(T_VLBA_TRNSPRT_SYS_TRK,q_list));
   q_list=NULL;
+  return(NULL);
 }  
 /*-------------------------------------------------------------------*/
-void
+void *
 create_s2_recording_mode(char *str)
 {
   char *s1;
 
   s1=(char *)strdup(str);
   qref_list = add_list(qref_list,make_lowl(T_S2_RECORDING_MODE,s1));
+  return(NULL);
 }
 /*-------------------------------------------------------------------*/
-void
+void *
 create_s2_data_source(char *str, char *str2, char *str3)
 {
   char *s1, *s2, *s3;
@@ -2658,6 +2791,7 @@ create_s2_data_source(char *str, char *str2, char *str3)
       qref_list = add_list(qref_list,make_lowl(T_S2_DATA_SOURCE,
 			   	     make_s2_data_source(s1,s2,s3)));
     }
+  return(NULL);
 }
 
 

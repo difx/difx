@@ -12,6 +12,8 @@ CFLAGS=-fPIC
 
 default: y.tab.h libvex.a libvex.so 
 
+.NOTPARALLEL: y.tab.h
+
 libvex.a: $(OBJECTS)
 	touch $@
 	rm $@
@@ -39,7 +41,7 @@ vex_put.o:	y.tab.h
 vexf.o:		y.tab.h
 
 clean:
-	-@rm -f *.o libvex.a *~ libvex.so
+	-@rm -f *.o libvex.a *~ libvex.so y.tab.c y.tab.h
 
 dist:
 	make clean
