@@ -1,10 +1,10 @@
-AC_INIT([mpifxcorr], [2.7], [Adam Deller <adeller@astro.swin.edu.au>])
+AC_INIT([mpifxcorr],[2.7],[Adam Deller <adeller@astro.swin.edu.au>])
 PACKAGE_VERSION=AC_PACKAGE_VERSION
 AC_SUBST([PACKAGE_VERSION])
 AC_SUBST([LIBRARY_VERSION])
 AM_INIT_AUTOMAKE([subdir-objects])
 AM_CONFIG_HEADER(config.h)
-AC_LANG_CPLUSPLUS
+AC_LANG([C++])
 AC_PROG_CXX
 AX_OPENMP
 AC_PROG_RANLIB
@@ -149,7 +149,7 @@ LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${MARK6SG_LIBS} ${SS_LIBS} ${MATH_LIBS} ${
 
 echo "CXXFLAGS = ${CXXFLAGS}"
 echo "LIBS = ${LIBS}"
-AC_OUTPUT([
+AC_CONFIG_FILES([
 	Makefile \
 	mpifxcorr.pc \
 	fxcorr.pc \
@@ -157,3 +157,4 @@ AC_OUTPUT([
 	src/architecture.h \
 	utils/Makefile\
 ])
+AC_OUTPUT
