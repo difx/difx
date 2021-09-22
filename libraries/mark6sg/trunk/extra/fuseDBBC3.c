@@ -105,7 +105,8 @@ static config_t myfs_config;
 
 void read_header(int fds, vdif_header_info_t * vdif_header)
 {
-	for (int i = 0; i < 8; ++i)
+	int i;
+	for (i = 0; i < 8; ++i)
 	{
 		mark6_sg_read(fds, &(vdif_header->header[i]), 4);
 	}
@@ -133,7 +134,8 @@ void read_header(int fds, vdif_header_info_t * vdif_header)
 
 void generate_output_header(vdif_header_info_t * output_header, vdif_header_info_t * input_header, int index)
 {
-	for (int i = 0; i < 8; ++i)
+	int i;
+	for (i = 0; i < 8; ++i)
 	{
 		output_header->header[i] = input_header->header[i];
 	}
@@ -158,10 +160,11 @@ void generate_output_header(vdif_header_info_t * output_header, vdif_header_info
 void generate_lookup(void)
 {
 	// Lookup-table for vdif interleaving
-	for(int i = 0; i < N_VDIF_STREAMS; ++i) {
+	int i, j;
+	for(i = 0; i < N_VDIF_STREAMS; ++i) {
 		int mask = 3 << (2*i);
 		int temp = 0;
-		for(int j = 0; j < 256; ++j) {
+		for(j = 0; j < 256; ++j) {
 			temp = j << (i*2);
 			lookup_table[i][j]  = (temp & mask);
 			temp >>= 2;
@@ -184,6 +187,7 @@ void interleave_more(open_file_info_t *finfo)
 	unsigned int output_word;
 	vdif_header_info_t header[N_VDIF_STREAMS];
 	vdif_header_info_t output_header;
+	int i;
 
 	// Ensure time-alignment of all VDIFs
 
@@ -262,7 +266,7 @@ void interleave_more(open_file_info_t *finfo)
 			// Write output header
 			unsigned int header_offset = ((frame * N_VDIF_STREAMS) + subframe) * (OUTPUT_VDIF_FRAME_SIZE / sizeof(unsigned int));
 
-			for(int i = 0; i < 8; ++i)
+			for(i = 0; i < 8; ++i)
 			{
 				finfo->vdifframe_out[header_offset+i] = output_header.header[i];
 			}
@@ -271,7 +275,7 @@ void interleave_more(open_file_info_t *finfo)
 			unsigned int input_data_offset = subframe * (VDIF_DATA_SIZE / N_VDIF_STREAMS);
 			unsigned int output_data_offset = header_offset + 8;
 			//fprintf(stderr, "HDO: %u\n", header_offset);
-			for(int i = 0; i < VDIF_DATA_SIZE / N_VDIF_STREAMS; ++i) {
+			for(i = 0; i < VDIF_DATA_SIZE / N_VDIF_STREAMS; ++i) {
 				// fuseBBC3 throughput with lookup disabled: 1.3 GB/s
 				// fuseBBC3 throughput with lookup active:   877 MB/s
 				output_word  = lookup_table[0][finfo->vdifframes_in[0][i + input_data_offset]];
@@ -292,6 +296,8 @@ void interleave_more(open_file_info_t *finfo)
 
 void fusem6_make_scanlist(mk6module_t* module)
 {
+	int scan;
+
 	if (module == NULL) {
 		return;
 	}
@@ -308,7 +314,7 @@ void fusem6_make_scanlist(mk6module_t* module)
 	// Get scan properties
 	module->scanstats = malloc(module->nscans * sizeof(struct stat));
 	memset(module->scanstats, 0, module->nscans * sizeof(struct stat));
-	for (int scan=0; scan < module->nscans; scan++) {
+	for (scan=0; scan < module->nscans; scan++) {
 		time_t t0 = time(NULL);
 		module->scanstats[scan].st_nlink = 1;
 		//module->scanstats[scan].st_uid   = m_uid;
@@ -330,6 +336,8 @@ void fusem6_make_scanlist(mk6module_t* module)
 
 int fusem6_get_scanindex(const mk6module_t* module, const char* scanpath)
 {
+	int scan;
+
 	const char *scanname = scanpath;
 	if ((module == NULL) || (scanname == NULL)) {
 		return -1;
@@ -339,7 +347,7 @@ int fusem6_get_scanindex(const mk6module_t* module, const char* scanpath)
 		scanname = strrchr(scanname, '/') + 1;
 	}
 
-	for (int scan = 0; module->nscans; scan++) {
+	for (scan = 0; module->nscans; scan++) {
 		if (strcmp(scanname, module->scannames[scan]) == 0) {
 			return scan;
 		}
@@ -374,12 +382,14 @@ struct fuse_operations my_filesys_ops = {
 /** Return a "directory" listing */
 int myfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi)
 {
+	int scan;
+
 	// Add the default directories
 	filler(buf, ".", NULL, 0);
 	filler(buf, "..", NULL, 0);
 
 	// Add scans from 1st out of 4 modules, hoping that they are present on the other modules as well
-	for (int scan = 0; scan < myfs_config.mk6modules[0].nscans; scan++) {
+	for (scan = 0; scan < myfs_config.mk6modules[0].nscans; scan++) {
 		filler(buf, myfs_config.mk6modules[0].scannames[scan], &myfs_config.mk6modules[0].scanstats[scan], 0);
 		//filler(buf, myfs_config.mk6modules[0].scannames[scan], NULL, 0);
 	}
@@ -390,6 +400,9 @@ int myfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offs
 /** Return file/directory properties when user asks for properties of a specific "file" */
 int myfs_getattr(const char *path, struct stat *statbuf)
 {
+	size_t total_input_frames = 0;
+	int module;
+
 	fprintf(stderr, "myfs_getattr: getting properties for %s\n", path);
 
 	// Defaults
@@ -403,8 +416,7 @@ int myfs_getattr(const char *path, struct stat *statbuf)
 	}
 
 	// Properties of a file in the main directory : count total# of VDIF frames in streams
-	size_t total_input_frames = 0;
-	for (int module = 0; module < N_VDIF_STREAMS; module++) {
+	for (module = 0; module < N_VDIF_STREAMS; module++) {
 		int idx = fusem6_get_scanindex(&myfs_config.mk6modules[module], path);
 		if (idx < 0) {
 			return -ENOENT;
@@ -427,7 +439,7 @@ int myfs_open(const char *path, struct fuse_file_info *fi)
 {
 	open_file_info_t *finfo;
 	struct stat statbuf;
-	int rv;
+	int n, rv;
 
 	fprintf(stderr, "myfs_open: opening %s\n", path);
 
@@ -450,7 +462,7 @@ int myfs_open(const char *path, struct fuse_file_info *fi)
 	fi->keep_cache = 0;   // disable caching of old data
 
 	// Open all associated input stream files
-	for (int n = 0; n < N_VDIF_STREAMS; n++) {
+	for (n = 0; n < N_VDIF_STREAMS; n++) {
 		finfo->streamfiles[n] = strdup(path);
 		fprintf(stderr, "Telling mark6sg to open %s under %s\n", finfo->streamfiles[n], myfs_config.mk6modules[n].rootpattern);
 		mark6_sg_set_rootpattern(myfs_config.mk6modules[n].rootpattern);
@@ -458,13 +470,13 @@ int myfs_open(const char *path, struct fuse_file_info *fi)
 	}
 
 	// Allocate buffer space for single VDIF frames
-	for (int n = 0; n < N_VDIF_STREAMS; n++) {
+	for (n = 0; n < N_VDIF_STREAMS; n++) {
 		finfo->vdifframes_in[n] = calloc(1, INPUT_VDIF_FRAME_SIZE-VDIF_HEADER_SIZE);
 	}
  	rv = posix_memalign((void**)&finfo->vdifframe_out, 4096, 4*OUTPUT_VDIF_FRAME_SIZE*N_OUTPUT_FRAMES_BUFFERED);
 	if (rv != 0) {
 		fprintf(stderr, "Error: posix_memalign returned %d\n", rv);
-		for (int n = 0; n < N_VDIF_STREAMS; n++) {
+		for (n = 0; n < N_VDIF_STREAMS; n++) {
 			mark6_sg_close(finfo->fds[n]);
 			free(finfo->vdifframes_in[n]);
 		}
@@ -536,17 +548,19 @@ int myfs_read(const char *path, char *buf, size_t size, off_t offset, struct fus
 /** Close all input streams */
 int myfs_close(const char *path, struct fuse_file_info *fi)
 {
+	int n;
+
 	open_file_info_t *finfo = (open_file_info_t*)(fi->fh);
 	fprintf(stderr, "myfs_close: closing %s\n", path);
 
 	// Close all input streams
-	for (int n = 0; n < N_VDIF_STREAMS; n++) {
+	for (n = 0; n < N_VDIF_STREAMS; n++) {
 		free(finfo->streamfiles[n]);
 		mark6_sg_close(finfo->fds[n]);
 	}
 
 	// Free all VDIF frame buffers
-	for (int n = 0; n < N_VDIF_STREAMS; n++) {
+	for (n = 0; n < N_VDIF_STREAMS; n++) {
 		free(finfo->vdifframes_in[n]);
 	}
 	free(finfo->vdifframe_out);
@@ -566,7 +580,7 @@ int main(int argc, char *argv[])
 {
 	char *fuse_vargs[16];
 	int fuse_nargs = 0;
-	int n, rc;
+	int n, rc, module;
 
 	assert(sizeof(unsigned int) == 4);
 
@@ -580,7 +594,7 @@ int main(int argc, char *argv[])
 
 	// Prepare global structures
 	memset(&myfs_config, 0, sizeof(myfs_config));
-	for (int module = 0; module < N_VDIF_STREAMS; module++) {
+	for (module = 0; module < N_VDIF_STREAMS; module++) {
 		char rootpattern[256];
 #if 0
 		sprintf(rootpattern, "/mnt/disks/%d/[0-7]/data/", module+1);
@@ -590,7 +604,7 @@ int main(int argc, char *argv[])
 #endif
 		myfs_config.mk6modules[module].rootpattern = strdup(rootpattern);
 	}
-	for (int module = 0; module < N_VDIF_STREAMS; module++) {
+	for (module = 0; module < N_VDIF_STREAMS; module++) {
 		fusem6_make_scanlist(&myfs_config.mk6modules[module]);
 	}
 	generate_lookup();
