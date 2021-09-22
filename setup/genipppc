@@ -30,12 +30,12 @@ def getippversion(path):
 		ippheader = path+'/ipp/include/ippversion.h'
 	if not isfile(ippheader):
 		ippheader = path+'/composerxe/ipp/include/ippversion.h'
-	        if isfile(ippheader):
-                        path += '/composerxe'
+		if isfile(ippheader):
+			path += '/composerxe'
 	if not isfile(ippheader):
-                ippheader = path+'/oneapi/ipp/latest/include/ippversion.h'
-	        if isfile(ippheader):
-                        path += '/oneapi/ipp/latest/'
+		ippheader = path+'/oneapi/ipp/latest/include/ippversion.h'
+		if isfile(ippheader):
+			path += '/oneapi/ipp/latest/'
 	if not isfile(ippheader):
 		ippheader = ''
 
