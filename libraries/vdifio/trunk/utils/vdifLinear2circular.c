@@ -599,8 +599,8 @@ void unpack8bit(Ipp8u *in, Ipp32f **out, int nchan, int iscomplex, int n, int of
       exit(1);
     }
   } else if (nchan==2 && iscomplex) {
-    int j=0;
-    for (int i=0; i<n; i++) {
+    int i, j=0;
+    for (i=0; i<n; i++) {
       out[0][offset + i*2]   = ins[j++];
       out[0][offset + i*2+1] = ins[j++];
       out[1][offset + i*2]   = ins[j++];
@@ -634,8 +634,8 @@ void unpack16bit(Ipp16u *in, Ipp32f **out, int nchan, int iscomplex, int n, int 
       exit(1);
     }
   } else if (nchan==2 && iscomplex) {
-    int j=0;
-    for (int i=0; i<n; i++) {
+    int i, j=0;
+    for (i=0; i<n; i++) {
       out[0][offset + i*2]   = ins[j++];
       out[0][offset + i*2+1] = ins[j++];
       out[1][offset + i*2]   = ins[j++];
@@ -653,13 +653,14 @@ int pack8bit(Ipp32f **in, Ipp8u *out, int nchan, int iscomplex, float mean, floa
   Ipp8s *outs;
   IppStatus status;
   int cfact = (iscomplex) ? 2 : 1;
+  int i;
 
   offset *= cfact;
 
   //printf("*OFFSET=%d\n", offset);
   
   outs = (Ipp8s*)out;
-  for (int i=0; i<nchan; i++) {
+  for (i=0; i<nchan; i++) {
   // Subtract mean and scale to target
     if (mean!=0.0) 
       ippsSubC_32f_I(mean, &in[i][offset], n*cfact);
@@ -674,9 +675,9 @@ int pack8bit(Ipp32f **in, Ipp8u *out, int nchan, int iscomplex, float mean, floa
       fprintf(stderr, "Error calling ippsConvert_32f8s_Sfs\n");
     }
   } else if (nchan==2) {
-    int o=0;
+    int i, o=0;
     if (iscomplex) {
-      for (int i=0;i<n;i++) {
+      for (i=0;i<n;i++) {
 	//printf("* %4d-%4d: ", o,o+3);
 	
         outs[o++] = in[0][offset + i*2];
@@ -689,7 +690,7 @@ int pack8bit(Ipp32f **in, Ipp8u *out, int nchan, int iscomplex, float mean, floa
 
       }
     } else {
-      for (int i=0;i<n;i++) {
+      for (i=0;i<n;i++) {
         outs[o++] = in[0][offset + i];
         outs[o++] = in[1][offset + i];
       }
@@ -712,9 +713,10 @@ int pack16bit(Ipp32f **in, Ipp16u *out, int nchan, int iscomplex, float mean, fl
   Ipp16s *outs;
   IppStatus status;
   int cfact = (iscomplex) ? 2 : 1;
+  int i;
 
   outs = (Ipp16s*)out;
-  for (int i=0; i<nchan; i++) {
+  for (i=0; i<nchan; i++) {
     // Subtract mean and scale to target
     if (mean!=0.0) 
       ippsSubC_32f_I(mean, &in[i][offset], n*cfact);
@@ -729,16 +731,16 @@ int pack16bit(Ipp32f **in, Ipp16u *out, int nchan, int iscomplex, float mean, fl
       fprintf(stderr, "Error calling ippsConvert_32f16s_Sfs\n");
     }
   } else if (nchan==2) {
-    int o=0;
+    int i, o=0;
     if (iscomplex) {
-      for (int i=0;i<n;i++) {
+      for (i=0;i<n;i++) {
         outs[o++] = in[0][offset + i*2];
         outs[o++] = in[0][offset + i*2+1];
         outs[o++] = in[1][offset + i*2];
         outs[o++] = in[1][offset + i*2+1];
       }
     } else {
-      for (int i=0;i<n;i++) {
+      for (i=0;i<n;i++) {
         outs[o++] = in[offset + 0][i];
         outs[o++] = in[offset + 1][i];
       }
