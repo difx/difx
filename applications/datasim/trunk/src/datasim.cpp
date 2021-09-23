@@ -26,6 +26,7 @@
 #include <gsl/gsl_randist.h>
 #include <getopt.h>
 #include <mpi.h>
+#include <stddef.h>
 #include "configuration.h"
 #include "datasim.h"
 #include "util.h"
