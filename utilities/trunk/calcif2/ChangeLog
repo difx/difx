@@ -5,6 +5,7 @@ Version 2.7.0
 * difxvmf : Tool to calculate Vienna Mapping Function and apply to .im file (incomplete as of 20190318)
 * If .v2d file has "+vmd" at end of delayModel parameter, then cause VMF to be used.  E.g., delayModel=difxcalc+vmf
   - if it has "+met" at end instead, calculate VMF using actual weather values; must be stored in files called <project>.<stn>.weather
+* Pass options to the underlying calc program by prefixing with a +
 
 Version 2.6.0
 * Version for DiFX-2.6, Mar 4, 2019

@@ -84,14 +84,12 @@ int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, con
 	}
 
 	vmfRows = loadVMFData(vmfData, MaxVMFData, (int)(D->job->mjdStart), 2, verbose);
-
 	if(vmfRows <= 0)
 	{
 		fprintf(stderr, "Error: %s: no VMF data loaded\n", program);
 
 		return -1;
 	}
-
 	
 	if(difxVersion && D->job->difxVersion[0])
 	{

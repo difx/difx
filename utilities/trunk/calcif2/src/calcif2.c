@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2019 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2021 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -47,7 +47,7 @@
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = VERSION;
-const char verdate[] = "20190401";
+const char verdate[] = "20210922";
 
 typedef struct
 {
@@ -67,6 +67,7 @@ typedef struct
 	char *files[MAX_FILES];
 	int overrideVersion;
 	enum AberCorr aberCorr;
+	char extra[1024];
 } CommandLineOptions;
 
 static void usage()
@@ -120,6 +121,8 @@ static void usage()
 	fprintf(stderr, "      variable CALC_SERVER can be used to override that.  The command line\n");
 	fprintf(stderr, "      overrides all.\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  +<arg>                  Pass <arg> to the calc program (not for calcserver)\n");
+	fprintf(stderr, "\n");
 }
 
 static void deleteCommandLineOptions(CommandLineOptions *opts)
@@ -157,7 +160,12 @@ static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 
 	for(i = 1; i < argc; ++i)
 	{
-		if(argv[i][0] == '-')
+		if(argv[i][0] == '+')
+		{
+			strcat(opts->extra, " ");
+			strcat(opts->extra, argv[i]+1);
+		}
+		else if(argv[i][0] == '-')
 		{
 			if(strcmp(argv[i], "-v") == 0 ||
 			   strcmp(argv[i], "--verbose") == 0)
@@ -640,7 +648,7 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 		}
 	}
 
-	if(strlen(delayModel) > 0)
+	if(strlen(delayModel) > 0 && strcasecmp(delayModel, "calcserver") != 0)
 	{
 		/* use specified delay model program rather than the calcserver */
 		
@@ -652,7 +660,7 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 			printDifxInput(D);
 		}
 
-		snprintf(cmd, MaxCommandLength, "%s %s.calc", delayModel, prefix);
+		snprintf(cmd, MaxCommandLength, "%s %s %s.calc", delayModel, opts->extra, prefix);
 		if(opts->verbose > 0)
 		{
 			printf("Executing the following: %s\n", cmd);
