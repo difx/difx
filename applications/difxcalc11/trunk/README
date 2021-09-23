@@ -4,6 +4,8 @@ July 2016.  This version contains implementations of the
 near field models of Sekido-Fukushima, Duev, and laser ranging
 and native DiFX interface.
 
+Fortran code relies on GNU Fortran extensions SYSTEM() and fnum(), 
+these are not available in Intel Fortran; won't compile in ifort.
 
 # To set up build files from a fresh SVN checkout (not needed for tar-ball)
 
