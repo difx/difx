@@ -19,6 +19,7 @@
 *****************************************************************************/
 
 #include <iostream>
+#include <cstddef>
 #include <cstdlib>
 #include <unistd.h>
 #include <vector>
@@ -26,7 +27,6 @@
 #include <gsl/gsl_randist.h>
 #include <getopt.h>
 #include <mpi.h>
-#include <stddef.h>
 #include "configuration.h"
 #include "datasim.h"
 #include "util.h"
