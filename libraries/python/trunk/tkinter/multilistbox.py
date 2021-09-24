@@ -213,8 +213,8 @@ class MultiListbox(Frame):
               
             lab = widget.cget('text')
 
-            if lab[0]=="\u2191": widget.config(text=lab[1:])
-            if lab[0]=="\u2193": widget.config(text=lab[1:])
+            if lab[0]==u"\u2191": widget.config(text=lab[1:])
+            if lab[0]==u"\u2193": widget.config(text=lab[1:])
 
       btnLabel = button.cget('text')
       
@@ -223,8 +223,8 @@ class MultiListbox(Frame):
          tableData = self.origData
       else:
          
-         if direction==1: button.config(text="\u2191" + btnLabel)
-         else: button.config(text="\u2193" + btnLabel)
+         if direction==1: button.config(text=u"\u2191" + btnLabel)
+         else: button.config(text=u"\u2193" + btnLabel)
 
          if self.columns[col].numeric:
                  tableData = sorted (tableData, reverse=reverse, key=lambda x: 0.0 if x[col]=="" else float(x[col]))
@@ -275,10 +275,11 @@ class MultiListbox(Frame):
 
    def get(self, first, last=None):
       result = []
-      print (self.lists)
       for l in self.lists:
           result.append(l.get(first,last))
-      if last: return list(map(*[None] + result))
+      if last: 
+          #return list(map(*[None] + result))
+          return map(*[None] + result)
       return result
 
    def index(self, index):

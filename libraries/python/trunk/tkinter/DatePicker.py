@@ -30,7 +30,7 @@ import datetime
 import sys
 
 if sys.version[0] == '2':
-    import Tkinter as tk
+    import tkinter as tk
 else:
     import tkinter as tk
  
@@ -45,7 +45,7 @@ class DatePicker:
         self.month_selected = self.month
         self.year_selected = self.year
         self.day_name = ''
-	self.selectedDate = datetime.date.today()
+        self.selectedDate = datetime.date.today()
 
         self.setup(self.year, self.month)
          
@@ -84,7 +84,7 @@ class DatePicker:
 
          
         #data
-	self.selectedDate = datetime.date(self.year, self.month, day)
+        self.selectedDate = datetime.date(self.year, self.month, day)
         self.day_name = self.selectedDate.strftime("%A")
          
         self.clear()
@@ -139,7 +139,7 @@ if __name__ == '__main__':
             cal = DatePicker(child)
              
         def print_selected_date(self):
-            print(self.data)
+            print((self.data))
              
  
     root = tk.Tk()
