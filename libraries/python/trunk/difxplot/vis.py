@@ -75,7 +75,10 @@ class AverageVis:
                 fout.write(f"Source: {self.exp_info.source_name}\n")
                 fout.write(f"Frequency: {self.exp_info.freq_range[0]}\n")
                 baseline_names = [b[0].name + "-" + b[1].name for b in self.plot.baselines]
-                fout.write(f"MJD: {self.vis_arr[baseline_names[0]][0][0][0].mjd+self.vis_arr[baseline_names[0]][0][0][0].seconds/86400.0}\n") 
+                try:
+                    fout.write(f"MJD: {self.vis_arr[baseline_names[0]][0][0][0].mjd+self.vis_arr[baseline_names[0]][0][0][0].seconds/86400.0}\n")
+                except IndexError:
+                    fout.write(f"MJD: {self.vis_arr[baseline_names[3]][0][0][0].mjd+self.vis_arr[baseline_names[3]][0][0][0].seconds/86400.0}\n")
                 for bl in baseline_names:
                     for freq in range(self.exp_info.numfreqs):
                         for pol in range(2):
