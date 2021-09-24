@@ -30,8 +30,17 @@ __author__="Helge Rottmann"
 import re
 import os
 import time
-import tkMessageBox
-from Tkinter import *
+from datetime import date
+import sys
+if sys.version_info < (3, 0):
+    import tkMessageBox
+    from Tkinter import *
+    import Tkconstants, tkFileDialog
+else:
+    from tkinter import *
+    import tkinter.messagebox as tkMessageBox
+    import tkinter.constants as Tkconstants
+
 import PIL.Image, PIL.ImageFont, PIL.ImageDraw
 import subprocess
 
@@ -47,12 +56,9 @@ from difxdb.difxdbconfig import DifxDbConfig
 from difxfile.difxdir import *
 from difxfile.difxfilelist import *
 
-from string import strip, upper
 from collections import deque
 
 from sqlalchemy import *
-#from Tkinter import *
-import Tkconstants, tkFileDialog
 from tkinter_difx.multilistbox import *
 from functools import partial
 
@@ -67,12 +73,12 @@ class GenericWindow(object):
         self.parent = parent
         self.config = None
     def busy(self):
-    	self.rootWidget.config(cursor="watch")
-	self.rootWidget.update()
+        self.rootWidget.config(cursor="watch")
+        self.rootWidget.update()
 
     def notbusy(self):
-   	self.rootWidget.config(cursor="")
-	self.rootWidget.update()
+        self.rootWidget.config(cursor="")
+        self.rootWidget.update()
         
 class MainWindow(GenericWindow):
     
@@ -92,8 +98,8 @@ class MainWindow(GenericWindow):
         self.databaseOptionsDlg= DatabaseOptionsWindow(self,rootWidget)
         self.notificationOptionsDlg= NotificationOptionsWindow(self,rootWidget)
         self.scanModulesDlg = ScanModulesWindow(self, rootWidget)
-	self.editExpDlg = EditExperimentsWindow(self, rootWidget)
-	self.showDirDlg = DirFileWindow(self, rootWidget)
+        self.editExpDlg = EditExperimentsWindow(self, rootWidget)
+        self.showDirDlg = DirFileWindow(self, rootWidget)
         
         self.defaultBgColor = rootWidget["background"]
         self.isConnected = False
@@ -105,10 +111,10 @@ class MainWindow(GenericWindow):
         self.filterUnscanned = IntVar()
         self.filterExpVar = StringVar()
         self.filterModuleTypeVar = StringVar()
-	self.filterAttentionVar = IntVar()
-	self.attentionVar = IntVar()
-	self.attentionVar.set(0)
-	
+        self.filterAttentionVar = IntVar()
+        self.attentionVar = IntVar()
+        self.attentionVar.set(0)
+        
         
         self.expFilterItems = []
         self.labelSizeX = 320
@@ -171,16 +177,16 @@ class MainWindow(GenericWindow):
         self.cboModuleType = OptionMenu(self.frmFilter, self.filterModuleTypeVar, *self.moduleTypes, command=self.applyModuleFilter)
         
         # widgets on frmMain
-	colList = []
-	colList.append(ListboxColumn("slot",4, searchable=True))
-	colList.append(ListboxColumn("vsn",6, searchable=True))
+        colList = []
+        colList.append(ListboxColumn("slot",4, searchable=True))
+        colList.append(ListboxColumn("vsn",6, searchable=True))
         colList.append(ListboxColumn("station",3, sortable=True))
         colList.append(ListboxColumn("experiments",30))
         colList.append(ListboxColumn("scans",3, numeric=True))
         colList.append(ListboxColumn("capacity",4, numeric=True) )
         colList.append(ListboxColumn("datarate",4, numeric=True))
         colList.append(ListboxColumn("received",15))
-	columns = tuple(colList)
+        columns = tuple(colList)
         self.grdSlot = MultiListbox(self.frmMain, 16, *columns)
         self.grdSlot.bindEvent("<ButtonRelease-1>", self.selectSlotEvent)
         self.btnExportList = Button (self.frmMain, text="Export list", command=self.saveModuleList)
@@ -216,7 +222,7 @@ class MainWindow(GenericWindow):
         self.cboExperiments =  Listbox(self.frmDetail, height=3, yscrollcommand=scrollCboExperiments.set, selectmode=MULTIPLE, state=DISABLED)
         scrollCboExperiments.config(command=self.cboExperiments.yview)
         self.btnEditExp = Button (self.frmDetail, text="Change experiments", command=self.showEditExperimentsWindow,state=DISABLED)
-	self.chkAttention = Checkbutton(self.frmDetail, text = "needs attention", variable=self.attentionVar, command= lambda : self.editModuleDetailsEvent(None))
+        self.chkAttention = Checkbutton(self.frmDetail, text = "needs attention", variable=self.attentionVar, command= lambda : self.editModuleDetailsEvent(None))
         self.txtComment = Text(self.frmDetail, height=3, width=25)
         
         # widgets on frmAction
@@ -228,7 +234,7 @@ class MainWindow(GenericWindow):
         self.btnRetire = Button (frmAction, text="Retire module", command=self.retireModuleEvent,state=DISABLED)
         self.btnExpad = Button (frmAction, text="Show exp. details", command=self.showExpDetailEvent,state=DISABLED) 
         self.btnShowDir = Button (frmAction, text="Show .dir file", command=self.showDirFileWindow,state=DISABLED) 
-	
+        
         # arrange objects on grid     
         self.frmFilter.grid(row=3,column=0, sticky=E+W+N+S,padx=2,pady=2) 
         self.frmMain.grid(row=1,rowspan=2,column=0, sticky=E+W+N+S, padx=2,pady=2)   
@@ -278,7 +284,7 @@ class MainWindow(GenericWindow):
         self.btnPrintVSNLabel.grid(row=30,column=2, sticky=E+W)
         self.btnExpad.grid(row=40,column=0, sticky=E+W)
         self.btnShowDir.grid(row=40,column=1, sticky=E+W)
-	
+        
         # bind events to widgets
         self.txtLocationContent.bind("<KeyRelease>", self.editModuleDetailsEvent)
         self.lblVSNContent.bind("<KeyRelease>", self.editModuleDetailsEvent)
@@ -287,7 +293,7 @@ class MainWindow(GenericWindow):
         self.lblDatarateContent.bind("<KeyRelease>", self.editModuleDetailsEvent)
         self.lblReceivedContent.bind("<KeyRelease>", self.editModuleDetailsEvent)
         self.txtComment.bind("<KeyRelease>", self.editModuleDetailsEvent)
-#	self.chkAttention.bind("<ButtonRelease-1>)", self.editModuleDetailsEvent)
+#       self.chkAttention.bind("<ButtonRelease-1>)", self.editModuleDetailsEvent)
     
     def saveModuleList(self):
         """Saves the current selection in a file"""
@@ -314,20 +320,20 @@ class MainWindow(GenericWindow):
              
     def printVSNLabel(self):
 
-	    if (self.selectedSlotIndex < 0):
-		return
+            if (self.selectedSlotIndex < 0):
+                return
 
-	    session = dbConn.session()
-	    slot = model.Slot()
-	    slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
+            session = dbConn.session()
+            slot = model.Slot()
+            slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
 
-	    if (slot is not None):
-		 vsnString = "%s/%s/%s" % (slot.module.vsn, slot.module.capacity, slot.module.datarate)
+            if (slot is not None):
+                 vsnString = "%s/%s/%s" % (slot.module.vsn, slot.module.capacity, slot.module.datarate)
 
-	    session.close()
+            session.close()
 
-	    printBarcode(vsnString, self.config.get("Comedia", "printCommand"))
-		
+            printBarcode(vsnString, self.config.get("Comedia", "printCommand"))
+                
 
     def printLibraryLabel(self, slotName=None):
         
@@ -350,7 +356,7 @@ class MainWindow(GenericWindow):
                 font = PIL.ImageFont.truetype(self.config.get("Comedia","fontFile"), int(self.config.get("Comedia", "fontSize")))
                 fontSmall = PIL.ImageFont.truetype(self.config.get("Comedia","fontFile"), int(self.config.get("Comedia", "fontSize"))-2)
             except:
-		print "Cannot find font: %s. Using default font" % (self.config.get("Comedia","fontFile"))
+                print ("Cannot find font: %s. Using default font" % (self.config.get("Comedia","fontFile")))
                 font = PIL.ImageFont.load_default()
                 fontSmall = PIL.ImageFont.load_default()
             
@@ -389,7 +395,7 @@ class MainWindow(GenericWindow):
             slot.module.capacity = self.lblCapacityContent.get()
             slot.module.datarate = self.lblDatarateContent.get()
             slot.module.comment = self.txtComment.get(1.0,END)
-	    slot.module.needsAttention = self.attentionVar.get()
+            slot.module.needsAttention = self.attentionVar.get()
             
             # remove all experiment assigments of this module
             slot.module.experiments = []
@@ -423,7 +429,7 @@ class MainWindow(GenericWindow):
         
     def updateSlotListbox(self):
         
-	self.busy()
+        self.busy()
         session = dbConn.session()
     
         # deselect active slot
@@ -477,8 +483,8 @@ class MainWindow(GenericWindow):
                 if (slot.module.numScans != None):
                     continue
 
-	    # check if "attention" checkbox is activated
-	    if (self.filterAttentionVar.get()):
+            # check if "attention" checkbox is activated
+            if (self.filterAttentionVar.get()):
                 if (not slot.module.needsAttention):
                     continue
             
@@ -495,7 +501,7 @@ class MainWindow(GenericWindow):
         
         session.close()
 
-	self.notbusy()
+        self.notbusy()
    
     
     def _saveModuleDetails(self):
@@ -509,8 +515,8 @@ class MainWindow(GenericWindow):
         
         self.lastExperiments = self.cboExperiments.get(0,END)
         self.lastComment = self.txtComment.get(1.0, END)
-	self.lastAttentionVar = IntVar()
-	self.lastAttentionVar.set(self.attentionVar.get())
+        self.lastAttentionVar = IntVar()
+        self.lastAttentionVar.set(self.attentionVar.get())
       
          
     def _updateExperimentListboxes(self):
@@ -535,8 +541,8 @@ class MainWindow(GenericWindow):
         self.cboExperiments["state"] = NORMAL
         self.txtComment["state"] = NORMAL
         self.btnChangeSlot["state"] = NORMAL
-	self.btnEditExp["state"] = DISABLED
-	self.chkAttention["state"] = NORMAL
+        self.btnEditExp["state"] = DISABLED
+        self.chkAttention["state"] = NORMAL
         
         self.txtLocationContent.delete(0,END)
         self.lblVSNContent.delete(0,END)
@@ -559,7 +565,7 @@ class MainWindow(GenericWindow):
         self.btnRescan["state"] = NORMAL
         self.btnPrintLibraryLabel["state"] = NORMAL
         self.btnDeleteModule["state"] = NORMAL
-	self.btnEditExp["state"] = NORMAL
+        self.btnEditExp["state"] = NORMAL
         
         
         session = dbConn.session()
@@ -576,20 +582,20 @@ class MainWindow(GenericWindow):
             self.lblDatarateContent.insert(0, slot.module.datarate)
             self.lblReceivedContent.insert(0, slot.module.received)
             self.txtComment.insert(1.0, unicode(none2String(slot.module.comment),errors='ignore'))
-	    if slot.module.needsAttention == 1:
-	    	self.attentionVar.set(1)
-	    else:
-		self.attentionVar.set(0)
+            if slot.module.needsAttention == 1:
+                self.attentionVar.set(1)
+            else:
+                self.attentionVar.set(0)
             
             # update experiment listbox
             for experiment in slot.module.experiments:
                 assignedCodes.append(experiment.code)
                 self.cboExperiments.insert(END, experiment.code)
                 
-	    if len(assignedCodes) > 0:
-		self.btnExpad["state"] = NORMAL
-	    if (hasDir(slot.module.vsn)):
-		self.btnShowDir["state"] = NORMAL
+            if len(assignedCodes) > 0:
+                self.btnExpad["state"] = NORMAL
+            if (hasDir(slot.module.vsn)):
+                self.btnShowDir["state"] = NORMAL
                 
             self._saveModuleDetails()
             
@@ -613,7 +619,7 @@ class MainWindow(GenericWindow):
         self.lblReceivedContent.delete(0,END)
         self.cboExperiments.delete(0,END)
         self.txtComment.delete(1.0,END)
-	self.attentionVar.set(0)
+        self.attentionVar.set(0)
         
         # disable fields/buttons in the Details form
         self.txtLocationContent["state"] = DISABLED
@@ -630,7 +636,7 @@ class MainWindow(GenericWindow):
         self.btnPrintLibraryLabel["state"] = DISABLED
         self.btnDeleteModule["state"] = DISABLED
         self.btnChangeSlot["state"] = DISABLED
-	self.chkAttention["state"] = DISABLED
+        self.chkAttention["state"] = DISABLED
         
         # reset colors
         self.txtLocationContent["bg"] = self.defaultBgColor
@@ -648,28 +654,28 @@ class MainWindow(GenericWindow):
     def getSelectedSlot(self, session):
     
         if (self.selectedSlotIndex == -1):
-		return(None)
+                return(None)
 
-    	slot = model.Slot()
-	slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
+        slot = model.Slot()
+        slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
 
-	return(slot)
+        return(slot)
 
     def retireModuleEvent(self):
 
         session = dbConn.session()
 
-	slot = self.getSelectedSlot(session)
-	print slot, slot.module.id
-	if slot == None:
-		return
+        slot = self.getSelectedSlot(session)
+        print (slot, slot.module.id)
+        if slot == None:
+                return
 
         if (tkMessageBox.askokcancel("Confirm module retirement", "Do you really want to retire module " + slot.module.vsn + "? ")):
 
-       	    # set retired flag
-	    retire(session, slot.module.id)
+            # set retired flag
+            retire(session, slot.module.id)
 
-	    session.close()
+            session.close()
 
             #self.doCheckout(module.id)
 
@@ -705,7 +711,7 @@ class MainWindow(GenericWindow):
             
 
         if (tkMessageBox.askokcancel("Confirm module check-out", "Do you really want to remove module " + slot.module.vsn + " from the library? ")):
-	    session.close()
+            session.close()
             self.doCheckout(module.id)
         
         
@@ -731,13 +737,13 @@ class MainWindow(GenericWindow):
         dirFile = buildDirFilename(settings["dirPath"], module.vsn)
         if os.path.isfile(dirFile):
             os.remove(dirFile)
-	# delete .bindir file
-	bindirFile = dirFile[:-3] + "bindir"
+        # delete .bindir file
+        bindirFile = dirFile[:-3] + "bindir"
         if os.path.isfile(bindirFile):
             os.remove(bindirFile)
-	
-	# delete mark6 filelist
-	filelistFile = dirFile[:-3] + "filelist"
+        
+        # delete mark6 filelist
+        filelistFile = dirFile[:-3] + "filelist"
         if os.path.isfile(filelistFile):
             os.remove(filelistFile)
             
@@ -752,30 +758,30 @@ class MainWindow(GenericWindow):
         self.updateSlotListbox()
         
 #    def showDirEvent(self):
-#	if self.selectedSlotIndex == -1:
+#       if self.selectedSlotIndex == -1:
 #            return
-#	return
+#       return
 
     def showExpDetailEvent(self):
 
-	if self.selectedSlotIndex == -1:
+        if self.selectedSlotIndex == -1:
             return
 
-	session = dbConn.session()
+        session = dbConn.session()
         slot = model.Slot()
         slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
 
-	if len(slot.module.experiments) == 0:
-		return
-	expadArgs = ["expad"]
+        if len(slot.module.experiments) == 0:
+                return
+        expadArgs = ["expad"]
 
-	for exp in slot.module.experiments:
-		expadArgs.append(exp.code)
+        for exp in slot.module.experiments:
+                expadArgs.append(exp.code)
 
-	subprocess.call(expadArgs)
+        subprocess.call(expadArgs)
 
-	session.close()
-	
+        session.close()
+        
     def rescanModuleEvent(self):
         
         if self.selectedSlotIndex == -1:
@@ -808,27 +814,27 @@ class MainWindow(GenericWindow):
              
         for slot in slots:
             
-	    isDir = False
-	    isScan = False
+            isDir = False
+            isScan = False
             # find modules without .dir file
             if (not hasDir(slot.module.vsn)):
                 dirLessCount += 1
-	    else:
-		isDir = True
+            else:
+                isDir = True
         
             # find unvalidated modules
             if (slot.module.numScans == None):
-		if hasDir(slot.module.vsn):
-		    unvalidatedCount += 1
-	    else:
-		isScan = True
+                if hasDir(slot.module.vsn):
+                    unvalidatedCount += 1
+            else:
+                isScan = True
 
-	    # find modules that have been previously scanned but no .dir file
-	    # exists anymore (e.g. when manually deleted from disk)
-	    if isScan and not isDir:
-		self.scanModulesDlg.scanModules(slot.module)
-		print "missing .dir file for %s.  You might want to rescan the module. " %  slot.module.vsn
-		
+            # find modules that have been previously scanned but no .dir file
+            # exists anymore (e.g. when manually deleted from disk)
+            if isScan and not isDir:
+                self.scanModulesDlg.scanModules(slot.module)
+                print ("missing .dir file for %s.  You might want to rescan the module. " %  slot.module.vsn)
+                
         
         self.lblNumDirLess["text"] = dirLessCount
         self.lblNumUnscanned["text"] = unvalidatedCount
@@ -864,7 +870,7 @@ class MainWindow(GenericWindow):
     
     def searchModuleEvent(self, Event):
          
-        self.moduleFilter = upper(strip(self.txtSearch.get()))   
+        self.moduleFilter = self.txtSearch.get().upper().strip()
         self.updateSlotListbox()
         
         
@@ -911,12 +917,12 @@ class MainWindow(GenericWindow):
         else:
             self.lblDatarateContent["background"] = color
 
-	if (self.lastAttentionVar.get() != self.attentionVar.get()):
-	    self.chkAttention["background"] = editColor
-	    self.chkAttention["activebackground"] = editColor
+        if (self.lastAttentionVar.get() != self.attentionVar.get()):
+            self.chkAttention["background"] = editColor
+            self.chkAttention["activebackground"] = editColor
             self.moduleEdit += 1
-	else:
-	    self.chkAttention["background"] = color
+        else:
+            self.chkAttention["background"] = color
           
             
         if (self.lastReceivedContent != self.lblReceivedContent.get()):
@@ -1017,15 +1023,15 @@ class MainWindow(GenericWindow):
         slot = model.Slot()
         slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
 
-	if (isMark6(slot.module.vsn)):
-	    ext = ".filelist"
-	else:
-	    ext = ".dir"
-	filename = dirPath + "/" + slot.module.vsn + ext
-		
+        if (isMark6(slot.module.vsn)):
+            ext = ".filelist"
+        else:
+            ext = ".dir"
+        filename = dirPath + "/" + slot.module.vsn + ext
+                
         if (os.path.isfile(filename)):
-		self.showDirDlg.dirFilename = filename
-		self.showDirDlg.show()
+                self.showDirDlg.dirFilename = filename
+                self.showDirDlg.show()
         
         session.close()
 
@@ -1110,8 +1116,8 @@ class CheckinWindow(GenericWindow):
         
         self.chkPrintLibLabelVar = IntVar()
         self.chkPrintLibLabelVar.set(1)
-	self.vsnStringVar = StringVar()
-	#self.vsnStringVar.trace("w", lambda name, index, mode, var=self.vsnStringVar: self.callback(self.vsnStringVar))
+        self.vsnStringVar = StringVar()
+        #self.vsnStringVar.trace("w", lambda name, index, mode, var=self.vsnStringVar: self.callback(self.vsnStringVar))
         
         self._setupWidgets()
         self.updateExperimentListbox()
@@ -1179,7 +1185,7 @@ class CheckinWindow(GenericWindow):
         m = re.match('([a-zA-Z]+[%\+-]\d+)/(\d+)/(\d+).*', self.txtVSN.get().lstrip())
      
         if (m != None):
-            vsn = upper(m.group(1))
+            vsn = m.group(1).upper()
 
             
             if (len(vsn) != 8):
@@ -1272,7 +1278,7 @@ class DirFileWindow(GenericWindow):
         # call super class constructor
         super( DirFileWindow, self ).__init__(parent, rootWidget)
 
-	self.dirFilename = ""
+        self.dirFilename = ""
 
 
     def show(self):
@@ -1295,25 +1301,25 @@ class DirFileWindow(GenericWindow):
 
 
         self.txtDir = Text(self.dlg , width=150)
-	self.txtDir.grid(row=10, column=0, sticky=E+W)
-	yScroll = Scrollbar ( self.dlg, orient=VERTICAL )
+        self.txtDir.grid(row=10, column=0, sticky=E+W)
+        yScroll = Scrollbar ( self.dlg, orient=VERTICAL )
 
-	yScroll.config(command=self.txtDir.yview)
-	self.txtDir.config(yscrollcommand = yScroll.set)
+        yScroll.config(command=self.txtDir.yview)
+        self.txtDir.config(yscrollcommand = yScroll.set)
         yScroll.grid ( row=10, column=2, sticky=W+N+S )
 
 
-	try:
-	    dirFile = open(self.dirFilename, "r")
-	    self.txtDir.insert(END, dirFile.read())
+        try:
+            dirFile = open(self.dirFilename, "r")
+            self.txtDir.insert(END, dirFile.read())
 
-	    dirFile.close()
-	except:
-	    return
+            dirFile.close()
+        except:
+            return
 
-	self.txtDir.config (state=DISABLED)
-	
-	
+        self.txtDir.config (state=DISABLED)
+        
+        
 
 class ChangeSlotWindow(GenericWindow):
     
@@ -1610,7 +1616,7 @@ class EditExperimentsWindow(GenericWindow):
         frmAssigned.grid(row=2, column=1,sticky=W)     
         scrollCboExperiments = Scrollbar(frmAssigned)
         self.cboExperiments =  Listbox(frmAssigned, height=15, yscrollcommand=scrollCboExperiments.set, selectmode=MULTIPLE)
-	
+        
         #frmButtons
         frmButtons = Frame(self.dlg)
         frmButtons.grid(row=2, column=2,sticky=W)   
@@ -1632,7 +1638,7 @@ class EditExperimentsWindow(GenericWindow):
         scrollCboExperiments.config(command=self.cboExperiments.yview)
         scrollCboFreeExperiments.config(command=self.cboFreeExperiments.yview)
         
-	self.cboExperiments.grid(row=5, column=1, rowspan=2, sticky=E+W+N+S)
+        self.cboExperiments.grid(row=5, column=1, rowspan=2, sticky=E+W+N+S)
         self.cboFreeExperiments.grid(row=5, column=5, rowspan=2, sticky=W+N+S)
         scrollCboExperiments.grid(row=5,column=3, rowspan=2, sticky=W+N+S)
         scrollCboFreeExperiments.grid(row=5,column=7, rowspan=2, sticky=W+N+S)
@@ -1770,7 +1776,7 @@ class EditExperimentsWindow(GenericWindow):
         exps = self.cboExperiments.get(0, END)
         
         self.updateExperiments(exps)
-	
+        
 
 class ScanModulesWindow(GenericWindow):
  
@@ -1963,12 +1969,12 @@ class ScanModulesWindow(GenericWindow):
         if self.config.get('Comedia', 'enableEmailNotification') == 0:
             return
         
-	import smtplib
+        import smtplib
         from email.mime.text import MIMEText
 
         server = self.config.get('Comedia', 'smtpServer')
-	sender = self.config.get('Comedia', 'smtpFrom')
-	receiver = self.config.get('Comedia', 'smtpTo')
+        sender = self.config.get('Comedia', 'smtpFrom')
+        receiver = self.config.get('Comedia', 'smtpTo')
         
         text = "A module has arrived (VSN = %s)  that contains data from experiment %s.\n\n" % (vsn, exp)
         text += "Data for experiment %s is also stored on following modules:\n" % (exp)
@@ -1980,7 +1986,7 @@ class ScanModulesWindow(GenericWindow):
             text += "VSN = %s station = %s \n" % (module.vsn, module.stationCode)
         
 
-	msg = MIMEText(text)
+        msg = MIMEText(text)
 
         msg['Subject'] = '[comedia] module for experiment %s has arrived' % (exp)
         msg['From'] = sender
@@ -2004,12 +2010,12 @@ class ScanModulesWindow(GenericWindow):
         if self.config.get('Comedia', 'enableEmailNotification') == 0:
             return
         
-	import smtplib
+        import smtplib
         from email.mime.text import MIMEText
 
         server = self.config.get('Comedia', 'smtpServer')
-	sender = self.config.get('Comedia', 'smtpFrom')
-	receiver = self.config.get('Comedia', 'smtpTo')
+        sender = self.config.get('Comedia', 'smtpFrom')
+        receiver = self.config.get('Comedia', 'smtpTo')
         
         text = "The module with the VSN: " + vsn + " contains data from experiments with unknown state.\n\n"
         text += "Please update the state of the following experiments:\n"
@@ -2019,7 +2025,7 @@ class ScanModulesWindow(GenericWindow):
         
         text += "\nNOTE: Leaving experiments in unknown state will prevent modules from being released."
 
-	msg = MIMEText(text)
+        msg = MIMEText(text)
 
         msg['Subject'] = '[comedia] modules with unknown experiments have arrived'
         msg['From'] = sender
@@ -2048,7 +2054,7 @@ class ScanModulesWindow(GenericWindow):
                 module.experiments = []
                 
                 # loop over all scanned experiment codes
-		unknownExps = []
+                unknownExps = []
                 for expCode in checkModule.scannedExps:
                     
                     if (not experimentExists(session, expCode)):
@@ -2074,9 +2080,9 @@ class ScanModulesWindow(GenericWindow):
                 session.commit()
                 session.flush()
 
-		#send email notofication about added experiments
-		if len(unknownExps) > 0:
-			self.notifyAddExperiment(checkModule.vsn, unknownExps)
+                #send email notofication about added experiments
+                if len(unknownExps) > 0:
+                        self.notifyAddExperiment(checkModule.vsn, unknownExps)
                 
                 
                 continue
@@ -2146,7 +2152,7 @@ class PrintVSNLabelWindow(GenericWindow):
          
          vsnString = self.txtVSN.get()
 
-	 printBarcode(vsnString, self.config.get("Comedia", "printCommand"))
+         printBarcode(vsnString, self.config.get("Comedia", "printCommand"))
              
          self.dlg.destroy()
         
@@ -2253,7 +2259,7 @@ class AddExperimentWindow(GenericWindow):
         
     def _persistExperiment(self):
         
-        code = upper(self.txtExpCode.get())
+        code = self.txtExpCode.get().upper()
         # check that Code has been set
         if (code == ""):
             return
@@ -2288,24 +2294,26 @@ class ComediaConfig(DifxDbConfig):
           
 def printBarcode(label, printCommand):
 
-	try:
-		from reportlab.graphics.barcode import code39
-		from reportlab.lib.units import mm
-		from reportlab.pdfgen import canvas
-	except:
-		tkMessageBox.showinfo("Missing package", "For using the barcode functionality please install the python reportlab package.")
-		return
-		
-	c = canvas.Canvas("/tmp/comedia_vsn.pdf")
-	c.setPageSize((89*mm,36*mm))
-	c.setFontSize(20)
-	barcode39 = code39.Standard39(label, barHeight=10*mm, barWidth=0.27*mm, humanReadable=0, checksum=0)
+        try:
+                from reportlab.graphics.barcode import code39
+                from reportlab.lib.units import mm
+                from reportlab.pdfgen import canvas
+        except:
+                tkMessageBox.showinfo("Missing package", "For using the barcode functionality please install the python reportlab package.")
+                return
+                
+        c = canvas.Canvas("/tmp/comedia_vsn.pdf")
+        c.setPageSize((89*mm,36*mm))
+        barcode39 = code39.Standard39(label, barHeight=10*mm, barWidth=0.27*mm, humanReadable=0, checksum=0)
 
-	c.drawString(6*mm, 17*mm, label)
-	barcode39.drawOn(c, 0, 5*mm)
+        c.setFontSize(12)
+        c.drawString(6*mm, 30*mm, date.today().strftime("%d-%m-%Y"))
+        c.setFontSize(20)
+        c.drawString(6*mm, 17*mm, label)
+        barcode39.drawOn(c, 0, 5*mm)
 
-	c.showPage()
-	c.save()
+        c.showPage()
+        c.save()
 
         os.system( printCommand + ' -o ppi=300 /tmp/comedia_vsn.pdf')
 
@@ -2330,8 +2338,8 @@ if __name__ == "__main__":
     
     if not os.path.isfile(settings["configFile"]):
         createConfig = True
-        print "Created initial configuration file ( %s ) for you.\n" % settings["configFile"]
-        print "Please edit this file and restart comedia\n"
+        print ("Created initial configuration file ( %s ) for you.\n" % settings["configFile"])
+        print ("Please edit this file and restart comedia\n")
         
     else:
         createConfig = False
@@ -2367,13 +2375,13 @@ if __name__ == "__main__":
         
         if not isSchemaVersion(sess, minSchemaMajor, minSchemaMinor):
             major, minor = getCurrentSchemaVersionNumber(sess)
-            print "Current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor)
+            print ("Current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor))
             sys.exit(1)
         
     except Exception as e:
-        print "Error: ",  e, "\nPlease check your database settings in %s " % settings["configFile"] 
+        print ("Error: ",  e, "\nPlease check your database settings in %s " % settings["configFile"] )
         mainDlg.isConnected = False
-        sys.exit()
+        exit(0)
     finally:
         sess.close()
         
@@ -2384,9 +2392,3 @@ if __name__ == "__main__":
     mainDlg.show()
     
     root.mainloop()
-
-
-    
-    
-    
-  
