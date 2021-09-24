@@ -1,0 +1,37 @@
+#!/bin/bash
+
+DISKS_EXPECTED=32
+
+echo "Unmounting previously mounted FUSE filesystems"
+fusermount -u /`hostname -s`_fuse/12
+fusermount -u /`hostname -s`_fuse/34
+
+dcount=`mount|grep disks|grep -v meta|wc -l`
+echo "Detected $dcount disks present out of required $DISKS_EXPECTED"
+
+if [[ `ps axuf|grep "bin\/mk5daemon"` == "" ]]; then
+	echo "Mk5daemon not running. Trying to start it now."
+	startMk5daemon
+fi
+
+while [[ $dcount != $DISKS_EXPECTED ]]; do
+	sleep 1
+	echo "Detected $dcount of $DISKS_EXPECTED disks, waiting for more..."
+	dcount=`mount|grep disks|grep -v meta|wc -l`
+done
+
+. /data/cluster/difx/DiFX-trunk_64/setup_difx
+
+rm -f /tmp/mark6_fuse_auto*
+
+echo "Mounting module group 12 to /`hostname -s`_fuse/12"
+fuseMk6 -r '/mnt/disks/[12]/*/data' /`hostname -s`_fuse/12
+echo "Mounting module group 34 to /`hostname -s`_fuse/34"
+fuseMk6 -r '/mnt/disks/[34]/*/data' /`hostname -s`_fuse/34
+
+firstscan12=`ls -1 /mark6-??_fuse/12/*.vdif | head -1`
+firstscan34=`ls -1 /mark6-??_fuse/34/*.vdif | head -1`
+echo "Mounted. Please manually check integrity of at least one scan with e.g.:"
+echo " vdifcontinuitycheck.py $firstscan12"
+echo " vdifcontinuitycheck.py $firstscan34"
+

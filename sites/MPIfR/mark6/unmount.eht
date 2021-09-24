@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "Unmounting previously mounted FUSE filesystems"
+fusermount -u /`hostname -s`_fuse/12
+fusermount -u /`hostname -s`_fuse/34
+
+. /data/cluster/difx/DiFX-trunk_64/setup_difx
+
+stopMk5daemon
+sleep 5
+sudo umount /mnt/disks/?/?
+sudo umount /mnt/disks/.meta/?/?
+startMk5daemon
+
