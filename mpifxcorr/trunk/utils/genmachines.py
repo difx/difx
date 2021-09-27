@@ -536,7 +536,7 @@ def writethreads(basename, threads):
                 o.write('%d\n' % t)
         o.close()
 
-def writemachines(basename, hostname, results, datastreams, overheadcores, verbose):
+def writemachines(basename, hostname, results, datastreams, overheadcores, verbose, dorankfile=False):
         """
         Write machines file to be used by mpirun
         """
@@ -556,9 +556,9 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                         # add trailing /
                         if not url.endswith("/"):
                                 url += "/"
-                        #print "Trying: ", stream.path, url
+                        #print ("Trying: ", stream.path, url)
                         if stream.path.startswith(url):
-                            #print "match: ", stream.path, url
+                            #print ("match: ", stream.path, url)
                             matchNodes.append(node.name)
 
                             if url not in dsBookings:
@@ -659,6 +659,31 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                 
             o.write('%s\n' % (node.name))
             threads.append(node.threads-usedThreads)
+
+        o.close()
+
+        # write optional OpenMPI rank file
+        if dorankfile:
+
+            allnodes = [hostname] + dsnodes + [node.name for node in difxmachines.getComputeNodes()]
+            corecounts = {}
+
+            o = open(basename+'rankfile', 'w')
+        
+            for rank in range(len(allnodes)):
+                node = allnodes[rank]
+                if node not in corecounts:
+                    corecounts[node] = 0
+
+                # Syntax of "physical" rankfiles; need MCA param rmaps_rank_file_physical=1 :
+                o.write('rank %d=%s slot=%d\n' % (rank, node, corecounts[node]))
+
+                # Syntax of "logical" rankfiles;
+                # o.write('rank %d=%s slot=%d:%d\n' % (rank, node, cpusocket, cpucore]))
+
+                corecounts[node] += 1
+
+            o.close()
         
         return threads
 
@@ -680,7 +705,7 @@ def uniqueVsns(datastreams):
         else:
                 return 1
 
-def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
+def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb, dorankfile):
         ok = True
 
         # check if host is an allowed headnode
@@ -750,7 +775,7 @@ def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
         if not ok:
                 return 1
 
-        t = writemachines(basename, hostname, results, datastreams, overheadcores, verbose)
+        t = writemachines(basename, hostname, results, datastreams, overheadcores, verbose, dorankfile)
         
         if len(t) == 0:
                 return 1
@@ -802,6 +827,7 @@ if __name__ == "__main__":
         parser.add_argument("-m", "--machines", dest="machinesfile", default="", help="use MACHINESFILE instead of $DIFX_MACHINES")
         parser.add_argument("-n", "--nothreads", dest="dothreads", action="store_false", default=True, help="don't write a .threads file")
         parser.add_argument("-d", "--difxdb", dest="usedifxdb", action="store_true", default=False, help="use difxdb to obtain data location")
+        parser.add_argument("-r", "--rankfile", dest="dorankfile", action="store_true", default=False, help="additionally write an OpenMPI rank file")
         parser.add_argument("--ignore-incomplete-module", dest="ignoreIncompleteModules", action="store_true", default=True, help="Proceed even when Mark6 modules are found to be incomplete.")
         parser.add_argument("input",  nargs='+', help= "DiFX inputs file(s)")
         
@@ -811,6 +837,7 @@ if __name__ == "__main__":
         verbose = args.verbose
         dothreads = args.dothreads
         useDifxDb = args.usedifxdb
+        dorankfile = args.dorankfile
 
         # assign the cluster definition file
         if len(args.machinesfile) == 0:
@@ -878,6 +905,6 @@ if __name__ == "__main__":
             exit(1)
         
         for file in files:
-                v = run(file, machinesfile, overheadcores, verbose, dothreads, useDifxDb)
+                v = run(file, machinesfile, overheadcores, verbose, dothreads, useDifxDb, dorankfile)
                 if v != 0:
                         exit(v)
