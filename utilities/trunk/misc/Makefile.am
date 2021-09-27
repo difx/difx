@@ -1,6 +1,7 @@
 dist_bin_SCRIPTS = \
 	addMark5b.pl \
 	addVDIF.pl \
+	clockshift.py \
 	day2mjd.py \
 	difxcopy.py \
 	mvdifxhere.py \
