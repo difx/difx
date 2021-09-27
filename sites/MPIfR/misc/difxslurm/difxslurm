@@ -39,9 +39,14 @@ set -m
 # make sure slurm job gets canceled on SIGINT
 trap cleanExit SIGINT
 
+JOB_ID=""
+PID=""
+
 function cleanExit {
-    scancel $JOB_ID
-    kill -9 $PID
+    if [[ -n "$JOB_ID" ]]; then
+      scancel $JOB_ID
+    fi
+    kill -9 $PID >& /dev/null
     echo "done"
     exit
 }
@@ -130,6 +135,7 @@ numtasks=`cat $HOSTFILE | wc -l`
 
 rm -f /tmp/$job
 # make dummy allocation
+#echo salloc -J $job $jobsteps : -p correlator --cpus-per-task=$threads --ntasks-per-node=1 --nodelist=$cnodelist
 salloc -J $job $jobsteps : -p correlator --cpus-per-task=$threads --ntasks-per-node=1 --nodelist=$cnodelist &> /tmp/$job &
 #echo $jobsteps
 
@@ -137,32 +143,46 @@ sleep 1
 # get pid of salloc process
 PID=$!
 
-JOB_ID=""
 # parse salloc output to see whether resources have been granted
 # salloc: job 10912 queued and waiting for resources
+regPending='salloc: Pending job allocation ([0-9]+)'
 regGrant='salloc: Granted job allocation ([0-9]+)'
-regQueue='salloc: job ([0-9]+) queued'
+#regQueue='salloc: job ([0-9]+) queued'
+regRevoked='salloc: Job allocation ([0-9]+) has been revoked'
 START=0
 echo "Waiting for SLURM resource allocation"
 while [ $START -eq 0 ]
 do
     while read l; do
-        # allocation granted
-        if [[ $l =~ $regGrant ]]; then
-            #JOB_ID=${BASH_REMATCH[1]}
-            START=1
-            break
-        fi
-        #alocation queued
-        if [[ $l =~ $regQueue ]]; then
+        
+        # obtain job ID from pending message
+        if [[ $l =~ $regPending ]]; then
             JOB_ID=${BASH_REMATCH[1]}
             echo $JOB_ID > $job.slurmid
+            echo "JOBID: " $JOB_ID
+        fi
+        # allocation granted
+        if [[ $l =~ $regGrant ]]; then
+            if [[ $JOB_ID == ${BASH_REMATCH[1]} ]]; then
+              echo "Allocation granted"
+              START=1
+              break
+            fi
+        fi
+        # in case of error the allocation will be revoked
+        if [[ $l =~ $regRevoked ]]; then
+              break 2
         fi 
+        
     done < /tmp/$job
 done
 
-echo "Granted job allocation" $JOB_ID
-mpirun -np $numtasks --hostfile $HOSTFILE $DIFX_MPIRUNOPTIONS /cluster/difx/runmpifxcorr.$DIFX_VERSION $job.input
+if [[ START == 1 ]]; then 
+  echo "Granted job allocation" $JOB_ID
+  mpirun -np $numtasks --hostfile $HOSTFILE $DIFX_MPIRUNOPTIONS /cluster/difx/runmpifxcorr.$DIFX_VERSION $job.input
+else
+  cat /tmp/$job
+fi
 
 cleanExit
 
