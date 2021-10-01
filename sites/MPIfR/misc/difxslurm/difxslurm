@@ -25,7 +25,7 @@
 #============================================================================
 
 # Shell script to allow starting of heterogeneous DiFX jobs through the SLURM batch scheduler.
-# DiFX jobs will be heterogeneous when containing e.g. mark5 and/or mark5 playback units or
+# DiFX jobs will be heterogeneous when containing e.g. mark5 and/or mark6 playback units or
 # if a specific head node is required.
 # The "normal" SLURM mechanism of using jobsteps is unsuited as it will always execute in 
 # exclusive mode when using jobsteps which will prevent starting of multiple DiFX jobs in
@@ -60,6 +60,8 @@ partition=correlator
 threads=19
 
 cd $path
+
+rm -f $job.slurmid
 
 if [ ! -f $job.input ]; then
     echo "ERROR: $job.input does not exist"
@@ -154,17 +156,14 @@ echo "Waiting for SLURM resource allocation"
 while [ $START -eq 0 ]
 do
     while read l; do
-        
         # obtain job ID from pending message
         if [[ $l =~ $regPending ]]; then
             JOB_ID=${BASH_REMATCH[1]}
-            echo $JOB_ID > $job.slurmid
             echo "JOBID: " $JOB_ID
         fi
         # allocation granted
         if [[ $l =~ $regGrant ]]; then
             if [[ $JOB_ID == ${BASH_REMATCH[1]} ]]; then
-              echo "Allocation granted"
               START=1
               break
             fi
@@ -177,7 +176,8 @@ do
     done < /tmp/$job
 done
 
-if [[ START == 1 ]]; then 
+if [[ $START == 1 ]]; then 
+  echo $JOB_ID > $job.slurmid
   echo "Granted job allocation" $JOB_ID
   mpirun -np $numtasks --hostfile $HOSTFILE $DIFX_MPIRUNOPTIONS /cluster/difx/runmpifxcorr.$DIFX_VERSION $job.input
 else
