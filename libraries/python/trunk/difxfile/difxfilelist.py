@@ -30,7 +30,6 @@ import os
 import math
 import os.path
 from collections import deque
-from string import upper
 from datetime import datetime, timedelta
 from difxutil.dateutil import mjdToDate
 
@@ -93,23 +92,23 @@ class DifxFilelist(object):
                 continue
             fields = line.split()
             
-	    # e18a24_Mm_114-0942.vdif 58232.40416667 58232.40625000 216411093408
-	    if (len(fields) < 3):
-		errorCount += 1
-		self.parseErrors.append("Line %d: illegal format %s" % (lineCount, fields[0]))
-	    else:
+            # e18a24_Mm_114-0942.vdif 58232.40416667 58232.40625000 216411093408
+            if (len(fields) < 3):
+                errorCount += 1
+                self.parseErrors.append("Line %d: illegal format %s" % (lineCount, fields[0]))
+            else:
                     scan = self.FileListLine()
 
                     scan.startMJD = float(fields[1])
                     scan.stopMJD = float(fields[2])
-		    if (len(fields) == 4):
-			scan.bytes = float(fields[3])
+                    if (len(fields) == 4):
+                        scan.bytes = float(fields[3])
                                  
                     # try to separate the scan name into experiment stationcode and scanname
                     nameSplit = fields[0].strip('_').split("_")
                     if (len(nameSplit) == 3):
-                        scan.expName = upper(nameSplit[0])
-                        scan.stationCode = upper(nameSplit[1])
+                        scan.expName = nameSplit[0].upper()
+                        scan.stationCode = nameSplit[1].upper()
                         scanName = nameSplit[2]      
                         # check for file extensions in scan name
                         scanName = scanName.split(".")[0]
@@ -124,25 +123,25 @@ class DifxFilelist(object):
                     scan.startSec = int(fracSeconds * 86400.0)
                     scan.scanDuration = int(round((scan.stopMJD - scan.startMJD) * 86400))
                     
-		    # construct datetime from MJD and seconds within a day
-		    y,M,d = mjdToDate(scan.startMJD)
+                    # construct datetime from MJD and seconds within a day
+                    y,M,d = mjdToDate(scan.startMJD)
                     m, s = divmod(int(scan.startSec), 60)
                     h, m = divmod(m, 60)
                     date = datetime(int(y),int(M),int(d),h,m,s)
        #             print date
                   
                     if (scan.expName != ""):
-			# new experiment found
+                        # new experiment found
                         if (scan.expName not in self.experiments):
                             self.experiments.append(scan.expName)
-			    self.expStart[scan.expName] = date
-			    self.expStop[scan.expName] = date
-			else:
-			    if date < self.expStart[scan.expName]:
-				self.expStart[scan.expName] = date
-			    elif date > self.expStop[scan.expName]:
-				self.expStop[scan.expName] = date + timedelta(0,float(scan.scanDuration))
-			    
+                            self.expStart[scan.expName] = date
+                            self.expStop[scan.expName] = date
+                        else:
+                            if date < self.expStart[scan.expName]:
+                                self.expStart[scan.expName] = date
+                            elif date > self.expStop[scan.expName]:
+                                self.expStop[scan.expName] = date + timedelta(0,float(scan.scanDuration))
+                            
                     if (len(scan.stationCode) == 2) and (len(self.stationCode) == 0):
                         self.stationCode = scan.stationCode
     
@@ -195,22 +194,22 @@ class DifxFilelist(object):
         return(self.experiments)
     
     def getExperimentStartDatetime(self, expCode):
-	''' Returns the datetime of the first scan of the given experiment
-	found in the module .dir listing.
-	'''
-	if expCode in self.expStart:
-		return(self.expStart[expCode])
-	else:
-		return(None)
+        ''' Returns the datetime of the first scan of the given experiment
+        found in the module .dir listing.
+        '''
+        if expCode in self.expStart:
+                return(self.expStart[expCode])
+        else:
+                return(None)
 
     def getExperimentStopDatetime(self, expCode):
-	''' Returns the datetime (including the scan duration) of the last scan of the given experiment
-	found in the module .dir listing.
-	'''
-	if expCode in self.expStop:
-		return(self.expStop[expCode])
-	else:
-		return(None)
+        ''' Returns the datetime (including the scan duration) of the last scan of the given experiment
+        found in the module .dir listing.
+        '''
+        if expCode in self.expStop:
+                return(self.expStop[expCode])
+        else:
+                return(None)
 
     def getParseErrorCount(self):
         '''
@@ -239,7 +238,7 @@ class DifxFilelist(object):
             self.stopMJD = 0
             self.startSec = 0
             self.scanDuration = 0
-	    self.bytes = 0
+            self.bytes = 0
 
 if __name__ == "__main__":
     
@@ -249,22 +248,22 @@ if __name__ == "__main__":
     
     #flist= DifxFilelist(".", ")
     flist= DifxFilelist(sys.argv[1], sys.argv[2])
-    print "Found scans:"
+    print ("Found scans:")
     for scan in flist.scans:
-            print scan.expName, scan.stationCode, scan.scanName, scan.startMJD, scan.stopMJD, scan.startSec, scan.scanDuration
+            print((scan.expName, scan.stationCode, scan.scanName, scan.startMJD, scan.stopMJD, scan.startSec, scan.scanDuration))
             
-    print "Number of scans: %d" % flist.scanCount
-    print "Station code: %s" % flist.stationCode
-    print "Experiments: %s" % flist.experiments
-    print "Filelist date: %s " % datetime.fromtimestamp(flist.fileDate).strftime('%d/%m/%Y')
-    print "Parse errros: %d" % flist.getParseErrorCount()
+    print(("Number of scans: %d" % flist.scanCount))
+    print(("Station code: %s" % flist.stationCode))
+    print(("Experiments: %s" % flist.experiments))
+    print(("Filelist date: %s " % datetime.fromtimestamp(flist.fileDate).strftime('%d/%m/%Y')))
+    print(("Parse errros: %d" % flist.getParseErrorCount()))
     
     if (flist.getParseErrorCount() > 0):
         for error in flist.getParseErrors():
-            print error
-    print "Experiment summary:"
+            print (error)
+    print ("Experiment summary:")
     for exp in flist.experiments:
-        print exp, flist.expStart[exp], flist.expStop[exp]
+        print((exp, flist.expStart[exp], flist.expStop[exp]))
         
     
         
