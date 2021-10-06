@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2019 by Walter Brisken & Chris Phillips            *
+ *   Copyright (C) 2008-2021 by Walter Brisken & Chris Phillips            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -47,7 +47,7 @@
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken, Chris Phillips";
 const char version[] = "1.6";
-const char verdate[] = "20191101";
+const char verdate[] = "20211003";
 
 volatile int die = 0;
 
@@ -69,7 +69,7 @@ static void usage(const char *pgm)
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("A Mark5 spectrometer.  Can use VLBA, Mark3/4, Mark5B, and single-\nthread VDIF formats using the mark5access library.\n\n");
-	printf("Usage : %s <infile> <dataformat> <nchan> <nint> <outfile> [<offset>]\n\n", program);
+	printf("Usage : %s [options] <infile> <dataformat> <nchan> <nint> <outfile> [<offset>]\n\n", program);
 	printf("  <infile> is the name of the input file\n\n");
 	printf("  <dataformat> should be of the form: "
 		"<FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
@@ -82,7 +82,7 @@ static void usage(const char *pgm)
 	printf("    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27 ~= 76 Mbps\n");
 	printf("    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");
 	printf("  <nchan> is the number of spectral points to make per baseband channel\n\n");
-	printf("  <nint> is the number of FFT frames to spectrometize\n\n");
+	printf("  <nint> is the number of FFT frames to spectrometize; 0 -> run until end of file\n\n");
 	printf("  <outfile> is the name of the output file\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
 	printf("\n");

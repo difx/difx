@@ -1,4 +1,4 @@
-Version 1.5.5
+Version 1.6
 * All examples: Added support for new, generalised CODIF and VDIF naming scheme
 * Changed Mbps to a float, dealt with this by casting to int in legacy formats
 * m5d, mark5streamunpacker: harmonise the way CODIF and VDIF files are treated
