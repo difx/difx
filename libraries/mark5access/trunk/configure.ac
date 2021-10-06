@@ -65,30 +65,20 @@ if test -n "$PYTHON" -a "x$REQUESTED_PYTHON_CTYPES" = "xyes"; then
 fi
 AM_CONDITIONAL([ENABLE_PYTHON_CTYPES], [test -n "$PYTHON" -a "x$REQUESTED_PYTHON_CTYPES" = "xyes" -a -n "$GOT_PYTHON_CTYPES"])
 
-PKG_CHECK_MODULES([MARK6SG], [mark6sg >= 2.0.1], [HAVE_MARK6SG=true], [HAVE_MARK6SG=false])
-AM_CONDITIONAL(USE_MARK6SG, $HAVE_MARK6SG)
-if test ${HAVE_MARK6SG} = true; then
-  AC_DEFINE(HAVE_MARK6SG, 1, [Define if you have mark6sg library.])
-  CFLAGS="${CFLAGS} ${MARK6SG_CFLAGS}"
-  LIBS="${LIBS} ${MARK6SG_LIBS}"
-  AC_SUBST(MARK6SG_LIBS)
-fi
-
 PKG_CHECK_MODULES([CODIFIO], [codifio >= 0.2], [HAVE_CODIFIO=true], [HAVE_CODIFIO=false])
 AM_CONDITIONAL(USE_CODIFIO, $HAVE_CODIFIO)
 if test ${HAVE_CODIFIO} = true; then
-  AC_DEFINE(HAVE_CODIFIO, 1, [Define if you have codifio library.])
+  AC_DEFINE([HAVE_CODIFIO], 1, [1=has CODIFIO])
   CFLAGS="${CFLAGS} ${CODIFIO_CFLAGS}"
   LIBS="${LIBS} ${CODIFIO_LIBS}"
-# AC_SUBST(CODIFIO_LIBS)
 fi
 
-PKG_CHECK_MODULES([MARK6SG], [mark6sg >= 2.0.2], [hasmark6sg=true], [hasmark6sg=false])
-AM_CONDITIONAL(WITH_MARK6SG, $hasmark6sg)
-if test $hasmark6sg = true; then
-  CPPFLAGS="${CPPFLAGS} ${MARK6SG_CFLAGS}"
+PKG_CHECK_MODULES([MARK6SG], [mark6sg >= 2.0.2], [HAVE_MARK6SG=true], [HAVE_MARK6SG=false])
+AM_CONDITIONAL(USE_MARK6SG, $HAVE_MARK6SG)
+if test $HAVE_MARK6SG = true; then
   AC_DEFINE([HAVE_MARK6SG], 1, [1=has MARK5SG])
-  AC_DEFINE(hasmark6sg, 1, [Define if you have mark6sg library.])
+  CFLAGS="${CFLAGS} ${MARK6SG_CFLAGS}"
+  LIBS="${LIBS} ${MARK6SG_LIBS}"
 fi
 
 
