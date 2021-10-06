@@ -78,6 +78,10 @@ void printvdiffilesummary(const struct vdif_file_summary *sum)
 	printf("  end second = %d\n", sum->endSecond % 86400);
 	printf("  end frame = %d\n", sum->endFrame);
 	printf("  first frame offset = %d bytes\n", sum->firstFrameOffset);
+	if(sum->framesPerSecond > 0)
+	{
+		printf("  data rate = %lld Mbps\n", (long long)(sum->nThread)*(long long)(sum->framesPerSecond)*(long long)(sum->frameSize - 32)/125000LL);
+	}
 }
 
 void snprintvdiffilesummary(char *str, int maxLength, const struct vdif_file_summary *sum)

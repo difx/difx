@@ -30,7 +30,6 @@ def usage():
 	print('  <nbit> is number of bits per sample (default is 2)\n')
 	print('  <offset> optionally jump into input file by this many bytes\n')
 	print('  <bchan> and <echan> select range of channels to store in output file\n')
-	print('Note: Only works on 2-bit real data for now...\n')
 
 if '--version' in argv:
 	printVersion()

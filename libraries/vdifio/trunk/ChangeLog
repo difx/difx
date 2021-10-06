@@ -16,6 +16,8 @@ Version 1.5
 * vdif file summary (as used by vsum) would under-report length of a scan if file size < 80MB and datarate < 320 Mbps; fixed
 * vdifd: correct parsing command line: optional params nbit and offset were swapped
 * vmux: option to force 1-bit input
+* vsum: print data rate
+* vdifspec and vdifd: verified operation on 1-bit and 8-bit data
 
 Version 1.4
 ~~~~~~~~~~~

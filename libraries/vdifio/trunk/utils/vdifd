@@ -4,8 +4,8 @@
 
 program = 'vdifd'
 author  = 'Walter Brisken'
-version = '0.7'
-verdate = '20210628'
+version = '0.8'
+verdate = '20211004'
 
 from os import system
 from sys import exit, argv
@@ -26,7 +26,6 @@ def usage():
 	print('  <n> is the number of samples per channel to decode\n')
 	print('  <offset> optionally jump into input file by this many bytes\n')
 	print('  <nbit> is number of bits per sample (default is 2)\n')
-	print('Note: Only tested on 1-bit and 2-bit real data...\n')
 
 if '--version' in argv:
 	printVersion()
@@ -45,11 +44,11 @@ n = int(argv[5])
 if len(argv) > 6:
 	offset = int(argv[6])
 else:
-	offset = 2
+	offset = 0
 if len(argv) > 7:
 	nbit = int(argv[7])
 else:
-	nbit = 0
+	nbit = 2
 
 nc = 1
 while(nc < nt):

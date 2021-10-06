@@ -4,8 +4,8 @@
 
 program = 'vdiffold'
 author  = 'Walter Brisken'
-version = '0.6'
-verdate = '20210417'
+version = '0.7'
+verdate = '20211004'
 
 from os import system
 from sys import exit, argv
@@ -30,7 +30,9 @@ def usage():
 	print('  <outfile> is the name of the output file\n')
 	print('  <offset> optionally jump into input file by this many bytes\n')
 	print('  <nbit> is number of bits per sample (default is 2)\n')
-	print('Note: Only works on 2-bit real data for now...\n')
+	print('Note: Only known to work on 2-bit real data for now;\n')
+	print('by the nature of the functionality, this cannot work on\n')
+	print('1-bit data\n')
 
 if '--version' in argv:
 	printVersion()
@@ -50,13 +52,13 @@ nint = int(argv[6])
 freq = argv[7]
 outfile = argv[8]
 if len(argv) > 9:
-	nbit = int(argv[9])
-else:
-	nbit = 2
-if len(argv) > 10:
-	offset = int(argv[10])
+	offset = int(argv[9])
 else:
 	offset = 0
+if len(argv) > 10:
+	nbit = int(argv[10])
+else:
+	nbit = 2
 
 nc = 1
 while(nc < nt):
