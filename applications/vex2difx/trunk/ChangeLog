@@ -35,6 +35,7 @@ Version 2.7.0
 * vexpeek: new scan summary mode: --scans2; add --scans2 twice to command line for nChan, nBit, Bandwidth info
 * oms2v2d: force max length to be 3200 (sec)
 * vex2difx: fix bug preventing "canonical VDIF" setups from using other than 2 bits per sample
+* Fix: Constructor of VexStream: initialize format()
 
 Version 2.6.0
 ~~~~~~~~~~~~~
