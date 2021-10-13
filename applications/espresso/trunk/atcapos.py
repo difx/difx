@@ -85,7 +85,13 @@ for targetdate in args:
         if iline == 2:
             refant = re.sub(r"Refant:\s*CA0", "", line)
             refant = int(refant)
-            refant_pad = pads[refant-1]
+            refant_pad = None
+            if refant == 0:
+                refant_pad = "W196"
+                print("WARNING: refant is CA00."
+                        " Atmospheric corrections will be on!")
+            else:
+                refant_pad = pads[refant-1]
             print ("{}: {}".format(targetdate, refant_pad))
 
 print ("updatepos.py ATCA AT_{}".format(refant_pad))
