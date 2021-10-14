@@ -48,7 +48,6 @@ else
         "type_307.h"
         "type_308.h"
         "type_309.h"
-        "type_comp.h"
         "T1.h"
         "mk4_records.h"
         "mk4_data.h"

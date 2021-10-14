@@ -292,7 +292,7 @@ class ChannelToBandMap(object):
         if self.map_type == 'FILE' and filename != None:
             #use a custom band <-> channel mapping defined in a file
             pcc_logger.error("Error: file band-channel map not yet implemented!")
-            sys.exit()
+            sys.exit('Error: file band-channel map not yet implemented!')
 
         #set up inverse map
         for b in self.band_list:
@@ -419,7 +419,7 @@ class SingleChannelPhasorCollection(object):
             self.tone_low =  self.pcal_spacing*math.ceil( old_div( (self.sky_frequency + self.sideband_sign*self.bandwidth), self.pcal_spacing) )
         else:
             pcc_logger.error("Error, channel with net-sideband not L or U present.")
-            sys.exit()
+            sys.exit('Error, channel with net-sideband not L or U present.')
 
         self.ntones = int( 1 + old_div( abs(self.tone_high - self.tone_low), self.pcal_spacing) )
         self.tone_physical_freq_array = []
@@ -453,7 +453,11 @@ class SingleChannelPhasorCollection(object):
                 ave *= 1.0/time_accum
             else:
                 ave = complex(0.0,0.0)
-            self.freq_phasor_pairs[tone_index] = [freq, ave, ComplexReImCovarianceMatrix(data_vec), True]
+            if len(data_vec)==0:
+                pcc_logger.error("Error, phasor data for this scan are not present.")
+                sys.exit('Error, phasor data not present.')
+            else:
+                self.freq_phasor_pairs[tone_index] = [freq, ave, ComplexReImCovarianceMatrix(data_vec), True]
 
     def apply_phase_reference_collection(self, reference_scpc):
         """Correct this single channel phasor collection by a set of reference phasors for the same channel.
@@ -478,11 +482,12 @@ class SingleChannelPhasorCollection(object):
 
 class StationScanPhaseCalibrationData(object):
 
-    def __init__(self, mk4_site_id, ovex_data_file):
+    def __init__(self, mk4_site_id, ovex_data_file, verbosity=0):
         self.ovex_data_file = os.path.abspath(ovex_data_file) #the 'root' file
         self.root_suffix = ovex_data_file[-6:]
         self.station_data_file = os.path.join( os.path.dirname(self.ovex_data_file), mk4_site_id + ".." + self.root_suffix)
         self.mk4_site_id = mk4_site_id #single character station Mk4-id
+        self.verbosity = verbosity
         self.scan_name = ""
         self.source_name = ""
         self.exp_name = ""
@@ -512,6 +517,8 @@ class StationScanPhaseCalibrationData(object):
             #get the scan information
             self.exp_name = str( ovex.exper_name.decode() )
             self.scan_name = str( ovex.scan_name.decode() )
+            if self.verbosity > 2:
+                pcc_logger.debug("Scan name = " + self.scan_name)
             self.source_name = str( ovex.src.source_name.decode() )
             self.start_time.initialize_from_date( ovex.start_time)
             self.fourfit_ref_time.initialize_from_date( ovex.ffit_reftime )
@@ -726,7 +733,7 @@ class StationExperimentPhasorCollection(object):
         self.locate_root_files()
         if len(self.root_files) == 0:
             pcc_logger.error("Error: No matching root-files located.")
-            sys.exit(1)
+            sys.exit('Error: no matching root-files located.')
         self.read_in_data()
 
     def locate_root_files(self):
@@ -745,7 +752,7 @@ class StationExperimentPhasorCollection(object):
     def read_in_data(self):
         self.sspc_list = []
         for rf in self.root_files:
-            sspc = StationScanPhaseCalibrationData(self.mk4_site_id, rf)
+            sspc = StationScanPhaseCalibrationData(self.mk4_site_id, rf, self.verbosity)
             if sspc.valid is True:
                 self.sspc_list.append(sspc)
         #now sort the list in time order using the scan start time
@@ -953,7 +960,7 @@ class ExperimentPccBandDelay(object):
             elem = (os.path.basename( os.path.abspath(filename ) ) ).split('.')
             if len(elem) != 6 or elem[-1] != 'dat':
                 pcc_logger.error('Error: file: ' + filename + " does not have a correctly formatted filename")
-                sys.exit(1)
+                sys.exit('Error, file does not have a correctly formatted filename.')
             self.experiment_name = str(elem[1])
             self.station_id = str(elem[2])
             self.band_name = str(elem[3])
@@ -1124,7 +1131,7 @@ def process_experiment(pcc_config):
 
     station_data = dict()
     for st in pcc_config.stations:
-        sepc = StationExperimentPhasorCollection(pcc_config.exp_dir, chan_map, st)
+        sepc = StationExperimentPhasorCollection(pcc_config.exp_dir, chan_map, st, verbosity=pcc_config.verbosity)
         sepc.initialize()
         if pcc_config.reference_scan == '':
             sepc.apply_start_as_phase_reference()

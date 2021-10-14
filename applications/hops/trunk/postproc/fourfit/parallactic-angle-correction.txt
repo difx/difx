@@ -1,0 +1,105 @@
+email from vfish, sep3 2021:
+
+> The equations for how the field rotation angles affect circular
+> polarization products are given on page 722 of Roberts, Wardle,
+> & Brown (1994).  Here's a direct link to a scan of that page:
+> http://articles.adsabs.harvard.edu//full/1994ApJ...427..718R/0000722.000.html
+
+> You can ignore any term with a "D" in it, since those apply to
+> polarization leakage and we're not (yet) contemplating D-term
+> correction in HOPS.  So, basically each polarization product
+> (e.g., RR) acquires a phase from the field rotation angle (phi)
+> at each telescope, with conjugation for the remote station
+> (as usual in correlated products). The equations give you the
+> signs of these corrections.
+
+> So what is the field rotation angle?  That depends on the mount type:
+>     # mount types with field rotation angle (fr) equations
+>     #   CASSEGRAIN:    fr = parallactic angle
+>     #   NASMYTHLEFT:   fr = parallactic angle - elevation
+>     #   NASMYTHRIGHT:  fr = parallactic angle + elevation
+
+> Basically, the elevation term is needed if the receiver is bolted
+> to the floor and therefore doesn't rotate with the telescope.
+> To use a common point of reference, the SMT 230 GHz is considered
+> Nasmyth right.  (If you recall, when you're standing behind
+> the telescope, the 230 GHz receiver is on the right side.)
+> If/when you need them, I can give you mount locations for
+> all(?) of the current EHT telescopes.
+
+> urfit has ready access to the elevation and parallactic angles
+> of each telescope.  They appear on the left of the penultimate
+> line in a fourfit plot.
+
+Notes:
+
+fourfit doesn't compute elevation until after it finds a fringe
+(see fill_202.c).
+
+param->par_angle is computed only at the first time (see organize_data.c)
+So really, par_angle and elev need to be computed from the model for every AP,
+once at the outset of every fringe.
+
+neglecting D terms, and suppressing gains,
+
+(alphbetically sorted to align with fourfit usage)
+
+(14) L1.L2* = ...I12 exp[ i( + phi1 - phi2 ) ]
+(13) R1.R2* = ...I12 exp[ i( - phi1 + phi2 ) ]
+(16) L1.R2* = ...P21 exp[ i( + phi1 + phi2 ) ]
+(15) R1.L2* = ...P12 exp[ i( - phi1 - phi2 ) ]
+                             polcof
+
+phi is fr, I believe, depending on parallactic angle and elevation.
+and 1 and 2 are really 0 and 1 subscripts
+
+the cblock would need to note the mount type on a ref/rem station basis
+would want to set up to interpolate the parallactic angle and elevation
+to the AP (to do this right).  Otherwise the variation of each over the
+course of the scan will not be properly tracked.
+
+splined values are generally computed in compute_model which is called
+from fill_208.c
+
+if station ... : mount_type = no_mount|cassegrain|nasmythleft|nasmythright
+
+>     #   CASSEGRAIN:    fr = parallactic angle
+>     #   NASMYTHLEFT:   fr = parallactic angle - elevation
+>     #   NASMYTHRIGHT:  fr = parallactic angle + elevation
+
+SO if station_pol_mode == CIRC_MODE and mount_type(s) are both defined
+then (double) polcof becomes != 1. according to the above formulae
+
+NO: spectral data (DiFX) is inherently complex, so polcof needs to
+NO: become type hops_complex.... float complex cexpf(float complex z);
+NO: and likewise the normalization factor.
+
+We just want equal weighting when we add them.
+
+for vhelp:
+
+mount_type 'no_mount' or 'cassegrain' or 'nasmythleft' or 'nasmythright'
+
+Anyway, here are mount types for the 230 GHz receivers.
+  ALMA,CARMA,GLT,JCMT,KP,SPT: Cassegrain ("alt-az")
+  LMT,PV,SMA: Nasmyth left
+  SMT: Nasmyth right
+  APEX: Nasmyth right, but old receiver was Nasmyth left(*)
+
+(*) i.e., the default should be Nasmyth right, but the user should be
+able to override this in the control file
+
+Locations of 345 GHz receivers may be different!  For instance, the 345
+GHz receiver at the SMT used to be (still is?) on the opposite side of
+the recceiver room for the 230 GHz one.
+
+I believe that all the receivers on the VLBA antennas have field rotation
+angles consistent with Cassegrain (i.e., no elevation term).
+
+Note that the underlying type_303 structures store coefficients for values
+in degrees, so a time-variable correction requires a different interface.
+
+Note that the equations (13-16) express what would be seen in terms of the
+model.  To make a correction, one must use the negative of the phase. (D'oh).
+
+eof

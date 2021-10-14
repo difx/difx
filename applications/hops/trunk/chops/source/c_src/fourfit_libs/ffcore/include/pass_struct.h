@@ -1,7 +1,7 @@
 #ifndef PASS_STRUCT
 #define PASS_STRUCT
 
-#include <complex.h>
+#include "hops_complex.h"
 #include "control.h"
 #include "mk4_data.h"
 #include "mk4_sizes.h"
@@ -25,19 +25,19 @@
 
 struct interp_sdata
         {
-        complex phasecal_lcp[MAX_PCF];               /* USB only for now */
+        hops_complex phasecal_lcp[MAX_PCF];               /* USB only for now */
         float pcweight_lcp;                 /* (see pcal_interp routine) */
-        complex phasecal_rcp[MAX_PCF];
+        hops_complex phasecal_rcp[MAX_PCF];
         float pcweight_rcp;
         float bigpos[4];                    /* State count statistics as fractions: */
         float pos[4];                       /* lcp_usb, lcp_lsb, rcp_usb, rcp_lsb */
         float neg[4];
         float bigneg[4];
-        complex mt_pcal[2];                 // pc phasor for multitone mode L:R or H:V
+        hops_complex mt_pcal[2];                 // pc phasor for multitone mode L:R or H:V
         double mt_delay[2];                 // multitone delay (us) [L:R or H:V or X:Y]
         };
 
-struct data_corel 
+struct data_corel
         {
         int flag;
         struct type_120 *apdata_ll[2];          /* By sideband */
@@ -45,15 +45,15 @@ struct data_corel
         struct type_120 *apdata_lr[2];
         struct type_120 *apdata_rl[2];
         int sband;
-        complex *sbdelay;                       /* Allocated in fringe_search */
+        hops_complex *sbdelay;                       /* Allocated in fringe_search */
         struct interp_sdata ref_sdata;
         struct interp_sdata rem_sdata;
         float usbfrac;
         float lsbfrac;
-        complex pc_phasor[4];  // extracted in rotate_pcal [LL:RR:LR:RL]
+        hops_complex pc_phasor[4];  // extracted in rotate_pcal [LL:RR:LR:RL]
         };
 
-struct freq_corel 
+struct freq_corel
         {
         char freq_code;         /* Fourfit frequency identifier (a..zA..Z$%) */
         double frequency;       /* sky frequency (MHz) */
@@ -76,7 +76,7 @@ struct freq_corel
         };
 
 
-struct type_pass 
+struct type_pass
         {
         struct freq_corel       pass_data[MAX_CHAN];
         int                     nfreq;
@@ -97,7 +97,7 @@ struct type_pass
         double                  reftime;
         struct c_block          control;
         };
-        
+
 static char fchars[64] =
 	{'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p',
      'q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F',

@@ -3,8 +3,10 @@
 # $Id$
 #
 # Make pdfs of things.  Useful for the future.
+# ls data/ff_testdata/*ps | wc -l
 #
-npdfs=24
+#npdfs=33
+npdfs=`ls *.ps | wc -l`
 
 verb=false
 [ -n "$testverb" ] && verb=true

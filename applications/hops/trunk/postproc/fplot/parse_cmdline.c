@@ -21,9 +21,13 @@
 /************************************************************************/
 
 #include <stdio.h>
+#include <unistd.h>
 #include "fstruct.h"
 #include "fplot.h"
 
+#include "mk4_util.h"
+
+int
 parse_cmdline (int argc, char** argv, fstruct** files, int* display, char** file_name)
     {
     int err;
@@ -33,7 +37,7 @@ parse_cmdline (int argc, char** argv, fstruct** files, int* display, char** file
                                         /* Interpret command line flags */
     *display = NONE;
     err = FALSE;
-    while((c=getopt(argc,argv,"xd:hlm:")) != -1) 
+    while((c=getopt(argc,argv,"xd:p:hlm:")) != -1) 
         {
         switch (c) 
             {
@@ -45,6 +49,12 @@ parse_cmdline (int argc, char** argv, fstruct** files, int* display, char** file
             case 'd':
                 if (*display != NONE) err = TRUE;
                 else *display = DISKFILE;
+                *file_name = optarg;
+                break;
+
+            case 'p':
+                if (*display != NONE) err = TRUE;
+                else *display = PSTOPDF;
                 *file_name = optarg;
                 break;
 

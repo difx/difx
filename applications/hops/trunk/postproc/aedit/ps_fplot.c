@@ -23,7 +23,7 @@ int ps_fplot (struct ps_array *psarray, fringesum *fdatum)
     {
     static struct mk4_fringe fringe4;
     int index, ret;
-    char *fname, *fringename(), fullname[256];
+    char *fname, *fringename(), fullname[256], localname[256];
     char *argv[2];
     static int argc = 1;
     extern char datadir[];
@@ -33,12 +33,14 @@ int ps_fplot (struct ps_array *psarray, fringesum *fdatum)
         msg ("Could not generate data file name", 2);
         return (1);
         }
+    /* try DATADIR first */
     sprintf (fullname, "%s/%s", datadir, fname);
-                                        /* Establish file type */
-                                        /* Mk4 data */
-    if (read_mk4fringe (fullname, &fringe4) != 0)
+    /* then local dir next */
+    sprintf (localname, "./%s", fname);
+    if (read_mk4fringe (fullname, &fringe4) != 0 &&
+        read_mk4fringe (localname, &fringe4) != 0)
         {
-        msg ("Failure reading fringe file %s", 2, fullname);
+        msg ("Failure reading fringe file %s (in DATADIR or .)", 2, fname);
         return (1);
         }
     display_221 (fringe4.t221, -1);

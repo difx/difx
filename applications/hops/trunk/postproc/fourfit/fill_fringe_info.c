@@ -104,7 +104,7 @@ char *filename)
         {
                                         /* Allocate memory as a block */
         xpow_len = 16 * 2 * param.nlags;
-        size_of_t230 = sizeof (struct type_230) - sizeof (complex) + xpow_len;
+        size_of_t230 = sizeof (struct type_230) - sizeof (hops_complex) + xpow_len;
         t230_array = (char *)malloc (pass->nfreq * nap * size_of_t230);
         if (t230_array == NULL)
             {
@@ -129,7 +129,7 @@ char *filename)
 
     if (error != 0)
         msg ("Warning - some or all of the output records were not filled", 2);
-    
+
     status.amp_err = status.delres_max / status.snr;
     status.resid_phase = status.coh_avg_phase * ( 180.0 / M_PI);
     status.mod_resid_phase *= 180.0 / M_PI;
@@ -150,4 +150,4 @@ char *filename)
 /*       / (rbase->t2600.v_1ghz * 1.0E-3)); */
 
     return (0);
-    }   
+    }

@@ -69,7 +69,7 @@ static void masthead(int mode, char *rf,
 {
     msg("rf:  %s", 3, rf);
     msg("cf:  %s", 3, control_filename);
-    msg("on: %.8s - %.8s [%c%c] fq %c pol %s ch %c..%c mode %d", 3,
+    msg("on: %.8s - %.8s [%c%c] fq %c pol %s ch %c..%c mode %03X", 3,
         fringe.t202->ref_name, fringe.t202->rem_name,
         fringe.t202->baseline[0], fringe.t202->baseline[1],
         pass->pass_data[0].fgroup, pol_string((int)pass->pol),
@@ -101,18 +101,20 @@ static void est_phases(struct type_pass *pass, int first, int final,
     static char buf[720], tmp[80], *pb;
     int ch, ss, pol, nd;
     double inp_phase, est_phase, sbmult, delta_delay, phase_bias;
-    char *epb;
+    char *epb = getenv("HOPS_EST_PC_BIAS");
+    char *epd = getenv("HOPS_EST_PC_DLYM");
 
     *progname = 0;
     msg("*est: phases on %s station", 1, rr ? "ref" : "rem");
 
     /* support for bias operation */
     if (keep) {
-        epb = getenv("HOPS_EST_PC_BIAS");
         phase_bias = (epb) ? atof(epb) : 0.0;
         msg("*est: phase bias %f (mod res phase is %f)", 3,
             phase_bias, status.coh_avg_phase * (180.0 / M_PI));
     }
+    if (epb || epd)
+        msg("*est: HOPS_EST_PC_BIAS %s ..._DLYM %s", 3, epb, epd);
 
     /* header for the section */
     pol = pol_letter(pass->pol, !rr);
@@ -135,6 +137,8 @@ static void est_phases(struct type_pass *pass, int first, int final,
         delta_delay = (param.mbd_anchor == MODEL)
                     ? fringe.t208->resid_mbd
                     : fringe.t208->resid_mbd - fringe.t208->resid_sbd;
+        /* allow this factor to be adjusted */
+        delta_delay *= (epd) ? atof(epd) : 1.0;
         est_phase += sbmult * (carg (status.fringe[ch]) * 180.0 / M_PI
                   + 360.0 * delta_delay *
                     (pass->pass_data[ch].frequency - fringe.t205->ref_freq));
@@ -154,7 +158,7 @@ static void est_phases(struct type_pass *pass, int first, int final,
         if (rr) est_phase = pbranch(est_phase);
         else    est_phase = pbranch(-est_phase);
         snprintf(tmp, sizeof(tmp), " %+8.3f", est_phase);
-        strncat(buf, tmp, sizeof(buf));
+        strncat(buf, tmp, sizeof(buf)-1);
 
         /* eight phases per line for a line length of 73 */
         if (++ss == 8) {
@@ -183,7 +187,7 @@ static int sbd_cmp(const void *a, const void *b)
  *    0x10: use original SBD values
  *    0x20: use heuristics to discard outliers
  */
-static void adj_delays(double sbd[], double esd[],
+static void adj_delays(double sbd[], double esd[], double delta_delay,
     int first, int final, int rr, int how)
 {
     static double cpy[MAXFREQ];
@@ -221,16 +225,16 @@ static void adj_delays(double sbd[], double esd[],
 
     if        (how & 0x02) {            /* use the median value */
         msg("*est: using median delay (mode %x)",3,how);
-        for (ch = first; ch <= final; ch++) esd[ch] = medly;
+        for (ch = first; ch <= final; ch++) esd[ch] = medly - delta_delay;
     } else if (how & 0x04) {            /* compute and use average */
         msg("*est: using ave delay (mode %x)",3,how);
-        for (ch = first; ch <= final; ch++) esd[ch] = ave;
+        for (ch = first; ch <= final; ch++) esd[ch] = ave - delta_delay;
     } else if (how & 0x08) {            /* use total SBD value */
         msg("*est: using total SBD delay (mode %x)",3,how);
-        for (ch = first; ch <= final; ch++) esd[ch] = tot;
+        for (ch = first; ch <= final; ch++) esd[ch] = tot - delta_delay;
     } else if (how & 0x10) {            /* use the measured values */
         msg("*est: using measured SBD delay (mode %x)",3,how);
-        for (ch = first; ch <= final; ch++) esd[ch] = sbd[ch];
+        for (ch = first; ch <= final; ch++) esd[ch] = sbd[ch] - delta_delay;
     }
 
     if (!rr) for (ch = first; ch <= final; ch++) esd[ch] = -esd[ch];
@@ -246,17 +250,31 @@ static void est_delays(struct type_pass *pass,
 {
     static char buf[720], tmp[80];
     static double sbd[MAXFREQ], rdy[MAXFREQ], esd[MAXFREQ];
+    double delta_delay;
     int ch, ss, pol, nd;
-    char *pb;
+    char *pb, *epd = getenv("HOPS_EST_PC_MDLY");
 
     *progname = 0;
     msg("*est: delays on %s station", 1, rr ? "ref" : "rem");
+    if (epd) msg("*est: HOPS_EST_PC_MDLY %s", 3, epd);
 
     /* restrict operation to only one delay calculation */
     if ((((how & 0x02)>>1) + ((how & 0x04)>>2) +
          ((how & 0x08)>>3) + ((how & 0x10)>>4)) > 1) {
         msg("*est: too many delay modes selected: 0x%02x",3,how);
         return;
+    }
+
+    /* consider a delay correction due to mbd */
+    if (how & 0x100) {
+        //delta_delay = (param.mbd_anchor == MODEL)
+        //            ? fringe.t208->resid_mbd
+        //            : fringe.t208->resid_mbd - fringe.t208->resid_sbd;
+        delta_delay = fringe.t208->resid_mbd;
+        delta_delay *= ((epd) ? atof(epd) : 1.0) * 1000.0;
+        msg("*est: post-MDLY sbd adjustment %f ns", 3, delta_delay);
+    } else {
+        delta_delay = 0.0;
     }
 
     /* build an array of per-channel sbd values */
@@ -275,7 +293,7 @@ static void est_delays(struct type_pass *pass,
     }
     
     /* make sense of it */
-    adj_delays(sbd, esd, first, final, rr, how);
+    adj_delays(sbd, esd, delta_delay, first, final, rr, how);
 
     /* header for the section */
     pol = pol_letter(pass->pol, !rr);
@@ -290,7 +308,7 @@ static void est_delays(struct type_pass *pass,
         esd[ch] += rdy[ch];     /* work relative to input value */
         if (fabs(esd[ch] - rdy[ch]) > 0.01) nd ++;
         snprintf(tmp, sizeof(tmp), " %+8.3f", esd[ch]);
-        strncat(buf, tmp, sizeof(buf));
+        strncat(buf, tmp, sizeof(buf)-1);
   
         /* eight delays per line for a line length of 73 */
         if (++ss == 8) {
@@ -327,11 +345,11 @@ void est_pc_manual(int mode, char *rootfile, struct type_pass *pass)
     save_pn();
 
     doref = (mode>0) ? 1 : 0;
-    if (!doref) mode *= -1;
-    dophs = mode & 0x001;
-    dodly = mode & 0x03e;
-    dooff = mode & 0x040;
-    domrp = mode & 0x080;
+    if (!doref) mode *= -1; /* so that mode is now positive   */
+    dophs = mode & 0x001;   /* per-channel phase correction   */
+    dodly = mode & 0x13e;   /* 0x02 0x04 0x08 0x10 0x20 0x100 */
+    dooff = mode & 0x040;   /* estimate phase offset value    */
+    domrp = mode & 0x080;   /* phase bias HOPS_EST_PC_BIAS    */
 
     first_ch = (param.first_plot == 0) ? 0 : param.first_plot;
     final_ch = (param.nplot_chans == 0) ? pass->nfreq : param.nplot_chans;

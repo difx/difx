@@ -5,12 +5,15 @@
 '''
 Script to estimate manual phases in a fourfit control file
 '''
+from __future__ import absolute_import
+from __future__ import print_function
 import argparse
 import fileinput
 import os
 import re
 import subprocess
 import sys
+import time
 import textwrap
 
 def parseOptions():
@@ -28,11 +31,15 @@ def parseOptions():
     Typical usage requires just the name of the control file
     to build, the root file to use, and the list of stations:
 
-    est_manual_phases.py -r 3597/No0049/3C279.zlwmcz -c sample.conf -s A,...
+      est_manual_phases.py -r 3597/No../3C279.... -c old.conf -s A,...
+
+    To create a 'starter' control file, use the prune (-p) option:
+
+      est_manual_phases.py -r ... -c new.conf -s ... -p
     ''')
     use = '%(prog)s [options]\n'
     use += '  Version '
-    use += '$Id: est_manual_phases.py.in 3046 2020-09-02 14:11:29Z gbc $'
+    use += '$Id: est_manual_phases.py.in 3373 2021-09-20 18:12:39Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     required = parser.add_argument_group('required options')
@@ -55,12 +62,16 @@ def parseOptions():
     flaggers.add_argument('-v', '--verbose', dest='verb',
         action='store_true', default=False,
         help='Provide more verbosity about activities')
+    flaggers.add_argument('-w', '--veryverb', dest='very',
+        action='store_true', default=False,
+        help='Provide more even more verbosity about activities')
     flaggers.add_argument('-n', '--nuke', dest='nuke',
         action='store_true', default=False,
         help='Nuke existing control file and start from scratch')
     flaggers.add_argument('-X', '--mixed', dest='mixed',
         action='store_true', default=False,
-        help='Fall back on the LMT/ALMA mixed first strategy')
+        help='Fall back on the (LMT)/ALMA first-station'
+        '-is-mixed-pol first strategy')
     #
     dbugging.add_argument('-d', '--dry', dest='dry',
         action='store_true', default=False,
@@ -80,11 +91,23 @@ def parseOptions():
         metavar='INT', default='4',
         help='Maximum number of iterations of -q sequence')
     optional.add_argument('-t', '--tolerance', dest='tolerance',
-        metavar='FLOAT', default=0.000001, type=float,
+        metavar='FLOAT', default=0.000010, type=float,
         help='Continue until sbd/mbd are smaller than this')
     optional.add_argument('-a', '--additional', dest='additional',
         action='store_true', default=False,
         help='If set, just do the phase/delay on the site list.')
+#   optional.add_argument('-k', '--keepers', dest='keepers',
+#       metavar='RE-LIST', default='',
+#       help='comma-sep list of RE-patterns from control file'
+#       ' to preserve in iterations of control file.  The parser for'
+#       ' the control file is rather primitive and looks for the various'
+#       ' control keywords at the start of a line.  And it is expecting'
+#       ' if station .. phases and delays to be under its control.')
+    optional.add_argument('-A', '--alma', dest='alma',
+        metavar='CHAR', default='A',
+        help='The letter of the "ALMA" type anchor station which'
+        ' must be first in the list.  "A" is the default, but you'
+        ' can change to some other station')
     #
     whatelse.add_argument('arguments', nargs='*',
         help='Any remaining command-line arguments are treated '
@@ -102,12 +125,23 @@ def parseOptions():
     o.cf_default = '''
     pc_mode manual            * manual phase required
     weak_channel 0.0          * shut up about code G
-    optimize_closure true     * expected to be better
-    mbd_anchor sbd            * model isn't too good
-    gen_cf_record true        * for debugging @
+    optimize_closure true     * use mbd not sbd for delay
+    mbd_anchor sbd            * force mbd near sbd
     sb_win -0.10     0.10     * SBD search window
     mb_win -0.008    0.008    * MBD search window
     dr_win -0.000001 0.000001 * Delay Rate window
+    if station A mount_type cassegrain  * 2021 info
+    if station G mount_type cassegrain
+    if station J mount_type cassegrain
+    if station K mount_type cassegrain
+    if station L mount_type cassegrain
+    if station M mount_type cassegrain
+    if station N mount_type cassegrain
+    if station P mount_type nasmythleft
+    if station S mount_type cassegrain
+    if station X mount_type nasmythright
+    if station Y mount_type cassegrain
+    if station Z mount_type nasmythright
     '''
     return o
 
@@ -134,12 +168,22 @@ def saveOrigControl(o):
     '''
     Save the original control file prior to doing the work
     '''
-    if o.verb: print 'Saving original %s as %s.orig' % (o.control, o.control)
+    if o.verb: print('Saving original %s as %s.orig' % (o.control, o.control))
     if o.nuke:
         os.rename(o.control, o.control + '.orig')
         createNewControl(o)
     else:
         os.system('cp -p %s %s' % (o.control, o.control + '.orig'))
+
+def copyControl(o):
+    '''
+    Make a copy of the control file for debugging
+    '''
+    if not o.very: return
+    o.counter = o.counter + 1
+    cmd = 'cp -p %s %s.%03d' % (o.control, o.control, o.counter)
+    os.system(cmd)
+    print('# ' + cmd)
 
 def createFile(cfile, directives):
     '''
@@ -160,26 +204,26 @@ def createNewControl(o):
     else:
         createFile(o.control, o.cf_default)
         how = 'from default control file directives'
-    if o.verb: print 'Created %s %s' % (o.control, how)
+    if o.verb: print('Created %s %s' % (o.control, how))
 
 def doStarters(o):
     '''
     Idiot stuff to start off with.
     '''
     if not os.path.exists(o.rootfile):
-        raise Exception, 'Rootfile "%s" does not exist' % o.rootfile
-    if o.verb: print 'Working with rootfile ' + o.rootfile
+        raise Exception('Rootfile "%s" does not exist' % o.rootfile)
+    if o.verb: print('Working with rootfile ' + o.rootfile)
     makeSiteMap(o)
     if o.verb:
-        print 'Site map is:',
-        for one in o.site: print ('%s -> %s' % (one, o.site[one])),
-        print
+        print('Site map is:', end=' ')
+        for one in o.site: print(('%s -> %s' % (one, o.site[one])), end=' ')
+        print()
     if os.path.exists(o.control): saveOrigControl(o)
     else:                         createNewControl(o)
     o.ffdir = os.path.dirname(o.rootfile)
     o.stamp = o.rootfile[-6:]
-    if o.verb: print 'Using data files in %s with stamp %s' % (
-        o.ffdir, o.stamp)
+    if o.verb: print('Using data files in %s with stamp %s' % (
+        o.ffdir, o.stamp))
 
 def executeFFact(o):
     '''
@@ -187,29 +231,37 @@ def executeFFact(o):
     results and interpreting them.  Return with an assesment
     of convergence.
     '''
-    if o.verb: print '    %s' % o.cmd
+    if o.verb: print('    %s' % o.cmd)
     p = subprocess.Popen(o.cmd.split(' '),
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     cf = open(o.control, 'r')
     nf = open(o.control + '.temp', 'w') 
     for line in cf.readlines(): nf.write(line)
     cf.close()
-    nf.write('\n* executeFFact\n* %s\n' % o.cmd)
+    try: etime = "%.3f"%(time.clock_gettime(time.CLOCK_REALTIME) - o.rtstart)
+    except: etime = "na"
+    nf.write('\n* executeFFact %s\n* %s\n' % (etime, o.cmd))
     converged = False
     ind = '      '
-    for line in p.stdout:
+    for lineb in p.stdout:
+        line = lineb.decode()
         dly = o.sbdmbd_re.search(line.rstrip())
         if dly:
             sbd = float(dly.group(1))
             mbd = float(dly.group(2))
             frr = float(dly.group(3))
-            if abs(sbd) < o.tolerance and abs(mbd) < o.tolerance:
-                converged = True
+            if (abs(sbd-o.lsbd) < o.tolerance and
+                abs(mbd-o.lmbd) < o.tolerance):
+                    converged = True
             if converged: status = '(is  converged)'
             else:         status = '(not converged)'
-            if o.verb: print ind, line.rstrip(), sbd, mbd, frr, status
+            if o.verb:
+                print(ind, line,
+                      ind, '* ', etime, 's', sbd, o.lsbd, mbd, o.lmbd, status)
+            o.lsbd = sbd
+            o.lmbd = mbd
         else:
-            if o.verb: print ind, line,
+            if o.very: print(ind, line, end=' ')
         # protect control file from error messages
         if line[0:8] == 'fourfit:': line = '* ' + line
         # don't output suggested values after converging
@@ -217,6 +269,7 @@ def executeFFact(o):
         nf.write(line)
     p.wait()
     nf.close()
+    copyControl(o)
     os.unlink(o.control)
     os.rename(o.control + '.temp', o.control)
     return converged
@@ -225,9 +278,9 @@ def executeFFdry(o):
     '''
     Do one execution of the fourfit command, capturing the
     results and interpreting them.  Return with an assesment
-    of convergence.
+    of convergence.  In the dry case we do nothing.
     '''
-    print '    %s' % o.cmd
+    print('    %s' % o.cmd)
     return False
 
 def genPhaseDelay(o, ref, rem, ref_pol, rem_pol, sgn):
@@ -238,14 +291,17 @@ def genPhaseDelay(o, ref, rem, ref_pol, rem_pol, sgn):
     '''
     if sgn > 0: what = ref
     else:       what = rem
-    if o.verb: print 'Baseline %s%s pol %s%s for %s phase and delay:' % (
-        ref, rem, ref_pol, rem_pol, what)
+    if o.verb: print('Baseline %s%s pol %s%s for %s phase and delay:' % (
+        ref, rem, ref_pol, rem_pol, what))
     cor = '%s/%s%s..%s' % (o.ffdir, ref, rem, o.stamp)
     if not os.path.exists(cor):
-        if o.verb: print '  Missing datafile %s, skipping...' % cor
+        if o.verb: print('  Missing datafile %s, skipping...' % cor)
         return 0
-    if o.verb: print '  Using datafile %s' % cor
+    if o.verb: print('  Using datafile %s' % cor)
+    o.lsbd = 0.0
+    o.lmbd = 0.0
     for ite in range(int(o.max)):
+        if o.very: print("# Iteration %d/%d" % (ite,int(o.max)))
         for seq in o.sequence.split(','):
             o.cmd = '%s -t -c %s -b %s%s -P %s%s %s set est_pc_manual %d' % (
                 'fourfit', o.control, ref, rem, ref_pol, rem_pol,
@@ -253,7 +309,7 @@ def genPhaseDelay(o, ref, rem, ref_pol, rem_pol, sgn):
             if o.dry: converged = executeFFdry(o)
             else:     converged = executeFFact(o)
             if converged:
-                if o.verb: print '    Converged'
+                if o.verb: print('    Converged')
                 return 1
     return 0
 
@@ -265,46 +321,51 @@ def genPhaseOffset(o, ref, rem, ref_pol, rem_pol, sgn):
     '''
     if sgn > 0: what = ref
     else:       what = rem
-    if o.verb: print 'Baseline %s%s pol %s%s for %s phase offset:' % (
-        ref, rem, ref_pol, rem_pol, what)
+    if o.verb: print('Baseline %s%s pol %s%s for %s phase offset:' % (
+        ref, rem, ref_pol, rem_pol, what))
     cor = '%s/%s%s..%s' % (o.ffdir, ref, rem, o.stamp)
     if not os.path.exists(cor):
-        if o.verb: print '  Missing datafile %s, skipping...' % cor
+        if o.verb: print('  Missing datafile %s, skipping...' % cor)
         return 0
-    if o.verb: print '  Using datafile %s' % cor
+    if o.verb: print('  Using datafile %s' % cor)
     o.cmd = '%s -t -c %s -b %s%s -P %s%s %s set est_pc_manual %d' % (
         'fourfit', o.control, ref, rem, ref_pol, rem_pol, o.rootfile, sgn*64)
+    o.lsbd = 0.0
+    o.lmbd = 0.0
     if o.dry: converged = executeFFdry(o)
     else:     converged = executeFFact(o)
-    if converged:
-        if o.verb: print '    Converged'
-        return 1
-    return 0
+#   if converged:
+#       if o.verb: print('    Converged')
+#       return 1
+#   return 0
+    return 1
 
 def doTheWorkMix(o):
     '''
     Build the control file as specified in program options.
-    In the standard (EHT) path, we do the following:
-    0. build a site id mk4 id mapping list
-    a. use AL YL to generate A R phase & delay (ref)
-    b. use AL XL to generate A L phase & delay (ref)
-    c. use AL XR to generate L R phase & delay (rem)
-    d. use AL YR to generate L R phase offset (rem)
-    e. for every additional station/pol, use
-       Ax ?? to generate x R/L phase & delay (rem)
     Note that fourfit aliases X and Y into L and R.
+    In the standard (EHT) path, we do the following steps:
+        '0. build a site id mk4 id mapping list'
+    then ok tracks the steps:
     '''
+    steps = [
+        'a. use AL YL to generate A R phase & delay (ref)',
+        'b. use AL XL to generate A L phase & delay (ref)',
+        'c. use AL XR to generate L R phase & delay (rem)',
+        'd. use AL YR to generate L R phase offset (rem)',
+        'e. for every additional station/pol, use\n' +
+        '   Ax ?? to generate x R/L phase & delay (rem)' ]
     doStarters(o)
     sites = o.sites.split(',')
     mixed = sites.pop(0)
     ok = 0
     eok = 4 + 2 * len(sites)
     if not o.additional:
-        if mixed != 'A':
-            raise Exception, 'ALMA is expected to be first in the list of sites'
+        if mixed != o.alma: raise Exception(
+            'ALMA is expected to be first in the list of sites; use\n'
+            'the -A option to have the first station play that role')
         fixed = sites.pop(0)
-        if fixed != 'L':
-            raise Exception, 'LMT is expected to be second in the list of sites'
+        # LMT is a great site for this, however...
         ok += genPhaseDelay(o, mixed, fixed, 'R', 'L', 1)  # step a.
         ok += genPhaseDelay(o, mixed, fixed, 'L', 'L', 1)  # step b.
         ok += genPhaseDelay(o, mixed, fixed, 'L', 'R', -1)  # step c.
@@ -313,39 +374,43 @@ def doTheWorkMix(o):
         ok += genPhaseDelay(o, mixed, other, 'R', 'R', -1)  # step e.
         ok += genPhaseDelay(o, mixed, other, 'R', 'L', -1)  # step e.
     if ok == eok:
-        print 'The %d of %d steps were completed properly'%(ok,eok)
+        print('The %d of %d steps were completed properly'%(ok,eok))
     else:
-        print 'Only %d of %d steps were completed properly'%(ok,eok)
+        print('Only %d of %d steps were completed properly'%(ok,eok))
+        if o.very: print('\n'.join(steps))
 
 def doTheWorkAok(o):
     '''
     Build the control file as specified in program options.
     In the standard (EHT) path, we do the following:
     0. build a site id mk4 id mapping list
-    a. If the first site is ALMA, assume done properly: phases/delays => 0
-       This is the default, so there is no work. (pop)
-    b. for every additional station/pol, use
-       Ax ?? to generate x R/L phase & delay (rem)
-    c. If the first site is not ALMA, assume done properly; phases/delays
-       are not zero, but are consistent with ALMA and fourfit should be
-       generating numbers consistent with that.
-    d. for every additional station/pol, proceed to generate phases/delays
-       as normally.  However, it may be necessary to
-    e. swap baselines to find the proper ref/rem combination.
     '''
+    steps = [
+        'a. If the first site is ALMA, assume it wasdone properly:\n' +
+        '   set its phases/delays => 0. This is the default, so there\n' +
+        '   is no work to this step. (pop)',
+        'b. for every additional station/pol, use\n' +
+        '   Ax ?? to generate x R/L phase & delay (rem)',
+        'c. If the first site is not ALMA, assume done properly;\n' +
+        '   phases/delays are not zero, but are consistent with ALMA\n' +
+        '   and fourfit should be generating numbers consistent with that.',
+        'd. for every additional station/pol, proceed to generate\n' +
+        '   phases/delays as normally.  However, it may be necessary to\n',
+        'e. swap baselines to find the proper ref/rem combination.' ]
     doStarters(o)
     sites = o.sites.split(',')
     mixed = sites.pop(0)
     ok = 0
     eok = 2 * len(sites)
-    if mixed == 'A':
+    if mixed == o.alma:
         for other in sites:
             ok += genPhaseDelay(o, mixed, other, 'R', 'R', -1)  # step a.
             ok += genPhaseDelay(o, mixed, other, 'L', 'L', -1)  # step a.
         if ok == eok:
-            print 'The %d of %d steps were completed properly'%(ok,eok)
+            print('The %d of %d steps were completed properly'%(ok,eok))
         else:
-            print 'Only %d of %d steps were completed properly'%(ok,eok)
+            print('Only %d of %d steps were completed properly'%(ok,eok))
+            if o.very: print('\n'.join(steps))
     else:
         # trust the first station
         for other in sites:
@@ -357,30 +422,55 @@ def doTheWorkAok(o):
             if ans == 0:
                 ans = genPhaseDelay(o, other,mixed, 'L', 'L', 1) # step e.
         if ok == eok:
-            print 'The %d of %d steps were completed properly'%(ok,eok)
+            print('The %d of %d steps were completed properly'%(ok,eok))
         else:
-            print 'Only %d of %d steps were completed properly'%(ok,eok)
+            print('Only %d of %d steps were completed properly'%(ok,eok))
+            if o.very: print('\n'.join(steps))
 
 def pruneCF(o):
     '''
     Walk through the control file and prune it.
     '''
-    os.rename(o.control, o.control + '.full')
+    # os.rename(o.control, o.control + '.full')
+    if os.path.exists(o.control):
+        os.rename(o.control, o.control + '.full')
+    else:
+        createFile(o.control + '.full', o.cf_default)
     cf = open(o.control + '.full', 'r')
     nf = open(o.control, 'w')
     iftxt = ''
     site = None
     what = None
-    if_re = re.compile(r'^if station (.)')
+    # path to saving random stuff
+#   misc = [
+#       re.compile(r'^if station (.) mount_type'),
+#       re.compile(r'^ref_freq'),
+#       re.compile(r'^start'),
+#       re.compile(r'^stop'),
+#   ]
+#   for pat in o.keepers.split(','):
+#       misc.append(re.compile(pat))
+    # and the standard list we require
+    if_re = re.compile(r'^if station (.)$')
     do_re = re.compile(r'.*delay_offs_(.)')
     ph_re = re.compile(r'.*pc_phases_(.)')
     po_re = re.compile(r'.*pc_phase_offset_(.)')
+    # ok, run through the cf by line
     for lineo in cf.readlines():
         line = lineo.lstrip()
         if len(line) == 0: continue
         if line[0] == '*': continue
         if line[0] == '\n': continue
         ls = lineo.rstrip()
+#       mfor = False
+#       for m in misc:
+#           hit = m.search(ls)
+#           if hit:
+#               nf.write(line)
+#               mfor = True
+#               break # so we can continue
+#       if mfor:
+#           continue # to next line
         hit = if_re.search(ls)
         if hit:
             if site and what:
@@ -410,8 +500,7 @@ def pruneCF(o):
         key = 'site:' + site + ':' + what
         o.cfd[key] = iftxt
     cf.close()
-    keys = o.cfd.keys()
-    keys.sort()
+    keys = sorted(o.cfd.keys())
     for key in keys:
         nf.write('*' + '-'*71 + '\n')
         nf.write(o.cfd[key])
@@ -422,35 +511,40 @@ def dumpOpts(o):
     '''
     Print out all the arguments.
     '''
-    print ''
-    print 'est_manual_phases.py \\'
-    print '  [-v] [-n] [-p] [-d] [-x] -c %s -r %s \\' % (o.control, o.rootfile)
-    print '  -s %s -q %s -m %s -t %s [cf directives]' % (
-        o.sites, o.sequence, o.max, o.tolerance)
-    print ''
-    print '  The default list of fourfit cf directives is:',
-    print o.cf_default
-    print '  Valid bits available in each -q list element are:'
-    print '    0x01 -   1 - solve for phases'
-    print '    0x02 -   2 - estimate delay from median value [*]'
-    print '    0x04 -   4 - estimate delay from average value [*]'
-    print '    0x08 -   8 - estimate delay from total SBD value'
-    print '    0x10 -  16 - use per-channel SBD values [*]'
-    print '    0x20 -  32 - discard outlier per-channel SBD values on [*]'
-    print '    0x40 -  64 - calculate the phase offset between polarizations'
-    print '    0x80 - 128 - apply a phase bias'
-    print ''
-    print '  This sequence of estimates [-q] is repeated to the -m limit.'
-    print '  The first station is assumed mixed pol (or that the target'
-    print '    is polarized; then its R,L phase & delays are calculated.'
-    print '  After that the second station R phase, and finally the'
-    print '    phase offset for the second station R phase.'
-    print '  Finally the first station is used to remaining phase and delays.'
-    print ''
+    print('')
+    print('est_manual_phases.py \\')
+    print('  [-v] [-n] [-p] [-d] [-x] -c %s -r %s \\' % (o.control, o.rootfile))
+    print('  -s %s -q %s -m %s -t %s [cf directives]' % (
+        o.sites, o.sequence, o.max, o.tolerance))
+    print('')
+    print('  The default list of fourfit cf directives is:', end=' ')
+    print(o.cf_default)
+    print('  Valid bits available in each -q list element are:')
+    print('    0x01 -   1 - solve for phases')
+    print('    0x02 -   2 - estimate delay from median value [*]')
+    print('    0x04 -   4 - estimate delay from average value [*]')
+    print('    0x08 -   8 - estimate delay from total SBD value')
+    print('    0x10 -  16 - use per-channel SBD values [*]')
+    print('    0x20 -  32 - discard outlier per-channel SBD values on [*]')
+    print('    0x40 -  64 - calculate the phase offset between polarizations')
+    print('    0x80 - 128 - apply a phase bias')
+    print('')
+    print('  This sequence of estimates [-q] is repeated to the -m limit.')
+    print('  The first station is assumed mixed pol (or that the target')
+    print('    is polarized; then its R,L phase & delays are calculated.')
+    print('  After that the second station R phase, and finally the')
+    print('    phase offset for the second station R phase.')
+    print('  Finally the first station is used to remaining phase and delays.')
+    print('')
 
 # main entry point
 if __name__ == '__main__':
     o = parseOptions()
+    o.counter = 0
+    try:    o.rtstart = time.clock_gettime(time.CLOCK_REALTIME)
+    except: o.rtstart = 'na'
+    if o.very:
+        o.verb = True
     if o.defaults:
         dumpOpts(o)
         sys.exit(0)
@@ -459,16 +553,16 @@ if __name__ == '__main__':
         sys.exit(0)
     try:
         if o.mixed:
-            print 'Assuming ALMA is mixed (-X option used).'
+            print('Assuming ALMA is mixed pol (-X option used).')
             doTheWorkMix(o)
         else:
-            print 'Assuming ALMA is fixed (-X option not used).'
+            print('Assuming ALMA is fixed circ (-X option not used).')
             doTheWorkAok(o)
         pruneCF(o)
     except KeyboardInterrupt:
-        print '^C, shutting down'
-    except Exception, ex:
-        print 'Exception: ', ex
+        print('^C, shutting down')
+    except Exception as ex:
+        print('Exception: ', ex)
         sys.exit(1)
     sys.exit(0)
 

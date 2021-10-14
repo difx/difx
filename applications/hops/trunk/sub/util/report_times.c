@@ -33,7 +33,7 @@ void report_wallclock(int npass, int totpass)
 int report_times(struct time_account *t_acc, int nseg, struct tms *buf,
     int real, double time_unit)
     {
-    int max_len, i, j, total_calls, len;
+    size_t max_len, i, j, total_calls, len;
     char line[101];
     double total_real, total_user, total_system;
     double acc_user, acc_system, acc_real;
@@ -87,7 +87,7 @@ int report_times(struct time_account *t_acc, int nseg, struct tms *buf,
     acc_real = real * time_unit - total_real;
     for (j=0; j<strlen(line); j++) line[j] = ' ';
     strncpy (line, "Accounting", 10);
-    sprintf (line+max_len+4, "%9.3f %9.3f %9.3f %9d",
+    sprintf (line+max_len+4, "%9.3f %9.3f %9.3f %9ld",
             fabs(acc_user), fabs(acc_system), fabs(acc_real), total_calls);
     if (real < 0) strncpy (line+max_len+28, "       ???", 10);
     msg ("%s", 3, line);

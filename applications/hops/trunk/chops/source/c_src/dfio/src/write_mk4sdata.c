@@ -33,7 +33,7 @@ write_mk4sdata (struct mk4_sdata *sdata,
     struct type_000 t000;
     struct type_301 *t301;
     struct type_302 *t302;
-    struct type_302 *t303;
+    struct type_303 *t303;
                                         /* Check for legal and sensible */
                                         /* filename input */
     ptr = (char *)strrchr (filename, '/');

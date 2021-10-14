@@ -1,8 +1,8 @@
 #!/bin/sh
 #
-# $Id: chk_baselines.sh 1082 2015-03-12 15:31:30Z gbc $
+# $Id: chk_baselines.sh 3326 2021-09-04 13:05:05Z gbc $
 #
-# canonical test suite for fourfit
+# test to verify local data processing
 #
 
 verb=false

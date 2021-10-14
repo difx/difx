@@ -37,7 +37,8 @@ stcount_interp (
 struct mk4_sdata *sd1,
 struct mk4_sdata *sd2,
 struct type_param *param,
-struct freq_corel *corel)
+struct freq_corel *corel,
+struct type_status *status)
     {
     int stn, j, sc, ap, ch, f, i, n;
     double start, stop, time[MAXSTATPER];
@@ -54,10 +55,9 @@ struct freq_corel *corel)
     struct mk4_sdata *sd;
     struct type_306 *t306;
     struct interp_sdata *isd;
-    extern struct type_status status;
                                         /* flag to control stc err message */
     first_mess = 1;
-    status.stc_present = 0;         // indicate neither station having state counts
+    status->stc_present = 0;         // indicate neither station having state counts
     
     if (param->bits_sample[0] == 2) // in mk4 xf mode, both stns have same bits/samp
         {
@@ -106,7 +106,7 @@ struct freq_corel *corel)
             continue;
             }
                                     // indicate that this station has state counts
-        status.stc_present |= 1 << stn;
+        status->stc_present |= 1 << stn;
                                         /* Loop over channels */
                                         /* Assume that first 306 is like */
                                         /* all the rest, vis a vis chan order */

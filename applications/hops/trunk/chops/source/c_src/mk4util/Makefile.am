@@ -4,9 +4,9 @@
 
 SUBDIRS = .
 
-AM_CPPFLAGS = -I. -I$(srcdir)/include  -Wall -Wextra -DHAVE_CONFIG_H
+AM_CPPFLAGS = -I. -I$(srcdir)/include -DHAVE_CONFIG_H
 
-pkginclude_HEADERS = ./include/account.h ./include/fileset.h ./include/fstruct.h ./include/general.h ./include/mk4_sizes.h ./include/mk4_typedefs.h ./include/mk4_util.h ./include/adler32_checksum.h
+pkginclude_HEADERS = ./include/account.h ./include/fileset.h ./include/fstruct.h ./include/general.h ./include/mk4_sizes.h ./include/mk4_typedefs.h ./include/mk4_util.h ./include/adler32_checksum.h ./include/hops_complex.h
 
 pkglib_LTLIBRARIES = libmk4utilb.la
 

@@ -18,6 +18,7 @@
 /* version 1                                           rjc 2010.10.1    */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "bytflp.h"
 #include "type_309.h"

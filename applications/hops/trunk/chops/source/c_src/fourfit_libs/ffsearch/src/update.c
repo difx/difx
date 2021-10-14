@@ -9,7 +9,8 @@
 #include "param_struct.h"
 #include "pass_struct.h"
 
-update (struct type_pass* pass, int mbd_cell, double max_val, int lag, int drate_cell, int flag)
+void update (struct type_pass* pass,
+    int mbd_cell, double max_val, int lag, int drate_cell, int flag)
     {
     double dr_max, mbd_max, mbd_max_pre_dr_adjust;
     extern struct type_status status;
@@ -55,6 +56,9 @@ update (struct type_pass* pass, int mbd_cell, double max_val, int lag, int drate
 
     if (flag == GLOBAL)
         {
+        // storing results, but interp() is still to come
+        // max555() uses 5x5x5 about [max_delchan(sbd index),
+        // status.mbd_max_global(mbd delay), status.dr_max_global(dr)]
         status.max_delchan = lag;
         status.sbd_max = (lag - param.nlags) * status.sbd_sep;
         status.dr_max_global = dr_max;

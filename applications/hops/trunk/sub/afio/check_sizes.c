@@ -3,6 +3,7 @@
  *
  */
 
+#include <stdio.h>
 #include "adata.h"
 
 int main(int argc, char **argv)

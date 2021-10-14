@@ -60,6 +60,7 @@
 /*    mod 15 May 2006 ab/alr - strtok removed                 */
 /*                                                            */
 /*    mod 2015.3.2  rjc  fix behavior with new sked format    */
+/*    mod 2021.3.30 jpb  boost MAXSC form 2k to 10k           */
 /**************************************************************/
 
 #include <ctype.h>
@@ -73,7 +74,7 @@
 /*  Note: actually baseline/freq, each scan has X baselines then S  */
 #define MAXBL 600 
 #define MAXSOR 256
-#define MAXSC 2000
+#define MAXSC 10000
 #define MAXLINLEN 6000  
 #define SNRMAX 10.0
 #define SNRWARN 5.0
@@ -433,11 +434,11 @@ int main(int argc, char *argv[])
 
 /*   ns=matching scbl index    */
 
-            isnro = snro;
+           /* isnro = snro; */
 
 /*   use snr from alist only if greater than existing value  */
 
-          if(isnro > scbl[ns].osnr[n] )  scbl[ns].osnr[n] = isnro;
+          if(snro > scbl[ns].osnr[n] )  scbl[ns].osnr[n] = snro;
         }
       }    
     }

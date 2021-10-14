@@ -9,15 +9,16 @@
 /************************************************************************/
 #include <math.h>
 #include <stdio.h>
-#include <complex.h>
+#include "hops_complex.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
+#include "ff_misc_if.h"
 
 void
 calc_rms (struct type_pass *pass)
     {
-    complex vsum, vsumf, refpc, rempc, pcal, wght_phsr;
+    hops_complex vsum, vsumf, refpc, rempc, pcal, wght_phsr;
     double true_nseg, apwt, wt, totwt, totap, c;
     double wtf, wtf_dsb, wt_dsb, mean_ap, ap_in_seg, usbfrac, lsbfrac;
     double ref_tperr, rem_tperr;
@@ -96,20 +97,20 @@ calc_rms (struct type_pass *pass)
                 mean_ap += ap * apwt;
                                         /* Make sure we account for double */
                                         /* sideband normalization */
-                if (datum->usbfrac >= 0.0) 
+                if (datum->usbfrac >= 0.0)
                     {
                     usbfrac += datum->usbfrac;
                     wtf_dsb += apwt;
                     wt_dsb += apwt;
                     }
-                if (datum->lsbfrac >= 0.0) 
+                if (datum->lsbfrac >= 0.0)
                     {
                     lsbfrac += datum->lsbfrac;
                     wtf_dsb += apwt;
                     wt_dsb += apwt;
                     }
                                         /* State count data */
-                if (reflcp) 
+                if (reflcp)
                     {
                     ref_scount_usb += datum->ref_sdata.pos[0] + datum->ref_sdata.neg[0];
                     ref_scount_lsb += datum->ref_sdata.pos[1] + datum->ref_sdata.neg[1];
@@ -118,7 +119,7 @@ calc_rms (struct type_pass *pass)
                     ref_bias_lsb += datum->ref_sdata.bigpos[1] + datum->ref_sdata.pos[1]
                                     - datum->ref_sdata.neg[1] - datum->ref_sdata.bigneg[1];
                     }
-                else 
+                else
                     {
                     ref_scount_usb += datum->ref_sdata.pos[2] + datum->ref_sdata.neg[2];
                     ref_scount_lsb += datum->ref_sdata.pos[3] + datum->ref_sdata.neg[3];
@@ -127,7 +128,7 @@ calc_rms (struct type_pass *pass)
                     ref_bias_lsb += datum->ref_sdata.bigpos[3] + datum->ref_sdata.pos[3]
                                     - datum->ref_sdata.neg[3] - datum->ref_sdata.bigneg[3];
                     }
-                if (remlcp) 
+                if (remlcp)
                     {
                     rem_scount_usb += datum->rem_sdata.pos[0] + datum->rem_sdata.neg[0];
                     rem_scount_lsb += datum->rem_sdata.pos[1] + datum->rem_sdata.neg[1];
@@ -136,7 +137,7 @@ calc_rms (struct type_pass *pass)
                     rem_bias_lsb += datum->rem_sdata.bigpos[1] + datum->rem_sdata.pos[1]
                                     - datum->rem_sdata.neg[1] - datum->rem_sdata.bigneg[1];
                     }
-                else 
+                else
                     {
                     rem_scount_usb += datum->rem_sdata.pos[2] + datum->rem_sdata.neg[2];
                     rem_scount_lsb += datum->rem_sdata.pos[3] + datum->rem_sdata.neg[3];
@@ -197,9 +198,9 @@ calc_rms (struct type_pass *pass)
                                         /* Record amp/phase in plot arrays */
                                         /* Also compute data fraction */
                                         /* tape errors, statecounts and phasecals */
-            if (wtf == 0.0) 
+            if (wtf == 0.0)
                 plot.seg_amp[fr][seg] = 0.0;
-            else 
+            else
                 {
                 plot.mean_ap[fr][seg] = mean_ap / wtf;
                 plot.seg_amp[fr][seg] = cabs (vsumf) / wtf_dsb;
@@ -232,25 +233,25 @@ calc_rms (struct type_pass *pass)
                 plot.seg_refpcal[fr][seg] = status.pc_offset[fr][0][stnpol[0][pass->pol]];
             else if (refpcwt == 0.0)
                 plot.seg_refpcal[fr][seg] = 0.0;
-            else 
+            else
                 plot.seg_refpcal[fr][seg] = carg (refpc) * 180.0 / M_PI;
 
             if (param.pc_mode[1] == MANUAL)
                 plot.seg_rempcal[fr][seg] = status.pc_offset[fr][1][stnpol[1][pass->pol]];
             else if (rempcwt == 0.0)
                 plot.seg_rempcal[fr][seg] = 0.0;
-            else 
+            else
                 plot.seg_rempcal[fr][seg] = carg (rempc) * 180.0 / M_PI;
             }
                                         /* Record amp/phase for all freqs */
         if (pass->nfreq > 1)
             {
             if (wt == 0.0) plot.seg_amp[pass->nfreq][seg] = 0.0;
-            else 
+            else
                 {
                 mean_ap = 0.0;
                 nfr = 0;
-                for (i=0; i<pass->nfreq; i++) 
+                for (i=0; i<pass->nfreq; i++)
                     {
                     mean_ap += plot.mean_ap[i][seg];
                     if (plot.mean_ap[i][seg] > 0.0) nfr++;
@@ -276,9 +277,9 @@ calc_rms (struct type_pass *pass)
                                         /* over all freqs */
         c = cabs(vsum);
         status.inc_avg_amp += c * status.amp_corr_fact;
-        if (wt_dsb == 0) 
+        if (wt_dsb == 0)
             c = 0.0;
-        else 
+        else
             c = c / wt_dsb;
                                         /* delres_max is amplitude at peak */
         c = c * status.amp_corr_fact - status.delres_max;
@@ -311,7 +312,7 @@ calc_rms (struct type_pass *pass)
         status.freqrms_amp += c * c;
         }
     if (pass->nfreq > 2)                // avoid 0/0 singularity
-        status.freqrms_phase = sqrt(status.freqrms_phase 
+        status.freqrms_phase = sqrt(status.freqrms_phase
                                     / (pass->nfreq - 2)) * 180./M_PI;
     else
         status.freqrms_phase = 0.0;
@@ -325,7 +326,7 @@ calc_rms (struct type_pass *pass)
 
     status.th_timerms_phase = sqrt(true_nseg) * 180. / (M_PI * status.snr);
     status.th_freqrms_phase = sqrt(pass->nfreq) * 180. / (M_PI * status.snr);
-        
+
     status.th_timerms_amp = status.th_timerms_phase * M_PI * 100. / 180.;
     status.th_freqrms_amp = status.th_freqrms_phase * M_PI * 100. / 180.;
     msg ("RMS = %lg %lg %lg %lg %lg %lg %lg %lg ",0,

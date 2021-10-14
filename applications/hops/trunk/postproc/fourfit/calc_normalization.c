@@ -18,6 +18,7 @@
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
+#include "ff_misc_if.h"
 
 #define min(a,b) ((a<b) ? a : b)
 #define max(a,b) ((a>b) ? a : b)

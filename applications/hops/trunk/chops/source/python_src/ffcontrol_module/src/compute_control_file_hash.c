@@ -15,9 +15,10 @@ unsigned int compute_control_file_hash(char* filename)
 
     retval = read_control_file (filename, &control_file_buff, &flag);
 
-    cf_hash = adler32_checksum( (unsigned char*) control_file_buff, strlen(control_file_buff) );
-
-    if(control_file_buff != NULL){free(control_file_buff);};
-
+    if(retval == 0)
+    {
+        cf_hash = adler32_checksum( (unsigned char*) control_file_buff, strlen(control_file_buff) );
+        if(control_file_buff != NULL){free(control_file_buff);};
+    }
     return cf_hash;
 }

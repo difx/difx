@@ -6,8 +6,8 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.22, gbc@haystack.mit.edu)
-AM_INIT_AUTOMAKE([foreign -Wno-extra-portability subdir-objects no-dependencies])
+AC_INIT(hops, 3.23, gbc@haystack.mit.edu)
+AM_INIT_AUTOMAKE([foreign -Wno-extra-portability subdir-objects])
 
 AC_CONFIG_SRCDIR([hops.bash.in])
 AC_CONFIG_HEADERS([hops_config.h])
@@ -226,6 +226,10 @@ AC_GBC_NOTICE([GS_VERSION is $GS_VERSION])
 AC_SUBST(GS_COPYPAGE_OK)
 AC_SUBST(GS_VERSION)
 # in theory we should eliminate GS_COPYPAGE_OK in favor of GS_VERSION
+
+# and PS is so 20th century...
+AC_PATH_PROGS(PS2PDF, ps2pdf, /bin/false)
+AC_SUBST(PS2PDF)
 
 # PERL/Python might be in nonstandard locations
 AC_PATH_PROGS(PERL, perl, /bin/false)
@@ -881,11 +885,14 @@ if [ "$have_chops" = true ] ; then
 
     # These need to be configured, whether used or not.
     AC_CONFIG_FILES( chops/source/python_src/Makefile )
-    AC_CONFIG_FILES( chops/source/python_src/mk4_module/Makefile )
+    # This one is a challenge.  Here we make includes optional
+    AC_CONFIG_FILES([chops/source/python_src/mk4_module/Makefile],
+        [mv chops/source/python_src/mk4_module/Makefile chops/source/python_src/mk4_module/Makefile- ; sed 's/^include src/-include src/' chops/source/python_src/mk4_module/Makefile- > chops/source/python_src/mk4_module/Makefile ; rm chops/source/python_src/mk4_module/Makefile-])
     AC_CONFIG_FILES( chops/source/python_src/hopstest_module/Makefile )
     AC_CONFIG_FILES( chops/source/python_src/ffcontrol_module/Makefile )
     AC_CONFIG_FILES( chops/source/python_src/vpal_module/Makefile )
-    AC_CONFIG_FILES( chops/source/python_src/vex_module/Makefile )
+    AC_CONFIG_FILES([chops/source/python_src/vex_module/Makefile],
+        [mv chops/source/python_src/vex_module/Makefile chops/source/python_src/vex_module/Makefile- ; sed 's/^include src/-include src/' chops/source/python_src/vex_module/Makefile- > chops/source/python_src/vex_module/Makefile ; rm chops/source/python_src/vex_module/Makefile-])
     AC_CONFIG_FILES( chops/source/python_src/scripts/Makefile )
     AC_CONFIG_FILES( chops/source/python_src/tests/Makefile )
     AC_CONFIG_FILES( [chops/source/python_src/mk4_module/setup.py] )

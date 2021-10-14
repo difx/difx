@@ -22,6 +22,7 @@
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
+#include "ff_misc_if.h"
 
 int
 gate_off (struct type_pass* pass, int frq, int ap)
@@ -30,7 +31,6 @@ gate_off (struct type_pass* pass, int frq, int ap)
     int period, start_gate, end_gate, duration, acc_period, ap_start, ap_stop;
     int pstart, offset;
     extern struct type_param param;
-    int fcode (char, char *);
                                         /* Get appropriate values from */
                                         /* control blk */
                                         /* Do all in milliseconds for integer */

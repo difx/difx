@@ -68,6 +68,8 @@ struct type_208 *t208)
     t208->arate = arate * 1.0e6;
     t208->aaccel = aaccel * 1.0e6;
                                         /* Totals, residuals, and errors */
+                                        // status values assigned by update(...GLOBAL)
+                                        // and subsequenly updated by interp(max555)
     t208->tot_mbd = t208->adelay + status->mbd_max_global;
     t208->tot_sbd = t208->adelay + status->sbd_max;
                                         // anchor total mbd to sbd if desired

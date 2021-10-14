@@ -325,6 +325,11 @@ static int locate_flag(char *file, double thyme, int fr)
 
 /*
  * Main entry to adhoc flagging of data via files.
+ *
+ * On entry dataum_flag is 1 if the data is 'good'
+ * on exit *uflag and *lflag are set if the USB and LSB
+ * are considered to be good after consulting the flag files.
+ * norm_fx() uses these to determine if data is present by pol.
  */
 void adhoc_flag(struct type_param *pp,
     int datum_flag, int fr, int ap, int *uflag, int *lflag)

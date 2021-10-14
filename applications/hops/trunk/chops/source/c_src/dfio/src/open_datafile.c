@@ -33,7 +33,7 @@ open_datafile (char filename[],
                int *type,
                FILE **fp)
     {
-    char relname[100], name[50], tempname[256];
+    char relname[150], name[50], tempname[256];
     char expdir[50], scandir[50];
     char *ptr;
     struct type_000 id_record;

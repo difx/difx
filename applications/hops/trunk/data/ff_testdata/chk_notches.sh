@@ -1,8 +1,11 @@
 #!/bin/bash
 #
-# $Id: chk_notches.sh 2399 2018-06-19 19:54:09Z gbc $
+# $Id: chk_notches.sh 3333 2021-09-07 20:30:41Z gbc $
 #
-# Something to check notches using the fourmered data sample
+# Something to check notches using the some ALMA test data
+# (The original version of this test used Mk4/hdw data and
+# thus used norm_xf() not norm_fx() which is where develop
+# is not proceeding.
 #
 
 verb=false
@@ -15,151 +18,117 @@ export ALTDDIR=`cd $srcdir/testdata; pwd`
 cwd=$DATADIR
 $verb && echo DATADIR=$DATADIR && echo cwd=$cwd
 
-# ref freq chan g is 8212.99 MHz, bw is 8 MHz
+wdir='3727/026-1123'
+[ -d $ALTDDIR/$wdir ] || { echo No 3727 data; exit 1; }
+root=$ALTDDIR/$wdir/J1337-1257.12SVG0
+[ -n "$root" -a -s "$root" ] || { echo no root ; exit 1; }
 
-os=`uname -s` || os=idunno
-#cho passband 8205.99 8211.99 > ./cf3372-pb-lsb
-#cho passband 8205.99 8206.99 > ./cf3372-pb-lsb
-#cho passband 8210.99 8211.99 > ./cf3372-pb-lsb
-echo passband 8206.99 8211.99 > ./cf3372-pb-lsb
-echo plot_data_dir pdd3372-lsb >> ./cf3372-pb-lsb
-echo freqs g- >> ./cf3372-pb-lsb
-grep -v $os $ALTDDIR/3372/cf3372 >> ./cf3372-pb-lsb
-#
-rm -f ff-3372-pb-lsb.ps
-$verb && echo \
-fourfit -t -d diskfile:ff-3372-pb-lsb.ps -b TV:X \\ && echo \
-    -c ./cf3372-pb-lsb \\ && echo \
-    $ALTDDIR/3372/193-1757/0529+483.vtqbsq
-#
-fourfit -t -d diskfile:ff-3372-pb-lsb.ps -b TV:X \
-    -c ./cf3372-pb-lsb \
-    $ALTDDIR/3372/193-1757/0529+483.vtqbsq
-
-rm -f ff-3372-pb-usb.ps
-#cho passband 8213.99 8219.99 > ./cf3372-pb-usb
-#cho passband 8218.99 8219.99 > ./cf3372-pb-usb
-#cho passband 8213.99 8214.99 > ./cf3372-pb-usb
-echo passband 8213.99 8218.99 > ./cf3372-pb-usb
-echo plot_data_dir pdd3372-usb >> ./cf3372-pb-usb
-echo freqs g+ >> ./cf3372-pb-usb
-grep -v $os $ALTDDIR/3372/cf3372 >> ./cf3372-pb-usb
-#
-rm -f ff-3372-pb-usb.ps
-$verb && echo \
-fourfit -t -d diskfile:ff-3372-pb-usb.ps -b TV:X \\ && echo \
-    -c ./cf3372-pb-usb \\ && echo \
-    $ALTDDIR/3372/193-1757/0529+483.vtqbsq
-#
-fourfit -t -d diskfile:ff-3372-pb-usb.ps -b TV:X \
-    -c ./cf3372-pb-usb \
-    $ALTDDIR/3372/193-1757/0529+483.vtqbsq
-
-
-line_lsb=$(grep '7570 9384' ff-3372-pb-lsb.ps)
-line_usb=$(grep '7570 9384' ff-3372-pb-usb.ps)
-#
-IFS='()'
-read a amp_lsb b <<<"$line_lsb"
-echo .$a.$amp_lsb.$b.
-read a amp_usb b <<<"$line_usb"
-echo .$a.$amp_usb.$b.
-#
-low_lsb=22.8 high_lsb=23.1
-aok_lsb=$(echo "$low_lsb < $amp_lsb && $amp_lsb < $high_lsb" | bc -lq)
-$verb && 
-    echo aok_lsb is $aok_lsb and \
-        "$low_lsb < $amp_lsb && $amp_lsb < $high_lsb" from $line_lsb
-#
-low_usb=23.1 high_usb=23.4
-aok_usb=$(echo "$low_usb < $amp_usb && $amp_usb < $high_usb" | bc -lq)
-$verb && 
-    echo aok_usb is $aok_usb and \
-        "$low_usb < $amp_usb && $amp_usb < $high_usb" from $line_usb
-[ "$aok_lsb" -gt 0 -a "$aok_usb" -gt 0 ]  || exit 1
-
-wdir='3365/094-0644_HL'
-[ -d $wdir ] || { echo No 3365 data -- run chk_fourmer.sh first; exit 1; }
-fout=OP-fx.out
-[ -s $fout ] || { echo no file $fout -- run chk_fourmer.sh first; exit 1; }
-root=`ls 3365/094-0644_HL/3C273.*`
-[ -n "$root" -a -s "$root" ] || { echo no HL root ; exit 1; }
-
-cf=cf3365.notch
-# p is doubled
-echo 'freqs a b c d e f g h i j k l m n o q r s t u v w x y z A B C D E' > $cf
-#cho 'freqs a b c d e f g h i j k l n n o ' > $cf
-#cho 'freqs q r s t u v w x y z A B C D E'  > $cf
-echo 'plot_data_dir pdd3365' >> $cf
+cf=cf3727.notch
+pdd=pdd3727
+#echo 'freqs a b c d e f g h i j k l m n o p q r s t u v w x y z A B C D E F' > $cf
+echo "plot_data_dir $pdd" > $cf
 echo 'pc_mode manual' >> $cf
-grep pc_phases $fout >> $cf
-# a 228881.000113 .. 228849.000113
-# b 228913.000113 .. 228881.000113
-# c 228945.000113 .. 228913.000113
-# ...
-# p doubled
-# ...
-# C 229745.000113 .. 229777.000113
-# D 229777.000113 .. 229809.000113
-# E 229809.000113 .. 229841.000113
+# a 212162.796875 .. + 58
+# b 212221.390625 .. + 58
+# ..
+# E 213920.609375 .. + 58
+# F 213979.203125 .. + 58
 echo -n 'notches ' >> $cf
-fr=228853.0001
-to=228859.0001
-true && echo -n "$fr $to" >> $cf
-true && for n in {1..60}
+# 4x 58/4 MHz notches per channel, lined up to be obvious
+# effectively reducing the bandwidth by 2, we expect the
+# amplitude to be unchanged and the SNR to drop by ~sqrt(2).
+# 671.7 / sqrt(2) * 1.013 =  481.1, i.e. agreement to 1.3%
+fr=212166.000000
+to=212173.250000
+true && for n in {1..32}
 do
-    fr=`echo $fr + 8 | bc`
-    to=`echo $to + 8 | bc`
-    echo -n " $fr $to" >> $cf
-done
-fr=229832.0001
-to=229838.0001
-echo -n '       ' >> $cf
-true && echo -n "$fr $to" >> $cf
-true && for n in {1..60}
-do
-    fr=`echo $fr - 8 | bc`
-    to=`echo $to - 8 | bc`
-    echo -n " $fr $to" >> $cf
+  frx=$fr tox=$to
+  for n in {1..4}
+  do
+    echo -n " $frx $tox" >> $cf
+    frx=`echo $frx + 14.500000 | bc`
+    tox=`echo $tox + 14.500000 | bc`
+  done
+  fr=`echo $fr + 58.593750 | bc`
+  to=`echo $to + 58.593750 | bc`
 done
 echo '' >> $cf
 grep -v notches $cf > $cf.not
 mv $cf $cf.got
 
 export HOPS_PLOT_DATA_MASK=0x87FFFFFF
-rm -rf pdd3365
+rm -rf $pdd
 $verb && echo \
-    fourfit -t -c $cf.not -d diskfile:ff-3365-OP.not.ps -b OP -P LL $root
-    fourfit -t -c $cf.not -d diskfile:ff-3365-OP.not.ps -b OP -P LL $root
-for o in `ls pdd3365/*` ; do mv $o $o.not ; done
+    fourfit -t -c $cf.not -d diskfile:ff-3727-DA.not.ps -b DA -P LL $root
+    fourfit -t -c $cf.not -d diskfile:ff-3727-DA.not.ps -b DA -P LL $root
+for o in `ls $pdd/*` ; do mv $o $o.not ; done
 $verb && echo \
-    fourfit -t -c $cf.got -d diskfile:ff-3365-OP.got.ps -b OP -P LL $root
-    fourfit -t -c $cf.got -d diskfile:ff-3365-OP.got.ps -b OP -P LL $root
-for o in `ls pdd3365/* | grep -a -v not` ; do mv $o $o.got ; done
+    fourfit -t -c $cf.got -d diskfile:ff-3727-DA.got.ps -b DA -P LL $root
+    fourfit -t -c $cf.got -d diskfile:ff-3727-DA.got.ps -b DA -P LL $root
+for o in `ls $pdd/* | grep -a -v not` ; do mv $o $o.got ; done
 
-[ -s ff-3365-OP.not.ps -a -s ff-3365-OP.got.ps ] || exit 2
+[ -s ff-3727-DA.not.ps -a -s ff-3727-DA.got.ps ] && second=true || second=false
+$second && $verb && echo second test passed
+$second || echo second test failed, cf ff-3727-DA.not.ps ff-3727-DA.got.ps
 
-line_not=$(grep '7570 9384' ff-3365-OP.not.ps)
-line_got=$(grep '7570 9384' ff-3365-OP.got.ps)
-#
+# grep out the amplitude which should be roughly invariant
+line_not=$(grep '7570 9384' ff-3727-DA.not.ps)
+line_got=$(grep '7570 9384' ff-3727-DA.got.ps)
+# ps file has:  7570 9384 M (amp_value) SR
 IFS='()'
 read a amp_not b <<<"$line_not"
 echo .$a.$amp_not.$b.
 read a amp_got b <<<"$line_got"
 echo .$a.$amp_got.$b.
-#
-low_not=2.40 high_not=2.44
+# ff-3727-DA.not.ps:7570 9384 M (37.295) SR
+low_not=37.195 high_not=37.395
 aok_not=$(echo "$low_not < $amp_not && $amp_not < $high_not" | bc -lq)
 $verb && 
     echo aok_not is $aok_not and \
         "$low_not < $amp_not && $amp_not < $high_not" from $line_not
-#
-low_got=2.50 high_got=2.52
+# ff-3727-DA.got.ps:7570 9384 M (37.152) SR
+low_got=37.052 high_got=37.252
 aok_got=$(echo "$low_got < $amp_got && $amp_got < $high_got" | bc -lq)
 $verb && 
     echo aok_got is $aok_got and \
         "$low_got < $amp_got && $amp_got < $high_got" from $line_got
-[ "$aok_not" -gt 0 -a "$aok_got" -gt 0 ]  || exit 3
+[ "$aok_not" -gt 0 -a "$aok_got" -gt 0 ] && third=true || third=false
+$third && $verb && echo third test passed
+$third || echo third test failed, cf ff-3727-DA.not.ps ff-3727-DA.got.ps
+
+# grep out the snr which should scale by bits used
+lsnr_not=$(grep '7570 9653' ff-3727-DA.not.ps)
+lsnr_got=$(grep '7570 9653' ff-3727-DA.got.ps)
+# ps file has:  7570 9384 M (snr_value) SR
+IFS='()'
+read a snr_not b <<<"$lsnr_not"
+echo .$a.$snr_not.$b.
+read a snr_got b <<<"$lsnr_got"
+echo .$a.$snr_got.$b.
+# ff-3727-DA.not.ps:7570 9653 M (671.7) SR
+low_not=671.0 high_not=672.4
+aok_not=$(echo "$low_not < $snr_not && $snr_not < $high_not" | bc -lq)
+$verb && 
+    echo aok_not is $aok_not and \
+        "$low_not < $snr_not && $snr_not < $high_not" from $lsnr_not
+# ff-3727-DA.got.ps:7570 9653 M (669.1) SR
+#low_got=668.6 high_got=669.9
+low_got=481.1 high_got=481.3
+aok_got=$(echo "$low_got < $snr_got && $snr_got < $high_got" | bc -lq)
+$verb && 
+    echo aok_got is $aok_got and \
+        "$low_got < $snr_got && $snr_got < $high_got" from $lsnr_got
+[ "$aok_not" -gt 0 -a "$aok_got" -gt 0 ] && fourth=true || fourth=false
+$fourth && $verb && echo fourth test passed
+$fourth || echo fourth test failed, cf ff-3727-DA.not.ps ff-3727-DA.got.ps
+
+# final exit status
+st=0
+$second || st=$(($st + 10))
+$third  || st=$(($st + 20))
+$fourth || st=$(($st + 40))
+exit $st
+
 #
 # eof
 #

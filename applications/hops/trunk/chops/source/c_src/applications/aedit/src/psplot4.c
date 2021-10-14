@@ -14,6 +14,7 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -26,8 +27,8 @@
 
 int psplot4 (esum *data)
     {
-    int i, s, j, nst, ch, ret, len, expno;
-    char fg, st_id, vexname[128];
+    int i, s, j, nst, ch, ret, len, expno, isv, isa;
+    char fg, st_id, vexname[256], altname[256];
     struct scan_struct *scn, *scan_info();
     struct psplot_scantime *psscan;
     struct stat statbuf;
@@ -41,16 +42,19 @@ int psplot4 (esum *data)
                                         /* Read in the vex file */
                                         /* associated with the data in memory */
     sprintf (vexname, "%s/%04d/%04d.ovex", datadir, expno, expno);
-    if (stat (vexname, &statbuf) != 0)
+    sprintf (altname, "./%04d.ovex", expno);
+    if ((isv = stat (vexname, &statbuf)) != 0 &&
+        (isa = stat (altname, &statbuf) != 0))
 	    {
-	    msg ("Could not find file '%s'", 3, vexname);
+	    msg ("Could not find file '%s' or '%s'", 3, vexname, altname);
             msg ("(You can make one from vex.obs with hops_vex2ovex.py)", 3);
 	    printf ("Enter full pathname of ovex file: ");
-	    if (fgets (vexname, 128, stdin)) return(1);
+	    if (fgets (vexname, 256, stdin) < 0) return(1);
 	    len = strlen (vexname);
 	    if (vexname[len-1] == '\n') vexname[len-1] = '\0';
+            isa = 0;
 	    }
-    if (parse_vexfile (vexname) != 0)
+    if (parse_vexfile (isa ? altname : vexname) != 0)
         {
         msg ("Could not read vex file for experiment %d", 2, expno);
         return (1);

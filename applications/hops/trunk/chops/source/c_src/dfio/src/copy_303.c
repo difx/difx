@@ -19,6 +19,7 @@
 /* Adopted for use with az, el, and pa    rjc 2012.2.21                 */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "bytflp.h"
 #include "type_303.h"

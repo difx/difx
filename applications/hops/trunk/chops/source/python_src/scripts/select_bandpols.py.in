@@ -34,7 +34,7 @@ Arguments:
         If more stations are given in -s, like -s EY or -s VIGH, only the
         data for those stations are plotted and saved in -o directory.
         If -a is present, -b and -c are ignored (for too many windows would
-        be opened).
+        be opened). WARNING, this function not completely supported.
   -n    do not create plots and do not save them in .png files
   -h    print this text.
 
@@ -92,7 +92,7 @@ import getopt
 # threshold_mulcor = 0.9
 threshold_median = 0.5
 
-all_stations = ('E', 'G', 'H', 'I', 'V', 'Y')
+#all_stations = ('E', 'G', 'H', 'I', 'V', 'Y', 'M')
 bp_sym = ['AX', 'AY', 'BX', 'BY', 'CX', 'CY', 'DX', 'DY']
 nbp_sym = len(bp_sym)
 bp_patt = re.compile(r'[A-D][X-Y]')  # Regex pattern to catch bandpols, like AX
@@ -194,12 +194,14 @@ else:
     n_station = 0
     station_temp = ''
     for st in station:
-        if (st in all_stations) and (st not in station_temp):
+        #if (st in all_stations) and (st not in station_temp):
+        if (st not in station_temp):
             station_temp += st
             n_station += 1
         else:
-            print('ERROR: Station ' + st + ' not in ' + str(all_stations))
-            station_data_exist = False
+            pass
+            #print('ERROR: Station ' + st + ' not in ' + str(all_stations))
+            #station_data_exist = False
     station = station_temp
 
 if dirname == '':

@@ -27,7 +27,7 @@ clear_120 (struct type_120 *t120)
 
     t120->baseline[0] = ' ';
     t120->baseline[1] = ' ';
-    strcpy (t120->rootcode, "      ");
+    strncpy (t120->rootcode, "      ", 6);
     t120->index = 0;
     t120->ap = 0;
     t120->fw.flag = 0;

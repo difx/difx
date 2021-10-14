@@ -1,8 +1,8 @@
 #!/bin/sh
 #
-# $Id: chk_cofit.sh 1769 2017-06-06 15:31:19Z gbc $
+# $Id: chk_cofit.sh 3326 2021-09-04 13:05:05Z gbc $
 #
-# canonical test suite for cofit
+# exercises cofit
 #
 
 verb=false

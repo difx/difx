@@ -9,7 +9,7 @@
 
 #include "plot_struct.h"
 
-struct type_param 
+struct type_param
     {
                                         /* Filled in by time_range() */
     double      start_nom;              /* nom. scan start time from ovex (sBOY) */
@@ -61,6 +61,8 @@ struct type_param
     short       use_sample_cnts;        /* iff true, use sample counts to normalize */
     short       dc_block;               // iff true, zero out DC subchannel in spectrum
     double      passband[2];            /* passband for spectral filtering (MHz) */
+    double      avxpzoom[2];            /* ave XP zoom options for passband */
+    int         avxplopt[2];            /* some plot options on ave XP plot */
     int         gen_cf_record;          /* whether to generate cf record */
     int         nnotches;               /* alternative to passband */
     double      notches[MAXNOTCH][2];   /* alternative to passband */
@@ -80,6 +82,8 @@ struct type_param
     char*       control_file_buff;      // stripped but unparsed contents of control file
     char*       set_string_buff;        // stripped but unparsed contents of set commands
     int         est_pc_manual;          // estimate pc manual values
+    int         mount_type[2];          // mount types for ref and rem
+    double      elevation[2];           // elevation angle for ref and rem (radians)
     };
 
 #define WIN_EDGE_SBD   0x01             /* masks for status.interp_err */
@@ -93,7 +97,7 @@ struct type_param
 #define DIFX   0x02                     // For Adam D
 #define SFXC   0x03                     // For Mark K
 
-struct type_status 
+struct type_status
     {
     double      freq_space;             /* Freq spacing in FFT to MBdelay */
     int         grid_points;            /* # of points in FFT to MBdelay */
@@ -103,7 +107,7 @@ struct type_status
     int         zero_errors;            // # of AP's with zero (some lag count 0) errors
     int         total_ap;               /* Total # of ap's processed (both sb's )*/
     float       total_ap_frac;          /* Same, but with microediting */
-    float       total_usb_frac;         // usb subtotal of total_ap_frac 
+    float       total_usb_frac;         // usb subtotal of total_ap_frac
     float       total_lsb_frac;         // lsb    "      "    "     "
     int         ap_num[2][MAXFREQ];     /* # of aps for each sideband & freq */
     double      ap_frac[2][MAXFREQ];    /* Same, but with microediting */
@@ -151,7 +155,7 @@ struct type_status
     int         win_dr_save[2];         /* Saved delay rate search indices */
     int         win_mb_save[2];         /* Saved multi band search indices */
     int         pts_searched;           /* Number of points searched */
-    complex     fringe[MAXFREQ+1];      /* Fringe phase & amp for each freq */
+    hops_complex     fringe[MAXFREQ+1];      /* Fringe phase & amp for each freq */
     double      sbdbox[MAXFREQ+1];      /* Single band delay box for each freq */
     double      snr;                    /* Signal to Noise ratio */
     double      prob_false;             /* Probability of false detection */
@@ -194,6 +198,13 @@ struct type_status
     int         sb_indx;                // index of max when searching over sb delay
     int         mb_indx;                // index of max when searching over mb delay
     int         dr_indx;                // index of max when searching over delay rate
+    double      xpnotchpband[2*MAXNOTCH];   // xp sites of notches or passband
+    double      sb_bw_fracs[MAXFREQ+2][2];  // bandwidth reduction factors (0..1) by sb
+    double      sb_bw_origs[MAXFREQ+2][2];  // original values accumulated
+    double      sb_bw_apcnt[MAXFREQ+2][2];  // count of ap/fr/sb involved
+    double      tot_sb_bw_aperr;        // accumulated error in total_ap_frac
+    int         apbyfreq[MAXFREQ];      // counter of APs contributing by freq
+    int         napbyfreq;              // number of freqs actually having usable data
     };
-    
+
 #endif

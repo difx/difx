@@ -76,6 +76,7 @@ check_name(char *name, fstruct *f_info)
         }
 
     if (nfield == 1) return (BADSTRING);
+    (void) field5; //disable unused var compiler warning
 
     switch (nfield)
         {

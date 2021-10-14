@@ -57,7 +57,7 @@ write_mk4root (char *vex_source,
 	return (-1);
 	}
 					/* Write it out */
-    if (fprintf (fp, vex_source) <= 0)
+    if (fprintf (fp, "%s", vex_source) <= 0)
 	{
 	msg ("Error writing root file '%s'", 2, filename);
 	return (-1);

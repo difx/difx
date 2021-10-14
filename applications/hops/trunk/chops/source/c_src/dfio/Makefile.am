@@ -4,9 +4,9 @@
 
 SUBDIRS = .
 
-AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../mk4util/include  -Wall -Wextra -DHAVE_CONFIG_H
+AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../mk4util/include -DHAVE_CONFIG_H
 
-pkginclude_HEADERS = ./include/T1.h ./include/bytflp.h ./include/mk4_data.h ./include/mk4_dfio.h ./include/mk4_records.h ./include/type_000.h ./include/type_100.h ./include/type_101.h ./include/type_110.h ./include/type_120.h ./include/type_200.h ./include/type_201.h ./include/type_202.h ./include/type_203.h ./include/type_204.h ./include/type_205.h ./include/type_206.h ./include/type_207.h ./include/type_208.h ./include/type_210.h ./include/type_212.h ./include/type_220.h ./include/type_221.h ./include/type_222.h ./include/type_230.h ./include/type_300.h ./include/type_301.h ./include/type_302.h ./include/type_303.h ./include/type_304.h ./include/type_305.h ./include/type_306.h ./include/type_307.h ./include/type_308.h ./include/type_309.h ./include/type_comp.h
+pkginclude_HEADERS = ./include/T1.h ./include/bytflp.h ./include/mk4_data.h ./include/mk4_dfio.h ./include/mk4_records.h ./include/type_000.h ./include/type_100.h ./include/type_101.h ./include/type_110.h ./include/type_120.h ./include/type_200.h ./include/type_201.h ./include/type_202.h ./include/type_203.h ./include/type_204.h ./include/type_205.h ./include/type_206.h ./include/type_207.h ./include/type_208.h ./include/type_210.h ./include/type_212.h ./include/type_220.h ./include/type_221.h ./include/type_222.h ./include/type_230.h ./include/type_300.h ./include/type_301.h ./include/type_302.h ./include/type_303.h ./include/type_304.h ./include/type_305.h ./include/type_306.h ./include/type_307.h ./include/type_308.h ./include/type_309.h
 
 pkglib_LTLIBRARIES = libdfiob.la
 

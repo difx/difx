@@ -11,7 +11,7 @@
 
 #include "mk4_data.h"
 #include <math.h>
-#include <complex.h>
+#include "hops_complex.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 #include <stdio.h>
@@ -20,14 +20,15 @@
 #define MD 2
 #define SD 3
 
+// dmin(),dmax(), dwin() are in sub/util/minmax.c
 
 void interp (struct type_pass *pass)
     {
     extern struct type_status status;
     extern struct type_param param;
-    complex X, pcal, delay[3], vrot();
+    hops_complex X, pcal, delay[3], vrot();
     double sp, max, r_max, r, ph, peak, d_dr, d_mbd, dr, mbd,
-           pcr, theta, center_mag, q[3],lower,upper,frac, 
+           pcr, theta, center_mag, q[3],lower,upper,frac,
            dr_lower,dr_upper,mbd_lower,mbd_upper,sbd_lower,sbd_upper,
            dmin(),dmax(), dwin(), delay_mag[3], drpt, delta_dr, divisor, eks,
            xlim[3][2];
@@ -35,7 +36,7 @@ void interp (struct type_pass *pass)
         d_sbd,center_lag,ret_code, nl, ret, n, ndrpts, first;
     int isbd, imbd, idr;
     int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
-    complex z;
+    hops_complex z;
     double drf[5][5][5],
            drfmax,
            xi[3];
@@ -58,30 +59,30 @@ void interp (struct type_pass *pass)
             {                                        /* Evaluate  at 3 points */
             for (index = 0; index < 3; index++)
                 {
-                r = status.pc_rate[station] + status.rate_sep * sp * (index-1); 
+                r = status.pc_rate[station] + status.rate_sep * sp * (index-1);
                 delay[index] = 0.0;
                 for (fr = 0; fr < pass->nfreq; fr++)
                     {                            /* Sum over all freqs & ap's */
                     frq = pass->pass_data + fr;
                     for (ap = pass->ap_off; ap < pass->ap_off+pass->num_ap; ap++)
                         {
-                        if (station == 0) 
+                        if (station == 0)
                             isd = &(frq->data[ap].ref_sdata);
-                        else if (station == 1) 
+                        else if (station == 1)
                             isd = &(frq->data[ap].rem_sdata);
                                         // FIXME!! these pols shouldn't be added together
                         pcal = isd->phasecal_lcp[pass->pci[station][fr]]
                              + isd->phasecal_rcp[pass->pci[station][fr]];
-                        if (cabs (pcal) > 0.0) 
+                        if (cabs (pcal) > 0.0)
                             {
                             ph = carg (pcal);
 
                             ph -= (status.pc_phase[fr][station][stnpol[station][pass->pol]]
                                + M_PI * status.pc_offset[fr][station][stnpol[station][pass->pol]] / 180.0);
-                               
+
                             ph -= 2.0 * M_PI * frq->frequency * r * param.acc_period * ap;
 
-                            msg  ("fr %d ap %d st %d freq %g pcal %f %f ph %g", -4, 
+                            msg  ("fr %d ap %d st %d freq %g pcal %f %f ph %g", -4,
                                    fr, ap, station, frq->frequency, pcal, ph);
 
                             delay[index] = delay[index] + cexp(I * ph);
@@ -101,7 +102,7 @@ void interp (struct type_pass *pass)
                 status.pc_rate[station] += status.rate_sep * r_max * sp;
             else if (first)
                 {
-                msg ("Warning: pcal rate interpolation error for station %c", 
+                msg ("Warning: pcal rate interpolation error for station %c",
                       2, param.baseline[station]);
                 status.pc_rate[station] = 0;
                 first = FALSE;          // only one message per station per baseline
@@ -112,7 +113,7 @@ void interp (struct type_pass *pass)
                                         // exit loop on terminal spacing achieved
             if (sp < 0.5)
                 break;
-            }   
+            }
         }
       else
         status.pc_rate[station] = 0.0;
@@ -122,7 +123,7 @@ void interp (struct type_pass *pass)
                                         /* Calculate Delay Res. function by
                                            rotation and summation, then
                                            interpolate to find maximum value. */
-    
+
                                             /* set interpolation bounds to user
                                                windows, but constrained to lie
                                                within +/- 1 search grid point */
@@ -142,7 +143,6 @@ void interp (struct type_pass *pass)
         else
             mbd_upper = dmin (mbd_upper, param.win_mb[1]);
         }
-
                               /* if wide open, don't alter the tabular points */
     else if (param.win_mb[1] - param.win_mb[0] < 0.9999 / status.freq_space)
         {                            /* otherwise make them fit within window */
@@ -181,17 +181,17 @@ void interp (struct type_pass *pass)
                                     // only rotate if "good" flag set
                             if (frq->data[ap].flag)
                                 {
-                                X = frq->data[ap].sbdelay[sbd] 
-                                  * vrot (ap, dr, mbd, fr, 0, pass); 
+                                X = frq->data[ap].sbdelay[sbd]
+                                  * vrot (ap, dr, mbd, fr, 0, pass);
                                     // Weight by fractional ap's
                                 frac = 0.0;
-                                if (frq->data[ap].usbfrac >= 0.0) 
+                                if (frq->data[ap].usbfrac >= 0.0)
                                     frac = frq->data[ap].usbfrac;
-                                if (frq->data[ap].lsbfrac >= 0.0) 
+                                if (frq->data[ap].lsbfrac >= 0.0)
                                     frac += frq->data[ap].lsbfrac;
                                     // When both sidebands added together,
                                     // we use the mean fraction
-                                if ((frq->data[ap].usbfrac >= 0.0) 
+                                if ((frq->data[ap].usbfrac >= 0.0)
                                     && (frq->data[ap].lsbfrac >= 0.0)) frac /= 2.0;
                                 X = X * frac;
                                 z = z + X;
@@ -210,7 +210,7 @@ void interp (struct type_pass *pass)
 
         xlim[2][0] = 2.0 * (dr_lower - status.dr_max_global) / status.rate_sep;
         xlim[2][1] = 2.0 * (dr_upper - status.dr_max_global) / status.rate_sep;
-        msg ("xlim's %f %f    %f %f    %f %f", 0, xlim[0][0], xlim[0][1], 
+        msg ("xlim's %f %f    %f %f    %f %f", 0, xlim[0][0], xlim[0][1],
                 xlim[1][0], xlim[1][1], xlim[2][0], xlim[2][1]);
                                     // find maximum value within cube via interpolation
         max555 (drf, xlim, xi, &drfmax);
@@ -225,10 +225,17 @@ void interp (struct type_pass *pass)
                                 theta / sin (theta) :
                                 1.0;
         status.amp_corr_fact = status.amp_rate_corr;
-        status.delres_max = drfmax * status.amp_corr_fact;  
-        
+        status.delres_max = drfmax * status.amp_corr_fact;
+
         msg ("max555 found amp %f at sbd %f mbd %f dr %e", 1,
               status.delres_max, status.sbd_max, status.mbd_max_global, status.dr_max_global);
+        // MBD is meaningless if there is only one channel
+        if (status.napbyfreq == 1)
+            {
+            msg ("only one data channel, setting MBD(%lf) to SBD(%lf)", 1,
+                status.mbd_max_global, status.sbd_max);
+            status.mbd_max_global = status.sbd_max;
+            }
         }
     else                            // iterative interpolation
         {
@@ -299,19 +306,19 @@ void interp (struct type_pass *pass)
                                     // temporary kludge for tests rjc 2001.1.29
                                     if (v == SD)
                                       X = frq->data[ap].sbdelay[sbd]
-                                        * vrot (ap, dr, mbd, fr, 0, pass); 
+                                        * vrot (ap, dr, mbd, fr, 0, pass);
                                     else
                                       X = frq->data[ap].sbdelay[sbd]
-                                        * vrot (ap, dr, mbd, fr, frq->data[ap].sband, pass); 
+                                        * vrot (ap, dr, mbd, fr, frq->data[ap].sband, pass);
                                     // Weight by fractional ap's
                                     frac = 0.0;
-                                    if (frq->data[ap].usbfrac >= 0.0) 
+                                    if (frq->data[ap].usbfrac >= 0.0)
                                         frac = frq->data[ap].usbfrac;
-                                    if (frq->data[ap].lsbfrac >= 0.0) 
+                                    if (frq->data[ap].lsbfrac >= 0.0)
                                         frac += frq->data[ap].lsbfrac;
                                     // When both sidebands added together,
                                     // we use the mean fraction
-                                    if ((frq->data[ap].usbfrac >= 0.0) 
+                                    if ((frq->data[ap].usbfrac >= 0.0)
                                         && (frq->data[ap].lsbfrac >= 0.0)) frac /= 2.0;
                                     X = X * frac;
                                     delay[index] = delay[index] + X;
@@ -321,10 +328,10 @@ void interp (struct type_pass *pass)
                         delay_mag[index] = cabs (delay[index]);
                         }
                     else            // do incoherent averaging by counter-rotating and
-                        {           // summing data to form a complex delay value; then, by
+                        {           // summing data to form a hops_complex delay value; then, by
                                     // taking the magnitude and averaging over a range of dr
                                     // values
-                        ndrpts = status.drsp_size * param.acc_period 
+                        ndrpts = status.drsp_size * param.acc_period
                                                   / (2.0 * pass->control.t_cohere) + 0.5;
                         delta_dr = 1.0 / (param.acc_period * status.drsp_size);
                         msg ("interp. with incoherent avg. over %d pts, spacing %f Hz", -1,
@@ -346,19 +353,19 @@ void interp (struct type_pass *pass)
                                     // temporary kludge for tests rjc 2001.1.29
                                         if (v == SD)
                                           X = frq->data[ap].sbdelay[sbd]
-                                            * vrot (ap, drpt, mbd, fr, 0, pass); 
+                                            * vrot (ap, drpt, mbd, fr, 0, pass);
                                         else
                                           X = frq->data[ap].sbdelay[sbd]
                                             * vrot (ap, drpt, mbd, fr, frq->data[ap].sband, pass);
                                     // Weight by fractional ap's
                                         frac = 0.0;
-                                        if (frq->data[ap].usbfrac >= 0.0) 
+                                        if (frq->data[ap].usbfrac >= 0.0)
                                             frac = frq->data[ap].usbfrac;
-                                        if (frq->data[ap].lsbfrac >= 0.0) 
+                                        if (frq->data[ap].lsbfrac >= 0.0)
                                             frac += frq->data[ap].lsbfrac;
                                     // When both sidebands added together,
                                     // we use the mean fraction
-                                        if ((frq->data[ap].usbfrac >= 0.0) 
+                                        if ((frq->data[ap].usbfrac >= 0.0)
                                             && (frq->data[ap].lsbfrac >= 0.0)) frac /= 2.0;
                                         X = X * frac;
                                         delay[index] = delay[index] + X;
@@ -374,14 +381,14 @@ void interp (struct type_pass *pass)
                             }
                         delay_mag[index] /= divisor;
                         }
-                    }       
+                    }
                 center_mag = delay_mag[1];
 
                                            /* parabolic interpolation of 3 points */
                 ret_code = parabola (delay_mag, lower, upper, &peak, &max, q);
-                
+
                 msg ("parabola r_c %d peak at %f max %f range %lf %lf input pts %f %f %f",
-                      0, ret_code, peak, max, lower, upper, 
+                      0, ret_code, peak, max, lower, upper,
                       delay_mag[0], delay_mag[1], delay_mag[2]);
 
 
@@ -424,7 +431,7 @@ void interp (struct type_pass *pass)
                         status.sbd_max = (center_lag - nl + peak)
                                          * status.sbd_sep;
                         status.amp_corr_fact = max * status.amp_rate_corr / center_mag;
-                        status.delres_max *= status.amp_corr_fact;  
+                        status.delres_max *= status.amp_corr_fact;
                         msg ("%f, %f, %f", -1, max, status.amp_rate_corr, center_mag);
 
                         if (ret_code & 1)
@@ -448,7 +455,6 @@ void interp (struct type_pass *pass)
     msg ("phase cal rate %lg %lg", 0, status.pc_rate[0],status.pc_rate[1]);
     msg ("fringe phase = %lf", 0, carg (delay[1]) * 180.0 / M_PI);
     msg ("single band delay : %lg", 0, status.sbd_max);
-    msg ("dr %lg mbd %lg dmax %lf",  0, status.corr_dr_max, 
+    msg ("dr %lg mbd %lg dmax %lf",  0, status.corr_dr_max,
                                 status.mbd_max_global, status.delres_max);
     }
-

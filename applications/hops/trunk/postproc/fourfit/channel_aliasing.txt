@@ -1,0 +1,114 @@
+------------------------------------------------------------------------------
+Notes concerning new channel aliasing protocols and other current disruptions.
+------------------------------------------------------------------------------
+
+Random things:
+--------------
+
+Should restore max_parity to emit an error message while ignoring it.
+
+-f / -n options should also be CF keyword controlled and also
+    fall under the control of the new alias system.
+
+display_channels <channel-list>
+
+there was a request for an estimate mode where a single calculation
+would be made and the result extrapolated to provide an estimate of
+performance.  Implemented as -e
+
+estimate_duration <boolean>
+
+Channel Plan:
+-------------
+
+Currently a-z,A-Z,0-9,$% are the names for up to 64 channels and
+the assignment is in sequence starting with a.
+
+@n is now available for a new naming scheme for channels where n is an integer
+with no limit (on magnitude or sign).
+
+The - or + suffix is still legal to cover the case of upper / lower
+bands sharing the same DC edge.  Frequency still refers to the DC edge.
+
+The default mapping is a-z,A-Z,0-9,$% or @0..@63 corresponding to the
+up to 64 frequencies found
+
+alias <channel-list> <frequencies>
+    where channel-list and frequencies (after parsing) constitute a
+    one-to-one mapping
+
+channel-list:
+    <channel>+                      # a sequence of channel labels
+    <channel>~<channel>             # an inclusive range of channel labels
+    <channel-list><channel-list>    # concatenation supported
+
+channel:
+    [a-z,A-Z,0-9,$%]                    # old school
+    @n for n in -infinity .. +infinity  # new school
+
+the sequence of single channels used by the freqs directive can be
+replaced by a channel-list; 
+    
+freq_code in fstruct.h or adata.h -> string
+ffit_chan_id in type_205.h is more of a problem:
+
+    struct
+        {
+        char            ffit_chan_id;           /* Fourfit channel letter id */
+        char            unused;                 /* Alignment padding */
+        short           channels[4];            /* Indices into type 203 */
+        } ffit_chan[64];                        /* Fourfit channel id info */
+    };
+
+the structure can stay the same size with
+
+    struct
+        {
+        unsigned short  chan_num;               /* Fourfit channel number */
+        short           channels[4];            /* Indices into type 203 */
+        } ffit_chan[64];                        /* Fourfit channel id info */
+    };
+
+the indices here point to 203's which include the ref_freq for each channel,
+so chan_num just needs to map 65536 options into a-z,A-Z,0-9,$% or @n vals.
+In ASCII, a-z is 97-122, A-Z is 65-90, 0-9 is 48-57 $-% is 36-37. So if
+we reserve 0-127 for ASCII, chan_num - 32832 gives us @-32704 through @32703
+
+Note that unused is currently NOT cleared, so there is a real problem
+with legacy data.  Probably better to just create type_205_v2 with:
+
+    struct
+        {
+        char            freq_code[8];           /* Fourfit channel number */
+        short           channels[4];            /* Indices into type 203 */
+        } ffit_chan[64];                        /* Fourfit channel id info */
+    };
+
+@-999999 through @9999999 should be enough for everyone if we don't
+insist on null termination; @-99999 through @999999 if we do.
+
+Channel Implementation:
+-----------------------
+
+control blocks:
+    lex.c: int fcode(char c)
+    lex.c: char get_fchar_by_index(int i)       # never called
+    parser.c: fcode(parsed_codes[nv]);
+
+    this needs to be generalized
+
+    precorrect.c, etc.:
+
+        for (fr = 0; fr < pass->nfreq; fr++)
+            ...
+            j = fcode(pass->pass_data[fr].freq_code);
+            ...
+
+    make_flist(): sorts out frequencies for two stations of baseline.
+        this is where we end up with a mapping in freqlist (freqlist.h)
+
+### the preceding was notional prior to the implementation of chan_ids.
+### this could still be implemented....
+
+eof
+

@@ -24,7 +24,7 @@ extern void adhoc_flag(struct type_param *pp,
 #define USE_ADHOC_FLAG HAVE_HSEARCH_R
 #endif /* USE_ADHOC_FLAG */
 #if USE_ADHOC_FLAG
-#warning "Ad Hoc Flagging enabled"
+/*#warning "Ad Hoc Flagging enabled"*/
 #define ADHOC_FLAG(PP, DF, FR, AP, PU, PL) do { \
     static int once = 1;                        \
     if (once) {                                 \
@@ -39,7 +39,7 @@ extern void adhoc_flag(struct type_param *pp,
         *(PU) = *(PL) = DF;                     \
     } while(0)
 #else /* USE_ADHOC_FLAG */
-#warning "Ad Hoc Flagging disabled"
+/*#warning "Ad Hoc Flagging disabled"*/
 #define ADHOC_FLAG(PP, DF, FR, AP, PU, PL) do { \
     *(PU) = *(PL) = DF; } while(0)
 #endif /* USE_ADHOC_FLAG */

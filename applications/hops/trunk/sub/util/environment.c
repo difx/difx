@@ -22,6 +22,9 @@
 #include <string.h>
 #include "mk4_util.h"
 
+#ifndef PFORMAT_TEXT_DIR
+#define PFORMAT_TEXT_DIR "/correlator/prog/text"
+#endif /* !PFORMAT_TEXT_DIR */
                                         /* Declare these global, to be */
                                         /* initialized here, but used */
                                         /* throughout program */
@@ -40,7 +43,7 @@ environment(void)
     static char *datadef = "/correlator/data";
     static char *scheddef = "/correlator/schedules";
     static char *afiledef = "/correlator/afiles";
-    static char *textdef = "/correlator/prog/text";
+    static char *textdef = PFORMAT_TEXT_DIR;
     static char *sysvexdef = "/correlator/sysvex";
     static char *taskdef = "/correlator/task";
     static char *bindef = "/correlator/prog/bin/hppa";

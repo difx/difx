@@ -24,7 +24,7 @@ int fplot (esum *data)
     extern struct plot_info pdata[];
     static struct mk4_fringe fringe4;
     int index, ret;
-    char *fname, *fringename(), fullname[256];
+    char *fname, *fringename(), fullname[256], localname[256];
     char c, *argv[2];
     int argc = 1;
     extern char datadir[];
@@ -53,11 +53,14 @@ int fplot (esum *data)
             msg ("Could not generate data file name", 2);
             continue;
             }
+        /* try DATADIR, then . */
         sprintf (fullname, "%s/%s", datadir, fname);
+        sprintf (localname, "./%s", fname);
 
-        if (read_mk4fringe (fullname, &fringe4) != 0)
+        if (read_mk4fringe (fullname, &fringe4) != 0 &&
+            read_mk4fringe (localname, &fringe4) != 0)
             {
-            msg ("Failure reading fringe file %s", 2, fullname);
+            msg ("Failure reading fringe file %s (in DATADIR or .)", 2, fname);
             continue;
             }
         if (ret == -3) c = display_221 (fringe4.t221, 0);

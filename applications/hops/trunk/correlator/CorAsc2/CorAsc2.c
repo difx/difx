@@ -1402,8 +1402,8 @@ int main (int argc, char *argv[])
             (void) printf (" Index    re          im \n");
             for (i = 0; i < flip_short(t230->nspec_pts); i++)   /* Each xpower[] */
                 (void) printf ("%3d %12.3e %12.3e \n",
-                       i, flip_double(creal(t230->xpower[i])),
-                       flip_double(cimag(t230->xpower[i])));
+                       i, flip_double(t230->xpower[i].real),
+                       flip_double(t230->xpower[i].imag));
             }           /* End of if type 230 */
         /* ** Type-3xx records are in station-data files ** */
         /* * Type-300 record? * */

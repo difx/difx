@@ -23,7 +23,8 @@
 
 int fringe_search ( struct vex* root, struct type_pass* pass)
     {
-    int fr, ap, size, oret, rc; 
+    int fr, ap, size, oret, rc;
+    oret = 0;
 
     struct data_corel *datum;
     complex *sbarray, *sbptr;
@@ -109,7 +110,9 @@ int fringe_search ( struct vex* root, struct type_pass* pass)
                                         /* attached, depending on control info */
                                         /* Also, update memory image of root file, */
                                         /* and display a fringe plot, if requested */
+    #ifndef DISABLE_OUTPUT //allow for compiler flag to decouple search & plot libs
     oret = output (root, pass);
+    #endif
     if (oret > 0)
         {
         msg ("Error writing results", 2);

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 2861 2019-09-18 14:59:10Z rjc $
+# $Id: Makefile.am 3359 2021-09-15 14:51:45Z gbc $
 #
 
 SUBDIRS = .
@@ -7,16 +7,19 @@ SUBDIRS = .
 AM_CPPFLAGS = @HOPS_INC@
 
 TESTS_ENVIRONMENT = srcdir=$(srcdir)
-TESTS             = fft_chk
+TESTS             = fft_chk ff_misc_if
 
 noinst_HEADERS = adhoc_flag.h control.h filter.h freqlist.h meta_struct.h \
 		 param_struct.h  parser.h pass_struct.h plot_struct.h \
-		 plot_data_dir.h refringe.h statistics.h
+		 plot_data_dir.h refringe.h statistics.h apply_funcs.h \
+		 ff_misc_if.h
 
 bin_PROGRAMS = fourfit
 bin_SCRIPTS = 
-check_PROGRAMS = fft_chk
-EXTRA_DIST = $(bin_SCRIPTS) new_parameters.txt
+check_PROGRAMS = fft_chk ff_misc_if
+text_docs = new_parameters.txt data-flagging.txt channel_aliasing.txt \
+	parallactic-angle-correction.txt
+EXTRA_DIST = $(bin_SCRIPTS) $(text_docs)
 
 if HAVE_FFTW
 if HAVE_PGPLOT
@@ -56,11 +59,13 @@ fourfit_sources = \
 		  create_lockfile.c wait_for_write_lock.c \
 		  fourfit_signal_handler.c est_pc_manual.c adhoc_flag.c \
 		  plot_data_dir.c apply_video_bp.c ion_covariance.c \
-		  minvert.c fit_vbp.c
+		  minvert.c fit_vbp.c apply_cmplxbp.c adjust_snr.c \
+		  compute_field_rotations.c
 fourfit_SOURCES = $(fourfit_sources)
 
 fourfit_CPPFLAGS = -DFF_PROGNAME=\"fourfit\" \
 		   -DFF_VER_NO=\"@PACKAGE_VERSION@\" \
+		   -DPS2PDF=\"@PS2PDF@\" \
 		   $(AM_CPPFLAGS)
 fourfit_LDADD = @DFIO_LIB@ @VEX_LIB@ @AFIO_LIB@ @UTIL_LIB@ \
 		@PGP_LIB@ @PNG_LIB@ @X_FPLOT_LIB@ @X11_LIB@ @FFTW3_LIBS@
@@ -68,6 +73,8 @@ fourfit_DEPENDENCIES = @DFIO_DEP@ @VEX_DEP@ @AFIO_DEP@ @UTIL_DEP@
 
 # check the fft code
 fft_chk_SOURCES = fft_chk.c
+# check function prototypes
+ff_misc_if_SOURCES = ff_misc_if.c
 
 else !HAVE_PNG
 fourfit_SOURCES = you_lose.c

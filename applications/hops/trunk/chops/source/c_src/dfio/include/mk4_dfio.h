@@ -62,6 +62,7 @@ extern struct type_221 * addr_221 (short, void *, int *);
 extern struct type_221 * addr_221_dummy (short, void *, int *);
 
 extern struct type_222 * addr_222 (short, void *, int *);
+extern struct type_222 * addr_222_dummy (short version, void *address, int *size);
 extern struct type_230 * addr_230 (short, void *, int *);
 extern struct type_300 * addr_300 (short, void *, int *);
 extern struct type_301 * addr_301 (short, void *, int *);

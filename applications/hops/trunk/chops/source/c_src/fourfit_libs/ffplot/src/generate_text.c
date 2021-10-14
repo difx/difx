@@ -13,12 +13,14 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
-#include <complex.h>
+#include "hops_complex.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "meta_struct.h"
 #include "ovex.h"
 #include <stdlib.h>
+
+extern void msg (char *, int, ...);
 
 #define pi 3.141592654
                                         // polarization bit masks
@@ -27,8 +29,12 @@
 #define LREM 4
 #define RREM 8
                                         /* Set up some convenient macros */
-                                        /* for inserting justified text using */         
+                                        /* for inserting justified text using */
                                         /* native postscript fonts */
+// SL is {show} def -- i.e. let justified
+// SR is {dup stringwidth neg exch neg exch rmoveto show} def
+// there is no centering command...
+// pplot is the accumulating PS page description
 #define pscat(ps_string) strcat (pplot, ps_string)
 #define psleft(xcoord, ycoord, ps_string)\
              {xval = xcoord * 7570; yval = ycoord * 10500;\
@@ -45,10 +51,12 @@
 #define setblue pscat ("0.0 0.0 1.0 setrgbcolor\n")
 #define setcyan pscat ("0.0 1.0 1.0 setrgbcolor\n")
 #define setorange pscat ("1.0 0.5 0.0 setrgbcolor\n")
+#define setdarkorange pscat ("0.8 0.4 0.0 setrgbcolor\n")
 #define setgreen pscat ("0.0 0.6 0.0 setrgbcolor\n")
 #define setmagenta pscat ("1.0 0.0 1.0 setrgbcolor\n")
 #define setblack pscat ("0.0 0.0 0.0 setrgbcolor\n")
-
+                                        // allow markers in file
+#define pslabel(lab) pscat ("%"  lab  "\n")
 
 
 void generate_text (struct scan_struct *root,
@@ -69,7 +77,7 @@ void generate_text (struct scan_struct *root,
     extern char *sprint_char_arr();
     struct stat xeq_stat;
     int i, j, n, k;
-    int start_plot, limit_plot;
+    int start_plot, limit_plot, notchpass;
     char *rootname;
     char buf[2560], psbuf[2560], output_filename[256];
     char input_filename[256], polstr[13], polstrx[13];
@@ -86,11 +94,12 @@ void generate_text (struct scan_struct *root,
     FILE *popfil;
     char absexec[256], which_command[256];
     char buffer[32], *phost;
+    char mty[2][10];
     static char *pcstr[5]={"","NORMAL","AP BY AP","MANUAL", "MULTITONE"};
     double delta_delay;
     void stripbuf (char *),
          modify_pol (struct type_pass *, char *);
-    
+
 
                                         // precalculate general quantities
     numsb = 0;
@@ -110,15 +119,19 @@ void generate_text (struct scan_struct *root,
     limit_plot = (param.nplot_chans == FALSE) ? pass->nfreq : param.nplot_chans;
 
     nplots = (limit_plot == 1) ? 1 : limit_plot+1;
-   
+
     plotwidth = 0.88 / (double)nplots;
-    if (nplots == 1) 
+    if (nplots == 1)
         plotwidth = 0.8;
 
     start_plot = (param.first_plot == FALSE) ? 0 : param.first_plot;
     limit_plot = (param.nplot_chans == FALSE) ? pass->nfreq : param.nplot_chans;
 
     yplace = (status.stc_present) ? 0.275 : 0.345;
+
+                                        // this test occurs a few times
+    notchpass = (param.nnotches > 0 ||
+        param.passband[0] != 0.0 || param.passband[1] != 1.0E6) ? 1 : 0;
 
                                         /* Build up text part of file */
                                         /* Start appending strings */
@@ -128,13 +141,13 @@ void generate_text (struct scan_struct *root,
     pscat ("/Helvetica-Bold findfont 180 scalefont setfont\n");
 
     if (param.corr_type == DIFX)
-        sprintf (buffer, "Mk4/DiFX %s %s rev %hd", 
+        sprintf (buffer, "Mk4/DiFX %s %s rev %hd",
                  progname, version_no, fringe.t200->software_rev[0]);
     else if (param.corr_type == SFXC)
-        sprintf (buffer, "Mk4/SFXC %s %s rev %hd", 
+        sprintf (buffer, "Mk4/SFXC %s %s rev %hd",
                  progname, version_no, fringe.t200->software_rev[0]);
     else
-        sprintf (buffer, "Mk4/hdw. %s %s rev %hd", 
+        sprintf (buffer, "Mk4/hdw. %s %s rev %hd",
                  progname, version_no, fringe.t200->software_rev[0]);
     psleft (0.0, 0.98, buffer)
     strncpy(meta.corrvers, buffer, sizeof(meta.corrvers));
@@ -143,7 +156,7 @@ void generate_text (struct scan_struct *root,
         rootname = root->filename;
     else rootname++;
 
-    sprintf (buf, "%s, %s, %c%c", rootname, root->scan_name, 
+    sprintf (buf, "%s, %s, %c%c", rootname, root->scan_name,
                                   param.baseline[0], param.baseline[1]);
     psright (1.0, 0.98, buf);
     strncpy(meta.rt_sn_bl, buf, sizeof(meta.rt_sn_bl));
@@ -161,7 +174,7 @@ void generate_text (struct scan_struct *root,
     polars = 0;
     if (param.pol == 0)
         {
-        if (pass->pol == POL_LL) 
+        if (pass->pol == POL_LL)
             {
             sprintf (polstr, "LL");
             polars |= LREF | LREM;
@@ -171,12 +184,12 @@ void generate_text (struct scan_struct *root,
             sprintf (polstr, "RR");
             polars |= RREF | RREM;
             }
-        else if (pass->pol == POL_LR) 
+        else if (pass->pol == POL_LR)
             {
             sprintf (polstr, "LR");
             polars |= LREF | RREM;
             }
-        else if (pass->pol == POL_RL) 
+        else if (pass->pol == POL_RL)
             {
             sprintf (polstr, "RL");
             polars |= RREF | LREM;
@@ -365,24 +378,24 @@ void generate_text (struct scan_struct *root,
     psleft (0.87, ypos, "Start"); ypos -= spacing;
     psleft (0.87, ypos, "Stop"); ypos -= spacing;
     psleft (0.87, ypos, "FRT"); ypos -= spacing;
-    
-    psleft (0.87, ypos, "Corr/FF/build"); 
+
+    psleft (0.87, ypos, "Corr/FF/build");
     ypos -= 4.0 * spacing;
-    if (fringe.t201->epoch == 1950) 
+    if (fringe.t201->epoch == 1950)
         sprintf (buf, "RA & Dec (B1950)");
-    else if (fringe.t201->epoch == 2000) 
+    else if (fringe.t201->epoch == 2000)
         sprintf (buf, "RA & Dec (J2000)");
-    else 
+    else
         sprintf (buf, "RA & Dec (J??? )");
     psleft (0.87, ypos, buf);
     setblack;
                                         /* Channel-by-channel text */
-    sprintf (buf, 
+    sprintf (buf,
         "Amp. and Phase vs. time for each freq., %d segs, %d APs / seg\
- (%.2f sec / seg.), time ticks %d sec", 
+ (%.2f sec / seg.), time ticks %d sec",
             status.nseg, status.apseg, status.apseg * param.acc_period,
             (int)tickinc);
-    psleft (0.05, 0.58, buf);   
+    psleft (0.05, 0.58, buf);
                                         /* Switch to 110 font for the rest */
     if (nplots > 17) pscat ("/Helvetica findfont 95 scalefont setfont\n");
     else pscat ("/Helvetica findfont 110 scalefont setfont\n");
@@ -435,7 +448,7 @@ void generate_text (struct scan_struct *root,
     psleft (xpos, ypos, buf);
     setblack;
                                         /* Relocate text if only one plot */
-    if (nplots == 2) 
+    if (nplots == 2)
         labelpos = 0.30;
                                         /* use smaller font for bottom of plot rjc 030430 */
     if (nplots < 10)
@@ -487,7 +500,7 @@ void generate_text (struct scan_struct *root,
         ypos -= spacing;
         sprintf (buf, "%d/%d", status.ap_num[0][i], status.ap_num[1][i]);
         psleft (xpos, ypos, buf);
-        if (i == start_plot) 
+        if (i == start_plot)
             {
             psleft (labelpos, ypos, "APs used");
             psright (0.04, ypos, "U/L");
@@ -499,7 +512,7 @@ void generate_text (struct scan_struct *root,
             sprintf (buf, "%d",               // reference pcal frequencies
                 (int)pass->pass_data[i].pc_freqs[0][pass->pci[0][i]]/1000);
             psleft (xpos, ypos, buf);
-            if (i == start_plot) 
+            if (i == start_plot)
                 {
                 psleft (labelpos, ypos, "PC freqs");
                 sprintf (buf, "%c", param.baseline[0]);
@@ -513,7 +526,7 @@ void generate_text (struct scan_struct *root,
             sprintf (buf, "%d",               // remote pcal frequencies
                 (int)pass->pass_data[i].pc_freqs[1][pass->pci[1][i]]/1000);
             psleft (xpos, ypos, buf);
-            if (i == start_plot) 
+            if (i == start_plot)
                 {
                 psleft (labelpos, ypos, "PC freqs");
                 sprintf (buf, "%c", param.baseline[1]);
@@ -531,7 +544,7 @@ void generate_text (struct scan_struct *root,
                         {
                         sprintf (buf, "%.1f", 1e9 * status.pc_delay[i][n][k]);
                         psleft (xpos, ypos, buf);
-                        if (i == start_plot) 
+                        if (i == start_plot)
                             {
                             sprintf (buf, "PC %c delays (ns)", polchar[pass->linpol[n]][k]);
                             psleft (labelpos, ypos, buf);
@@ -546,7 +559,7 @@ void generate_text (struct scan_struct *root,
         sprintf (buf, "%d:%d", (int)rint((double)fringe.t207->ref_pcphase[i].lsb),
                                (int)rint((double)fringe.t207->rem_pcphase[i].lsb));
         psleft (xpos, ypos, buf);
-        if (i == start_plot) 
+        if (i == start_plot)
             {
             psleft (labelpos, ypos, "PC phase");
             sprintf (buf, "%c:%c", param.baseline[0], param.baseline[1]);
@@ -556,7 +569,7 @@ void generate_text (struct scan_struct *root,
         sprintf (buf, "%d:%d", (int)rint((double)fringe.t207->ref_pcoffset[i].lsb),
                                (int)rint((double)fringe.t207->rem_pcoffset[i].lsb));
         psleft (xpos, ypos, buf);
-        if (i == start_plot) 
+        if (i == start_plot)
             {
             psleft (labelpos, ypos, "Manl PC");
             sprintf (buf, "%c:%c", param.baseline[0], param.baseline[1]);
@@ -565,7 +578,7 @@ void generate_text (struct scan_struct *root,
         ypos -= spacing;
 
                                     // color code pcal amplitudes  rjc 2009.3.10
-        if (i == start_plot) 
+        if (i == start_plot)
             {
             psleft (labelpos, ypos, "PC amp");
             sprintf (buf, "%c", param.baseline[0]);
@@ -573,7 +586,7 @@ void generate_text (struct scan_struct *root,
             }
         pcaref = rint (1000.0 * (double)fringe.t207->ref_pcamp[i].lsb);
         pcarem = rint (1000.0 * (double)fringe.t207->rem_pcamp[i].lsb);
-        
+
         if (pcaref < 4 || pcaref >= 150)
             setred;
         else if (pcaref < 10 || pcaref >= 100)
@@ -594,16 +607,16 @@ void generate_text (struct scan_struct *root,
 
         psleft (xpos, ypos, buf);
         setblack;
-        if (i == start_plot) 
+        if (i == start_plot)
             {
             sprintf (buf, "%c", param.baseline[1]);
             psright (0.04, ypos, buf);
             }
         ypos -= spacing;
 
-        /* prevent junk chan/track ids from being written out to 
+        /* prevent junk chan/track ids from being written out to
 	the postscript file in the case of a combined polarization fit */
-        if(polstr[0] != 'I') 
+        if(polstr[0] != 'I')
         {
                                         /* Channel ids, reference station */
         if (polstr[0] == 'L' || polstr[0] == 'X')
@@ -631,11 +644,11 @@ void generate_text (struct scan_struct *root,
         if (xpos > xposref + digitwidth)
             offset = 0.0;
         else
-            offset = xposref - xpos + 3 * digitwidth; 
+            offset = xposref - xpos + 3 * digitwidth;
         first = TRUE;
         for (j=0; j<16; j++)
             {
-            if ((pass->pass_data[i].trk_lcp[0][j] > 0) 
+            if ((pass->pass_data[i].trk_lcp[0][j] > 0)
              && ((polstr[0] == 'L') || (polstr[0] == 'X')))
                 {
                 sprintf (buf, "%d", pass->pass_data[i].trk_lcp[0][j]);
@@ -646,7 +659,7 @@ void generate_text (struct scan_struct *root,
                 offset += digitwidth * strlen (buf);
                 first = FALSE;
                 }
-            if ((pass->pass_data[i].trk_rcp[0][j] > 0) 
+            if ((pass->pass_data[i].trk_rcp[0][j] > 0)
              && ((polstr[0] == 'R') || (polstr[0] == 'Y')))
                 {
                 sprintf (buf, "%d", pass->pass_data[i].trk_rcp[0][j]);
@@ -670,7 +683,7 @@ void generate_text (struct scan_struct *root,
                     pass->pass_data[i].ch_lsb_rcp[1]);
         stripbuf (buf);
         psleft (xpos, ypos, buf);
-        if (i == start_plot) 
+        if (i == start_plot)
             {
             psleft (labelpos, ypos, "Chan ids");
             ypos -= spacing/2.0;
@@ -685,11 +698,11 @@ void generate_text (struct scan_struct *root,
         if (xpos > xposrem + digitwidth)
             offset = 0.0;
         else
-            offset = xposrem - xpos + 3 * digitwidth; 
+            offset = xposrem - xpos + 3 * digitwidth;
         first = TRUE;
         for (j=0; j<16; j++)
             {
-            if ((pass->pass_data[i].trk_lcp[1][j] > 0) 
+            if ((pass->pass_data[i].trk_lcp[1][j] > 0)
              && ((polstr[1] == 'L') || (polstr[1] == 'X')))
                 {
                 sprintf (buf, "%d", pass->pass_data[i].trk_lcp[1][j]);
@@ -700,7 +713,7 @@ void generate_text (struct scan_struct *root,
                 offset += digitwidth * strlen (buf);
                 first = FALSE;
                 }
-            if ((pass->pass_data[i].trk_rcp[1][j] > 0) 
+            if ((pass->pass_data[i].trk_rcp[1][j] > 0)
              && ((polstr[1] == 'R') || (polstr[1] == 'Y')))
                 {
                 sprintf (buf, "%d", pass->pass_data[i].trk_rcp[1][j]);
@@ -717,11 +730,11 @@ void generate_text (struct scan_struct *root,
                                     // helpful printout of manual phase cal adjustments,
                                     // to allow zeroing out phase and mbd residuals for
                                     // combining multiple bands    rjc 2010.1.5
-	}  /* end of if(polstr[0] != 'I') */ 
+	}  /* end of if(polstr[0] != 'I') */
         if (msglev < 2)
             {
             fprintf (stderr, "%6.1f ", fmod(carg (status.fringe[i]) * 180.0 / pi
-              + 360 * delta_delay * (pass->pass_data[i].frequency 
+              + 360 * delta_delay * (pass->pass_data[i].frequency
                       - fringe.t205->ref_freq), 360.0));
             }
         }
@@ -748,11 +761,11 @@ void generate_text (struct scan_struct *root,
     pscat ("/Helvetica findfont 95 scalefont setfont\n");
     if (param.mbd_anchor == MODEL)
         {
-        psleft (0.0, ypos, "Group delay (usec)(model)"); 
+        psleft (0.0, ypos, "Group delay (usec) (MODEL)");
         }
     else
         {
-        psleft (0.0, ypos, "Group delay (usec)(sbd)"); 
+        psleft (0.0, ypos, "Group delay (usec) (SBD)");
         }
     ypos -= 0.01;
     psleft (0.0, ypos, "Sband delay (usec)"); ypos -= 0.01;
@@ -781,7 +794,7 @@ void generate_text (struct scan_struct *root,
     psright (0.62, ypos, buf); ypos -= 0.01;
     sprintf (buf, "%.7E", fringe.t202->rem_clock - fringe.t202->ref_clock);
     psright (0.62, ypos, buf); ypos -= 0.01;
-    sprintf (buf, "%.7E", 1.0e6 * (fringe.t202->rem_clockrate - 
+    sprintf (buf, "%.7E", 1.0e6 * (fringe.t202->rem_clockrate -
                                             fringe.t202->ref_clockrate));
     psright (0.62, ypos, buf); ypos -= 0.01;
     sprintf (buf, "%.11E", fringe.t208->arate);
@@ -851,7 +864,7 @@ void generate_text (struct scan_struct *root,
     psleft (0.23, ypos, buf);
     sprintf (buf, "%.3f", status.search_amp);
     psleft (0.35, ypos, buf);
-    sprintf (buf, "Pcal rate: %.3E,  %.3E  (us/s)", 
+    sprintf (buf, "Pcal rate: %.3E,  %.3E  (us/s)",
                         fringe.t207->ref_pcrate, fringe.t207->rem_pcrate);
     psleft (0.5, ypos, buf);
     sprintf (buf, "sb window (us)");
@@ -887,8 +900,9 @@ void generate_text (struct scan_struct *root,
     psleft (0.23, ypos, "Inc. seg. avg.");
     sprintf (buf, "%.3f", fringe.t208->inc_seg_ampl);
     psleft (0.35, ypos, buf);
-    
-    sprintf (buf, "Sample rate(MSamp/s): %d", srate);
+
+    sprintf (buf, "Data rate(MSamp/s): %d MBpts %d Amb %.3lf us",
+        srate, status.grid_points, 1.0/status.freq_space);
     psleft (0.5, ypos, buf);
     sprintf (buf, "dr window (ns/s)");
     psleft (0.82, ypos, buf);
@@ -903,7 +917,7 @@ void generate_text (struct scan_struct *root,
     psleft (0.23, ypos, "Inc. frq. avg.");
     sprintf (buf, "%.3f", fringe.t208->inc_chan_ampl);
     psleft (0.35, ypos, buf);
-    sprintf (buf, "Data rate(Mb/s): %d", (int)(numsb * eff_npols * srate 
+    sprintf (buf, "Data rate(Mb/s): %d", (int)(numsb * eff_npols * srate
             * sqrt ((double)(param.bits_sample[0] * param.bits_sample[1])) + 0.5));
     psleft (0.5, ypos, buf);
     sprintf (buf, "nlags: %d", param.nlags);
@@ -920,14 +934,20 @@ void generate_text (struct scan_struct *root,
     sprintf (buf, "%8.2f %8.2f", param.win_ion[0], param.win_ion[1]);
     psleft (0.92, ypos, buf);
     ypos -= 0.012;
-                                    // az, el, par. angle
-    sprintf (buf, "%c: az %.1f  el %.1f  pa %.1f", param.baseline[0],
-            fringe.t202->ref_az, fringe.t202->ref_elev, 
-            param.par_angle[0] * 180 / M_PI);
+                                    // az, el, par. angle, mty
+    for (i=0;i<2;i++) switch (param.mount_type[i]) {
+    case CASSEGRAIN:    strncpy(mty[i], "[Cass]", 7); break;
+    case NASMYTHLEFT:   strncpy(mty[i], "[NsLf]", 7); break;
+    case NASMYTHRIGHT:  strncpy(mty[i], "[NsRt]", 7); break;
+    default:            strncpy(mty[i], "      ", 7); break;
+    }
+    sprintf (buf, "%c: az %.1f el %.1f pa %.1f %s ", param.baseline[0],
+            fringe.t202->ref_az, fringe.t202->ref_elev,
+            param.par_angle[0] * 180 / M_PI, mty[0]);
     psleft (0.00, ypos, buf);
-    sprintf (buf, "%c: az %.1f  el %.1f  pa %.1f", param.baseline[1], 
+    sprintf (buf, "%c: az %.1f el %.1f pa %.1f %s ", param.baseline[1],
             fringe.t202->rem_az, fringe.t202->rem_elev,
-            param.par_angle[1] * 180 / M_PI);
+            param.par_angle[1] * 180 / M_PI, mty[1]);
     psleft (0.20, ypos, buf);
                                     // u and v
     sprintf (buf, "u,v (fr/asec) %.3f  %.3f", fringe.t202->u, fringe.t202->v);
@@ -937,7 +957,8 @@ void generate_text (struct scan_struct *root,
         sprintf (buf, "iterative interpolator");
     else if (param.interpol == SIMUL)
         sprintf (buf, "simultaneous interpolator");
-    psleft (0.90, ypos, buf);
+    //psleft (0.90, ypos, buf);
+    psright(1.00, ypos, buf);
     ypos -= 0.012;
 
     if (test_mode) strcpy (output_filename, "Suppressed by test mode");
@@ -950,10 +971,10 @@ void generate_text (struct scan_struct *root,
                                     // construct type 1 name from type 2 name
     strcpy (buf, input_filename+strlen(input_filename)-7);
     strcpy (input_filename+i+4, buf);
-    sprintf (buf, "Control file: %s    Input file: %s    Output file: %s", 
+    sprintf (buf, "Control file: %s    Input file: %s    Output file: %s",
              control_filename, input_filename, output_filename);
     psleft (0.00, ypos, buf);
-    ypos -= 0.01;
+    ypos -= 0.012;
                                     // samplers line, possibly
     if (pass->control.nsamplers)
         {
@@ -964,12 +985,54 @@ void generate_text (struct scan_struct *root,
             strcat (buf, buffer);
             }
         psleft (0.00, ypos, buf);
+        ypos -= 0.012;
         }
+
+                                    // warn user about passband/notches
+    if (notchpass)                  // set to 1 above
+        {
+        pscat ("/Helvetica-Bold findfont 95 scalefont setfont\n");
+        setdarkorange;
+        sprintf (buf,
+            "***Warning: XP spectrum is normalized for full band FFT--"
+            "as spectrum is excluded XP amplitude increases.  "
+            "Amp and SNR calculations are approximately correct.***");
+        psleft (0.00, ypos, buf);
+        ypos -= 0.012;
+        pscat ("/Helvetica findfont 95 scalefont setfont\n");
+        setblack;
+        if (param.nnotches > 0)
+            {
+            sprintf (buf, "%d frequency notches from %.6lf to %.6lf",
+                param.nnotches, param.notches[0][0],
+                param.notches[param.nnotches-1][1]);
+            psleft (0.00, ypos, buf);
+            notchpass--;
+            }
+        if (param.passband[0] != 0.0 || param.passband[1] != 1.0E6)
+            {
+            if (param.passband[0] < param.passband[1])
+                sprintf (buf, "Inclusive passband applied from %.6lf to %.6lf",
+                    param.passband[0], param.passband[1]);
+            if (param.passband[1] < param.passband[0])
+                sprintf (buf, "Exclusive passband to %.6lf and after %.6lf",
+                param.passband[0], param.passband[1]);
+            psright (1.00, ypos, buf);
+            notchpass--;
+            }
+        if (notchpass < 0)          // warn about using both
+            {
+            setred;
+            sprintf (buf, "Warning: passband/notches used together!");
+            psleft(0.37, ypos, buf);
+            }
+        ypos -= 0.012;
+        setblack;
+        }
+    pslabel("fourfit done");
     }
 
-
-
-                                        /* Simple little routine to convert dumb */
+                                        /* Simple routine to convert dumb */
                                         /* space-delimited list into minimal */
                                         /* comma-separated one */
 void stripbuf (char *list)

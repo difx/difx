@@ -17,6 +17,7 @@ else
     #list of header files we want to import from hops
     declare -a header_list=(
         "adhoc_flag.h"
+        "apply_funcs.h"
     )
 
     header_src_dir="${HOPS_SRC_DIR}/postproc/fourfit"
@@ -43,9 +44,11 @@ else
         fi
     done
 
+    # "report_actions.c"
     declare -a source_list=(
         "adhoc_flag.c"
         "apply_filter.c"
+        "apply_cmplxbp.c"
         "apply_notches.c"
         "apply_passband.c"
         "calc_normalization.c"
@@ -64,7 +67,6 @@ else
         "est_pc_manual.c"
         "precorrect.c"
         "pcalibrate.c"
-        "report_actions.c"
         "rotate_pcal.c"
         "sampler_delays.c"
         "search.c"
@@ -74,6 +76,8 @@ else
         "parse_cmdline.c"
         "apply_video_bp.c"
         "ion_covariance.c"
+        "adjust_snr.c"
+        "compute_field_rotations.c"
     )
 
     source_src_dir="${HOPS_SRC_DIR}/postproc/fourfit"

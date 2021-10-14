@@ -19,6 +19,7 @@
 /* Add version 1 support          2011.10.6        rjc                  */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "bytflp.h"
 #include "type_203.h"

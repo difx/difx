@@ -1,10 +1,10 @@
 #
-# $Id: Makefile.am 265 2011-05-20 15:39:47Z gbc $
+# $Id: Makefile.am 3300 2021-08-27 19:40:06Z gbc $
 #
 
 SUBDIRS = .
 
-AM_CPPFLAGS = @HOPS_INC@
+AM_CPPFLAGS = @HOPS_INC@ -DPS2PDF=\"@PS2PDF@\"
 
 noinst_HEADERS = fplot.h
 

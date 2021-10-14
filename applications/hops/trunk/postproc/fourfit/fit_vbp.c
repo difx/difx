@@ -11,7 +11,7 @@
 #include "pass_struct.h"
 #include <math.h>
 #include <stdio.h>
-#include <complex.h>
+#include "hops_complex.h"
 
 void fit_vbp (int npts)
     {
@@ -76,7 +76,6 @@ void fit_vbp (int npts)
     if (minvert (5, a, a_inv))      // error returned?
         {                           // if so, report it
         msg ("unable to compute vbp model due to singular matrix", 2);
-        //return (-1);
         }
 
     for (i=0; i<5; i++)

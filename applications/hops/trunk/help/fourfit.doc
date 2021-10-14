@@ -79,11 +79,14 @@ OPTION FLAGS:
             Upon completion of a fringe fit, fourfit can
             optionally display the results using postscript.
             The valid choices for "display_device" are:
-                diskfile:file.ps  save the plot in "file.ps"
                 hardcopy          send the plot directly to lpr
                 pshardcopy        print the plot via pplot_print
                 xwindow           show the plot in an X11 window
                 psscreen          the same, but allow GS_* options
+                diskfile:file.ps  save the plot in "file.ps"
+                ps2pdf:file.ps    use "file.ps" to make "file.pdf"
+            If a %d printf token is present an incrementing number
+            will be used.
 
         -e
             If specified, this option estimates the time required for
@@ -163,7 +166,14 @@ OPTION FLAGS:
         -P pp
             Controls polarization processing, where the 2 character
             string pp is one of four cross-polarization 
-            states: LL, RR, LR, or RL.
+            states: LL, RR, LR, or RL.  Additional modes are possible
+                'all'  adds data from all polarizations present
+                'I'    forms a Stokes I from presumed linear pols
+            and using '+' a sum of up to 4 pol products co-added.
+            (With the exception of 'I', fourfit does not care that
+            the polarizations are linear or circular...it just adds
+            what it has.  Rudimentary support for co-adding circular
+            pols likely requires correct setting of the mount_type.)
 
         -T trefoffs
             If this option is invoked, the fourfit reference
@@ -225,7 +235,9 @@ ARGUMENTS:  data file list
             processed, and overrides whatever the control file
             itself specified for the parameters in question.
 
-ENVIRONMENT:    DEF_CONTROL, DISPLAY, DATADIR, GS_DEVICE, GS_OPTIONS
+ENVIRONMENT:    DEF_CONTROL, DISPLAY, DATADIR, GS_DEVICE, GS_OPTIONS,
+                HOPS_PLOT_DATA_MASK, HOPS_AMP_SEG_FILTER, HOPS_EST_PC_BIAS,
+                HOPS_EST_PC_DLYM, ARCH, HOPS_FF_PHASE_CLR, HOPS_PLOT_DATA_MASK
 
 DESCRIPTION:
 
@@ -337,7 +349,7 @@ ACTION KEYWORDS         VALUES
    gates              n char string, followed by 2n floats
    gen_cf_record      'true' or 'false' (default: false)
    index              n ints
-   interpolator       'iterate' or 'simul' (default: iterate)
+   interpolator       'iterate' or 'simul' (default: simul[taneous])
    ionosphere         float
    ion_npts           int
    ion_smooth         'true' or 'false' (default: false)
@@ -346,9 +358,12 @@ ACTION KEYWORDS         VALUES
    mb_win             2 floats
    mbd_anchor         'sbd' or 'model' (default: model)
    min_weight         float
+   mount_type         'no_mount', 'cassegrain', 'nasmythleft' or 'nasmythright'
    notches            2n floats
    optimize_closure   'true' or 'false' (default: false)
    passband           2 floats
+   avxpzoom           2 floats
+   avxplopt           2 int
    pc_amp_hcode       float
    pc_delay_l         float
    pc_delay_r         float
@@ -437,6 +452,30 @@ KEYWORD SEMANTICS
                  amplitude observable (as if the data excluded were perfectly
                  valid); this means that the area under cross-power spectral
                  plot amplitude curve is approximately conserved.
+                 Note: passband and notches should not both be applied;
+                 you will get a warning (just in case you know what you are
+                 doing) in the fourfit plot, but no fatal error.
+   avxpzoom      a pair of numbers that allows you to "zoom in" on the average
+                 cross-power spectrum plot.  The first number is the location
+                 (in plot window x coordinates, ranging from 0.0 to 1.0) of
+                 interest and the second number is the width (again in plot
+                 window x coordinates).  This is useful to use with the
+                 passband option.
+   avxplopt      two numbers providing options for plotting of this window.
+                 The second number can be -7, -1, 0, 1 or +7.  The default
+                 behavior obtains with 0.  With non-negative values, the
+                 amplitude is plotted first, with negative values, the phase
+                 is plotted first--0 and 1 are equivalent.  With +/-7 the
+                 phase points will be connected with a faint reddish line.
+                 The first number (useful when passband is active) is an
+                 amplitude threshold (in pixels, defaulting to 20) for
+                 amplitude/phase data to be discarded.  The fourier transform,
+                 interpolation and smoothing process generate small values
+                 which clutter the plot and it is usually better to discard
+                 them.  This is only done for nonzero values of the second
+                 number.  The RGB values in the +/-7 option may be set as
+                 you like using HOPS_FF_PHASE_CLR to be a cvs triplet of
+                 red,green,blue on a 0..1 scale (see pgplot documentation).
    notches       a list of non-overlapping lower/upper bounds pairs (in MHz)
                  to exclude from the spectral passband.  (Passband may be
                  applied prior to removal of these notches.)  Note that the
@@ -446,6 +485,9 @@ KEYWORD SEMANTICS
                  is supported and you will get a complaint if you exceed it.)
                  As with passband, the spectral data is rescaled so that
                  the amplitude observable is in some sense preserved.
+                 Note: passband and notches should not both be applied;
+                 you will get a warning (just in case you know what you are
+                 doing) in the fourfit plot, but no fatal error.
    dc_block      if set to true, zero out lowest cross-power spectral
                  channel; useful for suppressing DC bias
    min_weight    fraction of data which must be present for inclusion.
@@ -478,8 +520,8 @@ KEYWORD SEMANTICS
    interpolator  selects method of fit interpolation. Classically, an
                  iterative search has been done over sbd, mbd, drate, one
                  dimension at a time, for 3 cycles. The simultaneous mode
-                 constructs a 5x5x5 cube of data points and does a 3D
-                 quintic interpolation.
+                 (simul for brevity) constructs a 5x5x5 cube of data points
+                 and does a 3D quintic interpolation.
 
 
 **corrections**  apply corrections to the data, either before or after fit
@@ -586,6 +628,14 @@ KEYWORD SEMANTICS
    sampler_delay_r same as the above, but for RCP, instead of LCP.
    sampler_delay_x synonym for sampler_delay_l.
    sampler_delay_y synonym for sampler_delay_r.
+   mount_type allows one to specify one of these: 'no_mount', 'cassegrain',
+             'nasmythleft' or 'nasmythright' on a per-station basis.  If a
+             station is specified as other than no_mount, then a field
+             rotation angle correction will be made.  This currently is
+             an experimental feature, and only applies to non-mixed,
+             circular polarization fringe products.  The parallactic angle
+             and elevation angles are currently evaluated only at the start
+             of the scan.
 
 ** miscellaneous functions
    chan_ids      changes the assignment of the channel labels
@@ -594,7 +644,9 @@ KEYWORD SEMANTICS
                  This is useful to prevent mis-matched IFs within one experiment
                  from causing the same channel label to be ambiguously used on
                  various baselines.  (You should ideally use exactly the same
-                 frequencies as would be assigned by default.)
+                 frequencies as would be assigned by default.)  Note that this
+                 directive must appear prior to any mention of channels by id
+                 (as the mapping is changed with this command).
    plot_data_dir if present will be used as a path to dump the plot data
                  in a self-documented ascii form to allow export of plot
                  information to other arenas (specialized plots, &c).  One
@@ -609,15 +661,34 @@ KEYWORD SEMANTICS
    est_pc_manual if nonzero, estimates manual pc_phase_? and delay_offs_?
                  values. A value >0/<0 estimates ref/rem station values.
                  The magnitude is a mask of bits indicating what and how
-                 to make estimates.  0x01 phase, 0x02 median channel sbd,
-                 0x04 average sbd channel, 0x08 use total sbd value,
-                 0x10 use original per-channel sbd delay, 0x20 activates
-                 heuristics to discard outliers and 0x40 reports phase
-                 measurement as a pc_phase_offset_? value.  Finally, 0x80
-                 can be used to supply a phase bias via an environment
-                 variable (HOPS_EST_PC_BIAS).  Calculations are made with
-                 channels in the -f and -n range (inclusive).  Conflicting
-                 commanding on delay options results in no corrections.
+                 to make estimates; too estimate phase: include 0x01.
+                 For delay there are several options: 0x02 to use the median
+                 of the individual channel sbd values, 0x04 to use the average
+                 of the sbd channel values, 0x08 uses the total sbd value, or
+                 0x10 use the computed per-channel sbd delays. The bit 0x20
+                 (in addition) activates heuristics to discard outliers.
+                 0x40 reports a phase measurement that is usable via the
+                 pc_phase_offset_? value.  Finally, 0x80 can be used to
+                 supply a phase bias via an environment variable
+                 (HOPS_EST_PC_BIAS, i.e. this shifts all channel phases).
+                 Calculations are made with channels in the -f and -n range
+                 (inclusive).  Conflicting commanding on the delay options
+                 results in no corrections.  The phase calculation normally
+                 provides values that remove the MBD (according to the setting
+                 of mbd_anchor).  An environment variable HOPS_EST_PC_DLYM may
+                 be set to provide a multipler on this correction:  0.0 will
+                 not correct delay but will line up the phases, 0.5 will only
+                 correct half of the delay (e.g. which could be used as part
+                 of an iterative process), and 1.0 is the default which
+                 chooses phases to remove the MBD.  If 0x100 is set (for
+                 the 0x02..0x08 methods), the delay so calculated is transferred
+                 to the sbd values.  In this case an environment variable
+                 HOPS_EST_PC_MDLY is used.  In all of these cases the output is
+                 text suitable for inclusion in a control file.  (Note that
+                 the fourfit control parser only works with base-10 integers,
+                 sos setting 0x100 really means add 256 to 2, 4 or 8.)
+                 A script est_manual_phases.py is available to drive a full
+                 determination of manual pc phases using these options.
 
 SPECIAL KEYWORD VALUES
    ?         wild card character
@@ -626,7 +697,25 @@ SPECIAL KEYWORD VALUES
    true          1
    false         0
    
+QUALITY CODES
+   Fourfit plots show fringe quality and/or error codes.  Quality starts at
+   9 and falls as the time and freq phase and amp exceed theoretical limits.
+   A qcode of 0 means no fringe (PFD > 1E-4).
 
+ERROR CODES
+   A  Trying to use both passband and notches.  This is maybe not horrible
+      if the notches are tiny...but proper accounting of SNR is failing.
+   B  Some form of interpolation error, usually due to fringes at the
+      edge of some window
+   C  (some epoch error condition that is no longer used)
+   D  missing track
+   E  Solution is at the edge of some window.
+   F  Originally meant no data found; now notes Station Unit "forks"
+      (whatever that means)
+   G  Shows there is a "weak" channel when the SNR > 20
+   H  Indicates there are one or more weak phase cals in normal mode.
+      In multitone mode, it means the average pcal amplitude is below
+      threshold.  Note that some tones may be weak but not generate H.
 
 SPECIAL FORMATS
    UT-epochs:  UT-epochs are expressed in the format ddd-hhmmss, where all 10

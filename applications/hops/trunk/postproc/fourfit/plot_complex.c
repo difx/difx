@@ -14,18 +14,18 @@
 /****************************************/
 #include <stdio.h>
 #include <math.h>
-#include <complex.h>
+#include "hops_complex.h"
 #include "control.h"
 
-void 
-plot_complex (char** matrix, int x, int y, int width, int height, 
+void
+plot_complex (char** matrix, int x, int y, int width, int height,
                 double scale_x, double scale_y, int winstart, int winstop,
-                        complex* points, double* weights, int numpoints, char ch, char altch, int segment, int amp_phase_flag) 
+                        hops_complex* points, double* weights, int numpoints, char ch, char altch, int segment, int amp_phase_flag)
     {
     int index, seg, nlsb, nusb, start, stop;
     char symbol;
     double seg_len,data,wt, wtsum;
-    complex segsum;
+    hops_complex segsum;
 
     if (segment)
         {

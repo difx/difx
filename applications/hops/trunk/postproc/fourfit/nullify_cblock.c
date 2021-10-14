@@ -94,6 +94,8 @@ nullify_cblock (struct c_block *cb_ptr)
         cb_ptr -> dr_window[i]           = NULLFLOAT;
         cb_ptr -> time_span[i]           = NULLINT;
         cb_ptr -> passband[i]            = NULLFLOAT; 
+        cb_ptr -> avxpzoom[i]            = NULLFLOAT;
+        cb_ptr -> avxplopt[i]            = NULLINT;
         cb_ptr -> ion_window[i]          = NULLFLOAT;
         cb_ptr -> adhoc_file[i][0]       = 0; 
         cb_ptr -> adhoc_file_chans[i][0] = 0; 
@@ -101,7 +103,8 @@ nullify_cblock (struct c_block *cb_ptr)
         cb_ptr -> plot_data_dir[i][0]    = 0;
         cb_ptr -> pc_phase_offset[i].ref = NULLFLOAT;
         cb_ptr -> pc_phase_offset[i].rem = NULLFLOAT;
-        cb_ptr -> vbp_file[i][0]       = 0; 
+        cb_ptr -> vbp_file[i][0]         = 0; 
+        cb_ptr -> mount_type[i]          = NULLINT;
         }
 
     cb_ptr -> gen_cf_record = NULLINT;

@@ -1,5 +1,5 @@
 // pcalibrate extracts phase cal from the ap by ap data
-// for a single frequency channel. It figures out which 
+// for a single frequency channel. It figures out which
 // tone(s) are to be used, forms their average phase over
 // time, and corrects the resulting phase to mid-band. If
 // there are multiple tones, then the phases are used
@@ -13,7 +13,7 @@
 
 #include <stdio.h>
 #include <math.h>
-#include <complex.h>
+#include "hops_complex.h"
 #include <string.h>
 #include <fftw3.h>
 #include "mk4_data.h"
@@ -64,8 +64,8 @@ void pcalibrate (struct type_pass *pass,
            pc_amb_center,
            lo,
            hi;
-        
-    complex pc_avg[2][MAX_PCF],
+
+    hops_complex pc_avg[2][MAX_PCF],
             pc_adj[2],
             pc_sub[2],
             phasors[FFTSIZE],
@@ -82,17 +82,17 @@ void pcalibrate (struct type_pass *pass,
     extern struct type_status status;
                                     // function prototypes
     int parabola (double *, double, double, double *, double *, double *);
-    complex c_mean (complex *, int);
+    hops_complex c_mean (hops_complex *, int);
     double get_sampler_delay (struct type_pass *, int, int, int);
     static fftw_plan fftplan;
-    
+
                                     // pre-calculate fft quantities only once
     if (do_once)
         {
         fftplan = fftw_plan_dft_1d (FFTSIZE, phasors, delay_fn, FFTW_FORWARD, FFTW_MEASURE);
         do_once = FALSE;
         }
- 
+
     lowpol = 0;                     // default is to do both pols
     hipol = 1;
                                     // only loop over 1 pol if that's all there is
@@ -109,12 +109,12 @@ void pcalibrate (struct type_pass *pass,
             hipol = 1;
             }
         }
-        
+
     fdata = pass->pass_data + fr;
                                     // loop over reference and remote stations
-    for (stn = 0; stn < 2; stn++) 
+    for (stn = 0; stn < 2; stn++)
         {
-        sdelay = (stn) ? pass->control.station_delay.rem 
+        sdelay = (stn) ? pass->control.station_delay.rem
                        : pass->control.station_delay.ref;
         if (param.pc_mode[stn] == MULTITONE)
             {                       // in multitone mode we may need to use all the tones
@@ -141,9 +141,9 @@ void pcalibrate (struct type_pass *pass,
                                     // FIXME - this is an ad hoc place for the ionosphere
         theta_ion = -8.448e9 * param.ion_diff / (1e6 * fdata->frequency + fcenter);
         theta_ion = stn ?           // spread differential between ref. and remote
-            0.5 * theta_ion : 
+            0.5 * theta_ion :
            -0.5 * theta_ion;
-        msg ("a priori ionospheric phase for stn %d %lf rad at %g Hz", -1, 
+        msg ("a priori ionospheric phase for stn %d %lf rad at %g Hz", -1,
              stn,theta_ion, 1e6 * fdata->frequency + fcenter);
                                     // loop over each of 2 polarizations
         for (ipol=lowpol; ipol<hipol+1; ipol++)
@@ -160,7 +160,7 @@ void pcalibrate (struct type_pass *pass,
           delta_phase[stn] = theta_ion + M_PI * status.pc_offset[fr][stn][ipol] / 180.0;
 
                                     // loop over time within the scan
-          for (ap = pass->ap_off; ap < pass->ap_off + pass->num_ap; ap++, ip++)  
+          for (ap = pass->ap_off; ap < pass->ap_off + pass->num_ap; ap++, ip++)
             {
             if (ip % param.pc_period[stn] == 0)
                 {                  // clear counters on sub-integration start
@@ -195,9 +195,9 @@ void pcalibrate (struct type_pass *pass,
               for (i=ilo; i<ihi; i++)
                   if (status.pcals_accum[stn] > 0.0)
                       pc_avg[stn][i] = pc_avg[stn][i] * 1 / status.pcals_accum[stn];
-                  else 
+                  else
                       pc_avg[stn][i] = 0.0;
-              
+
 
 
 
@@ -227,7 +227,7 @@ void pcalibrate (struct type_pass *pass,
                 for (i=0; i<MAX_PCF; i++)
                     if (pass->pcinband[stn][fr][i] >= 0)
                         {
-                        index[i] = 
+                        index[i] =
                          (int)(fabs (fdata->pc_freqs[stn][pass->pcinband[stn][fr][i]] - minf)
                                  / param.pcal_spacing[stn] + 0.5);
                         }
@@ -235,7 +235,7 @@ void pcalibrate (struct type_pass *pass,
                                     // pad with zeroes to increase sampling of transform
                 for (i=0; i<FFTSIZE; i++)
                     phasors[i] = 0.0;
-                                    // fill array with complex tone values
+                                    // fill array with hops_complex tone values
                 for (i=0; i<pass->npctones; i++)
                     if (pass->pcinband[stn][fr][i] >= 0)
                         phasors[index[i]] = pc_avg[stn][i];
@@ -256,10 +256,10 @@ void pcalibrate (struct type_pass *pass,
                 parabola (y, -1.0, 1.0, &ymax, &ampmax, q);
 
                                     // DC is in 0th element
-                delay = (indpeak+ymax) / 256.0 / param.pcal_spacing[stn];       
+                delay = (indpeak+ymax) / 256.0 / param.pcal_spacing[stn];
                                     // find corresponding delay in suitable range
                 pc_amb = 1 / param.pcal_spacing[stn];
-                
+
                                     // find bounds of allowable resolved delay
                 lo = sdelay + pc_amb_center - pc_amb / 2.0;
                 hi = sdelay + pc_amb_center + pc_amb / 2.0;
@@ -271,12 +271,12 @@ void pcalibrate (struct type_pass *pass,
                                     // add in a priori offset to delay for this chan & stn
                 delay += 1e-9 * status.delay_offs[fr][stn];
 
-                msg ("fr %d stn %d ipol %d ap %d delay %6.1f ns", 0, 
+                msg ("fr %d stn %d ipol %d ap %d delay %6.1f ns", 0,
                       fr, stn, ipol, ap, 1e9 * delay);
 
                                     // find mean of delay-adjusted phases at center frequency
                 nin = 0;
-            
+
                 for (i=0; i<pass->npctones; i++)
                     if (pass->pcinband[stn][fr][i] >= 0)
                         {           // rotate each value to the center frequency
@@ -287,7 +287,7 @@ void pcalibrate (struct type_pass *pass,
 
                         rotval[i] = pc_avg[stn][i] * cexp (I * theta);
                         msg ("stn %d chan %02d pol %d ap %02d-%02d tone %02d "
-                             "rotated pcal phasor %7.2f %7.2f", 0, 
+                             "rotated pcal phasor %7.2f %7.2f", 0,
                              stn, fr, ipol, ap_subint_start, ap, i,
                              1e3 * cabs(rotval[i]), 180.0 / M_PI * carg (rotval[i]));
                         nin++;
@@ -328,8 +328,8 @@ void pcalibrate (struct type_pass *pass,
               else
                                     // manual pcal - set to unit amp, zero phase
                   pc_adj[stn] = 1.0 + 0.0 * I;
-                  
-              msg ("non-multitone pcal phasor %7.2f %7.2f", -1, 
+
+              msg ("non-multitone pcal phasor %7.2f %7.2f", -1,
                       1e3 * cabs (pc_adj[stn]), 180.0 / M_PI * carg (pc_adj[stn]));
               }
                                     // make copies of amplitude and phase
@@ -343,18 +343,18 @@ void pcalibrate (struct type_pass *pass,
 
           status.pc_amp[fr][stn][ipol] = cabs (pc_adj[stn]);
           msg ("chan %d stn %d ipol %d pc_amp %6.2f pc_phase %7.2f\n", 0,
-               fr, stn, ipol, 1e3 * status.pc_amp[fr][stn][ipol], 
+               fr, stn, ipol, 1e3 * status.pc_amp[fr][stn][ipol],
                180.0 / M_PI * status.pc_phase[fr][stn][ipol]);
           }                         // end of polarizaton loop
         }                           // bottom of stn = 0..1 loop
     }
 
 
-// return mean of n complex numbers, z
-complex c_mean (complex *z, int n)
+// return mean of n hops_complex numbers, z
+hops_complex c_mean (hops_complex *z, int n)
     {
     int i;
-    complex sum;
+    hops_complex sum;
 
     sum = 0.0;
     for (i=0; i<n; i++)

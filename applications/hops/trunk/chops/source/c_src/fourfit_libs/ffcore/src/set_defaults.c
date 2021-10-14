@@ -10,6 +10,8 @@
 #include "control.h"
 #include "param_struct.h"
 
+static char def_control_null[] = "/dev/null";
+
 int
 set_defaults()
     {
@@ -30,8 +32,9 @@ set_defaults()
     default_cfile = getenv("DEF_CONTROL");
     if (default_cfile == NULL)
         {
-        msg ("Default control file DEF_CONTROL environment variable undefined!", 3);
-        return (1);
+        msg ("DEF_CONTROL environment variable undefined!", 2);
+        default_cfile = def_control_null;
+        /* return (1); */
         }
     if (parse_control_file(default_cfile, &(param.control_file_buff), &(param.set_string_buff)) != 0)
         {

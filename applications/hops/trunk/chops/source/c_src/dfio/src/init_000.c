@@ -28,7 +28,7 @@ init_000 (struct type_000 *t000,
           char *filename)
     {
     int i, err, len, nslash;
-    char *dataname, *stripname, date[25];
+    char *dataname, *stripname, date[64];
     time_t tm;
     struct tm *utc_now, *gmtime();
     fstruct f_info;

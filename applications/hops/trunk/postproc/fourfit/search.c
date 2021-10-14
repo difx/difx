@@ -6,20 +6,24 @@
 
 
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
-#include <complex.h>
+#include "hops_complex.h"
 #include <fftw3.h>
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "control.h"
 
+#ifndef MBD_GRID_MAX
 #define MBD_GRID_MAX 8192
+#endif /* MBD_GRID_MAX == MBDMXPTS */
+
 int search (struct type_pass *pass)
     {
     fftw_complex *data = NULL; 
     double mb_delay[MBD_GRID_MAX]; 
-    static complex rate_spectrum[MAXFREQ][MAXAP];
+    static hops_complex rate_spectrum[MAXFREQ][MAXAP];
     static double amps[MBD_GRID_MAX][MAXAP], drtemp[MAXAP];
     int cnt, fr, i, j, station, lag, dr_index, mbd_index, ap, newmax;
     int max_mbd_cell, max_dr_cell, max_lag, drlag;
@@ -43,8 +47,16 @@ int search (struct type_pass *pass)
     status.total_ap_frac = 0.0;
     status.total_usb_frac = 0.0;
     status.total_lsb_frac = 0.0;
+
+    // cleanup some accounting errors
+    memset(status.sb_bw_fracs, 0, sizeof(status.sb_bw_fracs));
+    memset(status.sb_bw_origs, 0, sizeof(status.sb_bw_origs));
+    memset(status.sb_bw_apcnt, 0, sizeof(status.sb_bw_apcnt));
+    memset(status.apbyfreq, 0, sizeof(status.apbyfreq));
+    status.tot_sb_bw_aperr = 0.0;
                                         // allocate fftw data array
-    data = fftw_malloc (sizeof (fftw_complex) * MBD_GRID_MAX);
+    // +3 is (temporary for slop)
+    data = fftw_malloc (sizeof (fftw_complex) * (MBD_GRID_MAX+3));
     if (data == NULL)
         {
         msg ("fftw_malloc() failed to allocate memory");
@@ -72,7 +84,7 @@ int search (struct type_pass *pass)
     for (i = 0; i <= pass->nfreq; i++)
         status.epoch_err[i]=param.frt_offset;
    
-        /* This section calls norm() which performs calculations that must         */
+        /* This section calls norm_??() which performs calculations that must      */
         /* be done on each frequency for each accumulation period. For every       */
         /* frequency, it also calculates an average phasecal & dominant sideband.  */
     
@@ -93,7 +105,7 @@ int search (struct type_pass *pass)
     if (do_accounting) 
         account ("Phase cal calculations");
 
-    for (fr = 0; fr < pass->nfreq; fr++) 
+    for (fr = 0, status.napbyfreq = 0; fr < pass->nfreq; fr++) 
         {      
         status.ap_num[0][fr] = 0;
         status.ap_num[1][fr] = 0;
@@ -102,21 +114,38 @@ int search (struct type_pass *pass)
                                         // convert the digital results to analog equivalents
         for (ap = pass->ap_off; ap < pass->ap_off + pass->num_ap; ap++)  
             if (param.corr_type == MK4HDW)
-                norm_xf (pass, fr, ap);
-            else                        // use spectral version
-                norm_fx (pass, fr, ap);
+                // this is preserved for historical comparisons of test data
+                norm_xf (pass, &param, &status, fr, ap);
+            else
+                // use spectral version this is the main line of development now
+                norm_fx (pass, &param, &status, fr, ap);
         
         msg ("Freq %d, ap's by sideband through norm = %d, %d", -1,
                 fr, status.ap_num[0][fr], status.ap_num[1][fr]);
+
+        // count of fr that actually have data after norm_fx
+        if (status.apbyfreq[fr] > 0) status.napbyfreq ++;
         }
                                         /* norm can flag data, so check we still */
                                         /* have some! */
-    if (status.total_ap == 0)
+    if (status.total_ap == 0 || status.napbyfreq == 0)
         {
-        msg ("Warning: No valid data for this pass for pol %d", 2, pass->pol);
+        msg ("Warning: No valid data for this pass for pol %d (tot AP: %d tot FR: %d)",
+            2, pass->pol, status.total_ap, status.napbyfreq);
         fftw_free (data);   // clean up the malloc'ed data array
         return (1);
         }
+
+    // see discussion in adjust_snr.c
+    if (status.tot_sb_bw_aperr != 0.0 &&
+        status.total_ap_frac > status.tot_sb_bw_aperr)
+        {
+        msg ("adjust_amp: %lf -> %lf", 1, status.total_ap_frac,
+            status.total_ap_frac - status.tot_sb_bw_aperr);
+        status.total_ap_frac -= status.tot_sb_bw_aperr;
+        }
+
+    /* NB: status.epoch_off_cent is only used in norm_xf.c */
     status.epoch_off_cent = -(status.epoch_off_cent / status.total_ap + 0.5)
                 * param.acc_period - param.frt_offset;
         
@@ -163,8 +192,10 @@ int search (struct type_pass *pass)
             for (i = 0; i < status.grid_points; i++)
                 data[i] = 0.0;
                 
+            // check that mb_index value is legit
             for (fr = 0; fr < pass->nfreq; fr++)
-                data[status.mb_index[fr]] = rate_spectrum[fr][dr_index];
+                if (status.mb_index[fr] < MBD_GRID_MAX)
+                    data[status.mb_index[fr]] = rate_spectrum[fr][dr_index];
 
                                                 // FFT to delay resolution function
             fftw_execute (fftplan);

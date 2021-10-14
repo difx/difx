@@ -12,8 +12,19 @@
 #include "pass_struct.h"
 #include <math.h>
 #include <stdio.h>
-#include <complex.h>
+#include "hops_complex.h"
+#include "apply_funcs.h"
+#include "ff_misc_if.h"
 #include <fftw3.h>
+
+// MAXLAG == 8192 so 4*MAXLAG is 4x MBDMXPTS which is 3x more than needed for MBD.
+// However, Y is re-used with the lagdata and 4*MAXLAG is then needed.
+// +3 is temporarily for slop...
+// assert(plot.num_mb_pts < 8192)
+
+#ifndef GRID_PTS
+#define GRID_PTS 2048
+#endif /* GRID_PTS = MBDMXPTS / MBDMULT */
 
 int make_plotdata(struct type_pass *pass)
     {
@@ -22,10 +33,10 @@ int make_plotdata(struct type_pass *pass)
     extern struct type_plot plot;
     struct freq_corel *pdata;
     struct data_corel *datum;
-    complex Z, sum; 
-    static complex X[2*MAXMAX], Y[4*MAXLAG], sbsp[MAXFREQ][2*MAXLAG], sum_ap[MAXAP];
-    complex vrot(), sum_all, sum_freq;
-    complex wght_phsr;
+    hops_complex Z, sum;
+    static hops_complex X[2*MAXMAX], Y[4*MAXLAG+3], sbsp[MAXFREQ][2*MAXLAG], sum_ap[MAXAP];
+    hops_complex vrot(), sum_all, sum_freq;
+    hops_complex wght_phsr;
     int maxchan[MAXFREQ], i, j, np, fr, ap, lag, st, seg, lagbit;
     double ap_seg, max[MAXFREQ], maxv, peak, frac,
            sbdbox[MAXFREQ], rj, c, nap,
@@ -59,15 +70,15 @@ int make_plotdata(struct type_pass *pass)
                                         /* first apply rotator to single band */
                                         /* delay values (at max sb delay) and */
                                         /* total sum over all freqs */
-    for (i = 0; i < MAXAP; i++) 
+    for (i = 0; i < MAXAP; i++)
         X[i] = 0.0;
 
     for (fr = 0; fr < pass->nfreq; fr++)
-        for(ap = pass->ap_off; ap < pass->ap_off+pass->num_ap; ap++) 
+        for(ap = pass->ap_off; ap < pass->ap_off+pass->num_ap; ap++)
             {
             datum = pdata[fr].data + ap;
             Z = datum->sbdelay[status.max_delchan]
-              * vrot (ap,status.dr_max_global, status.mbd_max_global, fr, datum->sband, pass); 
+              * vrot (ap,status.dr_max_global, status.mbd_max_global, fr, datum->sband, pass);
                                         /* Weight by fractional AP */
             frac = 0.0;
             if (datum->usbfrac >= 0.0) frac = datum->usbfrac;
@@ -85,14 +96,14 @@ int make_plotdata(struct type_pass *pass)
     fftw_execute (fftplan);
     for (i = 0; i < npmax; i++)
         {
-        rj = (double)i - (double)(npmax/2); 
+        rj = (double)i - (double)(npmax/2);
         offset = status.dr_max_global * pdata[0].frequency * param.acc_period
                         * (double)npmax;
         rj -= offset;
         if (rj < -0.5) rj += (double)npmax;
         if (rj > (npmax - 0.5)) rj -= (double)npmax;
         j = (int)(rj + 0.5);
-        plot.d_rate[i] = cabs (X[j]) / (double)status.total_ap_frac;   
+        plot.d_rate[i] = cabs (X[j]) / (double)status.total_ap_frac;
         }
                                         /* adjust dr plot for effects of coherence time
                                          * if that feature has been invoked  rjc 2006.4.27 */
@@ -148,19 +159,21 @@ int make_plotdata(struct type_pass *pass)
               * vrot (ap, status.dr_max_global, 0.0, fr, datum->sband, pass);
                                         /* Weight by fractional AP */
             frac = 0.0;
-            if (datum->usbfrac >= 0.0) 
+            if (datum->usbfrac >= 0.0)
                 frac = datum->usbfrac;
-            if (datum->lsbfrac >= 0.0) 
+            if (datum->lsbfrac >= 0.0)
                 frac += datum->lsbfrac;
                                         /* When both sidebands added together, */
                                         /* we use the mean fraction */
-            if ((datum->usbfrac >= 0.0) && (datum->lsbfrac >= 0.0)) 
+            if ((datum->usbfrac >= 0.0) && (datum->lsbfrac >= 0.0))
                 frac /= 2.0;
             Z = Z * frac;
 
             X[fr] = X[fr] + Z;
             }                           /* Space frequencies in array for FFT */
-        Y[status.mb_index[fr]] = X[fr];
+        // allow garbage to be ignored
+        if (status.mb_index[fr] < GRID_PTS)
+            Y[status.mb_index[fr]] = X[fr];
         }
                                         /* FFt across freq to mbdelay spectrum */
     fftplan = fftw_plan_dft_1d (plot.num_mb_pts, Y, Y, FFTW_FORWARD, FFTW_ESTIMATE);
@@ -168,18 +181,18 @@ int make_plotdata(struct type_pass *pass)
     for (i = 0; i < plot.num_mb_pts; i++)
         {
         j = i - plot.num_mb_pts / 2;
-        if (j < 0) 
+        if (j < 0)
             j += plot.num_mb_pts;
         plot.mb_amp[i] = cabs(Y[j]) / status.total_ap_frac;
         }
 
                                         /* Calculate single band delay, */
                                         /* Xpower spectrum, & sbdbox */
-    for (i = 0; i < 2*MAXLAG; i++) 
+    for (i = 0; i < 2*MAXLAG; i++)
         X[i] = 0.0;
-    for (i = 0; i < 4*MAXLAG; i++) 
+    for (i = 0; i < 4*MAXLAG; i++)
         Y[i] = 0.0;
-    for (i = 0; i < MAXFREQ; i++) 
+    for (i = 0; i < MAXFREQ; i++)
         {
         max[i] = 0.0;
         maxchan[i] = 0;
@@ -237,15 +250,15 @@ int make_plotdata(struct type_pass *pass)
        {
        j = nl - i;
        if (j <= 0)
-           sb_factor = status.total_usb_frac > 0 ? 
+           sb_factor = status.total_usb_frac > 0 ?
                sqrt (0.5) / (M_PI * status.total_usb_frac) : 0.0;
        else
-           sb_factor = status.total_lsb_frac > 0 ? 
+           sb_factor = status.total_lsb_frac > 0 ?
                sqrt (0.5) / (M_PI * status.total_lsb_frac) : 0.0;
 
        if (j < 0)
            j += 4*nl;
-            
+
        plot.cp_spectrum[i] = Y[j] * sb_factor;
                                         /* Counter rotate to eliminate sband delay */
        Z = cexp(-I * (status.sbd_max * (i-nl) * M_PI / (status.sbd_sep * 2*nl)));
@@ -257,7 +270,7 @@ int make_plotdata(struct type_pass *pass)
         fit_vbp (nl);
                                         /* For each freq, interpolate through */
                                         /* 3 sband delays to find sbdbox */
-    for (fr = 0; fr < MAXFREQ; fr++) 
+    for (fr = 0; fr < MAXFREQ; fr++)
         status.sbdbox[fr] = 0.0;
     for (fr = 0; fr < pass->nfreq; fr++)
        {
@@ -270,9 +283,10 @@ int make_plotdata(struct type_pass *pass)
                                         // effective number of polarizations
     eff_npol = pass->npols > 2 ? 2 : pass->npols;
                                         /*  Signal to Noise Ratio */
-    status.snr = status.delres_max * param.inv_sigma 
+    status.snr = status.delres_max * param.inv_sigma
             * sqrt((double)status.total_ap_frac * eff_npol)
                        / (1.0E4 * status.amp_corr_fact);
+    status.snr = adjust_snr(pass, &status);
 
     msg ("SNR %8.2f", 1, status.snr);
 
@@ -281,13 +295,13 @@ int make_plotdata(struct type_pass *pass)
                                     (double)status.pts_searched));
     if (status.prob_false < 0.01) status.prob_false = status.pts_searched
                                    * exp(-status.snr * status.snr / 2.0);
-   
+
                                         /*  Calculate fringe values */
-    status.timerms_phase = 0.0; 
+    status.timerms_phase = 0.0;
     status.timerms_amp = 0.0;
-    status.freqrms_phase = 0.0; 
+    status.freqrms_phase = 0.0;
     status.freqrms_amp = 0.0;
-    status.inc_avg_amp = 0.0; 
+    status.inc_avg_amp = 0.0;
     status.inc_avg_amp_freq = 0.0;
 
     for (i = 0; i < pass->num_ap; i++)
@@ -352,9 +366,10 @@ int make_plotdata(struct type_pass *pass)
     status.coh_avg_phase = carg (sum_all);
     status.inc_avg_amp_freq /= status.total_ap_frac;
                                         /* Noise bias correction ? */
-    status.inc_avg_amp_freq /= ((1.0 + 1.0/(2.0 * status.snr 
+    status.inc_avg_amp_freq /= ((1.0 + 1.0/(2.0 * status.snr
                                         * status.snr / pass->nfreq)));
-   
+
+    /* NB: this routine calc plot data by segment in addition to RMS */
     calc_rms (pass);
 
     fftw_destroy_plan (fftplan);

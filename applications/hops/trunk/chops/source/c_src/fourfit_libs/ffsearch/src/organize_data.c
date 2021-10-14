@@ -24,9 +24,13 @@ struct mk4_corel *cdata,
 struct scan_struct *ovex,
 struct ivex_struct *ivex,
 struct mk4_sdata *sdata,
-struct freq_corel *corel)
+struct freq_corel *corel,
+struct type_param *param,
+struct type_status *status,
+struct c_block *cb_head
+)
     {
-    extern struct type_param param;
+    //extern struct type_param param;
     extern int do_accounting;
     struct station_struct *stn1, *stn2;
     struct mk4_sdata *sd1, *sd2;
@@ -41,12 +45,12 @@ struct freq_corel *corel)
         if (st1 == ovex->st[i].mk4_site_id) 
             {
             stn1 = ovex->st + i;
-            param.ov_bline[0] = i;
+            param->ov_bline[0] = i;
             }
         if (st2 == ovex->st[i].mk4_site_id)
             {
             stn2 = ovex->st + i;
-            param.ov_bline[1] = i;
+            param->ov_bline[1] = i;
             }
         }
     if ((stn1 == NULL) || (stn2 == NULL))
@@ -57,7 +61,7 @@ struct freq_corel *corel)
         }
                                         /* Fill in as much of the param struct */
                                         /* as we can at this point */
-    if (fill_param (ovex, ivex, stn1, stn2, cdata, &param) != 0)
+    if (fill_param (ovex, ivex, stn1, stn2, cdata, param, cb_head) != 0)
         {
         msg ("Error filling param structure", 2);
         return (-1);
@@ -66,7 +70,7 @@ struct freq_corel *corel)
                                         /* out number of accumulation periods, */
                                         /* and the fourfit reference time */
                                         /* Results go into param structure */
-    if (time_range (ovex, stn1, stn2, cdata, &param) != 0)
+    if (time_range (ovex, stn1, stn2, cdata, param) != 0)
         {
         msg ("Error in time_range(), file %s, baseline %c%c", 2,
                                 ovex->filename, st1, st2);
@@ -79,7 +83,7 @@ struct freq_corel *corel)
                                         /* ordered time vs frequency array */
                                         /* Failure (partial or complete) is */
                                         /* indicated by null ptrs in main array */
-    if (set_pointers (stn1, stn2, cdata, &param, corel) != 0)
+    if (set_pointers (stn1, stn2, cdata, param, corel) != 0)
         {
         msg ("set_pointers() fails", 2);
         return (-1);
@@ -101,32 +105,51 @@ struct freq_corel *corel)
             }
         }
     if (do_accounting) account ("Organize data");
-    if (stcount_interp (sd1, sd2, &param, corel) != 0)
+    if (stcount_interp (sd1, sd2, param, corel, status) != 0)
         {
         msg ("Error interpolating state count information.", 2);
         return (-1);
         }
     if (do_accounting) account ("STcount interp");
-    if (pcal_interp (sd1, sd2, &param, corel) != 0)
+    if (pcal_interp (sd1, sd2, param, corel, cdata) != 0)
         {
         msg ("Error interpolating phasecal information.", 2);
         return (-1);
         }
     if (do_accounting) account ("PCal interp");
                                         /* Record the station unit numbers */
-    param.su_number[0] = sd1->t300->SU_number;
-    param.su_number[1] = sd2->t300->SU_number;
+    param->su_number[0] = sd1->t300->SU_number;
+    param->su_number[1] = sd2->t300->SU_number;
                                         // insert appropriate parallactic angles
                                         // FIXME - should evaluate at frt
+    // there are 6 coefficients for the coefficients of
+    // progressively higher powers of dt = now - start of scan
+    // see compute_model.c for sample calculations.
     if (sd1->model[0].t303[0] != NULL)
-        param.par_angle[0] = sd1->model[0].t303[0]->parallactic_angle[0] / 180.0 * M_PI;
+        {
+        param->par_angle[0] =
+            sd1->model[0].t303[0]->parallactic_angle[0] / 180.0 * M_PI;
+        param->elevation[0] =
+            sd1->model[0].t303[0]->elevation[0] / 180.0 * M_PI;
+        }
     else
-        param.par_angle[0] = 0.0;
+        {
+        param->par_angle[0] = 0.0;
+        param->elevation[0] = 0.0;
+        }
 
     if (sd2->model[0].t303[0] != NULL)
-        param.par_angle[1] = sd2->model[0].t303[0]->parallactic_angle[0] / 180.0 * M_PI;
+        {
+        param->par_angle[1] =
+            sd2->model[0].t303[0]->parallactic_angle[0] / 180.0 * M_PI;
+        param->elevation[1] =
+            sd2->model[0].t303[0]->elevation[0] / 180.0 * M_PI;
+        }
     else
-        param.par_angle[1] = 0.0;
+        {
+        param->par_angle[1] = 0.0;
+        param->elevation[1] = 0.0;
+        }
   
     return(0);
     }

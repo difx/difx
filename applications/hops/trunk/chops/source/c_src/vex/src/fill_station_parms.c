@@ -39,7 +39,8 @@ fill_station_parms (struct def_list *deflist,
                                         /* Do a sanity check */
     if (st->start_offset >=  st->stop_offset)
         {
-        msg ("Station stop time invalid", 2);
+        msg ("Station stop time invalid %d>=%d",
+            2, st->start_offset, st->stop_offset);
         return (1);
         }
                                         /* Now time to start digging into the */

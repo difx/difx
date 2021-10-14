@@ -4,13 +4,13 @@
 
 SUBDIRS = .
 
-AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../../mk4util/include -I$(srcdir)/../../dfio/include  -Wall -Wextra -DHAVE_CONFIG_H
+AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../../mk4util/include -I$(srcdir)/../../dfio/include -DHAVE_CONFIG_H
 
 pkginclude_HEADERS = 
 
 pkglib_LTLIBRARIES = libffmathb.la
 
-libffmathb_la_SOURCES = ./src/ap_mean.c ./src/bcd_to_2int.c ./src/interp555.c ./src/linterp.c ./src/max555.c ./src/parabola.c ./src/minvert.c
+libffmathb_la_SOURCES = ./src/ap_mean.c ./src/interp555.c ./src/linterp.c ./src/max555.c ./src/parabola.c ./src/minvert.c
 
 libffmathb_la_LIBADD = ../../mk4util/libmk4utilb.la ../../dfio/libdfiob.la
 

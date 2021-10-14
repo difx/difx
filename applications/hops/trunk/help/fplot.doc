@@ -5,10 +5,10 @@ COMMAND NAME:   fplot
 
 SYNOPSIS:  Displays fringe plots attached to type 2 files
 
-SYNTAX:    fplot [-x] [-d template] [-h] [-l] [-m level] [data file list]
+SYNTAX:    fplot [-x] [-d|-p template] [-h] [-l] [-m level] [data file list]
                All option flags must appear before the data file list.
-               The -x, -d, -h and -l flags are mutually exclusive, and
-               enable xwindow display, diskfile, and hardcopy and
+               The -x, -d, -p, -h and -l flags are mutually exclusive, and
+               enable xwindow display, diskfile, ps2pdf, hardcopy and
                line printer display mechinisms respectively.  The default
                is to display the plots with gs according to the GS_DEVICE
                environment variable.
@@ -20,6 +20,9 @@ OPTION FLAGS:	-x
                         Saves the fringe plots(s) using the template name.
                         With more than one plot, %d should appear in this
                         template name so that unique files are generated.
+                -p template
+                        Same as -d, but converts file.ps into file.pdf
+                        using ps2pdf (which must be available)
 		-h
 			Print a hardcopy of the fringe plot(s), via
                         the print utility pprint_plot

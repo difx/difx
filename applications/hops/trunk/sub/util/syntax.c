@@ -40,7 +40,7 @@ void version(char *headurl)
 void syntax(char *headurl)
     {
     extern char progname[];
-    char *evar, *getenv(), docdir[256], helpfile[256], line[256];
+    char *evar, *getenv(), docdir[256], helpfile[512], line[256];
     int len, print;
     FILE *fp;
 					/* Start with a blank line for appearance */
@@ -48,7 +48,7 @@ void syntax(char *headurl)
 					/* User override of documentation location */
     if ((evar = getenv ("PROGDOC")) == NULL) 
 	sprintf (docdir, "/usr/local/doc");
-    else sprintf (docdir, evar);
+    else sprintf (docdir, "%s", evar);
     sprintf (helpfile, "%s/%s.doc", docdir, progname);
 
     if ((fp = fopen (helpfile, "r")) == NULL)

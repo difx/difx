@@ -8,14 +8,23 @@
 /* Created October 3 1991 by CJL                     */
 /*                                                   */
 /*****************************************************/
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "mk4_data.h"
+
+extern void msg (char *, int, ...);
+extern char display_221 (struct type_221 *, int);
 
 #ifdef P_tmpdir
 # define P_tmpdir "/tmp"
 #endif /* P_tmpdir */
+
+#ifndef PS2PDF
+# define PS2PDF "false"
+#endif /* PS2PDF */
 
 #define TRUE 1
 #define FALSE 0
@@ -25,7 +34,7 @@ display_fplot (struct mk4_fringe *fringe)
     {
     FILE *fp, *fopen();
     char c;
-    int i, size;
+    int i, size, ofs;
     extern int displayopt;
     extern char display_name[];
     static char *options[] = 
@@ -34,10 +43,11 @@ display_fplot (struct mk4_fringe *fringe)
         "diskfile",
         "hardcopy",
         "pshardcopy",
-        "psscreen"
+        "psscreen",
+        "ps2pdf"
         };
-    enum {XWINDOW, DISKFILE, HARDCOPY, PSHARDCOPY, PSSCREEN};
-    static int noptions = 5;
+    enum {XWINDOW, DISKFILE, HARDCOPY, PSHARDCOPY, PSSCREEN, PSTOPDF};
+    static int noptions = 6, pn = 0;
     static int gsopen = FALSE;
     static FILE *gs;
     static char temp[1024], cmd[1280];
@@ -52,17 +62,20 @@ display_fplot (struct mk4_fringe *fringe)
     while (c = temp[i++]) 
         if (isupper(c)) temp[i-1] = tolower(c);
     for (i=0; i<noptions; i++)
-	if (strncmp (options[i], temp, 7) == 0) break;
+	if (strncmp (options[i], temp, 6) == 0) break;
 
     switch (i)
         {
+        case PSTOPDF:
         case DISKFILE:
 	    if (strlen(display_name) < 10)
 		{
 		msg ("Illegal diskfile request %s", 2, display_name);
 		return(0);
 		}
-	    strncpy(ps_file, display_name+9, sizeof(ps_file));
+	    //strncpy(ps_file, display_name+9, sizeof(ps_file));
+            ofs = (DISKFILE == i) ? 9 : 7;
+            snprintf(ps_file, sizeof(ps_file), display_name+ofs, pn++);
 	    if ((fp = fopen (ps_file, "w")) == NULL)
 		{
                 msg ("Could not open PS file (%s) for output", 2, ps_file);
@@ -72,6 +85,15 @@ display_fplot (struct mk4_fringe *fringe)
 	    fwrite (fringe->t221->pplot, 1, size, fp);
 	    fclose (fp);
 	    msg ("Created PS plot %s", 1, ps_file);
+            if (DISKFILE == i) break;
+            // continue with system call for PSTOPDF
+            snprintf(cmd, sizeof(cmd), "%s %s", PS2PDF, ps_file);
+            if (system(cmd))
+                msg ("ps2pdf na/failed, leaving %s", 2, ps_file);
+            else if (unlink(ps_file))
+                msg ("Unable to remove %s", 2, ps_file);
+            else
+                msg ("Created PDF from %s", 1, ps_file);
             break;
 
         case HARDCOPY:

@@ -89,7 +89,7 @@ get_filelist (int argc, char **argv, int type, fstruct **files)
 	    msg ("Trying %s in datadir.", 1, ddargv);
 	    if (stat(ddargv, &file_status) == 0) argv[i] = ddargv;
 	    else continue;		/* that didn't work, either */
-	    msg ("Examining %s", argv[i]);
+	    msg ("Examining %s", 3, argv[i]);
 #else /* HAVE_CONFIG_H */
         if (stat(argv[i], &file_status) != 0) continue
 #endif /* HAVE_CONFIG_H */

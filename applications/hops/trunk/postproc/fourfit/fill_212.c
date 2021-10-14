@@ -10,7 +10,7 @@
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
-#include <complex.h>
+#include "hops_complex.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
@@ -29,7 +29,7 @@ struct type_212 *t212)
     extern struct type_plot plot;
 
     clear_212 (t212);
-    
+
     nap = pass->num_ap;
     t212->nap = nap;
     t212->first_ap = pass->ap_off;

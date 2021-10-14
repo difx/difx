@@ -6,12 +6,37 @@
 #include "pass_struct.h"
 #include <stdio.h>
 
+#ifndef MBDMXPTS
+#define MBDMXPTS 8192
+#endif /* MBD_GRID_MAX == MBDMXPTS */
+
+#ifndef MBDMULT
+#define MBDMULT 4
+#endif /* MBDMULT */
+// 2048 == 8192 / 4 == MBDMXPTS / MBDMULT
+#define GRID_PTS    (MBDMXPTS / MBDMULT)
+
+// this routine implicitly assumes all frequencies have data
+// status.mb_index[MAXFREQ] indicates where in the MBD grid a channel fr sits
+// values are 0..GRID_PTS-1 but there is then zero-padding to MBDMXPTS-1
+
+#define BOGUS_MB_INDEX (GRID_PTS * MBDMULT + 1)
+// this routine could be rewritten to not use pass, param or status.
+
+#ifndef ORIGINAL_FREQ_SPACING_CODE
+// set to 1 to recover original code
+#define ORIGINAL_FREQ_SPACING_CODE 0
+#endif /* ORIGINAL_FREQ_SPACING_CODE */
+
 void freq_spacing (struct type_pass *pass)
     {
     double frq,min_freq,min_space,avg_freq,spacing,index,space,fabs(),sqrt();
     int fr,i,j,div,grid_pts,spacing_ok;
     extern struct type_param param;
     extern struct type_status status;
+#if ORIGINAL_FREQ_SPACING_CODE
+#warning "using original freq_spacing() MBD sample space"
+                                        // this assumes there is data in all channels
                                         /* Find the lowest frequency, the smallest */
                                         /* spacing between freqs, and the average */
                                         /* frequency. */
@@ -31,6 +56,32 @@ void freq_spacing (struct type_pass *pass)
             }
         }
     avg_freq /= pass->nfreq;
+#else /* ORIGINAL_FREQ_SPACING_CODE */
+#warning "using modified freq_spacing() MBD sample space"
+    // this version ignores channels with no data
+    int mnfr = 0, mxfr = pass->nfreq-1, frcnt = 1;
+    while (status.apbyfreq[mxfr] == 0 && mxfr > mnfr) mxfr--;
+    while (status.apbyfreq[mnfr] == 0 && mnfr < mxfr) mnfr++;
+    min_freq = pass->pass_data[mxfr].frequency;
+    min_space = pass->pass_data[mnfr].frequency;
+    avg_freq = min_space;
+    for (i = mnfr; i < mxfr; i++)
+        {
+        if (status.apbyfreq[i] == 0) continue;
+        frq = pass->pass_data[i].frequency;
+        if (frq < min_freq) min_freq = frq;
+        avg_freq += pass->pass_data[i+1].frequency;
+        frcnt ++;
+        for (j = i+1; j < mxfr+1; j++)
+            {
+            if (status.apbyfreq[j] == 0) continue;
+            space = fabs (frq - pass->pass_data[j].frequency);
+            if ((space < min_space) && (space != 0))
+                min_space = space;
+            }
+        }
+    avg_freq /= frcnt;
+#endif /* ORIGINAL_FREQ_SPACING_CODE */
     msg ("min_freq %lf min_space %lf avg_freq %lf", -1, min_freq, min_space, avg_freq);
     div = 1;
 
@@ -42,21 +93,31 @@ void freq_spacing (struct type_pass *pass)
         grid_pts = 2;
         for (fr = 0; fr < pass->nfreq; fr++)
             {
+            // ignore frequencies that have no data after norm_fx or norm_xf.
+            if (status.apbyfreq[fr] == 0)
+                {
+                status.mb_index[fr] = BOGUS_MB_INDEX;
+                continue;
+                }
             index = (pass->pass_data[fr].frequency - min_freq) / spacing;
                                         /* Check whether all freqs */
                                         /* lie on grid points */
             if (fabs(index - (int)(index+0.5)) > 0.001)
                 spacing_ok = 0;
             index = (double) (int)(index + 0.5);
-            status.mb_index[fr] = index;
+            // status.mb_index[fr] = index;
                                         /* Make # of grid points the smallest  */
             for (i = 1; i < 8; i++)     /* power of 2 that will cover all points */
                 if((grid_pts - 1) < index)
                     grid_pts *= 2;
-            if ((index > 2047) || (index < 0))
+            if ((index > (GRID_PTS-1)) || (index < 0))
                 {
                 status.space_err = 1;
-                status.mb_index[fr] = 0;
+                status.mb_index[fr] = BOGUS_MB_INDEX;
+                }
+            else
+                {
+                status.mb_index[fr] = index;
                 }
             }
         }
@@ -68,9 +129,9 @@ void freq_spacing (struct type_pass *pass)
     status.grid_points = grid_pts; 
     msg ("spacing %g grid_pts %d", 0, spacing, grid_pts);
 
-    if(status.grid_points > 2048)
-        status.grid_points = 2048;
-    status.grid_points *= 4;
+    if(status.grid_points > GRID_PTS)
+        status.grid_points = GRID_PTS;
+    status.grid_points *= MBDMULT;
                                         /* This needs to account for mixed */
                                         /* single and double sideband data */
                                         /* Should it be accurately weighted? */
@@ -78,6 +139,8 @@ void freq_spacing (struct type_pass *pass)
                                         /* presence is ap_num.  Perhaps proper */
                                         /* treatment is to invent then weight */
                                         /* ap_num_frac.  Discuss on return */
+    // order of code is reversed here -- if pass->nfreq == 1 the loop is not needed...
+    // freq_spread is used in fill_208 to estimate the snr of the mbd value
     status.freq_spread = 0.0;
     for (fr = 0; fr < pass->nfreq; fr++)
         {

@@ -13,6 +13,13 @@
 #include "control.h"
 #include "mk4_sizes.h"
 
+#include "ff_misc_if.h"
+
+/* eliminate some messages */
+extern int    nullify_cblock (struct c_block *cb_ptr);
+static int append_cblocks (struct c_block **cb_start, struct c_block **cb_end, int num);
+static void parsing_error (int state_num, int ntok);
+
 #define FALSE 0
 #define TRUE 1
                                     // multiple pols. mapped into index 0 and 1
@@ -54,14 +61,14 @@ int parser (void)
         chan[2];
                                             // master_codes static so "set" works
    static char master_codes[MAXFREQ];
-   float fval;
+   float fval;      // historical choice
+   double dval;     // some things require this
 
    struct c_block *cond_start,
                   *cb_start,      /* start of appplicable blocks in the event
                                                     of a complex IF condition */
                   *cb_ptr,
                   *cb_tail;                 /* points to last cblock in chain */
-   int fcode (char, char *);
 
    if (master_codes[0] == '\0')
        strncpy (master_codes, FCHARS, sizeof (master_codes));
@@ -293,6 +300,15 @@ int parser (void)
                        cb_ptr -> vbp_correct = tval;
                    else if (toknum == VBP_FIT_)
                        cb_ptr -> vbp_fit = tval;
+
+                   else if (toknum == MOUNT_TYPE_)
+                       {
+                       if (cb_ptr -> baseline[1] == WILDCARD)      // ref station
+                           cb_ptr -> mount_type[0] = tval;
+                       else if (cb_ptr -> baseline[0] == WILDCARD) // rem station
+                           cb_ptr -> mount_type[1] = tval;
+                       }
+
                break;
 
 
@@ -595,6 +611,56 @@ int parser (void)
                            cb_ptr -> passband[nv] = float_values[tval];
                        }
 
+                   else if (toknum == AVXPZOOM_)
+                       {
+                       if (nv > 1)
+                           {
+                           msg ("Too many avxpzoom numbers",2);
+                           return (-1);
+                           }
+                       if (tokens[ntok].category == INTEGER)
+                           cb_ptr -> avxpzoom[nv] = tval;
+                       else
+                           cb_ptr -> avxpzoom[nv] = float_values[tval];
+                       /* check for legal values */
+                       if (nv == 1 && (cb_ptr->avxpzoom[0] < 0.0 ||
+                           cb_ptr->avxpzoom[0] > 1.0 ||
+                           cb_ptr->avxpzoom[1] > 1.0))
+                           {
+                           msg ("illegal avxpzoom paramters", 2);
+                           return (-1);
+                           }
+                       }
+
+                   else if (toknum == AVXPLOPT_)
+                       {
+                       if (nv > 1)
+                           {
+                           msg ("Too many avxplopt numbers",2);
+                           return (-1);
+                           }
+                       if (tokens[ntok].category == INTEGER)
+                           {
+                           cb_ptr -> avxplopt[nv] = tval;
+                           }
+                       else
+                           {
+                           msg ("avxplopt numbers must be integers",2);
+                           return (-1);
+                           }
+                       /* check for legal values */
+                       if (nv == 1 && (!(cb_ptr->avxplopt[nv] == -7 ||
+                           cb_ptr->avxplopt[nv] == -1 ||
+                           cb_ptr->avxplopt[nv] == 0 ||
+                           cb_ptr->avxplopt[nv] == 1 ||
+                           cb_ptr->avxplopt[nv] == 7)))
+                           {
+                           msg ("illegal avxplopt values",2);
+                           return (-1);
+                           }
+                       }
+
+
 // ##DELAY_OFFS##  for next clause
                    else if (toknum == DELAY_OFFS_) // is this a channel delay offset?
                        {
@@ -735,10 +801,10 @@ int parser (void)
                            }
                                           // allow int or float input values
                        if (tokens[ntok].category == INTEGER)
-                           fval = tval;
+                           dval = tval;
                        else
-                           fval = float_values[tval];
-                       cb_ptr -> chid_rf[nv] = fval;
+                           dval = float_values[tval];
+                       cb_ptr -> chid_rf[nv] = dval;
                        }
 
                nv++;                       /* bump index for next vector parm */
@@ -955,8 +1021,8 @@ int parser (void)
                   cond_start -> scan[i] = parsed_scan[i];
                   cb_tail    -> scan[i] = parsed_scan[i];
                   }
-               memcpy (cond_start -> baseline, parsed_baseline, 8);
-               memcpy (cb_tail    -> baseline, parsed_baseline, 8);
+               memcpy (cond_start -> baseline, parsed_baseline, 2);
+               memcpy (cb_tail    -> baseline, parsed_baseline, 2);
 
                memcpy (cond_start -> source, parsed_source, 32);
                memcpy (cb_tail    -> source, parsed_source, 32);
@@ -1016,7 +1082,7 @@ int parser (void)
 *    section are returned in *cb_start and *cb_end.        rjc  92.2.19        *
 *******************************************************************************/
 
-int append_cblocks (struct c_block **cb_start, struct c_block **cb_end, int num)
+static int append_cblocks (struct c_block **cb_start, struct c_block **cb_end, int num)
    {
    int i;
    struct c_block *cb_ptr;
@@ -1052,7 +1118,7 @@ int append_cblocks (struct c_block **cb_start, struct c_block **cb_end, int num)
 *       94.1.13  rjc  initial code                                             *
 *******************************************************************************/
 
-parsing_error (int state_num, int ntok)
+static void parsing_error (int state_num, int ntok)
    {
    extern struct token_struct *tokens;   /* input struct of tokens & values   */
    extern char *token_string[];

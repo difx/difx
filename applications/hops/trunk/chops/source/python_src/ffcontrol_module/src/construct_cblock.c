@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "control.h"
 #include "ffcontrol_module_extern.h"
@@ -11,7 +12,7 @@ int construct_cblock (char* filename, struct c_block* cb_out, char baseline[stat
     extern void default_cblock (struct c_block* );
     extern int criteria_match (struct c_block* , char[2], char[31], char, int );
     extern int copy_cblock_parts ( struct c_block* , struct c_block* );
-    extern int parse_control_file (char*, char*, char*);
+    extern int parse_control_file (char*, char**, char**);
 
     //init control record buffers
     char* control_file_buff = NULL;

@@ -77,7 +77,8 @@ display_221 (struct type_221 *t221,
     {
     char *pplot, *end_of_plot, c, *ptr, *gs_exec = getenv("GS_EXEC");
     char *gs_debug = getenv("GS_DEBUG");
-    int i, nchar, size, xval, yval, loop;
+    char *fgets_retval;
+    int i, nchar, size, xval, yval, loop, system_retval;
     static int gsopen = FALSE;
     static FILE *gs;
     static char psbuf[2560], cmd[1280], response[1024], fname[1024];
@@ -216,7 +217,7 @@ display_221 (struct type_221 *t221,
         }
     while (loop)
         {
-        system ("stty -echo -icanon min 1");
+        system_retval = system ("stty -echo -icanon min 1");
         c = getchar();
         if (end_of_plot)
         {
@@ -226,7 +227,7 @@ display_221 (struct type_221 *t221,
         if (fdbg) fclose(fdbg);
         fdbg = 0;
         }
-        system ("stty echo icanon");
+        system_retval = system ("stty echo icanon");
 
         switch (c)
             {
@@ -245,7 +246,7 @@ display_221 (struct type_221 *t221,
                 fwrite (pplot, 1, size, fp);
                 fclose (fp);
                 sprintf (cmd, "pplot_print %s", ps_file);
-                system (cmd);
+                system_retval = system (cmd);
                 msg ("Printing hardcopy of postscript fringe plot", 2);
                                         /* Tidy up */
                 unlink (ps_file);
@@ -256,7 +257,7 @@ display_221 (struct type_221 *t221,
             case 'S':
                 printf ("%s: Type name of file to save plot in:  ", progname); 
                 fflush(stdout);
-                fgets (response, 127, stdin);
+                fgets_retval = fgets (response, 127, stdin);
                 ptr = response;
                                         /* Find first whitespace-delimited */
                                         /* string in the response */

@@ -42,7 +42,7 @@ extract_filenames (char *directory, int type, fstruct **files, int *nalloc, int 
     {
     DIR *dp, *opendir();
     struct dirent *ds, *readdir();
-    char temp[256], fulnam[256];
+    char temp[384], fulnam[384];
     /* char *ptr; */
     struct stat file_status;
     extern char progname[];

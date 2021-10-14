@@ -37,6 +37,7 @@ int set_device (char *string)
 	}
 					/* All devices below this need a */
 					/* disk file, so construct name */
+    /* FIXME: deprecated call and usage below */
     if ((filename = tmpnam (NULL)) == NULL)
 	{
 	msg ("Temporary file name creation failed in set_device()", 2);

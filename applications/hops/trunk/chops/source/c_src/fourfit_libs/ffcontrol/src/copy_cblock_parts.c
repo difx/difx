@@ -198,6 +198,12 @@ copy_cblock_parts ( struct c_block* f, struct c_block* t)
         if (f->passband[i] != NULLFLOAT)
             t->passband[i] = f->passband[i];
 
+        if (f->avxpzoom[i] != NULLFLOAT)
+            t->avxpzoom[i] = f->avxpzoom[i];
+
+        if (f->avxplopt[i] != NULLINT)
+            t->avxplopt[i] = f->avxplopt[i];
+
         if (f->ion_window[i] != NULLFLOAT)
             t->ion_window[i] = f->ion_window[i];
 
@@ -221,6 +227,9 @@ copy_cblock_parts ( struct c_block* f, struct c_block* t)
 
         if (f->vbp_file[i][0] != 0)
             strcpy (t->vbp_file[i], f->vbp_file[i]);
+
+        if (f->mount_type[i] != NULLINT)
+            t->mount_type[i] = f->mount_type[i];
         }
 
     if (f->gen_cf_record != NULLINT)

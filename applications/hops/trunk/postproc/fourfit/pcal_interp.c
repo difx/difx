@@ -34,7 +34,8 @@ enum {LCP, RCP};
 int pcal_interp (struct mk4_sdata *sd1,
                  struct mk4_sdata *sd2,
                  struct type_param *param,
-                 struct freq_corel *corel)
+                 struct freq_corel *corel,
+                 struct mk4_corel *pcdata)
     {
     int stn, j, pc, ap, ch, f, ipc, ipcmin, ipcmax, i, n,
         pc_index[MAX_CHAN],
@@ -52,7 +53,6 @@ int pcal_interp (struct mk4_sdata *sd1,
     struct type_309 *t309;
     struct interp_sdata *isd;
     extern int do_accounting;
-    extern struct mk4_corel cdata;
     
     for (i=0; i<MAX_CHAN; i++)
         pc_index[i] = -1;
@@ -89,7 +89,7 @@ int pcal_interp (struct mk4_sdata *sd1,
         }
 
                                         // test for correlation date after pcal sign flip
-    sscanf (cdata.id->date, "%4d%3d", &iyr, &idoy);
+    sscanf (pcdata->id->date, "%4d%3d", &iyr, &idoy);
     idate = 1000 * iyr + idoy;
     after_2012_124 = idate > 2012124;
                                         /* Do it one station at a time */

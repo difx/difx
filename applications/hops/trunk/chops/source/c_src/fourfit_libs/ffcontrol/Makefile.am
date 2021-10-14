@@ -4,7 +4,7 @@
 
 SUBDIRS = .
 
-AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../../mk4util/include  -Wall -Wextra -DHAVE_CONFIG_H
+AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../../mk4util/include -DHAVE_CONFIG_H -I$(srcdir)/../ffcore/include
 
 pkginclude_HEADERS = ./include/control.h ./include/parser.h
 

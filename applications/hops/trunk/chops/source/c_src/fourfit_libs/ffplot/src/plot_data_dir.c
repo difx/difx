@@ -324,7 +324,18 @@ static void dump_fineprint(FILE *fp, struct type_dump *dp)
                 "undefined");
 
     fprintf(fp, "# ControlFile             '%s'\n", control_filename);
-    //FIXME -- yet morethings
+    if (dp->param->passband[0] != 0.0 || dp->param->passband[1] != 1.0E6)
+        fprintf(fp, "# PassbandInAvXPSpectrum  '%lf %lf'\n",
+            dp->status->xpnotchpband[0], dp->status->xpnotchpband[1]);
+    if (dp->param->nnotches > 0) {
+        fprintf(fp, "# NumberOfNotches         '%d'\n", dp->param->nnotches);
+        fprintf(fp, "# NotchesInAvXPSpectrum   '");
+        for (ii = 0; ii < dp->param->nnotches; ii++)
+            fprintf(fp, " %lf", dp->status->xpnotchpband[ii]);
+        fprintf(fp, "'\n");
+    }
+
+    //FIXME -- yet morethings that should be output
 }
 
 /*

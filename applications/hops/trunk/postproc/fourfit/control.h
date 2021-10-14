@@ -84,6 +84,8 @@ struct c_block                     /* Elemental control block structure */
    char adhoc_flag_files[2][256];  /* file names for ad hoc data flagging */
    char plot_data_dir[2][256];     /* dir name(s) for dumping plot data */
    double passband[2];             /* passband for spectral filtering (MHz) */
+   double avxpzoom[2];             /* ave XP zoom options for passband case */
+   int avxplopt[2];                /* some plot options on ave XP plot */
    int gen_cf_record;              /* whether to general control file record */
    int nnotches;                   /* alternative to passband */
    double notches[MAXNOTCH][2];    /* alternative to passband */
@@ -111,6 +113,7 @@ struct c_block                     /* Elemental control block structure */
    int vbp_fit;                    // iff true, do algebraic model fit for video bandpass
    struct dstats vbp_coeffs[5];    // video bandpass model coeffs (deg)
    char vbp_file[2][256];          // if not null, specifies filename for video bandpass corr.
+   int mount_type[2];              // non-zero implies field-rotation-corrections should be made.
    };
 
           /* Defined values for various structure variables */
@@ -147,6 +150,11 @@ struct c_block                     /* Elemental control block structure */
                                    // mbd anchor choice
 #define MODEL 1
 #define SBD   2
+
+#define NO_MOUNT_TYPE   0          /* mount_type */
+#define CASSEGRAIN      1
+#define NASMYTHLEFT     2
+#define NASMYTHRIGHT    3
 
 #define FCHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$%"
 #endif

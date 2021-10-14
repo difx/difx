@@ -6,7 +6,7 @@ SUBDIRS = .
 
 nobase_dist_pkgdata_DATA = text/blk_stmt.txt text/pformat.txt
 
-AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../mk4util/include  -Wall -Wextra -DHAVE_CONFIG_H
+AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../mk4util/include -DHAVE_CONFIG_H
 
 pkginclude_HEADERS = ./include/cvex.h ./include/evex.h ./include/ivex.h ./include/lvex.h ./include/mk4_vex.h ./include/ovex.h ./include/svex.h ./include/vex.h
 

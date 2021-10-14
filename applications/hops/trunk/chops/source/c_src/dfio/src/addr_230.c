@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <complex.h>
 #include "bytflp.h"
 #include "type_230.h"
 #include "mk4_dfio.h"
@@ -53,7 +52,7 @@ addr_230 ( short version,
     if (version == T230_VERSION) t230 = (struct type_230 *)address;
     else
         {
-        size_230 = sizeof (struct type_230) - sizeof (complex) + xpow_len;
+        size_230 = sizeof (struct type_230) - sizeof (hops_scomplex) + xpow_len;
         t230 = (struct type_230 *) malloc (size_230);
         if (t230 == NULL)
             {
@@ -73,7 +72,7 @@ addr_230 ( short version,
                                         /* since sizeof() doesn't know we are */
                                         /* tricking compiler with variable numbers */
                                         /* of raw data blocks */
-        *size = sizeof (struct type_230_v0) - sizeof (complex) + xpow_len;
+        *size = sizeof (struct type_230_v0) - sizeof ( hops_scomplex) + xpow_len;
         t230_v0 = (struct type_230_v0 *)address;
                                         /* Start copying structure elements, */
                                         /* with hidden byte flipping if needed */
@@ -88,9 +87,10 @@ addr_230 ( short version,
         cp_float (t230->lsbweight, t230_v0->lsbweight);
         for (i=0; i<nspec_pts; i++)
             {                           // complex copy
-            cp_double (rpart, creal (t230_v0->xpower[i]));
-            cp_double (ipart, cimag (t230_v0->xpower[i]));
-            t230->xpower[i] = rpart + I * ipart;
+            cp_double (rpart, t230_v0->xpower[i].real);
+            cp_double (ipart, t230_v0->xpower[i].imag);
+            t230->xpower[i].real = rpart;
+            t230->xpower[i].imag = ipart;
             }
         return (t230);
         }

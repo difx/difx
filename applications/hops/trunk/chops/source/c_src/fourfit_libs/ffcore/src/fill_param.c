@@ -24,6 +24,7 @@
 #include "vex.h"
 #include "param_struct.h"
 #include "control.h"
+#include "ff_misc_if.h"
 
 int
 fill_param (struct scan_struct *ovex,
@@ -31,12 +32,12 @@ fill_param (struct scan_struct *ovex,
             struct station_struct *stn1,
             struct station_struct *stn2,
             struct mk4_corel *cdata,
-            struct type_param *param)
+            struct type_param *param,
+            struct c_block *cb_head)
     {
     int i;
     double fact1, fact2, fact3;
     unsigned long ap_in_sysclks;
-    extern struct c_block *cb_head;
     struct c_block *cb_ptr;
                                         /* Record the baseline */
     strncpy (param->baseline, cdata->t100->baseline, 2);
@@ -51,6 +52,7 @@ fill_param (struct scan_struct *ovex,
             return (-1);
             }
                                         /* Sample period comes from inverse sample rate */
+    // one presumes this is correct insofar as only the narrow band correlates
     msg ("samplerates %lf %lf\n", 0, stn1->samplerate, stn2->samplerate);
     if (stn1->samplerate < stn2->samplerate)
         param->samp_period = 1.0  / stn1->samplerate;
@@ -84,17 +86,29 @@ fill_param (struct scan_struct *ovex,
         fact1 = 0.985;
     else 
         fact1 = 1.0;
+
+    // see extended discussion in adjust_snr.  difx2mark4 partitions
+    // these sampling losses by station (i.e. a sqrt of the actual
+    // factor which combine for the correct factor), however, difx2mark4
+    // has higher precision values than these original ones.
+    // The 1-bit x 2-bit case is what it is due to what is done in
+    // difx2mark4.  Someone should actually work out the true loss.
+    //
+    // The corrections are only staged in the next few lines.
                                     // Nyquist-sampling losses
     switch (param->bits_sample[0] + param->bits_sample[1])
         {
         case 2:                     // 1-bit x 1-bit
             fact2 = 0.637;
+            //fact2 = (param->corr_type==DIFX) ? 0.6366239755 : 0.637;
             break;
         case 3:                     // 1-bit x 2-bits
-            fact2 = 0.749;          // approx. by harmonic mean of 1x1 & 2x2
+            fact2 = 0.749;        // approx. by harmonic mean of 1x1 & 2x2
+            //fact2 = (param->corr_type==DIFX) ? 0.7495558345 : 0.749;
             break;
         case 4:                     // 2-bits x 2-bits
             fact2 = 0.881;
+            //fact2 = (param->corr_type==DIFX) ? 0.8825208768 : 0.881;
             break;
         }
 

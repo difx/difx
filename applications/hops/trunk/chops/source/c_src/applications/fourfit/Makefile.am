@@ -4,7 +4,7 @@
 
 SUBDIRS = .
 
-AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../../mk4util/include -I$(srcdir)/../../afio/include -I$(srcdir)/../../dfio/include -I$(srcdir)/../../vex/include -I$(srcdir)/../../fourfit_libs/ffcontrol/include -I$(srcdir)/../../fourfit_libs/ffmath/include -I$(srcdir)/../../fourfit_libs/ffcore/include -I$(srcdir)/../../fourfit_libs/ffio/include -I$(srcdir)/../../fourfit_libs/ffsearch/include -I$(srcdir)/../../fourfit_libs/ffplot/include  -Wall -Wextra -DHAVE_CONFIG_H -DFF_PROGNAME=\"fourfit\" -DFF_VER_NO=\"0.00\"
+AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../../mk4util/include -I$(srcdir)/../../afio/include -I$(srcdir)/../../dfio/include -I$(srcdir)/../../vex/include -I$(srcdir)/../../fourfit_libs/ffcontrol/include -I$(srcdir)/../../fourfit_libs/ffmath/include -I$(srcdir)/../../fourfit_libs/ffcore/include -I$(srcdir)/../../fourfit_libs/ffio/include -I$(srcdir)/../../fourfit_libs/ffsearch/include -I$(srcdir)/../../fourfit_libs/ffplot/include -DHAVE_CONFIG_H -DFF_PROGNAME=\"fourfit\" -DFF_VER_NO=\"0.00\"
 
 AM_CPPFLAGS += ${FFTW3_CFLAGS} ${X_CFLAGS} -I${PGPLOT_DIR}
 

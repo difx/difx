@@ -54,7 +54,7 @@ int read_control_file (char* control_file_name, char** input_string, int* flag)
    num_chars = 0;
    num_line = 1;
 
-   if (memcmp (control_file_name, "if ", 3))   /* special memory file option? */
+   if (memcmp (control_file_name, "if ", (size_t)3))   /* special memory file option? */
       {
       *flag = IS_CONTROL_FILE;
       n = -1;                                  /* no, signify input from file */

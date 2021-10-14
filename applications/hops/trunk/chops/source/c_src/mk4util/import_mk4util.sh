@@ -23,7 +23,8 @@ else
         "mk4_sizes.h"
         "mk4_typedefs.h"
         "mk4_util.h"
-		"adler32_checksum.h"
+	"adler32_checksum.h"
+        "hops_complex.h"
     )
 
     header_src_dir="${HOPS_SRC_DIR}/include"

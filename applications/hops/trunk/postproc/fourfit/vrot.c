@@ -1,5 +1,5 @@
 /****************************************************************************
-* Function to calculate complex rotator                                     *
+* Function to calculate hops_complex rotator                                     *
 * used in computing delay res. function                                     *
 *                                                                           *
 *                                                                           *
@@ -23,13 +23,13 @@
 ****************************************************************************/
 
 #include <math.h>
-#include <complex.h>
+#include "hops_complex.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 
 
-complex vrot (int ap, double dr, double mbd, int fr, int sb, struct type_pass* pass)
+hops_complex vrot (int ap, double dr, double mbd, int fr, int sb, struct type_pass* pass)
     {
     double theta;
     extern struct type_param param;
@@ -37,21 +37,21 @@ complex vrot (int ap, double dr, double mbd, int fr, int sb, struct type_pass* p
                                         // theta is in rotations
 
                                         /* fringe rate * time from central epoch */
-    theta = pass->pass_data[fr].frequency * dr 
+    theta = pass->pass_data[fr].frequency * dr
                 * (param.acc_period * (ap + 0.5) + status.epoch_err[fr]);
 
                                         // Residual mbd effect at this freq
     theta += mbd * (pass->pass_data[fr].frequency - param.ref_freq);
                                         // Effect due to offset of lag where max lies
     theta += (param.nlags - status.max_delchan) * 0.125 * sb;
-   
+
     if (pass->control.optimize_closure) // sacrifice mbd fit for less-noisy closure?
         theta += 0.125 * mbd * sb / status.sbd_sep;
-       
+
     else                                /* effect of non-integral sbd iff SSB
                                          * correct phase to dc edge, based on sb delay */
         theta += 0.125 * status.sbd_max * sb / status.sbd_sep;
-        
+
     theta *= (-2.0 * M_PI);             // convert to radians
 
     return (cexp(I * theta));              // return unit phasor

@@ -28,20 +28,26 @@ fourfit -t -d diskfile:ff-3413.ps -b GE -P LL \
     -c ./cf3413 \
     $DATADIR/3413/278-1758/0552+398.wmtukg 2>/dev/null 1>&2
 [ -f ./ff-3413.ps ] || { echo ./ff-3413.ps missing && exit 2 ; }
+# pluck out lines containing the snr and amp, parse and check
 
-# pluck out line containing the snr and parse it
-line=$(grep '7570 9653' ./ff-3413.ps)
-
+# ff-3413.ps:7570 9384 M (5.880) SR
+line=$(grep '7570 9384' ./ff-3413.ps)
 IFS='()'
-read a snr b <<<"$line"
-
-# snr bounds
-low=123.8
-high=124.6
-aok=$(echo "$snr>$low && $snr<$high" | bc)
-$verb && echo aok is $aok and "$low < $snr < $high" is expected from: $line
-
-[ "$aok" -gt 0 ]
+read a amp b <<<"$line"
+low=5.870
+high=5.890
+okamp=$(echo "$amp>$low && $amp<$high" | bc)
+$verb && echo okamp is $okamp and "$low < $amp < $high" is expected from: $line
+# ff-3413.ps:7570 9653 M (124.5) SR
+lsnr=$(grep '7570 9653' ./ff-3413.ps)
+IFS='()'
+read a snr b <<<"$lsnr"
+low=124.2
+high=124.7
+oksnr=$(echo "$snr>$low && $snr<$high" | bc)
+$verb && echo oksnr is $oksnr and "$low < $snr < $high" is expected from: $lsnr
+#
+[ "$okamp" -gt 0 -a "$oksnr" -gt 0 ]
 
 #
 # eof

@@ -1,8 +1,8 @@
 #!/bin/sh
 #
-# $Id: chk_aedit.sh 330 2011-06-10 13:32:10Z gbc $
+# $Id: chk_aedit.sh 3326 2021-09-04 13:05:05Z gbc $
 #
-# canonical test suite for aedit
+# check that aedit runs
 #
 
 verb=false

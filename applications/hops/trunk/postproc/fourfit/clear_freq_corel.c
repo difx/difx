@@ -10,6 +10,7 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include "mk4_data.h"
 #include "pass_struct.h"
 

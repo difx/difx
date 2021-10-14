@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# $Id: chk_ff_2843.sh 3155 2020-11-12 13:46:32Z gbc $
+# $Id: chk_ff_2843.sh 3327 2021-09-04 13:47:06Z gbc $
 #
 # canonical test suite for fourfit
 #
@@ -24,19 +24,27 @@ fourfit -t -d diskfile:ff-2843.ps -b AI:S \
     set start -3 2>/dev/null 1>&2
 [ -f ./ff-2843.ps ] || { echo ./ff-2843.ps missing && exit 2 ; }
 
-# pluck out line containing the snr and parse it
-line=$(grep '7570 9653' ./ff-2843.ps)
+# pluck out lines containing the snr and amp, parse and check
 
+# ff-2843.ps:7570 9384 M (21.664) SR
+line=$(grep '7570 9384' ./ff-2843.ps)
 IFS='()'
-read a snr b <<<"$line"
+read a amp b <<<"$line"
+low=21.660
+high=21.668
+okamp=$(echo "$amp>$low && $amp<$high" | bc)
+$verb && echo okamp is $okamp and "$low < $amp < $high" is expected from: $line
+# ff-2843.ps:7570 9653 M (48.2) SR
+lsnr=$(grep '7570 9653' ./ff-2843.ps)
+IFS='()'
+read a snr b <<<"$lsnr"
+low=48.1
+high=48.3
+oksnr=$(echo "$snr>$low && $snr<$high" | bc)
+$verb && echo oksnr is $oksnr and "$low < $snr < $high" is expected from: $lsnr
+#
+[ "$okamp" -gt 0 -a "$oksnr" -gt 0 ]
 
-# snr bounds
-low=47.8
-high=48.6
-aok=$(echo "$snr>$low && $snr<$high" | bc)
-$verb && echo aok is $aok and "$low < $snr < $high" is expected from: $line
-
-[ "$aok" -gt 0 ]
 #
 # eof
 #

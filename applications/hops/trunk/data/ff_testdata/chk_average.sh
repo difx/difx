@@ -1,8 +1,8 @@
 #!/bin/sh
 #
-# $Id: chk_average.sh 1763 2017-06-02 18:08:08Z gbc $
+# $Id: chk_average.sh 3326 2021-09-04 13:05:05Z gbc $
 #
-# canonical test suite for average
+# this uses aedit's output, with fringex to average data
 #
 
 verb=false

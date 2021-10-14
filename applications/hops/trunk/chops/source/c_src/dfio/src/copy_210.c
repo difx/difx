@@ -18,6 +18,7 @@
 /* version 2                        2010.1.5  rjc                       */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "bytflp.h"
 #include "type_210.h"

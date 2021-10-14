@@ -317,7 +317,9 @@ char *next_token;
    }
    
 /*
-int fcode(char c)
+// this was commented out at some point and
+// the common routine is found in parser.c
+// // int fcode(char c)
 	{
 	int i;
 //	char fchars[64];

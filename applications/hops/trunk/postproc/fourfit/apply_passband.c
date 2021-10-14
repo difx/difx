@@ -12,15 +12,19 @@
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
+#include "apply_funcs.h"
+#include "ff_misc_if.h"
 #include <stdio.h>
 
 extern void   msg (char *, int, ...);
 
 void apply_passband (int sb, int ap,
                      struct freq_corel *fdata,
-                     complex *xp_spectrum,
+                     hops_complex *xp_spectrum,
                      int npts,
-                     struct data_corel *datum)
+                     struct data_corel *datum,
+                     struct type_status *status,
+                     struct type_param *param)
     {
     int i,
         ibot,
@@ -34,35 +38,35 @@ void apply_passband (int sb, int ap,
            param_passband_0_, param_passband_1_;
     float *usbfracptr, usbreduce, usboldfrac;
     float *lsbfracptr, lsbreduce, lsboldfrac;
+    double factor, oldfrac;
 
-    extern struct type_param param;
-    // extern struct type_sumb_tatus status;
-
-    dv = (param.corr_type == DIFX) ? 4 : 2 ;
-    
-                                    /* return immediately if no filtering
-                                     * is desired (still set to defaults) */
-    if (param.passband[0] == 0.0 && param.passband[1] == 1.0E6)
+    // mark temporary space and return immediately if no work
+    // using 1 for notches and 0 for passband, -1 as 'no action'
+    status->sb_bw_fracs[MAXFREQ+0][sb] = -1.0;
+    status->sb_bw_origs[MAXFREQ+0][sb] =  0.0;
+    if (param->passband[0] == 0.0 && param->passband[1] == 1.0E6)
         return;
                                     /* return if 'band' width is zero */
-    if (param.passband[0] == param.passband[1])
+    if (param->passband[0] == param->passband[1])
         return;
 
-    if (param.passband[0] < param.passband[1])
+    if (param->passband[0] < param->passband[1])
         {
         incband = 1;                /* this is an inclusion band */
-        param_passband_0_ = param.passband[0];
-        param_passband_1_ = param.passband[1];
+        param_passband_0_ = param->passband[0];
+        param_passband_1_ = param->passband[1];
         }
     else
         {
         incband = 0;                /* this is an exclusion band */
-        param_passband_0_ = param.passband[1];
-        param_passband_1_ = param.passband[0];
+        param_passband_0_ = param->passband[1];
+        param_passband_1_ = param->passband[0];
         }
     /* assert( param_passband_0_ < param_passband_1_ ); */
 
-    bw = 0.5e-6 / param.samp_period;/* in MHz, assumes Nyquist sampling */
+    bw = 0.5e-6 / param->samp_period;/* in MHz, assumes Nyquist sampling */
+
+    dv = (param->corr_type == DIFX) ? 4 : 2 ;    // deviant npts usage
 
                                     /* determine top and bottom frequency of
                                      * this current sideband (MHz) */
@@ -71,13 +75,18 @@ void apply_passband (int sb, int ap,
         top = fdata->frequency;
         bottom = top - bw;
 
+        // save relative locations in the xp spectrum space
+        for (i=0; i<2; i++)         // assert( bottom < top )
+            if (bottom <= param->passband[i] && param->passband[i] <= top)
+                status->xpnotchpband[i] = param->passband[i] - top;
+
         if (param_passband_1_ < bottom)
             ibot = npts + 1;
         else if (param_passband_1_ < top)
             ibot = (1.0 - (param_passband_1_ - bottom) / bw) * npts /dv + 0.5;
         else
             ibot = -1;
-    
+
         if (param_passband_0_ < bottom)
             itop = npts + 1;
         else if (param_passband_0_ < top)
@@ -93,13 +102,18 @@ void apply_passband (int sb, int ap,
         bottom = fdata->frequency;
         top = bottom + bw;
 
+        // save relative locations in the xp spectrum space
+        for (i=0; i<2; i++)         // assert( bottom < top )
+            if (bottom <= param->passband[i] && param->passband[i] <= top)
+                status->xpnotchpband[i] = param->passband[i] - bottom;
+
         if (param_passband_0_ < bottom)
             ibot = -1;
         else if (param_passband_0_ < top)
             ibot = (param_passband_0_ - bottom) / bw * npts /dv + 0.5;
         else
             ibot = npts + 1;
-    
+
         if (param_passband_1_ < bottom)
             itop = -1;
         else if (param_passband_1_ < top)
@@ -131,33 +145,36 @@ void apply_passband (int sb, int ap,
     /* implicitly assuming USB and LSB bands are same size: npts/dv */
 
     usbreduce = lsbreduce = 0.0;
-    if (usbfracptr)
+    if (usbfracptr) // sb == 0
         {
-        usboldfrac = *usbfracptr;
-        usbreduce = (nuked >= npts/dv)
+        oldfrac = usboldfrac = *usbfracptr;
+        factor = usbreduce = (nuked >= npts/dv)
                   ? 0.0 : (double)(npts/dv)/(double)(npts/dv - nuked);
         *usbfracptr *= usbreduce;
         msg ("usb: ap %d bw %.3lf bot %.3lf top %.3lf ibot %3d itop %3d "
              "nuke/npts %3d/%3d %s %.3lf->%.3lf (%.3lf) %.2f %.2f",
-            1, ap, bw, bottom, top, ibot, itop, nuked, npts,
+            0, ap, bw, bottom, top, ibot, itop, nuked, npts,
             incband ? "include" : "exclude",
             usboldfrac, *usbfracptr, usbreduce,
             param_passband_0_, param_passband_1_);
         }
 
-    if (lsbfracptr)
+    if (lsbfracptr) // sb == 1
         {
-        lsboldfrac = *lsbfracptr;
-        lsbreduce = (nuked >= npts/dv)
+        oldfrac = lsboldfrac = *lsbfracptr;
+        factor = lsbreduce = (nuked >= npts/dv)
                   ? 0.0 : (double)(npts/dv)/(double)(npts/dv - nuked);
         *lsbfracptr *= lsbreduce;
         msg ("lsb: ap %d bw %.3lf bot %.3lf top %.3lf ibot %3d itop %3d "
              "nuke/npts %3d/%3d %s %.3lf->%.3lf (%.3lf) %.2f %.2f",
-            1, ap, bw, bottom, top, ibot, itop, nuked, npts,
+            0, ap, bw, bottom, top, ibot, itop, nuked, npts,
             incband ? "include" : "exclude",
             lsboldfrac, *lsbfracptr, lsbreduce,
             param_passband_0_, param_passband_1_);
         }
+
+    status->sb_bw_fracs[MAXFREQ+0][sb] = (factor>0.0) ? 1/factor : 0.0;
+    status->sb_bw_origs[MAXFREQ+0][sb] = oldfrac; // to undo this later
 
     }
 

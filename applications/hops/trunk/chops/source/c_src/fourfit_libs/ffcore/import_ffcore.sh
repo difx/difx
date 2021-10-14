@@ -25,6 +25,7 @@ else
     "plot_struct.h"
     "refringe.h"
     "statistics.h"
+    "ff_misc_if.h"
     )
 
     header_src_dir="${HOPS_SRC_DIR}/postproc/fourfit"
@@ -87,7 +88,7 @@ else
     "wait_for_write_lock.c"
     "clear_pass.c"
     "make_flist.c"
-	"make_passes.c"
+    "make_passes.c"
     "fill_param.c"
     "read_sdata.c"
     "time_range.c"
@@ -99,6 +100,8 @@ else
     "set_pointers.c"
     "generate_cblock.c"
     "vrot.c"
+    "pcal_interp.c"
+    "ff_misc_if.c"
     )
 
     source_src_dir="${HOPS_SRC_DIR}/postproc/fourfit"

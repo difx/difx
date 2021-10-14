@@ -1,8 +1,8 @@
 #!/bin/sh
 #
-# $Id: chk_fringex.sh 1402 2016-08-05 12:31:22Z gbc $
+# $Id: chk_fringex.sh 3326 2021-09-04 13:05:05Z gbc $
 #
-# canonical test suite for fringex
+# check that fringex runs in refringe mode
 #
 
 verb=false

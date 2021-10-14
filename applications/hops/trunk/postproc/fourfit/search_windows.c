@@ -27,6 +27,7 @@ search_windows(struct type_pass* pass)
            mb_ambiguity,
            dwin(),
            snr_approx;              // rough approximation to snr for ion speedup code
+                                    // snr_approx used only to identify large SNR case
    
                                     // parameters for current sb lag
     static int saved = FALSE,
@@ -78,6 +79,7 @@ search_windows(struct type_pass* pass)
 
 
                                /* Calculate integer indices for search params */
+                               // estimate not valid if passband/notches in use
     snr_approx = 1e-4 * status.delres_max * param.inv_sigma 
                       * sqrt((double)status.total_ap_frac * 2.0);
     msg("loopion %d snr_approx %f", -2, status.loopion, snr_approx);

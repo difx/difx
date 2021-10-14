@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 2237 2018-02-16 18:14:07Z barrettj $
+# $Id: Makefile.am 3253 2021-07-30 18:17:53Z barrettj $
 #
 
 SUBDIRS = .
@@ -18,7 +18,7 @@ hops_headers =  account.h adata.h cvex.h data.h evex.h \
 		type_300.h type_301.h type_302.h \
 		type_303.h type_304.h type_305.h type_306.h \
 		type_307.h type_308.h type_309.h \
-		type_comp.h vex.h afile_structure.h \
+	        hops_complex.h vex.h afile_structure.h \
 		fourfit_signal_handler.h write_lock_mechanism.h \
 		adler32_checksum.h
 

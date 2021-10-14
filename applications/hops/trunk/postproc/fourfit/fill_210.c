@@ -11,7 +11,7 @@
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
-#include <complex.h>
+#include "hops_complex.h"
 #include "mk4_data.h"
 #include "vex.h"
 #include "pass_struct.h"

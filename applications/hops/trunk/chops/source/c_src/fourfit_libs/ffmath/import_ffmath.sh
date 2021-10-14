@@ -15,11 +15,11 @@ if [ -z ${HOPS_SRC_DIR} ] && [ -z ${CHOPS_SRC_DIR} ]; then
 else
 
     #independent math utilities
+    # bcd_to_2int.c
     declare -a source_list=(
     "ap_mean.c"
     "linterp.c"
     "interp555.c"
-    "bcd_to_2int.c"
     "parabola.c"
     "max555.c"
     "minvert.c"

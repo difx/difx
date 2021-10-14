@@ -34,10 +34,11 @@ enum {LCP, RCP};
 int pcal_interp (struct mk4_sdata *sd1,
                  struct mk4_sdata *sd2,
                  struct type_param *param,
-                 struct freq_corel *corel)
+                 struct freq_corel *corel,
+                 struct mk4_corel *pcdata)
     {
     int stn, j, pc, ap, ch, f, ipc, ipcmin, ipcmax, i, n,
-        pc_index[MAXFREQ],
+        pc_index[MAX_CHAN],
         numchans, new_chan, npts, nstart,
         ret, do309, numrecs, pc_max, jmax, tshift,
         iyr, idoy, idate, after_2012_124;
@@ -45,16 +46,15 @@ int pcal_interp (struct mk4_sdata *sd1,
     double start, stop, time[MAXSTATPER], pc_real[MAXSTATPER], pc_imag[MAXSTATPER];
     double realval, imagval, freq, u, v;
     char chan[9];
-    char chan_buffer[MAXFREQ][9];
+    char chan_buffer[MAX_CHAN][9];
     struct freq_corel *fc;
     struct mk4_sdata *sd;
     struct type_308 *t308;
     struct type_309 *t309;
     struct interp_sdata *isd;
     extern int do_accounting;
-    extern struct mk4_corel cdata;
     
-    for (i=0; i<MAXFREQ; i++)
+    for (i=0; i<MAX_CHAN; i++)
         pc_index[i] = -1;
                                         /* Initialize pcal arrays and data */
     for (f=0; f<MAXFREQ; f++)
@@ -89,7 +89,7 @@ int pcal_interp (struct mk4_sdata *sd1,
         }
 
                                         // test for correlation date after pcal sign flip
-    sscanf (cdata.id->date, "%4d%3d", &iyr, &idoy);
+    sscanf (pcdata->id->date, "%4d%3d", &iyr, &idoy);
     idate = 1000 * iyr + idoy;
     after_2012_124 = idate > 2012124;
                                         /* Do it one station at a time */
@@ -113,10 +113,11 @@ int pcal_interp (struct mk4_sdata *sd1,
                                         /* Loop over channels */
                                         /* Assume that first 308/9 is like */
                                         /* all the rest, vis a vis chan order */
-        pc_max = (do309) ? MAXFREQ : 32;
+					// both #chans and #tones hardwired in t309
+        pc_max = (do309) ? 64 : 32;
         for (n=0; n<numrecs; n++)
             {
-            jmax = do309 ? MAXFREQ : 32;
+            jmax = do309 ? 64 : 32;
             for (j=0; j<jmax; j++)
                 {
                 if (do309)          // copy in appropriate channel name
@@ -138,6 +139,12 @@ int pcal_interp (struct mk4_sdata *sd1,
                         
                     if (new_chan)
                         {
+                        if (numchans >= MAX_CHAN)
+                            {
+			    msg ("Too many chans in type 1 records! (> %d)", 2, MAX_CHAN);
+			    return (-1);
+			    }
+
                         pc_index[numchans] = j;
                         strncpy (chan_buffer[numchans], chan, 8);
                         msg ("pcal_interp chan_buffer[%d] %s", -1, 
@@ -218,7 +225,7 @@ int pcal_interp (struct mk4_sdata *sd1,
             if (do309)
                 {
                 ipcmin = 0;             // we will be copying all tones for t309
-                ipcmax = MAXFREQ - 1;
+                ipcmax = MAX_CHAN - 1;
                 }
             else                        // figure out which single tone for t308
                 {
@@ -269,6 +276,8 @@ int pcal_interp (struct mk4_sdata *sd1,
                                     // difx gives time for centroid of pcal interval
                         if (param->corr_type == DIFX)
                             time[n] = t309->rot / 32e6;
+                        else if (param->corr_type == SFXC)
+                            time[n] = t309->rot / 32e6;
                         else
                             time[n] = t309->rot / 32e6 + 0.5 * t309->acc_period;
                         }
@@ -310,7 +319,7 @@ int pcal_interp (struct mk4_sdata *sd1,
                         }
                                         // correct for LSB pcal sign flip after 2012y124d
                     if (after_2012_124
-                     && param->corr_type == DIFX
+                     && (param->corr_type == DIFX || param->corr_type == SFXC)
                      && (ch == LSB_LCP || ch == LSB_RCP))
                         imagval = -imagval;
                                         /* Apply these values to corel array */
