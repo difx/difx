@@ -58,6 +58,8 @@ done
 [ -z "$dpfu" ] && dpfu='0.000'
 DPFU='NDef.'
 eval `awk 'NR==1{print $4;exit}' $qart`  # defines DPFU
+dpfac=`echo $DPFU / $dpfu | bc -lq 2>&-` || dpfix=''
+[ -n "$dpfac" ] && dpfix=" ratio $dpfac" || dpfac=1.0
 
 # find the polconvert products
 [ $# -gt 0 ] || set -- `ls *.polconvert-*/*ANTAB`
@@ -118,6 +120,8 @@ t=`echo $last \* 24 | bc -lq`
 mtsys=`awk '{s+=$2;s+=$3;c+=2}END{print int(2*s/c)}' $tag.out`
 [ $mtsys -gt 10 ] && echo "Warning, export plotrange='[][0:$mtsys]' suggested"
 
+taggy=`echo $tag | sed 's/_/-/g'`
+
 # header
 max=$(($ndx + 1))
 sed 's/^....//' > $tag.gnu <<EOF
@@ -125,7 +129,7 @@ sed 's/^....//' > $tag.gnu <<EOF
     set output '$tag.pdf'
     set key below box title \\
     'Targets(Job) by VLBIScan (<upper> and <lower> chans plotted)'
-    set title '{/sans:Bold=20 $tag [DPFU=$DPFU (in QA2) $dpfu (in PC)]}'
+    set title '{/sans:Bold=20 $taggy [DPFU=$DPFU (in QA2) $dpfu (in PC)]$dpfix}'
     set ylabel 'T_{sys}' font 'sans:Bold,20'
     set xlabel 'Hours (0hr of day $last)' font 'sans:Bold,20'
     set palette rgbformulae 3,11,6
@@ -156,7 +160,7 @@ do
 done
 # coda
 sed 's/^....//' >> $tag.gnu <<EOF
-        '' in 0 u (\$1*24.0-$t):2 ${tit[0]} w p ls $max
+        '' in 0 u (\$1*24.0-$t):(\$2/$dpfac) ${tit[0]} w p ls $max
     set output
 EOF
 
