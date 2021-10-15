@@ -13,7 +13,7 @@ if HAVE_FUSE
 if HAVE_LINUX
 vdifuse = vdifuse
 vdifuse_h = vdifuse.h vdifsg2.h vdifsig.h
-prepone = prep-one-scan.sh
+prepone = prep-one-scan.sh set-read-ahead.sh
 else
 vdifuse =
 vdifuse_h =
@@ -31,20 +31,24 @@ prepone =
 endif
 
 dist_noinst_HEADERS = vdif.h vdif_epochs.h vdif_time_util.h \
-	sg_access.h sc_stats.h exthdr.h m6scmodule.h $(vdifuse_h)
-test_scripts = hammer.sh hammerplot.sh fillerfrac.sh statsplot.py glitchplot.sh
+	sg_access.h sc_stats.h exthdr.h m6scmodule.h $(vdifuse_h) \
+	fix_the_file.h
+test_scripts = hammer.sh hammerplot.sh fillerfrac.sh \
+	statsplot.py glitchplot.sh chk_fixer.sh
 
 check_PROGRAMS =
-TESTS = 
+TESTS =
 
 if HAVE_LINUX
 scanext=exthdr.c almahdr.c r2dbehdr.c
 scan_check_SOURCES = scan_check.c per_file.c sg_access.c sc_stats.c $(scanext)
 scan_check_CPPFLAGS = -DEXTEND_HCHK=1
+scan_fixer_SOURCES = scan_fixer.c fix_the_file.c sg_access.c
 vdif_time_SOURCES   = vdif_time_main.c vdif_time.c
 else
 scan_check_SOURCES =
 scan_check_CPPFLAGS =
+scan_fixer_SOURCES = 
 vdif_time_SOURCES   =
 endif
 
@@ -53,7 +57,7 @@ if HAVE_FUSE
 if HAVE_LINUX
 vdsrc = vdifuse.c vdifopt.c vdifsup.c vdiftst.c vdifseq.c vdiftrc.c vdifsig.c \
 	vdiforr.c vdifsg2.c sg_access.c sg_advice.c sg_spwrda.c \
-	vdiflat.c vdifrex.c
+	vdiflat.c vdifrex.c vdifthr.c
 dist_vdifuse_SOURCES = $(vdsrc)
 else
 dist_vdifuse_SOURCES =
@@ -69,7 +73,7 @@ vdifuse_CFLAGS = $(FUSE_CFLAGS)
 vdifuse_LDADD = $(FUSE_LIBS)
 
 if HAVE_LINUX
-bin_PROGRAMS = scan_check vdif_time $(vdifuse)
+bin_PROGRAMS = scan_check scan_fixer vdif_time $(vdifuse)
 dist_bin_SCRIPTS = $(prepone) $(test_scripts)
 else
 bin_PROGRAMS =

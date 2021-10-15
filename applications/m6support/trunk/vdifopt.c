@@ -1,5 +1,5 @@
 /*
- * $Id: vdifopt.c 3897 2016-04-21 19:06:31Z gbc $
+ * $Id: vdifopt.c 5272 2021-08-05 20:24:58Z gbc $
  *
  * This file provides support for the fuse interface.
  * Here we do the command-line processing to drive the support for fuse.
@@ -20,6 +20,10 @@ int vdifuse_enable = VDIFUSE_ENABLE_SKIP;   /* invoke fuse_main() */
 int vdifuse_protect = 0;
 int vdifuse_reuse = 0;
 FILE *vdflog = 0;
+
+/* for the two types of thread options: dir or seq */
+int vthreads_dir = 0;
+int vthreads_seq = 0;
 
 /* principal support options */
 static int vdifuse_report = 0;
@@ -43,11 +47,14 @@ static int vdifsup_help(char *fullname, char *help)
     if (!name) name = fullname;
     else name++;
     fprintf(stderr,
-        "usage: %s [options] [fuse-options] mount-point <directories>\n"
+        "Usage: %s [options] [fuse-options] mount-point <directories>\n"
         "\n"
         "  -h           this help\n"
         "  --HELP       help and additional FUSE mounting options\n"
         "  -xhelp       help on processing parameters\n"
+        "  -xissues     reports on some issues to be aware of\n"
+        "  -xenv        help with environment variables\n"
+        "  -xexamples   help on sample usage\n"
         "\n"
         "  -c <file>    create cache <file> for metadata (and exit)\n"
         "  -r <file>    check & report on cache <file> (and exit)\n"
@@ -62,28 +69,25 @@ static int vdifsup_help(char *fullname, char *help)
         "  -x <key=val> set various processing parameters\n"
         "\n"
         "%s is expecting to scan a set of <directories> for valid VDIF\n"
-        "files (-xfiles, -xm6raid) or valid Mark6 scatter-gather files (-xm6sg),\n"
-        "to build a cache (-c, -a) of what it finds, and to prepare to supply a FUSE\n"
-        "filesystem filled with \"fragments\" (what it found) and \"sequences\" (what\n"
-        "it assembles into virtual files).\n"
+        "files (-xfiles, -xm6raid) or Mark6 scatter-gather files (-xm6sg).\n"
+        "The result of the scan is to build a cache (-c or -a options)\n"
+        "which may be used to supply a filesystem of \"fragments\" (i.e.\n"
+        "files it found), \"sequences\" (virtual files) or \"vthreads\"\n"
+        "(if VDIF threading is enabled via -xvthreads=...)."
         "\n"
         "Normal usage is to create and use a new cache in one step:\n"
         "\n"
         "  %s -a cache-file -xm6sg mount-point <directories>\n"
         "\n"
-        "and when finished unmount it with\n"
+        "When finished, unmount it with\n"
         "\n"
         "  fusermount -u mount-point\n"
         "\n"
-        "The FUSE option -f keeps %s in the foreground, and if combined\n"
-        "with processing parm -xdebug=N is the best way to debug issues.\n"
+        "The FUSE option -f keeps %s in the foreground; combined with\n"
+        "processing parm -xdebug=N, this is the best way to debug issues.\n"
         "For convenience -v (repeated N) is equivalent to -xdebug=N.\n"
         "\n"
         "The -l/-t options are for debugging problematic files.\n"
-        "\n"
-        "For usage examples, use \"-xexamples\".\n"
-        "For details on additional processing parameters, use \"-xhelp\".\n"
-        "For details on a variety of known issues, use \"-xissues\".\n"
         "\n",
         name, name, name, name
     );
@@ -110,7 +114,8 @@ static int horv(int *argc, char **argv[])
 {
     int aa;
     char *name = (*argv)[0];
-    if (*argc < 2) return(fprintf(stderr, "Arguments are required (try -h for help)\n"));
+    if (*argc < 2)
+        return(fprintf(stderr, "Arguments are required (try -h for help)\n"));
     for (aa = 0; aa < *argc; aa++) {
         if (!strncmp((*argv)[aa], "-h", 2)) return(vdifsup_help(name,NULL));
         if (!strncmp((*argv)[aa], "--HELP", 6))
@@ -244,7 +249,7 @@ static int unmount_mp(char *mp)
 {
     char *fusermount = malloc(strlen(mp) + strlen("fusermount -u....."));
     sprintf(fusermount, "fusermount -u %s", mp);
-    if (vdifuse_debug > 0) fprintf(stderr, "Invoking: %s\n", fusermount);
+    if (vdifuse_debug>0) fprintf(stderr, "Invoking: %s\n", fusermount);
     return(system(fusermount));
 }
 
@@ -252,7 +257,9 @@ static int unmount_mp(char *mp)
  * Check to see if the requested mount point is already in use.
  * IF so, the vdifuse_reuse flag will determine what happens next.
  */
-static int mount_in_use(char *mp)
+#if USE_READDIR_R
+#define mount_in_use_opt mount_in_use_r
+static int mount_in_use_r(char *mp)
 {
     DIR *dp;
     struct dirent de, *dep;
@@ -261,7 +268,7 @@ static int mount_in_use(char *mp)
     if (!dp) return(fprintf(stderr, "%s isn't usable\n", mp));
     while (1) {
         if (readdir_r(dp, &de, &dep)) return(perror("readdir_r"),2);
-        if (dep && vdifuse_debug > 1) fprintf(stderr,
+        if (dep && vdifuse_debug>1) fprintf(vdflog,
             " Mount check: %s[%d] is %s\n", mp, cnt, de.d_name);
         if (!dep) break;
         cnt ++;
@@ -277,6 +284,34 @@ static int mount_in_use(char *mp)
         mp, cnt, mp));
     return(unmount_mp(mp));
 }
+#else /* USE_READDIR_R */
+#define mount_in_use_opt mount_in_use
+static int mount_in_use(char *mp)
+{
+    DIR *dp;
+    struct dirent *dep;
+    int cnt = 0;
+    dp = opendir(mp);
+    if (!dp) return(fprintf(stderr, "%s isn't usable\n", mp));
+    errno = 0;
+    while ((dep = readdir(dp)) && (errno == 0)) {
+        if (vdifuse_debug>1) fprintf(vdflog,
+            " Mount check: %s[%d] is %s\n", mp, cnt, dep->d_name);
+        cnt ++;
+        if (!strcmp(dep->d_name, "..")) cnt--;
+        else if (!strcmp(dep->d_name, ".")) cnt--;
+    }
+    if (errno) return(perror("readdir"),2);
+    if (closedir(dp)) return(perror("mount_in_use:closedir"), 1);
+    if (cnt == 0) return(0);
+    if (vdifuse_reuse == 0) return(fprintf(stderr,
+        "The mount point '%s' is currently being used with %d non-trivial\n"
+        "entries.  If you want to co-opt it for you use, unmount with:\n"
+        "\n    fusermount -u %s\n",
+        mp, cnt, mp));
+    return(unmount_mp(mp));
+}
+#endif /* USE_READDIR_R */
 
 /*
  * Implement aforementioned plans.
@@ -327,7 +362,7 @@ static int vdifuse_implement(void)
         if (vorr_init())
             return(fprintf(stderr, "Unable to initialize for use.\n"));
 
-        if (mount_in_use(vdifuse_mount)) return(1);
+        if (mount_in_use_opt(vdifuse_mount)) return(1);
 
         vdifuse_enable =
             vdifuse_use_it ? VDIFUSE_ENABLE_DOIT : VDIFUSE_ENABLE_SKIP;

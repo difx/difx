@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsg2.h 4011 2016-06-30 17:51:09Z gbc $
+ * $Id: vdifsg2.h 5271 2021-08-05 19:46:35Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -90,6 +90,7 @@
 #define SGV2_ERR_TIME_B     0x0020U
 #define SGV2_ERR_SRTCHK     0x0100U
 #define SGV2_ERR_TIME_C     0x0200U
+#define SGV2_ERR_TIME_0     0x0400U
 
 /* for the stripe diagnostic counters */
 #define SGV2_DIAG_BREAD     0

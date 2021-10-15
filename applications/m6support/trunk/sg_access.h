@@ -1,5 +1,5 @@
 /*
- * $Id: sg_access.h 4500 2017-11-21 15:53:54Z gbc $
+ * $Id: sg_access.h 5243 2021-08-03 16:16:40Z gbc $
  *
  * Code to understand and access sg files efficiently.
  */
@@ -27,8 +27,13 @@ typedef struct sg_mmap_info {
     int         users;          /* number of users for this mapping */
 } SGMMInfo; 
 
-/* most likely 4 is enough */
-#define MAX_VDIF_THREADS 8
+/*
+ * Supporting all 2^16 threads requires more storage.
+ * Most likely 4 is enough; double that: 8 threads(max) * 5 chars = 40
+ */
+#define MAX_VDIF_THREADS    8
+#define THREP_BUFFER        120
+#define MAX_LEGAL_THREAD_ID 32767   /* was 1023 previously */
 
 /*
  * A structure to hold what we can easily find out about an SG fragment
@@ -44,7 +49,7 @@ typedef struct sg_info {
     uint32_t    total_pkts;     /* total number of packets */
     uint32_t    pkt_size;       /* VDIF packet size */
     uint32_t    pkt_offset;     /* offset into packet */
-    uint32_t    read_size;      /* total packet + overhead */
+    int32_t     read_size;      /* total packet + overhead */
     uint32_t    ref_epoch;      /* reference epoch */
     uint32_t    first_secs;     /* seconds of epoch of first packet */
     uint32_t    first_frame;    /* frame counter of first packet */
@@ -52,8 +57,12 @@ typedef struct sg_info {
     uint32_t    final_frame;    /* frame counter of final packet */
     uint32_t    frame_cnt_max;  /* maximum frame counter value seen */
     VDIFsigu    vdif_signature; /* header signature */
-    short       threads[MAX_VDIF_THREADS];
-    short       reserved[MAX_VDIF_THREADS * 2];
+    short       vthreads[MAX_VDIF_THREADS];      /* vthreads */
+    
+    /* reserved space ensures that Sizeof(SGInfo) is 224 for vdifuse */
+    short       reserved[14];
+    short       nvthreads;      /* as enumerated in threads */
+    short       vthreadsep;     /* separation of threads */
 
     /* sg version 2 */
     int32_t     sg_version;
@@ -110,7 +119,7 @@ extern char *sg_error_str(int err);
 /*
  * Methods to open an SG file for use.
  *   sg_access()    opens the file, understands it, and closes it
- *   sg_open()      opens the file, and if sgi is non-null, and calls
+ *   sg_open()      opens the file, and if sgi is non-null calls
  *   sg_info()      to understand the file opened in smi
  *   sg_close()     closes a file opened with sg_open()
  *   sg_reopen()    assumes sgi is valid and opens sgi->name
@@ -150,13 +159,17 @@ extern uint32_t *sg_pkt_blkby(SGInfo *sgi,
     off_t nb, int *nl, off_t *pktbytesbefore, off_t *pktbytesafter);
 
 /*
- * A diagnostic method to check the signatures on packets found by the above.
- * It returns the number of packets failing the signature check (0 through nl,
- * inclusive), or the end-of-block check.
+ * Diagnostic methods to check the signatures on packets found by the above.
+ * The _check version returns the number of packets failing the signature
+ * check (0 through nl, inclusive), or the end-of-block check.
+ * The _times version returns nonzero if there are issues with time ordering.
+ * For single-vthreaded data this means one of three errors in sec/frame
+ * counters.  For multi-vthreaded data this means only that the different
+ * threads are out of time sequence.
  */
-extern int sg_pkt_check(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end,
+extern int seq_pkt_check(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end,
     int *nv);
-extern int sg_pkt_times(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end);
+extern int seq_pkt_times(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end);
 
 /*
  * A diagnostic method to describe the SGInfo contents: stdout or buffer
@@ -171,8 +184,9 @@ extern uint64_t sg_get_vsig(uint32_t *vhp, void *o, int verb,
 extern void sg_set_station_id_mask(int mask);
 extern int sg_get_station_id_mask(void);
 
-/* Some hooks for threads */
-extern void sg_threads(short *thp, short tid, char *report);
+/* Some hooks for threads; report should be at least THREP_BUFFER */
+extern int sg_vthreads(short *thp, short tid, char *report);
+extern char *sg_threads_rep(short *thp);
 extern void sg_set_max_legal_thread_id(int max);
 extern int sg_get_max_legal_thread_id(void);
 

@@ -1,5 +1,5 @@
 /*
- * $Id: sg_advice.c 4315 2017-05-11 21:11:03Z gbc $
+ * $Id: sg_advice.c 5282 2021-08-09 13:39:28Z gbc $
  * 
  * Code to boost performance on reads to sg files
  *
@@ -24,8 +24,12 @@
  *     880.110 MB/s net with  50000000L
  *   based on cat <300GBfile>  > /dev/null
  *   mileage varies depending on file corruption and other (unknown) factors.
+ *
+ * TODO: create a new ADVICE method that creates a pool of threads once
+ * and then merely tasks them with the read-ahead work.  More efficient....
  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -51,7 +55,7 @@ int sg_advice_disable = 0;
 #define SG_ADVICE_DEFAULT           SG_ADVICE_MADV_WILLNEED
 #define SG_ADVICE_BLOCKS            40000000L
 
-static int  advice_type = SG_ADVICE_DISABLE;
+static int  advice_type = SG_ADVICE_DEFAULT;
 static long pagesize = 0L;
 static long open_max = 0L;
 static unsigned long addrmask = 0L;
@@ -59,12 +63,11 @@ static long blockage = SG_ADVICE_BLOCKS;
 
 static pthread_once_t sg_advice_control = PTHREAD_ONCE_INIT;
 typedef struct pidex { pthread_t tid; pthread_mutex_t tmx; } Pidex;
-Pidex *sg_advice_threads = (Pidex *)0;
+Pidex *sg_advice_pthreads = (Pidex *)0;
 
 /*
- * Initialization code.
- * For the methods that require a helper thread, we make preparations
- * to support them.
+ * Initialization code for the methods that require a helper thread.
+ * This routine is called once on the first call to sg_advice.
  */
 static void sg_advice_init(void)
 {
@@ -94,11 +97,12 @@ static void sg_advice_init(void)
     case SG_ADVICE_SPAWN_READAHEAD:
         /* initialize for threads */
         vdifuse_trace(VDT("SG_ADVICE_SPAWN_READAHEAD selected\n"));
+        /* persistent thread information not needed */
         break;
     case SG_ADVICE_SPAWN_READTHREAD:
         /* initialize for threads */
         vdifuse_trace(VDT("SG_ADVICE_SPAWN_READTHREAD selected\n"));
-        sg_advice_threads = (Pidex *)calloc(open_max, sizeof(Pidex));
+        sg_advice_pthreads = (Pidex *)calloc(open_max, sizeof(Pidex));
         break;
     }
     if (hint || blks) {
@@ -110,21 +114,22 @@ static void sg_advice_init(void)
 }
 
 /*
- * If threads are in use, terminate the appropriate helper
+ * If threads are in use, terminate the appropriate helper.
+ * This call (from the main sg_access.c module) immediately
+ * precedes the close on mmfd that will unmap the file.
  */
 void sg_advice_term(int mmfd)
 {
-    //if (advice_type != SG_ADVICE_SPAWN_READTHREAD) return;
-    if (sg_advice_threads == (Pidex*)0) return;
+    if (sg_advice_pthreads == (Pidex*)0) return;
 
     /* code to terminate mmfd would go here */
-    pthread_mutex_lock(&sg_advice_threads[mmfd].tmx);
-    (void)pthread_cancel(sg_advice_threads[mmfd].tid);
-    (void)pthread_join(sg_advice_threads[mmfd].tid, 0);
-    pthread_mutex_unlock(&sg_advice_threads[mmfd].tmx);
+    pthread_mutex_lock(&sg_advice_pthreads[mmfd].tmx);
+    (void)pthread_cancel(sg_advice_pthreads[mmfd].tid);
+    (void)pthread_join(sg_advice_pthreads[mmfd].tid, 0);
+    pthread_mutex_unlock(&sg_advice_pthreads[mmfd].tmx);
     vdifuse_trace(VDT("Cancelled %lu on %02d\n"),
-        sg_advice_threads[mmfd].tid, mmfd);
-    sg_advice_threads[mmfd].tid = 0;
+        sg_advice_pthreads[mmfd].tid, mmfd);
+    sg_advice_pthreads[mmfd].tid = 0;
 }
 
 /*
@@ -139,8 +144,11 @@ void sg_advice(SGInfo *sgi, void *pkt, int dir)
     void *addr, *drop;
     size_t len = blockage;
 
-    //if (pagesize == 0L) sg_advice_init();   /* once */
-    (void)pthread_once(&sg_advice_control, &sg_advice_init);
+    if (pthread_once(&sg_advice_control, &sg_advice_init)) {
+        perror("pthread_once");
+        vdifuse_trace(VDT("pthread_once: errno is %d\n"), errno);
+        errno = sg_advice_disable = 0;
+    }
     if (sg_advice_disable || pagesize == 0L) return;
 
     /* madvice code; trim request to mmap()ed range */
@@ -155,7 +163,6 @@ void sg_advice(SGInfo *sgi, void *pkt, int dir)
     else         drop = addr + len;
     if (drop < sgi->smi.start) drop = 0;
     if (drop + len >= sgi->smi.eomem) drop = 0;
-
 
     /*
      * Take an appropriate action based on advice type

@@ -1,5 +1,5 @@
 /*
- * $Id: sg_access.c 4498 2017-11-20 22:00:42Z gbc $
+ * $Id: sg_access.c 5241 2021-08-03 12:57:34Z gbc $
  *
  * Code to understand and access sg files efficiently.
  */
@@ -74,8 +74,8 @@ uint64_t sg_get_vsig(uint32_t *vhp, void *o, int verb, char *lab,
     VDIFsigu vdif_signature;
     VDIFHeader *vh = (VDIFHeader *)vhp;
     static char *labs[5] = { "??", "ok", "nv", "OK", "NV" };
-    static char threp[80];     /* 8 threads(max) * 5 chars = 40 */
-    int labi = 0;
+    static char threp[THREP_BUFFER];
+    int labi = 0, thup = 0;
     /* compute signature */
     vdif_signature.word              = 0LL;
     vdif_signature.bits.df_len       = vh->w3.df_len;
@@ -90,28 +90,31 @@ uint64_t sg_get_vsig(uint32_t *vhp, void *o, int verb, char *lab,
     vdif_signature.bits.unused       = 0x1;
     if (vc) {       /* have a basis for checking/fixing */
         if (vh->w1.invalid) {
-            labi = (vdif_signature.word == (1LL<<63 | vh->w3.df_len)) ? 1 : 2;
+            labi = (vdif_signature.word == (1LLU<<63 | vh->w3.df_len)) ? 1 : 2;
             if (1 == labi) vdif_signature.word = vc->word;
         } else {    /* a valid packet had better agree */
             labi = (vdif_signature.word == vc->word) ? 3 : 4;
         }
     }
+    /* update list of threads only on 'ok' or 'OK' */
+    if (thp && (labi==1||labi==3)) {
+        thup = sg_vthreads(thp, vh->w4.threadID, verb>0 ? threp : 0);
+        if (verb>0) fputs(threp, sgalog);
+    }
     if (verb>0) fprintf(sgalog,
-        "%s%18p %016lX (%s) at %lu\n"
+        "%s%18p %016lX (%s) at %lu (%d%c)\n"
         "%s  %08x%08x %08x%08x %08x%08x %08x%08x\n",
-        lab, vhp, vdif_signature.word, labs[labi], (void *)vhp - o,
+        lab, vhp, vdif_signature.word, labs[labi],
+        (void *)vhp - o, vh->w4.threadID, thup ? '+' : ' ',
         lab, vhp[1], vhp[0], vhp[3], vhp[2], vhp[5], vhp[4], vhp[7], vhp[6]);
-    /* update list of threads */
-    if (thp) sg_threads(thp, vh->w4.threadID, verb>0 ? threp : 0);
-    if (thp && verb>0) fputs(threp, sgalog);
     return(vdif_signature.word);
 }
 
 /* Set a bound on legality since lower thread ids are the norm */
-static int max_legal_thread_id = 1023;
+static int max_legal_thread_id = MAX_LEGAL_THREAD_ID;
 void sg_set_max_legal_thread_id(int max)
 {
-    if (max < 0 || max > 1023) return;
+    if (max < 0 || max > MAX_LEGAL_THREAD_ID) return;
     max_legal_thread_id = max;
 }
 int sg_get_max_legal_thread_id(void)
@@ -122,27 +125,38 @@ int sg_get_max_legal_thread_id(void)
 /*
  * Some management for threads; assumes thp[] entries are initialized
  * with invalid values (e.g. -1).  Report here is just for diagnostics.
+ * Initialization to -1 is done in sg_info()
+ * Returns 1 if a new thread was identified.
  */
-void sg_threads(short *thp, short tid, char *threp)
+int sg_vthreads(short *thp, short tid, char *threp)
 {
     static int bads = 0;
-    int ii = 0;
+    int ii = 0, rv = 0;
     if (tid < 0 || tid > max_legal_thread_id) {
         bads++;
     } else for (ii = 0; ii < MAX_VDIF_THREADS; ii++) {
         if (tid == thp[ii]) {
-            break;                      /* found */
+            break;                      /* already have it */
         } else if (thp[ii] >= 0 && thp[ii] <= max_legal_thread_id) {
-            continue;                   /* legal */
+            continue;                   /* skip legal entries */
         } else {
+            rv = 1;                     /* for caller's benefit */
             thp[ii] = tid;
-            break;                      /* added */
+            break;                      /* legally added */
         }
     }
-    if (threp) snprintf(threp, 80,
-        "threads: %d %s[%d] %d,%d,%d,%d,%d,%d,%d,%d\n",
-        tid, ii < MAX_VDIF_THREADS ? "ok" : "er", bads,
+    if (threp) snprintf(threp, THREP_BUFFER,
+        "vthreads: %d %s[%d:%d] %d,%d,%d,%d,%d,%d,%d,%d\n",
+        tid, ii < MAX_VDIF_THREADS ? "ok" : "er", bads, rv,
         thp[0], thp[1], thp[2], thp[3], thp[4], thp[5], thp[6], thp[7]);
+    return(rv);
+}
+char *sg_threads_rep(short *thp)
+{
+    static char threp[THREP_BUFFER];
+    snprintf(threp, THREP_BUFFER, "vthreads: %d,%d,%d,%d,%d,%d,%d,%d",
+        thp[0], thp[1], thp[2], thp[3], thp[4], thp[5], thp[6], thp[7]);
+    return(threp);
 }
 
 /*
@@ -320,7 +334,7 @@ static void sg_first_packet_common(SGInfo *sgi, off_t foff, off_t *rwdsp)
     do {
         vhp0 = (uint32_t *)(sgi->smi.start + foff + poff);
         vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
-            "fpc0:", vdsp, sgi->threads);
+            "fpc0:", vdsp, sgi->vthreads);
         if (*rwdsp == 0) {
             rwords = 2 * vds0.bits.df_len + poff / sizeof(uint32_t);
             if (rwords > SG_MAX_VDIF_BYTES/4) rwords = SG_MAX_VDIF_BYTES/4;
@@ -328,7 +342,7 @@ static void sg_first_packet_common(SGInfo *sgi, off_t foff, off_t *rwdsp)
         vhp1 = vhp0 + rwords;
         vds1.word = (vhp1 < (uint32_t *)(sgi->smi.eomem - sizeof(VDIFHeader)))
                   ? sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-                    "fpc1:", vdsp, sgi->threads) : 0LL;
+                    "fpc1:", vdsp, sgi->vthreads) : 0LL;
     } while ((vds0.word != vds1.word) &&
              ((poff += sizeof(uint32_t)) < rwords));
     
@@ -402,13 +416,13 @@ static uint64_t valid_first_signature(SGInfo *sgi, off_t foff, uint32_t rdsize)
     do {
         vh0 = (VDIFHeader *)vhp0;
         vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
-            "vfs0:", (VDIFsigu *)0, sgi->threads);
+            "vfs0:", (VDIFsigu *)0, sgi->vthreads);
         vhp1 = vhp0 + rdsize / sizeof(uint32_t);
         vh1 = (VDIFHeader *)vhp1;
         if (vhp1 > (uint32_t *)(sgi->smi.eomem - sizeof(VDIFHeader)))
             return(0LL);
         vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-                    "vfs1:", (VDIFsigu *)0, sgi->threads);
+                    "vfs1:", (VDIFsigu *)0, sgi->vthreads);
         if ((vds0.word == vds1.word) &&
             !(vh0->w1.invalid || vh1->w1.invalid)) {
                 if (sgi->verbose>1) fprintf(sgalog,
@@ -466,9 +480,9 @@ static void sg_final_packet(SGInfo *sgi)
     vhp0 = (uint32_t *)(sgi->smi.eomem - 2 * sgi->read_size + sgi->pkt_offset);
     vhp1 = (uint32_t *)(sgi->smi.eomem - 1 * sgi->read_size + sgi->pkt_offset);
     vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-1,
-        "fnp0:", &sgi->vdif_signature, sgi->threads);
+        "fnp0:", &sgi->vdif_signature, sgi->vthreads);
     vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-1,
-        "fnp1:", &sgi->vdif_signature, sgi->threads);
+        "fnp1:", &sgi->vdif_signature, sgi->vthreads);
     if (vds0.word != vds1.word || vds0.word != sgi->vdif_signature.word) {
         sgi->sg_version = SG_VERSION_SIG_FINAL_FAIL;
         if (sgi->verbose>2)
@@ -509,9 +523,9 @@ static void sg_double_short(SGInfo *sgi, uint32_t *vhp0, uint32_t *vhp1)
     VDIFsigu vds0, vds1;
 
     vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
-        "dsh0:", &sgi->vdif_signature, sgi->threads);
+        "dsh0:", &sgi->vdif_signature, sgi->vthreads);
     vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-        "dsh1:", &sgi->vdif_signature, sgi->threads);
+        "dsh1:", &sgi->vdif_signature, sgi->vthreads);
 
     update_fr_cnt_max_fr_ptr32(vhp0, sgi->frame_cnt_max);
     while (vds0.word == vds1.word && vds0.word == sgi->vdif_signature.word) {
@@ -527,7 +541,7 @@ static void sg_double_short(SGInfo *sgi, uint32_t *vhp0, uint32_t *vhp1)
             return;
         }
         vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-3,
-            "dswh:", &sgi->vdif_signature, sgi->threads);
+            "dswh:", &sgi->vdif_signature, sgi->vthreads);
     }
 
     /* ok, vhp1 points to the first short block */
@@ -557,7 +571,7 @@ static void sg_double_short(SGInfo *sgi, uint32_t *vhp0, uint32_t *vhp1)
     /* check signature in new block */
     vhp1 += sgi->sg_wbht_size / sizeof(uint32_t);
     vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-        "dsnw:", &sgi->vdif_signature, sgi->threads);
+        "dsnw:", &sgi->vdif_signature, sgi->vthreads);
     if (vds0.word != vds1.word || vds0.word != sgi->vdif_signature.word) {
         if (sgi->verbose>1) fprintf(sgalog,
             "But blocks appear to be corrupt\n");
@@ -602,9 +616,9 @@ static void sg_short_endfix(SGInfo *sgi)
         sgi->sg_wr_block + sgi->sg_wbht_size + sgi->pkt_offset);
     vhp1 = vhp0 + (sgi->read_size / sizeof(uint32_t));
     vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
-        "sef0:", &sgi->vdif_signature, sgi->threads);
+        "sef0:", &sgi->vdif_signature, sgi->vthreads);
     vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-        "sef1:", &sgi->vdif_signature, sgi->threads);
+        "sef1:", &sgi->vdif_signature, sgi->vthreads);
 
     /* usually, there is no short block at the end of the file */
     if (vds0.word == vds1.word && vds0.word == sgi->vdif_signature.word) {
@@ -624,17 +638,17 @@ static void sg_short_endfix(SGInfo *sgi)
     vhp0 -= sgi->sg_wbht_size / sizeof(uint32_t);
     vhp1 -= sgi->sg_wbht_size / sizeof(uint32_t);
     vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
-        "sef2:", &sgi->vdif_signature, sgi->threads);
+        "sef2:", &sgi->vdif_signature, sgi->vthreads);
     vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-        "sef3:", &sgi->vdif_signature, sgi->threads);
+        "sef3:", &sgi->vdif_signature, sgi->vthreads);
     if (vds0.word != vds1.word || vds0.word != sgi->vdif_signature.word) {
         /* this may happen if there are two short blocks at the end */
         vhp0 -= sgi->sg_wbht_size / sizeof(uint32_t);
         vhp1 -= sgi->sg_wbht_size / sizeof(uint32_t);
         vds0.word = sg_get_vsig(vhp0, sgi->smi.start, sgi->verbose-2,
-            "sef4:", &sgi->vdif_signature, sgi->threads);
+            "sef4:", &sgi->vdif_signature, sgi->vthreads);
         vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-            "sef5:", &sgi->vdif_signature, sgi->threads);
+            "sef5:", &sgi->vdif_signature, sgi->vthreads);
         if (vds0.word != vds1.word || vds0.word != sgi->vdif_signature.word) {
             /* this would happen if the blocks were corrupt */
             sgi->sg_version = SG_VERSION_SIG_SEBLK_FAIL;
@@ -669,13 +683,13 @@ static void sg_short_endfix(SGInfo *sgi)
             return;
         }
         vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-3,
-            "sef6:", &sgi->vdif_signature, sgi->threads);
+            "sef6:", &sgi->vdif_signature, sgi->vthreads);
     }
 
     /* ok, we didn't run off the end and the signatures are different */
     vhp1 += sgi->sg_wbht_size / sizeof(uint32_t);
     vds1.word = sg_get_vsig(vhp1, sgi->smi.start, sgi->verbose-2,
-        "sef7:", &sgi->vdif_signature, sgi->threads);
+        "sef7:", &sgi->vdif_signature, sgi->vthreads);
     if (vds0.word != vds1.word || vds0.word != sgi->vdif_signature.word) {
         /* this would happen if the blocks were corrupt */
         sgi->sg_version = SG_VERSION_SIG_SEBLK_BAIL2;
@@ -716,7 +730,7 @@ static uint32_t sg_binary_search(SGInfo *sgi,
         bpx = start + sgi->sg_fht_size + xamen * (off_t)sgi->sg_wr_block;
         bhtx = (uint32_t *)bpx;
         vdsx.word = sg_get_vsig(bhtx + offset, start, sgi->verbose-2,
-            "bshx:", &sgi->vdif_signature, sgi->threads);
+            "bshx:", &sgi->vdif_signature, sgi->vthreads);
         if (sgi->verbose>1) fprintf(sgalog,
             "sgb: lower %u xamen %u upper %u size %u\n",
                 lower, xamen, upper, bhtx[1]);
@@ -780,9 +794,9 @@ static uint32_t sg_short_search(SGInfo *sgi, uint32_t blks, off_t runt)
     bht1 = (uint32_t *)bp1;
 
     vds0.word = sg_get_vsig(bht0 + offset, start, sgi->verbose-2,
-        "ssh0:", &sgi->vdif_signature, sgi->threads);
+        "ssh0:", &sgi->vdif_signature, sgi->vthreads);
     vds1.word = sg_get_vsig(bht1 + offset, start, sgi->verbose-2,
-        "ssh1:", &sgi->vdif_signature, sgi->threads);
+        "ssh1:", &sgi->vdif_signature, sgi->vthreads);
 
     /* easy cases */
     if (vds0.word != sgi->vdif_signature.word ||
@@ -897,6 +911,100 @@ static void flat_final_update(SGInfo *sgi)
 }
 
 /*
+ * Try harder to find all the threads if we've found at least 2 threads.
+ * We try sequentially for twice as many threads as we can support and
+ * also by blocks for the same number.
+ */
+static void sg_vthreadsxtra(SGInfo *sgi)
+{
+    VDIFHeader *pkt;
+    int vv;
+    if (sgi->vthreads[1] < 0) return;   /* only one thread seen*/
+    for (vv = 0; vv < 2*MAX_VDIF_THREADS; vv++) {
+        pkt = (VDIFHeader*)sg_pkt_by_num(sgi, vv + MAX_VDIF_THREADS, 0, 0);
+        (void)sg_get_vsig((uint32_t *)pkt, sgi->smi.start, sgi->verbose-2,
+            "vthn:", &sgi->vdif_signature, sgi->vthreads);
+    }
+    for (vv = 0; vv < 2*MAX_VDIF_THREADS; vv++) {
+        pkt = (VDIFHeader*)sg_pkt_by_blk(sgi, vv + MAX_VDIF_THREADS, 0, 0);
+        (void)sg_get_vsig((uint32_t *)pkt, sgi->smi.start, sgi->verbose-2,
+            "vthb:", &sgi->vdif_signature, sgi->vthreads);
+    }
+}
+
+/*
+ * Support routine for sg_vthreadsdone().
+ * Returns the count of nonsequential fails.
+ */
+static int check_vthread_seq(int nvthreads, VDIFHeader *pkt[],
+    char *lab, int verbose)
+{
+    VDIFHeader *ah, *bh;
+    int vv, notseq = 0;
+    for (vv = 0; vv < nvthreads - 1; vv++) {
+        ah = pkt[vv];
+        bh = pkt[vv+1];
+        if (ah->w1.invalid || bh->w1.invalid) continue;     /* no comment */
+        if (ah->w1.secs_inre == bh->w1.secs_inre &&
+            ah->w4.threadID != bh->w4.threadID) continue;   /* sequential */
+        if (ah->w1.secs_inre + 1 == bh->w1.secs_inre) {
+            if (bh->w2.df_num_insec == 0 &&
+                ah->w4.threadID != bh->w4.threadID) continue;   /* ditto */
+        }
+        if (verbose>1)
+            fprintf(sgalog, "vthreadsdone %s %d..%d notset\n", lab, vv, vv+1);
+        notseq ++;  /* not sequential in time, no comment */
+    }
+    return(notseq);
+}
+
+/*
+ * Some work that vdifuse requires.  nvthreads gets set to a
+ * count of the number of threads seen.  vthreadsep gets set
+ * to 0 for sequential threads and sg_wr_pkts if the blocks
+ * are homogeneous.  We can use the sg_pkt_by_num and
+ * sg_pkt_by_blk methods since the block geometry has been
+ * determined by the time this function gets called.
+ */
+static void sg_vthreadsdone(SGInfo *sgi)
+{
+    int vv, notseq;
+    VDIFHeader *pkt[MAX_VDIF_THREADS];
+    /* first set sgi->vthreads */
+    sgi->nvthreads = 0;     /* should be zero anyway */
+    if (sgi->verbose>1) fprintf(sgalog,
+        "sg_vthreadsdone found %s\n", sg_threads_rep(sgi->vthreads));
+    for (vv = 0; vv < MAX_VDIF_THREADS; vv++) {
+        if (sgi->vthreads[vv] > 0) {
+            if (sgi->verbose>1) fprintf(sgalog,
+                "sg_vthreadsdone thread[%d] is %d\n", vv, sgi->vthreads[vv]);
+            sgi->nvthreads++;
+        }
+        pkt[vv] = (VDIFHeader*)sg_pkt_by_num(sgi, vv, 0, 0);
+    }
+    if (sgi->verbose>1)
+        fprintf(sgalog, "sg_vthreadsdone %d vthreads\n", sgi->nvthreads);
+    /* Cf seq_pkt_times() */
+    notseq = check_vthread_seq(sgi->nvthreads, pkt, "by-num", sgi->verbose);
+
+    /* allow some hiccups */
+    if (notseq < sgi->nvthreads/2) {
+        sgi->vthreadsep = 0;
+        if (sgi->verbose>1)
+            fprintf(sgalog, "vthreadsdone A vthreadsep = 0, %d\n", notseq);
+    } else {
+        /* verify a few blocks */
+        for (vv = 0; vv < MAX_VDIF_THREADS; vv++)
+            pkt[vv] = (VDIFHeader*)sg_pkt_by_blk(sgi, vv, 0, 0);
+        notseq = check_vthread_seq(sgi->nvthreads, pkt, "by_blk", sgi->verbose);
+        if (notseq < sgi->nvthreads/2) sgi->vthreadsep = sgi->sg_wr_pkts;
+        else sgi->vthreadsep = 0;
+        if (sgi->verbose>1) fprintf(sgalog,
+            "vthreadsdone B vthreadsep = %d, %d\n", sgi->vthreadsep, notseq);
+    }
+}
+
+/*
  * If we didn't find perfectly valid packets at the extremes,
  * these routines use the (now available) sg_pkt_by_num() method
  * to locate the packets and get their times.  There is an attempt
@@ -954,7 +1062,7 @@ void sg_final_time_check(SGInfo *sgi)
             final_secs = vx->w1.secs_inre;
             final_frame = vx->w2.df_num_insec + cnt;
             update_fr_cnt_max_fr_frame(vx->w2.df_num_insec,sgi->frame_cnt_max);
-            if (final_frame > sgi->frame_cnt_max) {
+            if (final_frame > (int)sgi->frame_cnt_max) {
                 final_frame -= (sgi->frame_cnt_max + 1);
                 final_secs ++;
             }
@@ -1044,7 +1152,7 @@ void sg_info(const char *file, SGInfo *sgi)
     if (sgi->name) free(sgi->name);
     memset(sgi, 0, sizeof(SGInfo));
     /* set thread ids to all be invalid */
-    for (ii = 0; ii < MAX_VDIF_THREADS; ii++) sgi->threads[ii] = -1;
+    for (ii = 0; ii < MAX_VDIF_THREADS; ii++) sgi->vthreads[ii] = -1;
     sgi->smi = smicopy;
     sgi->verbose = verbcopy;
     sgi->eval_time = current_or_elapsed_secs((double *)0);
@@ -1063,6 +1171,8 @@ void sg_info(const char *file, SGInfo *sgi)
         sg_short_endfix(sgi);
         sg_normal_block(sgi);
         sg_final_update(sgi);
+        sg_vthreadsxtra(sgi);
+        sg_vthreadsdone(sgi);
     } else {
         flat_first_packet(sgi);
         if (sgi->sg_version == SG_VERSION_FLAT) {
@@ -1428,22 +1538,22 @@ uint32_t *sg_pkt_by_off(SGInfo *sgi, off_t nn, int *nl, uint32_t **end)
 /*
  * Check the signatures on some number of packets starting with the
  * pkt pointer provided above.  It should return 0 if the number left
- * and end pointer are also as provided (or less restrictive).
- *
- * Despite the name, this method works as well for flat files.
+ * and end pointer are also as provided (or less restrictive).  If
+ * nv is a valid pointer, it is incremented by the number of fill
+ * (invalid) packets seen.
  */
-int sg_pkt_check(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end, int *nv)
+int seq_pkt_check(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end, int *nv)
 {
     int nbad = 0, fill = 0;
     VDIFsigu vds;
     if (nv) *nv = fill;
-    if (sgi->verbose>2) fprintf(sgalog, "sg_pkt_check(%lu<%lu)[%d]\n",
+    if (sgi->verbose>2) fprintf(sgalog, "seq_pkt_check(%lu<%lu)[%d]\n",
         (void*)pkt - sgi->smi.start, (void*)end - sgi->smi.start, nl);
     if (nl < 0) return(-nl);
     if (!sgi || (sgi->smi.start == 0)) return(nl);
     while (nl-- > 0) {
         vds.word = sg_get_vsig(pkt, sgi->smi.start, sgi->verbose-3,
-            "pchk:", &sgi->vdif_signature, sgi->threads);
+            "pchk:", &sgi->vdif_signature, sgi->vthreads);
         if ((pkt >= end) || vds.word != (sgi->vdif_signature.word)) nbad ++;
         update_fr_cnt_max_fr_ptr32(pkt, sgi->frame_cnt_max);
         pkt += sgi->read_size / sizeof(uint32_t);
@@ -1455,40 +1565,57 @@ int sg_pkt_check(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end, int *nv)
 
 static void pr_skip(int ty, VDIFHeader *ah, VDIFHeader *bh, void *start)
 {
+    static char ta[20], tb[20];
     static char *desc[] = {
-        "timing: same second, next frame",
+        "timing: same second in next frame",
         "timing: next second, frame -> 0",
-        "timing: multi-second packet gap"
+        "timing: multi-second packet gap",
+        "timing: new thread at same frame",
     };
-    fprintf(sgalog, "%s, %u+%06u at %lu\n%s, %u+%06u at %lu\n",
-        desc[ty], ah->w1.secs_inre, ah->w2.df_num_insec, (void*)ah - start,
-        desc[ty], bh->w1.secs_inre, bh->w2.df_num_insec, (void*)bh - start);
+    if (ty < 3) {
+        tb[0] = ta[0] = 0;
+    } else {
+        snprintf(ta, 20, " th-%05hd", ah->w4.threadID);
+        snprintf(tb, 20, " th-%05hd", bh->w4.threadID);
+    }
+    fprintf(sgalog, "%s, %u+%06u at %lu%s\n%s, %u+%06u at %lu%s\n",
+        desc[ty], ah->w1.secs_inre, ah->w2.df_num_insec, (void*)ah - start,ta,
+        desc[ty], bh->w1.secs_inre, bh->w2.df_num_insec, (void*)bh - start,tb);
 }
 
 /*
  * Check the timestamps on the packets.  It should return 0 if the
- * packets are sequential, otherwise nonzero if there are jumps.
+ * (nl) packets are sequential, otherwise nonzero if there are jumps.
  *
- * Despite the name, this method works as well for flat files.
+ * In the event of comingled threads, it is hard to say what to expect.
+ * However, we can consider sequential the case where the threads are
+ * collected by time and consider that to be a non-jump case.
+ *
+ * In code below, ah(eader) is immediately followed by bh(eader).
  */
-int sg_pkt_times(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end)
+int seq_pkt_times(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end)
 {
     VDIFHeader *ah = (VDIFHeader *)pkt, *bh;
     int ds, skips = 0;
-    if (sgi->verbose>2) fprintf(sgalog, "sg_pkt_times(%lu<%lu)[%d]\n",
+    if (sgi->verbose>2) fprintf(sgalog, "seq_pkt_times(%lu<%lu)[%d]\n",
         (void*)pkt - sgi->smi.start, (void*)end - sgi->smi.start, nl);
     while (--nl > 0) {
         pkt += sgi->read_size / sizeof(uint32_t);
         bh = (VDIFHeader *)pkt;
         if (ah->w1.invalid || bh->w1.invalid) {
-            /* nothing to test */
+            /* nothing to test -- one or both packets are invalid */
             ds = 0;
         } else if (ah->w1.secs_inre == bh->w1.secs_inre) {
-            /* same second, next frame */
+            /* same second in next frame; frame should inc by 1 */
             ds = (ah->w2.df_num_insec + 1 != bh->w2.df_num_insec) ? 1 : 0;
+            /* are we dealing with multiple threads */
+            if (ah->w4.threadID != bh->w4.threadID) {
+                if (sgi->verbose>3) pr_skip(3, ah, bh, sgi->smi.start);
+                ds = 0;     /* different threads are allowed same second */
+            }
             if (ds && sgi->verbose>2) pr_skip(0, ah, bh, sgi->smi.start);
         } else if (ah->w1.secs_inre + 1 ==  bh->w1.secs_inre) {
-            /* next second, frame -> 0 */
+            /* next second, frame -> 0; frame counter to 0 expected */
             ds = (bh->w2.df_num_insec != 0) ? 1 : 0;
             if (ds && sgi->verbose>2) pr_skip(1, ah, bh, sgi->smi.start);
         } else {

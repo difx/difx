@@ -1,5 +1,5 @@
 /*
- * $Id: m6scmodule.h.in 4523 2017-12-15 14:50:53Z gbc $
+ * $Id: m6scmodule.h.in 5217 2021-08-01 16:21:13Z gbc $
  *
  * Python interfaces to the scan checker
  */
@@ -7,7 +7,7 @@
 #ifndef m6scmodule_h
 #define m6scmodule_h
 
-#define M6_VERSION 0.19
+#define M6_VERSION 0.36
 
 /*
  * Scan check links to main()
@@ -56,7 +56,7 @@ extern char *m6sc_sr_status(const char *scanref);
  */
 typedef struct sc_info {
     char   scanref[512];      /* copy of the current scanref */
-    char   status[512];       /* final status message */
+    char   status[1024];      /* final status message */
     int    nfiles;            /* number of files checked */
     int    nf_exp;            /* expected number of files */
     double pc[4];             /* statistics accumulators */
@@ -64,13 +64,13 @@ typedef struct sc_info {
     int    bps;               /* bits / sample */
     int    stat_err;          /* statistics error */
     int    time_err;          /* timing error */
-    int    ref_epoch;         /* reference epoch */
-    int    alpha_s;           /* earliest first_secs */
-    int    alpha_fr;          /* earliest first_frame */
-    int    omega_s;           /* latest final_secs */
-    int    omega_fr;          /* latest final_frame */
-    int    max_fr;            /* max frame count seen */
-    int    exp_fr;            /* expected max frame count */
+    unsigned int ref_epoch;   /* reference epoch */
+    unsigned int alpha_s;     /* earliest first_secs */
+    unsigned int alpha_fr;    /* earliest first_frame */
+    unsigned int omega_s;     /* latest final_secs */
+    unsigned int omega_fr;    /* latest final_frame */
+    unsigned int max_fr;      /* max frame count seen */
+    unsigned int exp_fr;      /* expected max frame count */
     int    npkts;             /* accumulator of size packets */
     int    bpp;               /* bytes / packet */
 } SCInfo;

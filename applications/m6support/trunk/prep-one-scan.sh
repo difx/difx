@@ -9,34 +9,41 @@
 
 USAGE="$0 expression [rate [true|false [true|false [vdifuseoptions]]]]
 
-This script populates mount points for one scan in \$home
-(which if not supplied in the environment defaults to \$HOME/difx/data)
-and it assumes a pair of module subgroups (12 and 34) with data
-to be found in /mnt/disks/\$s/?/\$data, where \$s is taken from
-an environment variable \$sm (defaults to '12 34') and \$data
-defaults to 'data'.  If you've copied the data elsewhere set
-\$mount as a replacement for '/mnt/disks'.
+    expression      some regex(3) match for filenames
+    rate            if not 125000 packets per second
+    true|false      whether to reuse a module cache (defaults true)
+    true|false      whether to save the tracelog (defaults true)
+    vdifuseoptions  see vdifuse --help for these
 
-Here the expression is some character sequence (RE) that matches
-the scan(s) of interest.  The packet rate is assumed 125000 pkts/sec
-unless specified in the second argument.  The 3rd argument (true|false)
-controls whether to re-use an existing cache (mod-??-expression).  A
-fourth argument (true|false) specifies whether a tracelog should be
-retained.  (The default is false, which deletes the tracefiles written
-to /tmp after vdifuse exits.)
+This script populates mount points for one (or more) scan(s) in \$home
+(\$HOME/difx/data), assuming a pair of module subgroups (12 and 34)
+with data to be found in /mnt/disks/\$s/?/\$data.  The module cache
+(where vdifuse stores what is has learned) is saved as mod-??-expression.
+A file list is generated as mod-\$m-\$expression.filelist referencing \$home.
 
-Any additional arguments are passed directly to vdifuse, to do this
-you will need to specify the initial 4 arguments fully.  Use
-
-    vdifuse --help
-
-for more information about that.  To recap on the environment variables:
+Some changes are available with environment variables:
     home    where to work (\$HOME/difx/data)
     sm      the list of sub-module groups ('12 34')
     data    an alternate scatter-gather dir name ('data')
     mount   alternate mount points ('/mnt/disks')
+    flist   replacement for the filelist suffix
+    noema   true or false for 4 interlaced sub-module groups
+            (sm='1 2 3 4') and -xm6noema
+    debug   turns on debugging if = v or vv or vvv or ... vvvvvvv
+            and forces the tracelog option to true
 
-A filelist for use with vex2difx is generated in <something>.flist.
+mod-\$m-\$expression.filelist is a filelist for use in vex2difx.
+
+For example:
+    prep-one-scan.sh e21a14_Aa_No003
+
+makes all No003? scans available from on a Mark6 with ALMA modules.
+
+If you use 'wipe' in place of the rate, everything is unmounted, and
+any mod-\$m-\$expression caches are removed.  Trace logs appear in
+/tmp/vdifuse-trace.<processid> and are deleted automatically if debug
+is not set (vdifuse without -v).  Periodically you may wish to remove
+them with:  rm -f /tmp/vdifuse*
 "
 
 [ $# -lt 1 -o "$1" = '--help' ] && { echo "$USAGE" ; exit 0 ; }
@@ -45,55 +52,72 @@ A filelist for use with vex2difx is generated in <something>.flist.
 [ -d "$home" ] || mkdir -p $home
 cd $home
 
-[ -z "$sm"   ] && sm='12 34'
 [ -z "$data" ] && data='data'
 [ -z "$mount" ] && mount='/mnt/disks'
+[ -z "$flist" ] && flist='filelist'
+[ -z "$noema" ] && noema=false
 [ -n "$vdops" ] || vdops=''
+
+$noema && { m6sg=m6noema; sm='1 2 3 4'; } || { m6sg=m6sg; }
+[ -z "$sm"   ] && sm='12 34'
+
 expr=$1
 rate=${2-'125000'}
 save=${3-'true'}
-trace=${4-'false'}
+trace=${4-'true'}
 # this prevents agressive, out-of-order kernel-readaheads
 #opts='-o sync_read -o allow_other'
 # this is more agressive, and we think it might work, now.
 opts='-o async_read -o allow_other '$vdops
 [ $# -gt 4 ] && shift 4 && opts="$opts $@"
 
-$trace && trop='-vt' || trop='-t'
+# vdifuse has verbosity levels up through 7
+# tracing is always advisable
+[ -z "$debug" ] && $trace && trop='-t' || trop=''
+[ "$debug" = v -o \
+  "$debug" = vv -o \
+  "$debug" = vvv -o \
+  "$debug" = vvvv -o \
+  "$debug" = vvvvv -o \
+  "$debug" = vvvvvv -o \
+  "$debug" = vvvvvvv ] && trop="-$debug -t" || {
+    echo too much verbosity requested $debug, max is vvvvvvv, exit 1; }
 
 for m in $sm
 do
+    echo fusermount -u ./mnt$m
     fusermount -u ./mnt$m
     $save || rm -f mod-$m-$expr
+    [ "$rate" = wipe ] && continue
     [ -d ./mnt$m ] || mkdir ./mnt$m
     [ -f mod-$m-$expr ] && {
         echo reusing mod-$m-$expr
         echo \
         vdifuse $trop -u mod-$m-$expr $opts ./mnt$m
         vdifuse $trop -u mod-$m-$expr $opts ./mnt$m
-        # make filelist
-        [ -f mod-$m-$expr.flist ] || {
+        # make filelist if not found on disk
+        [ -f mod-$m-$expr.$flist ] || {
             echo \
-            vdifuse -m mod-$m-$expr -xlist=$home/mnt$m \> mod-$m-$expr.flist
-            vdifuse -m mod-$m-$expr -xlist=$home/mnt$m  > mod-$m-$expr.flist
+            vdifuse -m mod-$m-$expr -xlist=$home/mnt$m \> mod-$m-$expr.$flist
+            vdifuse -m mod-$m-$expr -xlist=$home/mnt$m  > mod-$m-$expr.$flist
         }
         true
     } || {
         echo creating mod-$m-$expr
-        echo vdifuse $trop -a mod-$m-$expr -xm6sg -xrate=$rate \\ && echo \
+        echo vdifuse $trop -a mod-$m-$expr -x$m6sg -xrate=$rate \\ && echo \
             -xinclpatt=$expr $opts ./mnt$m $mount/[$m]/?/$data
-        eval vdifuse $trop -a mod-$m-$expr -xm6sg -xrate=$rate \
+        eval vdifuse $trop -a mod-$m-$expr -x$m6sg -xrate=$rate \
             -xinclpatt=$expr $opts ./mnt$m $mount/[$m]/?/$data
         # make filelist
         echo \
-        vdifuse -m mod-$m-$expr -xlist=$home/mnt$m \> mod-$m-$expr.flist
-        vdifuse -m mod-$m-$expr -xlist=$home/mnt$m  > mod-$m-$expr.flist
+        vdifuse -m mod-$m-$expr -xlist=$home/mnt$m \> mod-$m-$expr.$flist
+        vdifuse -m mod-$m-$expr -xlist=$home/mnt$m  > mod-$m-$expr.$flist
     }
-    ls -l mod-$m-$expr mod-$m-$expr.flist
+    ls -l mod-$m-$expr mod-$m-$expr.$flist
 done
 
 # this should always work
-ls -lh ./mnt??/se*/*/??/*.vdif
-ls -l mod-*-$expr.flist
+ls -lh ./mnt*/se*/*/??/*.vdif
+ls -l mod-*-$expr.$flist
 
 # eof

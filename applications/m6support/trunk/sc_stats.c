@@ -1,5 +1,5 @@
 /*
- * $Id: sc_stats.c 4523 2017-12-15 14:50:53Z gbc $
+ * $Id: sc_stats.c 5211 2021-07-29 19:28:17Z gbc $
  *
  * Statistics checker for scan check
  */
@@ -55,7 +55,7 @@ void stats_check_2bits(BSInfo *bsi, uint64_t *optr)
 {
     int ii, ss, ch;
     uint64_t val;
-    for (ii = 0; ii < bsi->packet_octets; ii++)
+    for (ii = 0; ii < (int)bsi->packet_octets; ii++)
         for (val = *optr++, ss = 0, ch = 1; ss < 32; ss++, val >>= 2, ch <<= 1)
             if (bsi->channel_bits == 0 || bsi->channel_mask & ch)
                 bsi->bstates[val & 0x3] ++;
@@ -66,7 +66,7 @@ void stats_check_1bit(BSInfo *bsi, uint64_t *optr)
 {
     int ii, ss, ch;
     uint64_t val;
-    for (ii = 0; ii < bsi->packet_octets; ii++)
+    for (ii = 0; ii < (int)bsi->packet_octets; ii++)
         for (val = *optr++, ss = 0, ch = 1; ss < 64; ss++, val >>= 1, ch <<= 1)
             if (bsi->channel_bits == 0 || bsi->channel_mask & ch)
                 bsi->bstates[val & 0x1] ++;

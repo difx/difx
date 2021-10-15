@@ -1,5 +1,5 @@
 /*
- * $Id: sg_spwrda.c 4317 2017-05-11 21:11:42Z gbc $
+ * $Id: sg_spwrda.c 5277 2021-08-06 16:21:22Z gbc $
  *
  * Code to support thread creation to use readhead to supplement
  *
@@ -18,14 +18,17 @@
 #define RHMULT 4
 
 typedef struct pidex { pthread_t tid; pthread_mutex_t tmx; } Pidex;
-extern Pidex *sg_advice_threads;
+extern Pidex *sg_advice_pthreads;
 
 /* to hold the work assignment */
 typedef struct rh_task_data { int fd; off64_t offset; size_t count; } Rhtd;
 typedef struct th_task_data { int f; void *a; size_t c; long p; } Thtd;
 
 /*
- * this call blocks until the requested data is read into memory
+ * This call blocks until the requested data is read into memory via
+ * the (Linux) readahead(2) system call which does the actual work.
+ * Note that pthread_exit() does not return to the caller.  The rv
+ * value is formally available via a pthread_join, but we do not care.
  */
 void *readahead_task(void *arg)
 {
@@ -37,8 +40,9 @@ void *readahead_task(void *arg)
 
 /*
  * Launch a thread to use the readahead system call (which blocks)
+ * The thread created does the reads-ahead and exits.
  */
-void spawn_readahead_thread(int fd, off_t addr, size_t len, size_t max)
+void spawn_readahead_thread(int fd, off_t addr, size_t len, size_t size)
 {
     pthread_t tid;
     Rhtd task_data;
@@ -49,7 +53,7 @@ void spawn_readahead_thread(int fd, off_t addr, size_t len, size_t max)
     task_data.count = len;
 
     /* ask for several times as much */
-    if (task_data.offset + RHMULT*task_data.count < max)
+    if (task_data.offset + RHMULT*task_data.count < size)
         task_data.count *= RHMULT;
 
     (void)pthread_create(&tid, NULL, &readahead_task, &task_data);
@@ -61,6 +65,7 @@ void spawn_readahead_thread(int fd, off_t addr, size_t len, size_t max)
  * Thread task to touch pages.  We don't care about the
  * result or blocking on page faults, as long as we get the
  * kernel reading ahead (before the real reader catches up).
+ * Again the return value is ignored.
  *
  * FIXME:  munmap will occur after sg_advice_term(mmfd) is called.
  *         logic in that call should cause this thread to be cancelled first.
@@ -78,11 +83,11 @@ void *toucher_task(void *arg)
     req.tv_nsec = 100;
 
     for (cc = 0; ++cc < cnt/10; ) {
-        pthread_mutex_lock(&sg_advice_threads[f].tmx);
+        pthread_mutex_lock(&sg_advice_pthreads[f].tmx);
         for (ii = 0; ii < 10; addr += page)
             tot += *(char *)addr;
-        pthread_mutex_unlock(&sg_advice_threads[f].tmx);
-        // open hole for cancellability
+        pthread_mutex_unlock(&sg_advice_pthreads[f].tmx);
+        /* open hole for cancellability in sg_advice_term() */
         (void)nanosleep(&req, 0);
     }
     pthread_exit(&tot);
@@ -94,7 +99,7 @@ void *toucher_task(void *arg)
  */
 void spawn_toucher_thread(int fd, void *addr, size_t len, long page)
 {
-    pthread_t *tidp = &(sg_advice_threads[fd].tid);
+    pthread_t *tidp = &(sg_advice_pthreads[fd].tid);
     Thtd task_data;
 
     /* save arguments */

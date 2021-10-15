@@ -1,5 +1,5 @@
 /*
- * $Id: vdiftrc.c 4008 2016-06-29 20:50:52Z gbc $
+ * $Id: vdiftrc.c 5271 2021-08-05 19:46:35Z gbc $
  *
  * This file provides support for the fuse interface.
  * Here we provide a timing trace capability.
@@ -15,18 +15,27 @@
 
 static char vdtmpname[64];
 static FILE *vdftmp = 0;
-static struct timeval born;
+static struct timeval born, mark;
+static char marker[10] = "none";
 
 static int bc_slot = 0;
-static char bc_mess[NUM_BCS][MAX_BCS];
+static char bc_mess[NUM_BCS][2*MAX_BCS];
 
 static pthread_mutex_t bread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static void trace_timestamp(const struct timeval *tvp)
+static void trace_timestamp(const struct timeval *tvp,
+    const struct timeval *rfp, char *l1, char *l2)
 {
     struct tm *gm = gmtime(&tvp->tv_sec);
-    fprintf(vdftmp, "%7lu.%06lu %04d-%02d-%02dT%02d:%02d:%02d.%06ld\n",
-        tvp->tv_sec - born.tv_sec, tvp->tv_usec,
+    int dms = 0, dus = 0;
+    if (tvp->tv_usec < rfp->tv_usec) {
+        dus = 1000000;
+        dms = 1;
+    }
+    fprintf(vdftmp,
+        "%7lu.%06lu %s %s %04d-%02d-%02dT%02d:%02d:%02d.%06ld trace\n",
+        tvp->tv_sec - rfp->tv_sec - dms,
+        tvp->tv_usec - rfp->tv_usec + dus, l1, l2,
         gm->tm_year + 1900, gm->tm_mon + 1, gm->tm_mday,
         gm->tm_hour, gm->tm_min, gm->tm_sec, tvp->tv_usec);
 }
@@ -40,13 +49,28 @@ void vdifuse_mktrace(char *cache, char *mount)
     if (gettimeofday(&born, 0)) { perror("gettimeofday"); return; }
     snprintf(vdtmpname, sizeof(vdtmpname), "/tmp/vdifuse-trace.%d", getpid());
     vdftmp = fopen(vdtmpname, "w");
-    if (vdifuse_debug) fprintf(vdflog, "Trace log to %s\n", vdtmpname);
-    trace_timestamp(&born);
+    if (vdifuse_debug>0) fprintf(vdflog, "Trace log to %s\n", vdtmpname);
+    trace_timestamp(&born, &born, "at", "birth");
+    mark = born;
+    vdifuse_marker("birth");
     vdifuse_trace(VDT("Trace started, cache %s\n"), cache);
     if (!getcwd(cwd, sizeof(cwd))) sprintf(cwd, "Directory unknown");
     vdifuse_trace(VDT("Working in %s\n"), cwd);
     vdifuse_trace(VDT("Mount point is %s\n"), mount);
+    vdifuse_trace(VDT("Debug level is %d\n"), vdifuse_debug);
     vdifuse_flush_trace();
+}
+
+/*
+ * Note time relative to a marker
+ */
+void vdifuse_marker(char *what)
+{
+    struct timeval tv;
+    if (gettimeofday(&tv, 0)) { perror("gettimeofday"); return; }
+    trace_timestamp(&tv, &mark, marker, what);
+    strncpy(marker, what, sizeof(marker)-1);
+    mark = tv;
 }
 
 /*
@@ -55,7 +79,7 @@ void vdifuse_mktrace(char *cache, char *mount)
  */
 void vdifuse_rmtrace(int rv)
 {
-    if (vdftmp && (vdifuse_debug == 0) && (rv == 0)) unlink(vdtmpname);
+    if (vdftmp && (vdifuse_debug) && (rv == 0)) unlink(vdtmpname);
     else vdifuse_trace("Trace finished\n");
     vdifuse_flush_trace();
 }
@@ -68,14 +92,20 @@ void vdifuse_trace(char *fmt, ...)
     static int cnt = 0, clk = 0;
     va_list args;
     struct timeval tv;
+    int dms = 0, dus = 0;
     if (!vdftmp) return;
     if (gettimeofday(&tv, 0)) { perror("gettimeofday"); return; }
-    fprintf(vdftmp, "%7lu.%06lu ", tv.tv_sec - born.tv_sec, tv.tv_usec);
+    if (tv.tv_usec < born.tv_usec) {
+        dus = 1000000;
+        dms = 1;
+    }
+    fprintf(vdftmp, "%7lu.%06lu ",
+        tv.tv_sec - born.tv_sec - dms, tv.tv_usec - born.tv_usec + dus);
     va_start(args, fmt);
     vfprintf(vdftmp, fmt, args);
     va_end(args);
     if (++cnt == 20) { vdifuse_flush_trace(); cnt = 0; }
-    if (++clk == 100) { trace_timestamp(&tv); clk = 0; }
+    if (++clk == 100) { trace_timestamp(&tv, &born, "elapsed", "at"); clk = 0; }
 }
 
 /*
@@ -94,7 +124,7 @@ void vdifuse_flush_trace(void)
 
 void vdifuse_bread(char *fmt, ...)
 {
-    static char buf[2*MAX_BCS];
+    static char buf[2*MAX_BCS-1];
     static int serial = 0;
     va_list args;
     struct timeval tv;
@@ -106,9 +136,9 @@ void vdifuse_bread(char *fmt, ...)
         tv.tv_sec - born.tv_sec, tv.tv_usec, serial++);
     len = strlen(buf);
     va_start(args, fmt);
-    vsnprintf(buf + len, MAX_BCS - len, fmt, args);
+    vsnprintf(buf + len, 2*MAX_BCS - len - 3, fmt, args);
     va_end(args);
-    strncpy(bc_mess[bc_slot++], buf, MAX_BCS);
+    strncpy(bc_mess[bc_slot++], buf, 2*MAX_BCS-1);
     if (++bc_slot >= NUM_BCS) bc_slot = 0;
     pthread_mutex_unlock(&bread_mutex);
 }

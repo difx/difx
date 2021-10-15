@@ -1,12 +1,12 @@
 /*
- * $Id: vdifsg2.c 4488 2017-11-20 20:21:54Z gbc $
+ * $Id: vdifsg2.c 5276 2021-08-05 21:46:20Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
  *
  * This file provides glue to the sg_access library.
  *
- * FIXME:  blck numbers should be off_t throughout.
+ * TODO:  blck numbers should be off_t throughout.
  */
 
 #include <errno.h>
@@ -52,7 +52,7 @@ uint64_t sg_signature(uint32_t *vh)
 
 /*
  * A protected version of PACKET_TIME where we might have to deal
- * with invalid packets.  pt points to the target, pt is a limit,
+ * with invalid packets.  pt points to the target, pl is a limit,
  * and dp is the packet advance size in uint32_t words.  If pt < pl,
  * we want the start time for the member (+dp advances), if pt > pl,
  * we want the end time for the member (-dp advances).  The macro
@@ -63,22 +63,30 @@ uint64_t sg_signature(uint32_t *vh)
  * so that block movement still works properly.
  */
 static inline double packet_time(uint32_t *pt, uint32_t *pl,
-    uint32_t dp, uint32_t max_frame_count, int npkts)
+    uint32_t dp, uint32_t max_frame_count, int npkts,
+    int mmfd, char *dirs)
 {
     VDIFHeader pkt;
     int frames = 0, frames_fw = 0, frames_bw = 0, tick_dn = 0, tick_up = 0;
     int fcount;
     double tt;
 
-    while (pt < pl) {   /* want start time, forward advance */
+    if (pt < pl) {          /* start, ptbe case */
+      while (pt < pl) {   /* want start time, forward advance */
         frames = frames_fw;
         if (((VDIFHeader *)pt)->w1.invalid) { pt += dp; frames_fw ++; }
         else break;
-    }
-    while (pt > pl) {   /* want end time, backward advance */
+      }
+    } else if (pt > pl) {   /* end, pten case */
+      while (pt > pl) {   /* want end time, backward advance */
         frames = frames_bw;
         if (((VDIFHeader *)pt)->w1.invalid) { pt -= dp; frames_bw --; }
         else break;
+      }
+    } else {
+      /* this should never happen */
+      vdifuse_trace(VDT("holy f*ck, mother of god, robin"));
+      return 0.0;
     }
     pkt.w1.secs_inre = ((VDIFHeader *)pt)->w1.secs_inre;
     fcount = (int)((VDIFHeader *)pt)->w2.df_num_insec - frames;
@@ -86,29 +94,125 @@ static inline double packet_time(uint32_t *pt, uint32_t *pl,
         vdifuse_trace(VDT("No valid packets in block, guessing.\n"));
         /* FIXME:lasciate ogni speraza */
     if (fcount < 0) {
+        vdifuse_trace(VDT(" fcount %d < %d #%02d (normal)\n"),
+            fcount, 0, mmfd);
         fcount += max_frame_count;      /* as correct as max_frame_count */
         pkt.w1.secs_inre --;
         tick_dn ++;
     }
     if (fcount > max_frame_count) {
-        vdifuse_trace(VDT(" %d > %d\n"), fcount, max_frame_count);
+        vdifuse_trace(VDT(" fcount %d > %d #%02d (normal)\n"),
+            fcount, max_frame_count, mmfd);
         fcount -= max_frame_count;      /* as correct as max_frame_count */
         pkt.w1.secs_inre ++;
         tick_up ++;
     }
     pkt.w2.df_num_insec = fcount;
     tt = PACKET_TIME(&pkt);
-    if (frames || frames_fw || frames_bw || tick_dn || tick_up)
-        vdifuse_trace(VDT("invalid %s pkt %17.8lf [%d|%d %d|%d %d|%d]\n"),
-            ((pt < pl) ? "start" : ((pt > pl) ? " end " : "ERROR")), tt,
-            frames, frames_fw, frames_bw, tick_dn, tick_up, max_frame_count);
+    if (vdifuse_debug>1) vdifuse_trace(
+        VDT("new %s pkt %17.8lf [%+d|%+d %+d|%d %d|%d]#%02d-%s\n"),
+        ((pt < pl) ? "start" : ((pt > pl) ? " end " : "ERROR")), tt,
+        frames, frames_fw, frames_bw, tick_dn, tick_up, max_frame_count,
+        mmfd, dirs);
+    return tt;
+}
+
+/*
+ * A protected version of PACKET_TIME where we might have to deal
+ * with invalid packets.  pt points to the target, pl is a limit,
+ * and dp is the packet advance size in uint32_t words.  If pt < pl,
+ * we want the start time for the member (+dp advances), if pt > pl,
+ * we want the end time for the member (-dp advances).  The macro
+ * PACKET_TIME only uses w1.secs_inre and w2.df_num_insec.
+ *
+ * This routine is called to set the beginning and end packet times
+ * for a fragment block.  So coping with invalid packets must be done
+ * so that block movement still works properly.
+ *
+ * A variant of the above that deals with _seq-type vthreads.
+ * Since sequences of same-time vthread packets might end up split
+ * between blocks, we need to make the edge times unambiguous.
+ * In effect we treat the first/last few same-data-frame-num packets
+ * as if they are invalid.
+ */
+static inline double packet_time_seq(uint32_t *pt, uint32_t *pl,
+    uint32_t dp, uint32_t max_frame_count, short nvthreads, int npkts,
+    int mmfd, char *dirs)
+{
+    VDIFHeader pkt;
+    int frames = 0, frames_fw = 0, frames_bw = 0, tick_dn = 0, tick_up = 0;
+    int fcount;
+    double tt;
+
+    if (pt < pl) {          /* start, ptbe case */
+      while (pt < pl) {   /* want start time, forward advance */
+        frames = frames_fw;
+        if (((VDIFHeader *)pt)->w1.invalid ||
+            (((VDIFHeader *)(pt))->w2.df_num_insec ==
+             ((VDIFHeader *)(pt+dp))->w2.df_num_insec))
+                { pt += dp; frames_fw ++; }
+        else break;
+      }
+      /* shift once more */
+      pt += dp; frames_fw ++;
+      frames = frames_fw / nvthreads;
+    } else if (pt > pl) {   /* end, pten case */
+      while (pt > pl) {   /* want end time, backward advance */
+        frames = frames_bw;
+        if (((VDIFHeader *)pt)->w1.invalid ||
+            (((VDIFHeader *)(pt))->w2.df_num_insec ==
+             ((VDIFHeader *)(pt-dp))->w2.df_num_insec))
+                { pt -= dp; frames_bw --; }
+        else break;
+      }
+      /* shift once more */
+      pt -= dp;
+      frames_bw --;
+      frames = -(-frames_bw / nvthreads);
+    } else {
+      /* this should never happen */
+      vdifuse_trace(VDT("holy f*ck, mother of god, batman"));
+      return 0.0;
+    }
+    pkt.w1.secs_inre = ((VDIFHeader *)pt)->w1.secs_inre;
+    fcount = (int)((VDIFHeader *)pt)->w2.df_num_insec - frames;
+    if (((VDIFHeader *)pt)->w1.invalid)
+        vdifuse_trace(VDT("No valid packets in block, guessing.\n"));
+        /* FIXME:lasciate ogni speraza */
+    if (fcount < 0) {
+        vdifuse_trace(VDT(" fcount %d < %d #%02d (seq)\n"),
+            fcount, 0, mmfd);
+        fcount += max_frame_count;      /* as correct as max_frame_count */
+        pkt.w1.secs_inre --;
+        tick_dn ++;
+    }
+    if (fcount > max_frame_count) {
+        vdifuse_trace(VDT(" fcount %d > %d #%02d (seq)\n"),
+            fcount, max_frame_count, mmfd);
+        fcount -= max_frame_count;      /* as correct as max_frame_count */
+        pkt.w1.secs_inre ++;
+        tick_up ++;
+    }
+    pkt.w2.df_num_insec = fcount;
+    tt = PACKET_TIME(&pkt);
+    if (vdifuse_debug>1) vdifuse_trace(
+        VDT("vthr %s pkt %17.8lf [%+d|%+d %+d|%d %d|%d]#%02d-%s\n"),
+        ((pt < pl) ? "start" : ((pt > pl) ? " end " : "ERROR")), tt,
+        frames, frames_fw, frames_bw, tick_dn, tick_up, max_frame_count,
+        mmfd, dirs);
     return tt;
 }
 
 /*
  * The Delta(t) on the block should be somewhat sane most of the time.
  * Recall that the sub-sec is scaled by PKTDT = 1.0/PKTDT_INV
- * The routine returns non-zero if the file should be considered corrupt.
+ *
+ * For vthreads in sequences, the time advances slower by the number of
+ * vthreads, but the number of frames should correspond to the number of
+ * packets.  (So dt isn't a time, but a number of frames, here.)
+ *
+ * The routine returns non-zero if the file should be considered corrupt,
+ * however, this check is disabled, so all you get is a trace comment.
  */
 static int pkt_time_chk(SGV2sfrag *sfp)
 {
@@ -121,12 +225,20 @@ static int pkt_time_chk(SGV2sfrag *sfp)
         dt += (mfc + 1)/((float)PKTDT_INV);
     }
     dt *= (float)PKTDT_INV;
+    //if (sfp->sgi->nvthreads > 0) dt *= sfp->sgi->nvthreads;
+    if (sfp->sgi->nvthreads > 1) dt *= sfp->sgi->nvthreads;
     pkterr = round(dt) - (npkts - 1);
     if (pkterr == 0) return(0);
+    //if (sfp->sgi->nvthreads > 0 && pkterr < sfp->sgi->nvthreads) return(0);
+    if (sfp->sgi->nvthreads > 1 && pkterr < sfp->sgi->nvthreads) return(0);
+    // If we want to add this bit of anality:
     if (pkterr > npkts/2 || -pkterr > npkts/2) rv = 1;
-    vdifuse_trace(VDT("times: dt=%.0f on %d is %d rv=%d [fd:%d blk:%ld]\n"),
-        dt, npkts, pkterr, rv, sfp->sgi->smi.mmfd, sfp->cblk);
-    rv = 0; // FIXME: may want to enable this protection
+    vdifuse_trace(
+        VDT("times: dt=%.0f on %d is %d rv=%d [fd:%02d blk:%ld vt:%d]\n"),
+        dt, npkts, pkterr, rv,
+        sfp->sgi->smi.mmfd, sfp->cblk, sfp->sgi->nvthreads);
+    // FIXME: may want to binary search the block to find the internal jump
+    rv = 0;
     return(rv);
 }
 
@@ -350,7 +462,7 @@ static void member_show(SGV2sfrag *sfn, int ith)
 {
     if (vdifuse_debug>5) fprintf(vdflog, "member_show(%s)\n", sfn->sgi->name);
     fprintf(vdflog,
-        "  [%d]%04x@%d %lu/%u b/%luB i/%luB [0x%lx] a/%luB [%luB]\n"
+        "  [%d]%04x@#%02d %lu/%u b/%luB i/%luB [0x%lx] a/%luB [%luB]\n"
         "    %.8lf < %.8lf < %.8lf < %.8lf\n",
         ith, sfn->err, sfn->sgi->smi.mmfd,
         sfn->cblk, sfn->sgi->sg_total_blks,
@@ -365,14 +477,17 @@ static void member_show(SGV2sfrag *sfn, int ith)
  * use the real frame rate for time calculations, the time difference
  * gets huge (+/-) and we don't have the true frame rate to get it
  * correct, so we merely flag it (+/- 6.66).
+ *
+ * This is called from stripe_trace.  t0 is the beginning time (ptbe)
+ * for the stripe.  See discussion in comment preceding  stripe_sqze().
  */
 static void member_trace(SGV2sfrag *sfn, double t0, char label)
 {
     double d = rint((sfn->ptbe - t0)/PKTDT);
-    if (d < 0) d = -6.66;
-    if (d > PKTDT_INV/2) d = +6.66;
+    if (d < -99999) d = -6.666;
+    if (d >  99999) d = +6.666;
     vdifuse_trace(
-        VDT("[%c] %u/%u %5g "
+        VDT("[%c] %u/%u %6g "
             "%17.8lf < %17.8lf < %17.8lf < %17.8lf "
             "%lu[%lu]%lu\n"),
         label, sfn->cblk, sfn->sgi->sg_total_blks, d,
@@ -387,8 +502,9 @@ static void member_trace(SGV2sfrag *sfn, double t0, char label)
 static void member_move(SGV2sfrag *sfp, off_t blk, int dir)
 {
     uint32_t *pp, *pb, *pe, ps;
+    char *dirs = dir>0 ? "fw" : "bw";
     if (vdifuse_debug>5) fprintf(vdflog,
-        "member_move(%s) %s\n", sfp->sgi->name, dir>0 ? "fw" : "bw");
+        "member_move(%s) %s\n", sfp->sgi->name, dirs);
     if (blk < 0 || blk >= sfp->sgi->sg_total_blks) {
         sfp->err |= SGV2_ERR_BLKERR;
         vdifuse_trace(VDT("member_move %lu(<0 or >=%lu)\n"),
@@ -411,9 +527,20 @@ static void member_move(SGV2sfrag *sfp, off_t blk, int dir)
     pp += (ps = (sfp->sgi->read_size/sizeof(uint32_t))) * (sfp->nblk-1);
     pe = pp;
     /* now work out the times */
-    sfp->ptbe = packet_time(pb, pe, ps, sfp->sgi->frame_cnt_max, sfp->nblk);
-    sfp->pten = packet_time(pe, pb, ps, sfp->sgi->frame_cnt_max, sfp->nblk);
+    if (sfp->sgi->nvthreads == 1) {
+        /* TODO: _dir vthread case */
+        sfp->ptbe = packet_time(pb, pe, ps, sfp->sgi->frame_cnt_max,
+            sfp->nblk, sfp->sgi->smi.mmfd, dirs);
+        sfp->pten = packet_time(pe, pb, ps, sfp->sgi->frame_cnt_max,
+            sfp->nblk, sfp->sgi->smi.mmfd, dirs);
+    } else {
+        sfp->ptbe = packet_time_seq(pb, pe, ps, sfp->sgi->frame_cnt_max,
+            sfp->sgi->nvthreads, sfp->nblk, sfp->sgi->smi.mmfd, dirs);
+        sfp->pten = packet_time_seq(pe, pb, ps, sfp->sgi->frame_cnt_max,
+            sfp->sgi->nvthreads, sfp->nblk, sfp->sgi->smi.mmfd, dirs);
+    }
     /* check that the packet times are consistent with #packets in block */
+    if (sfp->ptbe == 0.0 || sfp->pten == 0.0) sfp->err |= SGV2_ERR_TIME_0;
     if (pkt_time_chk(sfp)) sfp->err |= SGV2_ERR_TIME_C;
     if (sfp->pten < sfp->ptbe) sfp->err |= SGV2_ERR_TIME_B;
     /* advise mmap() machinery of our intentions */
@@ -441,7 +568,8 @@ static int member_init(SGV2sfrag *sfp, int pgfcmx)
         vdifuse_trace(VDT("Fixing fcm: %d -> %d (too large)\n"),
             sfp->sgi->frame_cnt_max, pgfcmx);
         sfp->sgi->frame_cnt_max = pgfcmx;
-        // FIXME: the following times might then be incorrect
+        /* TODO: the following times might then be incorrect
+         * this should probably be considered as an error... */
     }
     sfp->err = (sg_reopen(sfp->sgi)) ? SGV2_ERR_VIRGIN : SGV2_ERR_REOPEN;
     pkt.w1.secs_inre = sfp->sgi->first_secs;
@@ -458,10 +586,10 @@ static int member_init(SGV2sfrag *sfp, int pgfcmx)
         msbs = sfp->sgi->sg_se_pkts;
     member_move(sfp, 0, 1);         /* start at the beginning */
     if (vdifuse_debug>1) fprintf(vdflog,
-        "member_init %d#%ld %.8f..%.8f %u pps msbs %d\n",
+        "member_init #%02d@%ld %.8f..%.8f %u pps msbs %d\n",
             sfp->sgi->smi.mmfd, sfp->cblk, sfp->first, sfp->final,
             sfp->sgi->frame_cnt_max, msbs);
-    vdifuse_trace(VDT("init %d#%ld %.8f..%.8f %u pps msbs %d\n"),
+    vdifuse_trace(VDT("init #%02d@%ld %.8f..%.8f %u pps msbs %d\n"),
         sfp->sgi->smi.mmfd, sfp->cblk, sfp->first, sfp->final,
         sfp->sgi->frame_cnt_max, msbs);
     return(msbs);
@@ -481,6 +609,9 @@ static off_t calculate_moves(SGV2sdata *sdp)
 /*
  * A bread version of stripe_show.  Check the move count, and only
  * if it has changed do we issue the bread crumb report on the stripe.
+ *
+ * s0 is t0 with the ones digit and fractions nuked.  Thus '(%.8f)'
+ * gives an offset of at most 10 seconds from s0
  */
 static void stripe_bread(SGV2sdata *sdp)
 {
@@ -493,7 +624,7 @@ static void stripe_bread(SGV2sdata *sdp)
     sdp->scnt = scnt;
     buf[0] = 0;
     s0 = floor(sdp->stripe[0].sfrag->ptbe / 10.0) * 10.0;
-    vdifuse_bread(VDT("(0..%d,%d..%d,%d..%d): %lu[%lu]%lu (%lu)B at %.2f...\n"),
+    vdifuse_bread(VDT("(0..%d,%d..%d,%d..%d): %lu[%lu]%lu (%lu)B at %.0f...\n"),
         ((sdp->zero == 0) ? 0 : sdp->zero - 1),
         sdp->zero, sdp->sgap - 1, sdp->sgap, sdp->numb,
         sdp->bybs, sdp->byis, sdp->byas, sdp->bygt, s0);
@@ -501,7 +632,7 @@ static void stripe_bread(SGV2sdata *sdp)
         if (ss == sdp->zero)    sep = '|';
         else if (ss==sdp->sgap) sep = '%';
         else                    sep = ',';
-        snprintf(tmp, sizeof(tmp), "%02d%c%02d:%lu(%.8f)",
+        snprintf(tmp, sizeof(tmp), "%02d%c#%02d:%lu(%.8f)",
             ss, sep, sdp->stripe[ss].sfrag->sgi->smi.mmfd,
             sdp->stripe[ss].sfrag->cblk,
             sdp->stripe[ss].sfrag->ptbe - s0);
@@ -525,6 +656,7 @@ static void stripe_trace(SGV2sdata *sdp, char *where, int adj)
     int ss;
     int z = sdp->zero, n = sdp->sgap-1, m = (z==0?0:z-1);
     off_t fragsum = 0;
+    double t0 = sdp->stripe[0].sfrag->ptbe;
     sdp->diag[SGV2_DIAG_TRACE] ++;
     vdifuse_trace(VDT("stripe_show(%s) %s (%d)\n"), sdp->vs->fuse, where, adj);
     vdifuse_trace(VDT("  (0..%d,%d..%d,%d..%d): %lu[%lu]%lu (%lu) B\n"),
@@ -534,13 +666,13 @@ static void stripe_trace(SGV2sdata *sdp, char *where, int adj)
         z, sdp->stripe[z].sfrag->ptbe, sdp->stripe[z].sfrag->pten, sdp->bybs);
     vdifuse_trace(VDT("  thru[%2d] %.8f..%.8f ..%lu\n"),
         n, sdp->stripe[n].sfrag->ptbe, sdp->stripe[n].sfrag->pten, sdp->byas);
+    vdifuse_trace(VDT("  t0 is %.8f\n"));
     for (ss = 0; ss < sdp->numb; ss++) {
         SGV2sfrag tmp;
-        double t0 = sdp->stripe[0].sfrag->ptbe;
         double d = rint((sdp->stripe[ss].sfrag->ptbe - t0)/PKTDT);
         if (d > 0.5 / PKTDT) d -= (1.0/PKTDT - (sdp->fcmx+1));
         vdifuse_trace(
-            VDT("%c %c%02d@%-2d#%lu[%2d:%1X]%-5g%c %lu[%lu]%lu {%lu..%lu}\n"),
+            VDT("%c %c#%02d@%-2d#%lu[%2d:%1X]%-5g%c %lu[%lu]%lu {%lu..%lu}\n"),
             '0' + ss, (ss == sdp->zero) ? '|' : ' ',
             sdp->stripe[ss].index, sdp->stripe[ss].sfrag->sgi->smi.mmfd,
             sdp->stripe[ss].sfrag->cblk, sdp->stripe[ss].reads,
@@ -598,7 +730,7 @@ static void stripe_show(SGV2sdata *sdp, char *where, int adj)
             /* use estimate of frame rate to fake it */
             if (d > 0.5 / PKTDT) d -= (1.0/PKTDT - (sdp->fcmx+1));
             fprintf(vdflog,
-                "%s%c%02d@%-2d#%lu[%2d]%-5g%c%s", 
+                "%s%c#%02d@%-2d#%lu[%2d]%-5g%c%s", 
                 (ss%4 == 0) ? " " : "",
                 (ss == sdp->zero) ? '|' : ' ',
                 sdp->stripe[ss].index, sdp->stripe[ss].sfrag->sgi->smi.mmfd,
@@ -613,7 +745,9 @@ static void stripe_show(SGV2sdata *sdp, char *where, int adj)
 
 /*
  * (Time) comparison function for qsort; it compares the
- * block starting times contained in sfrag->ptbe.
+ * block starting times contained in sfrag->ptbe.   Note
+ * that in the _seq vthreads case the ptbe values should
+ * still be well ordered.  Not true of _dir case.
  */
 static int stripe_comp(const void *sa, const void *sb)
 {
@@ -626,7 +760,7 @@ static int stripe_comp(const void *sa, const void *sb)
     if (a->sfrag->ptbe < b->sfrag->ptbe) return(-1);
     if (a->sfrag->ptbe > b->sfrag->ptbe) return( 1);
     /* we should never get to this case */
-    vdifuse_trace(VDT("stripe_comp %.8lf (fd %d) == %.8lf (fd %d)\n"),
+    vdifuse_trace(VDT("stripe_comp %.8lf (fd #%02d) == %.8lf (fd #%02d)\n"),
         a->sfrag->ptbe, a->sfrag->sgi->smi.mmfd,
         b->sfrag->ptbe, b->sfrag->sgi->smi.mmfd);
     return(0);
@@ -719,25 +853,25 @@ static int predecessors_leave_gap(int jj, SGV2sfrag *jth,
     double pten, double mint)
 {
     double dt = jth->ptbe - pten, odt;
-    int fd = jth->sgi->smi.mmfd;
+    int mmfd = jth->sgi->smi.mmfd;
     while (dt >= mint && jth->cblk > 0) {
         /* peek at jth's predecessor */
         SGV2sfrag tmp = *jth;
         member_move(&tmp, jth->cblk - 1, -1);
         odt = dt;
         dt = tmp.ptbe - pten;
-        if (dt > 0.0) {
+        if (dt > (double)(tmp.sgi->nvthreads-1)) {
             /* tmp is earlier than jth, but later than ith */
             if (vdifuse_debug>4) fprintf(vdflog,
-                "Gap%02d@%-2d: have %+.8lf = (jth-be)%.8lf - (ith-en)%.8lf\n"
-                "Gap%02d@%-2d: take %+.8lf = (jm1-be)%.8lf - (ith-en)%.8lf**\n",
-                jj, fd, odt, jth->ptbe, pten, jj, fd, dt, tmp.ptbe, pten);
+                "Gap%02d#%02d: have %+.8lf = (jth-be)%.8lf - (ith-en)%.8lf\n"
+                "Gap%02d#%02d: take %+.8lf = (jm1-be)%.8lf - (ith-en)%.8lf**\n",
+                jj, mmfd, odt, jth->ptbe, pten, jj, mmfd, dt, tmp.ptbe, pten);
             *jth = tmp;
         } else {
             if (vdifuse_debug>4) fprintf(vdflog,
-                "Ngp%02d@%-2d: keep %+.8lf = (jth-be)%.8lf - (ith-en)%.8lf**\n"
-                "Ngp%02d@%-2d: skip %+.8lf = (jm1-be)%.8lf - (ith-en)%.8lf\n",
-                jj, fd, odt, jth->ptbe, pten, jj, fd, dt, tmp.ptbe, pten);
+                "Ngp%02d#%02d: keep %+.8lf = (jth-be)%.8lf - (ith-en)%.8lf**\n"
+                "Ngp%02d#%02d: skip %+.8lf = (jm1-be)%.8lf - (ith-en)%.8lf\n",
+                jj, mmfd, odt, jth->ptbe, pten, jj, mmfd, dt, tmp.ptbe, pten);
             dt = odt;
             break;
         }
@@ -762,7 +896,7 @@ static int successor_closes_gap(SGV2sdata *sdp, double ptbe, int jj)
         if (tmp.cblk < tmp.sgi->sg_total_blks - 1) {
             member_move(&tmp, tmp.cblk + 1, 1);
             dt = tmp.pten - ptbe;
-            if (dt < 0.0) {
+            if (dt < -(double)(tmp.sgi->nvthreads-1)) {
                 /* found an earlier block */
                 if (vdifuse_debug>3) fprintf(vdflog,
                     "successor_closes_gap() w/ gap(%+.8lf = %.8lf - %.8lf)\n",
@@ -1090,23 +1224,23 @@ static int stripe_walk(SGV2sdata *sdp, int dir)
             if (dir > 0) nrd = (pten > edge) ? 0 : -1;
             else         nrd = (ptbe < edge) ? 0 : -1;
             if (vdifuse_debug>3) fprintf(vdflog,
-                "  stripe%02d@%-2d #%u %.8lf (%d) == same\n",
+                "  stripe%02d#%02d @%u %.8lf (%d) == same\n",
                 ii, ith->sgi->smi.mmfd, cblk, ptbe, ord);
         } else if (dir > 0 && pten > edge) {
             nrd = 0;
             if (vdifuse_debug>3) fprintf(vdflog,
-                "  stripe%02d@%-2d #%u %.8lf (%d) == greater (%.8lf > %.8lf)\n",
+                "  stripe%02d#%-2d @%u %.8lf (%d) == greater (%.8lf > %.8lf)\n",
                 ii, ith->sgi->smi.mmfd, cblk, ptbe, ord, pten, edge);
         } else if (dir < 0 && ptbe < edge) {
             nrd = 0;
             if (vdifuse_debug>3) fprintf(vdflog,
-                "  stripe%02d@%-2d #%u %.8lf (%d) == lesser (%.8lf < %.8lf)\n",
+                "  stripe%02d#%-2d @%u %.8lf (%d) == lesser (%.8lf < %.8lf)\n",
                 ii, ith->sgi->smi.mmfd, cblk, ptbe, ord, ptbe, edge);
         } else {
             nrd = 0;
             member_move(ith, nblk, dir);
             if (vdifuse_debug>3) fprintf(vdflog,
-                "  stripe%02d@%-2d #%u %.8lf (%d) -> #%u %.8lf %lu\n",
+                "  stripe%02d#%-2d @%u %.8lf (%d) -> #%u %.8lf %lu\n",
                 ii, ith->sgi->smi.mmfd, cblk, ptbe, ord,
                 nblk, ith->ptbe, ith->bybb);
         }
@@ -1633,7 +1767,7 @@ int open_sgv2_seq(VDIFUSEntry *vs, FFInfo *ffi)
         sdp->stripe[num].sfrag = sfp;
         errors |= sfp->err;
         if (vdifuse_debug>1 || sfp->err) fprintf(vdflog,
-            "open_sgv2_seq(%s)@%d:%x msbs %d err %x with %d pps -> %d pps\n",
+            "open_sgv2_seq(%s)#%02d:%x msbs %d err %x with %d pps -> %d pps\n",
             sfp->sgi->name, sfp->sgi->smi.mmfd, sfp->err, sdp->msbs,
             errors, fcmx, pgfcmx);
         if (sfp->err) vdifuse_trace(
@@ -1808,8 +1942,10 @@ static int do_read_sgv2_seq(char *buf, FFInfo *ffi)
             memset(&m6st, 0x00, sizeof(m6st));
             m6st.state = MARK6_STATE_PLAY;
             m6st.position = ffi->offset;
-            m6st.rate = nanf("0"); /* FIXME: use gettimeofday() etc to report a read rate */
-            snprintf(m6st.scanName, sizeof(m6st.scanName)-1, "%s", sdp->vs->fuse);
+            /* TODO: use gettimeofday() etc to report a read rate */
+            m6st.rate = nanf("0");
+            snprintf(m6st.scanName, sizeof(m6st.scanName)-1,
+                "%s", sdp->vs->fuse);
             difxMessageSendMark6Status(&m6st);
             vdifuse_trace(VDT("DM play %s\n"), sdp->vs->fuse);
         }

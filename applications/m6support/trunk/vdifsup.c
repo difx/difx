@@ -1,5 +1,5 @@
 /*
- * $Id: vdifsup.c 4248 2017-02-28 22:37:57Z gbc $
+ * $Id: vdifsup.c 5289 2021-08-14 13:20:33Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -27,7 +27,11 @@
  */
 static VDIFUSEpars clvpo = {
     .creation.tv_sec = 1,
-    .station_mask = SG_STATION_MASK
+    .station_mask = SG_STATION_MASK,
+    .vthr_per_seq = 1,
+    .vthread_list = {
+        VTHREAD_BOGUS, VTHREAD_BOGUS, VTHREAD_BOGUS, VTHREAD_BOGUS,
+        VTHREAD_BOGUS, VTHREAD_BOGUS, VTHREAD_BOGUS, VTHREAD_BOGUS }
 };
 static char *filelistprefix = ".";
 
@@ -52,15 +56,18 @@ static int accepted_as_frag(VDIFUSEntry *vc)
 
     /* if it actually passed the tests that matter */
     if ((rigor & vp->how_rigorous) == vp->how_rigorous) {
-        if ((cfe = create_fragment_vfuse(vc, vd_num_entries, vp, rigor))) {// ||
-            /* then we not able to accept this as a fragment */
+        if (vdifuse_debug>1) fprintf(vdflog, "  ...analyze_frag %s "
+            VDIFUSE_RIGOR_PRINTF "\n", vc->path, rigor);
+        /* try to create the fragment (via analyze_fragment())... */
+        if ((cfe = create_fragment_vfuse(vc, vd_num_entries, vp, rigor))) {
+            /* ... we not able to accept this as a fragment */
             vc->etype = VDIFUSE_ENTRY_INVALID;
             if (vdifuse_debug>2) fprintf(vdflog,
                 "    but failed [create:%d]\n", cfe);
-            if (vdifuse_debug>0) fprintf(vdflog,
+            if (vdifuse_debug>1) fprintf(vdflog,
                 "Problematic file %s [%d]\n", vc->path, cfe);
         } else {
-            /* then it is officially added as a fragment */
+            /* then it was officially added as a fragment */
             vc->etype = VDIFUSE_ENTRY_FRAGMENT;
             if (vdifuse_debug>3) fprintf(vdflog,
                 "    Accepted %s\n"
@@ -204,17 +211,16 @@ static int handle_bogey(unsigned char type, char *dir, char *parent)
  *   if a dir: recurse into it
  * We assume here that we have enough stack space (which seems to be true).
  */
-static int find_fragments(char *dir)
+#if USE_READDIR_R
+#warning "WARNING: using original (deprecated) re-entrant readdir_r()"
+/*
+ * The originally coded version used readdir_r() which is apparently
+ * now deprecated and considered not necessarily unless the same stream
+ * is being processed, and (I think) that cannot happen here.
+ */
+static int process_dirent_r(DIR *dp, char *dir)
 {
-    DIR *dp;
     struct dirent de, *dep;
-    if (vdifuse_debug>1) fprintf(vdflog, "Searching %s\n", dir);
-    dp = opendir(dir);
-    if (!dp && errno == ENOTDIR) {
-        if (vdifuse_debug>1) fprintf(vdflog, "which is not a dir\n");
-        return(0);
-    }
-    if (!dp) return(perror("opendir"),1);
     do {
         if (readdir_r(dp, &de, &dep)) return(perror("readdir_r"),2);
         if (dep == &de) {
@@ -233,6 +239,50 @@ static int find_fragments(char *dir)
             }
         }
     } while (dep);
+    return(0);
+}
+#else /* USE_READDIR_R */
+/* The new version is similar; NULL is returned at the end, or upon errors  */
+static int process_dirent(DIR *dp, char *dir)
+{
+    struct dirent *dep;
+    errno = 0;
+    while ((dep = readdir(dp)) && (errno == 0)) {
+        if (dep->d_name[0] == '.') {
+            continue;   /* ignore hidden files, . and .. */
+        } else if (dep->d_type == DT_REG) {
+            if (handle_frag(dep->d_name, dir)) return(fprintf(stderr,
+                "Problem with fragment %s of %s\n", dep->d_name, dir));
+        } else if (dep->d_type == DT_DIR) {
+                if (handle_dir(dep->d_name, dir)) return(fprintf(stderr,
+                    "Problem with directory %s of %s\n", dep->d_name, dir));
+        } else {
+                if (handle_bogey(dep->d_type, dep->d_name, dir))
+                    return(fprintf(stderr,
+                        "Problem with entry %s of %s\n", dep->d_name, dir));
+        }
+    }
+    if (errno) return(perror("readdir"),2);
+    return(0);
+}
+#endif /* USE_READDIR_R */
+static int find_fragments(char *dir)
+{
+    DIR *dp;
+    int rv;
+    if (vdifuse_debug>1) fprintf(vdflog, "Searching %s\n", dir);
+    dp = opendir(dir);
+    if (!dp && errno == ENOTDIR) {
+        if (vdifuse_debug>1) fprintf(vdflog, "which is not a dir\n");
+        return(0);
+    }
+    if (!dp) return(perror("opendir"),1);
+#if USE_READDIR_R
+    rv = process_dirent_r(dp, dir);
+#else /* USE_READDIR_R */    
+    rv = process_dirent(dp, dir);
+#endif /* USE_READDIR_R */    
+    if (rv) fprintf(stderr, "not previous issue with readdir\n");
     return(closedir(dp));
 }
 
@@ -263,6 +313,8 @@ static int populate_cache(int ndirs, char **dirs)
     }
     if (create_fragtree())
         return(fprintf(stderr, "Problem creating fragment tree\n"));
+    if (vthreads_dir && create_vthreads())
+        return(fprintf(stderr, "Problem creating vthreads\n"));
     if (create_sequences())
         return(fprintf(stderr, "Problem creating sequences\n"));
     if (vdifuse_debug>0) fprintf(vdflog,
@@ -272,7 +324,7 @@ static int populate_cache(int ndirs, char **dirs)
 
 static int create_params_entry(void)
 {
-    int ee = VDIFUSE_TOPDIR_PARAMS;
+    int ee = VDIFUSE_TOPDIR_PARAMS, vv;
     vd_cache[ee].index = ee;
     vd_cache[ee].etype = VDIFUSE_ENTRY_PARAMS;
     vd_cache[ee].cindex = vd_cache[ee].ccount = 0;
@@ -292,8 +344,10 @@ static int create_params_entry(void)
     vd_cache[ee].u.vpars.dropfraction = clvpo.dropfraction; // nyi
     vd_cache[ee].u.vpars.station_mask = clvpo.station_mask;
     sg_set_station_id_mask(clvpo.station_mask & SG_STATION_MASK);
+    vd_cache[ee].u.vpars.vthr_per_seq = clvpo.vthr_per_seq;
+    vd_cache[ee].u.vpars.reserved_tre = clvpo.reserved_tre; // nyi
 
-    /* topdir names for fragments and sequences */
+    /* topdir names for fragments and sequences and vthreads */
     if (clvpo.frag_top_dir[0] != '/')
         strcpy(clvpo.frag_top_dir, VDIFUSE_FRAGMENTS);
     strcpy(vd_cache[ee].u.vpars.frag_top_dir, clvpo.frag_top_dir);
@@ -304,12 +358,22 @@ static int create_params_entry(void)
     strcpy(vd_cache[ee].u.vpars.seqs_top_dir, clvpo.seqs_top_dir);
     strcpy(sequences_topdir, clvpo.seqs_top_dir);
     sequences_topdir_len = strlen(sequences_topdir);
+    if (clvpo.vthr_top_dir[0] != '/')
+        strcpy(clvpo.vthr_top_dir, VDIFUSE_VTHREADS);
+    strcpy(vd_cache[ee].u.vpars.vthr_top_dir, clvpo.vthr_top_dir);
+    strcpy(vthreads_topdir, clvpo.vthr_top_dir);
+    vthreads_topdir_len = strlen(vthreads_topdir);
 
-    /* discovered items */
+    /* defaults for discovered items which will be updated*/
     vd_cache[ee].u.vpars.est_pkt_rate = 1;
     vd_cache[ee].u.vpars.maxfrcounter = 0;
+    vd_cache[ee].u.vpars.vthreadseper = VTHREAD_BOGUS;
     if (gettimeofday(&vd_cache[ee].u.vpars.creation, 0))
         return(perror("gettimeofday"),1);
+
+    /* in _dir case a list was given, in _seq case it is discovered */
+    for (vv = 0; vv < VDIFUSE_MAX_VTHREADS; vv++)
+        vd_cache[ee].u.vpars.vthread_list[vv] = clvpo.vthread_list[vv];
 
     /* not to match anything else, ever */
     strcpy(vd_cache[ee].path, "--cache-parameters-entry-path--");
@@ -390,15 +454,36 @@ static int create_sequences_entry(struct stat *mp)
     }
     return(0);
 }
+static int create_vthreads_entry(struct stat *mp)
+{
+    int ee = VDIFUSE_TOPDIR_VTHREADS;
+    if (!vthreads_dir) return(0);
+    if (mp) {   /* update directory with mountpoint stat data */
+        struct stat *stbuf = &vd_cache[ee].u.vfuse;
+        *stbuf = *mp;
+        stbuf->st_mode = S_IFDIR | 0555;
+        stbuf->st_nlink = 2;
+    } else {
+        vd_cache[ee].index = ee;
+        vd_cache[ee].etype = VDIFUSE_ENTRY_DIRECTORY;
+        vd_cache[ee].cindex = vd_cache[ee].ccount = 0;
+        strcpy(vd_cache[ee].hier, sequences_topdir);
+        strcpy(vd_cache[ee].fuse, sequences_topdir);
+        vd_cache_modified++;
+    }
+    return(0);
+}
 
 /*
  * Sequences and Directories inherit ownership from the mount point
+ * Also true of vthreads.
  */
 static int update_other_entries(struct stat *mp)
 {
     int ee;
     for (ee = VDIFUSE_TOPDIR_SEQUENCE+1; ee < vd_num_entries; ee++) {
         if (vd_cache[ee].etype != VDIFUSE_ENTRY_SEQUENCE &&
+            vd_cache[ee].etype != VDIFUSE_ENTRY_VTHREADS &&
             vd_cache[ee].etype != VDIFUSE_ENTRY_DIRECTORY) continue;
         if (vdifuse_debug>2) fprintf(vdflog,
             "%s: uid %d -> %d gid %d -> %d &c.\n", vd_cache[ee].fuse,
@@ -424,7 +509,8 @@ static int create_cache(char *cache)
     if (create_root_entry(NULL)) return(3);
     if (create_fragments_entry(NULL)) return(4);
     if (create_sequences_entry(NULL)) return(5);
-    vd_num_entries = VDIFUSE_TOPDIR_SEQUENCE + 1;
+    if (create_vthreads_entry(NULL)) return(6);
+    vd_num_entries = VDIFUSE_TOPDIR_SEQUENCE + 1 + vthreads_dir;
     vd_cache_file = cache;
     return(0);
 }
@@ -452,8 +538,10 @@ static int load_cache(char *cache)
 
     strcpy(fragments_topdir, vd_cache[ee].u.vpars.frag_top_dir);
     strcpy(sequences_topdir, vd_cache[ee].u.vpars.seqs_top_dir);
+    strcpy(vthreads_topdir, vd_cache[ee].u.vpars.vthr_top_dir);
     fragments_topdir_len = strlen(fragments_topdir);
     sequences_topdir_len = strlen(sequences_topdir);
+    vthreads_topdir_len = strlen(vthreads_topdir);
     sg_set_station_id_mask(vd_cache[ee].u.vpars.station_mask & SG_STATION_MASK);
 
     return(fclose(fp));
@@ -560,11 +648,11 @@ int report_sequence(VDIFUSEntry *vp)
     return(0);
 }
 
-int describe_sequence(VDIFUSEntry *vp)
+int describe_seq_or_vthr(VDIFUSEntry *vp, char *sot)
 {
     if (vdifuse_debug>1) fprintf(vdflog,
-        "[%04d]Seq %s anc [%d] %lu links %luB\n",
-        vp->index, vp->fuse, vp->cindex,
+        "[%04d]%s %s anc [%d] %lu links %luB\n",
+        vp->index, sot, vp->fuse, vp->cindex,
         vp->u.vfuse.st_nlink, vp->u.vfuse.st_size);
     if (vdifuse_debug>2) fprintf(vdflog,
         "  pktsize=%lu pkts=%lu %lu.%09lu %lu.%09lu %lu.%09lu\n", 
@@ -574,6 +662,14 @@ int describe_sequence(VDIFUSEntry *vp)
         vp->u.vfuse.st_atime, vp->u.vfuse.st_atim.tv_nsec
         );
     return(0);
+}
+int describe_sequence(VDIFUSEntry *vp)
+{
+    return(describe_seq_or_vthr(vp, "Seq"));
+}
+int describe_vthreads(VDIFUSEntry *vp)
+{
+    return(describe_seq_or_vthr(vp, "Vth"));
 }
 int describe_directory(VDIFUSEntry *vp)
 {
@@ -611,7 +707,7 @@ int describe_params(VDIFUSEntry *vp)
         ctime(&birth));
     if (vdifuse_debug>2) fprintf(vdflog, 
         "  prefix_bytes=%u offset_bytes=%u searchwindow=%u\n"
-        "  bus_errors=%u station_mask=%x\n"
+        "  catchbuserrs=%u station_mask=%x vthr_per_seq=%d\n"
         "  max_pkts_gap=%u max_secs_gap=%f "
             "how_rigorous=" VDIFUSE_RIGOR_PRINTF "\n"
         "  noduplicates=%u seqhierarchy=%u writeblocker=%u\n"
@@ -622,6 +718,7 @@ int describe_params(VDIFUSEntry *vp)
         vp->u.vpars.searchwindow,   // nyi
         vp->u.vpars.catchbuserrs,
         vp->u.vpars.station_mask,
+        vp->u.vpars.vthr_per_seq,
         vp->u.vpars.max_pkts_gap,   // nyi
         vp->u.vpars.max_secs_gap,   // nyi
         vp->u.vpars.how_rigorous,
@@ -635,6 +732,13 @@ int describe_params(VDIFUSEntry *vp)
         vp->u.vpars.frag_top_dir,
         vp->u.vpars.seqs_top_dir
     );
+    if (vdifuse_debug>2 && vp->u.vpars.vthr_per_seq > 0) fprintf(vdflog,
+        "  vthread_list %d,%d,%d,%d,%d,%d,%d,%d sep %u\n",
+        vp->u.vpars.vthread_list[0], vp->u.vpars.vthread_list[1],
+        vp->u.vpars.vthread_list[2], vp->u.vpars.vthread_list[3],
+        vp->u.vpars.vthread_list[4], vp->u.vpars.vthread_list[5],
+        vp->u.vpars.vthread_list[6], vp->u.vpars.vthread_list[7],
+        vp->u.vpars.vthreadseper);
     return(0);
 }
 
@@ -689,6 +793,9 @@ void describe_cache_entry(VDIFUSEntry *vp)
     case VDIFUSE_ENTRY_SEQUENCE:
         (void)describe_sequence(vp);
         break;
+    case VDIFUSE_ENTRY_VTHREADS:
+        (void)describe_vthreads(vp);
+        break;
     case VDIFUSE_ENTRY_DIRECTORY:
         (void)describe_directory(vp);
         break;
@@ -706,11 +813,19 @@ void describe_cache_entry(VDIFUSEntry *vp)
 }
 
 /*
+ * shortcut method
+ */
+void describe_cache_params(void)
+{
+    (void)describe_params(vd_cache);
+}
+
+/*
  * Walk through the list, check and comment as required.
  */
 static int report_on_cache(void)
 {
-    long ee;
+    long ee, vthrs = 0;
     long frags = 0, seqs = 0, dirs = 0, params = 0, anc = 0, invalids = 0;
     VDIFUSEntry *vp;
     for (ee = 0, vp = vd_cache; ee < vd_num_entries; ee++, vp++) {
@@ -722,6 +837,10 @@ static int report_on_cache(void)
         case VDIFUSE_ENTRY_SEQUENCE:
             seqs++;
             if (describe_sequence(vp)) return(2);
+            break;
+        case VDIFUSE_ENTRY_VTHREADS:
+            vthrs++;
+            if (describe_vthreads(vp)) return(6);
             break;
         case VDIFUSE_ENTRY_DIRECTORY:
             dirs++;
@@ -743,9 +862,9 @@ static int report_on_cache(void)
         }
     }
 
-    if (vdifuse_debug>0) fprintf(vdflog,
-        "Have %lu frags %lu seqs %lu dirs %lu params %lu anc %lu invalids\n",
-        frags, seqs, dirs, params, anc, invalids);
+    if (vdifuse_debug>0) fprintf(vdflog, "Have "
+        "%lu frags %lu seqs %lu dirs %lu params %lu anc %lu vthr %lu inv\n",
+        frags, seqs, dirs, params, anc, vthrs, invalids);
     fflush(vdflog);
     return(0);
 }
@@ -759,7 +878,8 @@ static int filelist_from_cache(void)
     VDIFUSEntry *vp;
     for (ee = 0, vp = vd_cache; ee < vd_num_entries; ee++, vp++) {
         /* we only care about this one */
-        if ((vp->etype == VDIFUSE_ENTRY_SEQUENCE) &&
+        if (((vp->etype == VDIFUSE_ENTRY_SEQUENCE) ||
+             (vp->etype == VDIFUSE_ENTRY_VTHREADS)) &&
             report_sequence(vp)) return(2);
     }
     fflush(vdflog);
@@ -775,6 +895,11 @@ static int check_topdirs(void)
     x = vd_cache[VDIFUSE_TOPDIR_PARAMS].u.vpars.seqs_top_dir;
     if (strcmp(x, sequences_topdir))
         return(fprintf(stderr, "%s != %s\n", x, sequences_topdir));
+    if (vthreads_dir) {
+        x = vd_cache[VDIFUSE_TOPDIR_PARAMS].u.vpars.vthr_top_dir;
+        if (strcmp(x, vthreads_topdir))
+            return(fprintf(stderr, "%s != %s\n", x, vthreads_topdir));
+    }
     return(0);
 }
 
@@ -841,6 +966,7 @@ static int update_mount_point(struct stat *mp)
     if (create_root_entry(mp) ||
         create_fragments_entry(mp) ||
         create_sequences_entry(mp) ||
+        create_vthreads_entry(mp) ||
         update_other_entries(mp))
             return(fprintf(stderr, "Issues with mount point\n"));
     return(0);
@@ -875,13 +1001,16 @@ void vdifuse_topdir(int which, struct stat *stbuf)
 {
     switch (which) {
     case VDIFUSE_TOPDIR_ROOT_DIR:
-        *stbuf = vd_cache[1].u.vfuse;
+        *stbuf = vd_cache[VDIFUSE_TOPDIR_ROOT_DIR].u.vfuse;
         break;
     case VDIFUSE_TOPDIR_FRAGMENT:
-        *stbuf = vd_cache[2].u.vfuse;
+        *stbuf = vd_cache[VDIFUSE_TOPDIR_FRAGMENT].u.vfuse;
         break;
     case VDIFUSE_TOPDIR_SEQUENCE:
-        *stbuf = vd_cache[3].u.vfuse;
+        *stbuf = vd_cache[VDIFUSE_TOPDIR_SEQUENCE].u.vfuse;
+        break;
+    case VDIFUSE_TOPDIR_VTHREADS:
+        *stbuf = vd_cache[VDIFUSE_TOPDIR_VTHREADS].u.vfuse;
         break;
     default:
         fprintf(stderr, "Developer Error\n");
@@ -924,6 +1053,22 @@ int vdifuse_sequence(const char *path, struct stat *stbuf)
     if (vdifuse_debug>1) fprintf(vdflog, "Did not find %s\n", path);
     return(1);
 }
+int vdifuse_vthreads(const char *path, struct stat *stbuf)
+{
+    int ii;
+    for (ii = 0; ii < vd_num_entries; ii++) {
+        /* this directory tree contains subdirs and sequences */
+        if (vd_cache[ii].etype != VDIFUSE_ENTRY_DIRECTORY &&
+            vd_cache[ii].etype != VDIFUSE_ENTRY_VTHREADS) continue;
+        if (!strcmp(path, vd_cache[ii].fuse)) {
+            if (vdifuse_debug>1) fprintf(vdflog, "Found %s\n", path);
+            memcpy(stbuf, &vd_cache[ii].u.vfuse, sizeof(struct stat));
+            return(0);
+        }
+    }
+    if (vdifuse_debug>1) fprintf(vdflog, "Did not find %s\n", path);
+    return(1);
+}
 
 /*
  * Support for readdir.
@@ -951,14 +1096,15 @@ int get_vdifuse_fragment(int ii, char **name, struct stat **stbuf)
  * Returns of 0 indicate we are done, otherwise return the
  * nonzero index of the subdirectory or sequence entry.
  */
-int get_vdifuse_sequence(int ii, char **name, struct stat **stbuf)
+static int get_vdifuse_seq_or_vthr(
+    int ii, char **name, struct stat **stbuf, int ee)
 {
     static uint32_t sndx, sdir;
     static VDIFUSEntry *vseq;
     VDIFUSEntry *vc;
 
     if (ii == 0) {                  /* first time through */
-        vseq = &vd_cache[vd_cache[VDIFUSE_TOPDIR_SEQUENCE].cindex];
+        vseq = &vd_cache[vd_cache[ee].cindex];
         sdir = vseq->u.vseqi[sndx = 0];
     } else {                        /* pick up where we left off */
         if (++sndx == VDIFUSE_MAX_SEQI) {
@@ -981,6 +1127,14 @@ int get_vdifuse_sequence(int ii, char **name, struct stat **stbuf)
     }
     return(ii);
 }
+int get_vdifuse_sequence(int ii, char **name, struct stat **stbuf)
+{
+    return(get_vdifuse_seq_or_vthr(ii, name, stbuf, VDIFUSE_TOPDIR_SEQUENCE));
+}
+int get_vdifuse_vthreads(int ii, char **name, struct stat **stbuf)
+{
+    return(get_vdifuse_seq_or_vthr(ii, name, stbuf, VDIFUSE_TOPDIR_VTHREADS));
+}
 
 /*
  * Return the index of the sequence subdirectory matching path, if found.
@@ -989,17 +1143,25 @@ int get_vdifuse_sequence(int ii, char **name, struct stat **stbuf)
  * is needed to locate the parent subdirectory so that the second can
  * unload starting there.
  */
-int get_sequence_subdir(const char *path)
+static int get_seq_or_vthr_subdir(const char *path, int ee)
 {
     int ii;
     for (ii = 0 ; ii < vd_num_entries; ii++) {
-        if (vd_cache[ii].etype != VDIFUSE_ENTRY_SEQUENCE &&
+        if (vd_cache[ii].etype != ee &&
             vd_cache[ii].etype != VDIFUSE_ENTRY_DIRECTORY) continue;
         if (strcmp(path, vd_cache[ii].fuse)) continue;
         if (vdifuse_debug>1) fprintf(vdflog, "Found %s entry %d\n", path, ii);
         return(ii);
     }
     return(0);
+}
+int get_sequence_subdir(const char *path)
+{
+    return(get_seq_or_vthr_subdir(path, VDIFUSE_ENTRY_SEQUENCE));
+}
+int get_vthreads_subdir(const char *path)
+{
+    return(get_seq_or_vthr_subdir(path, VDIFUSE_ENTRY_VTHREADS));
 }
 int get_vdifuse_subdir(int ii, char **name, struct stat **stbuf)
 {
@@ -1008,6 +1170,7 @@ int get_vdifuse_subdir(int ii, char **name, struct stat **stbuf)
     VDIFUSEntry *vc;
 
     if (vd_cache[ii].etype == VDIFUSE_ENTRY_SEQUENCE ||
+        vd_cache[ii].etype == VDIFUSE_ENTRY_VTHREADS ||
         vd_cache[ii].etype == VDIFUSE_ENTRY_DIRECTORY) {    /* first time */
         if (vd_cache[ii].cindex == 0) return(0);
         vseq = &vd_cache[vd_cache[ii].cindex];
@@ -1026,7 +1189,7 @@ int get_vdifuse_subdir(int ii, char **name, struct stat **stbuf)
     } else {
         vc = &vd_cache[sdir];
         *name = strrchr(vc->fuse, '/');
-        if (!*name) *name = "/.damaged-sequence";
+        if (!*name) *name = "/.damaged-seq-or-vthr";
         (*name) ++;
         *stbuf = &vc->u.vfuse;
         ii = vseq - vd_cache;       /* index of current entry */
@@ -1041,8 +1204,11 @@ int get_vdifuse_subdir(int ii, char **name, struct stat **stbuf)
  */
 static int vdifuse_issues(void)
 {
-    fprintf(vdflog, "Single-threaded VDIF is expected.\n");
-    fprintf(vdflog, "Multi-threaded VDIF is not currently supported.\n");
+    fprintf(vdflog, "\n");
+    fprintf(vdflog, "Single-threaded VDIF is the most tested.\n");
+    fprintf(vdflog, "Multi-threaded VDIF is minimally supported for sg2:\n");
+    fprintf(vdflog, "  (VGOS) every sg2 block is a single thread.\n");
+    fprintf(vdflog, "  (NOEMA) vpts threads expected per slot.\n");
     fprintf(vdflog, "A single data rate is expected and must be\n");
     fprintf(vdflog, "  supplied for good results: i.e. -xrate=pkts/sec.\n");
     fprintf(vdflog, "Many cases of data corruption are handled, but\n");
@@ -1056,6 +1222,7 @@ static int vdifuse_issues(void)
  */
 static int vdifuse_examples(void)
 {
+    fprintf(vdflog, "\n");
     fprintf(vdflog, "With single-threaded Mark6 scatter-gather files,\n");
     fprintf(vdflog, "\n");
     fprintf(vdflog, "  vdifuse -a <label>.cache -xm6sg -xrate=125000 \\ \n");
@@ -1065,16 +1232,41 @@ static int vdifuse_examples(void)
     fprintf(vdflog, "group on a set of modules <label> (e.g. one session\n");
     fprintf(vdflog, "from some experiment) and mount it locally.\n");
     fprintf(vdflog, "\n");
-    fprintf(vdflog, "At the moment the packet rate is required.\n");
+    fprintf(vdflog, "The packet rate is required for best results.\n");
     fprintf(vdflog, "\n");
     fprintf(vdflog, "For a subset of scans, -xinclpatt=<RE> can be used\n");
     fprintf(vdflog, "to restrict attention to the scans of interest.\n");
     fprintf(vdflog, "\n");
-    return(0);
+    fprintf(vdflog, "See prep-one-scan.sh for more sophisticated usage.\n");
+    fprintf(vdflog, "\n");
+    return(1);
+}
+
+static int vdifuse_vthrhelp(void)
+{
+    fprintf(vdflog, "\n");
+    fprintf(vdflog, "There are three flavors of support for VDIF threads.\n");
+    fprintf(vdflog, "\n");
+    fprintf(vdflog, "In the normal case, the fragments are assumed to be\n");
+    fprintf(vdflog, "single-threaded (vtps=1) and a single-threaded\n");
+    fprintf(vdflog, "segment is generated.\n");
+    fprintf(vdflog, "\n");
+    fprintf(vdflog, "THIS IS IN DEVELOPMENT:\n");
+    fprintf(vdflog, "If there are multiple threads in the fragments (the\n");
+    fprintf(vdflog, "NOEMA case) then vtps=4 must be supplied (and the\n");
+    fprintf(vdflog, "processing must be per-slot).\n");
+    fprintf(vdflog, "\n");
+    fprintf(vdflog, "THIS IS NOT YET IMPLEMENTED:\n");
+    fprintf(vdflog, "If there are multiple threads in the fragments, but\n");
+    fprintf(vdflog, "each block is homogeneous (VGOS), then single-threaded\n");
+    fprintf(vdflog, "segments can be created under the vthreads directory.\n");
+    fprintf(vdflog, "\n");
+    return(1);
 }
 
 static int vdifuse_env(void)
 {
+    fprintf(vdflog, "\n");
     fprintf(vdflog, "For Mark6 scatter-gather (sg) files, two\n");
     fprintf(vdflog, "environment variables may be used to adjust\n");
     fprintf(vdflog, "the performance:\n");
@@ -1088,12 +1280,19 @@ static int vdifuse_env(void)
     fprintf(vdflog, "    advice strategy:\n");
     fprintf(vdflog, "    0   disabled\n");
     fprintf(vdflog, "    1   madvise 'sequential'\n");
-    fprintf(vdflog, "    2   madvise 'will need'\n");
+    fprintf(vdflog, "    2   madvise 'will need' (default)\n");
     fprintf(vdflog, "    3   fadvise 'will need'\n");
-//  fprintf(vdflog, "    Two additional methods (4 & 5) that are even\n");
-//  fprintf(vdflog, "    more aggressive have not been implemented.\n");
+    fprintf(vdflog, "    4   spawns threads to read ahead\n");
+    fprintf(vdflog, "    5   same thing, different plan (broken)\n");
+    fprintf(vdflog, "1-3 depend on the kernel, OS and read-ahead (which");
+    fprintf(vdflog, "may be adjusted with the set-read-ahead.sh script).\n");
+    fprintf(vdflog, "If those do not work, method 4 should do better.\n");
     fprintf(vdflog, "\n");
-    return(0);
+    fprintf(vdflog, "You can do this:\n");
+    fprintf(vdflog, "  SG_ACCESS_ADVICE=? ... prep-one-scan.sh\n");
+    fprintf(vdflog, "or make a custom script\n");
+    fprintf(vdflog, "\n");
+    return(1);
 }
 
 /*
@@ -1107,6 +1306,7 @@ static int vdifuse_options_help(void)
     fprintf(vdflog, "  help          provides this help\n");
     fprintf(vdflog, "  issues        provides some additional info\n");
     fprintf(vdflog, "  examples      provides some examples\n");
+    fprintf(vdflog, "  vthreads      provides some help on vdif threads\n");
     fprintf(vdflog, "  env           help on environment variables\n");
 
     fprintf(vdflog, "\n");
@@ -1155,8 +1355,11 @@ static int vdifuse_options_help(void)
         clvpo.frag_top_dir);
     fprintf(vdflog, "  seqs=<string> top-dir name for sequences (%s)\n",
         clvpo.seqs_top_dir);
-    fprintf(vdflog, "  smask=<float> station mask for sg files (%x)\n",
+    fprintf(vdflog, "  smask=<float> station mask for sg files (0x%X)\n",
         clvpo.station_mask);
+    fprintf(vdflog, "  vtps=<int>    # of threads per sequence (%d)\n",
+        clvpo.vthr_per_seq);
+    /* TODO: vthreads for _dir case */
     regexhelp(vdflog);
 
     fprintf(vdflog, "\n");
@@ -1164,6 +1367,8 @@ static int vdifuse_options_help(void)
     fprintf(vdflog, "  files         setup for general files\n");
     fprintf(vdflog, "  m6sg          setup for Mark6 scatter-gather dirs\n");
     fprintf(vdflog, "  m6raid        setup for Mark6 raid dirs\n");
+    fprintf(vdflog, "  m6noema       setup for Mark6 (sg) NOEMA\n");
+    fprintf(vdflog, "  m6vgos        setup for Mark6 (sg) VGOS\n");
     fprintf(vdflog, "(i.e. -xm6sg -xrate=125000)\n");
     fprintf(vdflog, "\n");
 
@@ -1192,16 +1397,26 @@ static void rigor_help(void)
     fprintf(vdflog,
         "  " VDIFUSE_RIGOR_HPRINTF "  tests for min file size (%d)\n",
         VDIFUSE_RIGOR_MINSIZE, VDIFUSE_MIN_FILE_SIZE);
+    fprintf(vdflog,
+        "  " VDIFUSE_RIGOR_HPRINTF "  tests based on regex on name\n",
+        VDIFUSE_RIGOR_REGEX);
+    fprintf(vdflog,
+        "  " VDIFUSE_RIGOR_HPRINTF "  tests based on vthreads for sequences\n",
+        VDIFUSE_RIGOR_VTHRSEQ);
+    fprintf(vdflog,
+        "  " VDIFUSE_RIGOR_HPRINTF "  tests based on vthreads for directory\n",
+        VDIFUSE_RIGOR_VTHRDIR);
     fprintf(vdflog, "\n");
 }
 
 /*
  * Handler for command-line options.
- * clvpo is probably initialized to 0, but making sure is ok.
+ * clvpo should be initialized to 0, and a few things have non-zero
+ * default values, now.
  */
 int vdifuse_options(char *arg)
 {
-    if (clvpo.creation.tv_sec) memset(&clvpo, 0, sizeof(clvpo));
+/*  if (clvpo.creation.tv_sec) memset(&clvpo, 0, sizeof(clvpo)); */
 
     if (!strncmp(arg, "help", 4)) {
         return(vdifuse_options_help());
@@ -1209,6 +1424,8 @@ int vdifuse_options(char *arg)
         return(vdifuse_issues());
     } else if (!strncmp(arg, "examples", 8)) {
         return(vdifuse_examples());
+    } else if (!strncmp(arg, "vthreads", 8)) {
+        return(vdifuse_vthrhelp());
     } else if (!strncmp(arg, "env", 3)) {
         return(vdifuse_env());
 
@@ -1293,7 +1510,12 @@ int vdifuse_options(char *arg)
     } else if (!strncmp(arg, "smask=", 6)) {
         clvpo.station_mask = atoi(arg + 6);
         if (vdifuse_debug>0) fprintf(vdflog,
-            "Masking sg signatures with %4X\n", clvpo.station_mask);
+            "Masking sg signatures with 0x%4X\n", clvpo.station_mask);
+    } else if (!strncmp(arg, "vtps=", 5)) {
+        clvpo.vthr_per_seq = atoi(arg + 5);
+        if (vdifuse_debug>0) fprintf(vdflog,
+            "Expecting %d vthreads per file sequence\n", clvpo.vthr_per_seq);
+        vthreads_seq = 1;
 
     } else if (!strncmp(arg, "frag=", 5)) {
         if (arg[5] == '/' && strlen(arg+5) < VDIFUSE_TOPDIR_SIZE) {
@@ -1313,6 +1535,8 @@ int vdifuse_options(char *arg)
         } else {
             fprintf(stderr, "%s is not suitable for sequences\n", arg+5);
         }
+
+    /* TODO: options for NOEMA vthreads_dir case */
 
     /*
      * Support for exclude/include capabilities
@@ -1359,6 +1583,12 @@ int vdifuse_options(char *arg)
         clvpo.noduplicates = 1;
         clvpo.writeblocker = 0;
         clvpo.how_rigorous = VDIFUSE_RIGOR_ENAME | VDIFUSE_RIGOR_MINSIZE;
+    } else if (!strncmp(arg, "m6raid", 6)) {
+        if (vdifuse_debug>0) fprintf(vdflog,
+            "Development setup for Mark6 Raid.\n");
+        clvpo.noduplicates = 1;
+        clvpo.writeblocker = 0;
+        clvpo.how_rigorous = VDIFUSE_RIGOR_ENAME | VDIFUSE_RIGOR_MINSIZE;
     } else if (!strncmp(arg, "m6sg", 4)) {
         if (vdifuse_debug>0) fprintf(vdflog,
             "Development setup Mark6 SG vers 2.\n");
@@ -1370,12 +1600,35 @@ int vdifuse_options(char *arg)
         clvpo.seqhierarchy = 3;
         clvpo.writeblocker = 10000000;
         clvpo.pkts_per_sec = 125000;
-    } else if (!strncmp(arg, "m6raid", 6)) {
+    } else if (!strncmp(arg, "m6noema", 7)) {
         if (vdifuse_debug>0) fprintf(vdflog,
-            "Development setup for Mark6 Raid.\n");
-        clvpo.noduplicates = 1;
-        clvpo.writeblocker = 0;
+            "Development setup Mark6 SG vers 2 for NOEMA.\n");
+        vdifuse_protect = 1;
+        vdifuse_reuse = 1;
+        clvpo.noduplicates = 0;
+        clvpo.catchbuserrs = 1;
         clvpo.how_rigorous = VDIFUSE_RIGOR_ENAME | VDIFUSE_RIGOR_MINSIZE;
+        clvpo.how_rigorous |= VDIFUSE_RIGOR_MAGIC | VDIFUSE_RIGOR_VTHRSEQ;
+        clvpo.seqhierarchy = 3;
+        clvpo.writeblocker = 10000000;
+        clvpo.pkts_per_sec = 125000;
+        clvpo.vthr_per_seq = 4;
+    } else if (!strncmp(arg, "m6vgos", 6)) {
+        if (vdifuse_debug>0) fprintf(vdflog,
+            "Development setup Mark6 SG vers 2 for VGOS.\n");
+        fprintf(stderr, "ERROR: m6vgos is not implmented\n");
+        /* the following requires support of _dir vthreads */
+        vdifuse_protect = 1;
+        vdifuse_reuse = 1;
+        clvpo.noduplicates = 0;
+        clvpo.catchbuserrs = 1;
+        clvpo.how_rigorous = VDIFUSE_RIGOR_ENAME | VDIFUSE_RIGOR_MINSIZE;
+        clvpo.how_rigorous |= VDIFUSE_RIGOR_MAGIC | VDIFUSE_RIGOR_VTHRDIR;
+        clvpo.seqhierarchy = 3;
+        clvpo.writeblocker = 10000000;
+        clvpo.pkts_per_sec = 125000;
+        clvpo.vthr_per_seq = 0;     /* vthreads doesn't use sequences */
+        return(1);
     } 
 
     return(0);

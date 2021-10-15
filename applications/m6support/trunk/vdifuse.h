@@ -1,7 +1,8 @@
 /*
- * $Id: vdifuse.h 4248 2017-02-28 22:37:57Z gbc $
+ * $Id: vdifuse.h 5276 2021-08-05 21:46:20Z gbc $
  *
  * This file provides support for the fuse interface
+ * ## items are not fully implemented
  */
 
 #ifndef vdifuse_h
@@ -16,8 +17,11 @@
 
 /* internal release number */
 #ifndef VDIFUSE_VERSION
-#define VDIFUSE_VERSION 0.0
+#error "VDIFUSE_VERSION needs to be supplied by Makefile"
 #endif /* VDIFUSE_VERSION */
+
+/* readdir_r() is deprecated -- set to 1 for old code */
+#define USE_READDIR_R   0
 
 #define VDIFUSE_MAX_PATH 256
 #define VDIFUSE_SEARCH_MAX 9999
@@ -29,6 +33,15 @@
 #define VDIFUSE_NUM_VOIDS (VDIFUSE_MAX_SEQI*sizeof(uint32_t)/sizeof(void*))
 #define VDIFUSE_TOPDIR_SIZE 16
 
+/* vthread support */
+#define VDIFUSE_MAX_VTHREADS 8
+/* need a legal value to flag garbage */
+#define VTHREAD_BOGUS        0xFFFF
+/* upper bits of vthread entry */
+#define VTHREAD_FLAG_IGNORE  0x00000
+#define VTHREAD_FLAG_SINGLE  0x10000
+#define VTHREAD_FLAG_MIXED   0x20000
+
 /* ns timing on files -- one of these appears to be set in stdio.h */
 #if !(defined(_BSD_SOURCE) || defined(_SVID_SOURCE) || defined(_POSIX_C_SOURCE))
 #error "none of _BSD_SOURCE, _SVID_SOURCE or _POSIX_C_SOURCE was defined"
@@ -37,10 +50,13 @@
 /* top-level subdirs of primary mount */
 #define VDIFUSE_FRAGMENTS "/fragments"
 #define VDIFUSE_SEQUENCES "/sequences"
+#define VDIFUSE_VTHREADS  "/vthreads"
 extern char fragments_topdir[VDIFUSE_TOPDIR_SIZE];
 extern char sequences_topdir[VDIFUSE_TOPDIR_SIZE];
+extern char vthreads_topdir[VDIFUSE_TOPDIR_SIZE];
 extern int fragments_topdir_len;
 extern int sequences_topdir_len;
+extern int vthreads_topdir_len;
 
 /* set when -d for fuse is */
 extern int vdifuse_debug;
@@ -59,6 +75,12 @@ extern int vdifuse_protect;
 
 /* allow the mount point to be forcibly reused */
 extern int vdifuse_reuse;
+
+/* original homogeneous case has both of these as 0 */
+/* allow vthread directory logic to be accessed: 0 or 1 (VGOS) */
+extern int vthreads_dir;
+/* allow vthreads mixed into sequences: 0 or 1 (NOEMA) */
+extern int vthreads_seq;
 
 /* parse command-line options and trigger pre-fuse_main() work */
 extern int vdifsup_opts(int *argc, char **argv[]);
@@ -100,16 +122,20 @@ typedef struct vdifuse_pars {
     float       dropfraction;       /* ## rate of dropped packets */
     uint32_t    catchbuserrs;       /* activate bus error handler */
     uint32_t    station_mask;       /* for sg_signature() use */
-    uint32_t    reserved_two;       /* reserved for future use */
+    uint32_t    vthr_per_seq;       /* vthreads allowed per sequence */
     uint32_t    reserved_tre;       /* reserved for future use */
-    uint32_t    reserved_fur;       /* reserved for future use */
-    /* topdir names for fragments and sequences */
+    /* topdir names for fragments, sequences and threads */
     char        frag_top_dir[VDIFUSE_TOPDIR_SIZE];
     char        seqs_top_dir[VDIFUSE_TOPDIR_SIZE];
+    char        vthr_top_dir[VDIFUSE_TOPDIR_SIZE];
     /* discovered information */
     uint32_t    maxfrcounter;       /* largest frame count seen */
     uint32_t    est_pkt_rate;       /* estimated rate */
+    uint32_t    vthreadseper;       /* vthreadsep of the frags */
     struct timeval  creation;       /* time of cache creation */
+    /* provisional vthread support: requested, found, viable */
+    uint16_t    vthread_list[VDIFUSE_MAX_VTHREADS];
+    uint16_t    reserved_fiv[2*VDIFUSE_MAX_VTHREADS];
 } VDIFUSEpars;
 
 /*
@@ -118,19 +144,20 @@ typedef struct vdifuse_pars {
  *  FRAGMENT:  (vfuse) non struct stat per-file data (for fragments)
  *  DIRECTORY: (vfuse) subdirectory information
  *  SEQUENCE:  (vseqi) storage for sequences, follows DIRECTORY
- *  ANCILLARY: (voids) ancillary data (##sgv2), follows FRAGMENT
+ *  VTHREAD:   (vseqi) storage for threads, follows SEQUENCE
+ *  ANCILLARY: (voids) ancillary data (sgv2), follows FRAGMENT
  *  INVALID:   (voids) empty entries in cache to ignore
  * 
- * ## items are not fully implemented
  */
 typedef struct vdifuse_entry {
     uint32_t    index;                      /* index in array of entries */
-    uint32_t    etype;                      /* see VDIFUSE_ENTRY_* above */
+    uint8_t     etype;                      /* see VDIFUSE_ENTRY_* above */
 
     /* need a union over additional stuff */
+    uint8_t     stype;                      /* S(ub)TYPE frag/seq/anc */
+    uint32_t    vthread;                    /* if single vthreads here */
+    uint16_t    reserved;
     uint64_t    vsig;                       /* vdif signature of frag/seq */
-    uint32_t    entry_pps;                  /* packets per sec of frag/seq */
-    uint32_t    stype;                      /* s(ub)type frag/seq/anc */
     uint32_t    cindex;                     /* continuation index */
     uint32_t    ccount;                     /* continuation count */
 
@@ -151,23 +178,29 @@ extern int describe_struct(void);
 extern int describe_params(VDIFUSEntry *vp);
 extern int describe_fragment(VDIFUSEntry *vp);
 extern int describe_sequence(VDIFUSEntry *vp);
+extern int describe_vthreads(VDIFUSEntry *vp);
 extern int describe_directory(VDIFUSEntry *vp);
 extern int describe_ancillary(VDIFUSEntry *vp);
 /* a switch into the above, ignoring checking */
 extern void describe_cache_entry(VDIFUSEntry *vp);
+/* alternate call */
+extern void describe_cache_params(void);
 
 /* getattr support: return 0 if path is a fragment or sequence */
 extern int vdifuse_fragment(const char *path, struct stat *stbuf);
 extern int vdifuse_sequence(const char *path, struct stat *stbuf);
+extern int vdifuse_vthreads(const char *path, struct stat *stbuf);
 #define VDIFUSE_TOPDIR_PARAMS   0
 #define VDIFUSE_TOPDIR_ROOT_DIR 1
 #define VDIFUSE_TOPDIR_FRAGMENT 2
 #define VDIFUSE_TOPDIR_SEQUENCE 3
+#define VDIFUSE_TOPDIR_VTHREADS 4
 extern void vdifuse_topdir(int which, struct stat *stbuf);
 
 /* readdir support: provide index (name and stbuf) of next fragment */
 extern int get_vdifuse_fragment(int index, char **name, struct stat **stbuf);
 extern int get_vdifuse_sequence(int index, char **name, struct stat **stbuf);
+extern int get_vdifuse_vthreads(int index, char **name, struct stat **stbuf);
 
 /* for ffi_info.errors */
 #define VDIFUSE_FFIERROR_NONE   0
@@ -197,8 +230,9 @@ extern int vorr_open(const char *fusepath, FFInfo *ffi);
 extern int vorr_release(const char *fusepath, FFInfo *ffi);
 extern int vorr_read(const char *fusepath, char *buf, FFInfo *ffi);
 
-/* support for the sequence hierarchy */
+/* support for the sequence (or vthreads) hierarchy */
 extern int get_sequence_subdir(const char *path);
+extern int get_vthreads_subdir(const char *path);
 extern int get_vdifuse_subdir(int index, char **name, struct stat **sb);
 
 /* external access to the cache for (careful) manipulations */
@@ -218,6 +252,7 @@ void describe_cache_entry(VDIFUSEntry *vp);
 #define VDIFUSE_ENTRY_DIRECTORY 3   /* a directory within fuse mount */
 #define VDIFUSE_ENTRY_PARAMS    4   /* parameters used to find files */
 #define VDIFUSE_ENTRY_ANCILLARY 5   /* ancillary data with any above */
+#define VDIFUSE_ENTRY_VTHREADS  6   /* fragments makes complete file */
 
 /* defined values for the stype in a VMDCentry */
 #define VDIFUSE_STYPE_NULL      0   /* (Fragment) unused */
@@ -227,21 +262,23 @@ void describe_cache_entry(VDIFUSEntry *vp);
 #define VDIFUSE_STYPE_SDIR      4   /* (Ancillary) subdir of subdir */
 #define VDIFUSE_STYPE_PART      5   /* (Ancillary) of sequence */
 #define VDIFUSE_STYPE_NDEF      6   /* not (yet) defined */
-//#define VDIFUSE_STYPE_BLKV    7   /* ## blocked VDIF */
+//#define VDIFUSE_STYPE_BLKV    7   /* ## blocked VDIF * /
 
 /* perform any closeout operations */
 extern int vdifuse_finish(void);
 
 /* fragment survey evaluations */
-#define VDIFUSE_RIGOR_NOCHECK   0x000001 /* consider everything valid */
-#define VDIFUSE_RIGOR_SUFFIX    0x000010 /* <whateveritmightbe>.vdif */
-#define VDIFUSE_RIGOR_ENAME     0x000100 /* <exp>_<sc>_<scan><ignore>.vdif */
-#define VDIFUSE_RIGOR_MAGIC     0x001000 /* magic number in file (sg2) */
-#define VDIFUSE_RIGOR_MINSIZE   0x010000 /* stat the file for min size */
-#define VDIFUSE_RIGOR_REGEX     0x100000 /* regex exclude/include used */
+#define VDIFUSE_RIGOR_NOCHECK   0x00000001 /* consider everything valid */
+#define VDIFUSE_RIGOR_SUFFIX    0x00000010 /* <whateveritmightbe>.vdif */
+#define VDIFUSE_RIGOR_ENAME     0x00000100 /* <exp>_<sc>_<scan><ignore>.vdif */
+#define VDIFUSE_RIGOR_MAGIC     0x00001000 /* magic number in file (sg2) */
+#define VDIFUSE_RIGOR_MINSIZE   0x00010000 /* stat the file for min size */
+#define VDIFUSE_RIGOR_REGEX     0x00100000 /* regex exclude/include used */
+#define VDIFUSE_RIGOR_VTHRSEQ   0x01000000 /* acceptable to vthreads_seq */
+#define VDIFUSE_RIGOR_VTHRDIR   0x10000000 /* acceptable to vthreads_dir */
 /* for printing what we have */
-#define VDIFUSE_RIGOR_HPRINTF    "%06x"
-#define VDIFUSE_RIGOR_PRINTF    "[%06x]"
+#define VDIFUSE_RIGOR_HPRINTF    "%08x"
+#define VDIFUSE_RIGOR_PRINTF    "[%08x]"
 extern int vdif_rigor_frag(char *path, VDIFUSEpars *pars);
 
 /* populate vfuse entry for a valid file */
@@ -255,6 +292,9 @@ extern int create_fragtree(void);
 
 /* support for sequence creation */
 extern int create_sequences(void);
+
+/* support for vthreads creation */
+extern int create_vthreads(void);
 
 /* sg access wrappers */
 extern uint64_t sg_signature(uint32_t *vh);
@@ -297,6 +337,7 @@ extern int regexcheck(char *path);
 /* trace utilities */
 extern void vdifuse_mktrace(char *c, char *m);
 extern void vdifuse_rmtrace(int rv);
+extern void vdifuse_marker(char *what);
 extern void vdifuse_trace(char *fmt, ...);
 extern void vdifuse_flush_trace(void);
 extern void vdifuse_bread(char *fmt, ...);

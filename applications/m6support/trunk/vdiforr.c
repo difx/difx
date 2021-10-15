@@ -1,5 +1,5 @@
 /*
- * $Id: vdiforr.c 3892 2016-04-17 20:01:45Z gbc $
+ * $Id: vdiforr.c 5280 2021-08-08 23:48:58Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -121,6 +121,7 @@ int do_vorr_open(const char *fusepath, FFInfo *ffi)
 {
     VDIFUSEntry *vs;
     vdifuse_trace(VDT("Opening %s\n"), fusepath);
+    vdifuse_marker("open");
     vdifuse_flush_trace();
     if(fusepath_to_realpath(fusepath)) {
         ffi->fh = realfd;
@@ -173,8 +174,11 @@ static void report_access(const FFInfo *ffi, const char *path)
     if (vdifuse_debug>1) fprintf(vdflog,
         "Clearing stored data for %s at fh %lu\n",
             (current_cache_start() + ffi->sindex)->fuse, ffi->fh);
-    vdifuse_trace(VDT("Clos[%d] %s, %lu B in %.3f s, %.3f MB/s\n"),
-        ffi->fh, path, ffi->totrb, dt, 1e-06 * (double)ffi->totrb / dt);
+    vdifuse_trace(VDT("Clos[%d] %s, %lu B in %.3f s\n"),
+        ffi->fh, path, ffi->totrb, dt);
+    vdifuse_trace(VDT("clos[%d] %.3f MB/s %.0f Mbps\n"),
+        1e-06 * (double)ffi->totrb / dt, 8e-06 * (double)ffi->totrb / dt);
+    vdifuse_marker("clos");
     vdifuse_flush_trace();
 }
 

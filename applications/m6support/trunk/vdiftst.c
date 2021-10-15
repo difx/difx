@@ -1,5 +1,5 @@
 /*
- * $Id: vdiftst.c 4248 2017-02-28 22:37:57Z gbc $
+ * $Id: vdiftst.c 5288 2021-08-14 13:18:11Z gbc $
  *
  * This file provides support for the fuse interface.
  * This file contains methods to label a file as valid VDIF.
@@ -11,12 +11,16 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 #include "vdif.h"
 #include "vdif_epochs.h"
 #include "vdifuse.h"
+
+/* included for vdif_rigor_by_vthrdir() and vdif_rigor_by_vthrseq() */
+#include "sg_access.h"
 
 /* VDIFUSE_SEARCH_MAX is at least long enough for a full VDIF packet */
 #define BUF_SIZ (2*VDIFUSE_SEARCH_MAX + 1)
@@ -114,17 +118,134 @@ static int vdif_rigor_by_regex(char *path, VDIFUSEpars *pars)
 }
 
 /*
+ * Support routine for vthread_list discovery.  The first fragment
+ * found with a legal set of threads forces all subsequent fragments
+ * to match.  Note: vthread_list is uint16_t but sgip->vthreads is short.
+ * Returns 1 if there is a match on threads, otherwise 0.
+ */
+static int comp_uint16(const void *sa, const void *sb)
+{
+    int dif = (int)(*(uint16_t*)sa) - (int)(*(uint16_t*)sb);
+    if (dif < 0) return(-1);
+    if (dif > 0) return( 1);
+    return(0);
+}
+static int comp_short(const void *sa, const void *sb)
+{
+    int dif = (int)(*(short*)sa) - (int)(*(short*)sb);
+    if (dif < 0) return(-1);
+    if (dif > 0) return( 1);
+    return(0);
+}
+/*
+ * We should expect all fragments to share the same thread ids
+ * as well as the separation between threads.  The first fragment
+ * sets these values and the subsequent fragments are checked.
+ * A minor complication is that sg_access uses a signed short
+ * for the thread id whereas vdifuse uses uint32_t.  So the illegal
+ * or unassigned slots have -1 or VTHREAD_BOGUS, respectively.
+ */
+static int update_vthread_list(SGInfo *sgip, VDIFUSEpars *pars)
+{
+    VDIFUSEpars *ccp = current_cache_pars();
+    int vv, vc;
+    if (vdifuse_debug>2) describe_cache_params();
+    if (ccp->vthread_list[0] == VTHREAD_BOGUS) {  /* first time */
+        ccp->vthreadseper = sgip->vthreadsep;
+        for (vv = 0; vv < VDIFUSE_MAX_VTHREADS; vv++)
+            if (sgip->vthreads[vv] >= 0 &&
+                sgip->vthreads[vv] <= MAX_LEGAL_THREAD_ID)
+                ccp->vthread_list[vv] = sgip->vthreads[vv];
+            else
+                ccp->vthread_list[vv] = VTHREAD_BOGUS;
+        qsort(ccp->vthread_list,
+            VDIFUSE_MAX_VTHREADS, sizeof(uint16_t), comp_uint16);
+        if (vdifuse_debug>2) describe_cache_params();
+        return(1);
+    } else {    /* subsequent fragments */
+        if (sgip->vthreadsep != ccp->vthreadseper) return(1);
+        if (vdifuse_debug>2) describe_cache_params();
+        qsort(sgip->vthreads,
+            VDIFUSE_MAX_VTHREADS, sizeof(short), comp_short);
+        for (vc = vv = 0; vv < VDIFUSE_MAX_VTHREADS; vv++) {
+            if (sgip->vthreads[vv] < 0) continue;   /* skip -1 entries */
+            if (sgip->vthreads[vv] != ccp->vthread_list[vc++]) break;
+        }
+        /* found all threads */
+        if (vv == VDIFUSE_MAX_VTHREADS && vc == ccp->vthr_per_seq)
+            return(1);
+        if (vdifuse_debug>3) fprintf(vdflog,
+            "    update_vthread_list: fail %d %d\n", vv, vc);
+    }
+    return(0);
+}
+
+/*
+ * Check to see if the file is suitable for use in a multi-thread sequence
+ * Open the file and see if it contains the required number of threads
+ * with no separation between threads.
+ */
+static int vdif_rigor_by_vthrseq(char *path, VDIFUSEpars *pars)
+{
+    SGInfo sgi;
+    if ((pars->how_rigorous & VDIFUSE_RIGOR_VTHRSEQ) == 0)
+        return(VDIFUSE_RIGOR_NOCHECK);
+    memset(&sgi, 0, sizeof(sgi));
+    sgi.frame_cnt_max = pars->pkts_per_sec;
+    if (vdifuse_debug>2) sgi.verbose = vdifuse_debug - 1;
+    sg_access(path, &sgi);
+    /* at the moment, we're only concerned with the sgv2 case */
+    if (sgi.sg_version != SG_VERSION_OK_2) return(0);
+    if (sgi.nvthreads == pars->vthr_per_seq &&
+        sgi.vthreadsep == 0 &&
+        update_vthread_list(&sgi, pars))
+        return(VDIFUSE_RIGOR_VTHRSEQ);
+    return(0);
+}
+
+/*
+ * Check to see if the file is suitable for use in a vthreads directory
+ * Open the file and see if it has homogeneous blocks, that is, that
+ * the separation between threads is at least the size of the write block.
+ */
+static int vdif_rigor_by_vthrdir(char *path, VDIFUSEpars *pars)
+{
+    SGInfo sgi;
+    if ((pars->how_rigorous & VDIFUSE_RIGOR_VTHRDIR) == 0)
+        return(VDIFUSE_RIGOR_NOCHECK);
+    memset(&sgi, 0, sizeof(sgi));
+    sgi.frame_cnt_max = pars->pkts_per_sec;
+    if (vdifuse_debug>2) sgi.verbose = vdifuse_debug - 1;
+    sg_access(path, &sgi);
+    /* at the moment, we're only concerned with the sgv2 case */
+    if (sgi.sg_version != SG_VERSION_OK_2) return(0);
+    if (sgi.nvthreads == pars->vthr_per_seq &&
+        sgi.vthreadsep >= sgi.sg_wr_pkts)
+        return(VDIFUSE_RIGOR_VTHRDIR);
+    return(0);
+}
+
+/*
  * Other tests could be added here, culminating with the test director.
+ * The bits in rigor are ultimately masked with the required bits, so
+ * VDIFUSE_RIGOR_NOCHECK is generally set, but ignored.
  */
 int vdif_rigor_frag(char *path, VDIFUSEpars *pars)
 {
-    int rigor = 0;
+    int rigor = 0, rigorx;
     rigor |= vdif_rigor_by_nocheck(path, pars);
     rigor |= vdif_rigor_by_suffix(path, pars);
     rigor |= vdif_rigor_by_ename(path, pars);
     rigor |= vdif_rigor_by_magic(path, pars);
     rigor |= vdif_rigor_by_minsize(path, pars);
-    rigor |= vdif_rigor_by_regex(path, pars);
+    rigorx = vdif_rigor_by_regex(path, pars);
+    rigor |= rigorx;
+    /* only do this if regex is invoked due to the sg effort */
+    if (rigorx == VDIFUSE_RIGOR_NOCHECK ||
+        rigorx == VDIFUSE_RIGOR_REGEX) {
+        rigor |= vdif_rigor_by_vthrseq(path, pars);
+        rigor |= vdif_rigor_by_vthrdir(path, pars);
+    }
     if (vdifuse_debug>3) fprintf(vdflog,
         "    passed tests " VDIFUSE_RIGOR_PRINTF "\n", rigor);
     return(rigor);
@@ -595,7 +716,7 @@ static int analyze_fragment_sgv2_harder(const char *path, struct stat *vfuse,
     /* TODO: call find_the_damn_rate_sgv2() when it isn't a no-op */
     // pkt_rate = pars->pkts_per_sec;
 
-    if ((vdifuse_debug>0) && (failcode && !err)) fprintf(vdflog,
+    if ((vdifuse_debug>1) && (failcode && !err)) fprintf(vdflog,
         "Problematic file %s [%d -> %d] saved\n", path, failcode, err);
     fclose(fp);
     if (err) return(err);
@@ -618,7 +739,7 @@ static int analyze_fragment_sgv2_harder(const char *path, struct stat *vfuse,
  * this would be needed if the fragments weren't broken on packet edges.
  */
 static int analyze_fragment(const char *path, struct stat *vfuse,
-    VDIFUSEpars *pars, int rigor, uint32_t *stype)
+    VDIFUSEpars *pars, int rigor, uint8_t *stype)
 {
     int rv, rvh = 0;
     if (rigor & VDIFUSE_RIGOR_MAGIC) {
@@ -688,9 +809,8 @@ int create_fragment_vfuse(VDIFUSEntry *vc, int index,
     vc->vsig = vdif_signature;
 
     /* if the packet rate of this file was larger than we had */
-    vc->entry_pps = vc->u.vfuse.st_ino;
-    if (vc->entry_pps > pars->est_pkt_rate) {
-        pars->est_pkt_rate = vc->entry_pps;
+    if (vc->u.vfuse.st_ino > pars->est_pkt_rate) {
+        pars->est_pkt_rate = vc->u.vfuse.st_ino;
         update_rate_params(pars);
     }
 
@@ -717,7 +837,7 @@ int create_fragment_vfuse(VDIFUSEntry *vc, int index,
     if (maxfrcounter_seen > pars->maxfrcounter)
         pars->maxfrcounter = maxfrcounter_seen;
     if (vdifuse_debug>3) fprintf(vdflog,
-        "FC %u %u\n", maxfrcounter_seen, pars->maxfrcounter);
+        "FrameCounter %u %u\n", maxfrcounter_seen, pars->maxfrcounter);
 
     vc->hier[0] = '-';  /* overwritten later */
     vc->hier[1] = 0;

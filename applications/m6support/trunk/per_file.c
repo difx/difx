@@ -1,5 +1,5 @@
 /*
- * $Id: per_file.c 4523 2017-12-15 14:50:53Z gbc $
+ * $Id: per_file.c 5224 2021-08-02 16:18:24Z gbc $
  *
  * Scan checker for Mark6.  Files are presumed to be:
  *   SGv2 files of VDIF packets
@@ -42,8 +42,8 @@ static struct checker_work {
     /* options */
     double      alarm_secs;         /* initial per-file allowance */
     uint32_t    trial_seed;         /* random number seed */
-    uint32_t    pkts_loops;         /* number of packets to hit */
-    uint32_t    pkts_runs;          /* number of packets in a row */
+    int32_t     pkts_loops;         /* number of packets to hit */
+    int32_t     pkts_runs;          /* number of packets in a row */
     uint32_t    pkts_seqstarter;    /* starting point for seq check */
     uint32_t    pkts_seqoffset;     /* seq check current offset */
     char        stat_chans[256];    /* csv list of channels */
@@ -243,12 +243,12 @@ static void check_random(Random_Picker *rp)
         }
         if (nl > work.pkts_runs) nl = work.pkts_runs;
         work.pkts_tested += nl;
-        fails = sg_pkt_check(&work.sgi, pkt, nl, end, &fills);
+        fails = seq_pkt_check(&work.sgi, pkt, nl, end, &fills);
         work.pkts_filled += fills;
         work.pkts_failed += fails;
         work.pkts_passed += (nl - fails);
         if (fails == 0)
-            work.pkts_timing += sg_pkt_times(&work.sgi, pkt, nl, end);
+            work.pkts_timing += seq_pkt_times(&work.sgi, pkt, nl, end);
         if (fails == 0 && work.stat_octets > 0) {
             int dp = work.sgi.read_size/sizeof(uint32_t);
             for (ii = 0; ii < nl; ii++, pkt += dp)
@@ -262,7 +262,7 @@ static void check_random(Random_Picker *rp)
                 pkt, nl, work.cur_numb, work.sgi.smi.start);
         if (work.showthreads) (void)sg_get_vsig(pkt,
             (void*)0, work.sgi.verbose > 2 ? 1 : 0,
-            "thr:", (VDIFsigu*)0, work.sgi.threads);
+            "thr:", (VDIFsigu*)0, work.sgi.vthreads);
         if (time_to_bail()) break;
     }
 }
@@ -272,26 +272,28 @@ static void check_random(Random_Picker *rp)
  */
 static void check_sequence(Random_Picker *rp)
 {
-    int tt, nl, num_check, fails, fills;
-    uint32_t *pkt, *end, *pkt0 = 0;
-    num_check = (work.pkts_runs == 0) ? work.sgi.total_pkts : work.pkts_runs;
+    int nl, fails, fills;
+    uint32_t tt, num_check, *pkt, *end, *pkt0 = 0;
+    num_check = (work.pkts_runs == 0)
+              ? work.sgi.total_pkts : (uint32_t)work.pkts_runs;
     if (work.pkts_seqoffset + num_check > work.sgi.total_pkts)
         num_check = work.sgi.total_pkts - work.pkts_seqoffset - 1;
-    for (tt = 0; tt < num_check; tt++) {
+    for (tt = 0; tt < num_check; ) {
         pkt = (*rp)(&nl, &end);
         if (pkt0 == 0) pkt0 = pkt;
         if (!pkt) {
             work.pkts_failed ++;
             work.pkts_tested ++;
-            continue;
+            if (++tt == 0) break;   /* unsigned loop counter */
+            else continue;
         }
         work.pkts_tested += 1;
-        fails = sg_pkt_check(&work.sgi, pkt, 1, end, &fills);
+        fails = seq_pkt_check(&work.sgi, pkt, 1, end, &fills);
         work.pkts_filled += fills;
         work.pkts_failed += fails ? 1 : 0;
         work.pkts_passed += fails ? 0 : 1;
         if (fails == 0)
-            work.pkts_timing += sg_pkt_times(&work.sgi, pkt, 2, end);
+            work.pkts_timing += seq_pkt_times(&work.sgi, pkt, 2, end);
         if (fails == 0 && work.stat_octets > 0)
             stats_check(&work.bsi, (uint64_t*)(pkt));
 #if EXTEND_HCHK
@@ -304,6 +306,7 @@ static void check_sequence(Random_Picker *rp)
             pkt0 = pkt;
         }
         if (time_to_bail()) break;
+        if (++tt == 0) break;       /* unsigned loop counter */
     }
 }
 
@@ -334,12 +337,12 @@ static void check_search(Random_Picker *rp)
             continue;
         }
         work.pkts_tested += 1;
-        fails = sg_pkt_check(&work.sgi, pkt, 1, end, &fills);
+        fails = seq_pkt_check(&work.sgi, pkt, 1, end, &fills);
         work.pkts_filled += fills;
         work.pkts_failed += fails ? 1 : 0;
         work.pkts_passed += fails ? 0 : 1;
         if (fails == 0)
-            work.pkts_timing += sg_pkt_times(&work.sgi, pkt, 2, end);
+            work.pkts_timing += seq_pkt_times(&work.sgi, pkt, 2, end);
         if (fails == 0 && work.stat_octets > 0)
             stats_check(&work.bsi, (uint64_t*)(pkt));
 
@@ -371,11 +374,11 @@ static void flist_report(void)
     ftime = work.sgi.first_secs;
     if (work.sgi.frame_cnt_max>0)
         ftime += rint(work.sgi.first_frame/work.sgi.frame_cnt_max);
-    strncpy(first, sg_vextime(work.sgi.ref_epoch, ftime), sizeof(first));
+    strncpy(first, sg_vextime(work.sgi.ref_epoch, ftime), sizeof(first)-1);
     ftime = work.sgi.final_secs;
     if (work.sgi.frame_cnt_max>0)
         ftime += rint(work.sgi.final_frame/work.sgi.frame_cnt_max);
-    strncpy(final, sg_vextime(work.sgi.ref_epoch, ftime), sizeof(final));
+    strncpy(final, sg_vextime(work.sgi.ref_epoch, ftime), sizeof(final)-1);
     fprintf(stdout, "%s    %s %s\n", work.cur_file, first, final);
     fflush(stdout);
 }
@@ -410,7 +413,7 @@ static void summary_report(void)
              sg_vextime(work.sgi.ref_epoch, work.sgi.first_secs),
         lab, work.pickername, work.pkts_passed, work.pkts_failed,
              work.pkts_timing, work.pkts_filled, work.pkts_tested);
-    if (work.showthreads) thread_summary(lab, work.sgi.threads);
+    if (work.showthreads) thread_summary(lab, work.sgi.vthreads);
     strcat(lab, ":");
     if (verb>0) sg_report(&work.sgi, lab);
     strcat(lab, "stats:");
@@ -838,7 +841,7 @@ int m6sc_set_chk_opt(const char *arg)
         if (verb>1) fprintf(stdout,
             "opt: Starting %u packets into file\n", work.pkts_seqstarter);
     } else if (!strncmp(arg, "chans=", 6)) {
-        strncpy(work.stat_chans, arg+6, sizeof(work.stat_chans));
+        strncpy(work.stat_chans, arg+6, sizeof(work.stat_chans)-1);
         if (verb>1) fprintf(stdout,
             "opt: Statistics on channels %s\n", work.stat_chans);
         //stats_chmask(&work.bsi, work.stat_chans);
@@ -892,7 +895,7 @@ int m6sc_set_chk_opt(const char *arg)
             "opt: Searching for PPS jumps > %u\n", work.pps_search);
     } else if (!strncmp(arg, "threads=", 8)){
         work.showthreads = atoi(arg+8);
-        if (work.showthreads > 0 || work.showthreads < 1024)
+        if (work.showthreads > 0 || work.showthreads < MAX_LEGAL_THREAD_ID)
             sg_set_max_legal_thread_id(work.showthreads);
         if (verb>1) fprintf(stdout,
             "opt: %s showing threads; max legal thread id is %d\n",

@@ -1,5 +1,5 @@
 /*
- * $Id: vdifuse.c 3815 2016-02-25 18:04:37Z gbc $
+ * $Id: vdifuse.c 5214 2021-07-30 20:28:55Z gbc $
  *
  * Fuse for vdif files for use with Mark6 or other
  * applications where vdif files are scattered around.
@@ -49,8 +49,10 @@
 
 char fragments_topdir[VDIFUSE_TOPDIR_SIZE] = VDIFUSE_FRAGMENTS;
 char sequences_topdir[VDIFUSE_TOPDIR_SIZE] = VDIFUSE_SEQUENCES;
+char vthreads_topdir[VDIFUSE_TOPDIR_SIZE] = VDIFUSE_VTHREADS;
 int fragments_topdir_len;
 int sequences_topdir_len;
+int vthreads_topdir_len;
 
 /*
  * Support for file attributes
@@ -87,6 +89,20 @@ static int vdifuse_getattr(const char *path, struct stat *stbuf)
             if (vdifuse_sequence(path, stbuf)) {
                 if (vdifuse_debug>3) fprintf(vdflog,
                     "vdifuse_getattr: sequence not found %s\n", path);
+                res = -ENOENT;
+            } /* else stbuf is valid */
+        }
+    } else if (vthreads_dir &&
+               !strncmp(path, vthreads_topdir, vthreads_topdir_len)) {
+        if (!strcmp(path, vthreads_topdir)) {
+            /* return data about the vthreads directory */
+            vdifuse_topdir(VDIFUSE_TOPDIR_VTHREADS, stbuf);
+        } else {
+            if (vdifuse_debug>2) fprintf(vdflog,
+                "vdifuse_getattr: vthreads lookup on %s\n", path);
+            if (vdifuse_vthreads(path, stbuf)) {
+                if (vdifuse_debug>3) fprintf(vdflog,
+                    "vdifuse_getattr: vthreads not found %s\n", path);
                 res = -ENOENT;
             } /* else stbuf is valid */
         }
@@ -131,16 +147,31 @@ static int vdifuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         filler(buf, "..", NULL, 0);
         while ((ndx = get_vdifuse_sequence(ndx, &name, &sb)) > 0)
             filler(buf, name, sb, 0);
+    } else if (vthreads_dir && !strcmp(path, vthreads_topdir)) {
+        /* top-level vthreads listing */
+        filler(buf, ".", NULL, 0);
+        filler(buf, "..", NULL, 0);
+        while ((ndx = get_vdifuse_vthreads(ndx, &name, &sb)) > 0)
+            filler(buf, name, sb, 0);
     } else {
+        res = -ENOENT;  /* a switch to failure-oriented is clearer below */
         /* look for it in the sequence hierarchy */
         ndx = get_sequence_subdir(path);
         if (ndx > 0) {
+            res = 0;
             filler(buf, ".", NULL, 0);
             filler(buf, "..", NULL, 0);
             while ((ndx = get_vdifuse_subdir(ndx, &name, &sb)) > 0)
                 filler(buf, name, sb, 0);
-        } else {
-            res = -ENOENT;
+        } else if (vthreads_dir) {
+            ndx = get_vthreads_subdir(path);
+            if (ndx > 0) {
+                res = 0;
+                filler(buf, ".", NULL, 0);
+                filler(buf, "..", NULL, 0);
+                while ((ndx = get_vdifuse_subdir(ndx, &name, &sb)) > 0)
+                    filler(buf, name, sb, 0);
+            }
         }
     }
     return(res);

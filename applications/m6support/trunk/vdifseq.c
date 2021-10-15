@@ -1,5 +1,5 @@
 /*
- * $Id: vdifseq.c 3815 2016-02-25 18:04:37Z gbc $
+ * $Id: vdifseq.c 5211 2021-07-29 19:28:17Z gbc $
  *
  * This file does the work of building sequences.
  */
@@ -436,7 +436,7 @@ static int fragment_in_fragtree(VDIFUSEntry *vc)
     node->first.tv_nsec = vc->u.vfuse.st_mtim.tv_nsec;
     node->final.tv_sec = vc->u.vfuse.st_ctime;
     node->final.tv_nsec = vc->u.vfuse.st_ctim.tv_nsec;
-    strncpy(node->path, vc->fuse, VDIFUSE_MAX_PATH);
+    strncpy(node->path, vc->fuse, VDIFUSE_MAX_PATH-1);
     node->fvdei = vc->index;
     leaf = tsearch(node, &tfrag_root, &tfrag_comp);
     if (!leaf) { perror("tsearch-frag"); return(2); }
@@ -484,10 +484,10 @@ static THIERnode *dir_hier_add(char *part, int depth)
     } else if (!part) { /* initialize temp with the root */
         memset(&tmp, 0, sizeof(THIERnode));
         tmp.type = 'X';
-        strncat(tmp.path, sequences_topdir, VDIFUSE_MAX_PATH);
+        strncat(tmp.path, sequences_topdir, VDIFUSE_MAX_PATH-1);
     } else { /* add a component, force null termination */
-        strncat(tmp.path, "/", VDIFUSE_MAX_PATH);
-        strncat(tmp.path, part, VDIFUSE_MAX_PATH);
+        strncat(tmp.path, "/", VDIFUSE_MAX_PATH-1);
+        strncat(tmp.path, part, VDIFUSE_MAX_PATH-1);
         tmp.path[VDIFUSE_MAX_PATH-1] = 0;
         tmp.type = 'D';
         node = (THIERnode *)malloc(sizeof(THIERnode));
