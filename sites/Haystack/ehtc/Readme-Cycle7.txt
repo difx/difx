@@ -45,9 +45,11 @@ export hays=/data-sc25/EHT_ARCHIVE/Hays_Output3
 export bonn=/data-sc25/EHT_ARCHIVE/Bonn_Output3
 #xport dsvn=/swc/difx/difx-svn
 export dsvn=/swc/difx/difx-svn/master_tags/DiFX-2.6.2/
+export dsv3=/swc/difx/difx-svn/master_tags/DiFX-2.6.3/
 # site vars: script area, correlator work dir and release directory
 #xport ehtc=$dsvn/sites/Haystack/ehtc
-export ehtc=/swc/scripts/ehtc
+#xport ehtc=/swc/scripts/ehtc
+export ehtc=$dsv3/sites/Haystack/ehtc
 export arch=$hays
 export corr=/data-sc15/difxoper
 # run polconvert on the same machine with the files
@@ -55,7 +57,7 @@ export work=/data-sc15/difxoper
 export work=/data-sc14/gbc
 
 # principal vars for tracking all the revisions and forth
-export exp=e18...
+export exp=e21...
 export vers=?       # major correlator top-level version
 export ctry=''      # minor correlator top-level version
 export subv=b?      # b1 b2 b3 b4
