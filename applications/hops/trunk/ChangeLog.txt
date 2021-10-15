@@ -1,4 +1,1730 @@
 ------------------------------------------------------------------------
+r3380 | gbc | 2021-09-29 16:02:57 -0400 (Wed, 29 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/est_pc_manual.c
+
+messing with est_pc_manual
+
+------------------------------------------------------------------------
+r3378 | gbc | 2021-09-22 13:24:27 -0400 (Wed, 22 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+
+fixed pb label location with avxpzoom, chops
+
+------------------------------------------------------------------------
+r3377 | gbc | 2021-09-22 13:23:30 -0400 (Wed, 22 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/generate_graphs.c
+
+fixed pb label location with avxpzoom
+
+------------------------------------------------------------------------
+r3375 | gbc | 2021-09-21 09:03:39 -0400 (Tue, 21 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_text.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/organize_data.c
+
+sync with chops
+
+------------------------------------------------------------------------
+r3374 | gbc | 2021-09-20 15:52:45 -0400 (Mon, 20 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/generate_text.c
+
+share info about mount type
+
+------------------------------------------------------------------------
+r3373 | gbc | 2021-09-20 14:12:39 -0400 (Mon, 20 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+backport to py2 which misses time.CLOCK_REALTIME
+
+------------------------------------------------------------------------
+r3372 | gbc | 2021-09-20 09:00:01 -0400 (Mon, 20 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/organize_data.c
+
+fixed indexing error
+
+------------------------------------------------------------------------
+r3371 | gbc | 2021-09-16 19:44:32 -0400 (Thu, 16 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/aedit/src/fplot.c
+   M /trunk/chops/source/c_src/applications/aedit/src/ps_fplot.c
+   M /trunk/chops/source/c_src/applications/aedit/src/psplot4.c
+   M /trunk/chops/source/c_src/vex/src/fill_station_parms.c
+
+mirroring changes to chops
+
+------------------------------------------------------------------------
+r3369 | gbc | 2021-09-16 18:19:54 -0400 (Thu, 16 Sep 2021) | 5 lines
+Changed paths:
+   M /trunk/postproc/aedit/fplot.c
+   M /trunk/postproc/aedit/ps_fplot.c
+   M /trunk/postproc/aedit/psplot4.c
+
+Trivial changes to allow use without DATADIR.
+
+These are just quick hacks.
+
+
+
+------------------------------------------------------------------------
+r3368 | gbc | 2021-09-16 18:19:12 -0400 (Thu, 16 Sep 2021) | 2 lines
+Changed paths:
+   M /trunk/scripts/hops_vex2ovex.py
+
+Py3'ized.
+
+
+------------------------------------------------------------------------
+r3367 | gbc | 2021-09-16 18:18:54 -0400 (Thu, 16 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/sub/vex/fill_station_parms.c
+
+giving the poor human a clue
+
+------------------------------------------------------------------------
+r3366 | gbc | 2021-09-16 15:54:01 -0400 (Thu, 16 Sep 2021) | 6 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/est_pc_manual.c
+
+Added HOPS_EST_PC_DLYM.
+
+This allows to fix up the phases without introducing a delay.
+Minor fixes to strncat calls to shut up the compiler.
+
+
+
+------------------------------------------------------------------------
+r3365 | gbc | 2021-09-16 15:52:06 -0400 (Thu, 16 Sep 2021) | 4 lines
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+removed the -k option--wasn't necessary.
+
+Also improved the convergence criterion.
+
+
+------------------------------------------------------------------------
+r3364 | gbc | 2021-09-16 13:37:43 -0400 (Thu, 16 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/help/fourfit.doc
+
+revised the help
+
+------------------------------------------------------------------------
+r3363 | barrettj | 2021-09-16 12:32:40 -0400 (Thu, 16 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/postproc/snratio/snratio.c
+
+add bugfix in snratio to avoid float->int->float conversion as suggest by USNO - P. Haftings
+
+------------------------------------------------------------------------
+r3361 | gbc | 2021-09-15 14:16:51 -0400 (Wed, 15 Sep 2021) | 2 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+   M /trunk/postproc/fourfit/generate_graphs.c
+
+Fixed typo in array size.
+
+
+------------------------------------------------------------------------
+r3360 | gbc | 2021-09-15 10:55:55 -0400 (Wed, 15 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+bang, shucks
+
+------------------------------------------------------------------------
+r3359 | gbc | 2021-09-15 10:51:45 -0400 (Wed, 15 Sep 2021) | 5 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/compute_field_rotations.c
+   M /trunk/postproc/fourfit/Makefile.am
+   M /trunk/postproc/fourfit/compute_field_rotations.c
+   M /trunk/postproc/fourfit/parallactic-angle-correction.txt
+   M /trunk/scripts/est_manual_phases.py.in
+
+Flipped sign on field rotation correction.
+
+I'd coded the model estimates, rather than using
+them to invert to recover the source model.
+
+
+------------------------------------------------------------------------
+r3358 | gbc | 2021-09-15 08:39:31 -0400 (Wed, 15 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/compute_field_rotations.c
+   M /trunk/postproc/fourfit/copy_cblock_parts.c
+   M /trunk/postproc/fourfit/nullify_cblock.c
+   M /trunk/postproc/fourfit/parser.c
+   M /trunk/postproc/fourfit/precorrect.c
+
+fixed up stupid stuff, non-chop
+
+------------------------------------------------------------------------
+r3357 | gbc | 2021-09-14 20:17:06 -0400 (Tue, 14 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/copy_cblock_parts.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/nullify_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parser.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/compute_field_rotations.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/precorrect.c
+
+fixed up stupid stuff
+
+------------------------------------------------------------------------
+r3355 | gbc | 2021-09-14 15:45:40 -0400 (Tue, 14 Sep 2021) | 1 line
+Changed paths:
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/compute_field_rotations.c
+
+added missing source
+
+------------------------------------------------------------------------
+r3354 | gbc | 2021-09-14 15:42:14 -0400 (Tue, 14 Sep 2021) | 29 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/control.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/parser.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/copy_cblock_parts.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/default_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/init_tokens.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/nullify_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parser.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/param_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/import_ffsearch.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/include/apply_funcs.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/organize_data.c
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/Makefile.am
+   M /trunk/postproc/fourfit/apply_funcs.h
+   A /trunk/postproc/fourfit/compute_field_rotations.c
+   M /trunk/postproc/fourfit/control.h
+   M /trunk/postproc/fourfit/copy_cblock_parts.c
+   M /trunk/postproc/fourfit/default_cblock.c
+   M /trunk/postproc/fourfit/init_tokens.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/nullify_cblock.c
+   M /trunk/postproc/fourfit/organize_data.c
+   M /trunk/postproc/fourfit/parallactic-angle-correction.txt
+   M /trunk/postproc/fourfit/param_struct.h
+   M /trunk/postproc/fourfit/parser.c
+   M /trunk/postproc/fourfit/parser.h
+
+Implemented field rotaton for circular pols.
+
+Some discussion with Vincent is captured in the text file:
+postproc/fourfit/parallactic-angle-correction.txt and the
+changes are necessarily duplicated into chops.  Aside from
+the function to "do the math", there are the usual changes
+to the control file scheme with a new mount_type entry to
+the control block, 4 types of mounts (including not-specified),
+and associated parser and cblock manipulations.  The param
+structure requires elevation in addition to the existing
+par_angle variables (for ref/rem).
+
+Note that the existing scheme just uses the first coefficient,
+so the correction is a constant for the duration of the scan.
+A revised version could/should be implemented at the cost of
+more interface changes.
+
+A new option for station_pol_mode, CIRC_PAREL was introduced
+to be sure not to break the existing code, and in any case the
+new code has not yet been tested as the development venue needs
+to shift to a machine with data to do the relevant testing.
+Also fixed the indents in norm_fx() as these had become broken.
+
+All existing tests pass and the new feature is untested.
+
+It also seems to me that the original 'I' mode was broken in
+the transformation to DiFX.
+
+
+
+------------------------------------------------------------------------
+r3350 | gbc | 2021-09-13 13:55:50 -0400 (Mon, 13 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/channel_aliasing.txt
+   A /trunk/postproc/fourfit/parallactic-angle-correction.txt
+
+a few comments
+
+------------------------------------------------------------------------
+r3349 | gbc | 2021-09-12 11:29:03 -0400 (Sun, 12 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/nullify_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+
+matching tweaks
+
+------------------------------------------------------------------------
+r3348 | gbc | 2021-09-12 11:20:00 -0400 (Sun, 12 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/nullify_cblock.c
+
+whitespace tweaks for testing
+
+------------------------------------------------------------------------
+r3347 | gbc | 2021-09-10 14:50:42 -0400 (Fri, 10 Sep 2021) | 29 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/param_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_208.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_text.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_plotdata.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/freq_spacing.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/interp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   M /trunk/data/ff_testdata/chk_ff_3772pb.sh
+   M /trunk/data/ff_testdata/testdata/3772/cf3772
+   M /trunk/postproc/fourfit/fill_208.c
+   M /trunk/postproc/fourfit/freq_spacing.c
+   M /trunk/postproc/fourfit/generate_graphs.c
+   M /trunk/postproc/fourfit/generate_text.c
+   M /trunk/postproc/fourfit/interp.c
+   M /trunk/postproc/fourfit/make_plotdata.c
+   M /trunk/postproc/fourfit/param_struct.h
+   M /trunk/postproc/fourfit/search.c
+
+New code for freq_spacing of MBD calculus.
+
+The underlying issue was that if data from certain channels
+were excised by norm_fx() edits, those (virtual) channels were
+still being used to set up the space for the MBD calculation.
+(This makes no physical sense--why should channels that are
+no longer providing data be providing input to the MBD answer?)
+As a related matter, max555 solves for a maximum in MBD, but if
+there is only one contributing channel...that is also bogus...and
+thus the SBD value is substituted.  (The other option is 0.0, but
+that might be mis-interpreted.)
+
+Additional cases to chk_ff_3772pb.sh were added, slightly altering
+the observed average values for amplitude; and the mb_win was narrowed
+to match the sbd_win range.
+
+Various comments were inserted in fill_208.c, freq_spacing.c,
+generate_graphs.c, and in the other files, comments and edits
+appropriate to ignoring frequency channels with no contributing
+data were made.   In addition to apbyfreq[] to track the #APs
+contributing to each channel, napbyfreq was also added to the
+status structure as a surrogate for pass->nfreq.  A completely
+refactored code might consider adjusting pass->nfreq, but the
+way things are currently written that is not trivial to do.
+
+Minor tweaks to the fine print at the bottom of the fourfit plot
+to allow having a clue about certain internal variables.
+
+
+
+------------------------------------------------------------------------
+r3346 | gbc | 2021-09-10 09:44:08 -0400 (Fri, 10 Sep 2021) | 5 lines
+Changed paths:
+   M /trunk/data/ff_testdata/chk_ff_3772pb.sh
+
+Fixed for 'po' which has an older version.
+
+Relaxed the limits somewhat...
+
+
+
+------------------------------------------------------------------------
+r3345 | gbc | 2021-09-09 16:56:07 -0400 (Thu, 09 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   M /trunk/data/ff_testdata/chk_ff_3772pb.sh
+   M /trunk/data/ff_testdata/testdata/3772/cf3772
+
+added another passband test
+
+------------------------------------------------------------------------
+r3344 | gbc | 2021-09-09 13:09:18 -0400 (Thu, 09 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   A /trunk/data/ff_testdata/chk_ff_3772pb.sh
+   A /trunk/data/ff_testdata/testdata/3772/cf3772
+
+added the 3772 basic test..more to come
+
+------------------------------------------------------------------------
+r3343 | gbc | 2021-09-09 13:02:18 -0400 (Thu, 09 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+LMT has not been around for a while...
+
+------------------------------------------------------------------------
+r3342 | gbc | 2021-09-09 12:39:02 -0400 (Thu, 09 Sep 2021) | 2 lines
+Changed paths:
+   A /trunk/data/ff_testdata/testdata/3772
+   A /trunk/data/ff_testdata/testdata/3772/No0001
+   A /trunk/data/ff_testdata/testdata/3772/No0001/1055+018.1T8DS3
+   A /trunk/data/ff_testdata/testdata/3772/No0001/A..1T8DS3
+   A /trunk/data/ff_testdata/testdata/3772/No0001/AB..1T8DS3
+   A /trunk/data/ff_testdata/testdata/3772/No0001/B..1T8DS3
+
+Adding another data set, useful for passband tests.
+
+
+------------------------------------------------------------------------
+r3341 | gbc | 2021-09-09 12:25:42 -0400 (Thu, 09 Sep 2021) | 9 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/param_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_208.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_xf.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/update.c
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/fill_208.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/norm_xf.c
+   M /trunk/postproc/fourfit/param_struct.h
+   M /trunk/postproc/fourfit/search.c
+   M /trunk/postproc/fourfit/update.c
+
+Added apbyfreq[] to status tracking channel usage.
+
+fourfit implicitly assumes that every channel mentioned
+actually has data in it.  With passband/notches editing
+this is no longer the case.
+
+reduced msg() commentary on apply_passband() and apply_notches().
+Added a few more explanatory comments tracking things down.
+
+
+------------------------------------------------------------------------
+r3339 | gbc | 2021-09-08 16:55:40 -0400 (Wed, 08 Sep 2021) | 6 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/plot_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/freq_spacing.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   M /trunk/postproc/fourfit/freq_spacing.c
+   M /trunk/postproc/fourfit/plot_struct.h
+   M /trunk/postproc/fourfit/search.c
+
+Introduced MBDMXPTS aka MBD_GRID_MAX
+
+There needs to be a common symbolic between several
+files...but it is not immediately clear where it should live.
+
+
+
+------------------------------------------------------------------------
+r3338 | gbc | 2021-09-08 15:37:21 -0400 (Wed, 08 Sep 2021) | 5 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   M /trunk/postproc/fourfit/search.c
+
+Forgot a verbose message.
+
+When bandpass editing transpires and if APs are discarded, the amplitude
+is now adjusted in search and a msg was triggered at the '3' level.
+
+
+------------------------------------------------------------------------
+r3337 | gbc | 2021-09-08 15:26:00 -0400 (Wed, 08 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/adjust_snr.c
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/fill_206.c
+   M /trunk/postproc/fourfit/generate_graphs.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/norm_xf.c
+   M /trunk/postproc/fourfit/param_struct.h
+   M /trunk/postproc/fourfit/search.c
+
+postproc side of previous chops-only commit
+
+------------------------------------------------------------------------
+r3336 | gbc | 2021-09-08 15:24:53 -0400 (Wed, 08 Sep 2021) | 17 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/param_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_206.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/adjust_snr.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_xf.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+
+possibly have resolved the bw correction issue.
+
+The underlying problem is that if bandpass edits are made,
+channels that were constributing may no longer be doing that
+and this affects ALL of integration time, amplitude and SNR.
+The problem is that total_ap_frac ends up incremented for
+the channels eventually discarded, and the way this variable
+is accumulated makes it hard to also get the integration time
+correct (which relies on the number of channels requested,
+pass->channels, rather than the number of channels actually used).
+
+This problem also bleeds into the MBD calculation, since the
+discarded channels will have no data in them, but the MBD
+solution process does not understand this.  (The MBD problem
+is deeper, since one still gets an MBD with even one channel.)
+
+
+
+------------------------------------------------------------------------
+r3333 | gbc | 2021-09-07 16:30:41 -0400 (Tue, 07 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/adjust_snr.c
+   M /trunk/data/ff_testdata/chk_notches.sh
+   M /trunk/data/ff_testdata/chk_notches_xf.sh
+   M /trunk/postproc/fourfit/adjust_snr.c
+
+fixed a silly variable init bug
+
+------------------------------------------------------------------------
+r3332 | gbc | 2021-09-07 14:13:41 -0400 (Tue, 07 Sep 2021) | 5 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parser.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/ff_misc_if.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_plotdata.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/include/apply_funcs.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/adjust_snr.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/calc_rms.c
+   M /trunk/data/ff_testdata/chk_notches.sh
+   M /trunk/data/ff_testdata/chk_notches_xf.sh
+   M /trunk/data/ff_testdata/chk_passband.sh
+   M /trunk/postproc/fourfit/adjust_snr.c
+   M /trunk/postproc/fourfit/apply_funcs.h
+   M /trunk/postproc/fourfit/calc_rms.c
+   M /trunk/postproc/fourfit/ff_misc_if.h
+   M /trunk/postproc/fourfit/make_plotdata.c
+   M /trunk/postproc/fourfit/parser.c
+
+Put an actual correction into adjust_snr().
+
+It appears to have the desired effect, but more careful
+checking should be made to be sure that nothing is amiss.
+
+
+------------------------------------------------------------------------
+r3331 | gbc | 2021-09-07 11:20:01 -0400 (Tue, 07 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/fill_param.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/adjust_snr.c
+   M /trunk/postproc/fourfit/adjust_snr.c
+   M /trunk/postproc/fourfit/fill_param.c
+
+passing along commentary on normalization
+
+------------------------------------------------------------------------
+r3329 | gbc | 2021-09-04 11:23:19 -0400 (Sat, 04 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/adjust_snr.c
+   M /trunk/postproc/fourfit/adjust_snr.c
+
+added explanation for SNR mess
+
+------------------------------------------------------------------------
+r3328 | gbc | 2021-09-04 09:57:54 -0400 (Sat, 04 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   M /trunk/data/ff_testdata/chk_ff_3756.sh
+
+missed one, now all have amp/snr checks
+
+------------------------------------------------------------------------
+r3327 | gbc | 2021-09-04 09:47:06 -0400 (Sat, 04 Sep 2021) | 2 lines
+Changed paths:
+   M /trunk/data/ff_testdata/chk_ff_2836.sh
+   M /trunk/data/ff_testdata/chk_ff_2843.sh
+   M /trunk/data/ff_testdata/chk_ff_3372.sh
+   M /trunk/data/ff_testdata/chk_ff_3413.sh
+
+check amplitude as well as snr
+
+
+------------------------------------------------------------------------
+r3326 | gbc | 2021-09-04 09:05:05 -0400 (Sat, 04 Sep 2021) | 2 lines
+Changed paths:
+   M /trunk/data/ff_testdata/chk_adump.sh
+   M /trunk/data/ff_testdata/chk_aedit.sh
+   M /trunk/data/ff_testdata/chk_alist.sh
+   M /trunk/data/ff_testdata/chk_average.sh
+   M /trunk/data/ff_testdata/chk_baselines.sh
+   M /trunk/data/ff_testdata/chk_cofit.sh
+   M /trunk/data/ff_testdata/chk_fringex.sh
+   M /trunk/data/ff_testdata/chk_notches_xf.sh
+
+comments while reviewing check on SNRs
+
+
+------------------------------------------------------------------------
+r3325 | gbc | 2021-09-03 19:44:20 -0400 (Fri, 03 Sep 2021) | 6 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/import_ffmath.sh
+   D /trunk/chops/source/c_src/fourfit_libs/ffmath/src/bcd_to_2int.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/import_ffsearch.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/adhoc_flag.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_xf.c
+   D /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/report_actions.c
+   M /trunk/postproc/fourfit/Makefile.am
+   M /trunk/postproc/fourfit/adhoc_flag.c
+   A /trunk/postproc/fourfit/attic/bcd_to_2int.c (from /trunk/postproc/fourfit/bcd_to_2int.c:3324)
+   A /trunk/postproc/fourfit/attic/norm_fx_original.c (from /trunk/postproc/fourfit/norm_fx_original.c:3324)
+   A /trunk/postproc/fourfit/attic/norm_xf_migrated.c (from /trunk/postproc/fourfit/norm_xf_migrated.c:3324)
+   A /trunk/postproc/fourfit/attic/print_at.c (from /trunk/postproc/fourfit/print_at.c:3324)
+   A /trunk/postproc/fourfit/attic/pwrt_left.c (from /trunk/postproc/fourfit/pwrt_left.c:3324)
+   A /trunk/postproc/fourfit/attic/pwrt_right.c (from /trunk/postproc/fourfit/pwrt_right.c:3324)
+   A /trunk/postproc/fourfit/attic/report_actions.c (from /trunk/postproc/fourfit/report_actions.c:3324)
+   D /trunk/postproc/fourfit/bcd_to_2int.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   D /trunk/postproc/fourfit/norm_fx_original.c
+   M /trunk/postproc/fourfit/norm_xf.c
+   D /trunk/postproc/fourfit/norm_xf_migrated.c
+   D /trunk/postproc/fourfit/print_at.c
+   D /trunk/postproc/fourfit/pwrt_left.c
+   D /trunk/postproc/fourfit/pwrt_right.c
+   D /trunk/postproc/fourfit/report_actions.c
+
+Migrating obsolete things to attic
+
+and a few comments made in norm_??.c  Got started
+on this as greps for "who uses this" were finding
+files not actually used and needed to cut down chatter.
+
+
+------------------------------------------------------------------------
+r3324 | gbc | 2021-09-03 17:20:20 -0400 (Fri, 03 Sep 2021) | 10 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_plotdata.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/import_ffsearch.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/include/apply_funcs.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/adjust_snr.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/postproc/fourfit/Makefile.am
+   A /trunk/postproc/fourfit/adjust_snr.c
+   M /trunk/postproc/fourfit/apply_funcs.h
+   M /trunk/postproc/fourfit/make_plotdata.c
+   M /trunk/postproc/fourfit/norm_fx.c
+
+Introduced adjust_snr() called by make_plotdata().
+
+As a consequence of the 'apply' functions, the SNR as
+currently calculated (theoretically) may end up incorrect.
+This function has been added (rather than jamming more code
+into make_plotdata() to encapsulate those adjustments.
+
+At the moment the function does nothing, but verifying what
+does or doesn't break with adjustments is the next step.
+
+
+------------------------------------------------------------------------
+r3323 | gbc | 2021-09-03 16:29:17 -0400 (Fri, 03 Sep 2021) | 5 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/postproc/fourfit/norm_fx.c
+
+elimintated no-longer-needed ACCOUNTING clauses
+
+== 1, == 2 and == 3 are now gone.  == 0 is for
+reference and == 4 is the eventual correct choice.
+
+
+------------------------------------------------------------------------
+r3322 | gbc | 2021-09-03 16:13:03 -0400 (Fri, 03 Sep 2021) | 9 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_xf.c
+   M /trunk/postproc/fourfit/norm_xf.c
+
+Backported STATUS_AP_ACCOUNTING logic to norm_xf
+
+The ... == 2 and ... == 3 are no longer required and
+thus are not copied over.  Once I am done with this
+mess I'll delete == 2 and 3 first and then the the
+STATUS_AP_ACCOUNTING defines altogether.  Today is
+not that day...
+
+
+
+------------------------------------------------------------------------
+r3321 | gbc | 2021-09-02 17:21:17 -0400 (Thu, 02 Sep 2021) | 8 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/param_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   A /trunk/postproc/fourfit/norm_xf_migrated.c
+   M /trunk/postproc/fourfit/param_struct.h
+
+capture passband and notches gyrations separately
+
+This allows for the possibility of someone working out
+how to properly combine them at some future date.  Here
+we just give preference to passband over notches if both
+were used.  Saved values are transferred to a freq array
+and available for cleanup prior to SNR and plotting.
+
+
+------------------------------------------------------------------------
+r3320 | gbc | 2021-09-02 15:19:54 -0400 (Thu, 02 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/ff_misc_if.h
+   M /trunk/postproc/fourfit/ff_misc_if.h
+
+added missing extern on calc_normalizatino
+
+------------------------------------------------------------------------
+r3319 | gbc | 2021-09-02 13:41:30 -0400 (Thu, 02 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/Copyright
+
+updated for another year at the mill
+
+------------------------------------------------------------------------
+r3318 | gbc | 2021-09-02 13:05:41 -0400 (Thu, 02 Sep 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/compute_qf.c
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/compute_qf.c
+
+fixed stupid typos
+
+------------------------------------------------------------------------
+r3317 | gbc | 2021-09-02 12:59:15 -0400 (Thu, 02 Sep 2021) | 8 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/compute_qf.c
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/compute_qf.c
+
+Actually capture the information for SNR fix.
+
+Added documentation on quality codes to the help text.
+It is not trivial to implement both passband and notches,
+and in practice not necessary.  I've co-opted the 'A'
+error code to flag someone trying this (in case I forget).
+
+
+
+------------------------------------------------------------------------
+r3316 | gbc | 2021-09-02 11:47:18 -0400 (Thu, 02 Sep 2021) | 9 lines
+Changed paths:
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/lex.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parser.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/import_ffcore.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/include/ff_misc_if.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/param_struct.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/src/ff_misc_if.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/import_ffsearch.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/include/apply_funcs.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_cmplxbp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_video_bp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/calc_normalization.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/gate_off.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_xf.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/precorrect.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search_windows.c
+   M /trunk/postproc/fourfit/Makefile.am
+   A /trunk/postproc/fourfit/apply_cmplxbp.c
+   M /trunk/postproc/fourfit/apply_funcs.h
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/apply_video_bp.c
+   M /trunk/postproc/fourfit/calc_normalization.c
+   A /trunk/postproc/fourfit/ff_misc_if.c
+   A /trunk/postproc/fourfit/ff_misc_if.h
+   M /trunk/postproc/fourfit/fourfit.c
+   M /trunk/postproc/fourfit/gate_off.c
+   M /trunk/postproc/fourfit/lex.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/norm_xf.c
+   M /trunk/postproc/fourfit/param_struct.h
+   M /trunk/postproc/fourfit/parser.c
+   M /trunk/postproc/fourfit/precorrect.c
+   M /trunk/postproc/fourfit/search_windows.c
+
+added ff_misc_if.[ch] to reduce warnings
+
+Despite the large number of files touched, the only substantive
+code change is to remove a few externals and augment the status
+structure with something needed to finally fix the notches/passband
+SNR problem.  Also taking this opportunity to insert a do-nothing
+apply_cmplxbp() function in the proper place so that eventually
+it can be fully instrumented without being terribly disruptive.
+
+
+------------------------------------------------------------------------
+r3314 | gbc | 2021-09-01 12:46:35 -0400 (Wed, 01 Sep 2021) | 16 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_xf.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   M /trunk/postproc/fourfit/apply_funcs.h
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/generate_graphs.c
+   M /trunk/postproc/fourfit/generate_text.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/norm_xf.c
+   M /trunk/postproc/fourfit/param_struct.h
+   M /trunk/postproc/fourfit/plot_data_dir.c
+   M /trunk/postproc/fourfit/search.c
+
+2nd half of last commit which adds to status
+
+Openened the door to apply_notches and apply_passband
+being able to pass corrective data to fix of the correlation
+amplitude once the fringe is found and make a correct plot.
+This includes a baby step of noting what passband/notches
+were made so that tick marks can be made in the plot.  When
+these features are used generate_text now makes a stern
+warning about such things.  At the moment, passband and
+notches are considered to be an either/or sort of thing.
+
+Brought norm_xf to the same interfaces as norm_xf w.r.t.
+the param and status structures being passed in, rather
+than being externals.  (The apply functions use them.)
+
+
+
+------------------------------------------------------------------------
+r3313 | gbc | 2021-08-31 19:29:30 -0400 (Tue, 31 Aug 2021) | 9 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/param_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_text.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/plot_data_dir.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/include/apply_funcs.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+
+Colorized the Av XP Spectrum plot
+
+In the case of passband or notches, a warning is printed
+and markers are laid down to indicate what was done.
+
+A new element to status was created...let's see if nightly is happy.
+
+Still need to fix SNR.
+
+
+------------------------------------------------------------------------
+r3312 | gbc | 2021-08-31 14:54:46 -0400 (Tue, 31 Aug 2021) | 8 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   M /trunk/data/ff_testdata/Makefile.am
+   M /trunk/data/ff_testdata/chk_notches.sh
+   A /trunk/data/ff_testdata/chk_notches_xf.sh (from /trunk/data/ff_testdata/chk_notches.sh:3306)
+   M /trunk/data/ff_testdata/chk_passband.sh
+   M /trunk/data/ff_testdata/chk_ps2pdf.sh
+   A /trunk/data/ff_testdata/testdata/3727
+   A /trunk/data/ff_testdata/testdata/3727/026-1123
+   A /trunk/data/ff_testdata/testdata/3727/026-1123/A..12SVG0
+   A /trunk/data/ff_testdata/testdata/3727/026-1123/AA..12SVG0
+   A /trunk/data/ff_testdata/testdata/3727/026-1123/D..12SVG0
+   A /trunk/data/ff_testdata/testdata/3727/026-1123/DA..12SVG0
+   A /trunk/data/ff_testdata/testdata/3727/026-1123/DD..12SVG0
+   A /trunk/data/ff_testdata/testdata/3727/026-1123/J1337-1257.12SVG0
+   M /trunk/postproc/fourfit/search.c
+
+Added new data set 3727 and new chk_notches
+
+The old one was using an old hardware correlation
+and thus not really useful for norm_fx development.
+
+Added a comment to search to the effect that norm_xf()
+should be considered dead code at this point....
+
+
+------------------------------------------------------------------------
+r3311 | gbc | 2021-08-31 13:41:51 -0400 (Tue, 31 Aug 2021) | 1 line
+Changed paths:
+   A /trunk/correlator/CorAsc2/CorPrune.c (from /trunk/correlator/CorAsc2/CorAsc2.c:3306)
+   M /trunk/correlator/CorAsc2/Makefile.am
+
+added CorPrune to allow saving bits of large data sets
+
+------------------------------------------------------------------------
+r3307 | gbc | 2021-08-30 17:17:04 -0400 (Mon, 30 Aug 2021) | 7 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/fill_param.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search_windows.c
+   M /trunk/postproc/fourfit/fill_param.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/search_windows.c
+
+added STATUS_AP_ACCOUNTING 4 which gets closer
+
+Need to introduce an extra status factor that can be
+used to forward the frequency loss into a bit loss for SNR.
+
+Added a few more explanatory comments.
+
+
+------------------------------------------------------------------------
+r3306 | gbc | 2021-08-30 11:32:13 -0400 (Mon, 30 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_passband.sh
+
+marked with guestimates
+
+------------------------------------------------------------------------
+r3305 | gbc | 2021-08-30 11:14:08 -0400 (Mon, 30 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_passband.sh
+   M /trunk/data/ff_testdata/chk_ps2pdf.sh
+
+added two more comparison plots
+
+------------------------------------------------------------------------
+r3304 | gbc | 2021-08-29 15:53:35 -0400 (Sun, 29 Aug 2021) | 11 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_plotdata.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   M /trunk/data/ff_testdata/chk_passband.sh
+   M /trunk/data/ff_testdata/chk_ps2pdf.sh
+   M /trunk/postproc/fourfit/make_plotdata.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/search.c
+
+shifted STATUS_AP_ACCOUNTING back to 0 for a bit
+
+split chk_passband out from chk_notches to allow
+more surgical testing.  Most checks seem to be a
+bit indifferent to the 3 cases, but this one is
+very peculiar--especially since a nonzero MBD is
+reported even though only one channel is present.
+
+Made some comments in sources to help sort out the mess.
+
+
+
+------------------------------------------------------------------------
+r3303 | gbc | 2021-08-29 15:23:20 -0400 (Sun, 29 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_notches.sh
+   M /trunk/data/ff_testdata/chk_passband.sh
+
+split of notches and passband is complete
+
+------------------------------------------------------------------------
+r3302 | gbc | 2021-08-29 15:12:48 -0400 (Sun, 29 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/Makefile.am
+   M /trunk/data/ff_testdata/chk_notches.sh
+   A /trunk/data/ff_testdata/chk_passband.sh (from /trunk/data/ff_testdata/chk_notches.sh:3301)
+
+first step in splitting notches and passband
+
+------------------------------------------------------------------------
+r3301 | gbc | 2021-08-28 08:10:30 -0400 (Sat, 28 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/display_fplot.c
+
+matching import
+
+------------------------------------------------------------------------
+r3300 | gbc | 2021-08-27 15:40:06 -0400 (Fri, 27 Aug 2021) | 7 lines
+Changed paths:
+   M /trunk/configure.ac
+   M /trunk/data/ff_testdata/Makefile.am
+   A /trunk/data/ff_testdata/chk_ff_ps2pdf.sh
+   M /trunk/help/fourfit.doc
+   M /trunk/help/fplot.doc
+   M /trunk/postproc/fourfit/Makefile.am
+   M /trunk/postproc/fourfit/display_fplot.c
+   M /trunk/postproc/fplot/Makefile.am
+   M /trunk/postproc/fplot/fplot.c
+   M /trunk/postproc/fplot/fplot.h
+   M /trunk/postproc/fplot/parse_cmdline.c
+
+Now may use ps2pdf for PDF plots.
+
+If ps2pdf is configured as being available, the fourfit
+and fplot will accept options for creating a PS file and
+then automatically convert it to a PDF using ps2pdf.
+
+
+
+------------------------------------------------------------------------
+r3296 | gbc | 2021-08-21 09:40:29 -0400 (Sat, 21 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/data/ff_testdata/chk_ff_3756.sh
+
+fixed a dislexic 3756 from 3765 typo in test
+
+------------------------------------------------------------------------
+r3295 | gbc | 2021-08-21 09:35:19 -0400 (Sat, 21 Aug 2021) | 1 line
+Changed paths:
+   D /trunk/data/ff_testdata/testdata/HT-3756-0.ps
+   D /trunk/data/ff_testdata/testdata/HT-3756-1.ps
+   D /trunk/data/ff_testdata/testdata/HT-3756-2.ps
+   D /trunk/data/ff_testdata/testdata/HT-3756-3.ps
+
+removing accidental files
+
+------------------------------------------------------------------------
+r3294 | gbc | 2021-08-21 09:35:08 -0400 (Sat, 21 Aug 2021) | 13 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/display_fplot.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/import_ffsearch.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/include/apply_funcs.h
+   M /trunk/data/ff_testdata/Makefile.am
+   A /trunk/data/ff_testdata/chk_ff_3756.sh
+   M /trunk/data/ff_testdata/chk_ps2pdf.sh
+   A /trunk/data/ff_testdata/testdata/3756
+   A /trunk/data/ff_testdata/testdata/3756/328-1800
+   A /trunk/data/ff_testdata/testdata/3756/328-1800/1803+784.1TDGBD
+   A /trunk/data/ff_testdata/testdata/3756/328-1800/H..1TDGBD
+   A /trunk/data/ff_testdata/testdata/3756/328-1800/HT..1TDGBD
+   A /trunk/data/ff_testdata/testdata/3756/328-1800/T..1TDGBD
+   A /trunk/data/ff_testdata/testdata/3756/cf_3758_GEHIMSTVY_pstokes4
+   A /trunk/data/ff_testdata/testdata/HT-3756-0.ps
+   A /trunk/data/ff_testdata/testdata/HT-3756-1.ps
+   A /trunk/data/ff_testdata/testdata/HT-3756-2.ps
+   A /trunk/data/ff_testdata/testdata/HT-3756-3.ps
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/apply_funcs.h
+   M /trunk/postproc/fourfit/display_fplot.c
+   M /trunk/postproc/fourfit/generate_graphs.c
+
+Fixed TEC plot, diskfile%d and chk_ff_3756.
+
+The logic for the ION line was a bit contorted in generate_graphs,
+and fixing the sb_win bar not showing up left the TEC line in a
+box of zero width at the bottom.
+
+Made diskfile:file-%d.ps work and added 3756 to check that.
+
+Fixed the chops import for apply_funcs.h.
+
+accidentally adding HT-3756-0.ps left over from a manual test.
+
+
+
+------------------------------------------------------------------------
+r3293 | gbc | 2021-08-20 17:51:52 -0400 (Fri, 20 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+
+missed for dist
+
+------------------------------------------------------------------------
+r3292 | gbc | 2021-08-20 17:48:22 -0400 (Fri, 20 Aug 2021) | 5 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/include/adhoc_flag.h
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/include/apply_funcs.h (from /trunk/postproc/fourfit/apply_funcs.h:3291)
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_video_bp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/data/ff_testdata/chk_notches.sh
+
+Matching chops sync
+
+apply_funcs.h needs to be merged with the import scheme.
+
+
+
+------------------------------------------------------------------------
+r3291 | gbc | 2021-08-20 17:09:14 -0400 (Fri, 20 Aug 2021) | 30 lines
+Changed paths:
+   M /trunk/postproc/fourfit/Makefile.am
+   M /trunk/postproc/fourfit/adhoc_flag.h
+   A /trunk/postproc/fourfit/apply_funcs.h
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/apply_video_bp.c
+   M /trunk/postproc/fourfit/norm_fx.c
+
+hacking up norm_fx with STATUS_AP_ACCOUNTING
+
+In theory this version works as well as the last one.
+
+An unmolested copy of norm_fx.c was captured in a previous
+revision; this version is punctuated by #if..#endifs on the
+STATUS_AP_ACCOUNTING macro.  The point is that status is
+updated early in the process and in fact, prior to all edits
+but ad hoc flagging (which is thus correct).  The notches and
+passband functions may make significant spectral edits and the
+eventual amplitude, SNR and time history of amplitude all need
+correction.  Three choices (0, 1 and 2) move this accounting
+later in the logic and (by inspection and) by the testsuite
+in ff_testdata all appear to work.  Case 3 (after the spectral
+edits) fails the chk_notches.sh test (since the tests are not
+actually testing correctly anyway) and the result is still
+not quite correct.  Committing this interim case as I must
+leave this for at least a week...
+
+With this commit we'll leave it at case 2 (status ap updates
+immediately prior to the notches and passband corrections.
+
+In the process, a header apply_funcs.h was added to remove
+some of the compilation warnings, the Ad Hoc Flagging enabled
+warning was turned off, since we seem to have that solidly on.
+
+The 'pol' variable is at this point a rather poor choice for a
+varible name since there are too many things with pol inside.
+
+
+
+------------------------------------------------------------------------
+r3290 | gbc | 2021-08-20 16:57:37 -0400 (Fri, 20 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/postproc/fourfit/Makefile.am
+
+distribute unhacked copy
+
+------------------------------------------------------------------------
+r3289 | gbc | 2021-08-20 16:56:36 -0400 (Fri, 20 Aug 2021) | 1 line
+Changed paths:
+   A /trunk/postproc/fourfit/norm_fx_original.c (from /trunk/postproc/fourfit/norm_fx.c:3287)
+
+saving an unhacked copy
+
+------------------------------------------------------------------------
+r3287 | gbc | 2021-08-19 11:30:40 -0400 (Thu, 19 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/sub/mk4py/Makefile.am
+
+finally fixed the build problem: BUILT_SOURCES
+
+------------------------------------------------------------------------
+r3284 | gbc | 2021-08-17 17:57:33 -0400 (Tue, 17 Aug 2021) | 3 lines
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/control.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/parser.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/copy_cblock_parts.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/default_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/init_tokens.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/nullify_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parser.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/param_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/set_defaults.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/precorrect.c
+
+Synchronizing chops w/ DEF_CONTROL/avxp* changes.
+
+
+
+------------------------------------------------------------------------
+r3283 | gbc | 2021-08-17 17:55:29 -0400 (Tue, 17 Aug 2021) | 7 lines
+Changed paths:
+   M /trunk/help/fourfit.doc
+
+Last commit was all about passband.
+
+I did the DEF_CONTROL thing while I was there.
+The functionality of passband doesn't change, but
+two new parameters avxpzoom and avxplopt allow you
+to tune the av(erage) xp(ower) plot to your satisfaction.
+
+
+------------------------------------------------------------------------
+r3282 | gbc | 2021-08-17 17:51:12 -0400 (Tue, 17 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/help/fourfit.doc
+   M /trunk/postproc/fourfit/control.h
+   M /trunk/postproc/fourfit/copy_cblock_parts.c
+   M /trunk/postproc/fourfit/default_cblock.c
+   M /trunk/postproc/fourfit/generate_graphs.c
+   M /trunk/postproc/fourfit/init_tokens.c
+   M /trunk/postproc/fourfit/nullify_cblock.c
+   M /trunk/postproc/fourfit/param_struct.h
+   M /trunk/postproc/fourfit/parser.c
+   M /trunk/postproc/fourfit/parser.h
+   M /trunk/postproc/fourfit/precorrect.c
+   M /trunk/postproc/fourfit/set_defaults.c
+
+made DEF_CONTROL optional
+
+------------------------------------------------------------------------
+r3272 | gbc | 2021-08-09 10:38:56 -0400 (Mon, 09 Aug 2021) | 1 line
+Changed paths:
+   D /trunk/data/ff_testdata/testdata/cmp-2843.pdf
+   A /trunk/data/ff_testdata/testdata/misc
+   A /trunk/data/ff_testdata/testdata/misc/cmp-2843.pdf (from /trunk/data/ff_testdata/testdata/cmp-2843.pdf:3271)
+
+moved to dir of random stuff
+
+------------------------------------------------------------------------
+r3271 | barrettj | 2021-08-05 10:57:38 -0400 (Thu, 05 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/fill_param.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/pcal_interp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/organize_data.c
+   M /trunk/postproc/fourfit/fill_param.c
+   M /trunk/postproc/fourfit/fourfit.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/organize_data.c
+   M /trunk/postproc/fourfit/pcal_interp.c
+   M /trunk/postproc/fourfit/stcount_interp.c
+
+remove additional extern's from fill_param, pcal_interp + some clean up
+
+------------------------------------------------------------------------
+r3270 | barrettj | 2021-08-05 10:57:38 -0400 (Thu, 05 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/pcal_interp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/organize_data.c
+   M /trunk/postproc/fourfit/fourfit.c
+   M /trunk/postproc/fourfit/organize_data.c
+   M /trunk/postproc/fourfit/pcal_interp.c
+   M /trunk/postproc/fourfit/stcount_interp.c
+
+change function signatures of pcal_interp, stcount_interp to get rid of externs
+
+------------------------------------------------------------------------
+r3269 | barrettj | 2021-08-05 10:57:37 -0400 (Thu, 05 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/organize_data.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/organize_data.c
+   M /trunk/postproc/fourfit/search.c
+
+change signature of norm_fx, fix segfaults, make check passes
+
+------------------------------------------------------------------------
+r3268 | barrettj | 2021-08-05 10:57:37 -0400 (Thu, 05 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/organize_data.c
+   M /trunk/postproc/fourfit/fourfit.c
+   M /trunk/postproc/fourfit/organize_data.c
+
+change signature of organize_data to pass pointer to param struct
+
+------------------------------------------------------------------------
+r3267 | barrettj | 2021-08-04 15:49:38 -0400 (Wed, 04 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/aedit/src/make_psarray4.c
+   M /trunk/chops/source/c_src/applications/aedit/src/psfile4.c
+   M /trunk/chops/source/c_src/applications/aedit/src/psplot4.c
+   M /trunk/chops/source/c_src/applications/aedit/src/update_fqex.c
+   M /trunk/chops/source/c_src/dfio/src/copy_110.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/read_control_file.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_205.c
+   D /trunk/chops/source/c_src/fourfit_libs/ffplot/src/sprint_date.c
+   M /trunk/postproc/aedit/make_psarray4.c
+   M /trunk/postproc/aedit/psfile4.c
+   M /trunk/postproc/aedit/psplot4.c
+   M /trunk/postproc/aedit/update_fqex.c
+   M /trunk/postproc/fourfit/fill_205.c
+   M /trunk/postproc/fourfit/read_control_file.c
+   M /trunk/sub/dfio/copy_110.c
+
+fix a few more warnings about calloc, remove sprint_date (why was it there in the first place?)
+
+------------------------------------------------------------------------
+r3266 | barrettj | 2021-08-04 14:02:12 -0400 (Wed, 04 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/afio/src/check_sizes.c
+   M /trunk/chops/source/c_src/dfio/src/addr_110.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parse_control_file.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/clear_freq_corel.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/report_actions.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   M /trunk/chops/source/python_src/ffcontrol_module/src/compute_control_file_hash.c
+   M /trunk/chops/source/python_src/ffcontrol_module/src/construct_cblock.c
+   M /trunk/postproc/fourfit/clear_freq_corel.c
+   M /trunk/postproc/fourfit/parse_control_file.c
+   M /trunk/postproc/fourfit/report_actions.c
+   M /trunk/postproc/fourfit/search.c
+   M /trunk/sub/afio/check_sizes.c
+   M /trunk/sub/dfio/addr_110.c
+
+fixing more warnings, looking much better now (though the 'Wall,Wextra' are hidden)
+
+------------------------------------------------------------------------
+r3265 | barrettj | 2021-08-04 13:14:57 -0400 (Wed, 04 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/afio/Makefile.am
+   M /trunk/chops/source/c_src/applications/aedit/Makefile.am
+   M /trunk/chops/source/c_src/applications/alist/Makefile.am
+   M /trunk/chops/source/c_src/applications/fourfit/Makefile.am
+   M /trunk/chops/source/c_src/dfio/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   M /trunk/chops/source/c_src/mk4util/Makefile.am
+   M /trunk/chops/source/c_src/vex/Makefile.am
+
+temporarily remove -Wall -Wextra from chops makefiles...lets just deal with the basic warnings first
+
+------------------------------------------------------------------------
+r3264 | barrettj | 2021-08-04 10:58:36 -0400 (Wed, 04 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/dfio/src/display_221.c
+   M /trunk/sub/dfio/display_221.c
+   M /trunk/sub/dfio/write_mk4root.c
+
+more compiler warning fixes in dfio
+
+------------------------------------------------------------------------
+r3263 | barrettj | 2021-08-04 10:58:35 -0400 (Wed, 04 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/dfio/include/mk4_dfio.h
+   M /trunk/chops/source/c_src/dfio/include/type_222.h
+   M /trunk/chops/source/c_src/dfio/src/clear_120.c
+   M /trunk/chops/source/c_src/dfio/src/copy_100.c
+   M /trunk/chops/source/c_src/dfio/src/copy_101.c
+   M /trunk/chops/source/c_src/dfio/src/copy_120.c
+   M /trunk/chops/source/c_src/dfio/src/copy_200.c
+   M /trunk/chops/source/c_src/dfio/src/copy_201.c
+   M /trunk/chops/source/c_src/dfio/src/copy_202.c
+   M /trunk/chops/source/c_src/dfio/src/copy_203.c
+   M /trunk/chops/source/c_src/dfio/src/copy_204.c
+   M /trunk/chops/source/c_src/dfio/src/copy_205.c
+   M /trunk/chops/source/c_src/dfio/src/copy_206.c
+   M /trunk/chops/source/c_src/dfio/src/copy_207.c
+   M /trunk/chops/source/c_src/dfio/src/copy_208.c
+   M /trunk/chops/source/c_src/dfio/src/copy_210.c
+   M /trunk/chops/source/c_src/dfio/src/copy_212.c
+   M /trunk/chops/source/c_src/dfio/src/copy_230.c
+   M /trunk/chops/source/c_src/dfio/src/copy_300.c
+   M /trunk/chops/source/c_src/dfio/src/copy_301.c
+   M /trunk/chops/source/c_src/dfio/src/copy_302.c
+   M /trunk/chops/source/c_src/dfio/src/copy_303.c
+   M /trunk/chops/source/c_src/dfio/src/copy_304.c
+   M /trunk/chops/source/c_src/dfio/src/copy_305.c
+   M /trunk/chops/source/c_src/dfio/src/copy_306.c
+   M /trunk/chops/source/c_src/dfio/src/copy_307.c
+   M /trunk/chops/source/c_src/dfio/src/copy_308.c
+   M /trunk/chops/source/c_src/dfio/src/copy_309.c
+   M /trunk/chops/source/c_src/dfio/src/init_000.c
+   M /trunk/chops/source/c_src/dfio/src/open_datafile.c
+   M /trunk/chops/source/c_src/dfio/src/write_mk4sdata.c
+   M /trunk/chops/source/c_src/mk4util/src/check_name.c
+   M /trunk/chops/source/c_src/mk4util/src/extract_filenames.c
+   M /trunk/chops/source/c_src/mk4util/src/get_abs_path.c
+   M /trunk/chops/source/c_src/mk4util/src/get_filelist.c
+   M /trunk/chops/source/c_src/mk4util/src/report_times.c
+   M /trunk/chops/source/c_src/mk4util/src/syntax.c
+
+chops import of previous commit
+
+------------------------------------------------------------------------
+r3262 | barrettj | 2021-08-04 10:58:34 -0400 (Wed, 04 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/include/mk4_dfio.h
+   M /trunk/sub/dfio/clear_120.c
+   M /trunk/sub/dfio/init_000.c
+   M /trunk/sub/dfio/open_datafile.c
+   M /trunk/sub/dfio/write_mk4sdata.c
+
+fix for more compiler warnings
+
+------------------------------------------------------------------------
+r3261 | barrettj | 2021-08-04 10:58:33 -0400 (Wed, 04 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/sub/dfio/copy_100.c
+   M /trunk/sub/dfio/copy_101.c
+   M /trunk/sub/dfio/copy_120.c
+   M /trunk/sub/dfio/copy_200.c
+   M /trunk/sub/dfio/copy_201.c
+   M /trunk/sub/dfio/copy_202.c
+   M /trunk/sub/dfio/copy_203.c
+   M /trunk/sub/dfio/copy_204.c
+   M /trunk/sub/dfio/copy_205.c
+   M /trunk/sub/dfio/copy_206.c
+   M /trunk/sub/dfio/copy_207.c
+   M /trunk/sub/dfio/copy_208.c
+   M /trunk/sub/dfio/copy_210.c
+   M /trunk/sub/dfio/copy_212.c
+   M /trunk/sub/dfio/copy_230.c
+   M /trunk/sub/dfio/copy_300.c
+   M /trunk/sub/dfio/copy_301.c
+   M /trunk/sub/dfio/copy_302.c
+   M /trunk/sub/dfio/copy_303.c
+   M /trunk/sub/dfio/copy_304.c
+   M /trunk/sub/dfio/copy_305.c
+   M /trunk/sub/dfio/copy_306.c
+   M /trunk/sub/dfio/copy_307.c
+   M /trunk/sub/dfio/copy_308.c
+   M /trunk/sub/dfio/copy_309.c
+
+fix missing includes to get rid of malloc warnings
+
+------------------------------------------------------------------------
+r3260 | barrettj | 2021-08-04 10:58:32 -0400 (Wed, 04 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/sub/util/get_abs_path.c
+   M /trunk/sub/util/report_times.c
+   M /trunk/sub/util/syntax.c
+
+fix compiler warnings in sub/util/
+
+------------------------------------------------------------------------
+r3259 | barrettj | 2021-08-04 10:58:32 -0400 (Wed, 04 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/include/type_222.h
+   M /trunk/sub/util/check_name.c
+   M /trunk/sub/util/extract_filenames.c
+   M /trunk/sub/util/get_abs_path.c
+   M /trunk/sub/util/get_filelist.c
+
+fix some compiler warnings in util sub, and type_222.h
+
+------------------------------------------------------------------------
+r3258 | barrettj | 2021-08-03 14:22:21 -0400 (Tue, 03 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/mk4util/include/hops_complex.h
+   M /trunk/include/hops_complex.h
+
+tweaks to hops_complex.h to play nice with old compilers
+
+------------------------------------------------------------------------
+r3257 | barrettj | 2021-08-03 13:17:22 -0400 (Tue, 03 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/mk4util/import_mk4util.sh
+   M /trunk/chops/source/c_src/mk4util/include/hops_complex.h
+   M /trunk/include/hops_complex.h
+
+tweak hops_complex.h and fix import script
+
+------------------------------------------------------------------------
+r3256 | barrettj | 2021-08-03 12:51:25 -0400 (Tue, 03 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/aedit/src/set_device.c
+   M /trunk/chops/source/c_src/mk4util/src/environment.c
+   M /trunk/postproc/aedit/set_device.c
+   M /trunk/sub/util/environment.c
+
+sync-in some minor changes in environment.c and set_device.c from HOPS4
+
+------------------------------------------------------------------------
+r3255 | barrettj | 2021-08-03 12:37:41 -0400 (Tue, 03 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/import_ffcore.sh
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/pcal_interp.c
+
+chops patch for forgotten file pcal_interp.c
+
+------------------------------------------------------------------------
+r3254 | barrettj | 2021-08-03 12:28:46 -0400 (Tue, 03 Aug 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/fringe_search.c
+   M /trunk/postproc/fourfit/fourfit.c
+   M /trunk/postproc/fourfit/fringe_search.c
+   M /trunk/postproc/fourfit/pcal_interp.c
+
+small changes to pcal_interp and fringe_search to allow for more globals/library decoupling
+
+------------------------------------------------------------------------
+r3253 | barrettj | 2021-07-30 14:17:53 -0400 (Fri, 30 Jul 2021) | 1 line
+Changed paths:
+   M /trunk/chops/import_hops.sh
+   M /trunk/chops/source/c_src/dfio/Makefile.am
+   M /trunk/chops/source/c_src/dfio/import_dfio.sh
+   M /trunk/chops/source/c_src/dfio/include/type_230.h
+   D /trunk/chops/source/c_src/dfio/include/type_comp.h
+   M /trunk/chops/source/c_src/dfio/src/addr_230.c
+   M /trunk/chops/source/c_src/dfio/src/copy_230.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/param_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/pass_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/plot_struct.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/vrot.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_210.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_212.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_230.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_fringe_info.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/fit_vbp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_text.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_plotdata.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/plot_complex.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_video_bp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/calc_rms.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/compute_qf.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/delay_rate.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/interp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/ion_covariance.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_xf.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/pcalibrate.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/precorrect.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/rotate_pcal.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   M /trunk/chops/source/c_src/mk4util/Makefile.am
+   A /trunk/chops/source/c_src/mk4util/include/hops_complex.h
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/correlator/CorAsc2/CorAsc2.c
+   M /trunk/include/Makefile.am
+   A /trunk/include/hops_complex.h
+   M /trunk/include/type_230.h
+   D /trunk/include/type_comp.h
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/apply_video_bp.c
+   M /trunk/postproc/fourfit/calc_rms.c
+   M /trunk/postproc/fourfit/compute_qf.c
+   M /trunk/postproc/fourfit/delay_rate.c
+   M /trunk/postproc/fourfit/fill_210.c
+   M /trunk/postproc/fourfit/fill_212.c
+   M /trunk/postproc/fourfit/fill_230.c
+   M /trunk/postproc/fourfit/fill_fringe_info.c
+   M /trunk/postproc/fourfit/fit_vbp.c
+   M /trunk/postproc/fourfit/generate_graphs.c
+   M /trunk/postproc/fourfit/generate_text.c
+   M /trunk/postproc/fourfit/interp.c
+   M /trunk/postproc/fourfit/ion_covariance.c
+   M /trunk/postproc/fourfit/make_plotdata.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/norm_xf.c
+   M /trunk/postproc/fourfit/param_struct.h
+   M /trunk/postproc/fourfit/pass_struct.h
+   M /trunk/postproc/fourfit/pcalibrate.c
+   M /trunk/postproc/fourfit/plot_complex.c
+   M /trunk/postproc/fourfit/plot_struct.h
+   M /trunk/postproc/fourfit/precorrect.c
+   M /trunk/postproc/fourfit/rotate_pcal.c
+   M /trunk/postproc/fourfit/search.c
+   M /trunk/postproc/fourfit/vrot.c
+   M /trunk/sub/dfio/addr_230.c
+   M /trunk/sub/dfio/copy_230.c
+
+eliminate use of 'complex' keyword in favor of 'hops_complex' to avoid collision with c++ types
+
+------------------------------------------------------------------------
+r3251 | dhoak | 2021-07-27 16:19:00 -0400 (Tue, 27 Jul 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+Added error handling for case when station data file has no phasor data; expanded exit messages.
+
+------------------------------------------------------------------------
+r3248 | gbc | 2021-07-13 14:46:32 -0400 (Tue, 13 Jul 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parser.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/make_passes.c
+
+syn with main tree
+
+------------------------------------------------------------------------
+r3247 | gbc | 2021-07-13 14:07:25 -0400 (Tue, 13 Jul 2021) | 1 line
+Changed paths:
+   M /trunk/scripts/est_manual_phases.py.in
+
+py3d version
+
+------------------------------------------------------------------------
+r3245 | gbc | 2021-07-13 11:58:19 -0400 (Tue, 13 Jul 2021) | 2 lines
+Changed paths:
+   M /trunk/postproc/fourfit/make_passes.c
+   M /trunk/postproc/fourfit/parser.c
+
+fixed double->float->double for chanids.
+
+
+------------------------------------------------------------------------
+r3235 | dhoak | 2021-03-31 17:08:02 -0400 (Wed, 31 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/select_bandpols.py.in
+
+removed hard-coded station name dependence, added comments
+
+------------------------------------------------------------------------
+r3234 | barrettj | 2021-03-30 19:32:38 -0400 (Tue, 30 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/postproc/snratio/snratio.c
+
+bump max scan parameter in snratio from 2k to 10k
+
+------------------------------------------------------------------------
+r3231 | dhoak | 2021-03-23 16:40:31 -0400 (Tue, 23 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/select_bandpols.py.in
+
+added station M to hard-coded list
+
+------------------------------------------------------------------------
+r3225 | gbc | 2021-03-20 09:19:14 -0400 (Sat, 20 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+restricting Python to future enabled
+
+------------------------------------------------------------------------
+r3223 | gbc | 2021-03-19 17:06:56 -0400 (Fri, 19 Mar 2021) | 2 lines
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am
+
+rsync cleanup
+
+
+------------------------------------------------------------------------
+r3222 | gbc | 2021-03-19 16:43:28 -0400 (Fri, 19 Mar 2021) | 2 lines
+Changed paths:
+   D /trunk/chops/data
+   M /trunk/chops/source/python_src/Makefile.am
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   M /trunk/chops/source/python_src/tests/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am
+   M /trunk/configure.ac
+
+Cleaned up the chops/python mess.
+
+
+------------------------------------------------------------------------
+r3220 | barrettj | 2021-03-18 11:11:51 -0400 (Thu, 18 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/Makefile.am
+   M /trunk/chops/source/python_src/ffcontrol_module/Makefile.am
+   M /trunk/chops/source/python_src/hopstest_module/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   D /trunk/chops/source/python_src/phorc_module
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   M /trunk/chops/source/python_src/tests/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am
+   M /trunk/configure.ac
+
+fix make dist on po
+
+------------------------------------------------------------------------
+r3218 | barrettj | 2021-03-09 19:19:11 -0500 (Tue, 09 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+fix distclean issue with source deps outside of immediate dir
+
+------------------------------------------------------------------------
+r3217 | barrettj | 2021-03-09 19:19:11 -0500 (Tue, 09 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+
+nevermind
+
+------------------------------------------------------------------------
+r3216 | barrettj | 2021-03-09 19:19:11 -0500 (Tue, 09 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+
+attempt to fix distclean
+
+------------------------------------------------------------------------
+r3215 | barrettj | 2021-03-09 19:19:10 -0500 (Tue, 09 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+
+change build rel path
+
+------------------------------------------------------------------------
+r3214 | barrettj | 2021-03-09 19:19:10 -0500 (Tue, 09 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/dfio/src/read_mk4corel.c
+   M /trunk/chops/source/c_src/dfio/src/read_mk4file.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_postplot.c
+   M /trunk/chops/source/c_src/vex/src/read_file.c
+   M /trunk/postproc/fourfit/make_postplot.c
+   M /trunk/sub/dfio/read_mk4corel.c
+   M /trunk/sub/dfio/read_mk4file.c
+   M /trunk/sub/vex/read_file.c
+
+applying Jan W.'s patch for files bigger than INT_MAX bytes
+
+------------------------------------------------------------------------
+r3213 | barrettj | 2021-03-09 19:19:09 -0500 (Tue, 09 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+
+fixing the gcc 7,8,9 linking issue for libmk4iob and libvexpyb libs
+
+------------------------------------------------------------------------
+r3212 | barrettj | 2021-03-09 19:19:09 -0500 (Tue, 09 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/select_bandpols.py.in
+
+changes to select_bandpols to make interface more user friendly
+
+------------------------------------------------------------------------
+r3209 | gbc | 2021-03-05 13:24:38 -0500 (Fri, 05 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am
+   R /trunk/chops/source/python_src/vpal_module/Makefile.am.cmake (from /trunk/chops/source/python_src/vpal_module/Makefile.am.in:3207)
+
+cleaned up the mess
+
+------------------------------------------------------------------------
+r3208 | barrettj | 2021-03-05 11:16:20 -0500 (Fri, 05 Mar 2021) | 1 line
+Changed paths:
+   A /trunk/chops/source/python_src/ffcontrol_module/Makefile.am.cmake (from /trunk/chops/source/python_src/ffcontrol_module/Makefile.am.in:3207)
+   D /trunk/chops/source/python_src/ffcontrol_module/Makefile.am.in
+   A /trunk/chops/source/python_src/hopstest_module/Makefile.am.cmake (from /trunk/chops/source/python_src/hopstest_module/Makefile.am.in:3207)
+   D /trunk/chops/source/python_src/hopstest_module/Makefile.am.in
+   A /trunk/chops/source/python_src/mk4_module/Makefile.am.cmake (from /trunk/chops/source/python_src/mk4_module/Makefile.am.in:3207)
+   D /trunk/chops/source/python_src/mk4_module/Makefile.am.in
+   A /trunk/chops/source/python_src/vex_module/Makefile.am.cmake (from /trunk/chops/source/python_src/vex_module/Makefile.am.in:3207)
+   D /trunk/chops/source/python_src/vex_module/Makefile.am.in
+   A /trunk/chops/source/python_src/vpal_module/Makefile.am.cmake (from /trunk/chops/source/python_src/vpal_module/Makefile.am.in:3207)
+   D /trunk/chops/source/python_src/vpal_module/Makefile.am.in
+
+rename Makefile.am.in to Makefile.am.cmake in chops python_src
+
+------------------------------------------------------------------------
+r3206 | dhoak | 2021-03-04 15:49:29 -0500 (Thu, 04 Mar 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/select_bandpols.py.in
+   M /trunk/chops/source/python_src/vpal_module/Makefile.am.in
+
+changed import in select_bandpols so it works; not sure if Makefile.am.in is the problem for the distcheck failure
+
+------------------------------------------------------------------------
 r3202 | barrettj | 2021-03-03 17:09:44 -0500 (Wed, 03 Mar 2021) | 1 line
 Changed paths:
    M /trunk/hops.bash.in
