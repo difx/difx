@@ -463,7 +463,7 @@ if gfortran:
 ###### Targets ####################################################
 # auto_compile(doreconf, dolibtoolize, doautoheader, ..., dompicxx)
 
-# calcif2 is a utility on truck but an application on master tags
+# calcif2 is a utility on trunk but an application on master tags
 
 libtargets = []
 if components["difxio"]:
