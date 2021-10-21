@@ -28,6 +28,7 @@
 
 import os
 import sys
+import collections
 from difxdb.difxdbconfig import DifxDbConfig
 from difxdb.business.moduleaction import *
 from difxdb.model.dbConnection import Schema, Connection
@@ -92,75 +93,72 @@ if __name__ == "__main__":
                 raise Exception("Unknown experiment")
                 sys.exit
 
+        if (experiment is None):
+          sys.exit()
+
         sum = 0
         count = 0
         station = 0
         lastStationCode = ""
-        if (experiment is not None):
-                sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
-                print("$TAPELOG_OBS;")
-                
-                
-                for module in sortedModules:
-                        error = 0
-                        if module.stationCode != lastStationCode:
-                                if station != 0:
-                                        print("enddef;")
-                                        
-                                print("def " + module.stationCode[0].upper() + module.stationCode[1].lower() + ";")
+        entries = collections.defaultdict(list)
 
-                                lastStationCode = module.stationCode
-                                count = 0
-                                station += 1
+        # sort modules by station code
+        sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
 
-                        try:
-                                dirFile = None
-                                if isMark6(module.vsn):
-                                        dirFile = DifxFilelist(os.getenv("MARK5_DIR_PATH"), module.vsn)
-                                else:
-                                        dirFile = DifxDir(os.getenv("MARK5_DIR_PATH"), module.vsn)
-                        except Exception as e:
-                                error +=1
-                                sys.stderr.write("%s\n" % e)
+        # look up start and stop times
+        for i in range(len(sortedModules)):
+            error = 0
+            module = sortedModules[i]
 
-                        #print dirFile.getExperimentStopDatetime(expCode.upper()), dirFile.getExperimentStartDatetime(expCode.upper())
+            message = ""
+            start = "UNKNOWN"
+            stop =  "UNKNOWN"
 
-                        start = "UNKNOWN"
-                        stop =  "UNKNOWN"
+            # read directories/filelists to find start and stop times
+            dirFile = None
+            try:
+                if isMark6(module.vsn):
+                    dirFile = DifxFilelist(os.getenv("MARK5_DIR_PATH"), module.vsn)
+                else:
+                    dirFile = DifxDir(os.getenv("MARK5_DIR_PATH"), module.vsn)
+            except Exception as e:
+                error +=1
+                message = "# WARNING: %s" % e
+                sys.stderr.write(message + "\n")
 
-                        if not dirFile is None:
-                            if not dirFile.getExperimentStartDatetime(expCode.upper()):
-                                    start = "UNKNOWN"
-                            else:
-                                    try:
-                                            start = dirFile.getExperimentStartDatetime(expCode.upper()).strftime("%Yy%jd%Hh%Mm%Ss")
-                                    except Exception as e:
-                                            print("WARNING: Error parsing {}".format(dirFile.getFilename()))
-                                            error += 1
-                                            start = "UNKNOWN"
-                                            #sys.exit("Error parsing {}".format(dirFile.getFilename()))
-                            if not dirFile.getExperimentStopDatetime(expCode.upper()) is not None:
-                                    stop = "UNKNOWN"
-                            else:
-                                    try:
-                                            stop = dirFile.getExperimentStopDatetime(expCode.upper()).strftime("%Yy%jd%Hh%Mm%Ss")
-                                    except Exception as e:
-                                            #sys.exit("Error parsing {}".format(dirFile.getFilename()))
-                                            print("WARNING: Error parsing {}".format(dirFile.getFilename()))
-                                            error += 1
-                                            stop =  "UNKNOWN"
-                        
-                        if error == 0:
-                            print("VSN=%d :  %s :   %s : %s ;" % (count, module.vsn, start,stop))
-                        else:
-                            print("#CHECK .dir file : VSN=%d :  %s :   %s : %s ;" % (count, module.vsn, start,stop))
-                        count += 1
+            if dirFile:
+                    if dirFile.getExperimentStartDatetime(expCode.upper()):
+                          try:
+                                  start = dirFile.getExperimentStartDatetime(expCode.upper()).strftime("%Yy%jd%Hh%Mm%Ss")
+                          except Exception as e:
+                                  message = "WARNING: Error parsing {}".format(dirFile.getFilename())
+                                  error += 1
+                                  start = "UNKNOWN"
+                    if dirFile.getExperimentStopDatetime(expCode.upper()):
+                          try:
+                                  stop = dirFile.getExperimentStopDatetime(expCode.upper()).strftime("%Yy%jd%Hh%Mm%Ss")
+                          except Exception as e:
+                                  message = "WARNING: Error parsing {}".format(dirFile.getFilename())
+                                  error += 1
+                                  stop =  "UNKNOWN"
 
+            entries[module.stationCode].append ({'vsn': module.vsn, 'start': start, 'stop': stop, 'message': message})
 
-                if station > 0:
-                        print("enddef;")
+        # now output the TAPELOG_OBS section
+        print("$TAPELOG_OBS;")
         
-    
+        for key,value in entries.items():
+            print("def " + key[0].upper() + key[1].lower() + ";")
+            count = 0
+            for module in sorted(value, key=lambda d: d['start']):
+
+                print("VSN=%d :  %s :   %s : %s ;" % (count, module['vsn'], module["start"], module["stop"]))
+                if len(module["message"])  > 0:
+                    print (module["message"])
+                count += 1
+
+            print ("enddef;")
+
     except Exception as e:
         sys.exit(e)
     
