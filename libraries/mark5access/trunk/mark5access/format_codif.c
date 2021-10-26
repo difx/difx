@@ -4068,7 +4068,7 @@ static int mark5_format_codif_validate(const struct mark5_stream *ms)
 	/* Check for overly unusual header  */
 	header = (codif_header *)ms->frame;
 
-	if(getCODIFSync(header) != 0xADEADBEE)
+	if(getCODIFSync(header) != 0xFEEDCAFE & getCODIFSync(header) != 0xADEADBEE)
 	{
 	        fprintf(m5stderr, "mark5_format_codif_validate: Skipping frame with wrong sync (0x%08X)\n", getCODIFSync(header));
 	        return 0;
