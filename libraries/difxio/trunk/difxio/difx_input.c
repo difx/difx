@@ -4625,6 +4625,29 @@ const DifxSource *DifxInputGetSource(const DifxInput *D, const char *sourceName)
 	}
 }
 
+/* returns -1 if source not found */
+int DifxInputGetSourceId(const DifxInput *D, const char *sourceName)
+{
+	if(D)
+	{
+		int s;
+
+		for(s = 0; s < D->nSource; ++s)
+		{
+			if(strcmp(D->source[s].name, sourceName) == 0)
+			{
+				return s;
+			}
+		}
+
+		return -1;
+	}
+	else
+	{
+		return -1;
+	}
+}
+
 void resetDifxMergeOptions(DifxMergeOptions *mergeOptions)
 {
 	memset(mergeOptions, 0, sizeof(DifxMergeOptions));

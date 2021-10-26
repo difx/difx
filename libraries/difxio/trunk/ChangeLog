@@ -15,6 +15,7 @@
 * read and write J2000 station position polynomials; option in tabulatedelays to evaluate
 * new utility: difxfilelist: read through .input file(s) and list files to be read, data format, ...
 * capture ephemeris file and object number in .calc file
+* new function: DifxInputGetSourceId()
 
 3.6.0
 * Post DiFX 2.5

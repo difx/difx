@@ -931,18 +931,11 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds);
 void printDifxScan(const DifxScan *ds);
 void fprintDifxScanSummary(FILE *fp, const DifxScan *ds);
 void printDifxScanSummary(const DifxScan *ds);
-void copyDifxScan(DifxScan *dest, const DifxScan *src,
-	const int *sourceIdRemap, const int *jobIdRemap, 
-	const int *configIdRemap, const int *antennaIdRemap);
-DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
-	const DifxScan *ds2, int nds2, const int *sourceIdRemap, 
-	const int *jobIdRemap, const int *configIdRemap, 
-	const int *antennaIdRemap, int *nds);
+void copyDifxScan(DifxScan *dest, const DifxScan *src, const int *sourceIdRemap, const int *jobIdRemap, const int *configIdRemap, const int *antennaIdRemap);
+DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1, const DifxScan *ds2, int nds2, const int *sourceIdRemap, const int *jobIdRemap, const int *configIdRemap, const int *antennaIdRemap, int *nds);
 int getDifxScanIMIndex(const DifxScan *ds, double mjd, double iat, double *dt);
-int writeDifxScan(FILE *out, const DifxScan *ds, int scanId, 
-	const DifxConfig *dc);
-int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds, 
-	const DifxConfig *dc);
+int writeDifxScan(FILE *out, const DifxScan *ds, int scanId, const DifxConfig *dc);
+int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds, const DifxConfig *dc);
 int padDifxScans(DifxInput *D);
 
 /* DifxEOP functions */
@@ -1026,6 +1019,7 @@ int isAntennaFlagged(const DifxJob *J, double mjd, int antennaId);
 int DifxInputGetPointingSourceIdByJobId(const DifxInput *D, double mjd, int jobId);
 int DifxInputGetPointingSourceIdByAntennaId(const DifxInput *D, double mjd, int antennaId);
 const DifxSource *DifxInputGetSource(const DifxInput *D, const char *sourceName);
+int DifxInputGetSourceId(const DifxInput *D, const char *sourceName);
 int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId);
 int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, int antennaId);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);

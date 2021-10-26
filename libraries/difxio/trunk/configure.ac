@@ -88,4 +88,5 @@ AC_CONFIG_FILES([
 	tests/Makefile \
 	utils/Makefile \
 ])
-AC_OUTPUT
+
+AC_OUTPUT()
