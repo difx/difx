@@ -543,7 +543,7 @@ int main(int argc, char * const argv[]) {
 	setVDIFFrameMJDSec(&vdif_headers[i], mjdsec);
       } else {
 	status = createCODIFHeader(&codif_headers[i], bufsize-header_bytes, i, 0, bits, numchan,
-				   sampleblocklength, 1, totalsamples, complex, "Tt");
+				   sampleblocklength, 1, totalsamples, complex, "Tt", 0);
 	if (status!=CODIF_NOERROR) {
 	  fprintf(stderr, "Error creating codif header (%d)\n", status);
 	  exit(1);
@@ -741,10 +741,10 @@ int main(int argc, char * const argv[]) {
       }
 
     } else if (mode==CODIF) {
+      nextCODIFHeader(&codif_headers[currentthread], framepersec);
       currentthread++;
       if (currentthread == numthread) {
         currentthread = 0;
-	nextCODIFHeader(&codif_headers[currentthread], framepersec);
 	mjd = getCODIFFrameDMJD(&codif_headers[currentthread], framepersec);
       }
 
