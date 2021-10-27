@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012-2015 by Chris Phillips                             *
+ *   Copyright (C) 2012-2020 by Chris Phillips                             *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
  *   the Free Software Foundation; either version 3 of the License, or     *
@@ -56,24 +56,25 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <getopt.h>
 #include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5slice";
 const char author[]  = "Chris Phillips";
-const char version[] = "0.2";
-const char verdate[] = "20150312";
+const char version[] = "0.5";
+const char verdate[] = "20200710";
 
 double printMJD(struct mark5_stream *ms);
 
 
-static void usage(const char *pgm)
+static void usage()
 {
 	printf("\n");
 
-	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
+	printf("m5slice ver. %s   %s  %s\n\n", version, author, verdate);
 	printf("A Mark5 slicer.  Can slice VLBA, Mark3/4, Mark5B and VDIF"
 		"formats using the mark5access library.\n\n");
-	printf("Usage : %s <file> <dataformat> <offset> <length>\n\n", pgm);
+	printf("Usage : m5slice <file> <dataformat> <offset> <length>\n\n");
 	printf("  <file> is the name of the input file\n\n");
 	printf("  <dataformat> should be of the form: "
 		"<FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
@@ -97,23 +98,53 @@ int main(int argc, char **argv) {
   double offset, length, framens;
   char msg[512], *buf, *bptr, *outname, *inname, *dotptr, *baseptr;
   struct mark5_stream *ms;
+  int nthread = 1;
+  int opt;
+  struct option options[] = {
+           {"version", 0, 0, 'V'}, // Version
+	   {"threads", 1, 0, 't'}, // Number of threads
+	   {"help", 0, 0, 'h'},
+	   {0, 0, 0, 0}
+  };
 
   outname = NULL;
 
   // m5slice test.m5b Mark5B-512-8-2 <offset> <length>
 
-  if(argc !=5 )	{
-    usage(argv[0]);
+
+  while((opt = getopt_long_only(argc, argv, "Vt:h", options, NULL)) != EOF)
+	{
+		switch (opt) 
+		{
+
+		case 'V': // Version
+		  printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
+		  return EXIT_SUCCESS;
+
+		case 't': // bchan (output selection)
+		  nthread = atoi(optarg);
+		  break;
+
+		case 'h': // help
+		  usage();
+		  return EXIT_SUCCESS;
+		}
+	}
+
+  int narg = argc-optind;
+  
+  if(narg !=4 )	{
+    usage();
     return EXIT_FAILURE;
   }
 
-  inname = argv[1];
+  inname = argv[optind];
 
-  offset = atof(argv[3]); // Seconds
-  length = atof(argv[4]); // Seconds
+  offset = atof(argv[optind+2]); // Seconds
+  length = atof(argv[optind+3]); // Seconds
 
   ms = new_mark5_stream_absorb(new_mark5_stream_file(inname, 0),
-			       new_mark5_format_generic_from_string(argv[2]));
+			       new_mark5_format_generic_from_string(argv[optind+1]));
 		
   if(!ms) {
     fprintf(stderr, "Error: problem opening or decoding %s\n", inname);
@@ -122,9 +153,9 @@ int main(int argc, char **argv) {
 
   framens = ms->framens;
 
-  offsetbytes = (off_t)(ms->frameoffset + lrint(offset*1e9/framens)*ms->framebytes);
+  offsetbytes = (off_t)(ms->frameoffset + lrint(offset*1e9/framens)*ms->framebytes)*nthread;
 
-  readbytes = lrint(length*1e9/framens)*ms->framebytes;
+  readbytes = lrint(length*1e9/framens)*ms->framebytes*nthread;
 
   delete_mark5_stream(ms);
 
