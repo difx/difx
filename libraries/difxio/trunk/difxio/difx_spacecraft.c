@@ -574,6 +574,83 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 	}
 }
 
+int computeDifxSpacecraftTwoLineElement(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *line1, const char *line2, double ephemStellarAber, double ephemClockError)
+{
+#if HAVE_SPICE
+	const int NElement = 10;
+	const SpiceInt MaxLineLength = 128;
+	const SpiceInt firstYear = 2000;
+	int p;
+	SpiceDouble elems[NElement];
+	SpiceDouble epoch;
+	SpiceChar lines[2][MaxLineLength];	/* To store the Two Line Element (TLE) */
+
+	if(naifFile)
+	{
+		ldpool_c(naifFile);
+	}
+
+	strncpy(lines[0], line1, MaxLineLength);
+	lines[0][MaxLineLength-1] = 0;
+	strncpy(lines[1], line2, MaxLineLength);
+	lines[1][MaxLineLength-1] = 0;
+
+	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and intializing */
+	{
+		ds->nPoint = nPoint;
+		ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
+		
+		for(p = 0; p < ds->nPoint; ++p)
+		{
+			double m = mjd0 + p*deltat;
+
+			ds->pos[p].mjd = m;
+			ds->pos[p].fracDay = m - ds->pos[p].mjd;
+		}
+	}
+
+	getelm_c(firstYear, MaxLineLength, lines, &epoch, elems);
+
+	p = snprintf(ds->name, DIFXIO_NAME_LENGTH, "%s", objectName);
+	if(p >= DIFXIO_NAME_LENGTH)
+	{
+		fprintf(stderr, "Warning: computeDifxSpacecraftEphemeris_tle: spacecraft name %s is too long %d > %d\n", objectName, p, DIFXIO_NAME_LENGTH-1);
+	}
+
+	for(p = 0; p < nPoint; ++p)
+	{
+		long double jd;
+		char jdstr[24];
+		double et;
+		double state[6];
+
+		/* time to evaluate ephemeris */
+		jd = 2400000.5 + ds->pos[p].mjd + ds->pos[p].fracDay + ephemClockError/86400.0;
+		sprintf(jdstr, "JD %18.12Lf", jd);
+		str2et_c(jdstr, &et);
+
+		evaluateTLE(et, elems, state);
+
+		TEME2J2000(et, state);
+
+		ds->pos[p].X = state[0]*1000.0;	/* Convert to m and m/s from km and km/s */
+		ds->pos[p].Y = state[1]*1000.0;
+		ds->pos[p].Z = state[2]*1000.0;
+		ds->pos[p].dX = state[3]*1000.0;
+		ds->pos[p].dY = state[4]*1000.0;
+		ds->pos[p].dZ = state[5]*1000.0;
+	}
+
+	clpool_c();
+
+	return 0;
+#else
+	fprintf(stderr, "Error: computeDifxSpacecraftEphemeris_tle: spice not compiled into difxio.\n");
+	
+	return -1;
+#endif
+}
+
 static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)
 {
 	snprintf(dest->name, DIFXIO_NAME_LENGTH, "%s", src->name);
