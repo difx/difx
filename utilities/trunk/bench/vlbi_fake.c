@@ -99,6 +99,7 @@ int main(int argc, char * const argv[]) {
   double mjd = -1;
   int numchan = 4;
   int numthread = 1;
+  int threadid = 0;
   int drop = -1;
   datamode mode = LBADR;
   int bits=2;
@@ -145,6 +146,7 @@ int main(int argc, char * const argv[]) {
     {"nchan", 1, 0, 'n'},
     {"bits", 1, 0, 'b'},
     {"nthread", 1, 0, 'T'},
+    {"threadid", 1, 0, 'J'},
     {"drop", 1, 0, 'j'},
     {"mark5b", 0, 0, 'B'},
     {"mk5b", 0, 0, 'B'},
@@ -279,6 +281,15 @@ int main(int argc, char * const argv[]) {
       }
       break;
       
+    case 'J':
+      status = sscanf(optarg, "%d", &tmp);
+      if (status!=1)
+        fprintf(stderr, "Bad threadid option %s\n", optarg);
+      else {
+        threadid = tmp;
+      }
+      break;
+      
     case 'j':
       status = sscanf(optarg, "%d", &tmp);
       if (status!=1)
@@ -398,14 +409,16 @@ int main(int argc, char * const argv[]) {
       printf("  -mjd <MJD>            MJD of start time\n");
       printf("  -mark5b/mk5b          Send Mark5b format data\n");
       printf("  -vdif                 Send VDIF format data\n");
-      printf("  -codif                 Send CODIF format data\n");
-      printf("  -udp <MTU>            Use UDP with given datagram size (Mark5b and VDIF only)\n");
+      printf("  -codif                Send CODIF format data\n");
+      printf("  -udp <MTU>            Use UDP with given datagram size (Mark5b, VDIF and CODIF only)\n");
+      printf("  -rate <RATE>          Send UDP data at approx given rate (Mbps)\n");
       printf("  -sleep <USEC>         Sleep (usec) between udp packets\n");
       printf("  -u/-update <SEC>      Number of seconds to average timing statistics\n");
       printf("  -w/-window <SIZE>     TCP window size (kB)\n");
       printf("  -S/blocksize <SIZE>   Blocksize to write, kB (1 MB default)\n");
       printf("  -f/filesize <SIZE>    Size in sec for files (1)\n");
       printf("  -nthread <NUM>        Number of threads (VDIF only)\n");
+      printf("  -threadid <NUM>       Thread ID of (first) threads (VDIF and CODIF only)\n");
       printf("  -drop <NUM>           Drop every NUM packets (UDP only)\n");
       printf("  -complex              Complex samples (VDIF only)\n");
       printf("  -novtp                Don't use VTP protocol (raw VLBI data)\n");
@@ -534,7 +547,7 @@ int main(int argc, char * const argv[]) {
     mjdsec = llround(mjd*24*60*60);
     for (i=0;i<numthread;i++) {
       if (mode==VDIF) {
-	status = createVDIFHeader(&vdif_headers[i], bufsize-header_bytes, i, bits, numchan, complex, "Tt");
+	status = createVDIFHeader(&vdif_headers[i], bufsize-header_bytes, i+threadid, bits, numchan, complex, "Tt");
 	if (status!=VDIF_NOERROR) {
 	  fprintf(stderr, "Error creating vdif header (%d)\n", status);
 	  exit(1);
@@ -542,7 +555,7 @@ int main(int argc, char * const argv[]) {
 	setVDIFEpochMJD(&vdif_headers[i],lround(floor(mjd)));
 	setVDIFFrameMJDSec(&vdif_headers[i], mjdsec);
       } else {
-	status = createCODIFHeader(&codif_headers[i], bufsize-header_bytes, i, 0, bits, numchan,
+	status = createCODIFHeader(&codif_headers[i], bufsize-header_bytes, i+threadid, 0, bits, numchan,
 				   sampleblocklength, 1, totalsamples, complex, "Tt", 0);
 	if (status!=CODIF_NOERROR) {
 	  fprintf(stderr, "Error creating codif header (%d)\n", status);
@@ -583,7 +596,7 @@ int main(int argc, char * const argv[]) {
     int packetspersec = rate*1e6/8/packetsize;
     udp.usleep = 1/(double)packetspersec;
 
-    printf("Setting sleep between packets to %1.f usec\n", udp.usleep*1e6);
+    printf("Setting sleep between packets to %.1f usec\n", udp.usleep*1e6);
 
   }
 
