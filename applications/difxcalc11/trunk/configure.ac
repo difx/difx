@@ -16,8 +16,8 @@ AC_FC_FREEFORM
 
 AC_PROG_CC
 
-AC_CHECK_LIB(m, sin,,)
-PKG_CHECK_MODULES(GSL, gsl)
+AC_SEARCH_LIBS([sqrt], [m])
+PKG_CHECK_MODULES(GSL, [gsl])
 
 LIBS="${LIBS} ${GSL_LIBS}"
 CFLAGS="${CFLAGS} ${GSL_CFLAGS}"
@@ -25,9 +25,11 @@ CFLAGS="${CFLAGS} ${GSL_CFLAGS}"
 AC_SUBST(de421_file)
 
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
 	Makefile \
 	data/Makefile \
 	src/Makefile \
 	src/param11.i \
 ])
+
+AC_OUTPUT()
