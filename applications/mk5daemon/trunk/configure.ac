@@ -1,5 +1,5 @@
 AC_INIT([mk5daemon], [2.7.0], [Walter Brisken <wbrisken@nrao.edu>])
-AM_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 AC_C_BIGENDIAN
 
@@ -17,15 +17,15 @@ hasmark6=true
 
 AC_CHECK_HEADER(expat.h)
 
-AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
-AC_CHECK_LIB(pthread, pthread_create,,[AC_MSG_ERROR("need libpthread")])
-AC_CHECK_LIB(expat, XML_Parse,,[AC_MSG_ERROR("need expat")])
+AC_SEARCH_LIBS([sqrt], [m])
+AC_SEARCH_LIBS([pthread_create], [pthread])
+AC_SEARCH_LIBS([XML_Parse], [expat])
 
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.7.0])
 PKG_CHECK_MODULES(MARK5IPC, [mark5ipc >= 2.7.0])
 PKG_CHECK_MODULES(M5ACCESS, [mark5access >= 1.5.5])
 PKG_CHECK_MODULES(MARK6META, [mark6meta >= 0.3], [AC_DEFINE(HAS_MARK6META, 1)], [hasmark6meta=false])
-PKG_CHECK_MODULES(MARK6SG, [mark6sg >= 2.0.2], [AC_DEFINE(HAS_MARK6SG, 1)], [hasmark6sg=false])
+PKG_CHECK_MODULES(MARK6SG, [mark6sg >= 2.0.3], [AC_DEFINE(HAS_MARK6SG, 1)], [hasmark6sg=false])
 PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.5)
 
 AH_TEMPLATE(HAS_MARK6META, [True if mark6meta library has been found])
@@ -72,10 +72,12 @@ AC_SUBST(version)
 echo "CPPFLAGS=${CPPFLAGS}"
 echo "LIBS=${LIBS}"
 
-AC_OUTPUT([ \
+AC_CONFIG_FILES([ \
 	Makefile \
 	vlbi-mk5daemon.spec \
 	src/Makefile \
 	utils/Makefile \
 	mk5dir/Makefile
 ])
+
+AC_OUTPUT()
