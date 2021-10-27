@@ -492,7 +492,7 @@ int main(int argc, char * const argv[]) {
     udp.size -= 20; // IP header
     udp.size -= 4*2; // UDP header
     udp.size -= sizeof(long long); // Sequence number
-    udp.size &= ~0x7;  //Truncate to smallest multiple of 8
+    udp.size &= ~0x7;  // Truncate to smallest multiple of 8
    
     if (udp.size<=0) {
       printf("Error: Specified UDP MTU size (%d) too small\n", 
@@ -555,8 +555,13 @@ int main(int argc, char * const argv[]) {
 	setVDIFEpochMJD(&vdif_headers[i],lround(floor(mjd)));
 	setVDIFFrameMJDSec(&vdif_headers[i], mjdsec);
       } else {
+ #ifdef CODIFV2
 	status = createCODIFHeader(&codif_headers[i], bufsize-header_bytes, i+threadid, 0, bits, numchan,
 				   sampleblocklength, 1, totalsamples, complex, "Tt", 0);
+#else
+	status = createCODIFHeader(&codif_headers[i], bufsize-header_bytes, i+threadid, 0, bits, numchan,
+				   sampleblocklength, 1, totalsamples, complex, "Tt");
+#endif
 	if (status!=CODIF_NOERROR) {
 	  fprintf(stderr, "Error creating codif header (%d)\n", status);
 	  exit(1);
