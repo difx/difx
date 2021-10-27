@@ -1,6 +1,6 @@
 AC_INIT([mark6sg], [2.0.3], [Jan Wagner <jwagner@mpifr.de>, Walter Brisken <wbrisken@nrao.edu>])
 
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_C_BIGENDIAN
@@ -26,13 +26,14 @@ AC_SUBST([LIBRARY_VERSION])
 
 AM_INIT_AUTOMAKE([foreign])
 
+LT_INIT
+
 AC_SYS_LARGEFILE
 AC_PROG_CC
 AM_PROG_CC_C_O
-AM_PROG_LIBTOOL
 AM_SANITY_CHECK
 
-AC_CHECK_LIB(pthread, pthread_create,,[AC_MSG_ERROR("need libpthread")])
+AC_SEARCH_LIBS([pthread_create], [pthread])
 
 OSTYPE=`uname -s`
 if [test "x$OSTYPE" != "xDarwin" ] ; then    # Don't run on OSX
@@ -60,7 +61,7 @@ CFLAGS="${CFLAGS} ${FUSE_CFLAGS} ${DIFXMESSAGE_CFLAGS}"
 version=AC_PACKAGE_VERSION
 AC_SUBST(version)
 
-AC_OUTPUT([ \
+AC_CONFIG_FILES([ \
 	Makefile         \
 	mark6sg/Makefile \
 	mark6gather/Makefile \
@@ -70,3 +71,5 @@ AC_OUTPUT([ \
 	mark6sg.pc       \
 	vlbi-mark6sg.spec
 ])
+
+AC_OUTPUT()
