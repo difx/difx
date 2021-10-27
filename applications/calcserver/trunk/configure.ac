@@ -1,16 +1,15 @@
-AC_INIT()
+AC_INIT([CalcServer], [1.8], [])
 
-AM_INIT_AUTOMAKE(CalcServer, 1.8, no-define)
+AM_INIT_AUTOMAKE([no-define])
+
+LT_INIT
 
 AC_PROG_CC
 AM_SANITY_CHECK
 
-AC_LANG_C
-
 AC_PROG_F77(gfortran)
-AM_PROG_LIBTOOL
 
-AC_CHECK_LIB(m, sin,,)
+AC_SEARCH_LIBS([sqrt], [m])
 
 # rpc functionality was dropped from some flavors of linux;
 # tirpc provides the same API
@@ -21,7 +20,7 @@ PKG_CHECK_MODULES(TIRPC, libtirpc,
 CPPFLAGS="${CPPFLAGS} ${TIRPC_CFLAGS}"
 LIBS="${LIBS} ${TIRPC_LIBS}"
 
-AC_OUTPUT(Makefile \
+AC_CONFIG_FILES(Makefile \
 	startCalcServer \
 	src/Makefile \
 	calc9.1/Makefile \
@@ -29,3 +28,5 @@ AC_OUTPUT(Makefile \
 	systemd/calcserver.service \
 	data/Makefile
 )
+
+AC_OUTPUT()
