@@ -130,4 +130,5 @@ AC_CONFIG_FILES([ \
 	python/Makefile \
 	vdifio.pc \
 ])
-AC_OUTPUT
+
+AC_OUTPUT()

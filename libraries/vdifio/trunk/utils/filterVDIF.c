@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2020 by Walter Brisken                             *
+ *   Copyright (C) 2015-2021 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,21 +31,27 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <vdifio.h>
 
 const char program[] = "filterVDIF";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.2";
-const char verdate[] = "20201201";
+const char version[] = "0.3";
+const char verdate[] = "20211109";
 
 static void usage(const char *pgm)
 {
 	printf("%s ver. %s  %s  %s\n\n", program, version, author, verdate);
 	printf("A utility to extract specfied threads from a VDIF file.\n\n");
-	printf("Usage: %s <VDIF input file> <VDIF output file> <threadids>\n\n", pgm);
+	printf("Usage 1: %s <VDIF input file> <VDIF output file> <threadids>\n\n", pgm);
+	printf("Usage 2: %s <VDIF input files> <VDIF output path> <threadids>\n\n", pgm);
 	printf("<VDIF input file> is the name of the VDIF file to read\n\n");
 	printf("<VDIF output file> is the name of the VDIF file to write\n\n");
 	printf("<threadids> is a comma separated list of thread ids to copy\n\n");
+	printf("In usage 2, output filenames are the input filenames concatennated\n");
+	printf("with the provided list of threadids.\n\n");
 	printf("Note: this currently assumes no interloper bytes and that all frames are the same size\n\n");
 }
 
@@ -106,7 +112,7 @@ int parseThreads(int *threadMap, const char *threadList)
 	return n;
 }
 
-int main(int argc, char **argv)
+int extractThreads(const char *inputFile, const char *outputFile, int nThread, const int *threadMap)
 {
 	FILE *in;
 	FILE *out;
@@ -114,40 +120,23 @@ int main(int argc, char **argv)
 	const vdif_header *V;
 	char *data;
 	int frameSize;
-	int nThread;
-	int threadMap[VDIF_MAX_THREAD_ID+1];	// set to 1 if the thread is to be saved, zero otherwise
 	int threadCount[VDIF_MAX_THREAD_ID+1];	// count of threads found in the file (for end report)
 	int t;
 	int lastSec = -1;
 	size_t s;
 
-	if(argc != 4)
-	{
-		usage(argv[0]);
-
-		return EXIT_FAILURE;
-	}
-
-	nThread = parseThreads(threadMap, argv[3]);
-	if(nThread < 0)
-	{
-		fprintf(stderr, "Error: cannot properly parse thread list : %s .   Return code was %d .\n", argv[3], nThread);
-
-		return EXIT_FAILURE;
-	}
-
-	printf("Extracting %d threads\n", nThread);
+	printf("Extracting %d threads from %s to %s\n", nThread, inputFile, outputFile);
 
 	for(t = 0; t <= VDIF_MAX_THREAD_ID; ++t)
 	{
 		threadCount[t] = 0;
 	}
 
-	in = fopen(argv[1], "r");
+	in = fopen(inputFile, "r");
 	if(!in)
 	{
 		fclose(in);
-		fprintf(stderr, "Error: cannot open %s for read\n", argv[1]);
+		fprintf(stderr, "Error: cannot open %s for read\n", inputFile);
 
 		return EXIT_FAILURE;
 	}
@@ -156,7 +145,7 @@ int main(int argc, char **argv)
 	if(!s)
 	{
 		fclose(in);
-		fprintf(stderr, "Error: first header read from %s failed\n", argv[1]);
+		fprintf(stderr, "Error: first header read from %s failed\n", inputFile);
 
 		return EXIT_FAILURE;
 	}
@@ -185,17 +174,17 @@ int main(int argc, char **argv)
 	{
 		free(data);
 		fclose(in);
-		fprintf(stderr, "Error: first frame read from %s failed\n", argv[1]);
+		fprintf(stderr, "Error: first frame read from %s failed\n", inputFile);
 
 		return EXIT_FAILURE;
 	}
 
-	out = fopen(argv[2], "w");
+	out = fopen(outputFile, "w");
 	if(!out)
 	{
 		free(data);
 		fclose(in);
-		fprintf(stderr, "Error: cannot open %s for write\n", argv[2]);
+		fprintf(stderr, "Error: cannot open %s for write\n", outputFile);
 
 		return EXIT_FAILURE;
 	}
@@ -215,7 +204,7 @@ int main(int argc, char **argv)
 				free(data);
 				fclose(in);
 				fclose(out);
-				fprintf(stderr, "Error: failed to write to %s.  Disk full?\n", argv[2]);
+				fprintf(stderr, "Error: failed to write to %s.  Disk full?\n", outputFile);
 
 				return EXIT_FAILURE;
 			}
@@ -242,4 +231,93 @@ int main(int argc, char **argv)
 	}
 
 	return EXIT_SUCCESS;
+}
+
+int isdir(const char *path)
+{
+	struct stat path_stat;
+
+	stat(path, &path_stat);
+
+	return S_ISDIR(path_stat.st_mode);
+}
+
+int main(int argc, char **argv)
+{
+	int nThread;
+	int threadMap[VDIF_MAX_THREAD_ID+1];	// set to 1 if the thread is to be saved, zero otherwise
+	char inputFile[PATH_MAX];
+	char outputFile[PATH_MAX];
+	int rv = EXIT_SUCCESS;
+
+	if(argc >= 4 && isdir(argv[argc-2]))
+	{
+		int a;
+
+		nThread = parseThreads(threadMap, argv[argc-1]);
+		if(nThread < 0)
+		{
+			fprintf(stderr, "Error: cannot properly parse thread list : %s .   Return code was %d .\n", argv[3], nThread);
+
+			return EXIT_FAILURE;
+		}
+		for(a = 1; a < argc-2; ++a)
+		{
+			int i;
+			char *fn;
+
+			if(isdir(argv[a]))
+			{
+				fprintf(stderr, "Error: input %s is a directory!\n", argv[a]);
+				rv = EXIT_FAILURE;
+				break;
+			}
+
+			strcpy(inputFile, argv[a]);
+			fn = inputFile;
+			for(i = 0; inputFile[i]; ++i)
+			{
+				if(inputFile[i] == '/')
+				{
+					fn = inputFile + i + 1;
+				}
+			}
+			
+			snprintf(outputFile, PATH_MAX, "%s/%s.%s", argv[argc-2], fn, argv[argc-1]);
+
+			rv = extractThreads(inputFile, outputFile, nThread, threadMap);
+			
+			if(rv == EXIT_FAILURE)
+			{
+				break;
+			}
+		}
+
+		if(rv == EXIT_FAILURE)
+		{
+			fprintf(stderr, "\nThere was a failure and this program ended prematurely.\n");
+		}
+	}
+	else if(argc == 4)
+	{
+		nThread = parseThreads(threadMap, argv[3]);
+		if(nThread < 0)
+		{
+			fprintf(stderr, "Error: cannot properly parse thread list : %s .   Return code was %d .\n", argv[3], nThread);
+
+			return EXIT_FAILURE;
+		}
+
+		strcpy(inputFile, argv[1]);
+		strcpy(outputFile, argv[2]);
+
+		rv = extractThreads(inputFile, outputFile, nThread, threadMap);
+	}
+	else
+	{
+		usage(argv[0]);
+		rv = EXIT_FAILURE;
+	}
+
+	return rv;
 }
