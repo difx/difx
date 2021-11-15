@@ -279,12 +279,12 @@ class PlotDifx:
         """Chooses the plot type depending on if a refant is set and if S/X mode or similar is used"""
         if self.refant:
             #if there's more than a 50% difference between min and max F we split the band into two plots:
-            if self.exp_info.freq_range[0]/self.exp_info.freq_range[1] < 0.5:
+            if self.exp_info.freq_range[0]/self.exp_info.freq_range[1] > 0.5:
                 plot = PlotRefSplit(self.exp_info, self.refant)
             else:
                 plot = PlotRef(self.exp_info, self.refant)
         else:
-            if self.exp_info.freq_range[0]/self.exp_info.freq_range[1] < 0.5:
+            if self.exp_info.freq_range[0]/self.exp_info.freq_range[1] > 0.5:
                 plot = PlotAllSplit(self.exp_info)
             else:
                 plot = PlotAll(self.exp_info)
