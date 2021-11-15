@@ -275,16 +275,27 @@ class PlotDifx:
         self.potential_new_file = "{}_{:0{pad}}".format(input_base.split("_")[0], (int(input_base.split("_")[1])+1), pad=len(input_base.split("_")[1]))
         self.plot()
 
+    @staticmethod
+    def max_diff(list_in):
+        """returns the maximum difference between elements in a list"""
+        max_diff = 0
+        last_val = list_in[0]
+        for item in list_in:
+            if abs(item - last_val) > max_diff:
+                max_diff = abs(item - last_val)
+            last_val = item
+        return max_diff
+            
     def choose_plot(self):
         """Chooses the plot type depending on if a refant is set and if S/X mode or similar is used"""
+        split_plot = self.max_diff([f.freq for f in self.exp_info.freqs]) > 300 #MHz so split if subbands have a split of more than 300 MHz
         if self.refant:
-            #if there's more than a 50% difference between min and max F we split the band into two plots:
-            if self.exp_info.freq_range[0]/self.exp_info.freq_range[1] > 0.5:
+            if split_plot:
                 plot = PlotRefSplit(self.exp_info, self.refant)
             else:
                 plot = PlotRef(self.exp_info, self.refant)
         else:
-            if self.exp_info.freq_range[0]/self.exp_info.freq_range[1] > 0.5:
+            if split_plot:
                 plot = PlotAllSplit(self.exp_info)
             else:
                 plot = PlotAll(self.exp_info)
