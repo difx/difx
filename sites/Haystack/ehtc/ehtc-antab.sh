@@ -129,9 +129,9 @@ sed 's/^....//' > $tag.gnu <<EOF
     set output '$tag.pdf'
     set key below box title \\
     'Targets(Job) by VLBIScan (<upper> and <lower> chans plotted)'
-    set title '{/sans:Bold=20 $taggy [DPFU=$DPFU (in QA2) $dpfu (in PC)]$dpfix}'
-    set ylabel 'T_{sys}' font 'sans:Bold,20'
-    set xlabel 'Hours (0hr of day $last)' font 'sans:Bold,20'
+    set title '{/sans:Bold=16 $taggy [DPFU=$DPFU (in QA2) $dpfu (in PC)]$dpfix}'
+    set ylabel 'T_{sys}' font 'sans:Bold'
+    set xlabel 'Hours (0hr of day $last)' font 'sans:Bold'
     set palette rgbformulae 3,11,6
     unset colorbox
     set style line $max linetype 1 lc palette frac 1.0 ps 0.8 pt 2

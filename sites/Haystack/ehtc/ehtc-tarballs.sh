@@ -773,9 +773,9 @@ $dotar && [ -n "$tarname" -a -n "$content" ] && (
     rm -f $workdir/$tarname $workdir/logs/$tarname.log
     exec > $workdir/logs/$tarname.log 2>&1
     echo \
-    tar -c --ignore-failed-read -f $workdir/$tarname $content
+    tar -h -c --ignore-failed-read -f $workdir/$tarname $content
     eval \
-    tar -c --ignore-failed-read -f $workdir/$tarname $content
+    tar -h -c --ignore-failed-read -f $workdir/$tarname $content
     [ -s "$workdir/$tarname" ] || {
         echo "tarball '$tarname' is empty"; exit 5; }
     true
