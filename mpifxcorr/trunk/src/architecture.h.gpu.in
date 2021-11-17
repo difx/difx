@@ -581,7 +581,7 @@ inline vecStatus genericAddProduct_32fc(const cf32 *src1,const cf32 *src2, cf32 
 inline vecStatus genericConj_32fc(const cf32 *src, cf32 *dest, int length)
 { for(int i=0;i<length;i++) {dest[i].re = src[i].re;dest[i].im = -src[i].im;} return vecNoErr; }
 
-/* #define vectorConj_cf32_I(src, dest, length)                                ippsConj_32fc_I(srcdest, length) */
+/* #define vectorConj_cf32_I(srcdest, length)                                  ippsConj_32fc_I(srcdest, length) */
 inline vecStatus genericConj_32fc_I(cf32 *srcdest, int length)
 { for(int i=0;i<length;i++) {srcdest[i].re = srcdest[i].re;srcdest[i].im = -srcdest[i].im;} return vecNoErr; }
 
