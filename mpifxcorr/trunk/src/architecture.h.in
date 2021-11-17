@@ -967,7 +967,7 @@ inline vecStatus genericMaxIndx_32f(f32 *src, int len, f32 *max, int *imax)
 #define vectorSub_cf32_I(src, srcdest, length)                              genericSub_32fc_I(src, srcdest, length)
 #define vectorSub_cf32(src1, src2, dest, length)                            genericSub_32fc(src1, src2, dest, length)
 
-#define vectorSum_cf32(src, length, sum, hint)                              genericSum_32fc(src, length, sum, hint)
+#define vectorSum_cf32(src, length, sum, hint)                              genericSum_32fc(src, length, sum)
 
 #define vectorZero_u8(dest, length)                                         genericZero_8u(dest, length)
 #define vectorZero_cf32(dest, length)                                       genericZero_32fc(dest, length)
