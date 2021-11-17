@@ -173,7 +173,7 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
     if (Nt == 0)
         return new PCalExtractorDummy(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, sampleoffset);
 
-    // Currently only one extraction method implemented for complex data
+    // Extraction methods for complex data
     if (data_type == Configuration::COMPLEX) {
         if ((No % Np) == 0)
             return new PCalExtractorComplexImplicitShift(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, band_type);
