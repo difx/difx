@@ -890,7 +890,7 @@ inline vecStatus genericMaxIndx_32f(f32 *src, int len, f32 *max, int *imax)
 #define vectorAddProduct_cf32(src1, src2, accumulator, length)              genericAddProduct_32fc(src1, src2, accumulator, length)
 
 #define vectorConj_cf32(src, dest, length)                                  genericConj_32fc(src, dest, length)
-#define vectorConj_cf32_I(src, dest, length)                                genericConj_32fc_I(srcdest, length)
+#define vectorConj_cf32_I(srcdest, length)                                  genericConj_32fc_I(srcdest, length)
 #define vectorConjFlip_cf32(src, dest, length)                              genericConjFlip_32fc(src, dest, length)
 
 //and finally other vector routines
