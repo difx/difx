@@ -581,6 +581,10 @@ inline vecStatus genericAddProduct_32fc(const cf32 *src1,const cf32 *src2, cf32 
 inline vecStatus genericConj_32fc(const cf32 *src, cf32 *dest, int length)
 { for(int i=0;i<length;i++) {dest[i].re = src[i].re;dest[i].im = -src[i].im;} return vecNoErr; }
 
+/* #define vectorConj_cf32_I(src, dest, length)                                ippsConj_32fc_I(srcdest, length) */
+inline vecStatus genericConj_32fc_I(cf32 *srcdest, int length)
+{ for(int i=0;i<length;i++) {srcdest[i].re = srcdest[i].re;srcdest[i].im = -srcdest[i].im;} return vecNoErr; }
+
 /* #define vectorConjFlip_cf32(src, dest, length)                              ippsConjFlip_32fc(src, dest, length) */
 inline vecStatus genericConjFlip_32fc(const cf32 *src, cf32 *dest, int length)
 { for(int i=0;i<length;i++) {dest[i].re = src[length-1-i].re;dest[i].im = -src[length-1-i].im;} return vecNoErr; }
@@ -886,6 +890,7 @@ inline vecStatus genericMaxIndx_32f(f32 *src, int len, f32 *max, int *imax)
 #define vectorAddProduct_cf32(src1, src2, accumulator, length)              genericAddProduct_32fc(src1, src2, accumulator, length)
 
 #define vectorConj_cf32(src, dest, length)                                  genericConj_32fc(src, dest, length)
+#define vectorConj_cf32_I(src, dest, length)                                genericConj_32fc_I(srcdest, length)
 #define vectorConjFlip_cf32(src, dest, length)                              genericConjFlip_32fc(src, dest, length)
 
 //and finally other vector routines
