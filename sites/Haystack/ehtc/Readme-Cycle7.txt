@@ -413,7 +413,8 @@ $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -c $exp.codes -K |\
 cp -p $ers-manifest.txt $release/logs
 awk '$4 == $6 {next;}{print;}' $ers-manifest.txt | sed 's/^/### /'
 
-# when ready to release, execute these shells
+# when ready to release, check on space; execute these shells
+df -h $release
 for r in tb-* ; do pushd $r ; ls -l ./release.sh & disown ; popd ; done
 for r in tb-* ; do pushd $r ; nohup ./release.sh & disown ; popd ; done
 
