@@ -132,7 +132,7 @@ or
     date_re = r"(\d{4})\.(\d{3})\.(\d{2}):(\d{2}):(\d{2})"
     clockline = None
     #clockline = re.match(date_re + ".*/(.*fmout.*)/(.*)$", line)
-    clockline = re.match(date_re + r".*/(.*gps.*)/(\S*)", line)
+    clockline = re.match(date_re + r".*/(.*gps.*)/\s*(\S*)", line)
     if not clockline:
         return None
     year, doy, hour, minute, sec, clocktype, offset = clockline.groups()
