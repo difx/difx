@@ -33,8 +33,10 @@
 # setup versioned tools -- very different per site
 # script that adds CASA 4.7.2 bin to PATH
 source ~/lib/casa.setup
-source /swc/difx/setup-DiFX-2.6.2.bash
-#source /swc/difx/setup-difx.bash
+source /swc/difx/setup-DiFX-2.6.2.bash      # 2017,2018
+#source /swc/difx/setup-DiFX-2.6.3.bash     # testing
+#source /swc/difx/setup-DiFX-2.7.bash       # 2021 target
+#source /swc/difx/setup-difx.bash           # testing
 #source /swc/hops/hops.bash
 # Only if you had somehow previously set it up:
 # export HOPS_SETUP=false
@@ -44,12 +46,12 @@ source $DIFXROOT/bin/hops.bash
 export hays=/data-sc25/EHT_ARCHIVE/Hays_Output3
 export bonn=/data-sc25/EHT_ARCHIVE/Bonn_Output3
 #xport dsvn=/swc/difx/difx-svn
-export dsvn=/swc/difx/difx-svn/master_tags/DiFX-2.6.2/
-export dsv3=/swc/difx/difx-svn/master_tags/DiFX-2.6.3/
+#export dsvn=/swc/difx/difx-svn/master_tags/DiFX-2.6.2
+export dsvn=/swc/difx/difx-svn/master_tags/DiFX-2.7
 # site vars: script area, correlator work dir and release directory
-#xport ehtc=$dsvn/sites/Haystack/ehtc
-#xport ehtc=/swc/scripts/ehtc
-export ehtc=$dsv3/sites/Haystack/ehtc
+#export ehtc=$dsvn/sites/Haystack/ehtc
+#export ehtc=/swc/scripts/ehtc
+export ehtc=$dsvn/sites/Haystack/ehtc
 export arch=$hays
 export corr=/data-sc15/difxoper
 # run polconvert on the same machine with the files
@@ -72,9 +74,12 @@ export expn=3...    # HOPS exp # (from Mike Titus)
 export dpfu=0.0308574   # band6
 #xport dpfu=0.0404810   # band7 ?
 
+# with NOEMA there is some confusion for PolConvert
+export spw=$((${subv/b/} - 1))
+
 # a list of stations in best order for polconvert plots
 #xport scmp='PV,MG,SW,AX,LM,SZ,GL,MM'
-export scmp='AX,MM,MG,GL,PV,SW,LM,SZ,KT,NN'
+export scmp='MM,PV,MG,SZ,GL,AX,SW,LM,KT,NN'
 # number of parallel grinds to schedule (< number physical cores)
 export npar=15
 # number of polconvert fringe plots to make
@@ -84,7 +89,15 @@ export npcf=4
 # in the track and set plab, pcal and qpar appropriately for it.  You
 # will need to repeat part of the one-time setup for each QA2 setup.
 # make sure that precisely one QA2_proj variable can be true
-export QA2_proj=false # true
+#
+# note that non-ALMA time still needs pcal and qpar defined
+# (due to the script checking; but the values are not used).
+#
+# if there is only one ALMA track, you may set that variable
+# true for the initial setup (unpacking DELIVERABLES, &c)...
+# but once you create the grinding jobs, you must be careful
+# not to source this file unless you plan to grind things.
+export QA2_proj=false
 export QA2_na=false
 $QA2_proj && {
     $QA2_na && echo QA2 logic error && exit
@@ -160,7 +173,6 @@ ls -l $exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile
 [ -d $pdir ] || { mkdir -p $pdir && echo need DELIVERABLES tarball in $pdir ; }
 [ -d ../qa2 ] || { mkdir ../qa2 ; }
 # for every QA2_proj, define $pcal,$pdir,$ptar and untar the $pdir/$ptar files
-for pc in $plst ; do ls -d ../qa2/$pc.qa2-diagnostics ; done
 for pc in $plst ; do [ -d ../qa2 -a -d ../qa2/$pc.qa2-diagnostics ] ||
     echo $pc tables are missing, you need to untar them. ; done
 # source the setup for each QA2_proj and then do this snippet:
@@ -210,7 +222,7 @@ cp -p $ehtc/ehtc-template.codes $dout/$exp.codes
 
 # clean slate fourfit control file
 cat > $ers.bare <<EOF
-* bare fourfit config file for ALMA 1mm session April 2018 $ers
+* bare fourfit config file for ALMA 1mm session
 weak_channel 0.0
 optimize_closure true
 pc_mode manual
@@ -274,7 +286,7 @@ awk '{print $5}' $ers-jobs-map.txt | sort | uniq -c
 target=...
 jobs=`echo $exp-$vers-${subv}_{,}.input` ; echo $jobs
 
-# reminder: for multi-project tracks you will need to update
+# REMINDER: for multi-project tracks you will need to update
 # $opts and $pcal using the QA_* logic variables above.
 # --override-version  on difx2mark4 should not be necessary
 prepolconvert.py -v -k -s $dout $jobs
@@ -328,22 +340,21 @@ false && {
 }
 #--------------------------------------------------------------------------
 # TODO list ======================
-# this command generates blocks of commands to insert here:
+# This command generates blocks of commands to insert here:
 # $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -L
 # but you must be sure to adjust these grind jobs to respect QA2_proj logic
+# Once you have edited this file to run a block of grinding jobs
+# with appropriate true and false controls, you can launch with:
+# sh *.logfile & disown
+# (since there should be only one *.logfile)
 
 ###
 ### log of $ers commands goes here
 ###
 
-# once you have edited this file to run a block of grinding jobs
-# with appropriate true and false controls, you can launch with:
-# sh *.logfile & disown
-# (there should be only one *.logfile)
 #--------------------------------------------------------------------------
-#
 # Final Steps ======================
-# This section is always MANUAL.
+# This section is always MANUAL as you must LOOK at things.
 #
 false && {
 # save logfile incrementally or when done:
@@ -354,14 +365,8 @@ ls -l $release/logs
 $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -T | tee $ers-performance.txt
 cp -p $ers-performance.txt $release/logs
 
-### review PolConvert progress incrementally or when done:
-summarizePolconvertLogs.py -s -c -g 0.5 -b 0.8
-# The -g and -b values set thresholds for
-# the line between good/poor and poor/bad; the defaults (0.3 and 0.6)
-# are really only likely to get you 'good' for a realy bright source
-# (e.g. 3C279) as these are fringes of a single channel.  Also:
-
-# additional checks for polconvert issues
+### Review PolConvert output.
+# first, make checks for polconvert issues
 grep -l SEVERE *pol*/casa*/*output |\
     cut -d_ -f2 | cut -d. -f1 | tr \\012 ' '
 grep -l 'was NOT polconverted properly' *polcon*/casa-logs/*output |\
@@ -379,10 +384,22 @@ for j in `cat $ers-jobs-map.txt | grep -v do.not | awk '{print $1}'`
 # paste ### lines here -- these are the jobs missing plots or antabs --
 # ideally these should be investigated and resolved.
 
-# Examine some of the 4fit fringes on questionable cases with
+# now review PolConvert progress by job:
+summarizePolconvertLogs.py -s -c -g 0.5 -b 0.8
+# The -g and -b values set thresholds for
+# the line between good/poor and poor/bad; the defaults (0.3 and 0.6)
+# are really only likely to get you 'good' for a realy bright source
+# (e.g. 3C279) as these are fringes of a single channel.
+#
+# Generate a list of some of the questionable cases to look at; paste it here:
+summarizePolconvertLogs.py -s -g 0.5 -b 0.8 |\
+grep -v good:[34] | awk '{print "### doyhhmm=" $3, "#",$2,$5,$4}'
+# and examine some of the 4fit fringes on questionable cases
+# (using doyhhmm=.. from above, or other cases as you like) with:
 fplot $ers-*-4fit.$expn.save/$doyhhmm/A[^A].B.*
+#   doyhhmm=doy-hhmm # replace job/qual/target with sort comments
 
-# if comparisons are available (with previous releases)
+# if comparisons are available (with previous releases or iterations)
 compare-baselines-v6.pl -n 10000 -m 10 -f -x AL \
     -a ...4fit.$expn.save/*.alist -b ...4fit.$expn.save/*.alist
 
@@ -395,9 +412,9 @@ cat $ers-fits-missing.txt | sed 's/^/### /'
 # and paste it here
 
 # Final steps ======================
-# generate some summary aedit pdfs
+# generate some summary aedit pdfs and look at them
 $ehtc/ehtc-aeditjob.sh all
-[ `cat $ers-$expn.errors|wc -l` = "37" ] || echo check alist generation
+[ `cat $ers-$expn.errors|wc -l` -ge "37" ] || echo check alist generation
 cp -p $ers-$expn-*-time.pdf $release/logs
 cp -p $ers-$expn.alist  $release/logs
 
@@ -413,10 +430,13 @@ $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -c $exp.codes -K |\
 cp -p $ers-manifest.txt $release/logs
 awk '$4 == $6 {next;}{print;}' $ers-manifest.txt | sed 's/^/### /'
 
-# when ready to release, check on space; execute these shells
+# when ready to release, check on space in Archive:
+du -sBG tb-* | awk '{t+=$1}END{print t "G"}'
 df -h $release
-for r in tb-* ; do pushd $r ; ls -l ./release.sh & disown ; popd ; done
+# if there is more than enough space: execute in parallel:
 for r in tb-* ; do pushd $r ; nohup ./release.sh & disown ; popd ; done
+# if you aren't sure, execute them serially
+for r in tb-* ; do pushd $r ; nohup ./release.sh & wait   ; popd ; done
 
 # and finally after everything is released count the products
 $ehtc/ehtc-release-check.sh | sed 's/^/### /'
