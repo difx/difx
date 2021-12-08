@@ -232,7 +232,7 @@ def getFPGAdelays(fpga):
 
     return fpga_delays
 
-def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, fpga, nchan, forceFFT, tInt, polyco, npol,startseries):
+def writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, fpga, nchan, forceFFT, tInt, polyco, npol, profilemode, startseries):
     if fpga is not None:
         fpga_delay = getFPGAdelays(fpga)
     else:
@@ -250,6 +250,8 @@ tweakIntTime = True
 exhaustiveAutocorrs = True
 
 '''.format(startseries))
+    if profilemode:
+        v2dout.write("mode = profile\n")
     v2dout.write("visBufferLength = 8\n")
     v2dout.write("antennas = ")
     for d in datafilelist[0]:
@@ -365,6 +367,7 @@ parser.add_argument("--npol", help="Number of polarisations", type=int, choices=
 parser.add_argument("--gstar", default=False, action="store_true", help="Set if using gstar for correlation")
 parser.add_argument("--large", default=False, action="store_true", help="Set if 32 nodes, 384 tasks are required (i.e., 23GB memory needed per task; else 16 nodes, 192 tasks will be used for 11.5GB per task")
 parser.add_argument("--numskylakenodes", default=1, type=int, help="Use 32x this many CPUs")
+parser.add_argument("--profile", default=False, action="store_true", help="Run DiFX in profile mode (looking at autocorrelations")
 args = parser.parse_args()
 
 ## Check arguments
@@ -524,7 +527,7 @@ if args.slurm:
     startseries = os.getpid()
     basename = "craftfrb_{0:d}".format(startseries)
 writev2dfile(v2dout, obs, twoletterannames, antennanames, delays, datafilelist, args.fpga,
-             args.nchan, args.forceFFT, args.integration, args.polyco, args.npol, startseries)
+             args.nchan, args.forceFFT, args.integration, args.polyco, args.npol, args.profile, startseries)
 for line in eoplines:
    if "xPole" in line or "downloaded" in line:
        v2dout.write(line)

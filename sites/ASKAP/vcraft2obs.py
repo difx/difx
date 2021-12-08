@@ -36,6 +36,7 @@ parser.add_argument('fileglob', help="glob pattern for vcraft files", nargs='+')
 parser.add_argument("--gstar", default=False, action="store_true", help="Set if using gstar for correlation")
 parser.add_argument("--large", default=False, action="store_true", help="Set if 32 nodes, 384 tasks are required (i.e., 23GB memory needed per task; else 16 nodes, 192 tasks will be used for 11.5GB per task")
 parser.add_argument("--numskylakenodes", default=1, type=int, help="Use 32x this many CPUs")
+parser.add_argument("--profile", default=False, action="store_true", help="Run DiFX in profile mode (looking at autocorrelations")
 args = parser.parse_args()
 
 # Check that sensible options were given for the queue destination
@@ -281,6 +282,7 @@ if args.gstar: runline += " --gstar"
 if args.large: runline += " --large"
 if args.numskylakenodes > 1:
     runline += " --numskylakenodes=" + str(args.numskylakenodes)
+if args.profile: runline += " --profile"
 runline += "\n"
 print "\nNow run:"
 print runline
