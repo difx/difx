@@ -134,6 +134,7 @@ int main(int argc, char **argv)
         readbytes = fread(buffer + VDIF_HEADER_BYTES + bufferoffset, 1, 8, input);
         extrareadbytes += 8;
       }
+      header = (vdif_header*)(buffer+bufferoffset);
     }
     if(bufferoffset > 0 || wholemissedpackets > 0) {
       invalidpackets++;
