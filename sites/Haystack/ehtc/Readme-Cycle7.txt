@@ -61,11 +61,11 @@ export work=/data-sc14/gbc
 # principal vars for tracking all the revisions and forth
 export exp=e21...
 export vers=?       # major correlator top-level version
-export ctry=''      # minor correlator top-level version
+export ctry=''      # minor correlator top-level version, a,b,...
 export subv=b?      # b1 b2 b3 b4
-export stry='a'     # minor correlator sub-band version
-export iter=?       # polconvert iteration
-export relv=?       # archive release name number
+export stry=''      # minor correlator sub-band version, a,b,...
+export iter=?       # polconvert iteration, 1,2,...
+export relv=?       # archive release name number, 0,1,...
 export flab=''      # re-fourfitting version (if needed)
 export expn=3...    # HOPS exp # (from Mike Titus)
 
@@ -93,21 +93,24 @@ export npcf=4
 # note that non-ALMA time still needs pcal and qpar defined
 # (due to the script checking; but the values are not used).
 #
-# if there is only one ALMA track, you may set that variable
-# true for the initial setup (unpacking DELIVERABLES, &c)...
-# but once you create the grinding jobs, you must be careful
-# not to source this file unless you plan to grind things.
+# if there is only one ALMA track, you may set that QA2_proj variable
+# as true for the initial setup (unpacking DELIVERABLES, &c)... and even
+# comment out some of the checking logic; but once you create the
+# the grinding jobs (...ehtc-joblist ... -L below), you must be careful
+# not to source this file unless you plan to grind things.  For setting
+# plab, pcal and qpar, either copy from a previous iteration or (first time)
+# this will be handy:   tar ztvf .../*.APP_DELIVERABLES.tgz &c.
 export QA2_proj=false
 export QA2_na=false
 $QA2_proj && {
     $QA2_na && echo QA2 logic error && exit
     export plab=<track>-<exp>-<yyyymmdd>           # external QA2 file label
     export pcal=???????                            # internal QA2 label
-    export qpar=v?
+    export qpar=v?                                 # README.DRIVEPOLCONVERT
 }
 $QA2_na && echo QA2 logic error && exit
-export opts="-r -P $npar -S $scmp -f $npcf -A $dpfu -q $qpar"
-export plst="list of all pcal labels"
+export opts="-r -P $npar -S $scmp -f $npcf -A $dpfu -q $qpar -s $spw"
+export plst=$pcal # or "list of all pcal labels"
 export pdir=$hays/$exp/$exp-$vers/qa2
 export ptar=$plab.APP_DELIVERABLES.tgz
 
@@ -141,8 +144,8 @@ type mpifxcorr && \
 type fourfit && \
 echo =============================================================== 
 ) | wc -w`
-[ "$wordcount" -eq 46 ] && echo variables are ok || {
-    [ "$wordcount" -eq 43 ] && echo variables ok, but QA2 all false ||
+[ "$wordcount" -eq 48 ] && echo variables are ok || {
+    [ "$wordcount" -eq 45 ] && echo variables ok, but QA2 all false ||
     { echo issue with variables ; exit ; }
 }
 
@@ -210,7 +213,7 @@ grep Average dpfu-scanner.log | sed 's/^/### /'
 
 # pull in the experiment codes: note J is single-pol 2018 and previous
 cp -p $ehtc/ehtc-template.codes $exp.codes
-cp -p $dout/*vex.obs .
+cp -p $dout/*vex.obs $dout/*.v2d .
 [ `ls -l *vex.obs | wc -l` -eq 1 ] || echo Too many/too few vex.obs files
 
 # haxp is generated in $dout so preserve $expn if found:
@@ -294,19 +297,29 @@ drivepolconvert.py -v $opts -l $pcal $jobs
 for j in $jobs ;\
 do difx2mark4 -e $expn -s $exp.codes --override-version ${j/input/difx} ; done
 
+# work in the $expn directory created by difx2mark4
+cd $expn ; cp ../$ers.conf . ; cp -p ../$ers.bare .
+
 # identify roots:
-roots=`cd $expn ; ls */$target*` ; echo $roots
-# For each root run this command, but set -s argument
-# with a comma-sep list of single letter station codes
+roots=`ls */$target*` ; echo $roots
+
+# if you are not sure about which scans to calibrate with which stations...
+for r in $roots; do fourfit -pt -c $ers.bare -b A? $r ; done
+# if you need to add more scans, make sure (after polconversion) that the
+# jobs variable reflects ALL scans (to be deleted at the end).
+
+# For each root run est_manual_phases.py, but set -s argument
+# with a different comma-sep list of single letter station codes
 # that should be fit (relative to A as first station).
 # Refer to the station codes file for the 2-letter to 1-letter codes.
-cd $expn ; cp ../$ers.conf .
 $ehtc/est_manual_phases.py -c $ers.conf -v \
     -r first-root -s A,x,y,z,...
 grep ^if.station $ers.conf | sort | uniq -c
 $ehtc/est_manual_phases.py -c $ers.conf -v \
     -r second-root -s A,p,q,r,...
 grep ^if.station $ers.conf | sort | uniq -c
+# ... iterate with additional roots as you find you need them
+#
 # The -v option turns on some progress so that you monitor progress.
 # It will declare some steps not done if full convergence is not
 # reached...this is generally not a problem.
@@ -314,6 +327,12 @@ grep ^if.station $ers.conf | sort | uniq -c
 ### are all manual phases set up plausibly?  tell us what you think.
 for r in $roots ; do fourfit -bA? -c $ers.conf $r & done ; wait
 fplot */A[^A].B*
+### first-root
+### SNR LL  RR  LR  RL
+### ...
+### second-root
+### SNR LL  RR  LR  RL
+### ...
 
 # be sure to clean up afterwards, especially to move $expn aside
 cd ..
@@ -321,8 +340,19 @@ cp -p $expn/$ers.conf .
 cp -p $expn/$ers.conf $release/logs
 mv $expn ff-conf-$expn
 rm -rf ${jobs//input/*}
+# this should be a short list (i.e. no DiFX job files):
+ls -latr | grep -v .ms.
 # now have $ers.conf
 } # ONE TIME SETUP
+
+#--------------------------------------------------------------------------
+# IF YOU NEED TO RE-DO anything, either start over in a new $iter or make
+# this directory pristine for a block with a suitable replacement for ????
+false && {
+  rm -rf $exp-$vers-${subv}_????.{calc,difx,flag,input,save,im,polc*}
+  rm -rf tb-*
+}
+#--------------------------------------------------------------------------
 
 # EXECUTION NOTES ======================
 # Capture all commands in this file.
@@ -331,22 +361,17 @@ rm -rf ${jobs//input/*}
 # As needed insert comments (for grepping later):
 #   # ... details of interest to correlator folks
 #   ###  important messages that can be grepped out to make a summary
-#--------------------------------------------------------------------------
-# IF YOU NEED TO RE-DO anythig, either start over in a new $iter or make
-# this directory pristine for a block with a suitable replacement for ????
-false && {
-  rm -rf $exp-$vers-${subv}_????.{calc,difx,flag,input,save,im,polc*}
-  rm -rf tb-*
-}
-#--------------------------------------------------------------------------
+#
 # TODO list ======================
-# This command generates blocks of commands to insert here:
-# $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -L
+# This command (without false) generates blocks of commands to insert here:
+false &&
+$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -L
 # but you must be sure to adjust these grind jobs to respect QA2_proj logic
-# Once you have edited this file to run a block of grinding jobs
-# with appropriate true and false controls, you can launch with:
+#
+# Once you have edited this file to run a block of grinding jobs with correct
+# true/false controls, you can launch with this (only one matching logfile):
+#
 # sh *.logfile & disown
-# (since there should be only one *.logfile)
 
 ###
 ### log of $ers commands goes here
@@ -436,10 +461,15 @@ df -h $release
 # if there is more than enough space: execute in parallel:
 for r in tb-* ; do pushd $r ; nohup ./release.sh & disown ; popd ; done
 # if you aren't sure, execute them serially
-for r in tb-* ; do pushd $r ; nohup ./release.sh & wait   ; popd ; done
+for r in tb-* ; do pushd $r ; nohup ./release.sh & wait   ; popd ; done &
+# monitor (if you want) with
+du -sBG tb-*
 
 # and finally after everything is released count the products
 $ehtc/ehtc-release-check.sh | sed 's/^/### /'
+
+# after tarballs are delivered you can remove the polconvert swin dirs:
+rm -rf $exp-$vers-${subv}_????.{save,difx}
 
 # one last time
 logfile=$exp-$subv-v${vers}${ctry}${stry}p${iter}r${relv}.logfile
@@ -449,9 +479,10 @@ cp -p $logfile $comment $release/logs
 ls -l $release/logs
 
 # Cleanup list ======================
-# after tarballs are delivered and if you want to recover disk space
-rm -rf $exp-$vers-${subv}_*.save
-rm -rf $exp-$relv-${subv}_*.save
+# the product dirs should probably be saved until the archive is final...
+ls -ld $exp-*-${subv}*.save
+# ...but you can remove them too:
+rm -rf $exp-*-${subv}*.save
 }
 # avoid worrisome error return values
 true
