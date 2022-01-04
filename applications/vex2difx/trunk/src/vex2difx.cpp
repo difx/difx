@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2019 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2022 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -558,7 +558,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 				exit(EXIT_FAILURE);
 			}
 
-			if(stream.recordChanAbsent(streamRecChan))
+			if(stream.isVDIFFormat() && stream.recordChanAbsent(streamRecChan))
 			{
 				continue;
 			}
@@ -575,15 +575,19 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 			
 			fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand, corrSetup->FFTSpecRes, corrSetup->outputSpecRes, 1, 0, toneSetId);	// 0 means not zoom band
 
-			// index into the difxio datastream object arrays is by "present band"
-// FIXME: Major bug to fix: in cases (such as vt031a) where the track map is not monotone increasing,
-// the final ordering of channels is incorrect.  Likely solution is to ensure we perform the "record chan" loop
-// in "track" (or "thread") order. 
+			// if VDIF, index into the difxio datastream object arrays is by "present band"
+			// else, keep the same rec chan
 
-// As a hint to a possible fix, the next two lines give the correct behavior when streamPresentChan -> streamRecChan,
-// but this breaks the new functionality.
-			D->datastream[dsId].recBandFreqId[streamPresentChan] = getBand(bandMap, fqId);
-			D->datastream[dsId].recBandPolName[streamPresentChan] = subband.pol;
+			if(stream.isVDIFFormat())
+			{
+				D->datastream[dsId].recBandFreqId[streamPresentChan] = getBand(bandMap, fqId);
+				D->datastream[dsId].recBandPolName[streamPresentChan] = subband.pol;
+			}
+			else
+			{
+				D->datastream[dsId].recBandFreqId[streamRecChan] = getBand(bandMap, fqId);
+				D->datastream[dsId].recBandPolName[streamRecChan] = subband.pol;
+			}
 
 			// Mark threads to be ignored by changing polarization to lower case
 			if(stream.recordChanIgnore(streamRecChan))
