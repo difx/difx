@@ -224,7 +224,8 @@ enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *i
 			//	{
 			//		status = Mark5DirectoryInfoErrorConnection;
 			//	}
-				else if(nBad > info->nScan/2)
+			//	else if(nBad > info->nScan/2)
+				if(nBad > info->nScan/2)
 				{
 					status = Mark5DirectoryInfoErrorGranularity;
 				}
