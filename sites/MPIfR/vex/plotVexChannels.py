@@ -166,7 +166,6 @@ class ZoomFreqs:
 		n = 0
 
 		currZoomBlock = ''
-		channelList = []
 
 		for line in lines:
 			if line.startswith("ZOOM"):
@@ -212,6 +211,30 @@ class OutputbandFreqs:
 			fqEntry = VexFreq(cfg.freqs[fq].low_edge(), cfg.freqs[fq].high_edge(), +1 if cfg.freqs[fq].lsb else -1)
 			self.outputFreqs.append(fqEntry)
 			self.outputLowestFreq = min(self.outputLowestFreq, fqEntry.flow)
+
+	def loadV2D(self, v2dfilename):
+		"""Add all outputbands from SETUP section of a v2d file"""
+
+		f = open(v2dfilename, 'r')
+		lines = f.readlines()
+		f.close()
+
+		lines = [line.split('#')[0].strip() for line in lines]
+		lines = [re.sub('\s+',' ',line).strip() for line in lines]
+		lines = [line for line in lines if len(line)>0]
+		print('OutputbandFreqs::loadV2D')
+		print(lines)
+
+		for line in lines:
+			#if line.startswith("SETUP"):
+			# ...
+			if 'addOutputBand' in line and 'freq@' in line:
+				r = line.find('freq@')
+				args = re.split(r'[@/]', line[r:])  # example: ['freq', '86268.000000', 'bw', '32.000000']
+				print('added v2d outputband with args %s' % (str(args)))
+				fqEntry = VexFreq(float(args[1]), float(args[1])+float(args[3]), +1)
+				self.outputFreqs.append(fqEntry)
+				self.outputLowestFreq = min(self.outputLowestFreq, fqEntry.flow)
 
 
 class Charting:
@@ -380,6 +403,7 @@ if __name__ == "__main__":
 	vx.loadVEX(vexfile)
 	if v2dfile:
 		zf.loadV2D(v2dfile)
+		ob.loadV2D(v2dfile)
 	if inputfile:
 		ob.loadInput(inputfile)
 
