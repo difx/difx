@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 NVI, Inc.
+ * Copyright (c) 2020-2021 NVI, Inc.
  *
  * This file is part of VLBI Field System
  * (see http://github.com/nvi-inc/fs).
@@ -1512,6 +1512,35 @@ int
 vex_field(int statement,void *ptr,int n,int *link,int *name,char **value,
 char **units)
 {
+/* vex_field -- retrieve the data for the n-th field in the statement
+ *              data pointed to by ptr
+ *
+ * Input:
+ *   int statement          the symbolic name for the statement,
+ *                          e.g., T_CHAN_DEF
+ *   void *ptr              pointer to the statement data, returned by
+ *                          a get_*() function for a primitive
+ *                          statement
+ *   int n                  the field to return
+ *
+ * Output:
+ *   int (return value)        0 == for no error
+ *                            -1 == statement type unknown
+ *                            -2 == n < 1 or less than n fields exist
+ *                          -999 == internal execution error
+ *   int *link                 1 == this field is a link
+ *                             0 == not a link
+ *   int *name                 1 == this field is a string value
+ *                             0 == numeric string units pair
+ *   char **value           a pointer to a pointer for the string or
+ *                          numeric value, If *value is NULL or points
+ *                          to a string with zero length, there is no
+ *                          string or numeric value.
+ *   char **units           a pointer to a pointer for the units
+ *                          string, If *units is NULL or points to a
+ *                          string with zero length, there are no
+ *                          units.
+ */
   int ierr;
 
   *link=0;

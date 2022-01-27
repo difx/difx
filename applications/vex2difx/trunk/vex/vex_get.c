@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 NVI, Inc.
+ * Copyright (c) 2020-2021 NVI, Inc.
  *
  * This file is part of VLBI Field System
  * (see http://github.com/nvi-inc/fs).
@@ -202,12 +202,16 @@ ldone:
 void *
 get_scan_source_next()
 {
+/* DEPRECATED: Use get_scan_source2_next() instead. */
+
   return get_scan_source(NULL);
 }
 /*---------------------------------------------------------------------------*/
 void *
 get_scan_source(Llist *lowls_scan_in)
 {
+/* DEPRECATED: Use get_scan_source2() instead. */
+
   Llist *lowls_this;
 
   static Llist *lowls;
