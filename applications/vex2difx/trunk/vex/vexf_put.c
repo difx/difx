@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2020 NVI, Inc.
+ *
+ * This file is part of VLBI Field System
+ * (see http://github.com/nvi-inc/fs).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 /* vexf.c FORTRAN VEX library */
 /* ----------------------------------------------------------------------- */
 
@@ -21,13 +40,7 @@ typedef double doublereal;
                                       if(strcmp(units,table[i].str)==0) {\
                                         out=table[i].factor;\
 					found=1; } }
-static void *save_ptr=NULL;
-static int save_type=0;
-static char *save_units=NULL;
-static Llist *save_lowls=NULL;
 
-static int
-field_copy(char *field,int field_len,char *ptr);
 /* ----------------------------------------------------------------------- */
 void
 #ifdef F2C
@@ -135,7 +148,7 @@ fend_def
 /* ... */
 
 /* input: */
-/*   none  */
+/*   none */
 /* output: */
 /*   VEX format def name */
 /* */
@@ -414,6 +427,65 @@ char **str;
 /* ----------------------------------------------------------------------- */
 void
 #ifdef F2C
+fcreate_source2__
+#else
+fcreate_source2
+#endif
+(str,str2,str3)
+char **str;
+char **str2;
+char **str3;
+/*<      subroutine fcreate_source2(ptr_ch(str)//(char *)0, >*/
+/*<                                      ptr_ch(str2)//(char *)0, >*/
+/*<                                     ptr_ch(str4)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_source2(*str,*str2,*str3);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_source2_stations__
+#else
+fcreate_source2_stations
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_source2_stations(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+
+  create_source2_stations(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
 fcreate_station__
 #else
 fcreate_station
@@ -564,6 +636,88 @@ char **str8;
 /* ----------------------------------------------------------------------- */
 void
 #ifdef F2C
+fcreate_intent__
+#else
+fcreate_intent
+#endif
+(str,str2,str3)
+char **str;
+char **str2;
+char **str3;
+/*<      subroutine fcreate_intent(ptr_ch(str)//(char *)0, >*/
+/*<                                      ptr_ch(str2)//(char *)0, >*/
+/*<                                     ptr_ch(str3)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_intent(*str,*str2,*str3);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_pointing_offset__
+#else
+fcreate_pointing_offset
+#endif
+(str,str2,str3,str4,str5,str6,str7)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+char **str6;
+char **str7;
+/*<      subroutine fcreate_pointing_offset(ptr_ch(str)//(char *)0, >*/
+/*<                                      ptr_ch(str2)//(char *)0, >*/
+/*<                                      ptr_ch(str3)//(char *)0, >*/
+/*<                                      ptr_ch(str4)//(char *)0, >*/
+/*<                                      ptr_ch(str5)//(char *)0, >*/
+/*<                                      ptr_ch(str6)//(char *)0, >*/
+/*<                                     ptr_ch(str7)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4; >*/
+/*<      character*(*) str5; >*/
+/*<      character*(*) str6; >*/
+/*<      character*(*) str7; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+/*   character*(*) str4      - string */
+/*   character*(*) str5      - string */
+/*   character*(*) str6      - string */
+/*   character*(*) str7      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_pointing_offset(*str,*str2,*str3,*str4,*str5,*str6,*str7);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
 fcreate_antenna_diam__
 #else
 fcreate_antenna_diam
@@ -594,6 +748,46 @@ char **str2;
 /* ----------------------------------------------------------------------- */
 void
 #ifdef F2C
+fcreate_axis_type2__
+#else
+fcreate_axis_type2
+#endif
+(str, str2, str3, str4)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+/*<      subroutine fcreate_axis_type2(ptr_ch(str)//(char *)0, >*/
+/*<                                   ptr_ch(str2)//(char *)0, >*/
+/*<                                   ptr_ch(str3)//(char *)0, >*/
+/*<                                   ptr_ch(str4)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string 1 */
+/*   character*(*) str2      - string 2 */
+/*   character*(*) str3      - string 3 */
+/*   character*(*) str4      - string 4 */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_axis_type2(*str,
+		    *str2,
+		    *str3,
+		    *str4);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
 fcreate_axis_type__
 #else
 fcreate_axis_type
@@ -603,6 +797,8 @@ char **str;
 char **str2;
 /*<      subroutine fcreate_axis_type(ptr_ch(str)//(char *)0, >*/
 /*<                                   ptr_ch(str2)//(char *)0) >*/
+/*<                                   ptr_ch(str3)//(char *)0, >*/
+/*<                                   ptr_ch(str4)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
 /*<      character*(*) str2; >*/
@@ -699,6 +895,61 @@ char **str5;
 /* ----------------------------------------------------------------------- */
 void
 #ifdef F2C
+fcreate_antenna_motion2__
+#else
+fcreate_antenna_motion2
+#endif
+(str, str2, str3, str4, str5, str6, str7)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+char **str6;
+char **str7;
+/*<      subroutine fcreate_antenna_motion(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0, >*/
+/*<                                    ptr_ch(str3)//(char *)0, >*/
+/*<                                    ptr_ch(str4)//(char *)0, >*/
+/*<                                    ptr_ch(str5)//(char *)0, >*/
+/*<                                    ptr_ch(str6)//(char *)0, >*/
+/*<                                    ptr_ch(str7)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4 >*/
+/*<      character*(*) str5; >*/
+/*<      character*(*) str6; >*/
+/*<      character*(*) str7; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string 1 */
+/*   character*(*) str2      - string 2 */
+/*   character*(*) str3      - string 3 */
+/*   character*(*) str4      - string 4 */
+/*   character*(*) str5      - string 5 */
+/*   character*(*) str6      - string 6 */
+/*   character*(*) str7      - string 7 */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_antenna_motion2(*str,
+			*str2,
+			*str3,
+			*str4,
+			*str5,
+			*str6,
+			*str7);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
 fcreate_pointing_sector__
 #else
 fcreate_pointing_sector
@@ -774,6 +1025,116 @@ char **str11;
 /* ----------------------------------------------------------------------- */
 void
 #ifdef F2C
+fcreate_pointing_sector2__
+#else
+fcreate_pointing_sector2
+#endif
+(str, str2, str3, str4, str5, str6, str7, str8, str9,str10,str11, str12)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+char **str6;
+char **str7;
+char **str8;
+char **str9;
+char **str10;
+char **str11;
+char **str12;
+/*<      subroutine fcreate_pointing_sector2(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0, >*/
+/*<                                    ptr_ch(str3)//(char *)0, >*/
+/*<                                    ptr_ch(str4)//(char *)0, >*/
+/*<                                    ptr_ch(str5)//(char *)0, >*/
+/*<                                    ptr_ch(str6)//(char *)0, >*/
+/*<                                    ptr_ch(str7)//(char *)0, >*/
+/*<                                    ptr_ch(str8)//(char *)0, >*/
+/*<                                    ptr_ch(str9)//(char *)0, >*/
+/*<                                    ptr_ch(str10)//(char *)0, >*/
+/*<                                    ptr_ch(str11)//(char *)0) >*/
+/*<                                    ptr_ch(str0)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4 >*/
+/*<      character*(*) str5; >*/
+/*<      character*(*) str6; >*/
+/*<      character*(*) str7 >*/
+/*<      character*(*) str8; >*/
+/*<      character*(*) str9; >*/
+/*<      character*(*) str10; >*/
+/*<      character*(*) str11; >*/
+/*<      character*(*) str12; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+/*   character*(*) str4      - string */
+/*   character*(*) str5      - string */
+/*   character*(*) str6      - string */
+/*   character*(*) str7      - string */
+/*   character*(*) str8      - string */
+/*   character*(*) str9      - string */
+/*   character*(*) str10     - string */
+/*   character*(*) str11     - string */
+/*   character*(*) str12     - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_pointing_sector2(*str,
+			 *str2,
+			 *str3,
+			 *str4,
+			 *str5,
+			 *str6,
+			 *str7,
+			 *str8,
+			 *str9,
+			 *str10,
+			 *str11,
+			 *str12);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_nasmyth__
+#else
+fcreate_nasmyth
+#endif
+(str, str2)
+char **str;
+char **str2;
+/*<      subroutine fcreate_nasmyth(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_nasmyth(*str,
+                 *str2);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
 fcreate_bbc_assign__
 #else
 fcreate_bbc_assign
@@ -804,6 +1165,109 @@ char **str3;
   create_bbc_assign(*str,
 		    *str2,
 		    *str3);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_stream_def__
+#else
+fcreate_stream_def
+#endif
+(str, str2, str3, str4, str5)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+/*<      subroutine fcreate_stream_def(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0, >*/
+/*<                                    ptr_ch(str3)//(char *)0, >*/
+/*<                                    ptr_ch(str4)//(char *)0, >*/
+/*<                                    ptr_ch(str5)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4; >*/
+/*<      character*(*) str5; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+/*   character*(*) str4      - string */
+/*   character*(*) str5      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_stream_def(*str,*str2, *str3, *str4, *str5);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_stream_sample_rate__
+#else
+fcreate_stream_sample_rate
+#endif
+(str, str2, str3)
+char **str;
+char **str2;
+char **str3;
+/*<      subroutine fcreate_stream_sample_rate(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0, >*/
+/*<                                    ptr_ch(str3)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_stream_sample_rate(*str,*str2, *str3);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_stream_label__
+#else
+fcreate_stream_label
+#endif
+(str, str2)
+char **str;
+char **str2;
+/*<      subroutine fcreate_stream_sample_rate(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_stream_label(*str,*str2);
   return;
 }
 /* ----------------------------------------------------------------------- */
@@ -856,6 +1320,138 @@ char **str5;
 	       *str3,
 	       *str4,
 	       *str5);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_clock_early__
+#else
+fcreate_clock_early
+#endif
+(str, str2, str3, str4, str5)
+/*
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+*/
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+/*<      subroutine fcreate_clock_early(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0, >*/
+/*<                                    ptr_ch(str3)//(char *)0, >*/
+/*<                                    ptr_ch(str4)//(char *)0, >*/
+/*<                                    ptr_ch(str5)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4; >*/
+/*<      character*(*) str5; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string  */
+/*   character*(*) str2      - string  */
+/*   character*(*) str3      - string  */
+/*   character*(*) str4      - string  */
+/*   character*(*) str5      - string  */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_clock_early(*str,
+	       *str2,
+	       *str3,
+	       *str4,
+	       *str5);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_clock_early2__
+#else
+fcreate_clock_early2
+#endif
+(str, str2, str3, str4, str5, str6, str7, str8, str9, str10, str11, str12)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+char **str6;
+char **str7;
+char **str8;
+char **str9;
+char **str10;
+char **str11;
+char **str12;
+/*<      subroutine fcreate_clock_early2(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0, >*/
+/*<                                    ptr_ch(str3)//(char *)0, >*/
+/*<                                    ptr_ch(str4)//(char *)0, >*/
+/*<                                    ptr_ch(str5)//(char *)0, >*/
+/*<                                    ptr_ch(str6)//(char *)0, >*/
+/*<                                    ptr_ch(str7)//(char *)0, >*/
+/*<                                    ptr_ch(str8)//(char *)0, >*/
+/*<                                    ptr_ch(str9)//(char *)0, >*/
+/*<                                    ptr_ch(str10)//(char *)0, >*/
+/*<                                    ptr_ch(str11)//(char *)0, >*/
+/*<                                    ptr_ch(str12)//(char *)0, >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4; >*/
+/*<      character*(*) str5; >*/
+/*<      character*(*) str6; >*/
+/*<      character*(*) str7; >*/
+/*<      character*(*) str8; >*/
+/*<      character*(*) str9; >*/
+/*<      character*(*) str10; >*/
+/*<      character*(*) st411; >*/
+/*<      character*(*) str12; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string  */
+/*   character*(*) str2      - string  */
+/*   character*(*) str3      - string  */
+/*   character*(*) str4      - string  */
+/*   character*(*) str5      - string  */
+/*   character*(*) str6      - string  */
+/*   character*(*) str7      - string  */
+/*   character*(*) str8      - string  */
+/*   character*(*) str9      - string  */
+/*   character*(*) str10      - string  */
+/*   character*(*) str11     - string  */
+/*   character*(*) str12     - string  */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_clock_early2(*str,
+	       *str2,
+	       *str3,
+	       *str4,
+	       *str5,
+	       *str6,
+	       *str7,
+	       *str8,
+	       *str9,
+	       *str10,
+	       *str11,
+	       *str12);
   return;
 }
 /* ----------------------------------------------------------------------- */
@@ -1137,6 +1733,468 @@ char **str;
 /* */
 {
   create_tape_control(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_equip__
+#else
+fcreate_equip
+#endif
+(str,str2,str3,str4)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+/*<      subroutine fcreate_equip(ptr_ch(str)//(char *)0, >*/
+/*<                               ptr_ch(str2)//(char *)0, >*/
+/*<                               ptr_ch(str3)//(char *)0, >*/
+/*<                               ptr_ch(str4)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+/*   character*(*) str4      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_equip(*str,*str2,*str3,*str4);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_dvalue_list__
+#else
+fcreate_dvalue_list
+#endif
+(str,str2)
+char **str;
+char **str2;
+/*<      subroutine fcreate_dvalue_list(ptr_ch(str)//(char *)0) >*/
+/*<                               ptr_ch(str2)//(char *)0, >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_dvalue_list(*str,*str2);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_svalue_list__
+#else
+fcreate_svalue_list
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_svalue_list(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_svalue_list(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_lvalue_list__
+#else
+fcreate_lvalue_list
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_lvalue_list(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_lvalue_list(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_composite_equip__
+#else
+fcreate_composite_equip
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_composite_equip(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_composite_equip(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_equip_set__
+#else
+fcreate_equip_set
+#endif
+(str,str2)
+char **str;
+char **str2;
+/*<      subroutine fcreate_equip_set(ptr_ch(str)//(char *)0, >*/
+/*<                                  ptr_ch(str2)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_equip_set(*str,*str2);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_equip_info__
+#else
+fcreate_equip_info
+#endif
+(str,str2)
+char **str;
+char **str2;
+/*<      subroutine fcreate_equip_info(ptr_ch(str)//(char *)0, >*/
+/*<                                   ptr_ch(str2)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_equip_info(*str,*str2);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_connection__
+#else
+fcreate_connection
+#endif
+(str,str2,str3,str4,str5)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+/*<      subroutine fcreate_equip(ptr_ch(str)//(char *)0, >*/
+/*<                               ptr_ch(str2)//(char *)0, >*/
+/*<                               ptr_ch(str3)//(char *)0, >*/
+/*<                               ptr_ch(str4)//(char *)0, >*/
+/*<                               ptr_ch(str5)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4; >*/
+/*<      character*(*) str5; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+/*   character*(*) str4      - string */
+/*   character*(*) str5      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_connection(*str,*str2,*str3,*str4,*str5);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_record_method__
+#else
+fcreate_record_method
+#endif
+(str,str2,str3,str4,str5)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+/*<      subroutine fcreate_record_method(ptr_ch(str)//(char *)0, >*/
+/*<                                      ptr_ch(str2)//(char *)0, >*/
+/*<                                      ptr_ch(str3)//(char *)0, >*/
+/*<                                     ptr_ch(str4)//(char *)0, >*/
+/*<                                     ptr_ch(str5)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4; >*/
+/*<      character*(*) str5; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+/*   character*(*) str4      - string */
+/*   character*(*) str5      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_record_method(*str,*str2,*str3,*str4,*str5);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_record_control__
+#else
+fcreate_record_control
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_record_control(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_record_control(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_datastream__
+#else
+fcreate_datastream
+#endif
+(str, str2, str3)
+char **str;
+char **str2;
+char **str3;
+/*<      subroutine fcreate_datastream(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0, >*/
+/*<                                    ptr_ch(str3)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_datastream(*str,*str2, *str3);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_thread__
+#else
+fcreate_thread
+#endif
+(str, str2, str3, str4, str5, str6, str7, str8, str9)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+char **str6;
+char **str7;
+char **str8;
+char **str9;
+/*<      subroutine fcreate_thread(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0, >*/
+/*<                                    ptr_ch(str3)//(char *)0, >*/
+/*<                                    ptr_ch(str4)//(char *)0, >*/
+/*<                                    ptr_ch(str5)//(char *)0, >*/
+/*<                                    ptr_ch(str6)//(char *)0, >*/
+/*<                                    ptr_ch(str7)//(char *)0, >*/
+/*<                                    ptr_ch(str8)//(char *)0, >*/
+/*<                                    ptr_ch(str9)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4; >*/
+/*<      character*(*) str5; >*/
+/*<      character*(*) str6; >*/
+/*<      character*(*) str7; >*/
+/*<      character*(*) str8; >*/
+/*<      character*(*) str9; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+/*   character*(*) str4      - string */
+/*   character*(*) str5      - string */
+/*   character*(*) str6      - string */
+/*   character*(*) str7      - string */
+/*   character*(*) str8      - string */
+/*   character*(*) str9      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_thread(*str,*str2, *str3, *str4, *str5, *str6, *str7, *str8, *str9);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_channel__
+#else
+fcreate_channel
+#endif
+(str, str2, str3, str4)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+/*<      subroutine fcreate_thread(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0, >*/
+/*<                                    ptr_ch(str3)//(char *)0, >*/
+/*<                                    ptr_ch(str4)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+/*   character*(*) str4      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_channel(*str,*str2, *str3, *str4);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_merged_datastream__
+#else
+fcreate_merged_datastream
+#endif
+(str, str2)
+char **str;
+char **str2;
+/*<      subroutine fcreate_thread(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_merged_datastream(*str,*str2);
   return;
 }
 /* ----------------------------------------------------------------------- */
@@ -1537,6 +2595,110 @@ char **str;
 /* ----------------------------------------------------------------------- */
 void
 #ifdef F2C
+fcreate_eop_origin__
+#else
+fcreate_eop_origin
+#endif
+(str, str2)
+char **str;
+char **str2;
+/*<      subroutine fcreate_eop_origin(ptr_ch(str)//(char *)0, >*/
+/*<                                 ptr_ch(str2)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_eop_origin(*str,*str2);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_delta_x_nut__
+#else
+fcreate_delta_x_nut
+#endif
+()
+/*<      subroutine fcreate_delta_x_nut >*/
+/*<      implicit none >*/
+
+/* ... */
+
+/* input: */
+/*   none */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_delta_x_nut();
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_delta_y_nut__
+#else
+fcreate_delta_y_nut
+#endif
+()
+/*<      subroutine fcreate_delta_y_nut >*/
+/*<      implicit none >*/
+
+/* ... */
+
+/* input: */
+/*   none */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_delta_y_nut();
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_nut_origin__
+#else
+fcreate_nut_origin
+#endif
+(str, str2)
+char **str;
+char **str2;
+/*<      subroutine fcreate_nut_origin(ptr_ch(str)//(char *)0, >*/
+/*<                                 ptr_ch(str2)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_nut_origin(*str,*str2);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
 fcreate_exper_num__
 #else
 fcreate_exper_num
@@ -1557,6 +2719,35 @@ char **str;
 /* */
 {
   create_exper_num(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_exper_name2__
+#else
+fcreate_exper_name2
+#endif
+(str, str2)
+char **str;
+char **str2;
+/*<      subroutine fcreate_exper_name2(ptr_ch(str)//(char *)0, >*/
+/*<                                 ptr_ch(str2)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_exper_name2(*str,*str2);
   return;
 }
 /* ----------------------------------------------------------------------- */
@@ -1837,6 +3028,102 @@ char **str;
 /* ----------------------------------------------------------------------- */
 void
 #ifdef F2C
+fcreate_scheduling_software__
+#else
+fcreate_scheduling_software
+#endif
+(str, str2, str3)
+char **str;
+char **str2;
+char **str3;
+/*<      subroutine fcreate_scheduling_software(ptr_ch(str)//(char *)0, >*/
+/*<                                 ptr_ch(str2)//(char *)0, >*/
+/*<                                 ptr_ch(str3)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2       - string */
+/*   character*(*) str3       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_scheduling_software(*str,*str2,*str3);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_vex_file_writer__
+#else
+fcreate_vex_file_writer
+#endif
+(str, str2, str3)
+char **str;
+char **str2;
+char **str3;
+/*<      subroutine fcreate_vex_file_writer(ptr_ch(str)//(char *)0, >*/
+/*<                                 ptr_ch(str2)//(char *)0, >*/
+/*<                                 ptr_ch(str3)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2       - string */
+/*   character*(*) str3       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_vex_file_writer(*str,*str2,*str3);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_extension__
+#else
+fcreate_extension
+#endif
+(str, str2)
+char **str;
+char **str2;
+/*<      subroutine fcreate_extension(ptr_ch(str)//(char *)0, >*/
+/*<                                 ptr_ch(str2)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_extension(*str,
+		   *str2);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
 fcreate_chan_def__
 #else
 fcreate_chan_def
@@ -1922,6 +3209,101 @@ char **str;
 {
 
   create_chan_def_states(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_chan_def2__
+#else
+fcreate_chan_def2
+#endif
+(str, str2, str3, str4, str5, str6, str7, str8, str9, str10)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+char **str6;
+char **str7;
+char **str8;
+char **str9;
+char **str10;
+/*<      subroutine fcreate_chan_def2(ptr_ch(str)//(char *)0, >*/
+/*<                                  ptr_ch(str2)//(char *)0, >*/
+/*<                                  ptr_ch(str3)//(char *)0, >*/
+/*<                                  ptr_ch(str4)//(char *)0, >*/
+/*<                                  ptr_ch(str5)//(char *)0, >*/
+/*<                                  ptr_ch(str6)//(char *)0, >*/
+/*<                                  ptr_ch(str7)//(char *)0, >*/
+/*<                                  ptr_ch(str8)//(char *)0, >*/
+/*<                                  ptr_ch(str9)//(char *)0, >*/
+/*<                                  ptr_ch(str10)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4 >*/
+/*<      character*(*) str5; >*/
+/*<      character*(*) str6; >*/
+/*<      character*(*) str7 >*/
+/*<      character*(*) str8; >*/
+/*<      character*(*) str9; >*/
+/*<      character*(*) str10; >*/
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+/*   character*(*) str4      - string */
+/*   character*(*) str5      - string */
+/*   character*(*) str6      - string */
+/*   character*(*) str7      - string */
+/*   character*(*) str8      - string */
+/*   character*(*) str9      - string */
+/*   character*(*) str10     - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_chan_def2(*str,
+		  *str2,
+		  *str3,
+		  *str4,
+		  *str5,
+		  *str6,
+		  *str7,
+		  *str8,
+		  *str9,
+		  *str10);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_chan_def2_states__
+#else
+fcreate_chan_def2_states
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_chan_def2_states(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+
+  create_chan_def2_states(*str);
   return;
 }
 /* ----------------------------------------------------------------------- */
@@ -2096,7 +3478,7 @@ fcreate_if_def__
 #else
 fcreate_if_def
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8, str9,str10, str11)
+(str, str2, str3, str4, str5, str6, str7, str8, str9,str10)
 char **str;
 char **str2;
 char **str3;
@@ -2107,7 +3489,6 @@ char **str7;
 char **str8;
 char **str9;
 char **str10;
-char **str11;
 /*<      subroutine fcreate_if_def(ptr_ch(str)//(char *)0, >*/
 /*<                                ptr_ch(str2)//(char *)0, >*/
 /*<                                ptr_ch(str3)//(char *)0, >*/
@@ -2157,8 +3538,198 @@ char **str11;
 		*str7,
 		*str8,
 		*str9,
+		*str10);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_if_def2__
+#else
+fcreate_if_def2
+#endif
+(str, str3, str4, str5, str6, str7, str8, str9,str10,str11,str12)
+char **str;
+char **str3;
+char **str4;
+char **str5;
+char **str6;
+char **str7;
+char **str8;
+char **str9;
+char **str10;
+char **str11;
+char **str12;
+/*<      subroutine fcreate_if_def(ptr_ch(str)//(char *)0, >*/
+/*<                                ptr_ch(str3)//(char *)0, >*/
+/*<                                ptr_ch(str4)//(char *)0, >*/
+/*<                                ptr_ch(str5)//(char *)0, >*/
+/*<                                ptr_ch(str6)//(char *)0, >*/
+/*<                                ptr_ch(str7)//(char *)0, >*/
+/*<                                ptr_ch(str8)//(char *)0, >*/
+/*<                                ptr_ch(str9)//(char *)0, >*/
+/*<                                ptr_ch(str10)//(char *)0, >*/
+/*<                                ptr_ch(str11)//(char *)0, >*/
+/*<                                ptr_ch(str12)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4 >*/
+/*<      character*(*) str5; >*/
+/*<      character*(*) str6; >*/
+/*<      character*(*) str7 >*/
+/*<      character*(*) str8; >*/
+/*<      character*(*) str9; >*/
+/*<      character*(*) str10; >*/
+/*<      character*(*) str11; >*/
+/*<      character*(*) str12; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string  */
+/*   character*(*) str3      - string  */
+/*   character*(*) str4      - string  */
+/*   character*(*) str5      - string  */
+/*   character*(*) str6      - string  */
+/*   character*(*) str7      - string  */
+/*   character*(*) str8      - string  */
+/*   character*(*) str9      - string  */
+/*   character*(*) str10     - string  */
+/*   character*(*) str11     - string  */
+/*   character*(*) str12     - string  */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_if_def2(*str,
+		*str3,
+		*str4,
+		*str5,
+		*str6,
+		*str7,
+		*str8,
+		*str9,
 		*str10,
-		*str11);
+		*str11,
+		*str12);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_receiver_name__
+#else
+fcreate_receiver_name
+#endif
+(str, str2)
+char **str;
+char **str2;
+/*<      subroutine fcreate_receiver_name(ptr_ch(str)//(char *)0, >*/
+/*<                                    ptr_ch(str2)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_receiver_name(*str,*str2);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_sub_lo_frequencies__
+#else
+fcreate_sub_lo_frequencies
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_sub_lo_frequencies(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_sub_lo_frequencies(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_sub_lo_sidebands__
+#else
+fcreate_sub_lo_sidebands
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_sub_lo_sidebands(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_sub_lo_sidebands(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_switched_power__
+#else
+fcreate_switched_power
+#endif
+(str,str2,str3,str4)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+/*<      subroutine fcreate_switched_power(ptr_ch(str)//(char *)0, >*/
+/*<                               ptr_ch(str2)//(char *)0, >*/
+/*<                               ptr_ch(str3)//(char *)0, >*/
+/*<                               ptr_ch(str4)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+/*   character*(*) str4      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_switched_power(*str,*str2,*str3,*str4);
   return;
 }
 /* ----------------------------------------------------------------------- */
@@ -2822,7 +4393,7 @@ fcreate_sefd__
 #else
 fcreate_sefd
 #endif
-(str, str2, str3, str4) 
+(str, str2, str3) 
 char **str;
 char **str2;
 char **str3;
@@ -2896,6 +4467,37 @@ char **str;
 /* */
 {
   create_site_type(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_site_id2__
+#else
+fcreate_site_id2
+#endif
+(str, str2)
+char **str;
+char **str2;
+/*<      subroutine fcreate_site_id(ptr_ch(str)//(char *)0) >*/
+/*<                              ptr_ch(str2)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string  */
+/*   character*(*) str2      - string  */
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_site_ID2(*str, *str2);
   return;
 }
 /* ----------------------------------------------------------------------- */
@@ -3536,8 +5138,40 @@ char **str2;
 /*   VEX format */
 /* */
 {
-  create_source_type(*str,
-		     *str2);
+  create_source_type(*str, *str2);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_source_type2__
+#else
+fcreate_source_type2
+#endif
+(str, str2, str3)
+char **str;
+char **str2;
+char **str3;
+/*<      subroutine fcreate_source_type(ptr_ch(str)//(char *)0, >*/
+/*<                                     ptr_ch(str2)//(char *)0, >*/
+/*<                                     ptr_ch(str3)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_source_type2(*str, *str2, *str3);
   return;
 }
 /* ----------------------------------------------------------------------- */
@@ -3900,11 +5534,277 @@ char **str13;
 /* ----------------------------------------------------------------------- */
 void
 #ifdef F2C
+fcreate_bsp_file_name__
+#else
+fcreate_bsp_file_name
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_bsp_file_name(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_bsp_file_name(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_bsp_object_id__
+#else
+fcreate_bsp_object_id
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_bsp_object_id(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_bsp_object_id(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_tle0__
+#else
+fcreate_tle0
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_tle0(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_tle0(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_tle1__
+#else
+fcreate_tle1
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_tle1(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_tle1(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_tle2__
+#else
+fcreate_tle2
+#endif
+(str)
+char **str;
+/*<      subroutine fcreate_tle2(ptr_ch(str)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_tle2(*str);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_datum__
+#else
+fcreate_datum
+#endif
+(str, str2, str3, str4, str5, str6, str7)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+char **str6;
+char **str7;
+/*<      subroutine fcreate_datum(ptr_ch(str)//(char *)0, >*/
+/*<                                     ptr_ch(str2)//(char *)0, >*/
+/*<                                     ptr_ch(str3)//(char *)0, >*/
+/*<                                     ptr_ch(str4)//(char *)0, >*/
+/*<                                     ptr_ch(str5)//(char *)0, >*/
+/*<                                     ptr_ch(str6)//(char *)0, >*/
+/*<                                     ptr_ch(str7)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4 >*/
+/*<      character*(*) str5; >*/
+/*<      character*(*) str6; >*/
+/*<      character*(*) str7 >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+/*   character*(*) str4      - string */
+/*   character*(*) str5      - string */
+/*   character*(*) str6      - string */
+/*   character*(*) str7      - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_datum(*str,
+		     *str2,
+		     *str3,
+		     *str4,
+		     *str5,
+		     *str6,
+		     *str7);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_vector__
+#else
+fcreate_vector
+#endif
+(str, str2, str3, str4, str5, str6, str7, str8, str9, str10, str11,
+ str12, str13)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+char **str5;
+char **str6;
+char **str7;
+char **str8;
+char **str9;
+char **str10;
+char **str11;
+char **str12;
+char **str13;
+/*<      subroutine fcreate_vector(ptr_ch(str)//(char *)0, >*/
+/*<                                     ptr_ch(str2)//(char *)0, >*/
+/*<                                     ptr_ch(str3)//(char *)0, >*/
+/*<                                     ptr_ch(str4)//(char *)0, >*/
+/*<                                     ptr_ch(str5)//(char *)0, >*/
+/*<                                     ptr_ch(str6)//(char *)0, >*/
+/*<                                     ptr_ch(str7)//(char *)0, >*/
+/*<                                     ptr_ch(str8)//(char *)0, >*/
+/*<                                     ptr_ch(str9)//(char *)0, >*/
+/*<                                     ptr_ch(str10)//(char *)0, >*/
+/*<                                     ptr_ch(str11)//(char *)0, >*/
+/*<                                     ptr_ch(str12)//(char *)0, >*/
+/*<                                     ptr_ch(str13)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4 >*/
+/*<      character*(*) str5; >*/
+/*<      character*(*) str6; >*/
+/*<      character*(*) str7 >*/
+/*<      character*(*) str8 >*/
+/*<      character*(*) str9 >*/
+/*<      character*(*) str10 >*/
+/*<      character*(*) str11 >*/
+/*<      character*(*) str12 >*/
+/*<      character*(*) str13 >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string */
+/*   character*(*) str2      - string */
+/*   character*(*) str3      - string */
+/*   character*(*) str4      - string */
+/*   character*(*) str5      - string */
+/*   character*(*) str6      - string */
+/*   character*(*) str7      - string */
+/*   character*(*) str8      - string */
+/*   character*(*) str9      - string */
+/*   character*(*) str10     - string */
+/*   character*(*) str11     - string */
+/*   character*(*) str12     - string */
+/*   character*(*) str13     - string */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_vector(*str,
+		     *str2,
+		     *str3,
+		     *str4,
+		     *str5,
+		     *str6,
+		     *str7,
+		     *str8,
+		     *str9,
+		     *str10,
+		     *str11,
+		     *str12,
+		     *str13);
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
 fcreate_vsn__
 #else
 fcreate_vsn
 #endif
-(str, str2, str3, str4) 
+(str, str2, str3, str4)
 char **str;
 char **str2;
 char **str3;
@@ -3932,6 +5832,47 @@ char **str4;
 /* */
 {
   create_vsn(*str,
+	     *str2,
+	     *str3,
+	     *str4);
+
+  return;
+}
+/* ----------------------------------------------------------------------- */
+void
+#ifdef F2C
+fcreate_vsn2__
+#else
+fcreate_vsn2
+#endif
+(str, str2, str3, str4)
+char **str;
+char **str2;
+char **str3;
+char **str4;
+/*<      subroutine fcreate_vsn2(ptr_ch(str)//(char *)0, >*/
+/*<                          ptr_ch(str2)//(char *)0, >*/
+/*<                          ptr_ch(str3)//(char *)0, >*/
+/*<                          ptr_ch(str4)//(char *)0) >*/
+/*<      implicit none >*/
+/*<      character*(*) str; >*/
+/*<      character*(*) str2; >*/
+/*<      character*(*) str3; >*/
+/*<      character*(*) str4; >*/
+
+/* ... */
+
+/* input: */
+/*   character*(*) str       - string  */
+/*   character*(*) str2      - string  */
+/*   character*(*) str3      - string  */
+/*   character*(*) str4      - string  */
+
+/* output: */
+/*   VEX format */
+/* */
+{
+  create_vsn2(*str,
 	     *str2,
 	     *str3,
 	     *str4);

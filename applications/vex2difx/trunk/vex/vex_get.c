@@ -1,7 +1,25 @@
+/*
+ * Copyright (c) 2020 NVI, Inc.
+ *
+ * This file is part of VLBI Field System
+ * (see http://github.com/nvi-inc/fs).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "vex.h"
 #include "vex_parse.tab.h"
 
@@ -24,6 +42,19 @@ int vex_open(const char *name, struct vex **vex)
   *vex=vex_ptr;
   fclose(yyin);
   return 0;
+}
+/*---------------------------------------------------------------------------*/
+char *
+get_vex_rev(struct vex *vex)
+{
+  Llist *lowls;
+
+  lowls=vex->version;
+  lowls=find_lowl(lowls,T_VEX_REV);
+  if(lowls==NULL)
+    return NULL;
+
+  return ((Lowl *)lowls->ptr)->item;
 }
 /*---------------------------------------------------------------------------*/
 void *
@@ -49,6 +80,126 @@ get_scan_mode(Llist *lowls)
 }
 /*---------------------------------------------------------------------------*/
 void *
+get_scan_source2_next()
+{
+  return get_scan_source2(NULL);
+}
+/*---------------------------------------------------------------------------*/
+void *
+get_scan_source2(Llist *lowls_scan_in)
+{
+  Llist *lowls_this;
+
+  static Llist *lowls;
+
+  static int state=FALSE;
+
+  if(lowls_scan_in==NULL && !state)
+     return NULL;
+
+  if(lowls_scan_in!=NULL) {
+    lowls=lowls_scan_in;
+    state=FALSE;
+  }
+
+  lowls=find_lowl(lowls,T_SOURCE);
+  if(lowls==NULL)
+    goto ldone;
+
+  state=TRUE;
+
+  lowls_this=lowls;
+  lowls=lowls->next;
+
+  return ((Lowl *)lowls_this->ptr)->item;
+
+
+ldone:
+  state=FALSE;
+  return NULL;
+}
+/*---------------------------------------------------------------------------*/
+void *
+get_scan_intent_next()
+{
+  return get_scan_intent(NULL);
+}
+/*---------------------------------------------------------------------------*/
+void *
+get_scan_intent(Llist *lowls_scan_in)
+{
+  Llist *lowls_this;
+
+  static Llist *lowls;
+
+  static int state=FALSE;
+
+  if(lowls_scan_in==NULL && !state)
+     return NULL;
+
+  if(lowls_scan_in!=NULL) {
+    lowls=lowls_scan_in;
+    state=FALSE;
+  }
+
+  lowls=find_lowl(lowls,T_INTENT);
+  if(lowls==NULL)
+    goto ldone;
+
+  state=TRUE;
+
+  lowls_this=lowls;
+  lowls=lowls->next;
+
+  return ((Lowl *)lowls_this->ptr)->item;
+
+
+ldone:
+  state=FALSE;
+  return NULL;
+}
+/*---------------------------------------------------------------------------*/
+void *
+get_scan_pointing_offset_next()
+{
+  return get_scan_pointing_offset(NULL);
+}
+/*---------------------------------------------------------------------------*/
+void *
+get_scan_pointing_offset(Llist *lowls_scan_in)
+{
+  Llist *lowls_this;
+
+  static Llist *lowls;
+
+  static int state=FALSE;
+
+  if(lowls_scan_in==NULL && !state)
+     return NULL;
+
+  if(lowls_scan_in!=NULL) {
+    lowls=lowls_scan_in;
+    state=FALSE;
+  }
+
+  lowls=find_lowl(lowls,T_POINTING_OFFSET);
+  if(lowls==NULL)
+    goto ldone;
+
+  state=TRUE;
+
+  lowls_this=lowls;
+  lowls=lowls->next;
+
+  return ((Lowl *)lowls_this->ptr)->item;
+
+
+ldone:
+  state=FALSE;
+  return NULL;
+}
+/*---------------------------------------------------------------------------*/
+void *
 get_scan_source_next()
 {
   return get_scan_source(NULL);
@@ -71,7 +222,6 @@ get_scan_source(Llist *lowls_scan_in)
     state=FALSE;
   }
 
-lstate:
   lowls=find_lowl(lowls,T_SOURCE);
   if(lowls==NULL)
     goto ldone;
@@ -80,7 +230,9 @@ lstate:
 
   lowls_this=lowls;
   lowls=lowls->next;
-  return ((Lowl *)lowls_this->ptr)->item;
+
+  return ((Source *)((Lowl *)lowls_this->ptr)->item)->key;
+
 
 ldone:
   state=FALSE;
@@ -635,7 +787,7 @@ get_station_lowl(const char *station_in,
   static Llist *refs;
   static Llist *lowls;
 
-  Llist *qualifiers, *lowls_this;
+  Llist *lowls_this;
   Llist *defs;
   char *def;
 
@@ -737,7 +889,6 @@ get_source_lowl(char *source_in, int statement_in, struct vex *vex_in)
 
   Llist *lowls_this;
   Llist *defs;
-  char *def;
 
   static char *source;
   static struct vex *vex;
@@ -774,8 +925,6 @@ get_source_lowl(char *source_in, int statement_in, struct vex *vex_in)
 
   lowls=((Def *)((Lowl *)defs->ptr)->item)->refs;
 
-lstart:
-
 lstate:
   lowls=find_lowl(lowls,statement);
   if(lowls==NULL)
@@ -810,7 +959,7 @@ get_global_lowl(int statement_in,
   static Llist *lowls;
 
   Llist *defs;
-  Llist *qualifiers, *lowls_this;
+  Llist *lowls_this;
   char *def;
 
   static struct vex *vex;
@@ -905,7 +1054,7 @@ find_block(int block,struct vex *vex)
 }
 /*---------------------------------------------------------------------------*/
 Llist *
-find_def(Llist *defs, const char *mode)
+find_def(Llist *defs,const char *mode)
 {
   while(defs!=NULL && defs->ptr!=NULL
 	&& (((Lowl *)defs->ptr)->statement != T_DEF
@@ -1031,11 +1180,9 @@ get_literal_lowl(char *source_in, struct vex *vex_in)
 
   Llist *lowls_this;
   Llist *defs;
-  char *def;
 
   static char *source;
   static struct vex *vex;
-  static int statement;
 
   static int state=FALSE;
 
@@ -1070,8 +1217,6 @@ get_literal_lowl(char *source_in, struct vex *vex_in)
     goto ldone;*/
 
   lowls=((Def *)((Lowl *)defs->ptr)->item)->refs;
-
-lstart:
 
 lstate:
   lowls=find_lowl(lowls,T_LITERAL);
@@ -1111,7 +1256,7 @@ get_a_literal(struct llist *literals, char **text)
   return literals->next;
 }
 /*---------------------------------------------------------------------------*/
-char *
+void
 get_all_literals(struct llist *literals, char *array[])
 {
   int i=0;
@@ -1132,7 +1277,6 @@ get_all_literals(struct llist *literals, char *array[])
     i++;
     literals = get_literal_lowl_next();
   }
-  return(NULL);
 }
 /*---------------------------------------------------------------------------*/
 void *

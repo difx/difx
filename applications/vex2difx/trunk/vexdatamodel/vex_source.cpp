@@ -43,14 +43,95 @@ std::ostream& operator << (std::ostream &os, const VexSource &x)
 	{
 		os << "  name=" << *it << std::endl;
 	}
-	os << "  ra=" << x.ra <<
-		"\n  dec=" << x.dec << std::endl;
+	switch(x.type)
+	{
+	case VexSource::Star:
+		os << "  Type=star" << std::endl;
+		os << "    ra=" << x.ra << std::endl;
+		os << "    dec=" << x.dec << std::endl;
+		break;
+	case VexSource::BSP:
+		os << "  Type=BSP" << std::endl;
+		os << "    file=" << x.bspFile << std::endl;
+		os << "    object=" << x.bspObject << std::endl;
+		break;
+	case VexSource::TLE:
+		os << "  Type=TLE" << std::endl;
+		os << "    line0='" << x.tle[0] << "'" << std::endl;
+		os << "    line1='" << x.tle[1] << "'" << std::endl;
+		os << "    line2='" << x.tle[2] << "'" << std::endl;
+		break;
+	case VexSource::Fixed:
+		os << "  Type=Fixed" << std::endl;
+		os << "    X = " << x.X << " m" << std::endl;
+		os << "    Y = " << x.Y << " m" << std::endl;
+		os << "    Z = " << x.Z << " m" << std::endl;
+		break;
+	default:
+		os << "  Type: unsupported" << std::endl;
+		break;
+	}
 
 	return os;
 }
 
-void VexSource::setSourceType(const char *t1, const char *t2)
+// Returns false if the source_type is not one of the supported ones
+bool VexSource::setSourceType(const char *t1, const char *t2, const char *t3)
 {
 	sourceType1 = t1 ? t1 : "";
 	sourceType2 = t2 ? t2 : "";
+	sourceType3 = t3 ? t3 : "";
+
+	if(sourceType1 == "star")
+	{
+		type = Star;
+	}
+	else if(sourceType1 == "earth_satellite")
+	{
+		type = EarthSatellite;
+	}
+	else if (sourceType1 == "bsp")
+	{
+		type = BSP;
+	}
+	else if (sourceType1 == "tle")
+	{
+		type = TLE;
+	}
+	else if (sourceType1 == "ephemeris")
+	{
+		type = Ephemeris;
+	}
+	else
+	{
+		type = Unsupported;
+
+		return false;
+	}
+
+	return true;
+}
+
+void VexSource::setTLE(int lineNum, const char *line)
+{
+	if(lineNum >= 0 && lineNum <= 2)
+	{
+		type = TLE;
+		tle[lineNum] = line;
+	}
+}
+
+void VexSource::setBSP(const char *fileName, const char *objectId)
+{
+	type = BSP;
+	bspFile = fileName;
+	bspObject = objectId;
+}
+
+void VexSource::setFixed(double x, double y, double z)
+{
+	type = Fixed;
+	X = x;	// (m)
+	Y = y;	// (m)
+	Z = z;	// (m)
 }

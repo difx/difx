@@ -82,11 +82,12 @@ public:
 	std::string difxName;
 	char calCode;
 	int qualifier;
-	// ephemeris
+
+	// for non-star source type:
 	std::string ephemObject;	// name of the object in the ephemeris
-	std::string ephemFile;	// file containing a JPL ephemeris
-	std::string naifFile;	// file containing naif time data
-	double ephemDeltaT;	// tabulated ephem. nterval (seconds, default 60)
+	std::string ephemFile;		// file containing a JPL ephemeris
+	std::string naifFile;		// file containing naif time data
+	double ephemDeltaT;		// tabulated ephem. interval (seconds, default 24)
 	double ephemStellarAber;	// 0 = don't apply (default), 1 = apply, other: scale correction accordingly
 	double ephemClockError;		// (sec) 0.0 is no error
 	double X, Y, Z;			// For geosync satellite [0, 0, 0 means not a geosync]
@@ -99,10 +100,10 @@ public:
 	int setkv(const std::string &key, const std::string &value);
 	int setkv(const std::string &key, const std::string &value, PhaseCentre * pc);
 
-	bool doPointingCentre;		// Whether or not to correlate the pointing centre
-	std::string vexName;		// Source name as appears in vex file
-	PhaseCentre pointingCentre;	// The source which is at the pointing centre
-	std::vector<PhaseCentre> phaseCentres; // Additional phase centres to be correlated
+	bool doPointingCentre;			// Whether or not to correlate the pointing centre
+	std::string vexName;			// Source name as appears in vex file
+	PhaseCentre pointingCentre;		// The source which is at the pointing centre
+	std::vector<PhaseCentre> phaseCentres;	// Additional phase centres to be correlated
 };
 
 class ZoomFreq
@@ -200,7 +201,6 @@ public:
 	double X, Y, Z;		// [m] Station coordinates to override vex
 	double axisOffset;	// [m]
 	int clockorder;		// Order of clock poly (if overriding)
-	double clock2, clock3, clock4, clock5;	// Clock coefficients (if overriding)
 	std::vector<double> freqClockOffs;	// Clock offsets for the individual frequencies
 	std::vector<double> freqClockOffsDelta; // Clock offsets between pols for the individual frequencies
 	std::vector<double> freqPhaseDelta;	// Phase difference between pols for each frequency

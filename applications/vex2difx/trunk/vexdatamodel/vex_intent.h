@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2021 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,47 +19,31 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id$
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision$
- * $Author$
- * $LastChangedDate$
+ * $Id: vex_intent.h 10265 2021-10-16 16:00:54Z WalterBrisken $
+ * $HeadURL: $
+ * $LastChangedRevision: 10265 $
+ * $Author: WalterBrisken $
+ * $LastChangedDate: 2021-10-16 10:00:54 -0600 (Sat, 16 Oct 2021) $
  *
  *==========================================================================*/
 
-#ifndef __VEX_SCAN_H__
-#define __VEX_SCAN_H__
+#ifndef __VEX_INTENT_H__
+#define __VEX_INTENT_H__
 
-#include <ostream>
+#include <iostream>
 #include <string>
-#include <map>
-#include <vector>
-#include <set>
-#include "interval.h"
-#include "vex_intent.h"
 
-class VexScan : public Interval
+class VexIntent
 {
 public:
-	std::string defName;				// name of this scan
-	std::string intent;				// intent of this scan (captured from comment).  This field is deprecated.
-	std::vector<VexIntent> scanIntent;		// "key=value" form of scan intent from vex2 $SCHED intent lines
+	VexIntent(const char *src, const char *id, const char *val) : identifier(id), value(val), source((src == 0 ? "" : src)) {};
 
-	std::string modeDefName;
-	std::string sourceDefName;			// pointing center
-	std::vector<std::string> phaseCenters;		// correlation centers; must include sourceDefName if that is to be correlated
-	std::map<std::string,Interval> stations;
-	std::map<std::string,bool> recordEnable;	// This is true if the drive number is non-zero
-	double size;					// [bytes] approx. correlated size
-	double mjdVex;					// The start time listed in the vex file
-
-	VexScan(): size(0), mjdVex(0.0) {};
-	const Interval *getAntennaInterval(const std::string &antName) const;
-	bool hasAntenna(const std::string &antName) const;
-	bool getRecordEnable(const std::string &antName) const;
-	void addToSourceSet(std::set<std::string> &sourceSet, bool incPointingCenter) const;
+	std::string identifier;		// must be non-blank
+	std::string value;		// must be non-blank
+	std::string source;		// if blank, applies to all sources in scan
+private:
 };
 
-std::ostream& operator << (std::ostream &os, const VexScan &x);
+std::ostream& operator << (std::ostream &os, const VexIntent &x);
 
 #endif

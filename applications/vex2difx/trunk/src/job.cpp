@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2022 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,6 +31,7 @@
 #include <fstream>
 #include <vexdatamodel.h>
 #include <algorithm>
+#include <set>
 #include "job.h"
 #include "jobflag.h"
 
@@ -59,7 +60,7 @@ void Job::assignAntennas(const VexData &V, std::list<std::pair<int,std::string> 
 	// find antennas in allAntennas that never got into jobAntennas
 	for(std::list<std::pair<int,std::string> >::const_iterator a = allAntennas.begin(); a != allAntennas.end(); ++a)
 	{
-		if (std::find(jobAntennas.begin(), jobAntennas.end(), a->second) == jobAntennas.end()) 
+		if(std::find(jobAntennas.begin(), jobAntennas.end(), a->second) == jobAntennas.end()) 
 		{
 			removedAntennas.push_back(*a);
 		}
@@ -130,6 +131,18 @@ bool Job::hasScan(const std::string &scanName) const
 {
 	// if find returns .end(), then it was not found
 	return find(scans.begin(), scans.end(), scanName) != scans.end();
+}
+
+unsigned int Job::getCorrelationSourceSet(const VexData *V, std::set<std::string> &sourceSet) const
+{
+	sourceSet.clear();
+
+	for(std::vector<std::string>::const_iterator it = scans.begin(); it != scans.end(); ++it)
+	{
+		V->getScanByDefName(*it)->addToSourceSet(sourceSet, false);
+	}
+
+	return sourceSet.size();
 }
 
 struct iless
@@ -322,6 +335,101 @@ int Job::generateFlagFile(const VexData &V, const std::list<Event> events, const
 	of.close();
 
 	return flags.size();
+}
+
+VexAntenna::NasmythType Job::getJobNasmythType(const VexData *V, const std::string &ant) const
+{
+	int nRight = 0;
+	int nLeft = 0;
+	int nNone = 0;
+	int nError = 0;
+
+	const VexAntenna *A;
+
+	A = V->getAntenna(ant);
+	if(!A)
+	{
+		return VexAntenna::NasmythError;
+	}
+	if(A->nasmyth.empty())
+	{
+		return VexAntenna::NasmythNone;
+	}
+
+	for(std::vector<std::string>::const_iterator si = scans.begin(); si != scans.end(); ++si)
+	{
+		const VexScan *scan = V->getScanByDefName(*si);
+		if(!scan)
+		{
+			std::cerr << "Developer error: Job::getJobNasmythType(): scan[" << *si << "] not found!  This cannot be!" << std::endl;
+			
+			exit(EXIT_FAILURE);
+		}
+
+		if(scan->getAntennaInterval(ant) == 0)	/* antenna not in this scan */
+		{
+			continue;
+		}
+
+		const VexMode *mode = V->getModeByDefName(scan->modeDefName);
+		if(!mode)
+		{
+			std::cerr << "Developer error: Job::getJobNasmythType(): mode[" << scan->modeDefName << "] not found!  This cannot be!" << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+
+		const VexSetup *setup = mode->getSetup(ant);
+		if(!setup)
+		{
+			std::cerr << "Developer error: Job::getJobNasmythType(): mode[" << scan->modeDefName << "] setup for antenna " << ant << " not found!  This cannot be!" << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+
+		for(std::vector<VexChannel>::const_iterator chan = setup->channels.begin(); chan != setup->channels.end(); ++chan)
+		{
+			VexAntenna::NasmythType t;
+			
+			t = A->getNasmyth(chan->bandLink);
+			switch(t)
+			{
+			case VexAntenna::NasmythNone:
+				++nNone;
+				break;
+			case VexAntenna::NasmythRight:
+				++nRight;
+				break;
+			case VexAntenna::NasmythLeft:
+				++nLeft;
+				break;
+			case VexAntenna::NasmythError:
+				++nError;
+				break;
+			}
+		}
+	}
+
+	if(nError > 0)
+	{
+		return VexAntenna::NasmythError;
+	}
+	else if(nRight > 0 && nLeft == 0 && nNone == 0)
+	{
+		return VexAntenna::NasmythRight;
+	}
+	else if(nRight == 0 && nLeft > 0 && nNone == 0)
+	{
+		return VexAntenna::NasmythLeft;
+	}
+	else if(nRight == 0 && nLeft == 0)
+	{
+		return VexAntenna::NasmythNone;
+	}
+	else
+	{
+		return VexAntenna::NasmythError;
+	}
 }
 
 std::ostream& operator << (std::ostream &os, const Job &x)

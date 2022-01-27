@@ -1,0 +1,12 @@
+The files in this directory are exact copies of those from NVI's git repo (https://github.com/nvi-inc/vex), with just a couple exceptions:
+
+1. The file in this directory called "vex_parse.y" corresponds to NVI's "vex.y"
+
+2. The .c files and vex.yy.l in this directory include "vex_parse.tab.h" instead of "y.tab.h"
+
+The following two lines of shell commands will convert the NVI files to those wanted here:
+
+  sed -i 's/y.tab.h/vex_parse.tab.h/' *.c vex.yy.l
+  mv -f vex.y vex_parse.y
+
+Any changes made to the source files here should be communicated to the AUTHOR of this package who will coordinate the changes with NVI / NASA Goddard.

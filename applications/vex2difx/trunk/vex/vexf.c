@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2020 NVI, Inc.
+ *
+ * This file is part of VLBI Field System
+ * (see http://github.com/nvi-inc/fs).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 /* vexf.c FORTRAN VEX library */
 /* ----------------------------------------------------------------------- */
 
@@ -58,6 +77,67 @@ integer *vex;
   return vex_open(*name,(struct vex **)vex);
 }
 
+/* ----------------------------------------------------------------------- */
+integer
+#ifdef F2C
+fget_vex_rev__
+#else
+fget_vex_rev
+#endif
+(version, version_len, vex)
+char **version;
+integer *version_len, *vex;
+/*<       integer function fget_vex_rev(ptr_ch(version),len(version), >*/
+/*<                                         vex) >*/
+/*<       implicit none >*/
+/*<       character*(*) version >*/
+/*<       integer vex >*/
+
+/* returns the VX_rev string of the vex file */
+
+/* input: */
+/*   integer vex             - vex file reference */
+
+/* output: */
+/*   character*(*) version   - VEX_rev string */
+/*                             use fvex_len to determine useful length */
+/*                             should be at least 1 byte longer than */
+/*                             longest expected to value to accomodate */
+/*                             null termination */
+
+/*   integer (return value)  - error code, zero indicates no error */
+/*                             otherwise errors determined by bits, if */
+/*                             bit is on the error occurred, bits are */
+/*                             numbered from 0 and correspond to */
+/*                             the value of the corresponding power of 2, */
+/*                             e.g. bit 0 is decimal 1 */
+/*                          bit 0 - VEX_rev  did not fit in version */
+/*                          bit 1 - *vex was NULL */
+{
+  char *ptr;
+  integer len, clen;
+
+  if(*vex!=0)
+    ptr=get_vex_rev((struct vex *)*vex);
+  else
+    return 2;
+
+  if(ptr==NULL) {
+    if(*version_len>0)
+      *version[0]='\0';
+    return 0;
+  }
+
+  len=strlen(ptr)+1;
+  clen=len > *version_len ? *version_len : len;
+  memcpy(*version,ptr,clen);
+
+  if((len-1)>*version_len)
+    return 1;
+
+  return 0;
+
+}
 /* ----------------------------------------------------------------------- */
 integer
 #ifdef F2C
@@ -357,7 +437,7 @@ integer *vex;
 /*   character*(*) station     - station def name, null terminated */
 /*   character*(*) mode        - mode def name, null terminated */
 /*   character*(*) statement   - the statement to be retrieved, */
-/*                               null terminated                */
+/*                               null terminated */
 /*   character*(*) primitive   - primitive block from which the statement */
 /*                               should be retrieved. omit the leading "$" */
 /*                               null terminated */
@@ -531,11 +611,12 @@ integer *start_len, *mode_len, *scanid_len, *vex;
 /*   using fvex_field. */
 
 /* When this routine does not return an error, the sources can be accessed */
-/*   using fvex_scan_source. */
+/*   using fvex_scan_source for VEX1. */
+/*   or fvex_scan_source2 for VEX1 and VEX2. */
 
 /*  input: */
 /*   character*(*) station     - the station to reurn statements for */
-/*                               null terminated                     */
+/*                               null terminated */
 /*   integer vex               - vex file reference */
 /*                               use value returned open_vex for first call */
 /*                               use 0 for subsequent calls */
@@ -552,14 +633,14 @@ integer *start_len, *mode_len, *scanid_len, *vex;
 /*                               -5 = mode did not fit in mode */
 /*                               -6 = scanid did not fit in scanid */
 {
-  int iprimitive, ierr;
+  int ierr;
   void *ptr;
   char *sidptr;
 
-  if(*vex!=0) {
-    save_type=T_STATION;
+  save_type=T_STATION;
+  if(*vex!=0)
     save_ptr=get_scan_station(&save_lowls,&sidptr,*station,(Vex *)*vex);
-  } else
+  else
     save_ptr=get_scan_station_next(&save_lowls,&sidptr);
 
   if(save_ptr==NULL)
@@ -610,11 +691,12 @@ integer *start_len, *mode_len, *scanid_len, *vex;
 /*   using fvex_field. */
 
 /* When this routine does not return an error, the sources can be accessed */
-/*   using fvex_scan_source. */
+/*   using fvex_scan_source for VEX1. */
+/*   or fvex_scan_source2 for VEX1 and VEX2. */
 
 /*  input: */
 /*   character*(*) station     - the station to reurn statements for */
-/*                               null terminated    */
+/*                               null terminated */
 /*   integer vex               - vex file reference */
 /*                               use value returned open_vex for first call */
 /*                               use 0 for subsequent calls */
@@ -631,7 +713,7 @@ integer *start_len, *mode_len, *scanid_len, *vex;
 /*                               -5 = mode did not fit in mode */
 /*                               -6 = scanid did not fit in scanid */
 {
-  int iprimitive, ierr;
+  int ierr;
   void *ptr;
   char *sidptr;
 
@@ -686,7 +768,8 @@ integer *start_len, *mode_len, *scanid_len,*vex;
 /*   find the station statements for this scan. */
 
 /* When this routine does not return an error, the source names can be */
-/*   accessed using fvex_scan_source. */
+/*   using fvex_scan_source for VEX1. */
+/*   or fvex_scan_source2 for VEX1 and VEX2. */
 
 /*  input: */
 /*   integer vex               - vex file reference */
@@ -750,7 +833,7 @@ fget_station_scan__
 fget_station_scan
 #endif
 (n)
-int *n;
+integer *n;
 /*<      integer function fget_station_scan(n) >*/
 /*<      implicit none >*/
 /*<      integer n >*/
@@ -799,7 +882,7 @@ fget_data_transfer_scan__
 fget_data_transfer_scan
 #endif
 (n)
-int *n;
+integer *n;
 /*<      integer function fget_data_transfer_scan(n) >*/
 /*<      implicit none >*/
 /*<      integer n >*/
@@ -922,7 +1005,7 @@ char *string;
 
 {
   char *string2;
-  int ierr,count;
+  int count;
 
   /* first read in a string of literal text, and return the */
   /* pointer to the next literal string. */
@@ -931,7 +1014,7 @@ char *string;
   /* How many characters do we have. */
   count = strlen(string2);
   if(count!=0)
-    ierr=field_copy(string,count+1,string2);
+    field_copy(string,count+1,string2);
 
   /* Evaluate the next pointer 'save_ptr' for end of a literal block */
   /* There could be several literal sub-blocks. */
@@ -974,14 +1057,13 @@ char **string;
 /*   integer (return value)    - count or error  -3 last statement */
 {
   char *string2;
-  int ierr,count;
-  void *ptr;
+  int count;
 
   save_ptr=get_a_literal(save_ptr,&string2);
   count = strlen(string2);
   string2[count]='\0';
   if(count!=0)
-    ierr=field_copy(*string,count+1,string2);
+    field_copy(*string,count+1,string2);
 
   if(save_ptr==NULL)
     {
@@ -1054,7 +1136,7 @@ char **field;
 /*				 -6 = n out of range */
 /*				 -9 = no statement available */
 {
-  int i,link,name, ierr;
+  int link,name, ierr;
   char *ptr, *units;
 
   save_units=NULL;
@@ -1124,6 +1206,138 @@ integer *units_len;
 /* ----------------------------------------------------------------------- */
 integer
 #ifdef F2C
+fvex_scan_intent__
+#else
+fvex_scan_intent
+#endif
+(n)
+integer *n;
+/*<       integer function fvex_scan_intent(n) >*/
+/*<       implicit none >*/
+/*<       integer n >*/
+
+/* Returns an intent from a scan using the */
+/*    get_scan_intent() routine. */
+
+/* input: */
+/*   integer n                - source parameter to return */
+
+/* output: */
+/*   integer (return value)    - error code, zero indicates no error */
+/*                               -6 = n out of range */
+
+/* When this routine does not return an error, the fields can be accessed */
+/*   using fvex_field. */
+
+{
+  int i;
+
+  if (*n < 1)
+    return -6;
+
+  save_type=T_INTENT;
+  save_ptr=get_scan_intent(save_lowls);
+  for (i=1;i < *n && save_ptr!= NULL;i++)
+    save_ptr=get_scan_intent_next();
+
+  if(save_ptr==NULL)
+    return -6;
+
+  return 0;
+
+}
+
+/* ----------------------------------------------------------------------- */
+integer
+#ifdef F2C
+fvex_scan_pointing_offset__
+#else
+fvex_scan_pointing_offset
+#endif
+(n)
+integer *n;
+/*<       integer function fvex_scan_pointing_offset(n) >*/
+/*<       implicit none >*/
+/*<       integer n >*/
+
+/* Returns a pointing_ofset from a scan using the */
+/*    get_scan_pointing_offset() routine. */
+
+/* input: */
+/*   integer n                - source parameter to return */
+
+/* output: */
+/*   integer (return value)    - error code, zero indicates no error */
+/*                               -6 = n out of range */
+
+/* When this routine does not return an error, the fields can be accessed */
+/*   using fvex_field. */
+
+{
+  int i;
+
+  if (*n < 1)
+    return -6;
+
+  save_type=T_POINTING_OFFSET;
+  save_ptr=get_scan_pointing_offset(save_lowls);
+  for (i=1;i < *n && save_ptr!= NULL;i++)
+    save_ptr=get_scan_pointing_offset_next();
+
+  if(save_ptr==NULL)
+    return -6;
+
+  return 0;
+
+}
+
+/* ----------------------------------------------------------------------- */
+integer
+#ifdef F2C
+fvex_scan_source2__
+#else
+fvex_scan_source2
+#endif
+(n)
+integer *n;
+/*<       integer function fvex_scan_source2(n) >*/
+/*<       implicit none >*/
+/*<       integer n >*/
+
+/* Returns a source from a scan using the */
+/*    get_scan_source2() routine. */
+
+/* input: */
+/*   integer n                - source parameter to return */
+
+/* output: */
+/*   integer (return value)    - error code, zero indicates no error */
+/*                               -6 = n out of range */
+
+/* When this routine does not return an error, the fields can be accessed */
+/*   using fvex_field. */
+
+{
+  int i;
+
+  if (*n < 1)
+    return -6;
+
+  save_type=T_SOURCE;
+  save_ptr=get_scan_source2(save_lowls);
+  for (i=1;i < *n && save_ptr!= NULL;i++)
+    save_ptr=get_scan_source2_next();
+
+  if(save_ptr==NULL)
+    return -6;
+
+  return 0;
+
+}
+
+/* ----------------------------------------------------------------------- */
+integer
+#ifdef F2C
 fvex_scan_source__
 #else
 fvex_scan_source
@@ -1132,12 +1346,12 @@ fvex_scan_source
 integer *n;
 char **src;
 integer *src_len;
-/*<       integer function fvex_src_field(n,ptr_ch(src),len(src)) >*/
+/*<       integer function fvex_scan_source(n,ptr_ch(src),len(src)) >*/
 /*<       implicit none >*/
 /*<       integer n >*/
 /*<       character*(*) src >*/
 
-/* Returns a source field from a station statement located using the */
+/* Returns a source from a scan located using the */
 /*    get_scan_station_lowl() routine. */
 
 /* input: */
@@ -1205,9 +1419,9 @@ doublereal *double__;
 /*                              -8 = units contained unknown units */
 {
 
-  char num[5], denom[5], *slash;
-  int found, num_found, denom_found;
-  double factor, num_factor, denom_factor;
+  char num[16], denom[16], *slash;
+  int found, num_found, denom_found, iexp;
+  double factor=0.0, num_factor=0.0, denom_factor=0.0;
 
   static struct {
     char *str;
@@ -1318,6 +1532,7 @@ doublereal *double__;
   num[slash-*units]='\0';
 
   if(strlen(slash) > sizeof(denom)) {
+    fprintf(stderr," slash '%s' strlen(slash) %d\n",slash,(int)(strlen(slash)));
     fprintf(stderr,"denom too small in fvex_double %.24s",*units);
     return -8;
   }
@@ -1328,11 +1543,27 @@ doublereal *double__;
   LOOKUP(num_found,num,length,num_factor);
   LOOKUP(num_found,num,time,num_factor);
 
+  iexp=1;
+  if(strlen(denom)>2) {
+    if(strcmp(denom+strlen(denom)-2,"^2")==0) {
+      iexp=2;
+      denom[strlen(denom)-2]=0;
+    } else if(strcmp(denom+strlen(denom)-2,"^3")==0) {
+      iexp=3;
+      denom[strlen(denom)-2]=0;
+    }
+  }
+
   denom_found=0;
   LOOKUP(denom_found,denom,time,denom_factor);
 
   if(num_found && denom_found) {
-    *double__*=(num_factor/denom_factor);
+    double dfact=denom_factor;
+    if(iexp>1)
+      dfact*=denom_factor;
+    if(iexp==3)
+      dfact*=denom_factor;
+    *double__*=(num_factor/dfact);
     return 0;
   }
 
@@ -1545,11 +1776,3 @@ field_copy(char *field,int field_len,char *ptr)
 
   return 0;
 }
-
-
-
-
-
-
-
-

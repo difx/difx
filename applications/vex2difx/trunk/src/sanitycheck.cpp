@@ -65,7 +65,7 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 	{
 		if(polarizations != V->getPolarizations())
 		{
-			std::cerr << "Warning: after performing requested polarization conversions, both linear and circular polarizations are due to be correlated.  Use at your own risk!" << std::endl;
+			std::cerr << "Warning: after performing requested polarization conversions, both linear and circular polarizations are due to be correlated.  Use at your own risk!  polarizations=" << polarizations << std::endl;
 		}
 		else
 		{
@@ -143,6 +143,34 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 		}
 	}
 
+	// Check clock models
+	bool highOrderClocks = false;
+	for(unsigned int a = 0; a < V->nAntenna(); ++a)
+	{
+		const VexAntenna *A = V->getAntenna(a);
+
+		if(!P->fakeDatasource)
+		{
+			if(!A->hasClockModel())
+			{
+				std::cerr << "Warning: antenna " << A->defName << ": no clock model was provided." << std::endl;
+				++nWarn;
+			}
+		}
+		for(std::vector<VexClock>::const_iterator it = A->clocks.begin(); it != A->clocks.end(); ++it)
+		{
+			if(it->accel != 0.0 || it->jerk != 0.0)
+			{
+				highOrderClocks = true;
+			}
+		}
+	}
+	if(highOrderClocks)
+	{
+		std::cerr << "Warning: One or more antennas has a clock model with high order (beyond linear) terms.  These terms may be neglected at some point in the processing or reporting (e.g., in mpifxcorr, difx2fits, or difx2mark4)." << std::endl;
+		++nWarn;
+	}
+
 	// Verify that final source names are legal
 	for(unsigned int s = 0; s < V->nSource(); ++s)
 	{
@@ -156,8 +184,7 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 		}
 		else if(S->sourceNames.size() > 1)
 		{
-			std::cout << "Warning: vex source def block " << S->defName << " has more than 1 source names.  Only the first is being considered!" << std::endl;
-			++nWarn;
+			std::cout << "Note: vex source def block " << S->defName << " has more than 1 source names.  Only the first is being considered!" << std::endl;
 		}
 
 		const SourceSetup *sourceSetup = P->getSourceSetup(S->sourceNames);

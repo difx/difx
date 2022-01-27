@@ -582,14 +582,14 @@ int main(int argc, char **argv)
 		int p = std::cout.precision();
 
 		std::cout.precision(13);
-		std::cout << V->getExper()->name << " " << V->obsStart() << " " << V->obsStop() << std::endl;
+		std::cout << V->getExper()->getFullName() << " " << V->obsStart() << " " << V->obsStop() << std::endl;
 		std::cout.precision(p);
 	}
 	if(doSummary)
 	{
 		if(!doModules && !doTime)
 		{
-			std::cout << V->getExper()->name << std::endl;
+			std::cout << V->getExper()->getFullName() << std::endl;
 		}
 		antennaSummary(V, doFormat, doUsage);
 	}

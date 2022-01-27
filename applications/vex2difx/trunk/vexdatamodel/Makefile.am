@@ -23,8 +23,12 @@ libvexdatamodel_la_SOURCES = \
 	vex_eop.h \
 	vex_exper.cpp \
 	vex_exper.h \
+	vex_extension.cpp \
+	vex_extension.h \
 	vex_if.cpp \
 	vex_if.h \
+	vex_intent.cpp \
+	vex_intent.h \
 	vexload.cpp \
 	vexload.h \
 	vex_mode.cpp \
@@ -41,6 +45,8 @@ libvexdatamodel_la_SOURCES = \
 	vex_stream.h \
 	vex_subband.cpp \
 	vex_subband.h \
+	vex_thread.cpp \
+	vex_thread.h \
 	vex_utility.cpp \
 	vex_utility.h
 

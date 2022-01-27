@@ -1,4 +1,4 @@
-AC_INIT([vex2difx], [2.7.0], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([vex2difx], [2.99.3], [Walter Brisken <wbrisken@nrao.edu>])
 AC_CONFIG_HEADERS([config.h])
 
 AC_C_BIGENDIAN
@@ -7,24 +7,22 @@ AM_INIT_AUTOMAKE([foreign])
 
 AC_CONFIG_MACRO_DIR([m4])
 
+LT_INIT
+
 AC_PROG_CC
 AC_PROG_F77
 AC_PROG_CPP
-LT_INIT
 AC_PROG_YACC
-AC_PROG_LEX(yywrap)
-AM_SANITY_CHECK
+AC_PROG_LEX([yywrap])
 AC_PROG_CXX
+PKG_PROG_PKG_CONFIG
 
 AM_SANITY_CHECK
 
 AC_SEARCH_LIBS([sqrt], [m])
-
-#AC_CONFIG_MACRO_DIR([m4])
- 
 PKG_CHECK_MODULES(DIFXIO, difxio >= 3.7.0)
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.7.0])
-PKG_CHECK_MODULES(DIRLIST, dirlist >= 0.1)
+PKG_CHECK_MODULES(DIRLIST, dirlist >= 0.2)
 
 LIBS="${LEXLIB} ${LIBS} ${DIFXIO_LIBS} ${DIRLIST_LIBS}"
 CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${DIRLIST_CFLAGS}"
@@ -37,4 +35,5 @@ AC_CONFIG_FILES([ \
 	src/Makefile \
 	utilities/Makefile \
 ])
-AC_OUTPUT
+
+AC_OUTPUT()

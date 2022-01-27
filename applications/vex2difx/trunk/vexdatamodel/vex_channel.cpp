@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2020 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2022 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -251,7 +251,8 @@ bool operator ==(const VexChannel &c1, const VexChannel &c2)
 {
 	if( (c1.recordChan  != c2.recordChan)   ||
 	    (c1.subbandId   != c2.subbandId)    ||
-	    (c1.ifName      != c2.ifName)       ||
+	    (c1.ifLink      != c2.ifLink)       ||
+	    (c1.bandLink    != c2.bandLink)     ||
 	    (c1.bbcFreq     != c2.bbcFreq)      ||
 	    (c1.bbcSideBand != c2.bbcSideBand)  ||
 	    (c1.tones       != c2.tones) )
@@ -264,12 +265,12 @@ bool operator ==(const VexChannel &c1, const VexChannel &c2)
 
 bool operator <(const VexChannel &c1, const VexChannel &c2)
 {
-	return c1.name < c2.name;
+	return c1.chanName < c2.chanName;
 }
 
 std::ostream& operator << (std::ostream &os, const VexChannel &x)
 {
-	os << "[name=" << x.name << " BBC=" << x.bbcName << " IF=" << x.ifName << " s=" << x.subbandId << " -> r=" << x.recordChan << " t=" << x.threadId << " tones=";
+	os << "[name=" << x.chanName << " bandLink=" << x.bandLink << " chanLink=" << x.chanLink << " BBC=" << x.bbcName << " IF=" << x.ifLink << " s=" << x.subbandId << " -> r=" << x.recordChan << " t=" << x.threadId << " tones=";
 	for(std::vector<unsigned int>::const_iterator v = x.tones.begin(); v != x.tones.end(); ++v)
 	{
 		if(v != x.tones.begin())

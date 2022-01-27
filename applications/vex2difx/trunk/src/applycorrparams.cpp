@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2022 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -30,10 +30,8 @@
 #include <cstdlib>
 #include "applycorrparams.h"
 
-int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError, std::set<std::string> &canonicalVDIFUsers)
+static void applyCorrParams_EOP(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError)
 {
-	VexStream tmpVS;	// used to hold output of format parsing
-
 	// merge sets of EOPs from vex and corr params file
 	if(!params.eops.empty())
 	{
@@ -48,16 +46,17 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 			V->addEOP(*e);
 		}
 	}
+}
 
+static void applyCorrParams_RemoveUnusedAntennas(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError)
+{
 	// remove unwanted antennas
 	for(unsigned int a = 0; a < V->nAntenna(); )
 	{
-		const VexAntenna *A;
-
-		A = V->getAntenna(a);
+		const VexAntenna *A = V->getAntenna(a);
 		if(!A)
 		{
-			std::cerr << "Developer error: applyCorrParams: Antenna number " << a << " cannot be gotten even though nAntenna() reports " << V->nAntenna() << std::endl;
+			std::cerr << "Developer error: applyCorrParams_Antenna: Antenna number " << a << " cannot be gotten even though nAntenna() reports " << V->nAntenna() << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -70,14 +69,41 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 			++a;
 		}
 	}
+}
 
-	// apply source parameters
-	for(unsigned int s = 0; s < V->nSource(); ++s)
+static void applyCorrParams_Clock(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError)
+{
+	// capture clock information
+	for(unsigned int a = 0; a < V->nAntenna(); ++a)
 	{
-		const VexSource *S = V->getSource(s);
+		const VexAntenna *A = V->getAntenna(a);
+		const AntennaSetup *antSetup = params.getAntennaSetup(A->name);
+
+		if(antSetup)
+		{
+			if(antSetup->clock.mjdStart > 0.0)
+			{
+				V->setClock(A->name, antSetup->clock);
+			}
+			V->adjustClock(A->name, antSetup->deltaClock, antSetup->deltaClockRate);
+
+			if(!antSetup->difxName.empty())
+			{
+				V->setAntennaDifxName(A->name, antSetup->difxName);
+			}
+		}
+	}
+}
+
+static void applyCorrParams_Source(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError)
+{
+	// apply source parameters
+	for(unsigned int sourceNum = 0; sourceNum < V->nSource(); ++sourceNum)
+	{
+		const VexSource *S = V->getSource(sourceNum);
 		if(!S)
 		{
-			std::cerr << "Developer error: applyCorrParams: Source number " << s << " cannot be gotten even though nSource() reports " << V->nSource() << std::endl;
+			std::cerr << "Developer error: applyCorrParams_Source: Source number " << sourceNum << " cannot be gotten even though nSource() reports " << V->nSource() << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -85,16 +111,95 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 		const SourceSetup *ss = params.getSourceSetup(S->defName);
 		if(ss)
 		{
-			if(ss->pointingCentre.calCode != ' ')
+			const PhaseCentre &pc = ss->pointingCentre;
+	
+			if(pc.calCode != ' ')
 			{
-				V->setSourceCalCode(S->defName, ss->pointingCentre.calCode);
+				V->setSourceCalCode(S->defName, pc.calCode);
+			}
+
+			// Source type parameters
+			if(pc.isSpacecraft())
+			{
+				V->setSourceEphemerisFile(S->defName, pc.ephemFile, pc.ephemObject);
+			}
+			else if(pc.isFixedSource())
+			{
+				V->setSourceITRFCoordinates(S->defName, pc.X, pc.Y, pc.Z);
+			}
+			else if(pc.ra != PhaseCentre::DEFAULT_RA || pc.dec != PhaseCentre::DEFAULT_DEC)
+			{
+				V->setSourceCoordinates(S->defName, pc.ra, pc.dec);
+			}
+			// FIXME: handle ephemDeltaT, ephemStellarAber, ephemClockError.  These are rarely, if ever, used...
+		}
+	}
+}
+
+static void applyCorrParams_MultiPhaseCenter(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError)
+{
+	// apply source parameters
+	for(unsigned int sourceNum = 0; sourceNum < V->nSource(); ++sourceNum)
+	{
+		const VexSource *S = V->getSource(sourceNum);
+		if(!S)
+		{
+			std::cerr << "Developer error: applyCorrParams_MultiPhaseCenter: Source number " << sourceNum << " cannot be gotten even though nSource() reports " << V->nSource() << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+		
+		const SourceSetup *ss = params.getSourceSetup(S->defName);
+		if(ss)
+		{
+			// If a SourceSetup with a list of phase centers matches the name of a scan pointing center, 
+			// that scan gets all of its .vex pointing centers replaced by the SourceSetup list
+			if(!ss->phaseCentres.empty())
+			{
+				unsigned int nScan;
+
+				// Loop over ss->phaseCentres, add to list of VexSources if they are missing
+				// Note that if a source with that name already exists, it won't be updated.
+				for(std::vector<PhaseCentre>::const_iterator pc = ss->phaseCentres.begin(); pc != ss->phaseCentres.end(); ++pc)
+				{
+					if(V->getSourceByDefName(pc->difxName))
+					{
+						// FIXME: add a test to make sure the RA and Dec match?
+						continue;
+					}
+					else
+					{
+						V->newSource(pc->difxName, pc->ra, pc->dec);
+					}
+				}
+
+				// Completely override the list of phase centers provided in the .vex file in any scan with this source as the pointing source
+
+				nScan = V->nScan();
+				for(unsigned int scanNum = 0; scanNum < nScan; ++scanNum)
+				{
+					if(V->getScan(scanNum)->sourceDefName != S->defName)
+					{
+						continue;
+					}
+					
+					V->deletePhaseCenters(scanNum);
+					if(ss->doPointingCentre)
+					{
+						V->addPhaseCenter(scanNum, ss->vexName);
+					}
+					for(std::vector<PhaseCentre>::const_iterator pc = ss->phaseCentres.begin(); pc != ss->phaseCentres.end(); ++pc)
+					{
+						V->addPhaseCenter(scanNum, pc->difxName);
+					}
+				}
 			}
 		}
-
-		// FIXME: here put multiphasecenter things, eventually
-
 	}
+}
 
+static void applyCorrParams_RemoveUnusedScans(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError)
+{
 	// remove scans that are not linked from v2d setups
 	for(unsigned int s = 0; s < V->nScan(); )
 	{
@@ -135,7 +240,10 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 
 	// remove scans with too few antennas or with scans outside the specified time range
 	V->reduceScans(params.minSubarraySize, params);
+}
 
+static void applyCorrParams_Polarization(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError)
+{
 	// swap antenna polarizations
 	for(unsigned int a = 0; a < V->nAntenna(); ++a)
 	{
@@ -144,7 +252,7 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 		A = V->getAntenna(a);
 		if(!A)
 		{
-			std::cerr << "Developer error: applyCorrParams: Antenna number " << a << " cannot be gotten even though nAntenna() reports " << V->nAntenna() << std::endl;
+			std::cerr << "Developer error: applyCorrParams_Polarization: Antenna number " << a << " cannot be gotten even though nAntenna() reports " << V->nAntenna() << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -154,9 +262,11 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 			V->swapPolarization(A->name);
 		}
 	}
+}
 
+static void applyCorrParams_Mode(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError, std::set<std::string> &canonicalVDIFUsers)
+{
 	// MODES / SETUPS / formats
-
 	for(unsigned int m = 0; m < V->nMode(); ++m)
 	{
 		const VexMode *M = V->getMode(m);
@@ -203,6 +313,7 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 
 				if(!DS.format.empty())
 				{
+					VexStream tmpVS;	// used to hold output of format parsing
 					bool A, B;
 					bool v;
 
@@ -260,7 +371,10 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 
 	// For modes where record channels were not explicitly assigned, use ordering by channel name
 	V->generateRecordChans();
+}
 
+static void applyCorrParams_Data(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError, std::set<std::string> &canonicalVDIFUsers)
+{
 	// Data and data source
 	for(unsigned int a = 0; a < V->nAntenna(); ++a)
 	{
@@ -504,6 +618,12 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 		}
 	}
 
+	// remove any datastreams with no data source
+	V->removeStreamsWithNoDataSource();
+}
+
+static void applyCorrParams_PulseCal(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError)
+{
 	// Tones
 	for(unsigned int a = 0; a < V->nAntenna(); ++a)
 	{
@@ -547,8 +667,11 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 			V->selectTones(A->name, as->toneSelection, as->toneGuardMHz);
 		}
 	}
+}
 
-	// Override clocks and other antenna parameters
+static void applyCorrParams_Antenna(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError)
+{
+	// Override antenna parameters
 	for(unsigned int a = 0; a < V->nAntenna(); ++a)
 	{
 		const VexAntenna *A;
@@ -565,12 +688,6 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 		if(!as)
 		{
 			continue;
-		}
-
-		const VexClock *paramClock = params.getAntennaClock(A->name);
-		if(paramClock)
-		{
-			V->setClock(A->name, *paramClock);
 		}
 
 		if(as->X != ANTENNA_COORD_NOT_SET || as->Y != ANTENNA_COORD_NOT_SET || as->Z != ANTENNA_COORD_NOT_SET)
@@ -596,9 +713,19 @@ int applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, u
 
 		V->setAntennaPolConvert(A->name, as->polConvert);
 	}
+}
 
-	// remove any datastreams with no data source
-	V->removeStreamsWithNoDataSource();
-
-	return 0;
+void applyCorrParams(VexData *V, const CorrParams &params, unsigned int &nWarn, unsigned int &nError, std::set<std::string> &canonicalVDIFUsers)
+{
+	applyCorrParams_EOP(V, params, nWarn, nError);
+	applyCorrParams_RemoveUnusedAntennas(V, params, nWarn, nError);
+	applyCorrParams_Clock(V, params, nWarn, nError);
+	applyCorrParams_Source(V, params, nWarn, nError);
+	applyCorrParams_MultiPhaseCenter(V, params, nWarn, nError);
+	applyCorrParams_RemoveUnusedScans(V, params, nWarn, nError);
+	applyCorrParams_Polarization(V, params, nWarn, nError);
+	applyCorrParams_Mode(V, params, nWarn, nError, canonicalVDIFUsers);
+	applyCorrParams_Data(V, params, nWarn, nError, canonicalVDIFUsers);
+	applyCorrParams_PulseCal(V, params, nWarn, nError);
+	applyCorrParams_Antenna(V, params, nWarn, nError);
 }

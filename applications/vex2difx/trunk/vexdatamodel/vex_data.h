@@ -51,6 +51,7 @@
 #include "vex_setup.h"
 #include "vex_mode.h"
 #include "vex_eop.h"
+#include "vex_extension.h"
 
 
 class VexData
@@ -62,25 +63,30 @@ private:
 	std::vector<VexMode> modes;
 	std::vector<VexAntenna> antennas;
 	std::vector<VexEOP> eops;
+	std::vector<VexExtension> extensions;	// this is for extensions captured in the $GLOBAL block
 
 	std::string directory;
 
-public:
-	char vexStartTime[50];		// FIXME: figure out why these are needed and are not in VexExper
-	char vexStopTime[50];
+	double version;			// version of vex file
 
+public:
 	int sanityCheck();
 
+	VexData() : version(0.0) {}
+
 	VexSource *newSource();
+	VexSource *newSource(const std::string &name, double ra, double dec);
 	VexScan *newScan();
 	VexMode *newMode();
 	VexAntenna *newAntenna();
 	VexEOP *newEOP();
+	VexExtension *newExtension();
 	void swapPolarization(const std::string &antName);
 	void setPhaseCalInterval(const std::string &antName, float phaseCalIntervalMHz);
 	void setPhaseCalBase(const std::string &antName, float phaseCalBaseMHz);
 	void selectTones(const std::string &antName, enum ToneSelection selection, double guardBandMHz);
 	void setClock(const std::string &antName, const VexClock &clock);
+	void adjustClock(const std::string &antName, double deltaClock, double deltaClockRate);
 	void setTcalFrequency(const std::string &antName, int tcalFrequency);
 	void addExperEvents(std::list<Event> &events) const;
 	void addClockEvents(std::list<Event> &events) const;
@@ -130,6 +136,9 @@ public:
 	const VexSource *getSourceByDefName(const std::string &defName) const;
 	const VexSource *getSourceBySourceName(const std::string &name) const;
 	void setSourceCalCode(const std::string &name, char calCode);
+	void setSourceEphemerisFile(const std::string &name, const std::string &ephemFile, const std::string &ephemObject);
+	void setSourceITRFCoordinates(const std::string &name, double X, double Y, double Z);	// (X, Y, Z in meters)
+	void setSourceCoordinates(const std::string &name, double ra, double dec);	// (ra, dec in radians)
 
 	size_t nScan() const { return scans.size(); }
 	const VexScan *getScan(unsigned int num) const;
@@ -140,6 +149,8 @@ public:
 	void getScanList(std::list<std::string> &scans) const;
 	unsigned int nAntennasWithRecordedData(const VexScan &scan) const;
 	bool removeScan(const std::string name);	// Note: cannot pass name as reference!
+	void deletePhaseCenters(unsigned int num);
+	void addPhaseCenter(unsigned int num, const std::string &name);
 
 	size_t nAntenna() const { return antennas.size(); }
 	int getAntennaIdByName(const std::string &antName) const;
@@ -153,6 +164,7 @@ public:
 	int getNumAntennaRecChans(const std::string &name) const;
 	bool removeAntenna(const std::string name);	// Note: cannot pass name as reference!
 	void setAntennaPolConvert(const std::string &name, bool doConvert);
+	void setAntennaDifxName(const std::string &name, const std::string &difxName);
 
 	size_t nMode() const { return modes.size(); }
 	int getModeIdByDefName(const std::string &defName) const;
@@ -165,6 +177,10 @@ public:
 	const VexEOP *getEOP(unsigned int num) const;
 	const std::vector<VexEOP> &getEOPs() const { return eops; }
 
+	size_t nExtension() const { return extensions.size(); }
+	void addExtension(const VexExtension &e);
+	const VexExtension *getExtension(unsigned int num) const;
+
 	bool usesAntenna(const std::string &antennaName) const;
 	bool usesMode(const std::string &modeDefName) const;
 
@@ -175,6 +191,11 @@ public:
 
 	const VexExper *getExper() const { return &exper; }
 	void setExper(const std::string &name, const Interval &experTimeRange);
+	void setExper(const std::string &name, const std::string &segment, const Interval &experTimeRange);
+
+	void setVersion(const std::string &ver);
+	void setVersion(double ver);
+	double getVersion() const;
 };
 
 std::ostream& operator << (std::ostream &os, const VexData &x);

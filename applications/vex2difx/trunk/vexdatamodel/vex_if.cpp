@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,8 +27,38 @@
  *
  *==========================================================================*/
 
+#include <cstring>
 #include <regex.h>
 #include "vex_if.h"
+
+const char VexIF::SwitchedPowerAmplitudeName[][8] =
+{
+	"unset",
+	"off",
+	"low",
+	"high",
+	"error"
+};
+
+enum VexIF::SwitchedPowerAmplitude stringToSwitchedPowerAmplitude(const char *s)
+{
+	if(strcasecmp(s, "off") == 0)
+	{
+		return VexIF::SP_off;
+	}
+	else if(strcasecmp(s, "low") == 0)
+	{
+		return VexIF::SP_low;
+	}
+	else if(strcasecmp(s, "high") == 0)
+	{
+		return VexIF::SP_high;
+	}
+	else
+	{
+		return VexIF::SP_error;
+	}
+}
 
 double VexIF::getLowerEdgeFreq() const
 {
@@ -51,15 +81,19 @@ std::string VexIF::bandName() const
 {
 	regex_t rxMatch;
 	regmatch_t matchPtr[2];
-	// Look for a name based on a comment in the Vex file
 
+	// First see if the receiver name is set
+	if(!rxName.empty())
+	{
+		return rxName;
+	}
+
+	// Then look for a name based on a comment in the Vex file
 	if(comment.empty())
 	{
 		return "";
 	}
-
 	regcomp(&rxMatch, " ([0-9]+[cm]m) ", REG_EXTENDED);
-
 	if(regexec(&rxMatch, comment.c_str(), 2, matchPtr, 0) == 0)
 	{
 		char buffer[8];
@@ -72,9 +106,9 @@ std::string VexIF::bandName() const
 
 		return buffer;
 	}
-
 	regfree(&rxMatch);
 
+	// If no receiver identified, return empty result
 	return "";
 }
 
@@ -144,7 +178,27 @@ std::string VexIF::VLBABandName() const
 
 std::ostream& operator << (std::ostream &os, const VexIF &x)
 {
-	os << "[name=" << x.name << ", SSLO=" << x.ifSSLO << ", sb=" << x.ifSideBand << ", pol=" << x.pol << ", phaseCalInterval=" << x.phaseCalIntervalMHz << " MHz, phaseCalBase=" << x.phaseCalBaseMHz << " MHz]";
+	os << "[link=" << x.ifLink << ", name=" << x.ifName << ", SSLO=" << x.ifSSLO << ", sb=" << x.ifSideBand << ", pol=" << x.pol << ", phaseCalInterval=" << x.phaseCalIntervalMHz << " MHz, phaseCalBase=" << x.phaseCalBaseMHz << " MHz";
+	
+	if(!x.upstreamSSLO.empty())
+	{
+		os << ", upstreamSSLO=";
+		for(std::vector<double>::const_iterator it = x.upstreamSSLO.begin(); it != x.upstreamSSLO.end(); ++it)
+		{
+			os << (it == x.upstreamSSLO.begin() ? "[" : ",") << *it;
+		}
+		os << "]";
+	}
+	if(x.ifSampleRate != 0)
+	{
+		os << ", sampRate=" << x.ifSampleRate << " Hz";
+	}
+	if(!x.rxName.empty())
+	{
+		os << ", rx=" << x.rxName;
+	}
+
+	os << "]";
 
 	return os;
 }

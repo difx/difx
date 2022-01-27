@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,7 +38,7 @@
 class VexBasebandData : public Interval
 {
 	public:
-	VexBasebandData() : streamId(-1) { }
+	VexBasebandData() : recorderId(0), streamId(-1) { }
 	std::string filename;	// or VSN, ...
 	int recorderId;		// as specified in vex file, can be associated using DATASTREAM::recorder parameter; otherwise sort to assign
 	int streamId;		// 0-based; -1 means not assigned.  Must be assigned for > 1 datastream operation

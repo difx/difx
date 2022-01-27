@@ -37,19 +37,31 @@
 #include "vex_if.h"
 #include "vex_channel.h"
 #include "vex_stream.h"
+#include "vex_extension.h"
 
 class VexSetup	// Container for all antenna-specific settings
 {
 public:
-	VexSetup() : streams(1) {};
+	enum SetupType		// Determines how parsing of channel information is performed
+	{
+		SetupIncomplete,
+		SetupTracks,
+		SetupS2,
+		SetupBitstreams,
+		SetupDatastreams,
+		SetupMergedDatastreams
+	};
+
+	static const char setupTypeName[][20];
+
+	VexSetup() : type(SetupIncomplete), streams(1) {};
 	float phaseCalIntervalMHz() const;
 	float phaseCalBaseMHz() const;
-	const VexIF *getIF(const std::string &ifName) const;
 	void sortChannels();				// sorts by channel name
 	bool hasUniqueRecordChans() const;		// true if each channel's recordChan parameter is unique
 	void assignRecordChans();
-	double firstTuningForIF(const std::string &ifName) const;	// returns Hz
-	double averageTuningForIF(const std::string &ifName) const;	// returns Hz
+	double firstTuningForIF(const std::string &ifLink) const;	// returns Hz
+	double averageTuningForIF(const std::string &ifLink) const;	// returns Hz
 	double dataRateMbps() const;
 	void setPhaseCalInterval(float phaseCalIntervalMHz);
 	void setPhaseCalBase(float phaseCalBaseMHz);
@@ -67,10 +79,15 @@ public:
 	bool hasDuplicateSubbands() const;
 	int getPolarizations() const;
 	int getConvertedPolarizations() const;
+	VexStream *getVexStreamByLink(const std::string streamLink);
+	VexChannel *getVexChannelByLink(const std::string chanLink);
+	VexIF *getVexIFByLink(const std::string &ifLink);
 
-	std::map<std::string,VexIF> ifs;		// Indexed by name in the vex file, such as IF_A
+	SetupType type;
+	std::map<std::string,VexIF> ifs;		// Indexed by name in the vex file, such as IF_A	FIXME: change to vector<> rather than map<> ?
 	std::vector<VexChannel> channels;
 	std::vector<VexStream> streams;			// or "datastreams".  
+	std::vector<VexExtension> extensions;		// extensions referenced from a $MODE block
 };
 
 std::ostream& operator << (std::ostream &os, const VexSetup &x);

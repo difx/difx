@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2020 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2022 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -48,12 +48,15 @@ public:
 
 	int recordChan;				// channel number on recorded media or threadnum on stream	(< 0 indicates non-recording)
 	int subbandId;				// 0-based index; -1 means unset
-	std::string ifName;			// name of the IF this channel came from
 	double bbcFreq;				// sky frequency tuning of the BBC (Hz)
 	double bbcBandwidth;			// bandwidth (Hz)
 	char bbcSideBand;			// sideband of the BBC
-	std::string name;
+	std::string bandLink;			// column 1 of the $FREQ chan_def line; may be unset as this parameter is optional
+	std::string chanName;			// column 8 of the $FREQ chan_def line, but fill in with column 5 if not present
+	std::string ifLink;			// name of the IF this channel came from
+	std::string chanLink;			// column 5 of the $FREQ chan_def line
 	std::string bbcName;			// name given in VEX of this channel in the BBC table
+	std::string phaseCalName;		// name of phase cal setup for this channel
 	std::vector<unsigned int> tones;	// pulse cal tones to extract, directly from PHASE_CAL_DETECT
 	int threadId;				// thread Id for this channel (assigned based on channel names)
 };

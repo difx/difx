@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,7 +34,12 @@ std::ostream& operator << (std::ostream &os, const VexExper &x)
 	int p = os.precision();
 
 	os.precision(12);
-	os << "Experiment " << x.name << " mjd(" << x.mjdStart << "," << x.mjdStop << ")";
+	os << "Experiment " << x.name;
+	if(!x.segment.empty())
+	{
+		os << " " << x.segment;
+	}
+	os << " mjd(" << x.mjdStart << "," << x.mjdStop << ")";
 	os.precision(p);
 
 	return os;

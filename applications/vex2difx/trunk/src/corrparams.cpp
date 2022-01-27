@@ -1165,10 +1165,6 @@ AntennaSetup::AntennaSetup(const std::string &name) : vexName(name), defaultData
 	deltaClockRate = 0.0;
 	clock.mjdStart = -1e9;
 	clockorder = 1;
-	clock2 = 0.0;
-	clock3 = 0.0;
-	clock4 = 0.0;
-	clock5 = 0.0;
 	phaseCalIntervalMHz = -1;
 	toneGuardMHz = -1.0;
 	toneSelection = ToneSelectionSmart;
@@ -1208,6 +1204,8 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	{
 		polConvert = parseBoolean(value);
 	}
+
+	// Eventually support clock=A,B,C,D
 	else if(key == "clockOffset" || key == "clock0")
 	{
 		if(clock.offset != 0.0)
@@ -1215,8 +1213,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			std::cerr << "Warning: antenna " << vexName << " has multiple clockOffset definitions" << std::endl;
 			++nWarn;
 		}
-		clock.offset = parseDouble(value);
-		clock.offset /= 1.0e6;	// convert from us to sec
+		clock.offset = parseDouble(value) / 1.0e6;	// convert from us to sec;
 		clock.mjdStart = 1;
 	}
 	else if(key == "clockRate" || key == "clock1")
@@ -1226,70 +1223,42 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			std::cerr << "Warning: antenna " << vexName << " has multiple clockRate definitions" << std::endl;
 			++nWarn;
 		}
-		clock.rate = parseDouble(value);
-		clock.rate /= 1.0e6;	// convert from us/sec to sec/sec
+		clock.rate = parseDouble(value) / 1.0e6;	// convert from us/sec to sec/sec
+		if(clockorder < 1)
+		{
+			clockorder = 1;
+		}
 		clock.mjdStart = 1;
 	}
-#warning "FIXME: this section of code could be made much nicer"
-	else if(key == "clock2")
+	else if(key == "clockAccel" || key == "clock2")
 	{
-		if(clock2 != 0.0)
+		if(clock.accel != 0.0)
 		{
-			std::cerr << "Warning: antenna " << vexName << " has multiple clock2 definitions" << std::endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple clockAccel definitions" << std::endl;
 			++nWarn;
 		}
 
-		ss >> clock2;
+		clock.accel = parseDouble(value) / 1.0e6;	// convert from us/sec^2 to sec/sec^2
 		if(clockorder < 2)
 		{
 			clockorder = 2;
 		}
-		clock2 /= 1.0e6;	// convert from us/sec^2 to sec/sec^2
+		clock.mjdStart = 1;
 	}
-	else if(key == "clock3")
+	else if(key == "clockJerk" || key == "clock3")
 	{
-		if(clock3 != 0.0)
+		if(clock.jerk != 0.0)
 		{
-			std::cerr << "Warning: antenna " << vexName << " has multiple clock3 definitions" << std::endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple clockJerk definitions" << std::endl;
 			++nWarn;
 		}
 
-		ss >> clock3;
+		clock.jerk = parseDouble(value) / 1.0e6;	// convert from us/sec^3 to sec/sec^3
 		if(clockorder < 3)
 		{
 			clockorder = 3;
 		}
-		clock3 /= 1.0e6;	// convert from us/sec^3 to sec/sec^3
-	}
-	else if(key == "clock4")
-	{
-		if(clock4 != 0.0)
-		{
-			std::cerr << "Warning: antenna " << vexName << " has multiple clock4 definitions" << std::endl;
-			++nWarn;
-		}
-
-		ss >> clock4;
-		if(clockorder < 4)
-		{
-			clockorder = 4;
-		}
-		clock4 /= 1.0e6;	// convert from us/sec^4 to sec/sec^4
-	}
-	else if(key == "clock5")
-	{
-		if(clock5 != 0.0)
-		{
-			std::cerr << "Warning: antenna " << vexName << " has multiple clock5 definitions" << std::endl;
-			++nWarn;
-		}
-
-		ss >> clock5;
-		if(clockorder < 5)
-		{
-			clockorder = 5;
-		}
-		clock5 /= 1.0e6;	// convert from us/sec^5 to sec/sec^5
+		clock.mjdStart = 1;
 	}
 	else if(key == "clockEpoch")
 	{
@@ -1308,8 +1277,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			std::cerr << "Warning: antenna " << vexName << " has multiple deltaClock definitions" << std::endl;
 			++nWarn;
 		}
-		deltaClock = parseDouble(value);
-		deltaClock /= 1.0e6;	// convert from us to sec
+		deltaClock = parseDouble(value) / 1.0e6;	// convert from us to sec
 	}
 	else if(key == "deltaClockRate")
 	{
@@ -1318,8 +1286,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			std::cerr << "Warning: antenna " << vexName << " has multiple deltaClockRate definitions" << std::endl;
 			++nWarn;
 		}
-		deltaClockRate = parseDouble(value);
-		deltaClockRate /= 1.0e6;	// convert from us/sec to sec/sec
+		deltaClockRate = parseDouble(value) / 1.0e6;	// convert from us/sec to sec/sec
 	}
 	else if(key == "X" || key == "x")
 	{
@@ -2771,7 +2738,7 @@ int CorrParams::sanityCheck()
 			std::cerr << "Warning: the default antenna's coordinates are set!" << std::endl;
 			++nWarn;
 		}
-		if(a->clock.offset != 0 || a->clock.rate != 0 || a->clock2 != 0 || a->clock3 != 0 || a->clock4 != 0 || a->clock5 != 0 || a->clock.offset_epoch != 0 || a->deltaClock != 0 || a->deltaClockRate != 0)
+		if(a->clock.offset != 0 || a->clock.rate != 0 || a->clock.accel != 0 || a->clock.jerk != 0 || a->clock.offset_epoch != 0 || a->deltaClock != 0 || a->deltaClockRate != 0)
 		{
 			std::cerr << "Warning: the default antenna's clock parameters are set!" << std::endl;
 			++nWarn;

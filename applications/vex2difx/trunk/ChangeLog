@@ -1,4 +1,33 @@
 
+Version 2.99.3
+~~~~~~~~~~~~~~
+* Merge of vex2 branch into trunk, Jan 27, 2022, from revision 10279 of https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/vex2
+
+Version 2.99.2
+~~~~~~~~~~~~~~
+* Support Nasmyth antenna mounts
+* Propagate nBit from track_frame_format
+* Modernize configure.ac a bit
+
+Version 2.99.1
+~~~~~~~~~~~~~
+* vex2 branch created on Aug 2, 2021 from rev. 10089
+* Updated Goddard/NVI Vex parser to version supporting vex2
+* Significant updates to vexdatamodel/ source to better match vex2
+* General trend to move more of the .v2d / .vex merge to applycorrparams
+* vex2difx.cpp getting streamlined a bit
+* Break up some large functions into smaller units
+* vex2 concepts that are now supported in vex2difx (that were not previously supported)
+  - $BITSTREAMS
+  - $DATASTREAM
+  - $CLOCK with up to 4 terms
+  - $SCHED blocks specifying multiple correlation centers
+  - $SOURCE entities that are non-sidereal
+  - $EXPER section with separately-specified experiment code/segment
+* As of Oct 27, 2021 (ver 2.99.1) sufficient testing has been performed successfully to 
+  designate this SVN snapshot as a beta version, leading up to a fully
+  vex2 supported ver 3.0.
+
 
 Version 2.7.0
 ~~~~~~~~~~~~~

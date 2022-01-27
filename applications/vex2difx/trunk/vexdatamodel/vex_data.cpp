@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2021 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2022 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,6 +32,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <list>
 #include <regex.h>
 #include "vex_data.h"
@@ -48,43 +49,19 @@ int VexData::sanityCheck()
 		++nWarn;
 	}
 
-	for(std::vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
-	{
-		if(it->clocks.empty())
-		{
-			std::cerr << "Warning: no clock values for antenna " << it->name << " ." << std::endl;
-			++nWarn;
-		}
-	}
-
-	for(std::vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
-	{
-#if 0
-FIXME: this functionality needs to be put somewhere else
-		if(it->dataSource == DataSourceFile && it->basebandFiles.empty())
-		{
-			std::cerr << "Warning: file based correlation desired but no files provided for antenna " << it->name << " ." << std::endl;
-			++nWarn;
-		}
-		if(it->dataSource == DataSourceModule && it->basebandFiles.empty())
-		{
-			std::cerr << "Warning: module based correlation desired but no media specified for antenna " << it->name << " ." << std::endl;
-			++nWarn;
-		}
-		if(it->dataSource == DataSourceNone)
-		{
-			std::cerr << "Warning: data source is NONE for antenna " << it->name << " ." << std::endl;
-			++nWarn;
-		}
-#endif
-	}
-
 	return nWarn;
 }
 
 VexSource *VexData::newSource()
 {
 	sources.push_back(VexSource());
+
+	return &sources.back();
+}
+
+VexSource *VexData::newSource(const std::string &name, double ra, double dec)
+{
+	sources.push_back(VexSource(name, ra, dec));
 
 	return &sources.back();
 }
@@ -148,6 +125,44 @@ void VexData::setSourceCalCode(const std::string &name, char calCode)
 		}
 	}
 }
+
+void VexData::setSourceEphemerisFile(const std::string &name, const std::string &ephemFile, const std::string &ephemObject)
+{
+	for(std::vector<VexSource>::iterator it = sources.begin(); it != sources.end(); ++it)
+	{
+		if(it->defName == name)
+		{
+			it->setBSP(ephemFile.c_str(), ephemObject.c_str());
+		}
+	}
+}
+
+// (X, Y, Z in meters)
+void VexData::setSourceITRFCoordinates(const std::string &name, double X, double Y, double Z)
+{
+	for(std::vector<VexSource>::iterator it = sources.begin(); it != sources.end(); ++it)
+	{
+		if(it->defName == name)
+		{
+			it->setFixed(X, Y, Z);
+		}
+	}
+}
+
+// (ra, dec in radians)
+void VexData::setSourceCoordinates(const std::string &name, double ra, double dec)
+{
+	for(std::vector<VexSource>::iterator it = sources.begin(); it != sources.end(); ++it)
+	{
+		if(it->defName == name)
+		{
+			it->type = VexSource::Star;
+			it->ra = ra;
+			it->dec = dec;
+		}
+	}
+}
+
 
 
 VexScan *VexData::newScan()
@@ -372,6 +387,26 @@ bool VexData::removeScan(const std::string name)
 	}
 
 	return removed;
+}
+
+void VexData::deletePhaseCenters(unsigned int num)
+{
+	if(num >= nScan())
+	{
+		std::cerr << "Developer error: VexData::deletePhaseCentres() : num=" << num << " nScan=" << nScan() << std::endl;
+	}
+
+	scans[num].phaseCenters.clear();
+}
+
+void VexData::addPhaseCenter(unsigned int num, const std::string &name)
+{
+	if(num >= nScan())
+	{
+		std::cerr << "Developer error: VexData::addPhaseCentre() : num=" << num << " nScan=" << nScan() << std::endl;
+	}
+
+	scans[num].phaseCenters.push_back(name);
 }
 
 VexAntenna *VexData::newAntenna()
@@ -606,6 +641,33 @@ void VexData::addEOP(const VexEOP &e)
 	*E = e;
 }
 
+
+VexExtension *VexData::newExtension()
+{
+	extensions.push_back(VexExtension());
+
+	return &extensions.back();
+}
+
+const VexExtension *VexData::getExtension(unsigned int num) const
+{
+	if(num > nExtension())
+	{
+		return 0;
+	}
+
+	return &extensions[num];
+}
+
+void VexData::addExtension(const VexExtension &e)
+{
+	VexExtension *E;
+
+	E = newExtension();
+	*E = e;
+}
+
+
 bool VexData::usesAntenna(const std::string &antennaName) const
 {
 	unsigned int n = nAntenna();
@@ -686,6 +748,14 @@ void VexData::removeBasebandData(const std::string &antName, int datastreamId)
 void VexData::setExper(const std::string &name, const Interval &experTimeRange)
 {
 	exper.name = name;
+	exper.segment = "";
+	exper.setTimeRange(experTimeRange);
+}
+
+void VexData::setExper(const std::string &name, const std::string &segment, const Interval &experTimeRange)
+{
+	exper.name = name;
+	exper.segment = segment;
 	exper.setTimeRange(experTimeRange);
 }
 
@@ -740,6 +810,30 @@ void VexData::setClock(const std::string &antName, const VexClock &clock)
 		{
 			it->clocks.clear();
 			it->clocks.push_back(clock);
+		}
+	}
+}
+
+// deltaClock in sec and deltaClockRate in sec/sec
+void VexData::adjustClock(const std::string &antName, double deltaClock, double deltaClockRate)
+{
+	for(std::vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
+	{
+		for(std::vector<VexClock>::iterator c = it->clocks.begin(); c != it->clocks.end(); ++c)
+		{
+			c->offset += deltaClock;	// [sec]
+			c->rate += deltaClockRate;	// [sec/sec]
+		}
+	}
+}
+
+void VexData::setAntennaDifxName(const std::string &name, const std::string &difxName)
+{
+	for(std::vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
+	{
+		if(it->name == name)
+		{
+			it->difxName = difxName;
 		}
 	}
 }
@@ -972,14 +1066,13 @@ void VexData::setCanonicalVDIF(const std::string &modeName, const std::string &a
 
 			for(std::vector<VexStream>::iterator sit = it->second.streams.begin(); sit != it->second.streams.end(); ++sit)
 			{
-				if(sit->format == VexStream::FormatVDIF && sit->nThread != sit->nRecordChan)
+				if(sit->format == VexStream::FormatVDIF && sit->nThread() != sit->nRecordChan)
 				{
-					sit->nThread = sit->nRecordChan;
 					sit->singleThread = false;
 					sit->threads.clear();
 					for(unsigned int c = 0; c < sit->nRecordChan; ++c)
 					{
-						sit->threads.push_back(c + tStart);
+						sit->threads.push_back(VexThread(c + tStart));
 					}
 				}
 				tStart += sit->nRecordChan;
@@ -1502,10 +1595,10 @@ bool VexData::isSX() const
 
 			for(std::map<std::string,VexIF>::const_iterator it = setup.ifs.begin(); it != setup.ifs.end(); ++it)
 			{
-				const VexIF &i = it->second;
+				const VexIF &vif = it->second;
 				double averageTune;	// (Hz)
 				
-				averageTune = setup.averageTuningForIF(i.name);
+				averageTune = setup.averageTuningForIF(vif.ifLink);
 
 				if(averageTune > 2.0e9 && averageTune < 3.9e9)
 				{
@@ -1535,43 +1628,69 @@ bool VexData::isSX() const
 	return hasSX & (!hasOther);
 }
 
+void VexData::setVersion(const std::string &ver)
+{
+	version = atof(ver.c_str());
+}
+
+void VexData::setVersion(double ver)
+{
+	version = ver;
+}
+
+double VexData::getVersion() const
+{
+	return version;
+}
+
+
 std::ostream& operator << (std::ostream &os, const VexData &x)
 {
-	int n = x.nSource();
+	size_t n;
 
-	os << "Vex:" << std::endl;
+	os << "Vex " << x.getVersion() << ":" << std::endl;
+	os << *x.getExper() << std::endl;
+
+	n = x.nSource();
 	os << n << " sources:" << std::endl;
-	for(int i = 0; i < n; ++i)
+	for(size_t i = 0; i < n; ++i)
 	{
 		os << *x.getSource(i);
 	}
 
 	n = x.nScan();
 	os << n << " scans:" << std::endl;
-	for(int i = 0; i < n; ++i)
+	for(size_t i = 0; i < n; ++i)
 	{
 		os << *x.getScan(i);
 	}
 
 	n = x.nAntenna();
 	os << n << " antennas:" << std::endl;
-	for(int i = 0; i < n; ++i)
+	for(size_t i = 0; i < n; ++i)
 	{
 		os << *x.getAntenna(i);
 	}
 
 	n = x.nMode();
 	os << n << " modes:" << std::endl;
-	for(int i = 0; i < n; ++i)
+	for(size_t i = 0; i < n; ++i)
 	{
 		os << *x.getMode(i);
 	}
 
 	n = x.nEOP();
 	os << n << " eops:" << std::endl;
-	for(int i = 0; i < n; ++i)
+	for(size_t i = 0; i < n; ++i)
 	{
-		os << "   " << *x.getEOP(i) << std::endl;
+		os << "  " << *x.getEOP(i) << std::endl;
+	}
+
+	n = x.nExtension();
+	os << n << " extensions:" << std::endl;
+	for(size_t i = 0; i < n; ++i)
+	{
+		os << "  " << *x.getExtension(i) << std::endl;
 	}
 
 	return os;

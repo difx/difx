@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -146,7 +146,7 @@ int VexMode::getBits() const
 		{
 			if(nBit != 0 && nb != 0 && firstTime)
 			{
-				std::cerr << "Note: getBits: differing number of bits: " << nBit << "," << nb << std::endl;
+				std::cerr << "Note: getBits: Mode=" << defName << " differing number of bits: " << nBit << "," << nb << std::endl;
 				std::cerr << "  Will proceed, but note that some metadata may be incorrect." << std::endl;
 
 				firstTime = 0;

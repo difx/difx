@@ -1,4 +1,23 @@
 %{
+/*
+ * Copyright (c) 2020 NVI, Inc.
+ *
+ * This file is part of VLBI Field System
+ * (see http://github.com/nvi-inc/fs).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -17,16 +36,20 @@
 #define isodigit(x) ((x) >= '0' && (x) <= '7')
 #define hextoint(x) (isdigit((x)) ? (x) - '0'\
                                   : ((x) - 'A') + 10)
-static struct llist *lit();
+
 static char *find_end(char *buffer, char *text);
-static char *quote();
 
 static int ref=0;
+static int inthreads=0;
 static int trailing=0;
 int lines=1;
 static int version=1;
-%}
 
+struct llist *lit();
+char *quote();
+
+void yyerror(char const *s);
+%}
 %option noyywrap
 
 %x VERSION DEF LINE REF
@@ -79,8 +102,11 @@ ANGLE		[+-]?([0-9]{1,2})d([0-9]{1,2})\'{SEC}\"
 <LINE,REF>"$"CLOCK	{BEGIN(INITIAL);return B_CLOCK;}
 <LINE,REF>"$"ANTENNA	{BEGIN(INITIAL);return B_ANTENNA;}
 <LINE,REF>"$"BBC		{BEGIN(INITIAL);return B_BBC;}
+<LINE,REF>"$"BITSTREAMS		{BEGIN(INITIAL);return B_BITSTREAMS;}
+<LINE,REF>"$"EXTENSIONS		{BEGIN(INITIAL);return B_EXTENSIONS;}
 <LINE,REF>"$"CORR		{BEGIN(INITIAL);return B_CORR;}
 <LINE,REF>"$"DAS		{BEGIN(INITIAL);return B_DAS;}
+<LINE,REF>"$"DATASTREAMS	{inthreads = 0; BEGIN(INITIAL);return B_DATASTREAMS;}
 <LINE,REF>"$"HEAD_POS	{BEGIN(INITIAL);return B_HEAD_POS;}
 <LINE,REF>"$"PASS_ORDER	{BEGIN(INITIAL);return B_PASS_ORDER;}
 <LINE,REF>"$"PHASE_CAL_DETECT	{BEGIN(INITIAL);return B_PHASE_CAL_DETECT;}
@@ -91,6 +117,7 @@ ANGLE		[+-]?([0-9]{1,2})d([0-9]{1,2})\'{SEC}\"
 <LINE,REF>"$"SOURCE	{BEGIN(INITIAL);return B_SOURCE;}
 <LINE,REF>"$"TAPELOG_OBS	{BEGIN(INITIAL);return B_TAPELOG_OBS;}
 <LINE,REF>"$"TRACKS	{BEGIN(INITIAL);return B_TRACKS;}
+<LINE,REF>"$"THREADS	{inthreads = 1; BEGIN(INITIAL); return B_THREADS;}
 <LINE>"$"SCHED	{BEGIN(INITIAL);return B_SCHED;}
 
 <REF,INITIAL>=		{if(ref == 1) {ref=0;BEGIN(DEF);} return(yytext[0]);}
@@ -110,15 +137,21 @@ ANGLE		[+-]?([0-9]{1,2})d([0-9]{1,2})\'{SEC}\"
 <LINE>mode		{BEGIN(INITIAL);return T_MODE;}
 <LINE>station		{BEGIN(INITIAL);return T_STATION;}
 <LINE>data_transfer	{BEGIN(INITIAL);return T_DATA_TRANSFER;}
+<LINE>intent		{BEGIN(INITIAL);return T_INTENT;}
+<LINE>pointing_offset		{BEGIN(INITIAL);return T_POINTING_OFFSET;}
 
 <LINE>antenna_diam	{BEGIN(INITIAL);return T_ANTENNA_DIAM;}
-<LINE>antenna_name	{BEGIN(INITIAL);return T_ANTENNA_NAME;}
 <LINE>axis_type	{BEGIN(INITIAL);return T_AXIS_TYPE;}
 <LINE>axis_offset	{BEGIN(INITIAL);return T_AXIS_OFFSET;}
 <LINE>antenna_motion	{BEGIN(INITIAL);return T_ANTENNA_MOTION;}
 <LINE>pointing_sector	{BEGIN(INITIAL);return T_POINTING_SECTOR;}
+<LINE>nasmyth            {BEGIN(INITIAL);return T_NASMYTH;}
 
 <LINE>BBC_assign	{BEGIN(INITIAL);return T_BBC_ASSIGN;}
+
+<LINE>stream_def	{BEGIN(INITIAL);return T_STREAM_DEF;}
+<LINE>stream_sample_rate	{BEGIN(INITIAL);return T_STREAM_SAMPLE_RATE;}
+<LINE>stream_label	{BEGIN(INITIAL);return T_STREAM_LABEL;}
 
 <LINE>clock_early	{BEGIN(INITIAL);return T_CLOCK_EARLY;}
 
@@ -131,6 +164,18 @@ ANGLE		[+-]?([0-9]{1,2})d([0-9]{1,2})\'{SEC}\"
 <LINE>recording_system_ID	{BEGIN(INITIAL);return T_RECORDING_SYSTEM_ID;}
 <LINE>tape_motion		{BEGIN(INITIAL);return T_TAPE_MOTION;}
 <LINE>tape_control		{BEGIN(INITIAL);return T_TAPE_CONTROL;}
+<LINE>equip		        {BEGIN(INITIAL);return T_EQUIP;}
+<LINE>composite_equip	        {BEGIN(INITIAL);return T_COMPOSITE_EQUIP;}
+<LINE>equip_set	                {BEGIN(INITIAL);return T_EQUIP_SET;}
+<LINE>equip_info                {BEGIN(INITIAL);return T_EQUIP_INFO;}
+<LINE>connection                {BEGIN(INITIAL);return T_CONNECTION;}
+<LINE>record_method             {BEGIN(INITIAL);return T_RECORD_METHOD;}
+<LINE>record_control            {BEGIN(INITIAL);return T_RECORD_CONTROL;}
+
+<LINE>datastream	        {BEGIN(INITIAL);return T_DATASTREAM;}
+<LINE>thread	                {BEGIN(INITIAL);return (inthreads ? T_THREAD_DEF : T_THREAD);}
+<LINE>channel	                {BEGIN(INITIAL);return (inthreads ? T_CHANNEL_DEF : T_CHANNEL);}
+<LINE>merged_datastream	        {BEGIN(INITIAL);return T_MERGED_DATASTREAM;}
 
 <LINE>TAI-UTC			{BEGIN(INITIAL);return T_TAI_UTC;}
 <LINE>A1-TAI			{BEGIN(INITIAL);return T_A1_TAI;}
@@ -138,14 +183,18 @@ ANGLE		[+-]?([0-9]{1,2})d([0-9]{1,2})\'{SEC}\"
 <LINE>num_eop_points		{BEGIN(INITIAL);return T_NUM_EOP_POINTS;}
 <LINE>eop_interval		{BEGIN(INITIAL);return T_EOP_INTERVAL;}
 <LINE>ut1-utc			{BEGIN(INITIAL);return T_UT1_UTC;}
-<LINE>x_wobble		{BEGIN(INITIAL);return T_X_WOBBLE;}
-<LINE>y_wobble		{BEGIN(INITIAL);return T_Y_WOBBLE;}
+<LINE>x_wobble		        {BEGIN(INITIAL);return T_X_WOBBLE;}
+<LINE>y_wobble		        {BEGIN(INITIAL);return T_Y_WOBBLE;}
 <LINE>nut_ref_epoch		{BEGIN(INITIAL);return T_NUT_REF_EPOCH;}
 <LINE>num_nut_points		{BEGIN(INITIAL);return T_NUM_NUT_POINTS;}
 <LINE>nut_interval		{BEGIN(INITIAL);return T_NUT_INTERVAL;}
 <LINE>delta_psi			{BEGIN(INITIAL);return T_DELTA_PSI;}
-<LINE>delta_eps		{BEGIN(INITIAL);return T_DELTA_EPS;}
+<LINE>delta_eps		        {BEGIN(INITIAL);return T_DELTA_EPS;}
 <LINE>nut_model			{BEGIN(INITIAL);return T_NUT_MODEL;}
+<LINE>eop_origin		{BEGIN(INITIAL);return T_EOP_ORIGIN;}
+<LINE>delta_x_nut		{BEGIN(INITIAL);return T_DELTA_X_NUT;}
+<LINE>delta_y_nut		{BEGIN(INITIAL);return T_DELTA_Y_NUT;}
+<LINE>nut_origin		{BEGIN(INITIAL);return T_NUT_ORIGIN;}
 
 <LINE>exper_num		{BEGIN(INITIAL);return T_EXPER_NUM;}
 <LINE>exper_name		{BEGIN(INITIAL);return T_EXPER_NAME;}
@@ -159,10 +208,17 @@ ANGLE		[+-]?([0-9]{1,2})d([0-9]{1,2})\'{SEC}\"
 <LINE>scheduler_name		{BEGIN(INITIAL);return T_SCHEDULER_NAME;}
 <LINE>scheduler_email		{BEGIN(INITIAL);return T_SCHEDULER_EMAIL;}
 <LINE>target_correlator	{BEGIN(INITIAL);return T_TARGET_CORRELATOR;}
+<LINE>scheduling_software	{BEGIN(INITIAL);return T_SCHEDULING_SOFTWARE;}
+<LINE>VEX_file_writer	{BEGIN(INITIAL);return T_VEX_FILE_WRITER;}
+<LINE>extension  	{BEGIN(INITIAL);return T_EXTENSION;}
 
 <LINE>headstack_pos		{BEGIN(INITIAL);return T_HEADSTACK_POS;}
 
 <LINE>if_def			{BEGIN(INITIAL);return T_IF_DEF;}
+<LINE>receiver_name	        {BEGIN(INITIAL);return T_RECEIVER_NAME;}
+<LINE>sub_lo_frequencies	        {BEGIN(INITIAL);return T_SUB_LO_FREQUENCIES;}
+<LINE>sub_lo_sidebands	        {BEGIN(INITIAL);return T_SUB_LO_SIDEBANDS;}
+<LINE>switched_power	        {BEGIN(INITIAL);return T_SWITCHED_POWER;}
 
 <LINE>pass_order		{BEGIN(INITIAL);return T_PASS_ORDER;}
 <LINE>S2_group_order		{BEGIN(INITIAL);return T_S2_GROUP_ORDER;}
@@ -223,6 +279,13 @@ ANGLE		[+-]?([0-9]{1,2})d([0-9]{1,2})\'{SEC}\"
 <LINE>source_position_epoch    {BEGIN(INITIAL);return T_SOURCE_POSITION_EPOCH;}
 <LINE>velocity_wrt_LSR	{BEGIN(INITIAL);return T_VELOCITY_WRT_LSR;}
 <LINE>source_model		{BEGIN(INITIAL);return T_SOURCE_MODEL;}
+<LINE>bsp_file_name		{BEGIN(INITIAL);return T_BSP_FILE_NAME;}
+<LINE>bsp_object_id		{BEGIN(INITIAL);return T_BSP_OBJECT_ID;}
+<LINE>tle0		{BEGIN(INITIAL);return T_TLE0;}
+<LINE>tle1		{BEGIN(INITIAL);return T_TLE1;}
+<LINE>tle2		{BEGIN(INITIAL);return T_TLE2;}
+<LINE>datum     {BEGIN(INITIAL);return T_DATUM;}
+<LINE>vector    {BEGIN(INITIAL);return T_VECTOR;}
 
 <LINE>VSN			{BEGIN(INITIAL);return T_VSN;}
 
@@ -234,6 +297,8 @@ ANGLE		[+-]?([0-9]{1,2})d([0-9]{1,2})\'{SEC}\"
 <LINE>VLBA_trnsprt_sys_trk	{BEGIN(INITIAL);return T_VLBA_TRNSPRT_SYS_TRK;}
 <LINE>S2_recording_mode		{BEGIN(INITIAL);return T_S2_RECORDING_MODE;}
 <LINE>S2_data_source		{BEGIN(INITIAL);return T_S2_DATA_SOURCE;}
+
+<LINE>format		{BEGIN(INITIAL);return T_FORMAT_DEF;}
 
 <LINE>start_literal\(		{BEGIN(INITIAL); yylval.llptr=lit(); return T_LITERAL;}
 	
@@ -260,7 +325,7 @@ ANGLE		[+-]?([0-9]{1,2})d([0-9]{1,2})\'{SEC}\"
 
 <<EOF>>         {version=1;ref=0;trailing=0;lines=1;yyterminate();}
 %%
-static struct llist *lit()
+struct llist *lit()
 {
   int inch, count, max_size;
   char *buffer, *last, *text;
@@ -303,7 +368,7 @@ static struct llist *lit()
 /* skip to ';' */
 
   inch=input();
-  while(inch != EOF && inch != ';' && inch != '\0') {
+  while(inch !=EOF && inch != ';' && inch != '\0') {
     if(inch == '\n')
       lines++;
     else if(NULL == strchr(" \t\r",inch))
@@ -331,7 +396,7 @@ static struct llist *lit()
     lines++;
 
   /* read lines */
-  
+
   buffer = malloc(ALLOC_SIZE);
   if(buffer == NULL)
     yyerror("out of memory in literal 4");
@@ -375,22 +440,42 @@ static struct llist *lit()
   {
     int i=strlen(last)-1;
 
-    unput('\n'); 
+    unput('\n');
     while ( i >= 0) {
        unput(last[i]);
     i--;
-    } 
+    }
   }
   free(buffer);
 
   return llist;
 }
-static char *quote()
+static char *find_end(char *buffer, char *text)
+{
+  char *ptr, *start;
+  char end[]="end_literal(";
+  int textlen=strlen(text);
+
+  start=buffer;
+  while(NULL != (ptr=strchr(buffer++,end[0])))
+    if(0==strncmp(ptr,end,sizeof(end)-1))
+      if(0==strncmp(ptr+sizeof(end)-1,text,textlen))
+	if(0==strncmp(ptr+sizeof(end)-1+textlen,")",1)) {
+	  *ptr='\0';
+	  for(;*start!=0;start++)
+	    if(NULL == strchr(" \t\r",*start))
+	      yyerror("Illegal character between '\\n' and end_literal(...)");
+	  return ptr+sizeof(end)+textlen;
+	}
+
+  return NULL;
+}
+char *quote()
 {
   int inch, count, max_size;
   char *buffer;
   int temp, ch;
- 
+
   buffer = malloc(ALLOC_SIZE);
   max_size = ALLOC_SIZE;
   inch=input();
@@ -464,7 +549,9 @@ static char *quote()
       }
     }
     if(inch == 0) {
-      yyerror("Null byte specified\n");
+      char tmpbuf[128];
+      sprintf(tmpbuf, "Null byte specified at line %d\n", lines);
+      yyerror(tmpbuf);
     }
     buffer[count++] = inch;
     if(count >= max_size) {
@@ -474,31 +561,13 @@ static char *quote()
     inch = input();
   }
   if(inch == EOF || inch == '\n') {
-    yyerror("Unterminated string");
+    char tmpbuf[128];
+    sprintf(tmpbuf, "Unterminated string at line %d\n", lines);
+    yyerror(tmpbuf);
   }
   buffer[count]='\0';
   if(strlen(buffer) > 128) {
     yyerror("quoted string too long");
   }
   return buffer;
-}
-static char *find_end(char *buffer, char *text)
-{
-  char *ptr, *start;
-  char end[]="end_literal(";
-  int textlen=strlen(text);
-
-  start=buffer;
-  while(NULL != (ptr=strchr(buffer++,end[0])))
-    if(0==strncmp(ptr,end,sizeof(end)-1))
-      if(0==strncmp(ptr+sizeof(end)-1,text,textlen))
-	if(0==strncmp(ptr+sizeof(end)-1+textlen,")",1)) {
-	  *ptr='\0';
-	  for(;*start!=0;start++)
-	    if(NULL == strchr(" \t\r",*start))
-	      yyerror("Illegal character between '\\n' and end_literal(...)");
-	  return ptr+sizeof(end)+textlen;
-	}
-
-  return NULL;
 }

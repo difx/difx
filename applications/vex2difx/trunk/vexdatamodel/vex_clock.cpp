@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,7 +31,17 @@
 
 std::ostream& operator << (std::ostream &os, const VexClock &x)
 {
-	os << "Clock(" << x.mjdStart << ": " << x.offset << ", " << x.rate << ", " << x.offset_epoch << ")";
+	os << "Clock(" << x.mjdStart << ": " << x.offset << ", " << x.rate;
+	if(x.accel != 0.0 || x.jerk != 0.0)
+	{
+		os << ", " << x.accel;
+	}
+	if(x.jerk != 0.0)
+	{
+		os << ", " << x.jerk;
+	}
+	
+	os << ", " << x.offset_epoch << ")";
 
 	return os;
 }

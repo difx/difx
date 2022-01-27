@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2021 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,31 +19,46 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id$
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision$
- * $Author$
- * $LastChangedDate$
+ * $Id: vex_extension.cpp 10267 2021-10-17 16:30:40Z WalterBrisken $
+ * $HeadURL:  $
+ * $LastChangedRevision: 10267 $
+ * $Author: WalterBrisken $
+ * $LastChangedDate: 2021-10-17 10:30:40 -0600 (Sun, 17 Oct 2021) $
  *
  *==========================================================================*/
 
-#ifndef __VEX_EXPER_H__
-#define __VEX_EXPER_H__
+#include "vex_extension.h"
 
-#include <iostream>
-#include "interval.h"
-
-class VexExper : public Interval
+// One VexExtension is one extension parameter line within a def statement
+std::ostream& operator << (std::ostream &os, const VexExtension &x)
 {
-public:
-	VexExper() : Interval(0.0, 1000000.0) {}
+	os << "extension[owner=" << x.owner << ",name=" << x.name;
+	if(x.value.size() != x.units.size())
+	{
+		os << ",<Error: nValue=" << x.value.size() << " != nUnits=" << x.units.size() << ">";
+	}
+	else
+	{
+		os << ",values";
+		for(unsigned int i = 0; i < x.value.size(); ++i)
+		{
+			os << (i == 0 ? "=" : ",") << "(" << x.value[i] << (x.units[i].empty() ? "" : " ") << x.units[i] << ")";
+		}
+	}
+	os << "]";
 
-	std::string name;
-	std::string segment;	// If empty, then name may have the segment code attached
+	return os;
+}
 
-	std::string getFullName() const { return name + segment; }
-};
+// One VexExtensionSet is a container of all extensions within a $EXTENSION def block
+std::ostream& operator << (std::ostream &os, const VexExtensionSet &x)
+{
+	os << "Extension " << x.defName << std::endl;
+	for(std::vector<VexExtension>::const_iterator iter = x.extension.begin(); iter != x.extension.end(); ++iter)
+	{
+		os << "    " << *iter << std::endl;
+	}
 
-std::ostream& operator << (std::ostream &os, const VexExper &x);
+	return os;
+}
 
-#endif

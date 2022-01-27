@@ -260,7 +260,7 @@ bool VexStream::parseThreads(const std::string &threadList)
 
 				return false;
 			}
-			threads.push_back(t);
+			threads.push_back(VexThread(t));
 			t = -1;
 		}
 		else
@@ -305,7 +305,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 	const int MaxMatches = 6;
 	regmatch_t match[MaxMatches];
 
-	nThread = 0;
+	threads.clear();
 	singleThread = false;
 
 	for(int df = 0; df < NumDataFormats; ++df)
@@ -334,7 +334,6 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		{
 			std::cerr << "Error parsing colon separated thread numbers.  String was '" << formatName.substr(match[2].rm_so, match[2].rm_eo-match[2].rm_so) << "'." << std::endl;
 		}
-		nThread = threads.size();
 		VDIFFrameSize = matchInt(formatName, match[3]);
 		nBit = matchInt(formatName, match[4]);
 
@@ -533,9 +532,9 @@ size_t VexStream::nPresentChan() const
 	{
 		n = threads.size();
 
-		for(std::vector<int>::const_iterator it = threads.begin(); it != threads.end(); ++it)
+		for(std::vector<VexThread>::const_iterator it = threads.begin(); it != threads.end(); ++it)
 		{
-			if(threadsAbsent.count(*it) > 0)
+			if(threadsAbsent.count(it->threadId) > 0)
 			{
 				--n;
 			}
@@ -558,7 +557,7 @@ bool VexStream::recordChanAbsent(int recChan) const
 
 	ti = recChan * threads.size() / nRecordChan;
 
-	return threadsAbsent.count(threads[ti]);
+	return threadsAbsent.count(threads[ti].threadId);
 }
 
 bool VexStream::recordChanIgnore(int recChan) const
@@ -572,7 +571,7 @@ bool VexStream::recordChanIgnore(int recChan) const
 
 	ti = recChan * threads.size() / nRecordChan;
 
-	return threadsIgnore.count(threads[ti]);
+	return threadsIgnore.count(threads[ti].threadId);
 }
 
 void VexStream::setFanout(int fan)
@@ -603,12 +602,12 @@ int VexStream::snprintDifxFormatName(char *outString, int maxLength) const
 			char sep;
 			sep = '/';
 			fn << "INTERLACEDVDIF";
-			for(std::vector<int>::const_iterator it = threads.begin(); it != threads.end(); ++it)
+			for(std::vector<VexThread>::const_iterator it = threads.begin(); it != threads.end(); ++it)
 			{
-				if(threadsAbsent.count(*it) == 0)	// exclude any elements of threadsAbsent set
+				if(threadsAbsent.count(it->threadId) == 0)	// exclude any elements of threadsAbsent set
 				{
 					fn << sep;
-					fn << *it;
+					fn << it->threadId;
 					sep = ':';
 				}
 			}
@@ -640,6 +639,8 @@ int VexStream::dataFrameSize() const
 
 	switch(format)
 	{
+	case FormatNone:
+		break;
 	case FormatVDIF:
 	case FormatLegacyVDIF:
 	case FormatCODIF:
@@ -670,6 +671,32 @@ int VexStream::dataFrameSize() const
 	return s;
 }
 
+VexThread *VexStream::getVexThreadByLink(const std::string threadLink)
+{
+	for(std::vector<VexThread>::iterator it = threads.begin(); it != threads.end(); ++it)
+	{
+		if(it->threadLink == threadLink)
+		{
+			return &(*it);
+		}
+	}
+
+	return 0;
+}
+
+VexThread *VexStream::getVexThreadByThreadId(int threadId)
+{
+	for(std::vector<VexThread>::iterator it = threads.begin(); it != threads.end(); ++it)
+	{
+		if(it->threadId == threadId)
+		{
+			return &(*it);
+		}
+	}
+
+	return 0;
+}
+
 bool isVDIFFormat(VexStream::DataFormat format)
 {
 	return (format == VexStream::FormatVDIF || format == VexStream::FormatLegacyVDIF || format == VexStream::FormatCODIF);
@@ -688,10 +715,18 @@ std::ostream& operator << (std::ostream &os, const VexStream &x)
 		formatName << "Illegal(" << x.format << ")";
 	}
 
-	os << " [format=" << formatName.str() << ", nBit=" << x.nBit << ", nRecordChan=" << x.nRecordChan << ", dataFrameSize=" << x.dataFrameSize() << ", nThread=" << x.nThread << ", singleThread=" << x.singleThread << ", sampRate=" << x.sampRate << ", tSys=" << x.difxTsys << ", dataSource=" << x.dataSource << "/" << dataSourceNames[x.dataSource];
+	os << "stream[format=" << formatName.str() << ", nBit=" << x.nBit << ", nRecordChan=" << x.nRecordChan << ", dataFrameSize=" << x.dataFrameSize() << ", nThread=" << x.nThread() << ", singleThread=" << x.singleThread << ", sampRate=" << x.sampRate << ", tSys=" << x.difxTsys << ", dataSource=" << x.dataSource << "/" << dataSourceNames[x.dataSource];
+	if(!x.streamLink.empty())
+	{
+		os << ", link=" << x.streamLink;
+	}
+	if(!x.streamName.empty())
+	{
+		os << ". name=" << x.streamName;
+	}
 	if(!x.threads.empty())
 	{
-		for(std::vector<int>::const_iterator it = x.threads.begin(); it != x.threads.end(); ++it)
+		for(std::vector<VexThread>::const_iterator it = x.threads.begin(); it != x.threads.end(); ++it)
 		{
 			if(it == x.threads.begin())
 			{
