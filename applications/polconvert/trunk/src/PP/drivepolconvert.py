@@ -539,7 +539,7 @@ def getInputTemplate():
     plotAntList=%s
     numFrPltPix=%d
     doTest=%s
-    # timeRange=[]                      # don't care
+    timeRange=[]                        # default: don't care
     %stimeRange = [0,0,0,0, 14,0,0,0]   # first 14 days
     #
     spwToUse = %d
