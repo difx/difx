@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 
 	for(i = 0; ; i++)
 	{
-		v = fread(frame, FRAMESIZE, 1, in);
+		v = fread(frame, 1, FRAMESIZE, in);
 		if(!v)
 		{
 			break;

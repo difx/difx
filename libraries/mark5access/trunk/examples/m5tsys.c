@@ -230,10 +230,14 @@ int main(int argc, char **argv)
 
 		buffer = malloc(bufferlen);
 
-		r = fread(buffer, bufferlen, 1, in);
-		if(r < 1)
+		r = fread(buffer, 1, bufferlen, in);
+		if(r < bufferlen)
 		{
 			fprintf(stderr, "Error: cannot read %d bytes from file\n", bufferlen);
+			fprintf(stderr, "Error:   just read %d bytes from file\n", r);
+			fclose(in);
+			free(buffer);
+			return -1;
 		}
 		else
 		{
