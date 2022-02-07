@@ -1063,7 +1063,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      for line in inputlines[fr+1:]:
        if entry in line:
          index = int((line.split(':')[0]).split()[-1])
-         FrInfo[entry][index] = type(FrInfo[entry][0])(line.split(':')[-1])
+         FrInfo[entry][index] = type(FrInfo[entry][0])(line.split(':')[-1].strip())
 
 # SORT OUT THE CHANNEL FREQUENCIES:
 
