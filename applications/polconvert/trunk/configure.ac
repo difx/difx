@@ -3,7 +3,8 @@
 # autoconf config file for building PolConvert within DiFX tree.
 #
 AC_PREREQ([2.63])
-AC_INIT([polconvert],[1.7],[Ivan Marti-Vidal <ivan.marti-vidal@chalmers.se>])
+AC_INIT([polconvert],[1.8],
+    [Ivan Marti-Vidal <ivan.marti-vidal@i.marti-vidal@uv.es>])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_HEADERS([config.h])
 
@@ -16,7 +17,7 @@ AC_PATH_PROG([CASACMD], [casa], [/bin/false], [$DIFXCASAPATH])
 if [test x$CASACMD = x/bin/false] ; then
     AC_MSG_NOTICE([casa was not found in DIFXCASAPATH, $DIFXCASAPATH])
     AC_PATH_PROG([CASACMD], [casa], [/bin/false])
-    if [test x$CASACMD = /bin/false] ; then
+    if [test x$CASACMD = x/bin/false] ; then
         have_casa=false
         AC_MSG_NOTICE(casa was not found in path, case 1)
     else
@@ -42,9 +43,32 @@ if [test $have_casa = true] ; then
     else
 	AC_MSG_NOTICE([BUILDMYTASKS is $BUILDMYTASKS])
     fi
+    # Version 6.x casa-release6/bin/python3 -> casa
+    # Version 5.x casa-release5/bin/python -> casa
+    AC_PATH_PROG([casapy3], [python3], [/bin/false], [$DIFXCASAPATH])
+    AC_PATH_PROG([casapy2], [python], [/bin/false], [$DIFXCASAPATH])
+    # we presume only one will be defined.  See the Makefile.am
+    # to understand what is going on with BMT*
+    if [test x$casapy3 = x$DIFXCASAPATH/python3] ; then
+        BMTASKARG='--upgrade polconvert.xml'
+        BMTASKXML='polconvert.xml'
+        CASAPYTHON=$casapy3
+        AC_MSG_NOTICE([Invoking CASAPYTHON as $CASAPYTHON])
+    elif [test x$casapy2 = x$DIFXCASAPATH/python] ; then
+        BMTASKARG='&& false'
+        BMTASKXML='&& false'
+        CASAPYTHON=$casapy2
+        AC_MSG_NOTICE([Invoking CASAPYTHON as $CASAPYTHON])
+    else
+        AC_MSG_NOTICE([Did not find python within CASA])
+        have_casa=false
+    fi
 fi
 # try to use whatever is in CASA
 DIFXCASALIBPATH=$DIFXCASAPATH/../lib
+AC_SUBST(BMTASKXML)
+AC_SUBST(BMTASKARG)
+AC_SUBST(CASAPYTHON)
 AC_SUBST(DIFXCASAPATH)
 AC_SUBST(DIFXCASALIBPATH)
 AM_CONDITIONAL(HAVE_CASA, $have_casa)

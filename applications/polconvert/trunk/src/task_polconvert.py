@@ -1,5 +1,6 @@
-# Copyright (c) Ivan Marti-Vidal 2012-2018 
+# Copyright (c) Ivan Marti-Vidal 2012-2020 
 #               EU ALMA Regional Center. Nordic node.
+#               Observatori Astronomic, Universitat de Valencia
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,8 +48,10 @@
 #
 #
 
-__version__ = "1.7.9"
-date = 'Sep 28 2020'     
+from __future__ import absolute_import
+from __future__ import print_function
+__version__ = "1.8.1"
+date = 'Feb 09 2021'     
 
 
 ################
@@ -64,13 +67,13 @@ try:
 # sys.path.append(mypath)
  import _PolConvert as PC
  goodclib = True
- print '\nC++ shared library loaded successfully\n'
+ print('\nC++ shared library loaded successfully (first try)\n')
 except:
  goodclib=False
- print '\n There has been an error related to the numpy' 
- print ' API version used by CASA. This is related to PolConvert'
- print ' (which uses the API version of your system) and should' 
- print ' be *harmless*.\n'
+ print('\n There has been an error related to the numpy') 
+ print(' API version used by CASA. This is related to PolConvert')
+ print(' (which uses the API version of your system) and should') 
+ print(' be *harmless*.\n')
 
 #mypath = os.path.dirname(os.path.realpath('__file__'))
 #print mypath
@@ -81,9 +84,20 @@ if not goodclib:
 #   sys.path.append(mypath)
    import _PolConvert as PC
    goodclib = True
-   print '\nC++ shared library loaded successfully\n'
+   print('\nC++ shared library loaded successfully (2nd try)\n')
   except:
    goodclib=False
+   print('\nNo, the shared library did not load successfully\n')
+#############
+
+if not goodclib:
+  try:
+   import _PolConvert as PC
+   goodclib = True
+   print('\nC++ shared library loaded successfully (3rd try)\n')
+  except:
+   goodclib=False
+   print('\nNo, the shared library still did not load successfully\n')
 #############
 
 import os,sys,shutil,re
@@ -95,13 +109,27 @@ import numpy as np
 import pylab as pl
 import datetime as dt
 import sys
-from taskinit import *
 import pickle as pk
-ms = gentools(['ms'])[0]
-tb = gentools(['tb'])[0]
 
-
-
+if sys.version_info.major < 3:
+  try:
+    from taskinit import *
+    ms = gentools(['ms'])[0]
+    tb = gentools(['tb'])[0]
+  except Exception as ex:
+    print('unable to load casa tools in python2\n\n')
+    raise ex
+else:
+  try:
+    # from taskutil import *
+    from casatools import ms as ms_casa
+    from casatools import table as tb_casa
+    ms = ms_casa()
+    tb = tb_casa()
+  except Exception as ex:
+    print('unable to load casa tools in python3\n\n')
+    raise ex
+    
 
 #########################################################
 ###########################
@@ -115,25 +143,41 @@ tb = gentools(['tb'])[0]
 
 if __name__=='__main__':
 
- 
+##z not changed yet
+  print('setting up variables')
+
+  # grep name= polconvert.xml | cut -d\" -f 4 | tr \\012 ,
+  global IDI,OUTPUTIDI,DiFXinput,DiFXcalc,doIF,linAntIdx,Range,ALMAant
+  global spw,calAPP,calAPPTime,APPrefant,gains,interpolation,gainmode
+  global XYavgTime,dterms,amp_norm,XYadd,XYdel,XYratio,usePcal,swapXY
+  global swapRL,feedRotation,IDI_conjugated,plotIF,plotRange,plotAnt
+  global excludeAnts,excludeBaselines,doSolve,solint,doTest,npix,solveAmp
+  global solveMethod,calstokes,calfield
+
+  # set things that the task machinery should set 
   taskname           = "polconvert"
-  IDI                =  "bm494e-0-b1_1200.difx"
-  OUTPUTIDI          =  "1200_POLCONVERT.difx"
-  DiFXinput          =  "bm494e-0-b1_1200.input"
-  DiFXcalc           =  "bm494e-0-b1_1200.calc"
-  doIF               =  [35, 36, 37, 38]
+  IDI                =  "no-such-dir.difx"
+  OUTPUTIDI          =  "no-such-dir.difx"
+  DiFXinput          =  "no-such-file.input"
+  DiFXcalc           =  "no-such-file.calc"
+  doIF               =  [6660,6661]
   linAntIdx          =  [1]
   Range              =  []
-  ALMAant            =  "APP_DERIVERABLES/SPECLINE_0.concatenated.ms.ANTENNA"
+  ALMAant            =  "no-such-dir/label.concatenated.ms.ANTENNA"
   spw                =  0
-  calAPP             =  "APP_DERIVERABLES/SPECLINE_0.concatenated.ms.calappphase"
+  calAPP             =  "no-such-dir/label.concatenated.ms.calappphase"
   calAPPTime         =  [0.0, 5.0]
   APPrefant          =  ""
-  gains              =  [['APP_DERIVERABLES/SPECLINE_0.concatenated.ms.bandpass-zphs', 'APP_DERIVERABLES/SPECLINE_0.concatenated.ms.flux_inf.APP', 'APP_DERIVERABLES/SPECLINE_0.concatenated.ms.phase_int.APP.XYsmooth', 'APP_DERIVERABLES/SPECLINE_0.calibrated.ms.XY0.APP', 'APP_DERIVERABLES/SPECLINE_0.calibrated.ms.Gxyamp.ALMA']]
+  gains              =  [[
+    'no-such-dir/label.concatenated.ms.bandpass-zphs',
+    'no-such-dir/label.concatenated.ms.flux_inf.APP',
+    'no-such-dir/label.concatenated.ms.phase_int.APP.XYsmooth',
+    'no-such-dir/label.calibrated.ms.XY0.APP',
+    'no-such-dir/label.calibrated.ms.Gxyamp.ALMA']]
   interpolation      =  []
   gainmode           =  [['G', 'T', 'G', 'G', 'G']]
   XYavgTime          =  0.0
-  dterms             =  ['APP_DERIVERABLES/SPECLINE_0.calibrated.ms.Df0gen.ALMA']
+  dterms             =  ['no-such-dir/label.calibrated.ms.Df0gen.ALMA']
   amp_norm           =  0.03
   XYadd              =  {}
   XYdel              =  {}
@@ -147,6 +191,7 @@ if __name__=='__main__':
   plotRange          =  [0, 0, 0, 0, 2, 0, 0, 0]
   plotAnt            =  2
   excludeAnts        =  []
+  excludeBaselines   =  []
   doSolve            =  -1
   solint             =  [1, 1]
   doTest             =  True
@@ -156,6 +201,20 @@ if __name__=='__main__':
   calstokes          =  [1.0, 0.0, 0.0, 0.0]
   calfield           =  -1
 
+  try:
+    # rename polconvert.last to polconvert.test to use it
+    pctest = open('polconvert.test')
+    changes = pctest.readlines()
+    pctest.close()
+    exec('\n'.join(changes))
+    print('updated defaults from polconvert.test')
+  except Exception as ex:
+    print('you cannot run this stand-alone without a polconvert.test\n' +
+          'file that re-assigns the variables.  You can use a previous\n' +
+          'polconvert.last if you copy/rename it to polconvert.test\n')
+    raise ex
+
+##z no changes above, yet
 
 #
 #
@@ -168,41 +227,48 @@ if __name__=='__main__':
 
 
 ############################################
-# COMMENT OUT THIS LINE WHEN DEBUGGING
-# YOU SHALL THEN RUN THIS FILE WITH "execfile(...)"
+# COMMENT OUT THIS LINE WHEN DEBUGGING IN CASA:
+#  YOU CAN THEN RUN THIS FILE DIRECTLY WITH "execfile(...)"
 
-def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMAant, spw, calAPP, calAPPTime, APPrefant, gains, interpolation, gainmode, XYavgTime, dterms, amp_norm, XYadd, XYdel, XYratio, usePcal, swapXY, swapRL, feedRotation, IDI_conjugated, plotIF, plotRange, plotAnt,excludeAnts,excludeBaselines,doSolve,solint,doTest,npix,solveAmp,solveMethod, calstokes, calfield):
-
+def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
+  Range, ALMAant, spw, calAPP, calAPPTime, APPrefant, gains,
+  interpolation, gainmode, XYavgTime, dterms, amp_norm, XYadd, XYdel,
+  XYratio, usePcal, swapXY, swapRL, feedRotation, IDI_conjugated, plotIF,
+  plotRange, plotAnt,excludeAnts,excludeBaselines,doSolve,solint,doTest,
+  npix,solveAmp,solveMethod, calstokes, calfield):
 
 ############################################
 
-
-  DEBUG = False
-
+  # this turns into the verbosity argument of _PolConvert.so
+  print('Entered task_polconvert::polconvert()')
+  DEBUG = False # or True
+  if 'POLCONVERTDEBUG' in os.environ:
+    if os.environ['POLCONVERTDEBUG'] == 'True': DEBUG = True
+    else:                                       DEBUG = False
+  print('DEBUG setting is ' + str(DEBUG))
+  print('__name__ is ' + __name__)
 
 # Auxiliary function: print error and raise exception:
   def printError(msg):
-    print msg,'\n' 
-    casalog.post('PolConvert: '+msg+'\n')
+    print(msg,'\n') 
+    #casalog.post('PolConvert: '+msg+'\n')
     lfile = open("PolConvert.log","a")
-    print >> lfile,'\n'+msg+'\n'
+    print('\n'+msg+'\n', file=lfile)
     lfile.close()
+    sys.stdout.flush()
     raise Exception(msg)
-
-
-
 
 # Auxiliary function: print message (terminal and log):
   def printMsg(msg, doterm=True, dolog=True):
     if doterm:
-      print msg
+      print(msg)
     if dolog:
-      casalog.post('PolConvert: '+msg)
+      #casalog.post('PolConvert: '+msg)
       lfile = open("PolConvert.log","a")
-      print >> lfile,'\n'+msg+'\n'
+      #print('\n'+msg+'\n', file=lfile)
+      print(msg, file=lfile)
+      sys.stdout.flush()
       lfile.close()
-
-
 
 
 # Auxiliary function: Geometric Median of a complex number:
@@ -246,7 +312,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       if IANT>=0:
         allAnts = [IANT]
       else:
-        allAnts = range(len(GallAnts))
+        allAnts = list(range(len(GallAnts)))
 
       tb.open('%s.XYsmooth.PolConvert'%GAINTABLE,nomodify=False)
       Gtimes = tb.getcol('TIME')
@@ -303,7 +369,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   # Update the table:
     tb.putcol('CPARAM',Ggains) 
     tb.close()         
-    print '\nDONE!\n\n' 
+    print('\nDONE!\n\n') 
 
 
 
@@ -489,7 +555,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      if check:
        pl.figure()
        pl.plot(180./np.pi*phases)
-       pl.show()
+    #  pl.show()
     #   raw_input('CHECK')
 
 
@@ -506,7 +572,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      if check:
        pl.figure()
        pl.plot(180./np.pi*phases[:,0])
-       pl.show()
+    #  pl.show()
     #   raw_input('CHECK')
 
 
@@ -535,7 +601,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     if len(time0)==0:
       printMsg('WARNING! NO APPCAL DATA FOR %s\n'%asd)
     else:
-      print '\n\nMEAS SET %s:'%asd
+      print('\n\nMEAS SET %s:'%asd)
       tmin = np.min(time0)/86400.
       tmax = np.max(time1)/86400.
     mstmin = np.min(mstime)/86400.
@@ -551,23 +617,27 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   tic = time.time()
 
 
-
-  greetings  =   ' ##########################################################################\n'
-  greetings +=   ' # POLCONVERT --  '+date+'. EUROPEAN ALMA REGIONAL CENTER (NORDIC NODE).  #\n'
-  greetings +=   ' #       Please, add the POLCONVERT reference to your publications:       #\n'
-  greetings +=   ' #                                                                        #\n'
-  greetings +=   ' #          Marti-Vidal, Roy, Conway & Zensus 2016, A&A, 587, 143         #\n'
-  greetings +=   ' #                                                                        #\n'
-  greetings +=   ' ##########################################################################\n\n'
-
-
+  greet  = '''
+##########################################################################
+# POLCONVERT -- version.                                                 #
+#       Please, add the POLCONVERT reference to your publications:       #
+#                                                                        #
+#          Marti-Vidal, Roy, Conway & Zensus 2016, A&A, 587, 143         #
+#                                                                        #
+##########################################################################
+'''
+  greetings = re.sub('version', __version__ + '  ', greet)
   printMsg(greetings,dolog=False)
-  printMsg('\n\nPOLCONVERT - VERSION %s  - Nordic ARC Node'%__version__, doterm=False)
+  printMsg('\n\nPOLCONVERT - VERSION %s'%__version__, doterm=False)
 
 
 #########################################
 # DO SOME SANITY CHECKS OF PARAMETERS
   
+  try:
+    doSolve = float(doSolve)
+  except:
+    printError("ERROR! doSolve should be a float!")
 
   allMethods = ['gradient','Levenberg-Marquardt','COBYLA','Nelder-Mead']
   scipyMethods = ['COBYLA','Nelder-Mead']
@@ -577,15 +647,18 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
   if type(calstokes) is not list:
     printError("ERROR! Wrong calstokes!")
-  elif len(calstokes)!=4:
-    printError("ERROR! calstokes should have 4 elements!")
+  elif len(calstokes)!=4 and doSolve >= 0 :
+    printError("ERROR! calstokes should have 4 elements, not %d (%s)!" % (
+        len(calstokes), str(calstokes)))
   for item in calstokes:
     if type(item) is not float:
-      printError("ERROR! calstokes should only have float elements!")
+      printError("ERROR! calstokes should have float elements; got %s!" %
+        str(type(item)))
 
   Stokes = list(calstokes)
 
-  if Stokes[0]<=0. or Stokes[0]<np.sqrt(Stokes[1]**2.+Stokes[2]**2.+Stokes[3]**2.):
+  if doSolve >=0 and (Stokes[0]<=0. or
+      Stokes[0]<np.sqrt(Stokes[1]**2.+Stokes[2]**2.+Stokes[3]**2.)):
       printError("ERROR! Inconsistent Stokes parameters!")
 
 # Will implement solveQU soon!
@@ -610,11 +683,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   if type(swapRL) is not bool:
     printError("ERROR! swapRL should be a boolean!")
 
-  try:
-    doSolve = float(doSolve)
-  except:
-    printError("ERROR! doSolve should be a float!")
-
   if type(doIF) is not list:
     printError("ERROR! doIF should be a list of integers!")
   else:
@@ -638,13 +706,15 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
   if type(solint) is not list or (len(solint) not in [2,3]):
-    printError("ERROR! solint must be a list of two/three numbers!")
+    printError("ERROR! solint (%s) must be a list of two/three numbers!" %
+        str(solint))
   else:
     try:
       solint[0] = int(solint[0])
       solint[1] = int(solint[1])
     except:
-      printError("ERROR! solint must be a list of two/three numbers!")
+      printError("ERROR! solint (%s) must be a list of two/three numbers!" %
+        str(solint))
 
   if len(solint)==3:
     solint[2] = float(solint[2])
@@ -670,7 +740,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     printError("ERROR! either both or none of calAPP and ALMAant need to be set!")
 
   if c0:
-    printMsg("WARNING: calAPP and ALMAant are not set.\nALMA DID NOT SEEM TO BE USED, ACCORDING TO USER\n\n")
+    printMsg("WARNING: calAPP and ALMAant are not set.")
+    printMsg("ALMA CAL TABLES DO NOT SEEM TO BE USED, ACCORDING TO USER.")
+    printMsg("This is not a problem in some cases...(isPhase now False).")
     isPhased=False
   else:
     if not os.path.exists(calAPP) or not os.path.exists(ALMAant):
@@ -684,15 +756,21 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     printError("ERROR! OUTPUTIDI should be a string!")
 
   if type(plotIF) is int:
-    plotIF = [plotIF]
+##z
+#   plotIF = [plotIF]
+    if plotIF >0:
+      plotIF = [plotIF]
+    else:
+      plotIF = []
   for pli in plotIF:
     if type(pli) is not int:
       printError("ERROR! plotIF should be an integer or a list of integers!")
 
-  try:
-    plotAnt = int(plotAnt)
-  except:
-    printError("ERROR! plotAnt should be an integer!")
+##z
+# try:
+#   plotAnt = int(plotAnt)
+# except:
+#   printError("ERROR! plotAnt should be an integer!")
 
 
   try:
@@ -789,7 +867,14 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   else:
     for pi in usePcal:
       if type(pi) is not bool:
-        printError("Invalid format for usePcal! Should be a list of booleans!\n")
+        printError("Invalid format for usePcal! " +
+            "It should be a list of booleans!\n")
+  if len(np.where(usePcal)[0]) > 0:
+    isPcalUsed = True
+    printMsg("Info: Pcal used in %s" % str(np.where(usePcal)[0])) 
+  else:
+    isPcalUsed = False
+    printMsg("Info: Pcal is not in use")
 
 
   if len(swapXY) != nALMA:
@@ -820,9 +905,13 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   except:
     printError("Bad format for calAPPTime. Should be a list of 2 floats!")
 
+##z
+# if plotAnt in linAntIdx:
+#   printMsg("WARNING: Plotting will involve autocorrelations. \nThis has not been fully tested!") 
 
-  if plotAnt in linAntIdx:
-    printMsg("WARNING: Plotting will involve autocorrelations. \nThis has not been fully tested!") 
+  printMsg("XYadd is %s"%str(XYadd))
+  printMsg("XYdel is %s"%str(XYdel))
+  printMsg("XYratio is %s"%str(XYratio))
 
 #########################################
 
@@ -902,7 +991,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     printError('ERROR: NO VALID ANTENNA TABLE FOUND!')
 
    allants = list(tb.getcol('NAME'))
-   allantidx = range(len(allants))
+   allantidx = list(range(len(allants)))
    tb.close()
 
    refants = np.array([allants.index(phants[t][refs[t]]) for t in range(len(phants))])
@@ -941,7 +1030,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     isSWIN = True
     printMsg('\n\nYou have asked to convert a set of SWIN files.')
     if len(DiFXinput)==0 or not os.path.exists(DiFXinput) or not os.path.isfile(DiFXinput):
-      printError("Invalid DiFX input file!")
+      printError("Invalid DiFX input file! %s"%DiFXinput)
     printMsg('Opening calc file... %s' % DiFXcalc)
     try:
       printMsg('Opening "%s"' % (DiFXcalc))
@@ -955,7 +1044,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
           antcodes.append(line.split()[-1])
         if 'TELESCOPE' in line and 'X (m):' in line:
     #      printMsg(line.rstrip())
-          antcoords.append(map(float,[ll.split()[-1] for ll in lines[ii:ii+3]]))
+          antcoords.append(list(map(float,[ll.split()[-1] for ll in lines[ii:ii+3]])))
           printMsg('TELESCOPE %s AT X: %.3f ; Y: %.3f ; Z: %.3f'%tuple([antcodes[-1]] + antcoords[-1]))
 # CURRENTLY, ONLY ALTAZ MOUNTS SUPPORTED FOR SWIN FILES:
           antmounts.append(0)
@@ -970,7 +1059,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       soucoords[0] = np.array(soucoords[0],dtype=np.float)
       soucoords[1] = np.array(soucoords[1],dtype=np.float)
       printMsg('done parsing calc')
-    except:
+    except Exception as ex:
+      printMsg(str(ex))
       printMsg(("WARNING! Invalid DiFX calc file '%s'!\n" + 
         "PolConvert may not calibrate properly.") % DiFXcalc)
     if len(antmounts)==0:
@@ -980,7 +1070,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   elif os.path.isfile(IDI):
     isSWIN = False
     printMsg('\n\nYou have asked to convert a FITS-IDI file.')
-    print 'Reading array geometry...'
+    print('Reading array geometry...')
     try:
       import pyfits as pf
       ffile = pf.open(IDI)
@@ -1002,6 +1092,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       if decappUnit=='DEGREES':
         soucoords[1] *= np.pi/180.
 
+##z
+      antcodes = [ff[:2] for ff in ffile['ANTENNA'].data['ANNAME']]
       ffile.close()
 
 # THESE LINES FAIL IF ORBPARM IS PRESENT IN ARRAY GEOMETRY!
@@ -1015,7 +1107,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       else:
         antcoords = gA.getCoords()
         antmounts = gA.getMounts()
-        antcodes = ['%02i'%i for i in range(1,len(antmounts)+1)]
+##z #   antcodes = ['%02i'%i for i in range(1,len(antmounts)+1)]
     except:
       printMsg('WARNING! This FITS-IDI file has missing information!\nPolConvert may not calibrate properly.')
   else:
@@ -1024,6 +1116,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
 ######
+
+
 
 
 ######
@@ -1048,9 +1142,11 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 # ONLY ONE FREQ TABLE IS ALLOWED:
     try:
       fr = FreqL[0]
-      Nfreq = int((filter(lambda x: 'FREQ ENTRIES' in x, inputlines[fr+1:])[0]).split()[-1])
-      Nr = range(Nfreq)
-    except:
+      Nfreq = int(list(filter(
+        lambda x: 'FREQ ENTRIES' in x, inputlines[fr+1:]))[0].split()[-1])
+      Nr = list(range(Nfreq))
+    except Exception as ex:
+      printMsg(str(ex))
       printError("BAD input file!")
 
     FrInfo = {'FREQ (MHZ)':[0. for i in Nr], 'BW (MHZ)':[0. for i in Nr], 
@@ -1068,7 +1164,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 # SORT OUT THE CHANNEL FREQUENCIES:
 
     if len(doIF)==0:
-      doIF = range(1,len(Nr)+1)
+      doIF = list(range(1,len(Nr)+1))
 
     metadata = []
     IFchan = 0
@@ -1082,7 +1178,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
         IFchan = max([IFchan,int(nchan/chav)])
       sb = {True: 1.0 , False: -1.0}[FrInfo['SIDEBAND'][nu] == 'U']
       FrInfo['SIGN'][nu] = float(sb)
-      freqs = (nu0 + np.linspace((sb-1.)/2.,(sb+1.)/2.,nchan/chav,endpoint=False)*bw)*1.e6
+      if float(nchan//chav) != nchan/chav:
+        printMsg("linspace check chan: %d / %d = %f" %
+            (nchan, chav, nchan/chav))
+      freqs = (nu0 + np.linspace((sb-1.)/2.,(sb+1.)/2.,
+        nchan//chav,    # should be exactly divisible
+        endpoint=False)*bw)*1.e6
       metadata.append(freqs)
 
 
@@ -1091,6 +1192,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
  
 
   else:
+
 # READ FREQUENCY INFO TO HELP SELECTING THE SPW AUTOMATICALLY:
     import pyfits as pf
     fitsf = pf.open(IDI)
@@ -1100,17 +1202,35 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     IFchan = nch
     Nr = fitsf['FREQUENCY'].header['NO_BAND']
     sgn = {True:1.0,False:-1.0}[bw>0.0]
-    FrInfo = {'FREQ (MHZ)':[nu0/1.e6], 'BW (MHZ)':[bw*nch/1.e6], 'SIGN':[sgn]}
+##z
+##z FrInfo = {'FREQ (MHZ)':[nu0/1.e6], 'BW (MHZ)':[bw*nch/1.e6], 'SIGN':[sgn]}
+    FrInfo = {'FREQ (MHZ)':[], 'BW (MHZ)':[], 'SIGN':[], 'NUM CHANNELS':[]}
+    if sgn:
+      FrInfo['SIDEBAND'] = ['U' for i in range(Nr)]
+    else:
+      FrInfo['SIDEBAND'] = ['L' for i in range(Nr)]
+
+    metadata = []
+##z
     for i in range(Nr):
-      FrInfo['FREQ (MHZ)'] += [(nu0 + bw*nch/1.e6)/1.e6]
+##z   FrInfo['FREQ (MHZ)'] += [(nu0 + bw*nch/1.e6)/1.e6]
+      FrInfo['FREQ (MHZ)'] += [(nu0 + i*bw*nch)/1.e6]
       FrInfo['BW (MHZ)'] += [bw*nch/1.e6]
       FrInfo['SIGN'] += [sgn]
       FrInfo['NUM CHANNELS'] += [int(nch)]
+      freqs = nu0 + np.linspace((sgn-1.)/2.,(sgn+1.)/2.,nch,endpoint=False)*bw
+      metadata.append(freqs)
+
+    FrInfo['CHANS TO AVG'] = [1 for i in range(Nr)]
+    FrInfo['OVERSAMPLE FAC.'] = [1 for i in range(Nr)]
+    FrInfo['DECIMATION FAC.']=[1 for i in range(Nr)]
+
 
     if len(doIF)==0:
-     doIF = range(1,1+fitsf['FREQUENCY'].header['NO_BAND'])
+     doIF = list(range(1,1+fitsf['FREQUENCY'].header['NO_BAND']))
 
     fitsf.close()
+
 
 
 
@@ -1120,13 +1240,42 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   calAnts = []
   for exA in antcodes:
     if exA not in excludeAnts:
-      calAnts.append(antcodes.index(exA)+1) ### = [i+1 for i in range(len(antcoords)) if i+1 not in excludeAnts]
+##z   #print exA, excludeAnts, exA in excludeAnts
+      calAnts.append(antcodes.index(exA)+1)
+      ### = [i+1 for i in range(len(antcoords)) if i+1 not in excludeAnts]
+    else:
+      printMsg("Excluding antenna %s"%str(exA))
+
+##z following section
+  try:
+    plotAnt = int(plotAnt)
+  except:
+    if plotAnt not in antcodes:
+      printError("Reference antenna %s is not found in metadata!"%str(plotAnt))
+    else:
+      plotAnt = antcodes.index(plotAnt)+1
+
+  for i in range(len(linAntIdx)):
+    try:
+      linAntIdx[i] = int(linAntIdx[i])
+    except:
+      if linAntIdx[i] not in antcodes:
+        linAntIdx[i] = antcodes.index(linAntIdx[i])+1
+
+
+  if plotAnt in linAntIdx:
+    printMsg(
+        "WARNING: Plotting will involve autocorrelations. \nThis has not been fully tested!")
+
+
+
 
 
   FlagBas1 = []
   FlagBas2 = []
   for fbi in excludeBaselines:
-    print fbi, antcodes
+##z # print(fbi, antcodes)
+    printMsg("Excluding baseline %s"%str(fbi))
     if fbi[0] in antcodes and fbi[1] in antcodes:
       FlagBas1.append(antcodes.index(fbi[0])+1) ### = np.array([int(i[0]+1) for i in excludeBaselines])
       FlagBas2.append(antcodes.index(fbi[1])+1) ### = np.array([int(i[1]+1) for i in excludeBaselines])
@@ -1151,7 +1300,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     printError("feedRotation must have %i entries!"%nTotAnt)
   else:
     feedRot = np.pi/180.*np.array(feedRotation, dtype=np.float)  
-
 
 
 
@@ -1203,12 +1351,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
         nu0 = FrInfo['FREQ (MHZ)'][nu-1]
         nu1 = FrInfo['FREQ (MHZ)'][nu-1] + FrInfo['BW (MHZ)'][nu-1]*FrInfo['SIGN'][nu-1]
         nus = [np.min([nu0,nu1]),np.max([nu0,nu1])]
-        print nu, ':', nurange[spwi][0], '<', nus[0], nus[1], '<', nurange[spwi][1],
+        print(nu, ':', nurange[spwi][0], '<', nus[0], nus[1], '<', nurange[spwi][1], end=' ')
         if (nurange[spwi][0] - slop) < nus[0] and nus[1] < (nurange[spwi][1] + slop):
           spwsel[nui] = spwi
-          print ' pass'
+          print(' pass')
         else:
-          print ' fail'
+          print(' fail')
        except:
         printMsg("WARNING! spw %i is NOT in SWIN file! Will skip it!"%nu)
         spwsel[nui] = -2
@@ -1224,7 +1372,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
             "Problematic IFs are:  %s"%(','.join(errmsg)))
 
          doIF = [doIF[i] for i in range(len(doIF)) if i in list(np.where(spwsel>=0)[0])]
-         printMsg('\n\n  NEW LIST OF IFs: '+','.join(map(str,doIF)))
+         printMsg('\n\n  NEW LIST OF IFs: '+','.join(list(map(str,doIF))))
 
     spwsel = list(set(spwsel[spwsel>=0]))
     if len(spwsel)>1:
@@ -1273,7 +1421,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     if doant in XYdel.keys():
       if type(XYdel[doant]) is list:
         try:
-          XYdelF[i] = map(float,XYdel[doant]) #float(XYdel[i]*np.pi/180.)
+          XYdelF[i] = list(map(float,XYdel[doant])) #float(XYdel[i]*np.pi/180.)
         except:
           printError("Invalid format for XYdel!\n Should be a dictionary with LISTS of numbers!")
       else:
@@ -1291,12 +1439,23 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   for i in range(nALMATrue):
     for j in doIF: # range(len(FrInfo['SIGN'])):
       sgn = FrInfo['SIGN'][j-1]
+      if (float(FrInfo['NUM CHANNELS'][j-1]//FrInfo['CHANS TO AVG'][j-1]) !=
+          FrInfo['NUM CHANNELS'][j-1]/FrInfo['CHANS TO AVG'][j-1]):
+            printMsg("linspace check freq: %d / %d = %f" % (
+              FrInfo['NUM CHANNELS'][j-1],FrInfo['CHANS TO AVG'][j-1],
+              FrInfo['NUM CHANNELS'][j-1]/FrInfo['CHANS TO AVG'][j-1]))
       if isSWIN:
-        NuChan = np.linspace((sgn-1.)/2.,(sgn+1.)/2.,FrInfo['NUM CHANNELS'][j-1]/FrInfo['CHANS TO AVG'][j-1],endpoint=False)
+        NuChan = np.linspace((sgn-1.)/2.,(sgn+1.)/2.,
+            FrInfo['NUM CHANNELS'][j-1]//FrInfo['CHANS TO AVG'][j-1],
+            endpoint=False)
       else:
-        NuChan = np.linspace(0.,sgn,FrInfo['NUM CHANNELS'][j-1]/FrInfo['CHANS TO AVG'][j-1],endpoint=False)
+        NuChan = np.linspace(0.,sgn,
+            FrInfo['NUM CHANNELS'][j-1]//FrInfo['CHANS TO AVG'][j-1],
+            endpoint=False)
 
-      Nus = 1.e6*np.array(FrInfo['FREQ (MHZ)'][j-1] + FrInfo['BW (MHZ)'][j-1]*NuChan,dtype=np.float)
+      Nus = 1.e6*np.array(
+        FrInfo['FREQ (MHZ)'][j-1] + FrInfo['BW (MHZ)'][j-1]*NuChan,
+            dtype=np.float)
       XYaddF[i].append(2.*np.pi*(Nus-XYdelF[i][1])*XYdelF[i][0])
 
 
@@ -1312,10 +1471,14 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   XYratioF = [[] for i in range(nALMATrue)]
   for i in range(nALMATrue):
     for j in doIF:
-      XYratioF[i].append(np.ones(FrInfo['NUM CHANNELS'][j-1]/FrInfo['CHANS TO AVG'][j-1],dtype=np.float))
-
-
-
+      if (float(FrInfo['NUM CHANNELS'][j-1]//FrInfo['CHANS TO AVG'][j-1]) !=
+          FrInfo['NUM CHANNELS'][j-1]/FrInfo['CHANS TO AVG'][j-1]):
+            printMsg("linspace check freq: %d / %d = %f" % (
+              FrInfo['NUM CHANNELS'][j-1],FrInfo['CHANS TO AVG'][j-1],
+              FrInfo['NUM CHANNELS'][j-1]/FrInfo['CHANS TO AVG'][j-1]))
+      XYratioF[i].append(np.ones(
+        FrInfo['NUM CHANNELS'][j-1]//FrInfo['CHANS TO AVG'][j-1],
+        dtype=np.float))
 
 
 
@@ -1332,6 +1495,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      if len(plotIF)==0: plotIF = list(doIF)
    except:
      printError("Bad time range format for plotRange!")
+
 
   if len(Range) == 0:
     Ran = np.array([0.,1.e20])
@@ -1352,6 +1516,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     os.system('rm -rf %s'%OUTPUTIDI)
     os.system('cp -rf %s %s'%(IDI,OUTPUTIDI))
   elif not os.path.exists(OUTPUTIDI):
+    printMsg('Copying IDI to OUTPUTIDI!\n')
     os.system('cp -rf %s %s'%(IDI,OUTPUTIDI))
 #     
 #######
@@ -1372,7 +1537,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     mjd = np.zeros(len(OUTPUT))
     mjs = np.zeros(len(OUTPUT))
     for i,fi in enumerate(OUTPUT):
-      mjd[i],mjs[i] = map(float,((os.path.basename(fi)).split('.')[0]).split('_')[1:3])
+      mjd[i],mjs[i] = list(map(float,((os.path.basename(fi)).split('.')[0]).split('_')[1:3]))
     mjd0 = np.min(mjd)
     mjp = Ran + mjd0
     metadata.append(mjd0)
@@ -1393,10 +1558,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
   if type(XYadd) is not dict: # or len(XYadd.keys) != nALMA:
     printError("Invalid format for XYadd!\n") # Should be a list as large as the number of linear-polarization VLBI stations!\nThe elements of that list shall be either numbers or lists as large as the number of IFs")
+  printMsg('keys of XYadd:' + str(XYadd.keys()))
 
 
-  import _XPCal as XP
-  import scipy.interpolate as spint
+  if isPcalUsed:
+      import _XPCal as XP
+      import scipy.interpolate as spint
 
 
   for i,doant in enumerate(linAntNamTrue):
@@ -1406,6 +1573,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 #### CORRECTIONS BASED ON PHASECAL TONES:
 
     if usePcal[i]:
+        printMsg("Using Pcal for %d" % i)
         PCFile = filter(lambda x: x.endswith(doant),PHASECALS)
         if len(PCFile)==0:
           printError("\n\n SANITY-TEST FAILURE! NO PHASECAL FILE FOR %i\n"%doant)
@@ -1450,6 +1618,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
     else:
         
+      #printMsg("Processing XYadd for %d,%d" % (i,doant))
+      printMsg("Processing XYadd for %d,%s" % (i,doant))
       if type(XYadd[doant]) is list:
         for j in range(len(XYadd[doant])):
          if type(XYadd[doant][j]) in [list,np.ndarray]:
@@ -1479,6 +1649,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   
   
   
+  printMsg('keys of XYratio: ' + str(XYratio.keys()))
   for i,doant in enumerate(linAntNamTrue):
 
     try:  
@@ -1488,6 +1659,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
       else:
           
+        #printMsg("Processing XYratio for %d,%d" % (i,doant))
+        printMsg("Processing XYratio for %d,%s" % (i,doant))
         if type(XYratio[doant]) not in [list,np.ndarray]:
 
           if float(XYratio[doant]) < 0.0:
@@ -1607,7 +1780,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     success = tb.open(os.path.join(dterms[i],'ANTENNA'))
     tabants = tb.getcol('NAME')
     tb.close()
-    print 'Reading ',dterms[i]
+    print('Reading ',dterms[i])
     tb.open(dterms[i])
     spmask = tb.getcol('SPECTRAL_WINDOW_ID')==int(spw)
     data = []
@@ -1668,7 +1841,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
   
    for j,gain in enumerate(gains[i]):
      gaindata[-1].append([])
-     print 'Reading ',gain
+     print('Reading ',gain)
      isLinear[-1][j] = interpolation[i][j]=='linear'
      if gain=="NONE":
       nchan = 1
@@ -1833,32 +2006,54 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
   if DEBUG:
-    PC_Params = [nALMATrue, doIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, len(gaindata), len(dtdata), OUTPUT, linAntIdxTrue, plRan, Ran, allantidx, len(nphtimes), len(antimes), len(refants), len(asdmtimes),  doTest, doSolve, doConj, doAmpNorm, np.shape(PrioriGains), len(metadata), soucoords, antcoords, antmounts, isLinear,calfield,timerangesArr[int(spw)],UseAutoCorrs,DEBUG]
+    PC_Params = [nALMATrue, plotIF, plotAnt, len(allants), doIF,
+        swapXY, ngain, NSUM, kind, len(gaindata), len(dtdata), OUTPUT,
+        linAntIdxTrue, plRan, Ran, allantidx, len(nphtimes), len(antimes),
+        len(refants), len(asdmtimes),  doTest, doSolve, doConj, doAmpNorm,
+        np.shape(PrioriGains), len(metadata), soucoords, antcoords, antmounts,
+        isLinear,calfield,timerangesArr[int(spw)],UseAutoCorrs,DEBUG]
     printMsg("POLCONVERT CALLED WITH: %s"%str(PC_Params))
       
-
   # plotAnt is no longer used by PC.PolConvert(), but is required by doSolve
-  # the second argument is "PC:PolConvert::plIF" and controls whether the huge binary fringe files are written.
-  didit = PC.PolConvert(nALMATrue, plotIF, plotAnt, len(allants), doIF, swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT, linAntIdxTrue, plRan, Ran, allantidx, nphtimes, antimes, refants, asdmtimes,  doTest, doSolve, doConj, doAmpNorm, PrioriGains, metadata, soucoords, antcoords, antmounts, isLinear,calfield,timerangesArr[int(spw)],UseAutoCorrs,DEBUG)
+  # the second argument is "PC:PolConvert::plIF" and controls whether the
+  # huge binary fringe files are written.
+  try:
+    didit = PC.PolConvert(nALMATrue, plotIF, plotAnt, len(allants), doIF,
+        swapXY, ngain, NSUM, kind, gaindata, dtdata, OUTPUT,
+        linAntIdxTrue, plRan, Ran, allantidx, nphtimes, antimes,
+        refants, asdmtimes,  doTest, doSolve, doConj, doAmpNorm,
+        PrioriGains, metadata, soucoords, antcoords, antmounts,
+        isLinear,calfield,timerangesArr[int(spw)],UseAutoCorrs,DEBUG)
+  except Exception as ex:
+    printMsg(str(ex))
+    printMsg("Continuing despite the exception, just for the fun of it")
+    didit = 0
 
   printMsg("\n###\n### Done with PolConvert (status %d).\n###" % (didit))
 
+##z # raw_input('HOLD')
 
   if didit != 0:
     printError("\n\n ERROR IN POLCONVERT!\n\n")
 
 # GENERATE ANTAB FILE(s):
 
-  DPFU = float(amp_norm)
-
   if doAmpNorm:
     printMsg('Generating ANTAB file(s).')
+    DPFU = float(amp_norm)
+    printMsg("DPFU(amp_norm) is %f\n" % DPFU)
+
     try:
       gfile = open("POLCONVERT.GAINS")
     except:
       printError("No gain file written!")
 
     entries = [l.split() for l in gfile.readlines()]; gfile.close()
+    if entries == 0:
+      printMsg("Gain file is empty!  ANTAB will be as well.")
+    else:
+      printMsg("Gain file had %d entries" % len(entries))
+
     IFs = np.zeros(len(entries),dtype=np.int)
     Data = np.zeros((len(entries),2))
     AntIdx = np.zeros(len(entries),dtype=np.int)
@@ -1866,7 +2061,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     for i,entry in enumerate(entries):
       IFs[i] = int(entry[0])
       AntIdx[i] = int(entry[1])
-      Data[i,:] = map(float,entry[2:])
+      Data[i,:] = list(map(float,entry[2:]))
 
     Times = np.unique(Data[:,0])
     Tsys = np.zeros((len(Times),len(doIF)+1))
@@ -1880,12 +2075,13 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
         Tsys[itime,ii+1] = datum[1]*DPFU
 
      outf = open("POLCONVERT_STATION_%s.ANTAB"%jnam,"w")
-     print >> outf,"GAIN AA  ELEV DPFU=%.3f   FREQ=10,100000"%DPFU
-     print >> outf,"POLY=1.0000E+00"
-     print >> outf,"/"
-     print >> outf,"TSYS AA  FT=1.0  TIMEOFF=0"
-     print >> outf,"INDEX= "+', '.join(['\'L%i|R%i\''%(i+1,i+1) for i in range(len(doIF))])
-     print >> outf,"/"
+     print("GAIN AA  ELEV DPFU=%.3f   FREQ=10,100000"%DPFU, file=outf)
+     print("POLY=1.0000E+00", file=outf)
+     print("/", file=outf)
+     print("TSYS AA  FT=1.0  TIMEOFF=0", file=outf)
+     print("INDEX= "+', '.join(
+        ['\'L%i|R%i\''%(i+1,i+1) for i in range(len(doIF))]), file=outf)
+     print("/", file=outf)
      fmt0 = "%i %i:%2.4f  "
      # boost field width to retain significant figures
      fmt1 = "%10.4f  "*len(doIF)
@@ -1893,22 +2089,25 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      for entry in Tsys:
        MJD2000 = 51544
        Tfr,Tin = np.modf(entry[0])
-       tobs = (dt.date(2000,1,1) + dt.timedelta(Tin-MJD2000)).timetuple().tm_yday
+       tobs = (dt.date(2000,1,1) +
+        dt.timedelta(Tin-MJD2000)).timetuple().tm_yday
        minute,hour = np.modf(Tfr*24.)
        minute *= 60.
        currT = fmt0%(tobs,hour,minute)
        if currT != prevT:  # Limited time resolution in ANTAB
          prevT = currT
-         print >> outf, currT + fmt1%tuple(entry[1:])
-     print >> outf, "/"
+         print(currT + fmt1%tuple(entry[1:]), file=outf)
+     print("/", file=outf)
      outf.close()
+    printMsg('Finished with ANTAB file(s).')
 
 
 
 
   tac = time.time()
 
-  printMsg('PolConvert took %.1f seconds.'%(tac-tic))
+  printMsg('PolConvert took %.1f seconds.\n\n'%(tac-tic))
+
 
 
 
@@ -1974,13 +2173,13 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
    try: 
      import _PolGainSolve as PS
      goodclib = True
-     print '\nC++ shared library loaded successfully\n'
+     print('\nC++ shared library loaded successfully (first try)\n')
    except:
      goodclib=False
-     print '\n There has been an error related to the numpy' 
-     print ' API version used by CASA. This is related to PolConvert'
-     print ' (which uses the API version of your system) and should' 
-     print ' be *harmless*.\n'
+     print('\n There has been an error related to the numpy') 
+     print(' API version used by CASA. This is related to PolConvert')
+     print(' (which uses the API version of your system) and should') 
+     print(' be *harmless*.\n')
 
 
 
@@ -1988,7 +2187,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      try: 
        import _PolGainSolve as PS
        goodclib = True
-       print '\nC++ shared library loaded successfully\n'
+       print('\nC++ shared library loaded successfully (2nd try)\n')
      except:
        goodclib=False
 
@@ -2000,7 +2199,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
      MAXIT = maxIter*len(fitAnts)
      relchange = 1.0
-     Gchange = 1.0
+     #Gchange = 1.0
 
      i = 0
 
@@ -2025,6 +2224,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
        ptst0 = np.copy(currP)
        currChi2 = PS.GetChi2(ptst0,LMTune,Ch0,Ch1,0)
        Chi2_0 = PS.GetChi2(ptst0,-1.0,Ch0,Ch1,0)
+       sys.stdout.write('%.3g/1 '%Chi2_0) ; sys.stdout.flush()
 
        if i==0 or currChi2<minChi2:
          minChi2 = currChi2
@@ -2033,18 +2233,24 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
        i += 1
 
-       while Chi2_0>currChi2: 
-
+##z    while Chi2_0>currChi2: 
+       while Chi2_0>=currChi2:
          i += 1     
          LMTune *= KFacRaise
          ptst0 = np.copy(currP)
 
          Chi2_ini = PS.GetChi2(ptst0,LMTune,Ch0,Ch1,0)
          Chi2_0 = PS.GetChi2(ptst0,-1.0,Ch0,Ch1,0)
+         sys.stdout.write('%.3g/2 '%Chi2_0) ; sys.stdout.flush()
          if i>=MAXIT:
            break
 
-       relchange = (currChi2 - Chi2_0)/Chi2_0
+##z    relchange = (currChi2 - Chi2_0)/Chi2_0
+       if Chi2_0 >0.0:
+         relchange = (currChi2 - Chi2_0)/Chi2_0
+       else:
+         printError("\n\n  Problem in PolGainSolve.\n")         
+
 
 # No improvement:
        if currChi2<minChi2:
@@ -2069,6 +2275,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
        ptst0 = np.copy(currP)
        Chi2_ini = PS.GetChi2(ptst0,LMTune,Ch0,Ch1,0)
        Chi2_0 = PS.GetChi2(ptst0,-1.0,Ch0,Ch1,0)
+       sys.stdout.write('%.3g/3 '%Chi2_0) ; sys.stdout.flush()
 
        i += 1
 
@@ -2083,21 +2290,26 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
            ptst0 = np.copy(currP)
            Chi2_ini = PS.GetChi2(ptst0,LMTune,Ch0,Ch1,0)
            Chi2_1 = PS.GetChi2(ptst0,-1.0,Ch0,Ch1,0)
+           sys.stdout.write('%.3g/4'%Chi2_1)
 
            if Chi2_1<minChi2:
              minChi2 = Chi2_1
              minGains = np.copy(ptst0)
              currP = np.copy(ptst0)
              currChi2 = Chi2_1
+             sys.stdout.write('a')
 
            if Chi2_1<Chi2_0 and i<=MAXIT:
              Chi2_0 = Chi2_1
              ptst1[:] = ptst0
              currP = np.copy(ptst0)
              currChi2 = Chi2_1
+             sys.stdout.write('b')
            else:
              break
+           sys.stdout.write(' ') ; sys.stdout.flush()
 
+         # this is not the correct expression if the 'b' path was visited
          relchange = (currChi2 - Chi2_0)/Chi2_0
          LMTune *= KFacDecr  # Come back to state of last successful decrease
 
@@ -2105,19 +2317,24 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
            break
 
 
-
-
-     if i >= MAXIT:
-        printMsg("\n WARNING! Slow converge for cross-pol gain estimate! | Chan(s): %i-%i\n     Check the outputs!\n"%(Ch0,Ch1-1))
-        printMsg("\n    Best error: %.3e in ChSq /  %.3e in gains\n"%(np.abs(relchange),Gchange))
-
      Chi2_final = PS.GetChi2(minGains,LMTune,Ch0,Ch1,1)
 
-     FLIP = Chi2_final < 0.0  # Flip gains by 180 degrees.
-         
+##z  FLIP = Chi2_final < 0.0  # Flip gains by 180 degrees.
+     FLIP = False # Chi2_final < 0.0  # Flip gains by 180 degrees.
+
+# GBC debugging:
+     if FLIP: sys.stdout.write(' Flipped\n')
+     else:    sys.stdout.write(' NotFlip\n')
+     printMsg("    Final error: %.3e in ChSq"%(np.abs(relchange)))
+     if i >= MAXIT:
+      if np.abs(relchange)>maxErr:
+        printMsg("    WARNING! Slow cross-pol gain convergence (%d)! | Chan(s): %i-%i !"%(i,Ch0,Ch1-1))
+      else:
+        printMsg("    Warning: too many iterations (%d) why is that?"%i)
+     #printMsg("\n    Final error: %.3e in ChSq / %.3e in gains\n"%(np.abs(relchange),Gchange))
 
      return [minGains,FLIP]   
-   # end of Levenberg-Marquardt minimizer of the GCPFF problem
+   # end of Levenberg-Marquardt minimizer of the GCPFF problem   LMMin
 
 
 
@@ -2139,22 +2356,36 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
     cAnts = np.array(calAnts,dtype=np.int32)
     lAnts = np.array(linAntIdxTrue,dtype=np.int32)
-    MySolve = PS.PolGainSolve(doSolveD,solint,selAnts,lAnts,FlagBas1,FlagBas2)
+#   if (len(FlagBas1) > 0 or len(FlagBas1) > 0):
+#    printMsg("Using 5 argument method of PolGainSolve")
+     #MySolve = PS.PolGainSolve(doSolveD,solint,selAnts,lAnts,FlagBas1,FlagBas2)
+    printMsg('\n%%% initializing PolGainSolve\n')
+    MySolve = PS.PolGainSolve(doSolveD,solint,selAnts,lAnts,[FlagBas1,FlagBas2])
+    printMsg(PS.__doc__ + ('\nInitialization rv %d\n'%MySolve) + '%%%\n')
+#   else:
+#    printMsg("Using 4 argument method of PolGainSolve:")
+#    printMsg("  selAnts is " + str(selAnts))
+#    printMsg("    lAnts is " + str(lAnts))
+#    MySolve = PS.PolGainSolve(doSolveD,solint,selAnts,lAnts)
+#   printMsg('PolGainSolve finished with return: <%s>' % str(MySolve))
 
     AllFreqs = []
-    print '\n\n'
     for pli in doIF:
       printMsg("Reading back IF #%i"%pli)
       file1 = "POLCONVERT.FRINGE/OTHERS.FRINGE_%i"%pli
       file2 = "POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i"%pli
+      printMsg("  file1 is %s" % file1)
+      printMsg("  file2 is %s" % file2)
       success = PS.ReadData(pli, file1, file2)
+      printMsg("  calling GetNScan(0) (success = %d)"% success)
       NScan = PS.GetNScan(0)
       if success != 0:
         printError('Failed PolGainSolve: ERROR %i'%success)
-      AllFreqs.append(PS.GetIFs(pli))
-
+      ifsofIF = PS.GetIFs(pli)
+      AllFreqs.append(ifsofIF)
+      #AllFreqs.append(PS.GetIFs(pli))
     MaxChan = max([np.shape(pp)[0] for pp in AllFreqs])
-
+    printMsg("  length of AllFreqs is %d MaxChan %d"%(len(AllFreqs),MaxChan))
     printMsg("\nWill now estimate the residual cross-polarization gains.\n")
 
 
@@ -2177,15 +2408,17 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
        CGains['XYadd'][antcodes[ci-1]] = []
        CGains['XYratio'][antcodes[ci-1]] = []
      for plii,pli in enumerate(doIF):
+       printMsg("  working %s,%s"%(str(plii),str(pli)))
        Nchans = np.shape(AllFreqs[plii])[0]
        temp = [np.zeros(Nchans,dtype=np.complex64) for ci in fitAnts]
-       BPChan = range(0,Nchans,ChAv)
+       BPChan = list(range(0,Nchans,ChAv))
        if BPChan[-1]<Nchans-1:
          BPChan.append(Nchans-1)
        BPChan = np.array(BPChan,dtype=np.int32)
        Npar = len(fitAnts)*{True:2,False:1}[solveAmp]
        laux = [pli]
-       PS.SetFit(Npar,laux,fitAnts,solveAmp,solveQU,Stokes,useCov,feedRot)
+       rv = PS.SetFit(Npar,laux,fitAnts,solveAmp,solveQU,Stokes,useCov,feedRot)
+       printMsg("  PS.SetFit rv %d" % rv)
        for chran in range(len(BPChan)-1):
          if chran==0 and plii==0:
            p0 = []
@@ -2205,8 +2438,14 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
    #      print PS.GetChi2(pArr,-1.0,BPChan[chran],BPChan[chran+1])
    #      raw_input('HOLD\n\n')
 
+   ###
+   #H: scipyMethods are probably broken since the interface has changed.
+   ###
+
          if fitMethod not in scipyMethods:
+           sys.stdout.write('+') ; sys.stdout.flush()
            myfit,FLIP = LMMin(p0,BPChan[chran],BPChan[chran+1])
+           sys.stdout.write('.') ; sys.stdout.flush()
          else:
          #  if fitMethid == 'COBYLA':  
          #    mymin = spopt.minimize(PS.GetChi2,p0,args=(-1.0, BPChan[chran],BPChan[chran+1]),method=fitMethod,options={'rhobeg':0.01})
@@ -2217,6 +2456,10 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
        #    mymin = spopt.minimize(PS.GetChi2,p0,args=(laux,fitAnts, BPChan[chran],BPChan[chran+1],solveAmp,-1.0,useCov),method=fitMethod)
 
            myfit = mymin.values()[5]
+
+   ###
+   #T: scipyMethods are probably broken since the interface has changed.
+   ###
 
          for ci,calant in enumerate(fitAnts):
            PhasFactor = {True:np.pi, False: 0.0}[FLIP and (calant in linAntIdxTrue)]
@@ -2230,9 +2473,11 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
          CGains['XYratio'][antcodes[calant-1]].append(np.copy(1./np.abs(temp[ci])))
          CGains['XYadd'][antcodes[calant-1]].append(np.copy(-180./np.pi*np.angle(temp[ci])))
 
+       printMsg("Done with BP mode\n")
 
 # MBD MODE:
-    else:
+    else:   # not BP MODE
+      printMsg("\n Estimate antenna cross-pol gains: MBD mode\n")
       p0 = []
       for ci in fitAnts:
         if solveAmp:
@@ -2242,10 +2487,16 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       for ci in fitAnts:
         p0 += [0.0] 
       laux = list(doIF)
-      PS.SetFit(Npar,laux,fitAnts,solveAmp,solveQU,Stokes,useCov)
+      ### this line was missing:
+      Npar = len(fitAnts)*{True:2,False:1}[solveAmp]
+      ### ^^^^ line was missing,
+      ###PS.SetFit(Npar,laux,fitAnts,solveAmp,solveQU,Stokes,useCov)
+      ### wrong number of arguments
+      PS.SetFit(Npar,laux,fitAnts,solveAmp,solveQU,Stokes,useCov,feedRot)
  #     print 'First Chi2: ', PS.GetChi2(np.array(p0),-1.0,0,MaxChan-1,solveAmp,solveQU,Stokes,-1.0,False)
       if fitMethod not in scipyMethods: #=='Levenberg-Marquardt':
         myfit = LMMin(p0,0,MaxChan-1)
+        sys.stdout.write('.') ; sys.stdout.flush()
       else:
         mymin = spopt.minimize(PS.GetChi2,p0,args=(-1.0, 0,MaxChan-1,0),method=fitMethod)
         myfit = mymin.values()[5]
@@ -2265,49 +2516,68 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
         CGains['XYadd'][antcodes[calant-1]].append(np.copy(-180./np.pi*np.angle(CrossGain)))
         CGains['XYratio'][antcodes[calant-1]].append(cp.copy(1./np.abs(CrossGain)))
-    # end of if BP else MBD MODE:
+      printMsg("Done with MBD mode\n")
+    # end of if BP else MBD MODE: not BP MODE
 
+    # see what we got...
+    #print(CGains['XYadd'])
+    #print(CGains['XYratio'])
+    #print(CGains['aPrioriXYGain'])
+    print('CGains contains: ',[(k,len(CGains[k])) for k in CGains.keys()])
 
+    #if False:
+    try:    # to plot something
+      fig = pl.figure()
+      MaxG = 0.0
+      color = ['r','g','b','k','m','y','c']
+      symbol = ['o','^','x']
+      Freq2Plot = np.concatenate(AllFreqs)/1.e9
 
-    fig = pl.figure()
-    sub1 = fig.add_subplot(211)
-    MaxG = 0.0
-    color = ['r','g','b','k','m','y','c']
-    symbol = ['o','^','x']
-    Freq2Plot = np.concatenate(AllFreqs)/1.e9
-    for antii,anti in enumerate(CGains['XYadd'].keys()):
-      sub1.plot(Freq2Plot,np.concatenate([np.array(ll) for ll in CGains['XYadd'][anti]]),symbol[((antii)/len(color))%len(symbol)]+color[(antii)%len(color)],label='ANT. '+str(anti))
-    sub2 = fig.add_subplot(212,sharex=sub1)
-    for antii,anti in enumerate(CGains['XYratio'].keys()):
-      toplot = np.concatenate([np.array(ll) for ll in CGains['XYratio'][anti]])
-      MaxG = max(MaxG,np.max(toplot))
-      sub2.plot(Freq2Plot,toplot,symbol[((antii)/len(color))%len(symbol)]+color[(antii)%len(color)],label='ANT. '+str(anti))
+      printMsg('Working subplot 1')
+      sub1 = fig.add_subplot(211)
+      for antii,anti in enumerate(CGains['XYadd'].keys()):
+        printMsg('antii,anti is',antii,anti)
+        sub1.plot(Freq2Plot,np.concatenate(
+            [np.array(ll) for ll in CGains['XYadd'][anti]]),
+            symbol[((antii)//len(color))%len(symbol)]+color[(antii)%len(color)],
+            label='ANT. '+str(anti))
 
+      printMsg('Working subplot 2')
+      sub2 = fig.add_subplot(212,sharex=sub1)
+      for antii,anti in enumerate(CGains['XYratio'].keys()):
+        printMsg('antii,anti is',antii,anti)
+        toplot = np.concatenate([np.array(ll) for ll in CGains['XYratio'][anti]])
+        MaxG = max(MaxG,np.max(toplot))
+        sub2.plot(Freq2Plot,toplot,
+            symbol[((antii)//len(color))%len(symbol)]+color[(antii)%len(color)],
+            label='ANT. '+str(anti))
 
+      printMsg('Labelling and adjusting')
+      sub1.set_ylim((-180.,180.))
+      sub2.set_ylim((0.,1.1*MaxG))
+      pl.setp(sub1.get_xticklabels(),'visible',False)
+      Dnu = np.max(Freq2Plot)-np.min(Freq2Plot)
+      sub1.set_xlim((np.min(Freq2Plot) - Dnu*0.1,np.max(Freq2Plot) + Dnu*0.45))
+      sub2.set_xlim((np.min(Freq2Plot) - Dnu*0.1,np.max(Freq2Plot) + Dnu*0.45))
+      sub2.set_ylim((0.,2.5))
 
+##z   sub2.legend(numpoints=1)
+      sub1.legend(numpoints=1)
+      sub1.set_ylabel('Cross-Phase (deg.)')
+      sub2.set_ylabel('Cross-Amp (Norm.)')
+      sub2.set_xlabel('Frequency (GHz)')
 
-    sub1.set_ylim((-180.,180.))
-    sub2.set_ylim((0.,1.1*MaxG))
-    pl.setp(sub1.get_xticklabels(),'visible',False)
-    Dnu = np.max(Freq2Plot)-np.min(Freq2Plot)
-    sub1.set_xlim((np.min(Freq2Plot) - Dnu*0.1,np.max(Freq2Plot) + Dnu*0.45))
-    sub2.set_xlim((np.min(Freq2Plot) - Dnu*0.1,np.max(Freq2Plot) + Dnu*0.45))
-    sub2.set_ylim((0.,2.5))
-
-
-    sub2.legend(numpoints=1)
-    sub1.set_ylabel('Cross-Phase (deg.)')
-    sub2.set_ylabel('Cross-Amp (Norm.)')
-    sub2.set_xlabel('Frequency (GHz)')
-
-
-    fig.suptitle('CROSS-POLARIZATION GAINS')
-    pl.savefig('Cross-Gains.png')
-    pl.show()
+      fig.suptitle('CROSS-POLARIZATION GAINS')
+      pl.savefig('Cross-Gains.png')
+     #pl.show()
+    except Exception as ex:
+      printMsg('Sorry amigo, plots did not work:\n %s' % str(ex))
+    # end of try to plot something
 
     PS.FreeData()
+    printMsg("PS Data freed\n")
 
-   else:
+   else: # if goodclib
     printMsg("\n\n  doSolve can ONLY work with the source was compiled with DO_SOLVE=True\n  PLEASE, RECOMPILE!\n\n")
 
   else:  # if doSolve >= 0.0:
@@ -2372,11 +2642,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      if os.stat("POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i"%pli).st_size>10:
        GoodIFs.append(pli)
      else:
-       printMsg("WARNING! IF %i was NOT polconverted properly\n"%pli)
+       printMsg(("WARNING! IF %i was NOT polconverted properly\n"%pli) +
+         ("POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i missing"%pli))
 
+# start of GoodIFs pli loop
    for pli in GoodIFs:
-
-    print '\n\n'
+    print('\n\n')
     printMsg("Plotting selected fringe for IF #%i"%pli)
 
     frfile = open("POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i"%pli,"rb")
@@ -2385,18 +2656,22 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     alldats = frfile.read(4)
     nchPlot = stk.unpack("i",alldats[:4])[0]
     dtype = np.dtype([("JDT",np.float64),("ANT1",np.int32),("ANT2",np.int32),
-                      ("PANG1",np.float64),("PANG2",np.float64), ("MATRICES",np.complex64,12*nchPlot)])
+                      ("PANG1",np.float64),("PANG2",np.float64),
+                      ("MATRICES",np.complex64,12*nchPlot)])
 
 # There is a silly bug in Python 2.7, which generates
 # an "integer is required" error in the first try to read:
     try:
       fringe = np.fromfile(frfile,dtype=dtype)
+      printMsg("Read fringe data from file POLCONVERT.FRINGE_%i"%pli)
     except:
       fringe = np.fromfile(frfile,dtype=dtype)
-
+      printMsg("Exceptional Read of fringe data POLCONVERT.FRINGE_%i"%pli)
+      printMsg("len(fringe) = %d" % len(fringe))
     frfile.close()
 
 
+    # start of for ant1 in linAntIdx
     for ant1 in linAntIdxTrue:
 
      if pli == GoodIFs[0]:
@@ -2405,35 +2680,38 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
       fringeAmpsMix[ant1] = []
       ResidGains[ant1] = []
 
+     # start of fringe loop on ant1-ant2 baseline
      for ant2 in [plotAnt]:
 
-      AntEntry1 = np.logical_and(fringe[:]["ANT1"] == ant1,fringe[:]["ANT2"] == ant2)
-      AntEntry2 = np.logical_and(fringe[:]["ANT2"] == ant1,fringe[:]["ANT1"] == ant2)
+      AntEntry1 = np.logical_and(
+        fringe[:]["ANT1"] == ant1,fringe[:]["ANT2"] == ant2)
+      AntEntry2 = np.logical_and(
+        fringe[:]["ANT2"] == ant1,fringe[:]["ANT1"] == ant2)
       AntEntry = np.logical_or(AntEntry1,AntEntry2)
+      printMsg("np.sum(AntEntry) > 0: '" + str(np.sum(AntEntry)) + "'")
 
+      # start of np.sum(AntEntry)
       if np.sum(AntEntry)>0:
+       printMsg("Something to plot, apparently")
 
        if pli == GoodIFs[0]:
         MixedCalib[ant1][ant2] = []
 
 # This is to store all fringes with linear-feeds involved:
-
+       # if len(fringe)>0
        if nchPlot > 0 and len(fringe)>0:
-
          uncal = [(fringe[AntEntry]["MATRICES"])[:,i::12] for i in range(4)]
          cal = [(fringe[AntEntry]["MATRICES"])[:,i::12] for i in range(4,8)]
          Kmat = [(fringe[AntEntry]["MATRICES"])[:,i::12] for i in range(8,12)]
-
          rchan = np.shape(uncal[0])[0] 
 
-# Zoom for the image plots:
+# Zoom for the image plots: a square centered on nchPlot and rchan:
          ToZoom = min(rchan,nchPlot,npix)
 
-         t0 = (nchPlot - ToZoom)/2
-         t1 = (nchPlot + ToZoom)/2
-
-         Ch0 = (rchan - ToZoom)/2
-         Ch1 = (rchan + ToZoom)/2
+         t0 = (nchPlot - ToZoom)//2
+         t1 = (nchPlot + ToZoom)//2
+         Ch0 = (rchan - ToZoom)//2
+         Ch1 = (rchan + ToZoom)//2
 
 # Fringes in delay-rate space:
          if ant2==plotAnt or ant1==plotAnt:
@@ -2449,8 +2727,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 # Calibration matrix (in frequency-time space)
 
-           MAXK = max(map(np.max,map(np.abs,Kmat)))    
-           MINK = min(map(np.min,map(np.abs,Kmat)))   
+           MAXK = max(list(map(np.max,list(map(np.abs,Kmat)))))
+           MINK = min(list(map(np.min,list(map(np.abs,Kmat)))))
 
 # Peaks to scale plots:
 
@@ -2471,23 +2749,31 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
          LL = np.abs(LLVis) 
 
 # Peaks of converted fringes:
+         if DEBUG: print("fringe maximum debugging:")
          RMAX = np.unravel_index(np.argmax(RR+LL),np.shape(RRVis))
+         if DEBUG: print(' unravel_index:',RMAX)
          MAXVis = [RRVis[RMAX],RLVis[RMAX],LRVis[RMAX],LLVis[RMAX]]
-         MixedCalib[ant1][ant2].append([np.array(MM) for MM in MAXVis])
+         if DEBUG: print(' MAXVis:',MAXVis)
+         try:
+             MixedCalib[ant1][ant2].append([np.array(MM) for MM in MAXVis])
+         except Exception as ex:
+            print('  MixedCalib np exception',str(ex))
          MAXl = [RR[RMAX],RL[RMAX],LR[RMAX],LL[RMAX]]
+         if DEBUG: print(' MAXl:',MAXl)
          MAX = max(MAXl)
+         if DEBUG: print(' Final MAX',MAX,'done')
 
-       #  raw_input('HOLD')
+         #  raw_input('HOLD')
 
 # Plot fringes:
          if ant2==plotAnt or ant1==plotAnt:
-
+          printMsg('making Fringe.plot.ANT%i-%i.IF%i.png'%(ant1,ant2,pli))
           fig.clf()
           ratt = 1.0   
 
           fig.subplots_adjust(left=0.02,right=0.98,wspace=0.05,hspace=0.2)
  
-          try:
+          try:  #to clear out previous plot stuff -- is this necessary?
             del sub0
             del sub1
             del sub2
@@ -2502,50 +2788,58 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
             pass
 
           sub0 = fig.add_subplot(241)
-          sub0.imshow(np.abs(RRu[Ch0:Ch1,t0:t1]),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
+          sub0.imshow(np.abs(RRu[Ch0:Ch1,t0:t1]),
+            vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
           sub0.set_title('XR mixed')
           pl.setp(sub0.get_xticklabels(),visible=False)
           pl.setp(sub0.get_yticklabels(),visible=False)
 
           sub1 = fig.add_subplot(242,sharex=sub0,sharey=sub0)
-          sub1.imshow(np.abs(RLu[Ch0:Ch1,t0:t1]),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
+          sub1.imshow(np.abs(RLu[Ch0:Ch1,t0:t1]),
+            vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
           sub1.set_title('XL mixed')
           pl.setp(sub1.get_xticklabels(),visible=False)
           pl.setp(sub1.get_yticklabels(),visible=False)
 
           sub2 = fig.add_subplot(243,sharex=sub0,sharey=sub0)
-          sub2.imshow(RR[Ch0:Ch1,t0:t1],vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
+          sub2.imshow(RR[Ch0:Ch1,t0:t1],
+            vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
           sub2.set_title('RR cal')
           pl.setp(sub2.get_xticklabels(),visible=False)
           pl.setp(sub2.get_yticklabels(),visible=False)
 
           sub3 = fig.add_subplot(244,sharex=sub0,sharey=sub0)
-          sub3.imshow(RL[Ch0:Ch1,t0:t1],vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
+          sub3.imshow(RL[Ch0:Ch1,t0:t1],
+            vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
           sub3.set_title('RL cal')
           pl.setp(sub3.get_xticklabels(),visible=False)
           pl.setp(sub3.get_yticklabels(),visible=False)
 
 
           sub4 = fig.add_subplot(245,sharex=sub0,sharey=sub0)
-          sub4.imshow(np.abs(LRu[Ch0:Ch1,t0:t1]),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
+          sub4.imshow(np.abs(LRu[Ch0:Ch1,t0:t1]),
+            vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
           sub4.set_title('YR mixed')
           pl.setp(sub4.get_xticklabels(),visible=False)
           pl.setp(sub4.get_yticklabels(),visible=False)
 
           sub5 = fig.add_subplot(246,sharex=sub0,sharey=sub0)
-          sub5.imshow(np.abs(LLu[Ch0:Ch1,t0:t1]),vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
+          sub5.imshow(np.abs(LLu[Ch0:Ch1,t0:t1]),
+            vmin=0.0,vmax=MAXu,interpolation='nearest',aspect=ratt)
           sub5.set_title('YL mixed')
           pl.setp(sub5.get_xticklabels(),visible=False)
           pl.setp(sub5.get_yticklabels(),visible=False)
 
           sub6 = fig.add_subplot(247,sharex=sub0,sharey=sub0)
-          sub6.imshow(LR[Ch0:Ch1,t0:t1],vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
+          sub6.imshow(LR[Ch0:Ch1,t0:t1],
+            vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
           sub6.set_title('LR cal')
           pl.setp(sub6.get_xticklabels(),visible=False)
           pl.setp(sub6.get_yticklabels(),visible=False)
 
           sub7 = fig.add_subplot(248,sharex=sub0,sharey=sub0)
-          sub7.imshow(LL[Ch0:Ch1,t0:t1],vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
+          sub7.imshow(LL[Ch0:Ch1,t0:t1],
+            vmin=0.0,vmax=MAX,interpolation='nearest',aspect=ratt)
           sub7.set_title('LL cal')
           pl.setp(sub7.get_xticklabels(),visible=False)
           pl.setp(sub7.get_yticklabels(),visible=False)
@@ -2556,34 +2850,38 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
 
 # Plot calibration matrix:
-
           ratt = float(np.shape(Kmat[0])[1])/float(np.shape(Kmat[0])[0])
 
+          printMsg('creating Kmatrix_AMP_IF%i-ANT%i.png'%(pli,ant1))
           fig2.clf()
 
           fig2.subplots_adjust(right=0.8)
           cbar_ax = fig2.add_axes([0.85, 0.15, 0.05, 0.7])
 
           sub = fig2.add_subplot(221)
-          im = sub.imshow(np.abs(Kmat[0]),vmin=0.0,vmax=MAXK,interpolation='nearest',aspect=ratt)
+          im = sub.imshow(np.abs(Kmat[0]),
+            vmin=0.0,vmax=MAXK,interpolation='nearest',aspect=ratt)
           pl.title(r'$K_{XR}$')
           pl.setp(sub.get_xticklabels(),visible=False)
           pl.setp(sub.get_yticklabels(),visible=False)
 
           sub = fig2.add_subplot(222)
-          sub.imshow(np.abs(Kmat[1]),vmin=0.0,vmax=MAXK,interpolation='nearest',aspect=ratt)
+          sub.imshow(np.abs(Kmat[1]),
+            vmin=0.0,vmax=MAXK,interpolation='nearest',aspect=ratt)
           pl.title(r'$K_{XL}$')
           pl.setp(sub.get_xticklabels(),visible=False)
           pl.setp(sub.get_yticklabels(),visible=False)
 
           sub = fig2.add_subplot(223)
-          sub.imshow(np.abs(Kmat[2]),vmin=0.0,vmax=MAXK,interpolation='nearest',aspect=ratt)
+          sub.imshow(np.abs(Kmat[2]),
+            vmin=0.0,vmax=MAXK,interpolation='nearest',aspect=ratt)
           pl.title(r'$K_{YR}$')
           pl.setp(sub.get_xticklabels(),visible=False)
           pl.setp(sub.get_yticklabels(),visible=False)
 
           sub = fig2.add_subplot(224)
-          sub.imshow(np.abs(Kmat[3]),vmin=0.0,vmax=MAXK,interpolation='nearest',aspect=ratt)
+          sub.imshow(np.abs(Kmat[3]),
+            vmin=0.0,vmax=MAXK,interpolation='nearest',aspect=ratt)
           pl.title(r'$K_{YL}$')
           pl.setp(sub.get_xticklabels(),visible=False)
           pl.setp(sub.get_yticklabels(),visible=False)
@@ -2594,31 +2892,36 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
           pl.savefig('CONVERSION.MATRIX/Kmatrix_AMP_IF%i-ANT%i.png'%(pli,ant1))
 
+          printMsg('creating Kmatrix_PHAS_IF%i-ANT%i.png'%(pli,ant1))
           fig2.clf()
 
           fig2.subplots_adjust(right=0.8)
           cbar_ax = fig2.add_axes([0.85, 0.15, 0.05, 0.7])
 
           sub = fig2.add_subplot(221)
-          im = sub.imshow(180./np.pi*np.angle(Kmat[0]),vmin=-180.,vmax=180.,interpolation='nearest',aspect=ratt)
+          im = sub.imshow(180./np.pi*np.angle(Kmat[0]),
+            vmin=-180.,vmax=180.,interpolation='nearest',aspect=ratt)
           pl.title(r'$K_{XR}$')
           pl.setp(sub.get_xticklabels(),visible=False)
           pl.setp(sub.get_yticklabels(),visible=False)
 
           sub = fig2.add_subplot(222)
-          sub.imshow(180./np.pi*np.angle(Kmat[1]),vmin=-180.,vmax=180.,interpolation='nearest',aspect=ratt)
+          sub.imshow(180./np.pi*np.angle(Kmat[1]),
+            vmin=-180.,vmax=180.,interpolation='nearest',aspect=ratt)
           pl.title(r'$K_{XL}$')
           pl.setp(sub.get_xticklabels(),visible=False)
           pl.setp(sub.get_yticklabels(),visible=False)
 
           sub = fig2.add_subplot(223)
-          sub.imshow(180./np.pi*np.angle(Kmat[2]),vmin=-180.,vmax=180.,interpolation='nearest',aspect=ratt)
+          sub.imshow(180./np.pi*np.angle(Kmat[2]),
+            vmin=-180.,vmax=180.,interpolation='nearest',aspect=ratt)
           pl.title(r'$K_{YR}$')
           pl.setp(sub.get_xticklabels(),visible=False)
           pl.setp(sub.get_yticklabels(),visible=False)
 
           sub = fig2.add_subplot(224)
-          sub.imshow(180./np.pi*np.angle(Kmat[3]),vmin=-180.,vmax=180.,interpolation='nearest',aspect=ratt)
+          sub.imshow(180./np.pi*np.angle(Kmat[3]),
+            vmin=-180.,vmax=180.,interpolation='nearest',aspect=ratt)
           pl.title(r'$K_{YL}$')
           pl.setp(sub.get_xticklabels(),visible=False)
           pl.setp(sub.get_yticklabels(),visible=False)
@@ -2644,14 +2947,28 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
           RLRatio = (MAXl[0]/MAXl[3])/(MAXl[2]/MAXl[1])
 
-          toprint = [pli,MAXl[0]/MAX,DRR,MAXl[3]/MAX,DLL,MAXl[1]/MAX,DRL,MAXl[2]/MAX,DLR,MAX/len(fringe),RLRatio]
-          fringeAmps[ant1].append([pli,MAXl[0],MAXl[0]/DRR,MAXl[3],MAXl[3]/DLL,MAXl[1],MAXl[1]/DRL,MAXl[2],MAXl[2]/DLR,RLRatio])
-          fringeAmpsMix[ant1].append([pli,MAXmix[0],MAXmix[0]/DRRu,MAXmix[3],MAXmix[3]/DLLu,MAXmix[1],MAXmix[1]/DRLu,MAXmix[2],MAXmix[2]/DLRu])
+          toprint = [pli,
+            MAXl[0]/MAX,DRR,
+            MAXl[3]/MAX,DLL,
+            MAXl[1]/MAX,DRL,
+            MAXl[2]/MAX,DLR,
+            MAX/len(fringe),RLRatio]
+          fringeAmps[ant1].append([pli,MAXl[0],MAXl[0]/DRR,
+            MAXl[3],MAXl[3]/DLL,MAXl[1],MAXl[1]/DRL,MAXl[2],MAXl[2]/DLR,
+            RLRatio])
+          fringeAmpsMix[ant1].append([pli,MAXmix[0],MAXmix[0]/DRRu,
+            MAXmix[3],MAXmix[3]/DLLu,MAXmix[1],MAXmix[1]/DRLu,MAXmix[2],
+            MAXmix[2]/DLRu])
 
-
-          pmsg = '\n\n\nFOR IF #%i. NORM. FRINGE PEAKS: \n  RR: %.2e ; SNR: %.1f \n  LL: %.2e ; SNR: %.1f \n  RL: %.2e ; SNR: %.1f \n  LR: %.2e ; SNR: %.1f\n\n AMPLITUDE: %.2e\nRL/LR Norm.: %.2e\n\n\n'%tuple(toprint)
-
+          printMsg("writing FRINGE.PEAKS%i-ANT%i.dat"%(pli,ant1))
           pfile = open('FRINGE.PEAKS/FRINGE.PEAKS%i-ANT%i.dat'%(pli,ant1),'w' )
+          pmsg = (('\n\n\nFOR IF #%i. NORM. FRINGE PEAKS: \n' +
+            '  RR: %.2e ; SNR: %.1f \n' +
+            '  LL: %.2e ; SNR: %.1f \n' +
+            '  RL: %.2e ; SNR: %.1f \n' +
+            '  LR: %.2e ; SNR: %.1f\n\n' +
+            ' AMPLITUDE: %.2e\nRL/LR Norm.: %.2e\n\n\n')%tuple(toprint))
+
           printMsg(pmsg)
           pfile.write(pmsg)
 
@@ -2670,8 +2987,19 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
           pmsg += '\nFor LR: optimum X/Y phase is %.1f deg.\n'%(optph) 
 
           printMsg(pmsg) 
-
           pfile.write(pmsg)
+          printMsg("wrote FRINGE.PEAKS%i-ANT%i.dat"%(pli,ant1))
+         # end of if for this baseline to be plotted
+       # end of if len(fringe)>0
+       else:
+          printMsg("Fringe length was zero")
+
+      # end of np.sum(AntEntry)
+      else:
+       printMsg("Nothing to plot, apparently")
+    # start of for ant1 in linAntIdx
+
+     # end of fringe loop on ant1-ant2 baseline
 
     try:
       del uncal[3],uncal[2],uncal[1],uncal[0],uncal
@@ -2692,6 +3020,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
     except:
       pass
     gc.collect()
+    # end of if ant1 in linAntIdx
 
 
  #  try:
@@ -2750,7 +3079,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
      pl.xlabel('IF NUMBER')
      pl.ylabel('(RR/LL)/(LR/RL)')
      pl.xlim((min(CONVAMP[:,0])-1,max(CONVAMP[:,0])+1))
-     pl.ylim((0.,np.max(CONVAMP[:,-1])*1.05))
+     uylim = np.max(CONVAMP[:,-1])
+     if np.isfinite(uylim):
+        pl.ylim((0,uylim))
+     else:
+        pl.ylim((0,2))
+     # pl.ylim((0.,np.max(CONVAMP[:,-1])*1.05))
 
      fig3.suptitle(jobLabel(DiFXinput)+' ANT: %i v %i'%(thisAnt,plotAnt))
      fig3.savefig('FRINGE.PLOTS/RL_LR_RATIOS_ANT_%i_%i.png'%(thisAnt,plotAnt))
@@ -2770,18 +3104,36 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMA
 
   printMsg('Please, check the PolConvert.log file for special messages.',dolog=False)
 
-  ofile = open('PolConvert.XYGains.dat','w')
-  pk.dump(CGains,ofile)
+  if sys.version_info.major < 3:
+    ofile = open('PolConvert.XYGains.dat','w')
+  else:
+    ofile = open('PolConvert.XYGains.dat','wb')
+  cgs = str(CGains)
+  if len(cgs) > 79: printMsg("%s..." % cgs[0:78])
+  else:             printMsg("%s" % cgs)
+  try:
+    pk.dump(CGains,ofile)
+  except Exception as ex:
+    printMsg(str(ex))
   ofile.close()
   printMsg('PolConvert.XYGains.dat was written with CGains' + str(CGains.keys()))
+
+# raw_input('HOLD')
+
+  printMsg('Task PolConvert is Done\n\n')
   return CGains   # RETURN!
 
 
 if __name__=='__main__':
 
-  polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx, Range, ALMAant, spw, calAPP, calAPPTime, APPrefant, 
-             gains, interpolation, gainmode,   XYavgTime, dterms, amp_norm, XYadd, XYdel, XYratio, swapXY, swapRL, 
-             IDI_conjugated, plotIF, plotRange, plotAnt,excludeAnts,doSolve,solint,doTest,npix,solveAmp,solveMethod, calstokes, calfield)
-  
-  
-  
+  print('calling polconvert')
+  polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
+    Range, ALMAant, spw, calAPP, calAPPTime, APPrefant, gains,
+    interpolation, gainmode, XYavgTime, dterms, amp_norm, XYadd, XYdel,
+    XYratio, usePcal, swapXY, swapRL, feedRotation, IDI_conjugated, plotIF,
+    plotRange, plotAnt,excludeAnts,excludeBaselines,doSolve,solint,doTest,
+    npix,solveAmp,solveMethod, calstokes, calfield)
+
+#
+#eof
+#

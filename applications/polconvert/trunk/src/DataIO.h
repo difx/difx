@@ -1,8 +1,9 @@
 /* DATAIO - FITS-IDI interface to PolConvert
 
-             Copyright (C) 2013  Ivan Marti-Vidal
+             Copyright (C) 2013-2020  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
+             Observatori Astronomic, Universitat de Valencia
   
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -47,6 +48,8 @@ typedef struct {
 double *BaseLine[3];
 double *SinDec;
 double *CosDec;
+//z
+double *RA;
 double *AntLon;
 int *Mount;
 double *Lat;
@@ -93,7 +96,8 @@ class DataIO {
    void getFrequencies(double* Freqarray);
 
 // Compute parallactic angle.
-  void getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &P1, double &P2);
+//z  void getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &P1, double &P2);
+   void getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &MJD, double &P1, double &P2);
 
 // Estimate amplitude ratios from the autocorrelations:
   std::complex<float> getAmpRatio(int ant, int spw, int chan);
@@ -144,7 +148,8 @@ class DataIO {
    bool success, currConj;
    bool *conjugate, *is1, *is2, *is1orig, *is2orig;
    int Flux, *NAV;
-   int nautos = 0;
+   //int nautos = 0;
+   int nautos;
    double day0;
 
 

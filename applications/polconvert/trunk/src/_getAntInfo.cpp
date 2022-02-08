@@ -1,7 +1,8 @@
 /* getAntInfo -
-             Copyright (C) 2017  Ivan Marti-Vidal
+             Copyright (C) 2017-2020  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
+             Observatori Astronomic, Universitat de Valencia
   
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include <Python.h>
+
+// compiler warning that we use a deprecated NumPy API
+// #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+// #define NO_IMPORT_ARRAY
+#if PY_MAJOR_VERSION >= 3
+#define NPY_NO_DEPRECATED_API 0x0
+#endif
+#include <numpy/npy_common.h>
 #include <numpy/arrayobject.h>
+
 #include <sys/types.h>
 #include <iostream> 
 #include <fstream>
@@ -30,7 +40,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #include <math.h>
 
 
+// cribbed from SWIG machinery
+#if PY_MAJOR_VERSION >= 3
+#define PyClass_Check(obj) PyObject_IsInstance(obj, (PyObject *)&PyType_Type)
+#define PyInt_Check(x) PyLong_Check(x)
+#define PyInt_AsLong(x) PyLong_AsLong(x)
+#define PyInt_FromLong(x) PyLong_FromLong(x)
+#define PyInt_FromSize_t(x) PyLong_FromSize_t(x)
+#define PyString_Check(name) PyBytes_Check(name)
+#define PyString_FromString(x) PyUnicode_FromString(x)
+#define PyString_Format(fmt, args)  PyUnicode_Format(fmt, args)
+//#define PyString_AsString(str) PyBytes_AsString(str)
+#define PyString_Size(str) PyBytes_Size(str)
+#define PyString_InternFromString(key) PyUnicode_InternFromString(key)
+#define Py_TPFLAGS_HAVE_CLASS Py_TPFLAGS_BASETYPE
+#define PyString_AS_STRING(x) PyUnicode_AS_STRING(x)
+#define _PyLong_FromSsize_t(x) PyLong_FromSsize_t(x)
+#endif
 
+// and after some hacking
+#if PY_MAJOR_VERSION >= 3
+#define PyString_AsString(obj) PyUnicode_AsUTF8(obj)
+#endif
 
 /* Docstrings */
 static char module_docstring[] =
@@ -41,28 +72,52 @@ static char getCoords_docstring[] =
     "Returns antenna coordinates";
 static char getMounts_docstring[] =
     "Returns the mount types";
+//z
+//static char getNames_docstring[] = 
+//    "Returns the antenna names (codes)";
 
 /* Available functions */
 static PyObject *getAntInfo(PyObject *self, PyObject *args);
 static PyObject *getCoords(PyObject *self, PyObject *args);
 static PyObject *getMounts(PyObject *self, PyObject *args);
+//z
+//static PyObject *getNames(PyObject *self, PyObject *args);
+
 
 /* Module specification */
 static PyMethodDef module_methods[] = {
     {"getAntInfo", getAntInfo, METH_VARARGS, getAntInfo_docstring},
     {"getCoords", getCoords, METH_VARARGS, getCoords_docstring},
-    {"getMounts", getMounts, METH_VARARGS, getMounts_docstring}
+//z {"getMounts", getMounts, METH_VARARGS, getMounts_docstring},
+    {"getMounts", getMounts, METH_VARARGS, getMounts_docstring}, //,
+//  {"getNames", getNames, METH_VARARGS, getNames_docstring},
+    {NULL, NULL, 0, NULL}   /* terminated by list of NULLs, apparently */
 };
 
-
 /* Initialize the module */
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef pc_module_def = {
+    PyModuleDef_HEAD_INIT,
+    "_getAntInfo",          /* m_name */
+    module_docstring,       /* m_doc */
+    -1,                     /* m_size */
+    module_methods,         /* m_methods */
+    NULL,NULL,NULL,NULL     /* m_reload, m_traverse, m_clear, m_free */
+};
+PyMODINIT_FUNC PyInit__getAntInfo(void)
+{
+    PyObject *m = PyModule_Create(&pc_module_def);
+    import_array();
+    return(m);
+}
+#else
 PyMODINIT_FUNC init_getAntInfo(void)
 {
     PyObject *m = Py_InitModule3("_getAntInfo", module_methods, module_docstring);import_array();
     if (m == NULL)
         return;
-
 }
+#endif
 
 ///////////////////////
 
@@ -169,7 +224,8 @@ static PyObject *getAntInfo(PyObject *self, PyObject *args){
   fits_close_file(ifile, &status);
 
   if(status){
-    printf("\n\nPROBLEM LOSING FITS-IDI!  ERR: %i\n\n",status);
+//z printf("\n\nPROBLEM LOSING FITS-IDI!  ERR: %i\n\n",status);
+    printf("\n\nPROBLEM CLOSING FITS-IDI!  ERR: %i\n\n",status);
     return Py_BuildValue("i",3);
   };
 
@@ -179,30 +235,59 @@ static PyObject *getAntInfo(PyObject *self, PyObject *args){
 };
 
 
+
+
+
+
+
 static PyObject *getCoords(PyObject *self, PyObject *args){
 
 // Build numpy array:
 
 PyObject *CoordArr;
-long CD[2] = {Nants,3};
+//z long CD[2] = {Nants,3};
+//z
+//z GBC had already removed Py_INCREF.
+//z Py_INCREF(CoordArr); -- original code
+//z CoordArr = PyArray_SimpleNewFromData(2, &CD[0], NPY_DOUBLE, (void*) Coords);
+//z Py_INCREF(CoordArr); -- needed only if we retain it and use it
+int nd = 2;
+npy_intp* CD = new npy_intp[nd];
 
-Py_INCREF(CoordArr);
-CoordArr = PyArray_SimpleNewFromData(2, &CD[0], NPY_DOUBLE, (void*) Coords);
+CD[0] = Nants; CD[1] = 3; // = {Nants,3};
+
+//Py_INCREF(CoordArr);
+CoordArr = PyArray_SimpleNewFromData(nd, CD, NPY_DOUBLE, (void*) Coords);
 
 return CoordArr;
 
 };
 
 
+
+
+
+
+
 static PyObject *getMounts(PyObject *self, PyObject *args){
+
 
 // Build numpy array:
 PyObject *MountArr;
 
-long MD[1] = {Nants};
+//z long MD[1] = {Nants};
+int nd = 1;
+npy_intp* MD = new npy_intp[nd];
+MD[0] = Nants;
 
-Py_INCREF(MountArr);
-MountArr = PyArray_SimpleNewFromData(1, &MD[0], NPY_INT, (void*) Mounts);
+//z GBC had already removed Py_INCREF
+//z Py_INCREF(MountArr); -- original code
+//z MountArr = PyArray_SimpleNewFromData(1, &MD[0], NPY_INT, (void*) Mounts);
+//z Py_INCREF(MountArr); -- needed only if we retain it and use it
+
+//z
+//Py_INCREF(MountArr);
+MountArr = PyArray_SimpleNewFromData(nd, MD, NPY_INT, (void*) Mounts);
 
 return MountArr;
 

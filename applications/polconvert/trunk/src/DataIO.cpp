@@ -1,8 +1,9 @@
 /* DATAIO - FITS-IDI interface to PolConvert
 
-             Copyright (C) 2013  Ivan Marti-Vidal
+             Copyright (C) 2013-2020  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
+             Observatori Astronomic, Universitat de Valencia
   
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,7 +42,7 @@ DataIO::~DataIO() {
 
 };
 
-DataIO::DataIO() { printf("\nCreating VLBI data structure");};
+DataIO::DataIO() { printf("\nCreating VLBI data structure"); nautos = 0;};
 
 
 // SELF-EXPLANATORY FUNCTIONS:
@@ -105,52 +106,74 @@ cplx32f DataIO::getAmpRatio(int ant, int spw, int chan){
 
 
 
-void DataIO::getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &P1, double &P2){
+//z void DataIO::getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &P1, double &P2){
+void DataIO::getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &MJD, double &P1, double &P2){
 
-double V2, Bx, By; //, Bz;
-double CH, SH, CT1, CT2, HAng, H1, H2, Elev1, Elev2;
-int ibas;
+//z double V2, Bx, By; //, Bz;
+//z double CH, SH, CT1, CT2, HAng, H1, H2, Elev1, Elev2;
+//zz double V2, Bx, By, GMST; //, Bz;
+double GMST;
+//double CDec, SDec, SRA, TLat1,TLat2, Lon1,Lon2,CH, SH;
+double CT1, CT2, HAng, H1, H2, Elev1, Elev2;
+//zz int ibas;
 
 Elev1 = 0.0; Elev2 = 0.0;
 
+//z:
+double days = MJD/86400.;
+double t = (days-51544.0)/36525.;
+double Hh = days - floor(days);
+double GMsec = 24110.54841 + 8640184.812866*t + 0.093104*t*t - 0.0000062*t*t*t;
+GMST = (GMsec/86400. + Hh)*2.*3.1415926535;
+//z:
+//CDec = Geometry->SinDec[sidx];
+//SDec = Geometry->CosDec[sidx];
+//TLat1 = tan(Geometry->Lat[Ant1]);
+//TLat2 = tan(Geometry->Lat[Ant1]);
+//Lon1 = Geometry->AntLon[Ant1];
+//Lon2 = Geometry->AntLon[Ant2];
+//SRA = Geometry->RA[sidx];
 
 // Dummy value if autocorrelation:
 if (Ant1==Ant2){P1 = -1.e9; P2 = -1.e9; return;};
 
+//z more blank lines
 
 if(sidx<Geometry->NtotSou && Ant1<Geometry->NtotAnt && Ant2<Geometry->NtotAnt){
 
-  V2 = Geometry->SinDec[sidx]*UVW[1] - Geometry->CosDec[sidx]*UVW[2];
-  ibas = Geometry->BasNum[Ant1][Ant2];
+//z  V2 = Geometry->SinDec[sidx]*UVW[1] - Geometry->CosDec[sidx]*UVW[2];
+//zz   ibas = Geometry->BasNum[Ant1][Ant2];
 
+//z  if (ibas<0){
+//z  ibas = -ibas;
+//z   Bx = -Geometry->BaseLine[0][ibas];
+//z   By = -Geometry->BaseLine[1][ibas];
+//z// Bz = -Geometry->BaseLine[2][ibas];
+//z  } else {
+//z   Bx = Geometry->BaseLine[0][ibas];
+//z   By = Geometry->BaseLine[1][ibas];
+//z// Bz = Geometry->BaseLine[2][ibas];
+//z  };
+//z
+//z  CH = (UVW[0]*By - V2*Bx); // /(By**2. + Bx**2.);
+//z  SH = (UVW[0]*Bx + V2*By); // /(By**2. + Bx**2.);
 
-  if (ibas<0){
-  ibas = -ibas;
-   Bx = -Geometry->BaseLine[0][ibas];
-   By = -Geometry->BaseLine[1][ibas];
-//   Bz = -Geometry->BaseLine[2][ibas];
-  } else {
-   Bx = Geometry->BaseLine[0][ibas];
-   By = Geometry->BaseLine[1][ibas];
-//   Bz = Geometry->BaseLine[2][ibas];
-  };
-
-  CH = (UVW[0]*By - V2*Bx); // /(By**2. + Bx**2.);
-  SH = (UVW[0]*Bx + V2*By); // /(By**2. + Bx**2.);
   CT1 = Geometry->CosDec[sidx]*tan(Geometry->Lat[Ant1]);
   CT2 = Geometry->CosDec[sidx]*tan(Geometry->Lat[Ant2]);
 
-  HAng = atan2(SH,CH);
+//z  HAng = atan2(SH,CH);
+  HAng = GMST - Geometry->RA[sidx];
   H1 = HAng + Geometry->AntLon[Ant1];
   H2 = HAng + Geometry->AntLon[Ant2];
 
   // sin(lat)*sin(dec)+cos(lat)cos(dec)cos(H)
 
   if (Geometry->Mount[Ant1] > 3){
-  Elev1 = asin(sin(Geometry->Lat[Ant1])*Geometry->SinDec[sidx]+cos(Geometry->Lat[Ant1])*Geometry->CosDec[sidx]*cos(H1));};
+   Elev1 = asin(sin(Geometry->Lat[Ant1])*Geometry->SinDec[sidx]+cos(Geometry->Lat[Ant1])*Geometry->CosDec[sidx]*cos(H1));};
 
   if (Geometry->Mount[Ant2] > 3){
-  Elev2 = asin(sin(Geometry->Lat[Ant1])*Geometry->SinDec[sidx]+cos(Geometry->Lat[Ant1])*Geometry->CosDec[sidx]*cos(H1));};
+//z  Elev2 = asin(sin(Geometry->Lat[Ant1])*Geometry->SinDec[sidx]+cos(Geometry->Lat[Ant1])*Geometry->CosDec[sidx]*cos(H1));};
+   Elev2 = asin(sin(Geometry->Lat[Ant2])*Geometry->SinDec[sidx]+cos(Geometry->Lat[Ant2])*Geometry->CosDec[sidx]*cos(H2));};
  
 
   switch (Geometry->Mount[Ant1]){
@@ -177,6 +200,8 @@ if(sidx<Geometry->NtotSou && Ant1<Geometry->NtotAnt && Ant2<Geometry->NtotAnt){
 
 //  P2 = atan2(sin(H2), CT2 - Geometry->SinDec[sidx]*cos(H2));
 
+//z:
+//if(Ant1==1){printf("%i  %i  %.16e  %.3f  %.3f  %.3f  %.3f\n",Ant1, Ant2, MJD, GMST, HAng, P1, P2);};
 
 } else {
 

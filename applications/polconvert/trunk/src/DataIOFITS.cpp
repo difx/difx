@@ -1,8 +1,9 @@
 /* DATAIO - FITS-IDI interface to PolConvert
 
-             Copyright (C) 2013  Ivan Marti-Vidal
+             Copyright (C) 2013-2020  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
+             Observatori Astronomic, Universitat de Valencia
   
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -265,7 +266,8 @@ void DataIOFITS::saveCirculars(std::string inputfile) {
 
  //     printf("READ! \n");
 
-      getParAng(souidx-1,a1-1,a2-1,UVW,AuxPA1,AuxPA2);
+//z    getParAng(souidx-1,a1-1,a2-1,UVW,AuxPA1,AuxPA2);
+      getParAng(souidx-1,a1-1,a2-1,UVW,Times[il],AuxPA1,AuxPA2);
 
  //     printf("COMPUTED: %.2e  %.2e \n",AuxPA1,AuxPA2);
 
@@ -656,7 +658,8 @@ void DataIOFITS::readInput(std::string inputfile, int saveSource) {
        UVW[0] = (double) FUVW[0]; UVW[1] = (double) FUVW[1]; UVW[2] = (double) FUVW[2]; 
 
 /////// TODO: SORT OUT a1-1 -> a1
-       getParAng(souidx-1,a1-1,a2-1,UVW,AuxPA1,AuxPA2);
+//z    getParAng(souidx-1,a1-1,a2-1,UVW,AuxPA1,AuxPA2);
+       getParAng(souidx-1,a1-1,a2-1,UVW,Times[il],AuxPA1,AuxPA2);
 
     } else if(saveSource<0 || souidx == saveSource) {
 

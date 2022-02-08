@@ -8,7 +8,10 @@
 # All these gains are then pre-applied to all data before conversion in
 # a second PolConvert run, and new FITS-IDI files are generated.
 ######
+from __future__ import absolute_import
 import pickle as pk
+# not needed
+# from six.moves import range
 
 REFANT = 4 # Antenna to which refer the conversion gain solution (O8)
 LINANT = 2 # Antenna with linear feed (EB)

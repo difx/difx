@@ -1,8 +1,9 @@
 /* CALTABLE - calibration table interface to PolConvert
 
-             Copyright (C) 2013  Ivan Marti-Vidal
+             Copyright (C) 2013-2020  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
+             Observatori Astronomic, Universitat de Valencia
   
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -518,7 +519,7 @@ bool CalTable::setInterpolationTime(double itime) {
  for (iant=0; iant<Nants; iant++) {
 
   Nts = Ntimes[iant];
-  if (Verbose){printf("Ant %i has %i times \n",iant,Nts);fflush(stdout);};
+  if (Verbose){printf("Ant %i has %li times \n",iant,Nts);fflush(stdout);};
 
   if (Nts == 1) {
     pret0[iant] = 0;
@@ -558,7 +559,7 @@ bool CalTable::setInterpolationTime(double itime) {
 
  };
 
-   if (Verbose){printf("%i  %i  %.3f\n",ti0, ti1, Kt);fflush(stdout);};
+   if (Verbose){printf("%li  %li  %.3f\n",ti0, ti1, Kt);fflush(stdout);};
 
    currTime = itime;
    return gainChanged;
@@ -596,7 +597,7 @@ void CalTable::applyInterpolation(int iant, int mode, std::complex<float> *gain[
   Kt = preKt[iant];
   Kt2 = 1.0-Kt;
 
-  if (Verbose){printf("indexes: %i %i  -  %.3f\n",ti0, ti1, Kt);fflush(stdout);};
+  if (Verbose){printf("indexes: %li %li  -  %.3f\n",ti0, ti1, Kt);fflush(stdout);};
 
  // printf("CALLED!\n");
 

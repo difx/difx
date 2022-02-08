@@ -1,8 +1,9 @@
 /* CROSSPHASECAL - Cross-polarization phasecal extraction for PolConvert
 
-             Copyright (C) 2018  Ivan Marti-Vidal
+             Copyright (C) 2018-2020  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
+             Observatori Astronomic, Universitat de Valencia
   
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,8 +23,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include <Python.h>
+
 // compiler warning that we use a deprecated NumPy API
+// #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+// #define NO_IMPORT_ARRAY
+#if PY_MAJOR_VERSION >= 3
+#define NPY_NO_DEPRECATED_API 0x0
+#endif
+#include <numpy/npy_common.h>
 #include <numpy/arrayobject.h>
+
 #include <stdio.h>  
 #include <stdlib.h>
 #include <sys/types.h>
@@ -41,7 +50,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 typedef std::complex<float> cplx32f;
 typedef std::complex<double> cplx64d;
 
+// cribbed from SWIG machinery
+#if PY_MAJOR_VERSION >= 3
+#define PyClass_Check(obj) PyObject_IsInstance(obj, (PyObject *)&PyType_Type)
+#define PyInt_Check(x) PyLong_Check(x)
+#define PyInt_AsLong(x) PyLong_AsLong(x)
+#define PyInt_FromLong(x) PyLong_FromLong(x)
+#define PyInt_FromSize_t(x) PyLong_FromSize_t(x)
+#define PyString_Check(name) PyBytes_Check(name)
+#define PyString_FromString(x) PyUnicode_FromString(x)
+#define PyString_Format(fmt, args)  PyUnicode_Format(fmt, args)
+//#define PyString_AsString(str) PyBytes_AsString(str)
+#define PyString_Size(str) PyBytes_Size(str)
+#define PyString_InternFromString(key) PyUnicode_InternFromString(key)
+#define Py_TPFLAGS_HAVE_CLASS Py_TPFLAGS_BASETYPE
+#define PyString_AS_STRING(x) PyUnicode_AS_STRING(x)
+#define _PyLong_FromSsize_t(x) PyLong_FromSsize_t(x)
+#endif
 
+// and after some hacking
+#if PY_MAJOR_VERSION >= 3
+#define PyString_AsString(obj) PyUnicode_AsUTF8(obj)
+#endif
 
 /* Docstrings */
 static char module_docstring[] =
@@ -63,19 +93,35 @@ static PyObject *XPConvert(PyObject *self, PyObject *args);
 static PyMethodDef module_methods[] = {
     {"XPCal", XPCal, METH_VARARGS, XPCal_docstring},
     {"XPConvert", XPConvert, METH_VARARGS, XPConvert_docstring},
-    {NULL, NULL, 0, NULL}
+    {NULL, NULL, 0, NULL}   /* terminated by list of NULLs, apparently */
 };
 
 
 /* Initialize the module */
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef pc_module_def = {
+    PyModuleDef_HEAD_INIT,
+    "_XPCal",               /* m_name */
+    module_docstring,       /* m_doc */
+    -1,                     /* m_size */
+    module_methods,         /* m_methods */
+    NULL,NULL,NULL,NULL     /* m_reload, m_traverse, m_clear, m_free */
+};
+PyMODINIT_FUNC PyInit__XPCal(void)
+{
+    PyObject *m = PyModule_Create(&pc_module_def);
+    import_array();
+    return(m);
+}
+#else
 PyMODINIT_FUNC init_XPCal(void)
 {
     import_array();
     PyObject *m = Py_InitModule3("_XPCal", module_methods, module_docstring);
     if (m == NULL)
         return;
-
 }
+#endif
 
 //////////////////////////////////
 // MAIN FUNCTION: 
@@ -110,25 +156,25 @@ static PyObject *XPCal(PyObject *self, PyObject *args)
 
   
   double T, inT, Tini; 
-  double Re, Im, nui;
-  double NEntry, *NWrap;
+  double Re = 0, Im, nui = 0;
+  double NEntry, *NWrap = 0;
   int Aux = 0; int Aux2 = 0;
-  int NTone, NToneHf, TPI, i,j,l;
+  int NTone, NToneHf = 0, TPI, i,j,l;
   long k;
-  char Pol;
+  char Pol = 0;
   std::string TelName, line, auxStr;
   std::istringstream tempStr;
 
-  cplx64d *PCalsX, *PCalsY, PCalTemp, *PCalsD; 
-  double *PCalsAX, *PCalsAY; 
-  double *PCalNus, MinNu;
-  double *RateFitXtt, *RateFitXpt, *RateFitXt, *RateFitXp;
-  double *PrevPhX, *NGoods;
-  bool *goodX, *goodY, RepNu;
+  cplx64d *PCalsX = 0, *PCalsY = 0, PCalTemp, *PCalsD = 0; 
+  double *PCalsAX = 0, *PCalsAY = 0; 
+  double *PCalNus = 0, MinNu;
+  double *RateFitXtt = 0, *RateFitXpt = 0, *RateFitXt = 0, *RateFitXp = 0;
+  double *PrevPhX = 0, *NGoods = 0;
+  bool *goodX = 0, *goodY = 0, RepNu;
 
-  int *NTimes, *TBUFF;
+  int *NTimes = 0, *TBUFF = 0;
 
-  double **Ti, **PDi;
+  double **Ti = 0, **PDi = 0;
 
 
   bool start = false;
@@ -290,7 +336,7 @@ static PyObject *XPCal(PyObject *self, PyObject *args)
                    };
                  };
                }; // In case of a new tone, add it to the data (and update 'Aux'):
-               if (!RepNu && nui >0.0){PCalNus[Aux]=nui; j=Aux; Aux+=1; printf("NEW %.3f, %.3f\n",nui);}; 
+               if (!RepNu && nui >0.0){PCalNus[Aux]=nui; j=Aux; Aux+=1; printf("NEW %.3f\n",nui);}; 
                i+= 1; break;
 
              case 1: Pol = auxStr.c_str()[0]; i += 1; break;
@@ -387,7 +433,17 @@ static PyObject *XPCal(PyObject *self, PyObject *args)
     };
   };
 
-
+// Need to catched the following if undefined:
+// PDi, Ti, NTimes, goodY, goodX, NGoods, PrevPhX, RateFitXp
+// RateFitXt, RateFitXpt, RateFitXtt, PCalNus, PCalsAY, PCalsAX
+// PCalsD, PCalsY, PCalsX, NWrap, TBUFF, Pol, NToneHf, Re, currP, nui
+// FIXME: check theme all here and bail if errors.
+if (PCalsY == 0 || PCalsX == 0 || PCalsD == 0 ||
+    PCalNus == 0 || PCalsAY == 0 || PCalsAX == 0 ||
+    RateFitXp == 0 || RateFitXt == 0 || RateFitXpt == 0 || RateFitXtt == 0 ||
+    PrevPhX == 0 || NWrap == 0 ||
+    PDi == 0 || Ti == 0 || NTimes == 0 || TBUFF == 0 ||
+    NGoods == 0 || goodY == 0 || goodX == 0) return ret;
 
 
 // Variables to store final results:
@@ -591,10 +647,10 @@ static PyObject *XPConvert(PyObject *self, PyObject *args)
 
 
   double T;
-  int i, j, k, nui; 
+  int i, j, k, nui = 0; 
   bool isX = false, RepNu = false;
   char Pol;
-  long currP, lastP, Nbytes;
+  long currP = 0, lastP, Nbytes;
 
 // Size of pcal buffer:
   int BuffSize = 1024;
@@ -643,7 +699,8 @@ static PyObject *XPConvert(PyObject *self, PyObject *args)
 
   std::string TelName, line, auxStr;
   std::stringstream tempStr;
-  std::stringbuf *linePos;
+//  unused:
+//  std::stringbuf *linePos;
 
 
   while (!PcalF.eof()){
@@ -658,7 +715,7 @@ static PyObject *XPConvert(PyObject *self, PyObject *args)
        tempStr.precision(5);
      //  tempStr.setw(12);
 
-       linePos = tempStr.rdbuf();
+//     linePos = tempStr.rdbuf();
 
 	// First elements in line (dummy reads):       
          tempStr >> TelName;

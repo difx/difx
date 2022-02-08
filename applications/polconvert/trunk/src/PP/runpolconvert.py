@@ -4,13 +4,15 @@
 # This version only works with SWIN files
 #
 
+from __future__ import absolute_import
+from __future__ import print_function
 import datetime
 import os
 import shutil
 import re
 import sys
 
-pcvers='1.7.9'
+pcvers='1.8.1'
 
 # Begin by verifying everthing that should be defined at this point.
 # If we can't print something, that's probably enough for a test.
@@ -18,7 +20,8 @@ pcvers='1.7.9'
 # Between v3 and v4 concatenated -> concatenated | calibrated
 # if concatenated.ms is already in label, we'll assume v3 or earlier
 # else use newer names here.
-print '\nRunning PolConvert Wrapper with label ' + label + ' in ' + DiFXout
+print('\nRunning PolConvert (v%s) Wrapper with label %s in %s' % (
+    pcvers, label, DiFXout))
 v4tables = None
 lm = re.match('(.*)\.concatenated.ms', label)
 if lm:
@@ -49,9 +52,9 @@ try:
                     bandpass, ampgains, phsgains, xyrelphs]
     for f in calgains:
         if not os.path.exists(f):
-            raise Exception, ('Required calibration %s is missing'%f)
-        print 'using ' + f
-except Exception, ex:
+            raise Exception('Required calibration %s is missing'%f)
+        print('using ' + f)
+except Exception as ex:
     raise ex
 
 # option to delete specific gain tables from the list
@@ -59,20 +62,20 @@ try:
     gdblst = ['bandpass', 'ampgains', 'phsgains', 'xyrelphs', 'gxyampli']
     if type(gainDel) == str and ',' in gainDel:
         for g in gainDel.split(','):
-            print 'Deleting ' + gdblst[int(g)]
+            print('Deleting ' + gdblst[int(g)])
             del calgains[3+int(g)]
-        print 'Revised calgains list is:'
-        for c in calgains: print '    ', c
+        print('Revised calgains list is:')
+        for c in calgains: print('    ', c)
     elif gainDel == '':
-        print 'No gain deletion requested'
+        print('No gain deletion requested')
     else:
         gainDel = ''
-        print 'Overriding gainDel -- turning it off'
-except Exception, ex:
-    print type(gainDel)
-    print 'gainDel not str?', str(ex)
+        print('Overriding gainDel -- turning it off')
+except Exception as ex:
+    print(type(gainDel))
+    print('gainDel not str?', str(ex))
     gainDel = ''
-    print 'gain deletion turned off'
+    print('gain deletion turned off')
 
 # option to control gain processing, which should be either
 # 'T' (combine) or 'G' (split) for handling of X&Y all gains
@@ -81,83 +84,88 @@ except Exception, ex:
 try:
     if not (gainmeth == 'T' or gainmeth == 'G'):
         gainmeth = 'G'
-        print 'illegal gain type supplied, defaulting to', gainmeth
-    if gainmeth == 'T': print 'X and Y cals will be combined'
-    if gainmeth == 'G': print 'X and Y cals will be split'
-except Exception, ex:
+        print('illegal gain type supplied, defaulting to', gainmeth)
+    if gainmeth == 'T': print('X and Y cals will be combined')
+    if gainmeth == 'G': print('X and Y cals will be split')
+except Exception as ex:
     gainmeth = 'G'
-    print 'gain type not supplied, defaulting to', gainmeth
+    print('gain type not supplied, defaulting to', gainmeth)
 
 # option to average gains over some interval to cut down on noise
 # this is a largely untested option: the preference is to do the
 # averaging on the QA2 products prior to this stage
 try:
     if type(XYavgTime) == float:
-        if XYavgTime > 0.0: print 'Gains averaged over %f secs' % XYavgTime
-        else:               print 'No time averaging of gains'
+        if XYavgTime > 0.0: print('Gains averaged over %f secs' % XYavgTime)
+        else:               print('No time averaging of gains')
     else:
-        print 'disabling XYavgTime'
+        print('disabling XYavgTime')
         XYavgTime = 0.0
-except Exception, ex:
-    print 'XYavgTime not float?', str(ex)
+except Exception as ex:
+    print('XYavgTime not float?', str(ex))
     XYavgTime = 0.0
-    print 'XYavgTime set to 0.0 (disabled)'
+    print('XYavgTime set to 0.0 (disabled)')
 
 # option to turn off the amplitude calibration logic
 try:
     if type(ampNorm) == float:
-        if ampNorm: print 'Amplitude Normalization is ',ampNorm
-        else:       print 'Amplitude Normalization is other:',ampNorm
+        if ampNorm: print('Amplitude Normalization is ',ampNorm)
+        else:       print('Amplitude Normalization is other:',ampNorm)
     else:
-        print 'Overriding ampNorm -- turning it on'
+        print('Overriding ampNorm -- turning it on')
         ampNorm = 1.0
-except Exception, ex:
-    print 'ampNorm not float?', str(ex)
+except Exception as ex:
+    print('ampNorm not float?', str(ex))
     ampNorm = 1.0
-    print 'Amplitude Normalization is now',ampNorm
+    print('Amplitude Normalization is now',ampNorm)
 
 # option for fringe plot pixels
 try:
     if type(numFrPltPix) == int:
-        print 'Fringe plots with %d pixels at center' % numFrPltPix
+        print('Fringe plots with %d pixels at center' % numFrPltPix)
     else:
-        print 'Overriding numFrPltPix to 50'
+        print('Overriding numFrPltPix to 50')
         numFrPltPix = 50
-except Exception, ex:
-    print 'numFrPltPix not int?', str(ex)
+except Exception as ex:
+    print('numFrPltPix not int?', str(ex))
     numFrPltPix = 50
-    print 'Setting numFrPltPix to 50'
+    print('Setting numFrPltPix to 50')
 
 # option to use different peers per scan
 # plotAntList.reverse() is to allow plotAntList.pop() below
 try:
     if type(plotAntList) == list:
         plotAntList.reverse()
-        print 'Popping antennas with indices',plotAntList
+        print('Popping antennas with indices',plotAntList)
     else:
-        raise Exception, 'plotAntList not a list'
-except Exception, ex:
-    print ex, 'Disabled plotAntList, using plotAnt', plotAnt
+        raise Exception('plotAntList not a list')
+except Exception as ex:
+    print(ex, 'Disabled plotAntList, using plotAnt', plotAnt)
     plotAntList = []
 
 # require constXYadd to be set to allow disabling table
 try:
     if type(constXYadd) == bool:
-        if constXYadd: print 'Disabling XY phase table'
-        else:          print 'Using XY phase table ' + xyrelphs
+        if constXYadd: print('Disabling XY phase table')
+        else:          print('Using XY phase table ' + xyrelphs)
     else:
-        raise Exception, 'constXYadd must be set True or False'
-except Exception, ex:
+        raise Exception('constXYadd must be set True or False')
+except Exception as ex:
     raise ex
 
 # Things defined in, e.g. drivepolconvert.py
+# plotIF may be any of these: -1 [] or [list of IFs to plot]
 try:
-    print "Experiment %s with linear pol antenna index %s\non IFs %s" % (
-        expName, str(linAnt), str(doIF))
-    if plotIF > 0:
-        print "Plotting IF %s on days %d .. %d" % (
-            str(plotIF), timeRange[0], timeRange[4])
-except Exception, ex:
+    print("Experiment %s with linear pol antenna index %s\non IFs %s" % (
+        expName, str(linAnt), str(doIF)))
+    if ((type(plotIF) == int and plotIF > 0) or
+        (type(plotIF) == list and len(plotIF) > 0)):
+        print("Plotting IF %s on days %d .. %d" % (
+            str(plotIF), timeRange[0], timeRange[4]))
+    elif type(plotIF) == list and len(plotIF) == 0:
+        print("Plotting all IFs on days %d .. %d" % (
+            timeRange[0], timeRange[4]))
+except Exception as ex:
     raise ex
 
 # Use 0..3 or -1 (figure it out) for the spw
@@ -165,9 +173,9 @@ try:
     if type(spwToUse) == int:
         if spwToUse in [-1, 0, 1, 2, 3]: pass
         else:                            spwToUse = -1
-except Exception, ex:
+except Exception as ex:
     raise ex
-print 'Spectral window request is for',spwToUse
+print('Spectral window request is for',spwToUse)
 
 #
 # A method to drive Polconvert for anticipated Cycle4/5 needs.
@@ -193,69 +201,80 @@ def runPolConvert(label, spw=-1, DiFXinput='',
         gains = gains[0:3]
         interpolation = interpolation[0:3]
 
-    gaintype = map(lambda g: 'G' if ('XY0' in g or 'bandpass' in g or
-        'Gxyamp' in g) else gainmeth, gains)
+    gaintype = ['G' if ('XY0' in g or 'bandpass' in g or
+        'Gxyamp' in g) else gainmeth for g in gains]
 
     # cover for optional tables
     while len(interpolation) < len(gains):
         interpolation.append('linear')
-    print 'gains', len(gains), gains
-    print 'interpolation', len(interpolation), interpolation
-    print 'gaintype', len(gaintype), gaintype
-    print 'PolConvert will use Spectral Window %d on %s' % (spw, label)
+    print('gains', len(gains), gains)
+    print('interpolation', len(interpolation), interpolation)
+    print('gaintype', len(gaintype), gaintype)
+    print('PolConvert will use Spectral Window %d on %s' % (spw, label))
 
     if not os.path.exists(DiFXinput):
-        raise Exception, 'No DiFX input %s'%DiFXinput
+        raise Exception('No DiFX input %s'%DiFXinput)
     if not os.path.exists(DiFXoutput):
-        raise Exception, 'No DiFX output %s'%DiFXoutput
+        raise Exception('No DiFX output %s'%DiFXoutput)
     if os.path.exists(DiFXsave):
-        raise Exception, 'DiFX save dir exists %s'%DiFXsave
+        raise Exception('DiFX save dir exists %s'%DiFXsave)
 
     # ok, save it and proceed
     os.rename(DiFXoutput, DiFXsave)
 
     # Now we actual run PolConvert setting (almost) everything.
-    # Commented arguments are not needed for DiFX, but are
-    # mentioned here as comments for clarity and coordination
-    # with task_polconvert.py:^def polconvert(...)
-    # CASA supplies defaults from the task xml file.
+    if 'POLCONVERTDEBUG' in os.environ:
+        if os.environ['POLCONVERTDEBUG'] == 'True':
+            print('PolConvert internal verbosity is enabled')
+        else:
+            print('PolConvert internal verbosity is disabled')
+    else:
+        print("PolConvert internal verbosity at default setting")
+    # argument list should exactly match what you see with
+    #   task_polconvert.py:^def polconvert(...)
+    # in theory CASA supplies defaults from the task xml file,
+    #   but we choose not to trust in CASA here.
     try:
-        print 'Calling PolConvert from runpolconvert'
+        print('Calling PolConvert from runpolconvert')
         polconvert(IDI=DiFXsave, OUTPUTIDI=DiFXoutput,
             DiFXinput=DiFXinput, DiFXcalc=DiFXcalc,
             doIF=doIF,
             linAntIdx=linAnt, Range=Range, ALMAant=aantpath,
             spw=spw, calAPP=calapphs, calAPPTime=calAPPTime,
-            #APPrefant,
+            APPrefant='',
             gains=[gains], interpolation=[interpolation],
             gainmode=[gaintype], XYavgTime=XYavgTime,
             dterms=[dterm], amp_norm=amp_norm,
             XYadd=XYadd,
-            #XYdel,
-            XYratio=XYratio, swapXY=[False],
-            #swapRL, feedRotation,
+            XYdel={},
+            XYratio=XYratio, usePcal=[], swapXY=[False],
+            swapRL=False, feedRotation=[],
             IDI_conjugated=True,
             plotIF=plotIF, plotRange=timeRange,
             plotAnt=plotAnt,
-            #excludedAnts, doSolve, solint,
+            excludeAnts=[], excludeBaselines=[],
+            doSolve=-1.0,
+            solint=[1,1],
             doTest=doTest, npix=npix,
-            solveAmp=False
-            #, solveMethod=gradient, calstokes, calfield
+            solveAmp=False,
+            solveMethod='gradient', calstokes=[1.,0.,0.,0.], calfield=-1
             )
-    except Exception, ex:
-        print 'Polconvert Exception'
+    except Exception as ex:
+        print('Polconvert Exception -- Restoring Saved DiFXoutput Dir')
         if (os.path.exists(DiFXoutput)):
             shutil.rmtree(DiFXoutput)
         os.rename(DiFXsave, DiFXoutput)
         raise ex
+    print('Finished with polconvert(...) invocation')
 
     try:
-        makeHistory(label, DiFXoutput, doIF=doIF, linAntIdx=linAntIdx,
+        print('Making the history file')
+        makeHistory(label, DiFXoutput, doIF=doIF, linAntIdx=linAnt,
             spw=spw, calAPPTime=calAPPTime, interpolation=[interpolation],
             gainmode=[gaintype], XYavgTime=XYavgTime, amp_norm=amp_norm,
             XYadd=XYadd, XYratio=XYratio, swapXY=[False])
-    except Exception, ex:
-        print 'Ignoring exception while writing history:', str(ex)
+    except Exception as ex:
+        print('Ignoring exception while writing history:', str(ex))
 
     # save the plots and other developer artifacts in a subdir
     pcprods = [ 'PolConvert.log', 'Fringe.plot%d.png'%plotAnt,
@@ -264,6 +283,7 @@ def runPolConvert(label, spw=-1, DiFXinput='',
                 'POLCONVERT_STATION1.ANTAB', 'CONVERSION.MATRIX',
                 'FRINGE.PEAKS', 'FRINGE.PLOTS' ]
     # this is used only in non-parallel execution
+    # in parallel execution, we are already in the savename directory
     if savename != '':
         now = datetime.datetime.now()
         outdir = now.strftime(savename + '.polconvert-%Y-%m-%dT%H.%M.%S')
@@ -271,7 +291,7 @@ def runPolConvert(label, spw=-1, DiFXinput='',
         for art in pcprods:
             if os.path.exists(art):
                 os.rename(art, outdir + '/' + art)
-        print savename + ' results moved to ' + outdir
+        print(savename + ' results moved to ' + outdir)
 
 def makeHistory(label, DiFXoutput, doIF=[], linAntIdx=[], spw=-1,
     calAPPTime=[], interpolation=[], gainmode=[], XYavgTime=0.0,
@@ -280,7 +300,7 @@ def makeHistory(label, DiFXoutput, doIF=[], linAntIdx=[], spw=-1,
     Generate a history record for eventual use by difx2fits
     '''
     if not os.path.isdir(DiFXoutput):
-        print 'No directory for polconvert history'
+        print('No directory for polconvert history')
         return
     history = DiFXoutput + '/polconvert.history'
     fh = open(history, 'w')
@@ -302,7 +322,7 @@ def makeHistory(label, DiFXoutput, doIF=[], linAntIdx=[], spw=-1,
     fh.write('XYratio: %s\n' % str(XYratio))
     fh.write('swapXY: %s\n' % str(swapXY))
     fh.close()
-    print 'Wrote history to', history
+    print('Wrote history to', history)
 
 for job in djobs:
     # DiFX output dir and input files:
@@ -320,18 +340,19 @@ for job in djobs:
     if DiFXout == '.': thesavename = expName + '_' + job
     else:              thesavename = ''
 
-    print '\nProceeding with job ' + job + '\n'
+    print('\nProceeding with job ' + job + '\n')
     runPolConvert(label, spw=spwToUse,
         DiFXinput=DiFXinput, DiFXcalc=DiFXcalc, DiFXoutput=SWIN, DiFXsave=SAVE,
         amp_norm=ampNorm, XYadd=XYadd, XYratio=XYratio,
         timeRange=timeRange, doTest=doTest, savename=thesavename,
         plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=usePlotAnt,
         npix=numFrPltPix, gainmeth=gainmeth, XYavgTime=XYavgTime)
-    print '\nFinished with job ' + job + '\n'
+    print('\nFinished with job ' + job + '\n')
 
 # make sure the last of the log gets written out so we are sure we are done
-print 'Finished with runpolconvert tasks'
+print('Finished with runpolconvert tasks\n')
 sys.stdout.flush()
+sys.stderr.flush()
 
 #
 # eof

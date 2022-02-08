@@ -1,6 +1,13 @@
 #!/bin/sh
 #
 # complete set
+# 
+# version bumps are synched in these files (relative to src)
+#   ../Changelog
+#   Changelog
+#   polconvert.xml
+#   task_polconvert.py
+#   PP/runpolconvert.py
 #
 
 cfiles='

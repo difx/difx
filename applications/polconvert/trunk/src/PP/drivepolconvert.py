@@ -21,151 +21,212 @@ import stat
 import sys
 import threading
 import time
+# not needed:
+# from six.moves import map
+# from six.moves import range
+# from six.moves import zip
+
+# this Kluge is for re-use by singlepolsolve.py
+# import solvepclib as spc
 
 def parseOptions():
     '''
-    Normally CASA is intended to be run interactively, and
-    that requires the user to be familiar with its quirks.
-    This script generates the appropriate (Python) commands
-    that could be typed into an interactive session, or for the
-    more likely use case, piped into CASA for the desired work.
-    If CASA is not found in your path, you must supply it via
-    the environment variable DIFXCASAPATH (which is used to
-    build these tools and hence is probably set in your DiFX setup).
+    PolConvert is executed within CASA which is inconvenient for
+    production work.  This script generates appropriate (Python)
+    commands with which CASA may be executed as a background task.
+    Multiple conversion jobs can and should be executed in parallel
+    (no more than one job per processor core is best, controlled with -P).
+    The DiFX compilation assumes DIFXCASAPATH is defined to point
+    to the CASA bin directory.  If DIFXCASAPATH is not in your
+    environment when this script is run, but the same version is to
+    be found as "casa" you should have no trouble.
     '''
     des = parseOptions.__doc__
     epi =  'In the typical use case, you would first unpack the QA2 tarball '
     epi += 'and then process some number of similar jobs '
     epi += 'first with prepolconvert.py, then with '
     epi += 'drivepolconvert.py, and finally difx2mark4 and/or difx2fits. '
-    epi += 'If you want to adjust the CASA invocation beyond what the '
-    epi += 'script provides, edit the output file and '
-    epi += 'then run it manually using the instructions provided. '
     epi += 'In normal usage, you only need '
-    epi += 'to supply the list of jobs and the label (-l). '
-    epi += 'Diagnostic plots of per-IF fringes is controlled with the '
-    epi += '-f option; if used -m, -S, -X and -T become relevant.  In '
-    epi += 'particular, with -T, no conversion is written to disk, '
+    epi += 'to supply the list of jobs, the QA2 label (-l) '
+    epi += 'the -q version (which tables to use) and -r to run.'
+    epi += 'You may omit the -r option, in which case the jobs will be '
+    epi += 'prepared with instructions for running them manually.  You '
+    epi += 'can then edit the input files as needed. '
+    epi += 'The number of diagnostic plots of per-IF fringes '
+    epi += 'is controlled with the '
+    epi += '-f option; you can also use -m, -S, -X and -T, see above.  In '
+    epi += 'particular, with the test option (-T), no conversion is '
+    epi += 'written to disk, '
     epi += 'but all of the diagnostic plots are made and saved. '
-    epi += 'Parallelization is possible with the -P option.  In the event '
-    epi += 'of problematic jobs, remove them from your list and deal with '
-    epi += 'them individually.'
+    epi += 'This is useful to manually tweak things prior to committing. '
     use = '%(prog)s [options] [input_file [...]]\n  Version'
     use += '$Id$'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
+    primary = parser.add_argument_group('Primary Options')
+    secondy = parser.add_argument_group('Secondary Options')
+    plotter = parser.add_argument_group('Plotting Options')
+    develop = parser.add_argument_group(
+        'Development Options (that may disappear some day)')
     # essential options
-    parser.add_argument('-v', '--verbose', dest='verb',
+    primary.add_argument('-v', '--verbose', dest='verb',
         default=False, action='store_true',
         help='be chatty about the work')
-    parser.add_argument('-p', '--prep', dest='prep',
+    primary.add_argument('-r', '--run', dest='run',
+        default=False, action='store_true',
+        help='execute CASA with the generated input')
+    primary.add_argument('-l', '--label', dest='label',
+        default='', metavar='STRING',
+        help='prefix to the QA2 polconvert calibration directories. '
+        'The names despend on the QA2 version (see -q option).')
+    primary.add_argument('-q', '--qa2', dest='qa2',
+        default='v8', metavar='STRING',
+        help='table naming scheme: v{0..11} are for QA2 tables, or '
+            's{0...} for non-QA2 cases.  Use "help" for details.')
+    # not normally needed, secondary arguments
+    secondy.add_argument('-P', '--parallel', dest='parallel',
+        default=6, metavar='INT', type=int,
+        help='Number of jobs to run in parallel. '
+        '(The default is 6.)')
+    secondy.add_argument('-p', '--prep', dest='prep',
         default=False, action='store_true',
         help='run prepolconvert.py on the same joblist--'
         'generally not a good idea unless you are certain it will work')
-    parser.add_argument('-r', '--run', dest='run',
+    secondy.add_argument('-a', '--ant', dest='ant',
+        default=1, metavar='INT', type=int,
+        help='1-based index of linear (ALMA) antenna (normally 1)')
+    secondy.add_argument('-L', '--lin', dest='lin',
+        default='AA', metavar='SC', # 'alma'
+        help='2-letter station code (all caps) for linear pol station (AA)')
+    # plotting arguments
+    plotter.add_argument('-f', '--fringe', dest='fringe',
+        default=4, metavar='INT', type=int,
+        help='Activate plotting diagnostics after conversion with the '
+            'number of IFs (channels) to produce fringe diagnostics on. '
+            'The default is 4.  Sensible values are 1 (pick a middle channel), '
+            'N for that many channels spread through the IF range, '
+            'or 0 for off.')
+    plotter.add_argument('-S', '--sites', dest='sites',
+        default='', metavar='LIST',
+        help='comma-sep list of 2-letter station codes (Xx,Yy,...) to try'
+            ' (in this order) to use for plot diagnostics')
+    plotter.add_argument('-X', '--npix', dest='npix',
+        default=50, metavar='INT', type=int,
+        help='The number of pixels to show in the fringe plots (50)')
+    plotter.add_argument('-T', '--test', dest='test',
         default=False, action='store_true',
-        help='execute CASA with the generated input')
-    parser.add_argument('-l', '--label', dest='label',
-        default='', metavar='STRING',
-        help='prefix to the QA2 polconvert calibration directories. '
-        'The exact names despend on the QA2 version (see -q option).')
-    # optional, developmental or convenience arguments
-    parser.add_argument('-P', '--parallel', dest='parallel',
-        default=0, metavar='INT', type=int,
-        help='Number of CASA jobs to run in parallel.  The best value '
-        'depends on the number of physical cores and the memory available. '
-        '0 reverts to the non-parallel execution logic; 1 should provide '
-        'similar results, >1 should simply be that much faster.')
-    parser.add_argument('-i', '--input', dest='input',
+        help='Turns off processing of files, just does plotting')
+    # developmental or convenience arguments
+    develop.add_argument('-i', '--input', dest='input',
         default='', metavar='FILE',
         help='name of input file that will be created for CASA.')
-    parser.add_argument('-o', '--output', dest='output',
+    develop.add_argument('-o', '--output', dest='output',
         default='', metavar='FILE',
         help='name of output file to collect CASA output chatter.')
-    parser.add_argument('-e', '--exp', dest='exp',
+    develop.add_argument('-e', '--exp', dest='exp',
         default='', metavar='STRING',
         help='VEX experiment name, prefix of job input files; it will '
         'be derived from the list of jobs if not supplied')
-    parser.add_argument('-a', '--ant', dest='ant',
-        default=1, metavar='INT', type=int,
-        help='1-based index of linear (ALMA) antenna (normally 1)')
-    parser.add_argument('-x', '--xyadd', dest='xyadd',
+    develop.add_argument('-x', '--xyadd', dest='xyadd',
         default='', metavar='STRING',
         help='user supplied per station XY angle adjustment dict, e.g. '
-        ' "Xx:0.0, ...", or empty for default.  Normally 180.0 or 0.0 are '
+        ' "Xx:0.0, ..."  (empty by default).  Normally 180.0 or 0.0 are '
         ' the values you might need to supply ')
-    parser.add_argument('-q', '--qa2', dest='qa2',
-        default='v8', metavar='STRING',
-        help='table naming scheme for the QA2 tables; there should be ' +
-            'eight tables for antennas, appphase, dterms, bandpass, ' +
-            'ampgains, phasegains and xy phase and xy gains.  ' +
-            'Options are "v0" .. "v11" or a ' +
-            'comma-sep list in an environment variable QA2TABLES.  In '
-            'versions prior to v4, ".concatenated.ms" was part of the '
-            'label.  For v4-v11 and subsequent the label is just the '
-            'uid name (and/or other identifiers).   The default is "v8". '
-            'Examine the script for the details....')
-    parser.add_argument('-E', '--avgtime', dest='avgtime',
+    develop.add_argument('-E', '--avgtime', dest='avgtime',
         default=0.0, metavar='FLOAT', type=float,
         help='If >0 this will time-average the gains to reduce noise')
-    parser.add_argument('-y', '--gainmeth', dest='gainmeth',
+    develop.add_argument('-y', '--gainmeth', dest='gainmeth',
         default='T', metavar='CHAR',
         help='Specify the gain method to use on all calibration tables'
             ' except ones with "XY0", "bandpass" or "Gxyamp" in name;'
             ' "T" combines the gains, "G" retains separation of X and Y.')
-    parser.add_argument('-d', '--noDterm', dest='nodt',
+    develop.add_argument('-d', '--noDterm', dest='nodt',
         default=False, action='store_true',
         help='disable use of Dterm calibration tables')
-    parser.add_argument('-A', '--ampNorm', dest='ampnrm',
+    develop.add_argument('-A', '--ampNorm', dest='ampnrm',
         default=1.0, type=float,
-        help='set the DPFU in ANTAB or <=0 to apply it (0)')
-    parser.add_argument('-G', '--gainDel', dest='gaindel',
+        help='value for the DPFU in ANTAB or <=0 to just apply it (0)')
+    develop.add_argument('-G', '--gainDel', dest='gaindel',
         default='', metavar='LIST',
-        help='comma-sep list of gain tables to delete: del(gains[x])' +
-            'will be applied for every x in the list AFTER checks for' +
+        help='comma-sep list of gain tables to delete: del(gains[x])'
+            'will be applied for every x in the list AFTER checks for'
             'existence of tables has been carried out')
-    parser.add_argument('-s', '--spw', dest='spw',
+    develop.add_argument('-s', '--spw', dest='spw',
         default=-1, metavar='INT', type=int,
-        help='Index of SPW for PolConvert to use: 0,1,2,3 for the ' +
+        help='Index of SPW for PolConvert to use: 0,1,2,3 for the '
             'four basebands, or -1 (default) for PolConvert to select')
-    # plotting arguments
-    parser.add_argument('-f', '--fringe', dest='fringe',
-        default=4, metavar='INT', type=int,
-        help='Activate plotting diagnostics during conversion with the ' +
-            'number of IFs (channels) to produce fringe diagnostics on. ' +
-            'The default is 4.  Sensible values are 1 (a middle channel), ' +
-            'N for that many channels spread through the IF range, '
-            'or 0 for off.')
-    parser.add_argument('-m', '--remote', dest='remote',
+    develop.add_argument('-m', '--remote', dest='remote',
         default=-1, metavar='INT', type=int,
-        help='Index of remote antenna on baseline to converted antenna. ' +
-            'The default is -1 (disabled).  The vex file will be searched' +
-            'for the appropriate indices based on the site list, see -S.' +
+        help='Index of remote antenna on baseline to converted antenna. '
+            'The default is -1 (disabled).  The vex file will be searched'
+            'for the appropriate indices based on the site list, see -S.'
             'This value may be used only if there are issues...')
-    parser.add_argument('-S', '--sites', dest='sites',
-        default='', metavar='LIST',
-        help='comma-sep list of 2-letter station codes to try' +
-            ' (in order) to use for plot diagnostics')
-    parser.add_argument('-X', '--npix', dest='npix',
-        default=50, metavar='INT', type=int,
-        help='The number of pixels to show in the fringe plots (50)')
-    parser.add_argument('-T', '--test', dest='test',
+    develop.add_argument('-z', '--zmchk', dest='zmchk',
         default=False, action='store_true',
-        help='Turns off processing of files, just does plotting')
-    parser.add_argument('-z', '--zmchk', dest='zmchk',
-        default=False, action='store_true',
-        help='the default (False) assumes that a PolConvert fix (to not' +
-            ' crash if the IFs mentioned cannot be converted); set this' +
+        help='the default (False) assumes that a PolConvert fix (to not'
+            ' crash if the IFs mentioned cannot be converted); set this'
             ' to recover the original behavior which protects PolConvert.')
-        
     # the remaining arguments provide the list of input files
     parser.add_argument('nargs', nargs='*',
-        help='List of DiFX input job files')
+        help='List of DiFX input job files to process')
     return parser.parse_args()
+
+def tableSchemeHelp():
+    '''
+    Provide some help on the complex scheme
+    '''
+    story='''
+    There are two modes of operation: QA2 mode, where a set of CASA
+    calibration tables have been (separately) derived from polarimetric
+    observations, and non-QA2 (solve) mode where a solution is derived
+    from one scan and applied to others.
+
+    The first scheme has twelve versions, v0 .. v11 based on the development
+    history.  Currently v4 .. v11 are sensible; the default is v8.  This
+    scheme requires a set of tables (named with the the -l label argument):
+
+        a <label>.concatenated.ms.ANTENNA
+        c <label>.concatenated.ms.calappphase
+        d <label>.calibrated.ms.Df0.<APP|ALMA>
+        b <label>.concatenated.ms.bandpass-zphs
+        g <label>.concatenated.ms.flux_inf.<APP|ALMA>
+        p <label>.concatenated.ms.phase_int.<APP|ALMA><.XYsmooth>
+        x <label>.calibrated.ms.XY0.<APP|ALMA>
+        y <label>.calibrated.ms.Gxyamp.<APP|ALMA>
+    
+    Here APP or ALMA refers to ALMA Phasing Project/System (APP/APS) scans
+    used for VLBI or normal ALMA calibration scans and calibrated or
+    concatenated refer to the details of the QA2 production script.
+    (APS data is used for the tables labelled with APP, ALMA data for
+    the tables with ALMA.)  Finally ".XYsmooth" appears if the data was
+    smoothed, and absent if not.
+
+        a    c    d    b    g    p    x    y    XYsmooth
+    v4  .    .    APP  .    APP  APP  APP  APP  no
+    v5  .    .    APP  .    APP  ALMA APP  ALMA no
+    v6  .    .    APP  .    APP  ALMA APP  APP  no
+    v7  .    .    APP  .    APP  APP  APP  ALMA no
+    v8  .    .    APP  .    APP  APP  APP  APP  yes
+    v9  .    .    APP  .    APP  ALMA APP  ALMA yes
+    v10 .    .    APP  .    APP  ALMA APP  APP  yes
+    v11 .    .    APP  .    APP  APP  APP  ALMA yes
+
+    The second scheme assumes an initial reduction with <TBD.py>.
+
+    Finally an environment variable QA2TABLES may be set to a comma-sep
+    list of compete table names (ignoring label, concatenated and calibrated)
+    may be used for any arbitrary set of tables.
+    '''
+    print(story)
 
 def calibrationChecks(o):
     '''
     Check that required files are present.
     '''
+    ### help on -q option
+    if o.qa2 == 'help':
+        tableSchemeHelp()
+        sys.exit(0)
+    ### label processing
     if o.label == '':
         raise Exception('A label (-l) is required to proceed')
     if o.verb: print('Using label %s' % o.label)
@@ -218,6 +279,7 @@ def calibrationChecks(o):
     if len(o.qal) < 7:
         raise Exception('at least 7 QA2 tables are required, see --qa2 option')
     keys = ['a', 'c', 'd', 'b', 'g', 'p', 'x', 'y']
+    # o.qa2_dict = dict(list(zip(keys,o.qal)))
     o.qa2_dict = dict(zip(keys,o.qal))
     if o.nodt:
         print('nodt option is', o.nodt)
@@ -330,7 +392,7 @@ def runPrePolconvert(o):
     if os.system(cmd):
         raise Exception('Error while running prepolconvert, see prepol.log')
 
-def deduceZoomIndicies(o):
+def deduceZoomIndices(o):
     '''
     Pull the Zoom frequency indicies from the input files and check
     that all input files produce the same first and last values.
@@ -339,14 +401,15 @@ def deduceZoomIndicies(o):
     in runpolconvert) switches to o.remotelist assuming it is of the
     proper length.  This should solve poor plotting choices.
     '''
-    # Todo: fix for the case antenna needing work isn't telescope 0/AA
     sitelist = o.sites.split(',')
     if o.verb: print('Sitelist is',sitelist)
+    o.amap_dicts = list()
     o.remotelist = []
     o.remotename = []
     o.remote_map = []
     zoompatt = r'^ZOOM.FREQ.INDEX.\d+:\s*(\d+)'
-    almapatt = r'^TELESCOPE NAME %d:\s*AA' % (o.ant-1)
+    # we call it 'alma' but o.lin holds the choice
+    almapatt = r'^TELESCOPE NAME %d:\s*%s' % (o.ant-1,o.lin)
     amap_re = re.compile(r'^TELESCOPE NAME\s*([0-9])+:\s*([A-Z0-9][A-Z0-9])')
     freqpatt = r'^FREQ..MHZ..\d+:\s*(\d+)'
     zfirst = set()
@@ -377,7 +440,7 @@ def deduceZoomIndicies(o):
         zfir = str(zfirch)
         zfin = str(zfinch)
 
-        # cull jobs that do not appear to have AA as telescope 0
+        # cull jobs that do not appear to have 'alma' as telescope 0
         if almaline == '':
             issue = True
             for jn in o.jobnums:
@@ -389,7 +452,7 @@ def deduceZoomIndicies(o):
             if issue: raise Exception('Unable to purge job ' + jobin)
             else:     continue
         else:
-            print('Found ALMA in',jobin,almaline.rstrip())
+            print('Found %s in'%o.lin,jobin,almaline.rstrip())
             newargs.append(jobin)
             # workout plot ant for this job
             plotant = -1
@@ -400,6 +463,7 @@ def deduceZoomIndicies(o):
                     o.remote_map.append(str(sorted(antmap.keys())))
                     break
             o.remotelist.append(plotant)
+            o.amap_dicts.append(antmap)
             antmap = {}
 
         if o.verb: print('Zoom bands %s..%s from %s' % (zfir, zfin, jobin))
@@ -458,14 +522,17 @@ def deduceZoomIndicies(o):
         print('Leaving it up to PolConvert to sort out')
         return
     # finally the diagnostic message
-    if   medianfreq <  90000.0: medianband = '3 (GMVA)'
-    elif medianfreq < 214100.0: medianband = 'b1 (Cycle5 6[LSB]Lo)'
-    elif medianfreq < 216100.0: medianband = 'b2 (Cycle5 6[LSB]Hi)'
-    elif medianfreq < 228100.0: medianband = 'b3 (Cycle4 6[USB]Lo)'
-    elif medianfreq < 230100.0: medianband = 'b4 (Cycle4 6[USB]Hi)'
-    else:                       medianband = '??? band 7 ???'
-    print('Working with band %s based on median freq (%f)' % (
-            medianband, medianfreq))
+    if o.lin == 'AA':
+        if   medianfreq <  90000.0: medianband = '3 (GMVA)'
+        elif medianfreq < 214100.0: medianband = 'b1 (Cycle5 6[LSB]Lo)'
+        elif medianfreq < 216100.0: medianband = 'b2 (Cycle5 6[LSB]Hi)'
+        elif medianfreq < 228100.0: medianband = 'b3 (Cycle4 6[USB]Lo)'
+        elif medianfreq < 230100.0: medianband = 'b4 (Cycle4 6[USB]Hi)'
+        else:                       medianband = '??? band 7 ???'
+        print('Working with band %s based on median freq (%f)' % (
+                medianband, medianfreq))
+    else:
+        print('Non-ALMA case, no comment on median band or freq')
 
 def plotPrep(o):
     '''
@@ -485,13 +552,13 @@ def plotPrep(o):
         o.doPlot = ['','#','#','']
         o.flist = '0'
         for ii in range(1,o.fringe):
-            o.flist += ',(%d*len(doIF)/%d)' % (ii, o.fringe)
+            o.flist += ',(%d*len(doIF)//%d)' % (ii, o.fringe)
     if o.remote == o.ant:
         o.remote = o.ant + 1
         print('Shifting baseline from %d-%d to %d-%d' % (
             o.ant, o.remote - 1, o.ant, o.remote))
 
-def getInputTemplate():
+def getInputTemplate(o):
     '''
     This is the input script with %-able adjustments.
     '''
@@ -502,6 +569,16 @@ def getInputTemplate():
     # are having trouble or wish to see some of the plots).
     #
     import os
+    import sys
+    print('Debug data follows')
+    '''
+    # found this via inspect...
+    for key,val in o._get_kwargs():
+        if type(val) is str or type(val) is datetime.datetime:
+            template += ('\n    print("debug: %12s = ","%s")' % (key,val))
+        else:   # str(val) is acceptable to print
+            template += ('\n    print("debug: %12s = ", %s )' % (key,val))
+    template += '''
     %simport pylab as pl
     %spl.ioff()
     #
@@ -509,16 +586,17 @@ def getInputTemplate():
     #
     DiFXout = '%s'
     label = '%s'
+    print('label is ', label)
     expName = '%s'
     linAnt = [%s]
     rpcpath = os.environ['DIFXROOT'] + '/share/polconvert/runpolconvert.py'
     zfirst=%d
     zfinal=%d
-    doIF = range(zfirst+1, zfinal+2)
+    doIF = list(range(zfirst+1, zfinal+2))
     %splotIF = -1                       # plot no channels
-    %splotIF = doIF[len(doIF)/2]        # plot the middle channel
+    %splotIF = doIF[int(len(doIF)/2)]   # plot the middle channel
     %splotIF = [doIF[i] for i in [%s]]  # plot a set of channels
-    print 'using doIF value: ' + str(doIF)
+    print('using doIF value: ' + str(doIF))
     #
     # calibration tables
     #
@@ -539,29 +617,34 @@ def getInputTemplate():
     plotAntList=%s
     numFrPltPix=%d
     doTest=%s
-    timeRange=[]                        # default: don't care
+    timeRange=[]                        # don't care, but must be defined
     %stimeRange = [0,0,0,0, 14,0,0,0]   # first 14 days
     #
     spwToUse = %d
-    # default is empty dictionary, equivalent to 'Aa':0.0
+    # default is empty dictionary, equivalent to 'AA':0.0
     XYadd = {}
     constXYadd = %s
     %sXYadd = {%s}
-    print 'using XYadd   %%s' %% (str(XYadd))
-    # default is empty dictionary, equivalent to 'Aa':1.0
+    print('using XYadd   %%s' %% (str(XYadd)))
+    # default is empty dictionary, equivalent to 'AA':1.0
     XYratio = {}
-    print 'using XYratio %%s' %% (str(XYratio))
+    print('using XYratio %%s' %% (str(XYratio)))
     #
     djobs = %s
-    print 'djobs contains these jobs: ' + str(djobs)
+    print('djobs contains these jobs: ' + str(djobs))
     #
     workdir = '%s'
     # actually do the work:
-    print 'executing "execfile(rpcpath)" with rcpath and working directory'
-    print rpcpath
-    print workdir
-    print os.getcwd()
-    execfile(rpcpath)
+    print('executing "execfile(rpcpath)" with rcpath and working directory')
+    print(rpcpath)
+    print(workdir)
+    print(os.getcwd())
+    if sys.version_info.major < 3:
+        print('Python 2 execution')
+        execfile(rpcpath)               # Py2 form
+    else:
+        print('Python 3 execution')
+        execfile(rpcpath, globals())    # Py3 form
     quit()
     '''
     return template
@@ -569,8 +652,9 @@ def getInputTemplate():
 def createCasaInput(o, joblist, caldir, workdir):
     '''
     This function creates a file of python commands that can be piped
-    directly into CASA.  It is now written to support both the single
-    processing as well as the parallel processing case.
+    directly into CASA.  It now only supports parallel execution.
+    Note that joblist is now a list with precisely one job:  [job],
+    caldir is '..', and workdir is where we cd'd to for the work.
     '''
     oinput = workdir + '/' + o.input
     if o.verb: print('Creating CASA input file\n  ' + oinput)
@@ -579,7 +663,8 @@ def createCasaInput(o, joblist, caldir, workdir):
     if o.test:   dotest = 'True'
     else:        dotest = 'False'
 
-    template = getInputTemplate()
+    template = getInputTemplate(o)
+    # o.doPlot is set in plotPrep()
     script = template % (o.doPlot[0], o.doPlot[0],
         caldir, o.label, o.exp, o.ant, o.zfirst, o.zfinal,
         o.doPlot[1], o.doPlot[2], o.doPlot[3], o.flist,
@@ -593,17 +678,6 @@ def createCasaInput(o, joblist, caldir, workdir):
     ci.close()
     return os.path.exists(oinput)
 
-def createCasaInputSingle(o):
-    '''
-    Create the input to process all jobs in the current
-    working directory, sequentially.
-    '''
-    if createCasaInput(o, o.djobs, '.', '.'):
-        if o.verb: print('Created %s for single-threaded execution' % o.input)
-    else:
-        print('Problem creating',o.input)
-        o.run = False
-
 def createCasaCommand(o, job, workdir):
     '''
     The required shell incantation to run one job (it is the
@@ -616,22 +690,32 @@ def createCasaCommand(o, job, workdir):
     basecmd = o.exp + '.' + job + '.pc-casa-command'
     cmdfile = workdir + '/' + basecmd
     os.mkdir(workdir + '/casa-logs')
+    # cmd = list(map(str,list(range(14))))
     cmd = list(map(str,range(14)))
     cmd[0]  = '#!/bin/sh'
     cmd[1]  = '[ -f killcasa ] && exit 0'
     cmd[2]  = 'cd ' + workdir + ' && echo "starting" > ./status || exit 1'
     cmd[3]  = 'date -u +%Y-%m-%dT%H:%M:%S > ./timing'
+    # --nocrashreport available with v 5 and later
     cmd[4]  = '%s --nologger --nogui -c %s > %s 2>&1 < /dev/null' % (
         o.casa, o.input, o.output)
     cmd[5]  = 'casarc=$?'
-    cmd[6]  = 'if [ "$casarc" == 0 ]; then echo "conversion"; else echo "conversion failed with code $casarc"; fi > ./status'
+    cmd[6]  = ('if [ "$casarc" == 0 ]; then echo "conversion"; ' +
+        'else echo "conversion failed with code $casarc"; fi > ./status')
     cmd[7]  = 'mv casa*.log ipython-*.log casa-logs 2>&-'
-    cmd[8]  = 'mv %s %s *.pc-casa-command casa-logs' % (o.input, o.output)
-    cmd[9]  = 'mv polconvert.last casa-logs'
-    cmd[10] = 'if [ "$casarc" == 0 ]; then echo "completed"; else echo "failed with code $casarc"; fi > ./status'
+    # do not move self (basecmd) until self is done.
+    # cmd[8]  = 'mv %s %s *.pc-casa-command casa-logs' % (o.input, o.output)
+    cmd[8]  = 'mv %s %s casa-logs' % (o.input, o.output)
+    # until CASA tasks are working properly, polconvert.last may not exist
+    cmd[9]  = '[ -f polconvert.last ] && mv polconvert.last casa-logs'
+    cmd[10] = ('if [ "$casarc" == 0 ]; then echo "completed"; ' +
+        'else echo "failed with code $casarc"; fi > ./status')
     cmd[11] = 'date -u +%Y-%m-%dT%H:%M:%S >> ./timing'
-    cmd[12] = 'echo " "CASA for job %s finished with return code $casarc.' % job
-    cmd[13] = 'exit 0'
+    cmd[12] = ('echo " "CASA for job %s finished with return code $casarc.' %
+        job)
+    # cmd[13] = 'exit 0'
+    cmd[13] = 'exec sh -c "mv %s casa-logs; echo PolConvert done."' % basecmd
+    # add newlines and give it execute permissions so it can run
     cs = open(cmdfile, 'w')
     for ii in range(len(cmd)): cs.write(cmd[ii] + '\n')
     cs.close()
@@ -700,99 +784,6 @@ def checkDifxSaveDirsError(o, vrb):
         if vrb and len(saved) > 0: print('These are present (nuke them):',saved)
         return True
     return False
-
-def doFinalRunCheck(o):
-    '''
-    runpolconvert is careful, but the overhead of getting to it
-    is high, so we check for this last bit of operator fatigue
-    '''
-    if o.run and checkDifxSaveDirsError(o, o.run):
-        print('\n\n### Disabling Run so you can fix the issue\n')
-        o.run=False
-
-def executeCasa(o):
-    '''
-    This function pipes input to CASA and collects output.  The
-    various developer debugging files (if present) are swept into
-    the casa-logs directory (which is subsequently timestamped).
-    '''
-    misc = [ 'polconvert.last', 'POLCONVERT_STATION1.ANTAB',
-             'POLCONVERT.FRINGE', 'POLCONVERT.GAINS', 'PolConvert.log',
-             'CONVERSION.MATRIX', 'FRINGE.PEAKS', 'FRINGE.PLOTS',
-             'PolConvert.XYGains.dat' ]
-    removeTrash(o, misc)
-    cmd1 = 'rm -f %s' % (o.output)
-    cmd2 = '%s --nologger --nogui -c %s > %s 2>&1 < /dev/null' % (
-        o.casa, o.input, o.output)
-    cmd3 = '[ -d casa-logs ] || mkdir casa-logs'
-    if o.prep: cmd4 = 'mv prepol*.log '
-    else:      cmd4 = 'mv '
-    cmd4 += ' casa*.log ipython-*.log casa-logs 2>&-'
-    cmd5 = 'mv %s %s casa-logs' % (o.input, o.output)
-    cmd6 = ''
-    casanow = o.exp + '-casa-logs.' + datetime.datetime.now().isoformat()[:-7]
-    if o.run:
-        doFinalRunCheck(o)
-    if o.run:
-        if os.system(cmd1):
-            raise Exception('That which cannot fail (rm -f), failed')
-        if o.verb:
-            print('Note, ^C will not stop CASA (or polconvert).')
-            print('If it appears to hang, use kill -9 and then')
-            print('"touch killcasa" to allow normal cleanup.')
-            print('Follow CASA run with:\n  tail -n +1 -f %s\n' % (o.output))
-        rc = os.system(cmd2)
-        if rc:
-            if os.path.exists('killcasa'):
-                print('Removing killcasa')
-                os.unlink('killcasa')
-                print('Proceeding with remaining cleanup')
-            else:
-                raise Exception('CASA execution "failed" with code %d' % (rc))
-        if o.verb:
-            print('Success!  See %s for output' % o.output)
-        logerr = False
-        mscerr = False
-        for m in misc:
-            if os.path.exists(m):
-                cmd6 += '[ -f %s ] && mv %s casa-logs ;' % (m,m)
-        if os.system(cmd3 + ' ; ' + cmd4 + ' ; ' + cmd5):
-            logerr = True
-        if os.system(cmd6):
-            mscerr = True
-        if o.verb:
-            print('Swept CASA logs to ' + casanow)
-        if logerr: print('  There was a problem collecting CASA logs')
-        if mscerr: print('  There was a problem collecting misc trash')
-        jl = open('casa-logs/%s.joblist'%o.exp, 'w')
-        o.nargs.sort()
-        for jb in o.nargs: jl.write(jb + '\n')
-        jl.close()
-        os.rename('casa-logs', casanow)
-        print('Completed job list is in %s/%s.joblist' % (casanow,o.exp))
-        if o.verb: print('Review CASA run with:\n  tail -n +1 %s/%s\n' % (
-            casanow, o.output))
-    else:
-        for m in misc:
-            cmd6 += '[ -f %s ] && mv %s casa-logs ;' % (m,m)
-        print('')
-        print('You can run casa manually with input from ' + o.input)
-        print('Or just do what this script would do now, viz: ')
-        print('    ' + cmd1)
-        print('    ' + cmd2 + ' &')
-        print('    tail -n +1 -f ' + o.output)
-        print('    ' + cmd3)
-        print('    ' + cmd4)
-        print('    ' + cmd5)
-        print('    ' + cmd6)
-        print('    mv casa-logs ' + casanow)
-        print('')
-    if o.test:
-        print('')
-        print('The *.difx and *.save directories should have identical')
-        print('contents, and you will need to remove *.save to continue')
-        print('additional test runs on the same jobs.')
-        print('')
 
 def convertOneScan(o,job,wdr,cmd):
     '''
@@ -886,7 +877,7 @@ def reportWorkTodo(o):
             len(pclogs),len(o.jobnums)))
     if o.verb:
         for pc in pcdirs: print('   ',pc)
-    print('drivepolconvert is finished.\n')
+    print('drivepolconvert is finished.')
 
 def executeCasaParallel(o):
     '''
@@ -940,18 +931,21 @@ def executeCasaParallel(o):
 # enter here to do the work
 #
 if __name__ == '__main__':
+    argv = ' '.join(sys.argv)
     opts = parseOptions()
+    opts.argv = argv
     checkOptions(opts)
     if opts.prep:
         runPrePolconvert(opts)
-    deduceZoomIndicies(opts)
+    deduceZoomIndices(opts)
     plotPrep(opts)
-    if opts.parallel == 0:
-        createCasaInputSingle(opts)
-        executeCasa(opts)
-    else:
-        createCasaInputParallel(opts)
-        executeCasaParallel(opts)
+    # run the jobs in parallel
+    if opts.verb:
+        print('\nParallel execution with %d threads\n' % opts.parallel)
+    createCasaInputParallel(opts)
+    executeCasaParallel(opts)
+    if opts.verb:
+        print('\nDrivePolconvert execution is complete\n')
     # explicit 0 exit 
     sys.exit(0)
 

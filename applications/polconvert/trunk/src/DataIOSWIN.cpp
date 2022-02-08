@@ -1,5 +1,7 @@
-/* Copyright (C) 2013  Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
+/* Copyright (C) 2013-2020
+ *                     Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
                        Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
+                       Observatori Astronomic, Universitat de Valencia
   
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -378,6 +380,9 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
   autoCorrs = fopen(message,"wb");
 //  };
   
+// FIXME:
+// the circFile[] should perhaps be restricted to the IFs
+// that are actually needed, not all of them....
   
 // OPEN AUXILIARY BINARY FILES:
   if (doWriteCirc){
@@ -432,7 +437,7 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
   sprintf(message,"\n\n Searching for visibilities with mixed (or linear) polarization.\n\n");
   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
-  long bperp, cp;
+  long bperp;
 
 
   long RecordSize = 5*sizeof(int) + sizeof(double) + 2*sizeof(char) + endhead;
@@ -448,7 +453,7 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
   sprintf(message,"\n\nReading file %i of %i (size %li MB)\n",auxI+1,nfiles,filesizes[auxI]/(1024*1024));
   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
-  cp = 0;
+//  long cp = 0;
 
   while(!newdifx[auxI].eof()) {
 
@@ -502,6 +507,7 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
     secs /= 86400.;
     daytemp = ((double) mjd) + secs - day0;
 
+    // printf(" mjd %d:  %lf <= (daytemp) %lf <= %lf\n", mjd, doRange[0], daytemp, doRange[1]);
     if(daytemp>=doRange[0] && daytemp<=doRange[1]){
 
 
@@ -524,8 +530,9 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
   
   
 // Derive the parallactic angles:
-  getParAng(sidx,ant1-1,ant2-1,UVW,AuxPA1,AuxPA2);
+//z getParAng(sidx,ant1-1,ant2-1,UVW,AuxPA1,AuxPA2);
   daytemp2 = (daytemp + day0)*86400.;
+  getParAng(sidx,ant1-1,ant2-1,UVW,daytemp,AuxPA1,AuxPA2);
 
   
   
@@ -590,7 +597,9 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
 
     };
 
-    fwrite(&daytemp,sizeof(double),1,circFile[fridx]);
+    // CPfile timestamp is here
+    //fwrite(&daytemp,sizeof(double),1,circFile[fridx]);
+    fwrite(&daytemp2,sizeof(double),1,circFile[fridx]);
     fwrite(&ant1,sizeof(int),1,circFile[fridx]);
     fwrite(&ant2,sizeof(int),1,circFile[fridx]);
     fwrite(&AuxPA1,sizeof(double),1,circFile[fridx]);
@@ -1032,6 +1041,7 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap, bool print
    if (print && canPlot) {
      if (currConj){
      if (k==0){
+       // MPfile timestamp is here
        fwrite(&Records[currVis].Time,sizeof(double),1,plotFile);
        fwrite(&Records[currVis].Antennas[0],sizeof(int),1,plotFile);
        fwrite(&Records[currVis].Antennas[1],sizeof(int),1,plotFile);

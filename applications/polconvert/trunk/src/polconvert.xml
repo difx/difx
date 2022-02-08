@@ -8,9 +8,9 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 <task type="function" name="polconvert" category="analysis">
 
-  <shortdescription>\n\nVersion 1.7.9\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</shortdescription>
+  <shortdescription>Version 1.8.1 -- Converts VLBI visibilities polarization basis.</shortdescription>
       
-       <description>\n\nVersion 1.7.9\n\nConverts VLBI visibilities from mixed-polarization basis (i.e., linear-to-circular) into circular basis. Works with single VLBI stations as well as with phased arrays (i.e., phased ALMA).\n\n</description>
+       <description>Version 1.8.1 -- Converts VLBI visibilities from mixed-polarization (linear-circular) into a circular basis. Works with single VLBI stations as well as with calibrated phased arrays (e.g., phased ALMA).</description>
 
 
 <input>
@@ -138,7 +138,7 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <value>[False]</value>
     </param>
 
-    <param type="any" name="swapRL" mustexist="false">
+    <param type="bool" name="swapRL" mustexist="false">
       <description>Swap R-L of the OTHER antenna(s) when plotting the fringes.</description>
       <value>False</value>
     </param>
@@ -171,18 +171,18 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
     </param>
 
     <param type="any" name="excludeAnts" mustexist="false">
-      <description>List of antennas (i.e., list of integers) to NOT use in the cross-polarization gain estimates.</description>
+      <description>List of antennas (i.e., list of antenna codenames) to NOT use in the cross-polarization gain estimates.</description>
       <value>[]</value>
     </param>
 
     <param type="any" name="excludeBaselines" mustexist="false">
-      <description>List of baselines (i.e., a list of lists of two integers) to NOT use in the cross-polarization gain estimates.</description>
+      <description>List of baselines (i.e., a list of lists of two antenna codenames) to NOT use in the cross-polarization gain estimates.</description>
       <value>[]</value>
     </param>
 
 
 
-    <param type="any" name="doSolve" mustexist="false">
+    <param type="float" name="doSolve" mustexist="false">
       <description>If negative, do not estimate the cross-polarization gains. If positive or zero, estimate the gains using a Global Cross-Pol Fringe Fitting (GCPFF). The gains are fitted with an error function (Chi Square) defined as:\n\n sum( doSolve*(RR/LL-1)^2 + (RL^2 + LR^2) ),\n\n so that doSolve=0 minimizes the cross-hand polarizations (so it assumes a small linear polarization of the source), whereas doSolve>>1 assumes a negligible Stokes V.</description>
       <value>-1</value>
     </param>

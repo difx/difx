@@ -6,24 +6,28 @@
 # $Id$
 #
 
+from __future__ import absolute_import
+from __future__ import print_function
 import pylab as pl
 import numpy as np
 import os
+# not needed
+# from six.moves import range
 
-print 'Interactive plotting off.'
+print('Interactive plotting off.')
 pl.ioff()
 
 try:
     for var in [ TsysTable, Flux_inf, CalAppPhase ]:
         if type(var) == str:
             if os.path.exists(var) and os.path.isdir(var):
-                print 'Using', var
+                print('Using', var)
             else:
-                print 'Not a directory:', var
+                print('Not a directory:', var)
         else:
-            print 'Not a string:', var
-except Exception, ex:
-    print 'Problem with variables'
+            print('Not a string:', var)
+except Exception as ex:
+    print('Problem with variables')
     raise ex
 
 ###################################
@@ -32,9 +36,9 @@ tb.open(CalAppPhase)
 NPhased = set()
 npa = tb.getvarcol('numPhasedAntennas')
 for row in npa: NPhased.add(npa[row][0])
-print 'This track has',sorted(list(NPhased)),'phased antennas'
-MNPhased = np.median(map(lambda e: e[0], npa.values()))
-print 'The median number phased is', int(MNPhased)
+print('This track has',sorted(list(NPhased)),'phased antennas')
+MNPhased = np.median([e[0] for e in list(npa.values())])
+print('The median number phased is', int(MNPhased))
 
 
 ###################################
@@ -60,7 +64,7 @@ HT = HH%24.
 # Figure out start for this uid as both MJD and Iso time.
 MStart=np.min(AllTime)/86400.0
 IStart=qa.time({'value':MStart,'unit':'d'},form='fits')[0]
-print 'This Table starts at',MStart,IStart
+print('This Table starts at',MStart,IStart)
 ####################################
 
 
@@ -163,7 +167,7 @@ DPFU = np.zeros((len(AllGAntenna),len(AllGSpw)))
 for ai,ant in enumerate(AllGAntenna):
   for si,spi in enumerate(AllSpw):
 
-    if AvgGain[ai,si]>0.0 and ant in MedTsys[spi].keys() and np.min(MedTsys[spi][ant])>0.0:
+    if AvgGain[ai,si]>0.0 and ant in list(MedTsys[spi].keys()) and np.min(MedTsys[spi][ant])>0.0:
       DPFU[ai,si] = np.median(MedTsys[spi][ant])*(AvgGain[ai,si])**2.
 
 fig = pl.figure()
@@ -183,6 +187,6 @@ pl.savefig('DPFU.png')
 Phased = DPFU[:,0]>0.0
 NPhas = np.sum(Phased)
 DPFUave = np.average(DPFU[Phased])
-print 'Ave DPFU on %i ant: %.3f K/Jy'%(NPhas,DPFUave)
+print('Ave DPFU on %i ant: %.3f K/Jy'%(NPhas,DPFUave))
 
 # eof
