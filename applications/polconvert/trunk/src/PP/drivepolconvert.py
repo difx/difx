@@ -165,6 +165,14 @@ def parseOptions():
         help='the default (False) assumes that a PolConvert fix (to not'
             ' crash if the IFs mentioned cannot be converted); set this'
             ' to recover the original behavior which protects PolConvert.')
+    develop.add_argument('-I', '--IFlist', dest='iflist',
+        default='', metavar='LIST',
+        help='comma-sep list of frequency-table entries as found in the'
+            ' DiFX input file, which will be converted to an IF list for'
+            ' PolConvert to process.  Using this bypasses the normal logic'
+            ' that deduces this from ZOOM or TARGET bands.'
+            ' For regression testing, this may be set to "original" to'
+            ' recover the pre-Cycle7 zoom-based index deduction logic.')
     # the remaining arguments provide the list of input files
     parser.add_argument('nargs', nargs='*',
         help='List of DiFX input job files to process')
@@ -392,7 +400,247 @@ def runPrePolconvert(o):
     if os.system(cmd):
         raise Exception('Error while running prepolconvert, see prepol.log')
 
+def updatePlotAntMaps(o, antmap):
+    '''
+    Helper routine for commonInputGrokkage().  Workout an appropriate
+    plotant for this job (from o.sitelist, ultimately) and update the
+    supporting data objects saved in 'o'.  antmap is a dict keyed by
+    antenna names provides indices for the antennas in this particular job.
+    '''
+    plotant = -1
+    for site in o.sitelist:
+        if site in antmap:
+            plotant = antmap[site] + 1
+            o.remotename.append(site)
+            o.remote_map.append(str(sorted(antmap.keys())))
+            break
+    o.remotelist.append(plotant)    # one-based antenna index to plot
+    o.amap_dicts.append(antmap)     # the antenna map for this job
+
+def provideRemoteReport(o):
+    '''
+    Provide a report on the remote peer for the polconvert plot diagnostics
+    If by some odd error the 4 lists are not the same length, the map will
+    processing through the shortest list.
+    '''
+    if o.verb:
+        for j,r,s,m in map(lambda x,y,z,w:(x,y,z,w),
+            o.nargs, o.remotelist, o.remotename, o.remote_map):
+            print("%s <-> remote %s(%s) = %s[%d]" % (j,s,r,m,r-1))
+        print('Remote list is',o.remotelist,'(indices start at 1)')
+        print('Remote list len is',len(o.remotelist),'remote index is',o.remote)
+        if o.remote == -1: print('(remote index of -1 means "not used; use list")')
+    if (len(o.remotelist) != len(o.nargs)):
+        print('Length mismatch:',len(o.nargs),'but',len(o.remotelist),
+            'remotes...\n...disabling plotting to allow PolConvert to not die')
+        o.remotelist = []
+
+def commonInputGrokkage(o):
+    '''
+    This routine contains work common to all IF deduction paths as
+    derived from the original code used in Cycles 4 and 5 or Cycle 7
+    without output bands in prepass work.  This opens the o.nargs
+    input files, groks for information which it caches in o.things.
+    In the event of serious difficulties, it throws an exception.
+    This routine generates the following data objects:
+        o.sitelist      a list of sites (o.sites)
+        o.amap_dicts    list of antenna map dictionaries
+        o.remotelist    list of remote antennas (for plotting)
+        o.remotename    corresponding site name
+        o.remote_map    completing the lookup
+        o.zoomfreqs     list of set of zoom indices to frequency table
+        o.targfreqs     list of set of target indices to frequency table
+        o.mfreqset      set of median frequencies by job
+        o.zfirst        global first (0-based) frequency index
+        o.zfinal        global final (0-based) frequency index
+    note that jobs that do not contain the 'alma' station are dropped
+    from the list of jobs to process (i.e. almaline == '').  These
+    lists are thus ordered by the new set of jobs to process.
+    FIXME: this function is still way to big...
+    '''
+    if o.ozlogic: return
+    ### FIXME: separate function for these
+    o.sitelist = o.sites.split(',')
+    if o.verb: print('Sitelist is',o.sitelist)
+    o.amap_dicts = list()
+    o.remotelist = []
+    o.remotename = []
+    o.remote_map = []
+    o.zoomfreqs  = []
+    o.targfreqs  = []
+    o.mfreqset   = set()
+    # things in the frequency table
+    zoom_re = re.compile(r'^ZOOM.FREQ.INDEX.\d+:\s*(\d+)')
+    tfrq_re = re.compile(r'^TARGET FREQ \d+/\d+:\s*(\d+)')
+    freq_re = re.compile(r'^FREQ..MHZ..\d+:\s*(\d+\.*\d*)')
+    # telescope table; we call it 'alma' but o.lin holds the choice
+    alma_re = re.compile(r'^TELESCOPE NAME %d:\s*%s' % (o.ant-1,o.lin))
+    amap_re = re.compile(r'^TELESCOPE NAME\s*([0-9])+:\s*([A-Z0-9][A-Z0-9])')
+    newargs = []
+    if o.verb: print('Grokking the',len(o.nargs),'jobs')
+    for jobin in o.nargs:
+        almaline = ''
+        antmap = {}
+        # capture uniq mentions of recorded frequencies,
+        # zoom indices and target indicies
+        cfrqset = set()
+        zoomset = set()
+        tfrqset = set()
+        ji = open(jobin, 'r')
+        for line in ji.readlines():
+            # frequency table info
+            freq = freq_re.search(line)
+            if freq:
+                cfrqset.add(freq.group(1))
+                continue
+            zhit = zoom_re.search(line)
+            if zhit:
+                zoomset.add(zhit.group(1))
+                continue
+            ofrq = tfrq_re.search(line)
+            if ofrq:
+                tfrqset.add(ofrq.group(1))
+                continue
+            # telescope table info
+            alma = alma_re.search(line)
+            if almaline == '' and alma:
+                almaline = line
+            amap = amap_re.search(line)
+            if amap:
+                antmap[amap.group(2)] = int(amap.group(1))
+                continue
+        ji.close()
+        # cull jobs that do not appear to have 'alma' as telescope '0'
+        if almaline == '':
+            ### FIXME: separate function
+            issue = True
+            for jn in o.jobnums:
+                if '_' + str(jn) + '.input' in jobin:
+                    print('ALMA not in',jobin,', skipping (',jn,')')
+                    o.jobnums.remove(jn)
+                    issue = False
+                    break
+            if issue:
+                raise Exception('Unable to purge job ' + jobin)
+            continue  # with next jobin from o.nargs 
+        print('Found %s in'%o.lin,jobin,almaline.rstrip())
+        newargs.append(jobin)
+        updatePlotAntMaps(o, antmap)
+        o.zoomfreqs.append(zoomset)
+        o.targfreqs.append(tfrqset)
+        cfrq = sorted(list(cfrqset))
+        o.mfreqset.add(cfrq[len(cfrq)//2])
+    # update the set of jobs
+    o.nargs = newargs
+    if o.verb: print('Retaining',len(o.nargs),'jobs')
+    # o.jobnums was synchronized above, but we need to resync
+    # this, which was originally set in inputRelatedChecks()
+    o.djobs = str(list(map(str,o.jobnums)))
+    if o.verb: print('Jobs now',o.djobs)
+    # Report on remote peer for polconvert plot diagnostics
+    provideRemoteReport(o)
+    provideBandReport(o)
+
+def provideBandReport(o):
+    '''
+    If we are handling the ALMA case, then report the ALMA band
+    we think we are working with.  If not the ALMA case, report
+    what we found, but make no comment about band.
+    '''
+    print('set of median frequencies is:',o.mfreqset)
+    if len(o.mfreqset) == 1:
+        medianfreq = float(o.mfreqset.pop())
+    elif len(o.mfreqset) > 1:
+        mfqlist = list(o.mfreqset)
+        medianfreq = float(mfqlist[len(mfqlist)/2])
+    else:
+        print('No median frequency, so no idea about medianband')
+        print('Leaving it up to PolConvert to sort out')
+        return
+    if o.lin == 'AA':
+        if   medianfreq <  40000.0: medianband = 'very low freq'
+        elif medianfreq <  50000.0: medianband = 'B1 b1 (GMVA)'
+        elif medianfreq <  90000.0: medianband = 'B3 b1 (GMVA)'
+        elif medianfreq < 214100.0: medianband = 'B6 b1 (EHTC)'
+        elif medianfreq < 216100.0: medianband = 'B6 b2 (EHTC)'
+        elif medianfreq < 228100.0: medianband = 'B6 b3 (EHTC)'
+        elif medianfreq < 230100.0: medianband = 'B6 b4 (EHTC)'
+        elif medianfreq < 336600.0: medianband = 'B7 b1 (EHTC)'
+        elif medianfreq < 338600.0: medianband = 'B7 b2 (EHTC)'
+        elif medianfreq < 348600.0: medianband = 'B7 b3 (EHTC)'
+        elif medianfreq < 350600.0: medianband = 'B7 b4 (EHTC)'
+        else:                       medianband = 'very high freq'
+        print('Working with band %s based on median freq (%f)' % (
+                medianband, medianfreq))
+    else:
+        print('Non-ALMA case, no comment on median band or freq')
+
+def useTheUserIFlist(o):
+    '''
+    User provided a list of frequency table entries; use those.
+    o.zfirst and o.zfinal remain negative to trigger that this
+    one list is used for all scans.  Likely only one requested.
+    The actual work is in the input template, so here we just check.
+    Return True if user list was provided.
+    '''
+    if o.ozlogic: return False
+    if o.iflist == '': return False
+    zlist = o.iflist.split(',')
+    o.zfirst = int(zlist[0])
+    o.zfinal = int(zlist[-1])
+    print("User list zff: %d,%d"%(o.zfirst,o.zfinal))
+    if o.verb: print(zlist)
+    return True
+
+def getFirstFinal(ofreqs):
+    '''
+    Helper for deduceOutputBands() and deduceZoomIndices() to
+    find first and final from the list of sets of indices.
+    ofreqs is a list of sets (o.targfreqs or o.zoomfreqs)
+    '''
+    first = 100000
+    final = -2
+    for zmf in ofreqs:
+        if len(zmf) == 0: continue
+        szmf = sorted(list(zmf))
+        sfir = int(szmf[0])
+        sfin = int(szmf[-1])
+        if sfir < first: first = sfir
+        if sfin > final: final = sfin
+    if first == 100000 or final == -2:
+        return -1,-2
+    return first,final
+
+def deduceOutputBands(o):
+    '''
+    Try do deduce the list of IFs to process from the input file assuming
+    the outputband TARGET FREQs are supplied...as with difx2mark4. In
+    commonInputGrokkage, o.targfreqs will have been created with target
+    frequency list.  For now, just find first and last.
+    ## FIXME-later: create per-job first and final or lists
+    Return True if TARGET FREQs were found.
+    '''
+    if o.ozlogic: return False
+    o.zfirst,o.zfinal = getFirstFinal(o.targfreqs)
+    if o.zfirst == -1: return False
+    return True
+
 def deduceZoomIndices(o):
+    '''
+    This is a modified version of the original logic that uses the common
+    code for non-IF things.  In commonInputGrokkage, o.zoomfreqs will have
+    been populated as a list (one per surviving job) of zoom freqs.  This
+    version mimics the behavior of the original code and produces global
+    first and final frequency indices.
+    ### FIXME-later: create per-job first and final or lists
+    Return True if ZOOM bands provided what we need.
+    '''
+    if o.ozlogic: return False
+    o.zfirst,o.zfinal = getFirstFinal(o.zoomfreqs)
+    if o.zfirst == -1: return False
+    return True
+
+def oldDeduceZoomIndices(o):
     '''
     Pull the Zoom frequency indicies from the input files and check
     that all input files produce the same first and last values.
@@ -400,6 +648,7 @@ def deduceZoomIndices(o):
     The user can specify a remote antenna, but now logic here (and
     in runpolconvert) switches to o.remotelist assuming it is of the
     proper length.  This should solve poor plotting choices.
+    No Return value; this is the original implementation.
     '''
     sitelist = o.sites.split(',')
     if o.verb: print('Sitelist is',sitelist)
@@ -439,7 +688,6 @@ def deduceZoomIndices(o):
         ji.close()
         zfir = str(zfirch)
         zfin = str(zfinch)
-
         # cull jobs that do not appear to have 'alma' as telescope 0
         if almaline == '':
             issue = True
@@ -465,7 +713,6 @@ def deduceZoomIndices(o):
             o.remotelist.append(plotant)
             o.amap_dicts.append(antmap)
             antmap = {}
-
         if o.verb: print('Zoom bands %s..%s from %s' % (zfir, zfin, jobin))
         if len(cfrq) < 1:
             raise Exception('Very odd, no frequencies in input file ' + jobin)
@@ -473,7 +720,6 @@ def deduceZoomIndices(o):
         zfirst.add(zfir)
         zfinal.add(zfin)
         mfqlst.add(cfrq[len(cfrq)//2])
-
     o.nargs = newargs
     # o.jobnums is also synchronized
     # and o.nargs should be synchronized with o.remotelist
@@ -534,13 +780,38 @@ def deduceZoomIndices(o):
     else:
         print('Non-ALMA case, no comment on median band or freq')
 
+def plotPrepList(o):
+    '''
+    Same as plotPrep() for the case that the user provided a list.
+    '''
+    pass
+
+###
+### end of old code section
+###
+
 def plotPrep(o):
     '''
-    This function sets a few things related to plotting.
+    This function sets a few things related to plotting, and assumes
+    a continuous set of IFs (no gaps) from zfirst to zfinal.  The list
+    o.doPlot comments out things in the template:
+        o.doPlot[0]  arg 0 and 1            %s import pylab and pl.ioff()
+        o.doPlot[1]  arg 8 (after zfinal)   %s plotIF = -1
+        o.doPlot[2]  arg 9                  %s plotIF = middle of doIF
+        o.doPlot[3]  arg 10                 %s plotIF = a list from flist
     '''
+    if o.remote == o.ant:
+        o.remote = o.ant + 1
+        print('Shifting baseline from %d-%d to %d-%d' % (
+            o.ant, o.remote - 1, o.ant, o.remote))
+    # handle the case of a discontinuous list, or different per job
+    if o.zfirst < 0 and o.zfinal < 0:
+        plotPrepList(o)
+        return
+    # handle the case of a continuous, common list for all jobs
     if o.fringe > o.zfinal+1-o.zfirst:
         o.fringe = o.zfinal+1-o.zfirst
-        print('Revising number of fringed channels to %d' % o.fringe)
+        print('Reducing number of fringe plot channels to %d' % o.fringe)
     if o.fringe == 0:
         o.doPlot = ['#','','#','#']
         o.remote = -1
@@ -553,10 +824,6 @@ def plotPrep(o):
         o.flist = '0'
         for ii in range(1,o.fringe):
             o.flist += ',(%d*len(doIF)//%d)' % (ii, o.fringe)
-    if o.remote == o.ant:
-        o.remote = o.ant + 1
-        print('Shifting baseline from %d-%d to %d-%d' % (
-            o.ant, o.remote - 1, o.ant, o.remote))
 
 def getInputTemplate(o):
     '''
@@ -590,9 +857,15 @@ def getInputTemplate(o):
     expName = '%s'
     linAnt = [%s]
     rpcpath = os.environ['DIFXROOT'] + '/share/polconvert/runpolconvert.py'
-    zfirst=%d
-    zfinal=%d
-    doIF = list(range(zfirst+1, zfinal+2))
+    # user-provided list of freq indices to convert via o.iflist:
+    doIFstr = '%s'
+    if doIFstr == '':   # original first,final logic; shift by 1
+        zfirst=%d
+        zfinal=%d
+        doIF = list(range(zfirst+1, zfinal+2))
+    else:               # use the user list and then: shift by 1
+        doIF = [i+1 for i in map(int,doIFstr.split(','))]
+    # frequency indices to plot
     %splotIF = -1                       # plot no channels
     %splotIF = doIF[int(len(doIF)/2)]   # plot the middle channel
     %splotIF = [doIF[i] for i in [%s]]  # plot a set of channels
@@ -666,7 +939,7 @@ def createCasaInput(o, joblist, caldir, workdir):
     template = getInputTemplate(o)
     # o.doPlot is set in plotPrep()
     script = template % (o.doPlot[0], o.doPlot[0],
-        caldir, o.label, o.exp, o.ant, o.zfirst, o.zfinal,
+        caldir, o.label, o.exp, o.ant, o.iflist, o.zfirst, o.zfinal,
         o.doPlot[1], o.doPlot[2], o.doPlot[3], o.flist,
         o.qa2, o.qal, o.qa2_dict, o.gainmeth, o.avgtime, o.ampnrm, o.gaindel,
         o.remote, o.remotelist, o.npix, dotest, o.doPlot[0],
@@ -740,6 +1013,7 @@ def createCasaInputParallel(o):
     if checkDifxSaveDirsError(o, True):
         raise Exception('Fix these *.difx or *.save dirs issues')
     o.now = datetime.datetime.now()
+    # o.remotelist is passed, but we set o.remote below
     remotelist = o.remotelist
     o.remotelist = []
     for job,rem in map(lambda x,y:(x,y), o.jobnums, remotelist):
@@ -937,7 +1211,24 @@ if __name__ == '__main__':
     checkOptions(opts)
     if opts.prep:
         runPrePolconvert(opts)
-    deduceZoomIndices(opts)
+    # this is somewhat "temporary"
+    if opts.iflist == 'original':
+        print('Original zoom logic requested')
+        opts.iflist = ''
+        opts.ozlogic = True
+    else:
+        opts.ozlogic = False
+    # various work in preparation for job creation and execution
+    commonInputGrokkage(opts)
+    if useTheUserIFlist(opts):
+        print('Proceeding with the User-provide list')
+    elif deduceOutputBands(opts):
+        print('Proceeding with list from output bands')
+    elif deduceZoomIndices(opts):
+        print('Proceeding with list from zoom bands')
+    else:
+        print('Proceeding with the original zoom logic')
+        oldDeduceZoomIndices(opts)     # original derived from ZOOMs
     plotPrep(opts)
     # run the jobs in parallel
     if opts.verb:
