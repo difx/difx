@@ -41,7 +41,7 @@ if os.path.exists(args[1]):
 starttime = float(timerange[0])
 stoptime  = float(timerange[1])
     
-if sys.version.info.major < 3:
+if sys.version_info.major < 3:
     difxinput  = open(args[0], 'r')
     difxoutput = open(args[1], 'w')
 else:   # Python3 requires binary opens
