@@ -14,11 +14,15 @@ parser.add_option("-v", "--verbose", dest="verbose", action="store_true", defaul
                   help="Turn verbose printing on")
 parser.add_option("-i", "--inputfile", dest="inputfile", default="",
                   help="The input file used for the correlation") 
+parser.add_option("-k", "--clobber", dest="clobber", default=False,
+                  action='store_true',
+                  help="clobber any exiting output file") 
 (options, args) = parser.parse_args()
 maxchannels     = int(options.maxchannels)
 verbose         = options.verbose
 inputfile       = options.inputfile
 timerange       = options.timerange.split(',')
+clobber            = options.clobber
 if len(args) != 2:
     parser.error("You must supply an input difx file to snip and an output filename!")
 if inputfile == "":
@@ -30,13 +34,19 @@ if numfreqs == 0:
     parser.error("Couldn't parse input file " + inputfile + " correctly!")
 if not os.path.exists(args[0]):
     parser.error("Input difx file %s doesn't exist!" % (args[0]))
+if os.path.exists(args[1]) and clobber:
+    os.unlink(args[1])
 if os.path.exists(args[1]):
     parser.error("Output difx file %s already exists!" % (args[1]))
 starttime = float(timerange[0])
 stoptime  = float(timerange[1])
     
-difxinput  = open(args[0])
-difxoutput = open(args[1], 'w')
+if sys.version.info.major < 3:
+    difxinput  = open(args[0], 'r')
+    difxoutput = open(args[1], 'w')
+else:   # Python3 requires binary opens
+    difxinput  = open(args[0], 'rb')
+    difxoutput = open(args[1], 'wb')
 vis        = []
 for j in range(maxchannels):
     vis.append(0.0)
@@ -56,7 +66,7 @@ while not len(nextheader) == 0:
         sys.exit()
     mjd = nextheader[1]
     seconds = nextheader[2]
-    buffer = difxinput.read(8*nchan)
+    buffer = difxinput.read(int(8*nchan))
     dayfrac = (mjd - startmjd) + float(seconds)/86400.0
     if dayfrac >= starttime and dayfrac <= stoptime:
         if verbose:
