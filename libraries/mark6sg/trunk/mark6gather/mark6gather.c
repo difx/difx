@@ -216,10 +216,7 @@ static int getFirstBlocks(Mark6File *m6f)
 		return -4;
 	}
 	v = fread(&m6f->block2, sizeof(m6f->block1), 1, m6f->in);
-	if(v < 1)
-	{
-		return -5;
-	}
+	/* No worries if this fails due to file size being short, it seems */
 
 	v = fseeko(m6f->in, offset, SEEK_SET);
 	if(v != 0)
