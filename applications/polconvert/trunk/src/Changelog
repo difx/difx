@@ -1,3 +1,16 @@
+v2.0b -- does not apply here, yet
+
+v1.9.0 -- does not apply here, yet
+
+v1.8.4
+- finishing Py3 conversion with updates to make/configure within DiFX
+
+v1.8.3
+- interim successor to v1.8.1 for the DiFX branch of PolConvert
+- (1.8.2 was developed on launchpad present with the git repo creation)
+
+v1.8.2 -- does not apply here, yet
+
 v1.8.1
 - improved support for FITS-IDI
 - fixed some buggy parallactic angle code relevant to single dish

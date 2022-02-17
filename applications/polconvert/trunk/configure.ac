@@ -43,35 +43,41 @@ if [test $have_casa = true] ; then
     else
 	AC_MSG_NOTICE([BUILDMYTASKS is $BUILDMYTASKS])
     fi
-    # Version 6.x casa-release6/bin/python3 -> casa
-    # Version 5.x casa-release5/bin/python -> casa
+    # Version 6.x casa-release6/bin/python3 -> casa -- case 1
+    # Version 5.x casa-release5/bin/python -> casa  -- case 2
+    # neither                                       -- case 3
     AC_PATH_PROG([casapy3], [python3], [/bin/false], [$DIFXCASAPATH])
     AC_PATH_PROG([casapy2], [python], [/bin/false], [$DIFXCASAPATH])
     # we presume only one will be defined.  See the Makefile.am
     # to understand what is going on with BMT*
     if [test x$casapy3 = x$DIFXCASAPATH/python3] ; then
-        BMTASKARG='--upgrade polconvert.xml'
+        BMTASKMOD='polconvertpkg'
         BMTASKXML='polconvert.xml'
         CASAPYTHON=$casapy3
+        have_casa6=true
         AC_MSG_NOTICE([Invoking CASAPYTHON as $CASAPYTHON])
     elif [test x$casapy2 = x$DIFXCASAPATH/python] ; then
-        BMTASKARG='&& false'
-        BMTASKXML='&& false'
+        BMTASKMOD=''
+        BMTASKXML=''
         CASAPYTHON=$casapy2
+        have_casa6=false
         AC_MSG_NOTICE([Invoking CASAPYTHON as $CASAPYTHON])
     else
         AC_MSG_NOTICE([Did not find python within CASA])
+        CASAPYTHON=/bin/false
         have_casa=false
+        have_casa6=false
     fi
 fi
 # try to use whatever is in CASA
 DIFXCASALIBPATH=$DIFXCASAPATH/../lib
 AC_SUBST(BMTASKXML)
-AC_SUBST(BMTASKARG)
+AC_SUBST(BMTASKMOD)
 AC_SUBST(CASAPYTHON)
 AC_SUBST(DIFXCASAPATH)
 AC_SUBST(DIFXCASALIBPATH)
 AM_CONDITIONAL(HAVE_CASA, $have_casa)
+AM_CONDITIONAL(HAVE_CASA6, $have_casa6)
 # until we figure out how to automatically write setup.py
 # this environment variable may be needed
 AC_MSG_NOTICE([POLGAINSOLVELIBS is $POLGAINSOLVELIBS])

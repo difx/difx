@@ -31,31 +31,38 @@ pkgdata_DATA = _PolConvert.so _getAntInfo.so _PolGainSolve.so _XPCal.so \
 # need to get the install first, then the local data install task
 install-data-am: install-pkgdataDATA install-data-local
 
-# Run the CASA local build in the install directory
-# buildmytasks is a PERL(!) script living in $DIFXCASAPATH through 5.x
-# converted to Python3 for 6.x series which requires an upgrade step
-# in order to share the same 5.x series xml file.
+#
+# One of casapy2 or casapy3 will be /bin/false based
+# on seaching for python or python3 in $DIFXCASAPATH
+#
+# @BUILDMYTASKS@ &c are provided by configure to handle the two
+# cases.  The python2 method works through 5.8.  The python3 method
+# was broken in 6.1 and possibly fixed in 6.2.  Tested in 6.4.
+#
 # The configure script for python2 will have set @BMTASKXML@ so that
-# the second statement is stops after the initial test.
-# The third statement covers some weird bug in casacore validation.
-install-data-local: install-pkgdataDATA
+# the chain of commands stops after one invocation.
+#
+# The standalone rewrite is not yet supported here.
+#
+if HAVE_CASA6
+# the command invokes a script that uses buildmytasks in ...share/polconvert
+bpt=$(srcdir)/PP/buildpy3tasks.sh
+else
+# the command below reduces to executing buildmytasks in ...share/polconvert
+bpt=
+endif
+install-data-local: install-pkgdataDATA $(bpt)
 	@echo first statement -- run buildmytasks
 	-cd $(pkgdatadir) ;\
 	export PATH=@DIFXCASAPATH@${PATH_SEPARATOR}${PATH} ;\
-	export CASALD_LIBRARY_PATH=@DIFXCASALIBPATH@${PATH_SEPARATOR}${LD_LIBRARY_PATH} ;\
-	@BUILDMYTASKS@ @BMTASKARG@ && @BUILDMYTASKS@ @BMTASKXML@
-	@echo ok to ignore the mv errors--these are within buildmytasks
-	@echo second statement -- cleanup after buildmytasks "(py3 only)"
-	[ "@BMTASKXML@" = '&& false' ] || \
-	sh -c "cd $(pkgdatadir) && [ -f polconvert.xml.bak ] && \
-		mv polconvert.py polconvert.bak && \
-		sed '/from..private.task/s/.private.//' polconvert.bak \
-			> polconvert.py ; "
-	@echo third statement
+	cslp=@DIFXCASALIBPATH@${PATH_SEPARATOR}${LD_LIBRARY_PATH} ;\
+	export CASALD_LIBRARY_PATH=$$cslp ;\
+	$(bpt) @BUILDMYTASKS@ @BMTASKXML@ @BMTASKMOD@
 	-[ -f $(pkgdatadir)/polconvert_cli.py ] && \
+	echo cleaning up some weird casacore validation issue && \
 	sh -c "cd $(pkgdatadir) ; mv polconvert_cli.py polconvert_cli.py.bak ;\
 		sed '/casac.casac.utils...verify/s/casac/#casac/' \
-			polconvert_cli.py.bak > polconvert_cli.py"
+		polconvert_cli.py.bak > polconvert_cli.py"
 
 #
 # massive Kluge here to share code between scripts
