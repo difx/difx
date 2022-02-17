@@ -12,6 +12,11 @@ import shutil
 import re
 import sys
 
+if sys.version_info.major < 3:
+    pass
+else:
+    from polconvertpkg.private.task_polconvert import polconvert as polconvert
+
 pcvers='1.8.4'
 
 # Begin by verifying everthing that should be defined at this point.

@@ -4,6 +4,7 @@ v1.9.0 -- does not apply here, yet
 
 v1.8.4
 - finishing Py3 conversion with updates to make/configure within DiFX
+- includes a start on tools to slice and dice sample datasets
 
 v1.8.3
 - interim successor to v1.8.1 for the DiFX branch of PolConvert
