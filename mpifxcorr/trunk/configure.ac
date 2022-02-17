@@ -147,6 +147,22 @@ AC_CHECK_LIB(rt, clock_gettime)
 CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${VDIFIO_CFLAGS} ${MARK6SG_CFLAGS} ${MATH_CFLAGS} ${FFTW3_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET} ${OPENMP_CXXFLAGS} ${DIRLIST_CFLAGS} ${MARK6SG_CFLAGS}"
 LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${MARK6SG_LIBS} ${SS_LIBS} ${MATH_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} ${DIRLIST_LIBS} $LIBS"
 
+
+dnl **********************************************************
+dnl **** Check if AddressSanitizer was requested          ****
+dnl **********************************************************
+
+AC_ARG_ENABLE([asan], AS_HELP_STRING([--enable-asan],[enable compiler instrumentation (AddressSanitizer), cf. Google for when to use it]))
+enable_asan=`echo $enable_asan`
+if test "x${enable_asan}" == "xyes"; then
+	# Note:  To use the ASan code instrumentation it must be suppored by your compiler (gcc 4.8+, Clang/LLVM)
+	# Note2: Only use --enable-asan for your DEBUG builds - the injected runtime checks have a high overhead.
+	CPPFLAGS="${CPPFLAGS} -fsanitize=address -fno-omit-frame-pointer"
+	CXXFLAGS="${CXXFLAGS} -fsanitize=address -fno-omit-frame-pointer"
+	LIBS="${LIBS} -static-libasan"  # gcc 4.8+
+fi
+
+
 echo "CXXFLAGS = ${CXXFLAGS}"
 echo "LIBS = ${LIBS}"
 AC_CONFIG_FILES([
