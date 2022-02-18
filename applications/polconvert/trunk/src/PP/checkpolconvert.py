@@ -10,7 +10,7 @@
 # look for "(Sync with drivepolconvert.)" in the doc strings.
 #
 '''
-checkepolconvert.py -- a program to check the polconvert tables
+checkpolconvert.py -- a program to check the polconvert tables
 '''
 
 from __future__ import absolute_import
@@ -38,7 +38,7 @@ def parseOptions():
     epi += 'first with prepolconvert.py, then with '
     epi += 'drivepolconvert.py, and finally difx2mark4 and/or difx2fits. '
     epi += 'This script is designed to report the shape of the tables, and '
-    epi += 'optionally (-c), extract some time-selected interval (-b ~ -c).'
+    epi += 'optionally (-c), extract some time-selected interval (-b ~ -e).'
     use = '%(prog)s [options]\n  Version'
     use += '$Id$'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
@@ -182,7 +182,7 @@ def calibrationChecks(o):
                     c = ''
         if c != '':
             o.qa2_copy[key] = c
-    o.exp = 'check'
+    o.exp = 'checkpolconvert'
 
 def reportTableNames(o):
     '''
@@ -240,7 +240,8 @@ def checkTemplate(key, caltab):
     '''
     Add code to check the calfile.  Checking consists of updating the
     "ok" variable and using the term ERROR.  Because CASA does not allow
-    a return value, post-processing of the output file is needed.
+    a return value, post-processing of the output file is needed.  The
+    ANTENNA table need not have a time column
     '''
     cs='''
     key='%s'
@@ -253,15 +254,18 @@ def checkTemplate(key, caltab):
     if tcname in cnames:
         print('  time index: %%d' %% cnames.index(tcname))
     else:
-        print('  time column ' + str(tcname) + ' is missing (ERROR)')
-        if key != 'a': ok += 1
+        if key != 'a':
+            print('  time column ' + str(tcname) + ' is missing (ERROR)')
+            ok += 1
     print('  time shape: %%s %%f %%f duration %%f' %% (
         tshape, tfirst, tfinal, (tfinal - tfirst)))
     if tfirst > 0 and tfinal > 0:
         tfirst_str = str(qa.time(qa.quantity(tfirst,'s'), form='ymd')[0])
         tfinal_str = str(qa.time(qa.quantity(tfinal,'s'), form='ymd')[0])
-        print('  tfirst: %%s (%%f)' %% (tfirst_str, strToTime(tfirst_str)))
-        print('  tfinal: %%s (%%f)' %% (tfinal_str, strToTime(tfinal_str)))
+        tfirst_val = strToTime(tfirst_str)
+        tfinal_val = strToTime(tfinal_str)
+        print('  tfirst: %%s (%%f)' %% (tfirst_str, tfirst_val))
+        print('  tfinal: %%s (%%f)' %% (tfinal_str, tfinal_val))
     ''' % (key, caltab)
 
     if key == 'a':
@@ -300,14 +304,17 @@ def pruneTemplate(cpytab, beg, end):
     '''
     ps='''
     cpy='%s'
-    beg='%s'
-    end='%s'
-    print('Pruning data to  ' + cpy)
-    print('data ranges from ' + beg + ' to ' + end)
+    beg='%s'    # beginning of the selection
+    end='%s'    # end of the selected period
+    print('Pruning data to   ' + cpy)
+    print('original data was ' + tfirst_str+ ' to ' + tfinal_str)
+    print('data requested is ' + beg + ' to ' + end)
     try:
-        # tm_col is the time column
-        bg = indicesOfTime(strToTime(beg), tm_col, 'b') # rows with time > beg
-        ed = indicesOfTime(strToTime(end), tm_col, 'e') # rows with time < end
+        # tm_col is the time column; get needed indices
+        # grab the rows with time > beg or the final value
+        bg = indicesOfTime(strToTime(beg), tm_col, 'b', tfinal)
+        # grab the rows with time < end or the first value
+        ed = indicesOfTime(strToTime(end), tm_col, 'e', tfirst)
         try:
             # older numpy (casa 4.7...)
             be = np.intersect1d(bg,ed)
@@ -341,6 +348,7 @@ def doneTemplate(key):
     ds='''
     print('Done with %s')
     tb.close()
+    sys.stdout.flush()
     ''' % (key)
     return ds
 
@@ -350,13 +358,16 @@ def duTemplate(key, qa2full, qa2copy):
     CASA eats the output, so an alternative to system is needed.
     '''
     ut = '    #\n    print()\n    print("Disk Usage Summary")\n'
-    for key in sorted(qa2full):
-        ut += ("    os.system('du -sh %s > /dev/tty')\n" % qa2full[key])
-        if key in qa2copy:
-            ut += ("    os.system('du -sh %s > /dev/tty')\n" % qa2copy[key])
+    for key in sorted(qa2full): # original keys
+        ut += ("    os.system('du -shL %s > /dev/tty 2>&1')\n" %
+            qa2full[key])
+        if key in qa2copy:      # the copies
+            ut += ("    os.system('du -shL %s > /dev/tty 2>&1')\n" %
+                qa2copy[key])
     ut += '''
 
     print()
+    # ok is a counter of ERROR issues
     if ok: print('ERROR status is a FAIL, (ok is %d)' % ok)
     else:  print('FINAL status is a PASS, (ok is %d)' % ok)
     quit()
@@ -377,7 +388,7 @@ def getInputTemplate(copy, begin, end, qa2full, qa2copy, nuke):
     import os
     import textwrap
 
-    ok = 0
+    ok = 0  # actually !ok
 
     MScols = ['TIME', 'FIELD_ID', 'SPECTRAL_WINDOW_ID',
         'ANTENNA1', 'ANTENNA2', 'INTERVAL', 'SCAN_NUMBER',
@@ -411,20 +422,24 @@ def getInputTemplate(copy, begin, end, qa2full, qa2copy, nuke):
         else:
             tm_col = tb.getcol(tcname) 
             tshape = tm_col.shape
-            tfirst = float(tm_col[0])
-            tfinal = float(tm_col[-1])
+            # what if these are not in order--sort to be sure?
+            tm_sort = sorted(tm_col)
+            tfirst = float(tm_sort[0])
+            tfinal = float(tm_sort[-1])
         return cnames, nmrows, tcname, tshape, tfirst, tfinal, tm_col
 
     def strToTime(targ):
         tm = float(qa.convert(targ, 's')['value'])
         return tm
 
-    def indicesOfTime(tm, tary, dir):
+    def indicesOfTime(tm, tary, dir, targ):
         try:
             if dir == 'b': nz = np.nonzero(tary > tm)
             else:          nz = np.nonzero(tary < tm)
         except:
             print('Unable to get row indices')
+        if len(nz[0]) == 0:
+            nz = np.nonzero(tary == targ)
         return nz
 
     '''
