@@ -9,13 +9,20 @@
 [ -z "$tag" ] && tag=''
 [ -z "$dxb" ] && {
     [ -z "$tag" ] && dxb=trunk  # branches/py3temp
-    [ -n "$tag" ] && dxb=''     # trunk missing on masters
+    [ -n "$tag" ] && dxb='' &&  # trunk missing on masters
+        tag=master_tags/$tag    # but master_tags in path
 }
 [ -z "$DFX" ] && DFX=/swc/difx/difx-svn
 [ -z "$dfx" ] && dfx=$DFX/$tag/applications/polconvert/$dxb/src
-[ -n "$git" -a -d "$git" ] || echo define git source trunk with \$git=...
-[ -n "$DFX" -a -d "$DFX" ] || echo define DiFX source trunk with \$DFX=...
-[ -n "$dfx" -a -d "$dfx" ] || echo define full path to DiFX pc src \$dfx=...
+[ -n "$git" -a -d "$git" ] || {
+    echo define git source trunk with \$git=...
+    echo git was $git ; exit 1; }
+[ -n "$DFX" -a -d "$DFX" ] || {
+    echo define DiFX source trunk with \$DFX=...
+    echo DFX was $DFX ; exit 1; }
+[ -n "$dfx" -a -d "$dfx" ] || {
+    echo define full path to DiFX pc src \$dfx=...
+    echo dfx was $dfx ; exit 1; }
 
 action=${1-'help'} ; shift
 
