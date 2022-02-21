@@ -95,7 +95,7 @@ C
          CALL KPACK( 'NONAME  ', NONAME )
          CALL KPACK( '        ', BLANK8 )
          CALL KPACK( ' ', BLANK1 )
-         CALL KPACK( 'CONT', CONT )
+         CALL KPACK4( 'CONT', CONT )
          DO I = 1, 10
             CALL KEYCHR( 'SOURCE', ' ', 16, KD, KC, KI )
          END DO
