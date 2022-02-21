@@ -161,10 +161,14 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 			print((" "*1*indent) + "Baseline %s x %s / DS %2d x %2d" % (cfg.telescopes[ds1.telescopeindex].name,cfg.telescopes[ds2.telescopeindex].name,b.dsaindex,b.dsbindex))
 			if len(b.dsabandindex) != len(b.dsbbandindex):
 				print((" "*2*indent) + "error: lenghts of ds<X>bandindex do not match (DS A: %d and DS B: %d)" % (len(b.dsabandindex),len(b.dsbbandindex)))
+
 			baseline_outputfreq_members = {}
 			for n in range(len(b.dsabandindex)):
+
 				bl_bands_1 = b.dsabandindex[n]
 				bl_bands_2 = b.dsbbandindex[n]
+
+				# Determine destination freq - explicitly given (DiFX 2.7), or default self as in DiFX-2.6
 				if b.version >= 2.7:
 					version = b.version
 					destfreq = b.destfreq[n]
@@ -173,7 +177,12 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 				if destfreq not in baseline_outputfreq_members:
 					baseline_outputfreq_members[destfreq] = []
 				all_dest_fqs.append(destfreq)
-				sdestfq = cfg.freqs[destfreq].str().strip()
+				if destfreq < len(cfg.freqs):
+					sdestfq = cfg.freqs[destfreq].str().strip()
+				else:
+					sdestfq = "<error: outFq %d not in freq table!>" % (destfreq)
+
+				# Report all band pairs
 				print((" "*2*indent) + "Cross-products set %d:" % (n))
 				for (bl_band_1,bl_band_2) in zip(bl_bands_1,bl_bands_2):
 					fq1,pol1 = getFreqPolOfBand(ds1,bl_band_1)
@@ -186,6 +195,19 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 					print((" "*3*indent) + "pols %s%s freqs %s x %s" % (pol1,pol2,sfq1,sfq2))
 					if opts.verbosity >= 1:
 						print((" "*3*indent) + "%s %2d x %s %2d -> fq %2d x %2d -> outFq %d" % (fqtype1,bl_band_1,fqtype2,bl_band_2, fq1,fq2,destfreq))
+
+					# Additional check: input bands must fall within the destination freq
+					if b.version >= 2.7:
+						dest_lo, dest_hi = cfg.freqs[destfreq].low_edge(), cfg.freqs[destfreq].high_edge()
+						if cfg.freqs[fq1].low_edge() < dest_lo:
+							print((" "*3*indent) + "WARNING: fq %d begins %.6f MHz below outFq %d!" % (fq1, dest_lo-cfg.freqs[fq1].low_edge(), destfreq))
+						if cfg.freqs[fq2].low_edge() < dest_lo:
+							print((" "*3*indent) + "WARNING: fq %d begins %.6f MHz below outFq %d!" % (fq2, dest_lo-cfg.freqs[fq2].low_edge(), destfreq))						
+						if cfg.freqs[fq1].high_edge() > dest_hi:
+							print((" "*3*indent) + "WARNING: fq %d extends %.6f MHz past outFq %d!" % (fq1, cfg.freqs[fq1].high_edge()-dest_hi, destfreq))
+						if cfg.freqs[fq2].high_edge() > dest_hi:
+							print((" "*3*indent) + "WARNING: fq %d extends %.6f MHz past outFq %d!" % (fq2, cfg.freqs[fq2].high_edge()-dest_hi, destfreq))
+						
 		print("")
 
 	# Print all utilized destination freqs of the BASELINEs
@@ -194,7 +216,10 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 		freqs.sort()
 		print("All output FREQs referenced by BASELINEs:")
 		for fq in freqs:
-			print((" "*1*indent) + "fq %3d : %s" % (fq, cfg.freqs[fq].str().strip()))
+			if fq < len(cfg.freqs):
+				print((" "*1*indent) + "fq %3d : %s" % (fq, cfg.freqs[fq].str().strip()))
+			else:
+				print((" "*1*indent) + "fq %3d : error, freq id not in freq table!" % (fq))
 		print((" "*1*indent) + "%d freqs in total expected in output visibility data" % (nfreqs))
 		print("")
 
@@ -238,11 +263,14 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 		for outfq in outfreqs:
 			constituents = list(set(outputfreq_members[outfq]))
 			constituents.sort()
-			print((" "*1*indent) + "freq %d %s assembled from" % (outfq, cfg.freqs[outfq].str().strip()))
-			for confq in constituents:
-				f = cfg.freqs[confq]
-				fstr = "%.6f MHz %3s at %.6f MHz" % (f.bandwidth, 'LSB' if f.lsb else 'USB', f.freq)
-				print((" "*2*indent) + "fq %3d bw %s" % (confq, fstr))
+			if outfq < len(cfg.freqs):
+				print((" "*1*indent) + "freq %d %s assembled from" % (outfq, cfg.freqs[outfq].str().strip()))
+				for confq in constituents:
+					f = cfg.freqs[confq]
+					fstr = "%.6f MHz %3s at %.6f MHz" % (f.bandwidth, 'LSB' if f.lsb else 'USB', f.freq)
+					print((" "*2*indent) + "fq %3d bw %s" % (confq, fstr))
+			else:
+				print((" "*1*indent) + "freq %d - error, freq not in freq table!" % (outfq))
 		print((" "*1*indent) + "%d outputbands in total" % (nfreqs))
 		print("")
 
