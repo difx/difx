@@ -1729,7 +1729,7 @@ static void populateScanTable(DifxInput *D, const Job& J, const VexData *V, cons
 		}
 
 		difxScan->pointingCentreSrc = DifxInputGetSourceId(D, vexScan->sourceDefName.c_str());
-		if(difxScan->pointingCentreSrc)
+		if(difxScan->pointingCentreSrc < 0)
 		{
 			std::cerr << "Developer error: DifxInputGetSourceId(D, " << vexScan->sourceDefName << ") returned " << difxScan->pointingCentreSrc << " for pointing center." << std::endl;
 
