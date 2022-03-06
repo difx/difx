@@ -1929,7 +1929,14 @@ static int getBitstreamsSetup(VexSetup &setup, Vex *v, const char *antDefName, c
 		fvex_double(&value, &units, &stream.sampRate);
 	}
 
-	stream.parseFormatString(format);
+	if(format.empty())
+	{
+		stream.parseFormatString("Mark5B");
+	}
+	else
+	{
+		stream.parseFormatString(format);
+	}
 
 	// Only Mark5B format is supported when using BITSTREAMS
 	if(stream.format != VexStream::FormatMark5B)
