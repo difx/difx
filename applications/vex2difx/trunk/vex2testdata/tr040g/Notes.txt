@@ -1,0 +1,56 @@
+
+I spent a few minutes to make a first vex2 file.  Note that this is about 
+as simple as it will get, but it does hae essentially all of the elements 
+that will need changing.
+
+The EXTENSIONS block is where the required comment fields go.  Note that 
+I've named the EXTENSIONS block to match that of the IF block -- that is 
+intentional as there will be a 1 to 1 correspondence between these.
+
+You can use "diff" to see the full set of changes.
+
+Note that this is an example for a file with a single VDIF channel.  Next 
+I will generate an example of a Mark5B format version.
+
+Here is a summary of the changes:
+
+1. top line: change 1.5 to 2.0  (vex version)
+
+2. in the MODE block: remove reference to three outdated blocks: HEAD_POS, 
+ROLL, and PASS_ORDER
+
+3. in the MODE block: add reference to the appropriate EXTENSIONS .  This 
+should be exactly analogous to the $IF block.  Note that as of now the 
+EXTENSIONS block, as used here, applies only to VLBA antennas.  I think 
+the logic is probably already in sched for the IF block.
+
+4. in the MODE block: reference a DATASTREAMS block, not a TRACKS block
+
+5. in the ANTENNA block: the pointing_sector parameter needs a final 
+field.  It is somewhat redundant with the first field, but in vex the 
+first field (with the &) is an internal reference and the last one is the 
+corresopnding name.
+
+6. in the IF block: the formerly required comment is no longer needed.
+
+7. the TRACKS section is replaced with the DATASTREAMS section
+
+8. The HEAD_POS, PASS_ORDER, and ROLL blocks are removed
+
+9. The EXTENSIONS block is added.
+
+10. in the if_def lines ($IF block), the second parameter should be left
+blank.
+
+11. in the if_def block, the receiver name is included in the "receiver_name"
+parameter.  The value is the same as the third comment parameter from the
+existing "if_def" parameter.
+
+Note that vex2script will need to learn how to use the values from the 
+EXTENSIONS block.  The vex2 parser code that you have should already read 
+the EXTENSIONS block and put them in the internal data structure.  I can 
+provide some help on doing this if needed.  And when we do this, I think 
+it would be a good idea to perform some extra sanity checking.  E.g., we 
+should make sure that the synthesizer values are not inconsistent with the 
+FREQ block.
+

@@ -1,0 +1,41 @@
+
+Attached is a sample file set for a Mark5B data format project.  The VLBA 
+currently uses Mark5B format in the mode where we offer 16 output 
+channels, each with 32 MHz bandwidth.  Whenever Mark5B format is used, the 
+"BITSTREAMS" block should be used in the vex2 file and whenever VDIF 
+format is used, the "DATASTREAMS" block should be used (as is the case in 
+the "tr040g" samples I previously sent you.
+
+A couple notes (beyond those noted in the previous email):
+
+1. There could be cases where some antennas use Mark5B/Bitstreams and 
+others use VDIF/DATASTREAMS, but an antenna should never change between 
+one and the other in one .vex file.
+
+2. In the EXTENSIONS section, I have listed three "synth" values for the 
+VLBA.  These refer to three frequency synthesizers in the antenna.  There 
+may be more of these in the future.  The values for "synth1" and "synth2" 
+are the same as two values currently (vex 1.5) stored in the comments in 
+the IF block:
+
+def DualFreqRPolTone/1;
+* mode =  1    stations =Mk:Pt
+      if_def = &IF_A : A : R :  2900.00 MHz : L : 1 MHz ; *    7900.00   2900.00  13cm     0 NA
+      if_def = &IF_B : B : R :  7900.00 MHz : U : 1 MHz ; *    7900.00   2900.00  4cm     0 NA
+enddef;
+
+In this case, the 7900 (after the *) is the value for synth1 and 2900 (the 
+secon value after the *) is the value for synth2.  When relevant, the
+"synth3" tuning value is specified as the fourth value in the comment.
+In this case the value is "0", meaning "not relevant, so no need to 
+propoaget this in the EXTENSIONS block.
+
+3. The .vex2 files are being crafted by hand.  It is possible there are 
+errors in them.  So if something looks out of the ordinary, don't hesitate 
+to ask me about it!
+
+
+In both this case and for TR040G, there is a single mode in use during the 
+observation.  I'll work to produce some examples involving more 
+complicated setups.
+

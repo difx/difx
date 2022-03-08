@@ -1,0 +1,1087 @@
+VEX_rev = 1.5;
+*    SCHED vers: Release 11.5. August 3, 2018
+*    VEX/SCHED:  1.5.87
+*    Other versions: Sched:  11.5  Plot: 1.06  JPL-ephem: 1.01
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = n20018;
+*                                                      +------------+
+*                         PI revision number:          |   15.0000  |
+*                                                      +------------+
+*    mode:       S/X
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def n20018;
+     exper_name = n20018;
+     exper_description = "USNO Daily UT1-UTC Measurement";
+     PI_name = "Alan Fey";
+     PI_email = ut1@nrao.edu;
+*    address:   United States Naval Observatory
+*               3450 Massachusetts Ave, NW
+*               Washington, DC 20392-5420
+*                U.S.A.
+*    phone:     202 762 1517
+*    during obs:202 762 1517
+*    fax:        
+*    notes:     DELZN-based UT1-UTC measurement
+*
+*    year, doy: 2020,  18
+*    date     : Sat 18 Jan 2020
+*    MJD      : 58866
+     exper_nominal_start=2020y018d05h40m00s;
+     exper_nominal_stop=2020y018d07h09m41s;
+*
+     target_correlator = VLBADIFX;
+*
+*    integr_time    :     2.000 s
+*    number_channels:    64
+*    number_antenna :  2
+*    cross_polarize : No
+*    weight_func    : UNIFORM
+*    distrib_medium : FTP
+*    distrib_format : FITS
+*    source_pos_cat : STANDARD
+*    distribute_to  : 
+*                     Walter Brisken
+*                     P. O. Box O
+*                     Socorro NM 87801
+*
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def rdbe.sx;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = DualFreq16x32MHz:Mk:Pt;
+     ref $IF = DualFreqRPolTone/1:Mk:Pt;
+     ref $BBC = 16BBCs:Mk:Pt;
+     ref $TRACKS = MARK5B.16Ch2bit1to1:Mk:Pt;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Mk:Pt;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = DsbDetect:Mk:Pt;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def Mk;
+     ref $SITE = VLBA_MK;
+     ref $ANTENNA = VLBA_MK;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Pt;
+     ref $SITE = VLBA_PT;
+     ref $ANTENNA = VLBA_PT;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def VLBA_MK;
+     site_type = fixed;
+     site_name = VLBA_MK;
+     site_ID = Mk;
+*    elev= 3763.03 long= 155:27:19. lat= 19:48:05.0
+     site_position =-5464075.20500 m:-2495248.06200 m: 2148297.39890 m;
+     site_velocity = -0.014740   m/yr:  0.062630   m/yr:  0.032650  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2014y001d;
+     site_position_epoch =   56658;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0:120.0:125.0:130.0:135.0:
+                               140.0:145.0:150.0:155.0:160.0:165.0:170.0:175.0:
+                               185.0:190.0:195.0:200.0:205.0:210.0:215.0:220.0:
+                               255.0:260.0:270.0:275.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:315.0:320.0:325.0:330.0:335.0:
+                               340.0:345.0:350.0:355.0:360.0;
+     horizon_map_el =  5.0 deg:  4.0:  3.0:  3.0:  2.0:  2.0:  4.0:  5.0:  5.0:
+                                 4.0:  4.0:  6.0:  8.0:  8.0: 11.0: 12.0: 13.0:
+                                13.0: 11.0: 11.0:  9.0:  7.0:  5.0:  3.0:  2.0:
+                                 2.0:  3.0:  3.0:  5.0:  6.0:  8.0: 10.0: 12.0:
+                                14.0: 12.0: 11.0:  9.0: 10.0: 11.0: 10.0: 12.0:
+                                14.0: 12.0:  9.0:  7.0:  5.0;
+enddef;
+*
+def VLBA_PT;
+     site_type = fixed;
+     site_name = VLBA_PT;
+     site_ID = Pt;
+*    elev= 2364.71 long= 108:07:09. lat= 34:18:03.7
+     site_position =-1640953.95690 m:-5014816.05570 m: 3575411.77800 m;
+     site_velocity = -0.014980   m/yr: -0.001210   m/yr: -0.005840  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2014y001d;
+     site_position_epoch =   56658;
+     horizon_map_az =  0.0 deg:  5.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:165.0:
+                               170.0:180.0:185.0:190.0:195.0:200.0:240.0:245.0:
+                               250.0:255.0:265.0:270.0:275.0:280.0:285.0:360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  3.0:  3.0:  2.0:  3.0:  2.0:  2.0:
+                                 3.0:  3.0:  4.0:  4.0:  3.0:  4.0:  4.0:  3.0:
+                                 4.0:  3.0:  3.0:  4.0:  3.0:  3.0:  2.0:  2.0;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def VLBA_MK;
+     axis_type = az : el;
+     antenna_motion = el :  30.0 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  79.0 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13400 m;
+enddef;
+*
+def VLBA_PT;
+     axis_type = az : el;
+     antenna_motion = el :  29.5 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  84.0 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13790 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+def 2RDBE2+NONE<;
+     record_transport_type = Mark5C;
+     electronics_rack_type = RDBE2;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def 0109+224;
+     source_name = 0109+224;
+*    this source had calibrator code: V
+*    alternate source name: J0112+2244
+*    alternate source name: J0112+22
+*    GSFC 2016a X/S astro solution,   4801 observations.
+     ra = 01h12m05.8247179s; dec =  22d44'38.786316"; ref_coord_frame = J2000;
+*    ra = 01h09m23.6085249s; dec =  22d28'44.124843"; ref_coord_frame = B1950;
+*    ra = 01h13m09.7805135s; dec =  22d50'58.365095"; ref_coord_frame = Date;
+enddef;
+*
+def 0119+115;
+     source_name = 0119+115;
+*    this source had calibrator code: V
+*    alternate source name: J0121+1149
+*    alternate source name: J0121+11
+*    GSFC 2016a X/S astro solution,  62476 observations.
+     ra = 01h21m41.5950429s; dec =  11d49'50.413207"; ref_coord_frame = J2000;
+*    ra = 01h19m03.0801265s; dec =  11d34'09.315223"; ref_coord_frame = B1950;
+*    ra = 01h22m44.0961081s; dec =  11d56'00.570716"; ref_coord_frame = Date;
+enddef;
+*
+def 0134+311;
+     source_name = 0134+311;
+*    this source had calibrator code: V
+*    alternate source name: J0137+3122
+*    GSFC 2016a X/S astro solution,   8986 observations.
+     ra = 01h37m08.7336340s; dec =  31d22'35.855484"; ref_coord_frame = J2000;
+*    ra = 01h34m18.5292117s; dec =  31d07'20.025706"; ref_coord_frame = B1950;
+*    ra = 01h38m16.0713004s; dec =  31d28'42.660710"; ref_coord_frame = Date;
+enddef;
+*
+def 0201+113;
+     source_name = 0201+113;
+*    this source had calibrator code: V
+*    alternate source name: J0203+1134
+*    alternate source name: J0203+11
+*    GSFC 2016a X/S astro solution,  17639 observations.
+     ra = 02h03m46.6570592s; dec =  11d34'45.409438"; ref_coord_frame = J2000;
+*    ra = 02h01m06.0033271s; dec =  11d20'22.953954"; ref_coord_frame = B1950;
+*    ra = 02h04m50.2642292s; dec =  11d40'23.668556"; ref_coord_frame = Date;
+enddef;
+*
+def 0307+380;
+     source_name = 0307+380;
+*    this source had calibrator code: V
+*    alternate source name: J0310+3814
+*    GSFC 2016a X/S astro solution,  10619 observations.
+     ra = 03h10m49.8799237s; dec =  38d14'53.837837"; ref_coord_frame = J2000;
+*    ra = 03h07m37.5540658s; dec =  38d03'34.470852"; ref_coord_frame = B1950;
+*    ra = 03h12m06.6750920s; dec =  38d19'26.755241"; ref_coord_frame = Date;
+enddef;
+*
+def 0322+222;
+     source_name = 0322+222;
+*    this source had calibrator code: V
+*    alternate source name: J0325+2224
+*    alternate source name: J0325+22
+*    GSFC 2016a X/S astro solution,  23956 observations.
+     ra = 03h25m36.8143537s; dec =  22d24'00.365580"; ref_coord_frame = J2000;
+*    ra = 03h22m41.7457176s; dec =  22d13'30.300927"; ref_coord_frame = B1950;
+*    ra = 03h26m46.6641909s; dec =  22d28'08.621827"; ref_coord_frame = Date;
+enddef;
+*
+def 0338-214;
+     source_name = 0338-214;
+*    this source had calibrator code: V
+*    alternate source name: J0340-2119
+*    alternate source name: J0340-21
+*    GSFC 2016a X/S astro solution,   3168 observations.
+     ra = 03h40m35.6078599s; dec = -21d19'31.172151"; ref_coord_frame = J2000;
+*    ra = 03h38m23.2790084s; dec = -21d29'07.913300"; ref_coord_frame = B1950;
+*    ra = 03h41m28.5305195s; dec = -21d15'56.993185"; ref_coord_frame = Date;
+enddef;
+*
+def 0340+362;
+     source_name = 0340+362;
+*    this source had calibrator code: V
+*    alternate source name: J0343+3622
+*    alternate source name: J0343+36
+*    GSFC 2016a X/S astro solution,   1607 observations.
+     ra = 03h43m28.9524130s; dec =  36d22'12.429722"; ref_coord_frame = J2000;
+*    ra = 03h40m14.7913241s; dec =  36d12'44.448022"; ref_coord_frame = B1950;
+*    ra = 03h44m46.6239160s; dec =  36d25'59.557831"; ref_coord_frame = Date;
+enddef;
+*
+def 0346-279;
+     source_name = 0346-279;
+*    this source had calibrator code: V
+*    alternate source name: J0348-2749
+*    alternate source name: J0348-27
+*    GSFC 2016a X/S astro solution,   2996 observations.
+     ra = 03h48m38.1445717s; dec = -27d49'13.565798"; ref_coord_frame = J2000;
+*    ra = 03h46m34.0263078s; dec = -27d58'20.966342"; ref_coord_frame = B1950;
+*    ra = 03h49m27.9042573s; dec = -27d45'52.388289"; ref_coord_frame = Date;
+enddef;
+*
+def 0345+460;
+     source_name = 0345+460;
+*    this source had calibrator code: V
+*    alternate source name: J0349+4609
+*    alternate source name: J0349+46
+*    GSFC 2016a X/S astro solution,  10033 observations.
+     ra = 03h49m18.7415738s; dec =  46d09'59.657779"; ref_coord_frame = J2000;
+*    ra = 03h45m46.8692655s; dec =  46d00'52.346694"; ref_coord_frame = B1950;
+*    ra = 03h50m43.6728427s; dec =  46d13'40.754105"; ref_coord_frame = Date;
+enddef;
+*
+def 0347-211;
+     source_name = 0347-211;
+*    this source had calibrator code: V
+*    alternate source name: J0349-2102
+*    GSFC 2016a X/S astro solution,   2434 observations.
+     ra = 03h49m57.8266765s; dec = -21d02'47.741620"; ref_coord_frame = J2000;
+*    ra = 03h47m45.7767428s; dec = -21d11'50.486397"; ref_coord_frame = B1950;
+*    ra = 03h50m50.6920365s; dec = -20d59'26.829155"; ref_coord_frame = Date;
+enddef;
+*
+def 0358+210;
+     source_name = 0358+210;
+*    this source had calibrator code: V
+*    alternate source name: J0401+2110
+*    alternate source name: J0401+21
+*    GSFC 2016a X/S astro solution,   2606 observations.
+     ra = 04h01m45.1660774s; dec =  21d10'28.586959"; ref_coord_frame = J2000;
+*    ra = 03h58m49.0714357s; dec =  21d02'08.654455"; ref_coord_frame = B1950;
+*    ra = 04h02m55.5862117s; dec =  21d13'44.056905"; ref_coord_frame = Date;
+enddef;
+*
+def 0400-319;
+     source_name = 0400-319;
+*    this source had calibrator code: V
+*    alternate source name: J0402-3147
+*    alternate source name: J0402-31
+*    GSFC 2016a X/S astro solution,   1401 observations.
+     ra = 04h02m21.2660006s; dec = -31d47'25.945549"; ref_coord_frame = J2000;
+*    ra = 04h00m23.6013883s; dec = -31d55'41.945021"; ref_coord_frame = B1950;
+*    ra = 04h03m08.5924113s; dec = -31d44'25.610754"; ref_coord_frame = Date;
+enddef;
+*
+def 0415+398;
+     source_name = 0415+398;
+*    this source had calibrator code: V
+*    alternate source name: J0419+3955
+*    alternate source name: J0419+39
+*    GSFC 2016a X/S astro solution,   3001 observations.
+     ra = 04h19m22.5495190s; dec =  39d55'28.977548"; ref_coord_frame = J2000;
+*    ra = 04h15m58.4859578s; dec =  39d48'16.375107"; ref_coord_frame = B1950;
+*    ra = 04h20m44.3792480s; dec =  39d58'21.918626"; ref_coord_frame = Date;
+enddef;
+*
+def 0430+289;
+     source_name = 0430+289;
+*    this source had calibrator code: V
+*    alternate source name: J0433+2905
+*    GSFC 2016a X/S astro solution,   4767 observations.
+     ra = 04h33m37.8298595s; dec =  29d05'55.477030"; ref_coord_frame = J2000;
+*    ra = 04h30m29.6803537s; dec =  28d59'40.389843"; ref_coord_frame = B1950;
+*    ra = 04h34m53.2358074s; dec =  29d08'22.613814"; ref_coord_frame = Date;
+enddef;
+*
+def 0442+389;
+     source_name = 0442+389;
+*    this source had calibrator code: V
+*    alternate source name: J0446+3900
+*    GSFC 2016a X/S astro solution,   1126 observations.
+     ra = 04h46m11.4940326s; dec =  39d00'17.099963"; ref_coord_frame = J2000;
+*    ra = 04h42m46.6371273s; dec =  38d54'52.925256"; ref_coord_frame = B1950;
+*    ra = 04h47m33.7222682s; dec =  39d02'25.739946"; ref_coord_frame = Date;
+enddef;
+*
+def 0446+112;
+     source_name = 0446+112;
+*    this source had calibrator code: V
+*    alternate source name: J0449+1121
+*    alternate source name: J0449+11
+*    GSFC 2016a X/S astro solution,  12767 observations.
+     ra = 04h49m07.6711020s; dec =  11d21'28.596355"; ref_coord_frame = J2000;
+*    ra = 04h46m21.2172825s; dec =  11d16'17.845561"; ref_coord_frame = B1950;
+*    ra = 04h50m14.4028297s; dec =  11d23'25.718872"; ref_coord_frame = Date;
+enddef;
+*
+def 0506+101;
+     source_name = 0506+101;
+*    this source had calibrator code: V
+*    alternate source name: J0509+1011
+*    alternate source name: J0509+10
+*    GSFC 2016a X/S astro solution,   3271 observations.
+     ra = 05h09m27.4570684s; dec =  10d11'44.600158"; ref_coord_frame = J2000;
+*    ra = 05h06m42.0408522s; dec =  10d07'59.501574"; ref_coord_frame = B1950;
+*    ra = 05h10m33.8412408s; dec =  10d13'07.304420"; ref_coord_frame = Date;
+enddef;
+*
+def 0515+208;
+     source_name = 0515+208;
+*    this source had calibrator code: V
+*    alternate source name: J0518+2054
+*    GSFC 2016a X/S astro solution,   2126 observations.
+     ra = 05h18m03.8245122s; dec =  20d54'52.497391"; ref_coord_frame = J2000;
+*    ra = 05h15m05.0417971s; dec =  20d51'43.763091"; ref_coord_frame = B1950;
+*    ra = 05h19m15.5832161s; dec =  20d56'02.789983"; ref_coord_frame = Date;
+enddef;
+*
+def 0529+483;
+     source_name = 0529+483;
+*    this source had calibrator code: V
+*    alternate source name: J0533+4822
+*    GSFC 2016a X/S astro solution,  36820 observations.
+     ra = 05h33m15.8657875s; dec =  48d22'52.807735"; ref_coord_frame = J2000;
+*    ra = 05h29m27.5653786s; dec =  48d20'47.970405"; ref_coord_frame = B1950;
+*    ra = 05h34m47.7569055s; dec =  48d23'41.689238"; ref_coord_frame = Date;
+enddef;
+*
+def 0534-340;
+     source_name = 0534-340;
+*    this source had calibrator code: V
+*    alternate source name: J0536-3401
+*    alternate source name: J0536-34
+*    GSFC 2016a X/S astro solution,   1507 observations.
+     ra = 05h36m28.4323626s; dec = -34d01'11.468365"; ref_coord_frame = J2000;
+*    ra = 05h34m39.5590674s; dec = -34d02'58.187714"; ref_coord_frame = B1950;
+*    ra = 05h37m12.7935169s; dec = -34d00'41.995826"; ref_coord_frame = Date;
+enddef;
+*
+def 0536+145;
+     source_name = 0536+145;
+*    this source had calibrator code: V
+*    alternate source name: J0539+1433
+*    alternate source name: J0539+14
+*    GSFC 2016a X/S astro solution,   4946 observations.
+     ra = 05h39m42.3659918s; dec =  14d33'45.561716"; ref_coord_frame = J2000;
+*    ra = 05h36m51.3614738s; dec =  14d32'10.730418"; ref_coord_frame = B1950;
+*    ra = 05h40m51.0614255s; dec =  14d34'17.101660"; ref_coord_frame = Date;
+enddef;
+*
+def 0544+273;
+     source_name = 0544+273;
+*    this source had calibrator code: V
+*    alternate source name: J0547+2721
+*    alternate source name: J0547+27
+*    GSFC 2016a X/S astro solution,   5241 observations.
+     ra = 05h47m34.1489207s; dec =  27d21'56.842528"; ref_coord_frame = J2000;
+*    ra = 05h44m25.9055699s; dec =  27d20'55.679223"; ref_coord_frame = B1950;
+*    ra = 05h48m49.7811095s; dec =  27d22'16.910774"; ref_coord_frame = Date;
+enddef;
+*
+def 0548+378;
+     source_name = 0548+378;
+*    this source had calibrator code: V
+*    alternate source name: J0552+3754
+*    GSFC 2016a X/S astro solution,   1388 observations.
+     ra = 05h52m17.9369153s; dec =  37d54'25.282414"; ref_coord_frame = J2000;
+*    ra = 05h48m52.2317500s; dec =  37d53'44.150535"; ref_coord_frame = B1950;
+*    ra = 05h53m40.6444544s; dec =  37d54'38.735161"; ref_coord_frame = Date;
+enddef;
+*
+def 0552+398;
+     source_name = 0552+398;
+*    this source had calibrator code: V
+*    alternate source name: J0555+3948
+*    alternate source name: DA193
+*    alternate source name: J0555+39
+*    GSFC 2016a X/S astro solution, 415688 observations.
+     ra = 05h55m30.8056108s; dec =  39d48'49.164962"; ref_coord_frame = J2000;
+*    ra = 05h52m01.4071684s; dec =  39d48'21.945810"; ref_coord_frame = B1950;
+*    ra = 05h56m55.0181682s; dec =  39d48'57.207316"; ref_coord_frame = Date;
+enddef;
+*
+def 0556+238;
+     source_name = 0556+238;
+*    this source had calibrator code: V
+*    alternate source name: J0559+2353
+*    alternate source name: J0559+23
+*    GSFC 2016a X/S astro solution,  18271 observations.
+     ra = 05h59m32.0331318s; dec =  23d53'53.926748"; ref_coord_frame = J2000;
+*    ra = 05h56m28.6917332s; dec =  23d53'45.208881"; ref_coord_frame = B1950;
+*    ra = 06h00m45.7122746s; dec =  23d53'52.379323"; ref_coord_frame = Date;
+enddef;
+*
+def 0641+392;
+     source_name = 0641+392;
+*    this source had calibrator code: V
+*    alternate source name: J0644+3914
+*    GSFC 2016a X/S astro solution,   7560 observations.
+     ra = 06h44m53.7095979s; dec =  39d14'47.533920"; ref_coord_frame = J2000;
+*    ra = 06h41m26.3107349s; dec =  39d17'55.151763"; ref_coord_frame = B1950;
+*    ra = 06h46m17.1534253s; dec =  39d13'28.244037"; ref_coord_frame = Date;
+enddef;
+*
+def 0714+457;
+     source_name = 0714+457;
+*    this source had calibrator code: V
+*    alternate source name: J0717+4538
+*    GSFC 2016a X/S astro solution,   7093 observations.
+     ra = 07h17m51.8524155s; dec =  45d38'03.260855"; ref_coord_frame = J2000;
+*    ra = 07h14m13.4380877s; dec =  45d43'29.653148"; ref_coord_frame = B1950;
+*    ra = 07h19m19.7724614s; dec =  45d35'47.827076"; ref_coord_frame = Date;
+enddef;
+*
+def 0804+499;
+     source_name = 0804+499;
+*    this source had calibrator code: V
+*    alternate source name: J0808+4950
+*    alternate source name: J0808+49
+*    GSFC 2016a X/S astro solution,  92227 observations.
+     ra = 08h08m39.6662837s; dec =  49d50'36.530417"; ref_coord_frame = J2000;
+*    ra = 08h04m58.3957427s; dec =  49d59'23.078114"; ref_coord_frame = B1950;
+*    ra = 08h10m08.7161842s; dec =  49d46'59.467827"; ref_coord_frame = Date;
+enddef;
+*
+def 0920+390;
+     source_name = 0920+390;
+*    this source had calibrator code: V
+*    alternate source name: J0923+3849
+*    alternate source name: J0923+38
+*    GSFC 2016a X/S astro solution,   6310 observations.
+     ra = 09h23m14.4529341s; dec =  38d49'39.910114"; ref_coord_frame = J2000;
+*    ra = 09h20m06.3184336s; dec =  39d02'32.111840"; ref_coord_frame = B1950;
+*    ra = 09h24m29.9604904s; dec =  38d44'23.462168"; ref_coord_frame = Date;
+enddef;
+*
+def 0955+476;
+     source_name = 0955+476;
+*    this source had calibrator code: V
+*    alternate source name: J0958+4725
+*    alternate source name: J0958+47
+*    GSFC 2016a X/S astro solution, 193238 observations.
+     ra = 09h58m19.6716418s; dec =  47d25'07.842442"; ref_coord_frame = J2000;
+*    ra = 09h55m08.5284265s; dec =  47d39'28.281753"; ref_coord_frame = B1950;
+*    ra = 09h59m36.3239526s; dec =  47d19'14.604624"; ref_coord_frame = Date;
+enddef;
+*
+def 1053+704;
+     source_name = 1053+704;
+*    this source had calibrator code: V
+*    alternate source name: J1056+7011
+*    alternate source name: J1056+70
+*    GSFC 2016a X/S astro solution,  14774 observations.
+     ra = 10h56m53.6175007s; dec =  70d11'45.915628"; ref_coord_frame = J2000;
+*    ra = 10h53m27.7240454s; dec =  70d27'47.935666"; ref_coord_frame = B1950;
+*    ra = 10h58m16.2801416s; dec =  70d05'08.950605"; ref_coord_frame = Date;
+enddef;
+*
+def 1053+815;
+     source_name = 1053+815;
+*    this source had calibrator code: V
+*    alternate source name: J1058+8114
+*    alternate source name: J1058+81
+*    GSFC 2016a X/S astro solution,  35777 observations.
+     ra = 10h58m11.5353688s; dec =  81d14'32.675184"; ref_coord_frame = J2000;
+*    ra = 10h53m36.2294325s; dec =  81d30'35.567827"; ref_coord_frame = B1950;
+*    ra = 11h00m02.0317706s; dec =  81d07'54.895179"; ref_coord_frame = Date;
+enddef;
+*
+def J1058+81;
+     source_name = J1058+81;
+*    this source had calibrator code: V
+*    alternate source name: 1053+815
+*    alternate source name: J1058+8114
+*    GSFC 2016a X/S astro solution,  35777 observations.
+     ra = 10h58m11.5353688s; dec =  81d14'32.675184"; ref_coord_frame = J2000;
+*    ra = 10h53m36.2294325s; dec =  81d30'35.567827"; ref_coord_frame = B1950;
+*    ra = 11h00m02.0317706s; dec =  81d07'54.895179"; ref_coord_frame = Date;
+enddef;
+*
+def 1637+826;
+     source_name = 1637+826;
+*    this source had calibrator code: V
+*    alternate source name: NGC6251
+*    alternate source name: J1632+8232
+*    alternate source name: J1632+82
+*    GSFC 2016a X/S astro solution,   7972 observations.
+     ra = 16h32m31.9699084s; dec =  82d32'16.399942"; ref_coord_frame = J2000;
+*    ra = 16h37m56.9269414s; dec =  82d38'18.498297"; ref_coord_frame = B1950;
+*    ra = 16h30m19.4625339s; dec =  82d29'33.226932"; ref_coord_frame = Date;
+enddef;
+*
+def 2229+695;
+     source_name = 2229+695;
+*    this source had calibrator code: V
+*    alternate source name: J2230+6946
+*    alternate source name: J2230+69
+*    GSFC 2016a X/S astro solution,  83078 observations.
+     ra = 22h30m36.4697543s; dec =  69d46'28.076894"; ref_coord_frame = J2000;
+*    ra = 22h29m11.6555720s; dec =  69d31'02.646457"; ref_coord_frame = B1950;
+*    ra = 22h31m07.2282840s; dec =  69d52'46.059884"; ref_coord_frame = Date;
+enddef;
+*
+def 2356+385;
+     source_name = 2356+385;
+*    this source had calibrator code: V
+*    alternate source name: J2359+3850
+*    GSFC 2016a X/S astro solution,  22800 observations.
+     ra = 23h59m33.1807981s; dec =  38d50'42.318228"; ref_coord_frame = J2000;
+*    ra = 23h56m59.8124701s; dec =  38d34'00.401535"; ref_coord_frame = B1950;
+*    ra = 00h00m33.1615376s; dec =  38d57'26.314473"; ref_coord_frame = Date;
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def DualFreq16x32MHz;
+* mode =  1    stations =Mk:Pt
+     sample_rate =    64.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  2052.00 MHz : U :  32.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :  2084.00 MHz : U :  32.00 MHz : &CH02 : &BBC02 : &U_Cal; *Rcp
+     chan_def = :  2116.00 MHz : U :  32.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = :  2212.00 MHz : U :  32.00 MHz : &CH04 : &BBC04 : &U_Cal; *Rcp
+     chan_def = :  2244.00 MHz : U :  32.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = :  2276.00 MHz : U :  32.00 MHz : &CH06 : &BBC06 : &U_Cal; *Rcp
+     chan_def = :  8460.00 MHz : L :  32.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = :  8492.00 MHz : L :  32.00 MHz : &CH08 : &BBC08 : &U_Cal; *Rcp
+     chan_def = :  8524.00 MHz : L :  32.00 MHz : &CH09 : &BBC09 : &U_Cal; *Rcp
+     chan_def = :  8588.00 MHz : L :  32.00 MHz : &CH10 : &BBC10 : &U_Cal; *Rcp
+     chan_def = :  8652.00 MHz : L :  32.00 MHz : &CH11 : &BBC11 : &U_Cal; *Rcp
+     chan_def = :  8716.00 MHz : L :  32.00 MHz : &CH12 : &BBC12 : &U_Cal; *Rcp
+     chan_def = :  8780.00 MHz : L :  32.00 MHz : &CH13 : &BBC13 : &U_Cal; *Rcp
+     chan_def = :  8844.00 MHz : L :  32.00 MHz : &CH14 : &BBC14 : &U_Cal; *Rcp
+     chan_def = :  8876.00 MHz : L :  32.00 MHz : &CH15 : &BBC15 : &U_Cal; *Rcp
+     chan_def = :  8908.00 MHz : L :  32.00 MHz : &CH16 : &BBC16 : &U_Cal; *Rcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*
+def DualFreqRPolTone/1;
+* mode =  1    stations =Mk:Pt
+     if_def = &IF_A : A : R :  2900.00 MHz : L : 1 MHz ; *    7900.00   2900.00  13cm     0 NA
+     if_def = &IF_B : B : R :  7900.00 MHz : U : 1 MHz ; *    7900.00   2900.00  4cm     0 NA
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 16BBCs;
+* mode =  1    stations =Mk:Pt
+     BBC_assign = &BBC01 :  1 : &IF_A;
+     BBC_assign = &BBC02 :  2 : &IF_A;
+     BBC_assign = &BBC03 :  3 : &IF_A;
+     BBC_assign = &BBC04 :  4 : &IF_A;
+     BBC_assign = &BBC05 :  5 : &IF_A;
+     BBC_assign = &BBC06 :  6 : &IF_A;
+     BBC_assign = &BBC07 :  7 : &IF_B;
+     BBC_assign = &BBC08 :  8 : &IF_B;
+     BBC_assign = &BBC09 :  9 : &IF_B;
+     BBC_assign = &BBC10 : 10 : &IF_B;
+     BBC_assign = &BBC11 : 11 : &IF_B;
+     BBC_assign = &BBC12 : 12 : &IF_B;
+     BBC_assign = &BBC13 : 13 : &IF_B;
+     BBC_assign = &BBC14 : 14 : &IF_B;
+     BBC_assign = &BBC15 : 15 : &IF_B;
+     BBC_assign = &BBC16 : 16 : &IF_B;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def DsbDetect;
+* mode =  1    stations =Mk:Pt
+     phase_cal_detect = &U_Cal :  2;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+def MARK5B.16Ch2bit1to1;
+* mode =  1    stations =Mk:Pt
+*    firmware_type = RDBE_PFB;
+*    format = MARK5B, and fan-out = 1
+*    mode requires  64.00Mb/s/tr; stations using disks
+     track_frame_format = MARK5B;
+     fanout_def =   : &CH01 : sign : 1:  2;
+     fanout_def =   : &CH01 :  mag : 1:  3;
+     fanout_def =   : &CH02 : sign : 1:  4;
+     fanout_def =   : &CH02 :  mag : 1:  5;
+     fanout_def =   : &CH03 : sign : 1:  6;
+     fanout_def =   : &CH03 :  mag : 1:  7;
+     fanout_def =   : &CH04 : sign : 1:  8;
+     fanout_def =   : &CH04 :  mag : 1:  9;
+     fanout_def =   : &CH05 : sign : 1: 10;
+     fanout_def =   : &CH05 :  mag : 1: 11;
+     fanout_def =   : &CH06 : sign : 1: 12;
+     fanout_def =   : &CH06 :  mag : 1: 13;
+     fanout_def =   : &CH07 : sign : 1: 14;
+     fanout_def =   : &CH07 :  mag : 1: 15;
+     fanout_def =   : &CH08 : sign : 1: 16;
+     fanout_def =   : &CH08 :  mag : 1: 17;
+     fanout_def =   : &CH09 : sign : 1: 18;
+     fanout_def =   : &CH09 :  mag : 1: 19;
+     fanout_def =   : &CH10 : sign : 1: 20;
+     fanout_def =   : &CH10 :  mag : 1: 21;
+     fanout_def =   : &CH11 : sign : 1: 22;
+     fanout_def =   : &CH11 :  mag : 1: 23;
+     fanout_def =   : &CH12 : sign : 1: 24;
+     fanout_def =   : &CH12 :  mag : 1: 25;
+     fanout_def =   : &CH13 : sign : 1: 26;
+     fanout_def =   : &CH13 :  mag : 1: 27;
+     fanout_def =   : &CH14 : sign : 1: 28;
+     fanout_def =   : &CH14 :  mag : 1: 29;
+     fanout_def =   : &CH15 : sign : 1: 30;
+     fanout_def =   : &CH15 :  mag : 1: 31;
+     fanout_def =   : &CH16 : sign : 1: 32;
+     fanout_def =   : &CH16 :  mag : 1: 33;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def DiskVoid;
+* mode =  1    stations =Mk:Pt
+*     Head positions irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def DiskVoid;
+* mode =  1    stations =Mk:Pt
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =Mk:Pt
+*    barrel-roll set to 'roll_off', so reverse-roll by  0 (1 head)
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment n20018  
+* USNO Daily UT1-UTC Measurement                                          
+scan No0002;
+*    start=2020y018d05h40m00s <= original start, modified for tape start.
+     start=2020y018d05h40m06s; mode=rdbe.sx; source=0529+483;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Mk:    0 sec:   16 sec:    0.000 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:    0.000 GB:   : &ccw  : 1;
+endscan;
+scan No0003;
+*    start=2020y018d05h42m12s <= original start, modified for tape start.
+     start=2020y018d05h42m18s; mode=rdbe.sx; source=0109+224;
+     station=Mk:    0 sec:   16 sec:    4.103 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:    4.103 GB:   : &ccw  : 1;
+endscan;
+scan No0004;
+*    start=2020y018d05h43m18s <= original start, modified for tape start.
+     start=2020y018d05h43m24s; mode=rdbe.sx; source=2356+385;
+     station=Mk:    0 sec:   16 sec:    8.205 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:    8.205 GB:   : &ccw  : 1;
+endscan;
+scan No0005;
+*    start=2020y018d05h44m52s <= original start, modified for tape start.
+     start=2020y018d05h44m58s; mode=rdbe.sx; source=1637+826;
+     station=Mk:    0 sec:   16 sec:   12.308 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:   12.308 GB:   : &ccw  : 1;
+endscan;
+scan No0006;
+*    start=2020y018d05h46m15s <= original start, modified for tape start.
+     start=2020y018d05h46m21s; mode=rdbe.sx; source=0920+390;
+     station=Mk:    0 sec:   16 sec:   16.410 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:   16.410 GB:   : &ccw  : 1;
+endscan;
+scan No0007;
+*    start=2020y018d05h48m26s <= original start, modified for tape start.
+     start=2020y018d05h48m32s; mode=rdbe.sx; source=0400-319;
+     station=Mk:    0 sec:   16 sec:   20.513 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:   20.513 GB:   : &n    : 1;
+endscan;
+scan No0008;
+*    start=2020y018d05h50m37s <= original start, modified for tape start.
+     start=2020y018d05h50m43s; mode=rdbe.sx; source=0430+289;
+     station=Mk:    0 sec:   16 sec:   24.615 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:   24.615 GB:   : &n    : 1;
+endscan;
+scan No0009;
+*    start=2020y018d05h51m25s <= original start, modified for tape start.
+     start=2020y018d05h51m31s; mode=rdbe.sx; source=0442+389;
+     station=Mk:    0 sec:   16 sec:   28.718 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:   28.718 GB:   : &cw   : 1;
+endscan;
+scan No0010;
+*    start=2020y018d05h53m41s <= original start, modified for tape start.
+     start=2020y018d05h53m47s; mode=rdbe.sx; source=0346-279;
+     station=Mk:    0 sec:   16 sec:   32.820 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:   32.820 GB:   : &n    : 1;
+endscan;
+scan No0011;
+*    start=2020y018d05h54m24s <= original start, modified for tape start.
+     start=2020y018d05h54m30s; mode=rdbe.sx; source=0338-214;
+     station=Mk:    0 sec:   16 sec:   36.923 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:   36.923 GB:   : &n    : 1;
+endscan;
+scan No0012;
+*    start=2020y018d05h56m56s <= original start, modified for tape start.
+     start=2020y018d05h57m02s; mode=rdbe.sx; source=0548+378;
+     station=Mk:    0 sec:   16 sec:   41.026 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:   41.026 GB:   : &cw   : 1;
+endscan;
+scan No0013;
+*    start=2020y018d05h57m35s <= original start, modified for tape start.
+     start=2020y018d05h57m41s; mode=rdbe.sx; source=0552+398;
+     station=Mk:    0 sec:   16 sec:   45.128 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:   45.128 GB:   : &cw   : 1;
+endscan;
+scan No0014;
+*    start=2020y018d05h58m41s <= original start, modified for tape start.
+     start=2020y018d05h58m47s; mode=rdbe.sx; source=0415+398;
+     station=Mk:    0 sec:   16 sec:   49.231 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:   49.231 GB:   : &cw   : 1;
+endscan;
+scan No0015;
+*    start=2020y018d06h01m02s <= original start, modified for tape start.
+     start=2020y018d06h01m08s; mode=rdbe.sx; source=1053+704;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Mk:    0 sec:   16 sec:   53.333 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:   53.333 GB:   : &cw   : 1;
+endscan;
+scan No0016;
+*    start=2020y018d06h01m42s <= original start, modified for tape start.
+     start=2020y018d06h01m48s; mode=rdbe.sx; source=1053+815;
+     station=Mk:    0 sec:   16 sec:   57.436 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:   57.436 GB:   : &cw   : 1;
+endscan;
+scan No0017;
+*    start=2020y018d06h04m18s <= original start, modified for tape start.
+     start=2020y018d06h04m24s; mode=rdbe.sx; source=0534-340;
+     station=Mk:    0 sec:   16 sec:   61.538 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:   61.538 GB:   : &n    : 1;
+endscan;
+scan No0018;
+*    start=2020y018d06h06m11s <= original start, modified for tape start.
+     start=2020y018d06h06m17s; mode=rdbe.sx; source=0119+115;
+     station=Mk:    0 sec:   16 sec:   65.641 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:   65.641 GB:   : &cw   : 1;
+endscan;
+scan No0019;
+*    start=2020y018d06h07m00s <= original start, modified for tape start.
+     start=2020y018d06h07m06s; mode=rdbe.sx; source=0201+113;
+     station=Mk:    0 sec:   16 sec:   69.743 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:   69.743 GB:   : &n    : 1;
+endscan;
+scan No0020;
+*    start=2020y018d06h09m36s <= original start, modified for tape start.
+     start=2020y018d06h09m42s; mode=rdbe.sx; source=0641+392;
+     station=Mk:    0 sec:   16 sec:   73.846 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:   73.846 GB:   : &cw   : 1;
+endscan;
+scan No0021;
+*    start=2020y018d06h10m24s <= original start, modified for tape start.
+     start=2020y018d06h10m30s; mode=rdbe.sx; source=0714+457;
+     station=Mk:    0 sec:   16 sec:   77.949 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:   77.949 GB:   : &cw   : 1;
+endscan;
+scan No0022;
+*    start=2020y018d06h12m35s <= original start, modified for tape start.
+     start=2020y018d06h12m41s; mode=rdbe.sx; source=0544+273;
+     station=Mk:    0 sec:   16 sec:   82.051 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:   82.051 GB:   : &n    : 1;
+endscan;
+scan No0023;
+*    start=2020y018d06h13m17s <= original start, modified for tape start.
+     start=2020y018d06h13m23s; mode=rdbe.sx; source=0556+238;
+     station=Mk:    0 sec:   16 sec:   86.154 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:   86.154 GB:   : &n    : 1;
+endscan;
+scan No0024;
+*    start=2020y018d06h15m55s <= original start, modified for tape start.
+     start=2020y018d06h16m01s; mode=rdbe.sx; source=2356+385;
+     station=Mk:    0 sec:   16 sec:   90.256 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:   90.256 GB:   : &cw   : 1;
+endscan;
+scan No0025;
+*    start=2020y018d06h16m57s <= original start, modified for tape start.
+     start=2020y018d06h17m03s; mode=rdbe.sx; source=0109+224;
+     station=Mk:    0 sec:   16 sec:   94.359 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:   94.359 GB:   : &cw   : 1;
+endscan;
+scan No0026;
+*    start=2020y018d06h18m52s <= original start, modified for tape start.
+     start=2020y018d06h18m58s; mode=rdbe.sx; source=1637+826;
+     station=Mk:    0 sec:   16 sec:   98.461 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:   98.461 GB:   : &cw   : 1;
+endscan;
+scan No0027;
+*    start=2020y018d06h19m42s <= original start, modified for tape start.
+     start=2020y018d06h19m48s; mode=rdbe.sx; source=2229+695;
+     station=Mk:    0 sec:   16 sec:  102.564 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:  102.564 GB:   : &cw   : 1;
+endscan;
+scan No0028;
+*    start=2020y018d06h22m15s <= original start, modified for tape start.
+     start=2020y018d06h22m21s; mode=rdbe.sx; source=0400-319;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Mk:    0 sec:   16 sec:  106.666 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:  106.666 GB:   : &n    : 1;
+endscan;
+scan No0029;
+*    start=2020y018d06h23m06s <= original start, modified for tape start.
+     start=2020y018d06h23m12s; mode=rdbe.sx; source=0347-211;
+     station=Mk:    0 sec:   16 sec:  110.769 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:  110.769 GB:   : &n    : 1;
+endscan;
+scan No0030;
+*    start=2020y018d06h25m39s <= original start, modified for tape start.
+     start=2020y018d06h25m45s; mode=rdbe.sx; source=0955+476;
+     station=Mk:    0 sec:   16 sec:  114.872 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  114.872 GB:   : &ccw  : 1;
+endscan;
+scan No0031;
+*    start=2020y018d06h26m23s <= original start, modified for tape start.
+     start=2020y018d06h26m29s; mode=rdbe.sx; source=0920+390;
+     station=Mk:    0 sec:   16 sec:  118.974 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  118.974 GB:   : &ccw  : 1;
+endscan;
+scan No0032;
+*    start=2020y018d06h27m20s <= original start, modified for tape start.
+     start=2020y018d06h27m26s; mode=rdbe.sx; source=0804+499;
+     station=Mk:    0 sec:   16 sec:  123.077 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  123.077 GB:   : &ccw  : 1;
+endscan;
+scan No0033;
+*    start=2020y018d06h30m35s <= original start, modified for tape start.
+     start=2020y018d06h30m41s; mode=rdbe.sx; source=0358+210;
+     station=Mk:    0 sec:   16 sec:  127.179 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  127.179 GB:   : &n    : 1;
+endscan;
+scan No0034;
+*    start=2020y018d06h31m27s <= original start, modified for tape start.
+     start=2020y018d06h31m33s; mode=rdbe.sx; source=0430+289;
+     station=Mk:    0 sec:   16 sec:  131.282 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  131.282 GB:   : &cw   : 1;
+endscan;
+scan No0035;
+*    start=2020y018d06h32m16s <= original start, modified for tape start.
+     start=2020y018d06h32m22s; mode=rdbe.sx; source=0442+389;
+     station=Mk:    0 sec:   16 sec:  135.384 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  135.384 GB:   : &cw   : 1;
+endscan;
+scan No0036;
+*    start=2020y018d06h32m56s <= original start, modified for tape start.
+     start=2020y018d06h33m02s; mode=rdbe.sx; source=0415+398;
+     station=Mk:    0 sec:   16 sec:  139.487 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  139.487 GB:   : &cw   : 1;
+endscan;
+scan No0037;
+*    start=2020y018d06h33m38s <= original start, modified for tape start.
+     start=2020y018d06h33m44s; mode=rdbe.sx; source=0345+460;
+     station=Mk:    0 sec:   16 sec:  143.589 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  143.589 GB:   : &cw   : 1;
+endscan;
+scan No0038;
+*    start=2020y018d06h34m25s <= original start, modified for tape start.
+     start=2020y018d06h34m31s; mode=rdbe.sx; source=0307+380;
+     station=Mk:    0 sec:   16 sec:  147.692 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  147.692 GB:   : &cw   : 1;
+endscan;
+scan No0039;
+*    start=2020y018d06h35m07s <= original start, modified for tape start.
+     start=2020y018d06h35m13s; mode=rdbe.sx; source=0340+362;
+     station=Mk:    0 sec:   16 sec:  151.794 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  151.794 GB:   : &cw   : 1;
+endscan;
+scan No0040;
+*    start=2020y018d06h36m15s <= original start, modified for tape start.
+     start=2020y018d06h36m21s; mode=rdbe.sx; source=0529+483;
+     station=Mk:    0 sec:   16 sec:  155.897 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  155.897 GB:   : &cw   : 1;
+endscan;
+scan No0041;
+*    start=2020y018d06h36m59s <= original start, modified for tape start.
+     start=2020y018d06h37m05s; mode=rdbe.sx; source=0552+398;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Mk:    0 sec:   16 sec:  160.000 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  160.000 GB:   : &cw   : 1;
+endscan;
+scan No0042;
+*    start=2020y018d06h37m34s <= original start, modified for tape start.
+     start=2020y018d06h37m40s; mode=rdbe.sx; source=0548+378;
+     station=Mk:    0 sec:   16 sec:  164.102 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  164.102 GB:   : &cw   : 1;
+endscan;
+scan No0043;
+*    start=2020y018d06h39m36s <= original start, modified for tape start.
+     start=2020y018d06h39m42s; mode=rdbe.sx; source=1053+704;
+     station=Mk:    0 sec:   16 sec:  168.205 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  168.205 GB:   : &cw   : 1;
+endscan;
+scan No0044;
+*    start=2020y018d06h40m16s <= original start, modified for tape start.
+     start=2020y018d06h40m22s; mode=rdbe.sx; source=1053+815;
+     station=Mk:    0 sec:   16 sec:  172.307 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  172.307 GB:   : &cw   : 1;
+endscan;
+scan No0045;
+*    start=2020y018d06h43m00s <= original start, modified for tape start.
+     start=2020y018d06h43m06s; mode=rdbe.sx; source=0346-279;
+     station=Mk:    0 sec:   16 sec:  176.410 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:  176.410 GB:   : &n    : 1;
+endscan;
+scan No0046;
+*    start=2020y018d06h43m42s <= original start, modified for tape start.
+     start=2020y018d06h43m48s; mode=rdbe.sx; source=0338-214;
+     station=Mk:    0 sec:   16 sec:  180.512 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:  180.512 GB:   : &n    : 1;
+endscan;
+scan No0047;
+*    start=2020y018d06h46m20s <= original start, modified for tape start.
+     start=2020y018d06h46m26s; mode=rdbe.sx; source=1637+826;
+     station=Mk:    0 sec:   16 sec:  184.615 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:  184.615 GB:   : &cw   : 1;
+endscan;
+scan No0048;
+*    start=2020y018d06h47m09s <= original start, modified for tape start.
+     start=2020y018d06h47m15s; mode=rdbe.sx; source=2229+695;
+     station=Mk:    0 sec:   16 sec:  188.717 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:  188.717 GB:   : &cw   : 1;
+endscan;
+scan No0049;
+*    start=2020y018d06h48m34s <= original start, modified for tape start.
+     start=2020y018d06h48m40s; mode=rdbe.sx; source=0109+224;
+     station=Mk:    0 sec:   16 sec:  192.820 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:  192.820 GB:   : &cw   : 1;
+endscan;
+scan No0050;
+*    start=2020y018d06h49m24s <= original start, modified for tape start.
+     start=2020y018d06h49m30s; mode=rdbe.sx; source=0201+113;
+     station=Mk:    0 sec:   16 sec:  196.923 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:  196.923 GB:   : &cw   : 1;
+endscan;
+scan No0051;
+*    start=2020y018d06h51m43s <= original start, modified for tape start.
+     start=2020y018d06h51m49s; mode=rdbe.sx; source=0955+476;
+     station=Mk:    0 sec:   16 sec:  201.025 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:  201.025 GB:   : &cw   : 1;
+endscan;
+scan No0052;
+*    start=2020y018d06h52m28s <= original start, modified for tape start.
+     start=2020y018d06h52m34s; mode=rdbe.sx; source=0920+390;
+     station=Mk:    0 sec:   16 sec:  205.128 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:  205.128 GB:   : &cw   : 1;
+endscan;
+scan No0053;
+*    start=2020y018d06h55m05s <= original start, modified for tape start.
+     start=2020y018d06h55m11s; mode=rdbe.sx; source=0515+208;
+     station=Mk:    0 sec:   16 sec:  209.230 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:  209.230 GB:   : &n    : 1;
+endscan;
+scan No0054;
+*    start=2020y018d06h55m53s <= original start, modified for tape start.
+     start=2020y018d06h55m59s; mode=rdbe.sx; source=0544+273;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Mk:    0 sec:   16 sec:  213.333 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:  213.333 GB:   : &n    : 1;
+endscan;
+scan No0055;
+*    start=2020y018d06h57m00s <= original start, modified for tape start.
+     start=2020y018d06h57m06s; mode=rdbe.sx; source=0430+289;
+     station=Mk:    0 sec:   16 sec:  217.435 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:  217.435 GB:   : &cw   : 1;
+endscan;
+scan No0056;
+*    start=2020y018d06h57m51s <= original start, modified for tape start.
+     start=2020y018d06h57m57s; mode=rdbe.sx; source=0442+389;
+     station=Mk:    0 sec:   16 sec:  221.538 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:  221.538 GB:   : &cw   : 1;
+endscan;
+scan No0057;
+*    start=2020y018d06h59m27s <= original start, modified for tape start.
+     start=2020y018d06h59m33s; mode=rdbe.sx; source=0358+210;
+     station=Mk:    0 sec:   16 sec:  225.640 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:  225.640 GB:   : &n    : 1;
+endscan;
+scan No0058;
+*    start=2020y018d07h00m14s <= original start, modified for tape start.
+     start=2020y018d07h00m20s; mode=rdbe.sx; source=0322+222;
+     station=Mk:    0 sec:   16 sec:  229.743 GB:   : &cw   : 1;
+     station=Pt:    0 sec:   16 sec:  229.743 GB:   : &cw   : 1;
+endscan;
+scan No0059;
+*    start=2020y018d07h02m26s <= original start, modified for tape start.
+     start=2020y018d07h02m32s; mode=rdbe.sx; source=0446+112;
+     station=Mk:    0 sec:   16 sec:  233.846 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:  233.846 GB:   : &n    : 1;
+endscan;
+scan No0060;
+*    start=2020y018d07h03m08s <= original start, modified for tape start.
+     start=2020y018d07h03m14s; mode=rdbe.sx; source=0506+101;
+     station=Mk:    0 sec:   16 sec:  237.948 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:  237.948 GB:   : &n    : 1;
+endscan;
+scan No0061;
+*    start=2020y018d07h04m00s <= original start, modified for tape start.
+     start=2020y018d07h04m06s; mode=rdbe.sx; source=0536+145;
+     station=Mk:    0 sec:   16 sec:  242.051 GB:   : &n    : 1;
+     station=Pt:    0 sec:   16 sec:  242.051 GB:   : &n    : 1;
+endscan;
+scan No0062;
+*    start=2020y018d07h04m52s <= original start, modified for tape start.
+     start=2020y018d07h04m58s; mode=rdbe.sx; source=0556+238;
+     station=Mk:    0 sec:   16 sec:  246.153 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  246.153 GB:   : &n    : 1;
+endscan;
+scan No0063;
+*    start=2020y018d07h07m07s <= original start, modified for tape start.
+     start=2020y018d07h07m13s; mode=rdbe.sx; source=1053+704;
+     station=Mk:    0 sec:   16 sec:  250.256 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  250.256 GB:   : &cw   : 1;
+endscan;
+scan No0064;
+*    start=2020y018d07h07m49s <= original start, modified for tape start.
+     start=2020y018d07h07m55s; mode=rdbe.sx; source=1053+815;
+     station=Mk:    0 sec:   16 sec:  254.358 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  254.358 GB:   : &cw   : 1;
+endscan;
+scan No0065;
+*    start=2020y018d07h09m19s <= original start, modified for tape start.
+     start=2020y018d07h09m25s; mode=rdbe.sx; source=0134+311;
+     station=Mk:    0 sec:   16 sec:  258.461 GB:   : &ccw  : 1;
+     station=Pt:    0 sec:   16 sec:  258.461 GB:   : &cw   : 1;
+endscan;
