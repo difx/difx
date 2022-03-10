@@ -532,6 +532,43 @@ static int getAntennas(VexData *V, Vex *v)
 			fvex_double(&(r->value), &(r->units), &A->axisOffset);
 		}
 
+		if(V->getVersion() >= 1.8)
+		{
+			struct equip *e;
+			
+			for(e = (struct equip *)get_station_lowl(stn, T_EQUIP, B_DAS, v); e; e = (struct equip *)get_station_lowl_next())
+			{
+				if(strcasecmp(e->type, "rack") == 0)
+				{
+					A->rackType = e->device;
+				}
+				else if(strcasecmp(e->type, "recorder") == 0)
+				{
+					A->recorderType = e->device;
+				}
+			}
+		}
+		else
+		{
+			void *c;
+			char *value, *units;
+			int name, link;
+			
+			c = get_station_lowl(stn, T_ELECTRONICS_RACK_TYPE, B_DAS, v);
+			if(c)
+			{
+				vex_field(T_ELECTRONICS_RACK_TYPE, c, 1, &link, &name, &value, &units);
+				A->rackType = value;
+			}
+
+			c = get_station_lowl(stn, T_RECORD_TRANSPORT_TYPE, B_DAS, v);
+			if(c)
+			{
+				vex_field(T_RECORD_TRANSPORT_TYPE, c, 1, &link, &name, &value, &units);
+				A->recorderType = value;
+			}
+		}
+
 		for(void *c = get_station_lowl(stn, T_CLOCK_EARLY, B_CLOCK, v); c; c = get_station_lowl_next())
 		{
 			char *value, *units;

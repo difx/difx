@@ -1,6 +1,14 @@
 There are many MODEs here and consequently many DATASTREAMS and IF and EXTENSIONS blocks.
 
-A new "extension" is employed when using the "90cm" receiver.  I have named it "filter50cm".  
-The value of "5 MHz" corresponds to "NARROW" in the old "if_def" comment line and "33 MHz"
-corresponds to "BROAD".  In practice, "NARROW" should be assumed for a value less than 8 MHz, 
-"BROAD" should be asusmed for a value > 24 MHz.
+A new "extension" is employed when using the "90cm" receiver.  I have named
+it "filter50cm".  The value of "5 MHz" corresponds to "NARROW" in the old
+"if_def" comment line and "33 MHz" corresponds to "BROAD".  In practice,
+"NARROW" should be assumed for a value less than 8 MHz, "BROAD" should be
+asusmed for a value > 24 MHz.
+
+When observing with the "7mm" VLBA receiver, synth3 has its frequency
+multipled by 3 prior to mixing.  This is noted in a comment field which is not
+required.  The "synth3" value is obtained by taking the 4th parameter in the
+old if_def comment field and dividing the number by 3.  When observing with
+the "3mm" VLBA receiver, there is a 6x multiplication and the number is
+determined by dividing the comment number by 6.

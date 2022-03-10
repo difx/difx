@@ -160,12 +160,8 @@ enddef;
 $DAS;
 *
 def 2RDBE2+NONE<;
-     record_transport_type = Mark5C;
-     electronics_rack_type = RDBE2;
-     number_drives = 2;
-     headstack = 1 :            : 0 ;
-     headstack = 2 :            : 1 ;
-     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+     equip = rack : RDBE_PFB : &RDBE ;
+     equip = recorder : Mark6 : &MARK6 ;
 enddef;
 *------------------------------------------------------------------------------
 $SOURCE;

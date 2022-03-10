@@ -74,6 +74,8 @@ public:
 	std::string difxName;		// Name to be used in difx
 	std::string twoCharSiteCode;	// Not likely used...
 	std::string oneCharSiteCode;	// Used by mark4 data processing path; set to NULL if not provided
+	std::string rackType;		// From vex1.5 $DAS electronics_rack_type parameter or vex2 $DAS equip : rack parameter
+	std::string recorderType;	// From vex1.5 $DAS record_transport_type parameter or vex2 $DAS equip : recorder parameter
 
 	double x, y, z;		// (m) antenna position in ITRF
 	double dx, dy, dz;	// (m/sec) antenna velocity

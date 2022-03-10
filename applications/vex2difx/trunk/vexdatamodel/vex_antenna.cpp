@@ -250,6 +250,14 @@ std::ostream& operator << (std::ostream &os, const VexAntenna &x)
 	{
 		os << "  " << *it << std::endl;
 	}
+	if(!x.rackType.empty())
+	{
+		os << "  rack=" << x.rackType << std::endl;
+	}
+	if(!x.recorderType.empty())
+	{
+		os << "  recorder=" << x.recorderType << std::endl;
+	}
 	for(std::vector<VexExtension>::const_iterator it = x.extensions.begin(); it != x.extensions.end(); ++it)
 	{
 		os << "  " << *it << std::endl;
