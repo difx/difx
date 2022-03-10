@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken                             *
+ *   Copyright (C) 2008-2022 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -215,6 +215,7 @@ int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2)
 {
 	if((da1->spacecraftId == da2->spacecraftId) &&
 	   strcmp(da1->name, da2->name) == 0 &&
+	   da1->mount == da2->mount &&				/* the Nasmyth side could change during an obs... */
 	   fabs(da1->X - da2->X) < 1.0 &&
 	   fabs(da1->Y - da2->Y) < 1.0 &&
 	   fabs(da1->Z - da2->Z) < 1.0)

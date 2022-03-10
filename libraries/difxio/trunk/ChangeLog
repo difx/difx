@@ -16,6 +16,7 @@
 * new utility: difxfilelist: read through .input file(s) and list files to be read, data format, ...
 * capture ephemeris file and object number in .calc file
 * new function: DifxInputGetSourceId()
+* when checking equality of antennas, verify mount type is the same
 
 3.6.0
 * Post DiFX 2.5
