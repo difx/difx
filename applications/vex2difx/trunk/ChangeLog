@@ -2,7 +2,7 @@
 Version 2.99.3
 ~~~~~~~~~~~~~~
 * Merge of vex2 branch into trunk, Jan 27, 2022, from revision 10279 of https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/vex2
-* vex2: parse rack and recorder out of DAS block
+* vex2: parse equip, equip_set, and equip_info from $DAS
 * add some sample vex2 files for the VLBA (other groups encouraged to add vex2 samples as well!)
 
 Version 2.99.2

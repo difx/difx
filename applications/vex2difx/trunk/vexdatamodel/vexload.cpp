@@ -410,6 +410,32 @@ static int getExtensions(VexData *V, Vex *v)
 	return nWarn;
 }
 
+static void dvalueListToVectorString(std::vector<std::string> &values, const struct llist *L)
+{
+	values.clear();
+
+	for(const struct llist *l = L; l != 0; l = l->next)
+	{
+		if(l->ptr && ((const Dvalue *)l->ptr)->value)
+		{
+			values.push_back(((const Dvalue *)l->ptr)->value);
+		}
+	}
+}
+
+static void svalueListToVectorString(std::vector<std::string> &values, const struct llist *L)
+{
+	values.clear();
+
+	for(const struct llist *l = L; l != 0; l = l->next)
+	{
+		if(l->ptr)
+		{
+			values.push_back((const char *)l->ptr);
+		}
+	}
+}
+
 static int getAntennas(VexData *V, Vex *v)
 {
 	struct dvalue *r;
@@ -534,17 +560,36 @@ static int getAntennas(VexData *V, Vex *v)
 
 		if(V->getVersion() >= 1.8)
 		{
-			struct equip *e;
-			
-			for(e = (struct equip *)get_station_lowl(stn, T_EQUIP, B_DAS, v); e; e = (struct equip *)get_station_lowl_next())
+			for(const struct equip *e = (struct equip *)get_station_lowl(stn, T_EQUIP, B_DAS, v); e; e = (struct equip *)get_station_lowl_next())
 			{
-				if(strcasecmp(e->type, "rack") == 0)
+				A->equipment.push_back(VexEquipment(e->type, e->device, e->link, e->label ? e->label : ""));
+			}
+
+			for(const struct equip_set *es = (struct equip_set *)get_station_lowl(stn, T_EQUIP_SET, B_DAS, v); es != 0; es = (struct equip_set *)get_station_lowl_next())
+			{
+				bool ok;
+				std::vector<std::string> values;
+
+				dvalueListToVectorString(values, es->settings);
+				ok = A->addEquipmentSettings(es->link, es->function, values);
+				if(!ok)
 				{
-					A->rackType = e->device;
+					std::cerr << "Warning: equip_set for " << es->link << " does not match an equip parameter" << std::endl;
+					++nWarn;
 				}
-				else if(strcasecmp(e->type, "recorder") == 0)
+			}
+
+			for(const struct equip_info *ei = (struct equip_info *)get_station_lowl(stn, T_EQUIP_INFO, B_DAS, v); ei != 0; ei = (struct equip_info *)get_station_lowl_next())
+			{
+				bool ok;
+				std::vector<std::string> values;
+
+				svalueListToVectorString(values, ei->values);
+				ok = A->addEquipmentInfo(ei->link, ei->name, values);
+				if(!ok)
 				{
-					A->recorderType = e->device;
+					std::cerr << "Warning: equip_info for " << ei->link << " does not match an equip parameter" << std::endl;
+					++nWarn;
 				}
 			}
 		}
@@ -558,14 +603,14 @@ static int getAntennas(VexData *V, Vex *v)
 			if(c)
 			{
 				vex_field(T_ELECTRONICS_RACK_TYPE, c, 1, &link, &name, &value, &units);
-				A->rackType = value;
+				A->equipment.push_back(VexEquipment("rack", value, "RACK"));
 			}
 
 			c = get_station_lowl(stn, T_RECORD_TRANSPORT_TYPE, B_DAS, v);
 			if(c)
 			{
 				vex_field(T_RECORD_TRANSPORT_TYPE, c, 1, &link, &name, &value, &units);
-				A->recorderType = value;
+				A->equipment.push_back(VexEquipment("recorder", value, "RECORDER"));
 			}
 		}
 

@@ -235,6 +235,101 @@ bool usesCanonicalVDIF(const std::string &antName)
 	return (canonicalVDIFUsers.find(ant) != canonicalVDIFUsers.end());
 }
 
+const VexEquipment *VexAntenna::getEquipment(const std::string &link) const
+{
+	for(std::vector<VexEquipment>::const_iterator it = equipment.begin(); it != equipment.end(); ++it)
+	{
+		if(link == it->link)
+		{
+			return &(*it);
+		}
+	}
+
+	return 0;	// not found
+}
+
+bool VexAntenna::addEquipmentSettings(const std::string &link, const std::string &function, const std::vector<std::string> &values)
+{
+	for(std::vector<VexEquipment>::iterator it = equipment.begin(); it != equipment.end(); ++it)
+	{
+		if(link == it->link)
+		{
+			it->addSetting(function, values);
+
+			return true;
+		}
+	}
+
+	return false;	// no such link
+}
+
+bool VexAntenna::addEquipmentInfo(const std::string &link, const std::string &name, const std::vector<std::string> &values)
+{
+	for(std::vector<VexEquipment>::iterator it = equipment.begin(); it != equipment.end(); ++it)
+	{
+		if(link == it->link)
+		{
+			it->addInfo(name, values);
+
+			return true;
+		}
+	}
+
+	return false;	// no such link
+}
+
+bool VexAntenna::hasEquipmentRDBE() const
+{
+	for(std::vector<VexEquipment>::const_iterator it = equipment.begin(); it != equipment.end(); ++it)
+	{
+		if(strncasecmp(it->device.c_str(), "RDBE", 4) == 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool VexAntenna::hasEquipmentVNDA() const
+{
+	for(std::vector<VexEquipment>::const_iterator it = equipment.begin(); it != equipment.end(); ++it)
+	{
+		if(strncasecmp(it->device.c_str(), "VNDA", 4) == 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool VexAntenna::hasEquipment(const std::string &device) const
+{
+	for(std::vector<VexEquipment>::const_iterator it = equipment.begin(); it != equipment.end(); ++it)
+	{
+		if(strcasecmp(it->device.c_str(), device.c_str()) == 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool VexAntenna::hasEquipment(const std::string &type, const std::string &device) const
+{
+	for(std::vector<VexEquipment>::const_iterator it = equipment.begin(); it != equipment.end(); ++it)
+	{
+		if(strcasecmp(it->type.c_str(), type.c_str()) == 0 && strcasecmp(it->device.c_str(), device.c_str()) == 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 std::ostream& operator << (std::ostream &os, const VexAntenna &x)
 {
 	os << "Antenna " << x.name << " [" << x.twoCharSiteCode << " " << x.oneCharSiteCode << "] " << x.difxName <<
@@ -250,13 +345,9 @@ std::ostream& operator << (std::ostream &os, const VexAntenna &x)
 	{
 		os << "  " << *it << std::endl;
 	}
-	if(!x.rackType.empty())
+	for(std::vector<VexEquipment>::const_iterator it = x.equipment.begin(); it != x.equipment.end(); ++it)
 	{
-		os << "  rack=" << x.rackType << std::endl;
-	}
-	if(!x.recorderType.empty())
-	{
-		os << "  recorder=" << x.recorderType << std::endl;
+		os << "  " << *it;
 	}
 	for(std::vector<VexExtension>::const_iterator it = x.extensions.begin(); it != x.extensions.end(); ++it)
 	{

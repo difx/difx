@@ -39,6 +39,7 @@
 #include "vex_clock.h"
 #include "vex_basebanddata.h"
 #include "vex_networkdata.h"
+#include "vex_equipment.h"
 #include "vex_extension.h"
 
 bool isVLBA(const std::string &antName);
@@ -69,13 +70,22 @@ public:
 	void setAntennaPolConvert(bool doConvert) { polConvert = doConvert; }
 	NasmythType getNasmyth(const std::string &bandLink) const;
 
+	const VexEquipment *getEquipment(const std::string &link) const;
+	// the following will return false if no equipment with the given link exists
+	bool addEquipmentSettings(const std::string &link, const std::string &function, const std::vector<std::string> &values);
+	bool addEquipmentInfo(const std::string &link, const std::string &name, const std::vector<std::string> &values);
+	// the following return true if an RDBE or VNDA system (respectively) is present
+	bool hasEquipmentRDBE() const;
+	bool hasEquipmentVNDA() const;
+	// the following look for exact (but case independent) matches of device (and type for second case)
+	bool hasEquipment(const std::string &device) const;
+	bool hasEquipment(const std::string &type, const std::string &device) const;
+
 	std::string name;		// Deprecated
 	std::string defName;		// if name != defName, things may be very confused...
 	std::string difxName;		// Name to be used in difx
 	std::string twoCharSiteCode;	// Not likely used...
 	std::string oneCharSiteCode;	// Used by mark4 data processing path; set to NULL if not provided
-	std::string rackType;		// From vex1.5 $DAS electronics_rack_type parameter or vex2 $DAS equip : rack parameter
-	std::string recorderType;	// From vex1.5 $DAS record_transport_type parameter or vex2 $DAS equip : recorder parameter
 
 	double x, y, z;		// (m) antenna position in ITRF
 	double dx, dy, dz;	// (m/sec) antenna velocity
@@ -90,6 +100,9 @@ public:
 	std::vector<VexBasebandData> vsns;	// indexed by vsn number
 	std::vector<VexBasebandData> files;	// indexed by file number
 	std::vector<VexNetworkData> ports;	// indexed by stream number
+
+	std::vector<VexEquipment> equipment;	// relevant infom from $DAS block
+	
 	std::vector<VexExtension> extensions;	// extensions linked from $STATION block
 
 	std::map<std::string, NasmythType> nasmyth;	// maps band link to nasmyth type; default to NasmythNone if not found
