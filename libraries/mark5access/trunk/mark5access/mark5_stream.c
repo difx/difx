@@ -153,7 +153,7 @@ static void mark5_stream_blank_frame(struct mark5_stream *ms)
 int mark5_stream_next_frame(struct mark5_stream *ms)
 {
 	int n;
-	int v = 1;
+	int v = 0;
 
 	/* call specialized function to ready next frame */
 	n = ms->next(ms);
