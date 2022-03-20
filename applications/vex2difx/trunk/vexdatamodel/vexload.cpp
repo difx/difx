@@ -444,12 +444,13 @@ static int getAntennas(VexData *V, Vex *v)
 
 	block = find_block(B_CLOCK, v);
 
-	for(char *stn = get_station_def(v); stn; stn=get_station_def_next())
+	for(const char *stn = get_station_def(v); stn; stn=get_station_def_next())
 	{
-		struct site_position *p;
-		struct axis_type *q;
-		struct site_id *s;
-		struct nasmyth *n;
+		const struct site_position *p;
+		const struct axis_type *q;
+		const struct site_id *s;
+		const struct nasmyth *n;
+		const char *sn;
 		VexAntenna *A;
 
 		std::string antName(stn);
@@ -461,7 +462,7 @@ static int getAntennas(VexData *V, Vex *v)
 		Upper(A->name);
 		A->difxName = A->name;
 
-		s = (struct site_id *)get_station_lowl(stn, T_SITE_ID, B_SITE, v);
+		s = (const struct site_id *)get_station_lowl(stn, T_SITE_ID, B_SITE, v);
 		if(s != 0)
 		{
 			if(s->code2)
@@ -473,8 +474,14 @@ static int getAntennas(VexData *V, Vex *v)
 				A->oneCharSiteCode = s->code1;
 			}
 		}
+		sn = (const char *)get_station_lowl(stn, T_SITE_NAME, B_SITE, v);
+		if(sn != 0)
+		{
+			A->siteName = sn;
+		}
+		
 
-		p = (struct site_position *)get_station_lowl(stn, T_SITE_POSITION, B_SITE, v);
+		p = (const struct site_position *)get_station_lowl(stn, T_SITE_POSITION, B_SITE, v);
 		if(p == 0)
 		{
 			std::cerr << "Warning: cannot find site position for antenna " << antName << " in the vex file." << std::endl;
@@ -487,7 +494,7 @@ static int getAntennas(VexData *V, Vex *v)
 			fvex_double(&(p->z->value), &(p->z->units), &A->z);
 		}
 
-		p = (struct site_position *)get_station_lowl(stn, T_SITE_VELOCITY, B_SITE, v);
+		p = (const struct site_position *)get_station_lowl(stn, T_SITE_VELOCITY, B_SITE, v);
 		if(p)
 		{
 			fvex_double(&(p->x->value), &(p->x->units), &A->dx);
@@ -499,7 +506,7 @@ static int getAntennas(VexData *V, Vex *v)
 			A->dx = A->dy = A->dz = 0.0;
 		}
 
-		q = (struct axis_type *)get_station_lowl(stn, T_AXIS_TYPE, B_ANTENNA, v);
+		q = (const struct axis_type *)get_station_lowl(stn, T_AXIS_TYPE, B_ANTENNA, v);
 		if(q == 0)
 		{
 			std::cerr << "Warning: cannot find axis type for antenna " << antName << " in the vex file." << std::endl;
@@ -514,7 +521,7 @@ static int getAntennas(VexData *V, Vex *v)
 			}
 		}
 
-		for(n = (struct nasmyth *)get_station_lowl(stn, T_NASMYTH, B_ANTENNA, v); n != 0; n = (struct nasmyth *)get_station_lowl_next())
+		for(n = (const struct nasmyth *)get_station_lowl(stn, T_NASMYTH, B_ANTENNA, v); n != 0; n = (struct nasmyth *)get_station_lowl_next())
 		{
 			if(n)
 			{
@@ -1200,8 +1207,20 @@ static int collectIFInfo(VexSetup &setup, VexData *V, Vex *v, const char *antDef
 	{
 		p2array[i] = 0;
 	}
+	
+	//ADDED BACK: TODO we assign the comments below to vif.comment; should check if there is a way
+	// to do so here instead of going through this temp array
+	void *p;
 
-	for(void *p = get_all_lowl(antDefName, modeDefName, T_IF_DEF, B_IF, v); p; p = get_all_lowl_next())
+	for(p = get_all_lowl(antDefName, modeDefName, T_COMMENT_TRAILING, B_IF, v); p; p = get_all_lowl_next())
+	{
+		p2array[p2count++] = p;
+	}
+
+	// the collected comments and ifdef fields will always line up, so just run a count
+	p2count = 0;
+
+	for(p = get_all_lowl(antDefName, modeDefName, T_IF_DEF, B_IF, v); p; p = get_all_lowl_next())
 	{
 		double phaseCal, phaseCalBase;
 		int link, name;
@@ -2736,6 +2755,7 @@ static int getExper(VexData *V, Vex *v)
 				void *p;
 				
 				p = (((Lowl *)lowls->ptr)->item);
+				cerr << "start date: " << ((char *)p) << endl;
 				start = vexDate((char *)p);
 			}
 			else

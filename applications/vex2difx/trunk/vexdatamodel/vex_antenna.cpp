@@ -333,6 +333,7 @@ bool VexAntenna::hasEquipment(const std::string &type, const std::string &device
 std::ostream& operator << (std::ostream &os, const VexAntenna &x)
 {
 	os << "Antenna " << x.name << " [" << x.twoCharSiteCode << " " << x.oneCharSiteCode << "] " << x.difxName <<
+		"\n  site=" << x.siteName <<
 		"\n  x=" << x.x << "  dx/dt=" << x.dx <<
 		"\n  y=" << x.y << "  dy/dt=" << x.dy <<
 		"\n  z=" << x.z << "  dz/dt=" << x.dz <<

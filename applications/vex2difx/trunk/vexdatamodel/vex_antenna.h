@@ -86,6 +86,7 @@ public:
 	std::string difxName;		// Name to be used in difx
 	std::string twoCharSiteCode;	// Not likely used...
 	std::string oneCharSiteCode;	// Used by mark4 data processing path; set to NULL if not provided
+	std::string siteName;
 
 	double x, y, z;		// (m) antenna position in ITRF
 	double dx, dy, dz;	// (m/sec) antenna velocity
