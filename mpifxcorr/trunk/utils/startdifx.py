@@ -846,7 +846,7 @@ for a in joblist:
 
         if fb != None:
                 if fb[0] == '/':
-                        fileBaseList.append(a)
+                        fileBaseList.append(fb)
                 else:
                         fileBaseList.append(cwd + '/' + fb)
         
