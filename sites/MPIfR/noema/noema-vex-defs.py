@@ -8,14 +8,15 @@ and 2nd LO information. Channels are always 64 MHz wide.
 
 The Mark6 recorder to PolyFix units and channels assignment
 of EHT 2021 is assumed, and follows R. Garcias spreadsheet
-202104_pNOEMA_VLBI_backend_5-9GHz_freq_setup.xlsx
+202104_pNOEMA_VLBI_backend_5-9GHz_freq_setup.xlsx, and the
+cabling of 10G/Mark6 in IRAM's pNOEMA_2021_EHT_Backend_HW_Setup.pdf
 '''
 
 import argparse
 import sys
 
 __author__ = "Jan Wagner (MPIfR)"
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 NOEMA_PFB_BANDWIDTH_MHZ = 64.0
 
@@ -30,6 +31,7 @@ def parse_args(args: []):
 	parser.add_argument('-f', '--lo1', dest='lo1', metavar='GHz', default='221.100', help='frequency of 1st LO (GMVA 92.101, EHT 221.100; default: %(default)s)')
 	parser.add_argument('-F', '--lo2', dest='lo2', metavar='GHz', default='7.744', help='frequency of 2nd LO (default: %(default)s)')
 	parser.add_argument('-r', dest='recorders', default='1,2,3,4', help='list of recorder ID numbers (default: %(default)s), for GMVA2021 use 5')
+	parser.add_argument('-c', dest='cabling', default='5-9', help='link cabling config (default "%(default)s"; use "4-8" or "5-9")')
 	parser.add_argument('--if', '-i', dest='do_vex_if', action='store_true', help='also output VEX $IF section')
 	parser.add_argument('--bbc', '-b', dest='do_vex_bbc', action='store_true', help='also output VEX $BBC section')
 	# todo? : parser.add_argument('--v2d', '-v', dest='do_v2d', action='store_true', help='also output v2d ANTENNA, DATASTREAM sections')
@@ -59,10 +61,14 @@ class EHTBandLabels:
 
 	def __init__(self):
 		self.bands = [
-			BandLabel('b1',212.053,214.100),
+			BandLabel('b1',212.052,214.100),
 			BandLabel('b2',214.100,216.148),
 			BandLabel('b3',226.052,228.100),
-			BandLabel('b4',228.100,230.148)
+			BandLabel('b4',228.100,230.148),
+			BandLabel('b1_0.8mm',334.552,336.600),
+			BandLabel('b2_0.8mm',336.600,338.648),
+			BandLabel('b3_0.8mm',346.552,348.600),
+			BandLabel('b4_0.8mm',348.600,350.648)
 		]
 
 	def lookUp(self, freq_GHz, sideband='U'):
@@ -88,7 +94,7 @@ class NoemaVexFreqGenerator:
 		self.lo1_GHz, self.lo2_GHz = 0, 0
 		self.recorders = []
 		self.bw_MHz = NOEMA_PFB_BANDWIDTH_MHZ
-		self.pol2bbcnr = {'R':1, 'L':2, 'H':1, 'V':2}
+		self.pol2bbcnr = {'L':1, 'R':2, 'H':1, 'V':2}
 		self.indent = '   '
 		self.bandlabels = bandlabels
 		self.nvexchannels = 0
@@ -127,7 +133,11 @@ class NoemaVexFreqGenerator:
 			print('%schan_def = &B: %.2f MHz : %1s : %.2f MHz : &CH%02d : &BBC%02d : &NoCal; * %s' % (self.indent, freq_MHz, sideband, self.bw_MHz, chNr, bbc, bandlabel))
 
 
-	def generate(self, lo1_GHz, lo2_GHz=7740.0, recorders=[1,2,3,4]):
+	def __generate_5G_IF_equivalent(self, lo1_GHz, lo2_GHz=7740.0, recorders=[1,2,3,4]):
+		'''
+		Generate VEX chan_defs in the 10G-to-Mark6 cabling layout of the EHT 5-9 GHz equivalent
+		mode at NOEMA (GMVA 86 GHz, EHT 230 GHz)
+		'''
 
 		def subblock(usb, outer, subbands, polzn):
 			channelblock = self.__generate_block(rxUsb=usb, outer=outer, subbands=subbands)
@@ -142,58 +152,151 @@ class NoemaVexFreqGenerator:
 		print('def FREQ_Nn; * derived for on lo1=%.3f lo2=%.3f GHz' % (lo1_GHz, lo2_GHz))
 		print('%ssample_rate = %.1f Ms/sec;  * (2bits/sample)' % (self.indent, 2*self.bw_MHz))
 
+		USB, LSB = True, False
+		OUTER, INNER = True, False
+
 		if 1 in recorders:
 
-			print('%s* Recorder 1, slot 1, LSB-Inner, RCP, subbands 0-15' % (self.indent))
-			subblock(False, False, range(16), 'R')
-			print('%s* Recorder 1, slot 2, LSB-Outer, RCP, subbands 0-15' % (self.indent))
-			subblock(False, True, range(16), 'R')
-			print('%s* Recorder 1, slot 3, LSB-Outer, LCP, subbands 0-15' % (self.indent))
-			subblock(False, True, range(16), 'L')
-			print('%s* Recorder 1, slot 4, LSB-Inner, LCP, subbands 0-15' % (self.indent))
-			subblock(False, False, range(16), 'L')
+			print('%s* Recorder 1, slot 1, LSB-Inner, LCP, subbands 0-11,44-47' % (self.indent))
+			subblock(LSB, INNER, range(12), 'L')
+			subblock(LSB, INNER, range(44,48), 'L')
+			print('%s* Recorder 1, slot 2, LSB-Outer, LCP, subbands 0-15' % (self.indent))
+			subblock(LSB, OUTER, range(16), 'L')
+			print('%s* Recorder 1, slot 3, LSB-Outer, RCP, subbands 0-15' % (self.indent))
+			subblock(LSB, OUTER, range(16), 'R')
+			print('%s* Recorder 1, slot 4, LSB-Inner, RCP, subbands 0-11,44-47' % (self.indent))
+			subblock(LSB, INNER, range(12), 'R')
+			subblock(LSB, INNER, range(44,48), 'R')
 
 		if 2 in recorders:
 
-			print('%s* Recorder 2, slot 1, LSB-Inner, RCP, subbands 32-47' % (self.indent))
-			subblock(False, False, range(32,48), 'R')
-			print('%s* Recorder 2, slot 2, LSB-Inner, RCP, subbands 16-31' % (self.indent))
-			subblock(False, False, range(16,32), 'R')
-			print('%s* Recorder 2, slot 3, LSB-Inner, LCP, subbands 16-31' % (self.indent))
-			subblock(False, False, range(16,32), 'L')
-			print('%s* Recorder 2, slot 4, LSB-Inner, LCP, subbands 32-47' % (self.indent))
-			subblock(False, False, range(32,48), 'L')
+			print('%s* Recorder 2, slot 1, LSB-Inner, LCP, subbands 32-43,12-15' % (self.indent))
+			subblock(LSB, INNER, range(32,44), 'L')
+			subblock(LSB, INNER, range(12,16), 'L')
+			print('%s* Recorder 2, slot 2, LSB-Inner, LCP, subbands 16-31' % (self.indent))
+			subblock(LSB, INNER, range(16,32), 'L')
+			print('%s* Recorder 2, slot 3, LSB-Inner, RCP, subbands 16-31' % (self.indent))
+			subblock(LSB, INNER, range(16,32), 'R')
+			print('%s* Recorder 2, slot 4, LSB-Inner, RCP, subbands 32-43,12-15' % (self.indent))
+			subblock(LSB, INNER, range(32,44), 'R')
+			subblock(LSB, INNER, range(12,16), 'R')
 
 		if 3 in recorders:
 
-			print('%s* Recorder 3, slot 1, USB-Inner, RCP, subbands 0-15' % (self.indent))
-			subblock(True, False, range(16), 'R')
-			print('%s* Recorder 3, slot 2, USB-Outer, RCP, subbands 0-15' % (self.indent))
-			subblock(True, True, range(16), 'R')
-			print('%s* Recorder 3, slot 3, USB-Outer, LCP, subbands 0-15' % (self.indent))
-			subblock(True, True, range(16), 'L')
-			print('%s* Recorder 3, slot 4, USB-Inner, LCP, subbands 0-15' % (self.indent))
-			subblock(True, False, range(16), 'L')
+			print('%s* Recorder 3, slot 1, USB-Inner, LCP, subbands 0-11,44-47' % (self.indent))
+			subblock(USB, INNER, range(12), 'L')
+			subblock(USB, INNER, range(44,48), 'L')
+			print('%s* Recorder 3, slot 2, USB-Outer, LCP, subbands 0-15' % (self.indent))
+			subblock(USB, OUTER, range(16), 'L')
+			print('%s* Recorder 3, slot 3, USB-Outer, RCP, subbands 0-15' % (self.indent))
+			subblock(USB, OUTER, range(16), 'R')
+			print('%s* Recorder 3, slot 4, USB-Inner, RCP, subbands 0-11,44-47' % (self.indent))
+			subblock(USB, INNER, range(12), 'R')
+			subblock(USB, INNER, range(44,48), 'R')
 
 		if 4 in recorders:
 
-			print('%s* Recorder 4, slot 1, USB-Inner, RCP, subbands 32-47' % (self.indent))
-			subblock(True, False, range(32,48), 'R')
-			print('%s* Recorder 4, slot 2, USB-Inner, RCP, subbands 16-31' % (self.indent))
-			subblock(True, False, range(16,32), 'R')
-			print('%s* Recorder 4, slot 3, USB-Inner, LCP, subbands 16-31' % (self.indent))
-			subblock(True, False, range(16,32), 'L')
-			print('%s* Recorder 4, slot 4, USB-Inner, LCP, subbands 32-47' % (self.indent))
-			subblock(True, False, range(32,48), 'L')
+			print('%s* Recorder 4, slot 1, USB-Inner, LCP, subbands 32-43,12-15' % (self.indent))
+			subblock(USB, INNER, range(32,44), 'L')
+			subblock(USB, INNER, range(12,16), 'L')
+			print('%s* Recorder 4, slot 2, USB-Inner, LCP, subbands 16-31' % (self.indent))
+			subblock(USB, INNER, range(16,32), 'L')
+			print('%s* Recorder 4, slot 3, USB-Inner, RCP, subbands 16-31' % (self.indent))
+			subblock(USB, INNER, range(16,32), 'R')
+			print('%s* Recorder 4, slot 4, USB-Inner, RCP, subbands 32-43,12-15' % (self.indent))
+			subblock(USB, INNER, range(32,44), 'R')
+			subblock(USB, INNER, range(12,16), 'R')
 
 		if 5 in recorders:
 
-			print('%s* Recorder 5, slot 1, LSB-Inner, RCP, subbands 16-31' % (self.indent))
-			subblock(False, False, range(16,32), 'R')
-			print('%s* Recorder 5, slot 2, LSB-Inner, LCP, subbands 16-31' % (self.indent))
-			subblock(False, False, range(16,32), 'L')
+			print('%s* Recorder 5, slot 1, LSB-Inner, LCP, subbands 16-31' % (self.indent))
+			subblock(LSB, INNER, range(16,32), 'L')
+			print('%s* Recorder 5, slot 2, LSB-Inner, RCP, subbands 16-31' % (self.indent))
+			subblock(LSB, INNER, range(16,32), 'R')
 
 		print('enddef;')
+
+
+	def __generate_4G_IF_equivalent(self, lo1_GHz, lo2_GHz=7740.0, recorders=[1,2,3,4]):
+		'''
+		Generate VEX chan_defs in the 10G-to-Mark6 cabling layout of the EHT 4-8 GHz equivalent
+		mode at NOEMA (EHT 345 GHz).
+		'''
+
+		def subblock(usb, outer, subbands, polzn):
+			channelblock = self.__generate_block(rxUsb=usb, outer=outer, subbands=subbands)
+			for idx,(freq_MHz,sideband) in enumerate(channelblock):
+				bandlabel = self.bandlabels.lookUp(freq_MHz*1e-3,sideband)
+				self.__print_chan_def(freq_MHz, sideband, idx + self.nvexchannels, polzn, bandlabel)
+			self.nvexchannels += len(subbands)
+
+		self.lo1_GHz, self.lo2_GHz = lo1_GHz, lo2_GHz
+		self.nvexchannels = 1
+
+		print('def FREQ_Nn; * derived for on lo1=%.3f lo2=%.3f GHz' % (lo1_GHz, lo2_GHz))
+		print('%ssample_rate = %.1f Ms/sec;  * (2bits/sample)' % (self.indent, 2*self.bw_MHz))
+
+		USB, LSB = True, False
+		OUTER, INNER = True, False
+
+		if 1 in recorders:
+
+			print('%s* Recorder 1, slot 1, LSB-Lower/Inner PolyFiX 6 SFP+ 1, LCP, subbands 16-31' % (self.indent))
+			subblock(LSB, INNER, range(16,32), 'L')
+			print('%s* Recorder 1, slot 2, LSB-Lower/Inner PolyFiX 6 SFP+ 0, LCP, subbands 0-15' % (self.indent))
+			subblock(LSB, INNER, range(16), 'L')
+			print('%s* Recorder 1, slot 3, LSB-Lower/Inner PolyFiX 2 SFP+ 0, RCP, subbands 0-15' % (self.indent))
+			subblock(LSB, INNER, range(16), 'R')
+			print('%s* Recorder 1, slot 4, LSB-Lower/Inner PolyFiX 2 SFP+ 1, RCP, subbands 16-31' % (self.indent))
+			subblock(LSB, INNER, range(16,32), 'R')
+
+		if 2 in recorders:
+
+			print('%s* Recorder 2, slot 1, LSB-Lower/Inner PolyFiX 6 SFP+ 3, LCP, subbands 48-63' % (self.indent))
+			subblock(LSB, INNER, range(48,64), 'L')
+			print('%s* Recorder 2, slot 2, LSB-Lower/Inner PolyFiX 6 SFP+ 2, LCP, subbands 32-47' % (self.indent))
+			subblock(LSB, INNER, range(32,48), 'L')
+			print('%s* Recorder 2, slot 3, LSB-Lower/Inner PolyFiX 2 SFP+ 2, RCP, subbands 32-47' % (self.indent))
+			subblock(LSB, INNER, range(32,48), 'R')
+			print('%s* Recorder 2, slot 4, LSB-Lower/Inner PolyFiX 2 SFP+ 3, RCP, subbands 48-63' % (self.indent))
+			subblock(LSB, INNER, range(48,64), 'R')
+
+		if 3 in recorders:
+
+			print('%s* Recorder 3, slot 1, USB-Lower/Inner PolyFiX 7 SFP+ 1, LCP, subbands 16-31' % (self.indent))
+			subblock(USB, INNER, range(16,32), 'L')
+			print('%s* Recorder 3, slot 2, USB-Lower/Inner PolyFiX 7 SFP+ 0, LCP, subbands 0-15' % (self.indent))
+			subblock(USB, INNER, range(16), 'L')
+			print('%s* Recorder 3, slot 3, USB-Lower/Inner PolyFiX 3 SFP+ 0, RCP, subbands 0-15' % (self.indent))
+			subblock(USB, INNER, range(16), 'R')
+			print('%s* Recorder 3, slot 4, USB-Lower/Inner PolyFiX 3 SFP+ 1, RCP, subbands 16-31' % (self.indent))
+			subblock(USB, INNER, range(16,32), 'R')
+
+		if 4 in recorders:
+
+			print('%s* Recorder 4, slot 1, USB-Lower/Inner PolyFiX 7 SFP+ 3, LCP, subbands 48-63' % (self.indent))
+			subblock(USB, INNER, range(48,64), 'L')
+			print('%s* Recorder 4, slot 2, USB-Lower/Inner PolyFiX 7 SFP+ 2, LCP, subbands 32-47' % (self.indent))
+			subblock(USB, INNER, range(32,48), 'L')
+			print('%s* Recorder 4, slot 4, USB-Lower/Inner PolyFiX 3 SFP+ 2, RCP, subbands 32-47' % (self.indent))
+			subblock(USB, INNER, range(32,48), 'R')
+			print('%s* Recorder 4, slot 3, USB-Lower/Inner PolyFiX 3 SFP+ 3, RCP, subbands 48-63' % (self.indent))
+			subblock(USB, INNER, range(48,64), 'R')
+
+		print('enddef;')
+
+
+
+	def generate(self, lo1_GHz, lo2_GHz=7740.0, recorders=[1,2,3,4], if_range='5-9'):
+
+		if '4-8' in if_range:
+			self.__generate_4G_IF_equivalent(lo1_GHz, lo2_GHz, recorders)
+
+		elif '5-9' in if_range:
+			self.__generate_5G_IF_equivalent(lo1_GHz, lo2_GHz, recorders)
+
+		else:
+			print('Error: Unknown IF range "%s"! Supported are "4-8" and "5-9".')
 
 
 	def generateAllSubbands(self, lo1_GHz, lo2_GHz=7740.0):
@@ -238,8 +341,8 @@ class NoemaVexFreqGenerator:
 		print('')
 		print('$IF;')
 		print('def IF_NN; * station Nn')
-		print('    if_def = &IF_RCP : A1 : R : %.2f MHz : U ;' % (ref_lo*1e3))
-		print('    if_def = &IF_LCP : B1 : R : %.2f MHz : U ;' % (ref_lo*1e3))
+		print('    if_def = &IF_LCP : A1 : L : %.2f MHz : U ;' % (ref_lo*1e3))
+		print('    if_def = &IF_RCP : B1 : R : %.2f MHz : U ;' % (ref_lo*1e3))
 		print('enddef;')
 
 
@@ -247,9 +350,9 @@ class NoemaVexFreqGenerator:
 
 		print('')
 		print('$BBC;')
-		print('def BBC_NN; * station Nn')
-		print('    BBC_assign = &BBC01 :  1 : &IF_RCP;')
-		print('    BBC_assign = &BBC02 :  1 : &IF_LCP;')
+		print('def BBC_NN; * station Nn, note, polarizations are swapped vs Excel sheet (at least EHT2021 345G)')
+		print('    BBC_assign = &BBC%02d :  1 : &IF_LCP;' % (self.pol2bbcnr['L']))
+		print('    BBC_assign = &BBC%02d :  1 : &IF_RCP;' % (self.pol2bbcnr['R']))
 		print('enddef;')
 
 
@@ -260,6 +363,7 @@ if __name__ == "__main__":
 	lo1 = float(opts.lo1)
 	lo2 = float(opts.lo2)
 	recorders = [int(recNr) for recNr in opts.recorders.split(',')]
+	link_config = str(opts.cabling)
 
 	if lo2 > lo1:
 		print('Error: LO2 (-F %.3f GHz) should not be greater than LO1 (-f %.3f GHz)!' % (lo2, lo1))
@@ -271,7 +375,7 @@ if __name__ == "__main__":
 	if opts.do_full_polyfix_overview:
 		gen.generateAllSubbands(lo1, lo2)
 	else:
-		gen.generate(lo1, lo2, recorders)
+		gen.generate(lo1, lo2, recorders, link_config)
 
 	if opts.do_vex_if:
 		gen.generateIF()
