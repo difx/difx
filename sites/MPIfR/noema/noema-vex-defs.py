@@ -7,9 +7,9 @@ Sky frequencies of filterbank channels are derived from 1st LO
 and 2nd LO information. Channels are always 64 MHz wide.
 
 The Mark6 recorder to PolyFix units and channels assignment
-of EHT 2021 is assumed, and follows R. Garcias spreadsheet
-202104_pNOEMA_VLBI_backend_5-9GHz_freq_setup.xlsx, and the
-cabling of 10G/Mark6 in IRAM's pNOEMA_2021_EHT_Backend_HW_Setup.pdf
+of EHT&GMVA 2022 are assumed, as in R. Garcias spreadsheets
+2022_pNOEMA_EHT_backend_freq_setup_230G.xlsx and
+2022_pNOEMA_VLBI_backend_freq_setup_GMVA.xlsx
 '''
 
 import argparse
@@ -87,7 +87,6 @@ class EHTBandLabels:
 class NoemaVexFreqGenerator:
 	'''
 	VEX frequency block generator
-	Follows 202104_pNOEMA_VLBI_backend_5-9GHz_freq_setup.xlsx
 	'''
 
 	def __init__(self, bandlabels=EHTBandLabels()):
@@ -352,7 +351,7 @@ class NoemaVexFreqGenerator:
 		print('$BBC;')
 		print('def BBC_NN; * station Nn, note, polarizations are swapped vs Excel sheet (at least EHT2021 345G)')
 		print('    BBC_assign = &BBC%02d :  1 : &IF_LCP;' % (self.pol2bbcnr['L']))
-		print('    BBC_assign = &BBC%02d :  1 : &IF_RCP;' % (self.pol2bbcnr['R']))
+		print('    BBC_assign = &BBC%02d :  2 : &IF_RCP;' % (self.pol2bbcnr['R']))
 		print('enddef;')
 
 
