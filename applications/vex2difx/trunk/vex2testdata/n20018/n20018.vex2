@@ -666,7 +666,6 @@ $EXTENSIONS;
 def DualFreqRPolTone/1;
      extension = NRAO : synth1 : 7900 MHz ;
      extension = NRAO : synth2 : 2900 MHz ;
-     extension = NRAO : synth3 : 2900 MHz ;
 enddef;
 *------------------------------------------------------------------------------
 $SCHED;

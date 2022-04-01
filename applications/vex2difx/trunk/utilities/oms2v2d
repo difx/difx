@@ -34,11 +34,11 @@
 
 from sys import exit, argv
 from os.path import isfile, isdir
-from os import umask, popen, system
+from os import umask, popen, system, getenv
 
 program = 'oms2v2d'
-version = '1.16'
-verdate = '20210428'
+version = '1.17'
+verdate = '20220401'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -75,6 +75,13 @@ def usage(pgm):
 	print('  --quiet')
 	print('  -q       be less verbose\n')
 	print('<oms file> is a .oms file produced by sched\n')
+	print('If environment variable VLBA_STATION_FORMAT is set,')
+	print('the file at that location will be read and it will')
+	print('be used to override the data format for that station.')
+	print('Each line of this file should be of the form:')
+	print('  <stn> <fmt>')
+	print('Where <stn> is the station code (typically 2 letters) and')
+	print('<fmt> is the format designator, e.g., VDIF/5032/2 .\n')
 	exit(0)
 
 
@@ -302,6 +309,14 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 		out.write('SOURCE %s {%s }\n' % (s['SOURCE_NAME'][0], srcParams))
 	out.write('\n')
 
+	fmt = {}
+	a = getenv('VLBA_STATION_FORMAT')
+	if a:
+		data = open(a).readlines()
+		for d in data:
+			s = d.strip().split()
+			fmt[s[0].upper()] = s[1]
+
 	for s in stations:
 		extra = ''
 		nds = 0
@@ -333,6 +348,15 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 				out.write('# ANTENNA %s -- Data not found\n' % s)
 				continue
 			extra += datacopyAntennaSetup
+
+		if s in fmt:
+			f = 'format=' + fmt[s] + ' '
+			if len(dsData) > 0:
+				for i in range(len(dsData)):
+					dsData[i] += f
+			else:
+				dsData.append(f)
+
 		for ds in dsData:
 			out.write('DATASTREAM %s%d { %s}\n' % (s, nds, ds))
 			if nds == 0:
