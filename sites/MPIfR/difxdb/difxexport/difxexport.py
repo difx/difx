@@ -13,6 +13,7 @@
 #============================================================================
 
 import os
+import shutil
 import sys
 import random
 import argparse
@@ -195,7 +196,7 @@ def deleteExportFiles(session, expCode):
     for dir in delDirs:
         try:
             if os.path.isdir(dir):
-                os.rmdir(dir)
+                shutil.rmtree(dir, ignore_errors=True)
         except:
             session.close()
             sys.exit("Cannot delete directory: %s. Aborting!" % dir)
