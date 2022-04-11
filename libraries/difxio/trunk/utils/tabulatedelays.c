@@ -642,9 +642,8 @@ int main(int argc, char **argv)
 						printf("   %12.6f %12.9f", v1, v2);
 					}
 				}
-				
-				printf("\n");
 			}
+			printf("\n");
 		}
 
 		if(mjdFile != stdin)
@@ -857,9 +856,8 @@ int main(int argc, char **argv)
 								printf("   %12.6f %12.9f", v1, v2);
 							}
 						}
-						
-						printf("\n");
 					}
+					printf("\n");
 				}
 			}
 			else
