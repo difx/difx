@@ -819,10 +819,13 @@ void VexData::adjustClock(const std::string &antName, double deltaClock, double 
 {
 	for(std::vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
 	{
-		for(std::vector<VexClock>::iterator c = it->clocks.begin(); c != it->clocks.end(); ++c)
+		if(it->name == antName)
 		{
-			c->offset += deltaClock;	// [sec]
-			c->rate += deltaClockRate;	// [sec/sec]
+			for(std::vector<VexClock>::iterator c = it->clocks.begin(); c != it->clocks.end(); ++c)
+			{
+				c->offset += deltaClock;	// [sec]
+				c->rate += deltaClockRate;	// [sec/sec]
+			}
 		}
 	}
 }
