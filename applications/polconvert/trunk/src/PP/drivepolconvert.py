@@ -60,7 +60,6 @@ def parseOptions():
     epi += 'but all of the diagnostic plots are made and saved. '
     epi += 'This is useful to manually tweak things prior to committing. '
     use = '%(prog)s [options] [input_file [...]]\n  Version'
-    use += '$Id$'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     primary = parser.add_argument_group('Primary Options')
     secondy = parser.add_argument_group('Secondary Options')
@@ -550,6 +549,7 @@ def provideBandReport(o):
     print('set of median frequencies is:',o.mfreqset)
     if len(o.mfreqset) == 1:
         medianfreq = float(o.mfreqset.pop())
+        o.mfreqset.add(medianfreq)
     elif len(o.mfreqset) > 1:
         mfqlist = list(o.mfreqset)
         medianfreq = float(mfqlist[len(mfqlist)/2])
@@ -837,7 +837,7 @@ def getInputTemplate(o):
     #
     import os
     import sys
-    print('Debug data follows')
+    print('Debug data follows--these are option or working variables:')
     '''
     # found this via inspect...
     for key,val in o._get_kwargs():
@@ -935,7 +935,7 @@ def createCasaInput(o, joblist, caldir, workdir):
     else:             userXY = '#'
     if o.test:   dotest = 'True'
     else:        dotest = 'False'
-
+    # a very long string with a large number of %-substitions
     template = getInputTemplate(o)
     # o.doPlot is set in plotPrep()
     script = template % (o.doPlot[0], o.doPlot[0],
@@ -1013,15 +1013,38 @@ def createCasaInputParallel(o):
     if checkDifxSaveDirsError(o, True):
         raise Exception('Fix these *.difx or *.save dirs issues')
     o.now = datetime.datetime.now()
+    # split the job-oriented lists out so that the input template
+    # debugging and logic only reports the relevant set/dict.
     # o.remotelist is passed, but we set o.remote below
     remotelist = o.remotelist
+    amapdicts = o.amap_dicts
+    zoomfreqs = o.zoomfreqs
+    targfreqs = o.targfreqs
+    nargs = o.nargs
+    jnums = o.jobnums
+    djays = o.djobs
+    rname = o.remotename
     o.remotelist = []
-    for job,rem in map(lambda x,y:(x,y), o.jobnums, remotelist):
+    o.nargs = []
+    del(o.remote_map)
+    # pull the per-job info from the lists so that the debugging template
+    # output invoked for createCasaInput() doesn't contain confusing crap.
+    for job,rem,ad,zf,tf,na,jn,dj,rn in map(
+        lambda x,y,z,u,v,w,s,r,q:(x,y,z,u,v,w,s,r,q),
+        o.jobnums, remotelist, amapdicts, zoomfreqs, targfreqs,
+        nargs, jnums, djays, rname):
         savename = o.exp + '_' + job
         workdir = o.now.strftime(savename + '.polconvert-%Y-%m-%dT%H.%M.%S')
         os.mkdir(workdir)
         odjobs = str(list(map(str,[job])))
         o.remote = rem
+        o.amap_dicts = ad
+        o.zoomfreqs = sorted(list(zf))
+        o.targfreqs = sorted(list(tf))
+        o.nargs = na
+        o.jobnums = jn
+        o.djobs = dj
+        o.remotename = rn
         if createCasaInput(o, odjobs, '..', workdir):
             cmdfile = createCasaCommand(o, job, workdir)
             o.workdirs[job] = workdir

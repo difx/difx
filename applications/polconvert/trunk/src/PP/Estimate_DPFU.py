@@ -3,8 +3,6 @@
 # Script to generate DFPU values; but it is required to run within
 # CASA for the imports.
 #
-# $Id$
-#
 
 from __future__ import absolute_import
 from __future__ import print_function

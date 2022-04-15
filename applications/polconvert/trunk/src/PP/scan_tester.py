@@ -30,7 +30,6 @@ def parseOptions():
     des = parseOptions.__doc__
     epi = ''
     use = '%(prog)s [options] arguments\n  Version'
-    use += '$Id$'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     primary = parser.add_argument_group('Primary Options')
     secondy = parser.add_argument_group('Secondary Options')

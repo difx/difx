@@ -40,7 +40,7 @@ def parseOptions():
     epi += 'This script is designed to report the shape of the tables, and '
     epi += 'optionally (-c), extract some time-selected interval (-b ~ -e).'
     use = '%(prog)s [options]\n  Version'
-    use += '$Id$'
+    use += ''
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     # essential options
     parser.add_argument('-v', '--verbose', dest='verb',

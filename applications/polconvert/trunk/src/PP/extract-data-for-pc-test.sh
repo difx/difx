@@ -10,9 +10,7 @@ USAGE="$0 [options]
 
 will carve out a useful subset from a DiFX correlation output
 along with a useful subset from the corresponding QA2 product
-that may be used for testing.
-
-The required options are these:
+that may be used for testing.  Required options are these:
 
     -d --difx path      the directory with DiFX products
     -q --qa2 path       the directory with QA2 products
@@ -34,7 +32,8 @@ These modify the work done and may be optional:
     -m --maxchans int   max number (FFT) channels expected in DiFX ($maxchans)
     -p --pkg string     a new label for the QA2 package ($pkg)
     -n --new string     new job name (parsed as expn[...] _ jobn)
-    -z --tgz string     if provided, tarballs will be made
+    -z --tgz string     if provided, tarballs will be made, and
+    -s --script string  creates string.sh for testing (requires -z)
 
 and these provide help:
 
@@ -84,13 +83,16 @@ will populate 'example' with data from the e21f19 experiment, clobbering
 that directory if it exists.  The new data will be given a new vex name
 (newvex) and job number and the QA2 tables will be prefixed qa2snip.  The
 tarballs example/sample-*.{QA2,DIFX}.tgz should contain everything.
+
 The DiFX tarball contains a sed script as a reminder if the DiFX tarball
-is unpacked to some new location; see unload-data-for-pc-test.sh.
+is unpacked to some new location; see unload-data-for-pc-test.sh.  If the
+-s argument is provided with -z, a template script (requiring edits) is
+generated suggesting some commands to run polconvert on the data.
 "
 # derived from /usr/share/doc/util-linux/getopt-example.bash
-short='Hhvkyd:q:o:t:l:b:a:j:m:c:n:z:'
+short='Hhvkyd:q:o:t:l:b:a:j:m:c:n:z:s:'
 longy='explain,help,verb,nuke,dry,difx:,qa2:,out:,time:,njob:' 
-longy="$longy"',seconds:,before:,after:,job:,maxchans:,pkg:,tgz:'
+longy="$longy"',seconds:,before:,after:,job:,maxchans:,pkg:,tgz:,script:'
 GETOPT=$(getopt -o "$short" -l "$longy" -n $0 -- "$@")
 gostat=$?
 [ $gostat -ne 0 ] && { echo option parsing error $gostat; exit $gostat; }
@@ -98,7 +100,7 @@ eval set -- "$GETOPT" ; unset GETOPT
 # set defaults for parsed variables
 very=false verb=false user=false tale=false nuke=false dry=false
 difx='difx-dir-undefined' qa2='qa2-dir-undefined' when='now'
-out='out-dir-undefined'
+out='out-dir-undefined' script='no-script'
 job='no-job' input='no-input' njob='same' tgz=''
 # and now parse what getopt gave us
 while true; do case "$1" in
@@ -120,6 +122,7 @@ while true; do case "$1" in
 '-p'|'--pkg')       pkg=$2;     shift 2; continue;;
 '-n'|'--new')       njob=$2;    shift 2; continue;;
 '-z'|'--tgz')       tgz=$2;     shift 2; continue;;
+'-s'|'--script')    script=$2;  shift 2; continue;;
 '--')                             shift;    break;;
 *)                  echo parse error>&2;   exit 1;;
 esac ; done
@@ -327,6 +330,9 @@ esac ; dfcount=$(($dfcount + 1)); done
 [ "$dfcount" -lt 6 ] && {
     echo only $dfcount files present, which is likely not enough ; exit 13 ; }
 
+[ "$script" = 'no-script' -o -z "$tgz" ] && doscript=false || {
+    doscript=true script=$script.sh; rm -f $script ; }
+
 cwd=`pwd`
 echo using job $job, with input $input
 echo '  'difx data $dout
@@ -334,6 +340,7 @@ echo "  (and data $difxout with $dfcount other files)"
 echo "  replacing $oexpn,$ojmid,($oname),$ojobn"
 echo "       with $nexpn,$njmid,($nname),$njobn"
 echo "  and $opath -> $cwd/$out"
+$doscript && echo Generating test script $script for you to edit.
 echo Doing the delicate surgery into $out using these commands:
 echo '----------------------------------------------------------------------'
 
@@ -424,6 +431,65 @@ EOF
     cd ..
     echo $out/$tgz-$njob.DiFX.tgz contains extracted DiFX data
 }
+
+$doscript && cat >> $script <<EOF
+#!/bin/bash
+#
+eko=\${1-'echo'}    # use echo to dryrun, eval to do it
+#
+# this is needed for the EHTC code templates
+[ -z "\$ehtc" ] && ehtc=/swc/scripts/ehtc
+#
+# This is a template for a test script that will unpack the tarballs
+# generated and run polconvert.  It is meant to be edited.
+# into the \$OUTDIR (which will be clobbered since -k is set).
+# PolConvert usually runs in a new directory.
+#
+WRKDIR=WRKDIR   # EDIT: where you want to work
+PREFIX=PREFIX   # EDIT: new job series name
+JOBNUM=JOBNUM   # EDIT: new job number
+QA2PKG=QA2PKG   # EDIT: new QA2 package name
+OUTDIR=OUTDIR   # EDIT: where to unpack
+REMSTL=REMSTL   # EDIT: remote station code list for PC diag plots
+EXPNUM=EXPNUM   # EDIT: experiment number for difx2mark4
+SPECWN=SPECWN   # EDIT: ALMA SPW: 0..3 or -1
+#
+# EDIT: comment this next line out if you don't want the above changes
+#       for the unload-data-for-pc-test.sh invocation
+MOREARGS="-n \${PREFIX}_\${JOBNUM} -p \${QA2PKG}"
+#
+# EDIT: you may need to adjust these for the drivepolconvert invocation
+DPARGS="-S \$REMSTL -f 4 -P 1 -s \$SPECWN"
+#
+# below here is all the work
+#
+[ \$eko = eval ] && set -x
+\$eko unload-data-for-pc-test.sh -o \$OUTDIR \$MOREARGS -k \\
+    -d $out/$tgz-$njob.DiFX.tgz -q $out/$tgz-$pkg.QA2.tgz
+\$eko \"[ -d \$OUTDIR -o \$eko = echo ] || { echo unload failed ; exit 1 ; }\"
+#
+\$eko mkdir \$WRKDIR
+\$eko cp -p \$OUTDIR/\${PREFIX}.{v2d,vex.obs} \$WRKDIR
+\$eko cp -p \$ehtc/ehtc-template.codes \$WRKDIR/\${PREFIX}.codes
+qq='TBD'
+\$eko 'qq=\`cat \${OUTDIR}/README.DRIVEPOLCONVERT\`'
+#
+\$eko cd \$WRKDIR
+\$eko ln -s ../\${OUTDIR}/\${QA2PKG}.* .
+\$eko prepolconvert.py -v -k -s ../\$OUTDIR \${PREFIX}_\${JOBNUM}.input
+#
+\$eko drivepolconvert.py -v -r -q "\$qq" \$DPARGS \\
+    -l \${QA2PKG} \${PREFIX}_\${JOBNUM}.input
+\$eko difx2mark4 -e \$EXPNUM -s \${PREFIX}.codes \\
+    --override-version \${PREFIX}_\${JOBNUM} 2>d2m4.out 1>&2
+#
+[ \$eko = eval ] && set +x
+\$eko echo ready for fourfit of \$EXPNUM
+#
+# eof
+#
+EOF
+$doscript && chmod +x $script
 
 exit 0
 #

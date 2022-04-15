@@ -29,7 +29,7 @@ def parseOptions():
     For example:
       comparepolconvert.py -t testname -- *ANTAB FRINGE.PEAKS/*
     '''
-    use = '$Id'
+    use = ''
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     parser.add_argument('-v', '--verbose', dest='verb',
         default=False, action='store_true',

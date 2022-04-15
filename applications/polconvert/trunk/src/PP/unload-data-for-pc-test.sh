@@ -20,6 +20,7 @@ These modify the work done and may be optional:
     -v --verb           if set, chatter about the work (repeatable)
     -y --dry            if set, stop after gathering information
     -k --nuke           if set, delete any existing output directory
+    -r --reuse          if set, reuse the existing output directory
     -n --new string     new job name (parsed as expn[...] _ jobnum)
     -p --pkg string     a new qa2 package name
 
@@ -27,23 +28,32 @@ and these provide help:
 
     -h --help           this short help message
     -H --explain        an extended explanatory message
+
+For example,
+    unload-data-for-pc-test.sh -o prep -n dynamic_2001 -p qa2 -k \\
+        -d ex9/zzyy-expn_extra_11.DiFX.tgz -q ex9/zzyy-pkglab.QA2.tgz
+
+unloads the two tarballs in ex9 into a new dir prep with new job and
+QA2 names, clobbering any existing prep dir.
 "
 HELP="
 This script unpacks the tarballs created by extract-data-for-pc-test.sh.
 The 'wrinkle' is that DiFX file paths definitely need to be adjusted and
 you can also change the job number, vex experiment name, etc. via the 
 -n option.  The QA2 package is a similar untar operation, but you can
-rename the tables with -p if you like.
+rename the tables with -p if you like.  If you have multiple DiFX jobs to
+unload in one directory, the -r option allows you to do so.  Note that you
+will want to make sure the QA2 package covers all the scans
 "
 # derived from /usr/share/doc/util-linux/getopt-example.bash
-short='Hhvkyd:q:o:n:p:'
-longy='explain,help,verb,nuke,dry,difx:,qa2:,out:,new:,pkg:'
+short='Hhvkryd:q:o:n:p:'
+longy='explain,help,verb,nuke,reuse,dry,difx:,qa2:,out:,new:,pkg:'
 GETOPT=$(getopt -o "$short" -l "$longy" -n $0 -- "$@")
 gostat=$?
 [ $gostat -ne 0 ] && { echo option parsing error $gostat; exit $gostat; }
 eval set -- "$GETOPT" ; unset GETOPT
 # set defaults for parsed variables
-very=false verb=false user=false tale=false nuke=false dry=false
+very=false verb=false user=false tale=false nuke=false dry=false reuse=false
 difx='difx-dir-undefined' qa2='qa2-dir-undefined' out='out-dir-undefined'
 njob='same' pkg='same'
 # and now parse what getopt gave us
@@ -54,6 +64,7 @@ while true; do case "$1" in
                     verb=true;    shift; continue;;
 '-y'|'--dry')       dry=true;     shift; continue;;
 '-k'|'--nuke')      nuke=true;    shift; continue;;
+'-r'|'--reuse')     reuse=true;   shift; continue;;
 '-d'|'--difx')      difx=$2;    shift 2; continue;;
 '-q'|'--qa2')       qa2=$2;     shift 2; continue;;
 '-o'|'--out')       out=$2;     shift 2; continue;;
@@ -67,8 +78,10 @@ $tale && echo "$HELP" && exit 0
 
 # settle the directory issues
 [ -d "$out" ] && $nuke && rm -rf $out && $verb &&
-    echo output directory $out existed and was removed
-[ -d "$out" ] && { echo dir $out exists--stopping--use -k option; exit 2; }
+    echo output directory $out existed and was removed || {
+    [ -d "$out" ] && echo "(output directory $out exists)" ; }
+[ -d "$out" ] && { $reuse || {
+    echo dir $out exists--stopping--use -k option; exit 2; } ; }
 $verb && echo "unloading tarballs '$difx' and '$qa2' with output to '$out'"
 
 # set remapping variables that may be needed
@@ -110,7 +123,7 @@ $dry && echo since this is a dry run, stopping now... && exit 0
 
 # create the output directory
 cwd=`pwd`
-mkdir $out
+[ -d $out ] || mkdir $out
 [ -d $out ] || {
     echo cannot create output directories $out; exit 3; }
 
