@@ -340,11 +340,13 @@ def inputRelatedChecks(o):
     djobs = list(jobset)
     djobs.sort()
     o.jobnums = djobs
+    # Py2: str(map(str,o.jobnums))
     o.djobs = str(list(map(str,o.jobnums)))
     o.nargs = []
     # make sure o.nargs is co-ordered with o.jobnums for reference
     for jn in o.jobnums: o.nargs.append(o.exp + '_' + jn + '.input')
-    if o.verb: print('Processing jobs "%s"\n(%s)' % (o.djobs,str(o.nargs)))
+    if o.verb:
+        print('Processing jobs "%s" (with inputs %s)'%(o.djobs,str(o.nargs)))
 
 def runRelatedChecks(o):
     '''
@@ -535,7 +537,7 @@ def commonInputGrokkage(o):
     # o.jobnums was synchronized above, but we need to resync
     # this, which was originally set in inputRelatedChecks()
     o.djobs = str(list(map(str,o.jobnums)))
-    if o.verb: print('Jobs now',o.djobs)
+    if o.verb: print('Jobs now "%s"'%o.djobs)
     # Report on remote peer for polconvert plot diagnostics
     provideRemoteReport(o)
     provideBandReport(o)
@@ -726,6 +728,7 @@ def oldDeduceZoomIndices(o):
     # o.remotename and o.remote_map are just for readable diagnostics below
     # and we resync o.djobs here
     o.djobs = str(list(map(str,o.jobnums)))
+    if verb: print('jobs now "%s"'%o.djobs)
     if len(zfirst) != 1 or len(zfinal) != 1:
         if o.zmchk:
             raise Exception('Encountered ambiguities in zoom freq ranges: ' +
@@ -995,7 +998,7 @@ def createCasaCommand(o, job, workdir):
     execbits = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
     execbits |= stat.S_IRGRP | stat.S_IROTH
     os.chmod(cmdfile, execbits)
-    if os.path.exists(cmdfile): return basecmd
+    if os.path.exists(cmdfile): return basecmd,cmdfile
     else:                       return 'error'
 
 def createCasaInputParallel(o):
@@ -1021,17 +1024,25 @@ def createCasaInputParallel(o):
     zoomfreqs = o.zoomfreqs
     targfreqs = o.targfreqs
     nargs = o.nargs
+    # need to restore this later
     jnums = o.jobnums
-    djays = o.djobs
+    o.jnfinal = jnums
+    # o.djobs is a string rep of the list of jobnums as strings:
+    # djays = o.djobs
+    djays = [x.strip("'"'"') for x in o.djobs.strip('][').split(',')]
     rname = o.remotename
     o.remotelist = []
     o.nargs = []
     del(o.remote_map)
+    if o.verb:
+        print('  input array lengths', ','.join([str(len(x)) for x in
+            [jnums, remotelist, amapdicts, zoomfreqs, targfreqs,
+                nargs, jnums, djays, rname]]), 'djays',djays)
     # pull the per-job info from the lists so that the debugging template
     # output invoked for createCasaInput() doesn't contain confusing crap.
     for job,rem,ad,zf,tf,na,jn,dj,rn in map(
         lambda x,y,z,u,v,w,s,r,q:(x,y,z,u,v,w,s,r,q),
-        o.jobnums, remotelist, amapdicts, zoomfreqs, targfreqs,
+        jnums, remotelist, amapdicts, zoomfreqs, targfreqs,
         nargs, jnums, djays, rname):
         savename = o.exp + '_' + job
         workdir = o.now.strftime(savename + '.polconvert-%Y-%m-%dT%H.%M.%S')
@@ -1046,10 +1057,13 @@ def createCasaInputParallel(o):
         o.djobs = dj
         o.remotename = rn
         if createCasaInput(o, odjobs, '..', workdir):
-            cmdfile = createCasaCommand(o, job, workdir)
+            cmdfile,fullpath = createCasaCommand(o, job, workdir)
+            if cmdfile == 'error':
+                print('*** command not created for job %s ***' % job)
+                continue
             o.workdirs[job] = workdir
             o.workcmds[job] = cmdfile
-            # print '--- created working dir with inputs for job %s ---' % job
+            if o.verb: print(' ',fullpath)
         else:
             print('*** unable to create workdir or input for job %s ***' % job)
 
@@ -1162,16 +1176,16 @@ def reportWorkTodo(o):
     print('Results are in',pcdirstamps)
     pcdirs = glob.glob(pcdirstamps)
     pclogs = glob.glob(pcdirstamps+'/PolConvert.log')
-    if len(pcdirs) == len(o.jobnums):
+    if len(pcdirs) == len(o.jnfinal):
         print('The number of polconvert dirs (%d) is correct.' % len(pcdirs))
     else:
-        print('Error: %d workdirs and %d jobs'%(len(pcdirs),len(o.jobnums)))
-    if len(pclogs) == len(o.jobnums):
+        print('Error: %d workdirs and %d jobs'%(len(pcdirs),len(o.jnfinal)))
+    if len(pclogs) == len(o.jnfinal):
         print('The number of polconvert log files (%d) is correct.' % (
             len(pclogs)))
     else:
         print('Error: %d polconvert log files and %d jobs'%(
-            len(pclogs),len(o.jobnums)))
+            len(pclogs),len(o.jnfinal)))
     if o.verb:
         for pc in pcdirs: print('   ',pc)
     print('drivepolconvert is finished.')
