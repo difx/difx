@@ -15,6 +15,7 @@ from __future__ import print_function
 import argparse
 import datetime
 import glob
+import itertools
 import os
 import re
 import stat
@@ -429,8 +430,9 @@ def provideRemoteReport(o):
             o.nargs, o.remotelist, o.remotename, o.remote_map):
             print("%s <-> remote %s(%s) = %s[%d]" % (j,s,r,m,r-1))
         print('Remote list is',o.remotelist,'(indices start at 1)')
-        print('Remote list len is',len(o.remotelist),'remote index is',o.remote)
-        if o.remote == -1: print('(remote index of -1 means "not used; use list")')
+        print('Remote list len is',len(o.remotelist))
+        if o.remote == -1: print('o.remote argument is not used')
+        else: print('remote index is',o.remote)
     if (len(o.remotelist) != len(o.nargs)):
         print('Length mismatch:',len(o.nargs),'but',len(o.remotelist),
             'remotes...\n...disabling plotting to allow PolConvert to not die')
@@ -523,7 +525,7 @@ def commonInputGrokkage(o):
                     break
             if issue:
                 raise Exception('Unable to purge job ' + jobin)
-            continue  # with next jobin from o.nargs 
+            continue  # with next jobin from o.nargs
         print('Found %s in'%o.lin,jobin,almaline.rstrip())
         newargs.append(jobin)
         updatePlotAntMaps(o, antmap)
@@ -548,10 +550,13 @@ def provideBandReport(o):
     we think we are working with.  If not the ALMA case, report
     what we found, but make no comment about band.
     '''
+    print('Zoom freq IDs identified in .input   : ', o.zoomfreqs)
+    print('Target freq IDs identified in .input : ', o.targfreqs)
+    #
     print('set of median frequencies is:',o.mfreqset)
     if len(o.mfreqset) == 1:
         medianfreq = float(o.mfreqset.pop())
-        o.mfreqset.add(medianfreq)
+        o.mfreqset.add(medianfreq) # put it back
     elif len(o.mfreqset) > 1:
         mfqlist = list(o.mfreqset)
         medianfreq = float(mfqlist[len(mfqlist)/2])
@@ -581,17 +586,17 @@ def useTheUserIFlist(o):
     '''
     User provided a list of frequency table entries; use those.
     o.zfirst and o.zfinal remain negative to trigger that this
-    one list is used for all scans.  Likely only one requested.
+    one list is used for all scans.  (Likely only one scan requested.)
     The actual work is in the input template, so here we just check.
     Return True if user list was provided.
     '''
     if o.ozlogic: return False
     if o.iflist == '': return False
-    zlist = o.iflist.split(',')
-    o.zfirst = int(zlist[0])
-    o.zfinal = int(zlist[-1])
+    o.zlist = o.iflist.split(',')
+    o.zfirst = int(o.zlist[0])
+    o.zfinal = int(o.zlist[-1])
     print("User list zff: %d,%d"%(o.zfirst,o.zfinal))
-    if o.verb: print(zlist)
+    if o.verb: print('zlist is',o.zlist)
     return True
 
 def getFirstFinal(ofreqs):
@@ -625,6 +630,10 @@ def deduceOutputBands(o):
     if o.ozlogic: return False
     o.zfirst,o.zfinal = getFirstFinal(o.targfreqs)
     if o.zfirst == -1: return False
+    # flatten the list of target freqs and remove duplicates
+    freqIds = itertools.chain(*o.targfreqs)
+    freqIds = list(set(freqIds))
+    o.iflist = ','.join(sorted(freqIds))
     return True
 
 def deduceZoomIndices(o):
@@ -785,24 +794,47 @@ def oldDeduceZoomIndices(o):
 
 def plotPrepList(o):
     '''
-    Same as plotPrep() for the case that the user provided a list.
+    Same as plotPrepOrig() for the case that the user provided a list,
+    which was split and saved as o.zlist.  If the number of fringe
+    plots(adjusted) is more than 1, then sub-sample the list for the
+    set to plot.
     '''
-    pass
+    zlen = len(o.zlist)
+    if o.fringe > zlen:
+        o.fringe = zlen
+        print('Reduced number of fringe plot channels to %d' % o.fringe)
+    if o.fringe > 1:
+        o.doPlot = ['','#','#','']
+        o.flist = ','.join(
+            [str(o.zlist[(i*zlen)//o.fringe]) for i in range(o.fringe)])
 
-###
-### end of old code section
-###
+def plotPrepOrig(o):
+    '''
+    This function makes appropriate adjustments to o.fringe,
+    o.doPlot, o.remote and o.flist for the first/final case.
+    '''
+    # handle the case of a continuous, common list for all jobs
+    if o.fringe > o.zfinal+1-o.zfirst:
+        o.fringe = o.zfinal+1-o.zfirst
+        print('Reduced number of fringe plot channels to %d' % o.fringe)
+    if o.fringe > 1:
+        o.doPlot = ['','#','#','']
+        o.flist = '0'                   # first entry
+        for ii in range(1,o.fringe):    # and the rest
+            o.flist += ',(%d*len(doIF)//%d)' % (ii, o.fringe)
 
 def plotPrep(o):
     '''
     This function sets a few things related to plotting, and assumes
     a continuous set of IFs (no gaps) from zfirst to zfinal.  The list
-    o.doPlot comments out things in the template:
+    o.doPlot comments out (or retains with '') things in the template:
         o.doPlot[0]  arg 0 and 1            %s import pylab and pl.ioff()
         o.doPlot[1]  arg 8 (after zfinal)   %s plotIF = -1
         o.doPlot[2]  arg 9                  %s plotIF = middle of doIF
         o.doPlot[3]  arg 10                 %s plotIF = a list from flist
     '''
+    # if for some reason we end up with zerobaseline to plot, fix it.
+    # this presumes there is a second antenna after the (alma) o.ant.
     if o.remote == o.ant:
         o.remote = o.ant + 1
         print('Shifting baseline from %d-%d to %d-%d' % (
@@ -810,11 +842,9 @@ def plotPrep(o):
     # handle the case of a discontinuous list, or different per job
     if o.zfirst < 0 and o.zfinal < 0:
         plotPrepList(o)
-        return
-    # handle the case of a continuous, common list for all jobs
-    if o.fringe > o.zfinal+1-o.zfirst:
-        o.fringe = o.zfinal+1-o.zfirst
-        print('Reducing number of fringe plot channels to %d' % o.fringe)
+    else:
+        plotPrepOrig(o)
+    # 2 or more was just handled
     if o.fringe == 0:
         o.doPlot = ['#','','#','#']
         o.remote = -1
@@ -822,11 +852,6 @@ def plotPrep(o):
     elif o.fringe == 1:
         o.doPlot = ['','#','','#']
         o.flist = ''
-    else:
-        o.doPlot = ['','#','#','']
-        o.flist = '0'
-        for ii in range(1,o.fringe):
-            o.flist += ',(%d*len(doIF)//%d)' % (ii, o.fringe)
 
 def getInputTemplate(o):
     '''
@@ -852,6 +877,13 @@ def getInputTemplate(o):
     %simport pylab as pl
     %spl.ioff()
     #
+    # POLCONVERT_HOME in environment functions as a switch between the
+    # CASA task method (task_polconvert.py as in e.g. DiFX-2.6.3) and
+    # the code-split for ALMA polconvert_CASA.py version
+    #
+    if os.environ.get('POLCONVERT_HOME'):
+        from PolConvert import polconvert_CASA as PCONV
+    #
     # variables from drivepolconvert.py required for runpolconvert.py:
     #
     DiFXout = '%s'
@@ -859,7 +891,12 @@ def getInputTemplate(o):
     print('label is ', label)
     expName = '%s'
     linAnt = [%s]
-    rpcpath = os.environ['DIFXROOT'] + '/share/polconvert/runpolconvert.py'
+    if os.environ.get('POLCONVERT_HOME'):
+        # runpolconvert needs to use PCONV
+        rpcpath = os.environ['POLCONVERT_HOME'] + '/PP/runpolconvert.py'
+    else:
+        # runpolconvert uses the task polconvert
+        rpcpath = os.environ['DIFXROOT'] + '/share/polconvert/runpolconvert.py'
     # user-provided list of freq indices to convert via o.iflist:
     doIFstr = '%s'
     if doIFstr == '':   # original first,final logic; shift by 1
@@ -1254,6 +1291,7 @@ if __name__ == '__main__':
         opts.iflist = ''
         opts.ozlogic = True
     else:
+        print('Using user specified iflist',opts.iflist)
         opts.ozlogic = False
     # various work in preparation for job creation and execution
     commonInputGrokkage(opts)
