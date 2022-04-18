@@ -57,6 +57,10 @@
 //z straight up merge
 #define IVAN_MERGE  0
 
+// incorporate Jan's fix on PriorGains imported with DifXData->getAmpRatio 
+// 0 restores previous version
+#define USE_JAN_FIX 1
+
 #include <Python.h>
 
 // compiler warning that we use a deprecated NumPy API
@@ -835,8 +839,15 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 #endif // IVAN_MERGE
 //z
         for (ij=0; ij<nchans[ii]; ij++){
+#if USE_JAN_FIX
+#warning "USE_JAN_FIX: getAmpRatio fix selected im -> ii"
+          PrioriGains[currAntIdx][im][ij] *=
+            DifXData->getAmpRatio(currAntIdx, ii, ij);
+#else // USE_JAN_FIX
+#warning "USE_JAN_FIX: getAmpRatio original code selected"
           PrioriGains[currAntIdx][im][ij] *=
             DifXData->getAmpRatio(currAntIdx, im, ij);
+#endif
         };
       };
   };
