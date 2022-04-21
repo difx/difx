@@ -854,6 +854,10 @@ for a in joblist:
 if len(fileBaseList) < 1:
         optParser.error("ERROR: At least one .input or .joblist file must be given.")
 
+# if more than one job: terminate difxlog after each job completes, rather than terminating N open difxlog's after N jobs
+if len(fileBaseList) > 1:
+        runJobList = True
+
 # verify that machinesfile exists
 if args.machinesFile != "" and  isfile(args.machinesFile) == False:
         print("ERROR: The machines file (%s) does not exist" % args.machinesFile)
