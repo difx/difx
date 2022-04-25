@@ -4006,7 +4006,7 @@ $$ YAMAGU32,                  RADI TANG  lon/lat:  131.5571   34.2160  165.618
     38.1   67.1   42.4   49.0 -157.4 -173.0 -163.5  163.9  -45.3  -54.1 -155.6
    -45.8  -30.8  -59.9  -30.4   91.5   70.8   90.1   61.9   49.0   31.8    4.1
 $$
-  PICOVEL   
+  PICOVEL   PV
 $$ TPXO.7.2_PP ID: 2015-03-16 21:08:31
 $$ Computed by OLMPP by H G Scherneck, Onsala Space Observatory, 2015
 $$ PICOVEL,                   RADI TANG  lon/lat:  356.6074   37.0662 2921.720
