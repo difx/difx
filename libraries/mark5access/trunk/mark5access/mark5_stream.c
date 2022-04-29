@@ -1375,11 +1375,16 @@ void delete_mark5_stream(struct mark5_stream *ms)
 {
 	if(ms)
 	{
+#if 0
+		/* Note: folks calling delete_mark5_stream might want to first check to see
+		 * how many validations were reported and react accordingly
+		 */
 		if(ms->nvalidatefail > 0)
 		{
 			fprintf(m5stderr, "Warning: %d validation failures on %s framenum=%lld -> bytepos=%lld\n",
 				ms->nvalidatefail, ms->streamname, ms->framenum, ms->framenum*ms->framebytes);
 		}
+#endif
 		if(ms->final_stream)
 		{
 			ms->final_stream(ms);
@@ -1488,9 +1493,7 @@ int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, double ns)
 	}
 	if(ms->seek)
 	{
-		jumpns = 86400000000000LL*(mjd - ms->mjd) 
-		       + 1000000000LL*(sec - ms->sec)
-		       + (ns - ms->ns);
+		jumpns = 86400000000000LL*(mjd - ms->mjd) + 1000000000LL*(sec - ms->sec) + (ns - ms->ns);
 
 		if(jumpns < 0) /* before start of stream */
 		{

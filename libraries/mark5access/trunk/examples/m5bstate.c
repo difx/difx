@@ -20,8 +20,8 @@
 
 const char program[] = "m5bstate";
 const char author[]  = "Alessandra Bertarini";
-const char version[] = "1.3";
-const char verdate[] = "2015 May 21";
+const char version[] = "1.4";
+const char verdate[] = "2022 Apr 29";
 
 volatile int die = 0;
 
@@ -112,11 +112,6 @@ void process_realdata(struct mark5_stream *ms, int nframes, int nstates) {
   {
     total += chunk;
     unpacked += status;
-  }
-	      
-  if(ms->consecutivefails > 5)
-  {
-    break;
   }
 	      
 	      
@@ -251,11 +246,6 @@ void process_complexdata(struct mark5_stream *ms, int nframes, int nstates) {
 	unpacked += status;
       }
     
-    if(ms->consecutivefails > 5)
-      {
-	break;
-      }
-    
     
     for(i = 0; i < nif; i++) 
       {
@@ -383,13 +373,8 @@ void process_8bit_realdata(struct mark5_stream *ms, int nframes) {
       unpacked += status;
     }
 	      
-    if (ms->consecutivefails > 5)
-    {
-      break;
-    }
 	      
-	      
-    for (i = 0; i < nif; i++) 
+    for(i = 0; i < nif; i++) 
     {
       double thissum=0, thissumsqr=0;
       for(k = 0; k < chunk; k++)
@@ -483,7 +468,7 @@ int bstate(const char *filename, const char *formatname, int nframes,
 
 
         /* bstate 2nd dim. is either 2 for the 1bit: ++ -- or 4 for the 2 bits ++ + - -- */
-	if (ms->nbit == 8)
+	if(ms->nbit == 8)
 	{
 	  if (docomplex) {
 	    printf("Error: Do not support 8bit complex yet!\n");
@@ -508,7 +493,7 @@ int bstate(const char *filename, const char *formatname, int nframes,
 	    return 0;
 	  }
 
-	  if (docomplex) {
+	  if(docomplex) {
 	    process_complexdata(ms, nframes, nstates);
 	  } else {
 	    process_realdata(ms, nframes, nstates);

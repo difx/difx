@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken & Chris Phillips & Richard Dodson *
+ *   Copyright (C) 2008-2022 by Walter Brisken & Chris Phillips & Richard Dodson *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -47,8 +47,8 @@
 const char program[] = "m5fb";
 const char author[]  = "Richard Dodson";
 //  Copied extensively from m5spec by Walter Brisken & Chris Phillips
-const char version[] = "1.2";
-const char verdate[] = "20170426";
+const char version[] = "1.3";
+const char verdate[] = "20220429";
 
 volatile int die = 0;
 
@@ -138,11 +138,6 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 		{
 			*total += chunk;
 			*unpacked += status;
-		}
-
-		if(ms->consecutivefails > 5)
-		{
-			break;
 		}
 
 		for(i = 0; i < ms->nchan; ++i)
@@ -238,11 +233,6 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 		{
 			*total += chunk;
 			*unpacked += status;
-		}
-
-		if(ms->consecutivefails > 5)
-		{
-			break;
 		}
 
 		for(i = 0; i < ms->nchan; ++i)

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2021 by Walter Brisken & Chris Phillips            *
+ *   Copyright (C) 2008-2022 by Walter Brisken & Chris Phillips            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -47,7 +47,7 @@
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken, Chris Phillips";
 const char version[] = "1.6";
-const char verdate[] = "20211003";
+const char verdate[] = "20220429";
 
 volatile int die = 0;
 
@@ -139,11 +139,6 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 		{
 			*total += chunk;
 			*unpacked += status;
-		}
-
-		if(ms->consecutivefails > 5)
-		{
-			break;
 		}
 
 		for(i = 0; i < ms->nchan; ++i)
@@ -253,11 +248,6 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 			*unpacked += status;
 		}
 
-		if(ms->consecutivefails > 5)
-		{
-			break;
-		}
-
 		for(i = 0; i < ms->nchan; ++i)
 		{
 			/* FFT */
@@ -278,7 +268,7 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 			}
 		}
 
-		if (polmode==VLBA) 
+		if(polmode==VLBA) 
 		{
 			for(i = 0; i < ms->nchan/2; ++i)
 			{
@@ -290,17 +280,17 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 				}
 			}
 		} 
-		else if (polmode==DBBC) 
+		else if(polmode==DBBC) 
 		{
-		  for(i = 0; i < ms->nchan/2; ++i)
-		  {
-			int c;
-
-			for(c = 0; c < nchan; ++c)
+			for(i = 0; i < ms->nchan/2; ++i)
 			{
-				zx[i][c] += zdata[i][c]*~zdata[i+ms->nchan/2][c];
+				int c;
+
+				for(c = 0; c < nchan; ++c)
+				{
+					zx[i][c] += zdata[i][c]*~zdata[i+ms->nchan/2][c];
+				}
 			}
-		  }
 		}
 	}
 	for(j = 0; j < ms->nchan; ++j)
@@ -405,11 +395,12 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	}
 
 	f = ms->nchan*nchan/sum;
-	if (nonorm) {
-	  //printf("Norm Factor = %.3g\n", 1/f);
-	  //f *= unpacked*256;
-	  //printf("Updated Norm Factor = %.3g\n", 1/f);
-	  f = 1.0/unpacked/256.0;
+	if(nonorm)
+	{
+		//printf("Norm Factor = %.3g\n", 1/f);
+		//f *= unpacked*256;
+		//printf("Updated Norm Factor = %.3g\n", 1/f);
+		f = 1.0/unpacked/256.0;
 	}
 	
 	chanbw = ms->samprate/(2.0e6*nchan);

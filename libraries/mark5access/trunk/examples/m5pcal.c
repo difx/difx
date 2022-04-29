@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2017 by Walter Brisken                             *
+ *   Copyright (C) 2010-2022 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -41,8 +41,8 @@
 
 const char program[] = "m5pcal";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.9";
-const char verdate[] = "20170426";
+const char version[] = "0.10";
+const char verdate[] = "20220429";
 
 int ChunkSize = 0;
 const int MaxTones = 4096;
@@ -404,12 +404,6 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 				unpacked += status;
 			}
 
-			if(ms->consecutivefails > 5)
-			{
-				printf("Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
-				break;
-			}
-			
 			for(i = 0; i < nFreq; ++i)
 			{
 				for(j = 0; j < DFTlen; ++j)

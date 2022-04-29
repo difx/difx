@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2017 by Walter Brisken, Chris Phillips             *
+ *   Copyright (C) 2010-2022 by Walter Brisken, Chris Phillips             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,8 +38,8 @@
 
 const char program[] = "m5timeseries";
 const char author[]  = "Chris Phillips";
-const char version[] = "0.2";
-const char verdate[] = "20170426";
+const char version[] = "0.3";
+const char verdate[] = "20220429";
 
 const int ChunkSize = 10000;
 
@@ -96,10 +96,6 @@ int average_real(struct mark5_stream *ms, int *nused, uint64_t nint, uint64_t *n
     if(status < 0) {
       return(status);
     } 
-    if(ms->consecutivefails > 5) {
-      printf("Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
-      return(-1);
-    }
     *nused = 0;
   } 
 
@@ -127,10 +123,6 @@ int average_complex(struct mark5_stream *ms, int *nused, uint64_t nint, uint64_t
     if(status < 0) {
       return(status);
     } 
-    if(ms->consecutivefails > 5) {
-      printf("Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
-      return(-1);
-    }
     *nused = 0;
   } 
 

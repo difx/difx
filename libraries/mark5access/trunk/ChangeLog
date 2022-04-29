@@ -11,6 +11,8 @@ Version 1.6
 * m5fold: change all printf() to fprintf(stderr, ) so piping is clean
 * m5fold: allow outfile to be - to imply stdout; this makes output quiet
 * fix possible crash due to blanker operating on invalid data (thanks to Mars Buttfield-Addison)
+* don't stop "example programs" when consecutive errors exceed a threshold.
+* no longer print number of validation failures when closing a mark5_stream
 * Post DiFX-2.6
 
 Version 1.5.4
