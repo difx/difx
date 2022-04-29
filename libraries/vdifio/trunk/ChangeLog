@@ -19,6 +19,7 @@ Version 1.5
 * vsum: print data rate
 * vdifspec and vdifd: verified operation on 1-bit and 8-bit data
 * filterVDIF: option to run on many files (Usage 2).
+* vmux: change default to not generating per-channel validity as this could lead to problematic behavior in programs not expecting that kind of output.
 
 Version 1.4
 ~~~~~~~~~~~

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2021 by Walter Brisken                             *
+ *   Copyright (C) 2013-2022 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,8 +35,8 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.13";
-const char verdate[] = "20210628";
+const char version[] = "0.14";
+const char verdate[] = "20220429";
 
 const int defaultChunkSize = 10000000;
 const int defaultNGap = 100;
@@ -97,9 +97,9 @@ void usage(const char *pgm)
 	fprintf(stderr, "  --quiet\n");
 	fprintf(stderr, "  -q        Decrease verbosity\n\n");
 	fprintf(stderr, "  --noEDV4\n");
-	fprintf(stderr, "  -n        Don't make use of EDV4 (per-thread validity) in output\n\n");
+	fprintf(stderr, "  -n        Don't make use of EDV4 (per-thread validity) in output [default]\n\n");
 	fprintf(stderr, "  --EDV4\n");
-	fprintf(stderr, "  -e        Use EDV4 (per-thread validity) in output [default]\n\n");
+	fprintf(stderr, "  -e        Use EDV4 (per-thread validity) in output (use with caution!)\n\n");
 	fprintf(stderr, "  --align\n");
 	fprintf(stderr, "  -a        Pre-align multithreaded VDIF threads in problematic recordings (note: do not set 'sort').\n\n");
 	fprintf(stderr, "  --fanout <f>\n");
@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 	int fanoutFactor = 1;
 	const vdif_header *vh;
 	struct vdif_mux vm;
-	int flags = VDIF_MUX_FLAG_PROPAGATEVALIDITY | VDIF_MUX_FLAG_RESPECTGRANULARITY;
+	int flags = VDIF_MUX_FLAG_RESPECTGRANULARITY;
 	int a;
 
 	if(argc <= 1)
@@ -656,18 +656,18 @@ int main(int argc, char **argv)
 		}
 
 		/* if we encountered fill pattern at the seam between two chunkSizes we will need to write some dummy frames */
-		if(nextFrame >= 0 && nextFrame != stats.startFrameNumber)
+		if(stats.destUsed > 0 && nextFrame >= 0 && nextFrame != stats.startFrameNumber)
 		{
 			int64_t nJump = (int64_t)(stats.startFrameNumber - nextFrame);
 			int64_t j;
 
-			fprintf(stderr, "JUMP %zd\n", nJump);
+			fprintf(stderr, "JUMP %zd  %zd %zd\n", nJump, nextFrame/framesPerSecond, nextFrame%framesPerSecond);
 
 			/* borrow one output frame of src memory... */
 			memcpy(src, dest, VDIF_HEADER_BYTES);
 			for(j = 0; j < nJump; ++j)
 			{
-				setVDIFFrameSecond((vdif_header *)src, (nextFrame+j)/framesPerSecond);
+				((vdif_header *)src)->seconds = (nextFrame+j)/framesPerSecond;
 				setVDIFFrameNumber((vdif_header *)src, (nextFrame+j)%framesPerSecond);
 				setVDIFFrameInvalid((vdif_header *)src, 1);
 				fwrite(src, 1, stats.outputFrameSize, out);
@@ -678,8 +678,8 @@ int main(int argc, char **argv)
 
 		if(stats.srcUsed <= 0)
 		{
-				fprintf(stderr, "Weird: %d/%d bytes were consumed. Maybe input was all fill-pattern.\n", stats.srcUsed, stats.srcSize);
-				leftover = stats.srcSize % inputframesize;
+			fprintf(stderr, "Weird: %d/%d bytes were consumed. Maybe input was all fill-pattern.\n", stats.srcUsed, stats.srcSize);
+			leftover = stats.srcSize % inputframesize;
 		}
 		else
 		{
