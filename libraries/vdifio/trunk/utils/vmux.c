@@ -602,7 +602,7 @@ int main(int argc, char **argv)
 		{
 			if(stats.nCall == 0)
 			{
-				if(V == -3)
+				if(V == EVDIFBADFRAMENUMBER)
 				{
 					fprintf(stderr, "No valid frames (matching expected parameters) were found in the first %d bytes, so there will be no output.  Perhaps use printVDIFheader to determine correct frame parameters.\n", n);
 				}
