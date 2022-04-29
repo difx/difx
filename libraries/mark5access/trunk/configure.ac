@@ -34,7 +34,7 @@ AM_PROG_CC_C_O
 LT_INIT
 AM_SANITY_CHECK
 
-AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
+AC_SEARCH_LIBS([sqrt], [m])
 PKG_CHECK_MODULES(FFTW3, fftw3, [hasfftw=true], [hasfftw=false])
 
 AC_SUBST(FFTW3_CFLAGS)
@@ -95,5 +95,6 @@ AC_CONFIG_FILES([ \
 	doc/Makefile \
         python/Makefile \
 ])
-AC_OUTPUT
+
+AC_OUTPUT()
 
