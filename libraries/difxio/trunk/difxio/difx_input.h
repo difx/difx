@@ -433,9 +433,9 @@ typedef struct
 	int *recToneFreq;	/* Frequency of each pcal tone in the *recorded* baseband in MHz */
 	int *recToneOut;	/* bool Recorded pcal written out?*/
 
-	double *clockOffset;	/* (us) [freq] */
-	double *clockOffsetDelta; /* (us) [freq] */
-	double *phaseOffset;	/* (degrees) [freq] */
+	double *clockOffset;	/* (us) [recfreq] */
+	double *clockOffsetDelta; /* (us) [recfreq] */
+	double *phaseOffset;	/* (degrees) [recfreq] */
 	double *freqOffset;	/* Freq offsets for each frequency in Hz */
 	char pol[2];		/* polarization codes (one per nPol) : L R X Y, H or V. */
 	
