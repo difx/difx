@@ -1656,17 +1656,65 @@ static int fixDatastreamTable(DifxInput *D)
 	if(D && D->nDatastream > 0)
 	{
 		int dd;
+		int power2;		/* power of 2 that is >= nRecBand */
 
 		for(dd = 0; dd < D->nDatastream; ++dd)
 		{
 			int r;
+			DifxDatastream *ds;
 
-			for(r = 0; r < D->datastream[dd].nRecFreq; ++r)
+			ds = D->datastream + dd;
+
+			for(r = 0; r < ds->nRecFreq; ++r)
 			{
-				if(islower(D->datastream[dd].recBandPolName[r]))
+				if(islower(ds->recBandPolName[r]))
 				{
-					D->datastream[dd].recBandPolName[r] += ('A' - 'a');
+					ds->recBandPolName[r] += ('A' - 'a');
 					++nFix;
+				}
+			}
+
+			/* In case < 2^n channels were recorded, pad the arrays with info that can easily identified and safely ignored */
+			for(power2 = 1; power2 < ds->nRecBand; power2 *= 2) ;
+			if(ds->nRecBand < power2)
+			{
+				int delta;	/* additional fake refFreq and recBand entries to make */
+				int N;
+
+				delta = power2 - ds->nRecBand;
+
+				N = ds->nRecFreq + delta;
+				ds->clockOffset = (double *)realloc(ds->clockOffset, N*sizeof(double));
+				ds->clockOffsetDelta = (double *)realloc(ds->clockOffsetDelta, N*sizeof(double));
+				ds->phaseOffset = (double *)realloc(ds->phaseOffset, N*sizeof(double));
+				ds->nRecPol = (int *)realloc(ds->nRecPol, N*sizeof(int));
+				ds->recFreqId = (int *)realloc(ds->recFreqId, N*sizeof(int));
+				for(r = ds->nRecFreq; r < N; ++r)
+				{
+					ds->clockOffset[r] = 0.0;
+					ds->clockOffsetDelta[r] = 0.0;
+					ds->phaseOffset[r] = 0.0;
+					ds->nRecPol[r] = 1;
+					ds->recFreqId[r] = 0;
+				}
+
+				ds->nRecFreq = N;
+				N = ds->nRecBand + delta;
+				ds->recBandFreqId = (int *)realloc(ds->recBandFreqId, N*sizeof(int));
+				ds->recBandPolName = (char *)realloc(ds->recBandPolName, N*sizeof(char));
+				for(r = ds->nRecBand; r < N; ++r)
+				{
+					ds->recBandFreqId[r] = 0;
+					ds->recBandPolName[r] = 'R';
+				}
+				ds->nRecBand = N;
+
+				for(r = 0; r < delta; ++r)
+				{
+					char *p;
+
+					p = ds->dataFormat + strlen(ds->dataFormat);
+					sprintf(p, ":%d", 999-r);
 				}
 			}
 		}
@@ -2383,7 +2431,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 		cerr << "Warning: no correlatable baselines were found." << endl;
 	}
 
-	// Make sure all polarizations are capitalized before writing
+	// Make sure all polarizations are capitalized before writing, and round up to 2^n record channels if needed
 	fixDatastreamTable(D);
 
 	// Merge identical table entries

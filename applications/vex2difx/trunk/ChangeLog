@@ -5,6 +5,7 @@ Version 2.99.3
 * vex2: parse equip, equip_set, and equip_info from $DAS
 * add some sample vex2 files for the VLBA (other groups encouraged to add vex2 samples as well!)
 * add option to oms2v2d to override a station format from external file
+* introduce feature (a bit of a hack) to allow correlation of recorded interlaced VDIF data with non 2^n channels
 
 Version 2.99.2
 ~~~~~~~~~~~~~~
