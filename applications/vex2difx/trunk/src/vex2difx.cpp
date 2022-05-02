@@ -1652,6 +1652,7 @@ static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int
 static int fixDatastreamTable(DifxInput *D)
 {
 	int nFix = 0;
+	int addedFreq = -1;
 
 	if(D && D->nDatastream > 0)
 	{
@@ -1681,6 +1682,24 @@ static int fixDatastreamTable(DifxInput *D)
 				int delta;	/* additional fake refFreq and recBand entries to make */
 				int N;
 
+				if(addedFreq < 0)
+				{
+					DifxFreq *df;
+
+					D->freq = (DifxFreq *)realloc(D->freq, (D->nFreq + 1)*sizeof(DifxFreq));
+					
+					df = D->freq + D->nFreq;
+					memcpy(df, D->freq, sizeof(DifxFreq));		// copy much of this channel from [0]
+					df->freq = 0.999;
+					df->sideband = 'U';
+					df->nTone = 0;
+					df->tone = 0;
+					strcpy(df->rxName, "null");
+
+					addedFreq = D->nFreq;
+					++D->nFreq;
+				}
+
 				delta = power2 - ds->nRecBand;
 
 				N = ds->nRecFreq + delta;
@@ -1695,7 +1714,7 @@ static int fixDatastreamTable(DifxInput *D)
 					ds->clockOffsetDelta[r] = 0.0;
 					ds->phaseOffset[r] = 0.0;
 					ds->nRecPol[r] = 1;
-					ds->recFreqId[r] = 0;
+					ds->recFreqId[r] = addedFreq;
 				}
 
 				ds->nRecFreq = N;
@@ -1704,7 +1723,7 @@ static int fixDatastreamTable(DifxInput *D)
 				ds->recBandPolName = (char *)realloc(ds->recBandPolName, N*sizeof(char));
 				for(r = ds->nRecBand; r < N; ++r)
 				{
-					ds->recBandFreqId[r] = 0;
+					ds->recBandFreqId[r] = addedFreq;
 					ds->recBandPolName[r] = 'R';
 				}
 				ds->nRecBand = N;
@@ -2432,7 +2451,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 	}
 
 	// Make sure all polarizations are capitalized before writing, and round up to 2^n record channels if needed
-	fixDatastreamTable(D);
+	fixDatastreamTable(D);	// be sure to call simplifyDifxFreqs(D) after doing this
 
 	// Merge identical table entries
 	simplifyDifxFreqs(D);
