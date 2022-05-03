@@ -8,6 +8,8 @@ Version 2.0.3
   - with this fix, and with the above getMark6GathererFileSize() change, the resultant file sizes should be in accord.
 * mark6Gather() : seeks bigger than NDISK*2^31 were broken.  Now seem fixed.
 * mark6Gather() : operations on Mark6 files that are smaller than a block size seem to work now.
+* mk6gather: fail if output file cannot be created
+* mk6gather: all output goes to stderr to protect piping operation
 
 Version 2.0.2
 * Post DiFX-2.6

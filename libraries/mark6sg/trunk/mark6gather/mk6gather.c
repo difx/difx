@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2020 by Walter Brisken                             *
+ *   Copyright (C) 2015-2022 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -37,32 +37,32 @@
 #include "mark6gather.h"
 
 const char program[] = "mk6gather";
-const char version[] = "1.4";
-const char verdate[] = "20200603";
+const char version[] = "1.5";
+const char verdate[] = "20220503";
 
 const char defaultOutfile[] = "gather.out";
 
 void usage(const char *prog)
 {
-	printf("%s ver. %s  %s\n\n", program, version, verdate);
-	printf("Usage: %s [options] <fileset template>\n\n", prog);
-	printf("options can include:\n");
-	printf("  --help\n");
-	printf("  -h             print this help info and quit.\n\n");
-	printf("  --verbose\n");
-	printf("  -v             be more verbose.  -v -v for even more.\n\n");
-	printf("  --output <outfile>\n");
-	printf("  -o <outfile>   send output to <outfile> [default: %s].\n\n", defaultOutfile);
-	printf("  --bytes <bytes>\n");
-	printf("  -b <bytes>     stop process after <bytes> have been copied\n\n");
-	printf("  --skip <bytes>\n");
-	printf("  -s <bytes>     skip <bytes> at start of file\n\n");
-	printf("  --append\n");
-	printf("  -a             append to existing file; this continues a previous gather\n\n");
-	printf("<fileset template> is a glob expression selecting Mark6 files to.\n");
-	printf("read.  This is usually the name of the scan given to the recorder,\n");
-	printf("e.g., BB407A_LA_No0001\n\n");
-	printf("<outfile> can be set to - to indicate stdout.\n\n");
+	fprintf(stderr, "%s ver. %s  %s\n\n", program, version, verdate);
+	fprintf(stderr, "Usage: %s [options] <fileset template>\n\n", prog);
+	fprintf(stderr, "options can include:\n");
+	fprintf(stderr, "  --help\n");
+	fprintf(stderr, "  -h             print this help info and quit.\n\n");
+	fprintf(stderr, "  --verbose\n");
+	fprintf(stderr, "  -v             be more verbose.  -v -v for even more.\n\n");
+	fprintf(stderr, "  --output <outfile>\n");
+	fprintf(stderr, "  -o <outfile>   send output to <outfile> [default: %s].\n\n", defaultOutfile);
+	fprintf(stderr, "  --bytes <bytes>\n");
+	fprintf(stderr, "  -b <bytes>     stop process after <bytes> have been copied\n\n");
+	fprintf(stderr, "  --skip <bytes>\n");
+	fprintf(stderr, "  -s <bytes>     skip <bytes> at start of file\n\n");
+	fprintf(stderr, "  --append\n");
+	fprintf(stderr, "  -a             append to existing file; this continues a previous gather\n\n");
+	fprintf(stderr, "<fileset template> is a glob expression selecting Mark6 files to.\n");
+	fprintf(stderr, "read.  This is usually the name of the scan given to the recorder,\n");
+	fprintf(stderr, "e.g., BB407A_LA_No0001\n\n");
+	fprintf(stderr, "<outfile> can be set to - to indicate stdout.\n\n");
 }
 
 int main(int argc, char **argv)
@@ -221,7 +221,7 @@ fprintf(stderr, "Truncating existing file from %Ld to %Ld bytes\n", (long long i
 					rv = truncate(outfile, size);
 					if(rv != 0)
 					{
-						printf("Error: call to truncate(%s, %Ld) resulted in: %s\n", outfile, (long long)size, strerror(errno));
+						fprintf(stderr, "Error: call to truncate(%s, %Ld) resulted in: %s\n", outfile, (long long)size, strerror(errno));
 
 						exit(EXIT_FAILURE);
 					}
@@ -237,6 +237,13 @@ fprintf(stderr, "Truncating existing file from %Ld to %Ld bytes\n", (long long i
 		else
 		{
 			out = fopen(outfile, "w");
+		}
+
+		if(!out)
+		{
+			fprintf(stderr, "Error: cannot open %s for write\n", outfile);
+
+			exit(EXIT_FAILURE);
 		}
 	}
 
