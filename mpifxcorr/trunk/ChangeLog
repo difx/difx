@@ -27,6 +27,7 @@ Version 2.7
 * checkmpifxcorr: option to quiet output if no errors found
 * startdifx: --log-file , --comment-start , and --comment-end options added
 * model.cpp: update to reflect two optional .calc file rows supported by difxio
+* configuration.cpp: fix logic in populating equivfrequsedbybaseline[]
 
 Version 2.6
 ~~~~~~~~~~~

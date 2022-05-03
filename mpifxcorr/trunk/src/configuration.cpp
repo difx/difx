@@ -355,8 +355,8 @@ void Configuration::parseConfiguration(istream* input)
 	      freqdiff -= freqtable[j].bandwidth;
 	    if(freqtable[k].lowersideband)
 	      freqdiff += freqtable[k].bandwidth;
-#warning "JanW: The next statement is suspect. Is 'diff<TINY' critical here, or was 'fabs(diff)<TINY' intended?"
-	    if(bwdiff < Mode::TINY && freqdiff < Mode::TINY && freqtable[j].numchannels == freqtable[k].numchannels && 
+
+	    if(fabs(bwdiff) < Mode::TINY && fabs(freqdiff) < Mode::TINY && freqtable[j].numchannels == freqtable[k].numchannels && 
 	       freqtable[j].channelstoaverage == freqtable[k].channelstoaverage && 
 	       freqtable[j].oversamplefactor == freqtable[k].oversamplefactor &&
 	       freqtable[j].decimationfactor == freqtable[k].decimationfactor) {
