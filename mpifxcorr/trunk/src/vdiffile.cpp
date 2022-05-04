@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2020 by Adam Deller and Walter Brisken             *
+ *   Copyright (C) 2006-2022 by Adam Deller and Walter Brisken             *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -794,33 +794,7 @@ int VDIFDataStream::dataRead(int buffersegment)
 		readnanoseconds = bufferinfo[buffersegment].scanns;
 		readseconds = bufferinfo[buffersegment].scanseconds;
 
-		// look at difference in data frames consumed and produced and proceed accordingly
-		int deltaDataFrames = vstats.srcUsed/(nthreads*inputframebytes) - vstats.destUsed/(nthreads*(inputframebytes-VDIF_HEADER_BYTES) + VDIF_HEADER_BYTES);
-		if(abs(deltaDataFrames) < vm.nSort)
-		{
-			// We should be able to preset startOutputFrameNumber.  Warning: early use of this was frought with peril but things seem OK now.
-			startOutputFrameNumber = vstats.startFrameNumber + vstats.nOutputFrame;
-		}
-		else
-		{
-			if(deltaDataFrames < -(vm.nSort+10))
-			{
-				++nGapWarn;
-				if( (nGapWarn & (nGapWarn - 1)) == 0)
-				{
-					cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nGapWarn << " deltaDataFrames=" << deltaDataFrames << endl;
-				}
-			}
-			else if(deltaDataFrames > (vm.nSort+10))
-			{
-				++nExcessWarn;
-				if( (nExcessWarn & (nExcessWarn - 1)) == 0)
-				{
-					cwarn << startl << "Data excess of " << (vstats.srcUsed-vstats.destUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nExcessWarn << endl;
-				}
-			}
-			startOutputFrameNumber = -1;
-		}
+		startOutputFrameNumber = vstats.startFrameNumber + vstats.nOutputFrame;
 	}
 	else
 	{

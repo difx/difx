@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2017 by Walter Brisken and Adam Deller             *
+ *   Copyright (C) 2007-2022 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -528,49 +528,7 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 		readnanoseconds = bufferinfo[buffersegment].scanns;
 		readseconds = bufferinfo[buffersegment].scanseconds;
 
-		// look at difference in data frames consumed and produced and proceed accordingly
-		int deltaDataFrames = vstats.srcUsed/(nthreads*inputframebytes) - vstats.destUsed/(nthreads*(inputframebytes-VDIF_HEADER_BYTES) + VDIF_HEADER_BYTES);
-		if(deltaDataFrames == 0)
-		{
-			// We should be able to preset startOutputFrameNumber.  Warning: early use of this was frought with peril but things seem OK now.
-			startOutputFrameNumber = vstats.startFrameNumber + vstats.nOutputFrame;
-		}
-		else
-		{
-			if(deltaDataFrames < -10)
-			{
-				static int nGapWarn = 0;
-				int nSkip;
-
-
-				++nGapWarn;
-				if( (nGapWarn & (nGapWarn - 1)) == 0 || nGapWarn <= 10)
-				{
-					cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " deltaDataFrames=" << deltaDataFrames << " N=" << nGapWarn << endl;
-				}
-
-				nSkip = bytesvisible/2;
-				nSkip -= (nSkip % inputframebytes);
-				muxindex += nSkip;
-
-				if(nGapWarn > 6)
-				{
-					dataremaining = false;
-				}
-			}
-			else if(deltaDataFrames > 10)
-			{
-				static int nExcessWarn = 0;
-
-				++nExcessWarn;
-				if( (nExcessWarn & (nExcessWarn - 1)) == 0)
-				{
-					cwarn << startl << "Data excess of " << (vstats.srcUsed-vstats.destUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " deltaDataFrames=" << deltaDataFrames << " N=" << nExcessWarn << endl;
-					cwarn << startl << "readbufferslotsize=" << readbufferslotsize << " n1=" << n1 << " n2=" << n2 << endl;
-				}
-			}
-			startOutputFrameNumber = -1;
-		}
+		startOutputFrameNumber = vstats.startFrameNumber + vstats.nOutputFrame;
 	}
 	else
 	{

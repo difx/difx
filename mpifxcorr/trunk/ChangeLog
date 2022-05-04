@@ -28,6 +28,8 @@ Version 2.7
 * startdifx: --log-file , --comment-start , and --comment-end options added
 * model.cpp: update to reflect two optional .calc file rows supported by difxio
 * configuration.cpp: fix logic in populating equivfrequsedbybaseline[]
+* VDIF processing: remove check after vdifmux() that checks input usage vs. output generation
+  - This check is wrong to perform in the case of considerably out-of-order data or data with a lot of gaps
 
 Version 2.6
 ~~~~~~~~~~~
