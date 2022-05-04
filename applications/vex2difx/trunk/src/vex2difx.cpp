@@ -534,6 +534,8 @@ static unsigned int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vecto
 
 	for(unsigned int i = 0; i < stream.nRecordChan; ++i)
 	{
+		std::string rxName;
+
 		if(i + startBand >= setup.channels.size())
 		{
 			cerr << "Error: in setting format parameters, the number of provided channels was less than that expected.  This is for antenna " << antName << ".  In this particular case, " << setup.channels.size() << " were found but " << stream.nRecordChan << " were expected." << endl;
@@ -546,6 +548,16 @@ static unsigned int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vecto
 			cerr << "Error: setFormat: index to subband=" << ch->subbandId << " is out of range.  antName=" << antName << " mode=" << mode->defName << endl;
 
 			exit(EXIT_FAILURE);
+		}
+
+		const VexIF *vif = setup.getVexIFByLink(ch->ifLink);
+		if(vif)
+		{
+			rxName = vif->rxName;
+		}
+		else
+		{
+			rxName = "";
 		}
 
 		int setupRecChan = ch->recordChan;
@@ -582,7 +594,7 @@ static unsigned int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vecto
 				toneSetId = getToneSetId(toneSets, ch->tones);
 			}
 			
-			fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand, corrSetup->FFTSpecRes, corrSetup->outputSpecRes, 1, 0, toneSetId);	// 0 means not zoom band
+			fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand, corrSetup->FFTSpecRes, corrSetup->outputSpecRes, 1, 0, toneSetId, rxName);	// 0 means not zoom band
 
 			// index into the difxio datastream object arrays is by "present band"
 			D->datastream[dsId].recBandFreqId[streamPresentChan] = getBand(bandMap, fqId);
@@ -682,6 +694,7 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 		df->specAvg = freqs[f].specAvg();
 		df->decimation = freqs[f].decimation;
 		df->overSamp = 1;	// FIXME: eventually provide this again.
+		snprintf(df->rxName, DIFXIO_RX_NAME_LENGTH, "%s", freqs[f].rxName.c_str());
 
 		chanBW = freqs[f].outputSpecRes*1e-6;
 		if(chanBW > 0.51 && firstChanBWWarning)
@@ -2269,7 +2282,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 								{
 									minChans = zoomChans;
 								}
-								fqId = getFreqId(freqs, zf.frequency, zf.bandwidth, 'U', corrSetup->FFTSpecRes, corrSetup->outputSpecRes, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
+								fqId = getFreqId(freqs, zf.frequency, zf.bandwidth, 'U', corrSetup->FFTSpecRes, corrSetup->outputSpecRes, decimation, 1, 0, "");	// final zero points to the noTone pulse cal setup.
 								dd->zoomFreqId[nZoom] = fqId;
 								dd->nZoomPol[nZoom] = dd->nRecPol[parentFreqIndices[nZoom]];
 								nZoomBands += dd->nRecPol[parentFreqIndices[nZoom]];

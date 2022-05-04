@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken                                  *
+ *   Copyright (C) 2015-2022 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,9 +31,9 @@
 
 // Returns index of requested (fq, bw, sb, ...) from freqs.
 // If not in freqs, it is added first
-int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int d, int iz, unsigned int t)
+int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int d, int iz, unsigned int t, const std::string &rxName)
 {
-	for(std::vector<freq>::const_iterator it = freqs.begin(); it != freqs.end(); ++it)
+	for(std::vector<freq>::iterator it = freqs.begin(); it != freqs.end(); ++it)
 	{
 		if(fq  == it->fq &&
 		   bw  == it->bw &&
@@ -44,13 +44,18 @@ int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double is
 		   iz  == it->isZoomFreq &&
 		   t   == it->toneSetId)
 		{
+			if(rxName != it->rxName)
+			{
+				it->rxName.clear();		// if we get disagreement, then blank it
+			}
+
 			// use iterator math to get index
 			return it - freqs.begin();
 		}
 	}
 
 	// not in list yet, so add
-	freqs.push_back(freq(fq, bw, sb, isr, osr, d, iz, t));
+	freqs.push_back(freq(fq, bw, sb, isr, osr, d, iz, t, rxName));
 
 	return freqs.size() - 1;
 }

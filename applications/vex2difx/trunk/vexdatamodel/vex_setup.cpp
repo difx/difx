@@ -486,6 +486,19 @@ VexIF *VexSetup::getVexIFByLink(const std::string &ifLink)
 	return 0;
 }
 
+const VexIF *VexSetup::getVexIFByLink(const std::string &ifLink) const
+{
+	for(std::map<std::string,VexIF>::const_iterator it = ifs.begin(); it != ifs.end(); ++it)
+	{
+		if(it->second.ifLink == ifLink)
+		{
+			return &it->second;
+		}
+	}
+
+	return 0;
+}
+
 std::ostream& operator << (std::ostream &os, const VexSetup &x)
 {
 	os << "   Setup:" << std::endl;

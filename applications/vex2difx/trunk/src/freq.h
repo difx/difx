@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken                                  *
+ *   Copyright (C) 2015-2022 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,12 +35,13 @@ This is a helper class used within vex2difx.cpp
 #define __FREQ_H__
 
 #include <vector>
+#include <string>
 
 class freq
 {
 public:
-	freq(double f=0.0, double b=0.0, char s=' ', double isr=0.0, double osr=0.0, int d=0, int iz=0, unsigned int t=0) 
-		: fq(f), bw(b), inputSpecRes(isr), outputSpecRes(osr), decimation(d), isZoomFreq(iz), toneSetId(t), sideBand(s) {};
+	freq(double f=0.0, double b=0.0, char s=' ', double isr=0.0, double osr=0.0, int d=0, int iz=0, unsigned int t=0, const std::string &rx="") 
+		: fq(f), bw(b), inputSpecRes(isr), outputSpecRes(osr), decimation(d), isZoomFreq(iz), toneSetId(t), sideBand(s), rxName(rx) {};
 	double fq;		// Hz
 	double bw;		// Hz
 	double inputSpecRes;	// Hz
@@ -49,10 +50,11 @@ public:
 	int isZoomFreq;
 	unsigned int toneSetId;
 	char sideBand;
+	std::string rxName;	// name of the receiver; keep unset if disagrees across the participating antennas
 
 	int specAvg() const { return static_cast<int>(outputSpecRes/inputSpecRes + 0.5); }
 };
 
-int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int d, int iz, unsigned int t);
+int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int d, int iz, unsigned int t, const std::string &rxName);
 
 #endif

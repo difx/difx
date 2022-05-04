@@ -82,6 +82,7 @@ public:
 	VexStream *getVexStreamByLink(const std::string streamLink);
 	VexChannel *getVexChannelByLink(const std::string chanLink);
 	VexIF *getVexIFByLink(const std::string &ifLink);
+	const VexIF *getVexIFByLink(const std::string &ifLink) const;
 
 	SetupType type;
 	std::map<std::string,VexIF> ifs;		// Indexed by name in the vex file, such as IF_A	FIXME: change to vector<> rather than map<> ?

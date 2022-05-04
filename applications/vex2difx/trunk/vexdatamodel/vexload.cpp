@@ -1319,6 +1319,17 @@ static int collectIFInfo(VexSetup &setup, VexData *V, Vex *v, const char *antDef
 		if(value)
 		{
 			vif.comment = value;
+			if(V->getVersion() < 1.8)
+			{
+				// for VLBA, this comment may look like: "*   14600.00   2400.00  20cm     0 NA"
+
+				char rx[8];
+				int n = sscanf(value+1, "%*f%*f%7s", rx);
+				if(n == 1)
+				{
+					vif.rxName = rx;
+				}
+			}
 		} 
 		else
 		{

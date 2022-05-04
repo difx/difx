@@ -6,6 +6,7 @@ Version 2.99.3
 * add some sample vex2 files for the VLBA (other groups encouraged to add vex2 samples as well!)
 * add option to oms2v2d to override a station format from external file
 * introduce feature (a bit of a hack) to allow correlation of recorded interlaced VDIF data with non 2^n channels
+* in cases where it is known (e.g., vex2-based files) and the same across antennas, populate the "RX NAME" field in the .input file
 
 Version 2.99.2
 ~~~~~~~~~~~~~~
