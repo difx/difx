@@ -432,7 +432,7 @@ compare-baselines-v6.pl -n 10000 -m 10 -f -x AL \
 
 # verify that fits files are missing what is sensible
 # (delete lines  that are only x because of missing stations)
-cat *fits*/*pclist | egrep ' AA |x ' | sort | uniq |\ 
+cat *fits*/*pclist | egrep ' AA |x ' | sort | uniq |\
     grep -v '#' > $ers-fits-missing.txt
 cp -p $ers-fits-missing.txt $release/logs
 cat $ers-fits-missing.txt | sed 's/^/### /'
