@@ -38,10 +38,11 @@ class Freq:
         self.decimfac = 1
         self.npcal = 0
         self.pcalindices = []
+        self.rxname = ""
 
     def str(self):
         sideband = "LSB" if self.lsb else "USB"
-        summary = "%12.6f MHz %3s [%4d-ch/%d-avg] @ %.6f MHz" % (self.bandwidth,sideband,self.numchan,self.specavg,self.freq)
+        summary = "%s %12.6f MHz %3s [%4d-ch/%d-avg] @ %.6f MHz" % (self.rxname, self.bandwidth,sideband,self.numchan,self.specavg,self.freq)
         return summary
 
     def low_edge(self):

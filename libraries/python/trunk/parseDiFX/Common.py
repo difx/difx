@@ -455,6 +455,10 @@ def get_freqtable_info(inputfile):
         freqs[-1].bandwidth = float(lines[at+1][20:])
         if lines[at+2][20:21] == 'L':
             freqs[-1].lsb = True
+        #handle possible RX NAME field.
+        if "RX NAME" in lines[at+3]:
+            freqs[-1].rxname = lines[at+3].split(":")[-1].strip()
+            at += 1
         freqs[-1].numchan = int(lines[at+3][20:])
         freqs[-1].specavg = int(lines[at+4][20:])
         freqs[-1].oversamplefac = int(lines[at+5][20:])
