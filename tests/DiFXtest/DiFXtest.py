@@ -7,14 +7,7 @@ import shutil
 from astropy.io import fits 
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--generateVDIF", help="Generate VDIF data? (yes/[no])",default="no")
-parser.add_argument("--updatetest", help="Update the default test results (yes/[no])",default="no") 
-input_args = parser.parse_args()
-generateVDIF = input_args.generateVDIF
-generateVDIF = generateVDIF.upper()
-updatetest = input_args.updatetest
-updatetest = updatetest.upper()
+
 
 
 def get_binary_files(directory):
@@ -88,7 +81,7 @@ def runtest(testname):
  # quit()
 
 
-def compare_results(testname):
+def compare_results(testname, abstol, reltol):
 
   # results list [Binary file same as benchmark?,FITS file same as benchmark?]
   results = [True,True]
@@ -111,7 +104,7 @@ def compare_results(testname):
   #print(fits_file)
   hdu1 = fits.open(fits_file)
   hdu2 = fits.open(fits_file_benchmark) 
-  fd = fits.FITSDiff(hdu1, hdu2, ignore_keywords=['DATE-MAP','CDATE','HISTORY'])  
+  fd = fits.FITSDiff(hdu1, hdu2, ignore_keywords=['DATE-MAP','CDATE','HISTORY'], atol=abstol , rtol=tolerance)  
   diff_fitslog = working_directory + "/fits_diff.log"  
   output = fd.report(fileobj=diff_fitslog, indent=0, overwrite=True) 
   results[1] = fd.identical
@@ -154,12 +147,25 @@ def repackage_tests(testnames):
   subprocess.call(tar_command,shell=True)
 
 
-if (generateVDIF == "YES"):
+def unpackage_tests(testnames):
+  unpack = False
+  
+  for testname in testnames:
+    if (os.path.isdir(testname) == False):
+      unpack = True
+  if (unpack):
+    subprocess.call("tar -zxvf tests.tgz",shell=True)
+
+def create_test_data():
   # Create Synthetic VDIF Data
   DURATION=10
   
   SEED1=38573
   SEED2=58573
+
+  if (os.path.isdir("testdata") == False):
+    os.mkdir("testdata")
+
   
   # USB Real 
   args = "generateVDIF -seed="+str(SEED1)+" -w 4 -b 2 -C 1 -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.5 -year 2020 -dayno 100 -time 07:00:00 testdata/TEST1.vdif"
@@ -198,30 +204,55 @@ if (generateVDIF == "YES"):
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -doublesideband -lsb testdata/TEST2-dsb-lsb.vdif"
   #print(args)
   subprocess.call(args,shell=True)
-# end if (generateVDIF == "YES"):  
 
 
-# Run test correlations
-test_name_list = ["complex-complex","lsb","lsb-complex","lsb-dsb","usb","usb-complex","usb-dsb"]
 
-# Dictionary with pass/fail status of each test {"test name" : [binary file same (true/false), FITS file same (true/false)]}
-passfail = {"complex-complex":[True,True],"lsb":[True,True],"lsb-complex":[True,True],"lsb-dsb":[True,True],"usb":[True,True],"usb-complex":[True,True],"usb-dsb":[True,True]}
 
-#  
-for testname in test_name_list:
-  rm_output_files(testname)
-  runtest(testname)
 
-# Run comparison with the results
-for testname in test_name_list:
-  compare_results(testname)
+def main():
 
-if (updatetest == "YES"):
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--generateVDIF", help="Generate VDIF data? (yes/[no])",default="no")
+  parser.add_argument("--updatetest", help="Update the default test results (yes/[no])",default="no") 
+  parser.add_argument("--abstol",help="Update the absolute tolerance for FITS file comparison (default = 1e-6)",default=1e-6)
+  parser.add_argument("--reltol",help="relative tolerance for FITS file comparison (default = 1e-6)",default=1e-6)
+
+  input_args = parser.parse_args()
+  generateVDIF = input_args.generateVDIF
+  generateVDIF = generateVDIF.upper()
+  updatetest = input_args.updatetest
+  updatetest = updatetest.upper()
+  reltol = input_args.reltol
+  abstol = input_args.abstol
+
+  # list of test names
+  test_name_list = ["complex-complex","lsb","lsb-complex","lsb-dsb","usb","usb-complex","usb-dsb"]
+  # Dictionary with pass/fail status of each test {"test name" : [binary file same (true/false), FITS file same (true/false)]} 
+  passfail = {"complex-complex":[True,True],"lsb":[True,True],"lsb-complex":[True,True],"lsb-dsb":[True,True],"usb":[True,True],"usb-complex":[True,True],"usb-dsb":[True,True]}
+
+  # Upack tests if they haven't been already
+  unpackage_tests(test_name_list)
+  #quit()
+  # Generate synthetic VDIF data
+  if (generateVDIF == "YES" or (os.path.isdir("testdata") == False)):
+    create_test_data()
+   
+  # Run DiFX on  
   for testname in test_name_list:
-    update_test(testname)
-  repackage_tests(test_name_list)
+    rm_output_files(testname)
+    runtest(testname)
+  
+  # Run comparison with the results
+  for testname in test_name_list:
+    compare_results(testname,abstol,reltol)
+  
+  if (updatetest == "YES"):
+    for testname in test_name_list:
+      update_test(testname)
+    repackage_tests(test_name_list)
 
-#repackage_tests(test_name_list)
+if __name__ == "__main__":
+    main()
 
 
 
