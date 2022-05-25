@@ -20,12 +20,15 @@ CHECK_RESULTS = False # specifies whether to check results from subprocess() lau
 # xx/2015 v1.1 Harro Verkouter, improvements to preseve consistent mount points
 # 11/2015 v2.0 Jan Wagner, updated to use pyudev instead of 3rd party 'lsscsi'
 # 05/2017 v2.1 Jan Wagner, don't depend on installed disks to determine number of SAS cards installed
+# 05/2022 v2.2 Jan Wagner, add support for multiple expansion chassis but still just max 16 disks per SAS controller card
 
 # Helpful to add to sudoers:
 # %oper ALL=(root) NOPASSWD:/bin/mount
 # %oper ALL=(root) NOPASSWD:/bin/umount
 # %oper ALL=(root) NOPASSWD:/bin/chmod
 # %oper ALL=(root) NOPASSWD:/bin/chown
+
+MAX_DISKS_PER_SAS = 16
 
 def list_MPT2SAS_disks():
 	list = []
@@ -37,7 +40,7 @@ def list_MPT2SAS_disks():
 		pdev = dev.find_parent('pci')
 		if (pdev == None):
 			continue
-		if (pdev.driver == 'mpt2sas'):
+		if (pdev.driver == 'mpt2sas' or pdev.driver == 'mpt3sas'):
 			# DEVPATH /sys/devices/pci0000:00/0000:00:02.0/0000:06:00.0/host0/port-0:0/end_device-0:0/target0:0:0/0:0:0:0/block/sdb
 			# Controllers may have target0:0:0, target1:0:0, target17:0:0, ... depending perhaps on PCIe slot (0, 1, 17, ...)
 			# Since target<n> numbers n are not known in advance we don't use <n>, but replace it with an index (0,1,2,...)
@@ -50,7 +53,7 @@ def list_MPT2SAS_disks():
 	# Now find partitions on disks behind controllers
 	for dev in context.list_devices(subsystem='block', DEVTYPE='partition'):
 		pdev = dev.find_parent('pci')
-		if (pdev.driver == 'mpt2sas'):
+		if (pdev.driver == 'mpt2sas' or pdev.driver == 'mpt3sas'):
 			entry = {}
 			entry['devnode'] = dev.device_node
 			entry['fs'] = dev.get('ID_FS_TYPE')
@@ -65,16 +68,24 @@ def list_MPT2SAS_disks():
 			#  - SAS targets 8-15 on controller 0 are in "module 2" in "slots 0-7"
 			#  - SAS targets  0-7 on controller 1 are in "module 3" in "slots 0-7"
 			#  - SAS targets 8-15 on controller 1 are in "module 4" in "slots 0-7"
+			#
+			# However:
+			#  - SAS targets 16-31 on each mpt2sas controller on mark6-02 for some reason, breaking the above assumption
+			#  - SAS targets 16-31 on each mpt3sas controller and curiously targets 8-23 on mpt2sas, maybe wrong cabling?
+			#  => how to reliably number any of these, accross different Mark6 mobo+sas hardware versions? or is it a cabling error?
+
 			dp = dev['DEVPATH']
 			h = int(re.search('\/host([0-9]*)\/',dp).group(1))
 			m = ctrl_ids.index(h)
 			t = re.search('\/target([0-9]*:[0-9]*:[0-9]*)\/',dp).group(1)
 			t = [int(x) for x in t.split(':')]
-			if (t[-1] > 15):
-				# print('Unexpected target nr %d not in range of 0-15!' % (t[-1]))
-				t[-1] = int(t[-1]) % 16
-			entry['mk6_module'] = (1 + t[-1]/8) + 2*m  # 1-based count
-			entry['mk6_slot']   = t[-1] % 8            # 0-based count
+			t = int(t[-1])
+			# print(pdev.driver, dp, ' hostNr ', h, ' ctrl ', m, ' target ', t)
+			if (t > (MAX_DISKS_PER_SAS-1)):
+				# print('Unexpected target nr %d not in range of 0-%d! Changing it to %d' % (t,MAX_DISKS_PER_SAS-1,t % MAX_DISKS_PER_SAS))
+				t = t % MAX_DISKS_PER_SAS
+			entry['mk6_module'] = t/8 + 2*m +1     # 1-based count
+			entry['mk6_slot']   = t % 8            # 0-based count
 			if dp[-1]=='1':
 				entry['mk6_mountpoint'] = MARK6_ROOT % (entry['mk6_module'],entry['mk6_slot'])
 			elif dp[-1]=='2':
@@ -89,14 +100,14 @@ def list_MPT2SAS_disks():
 def mount(dev,dir):
 	print('Mounting %s to %s' % (dev,dir))
 	p = []
-	p.append( subprocess.Popen(["/usr/bin/sudo", "/bin/mount", dev, dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
-	p.append( subprocess.Popen(["/usr/bin/sudo", "/bin/chmod", "775", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
-	p.append( subprocess.Popen(["/usr/bin/sudo", "/bin/chown", "oper:mark6", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
+	p.append( subprocess.Popen(["/usr/bin/sudo", "/bin/mount", dev, dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL) )
+	p.append( subprocess.Popen(["/usr/bin/sudo", "/bin/chmod", "775", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL) )
+	p.append( subprocess.Popen(["/usr/bin/sudo", "/bin/chown", "oper:mark6", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL) )
 	return p
 
 def unmount(dir):
 	print('Unmounting %s' % (dir))
-	p = subprocess.Popen(["/usr/bin/sudo", "/bin/umount", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	p = subprocess.Popen(["/usr/bin/sudo", "/bin/umount", dir], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL)
 	return [p]
 
 def mount_all():
@@ -116,7 +127,7 @@ def unmount_invisible():
 
 	query = subprocess.Popen(["/usr/bin/sudo", "/bin/mount"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	(out,rc) = query.communicate()
-	allmounts = out.split('\n')
+	allmounts = str(out).split('\n')
 
 	p = []
 	for entry in allmounts:
