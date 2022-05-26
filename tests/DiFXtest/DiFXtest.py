@@ -84,7 +84,7 @@ def runtest(testname):
 def compare_results(testname, abstol, reltol):
 
   # results list [Binary file same as benchmark?,FITS file same as benchmark?]
-  results = [True,True]
+  results = ["",True]
 
   current_directory = os.getcwd()
   working_directory = current_directory + "/" + testname + "/"   
@@ -104,13 +104,20 @@ def compare_results(testname, abstol, reltol):
   #print(fits_file)
   hdu1 = fits.open(fits_file)
   hdu2 = fits.open(fits_file_benchmark) 
-  fd = fits.FITSDiff(hdu1, hdu2, ignore_keywords=['DATE-MAP','CDATE','HISTORY'], atol=abstol , rtol=tolerance)  
+  fd = fits.FITSDiff(hdu1, hdu2, ignore_keywords=['DATE-MAP','CDATE','HISTORY'], atol=abstol , rtol=reltol)  
   diff_fitslog = working_directory + "/fits_diff.log"  
   output = fd.report(fileobj=diff_fitslog, indent=0, overwrite=True) 
   results[1] = fd.identical
-  print("comparing fits_file = " + fits_file + " VS. benchmark fits file = " + fits_file_benchmark)
-  print(fd.identical)
+  #print("comparing fits_file = " + fits_file + " VS. benchmark fits file = " + fits_file_benchmark)
+  #print(fd.identical)
   #print(output)
+
+  fp_binary_diff_file = working_directory + 'binary_diff.log'
+  with open(fp_binary_diff_file, 'r') as f:
+    last_line = f.readlines()[-1]
+  last_line = last_line.strip('\n')
+  results[0] = last_line
+
   return(results)
 
 def update_test(testname):
@@ -205,8 +212,28 @@ def create_test_data():
   #print(args)
   subprocess.call(args,shell=True)
 
+def display_test_results(passfail):
 
+  print()
+  print()
+  print("FITS FILE COMPARISON TEST RESULTS:")
+  print()
+  for testname in passfail:
+    fit_result = "FAIL"
+    if (passfail[testname][1]): fits_result = "PASS"
+    string = "{0:20}{1}".format(testname, fits_result)
+    print(string)
 
+  print()
+  print()
+  print("BINARY FILE COMPARISON TEST RESULTS:")
+  print()
+  for testname in passfail:
+    binary_result = passfail[testname][0]
+    string = "{0:20}{1}".format(testname,binary_result)
+    print(string)
+
+  
 
 
 def main():
@@ -222,13 +249,13 @@ def main():
   generateVDIF = generateVDIF.upper()
   updatetest = input_args.updatetest
   updatetest = updatetest.upper()
-  reltol = input_args.reltol
-  abstol = input_args.abstol
+  reltol = float(input_args.reltol)
+  abstol = float(input_args.abstol)
 
   # list of test names
   test_name_list = ["complex-complex","lsb","lsb-complex","lsb-dsb","usb","usb-complex","usb-dsb"]
-  # Dictionary with pass/fail status of each test {"test name" : [binary file same (true/false), FITS file same (true/false)]} 
-  passfail = {"complex-complex":[True,True],"lsb":[True,True],"lsb-complex":[True,True],"lsb-dsb":[True,True],"usb":[True,True],"usb-complex":[True,True],"usb-dsb":[True,True]}
+  # Dictionary with pass/fail status of each test {"test name" : [binary file same (results), FITS file same (true/false)]} 
+  passfail = {"complex-complex":["",True],"lsb":["",True],"lsb-complex":["",True],"lsb-dsb":["",True],"usb":["",True],"usb-complex":["",True],"usb-dsb":["",True]}
 
   # Upack tests if they haven't been already
   unpackage_tests(test_name_list)
@@ -238,18 +265,20 @@ def main():
     create_test_data()
    
   # Run DiFX on  
-  for testname in test_name_list:
-    rm_output_files(testname)
-    runtest(testname)
+#  for testname in test_name_list:
+#    rm_output_files(testname)
+#    runtest(testname)
   
   # Run comparison with the results
   for testname in test_name_list:
-    compare_results(testname,abstol,reltol)
+    passfail[testname] = compare_results(testname,abstol,reltol)
   
   if (updatetest == "YES"):
     for testname in test_name_list:
       update_test(testname)
     repackage_tests(test_name_list)
+
+  display_test_results(passfail)
 
 if __name__ == "__main__":
     main()
