@@ -330,21 +330,24 @@ grep ^if.station $ers.conf | sort | uniq -c
 for r in $roots ; do fourfit -bA? -c $ers.conf $r & done ; wait
 fplot */A[^A].B*
 ### first-root
-### SNR LL  RR  LR  RL
+### SNR LL  RR  LR  RL  scan-name
 ### ...
 ### second-root
-### SNR LL  RR  LR  RL
+### SNR LL  RR  LR  RL  scan-name
 ### ...
 
-# be sure to clean up afterwards, especially to move $expn aside
+#
+# Reset jobs so that it reflects all the data brought in by prepolconvert:
+# now clean up to restore a clean directory, especially to move $expn aside
 cd ..
+jobs=`ls $exp-$vers-${subv}_*.input` ; echo $jobs
 cp -p $expn/$ers.conf .
 cp -p $expn/$ers.conf $release/logs
 mv $expn ff-conf-$expn
 rm -rf ${jobs//input/*}
 # this should be a short list (i.e. no DiFX job files):
-ls -latr | grep -v .ms.
-# now have $ers.conf
+ls -latr | grep -v .ms. | grep -v README | grep -v qa2
+# and now we have $ers.conf for the grind below
 } # ONE TIME SETUP
 
 #--------------------------------------------------------------------------
@@ -450,6 +453,8 @@ cp -p $ers-$expn.alist  $release/logs
 for pc in $plst
 do  $ehtc/ehtc-antab.sh $subv $pc $ers true
     cp -p $ers-$pc-antab.pdf $release/logs ; done
+# if you need to diagnose bad behavior, do it with verbose commentary:
+# verb=true $ehtc/ehtc-antab.sh ...
 
 # check on progress/missing scans (incrementally or when done):
 $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -c $exp.codes -K |\
