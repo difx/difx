@@ -219,7 +219,7 @@ def display_test_results(passfail):
   print("FITS FILE COMPARISON TEST RESULTS:")
   print()
   for testname in passfail:
-    fit_result = "FAIL"
+    fits_result = "FAIL"
     if (passfail[testname][1]): fits_result = "PASS"
     string = "{0:20}{1}".format(testname, fits_result)
     print(string)
@@ -265,9 +265,9 @@ def main():
     create_test_data()
    
   # Run DiFX on  
-#  for testname in test_name_list:
-#    rm_output_files(testname)
-#    runtest(testname)
+  for testname in test_name_list:
+    rm_output_files(testname)
+    runtest(testname)
   
   # Run comparison with the results
   for testname in test_name_list:
