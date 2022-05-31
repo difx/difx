@@ -7,6 +7,16 @@ import shutil
 from astropy.io import fits 
 
 
+def pre_checks():
+  locate = None
+  locate = shutil.which('mpifxcorr')
+  if (locate == None):
+    print('mpifxcorr not found please make sure DiFX is installed')
+    quit()
+  locate = shutil.which('generateVDIF')
+  if (locate == None):
+    print('generateVDIF not found, please make sure it is installed.')  
+    quit()
 
 
 
@@ -232,7 +242,10 @@ def display_test_results(passfail):
     binary_result = passfail[testname][0]
     string = "{0:20}{1}".format(testname,binary_result)
     print(string)
-
+  print()
+  print()
+  print('For more information please inspect the full log files located within each test directory *testname*/binary_diff.log  *testname*/fits_diff.log') 
+  
   
 
 
@@ -251,6 +264,8 @@ def main():
   updatetest = updatetest.upper()
   reltol = float(input_args.reltol)
   abstol = float(input_args.abstol)
+
+  pre_checks()
 
   # list of test names
   test_name_list = ["complex-complex","lsb","lsb-complex","lsb-dsb","usb","usb-complex","usb-dsb"]
