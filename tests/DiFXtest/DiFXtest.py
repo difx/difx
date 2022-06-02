@@ -5,7 +5,7 @@ import subprocess
 import argparse
 import shutil
 from astropy.io import fits 
-
+import warnings
 
 def pre_checks():
   locate = None
@@ -67,26 +67,49 @@ def rm_output_files(testname):
 def runtest(testname):
   current_directory = os.getcwd() 
   working_directory = current_directory + "/" + testname + "/"
+
+  vex2difxlogfile = working_directory + "/vex2difx.log"
+  vex2difxerrfile = working_directory + "/vex2difx.error"
+  f_vex2difxlog = open(vex2difxlogfile,"w")
+  f_vex2difxerr = open(vex2difxerrfile,"w")
+
+
+
   arg = "vex2difx test-" + testname + ".v2d"
-  proc =subprocess.Popen(arg,cwd=working_directory,shell=True)
+  proc =subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_vex2difxlog,stderr=f_vex2difxerr)
   proc.wait()
 
+  difxcalclogfile = working_directory + "/difxcalc.log"
+  difxcalcerrfile = working_directory + "/difxcalc.error"
+  f_difxcalclog = open(difxcalclogfile,"w")
+  f_difxcalcerr = open(difxcalcerrfile,"w")
+
   arg = "difxcalc test-" + testname + ".calc", 
-  subprocess.Popen(arg,cwd=working_directory,shell=True)
+  subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_difxcalclog,stderr=f_difxcalcerr)
   proc.wait()
   arg = "mpirun -machinefile machines -np 4 mpifxcorr test-" + testname + ".input"
+  difxlogfile = working_directory + "/mpifxcorr.log"
+  difxerrfile = working_directory + "/mpifxcorr.error"
+  f_difxlog = open(difxlogfile,"w")
+  f_difxerr = open(difxerrfile,"w")
 
   mpifxcorr_done = False
   # DiFX fails sometimes, re-run until it succeeds (need better fix here...)
   while (mpifxcorr_done == False):
-    proc = subprocess.call(arg,cwd=working_directory,shell=True)
+    proc = subprocess.call(arg,cwd=working_directory,shell=True,stdout=f_difxlog,stderr=f_difxerr)
     contents = os.listdir(working_directory)
     for item in contents: 
       if (item[-5:] == '.difx'):
         mpifxcorr_done = True
   #proc.wait()
+  difx2fitslogfile = working_directory + "/difx2fits.log"
+  difx2fitserrfile = working_directory + "/difx2fits.error"
+  f_difx2fitslog = open(difx2fitslogfile,"w")
+  f_difx2fitserr = open(difx2fitserrfile,"w")
+
+
   arg = "difx2fits test-" + testname
-  proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
+  proc = subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_difx2fitslog,stderr=f_difx2fitserr)
   proc.wait()
  # quit()
 
@@ -114,10 +137,18 @@ def compare_results(testname, abstol, reltol):
   #print(fits_file)
   hdu1 = fits.open(fits_file)
   hdu2 = fits.open(fits_file_benchmark) 
+
+  warnings.resetwarnings()
+  warnings.filterwarnings('ignore', category=UserWarning, append=True) 
+
   fd = fits.FITSDiff(hdu1, hdu2, ignore_keywords=['DATE-MAP','CDATE','HISTORY'], atol=abstol , rtol=reltol)  
   diff_fitslog = working_directory + "/fits_diff.log"  
   output = fd.report(fileobj=diff_fitslog, indent=0, overwrite=True) 
   results[1] = fd.identical
+  hdu1.close()
+  hdu2.close()
+  #warnings.resetwarnings()
+  #warnings.filterwarnings('always', category=UserWarning, append=True)
   #print("comparing fits_file = " + fits_file + " VS. benchmark fits file = " + fits_file_benchmark)
   #print(fd.identical)
   #print(output)
