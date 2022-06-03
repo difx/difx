@@ -71,7 +71,8 @@ static void usage(const char *pgm)
 	printf("\n");
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("A Mark5 filterbank.  Can use VLBA, Mark3/4, and Mark5B formats using the\nmark5access library.\n\n");
+	printf("A Mark5 filterbank.  Can use VLBA, Mark3/4, Mark5B, and single-thread\n");
+	printf("VDIF formats using the\nmark5access library.\n\n");
 	printf("Usage : %s <infile> <dataformat> <nchan> <dint> <outfile> [<offset>]\n\n", program);
 	printf("  <infile> is the name of the input file\n\n");
 	printf("  <dataformat> should be of the form: "
@@ -81,7 +82,7 @@ static void usage(const char *pgm)
 	printf("    Mark5B-512-16-2\n");
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
 	printf("  alternatively for VDIF and CODIF, Mbps can be replaced by <FramesPerPeriod>m<AlignmentSeconds>, e.g.\n");
-	printf("    VDIF_1000-64000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
+	printf("    VDIF_1000-8000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
 	printf("    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27  ~= 76 Mbps\n");
 	printf("    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");
 	printf("  <nchan> is the number of channels to make per IF\n\n");

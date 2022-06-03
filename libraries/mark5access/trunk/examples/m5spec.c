@@ -68,7 +68,8 @@ static void usage(const char *pgm)
 	printf("\n");
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("A Mark5 spectrometer.  Can use VLBA, Mark3/4, Mark5B, and single-\nthread VDIF formats using the mark5access library.\n\n");
+	printf("A Mark5 spectrometer.  Can use VLBA, Mark3/4, Mark5B, and single-thread");
+	printf("VDIF formats using the mark5access library.\n\n");
 	printf("Usage : %s [options] <infile> <dataformat> <nchan> <nint> <outfile> [<offset>]\n\n", program);
 	printf("  <infile> is the name of the input file\n\n");
 	printf("  <dataformat> should be of the form: "

@@ -154,7 +154,7 @@ static void usage()
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("A Mark5 time domain filter. Extracts a narrow subband from a wideband recording.\n\n");
-	printf("Can use VLBA, Mark3/4, and Mark5B formats using the mark5access library.\n\n");
+	printf("Can use VLBA, Mark3/4, Mark5B and single-thread VDIF formats using the mark5access library.\n\n");
 	printf("Usage : m5subband [--refmjd=<n>] [--wf=Hann|cos|box] [--npts=<n>] [--trunc]\n");
 	printf("                  [--no-leading|--leading] [--no-tailing|--tailing]\n");
 	printf("                  <infile> <dataformat> <outfile> <if_nr> <qf> <f0> <f1> [<offset>]\n\n");
@@ -173,7 +173,7 @@ static void usage()
 	printf("    Mark5B-512-16-2\n");
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n");
 	printf("  alternatively for VDIF and CODIF, Mbps can be replaced by <FramesPerPeriod>m<AlignmentSeconds>, e.g.\n");
-	printf("    VDIF_1000-64000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
+	printf("    VDIF_1000-8000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
 	printf("    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27  ~= 76 Mbps\n");
 	printf("    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");
 	printf("  <outfile> is the output VDIF file for the extracted subband\n\n");

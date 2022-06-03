@@ -60,7 +60,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "\n");
 
 	fprintf(stderr, "%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	fprintf(stderr, "A Mark5 power folder.  Can use VLBA, Mark3/4, Mark5B and VDIF " "formats using the\nmark5access library.\n\n");
+	fprintf(stderr, "A Mark5 power folder.  Can use VLBA, Mark3/4, Mark5B and single-thread VDIF\n"); 
+	fprintf(stderr, "formats using the\nmark5access library.\n\n");
 	fprintf(stderr, "Usage: %s <infile> <dataformat> <nbin> <nint> <freq> <outfile> [<offset>]\n\n", program);
 	fprintf(stderr, "  <infile> is the name of the input file\n\n");
 	fprintf(stderr, "  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
@@ -69,7 +70,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "    Mark5B-512-16-2\n");
 	fprintf(stderr, "    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
 	fprintf(stderr, "  alternatively for VDIF and CODIF, Mbps can be replaced by <FramesPerPeriod>m<AlignmentSeconds>, e.g.\n");
-	fprintf(stderr, "    VDIF_1000-64000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
+	fprintf(stderr, "    VDIF_1000-8000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
 	fprintf(stderr, "    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27  ~= 76 Mbps\n");
 	fprintf(stderr, "    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");
 	fprintf(stderr, "  <nbin> is the number of bins per if across 1 period\n");
