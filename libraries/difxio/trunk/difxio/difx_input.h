@@ -685,7 +685,6 @@ typedef struct
 	int nIF;		/* maximum num IF across configs */
 	int nPol;		/* maximum num pol across configs */
 	int AntPol;		/* 1 for antenna defined polarizations */
-	int polxy2hv;		/* if 1, then polarization X/Y is transformed to H/V */
 	int AllPcalTones;	/* if 1, then all phase calibration tomes are extracted */
 	int doPolar;		/* 0 if not, 1 if so */
 	int nPolar;		/* nPol*(doPolar+1) */

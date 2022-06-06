@@ -293,7 +293,6 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxM
 	D->nOutChan = D1->nOutChan;
 	D->AntPol   = D1->AntPol;
 	D->AllPcalTones = D1->AllPcalTones;
-	D->polxy2hv = D1->polxy2hv;
 	if(D1->visBufferLength > D2->visBufferLength)
 	{
 		D->visBufferLength = D1->visBufferLength;
