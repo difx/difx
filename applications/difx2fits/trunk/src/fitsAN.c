@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2022 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,7 +32,7 @@
 #include "config.h"
 #include "difx2fits.h"
 
-const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
 	/*  define the antenna characteristic FITS table columns */
 	char bandFormFloat1[8];
@@ -105,7 +105,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 	start = D->mjdStart - (int)D->mjdStart;
 	stop  = D->mjdStop  - (int)D->mjdStart; 
 
-        if(D->AntPol == 0)
+        if(opts->antpol == 0)
 	{
 		arrayId1 = 1;
 		switch(D->polPair[0])
@@ -166,7 +166,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 			antId1 = antennaId + 1;	  /* FITS antId1 starts at 1 */
 			strcpypad(antName, D->antenna[antennaId].name, 8);
 
-			if(D->AntPol == 1 && D->nPolar > 1)
+			if(opts->antpol && D->nPolar > 1)
 			{
 				if(D->antenna[antennaId].pol[0] == 'R' ||
 				   D->antenna[antennaId].pol[0] == 'L' ||
@@ -181,15 +181,15 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 				   D->antenna[antennaId].pol[1] == 'X' ||
 				   D->antenna[antennaId].pol[1] == 'Y')
 				{
-					if(D->polxy2hv == 0)
-					{
-						polTypeA = 'X';
-						polTypeB = 'Y';
-					}
-					else
+					if(opts->polxy2hv)
 					{
 						polTypeA = 'H';
 						polTypeB = 'V';
+					}
+					else
+					{
+						polTypeA = 'X';
+						polTypeB = 'Y';
 					}
 				}
 				if(D->antenna[antennaId].pol[0] == 'H' ||

@@ -1,3 +1,13 @@
+
+Version 3.7.0
+* Post DiFX-2.6
+* python3 conversion: showcal, plotpcal, plotpcal2, gentcal, makefits
+* add --relabelCircular option that will simply change the labeled  polarizations to R/L without any change to the processing.
+* pass CommandLineOptions to more of the major subroutines to improve the code
+* (along with corresponding difxio commit) remove polxy2hv from DifxInput
+* various pulse cal and polarizations additions as described below:
+
+
 Commit 10003 2021.04.30
 
 * Fixed a bug: presence of bad values in pcal file forced difx2calc to
@@ -7,7 +17,7 @@ Commit 10003 2021.04.30
 * Added extra check to ensure difx2fits does not skip dumping accumulated
   pcal phases and amplitudes.
 
-* Added a new feature in difx2fts: if --difx-pcal-interval 0, then
+* Added a new feature in difx2fits: if --difx-pcal-interval 0, then
   phase calibration phase and amplitude is averaged over an entire scan.
 
 
@@ -90,10 +100,6 @@ Commit 9637  2020.07.30
 
   Option --polxy2hv re-labels polarization XY to HV. This option works
   only if --antpol is applied.
-
-Version 3.7.0
-* Post DiFX-2.6
-* python3 conversion: showcal, plotpcal, plotpcal2, gentcal, makefits
 
 Version 3.6.0
 * SU table: make more IDI-FITS compliant

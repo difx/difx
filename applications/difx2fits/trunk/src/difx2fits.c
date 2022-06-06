@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2021 by Walter Brisken & Helge Rottmann            *
+ *   Copyright (C) 2008-2022 by Walter Brisken & Helge Rottmann            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -45,9 +45,6 @@ const double DefaultSniffInterval = 30.0;	/* sec */
 const double DefaultJobMatrixInterval = 20.0;	/* sec */
 const double DefaultDifxTsysInterval = 30.0;	/* sec */
 const double DefaultDifxPCalInterval = 30.0;	/* sec */
-const int    DefaultDifxAntPol       = 0;	
-const int    DefaultDifxPolXY2HV     = 0;	
-const int    DefaultDifxLocalDir     = 0;	
 const int    DefaultAllPcalTones     = 0;	
 
 /* FIXME: someday add option to specify EOP merge mode from command line */
@@ -162,6 +159,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --primary-band <pb> Add PRIBAND keyword with value <pb> to FITS file\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --relabelCircular   Change naming of all polarizations to R/L\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "%s responds to the following environment variables:\n", program);
 	fprintf(stderr, "    DIFX_GROUP_ID             If set, run with umask(2).\n");
 	fprintf(stderr, "    DIFX_VERSION              The DiFX version to report.\n");
@@ -192,9 +191,6 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts->jobMatrixDeltaT = DefaultJobMatrixInterval;
 	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
 	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
-	opts->antpol             = DefaultDifxAntPol; 
-	opts->polxy2hv           = DefaultDifxPolXY2HV; 
-	opts->localdir           = DefaultDifxLocalDir; 
 	opts->allpcaltones       = DefaultAllPcalTones;
 
 	return opts;
@@ -371,6 +367,10 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			{
 				opts->allpcaltones = 1;
 			}
+			else if(strcmp(argv[i], "--relabelCircular") == 0)
+			{
+				opts->relabelCircular = 1;
+			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
 				if(strcmp(argv[i], "--scale") == 0 ||
@@ -419,6 +419,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 						fprintf(stderr, "Illegal EOP merge mode: %s\n", argv[i]);
 						fprintf(stderr, "Legal values are: drop relaxed strict\n");
 						deleteCommandLineOptions(opts);
+
 						return 0;
 					}
 				}
@@ -439,6 +440,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 						fprintf(stderr, "Illegal clock merge mode: %s\n", argv[i]);
 						fprintf(stderr, "Legal values are: drop strict\n");
 						deleteCommandLineOptions(opts);
+
 						return 0;
 					}
 
@@ -583,9 +585,9 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 
 		return 0;
 	}
-        if(opts->polxy2hv == 1 && opts->antpol == 0)
+        if(opts->polxy2hv && !opts->antpol)
 	{
-		printf("Error: Option --polxy2hv can be used only togeather with opts->antpol \n");
+		printf("Error: Option --polxy2hv can be used only togeather with opts->antpol\n");
 		deleteCommandLineOptions(opts);
 
 		return 0;
@@ -766,7 +768,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPriv
 
 	printf("  AN -- antenna             ");
 	fflush(stdout);
-	D = DifxInput2FitsAN(D, &keys, out);
+	D = DifxInput2FitsAN(D, &keys, out, opts);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
@@ -778,7 +780,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPriv
 
 	printf("  ML -- model               ");
 	fflush(stdout);
-	D = DifxInput2FitsML(D, &keys, out, opts->phaseCentre);
+	D = DifxInput2FitsML(D, &keys, out, opts);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
@@ -790,7 +792,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPriv
 
 	printf("  MC -- model components    ");
 	fflush(stdout);
-	D = DifxInput2FitsMC(D, &keys, out, opts->phaseCentre);
+	D = DifxInput2FitsMC(D, &keys, out, opts);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
@@ -854,7 +856,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPriv
 
 	printf("  TS -- system temperature  ");
 	fflush(stdout);
-	D = DifxInput2FitsTS(D, &keys, out, opts->phaseCentre, opts->DifxTsysAvgSeconds);
+	D = DifxInput2FitsTS(D, &keys, out, opts);
 	if(out->bytes_written == last_bytes)
 	{
 		printf("No table written\n");
@@ -867,7 +869,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPriv
 
 	printf("  PH -- phase cal           ");
 	fflush(stdout);
-	D = DifxInput2FitsPH(D, &keys, out, opts->phaseCentre, opts->DifxPcalAvgSeconds, opts->verbose);
+	D = DifxInput2FitsPH(D, &keys, out, opts);
 	printf("                            ");
 	if(out->bytes_written == last_bytes)
 	{
@@ -929,6 +931,76 @@ static void deleteDifxInputSet(DifxInput **Dset, int n)
 	}
 }
 
+/* without modifying the data itself change any polarization label that is not R/L into R/L */
+/* X or H -> R */
+/* Y or V -> L */
+static void relabelCircular(DifxInput *D)
+{
+	int i, j, f;
+
+	for(f = 0; f < D->nFreqSet; ++f)
+	{
+		for(i = 0; i < D->freqSet[f].nIF; ++i)
+		{
+			for(j = 0; j < D->freqSet[f].IF[i].nPol; ++j)
+			{
+				if(D->freqSet[f].IF[i].pol[j] == 'X' || D->freqSet[f].IF[i].pol[j] == 'H')
+				{
+					D->freqSet[f].IF[i].pol[j] = 'R';
+				}
+				if(D->freqSet[f].IF[i].pol[j] == 'Y' || D->freqSet[f].IF[i].pol[j] == 'V')
+				{
+					D->freqSet[f].IF[i].pol[j] = 'L';
+				}
+			}
+		}
+	}
+
+	for(i = 0; i < D->nConfig; ++i)
+	{
+		for(j = 0; j < D->config[i].nPol; ++j)
+		{
+			if(D->config[i].pol[j] == 'X' || D->config[i].pol[j] == 'H')
+			{
+				D->config[i].pol[j] = 'R';
+			}
+			if(D->config[i].pol[j] == 'Y' || D->config[i].pol[j] == 'V')
+			{
+				D->config[i].pol[j] = 'L';
+			}
+		}
+	}
+
+	for(i = 0; i < D->nDatastream; ++i)
+	{
+		for(j = 0; j < D->datastream[i].nRecBand; ++j)
+		{
+			if(D->datastream[i].recBandPolName[j] == 'X' || D->datastream[i].recBandPolName[j] == 'H')
+			{
+				D->datastream[i].recBandPolName[j] = 'R';
+			}
+			if(D->datastream[i].recBandPolName[j] == 'Y' || D->datastream[i].recBandPolName[j] == 'V')
+			{
+				D->datastream[i].recBandPolName[j] = 'Y';
+			}
+		}
+
+		for(j = 0; j < D->datastream[i].nZoomBand; ++j)
+		{
+			if(D->datastream[i].zoomBandPolName[j] == 'X' || D->datastream[i].zoomBandPolName[j] == 'H')
+			{
+				D->datastream[i].zoomBandPolName[j] = 'R';
+			}
+			if(D->datastream[i].zoomBandPolName[j] == 'Y' || D->datastream[i].zoomBandPolName[j] == 'V')
+			{
+				D->datastream[i].zoomBandPolName[j] = 'Y';
+			}
+		}
+	}
+
+	strcpy(D->polPair, "RL");
+}
+
 static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 {
 	DifxInput **Dset;
@@ -958,9 +1030,15 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 
 			return 0;
 		}
-                Dset[i]->AntPol       = opts->antpol;
-                Dset[i]->polxy2hv     = opts->polxy2hv;
-                Dset[i]->AllPcalTones = opts->allpcaltones;
+
+		/* BAD! Neither of the following parameters belong in the DifxInput struct. */
+		Dset[i]->AntPol       = opts->antpol;			/* FIXME: remove when not needed by difxio */
+		Dset[i]->AllPcalTones = opts->allpcaltones;		/* FIXME: remove when not needed by difxio */
+
+		if(opts->relabelCircular)
+		{
+			relabelCircular(Dset[i]);
+		}
 
 		Dset[i] = updateDifxInput(Dset[i], &opts->mergeOptions);
 

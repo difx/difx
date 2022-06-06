@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2022 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -330,7 +330,7 @@ static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, i
 	return 0;
 }
 
-static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, int jobId, int antId, int origDsId, double avgSeconds, int phaseCentre, int nRowBytes, char *fitsbuf, int nColumn, const struct fitsBinTableColumn *columns, struct fitsPrivate *out, DifxTcal *T, int nRec)
+static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, int jobId, int antId, int origDsId, const struct CommandLineOptions *opts, int nRowBytes, char *fitsbuf, int nColumn, const struct fitsBinTableColumn *columns, struct fitsPrivate *out, DifxTcal *T, int nRec)
 {
 	const int MaxLineLength=1000;
 	char line[MaxLineLength];
@@ -488,7 +488,7 @@ static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, in
 				s = mjd1;	/* usually this will be > scan->mjdStart */
 				e = scan->mjdEnd;
 
-				nWindow = (int)((e - s)/(avgSeconds/86400.0) + 0.5);
+				nWindow = (int)((e - s)/(opts->DifxTsysAvgSeconds/86400.0) + 0.5);
 
 				if(nWindow < 1)
 				{
@@ -518,7 +518,7 @@ static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, in
 		{
 			scan = D->scan + currentScanId;
 
-			if(nAccum > 0 && currentScanId >= 0 && currentConfigId >= 0 && phaseCentre < scan->nPhaseCentres && scan->phsCentreSrcs[phaseCentre] >= 0)
+			if(nAccum > 0 && currentScanId >= 0 && currentConfigId >= 0 && opts->phaseCentre < scan->nPhaseCentres && scan->phsCentreSrcs[opts->phaseCentre] >= 0)
 			{
 				int freqSetId;
 				char *p_fitsbuf;
@@ -527,7 +527,7 @@ static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, in
 				time = (accumStart + accumEnd)*0.5 - (int)(D->mjdStart);
 				timeInt = accumEnd - accumStart;
 
-				sourceId = scan->phsCentreSrcs[phaseCentre];
+				sourceId = scan->phsCentreSrcs[opts->phaseCentre];
 
 				/* 1-based values for FITS */
 				freqSetId = D->config[currentConfigId].freqSetId;
@@ -810,7 +810,7 @@ static int processTsysFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 	return nRec;
 }
 
-const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre, double DifxTsysAvgSeconds)
+const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
 	const int MaxDatastreamsPerAntenna=8;
 
@@ -909,7 +909,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 	}
 
 	/* Priority 1: look for Tsys in DiFX output */
-	if(DifxTsysAvgSeconds > 0.0)
+	if(opts->DifxTsysAvgSeconds > 0.0)
 	{
 		for(antId = 0; antId < D->nAntenna; ++antId)
 		{
@@ -922,7 +922,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 				n = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(origDsIds, D, antId, jobId, MaxDatastreamsPerAntenna);
 				for(i = 0; i < n; ++i)
 				{
-					v = getDifxTsys(D, p_fits_keys, jobId, antId, origDsIds[i], DifxTsysAvgSeconds, phaseCentre, nRowBytes, fitsbuf, nColumn, columns, out, T, nRec);
+					v = getDifxTsys(D, p_fits_keys, jobId, antId, origDsIds[i], opts, nRowBytes, fitsbuf, nColumn, columns, out, T, nRec);
 					if(v > nRec)
 					{
 						++alreadyHasTsys[antId];
@@ -959,7 +959,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 			continue;
 		}
 
-		v = processTsysFile(D, p_fits_keys, D->antenna[antId].name, phaseCentre, tsysFile, out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasTsys, refDay, year, nRec);
+		v = processTsysFile(D, p_fits_keys, D->antenna[antId].name, opts->phaseCentre, tsysFile, out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasTsys, refDay, year, nRec);
 		if(v > nRec)
 		{
 			++alreadyHasTsys[antId];
@@ -968,7 +968,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 	}
 
 	/* Priority 3: look for multi-station Tsys file called tsys */
-	nRec = processTsysFile(D, p_fits_keys, 0, phaseCentre, "tsys", out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasTsys, refDay, year, nRec);
+	nRec = processTsysFile(D, p_fits_keys, 0, opts->phaseCentre, "tsys", out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasTsys, refDay, year, nRec);
 
 	/*  free memory, and return */
 	free(alreadyHasTsys);

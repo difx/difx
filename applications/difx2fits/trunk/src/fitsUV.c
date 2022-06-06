@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2022 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -289,7 +289,7 @@ static double *getDifxScaleFactor(const DifxInput *D, double s)
 	return scale;
 }
 
-DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre, double scaleFactor)
+DifxVis *newDifxVis(const DifxInput *D, int jobId, const struct CommandLineOptions *opts, int pulsarBin, int phaseCentre)
 {
 	DifxVis *dv;
 	int freqSetId;
@@ -322,7 +322,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentr
 	dv->sourceId = -1;
 	dv->scanId = -1;
 	dv->baseline = -1;
-	dv->scale = getDifxScaleFactor(D, scaleFactor);
+	dv->scale = getDifxScaleFactor(D, opts->scale);
 	dv->pulsarBin = pulsarBin;
 	dv->phaseCentre = phaseCentre;
 	dv->keepAC = 1;
@@ -356,7 +356,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentr
 	dv->mjdLastRecord = (double *)calloc(D->nAntenna, sizeof(double));
 
 	/* check for polarization confusion */
-	if(D->AntPol == 0)
+	if(!opts->antpol)
 	{
 		if(isMixedPolMask(polMask) ||
 			(polMask & DIFXIO_POL_ERROR) != 0 ||
@@ -466,14 +466,14 @@ void deleteDifxVis(DifxVis *dv)
 }
 
 
-static int getPolProdId(const DifxVis *dv, const char *polPair)
+static int getPolProdId(const DifxVis *dv, const char *polPair, const struct CommandLineOptions *opts)
 {
 	const char polSeq[8][4] = {"RR", "LL", "RL", "LR", "XX", "YY", "XY", "YX"};
 	const char pol1st[3] = {'R', 'X', 'H'};
 	const char pol2nd[3] = {'L', 'Y', 'V'};
 	int p, ind_1st, ind_2nd;
 
-	if(dv->D->AntPol == 0)
+	if(!opts->antpol)
 	{
 		for(p = 0; p < 8; ++p)
 		{
@@ -495,7 +495,7 @@ static int getPolProdId(const DifxVis *dv, const char *polPair)
 	else
 	{
 //
-// --------- Case of antenna-based polarizaiton (dv->D->AntPol == 0)
+// --------- Case of antenna-based polarizaiton (opts->antpol == 0)
 // --------- Polarization order: A1A2  B1B2  A1B2  B1A2, where
 // --------- 1,2 are antenna indices and 
 // --------- A is the 1st polarization, B is the 2nd polarization
@@ -616,10 +616,6 @@ static void UVfitsDump(const DifxVis *dv)
 			{
 				for(k = 0; k < dv->D->nPolar; ++k)
 				{
-//					printf("UV mjd: %5.0f utc: %9.3f sta: %1d %1d If: %2d Ic: %3d Ip: %1d vis: %14.7e, %14.7e \n",
-//						dv->record->jd - 2400000.5, dv->record->utc*86400.0, a1, a2, i, j, k,
-//						dv->record->data[m]/dv->scale[a1]/dv->scale[a2]/dv->recweight,
-//						-dv->record->data[m+1]/dv->scale[a1]/dv->scale[a2]/dv->recweight);
 					printf("UV MJD: %5.0f utc: %9.3f sta: %1d %1d If: %2d Ic: %3d Ip: %1d vis: %14.7e, %14.7e \n",
 						dv->record->jd - 2400000.5, dv->record->utc*86400.0, a1, a2, i, j, k,
 						dv->record->data[m], dv->record->data[m+1]);
@@ -629,7 +625,8 @@ static void UVfitsDump(const DifxVis *dv)
 		}
 	}
 }
-int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
+
+int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts)
 {
 	int i, i1, v;
 	int antId1, antId2;	/* These reference the DifxInput Antenna */
@@ -704,7 +701,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 
 				return HEADER_READ_ERROR;
 			}
-			if(verbose > 3)
+			if(opts->verbose > 3)
 			{
 				fprintf(stdout, "Read a vis from baseline %d\n", configBaselineId);
 			}
@@ -753,7 +750,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	scanId = DifxInputGetScanIdByJobId(dv->D, mjd+utc, dv->jobId);
 	if(scanId < 0)
 	{
-		if(verbose > 2)
+		if(opts->verbose > 2)
 		{
 			printf("ScanID < 0 (= %d); skipping record\n", scanId);
 		}
@@ -781,7 +778,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	}
 	if(sourceId != scan->orgjobPhsCentreSrcs[dv->phaseCentre] && (configBaselineId % 257 != 0) ) //don't skip autocorrelations
 	{
-		if(verbose > 2)
+		if(opts->verbose > 2)
 		{
 			printf("Skipping record with sourceId %d because orgjobphaseCentresrc[%d] is %d\n", sourceId, dv->phaseCentre, scan->orgjobPhsCentreSrcs[dv->phaseCentre]);
 		}
@@ -798,7 +795,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	{
 		/* Nope! */
 		dv->flagTransition = 1;
-		if(verbose > 2)
+		if(opts->verbose > 2)
 		{
 			printf("Flag transition: mjd range=%12.6f to %12.6f\n", mjd+utc-dt2, mjd+utc+dt2);
 		}
@@ -812,7 +809,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 
 	if(dfs->freqId2IF[freqId] < 0)
 	{
-		if(verbose > 2)
+		if(opts->verbose > 2)
 		{
 			printf("Freq not used: freqId= %d freqSetId= %d configId= %d, ind= %d.  Skipping record.\n", freqId, config->freqSetId, configId, dfs->freqId2IF[freqId]);
 		}
@@ -847,7 +844,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	antId2 = dv->D->datastream[dsId2].antennaId;
 	bl = (antId1+1)*256 + (antId2+1);
 	
-	if(verbose >= 1 && scanId != dv->scanId)
+	if(opts->verbose >= 1 && scanId != dv->scanId)
 	{
 		printf("        MJD=%11.5f jobId=%d scanId=%d dv->scanId=%d Source=%s  FITS SourceId=%d\n", 
 			mjd+utc, dv->jobId, scanId, dv->scanId, 
@@ -859,7 +856,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	dv->sourceId = scan->phsCentreSrcs[dv->phaseCentre];
 	dv->freqId   = config->freqSetId;
 	dv->bandId   = dfs->freqId2IF[freqId];
-	dv->polId    = getPolProdId(dv, polPair);
+	dv->polId    = getPolProdId(dv, polPair, opts);
 
 	/* freqId should correspond to the freqId table for the actual sideband produced in the 
 	 * case of mixed-sideband correlation.  Check with Adam that this is true! */
@@ -926,8 +923,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 			    fabs(w - dv->W) > 10.0) && 
 			    !dv->flagTransition) 
 			{
-				printf("Warning: UVW diff: %d %d %d-%d %f %f  %f %f  %f %f  %f %f\n", 
-					scanId, n, antId1, antId2, mjd+utc, dt, u, dv->U, v, dv->V, w, dv->W);
+				printf("Warning: UVW diff: %d %d %d-%d %f %f  %f %f  %f %f  %f %f\n", scanId, n, antId1, antId2, mjd+utc, dt, u, dv->U, v, dv->V, w, dv->W);
 			}
 		}
 	}
@@ -961,7 +957,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	
 	if(dv->polId < 0 || dv->polId >= dv->D->nPolar)
 	{
-		if(configBaselineId % 257 == 0 && skipextraautocorrs)
+		if(configBaselineId % 257 == 0 && opts->skipExtraAutocorrs)
 		{
 			// Silently ignore e.g. LL autocorrelations in an RR-only correlation
 			return SKIPPED_RECORD;
@@ -1219,7 +1215,7 @@ static int storevis(DifxVis *dv)
 	return 0;
 }
 
-static int readvisrecord(DifxVis *dv, int verbose, int skipextraautocorrs, int *nSkipped_recs)
+static int readvisrecord(DifxVis *dv, const struct CommandLineOptions *opts, int *nSkipped_recs)
 {
 	/* blank array */
 	memset(dv->weight, 0, dv->nFreq*dv->D->nPolar*sizeof(float));
@@ -1235,8 +1231,8 @@ static int readvisrecord(DifxVis *dv, int verbose, int skipextraautocorrs, int *
 		{
 			storevis(dv);
 		}
-		dv->changed = DifxVisNewUVData(dv, verbose, skipextraautocorrs);
-		if(verbose > 3)
+		dv->changed = DifxVisNewUVData(dv, opts);
+		if(opts->verbose > 3)
 		{
 			printf("readvisrecord: changed is %d\n", dv->changed);
 		}
@@ -1348,7 +1344,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	/* here allocate all the "normal" DifxVis objects */
 	for(jobId = 0; jobId < D->nJob; ++jobId)
 	{
-		dvs[jobId] = newDifxVis(D, jobId, opts->pulsarBin, opts->phaseCentre, opts->scale);
+		dvs[jobId] = newDifxVis(D, jobId, opts, opts->pulsarBin, opts->phaseCentre);
 		if(!dvs[jobId])
 		{
 			fprintf(stderr, "Error allocating DifxVis[%d/%d]\n", jobId, nDifxVis);
@@ -1371,7 +1367,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		/* here allocate special AC-only DifxVis objects */
 		for(jobId = 0; jobId < D->nJob; ++jobId)
 		{
-			dvs[jobId + D->nJob] = newDifxVis(D, jobId, 0, 0, opts->scale);
+			dvs[jobId + D->nJob] = newDifxVis(D, jobId, opts, 0, 0);
 			if(!dvs[jobId + D->nJob])
 			{
 				fprintf(stderr, "Error allocating DifxVis[%d/%d]\n", jobId + D->nJob, nDifxVis);
@@ -1497,7 +1493,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			fprintf(stdout, "Priming, dv=%d/%d\n", dvId, nDifxVis);
 		}
-		readvisrecord(dvs[dvId], opts->verbose, opts->skipExtraAutocorrs, &nSkipped_recs);
+		readvisrecord(dvs[dvId], opts, &nSkipped_recs);
 		if(opts->verbose > 3)
 		{
 			fprintf(stdout, "Done priming DifxVis objects\n");
@@ -1618,7 +1614,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 				return 0;
 			}
 
-			readvisrecord(dv, opts->verbose, opts->skipExtraAutocorrs, &nSkipped_recs);
+			readvisrecord(dv, opts, &nSkipped_recs);
 			nSkipped = nSkipped + nSkipped_recs;
 		}
 	}

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2018 by Walter Brisken                             *
+ *   Copyright (C) 2008-2022 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -72,10 +72,11 @@ struct CommandLineOptions
 	double jobMatrixDeltaT; /* seconds */
 	char *primaryBand;	/* for VLITE */
 	char *historyFile;	/* if set, dump contents to FITS history */
-	int  antpol;            /* if 1, then polarization is determined by antenna */        
-	int  polxy2hv;          /* if 1, then polarization X/Y is transformed to H/V */
-	int  localdir;          /* if 1, then *.calc, *.im, and *.difx are sought in the same directory as *.input files */
-	int  allpcaltones;      /* if 1, then all phase calibration tones are extactred */
+	int antpol;		/* if 1, then polarization is determined by antenna */        
+	int polxy2hv;		/* if 1, then polarization X/Y is transformed to H/V */
+	int localdir;		/* if 1, then *.calc, *.im, and *.difx are sought in the same directory as *.input files */
+	int allpcaltones;	/* if 1, then all phase calibration tones are extactred */
+	int relabelCircular;	/* if != 0, then relabel all polarizations as R/L regardless of their actual values */
 	DifxMergeOptions mergeOptions;
 };
 
@@ -89,33 +90,31 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsAN(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts);
 
 const DifxInput *DifxInput2FitsFR(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	const struct CommandLineOptions *opts);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts);
 
 const DifxInput *DifxInput2FitsML(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts);
 
 const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsMC(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts);
 
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, 
-	const struct CommandLineOptions *opts, int passNum);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts, int passNum);
 
 const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre, double DifxTcalAvgSeconds);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts);
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre, double DifxTcalAvgSeconds, int verbose);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts);
 
 const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
@@ -130,7 +129,6 @@ const DifxInput *DifxInput2FitsGD(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsGM(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	const struct CommandLineOptions *opts);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts);
 
 #endif

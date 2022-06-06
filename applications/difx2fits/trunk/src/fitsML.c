@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2022 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -45,7 +45,7 @@ static double current_mjd()
 	return MJD_UNIX0 + (t.tv_sec + t.tv_usec*1.0e-6)/86400.0;
 }
 		
-const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre)
+const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
 	char bandFormDouble[8];
 	char bandFormFloat[8];
@@ -178,7 +178,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			continue;
 		}
-		if(phaseCentre >= scan->nPhaseCentres)
+		if(opts->phaseCentre >= scan->nPhaseCentres)
 		{
 			continue;
 		}
@@ -186,7 +186,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 		config = D->config + configId;
 		dfs = D->freqSet + config->freqSetId;
 		freqId1 = config->freqSetId + 1;
-		sourceId1 = D->source[scan->phsCentreSrcs[phaseCentre]].fitsSourceIds[config->freqSetId] + 1;
+		sourceId1 = D->source[scan->phsCentreSrcs[opts->phaseCentre]].fitsSourceIds[config->freqSetId] + 1;
 
 		if(scan->im)
 		{
@@ -242,7 +242,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 					continue;
 				}
 
-				P = scan->im[antId][phaseCentre] + p;
+				P = scan->im[antId][opts->phaseCentre] + p;
 
 				time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
 				deltat = (P->mjd - da->clockrefmjd)*86400.0 + P->sec;
