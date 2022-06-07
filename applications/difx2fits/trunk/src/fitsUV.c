@@ -1631,7 +1631,10 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	printf("      %d out-of-time-range records dropped\n", nOld);
 	printf("      %d records skipped\n", nSkipped);
 	printf("      %d records written\n", nWritten);
-	printf("      FITS MJD range: %12.6f to %12.6f\n", firstMJD, lastMJD);
+	if(nWritten > 0)
+	{
+		printf("      FITS MJD range: %12.6f to %12.6f\n", firstMJD, lastMJD);
+	}
 	if(opts->verbose > 1)
 	{
 		printf("        Note : 1 record is all data from 1 baseline for 1 timestamp\n");

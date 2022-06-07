@@ -958,17 +958,10 @@ static void relabelCircular(DifxInput *D)
 
 	for(i = 0; i < D->nConfig; ++i)
 	{
-		for(j = 0; j < D->config[i].nPol; ++j)
-		{
-			if(D->config[i].pol[j] == 'X' || D->config[i].pol[j] == 'H')
-			{
-				D->config[i].pol[j] = 'R';
-			}
-			if(D->config[i].pol[j] == 'Y' || D->config[i].pol[j] == 'V')
-			{
-				D->config[i].pol[j] = 'L';
-			}
-		}
+		D->config[i].nPol = 2;
+		D->config[i].pol[0] = 'R';
+		D->config[i].pol[1] = 'L';
+		D->config[i].polMask = DIFXIO_POL_RL;
 	}
 
 	for(i = 0; i < D->nDatastream; ++i)
