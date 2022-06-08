@@ -1,19 +1,28 @@
 #!/usr/bin/env python3
 """
-Mark6 utility   m6sg_mount v2.1
+Mark6 utility   m6sg_mount v2.3
 
 Usage:  m6sg_mount [-u]
 
-With the '-u' option all scatter-gather disks are unmounted.
-With no options specified, all "diskpack" disks are mounted.
+By default mounts all disks of the connected Mark6 modules.
+
+With option '-u' all disks of the Mark6 modules are unmounted.
+
 The main purpose of this script is to avoid having to start cplane,
 then dplane, and then send the necessary da-client commands.
+
+If a config file is available (/etc/default/mark6_slots), with
+a controller id (like host0) one each config file line, the
+actually detected controllers are brought into that order
+before assigning Mark6 chassis slot-pairs 1+2, 3+4, etc.
 """
 
 import pyudev, re, subprocess, sys
+
 MARK6_ROOT = '/mnt/disks/%d/%d'
 MARK6_META = '/mnt/disks/.meta/%d/%d'
 CHECK_RESULTS = False # specifies whether to check results from subprocess() launches
+SLOTS_FILE = '/etc/default/mark6_slots'
 
 # Changelog:
 # xx/2015 v1.0 Jan Wagner, basic version for quick (un)mounting
@@ -21,6 +30,7 @@ CHECK_RESULTS = False # specifies whether to check results from subprocess() lau
 # 11/2015 v2.0 Jan Wagner, updated to use pyudev instead of 3rd party 'lsscsi'
 # 05/2017 v2.1 Jan Wagner, don't depend on installed disks to determine number of SAS cards installed
 # 05/2022 v2.2 Jan Wagner, add support for multiple expansion chassis but still just max 16 disks per SAS controller card
+# 06/2022 v2.3 Jan Wagner, read config /etc/default/mark6_slots containing local host controller names in order of slot-pair assignment
 
 # Helpful to add to sudoers:
 # %oper ALL=(root) NOPASSWD:/bin/mount
@@ -29,6 +39,22 @@ CHECK_RESULTS = False # specifies whether to check results from subprocess() lau
 # %oper ALL=(root) NOPASSWD:/bin/chown
 
 MAX_DISKS_PER_SAS = 16
+
+def sort_MPT2SAS_controller_list(ctlist):
+	'''
+	Sort a list of controller IDs (such as ['host0','host11','host13']) according
+	to the fixed order of any matching entries from a user config file - if available.
+	'''
+	with open(SLOTS_FILE) as cfg:
+		user_order = [entry.strip() for entry in cfg.readlines() if len(entry.strip())>0]
+		if len(user_order) > 0:
+			sorted = []
+			for entry in user_order:
+				if entry in ctlist:
+					sorted.append(entry)
+					ctlist.remove(entry)
+			ctlist = sorted + ctlist
+	return ctlist
 
 def list_MPT2SAS_disks():
 	list = []
@@ -48,7 +74,9 @@ def list_MPT2SAS_disks():
 			h = int(re.search('\/host([0-9]*)',dp).group(1))
 			if h not in ctrl_ids:
 				ctrl_ids.append(h)
-	#ctrl_ids.sort() # sort by 'host<n>'? this may not reflect PCI bus order though!
+
+	# Sort the list according to matching entries in a config file if available
+	ctrl_ids = sort_MPT2SAS_controller_list(ctrl_ids)
 
 	# Now find partitions on disks behind controllers
 	for dev in context.list_devices(subsystem='block', DEVTYPE='partition'):
