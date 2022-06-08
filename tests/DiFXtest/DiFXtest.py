@@ -216,42 +216,89 @@ def create_test_data():
 
   
   # USB Real 
+  TEST1vdiflog = "testdata/TEST1.vdif.log"
+  TEST1vdiferrfile = "testdata/TEST1.vdif.error"
+  f_TEST1vdiflog = open(TEST1vdiflog,"w")
+  f_TEST1vdiferrfile = open(TEST1vdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED1)+" -w 4 -b 2 -C 1 -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.5 -year 2020 -dayno 100 -time 07:00:00 testdata/TEST1.vdif"
-  #print(args)
-  subprocess.call(args,shell=True)
+  subprocess.call(args,shell=True,stdout=f_TEST1vdiflog,stderr=f_TEST1vdiferrfile)
+
+
+  TEST2_usbvdiflog = "testdata/TEST2-usb.vdif.log"
+  TEST2_usbvdiferrfile = "testdata/TEST2-usb.vdif.error"
+  f_TEST2_usbvdiflog = open(TEST2_usbvdiflog,"w")
+  f_TEST2_usbvdiferrfile = open(TEST2_usbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l " + str(DURATION) + " -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 testdata/TEST2-usb.vdif"
-  #print(args)
-  subprocess.call(args,shell=True)
+  subprocess.call(args,shell=True,stdout=f_TEST2_usbvdiflog,stderr=f_TEST2_usbvdiferrfile)
   
   
   ## LSB Real
+  TEST2_lsbvdiflog = "testdata/TEST2-lsb.vdif.log"
+  TEST2_lsbvdiferrfile = "testdata/TEST2-lsb.vdif.error"
+  f_TEST2_lsbvdiflog = open(TEST2_lsbvdiflog,"w")
+  f_TEST2_lsbvdiferrfile = open(TEST2_lsbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l " + str(DURATION) + " -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -lsb testdata/TEST2-lsb.vdif"
-  #print(args)
-  subprocess.call(args,shell=True)
+  subprocess.call(args,shell=True,stdout=f_TEST2_lsbvdiflog,stderr=f_TEST2_lsbvdiferrfile)
   
   
   ## Complex (single side band)
+  TEST1_complex_usbvdiflog = "testdata/TEST1-complex-usb.vdif.log"
+  TEST1_complex_usbvdiferrfile = "testdata/TEST1-complex-usb.vdif.error"
+  f_TEST1_complex_usbvdiflog = open(TEST1_complex_usbvdiflog,"w")
+  f_TEST1_complex_usbvdiferrfile = open(TEST1_complex_usbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED1)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.5 -year 2020 -dayno 100 -time 07:00:00 -complex testdata/TEST1-complex-usb.vdif"
-  #print(args)
-  subprocess.call(args,shell=True)
+  subprocess.call(args,shell=True,stdout=f_TEST1_complex_usbvdiflog,stderr=f_TEST1_complex_usbvdiferrfile)
+
+  TEST2_complex_usbvdiflog = "testdata/TEST2-complex-usb.vdif.log"
+  TEST2_complex_usbvdiferrfile = "testdata/TEST2-complex-usb.vdif.error"
+  f_TEST2_complex_usbvdiflog = open(TEST2_complex_usbvdiflog,"w")
+  f_TEST2_complex_usbvdiferrfile = open(TEST2_complex_usbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert testdata/TEST2-complex-usb.vdif"
-  #print(args)
-  subprocess.call(args,shell=True)
+  subprocess.call(args,shell=True,stdout=f_TEST2_complex_usbvdiflog,stderr=f_TEST2_complex_usbvdiferrfile)
   
-  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert testdata/TEST2-complex-usb.vdif"
-  #print(args)
-  subprocess.call(args,shell=True)
+  TEST2_complex_lsbvdiflog = "testdata/TEST2-complex-lsb.vdif.log"
+  TEST2_complex_lsbvdiferrfile = "testdata/TEST2-complex-lsb.vdif.error"
+  f_TEST2_complex_lsbvdiflog = open(TEST2_complex_lsbvdiflog,"w")
+  f_TEST2_complex_lsbvdiferrfile = open(TEST2_complex_lsbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -lsb testdata/TEST2-complex-lsb.vdif"
-  #print(args)
-  subprocess.call(args,shell=True)
+  subprocess.call(args,shell=True,stdout=f_TEST2_complex_lsbvdiflog,stderr=f_TEST2_complex_lsbvdiferrfile)
   
+
+
   ## Complex (double side band)
+  TEST2_dsb_usbvdiflog = "testdata/TEST2-dsb-usb.vdif.log"
+  TEST2_dsb_usbvdiferrfile = "testdata/TEST2-dsb-usb.vdif.error"
+  f_TEST2_dsb_usbvdiflog = open(TEST2_dsb_usbvdiflog,"w")
+  f_TEST2_dsb_usbvdiferrfile = open(TEST2_dsb_usbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -doublesideband testdata/TEST2-dsb-usb.vdif"
-  #print(args)
-  subprocess.call(args,shell=True)
+  subprocess.call(args,shell=True,stdout=f_TEST2_dsb_usbvdiflog,stderr=f_TEST2_dsb_usbvdiferrfile)
+
+
+
+  TEST2_dsb_lsbvdiflog = "testdata/TEST2-dsb-lsb.vdif.log"
+  TEST2_dsb_lsbvdiferrfile = "testdata/TEST2-dsb-lsb.vdif.error"
+  f_TEST2_dsb_lsbvdiflog = open(TEST2_dsb_lsbvdiflog,"w")
+  f_TEST2_dsb_lsbvdiferrfile = open(TEST2_dsb_lsbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -doublesideband -lsb testdata/TEST2-dsb-lsb.vdif"
-  #print(args)
-  subprocess.call(args,shell=True)
+  subprocess.call(args,shell=True,stdout=f_TEST2_dsb_lsbvdiflog,stderr=f_TEST2_dsb_lsbvdiferrfile)
+  
+  f_TEST1vdiflog.close()
+  f_TEST1vdiferrfile.close()
+  f_TEST2_usbvdiflog.close()
+  f_TEST2_usbvdiferrfile.close()
+  f_TEST2_lsbvdiflog.close()
+  f_TEST2_lsbvdiferrfile.close()
+  f_TEST1_complex_usbvdiflog.close()
+  f_TEST1_complex_usbvdiferrfile.close()
+  f_TEST2_complex_usbvdiflog.close()
+  f_TEST2_complex_usbvdiferrfile.close()
+  f_TEST2_complex_lsbvdiflog.close()
+  f_TEST2_complex_lsbvdiferrfile.close()
+  f_TEST2_dsb_usbvdiflog.close()
+  f_TEST2_dsb_usbvdiferrfile.close()
+  f_TEST2_dsb_lsbvdiflog.close()
+  f_TEST2_dsb_lsbvdiferrfile.close()
+
 
 def display_test_results(passfail):
 
