@@ -11,10 +11,18 @@ With option '-u' all disks of the Mark6 modules are unmounted.
 The main purpose of this script is to avoid having to start cplane,
 then dplane, and then send the necessary da-client commands.
 
-If a config file is available (/etc/default/mark6_slots), with
-a controller id (like host0) one each config file line, the
-actually detected controllers are brought into that order
-before assigning Mark6 chassis slot-pairs 1+2, 3+4, etc.
+Optional config file
+  /etc/default/mark6_slots_pci
+
+  Each line should have one SAS controller reference (e.g., pci-0000:0a:00.0).
+  The order guides the assignment to incremental Mark6 slots.
+  Controller with pci-... on the 1st line will be used for slots 1&2,
+  controller with pci-... on the 2nd line will be used for slots 3&4,
+  and so on.
+
+  You can find the SAS controller(s) on your system with a series of
+  $ udevadm info --query=all --name=/dev/sda | grep ID_SAS_PATH
+  ID_SAS_PATH=pci-0000:0a:00.0-sas-phy3-lun-0
 """
 
 import pyudev, re, subprocess, sys
@@ -22,7 +30,7 @@ import pyudev, re, subprocess, sys
 MARK6_ROOT = '/mnt/disks/%d/%d'
 MARK6_META = '/mnt/disks/.meta/%d/%d'
 CHECK_RESULTS = False # specifies whether to check results from subprocess() launches
-SLOTS_FILE = '/etc/default/mark6_slots'
+SLOTS_FILE = '/etc/default/mark6_slots_pci'
 
 # Changelog:
 # xx/2015 v1.0 Jan Wagner, basic version for quick (un)mounting
@@ -30,7 +38,7 @@ SLOTS_FILE = '/etc/default/mark6_slots'
 # 11/2015 v2.0 Jan Wagner, updated to use pyudev instead of 3rd party 'lsscsi'
 # 05/2017 v2.1 Jan Wagner, don't depend on installed disks to determine number of SAS cards installed
 # 05/2022 v2.2 Jan Wagner, add support for multiple expansion chassis but still just max 16 disks per SAS controller card
-# 06/2022 v2.3 Jan Wagner, read config /etc/default/mark6_slots containing local host controller names in order of slot-pair assignment
+# 06/2022 v2.3 Jan Wagner, read /etc/default/mark6_slots_pci containing SAS controller PCI bus roots in order of slot-pairs
 
 # Helpful to add to sudoers:
 # %oper ALL=(root) NOPASSWD:/bin/mount
@@ -42,15 +50,16 @@ MAX_DISKS_PER_SAS = 16
 
 def sort_MPT2SAS_controller_list(ctlist):
 	'''
-	Sort a list of numerical controller IDs (such as [0,11,13] of 'host0','host11','host13').
-	Sorts according to the fixed order of any matching entries from a user config file - if available.
+	Sort a list of SAS controller PCI bus roots such as ['pci-0000:0a:00.0','pci-0000:08:00.0','pci-0000:09:00.0'].
+	The sorting order is made to follow the order of occurrence in a user config file - if available.
 	'''
 	with open(SLOTS_FILE) as cfg:
 		user_order = [entry.strip() for entry in cfg.readlines() if len(entry.strip())>0]
-		user_order = [int(re.search('host([0-9]*)',ctlname).group(1)) for ctlname in user_order]
 		if len(user_order) > 0:
 			sorted = []
 			for entry in user_order:
+				if 'pci' not in entry:
+					print('Warning: entry %s does not look legit, the expected format is e.g. pci-0000:0a:00.0.' % (entry))
 				if entry in ctlist:
 					sorted.append(entry)
 					ctlist.remove(entry)
@@ -66,67 +75,82 @@ def list_MPT2SAS_disks():
 	context = pyudev.Context()
 	ctrl_ids = []
 
-	# Find controllers with disks (perhaps unpartitioned)
-	for dev in context.list_devices(subsystem='scsi'):
+	# Find block devices and their controllers
+	for dev in context.list_devices(subsystem='block'):
+
 		pdev = dev.find_parent('pci')
 		if (pdev == None):
 			continue
-		if (pdev.driver == 'mpt2sas' or pdev.driver == 'mpt3sas'):
+
+		if pdev.driver in ['mpt2sas','mpt3sas']:
 			# DEVPATH /sys/devices/pci0000:00/0000:00:02.0/0000:06:00.0/host0/port-0:0/end_device-0:0/target0:0:0/0:0:0:0/block/sdb
 			# Controllers may have target0:0:0, target1:0:0, target17:0:0, ... depending perhaps on PCIe slot (0, 1, 17, ...)
 			# Since target<n> numbers n are not known in advance we don't use <n>, but replace it with an index (0,1,2,...)
-			dp = dev['DEVPATH']
-			h = int(re.search('\/host([0-9]*)',dp).group(1))
-			if h not in ctrl_ids:
-				ctrl_ids.append(h)
+			#
+			# Major problem after testing, turns out the target<n> number for the exactly same physical disk
+			# keeps *changing* when the module is keyed off and then on again, especially when other modules are in the system,
+			# i.e. the target does apparently not at all reflect a physical link index.
+			#
+			# Other option:
+			# ID_SAS_PATH=pci-0000:0a:00.0-sas-phy0-lun-0
+			# The PCI dev root uniquely identifies the SAS controller, consistent over reboots.
+			# The phy<n> consistently identifies the physical link on the SAS controller, consistent over module key off/on cycles.
+			# The phy<0-7> are always on the same module albeit which LED they correspond to is a (at least consistent) mess; phy2 always LED 4 from top.
+
+			# print(dev, dev['SUBSYSTEM'], dev['DEVPATH'], dev['ID_SAS_PATH'])
+
+			dsas = dev['ID_SAS_PATH']
+			droot = re.search('pci-[0-9a-f]*:[0-9a-f]*:[0-9a-f]*.[0-9a-f]',dsas).group(0)
+			if droot not in ctrl_ids:
+				ctrl_ids.append(droot)
 
 	# Sort the list according to matching entries in a config file if available
 	ctrl_ids = sort_MPT2SAS_controller_list(ctrl_ids)
 
 	# Now find partitions on disks behind controllers
 	for dev in context.list_devices(subsystem='block', DEVTYPE='partition'):
+
 		pdev = dev.find_parent('pci')
-		if (pdev.driver == 'mpt2sas' or pdev.driver == 'mpt3sas'):
+		if pdev.driver in ['mpt2sas','mpt3sas']:
+
 			entry = {}
-			entry['devnode'] = dev.device_node
 			entry['fs'] = dev.get('ID_FS_TYPE')
 			entry['diskmodel'] = dev.get('ID_MODEL')
 			entry['diskserial'] = dev.get('ID_SERIAL')
 
- 			# Determine which "slot" (module) and "disk" the SAS target belongs to
-			# E.g., DEVPATH /devices/pci0000:00/0000:00:02.0/0000:06:00.0/host0/port-0:15/end_device-0:15/target0:0:15/0:0:15:0/block/sdq/sdq1
-			# has 'target0:0:15' on 'host0' which means target 15 (0..15) which maps to module 2 (1..4), slot 7 (0..7)
-			#  - no SAS Expanders are assumed to be in use, and at most 16 SAS targets per controller
-			#  - SAS targets  0-7 on controller 0 are in "module 1" in "slots 0-7"
-			#  - SAS targets 8-15 on controller 0 are in "module 2" in "slots 0-7"
-			#  - SAS targets  0-7 on controller 1 are in "module 3" in "slots 0-7"
-			#  - SAS targets 8-15 on controller 1 are in "module 4" in "slots 0-7"
-			#
-			# However:
-			#  - SAS targets 16-31 on each mpt2sas controller on mark6-02 for some reason, breaking the above assumption
-			#  - SAS targets 16-31 on each mpt3sas controller and curiously targets 8-23 on mpt2sas, maybe wrong cabling?
-			#  => how to reliably number any of these, accross different Mark6 mobo+sas hardware versions? or is it a cabling error?
+			dpath = dev['DEVPATH']
+			dname = dev['DEVNAME'] # same as in property dev.device_node
+			dpartition = dname[-1:]
 
-			dp = dev['DEVPATH']
-			h = int(re.search('\/host([0-9]*)\/',dp).group(1))
+ 			# Determine SAS controller index from PCI, physical endpoint device index from phy<n>
+			dsas = dev['ID_SAS_PATH']
+			h = re.search('pci-[0-9a-f]*:[0-9a-f]*:[0-9a-f]*.[0-9a-f]',dsas).group(0)
 			m = ctrl_ids.index(h)
-			t = re.search('\/target([0-9]*:[0-9]*:[0-9]*)\/',dp).group(1)
-			t = [int(x) for x in t.split(':')]
-			t = int(t[-1])
-			# print(pdev.driver, dp, ' hostNr ', h, ' ctrl ', m, ' target ', t)
-			if (t > (MAX_DISKS_PER_SAS-1)):
-				# print('Unexpected target nr %d not in range of 0-%d! Changing it to %d' % (t,MAX_DISKS_PER_SAS-1,t % MAX_DISKS_PER_SAS))
+			phy = re.search('phy[0-9]*',dsas).group(0)
+			t = int(phy[3:])
+			if t >= MAX_DISKS_PER_SAS:
+				print('Warning: unexpected target nr %d outside 0-%d! Changing it to %d!' % (t,MAX_DISKS_PER_SAS-1,t % MAX_DISKS_PER_SAS))
 				t = t % MAX_DISKS_PER_SAS
-			entry['mk6_module'] = t/8 + 2*m +1     # 1-based count
+
+			# print(pdev.driver, dname, dsas, h, 'ctrl:%d'%(m), 'endpoint:%d'%(t), dpath)
+
+ 			# Map the controller and disk device indices to a "slot" and "disk"
+			entry['blkdev'] = dname
+			entry['sas_path'] = dsas
+			entry['mk6_module'] = t//8 + 2*m +1    # 1-based count
 			entry['mk6_slot']   = t % 8            # 0-based count
-			if dp[-1]=='1':
+			if dpartition=='1':
 				entry['mk6_mountpoint'] = MARK6_ROOT % (entry['mk6_module'],entry['mk6_slot'])
-			elif dp[-1]=='2':
+			elif dpartition=='2':
 				entry['mk6_mountpoint'] = MARK6_META % (entry['mk6_module'],entry['mk6_slot'])
 			else:
+				print('Warning: no partion 1 or 2 found in devpath string %s' % (dpath))
 				entry['mk6_mountpoint'] = None
-			#print(dp,h,m,t,dp[-1],entry['mk6_module'],entry['mk6_slot'],entry['mk6_mountpoint'])
+
+			# print(dsas, h, m, t, dpartition, entry['blkdev'], entry['mk6_module'], entry['mk6_slot'], entry['mk6_mountpoint'])
+
 			list.append(entry)
+
 	list = sorted(list, key=lambda k: k['mk6_mountpoint'])
 	return list
 
@@ -146,7 +170,8 @@ def unmount(dir):
 def mount_all():
 	procs = []
 	for entry in list_MPT2SAS_disks():
-		procs = procs + mount(entry['devnode'], entry['mk6_mountpoint'])
+		procs = procs + mount(entry['blkdev'], entry['mk6_mountpoint'])
+		# print('mount %s from %s(%s) to %s' % (entry['sas_path'], entry['blkdev'], entry['blkdev'], entry['mk6_mountpoint']))
 	return procs
 
 def unmount_all():
@@ -191,4 +216,3 @@ def main(argv=sys.argv):
 
 if __name__ == "__main__":
 	main(sys.argv)
-
