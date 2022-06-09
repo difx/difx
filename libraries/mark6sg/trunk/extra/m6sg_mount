@@ -42,11 +42,12 @@ MAX_DISKS_PER_SAS = 16
 
 def sort_MPT2SAS_controller_list(ctlist):
 	'''
-	Sort a list of controller IDs (such as ['host0','host11','host13']) according
-	to the fixed order of any matching entries from a user config file - if available.
+	Sort a list of numerical controller IDs (such as [0,11,13] of 'host0','host11','host13').
+	Sorts according to the fixed order of any matching entries from a user config file - if available.
 	'''
 	with open(SLOTS_FILE) as cfg:
 		user_order = [entry.strip() for entry in cfg.readlines() if len(entry.strip())>0]
+		user_order = [int(re.search('host([0-9]*)',ctlname).group(1)) for ctlname in user_order]
 		if len(user_order) > 0:
 			sorted = []
 			for entry in user_order:
@@ -54,6 +55,10 @@ def sort_MPT2SAS_controller_list(ctlist):
 					sorted.append(entry)
 					ctlist.remove(entry)
 			ctlist = sorted + ctlist
+	#if True:
+	#	print('Suggestion for %s:' % (SLOTS_FILE))
+	#	for ctlId in ctlist:
+	#		print('host%d' % (ctlId))
 	return ctlist
 
 def list_MPT2SAS_disks():
@@ -155,13 +160,13 @@ def unmount_invisible():
 
 	query = subprocess.Popen(["/usr/bin/sudo", "/bin/mount"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	(out,rc) = query.communicate()
-	allmounts = str(out).split('\n')
+	allmounts = str(out).split('\\n')
 
 	p = []
 	for entry in allmounts:
 		if "/mnt/disks/" in entry:
 			dev = entry.split()[0]
-			print(entry, dev)
+			print('Unmounting',dev)
 			p.append( subprocess.Popen(["/usr/bin/sudo", "/bin/umount", dev], stdout=subprocess.PIPE, stderr=subprocess.PIPE) )
 	for sp in p:
 		(o,rc) = sp.communicate()
