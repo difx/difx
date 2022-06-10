@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # coding: latin-1
 
 #===========================================================================
@@ -17,12 +17,13 @@ import os
 import sys
 import subprocess
 import ftplib
-import urllib2
-from string import upper, strip, lower
+import pycurl
+import fnmatch
 from datetime import datetime, timedelta
 from difxdb.difxdbconfig import DifxDbConfig
 from difxdb.business.experimentaction import *
 from difxdb.model.dbConnection import Schema, Connection
+from io import BytesIO
 
 fringeDir="FRINGE"
 exportDir="EXPORT"
@@ -32,6 +33,49 @@ versionPrefix="v"
 
 geoFTPServer = "ivs.bkg.bund.de"
     
+def curlDownload (url, remotePath, patterns, localPath):
+
+  data = BytesIO()
+  c = pycurl.Curl()
+
+  baseurl = "ftp://%s/%s" % (geoFTPServer,remotePath)
+  print (url)
+  c.setopt(c.URL, baseurl)
+  c.setopt(c.USERNAME, 'anonymous')
+  c.setopt(c.USERPWD, 'anonymous')
+  c.setopt(c.WRITEFUNCTION, data.write)
+  c.setopt(c.USE_SSL, True)
+#  c.setopt(c.VERBOSE, True)
+
+  try:
+    c. perform()
+  except pycurl.error as e:
+    print ("No experiment files found at %s. Skipping." % (baseurl))
+    return()
+    
+  c.close()
+
+  resp = data.getvalue().decode('iso-8859-1')
+
+  for pattern in patterns:
+    filtered = fnmatch.filter(resp.split(), pattern)
+    for file in filtered:
+      fp = open('%s/%s' % (localPath, file), "wb")
+      url = baseurl + file
+      print ("Downloading: %s from %s" % (file, url))
+      c = pycurl.Curl()
+      c.setopt(c.URL, url)
+      c.setopt(c.USERNAME, 'anonymous')
+      c.setopt(c.USERPWD, 'anonymous')
+      c.setopt(c.WRITEDATA, fp)
+      c.setopt(c.USE_SSL, True)
+      #c.setopt(c.VERBOSE, True)
+      c. perform()
+      c.close()
+      fp.close()
+
+  return
+
 def ftpDownload(url, remotePath,localPath):
 
     ftp = ftplib.FTP(url, 'anonymous', 'anonymous')
@@ -48,7 +92,7 @@ def ftpDownload(url, remotePath,localPath):
         file = os.path.basename(remotefile)
         localFile=localPath+"/{}".format(file)
         with open(localFile, 'wb') as f:
-            print "Downloading: %s from %s" % (file, url)
+            print ("Downloading: %s from %s" % (file, url))
             ftp.retrlines("RETR %s" % remotefile, lambda s, w = f.write: w(s +'\n'))
 
 def makeSummary(code):
@@ -74,11 +118,11 @@ def expUpdate():
     code = codeFile.read()
     # create summary file with experiment details
     makeSummary(code)
-    print "Updated %s/SUMMARY" % (args.path) 
+    print ("Updated %s/SUMMARY" % (args.path) )
 
     #create TAPELOG_OBS file from database contents
     makeTapelogObs(code)
-    print "Updated %s/TAPELOG_OBS" % (args.path) 
+    print ("Updated %s/TAPELOG_OBS" % (args.path) )
     return
 
 def expFinalize():
@@ -99,7 +143,7 @@ def expPrepare(code):
         if not experimentExists(session, code):
             print ("The database contains no entry for experiment code: %s" % (code))
             print ("Enter a valid experiment code to be used for the directory: %s" % (args.path))
-            code = upper(raw_input("Code [return to exit]: "))
+            code = input("Code [return to exit]: ").upper()
             if not code:
                 session.close()
                 sys.exit()
@@ -149,23 +193,25 @@ def expPrepare(code):
     out.close()
 
     # obtain experiment files from FTP areas
-    resp = raw_input ("Download observation files (vex, logs, eop etc.)? [y/n]")
-    if strip(resp) == 'y':
+    resp = ''
+    while resp not in ['y','n']:
+        resp = input ("Download observation files (vex, logs, eop etc.)? [y/n]")
+    if resp.strip() == 'y':
         while True:
-            year = raw_input("year of observation? [YYYY]:")
+            year = input("year of observation? [YYYY]:")
             if year.isdigit() and len(year) == 4:
                 break
             else:
-                print "illegal input. Try again."
+                print ("illegal input. Try again.")
         while True:
-            doy = raw_input ("day of year of observation? :") 
+            doy = input ("day of year of observation? :") 
             if doy.isdigit():
                 break
             else:
-                print "illegal input. Try again."
+                print ("illegal input. Try again.")
             
         obsDate = datetime.strptime(year + "-" + doy, "%Y-%j")
-        obsStr = lower(obsDate.strftime("%b%y"))
+        obsStr = obsDate.strftime("%b%y").lower()
         eopStr = (obsDate+timedelta(days=-2)).strftime("%Y-%j")
         
         # get observation files
@@ -176,11 +222,7 @@ def expPrepare(code):
         # get geodetic files
         if not os.path.exists(filesDir):
             os.mkdir(filesDir)
-        ftpDownload(geoFTPServer, "/pub/vlbi/ivsdata/aux/%s/%s/*.log" % (year, lower(code)),filesDir)
-        ftpDownload(geoFTPServer, "/pub/vlbi/ivsdata/aux/%s/%s/*.skd" % (year, lower(code)),filesDir)
-        ftpDownload(geoFTPServer, "/pub/vlbi/ivsdata/aux/%s/%s/*.vex" % (year, lower(code)),filesDir)
-        ftpDownload(geoFTPServer, "/pub/vlbi/ivsdata/aux/%s/%s/*.txt" % (year, lower(code)),filesDir)
-        
+        curlDownload(geoFTPServer, "/pub/vlbi/ivsdata/aux/%s/%s/"% (year, code.lower()), ["*.log", "*.skd", "*.vex", "*.txt"], filesDir)
 
     return
 
@@ -197,13 +239,13 @@ if __name__ == "__main__":
     parser.add_argument("path", help="the path of the experiment directory")
 
     try:
-    	args = parser.parse_args()
+        args = parser.parse_args()
     except:
-	parser.print_help()
-	sys.exit(1)
+        parser.print_help()
+        sys.exit(1)
 
     # obtain experiment code from the trailing part of the path
-    code = upper(os.path.basename(args.path))
+    code = os.path.basename(args.path).upper()
 
   
     dbConn = None
@@ -239,4 +281,4 @@ if __name__ == "__main__":
     else:
         expPrepare(code)
 
-    print "DONE"
+    print ("DONE")
