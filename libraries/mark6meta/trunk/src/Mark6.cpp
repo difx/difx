@@ -652,6 +652,8 @@ int Mark6::enumerateDevices()
 					disk.setSerial(string(serial));
 							       
 				//cout << "device " << devName << " serial " << serial <<endl;
+				//cout << "device " << devName << " serial " << serial << " devpath " << devpath << " sasadress " << sasaddress << endl;
+                // mark6-03: device sdb serial ZA28RWSE devpath /devices/pci0000:00/0000:00:03.0/0000:01:00.0/0000:02:08.0/0000:04:00.0/host0/port-0:0/end_device-0:0/target0:0:0/0:0:0:0/block/sdb sasadress 0x4433221108000000
 				newDevices_m.push_back(disk);			
 				devCount++;
 				//cout << "Controller ID=" << disk.getControllerId() << endl;
@@ -708,14 +710,23 @@ long Mark6::parseDiskId(std::string sasAddress)
 int Mark6::parseControllerId(string devpath)
 {
     //cout << "devpath=" << devpath << endl;
-    size_t found = devpath.find("host0");
-    if (found != string::npos)
-        return(0);
-    
-    // any other host will receiver controllerId 1
+    size_t found;
+
     found = devpath.find("host");
     if (found != string::npos)
-        return(1);
-    
+    {
+        found = devpath.find("host0");
+        if (found != string::npos)
+            return(0);
+
+        // any other host will receiver controllerId 1
+        found = devpath.find("host");
+        if (found != string::npos)
+            return(1);
+    }
+    else
+    {
+        cout << "TODO: parse PCI devpath(?) " << devpath << endl;
+    }
     return(-1);
 }
