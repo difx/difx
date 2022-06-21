@@ -30,6 +30,8 @@
 #include <sys/time.h>
 
 #define READBUF_SIZE 100000
+#define MAX_SLOTS 6 // standard Mark6 *recorder* config is 4 module slots, playback can have multiple expansion chassis and thus more slots (6, 8, ...)
+#define MAX_DISKS_PER_SLOT 8
 
 const char program[] = "mk6dir";
 const char author[]  = "Mark Wainright <mwainrig@nrao.edu>";
@@ -106,7 +108,7 @@ void summarizeFile(const char *fileName, const char* filePattern, char *vsn, cha
     m6headersize = sizeof(Mark6Header);
 
     // open all the files
-    for(i = 0; i < 8; i++)
+    for(i = 0; i < MAX_DISKS_PER_SLOT; i++)
     {
         diskIndex[0] = '0' + i;
         fp = fopen(pattern, "r");
@@ -324,9 +326,9 @@ int getSlot(char *vsn)
 	FILE *fp;
 	char line[9];
 
-	for(int j = 1; j <= 4; j++)
+	for(int j = 1; j <= MAX_SLOTS; j++)
 	{
-		for(int i = 0; i < 8; i++)
+		for(int i = 0; i < MAX_DISKS_PER_SLOT; i++)
 		{
 			sprintf(path, "/mnt/disks/.meta/%d/%d/eMSN", j, i);
 			fp = fopen(path, "r");
@@ -359,7 +361,7 @@ int getVSN(int slot, char *vsn)
 	FILE *fp;
 	char line[9];
 
-	for(int i = 0; i < 8; i++)
+	for(int i = 0; i < MAX_DISKS_PER_SLOT; i++)
 	{
 		sprintf(path, "/mnt/disks/.meta/%d/%d/eMSN", slot, i);
 		fp = fopen(path, "r");
@@ -437,7 +439,7 @@ int main(int argc, char **argv)
 			{
 				catalogState = 1;
 			}
-			else if(strlen(argv[a]) == 1 && atoi(argv[a]) >= 1 && atoi(argv[a]) <= 4)
+			else if(strlen(argv[a]) == 1 && atoi(argv[a]) >= 1 && atoi(argv[a]) <= MAX_SLOTS)
 			{
                                 slot = atoi(argv[a]);
 
