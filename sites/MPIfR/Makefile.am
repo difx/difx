@@ -3,6 +3,7 @@ SUBDIRS = \
 	difxdb/difxarchive \
 	difxdb/difxexport \
 	difxdb/prepDifx \
+	GMVA \
 	misc/getObsFiles \
 	misc/datacheckers \
 	misc/difxslurm \
