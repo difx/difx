@@ -96,6 +96,7 @@ peak_fps = 1
 syncreport_prev_sec = 0
 nfill = 0
 skipsize = 4  # initially, length of fill 0x11223344
+old_framesize = 0
 
 done = False
 while not(done):
@@ -129,6 +130,8 @@ while not(done):
 				print ('Maybe try again without --bigendian? '),
 				print ('Then the current header decodes to:\n%s\n' % (str(hlittle)))
 			break
+		if old_framesize > 0 and h['size'] != old_framesize:
+			print ('Frame size jump: old:%d current:%d byte' % (old_framesize,h['size']))
 
 		skipsize = h['size'] - header_len
 		if (user_framesize > 0):
@@ -136,6 +139,7 @@ while not(done):
 		#f.seek(skipsize, 1)  # fails at 2GB boundary!?
 		tmp = f.read(skipsize)
 
+		old_framesize = h['size']
 
 	# First time to see a thread?
 	tID = h['thread']
