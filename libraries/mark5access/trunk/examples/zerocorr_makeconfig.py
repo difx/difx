@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # coding: latin-1
 
+# should work under python2 or python3
+
 #===========================================================================
 # Copyright (C) 2017  Max-Planck-Institut für Radioastronomie, Bonn, Germany
 # This program is free software: you can redistribute it and/or modify
