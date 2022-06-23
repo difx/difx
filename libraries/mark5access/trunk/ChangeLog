@@ -24,6 +24,8 @@ Version 1.6
   - some would not increase the input index when blanking
   - some increased the output index too much
   - 16 and 32 bit values had errors in converting to signed values
+* add 24 channel decoder for 1 and 2 bits real VDIF
+* add state counters for all 2-bit real VDIF modes with decoders
 * Post DiFX-2.6
 
 Version 1.5.4
