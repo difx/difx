@@ -1352,6 +1352,199 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
+static void cornerturn_24thread_1bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  const uint8_t *t0  = (const uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1  = (const uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2  = (const uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3  = (const uint8_t *)(threadBuffers[3]);
+  const uint8_t *t4  = (const uint8_t *)(threadBuffers[4]);
+  const uint8_t *t5  = (const uint8_t *)(threadBuffers[5]);
+  const uint8_t *t6  = (const uint8_t *)(threadBuffers[6]);
+  const uint8_t *t7  = (const uint8_t *)(threadBuffers[7]);
+  const uint8_t *t8  = (const uint8_t *)(threadBuffers[8]);
+  const uint8_t *t9  = (const uint8_t *)(threadBuffers[9]);
+  const uint8_t *t10 = (const uint8_t *)(threadBuffers[10]);
+  const uint8_t *t11 = (const uint8_t *)(threadBuffers[11]);
+  const uint8_t *t12 = (const uint8_t *)(threadBuffers[12]);
+  const uint8_t *t13 = (const uint8_t *)(threadBuffers[13]);
+  const uint8_t *t14 = (const uint8_t *)(threadBuffers[14]);
+  const uint8_t *t15 = (const uint8_t *)(threadBuffers[15]);
+  const uint8_t *t16 = (const uint8_t *)(threadBuffers[16]);
+  const uint8_t *t17 = (const uint8_t *)(threadBuffers[17]);
+  const uint8_t *t18 = (const uint8_t *)(threadBuffers[18]);
+  const uint8_t *t19 = (const uint8_t *)(threadBuffers[19]);
+  const uint8_t *t20 = (const uint8_t *)(threadBuffers[20]);
+  const uint8_t *t21 = (const uint8_t *)(threadBuffers[21]);
+  const uint8_t *t22 = (const uint8_t *)(threadBuffers[22]);
+  const uint8_t *t23 = (const uint8_t *)(threadBuffers[23]);
+  uint8_t *outputwordptr = (uint8_t *)outputBuffer;
+  int i, n;
+  uint64_t a, b, c, d, e, f, g, h;
+  union { uint64_t u64; uint8_t u8[8]; } A, B, C;
+
+  n = outputDataSize/32;
+
+PRAGMA_OMP(parallel private(i,a,b,c,d,e,f,g,h,A,B,C) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      a = t0[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t1[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t2[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t3[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t4[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t5[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t6[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t7[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      A.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      a = t8[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t9[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t10[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t11[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t12[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t13[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t14[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t15[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      B.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      a = t16[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t17[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t18[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t19[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t20[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t21[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t22[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t23[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      C.u64 = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7); 
+
+      outputwordptr[0]  = A.u8[0];
+      outputwordptr[1]  = B.u8[0];
+      outputwordptr[2]  = C.u8[0];
+      outputwordptr[4]  = A.u8[1];
+      outputwordptr[5]  = B.u8[1];
+      outputwordptr[6]  = C.u8[1];
+      outputwordptr[8]  = A.u8[2];
+      outputwordptr[9]  = B.u8[2];
+      outputwordptr[10] = C.u8[2];
+      outputwordptr[12] = A.u8[3];
+      outputwordptr[13] = B.u8[3];
+      outputwordptr[14] = C.u8[3];
+      outputwordptr[16] = A.u8[4];
+      outputwordptr[17] = B.u8[4];
+      outputwordptr[18] = C.u8[4];
+      outputwordptr[20] = A.u8[5];
+      outputwordptr[21] = B.u8[5];
+      outputwordptr[22] = C.u8[5];
+      outputwordptr[24] = A.u8[6];
+      outputwordptr[25] = B.u8[6];
+      outputwordptr[26] = C.u8[6];
+      outputwordptr[28] = A.u8[7];
+      outputwordptr[29] = B.u8[7];
+      outputwordptr[30] = C.u8[7];
+      outputwordptr += 32;
+    }
+  }
+}
+
 static void cornerturn_32thread_1bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   const uint8_t *t0  = (const uint8_t *)(threadBuffers[0]);
@@ -3058,6 +3251,103 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
       outputwordptr[4*i+1] = (u4.b[1] << 24) | (u3.b[1] << 16) | (u2.b[1] << 8) | u1.b[1];
       outputwordptr[4*i+2] = (u4.b[2] << 24) | (u3.b[2] << 16) | (u2.b[2] << 8) | u1.b[2];
       outputwordptr[4*i+3] = (u4.b[3] << 24) | (u3.b[3] << 16) | (u2.b[3] << 8) | u1.b[3];
+    }
+  }
+}
+
+static void cornerturn_24thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
+{
+  // Efficiently handle the special case of 32 threads of 2-bit data.
+  //
+  // Thread: ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+  // Byte:   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------
+  // Input:  R3  p2  p1  p0   o3  o2  o1  o0   n3  n2  n1  n0   m3  m2  m1  m0   l3  l2  l1  l0   k3  k2  k1  k0   j3  j2  j1  j0   i3  i2  i1  i0   h3  h2  h1  h0   g3  g2  g1  g0   f3  f2  f1  f0   e3  e2  e1  e0   d3  d2  d1  d0   c3  c2  c1  c0   b3  b2  b1  b0   a3  a2  a1  a0
+  //                                                                                                                                                
+  // Shift:  -48 -17 +14 +45  -51 -20 +11 +42  -54 -23 +8  +39  -57 -26 +5  +36  -60 -29 +2  +33  -63 -32 -1  +30  -66 -35 -4  +27  -69 -38 -7  +24  -72 -41 -10 +21  -75 -44 -13 +18  -78 -47 -16 +15  -81 -50 -19 +12  -84 -53 -22 +9   -87 -56 -25 +6   -90 -59 -28 +3   -93 -62 -31 +0 
+  //                                                                                                                                                
+  // Output:                                   H1  G1  F1  E1   D1  C1  B1  A1   p1  o1  n1  m1   l1  k1  j1  i1   h1  g1  f1  e1   d1  c1  b1  a1                                     H0  G0  F0  E0   D0  C0  B0  A0   p0  o0  n0  m0   l0  k0  j0  i0   h0  g0  f0  e0   d0  c0  b0  a0
+  // Byte:   ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+  //
+  // Thread: ------31------   ------30------   ------29------   ------28------   ------27------   ------26------   ------25------   ------24------   ------23------   ------22------   ------21------   ------20------   ------19------   ------18------   ------17------   ------16------
+  // Byte:   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------
+  // Input:                                                                                                                                          H3  H2  H1  H0   G3  G2  G1  G0   F3  F2  F1  F0   E3  E2  E1  E0   D3  D2  D1  D0   C3  C2  C1  C0   B3  B2  B1  B0   A3  A2  A1  A0
+  //                                                                                                                                                
+  // Shift:                                                                                                                                         -24 +7  +38 +69  -27 +4  +35 +66  -30 +1  +32 +63  -33 -2  +29 +60  -36 -5  +26 +57  -39 -8  +23 +54  -42 -11 +20 +51  -45 -14 +17 +48
+  //                                                                                                                                                
+  // Output:                                   H3  G3  F3  E3   D3  C3  B3  A3   p3  o3  n3  m3   l3  k3  j3  i3   h3  g3  f3  e3   d3  c3  b3  a3                                     H2  G2  F2  E2   D2  C2  B2  A2   p2  o2  n2  m2   l2  k2  j2  i2   h2  g2  f2  e2   d2  c2  b2  a2
+  // Byte:   ------31------   ------30------   ------29------   ------28------   ------27------   ------26------   ------25------   ------24------   ------23------   ------22------   ------21------   ------20------   ------19------   ------18------   ------17------   ------16------
+  //
+  // This one is a bit complicated.  A resonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
+  // do a final suffle of byte sized chunks.  There may be a better way...
+
+  const uint32_t M0 = 0xC0300C03;
+  const uint32_t M1 = 0x300C0300;
+  const uint32_t M2 = 0x00C0300C;
+  const uint32_t M3 = 0x0C030000;
+  const uint32_t M4 = 0x0000C030;
+  const uint32_t M5 = 0x03000000;
+  const uint32_t M6 = 0x000000C0;
+
+  const uint8_t *t0  = (const uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1  = (const uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2  = (const uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3  = (const uint8_t *)(threadBuffers[3]);
+  const uint8_t *t4  = (const uint8_t *)(threadBuffers[4]);
+  const uint8_t *t5  = (const uint8_t *)(threadBuffers[5]);
+  const uint8_t *t6  = (const uint8_t *)(threadBuffers[6]);
+  const uint8_t *t7  = (const uint8_t *)(threadBuffers[7]);
+  const uint8_t *t8  = (const uint8_t *)(threadBuffers[8]);
+  const uint8_t *t9  = (const uint8_t *)(threadBuffers[9]);
+  const uint8_t *t10 = (const uint8_t *)(threadBuffers[10]);
+  const uint8_t *t11 = (const uint8_t *)(threadBuffers[11]);
+  const uint8_t *t12 = (const uint8_t *)(threadBuffers[12]);
+  const uint8_t *t13 = (const uint8_t *)(threadBuffers[13]);
+  const uint8_t *t14 = (const uint8_t *)(threadBuffers[14]);
+  const uint8_t *t15 = (const uint8_t *)(threadBuffers[15]);
+  const uint8_t *t16 = (const uint8_t *)(threadBuffers[16]);
+  const uint8_t *t17 = (const uint8_t *)(threadBuffers[17]);
+  const uint8_t *t18 = (const uint8_t *)(threadBuffers[18]);
+  const uint8_t *t19 = (const uint8_t *)(threadBuffers[19]);
+  const uint8_t *t20 = (const uint8_t *)(threadBuffers[20]);
+  const uint8_t *t21 = (const uint8_t *)(threadBuffers[21]);
+  const uint8_t *t22 = (const uint8_t *)(threadBuffers[22]);
+  const uint8_t *t23 = (const uint8_t *)(threadBuffers[23]);
+  uint32_t *outputwordptr = (uint32_t *)outputBuffer;
+  uint32_t x1, x2, x3, x4, x5, x6;
+  int i, n;
+  n = outputDataSize/32;
+  union { uint32_t y; uint8_t b[4]; } u1, u2, u3, u4, u5, u6;
+
+PRAGMA_OMP(parallel private(i,x1,x2,x3,x4,x5,x6,u1,u2,u3,u4,u5,u6) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,t16,t17,t18,t19,t20,t21,t22,t23,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      // assemble 32-bit chunks
+      x1 = (t3[i]  << 24) | (t2[i]  << 16) | (t1[i]  << 8) | t0[i];
+      x2 = (t7[i]  << 24) | (t6[i]  << 16) | (t5[i]  << 8) | t4[i];
+      x3 = (t11[i] << 24) | (t10[i] << 16) | (t9[i]  << 8) | t8[i];
+      x4 = (t15[i] << 24) | (t14[i] << 16) | (t13[i] << 8) | t12[i];
+      x5 = (t19[i] << 24) | (t18[i] << 16) | (t17[i] << 8) | t16[i];
+      x6 = (t23[i] << 24) | (t22[i] << 16) | (t21[i] << 8) | t20[i];
+
+      // mask and shift 32-bit chunks
+      u1.y = (x1 & M0) | ((x1 & M1) >> 6) | ((x1 & M2) << 6) | ((x1 & M3) >> 12) | ((x1 & M4) << 12) | ((x1 & M5) >> 18) | ((x1 & M6) << 18);
+      u2.y = (x2 & M0) | ((x2 & M1) >> 6) | ((x2 & M2) << 6) | ((x2 & M3) >> 12) | ((x2 & M4) << 12) | ((x2 & M5) >> 18) | ((x2 & M6) << 18);
+      u3.y = (x3 & M0) | ((x3 & M1) >> 6) | ((x3 & M2) << 6) | ((x3 & M3) >> 12) | ((x3 & M4) << 12) | ((x3 & M5) >> 18) | ((x3 & M6) << 18);
+      u4.y = (x4 & M0) | ((x4 & M1) >> 6) | ((x4 & M2) << 6) | ((x4 & M3) >> 12) | ((x4 & M4) << 12) | ((x4 & M5) >> 18) | ((x4 & M6) << 18);
+      u5.y = (x5 & M0) | ((x5 & M1) >> 6) | ((x5 & M2) << 6) | ((x5 & M3) >> 12) | ((x5 & M4) << 12) | ((x5 & M5) >> 18) | ((x5 & M6) << 18);
+      u6.y = (x6 & M0) | ((x6 & M1) >> 6) | ((x6 & M2) << 6) | ((x6 & M3) >> 12) | ((x6 & M4) << 12) | ((x6 & M5) >> 18) | ((x6 & M6) << 18);
+
+      // shuffle 8-bit chunks
+      outputwordptr[8*i]   = (u4.b[0] << 24) | (u3.b[0] << 16) | (u2.b[0] << 8) | u1.b[0];
+      outputwordptr[8*i+1] =                                     (u6.b[0] << 8) | u5.b[0];
+      outputwordptr[8*i+2] = (u4.b[1] << 24) | (u3.b[1] << 16) | (u2.b[1] << 8) | u1.b[1];
+      outputwordptr[8*i+3] =                                     (u6.b[1] << 8) | u5.b[1];
+      outputwordptr[8*i+4] = (u4.b[2] << 24) | (u3.b[2] << 16) | (u2.b[2] << 8) | u1.b[2];
+      outputwordptr[8*i+5] =                                     (u6.b[2] << 8) | u5.b[2];
+      outputwordptr[8*i+6] = (u4.b[3] << 24) | (u3.b[3] << 16) | (u2.b[3] << 8) | u1.b[3];
+      outputwordptr[8*i+7] =                                     (u6.b[3] << 8) | u5.b[3];
     }
   }
 }
@@ -7287,6 +7577,8 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 			return cornerturn_8thread_1bit;
 		case 16:
 			return cornerturn_16thread_1bit;
+		case 24:
+			return cornerturn_24thread_1bit;
 		case 32:
 			return cornerturn_32thread_1bit;
 		case 64:
@@ -7362,6 +7654,8 @@ void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned c
 			return cornerturn_14thread_2bit;
 		case 15:
 			return cornerturn_15thread_2bit;
+		case 24:
+			return cornerturn_24thread_2bit;
 		/* Alternate versions of some corner turners can be specified with negative values */
 		case -2:
 			return cornerturn_2thread_2bit_slow;
