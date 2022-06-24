@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # coding: latin-1
 
 #===========================================================================
@@ -40,6 +40,7 @@ else:
     from tkinter import *
     import tkinter.messagebox as tkMessageBox
     import tkinter.constants as Tkconstants
+    import tkinter.filedialog
 
 import PIL.Image, PIL.ImageFont, PIL.ImageDraw
 import subprocess
@@ -306,7 +307,7 @@ class MainWindow(GenericWindow):
         options['initialfile'] = 'comedia.txt'
         options['parent'] = root
         options['title'] = 'Save module list as'
-        file  = tkFileDialog.asksaveasfile(**self.file_opt)
+        file  = filedialog.asksaveasfile(**self.file_opt)
         
         
         if file:
@@ -348,7 +349,7 @@ class MainWindow(GenericWindow):
         slot = session.query(model.Slot).filter_by(location=slotName).one()
         
         
-        if (slot > 0):
+        if (slot):
             
             im = PIL.Image.new("L", (self.labelSizeX,self.labelSizeY),255)
 
@@ -388,7 +389,7 @@ class MainWindow(GenericWindow):
         slot = model.Slot()
         slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
         
-        if (slot > 0):
+        if (slot):
          
             slot.module.vsn = self.lblVSNContent.get()
             slot.module.stationCode = self.lblStationContent.get()
@@ -581,7 +582,8 @@ class MainWindow(GenericWindow):
             self.lblCapacityContent.insert(0, slot.module.capacity)
             self.lblDatarateContent.insert(0, slot.module.datarate)
             self.lblReceivedContent.insert(0, slot.module.received)
-            self.txtComment.insert(1.0, unicode(none2String(slot.module.comment),errors='ignore'))
+            #self.txtComment.insert(1.0, unicode(none2String(slot.module.comment),errors='ignore'))
+            self.txtComment.insert(1.0, none2String(slot.module.comment))
             if slot.module.needsAttention == 1:
                 self.attentionVar.set(1)
             else:
@@ -858,7 +860,7 @@ class MainWindow(GenericWindow):
                 self._saveModuleDetails()
                 self.editModuleDetailsEvent(None)
      
-        if (len(self.grdSlot.curselection()) > 0):
+        if (self.grdSlot.curselection() >= 0):
             self.selectedSlotIndex =  self.grdSlot.curselection()
         else:
             self.selectedSlotIndex =  -1
@@ -1675,7 +1677,7 @@ class EditExperimentsWindow(GenericWindow):
             slot = model.Slot()
             slot = getSlotById(session, self.selectedSlotId)
         
-            if (slot > 0):
+            if (slot):
                 # remove all experiment assigments of this module
                 slot.module.experiments = []
                 for expItem in codes:
