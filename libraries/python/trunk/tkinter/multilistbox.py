@@ -278,8 +278,8 @@ class MultiListbox(Frame):
       for l in self.lists:
           result.append(l.get(first,last))
       if last: 
-          #return list(map(*[None] + result))
-          return map(*[None] + result)
+          transpose = list(zip(*result))
+          return(transpose)
       return result
 
    def index(self, index):
