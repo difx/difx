@@ -25,7 +25,7 @@ pcvers='1.8.5'
 # Between v3 and v4 concatenated -> concatenated | calibrated
 # if concatenated.ms is already in label, we'll assume v3 or earlier
 # else use newer names here.
-print('\nRunning PolConvert (v%s) Wrapper with label %s in %s' % (
+print('\nRunning PolConvert (v%s) Wrapper with label %s on data in %s' % (
     pcvers, label, DiFXout))
 v4tables = None
 lm = re.match('(.*)\.concatenated.ms', label)
@@ -223,9 +223,12 @@ def runPolConvert(label, spw=-1, DiFXinput='',
         raise Exception('No DiFX output %s'%DiFXoutput)
     if os.path.exists(DiFXsave):
         raise Exception('DiFX save dir exists %s'%DiFXsave)
+    print('DiFXinput is',DiFXinput)
 
     # ok, save it and proceed
     os.rename(DiFXoutput, DiFXsave)
+    print('DiFXoutput is',DiFXoutput)
+    print(' and saved as',DiFXsave)
 
     # Now we actual run PolConvert setting (almost) everything.
     if 'POLCONVERTDEBUG' in os.environ:
@@ -265,6 +268,8 @@ def runPolConvert(label, spw=-1, DiFXinput='',
             solveMethod='gradient', calstokes=[1.,0.,0.,0.], calfield=-1
             )
     except Exception as ex:
+        # note that CASA captures any polconvert task exceptions
+        # so this code cannot ever be executed....
         print('Polconvert Exception -- Restoring Saved DiFXoutput Dir')
         if (os.path.exists(DiFXoutput)):
             shutil.rmtree(DiFXoutput)
@@ -353,6 +358,12 @@ for job in djobs:
         plotIF=plotIF, doIF=doIF, linAnt=linAnt, plotAnt=usePlotAnt,
         npix=numFrPltPix, gainmeth=gainmeth, XYavgTime=XYavgTime)
     print('\nFinished with job ' + job + '\n')
+    if 'keepdifxout' in os.environ and os.environ['keepdifxout'] == 'True':
+        print('Leaving original difx output in', SAVE)
+    else:
+        nuke = "rm -rf " + SAVE
+        nuked = os.system(nuke)
+        print('Removed original difx output with:\n  %s (%d)' % (nuke,nuked))
 
 # make sure the last of the log gets written out so we are sure we are done
 print('Finished with runpolconvert tasks\n')

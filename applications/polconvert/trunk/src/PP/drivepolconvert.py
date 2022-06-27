@@ -60,6 +60,9 @@ def parseOptions():
     epi += 'written to disk, '
     epi += 'but all of the diagnostic plots are made and saved. '
     epi += 'This is useful to manually tweak things prior to committing. '
+    epi += 'The unconverted *.difx dir is saved as *.save until polconvert'
+    epi += 'completes successfully--at which time it is removed.  You can'
+    epi += 'keep it by setting keepdifxout=True in your environment'
     use = '%(prog)s [options] [input_file [...]]\n  Version'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     primary = parser.add_argument_group('Primary Options')
@@ -83,6 +86,10 @@ def parseOptions():
         help='table naming scheme: v{0..11} are for QA2 tables, or '
             's{0...} for non-QA2 cases.  Use "help" for details.')
     # not normally needed, secondary arguments
+    secondy.add_argument('-Y', '--XYtable', dest='XYtable',
+        default='XY0.APP', metavar='STRING',
+        help='Normally the XY phase is captured in ...XY0.APP, but '
+        'if an alternate table is needed, you can use, e.g. XY0kcrs.APP')
     secondy.add_argument('-P', '--parallel', dest='parallel',
         default=6, metavar='INT', type=int,
         help='Number of jobs to run in parallel. '
@@ -90,7 +97,18 @@ def parseOptions():
     secondy.add_argument('-p', '--prep', dest='prep',
         default=False, action='store_true',
         help='run prepolconvert.py on the same joblist--'
-        'generally not a good idea unless you are certain it will work')
+        'generally not a good idea unless you are certain it will work '
+        ' and the -D option is required to specify a source')
+    secondy.add_argument('-k', '--nuke', dest='nuke',
+        default=False, action='store_true',
+        help='used with the -p argument to nuke the input files '
+        'if they are present; this is only sensible if working '
+        'outside of the original correlation directory (which is '
+        'recommended')
+    secondy.add_argument('-D', '--data', dest='data',
+        default='', metavar='DIR',
+        help='the source data directory for the -p option: '
+        '-D "dir" is equivalent to prepolconvert -s "dir" ...')
     secondy.add_argument('-a', '--ant', dest='ant',
         default=1, metavar='INT', type=int,
         help='1-based index of linear (ALMA) antenna (normally 1)')
@@ -129,8 +147,9 @@ def parseOptions():
     develop.add_argument('-x', '--xyadd', dest='xyadd',
         default='', metavar='STRING',
         help='user supplied per station XY angle adjustment dict, e.g. '
-        ' "Xx:0.0, ..."  (empty by default).  Normally 180.0 or 0.0 are '
-        ' the values you might need to supply ')
+        ' "XX":0.0, ...  (empty by default) where XX is a linearly '
+        ' polarized antenna.  Normally "AA":180.0 or "AA":0.0 are '
+        ' the values you might need to supply for the antenna AA. ')
     develop.add_argument('-E', '--avgtime', dest='avgtime',
         default=0.0, metavar='FLOAT', type=float,
         help='If >0 this will time-average the gains to reduce noise')
@@ -220,6 +239,9 @@ def tableSchemeHelp():
 
     The second scheme assumes an initial reduction with <TBD.py>.
 
+    If an alternate table for the XY0 phase is suggested, you can change
+    the name with -Y; e.g. XY0.APP to XY0kcrs.APP
+
     Finally an environment variable QA2TABLES may be set to a comma-sep
     list of compete table names (ignoring label, concatenated and calibrated)
     may be used for any arbitrary set of tables.
@@ -237,53 +259,61 @@ def calibrationChecks(o):
     ### label processing
     if o.label == '':
         raise Exception('A label (-l) is required to proceed')
-    if o.verb: print('Using label %s' % o.label)
+    if o.verb: print('Using label %s' % o.label, 'cal table set', o.qa2)
     o.constXYadd = 'False'
     o.conlabel = o.label
     o.callabel = o.label
+    tbwarn=False
     ### developmental
     if o.qa2 == 'v0':   # original 1mm names
         o.qal = ['antenna.tab','calappphase.tab', 'NONE', 'bandpass-zphs.cal',
                'ampgains.cal.fluxscale', 'phasegains.cal', 'XY0amb-tcon']
+        tbwarn = True
     elif o.qa2 == 'v1': # revised 3mm names
         o.qal = ['ANTENNA', 'calappphase', 'NONE', 'bandpass-zphs',
                'flux_inf', 'phase_int.APP', 'XY0.APP' ]
+        tbwarn = True
     elif o.qa2 == 'v2': # revised 3mm names with Dterms (default)
         o.qal = ['ANTENNA', 'calappphase', 'Df0', 'bandpass-zphs',
                'flux_inf', 'phase_int.APP', 'XY0.APP' ]
+        tbwarn = True
     elif o.qa2 == 'v3': # revised 3mm names with Dterms, constant XYadd
         o.constXYadd = 'True'
         o.qal = ['ANTENNA', 'calappphase', 'Df0', 'bandpass-zphs',
                'flux_inf', 'phase_int.APP', 'XY0.APP' ]
+        tbwarn = True
     ### production default
     elif o.qa2 == 'v4' or o.qa2 == 'v8': # v3+D-APP/G-APP
         o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', 'bandpass-zphs',
-               'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.APP' ]
+               'flux_inf.APP', 'phase_int.APP', o.XYtable, 'Gxyamp.APP' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
         if o.qa2 == 'v8': o.qal[5] += '.XYsmooth'
     ### or other desperation plans
     elif o.qa2 == 'v5' or o.qa2 == 'v9': # v3+D-ALMA/G-ALMA
         o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', 'bandpass-zphs',
-               'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.ALMA' ]
+               'flux_inf.APP', 'phase_int.APP', o.XYtable, 'Gxyamp.ALMA' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
         if o.qa2 == 'v9': o.qal[5] += '.XYsmooth'
     elif o.qa2 == 'v6' or o.qa2 == 'v10': # v3+D-ALMA/G-APP
         o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', 'bandpass-zphs',
-               'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.APP' ]
+               'flux_inf.APP', 'phase_int.APP', o.XYtable, 'Gxyamp.APP' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
         if o.qa2 == 'v10': o.qal[5] += '.XYsmooth'
     elif o.qa2 == 'v7' or o.qa2 == 'v11': # v3+D-APP/G-ALMA
         o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', 'bandpass-zphs',
-               'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.ALMA' ]
+               'flux_inf.APP', 'phase_int.APP', o.XYtable, 'Gxyamp.ALMA' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
         if o.qa2 == 'v11': o.qal[5] += '.XYsmooth'
     ### if push comes to shove
     else:               # supply via environment variable
         o.qal = os.environ['QA2TABLES'].split(',')
+    if tbwarn:
+        print('\n\n ***You have selected an obsolete set of tables')
+        print('Will proceed--but you had better known what you are doing.\n')
     if len(o.qal) < 7:
         raise Exception('at least 7 QA2 tables are required, see --qa2 option')
     keys = ['a', 'c', 'd', 'b', 'g', 'p', 'x', 'y']
@@ -389,18 +419,48 @@ def checkOptions(o):
     inputRelatedChecks(o)
     runRelatedChecks(o)
 
+def checkExisting(o):
+    '''
+    Refuse to run if any of input, calc, flag, im, difx or save are present'
+    '''
+    suffile = ['input', 'calc', 'flag', 'im' ]
+    suffdir = ['difx', 'save' ]
+    oops = []
+    for ii in o.nargs:
+        base = ii[:-6]
+        for s in suffile:
+            fd = base + '.' + s
+            if o.verb: print('checking',fd)
+            if os.path.exists(fd): oops.append(fd)
+        for s in suffdir:
+            fd = base + '.' + s
+            if o.verb: print('checking',fd)
+            if os.path.exists(fd): oops.append(fd)
+    if len(oops) == 0: return
+    print('Found several files that would be overwritten:')
+    for fd in oops:
+        print('  ',fd)
+    raise Exception('Stopping since -k is not set')
+
 def runPrePolconvert(o):
     '''
     Run prepolconvert using the supplied jobs.
     '''
     cmd = 'prepolconvert.py'
+    print('\nRunning', cmd, 'on', o.nargs)
     if o.verb: cmd += ' -v'
+    if o.nuke: cmd += ' -k'
+    else: checkExisting(o)
+    if o.data: cmd += ' -s "%s"' % o.data
+    else: raise Exception('The -D option is required with -p')
+    # ok, actually run the command
     for ii in o.nargs: cmd += ' ' + ii
     cmd += ' > prepol.log 2>&1'
     if o.verb:
-        print('Running ' + cmd)
+        print('\nRunning ' + cmd + '\n')
     if os.system(cmd):
         raise Exception('Error while running prepolconvert, see prepol.log')
+    print('Files imported; see prepol.log\n')
 
 def updatePlotAntMaps(o, antmap):
     '''
@@ -456,6 +516,7 @@ def commonInputGrokkage(o):
         o.mfreqset      set of median frequencies by job
         o.zfirst        global first (0-based) frequency index
         o.zfinal        global final (0-based) frequency index
+        o.zffs          per-scan (zfirst,zfinal) pairs (zoom or target)
     note that jobs that do not contain the 'alma' station are dropped
     from the list of jobs to process (i.e. almaline == '').  These
     lists are thus ordered by the new set of jobs to process.
@@ -471,6 +532,7 @@ def commonInputGrokkage(o):
     o.remote_map = []
     o.zoomfreqs  = []
     o.targfreqs  = []
+    o.zffs = list()
     o.mfreqset   = set()
     # things in the frequency table
     zoom_re = re.compile(r'^ZOOM.FREQ.INDEX.\d+:\s*(\d+)')
@@ -534,8 +596,8 @@ def commonInputGrokkage(o):
         cfrq = sorted(list(cfrqset))
         o.mfreqset.add(cfrq[len(cfrq)//2])
     # update the set of jobs
+    if o.verb: print('Retaining',newargs,'out of',len(o.nargs),'jobs')
     o.nargs = newargs
-    if o.verb: print('Retaining',len(o.nargs),'jobs')
     # o.jobnums was synchronized above, but we need to resync
     # this, which was originally set in inputRelatedChecks()
     o.djobs = str(list(map(str,o.jobnums)))
@@ -590,6 +652,7 @@ def useTheUserIFlist(o):
     The actual work is in the input template, so here we just check.
     Return True if user list was provided.
     '''
+    if o.verb: print('useTheUserIFlist %s "%s"'%(str(o.ozlogic),str(o.iflist)))
     if o.ozlogic: return False
     if o.iflist == '': return False
     o.zlist = o.iflist.split(',')
@@ -599,7 +662,7 @@ def useTheUserIFlist(o):
     if o.verb: print('zlist is',o.zlist)
     return True
 
-def getFirstFinal(ofreqs):
+def getFirstFinal(ofreqs, o):
     '''
     Helper for deduceOutputBands() and deduceZoomIndices() to
     find first and final from the list of sets of indices.
@@ -612,6 +675,8 @@ def getFirstFinal(ofreqs):
         szmf = sorted(list(zmf))
         sfir = int(szmf[0])
         sfin = int(szmf[-1])
+        # per job zoom or target freq id min/max pair
+        o.zffs.append((sfir,sfin))
         if sfir < first: first = sfir
         if sfin > final: final = sfin
     if first == 100000 or final == -2:
@@ -627,8 +692,10 @@ def deduceOutputBands(o):
     ## FIXME-later: create per-job first and final or lists
     Return True if TARGET FREQs were found.
     '''
+    if o.verb: print('deduceOutputBands',o.ozlogic)
     if o.ozlogic: return False
-    o.zfirst,o.zfinal = getFirstFinal(o.targfreqs)
+    o.zfirst,o.zfinal = getFirstFinal(o.targfreqs, o)
+    if o.verb: print('getFirstFinal',o.zfirst,o.zfinal)
     if o.zfirst == -1: return False
     # flatten the list of target freqs and remove duplicates
     freqIds = itertools.chain(*o.targfreqs)
@@ -646,8 +713,10 @@ def deduceZoomIndices(o):
     ### FIXME-later: create per-job first and final or lists
     Return True if ZOOM bands provided what we need.
     '''
+    if o.verb: print('deduceZoomIndices',o.ozlogic)
     if o.ozlogic: return False
-    o.zfirst,o.zfinal = getFirstFinal(o.zoomfreqs)
+    o.zfirst,o.zfinal = getFirstFinal(o.zoomfreqs, o)
+    if o.verb: print('getFirstFinal',o.zfirst,o.zfinal)
     if o.zfirst == -1: return False
     return True
 
@@ -667,6 +736,7 @@ def oldDeduceZoomIndices(o):
     o.remotelist = []
     o.remotename = []
     o.remote_map = []
+    o.zlist = []
     zoompatt = r'^ZOOM.FREQ.INDEX.\d+:\s*(\d+)'
     # we call it 'alma' but o.lin holds the choice
     almapatt = r'^TELESCOPE NAME %d:\s*%s' % (o.ant-1,o.lin)
@@ -730,6 +800,7 @@ def oldDeduceZoomIndices(o):
         cfrq.sort()
         zfirst.add(zfir)
         zfinal.add(zfin)
+        o.zffs.append((zfir,zfin))
         mfqlst.add(cfrq[len(cfrq)//2])
     o.nargs = newargs
     # o.jobnums is also synchronized
@@ -737,7 +808,8 @@ def oldDeduceZoomIndices(o):
     # o.remotename and o.remote_map are just for readable diagnostics below
     # and we resync o.djobs here
     o.djobs = str(list(map(str,o.jobnums)))
-    if verb: print('jobs now "%s"'%o.djobs)
+    if o.verb: print('jobs now "%s"'%o.djobs)
+    if o.verb: print('zffs now',o.zffs)
     if len(zfirst) != 1 or len(zfinal) != 1:
         if o.zmchk:
             raise Exception('Encountered ambiguities in zoom freq ranges: ' +
@@ -799,6 +871,7 @@ def plotPrepList(o):
     plots(adjusted) is more than 1, then sub-sample the list for the
     set to plot.
     '''
+    if o.verb: print('plotPrepList', o.zlist)
     zlen = len(o.zlist)
     if o.fringe > zlen:
         o.fringe = zlen
@@ -807,6 +880,8 @@ def plotPrepList(o):
         o.doPlot = ['','#','#','']
         o.flist = ','.join(
             [str(o.zlist[(i*zlen)//o.fringe]) for i in range(o.fringe)])
+    # o.flist is indices into doIF
+    if o.verb: print('flist is',o.flist)
 
 def plotPrepOrig(o):
     '''
@@ -814,6 +889,7 @@ def plotPrepOrig(o):
     o.doPlot, o.remote and o.flist for the first/final case.
     '''
     # handle the case of a continuous, common list for all jobs
+    if o.verb: print('plotPrepOrig', o.zfirst,o.zfinal)
     if o.fringe > o.zfinal+1-o.zfirst:
         o.fringe = o.zfinal+1-o.zfirst
         print('Reduced number of fringe plot channels to %d' % o.fringe)
@@ -822,6 +898,8 @@ def plotPrepOrig(o):
         o.flist = '0'                   # first entry
         for ii in range(1,o.fringe):    # and the rest
             o.flist += ',(%d*len(doIF)//%d)' % (ii, o.fringe)
+    # o.flist is indices into doIF
+    if o.verb: print('flist',o.flist)
 
 def plotPrep(o):
     '''
@@ -1045,7 +1123,10 @@ def createCasaInputParallel(o):
     to the createCasaInput() input case except we must first create
     a working directory of the appropriate name before creating the
     script file.  The working directory (in the other case) was
-    created in runpolconvert after the execution.
+    created in runpolconvert after the execution.  Since the casa input
+    and output files contain debug messages, we go to the extra step
+    of resetting all the o. variables to what actually pertains to the
+    job at hand.  (Otherwise the debugging messages are too confusing.)
     '''
     if o.verb: print('Creating CASA work dirs and input files ' + o.input)
     o.workdirs = {}
@@ -1071,16 +1152,19 @@ def createCasaInputParallel(o):
     o.remotelist = []
     o.nargs = []
     del(o.remote_map)
+    o.zfirstglobal = o.zfirst
+    o.zfinalglobal = o.zfinal
+    zffs = o.zffs
     if o.verb:
         print('  input array lengths', ','.join([str(len(x)) for x in
             [jnums, remotelist, amapdicts, zoomfreqs, targfreqs,
-                nargs, jnums, djays, rname]]), 'djays',djays)
+                nargs, jnums, djays, rname, zffs]]), 'djays',djays)
     # pull the per-job info from the lists so that the debugging template
     # output invoked for createCasaInput() doesn't contain confusing crap.
-    for job,rem,ad,zf,tf,na,jn,dj,rn in map(
-        lambda x,y,z,u,v,w,s,r,q:(x,y,z,u,v,w,s,r,q),
+    for job,rem,ad,zf,tf,na,jn,dj,rn,ff in map(
+        lambda x,y,z,u,v,w,s,r,q,f:(x,y,z,u,v,w,s,r,q,f),
         jnums, remotelist, amapdicts, zoomfreqs, targfreqs,
-        nargs, jnums, djays, rname):
+        nargs, jnums, djays, rname, zffs):
         savename = o.exp + '_' + job
         workdir = o.now.strftime(savename + '.polconvert-%Y-%m-%dT%H.%M.%S')
         os.mkdir(workdir)
@@ -1093,6 +1177,8 @@ def createCasaInputParallel(o):
         o.jobnums = jn
         o.djobs = dj
         o.remotename = rn
+        o.zfirst,o.zfinal = ff
+        o.zffs = ff
         if createCasaInput(o, odjobs, '..', workdir):
             cmdfile,fullpath = createCasaCommand(o, job, workdir)
             if cmdfile == 'error':
@@ -1287,14 +1373,15 @@ if __name__ == '__main__':
         runPrePolconvert(opts)
     # this is somewhat "temporary"
     if opts.iflist == 'original':
-        print('Original zoom logic requested')
+        print('Original zoom logic requested -- iflist ignored')
         opts.iflist = ''
         opts.ozlogic = True
     else:
-        print('Using user specified iflist',opts.iflist)
+        print('Using user specified iflist "',opts.iflist,'" if any')
         opts.ozlogic = False
     # various work in preparation for job creation and execution
     commonInputGrokkage(opts)
+    print('CommonInputGrokkage done')
     if useTheUserIFlist(opts):
         print('Proceeding with the User-provide list')
     elif deduceOutputBands(opts):
@@ -1304,12 +1391,16 @@ if __name__ == '__main__':
     else:
         print('Proceeding with the original zoom logic')
         oldDeduceZoomIndices(opts)     # original derived from ZOOMs
+    print('Zoom/Output Band deductions done')
     plotPrep(opts)
     # run the jobs in parallel
     if opts.verb:
         print('\nParallel execution with %d threads\n' % opts.parallel)
-    createCasaInputParallel(opts)
-    executeCasaParallel(opts)
+    if len(opts.nargs) > 0:
+        createCasaInputParallel(opts)
+        executeCasaParallel(opts)
+    elif opts.verb:
+        print('\nWarning: after filtering, there were no jobs to execute\n')
     if opts.verb:
         print('\nDrivePolconvert execution is complete\n')
     # explicit 0 exit 

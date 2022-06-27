@@ -55,6 +55,11 @@ In any case, a full set of environment variables as must be supplied.
 [ -z "$proj"  ] && { echo proj  must be defined ; exit 1 ; }
 [ -z "$release"  ] && { echo release must be defined ; exit 1 ; }
 
+# it is not clear if zoomchk is useful in the OutputBands era.
+[ -n "$zchk" ] || zchk=true
+[ "$zchk" = true -o $zchk = false ] ||
+    { echo zchk must be true or false; exit 1 ; }
+
 # apply joblist -u flag
 [ -z "$uniq"  ] && uniq=false
 [ "$uniq" = 'true' -o "$uniq" = 'false' ] || {
@@ -112,8 +117,8 @@ $polconvert && {
     prepolconvert.py -v -k -s $dout $jobs
     # evaluate partitioning of job list (use -v if error)
     echo \
-    $ehtc/ehtc-zoomchk.py -v $jobs
-    $ehtc/ehtc-zoomchk.py -v $jobs
+    $zchk && $ehtc/ehtc-zoomchk.py -v $jobs
+    $zchk && $ehtc/ehtc-zoomchk.py -v $jobs
     # subdivide $jobs as necessary, do the polconvert on each set of $jobs
     echo \
     drivepolconvert.py -v $opts -l $pcal $jobs
