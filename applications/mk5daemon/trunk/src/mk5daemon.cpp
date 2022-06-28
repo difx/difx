@@ -33,6 +33,7 @@
 #include <cerrno>
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <algorithm>
 #include <unistd.h>
@@ -1114,6 +1115,10 @@ int main(int argc, char **argv)
     int halfLoadMonInterval;
     int pid;
     int status;
+#ifdef HAS_MARK6META
+    std:: ostringstream mk6out;
+    std::streambuf* backup;
+#endif
 
 #ifdef HAVE_XLRAPI_H
     time_t firstTime;
@@ -1249,19 +1254,25 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	//ofstream out("my_log");
-	//clog.rdbuf(out.rdbuf());
         if(options.isMk6)
         {
 
 #ifdef HAS_MARK6META
-	//	clog << "test" << endl;
+                // mark6meta library writes messages to clog
+                // redirect clog to be able to write the messages to the mk5daemon log
+                backup = clog.rdbuf();
+                clog.rdbuf(mk6out.rdbuf());
+
 		D->mark6 = new Mark6();
+
+                Logger_logData(D->log, mk6out.str().c_str());
+                mk6out.str("");
 #else
 		fprintf(stderr, "Error: mark6 option provided but Mark6 support is not compiled in.\n");
 
 		exit(EXIT_FAILURE);
 #endif
+
 	}
         
 	while(!D->dieNow)
@@ -1309,13 +1320,16 @@ int main(int argc, char **argv)
                                 // check for new modules on a mark6
                                 if(options.isMk6)
                                 {
-//clog << "pre poll" << endl;
                                     try
                                     {
+
                                         D->mark6->pollDevices();
                                         D->mark6->sendStatusMessage();
+                                        Logger_logData(D->log, mk6out.str().c_str());
+                                        mk6out.str("");
                                     }
                                     catch(Mark6InvalidMetadata& ex)
+        
                                     {
                                         cerr << "No valid Mark6 metadata found, retrying again later. The error was: " << ex.what() << endl;   
                                     }
@@ -1512,6 +1526,12 @@ int main(int argc, char **argv)
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Stopping %s ver. %s\n", program, version);
 	Logger_logData(D->log, message);
 
+#ifdef HAS_MARK6META
+        // restore clog redirection
+        if(options.isMk6)
+              clog.rdbuf(backup);
+#endif
+        
 	deleteMk5Daemon(D);
 
 	return EXIT_SUCCESS;
