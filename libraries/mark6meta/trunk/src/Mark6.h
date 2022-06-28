@@ -31,6 +31,7 @@
 
 #include "Mark6DiskDevice.h"
 #include "Mark6Module.h"
+#include "Mark6Controller.h"
 
 /**
  * Custom exception class for reporting Mark6 related errors
@@ -64,22 +65,23 @@ public:
 class Mark6
 {
 private:
-	static const int NUMSLOTS = 4;                                      // number of slots per mark6 unit
-       
-        
 	int fd;		// file descriptor for the udev monitor
         struct udev *udev_m;
         struct udev_monitor *mon;
 	std::vector<Mark6DiskDevice> mountedDevices_m;
 	std::vector<Mark6DiskDevice> removedDevices_m;
         std::vector<Mark6DiskDevice> newDevices_m;
-        Mark6Module modules_m[NUMSLOTS];
+        std::vector<Mark6Controller> controllers_m;
+        std::vector<Mark6Module> modules_m;
+        std::vector<std::string>  slotIds_m;
         std::string linkRootData_m;                 // default path for creating symbolic links to the mount points of the data partitions
         std::string linkRootMeta_m;                 // default path for creating symbolic links to the mount points of the meta partitions
         std::string mountRootData_m;        //                
         std::string mountRootMeta_m;    
-        std::string slotIds_m[NUMSLOTS];
         std::string diskIds_m[Mark6Module::MAXDISKS];
+        int numSlots_m;                 // the number of slots present in the mark6 system (2 per controller)
+        int readControllerConfig();
+        void writeControllerConfig();
         
         void manageDeviceChange();
 	void validateMountDevices();
@@ -95,6 +97,7 @@ public:
         bool isMounted(std::string deviceName);
         Mark6DiskDevice *getMountedDevice(std::string deviceName);
         void removeMountedDevice(Mark6DiskDevice device);
+        int enumerateControllers();
         int enumerateDevices();
         void cleanUp();
         int getSlot(std::string eMSN);

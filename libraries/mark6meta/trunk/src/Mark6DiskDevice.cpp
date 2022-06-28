@@ -99,6 +99,7 @@ std::string Mark6DiskDevice::getName() const {
  */
 bool Mark6DiskDevice::isValid()
 {
+    //clog << diskId_m << " " << controllerId_m << endl;
     if (diskId_m == -1)
         return(false);
     if (controllerId_m == -1)
@@ -127,29 +128,19 @@ int Mark6DiskDevice::getPosition() const {
 /**
  * Determines the slot (bank) in which the device is located by inspecting the controllerId and the diskId. 
  * NOTE: numbering of the slots is off by 1 compared to the bank labels written on the Mark6; e.g. slot=0 refers to bank=1 and so on. 
- * @return the slot number of the disk device (0-3)
+ * @return the slot number of the disk device (0-3), -1 in case of error
  */
 int Mark6DiskDevice::getSlot() const {
     
     //cout << "device: " << name_m << " diskid= " << diskId_m << " controllerid= " << controllerId_m << endl;
     if ((controllerId_m == -1) || (diskId_m == -1))
         return(-1);
-   
-    if (controllerId_m == 0)
-    {
-        if (diskId_m <= 7)
-            return(2);
-        else if ((diskId_m > 7) && (diskId_m <= 15))
-            return(3);
-    }
-    else if (controllerId_m == 1)
-    {
-        if (diskId_m <= 7)
-            return(0);
-        else if ((diskId_m > 7) && (diskId_m <= 15))
-            return(1);
-    }
 
+    if (diskId_m <= 7)
+        return(controllerId_m*2);
+    else if ((diskId_m > 7) && (diskId_m <= 15))
+        return(controllerId_m*2+1);
+   
     return(-1);
 }
 

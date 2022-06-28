@@ -127,36 +127,34 @@ void Mark6Meta::parse(string rootPath)
     }
     infile.close();
     
-    // parse group
+    // parse group in case a group file exist on the meta data partition
     path = rootPath + "/group";
-    if (stat( path.c_str(), &info ) != 0 )
+    if (stat( path.c_str(), &info ) == 0 )
     {
-        throw  Mark6InvalidMetadata ("The meta file: group does not exist at:" + rootPath);
-    }
-    
-    ifstream groupfile(path.c_str());
+        ifstream groupfile(path.c_str());
 
-    int count = 0;
-    int groupCount = -1;
-    while(getline(groupfile, line, ':')) 
-    {
-        count++;
-        if (count == 1)
+        int count = 0;
+        int groupCount = -1;
+        while(getline(groupfile, line, ':')) 
         {
-            stringstream ss(line);
-            ss >> groupCount;
-            continue;
+            count++;
+            if (count == 1)
+            {
+                stringstream ss(line);
+                ss >> groupCount;
+                continue;
+            }
+            //cout << "token " << line << endl;
+            group_m.push_back(line);
         }
-        //cout << "token " << line << endl;
-        group_m.push_back(line);
-    }
-    groupfile.close();
-    
-    if (group_m.size() != count-1)
-    {
-        stringstream message;
-        message << "Meta data indicates a group size of " << groupCount << " but  " << count-1 << " members have been listed.";
-        throw Mark6InvalidMetadata (message.str());
+        groupfile.close();
+        
+        if (group_m.size() != count-1)
+        {
+            stringstream message;
+            message << "Meta data indicates a group size of " << groupCount << " but  " << count-1 << " members have been listed.";
+            throw Mark6InvalidMetadata (message.str());
+        }
     }
 
         

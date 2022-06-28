@@ -5,12 +5,14 @@ h_sources = \
 	Mark6.h \
 	Mark6DiskDevice.h \
 	Mark6Meta.h \
+	Mark6Controller.h \
 	Mark6Module.h
 
 cpp_sources = \
 	Mark6.cpp \
 	Mark6DiskDevice.cpp \
 	Mark6Meta.cpp \
+	Mark6Controller.cpp \
 	Mark6Module.cpp
 
 library_includedir = $(includedir)/mark6meta
