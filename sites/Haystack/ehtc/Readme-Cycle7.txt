@@ -344,10 +344,10 @@ for r in $roots ; do fourfit -bA? -c $ers.conf $r & done
 # wait
 fplot */A[^A].B*
 ### first-root
-### SNR LL  RR  LR  RL
+### SNR  LL   RR   LR   RL
 ### ...
 ### second-root
-### SNR LL  RR  LR  RL
+### SNR  LL   RR   LR   RL
 ### ...
 
 #

@@ -1368,9 +1368,9 @@ if __name__ == '__main__':
     argv = ' '.join(sys.argv)
     opts = parseOptions()
     opts.argv = argv
-    checkOptions(opts)
     if opts.prep:
         runPrePolconvert(opts)
+    checkOptions(opts)
     # this is somewhat "temporary"
     if opts.iflist == 'original':
         print('Original zoom logic requested -- iflist ignored')
