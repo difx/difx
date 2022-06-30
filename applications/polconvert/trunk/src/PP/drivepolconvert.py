@@ -880,7 +880,9 @@ def plotPrepList(o):
         o.doPlot = ['','#','#','']
         o.flist = ','.join(
             [str(o.zlist[(i*zlen)//o.fringe]) for i in range(o.fringe)])
-    # o.flist is indices into doIF
+    else:
+        o.flist = ''
+    # o.flist is indices into doIF to be plotted
     if o.verb: print('flist is',o.flist)
 
 def plotPrepOrig(o):
@@ -898,7 +900,9 @@ def plotPrepOrig(o):
         o.flist = '0'                   # first entry
         for ii in range(1,o.fringe):    # and the rest
             o.flist += ',(%d*len(doIF)//%d)' % (ii, o.fringe)
-    # o.flist is indices into doIF
+    else:
+        o.flist = ''
+    # o.flist is indices into doIF to be plotted
     if o.verb: print('flist',o.flist)
 
 def plotPrep(o):
@@ -952,6 +956,7 @@ def getInputTemplate(o):
         else:   # str(val) is acceptable to print
             template += ('\n    print("debug: %12s = ", %s )' % (key,val))
     template += '''
+    # o.doPlot[0] twice
     %simport pylab as pl
     %spl.ioff()
     #
@@ -977,16 +982,16 @@ def getInputTemplate(o):
         rpcpath = os.environ['DIFXROOT'] + '/share/polconvert/runpolconvert.py'
     # user-provided list of freq indices to convert via o.iflist:
     doIFstr = '%s'
-    if doIFstr == '':   # original first,final logic; shift by 1
+    if doIFstr == '':   # original o.zfirst,o.zfinal logic; shift by 1
         zfirst=%d
         zfinal=%d
         doIF = list(range(zfirst+1, zfinal+2))
     else:               # use the user list and then: shift by 1
         doIF = [i+1 for i in map(int,doIFstr.split(','))]
     # frequency indices to plot
-    %splotIF = -1                       # plot no channels
-    %splotIF = doIF[int(len(doIF)/2)]   # plot the middle channel
-    %splotIF = [doIF[i] for i in [%s]]  # plot a set of channels
+    %splotIF = -1                       # plot no channels,        o.doPlot[1]
+    %splotIF = doIF[int(len(doIF)/2)]   # plot the middle channel, o.doPlot[2]
+    %splotIF = [doIF[i] for i in [%s]]  # plot a set of channels,  o.doPlot[3], o.flist
     print('using doIF value: ' + str(doIF))
     #
     # calibration tables
