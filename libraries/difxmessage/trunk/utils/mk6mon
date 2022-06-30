@@ -45,312 +45,337 @@ import signal
 import time
 
 def signal_handler(signal, frame):
-	print('You pressed Ctrl+C!')
-	raise KeyboardInterrupt
+        print('You pressed Ctrl+C!')
+        raise KeyboardInterrupt
 
 program = 'mk6mon'
 author  = 'Helge Rottmann'
-version = '0.2'
-verdate = '20190916'
+version = '0.3'
+verdate = '20220629'
 
 def usage(prog):
-	print('%s ver. %s  %s  %s\n' % (program, version, author, verdate))
-	print('Usage: %s [options]\n' % prog)
-	print('options can include:')
-	print('  --help')
-	print('  -h        print help information and quit\n')
+        print('%s ver. %s  %s  %s\n' % (program, version, author, verdate))
+        print('Usage: %s [options]\n' % prog)
+        print('options can include:')
+        print('  --help')
+        print('  -h        print help information and quit\n')
 
 class Mk6state:
 
-	def __init__(self):
-		self.ok    = False
-		self.mk6type  = ''
-		self.pid   = 0
-		self.id    = ''
-		self.mk6   = ''
-		self.seq   = 0
-		self.msn1  = 'none'
-		self.msn2  = 'none'
-		self.msn3  = 'none'
-		self.msn4  = 'none'
-		self.disks1 = 0
-		self.disks2 = 0
-		self.disks3 = 0
-		self.disks4 = 0
-		self.activeVSN  = 'none'
-		self.state = 'Unknown'
-		self.scan  = 0
-		self.name  = ''
-		self.pos   = 0
-		self.rate  = 0.0
-		self.date  = 0.0
+        def __init__(self):
+                self.ok    = False
+                self.mk6type  = ''
+                self.pid   = 0
+                self.id    = ''
+                self.mk6   = ''
+                self.seq   = 0
+                self.msn1  = 'none'
+                self.msn2  = 'none'
+                self.msn3  = 'none'
+                self.msn4  = 'none'
+                self.disks1 = 0
+                self.disks2 = 0
+                self.disks3 = 0
+                self.disks4 = 0
+                self.activeVSN  = 'none'
+                self.state = 'Unknown'
+                self.scan  = 0
+                self.name  = ''
+                self.pos   = 0
+                self.rate  = 0.0
+                self.date  = 0.0
 
-	def getstring(self):
-		if self.ok and self.mk6type == 'status':
-			str = '%-12s%8s (%d)      %8s (%d)      %8s (%d)      %8s (%d)      %s' % \
-				(self.mk6, self.msn1, self.disks1, self.msn2, self.disks2, self.msn3, self.disks3, self.msn4, self.disks4, \
+        def getstring(self):
+                if self.ok and self.mk6type == 'status':
+                        str = '%-12s%8s (%d)      %8s (%d)      %8s (%d)      %8s (%d)      %s' % \
+                                (self.mk6, self.msn1, self.disks1, self.msn2, self.disks2, self.msn3, self.disks3, self.msn4, self.disks4, \
                                  time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-		elif self.ok and self.mk6type == 'activity':
-			if self.state == 'GetDirectory':
-				position = '%d - %d%%' % (self.pos / 1000, self.pos % 1000)
-				str = '%-12s%8s %14s      %7.2f %14s %17s %12.6f' % \
-					(self.mk6, self.activeVSN, self.state, self.rate, position, self.name, self.date)
-			else:
-				str = '%-12s%8s %14s      %7.2f %14d %17s %12.6f' % \
-					(self.mk6, self.activeVSN, self.state, self.rate, self.pos, self.name, self.date)
-		else:
-			str = ''
-		return str
+                elif self.ok and self.mk6type == 'activity':
+                        if self.state == 'GetDirectory':
+                                position = '%d - %d%%' % (self.pos / 1000, self.pos % 1000)
+                                str = '%-12s%8s %14s      %7.2f %14s %17s %12.6f' % \
+                                        (self.mk6, self.activeVSN, self.state, self.rate, position, self.name, self.date)
+                        else:
+                                str = '%-12s%8s %14s      %7.2f %14d %17s %12.6f' % \
+                                        (self.mk6, self.activeVSN, self.state, self.rate, self.pos, self.name, self.date)
+                else:
+                        str = ''
+                return str
 
-	def getmk6(self):
-		return self.mk6
+        def getmk6(self):
+                return self.mk6
+
+class Mk6SlotState:
+
+    def __init__(self):
+        self.ok    = False
+        self.mk6type  = ''
+        self.pid   = 0
+        self.id    = ''
+        self.mk6   = ''
+        self.seq   = 0
+        self.slot  = 0
+        self.msn  = 'none'
+        self.disks = 0
+
 
 class Parser:
 
-	def __init__(self):
-		self._parser = expat.ParserCreate()
-		self._parser.StartElementHandler = self.start
-		self._parser.EndElementHandler = self.end
-		self._parser.CharacterDataHandler = self.data
-		self.tmp = ''
-		self.info = Mk6state()
+        def __init__(self):
+                self._parser = expat.ParserCreate()
+                self._parser.StartElementHandler = self.start
+                self._parser.EndElementHandler = self.end
+                self._parser.CharacterDataHandler = self.data
+                self.tmp = ''
+                self.info = Mk6state()
 
-	def feed(self, data):
-		try:
-			self._parser.Parse(data, 0)
-		except expat.ExpatError:
-			print('\n\n XXX %s XXX' % data)
+        def feed(self, data):
+                try:
+                        self._parser.Parse(data, 0)
+                except expat.ExpatError:
+                        print('\n\n XXX %s XXX' % data)
 
-	def close(self):
-		self._parser.Parse("", 1) # end of data
-		del self._parser # get rid of circular references
+        def close(self):
+                self._parser.Parse("", 1) # end of data
+                del self._parser # get rid of circular references
 
-	def start(self, tag, attrs):
-		pass
+        def start(self, tag, attrs):
+                pass
 
-	def end(self, tag):
-		if tag == 'mark6Status':
-			self.info.ok = True
-			self.info.mk6type = 'status'
-		if tag == 'slot1MSN':
-			if len(self.tmp) != 8:
-				self.info.msn1 = 'none'
-			else:
-				self.info.msn1 = self.tmp.upper()
-		if tag == 'slot2MSN':
-			if len(self.tmp) != 8:
-				self.info.msn2 = 'none'
-			else:
-				self.info.msn2 = self.tmp.upper()
-		if tag == 'slot3MSN':
-			if len(self.tmp) != 8:
-				self.info.msn3 = 'none'
-			else:
-				self.info.msn3 = self.tmp.upper()
-		if tag == 'slot4MSN':
-			if len(self.tmp) != 8:
-				self.info.msn4 = 'none'
-			else:
-				self.info.msn4 = self.tmp.upper()
-		if tag == 'slot1Disks':
-			self.info.disks1 = int(self.tmp)
-		if tag == 'slot2Disks':
-			self.info.disks2 = int(self.tmp)
-		if tag == 'slot3Disks':
-			self.info.disks3 = int(self.tmp)
-		if tag == 'slot4Disks':
-			self.info.disks4 = int(self.tmp)
-		if tag == 'from':
-			self.info.mk6 = self.tmp.lower()
-		if tag == 'mark6Activity':
-			self.info.ok = True
-			self.info.mk6type = 'activity'
-		if tag == 'activeVSN':
-			if len(self.tmp) != 8:
-				self.info.activeVSN = 'none'
-			else:
-				self.info.activeVSN = self.tmp.upper()
-		if tag == 'from':
-			self.info.mk6 = self.tmp.lower()
-		if tag == 'state':
-			self.info.state = self.tmp
-		if tag == 'playRate':
-			self.info.rate = float(self.tmp)
-		if tag == 'dataMJD':
-			self.info.date = float(self.tmp)
-		if tag == 'position':
-			self.info.pos = int(self.tmp)
-		if tag == 'scanNumber':
-			self.info.scan = int(self.tmp)
-		if tag == 'scanName':
-			self.info.name = self.tmp
+        def end(self, tag):
+                if tag == 'mark6Status':
+                        self.info.ok = True
+                        self.info.mk6type = 'status'
+                if tag == 'slot1MSN':
+                        if len(self.tmp) != 8:
+                                self.info.msn1 = 'none'
+                        else:
+                                self.info.msn1 = self.tmp.upper()
+                if tag == 'slot2MSN':
+                        if len(self.tmp) != 8:
+                                self.info.msn2 = 'none'
+                        else:
+                                self.info.msn2 = self.tmp.upper()
+                if tag == 'slot3MSN':
+                        if len(self.tmp) != 8:
+                                self.info.msn3 = 'none'
+                        else:
+                                self.info.msn3 = self.tmp.upper()
+                if tag == 'slot4MSN':
+                        if len(self.tmp) != 8:
+                                self.info.msn4 = 'none'
+                        else:
+                                self.info.msn4 = self.tmp.upper()
+                if tag == 'slot1Disks':
+                        self.info.disks1 = int(self.tmp)
+                if tag == 'slot2Disks':
+                        self.info.disks2 = int(self.tmp)
+                if tag == 'slot3Disks':
+                        self.info.disks3 = int(self.tmp)
+                if tag == 'slot4Disks':
+                        self.info.disks4 = int(self.tmp)
+                if tag == 'from':
+                        self.info.mk6 = self.tmp.lower()
+                if tag == 'mark6Activity':
+                        self.info.ok = True
+                        self.info.mk6type = 'activity'
+                if tag == 'activeVSN':
+                        if len(self.tmp) != 8:
+                                self.info.activeVSN = 'none'
+                        else:
+                                self.info.activeVSN = self.tmp.upper()
+                if tag == 'from':
+                        self.info.mk6 = self.tmp.lower()
+                if tag == 'state':
+                        self.info.state = self.tmp
+                if tag == 'playRate':
+                        self.info.rate = float(self.tmp)
+                if tag == 'dataMJD':
+                        self.info.date = float(self.tmp)
+                if tag == 'position':
+                        self.info.pos = int(self.tmp)
+                if tag == 'scanNumber':
+                        self.info.scan = int(self.tmp)
+                if tag == 'scanName':
+                        self.info.name = self.tmp
+                # mark6SlotStatus message
+                if tag == 'mark6SlotStatus':
+                        self.info.ok = True
+                        self.info.mk6type = 'slotstatus'
+                if tag == 'msn':
+                        if len(self.tmp) != 8:
+                                self.info.msn = 'none'
+                        else:
+                                self.info.msn = self.tmp.upper()
 
-	def data(self, data):
-		self.tmp = data
+                
 
-	def getinfo(self):
-		return self.info.getmk6(), self.info, self.info.getstring()
+        def data(self, data):
+                self.tmp = data
+
+        def getinfo(self):
+                return self.info.getmk6(), self.info, self.info.getstring()
 
 class Display:
 
-	def __init__(self):
-		self.info = {}
-		self.infoActivity = {}
-		self.rows = {}
-		self.rowsActivity = {}
-		self.curs = curses.initscr()
-		#curses.start_color()
-		#curses.init_pair(1, curses.COLOR_RED,curses.COLOR_WHITE)
-		curses.noecho()
-		curses.cbreak()
-		self.curs.keypad(1)
-		self.curs.refresh()
+        def __init__(self):
+                self.info = {}
+                self.infoActivity = {}
+                self.rows = {}
+                self.rowsActivity = {}
+                self.curs = curses.initscr()
+                #curses.start_color()
+                #curses.init_pair(1, curses.COLOR_RED,curses.COLOR_WHITE)
+                curses.noecho()
+                curses.cbreak()
+                self.curs.keypad(1)
+                self.curs.refresh()
 
-	def close(self):
-		curses.nocbreak()
-		self.curs.keypad(0)
-		curses.echo()
-		curses.endwin()
+        def close(self):
+                curses.nocbreak()
+                self.curs.keypad(0)
+                curses.echo()
+                curses.endwin()
 
-	def displayrow(self, info, row):
-		#self.curs.addstr(row, 0, info, curses.color_pair(1))
-		self.curs.addstr(row + 2, 0, info)
-		self.curs.refresh()
+        def displayrow(self, info, row):
+                #self.curs.addstr(row, 0, info, curses.color_pair(1))
+                self.curs.addstr(row + 2, 0, info)
+                self.curs.refresh()
 
-	def displayrowActivity(self, info, row, lenstatrows):
-		#self.curs.addstr(row, 0, info, curses.color_pair(1))
-		#self.curs.addstr(row + lenstatrows + 5, 0, info[0] + ' ' + str(info[1]))
-		self.curs.addstr(row + lenstatrows + 5, 0, info[0])
-		self.curs.refresh()
+        def displayrowActivity(self, info, row, lenstatrows):
+                #self.curs.addstr(row, 0, info, curses.color_pair(1))
+                #self.curs.addstr(row + lenstatrows + 5, 0, info[0] + ' ' + str(info[1]))
+                self.curs.addstr(row + lenstatrows + 5, 0, info[0])
+                self.curs.refresh()
 
-	def displayall(self, lenstatrows):
-		self.curs.clear()
-		self.curs.addstr(0, 0, "Mark6 Module Location")
-		self.curs.addstr(1, 0, "Machine     Slot 1 (# disks)  Slot 2 (# disks)  Slot 3 (# disks)  Slot 4 (# disks)  Status Time")
-		keys = self.rows.keys()
-		for k in keys:
-			self.curs.addstr(self.rows[k] + 2, 0, self.info[k])
+        def displayall(self, lenstatrows):
+                self.curs.clear()
+                self.curs.addstr(0, 0, "Mark6 Module Location")
+                self.curs.addstr(1, 0, "Machine     Slot 1 (# disks)  Slot 2 (# disks)  Slot 3 (# disks)  Slot 4 (# disks)  Status Time")
+                keys = self.rows.keys()
+                for k in keys:
+                        self.curs.addstr(self.rows[k] + 2, 0, self.info[k])
 
-		self.curs.addstr(lenstatrows + 3, 0, "Mark6 Unit Activity")
-		self.curs.addstr(lenstatrows + 4, 0, "Machine          VSN          State    Data Rate       Position         Scan Name     Data MJD")
-		keys = self.rowsActivity.keys()
-		for k in keys:
-			#self.curs.addstr(lenstatrows + 5 + self.rowsActivity[k], 0, self.infoActivity[k][0] + ' ' + str(self.infoActivity[k][1]))
-			self.curs.addstr(lenstatrows + 5 + self.rowsActivity[k], 0, self.infoActivity[k][0])
+                self.curs.addstr(lenstatrows + 3, 0, "Mark6 Unit Activity")
+                self.curs.addstr(lenstatrows + 4, 0, "Machine          VSN          State    Data Rate       Position         Scan Name     Data MJD")
+                keys = self.rowsActivity.keys()
+                for k in keys:
+                        #self.curs.addstr(lenstatrows + 5 + self.rowsActivity[k], 0, self.infoActivity[k][0] + ' ' + str(self.infoActivity[k][1]))
+                        self.curs.addstr(lenstatrows + 5 + self.rowsActivity[k], 0, self.infoActivity[k][0])
 
-		self.curs.refresh()
+                self.curs.refresh()
 
-	def newdata(self, data):
-		k = data[0]
-		j = data[1].activeVSN
-		lenstatrows = len(self.rows)
-		if data[1].mk6type == 'status' and k in self.rows:
-			self.info[k] = data[2]
-			self.displayrow(self.info[k], self.rows[k])
-		elif data[1].mk6type == 'activity' and (k,j) in self.rowsActivity:
-			self.infoActivity[(k,j)] = [data[2], time.time()]
-			self.displayrowActivity(self.infoActivity[(k,j)], self.rowsActivity[(k,j)], lenstatrows)
-		elif data[1].mk6type == 'status':
-			self.rows[k] = 0
-			self.info[k] = data[2]
-			keys = self.rows.keys()
-			i = 0
-			for k in sorted(keys):
-				self.rows[k] = i
-				i += 1
-			self.displayall(len(self.rows))
-		elif data[1].mk6type == 'activity':
-			self.rowsActivity[(k,j)] = 0
-			self.infoActivity[(k,j)] = [data[2], time.time()]
-			keys = self.rowsActivity.keys()
-			i = 0
-			for k in sorted(keys):
-				self.rowsActivity[k] = i
-				i += 1
-			self.displayall(lenstatrows)
-		# delete activity rows 30 seconds old
-		ikeys = self.infoActivity.keys()
-		rowsdeleted = False
-		for key in ikeys:
-			expired = False
-			if self.infoActivity[key][1] + 30 < time.time():
-				expired = True
-				rowsdeleted = True
-				del self.infoActivity[key]
-				del self.rowsActivity[key]
-		if rowsdeleted == True:
-			keys = self.rowsActivity.keys()
-			i = 0
-			for k in sorted(keys):
-				self.rowsActivity[k] = i
-				i += 1
-			self.displayall(lenstatrows)
+        def newdata(self, data):
+                k = data[0]
+                j = data[1].activeVSN
+                lenstatrows = len(self.rows)
+                if data[1].mk6type == 'status' and k in self.rows:
+                        self.info[k] = data[2]
+                        self.displayrow(self.info[k], self.rows[k])
+                elif data[1].mk6type == 'activity' and (k,j) in self.rowsActivity:
+                        self.infoActivity[(k,j)] = [data[2], time.time()]
+                        self.displayrowActivity(self.infoActivity[(k,j)], self.rowsActivity[(k,j)], lenstatrows)
+                elif data[1].mk6type == 'status':
+                        self.rows[k] = 0
+                        self.info[k] = data[2]
+                        keys = self.rows.keys()
+                        i = 0
+                        for k in sorted(keys):
+                                self.rows[k] = i
+                                i += 1
+                        self.displayall(len(self.rows))
+                elif data[1].mk6type == 'activity':
+                        self.rowsActivity[(k,j)] = 0
+                        self.infoActivity[(k,j)] = [data[2], time.time()]
+                        keys = self.rowsActivity.keys()
+                        i = 0
+                        for k in sorted(keys):
+                                self.rowsActivity[k] = i
+                                i += 1
+                        self.displayall(lenstatrows)
+                # delete activity rows 30 seconds old
+                ikeys = self.infoActivity.keys()
+                rowsdeleted = False
+                for key in ikeys:
+                        expired = False
+                        if self.infoActivity[key][1] + 30 < time.time():
+                                expired = True
+                                rowsdeleted = True
+                                del self.infoActivity[key]
+                                del self.rowsActivity[key]
+                if rowsdeleted == True:
+                        keys = self.rowsActivity.keys()
+                        i = 0
+                        for k in sorted(keys):
+                                self.rowsActivity[k] = i
+                                i += 1
+                        self.displayall(lenstatrows)
 
 
 def listen(port, group):
-	dt = 0.0
-	t = 0
-	maxtime = 6000
+        dt = 0.0
+        t = 0
+        maxtime = 6000
 
-	# Now listen for responses, until either time runs out or we get all we need
-	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-	s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 768000)
-	s.bind(('', port))
-	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
-	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
-	s.settimeout(0.2)
-	d = Display()
-	try:
-		while t < maxtime:
-			try:
-				message = s.recv(8000).decode('utf-8')
-			except socket.timeout:
-				t += dt
-				continue
+        # Now listen for responses, until either time runs out or we get all we need
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 768000)
+        s.bind(('', port))
+        mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
+        s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+        s.settimeout(0.2)
+        d = Display()
+        try:
+                while t < maxtime:
+                        try:
+                                message = s.recv(8000).decode('utf-8')
+                        except socket.timeout:
+                                t += dt
+                                continue
 
-			if message[0] != '<':
-				continue
-			p = Parser()
-			p.feed(message)
-			machine, mk6type, strng = p.getinfo()
-			p.close()
-			if len(strng) < 10:
-				continue
-			d.newdata([machine, mk6type, strng])
-	except KeyboardInterrupt:
-		d.close()
-		return 0
-	except:
-		d.close()
-		return 1
-	d.close()
-	return 0
+                        if message[0] != '<':
+                                continue
+                        p = Parser()
+                        p.feed(message)
+                        machine, mk6type, strng = p.getinfo()
+                        p.close()
+                        if len(strng) < 10:
+                                continue
+                        d.newdata([machine, mk6type, strng])
+        except KeyboardInterrupt:
+                d.close()
+                return 0
+        except:
+                d.close()
+                return 1
+        d.close()
+        return 0
 
 # main execution
 
 signal.signal(signal.SIGINT, signal_handler)
 
 if len(argv) >= 2:
-	if len(argv) == 2 and argv[1] in ['-h', '--help']:
-		usage(argv[0])
-		exit(0)
-	else:
-		print('Command line error.  Run with -h for help.\n')
-		exit(1)
+        if len(argv) == 2 and argv[1] in ['-h', '--help']:
+                usage(argv[0])
+                exit(0)
+        else:
+                print('Command line error.  Run with -h for help.\n')
+                exit(1)
 
 
 port = getenv('DIFX_MESSAGE_PORT')
 if port == None:
-	print('DIFX_MESSAGE_PORT needs to be defined')
-	exit(0)
+        print('DIFX_MESSAGE_PORT needs to be defined')
+        exit(0)
 else:
-	port = int(port)
+        port = int(port)
 group = getenv('DIFX_MESSAGE_GROUP')
 if group == None:
-	print('DIFX_MESSAGE_GROUP needs to be defined')
-	exit(0)
+        print('DIFX_MESSAGE_GROUP needs to be defined')
+        exit(0)
 
 while(listen(port, group)):
-	pass
+        pass
 
