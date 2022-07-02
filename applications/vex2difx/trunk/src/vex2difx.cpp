@@ -2586,8 +2586,8 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 			tops = J.calcOps(V, 2*corrSetup->maxInputChans(), corrSetup->doPolar) * 1.0e-12;
 
 			*of << fileBase << " " << J.mjdStart << " " << J.mjdStop << " " << D->nAntenna << " ";
-			*of << maxPulsarBins << " " << maxPulsarBins << " ";
-			*of << maxScanPhaseCentres << " " << maxScanPhaseCentres << " ";
+			*of << maxPulsarBins << " ";
+			*of << maxScanPhaseCentres << " ";
 			p = of->precision();
 			of->precision(4);
 			*of << tops << " ";
