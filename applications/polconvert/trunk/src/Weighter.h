@@ -1,10 +1,10 @@
 /* WEIGHTER - antenna weighting/flagging interface to PolConvert
 
-             Copyright (C) 2015-2020  Ivan Marti-Vidal
+             Copyright (C) 2015-2021  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
-             Observatori Astronomic, Universitat de Valencia
-  
+             University of Valencia (Spain)  
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 class Weighter {
   public:
     Weighter(int nPhase, long *nASDMtimes, long nASDMEntries, int *ASDMant, double **ASDMtimes, int *refants, double *time0, double *time1, double *BadTimes, int NBadTimes, FILE *logF);
+    Weighter(FILE *logF);
     ~Weighter();
 
     bool isPhased(double JDtime);

@@ -87,6 +87,8 @@ AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_CPP
 
+# java is required for buildmytasks, e.g. casa-release/
+# lib/py/lib/python3.8/site-packages/casatools/__casac__/bin/xml-casa
 AC_PATH_PROG([JAVACMD], [java], [/bin/false])
 if [test x$JAVACMD = /bin/false] ; then
     have_java=false

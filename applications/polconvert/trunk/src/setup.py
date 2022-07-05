@@ -29,9 +29,9 @@ if not os.path.exists(libdirs[0]):
 # IT NEEDS FFTW AND GSL:
 DO_SOLVE = True
 
-
-# it is not clear if include_dirs is needed or not
-
+## CHANGE IF NEEDED:
+cfitsio='/usr/include/cfitsio'
+# it is not clear if include_dirs is needed in the Extension or not
 
 sourcefiles1 = ['CalTable.cpp', 'DataIO.cpp', 'DataIOFITS.cpp',
                 'DataIOSWIN.cpp', 'Weighter.cpp', '_PolConvert.cpp']
@@ -42,28 +42,31 @@ sourcefiles3 = ['_getAntInfo.cpp']
 
 sourcefiles4 = ['_XPCal.cpp']
 
+sourcefiles5 = ['_XPCalMF.cpp']
+
 c_ext1 = Extension("_PolConvert", sources=sourcefiles1,
-                  language='c++',
-                  extra_compile_args=["-Wno-deprecated","-O3"],
+                  extra_compile_args=["-Wno-deprecated","-O3","-std=c++11"],
                   library_dirs=libdirs,
                   libraries=['cfitsio'],
                   include_dirs=[np.get_include()],
                   extra_link_args=["-Xlinker", "-export-dynamic"])
 
 c_ext3 = Extension("_getAntInfo", sources=sourcefiles3,
-                  language='c++',
-                  extra_compile_args=["-Wno-deprecated","-O3"],
+                  extra_compile_args=["-Wno-deprecated","-O3","-std=c++11"],
                   library_dirs=libdirs,
                   libraries=['cfitsio'],
                   include_dirs=[np.get_include()],
                   extra_link_args=["-Xlinker", "-export-dynamic"])
 
 c_ext4 = Extension("_XPCal",sources=sourcefiles4,
-                  language='c++',
-                  extra_compile_args=["-Wno-deprecated","-O3"],
+                  extra_compile_args=["-Wno-deprecated","-O3","-std=c++11"],
                   include_dirs=[np.get_include()],
                   extra_link_args=["-Xlinker","-export-dynamic"])
 
+c_ext5 = Extension("_XPCalMF",sources=sourcefiles5,
+                  extra_compile_args=["-Wno-deprecated","-O3","-std=c++11"],
+                  include_dirs=[np.get_include()],
+                  extra_link_args=["-Xlinker","-export-dynamic"])
 
 if DO_SOLVE:
   # gsl depends on cblas on some machines
@@ -81,7 +84,6 @@ if DO_SOLVE:
                   extra_compile_args=["-Wno-deprecated","-O3"],
                   extra_link_args=["-Xlinker", "-export-dynamic"])
 
-cfitsio='/usr/include/cfitsio'
 setup(
     ext_modules=[c_ext1], include_dirs=[cfitsio,'./'],
 )
@@ -94,6 +96,10 @@ setup(
 
 setup(
     ext_modules=[c_ext4],include_dirs=['./'],
+)
+
+setup(
+    ext_modules=[c_ext5],include_dirs=['./'],
 )
 
 

@@ -1,8 +1,7 @@
 /* getAntInfo -
-             Copyright (C) 2017-2020  Ivan Marti-Vidal
-             Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
-             Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
-             Observatori Astronomic, Universitat de Valencia
+             Copyright (C) 2017-2021  Ivan Marti-Vidal
+             Centro Astronomico de Yebes (Spain)
+             Universitat de Valencia (Spain)
   
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -57,11 +56,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #define PyString_AS_STRING(x) PyUnicode_AS_STRING(x)
 #define _PyLong_FromSsize_t(x) PyLong_FromSsize_t(x)
 #endif
-
 // and after some hacking
 #if PY_MAJOR_VERSION >= 3
 #define PyString_AsString(obj) PyUnicode_AsUTF8(obj)
 #endif
+
+
+
 
 /* Docstrings */
 static char module_docstring[] =
@@ -72,29 +73,25 @@ static char getCoords_docstring[] =
     "Returns antenna coordinates";
 static char getMounts_docstring[] =
     "Returns the mount types";
-//z
-//static char getNames_docstring[] = 
-//    "Returns the antenna names (codes)";
 
 /* Available functions */
 static PyObject *getAntInfo(PyObject *self, PyObject *args);
 static PyObject *getCoords(PyObject *self, PyObject *args);
 static PyObject *getMounts(PyObject *self, PyObject *args);
-//z
-//static PyObject *getNames(PyObject *self, PyObject *args);
 
 
 /* Module specification */
 static PyMethodDef module_methods[] = {
     {"getAntInfo", getAntInfo, METH_VARARGS, getAntInfo_docstring},
     {"getCoords", getCoords, METH_VARARGS, getCoords_docstring},
-//z {"getMounts", getMounts, METH_VARARGS, getMounts_docstring},
     {"getMounts", getMounts, METH_VARARGS, getMounts_docstring}, //,
-//  {"getNames", getNames, METH_VARARGS, getNames_docstring},
     {NULL, NULL, 0, NULL}   /* terminated by list of NULLs, apparently */
+
 };
 
+
 /* Initialize the module */
+
 #if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef pc_module_def = {
     PyModuleDef_HEAD_INIT,
@@ -111,12 +108,15 @@ PyMODINIT_FUNC PyInit__getAntInfo(void)
     return(m);
 }
 #else
+
 PyMODINIT_FUNC init_getAntInfo(void)
 {
     PyObject *m = Py_InitModule3("_getAntInfo", module_methods, module_docstring);import_array();
     if (m == NULL)
         return;
+
 }
+
 #endif
 
 ///////////////////////
@@ -146,11 +146,7 @@ static PyObject *getAntInfo(PyObject *self, PyObject *args){
   };
 
   std::string fname;
-
   fname = PyString_AsString(IDI);
-
-
-// TYPE == 1 -> IDI
 
   fitsfile *ifile;
   char ARRAY[] = "ARRAY_GEOMETRY";
@@ -165,13 +161,13 @@ static PyObject *getAntInfo(PyObject *self, PyObject *args){
      return Py_BuildValue("i",1);
   };
   fits_movnam_hdu(ifile, BINARY_TBL, ARRAY,1, &status);
+
   if (status){
      printf("\n\nPROBLEM ACCESSING ARRAY INFO!  ERR: %i\n\n",status); 
      return Py_BuildValue("i",1);
   };
 
   fits_get_num_rows(ifile, &lAux, &status);
-
   if(status){
     printf("\n\nPROBLEM ACCESSING ARRAY INFO!  ERR: %i\n\n",status);
     return Py_BuildValue("i",1);
@@ -199,40 +195,31 @@ static PyObject *getAntInfo(PyObject *self, PyObject *args){
   };
 
   for (jj=0;jj<Nants;jj++){
-
-  fits_read_col(ifile, TDOUBLE, ist, jj+1, 1, 3, NULL, &Coords[3*jj], &iAux, &status);
-  if(status){
-    printf("\n\nPROBLEM ACCESSING ARRAY COORDINATES DATA!  ERR: %i\n\n",status);
-    return Py_BuildValue("i",2);
+    fits_read_col(ifile, TDOUBLE, ist, jj+1, 1, 3, NULL, &Coords[3*jj], &iAux, &status);
+    if(status){
+      printf("\n\nPROBLEM ACCESSING ARRAY COORDINATES DATA!  ERR: %i\n\n",status);
+      return Py_BuildValue("i",2);
+    };
+    fits_read_col(ifile, TINT, imt, jj+1, 1, 1, NULL, &Mounts[jj], &iAux, &status);
+    if(status){
+      printf("\n\nPROBLEM ACCESSING ARRAY MOUNTS DATA!  ERR: %i\n\n",status);
+      return Py_BuildValue("i",2);
+    };
+    printf("ANTENNA %2li: X=%-9.1f Y=%-9.1f Z=%-9.1f | MOUNT: %i\n",
+       jj,Coords[3*jj],Coords[3*jj+1],Coords[3*jj+2],Mounts[jj]);
   };
-
-
-  fits_read_col(ifile, TINT, imt, jj+1, 1, 1, NULL, &Mounts[jj], &iAux, &status);
-  if(status){
-    printf("\n\nPROBLEM ACCESSING ARRAY MOUNTS DATA!  ERR: %i\n\n",status);
-    return Py_BuildValue("i",2);
-  };
-
-
-  printf("ANTENNA %2li: X=%-9.1f Y=%-9.1f Z=%-9.1f | MOUNT: %i\n",jj,Coords[3*jj],Coords[3*jj+1],Coords[3*jj+2],Mounts[jj]);
-
-
-  };
-
-
 
   fits_close_file(ifile, &status);
 
   if(status){
-//z printf("\n\nPROBLEM LOSING FITS-IDI!  ERR: %i\n\n",status);
     printf("\n\nPROBLEM CLOSING FITS-IDI!  ERR: %i\n\n",status);
     return Py_BuildValue("i",3);
   };
 
-
-    return Py_BuildValue("i",0);
+  return Py_BuildValue("i",0);
 
 };
+
 
 
 
@@ -243,25 +230,15 @@ static PyObject *getAntInfo(PyObject *self, PyObject *args){
 static PyObject *getCoords(PyObject *self, PyObject *args){
 
 // Build numpy array:
-
-PyObject *CoordArr;
-//z long CD[2] = {Nants,3};
-//z
-//z GBC had already removed Py_INCREF.
-//z Py_INCREF(CoordArr); -- original code
-//z CoordArr = PyArray_SimpleNewFromData(2, &CD[0], NPY_DOUBLE, (void*) Coords);
-//z Py_INCREF(CoordArr); -- needed only if we retain it and use it
-int nd = 2;
-npy_intp* CD = new npy_intp[nd];
-
-CD[0] = Nants; CD[1] = 3; // = {Nants,3};
-
-//Py_INCREF(CoordArr);
-CoordArr = PyArray_SimpleNewFromData(nd, CD, NPY_DOUBLE, (void*) Coords);
-
-return CoordArr;
-
+  PyObject *CoordArr;
+  int nd = 2;
+  npy_intp* CD = new npy_intp[nd];
+  CD[0] = Nants; CD[1] = 3;
+  CoordArr = PyArray_SimpleNewFromData(nd, CD, NPY_DOUBLE, (void*) Coords);
+  return CoordArr;
 };
+
+
 
 
 
@@ -271,27 +248,15 @@ return CoordArr;
 
 static PyObject *getMounts(PyObject *self, PyObject *args){
 
-
 // Build numpy array:
-PyObject *MountArr;
-
-//z long MD[1] = {Nants};
-int nd = 1;
-npy_intp* MD = new npy_intp[nd];
-MD[0] = Nants;
-
-//z GBC had already removed Py_INCREF
-//z Py_INCREF(MountArr); -- original code
-//z MountArr = PyArray_SimpleNewFromData(1, &MD[0], NPY_INT, (void*) Mounts);
-//z Py_INCREF(MountArr); -- needed only if we retain it and use it
-
-//z
-//Py_INCREF(MountArr);
-MountArr = PyArray_SimpleNewFromData(nd, MD, NPY_INT, (void*) Mounts);
-
-return MountArr;
+  PyObject *MountArr;
+  int nd = 1;
+  npy_intp* MD = new npy_intp[nd];
+  MD[0] = Nants;
+  MountArr = PyArray_SimpleNewFromData(nd, MD, NPY_INT, (void*) Mounts);
+  return MountArr;
 
 };
 
 
-
+// eof

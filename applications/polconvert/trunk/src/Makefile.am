@@ -10,7 +10,8 @@ PolConvertSources = \
 	DataIOFITS.cpp DataIOFITS.h \
 	DataIOSWIN.cpp DataIOSWIN.h \
 	Weighter.cpp Weighter.h \
-	_PolConvert.cpp _getAntInfo.cpp _PolGainSolve.cpp _XPCal.cpp \
+	_PolConvert.cpp _getAntInfo.cpp _PolGainSolve.cpp \
+	_XPCal.cpp _XPCalMF.cpp \
 	polconvert.xml setup.py task_polconvert.py
 PostPolScripts = PP/runpolconvert.py PP/README.POLCONVERT \
 	PP/Estimate_DPFU.py PP/DPFU_scanner.py
@@ -23,7 +24,8 @@ BuiltSources = $(PolConvertSources) $(PostPolScripts)
 bin_SCRIPTS = PP/prepolconvert.py PP/drivepolconvert.py \
 	PP/checkpolconvert.py PP/comparepolconvert.py \
 	PP/singlepolsolve.py
-pkgdata_DATA = _PolConvert.so _getAntInfo.so _PolGainSolve.so _XPCal.so \
+pkgdata_DATA = _PolConvert.so _getAntInfo.so _PolGainSolve.so \
+	_XPCal.so _XPCalMF.so \
 	PP/runpolconvert.py task_polconvert.py polconvert.xml \
 	PP/README.POLCONVERT PP/Estimate_DPFU.py PP/DPFU_scanner.py \
 	drivepclib.py solvepclib.py
@@ -113,7 +115,9 @@ build.sos: copy.them
 _PolConvert.so: build.sos
 	[ -f $@ ] || { pcso=`grep _PolConvert $<`   ; cp -p $$pcso $@ ; }
 _XPCal.so: build.sos
-	[ -f $@ ] || { pcso=`grep _XPCal $<`        ; cp -p $$pcso $@ ; }
+	[ -f $@ ] || { pcso=`grep '_XPCal[^M]' $<`  ; cp -p $$pcso $@ ; }
+_XPCalMF.so: build.sos
+	[ -f $@ ] || { pcso=`grep _XPCalMF $<`      ; cp -p $$pcso $@ ; }
 _PolGainSolve.so: build.sos
 	[ -f $@ ] || { pcso=`grep _PolGainSolve $<` ; cp -p $$pcso $@ ; }
 _getAntInfo.so: build.sos

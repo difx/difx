@@ -2360,7 +2360,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
 #    printMsg("Using 5 argument method of PolGainSolve")
      #MySolve = PS.PolGainSolve(doSolveD,solint,selAnts,lAnts,FlagBas1,FlagBas2)
     printMsg('\n%%% initializing PolGainSolve\n')
-    MySolve = PS.PolGainSolve(doSolveD,solint,selAnts,lAnts,[FlagBas1,FlagBas2])
+    # using a null for a logfile should be harmless...
+    MySolve = PS.PolGainSolve(doSolveD,solint,selAnts,lAnts,[FlagBas1,FlagBas2],0)
     printMsg(PS.__doc__ + ('\nInitialization rv %d\n'%MySolve) + '%%%\n')
 #   else:
 #    printMsg("Using 4 argument method of PolGainSolve:")

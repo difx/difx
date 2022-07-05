@@ -1,10 +1,10 @@
 /* DATAIO - FITS-IDI interface to PolConvert
 
-             Copyright (C) 2013-2020  Ivan Marti-Vidal
+             Copyright (C) 2013-2021  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
-             Observatori Astronomic, Universitat de Valencia
-  
+             University of Valencia (Spain)  
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -48,7 +48,6 @@ typedef struct {
 double *BaseLine[3];
 double *SinDec;
 double *CosDec;
-//z
 double *RA;
 double *AntLon;
 int *Mount;
@@ -96,8 +95,7 @@ class DataIO {
    void getFrequencies(double* Freqarray);
 
 // Compute parallactic angle.
-//z  void getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &P1, double &P2);
-   void getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &MJD, double &P1, double &P2);
+  void getParAng(int sidx, int Ant1, int Ant2, double*UVW, double &MJD, double &P1, double &P2);
 
 // Estimate amplitude ratios from the autocorrelations:
   std::complex<float> getAmpRatio(int ant, int spw, int chan);
@@ -105,6 +103,10 @@ class DataIO {
   
 // Set the current IF (and reset the mixed-vis. counter):
    virtual bool setCurrentIF(int i) = 0;
+
+// Get the file number of the current visibility (only useful for SWIN files; always returns 0 for FITS-IDI):
+// not ready for this yet
+// virtual int getFileNumber() = 0;
 
 
 /* Very important function. Finds the next combination of the 4 correlation
@@ -148,7 +150,6 @@ class DataIO {
    bool success, currConj;
    bool *conjugate, *is1, *is2, *is1orig, *is2orig;
    int Flux, *NAV;
-   //int nautos = 0;
    int nautos;
    double day0;
 
