@@ -81,7 +81,7 @@ if DO_SOLVE:
                   library_dirs=libdirs,
                   libraries=liblist,
                   include_dirs=[np.get_include()],
-                  extra_compile_args=["-Wno-deprecated","-O3"],
+                  extra_compile_args=["-Wno-deprecated","-O3","-std=c++11"],
                   extra_link_args=["-Xlinker", "-export-dynamic"])
 
 setup(
