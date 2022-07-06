@@ -139,7 +139,7 @@ unsigned int Job::getCorrelationSourceSet(const VexData *V, std::set<std::string
 
 	for(std::vector<std::string>::const_iterator it = scans.begin(); it != scans.end(); ++it)
 	{
-		V->getScanByDefName(*it)->addToSourceSet(sourceSet, false);
+		V->getScanByDefName(*it)->addToSourceSet(sourceSet, true);
 	}
 
 	return sourceSet.size();

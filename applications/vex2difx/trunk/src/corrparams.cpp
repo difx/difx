@@ -750,12 +750,12 @@ int SourceSetup::setkv(const std::string &key, const std::string &value, PhaseCe
 		PhaseCentre * newpc = &(phaseCentres.back());
 		last = 0;
 		at = 0;
-		while(at !=std::string::npos)
+		while(at != std::string::npos)
 		{
 			at = value.find_first_of('/', last);
 			nestedkeyval = value.substr(last, at-last);
 			splitat = nestedkeyval.find_first_of('@');
-			setkv(nestedkeyval.substr(0,splitat), nestedkeyval.substr(splitat+1), newpc);
+			setkv(nestedkeyval.substr(0, splitat), nestedkeyval.substr(splitat+1), newpc);
 			last = at+1;
 		}
 	}

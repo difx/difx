@@ -169,7 +169,12 @@ static void applyCorrParams_MultiPhaseCenter(VexData *V, const CorrParams &param
 					}
 					else
 					{
-						V->newSource(pc->difxName, pc->ra, pc->dec);
+						VexSource *newS = V->newSource(pc->difxName, pc->ra, pc->dec);
+						newS->sourceNames.push_back(pc->difxName);
+						if(pc->calCode)
+						{
+							newS->calCode = pc->calCode;
+						}
 					}
 				}
 
