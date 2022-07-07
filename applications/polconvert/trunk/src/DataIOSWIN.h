@@ -1,10 +1,10 @@
 /* DATAIO - FITS-IDI interface to PolConvert
 
-             Copyright (C) 2013-2020  Ivan Marti-Vidal
+             Copyright (C) 2013-2021  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
-             Observatori Astronomic, Universitat de Valencia
-  
+             University of Valencia (Spain)  
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -55,12 +55,15 @@ class DataIOSWIN: public DataIO {
 
    ~DataIOSWIN();
 
-   DataIOSWIN(int nSWIN, std::string* outputfiles, int Nant, int *Ants, double *doRange, int nIF, int *nChan, int *nChanACorr, double **Freqs, bool Overwrite, bool doTest, bool doSolve, int saveSource, double jd0, ArrayGeometry *Geom, FILE *logF);
+   DataIOSWIN(int nSWIN, std::string* outputfiles, int Nant, int *Ants, double *doRange, int nIF, int *nChan, int nIF2Conv, int *IF2Conv, int IFoffset, int Afilt, int *nChanACorr, double **Freqs, bool Overwrite, bool doTest, bool doSolve, int saveSource, double jd0, ArrayGeometry *Geom, bool doPar, FILE *logF);
 
    bool setCurrentIF(int i);
 
    // Average in time the antenna autocorrelations:
    void averageAutocorrs();
+
+   // Returns the file number of the current visibility:
+   int getFileNumber();
 
 /* Very important function. Finds the next combination of the 4 correlation
    products. Returns the visibilities as an array of pointers;
@@ -104,12 +107,16 @@ class DataIOSWIN: public DataIO {
 ////////
 
 //    char polOrder[4];
+    int AutoCorrMedianFilter;
+    int IFOffset;
+    int nDoIF;
+    int *DoIF;
     FILE *logFile;
     char message[512];
     int nfiles;
     std::ifstream *olddifx;
     std::fstream *newdifx;
-    bool isOverWrite, doWriteCirc, canPlot, isAutoCorr, isTwoLinear;
+    bool isOverWrite, doWriteCirc, canPlot, isAutoCorr, isTwoLinear, doParang;
     long currEntries[MAXIF][4], nrec;
     long *filesizes;
     std::complex<float> *currentVis[4] ;

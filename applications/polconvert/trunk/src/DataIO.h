@@ -105,8 +105,7 @@ class DataIO {
    virtual bool setCurrentIF(int i) = 0;
 
 // Get the file number of the current visibility (only useful for SWIN files; always returns 0 for FITS-IDI):
-// not ready for this yet
-// virtual int getFileNumber() = 0;
+   virtual int getFileNumber() = 0;
 
 
 /* Very important function. Finds the next combination of the 4 correlation

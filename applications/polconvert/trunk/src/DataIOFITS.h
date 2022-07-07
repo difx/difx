@@ -1,10 +1,10 @@
 /* DATAIO - FITS-IDI interface to PolConvert
 
-             Copyright (C) 2013-2020  Ivan Marti-Vidal
+             Copyright (C) 2013-2021  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
-             Observatori Astronomic, Universitat de Valencia
-  
+             University of Valencia (Spain)  
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -42,7 +42,7 @@ class DataIOFITS: public DataIO {
 
    ~DataIOFITS();
 
-   DataIOFITS(std::string outputfile, int Nant, int *Ants, double *doRange, bool Overwrite, bool doConj, bool doSolve, int saveSource, ArrayGeometry *Geom,  FILE *logF);
+   DataIOFITS(std::string outputfile, int Nant, int *Ants, double *doRange, bool Overwrite, bool doConj, bool doSolve, int saveSource, ArrayGeometry *Geom, bool doPar, FILE *logF);
 
    bool setCurrentIF(int i);
 
@@ -60,6 +60,9 @@ class DataIOFITS: public DataIO {
    corrected, this function puts them back into the right place. */
    bool setCurrentMixedVis();
 
+
+// Dummy function:
+   int getFileNumber();
 
  // Modify the visibilities read by "getNextMixedVis" by the calibration matrix supplied
  // Saves the result in the "bufferVis" pointer  
@@ -86,7 +89,7 @@ class DataIOFITS: public DataIO {
     int uu, vv, ww, ss;
 
     double *Times;
-    bool doConjugate, doWriteCirc, canPlot;
+    bool doConjugate, doWriteCirc, canPlot, doParang;
     char polOrder[4], message[512];
     long jump, Nentry, djump, dsize, TotSize;
     int currIF, currBand;
