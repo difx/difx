@@ -124,6 +124,7 @@ JOB_ID=""
 # salloc: job 10912 queued and waiting for resources
 regGrant='salloc: Granted job allocation ([0-9]+)'
 regQueue='salloc: job ([0-9]+) queued'
+regFail='salloc: error'
 START=0
 echo "Waiting for SLURM resource allocation"
 while [ $START -eq 0 ]
@@ -139,6 +140,10 @@ do
         if [[ $l =~ $regQueue ]]; then
             JOB_ID=${BASH_REMATCH[1]}
             echo $JOB_ID > $job.slurmid
+        fi 
+        if [[ $l =~ $regFail ]]; then
+            echo $l
+            cleanExit
         fi 
     done < /tmp/$job
 done
