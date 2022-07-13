@@ -1,3 +1,7 @@
+v2.0.3
+- Synchronized ALMA/non-ALMA buildables; python codes still not unified
+- still tracking down subtle bugs....
+
 v2.0b
 - Improved the GCPFF algorithm. Implemented the interface for CASA 6.
 

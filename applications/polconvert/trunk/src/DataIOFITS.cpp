@@ -1,6 +1,6 @@
 /* DATAIO - FITS-IDI interface to PolConvert
 
-             Copyright (C) 2013-2021  Ivan Marti-Vidal
+             Copyright (C) 2013-2022  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
              University of Valencia (Spain)  
@@ -210,7 +210,7 @@ void DataIOFITS::saveCirculars(std::string inputfile) {
 // OPEN AUXILIARY BINARY FILES:
   if (doWriteCirc){
     for (ii=0; ii<Nfreqs; ii++){
-      sprintf(message,"POLCONVERT.FRINGE/OTHERS.FRINGE_IF%i",ii+1);
+      sprintf(message,"POLCONVERT.FRINGE/OTHERS.FRINGE_IF%li",ii+1);
       circFile[ii] = fopen(message,"wb");
    //   printf("Writing %i chans to %i\n",Freqs[ii].Nchan,ii+1);fflush(stdout);
       fwrite(&Freqs[ii].Nchan,sizeof(int),1,circFile[ii]);

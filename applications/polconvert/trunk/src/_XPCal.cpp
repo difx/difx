@@ -1,6 +1,6 @@
 /* CROSSPHASECAL - Cross-polarization phasecal extraction for PolConvert
 
-             Copyright (C) 2018-2021  Ivan Marti-Vidal
+             Copyright (C) 2018-2022  Ivan Marti-Vidal
              Centro Astronomico de Yebes (Spain)
              University of Valencia (Spain)
               

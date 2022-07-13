@@ -1,6 +1,6 @@
 /* POLGAINSOLVE - Solving cross-polarizer gains for PolConvert
 
-             Copyright (C) 2017-2021  Ivan Marti-Vidal
+             Copyright (C) 2017-2022  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
              University of Valencia (Spain)  

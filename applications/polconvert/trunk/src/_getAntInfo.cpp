@@ -1,5 +1,5 @@
 /* getAntInfo -
-             Copyright (C) 2017-2021  Ivan Marti-Vidal
+             Copyright (C) 2017-2022  Ivan Marti-Vidal
              Centro Astronomico de Yebes (Spain)
              Universitat de Valencia (Spain)
   

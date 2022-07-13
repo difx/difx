@@ -1,5 +1,8 @@
 #!/usr/bin/python
 #
+# Copyright (c) Ivan Marti-Vidal 2015-2022, University of Valencia (Spain)
+#       and Geoffrey Crew 2015-2022, Massachusetts Institute of Technology
+#
 # Script to modify input files so that difx2fits and difx2mark4
 # will be happy with polconvert output.  As an option, the files
 # may be moved to a new location.

@@ -1,5 +1,9 @@
 See src/Changelog for further information.
 
+Version 2.0
+~~~~~~~~~~~
+version 0.3 synchronized buildables with non-ALMA case; Jul 13, 2022
+
 Version 1.8
 ~~~~~~~~~~~
 alpha 0 developing for Py3 and CASA 6 from Oct 11, 2020

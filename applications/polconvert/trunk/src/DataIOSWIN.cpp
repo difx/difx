@@ -1,4 +1,4 @@
-/* Copyright (C) 2013-2021 Ivan Marti-Vidal  
+/* Copyright (C) 2013-2022 Ivan Marti-Vidal
                  Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
                  Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
                  University of Valencia (Spain)  
@@ -904,7 +904,7 @@ int DataIOSWIN::getFileNumber(){
 bool DataIOSWIN::setCurrentMixedVis() { 
 
   long rec;
-  int i, j, k,l,fnum = 0;
+  int i, k,l,fnum = 0;
 
       if (isAutoCorr){
        int TotMedianWindow = 2*AutoCorrMedianFilter+1;

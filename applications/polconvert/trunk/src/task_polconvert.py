@@ -50,8 +50,8 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-__version__ = "1.8.5"
-date = 'Apr 18 2022'     
+__version__ = "2.0.3"
+date = 'Jul 13, 2022'
 
 
 ################
@@ -1294,7 +1294,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
           printError("Invalid format for XYdel!\n Should be a dictionary with LISTS of numbers!")
 
 
-  ### for difxdfile in OUTPUT
+  ### in general, now have an iteration: for difxdfile in OUTPUT
 
   XYaddF = [[] for i in range(nALMATrue)]
 
@@ -1412,7 +1412,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
   else:
     metadata = []
     OUTPUT = OUTPUTIDI
-
 
 
 
@@ -1555,7 +1554,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
       printError("Invalid format for XYratio!\n Should be a LIST of numbers (or a list of lists),\n as large as the number of linear-polarization VLBI stations!")
 
 
-### PriorGains now iterates on number of swin files
+### PriorGains now iterates on number of swin files (difxdfile)
 
 
 # A-PRIORI GAINS:
@@ -1868,18 +1867,12 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
 
   doAmpNorm = amp_norm>0.0
 
-
-# if DEBUG:
-  if True:  # if DEBUG:
-   if NEWPCSO:
+  if NEWPCSO:
     ALMAstuff = [ngain, NSUM, kind,
         gaindata, dtdata, allantidx,
         nphtimes, antimes, refants,
         asdmtimes, timerangesArr[int(spw)], isLinear]
-    # set to non-ALMA
-    # if len(ALMAstuff)==0:
-    #   PC.setPCMode(0)
-    # default other new variables
+    # defaults for other new variables
     IFoffset = 0
     AC_MedianWindow = 0
     correctParangle=False
@@ -1892,8 +1885,9 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
         doTest, doSolve, doConj, doAmpNorm, PrioriGains, metadata,
         soucoords, antcoords, antmounts, isLinear,calfield,
         UseAutoCorrs,bool(correctParangle),DEBUG, logName, ALMAstuff]
-    printMsg("NEW POLCONVERT SO CALLED WITH: %s"%str(PC_Params))
-   else:
+    if DEBUG:
+      printMsg("NEW POLCONVERT.SO CALLED WITH: %s"%str(PC_Params))
+  else:
     # old calling sequence
     PC_Params = [nALMATrue, plotIF, plotAnt, len(allants), doIF,
         swapXY, ngain, NSUM, kind, len(gaindata), len(dtdata), OUTPUT,
@@ -1901,7 +1895,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
         len(refants), len(asdmtimes),  doTest, doSolve, doConj, doAmpNorm,
         np.shape(PrioriGains), len(metadata), soucoords, antcoords, antmounts,
         isLinear,calfield,timerangesArr[int(spw)],UseAutoCorrs,DEBUG]
-    printMsg("POLCONVERT CALLED WITH: %s"%str(PC_Params))
+    if DEBUG:
+      printMsg("POLCONVERT CALLED WITH: %s"%str(PC_Params))
       
   # plotAnt is no longer used by PC.PolConvert(), but is required by doSolve
   # the second argument is "PC:PolConvert::plIF" and controls whether the
@@ -2254,11 +2249,13 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
 #    MySolve = PS.PolGainSolve(doSolveD,solint,selAnts,lAnts)
 #   printMsg('PolGainSolve finished with return: <%s>' % str(MySolve))
 
+### POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i
+
     AllFreqs = []
     for pli in doIF:
       printMsg("Reading back IF #%i"%pli)
-      file1 = "POLCONVERT.FRINGE/OTHERS.FRINGE_%i"%pli
-      file2 = "POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i"%pli
+      file1 = "POLCONVERT.FRINGE/OTHERS.FRINGE_IF%i"%pli
+      file2 = "POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i"%pli
       printMsg("  file1 is %s" % file1)
       printMsg("  file2 is %s" % file2)
       success = PS.ReadData(pli, file1, file2)
@@ -2524,19 +2521,20 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
 # Filter out IFs with no data:
    GoodIFs = []
    for pli in plotIF:
-     if os.stat("POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i"%pli).st_size>10:
+     if os.stat("POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i"%pli).st_size>10:
        GoodIFs.append(pli)
      else:
        printMsg(("WARNING! IF %i was NOT polconverted properly\n"%pli) +
-         ("POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i missing"%pli))
+         ("POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i missing"%pli))
 
 # start of GoodIFs pli loop
    for pli in GoodIFs:
     print('\n\n')
     printMsg("Plotting selected fringe for IF #%i"%pli)
 
-    frfile = open("POLCONVERT.FRINGE/POLCONVERT.FRINGE_%i"%pli,"rb")
+    frfile = open("POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i"%pli,"rb")
 
+### header format changed with addition of "FILE" for difxdfile iteration
 
     alldats = frfile.read(4)
     nchPlot = stk.unpack("i",alldats[:4])[0]
@@ -2549,10 +2547,10 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
 # an "integer is required" error in the first try to read:
     try:
       fringe = np.fromfile(frfile,dtype=dtype)
-      printMsg("Read fringe data from file POLCONVERT.FRINGE_%i"%pli)
+      printMsg("Read fringe data from file POLCONVERT.FRINGE_IF%i"%pli)
     except:
       fringe = np.fromfile(frfile,dtype=dtype)
-      printMsg("Exceptional Read of fringe data POLCONVERT.FRINGE_%i"%pli)
+      printMsg("Exceptional Read of fringe data POLCONVERT.FRINGE_IF%i"%pli)
       printMsg("len(fringe) = %d" % len(fringe))
     frfile.close()
 
@@ -2573,9 +2571,10 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
         fringe[:]["ANT1"] == ant1,fringe[:]["ANT2"] == ant2)
       AntEntry2 = np.logical_and(
         fringe[:]["ANT2"] == ant1,fringe[:]["ANT1"] == ant2)
-      ### all the SWIN files go to the same place
-      ### so np.logical_and(fringe[:]["FILE"]==0, np.logical_or(AntEntry1,AntEntry2))
-      ### only prints the first file ?
+      ### all the SWIN files (difxdfile) go to the same place
+      ### to only plot the first one, AntEntry changes to
+      ### np.logical_and(fringe[:]["FILE"]==0,
+      ###        np.logical_or(AntEntry1,AntEntry2))
       AntEntry = np.logical_or(AntEntry1,AntEntry2)
       printMsg("np.sum(AntEntry) > 0: '" + str(np.sum(AntEntry)) + "'")
 
@@ -3013,5 +3012,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
   return CGains   # RETURN!
 
 #
+# vim: set nospell:
 #eof
 #

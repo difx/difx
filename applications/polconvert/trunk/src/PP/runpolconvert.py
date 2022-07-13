@@ -1,5 +1,8 @@
 #!/usr/bin/python
 #
+# Copyright (c) Ivan Marti-Vidal 2015-2022, University of Valencia (Spain)
+#       and Geoffrey Crew 2015-2022, Massachusetts Institute of Technology
+#
 # Script to run PolConvert at the correlators from with CASA
 # This version only works with SWIN files
 #
@@ -17,7 +20,7 @@ if sys.version_info.major < 3:
 else:
     from polconvertpkg.private.task_polconvert import polconvert as polconvert
 
-pcvers='1.8.5'
+pcvers='2.0.3'
 
 # Begin by verifying everthing that should be defined at this point.
 # If we can't print something, that's probably enough for a test.
