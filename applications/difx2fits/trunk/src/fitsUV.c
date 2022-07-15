@@ -388,12 +388,12 @@ static double ***getDifxScaleFactor(const DifxInput *D, const struct CommandLine
 				{
 					if(a1 != a2)	/* don't correct parallel handed autocorrs */
 					{
-						scale[polId][a2][a1] *= vv;
+						scale[polId][a2][a1] /= vv;
 					}
 				}
 				for(polId = 2; polId < 4; ++polId)	/* polId = 2, 3 are cross hands */
 				{
-					scale[polId][a2][a1] *= vv;
+					scale[polId][a2][a1] /= vv;
 				}
 			}
 		}
