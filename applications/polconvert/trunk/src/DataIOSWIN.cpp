@@ -74,9 +74,11 @@ DataIOSWIN::~DataIOSWIN() {
 
 
 DataIOSWIN::DataIOSWIN(int nfiledifx, std::string* difxfiles, int NlinAnt, 
-         int *LinAnt, double *Range, int nIF, int *nChan, int nIF2Conv, int *IF2Conv, int IFoffset, int Afilt, int *NchanAC, 
+         int *LinAnt, double *Range, int nIF, int *nChan, int nIF2Conv,
+         int *IF2Conv, int IFoffset, int Afilt, int *NchanAC,
          double **FreqVal, bool Overwrite, bool doTest, bool doSolve, 
-         int saveSource, double jd0, ArrayGeometry *Geom, bool doPar, FILE *logF) {
+         int saveSource, double jd0, ArrayGeometry *Geom, bool doPar,
+         FILE *logF) {
 
 
   doWriteCirc = doSolve;
@@ -116,6 +118,8 @@ DataIOSWIN::DataIOSWIN(int nfiledifx, std::string* difxfiles, int NlinAnt,
   is2 = new bool[RECBUFFER];
 
   day0 = jd0 ;
+  // set true in setCurrentIF() to capture some first time stuff
+  debugNewIF = false;
 
   currFreq = 0;
   currVis = 0;
@@ -335,6 +339,8 @@ bool DataIOSWIN::setCurrentIF(int i){
     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
     success=false; return success;
   };
+
+  debugNewIF = true;
 
   currFreq = i;
   currVis = 0;
@@ -644,6 +650,8 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
 
 // day0 is JD (not MJD):
   day0 += 2400000.5 ;
+  sprintf(message,"day0 is %lf", day0);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
 
 // Case of error in reading files:
 FREE:
@@ -702,7 +710,7 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
   long indices[4];
   bool complete;
 
-
+  for (idx=0; idx<4; idx++) indices[idx] = -1;
 
   if (NLinVis==0){return false;};
 
@@ -714,6 +722,18 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
 // Find the four correlation products:
     canPlot=false;
 
+// Note that autocorrs are read, converted and written twice;
+// once for ref and once for rem (one of which is conjugated
+// for the conversion).  The logic here goes through all the
+// records (indexed by rec) to find the first unused visibility
+// and then looks for all the matches by baseline, time and
+// frequency (indexed by rec1).  The logic variables is1 and is2
+// are copies of is1orig and is2orig which are true if the ant
+// at one or the other end of the baseline is in the linear-feed
+// list and are reset to false once conversion happens (?).
+//
+// isTwoLinear means both antennas are linear-feed
+// complete true means otherwise
     while(true){
 
       idx = 0;
@@ -721,32 +741,40 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
         if (Records[rec].notUsed && (Records[rec].freqIndex==currFreq)) {
           indices[idx] = rec;
           complete = !(is1[rec] && is2[rec]) ; 
-          if(!complete){isTwoLinear=true;};
 
+          if(!complete){isTwoLinear=true;};
           if (complete){
             canPlot = true;
-            Records[rec].notUsed = false;};
-            idx ++;
-            basel = Records[rec].Baseline;
-            time = Records[rec].Time;
-            field = Records[rec].Source;
-            currVis = rec;
-            for (rec1=rec+1; rec1<nrec; rec1++) {
-              if (Records[rec1].Baseline==basel && 
-                Records[rec1].Time==time && 
-                Records[rec1].freqIndex==currFreq) {
+            Records[rec].notUsed = false;}; // since used as idx==0
+
+          idx ++;
+          basel = Records[rec].Baseline;
+          time = Records[rec].Time;
+          field = Records[rec].Source;
+          currVis = rec;
+          for (rec1=rec+1; rec1<nrec; rec1++) {
+              if (Records[rec1].Baseline==basel &&
+                  Records[rec1].Time==time &&
+                  Records[rec1].freqIndex==currFreq) {
                   indices[idx] = rec1; idx ++;
                   if (complete){
                     Records[rec1].notUsed = false;};
-                    if (idx==4) {break;};
+                  if (idx==4) {break;}; // since we have 4 products
               };
-           }; break;
+           };
+           break;  // since we have searched the entire output
+           // FIXME: optimization: DIFX cannot infinitely buffer data,
+           // so one could potentially break out here after a sufficient
+           // amount of due dilligence.
         };
       };
 
 
 // If no more mixed-pol visibilities are found, we return false:
 // If not all the 4 products are found, report a warning:
+// FIXME: actually this prints what exists, not what is missing,
+// and in the case of Autocorrs, well, sometimes only 2 products exist
+      convisok = true;
       if (idx==0) {
         return false;}
       else if (idx <4) {
@@ -766,8 +794,9 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
         };
         if(idx==1){
           indices[1] = -1; indices[2] = -1; indices[3] = -1; 
-          sprintf(message,"\n ERROR! ONLY ONE LINEAR POLARIZATION CHANNEL WILL NOT WORK!!");
-          fprintf(logFile,"%s",message); fflush(logFile);
+          convisok = false;
+//        sprintf(message,"\n ERROR! ONLY ONE LINEAR POLARIZATION CHANNEL WILL NOT WORK!!");
+//        fprintf(logFile,"%s",message); fflush(logFile);
           break;
         };
 
@@ -784,7 +813,7 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
     if (is1[indices[0]]){is1[indices[0]]=false; conj = true;} else {is2[indices[0]]=false; conj=false;};
 
     if (idx<4){
-      sprintf(message," CONJ: %i \n",conj);
+      sprintf(message," CONJ: %i (%s %ld)\n",conj,convisok?"ok":"ERROR",currVis);
       fprintf(logFile,"%s",message); fflush(logFile);
     };
 
@@ -800,7 +829,8 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
 
     for (rec = 0; rec < 4; rec++) {
 
-      if (indices[rec]>0){
+      //if (indices[rec]>0){
+      if (indices[rec]>=0){
         p1 = Records[indices[rec]].Pol[i];
         p2 = Records[indices[rec]].Pol[1-i];
 // All pol. products must have consistent booleans (for sanity)
@@ -826,15 +856,20 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
         newdifx[fnum].seekg(Records[rec].byteIni, newdifx[fnum].beg);
         newdifx[fnum].sync();
         newdifx[fnum].read(reinterpret_cast<char*>(currentVis[i]),Records[rec].byteEnd-Records[rec].byteIni);
+      } else {
+        // nuke values that would have been overwritten by the missing data
+        for (k=0; k<Freqs[currFreq].Nchan; k++) {
+          currentVis[i][k] = (std::complex<float>)0;
+        };
       };
     };
 
-
 // Case of auto-correlations (in the 2nd round of conversion):
-    isAutoCorr = antenna == otherAnt;
-    if (complete) {
 // Recover the fringe after the 1st round (since sometimes the 
 // file is not flushed properly, so we need an "aux" variable):
+// The auxVis values are captured at the end of applyMatrix
+    isAutoCorr = antenna == otherAnt;
+    if (complete) {
       if (isAutoCorr || isTwoLinear){
         for (k=0;k<Freqs[currFreq].Nchan; k++) {
           currentVis[3][k] = auxVis[3][k];
@@ -844,8 +879,6 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
         };
       };
     }; 
-
-
 
     if (isAutoCorr && !complete){
 // 1st round of autocorrs. Zero the cross-terms (XY and YX):
@@ -865,10 +898,17 @@ else if (isAutoCorr) {
         };
     };
 */
+
    calField = field; 
    JDTime = time;
    currConj = conj ;
 
+   if (debugNewIF) {    // share information
+      sprintf(message, "  source %d JDTime %lf RelTime %lf conj = %d\n",
+        field, time, time - Records[0].Time, conj);
+      fprintf(logFile,"%s",message); fflush(logFile);
+      debugNewIF = false;
+   };
  
    return true;
 
@@ -994,7 +1034,7 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap,
 
   for (k=0; k<Freqs[currFreq].Nchan; k++) {
 
-    if (currConj) {
+   if (currConj) {
       bufferVis[ca11][k] = M[0][0][k]*currentVis[a11][k]+M[0][1][k]*currentVis[a21][k];
       bufferVis[ca12][k] = M[0][0][k]*currentVis[a12][k]+M[0][1][k]*currentVis[a22][k];
       bufferVis[ca21][k] = M[1][0][k]*currentVis[a11][k]+M[1][1][k]*currentVis[a21][k];
@@ -1006,7 +1046,7 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap,
         bufferVis[ca21][k] /= auxVisApply;
         bufferVis[ca22][k] /= auxVisApply;
       };
-    } else {
+   } else {
       bufferVis[ca11][k] = std::conj(M[0][0][k])*currentVis[a11][k]+std::conj(M[0][1][k])*currentVis[a12][k];
       bufferVis[ca12][k] = std::conj(M[1][0][k])*currentVis[a11][k]+std::conj(M[1][1][k])*currentVis[a12][k];
       bufferVis[ca21][k] = std::conj(M[0][0][k])*currentVis[a21][k]+std::conj(M[0][1][k])*currentVis[a22][k];
@@ -1018,9 +1058,9 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap,
         bufferVis[ca21][k] /= auxVisApply;
         bufferVis[ca22][k] *= auxVisApply;
       };
-    };
+   };
 
- //  rec = currEntries[currFreq][0];
+
 
    if (print && canPlot) {
      if (currConj){
@@ -1079,8 +1119,8 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap,
      fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
      };
 
-   };
- };
+   };  // end of print && canPlot
+  };  // end of for loop
 
 
 
@@ -1089,20 +1129,20 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap,
 // UPDATE THE AUXILIAR VISIBILITIES (I.E. FOR AUTOCORRS WITH MISSING CROSS-POLS):
 
 
-for (i=0; i<4; i++) {
- if (currEntries[currFreq][i]<0 || isAutoCorr || isTwoLinear ) {
-  if (!canPlot){ // Case of auto-correlations (2nd round of conversion):   
+ for (i=0; i<4; i++) {
+  if (currEntries[currFreq][i]<0 || isAutoCorr || isTwoLinear ) {
+   if (!canPlot){ // Case of auto-correlations (2nd round of conversion):   
     for(k=0;k<Freqs[currFreq].Nchan; k++) {
       auxVis[i][k] = bufferVis[i][k];
     };
-  } else {
+   } else {
     for(k=0;k<Freqs[currFreq].Nchan; k++) {
       auxVis[i][k] = (std::complex<float>)0.0;
     };
     if(i==3){isTwoLinear=false;};
-  };
- }; 
-};
+   };
+  }; 
+ };
 ///////////////////////////////////
 
 

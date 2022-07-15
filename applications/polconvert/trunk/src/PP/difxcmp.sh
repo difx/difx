@@ -38,19 +38,29 @@ action=${1-'help'} ; shift
 }
 
 # things that do not end up in DiFX vendor branch
-skip="INSTALL build QA2 TODO.txt setup.py TOP/contents"
+skip="INSTALL build QA2 TODO.txt setup.py TOP/contents PP/wtf.txt"
 skip="$skip __init__.py polconvert_CASA.py polconvert_standalone.py"
+
+skipdir="EU-VGOS QA2"
 
 [ $# -eq 0 ] && set -- 'no-such-file'
 
 for f
 do
+  # more help
+  [ "$f" = 'no-such-file' ] && {
+    echo you need to supply file arguments
+    echo "you can use '* */*' for everything"
+    exit 2
+  }
   # ignore directories
   [ -d $f ] && continue
   # ignore things that don't go to DiFX but are in git
   punt=false
   for s in $skip
   do [ "$f" = "$s" ] && punt=true ; done
+  for dd in $skipdir
+  do [ `dirname $f` = "$dd" ] && punt=true ; done
   $punt && echo skipping $f && continue
   F=$f
   [ `expr $F : 'TOP.*'` -ge 3 ] && F=../`basename $f`
@@ -122,7 +132,8 @@ do
     rm -rf build
     ;;
   *)
-    [ "$action" = 'help' ] || action $action is not supported
+    [ "$action" = 'help' -o "$action" = '--help' ] ||
+        echo action $action is not supported
     cat <<....EOF
     Usage: PP/difxcmp.sh action file ...
 

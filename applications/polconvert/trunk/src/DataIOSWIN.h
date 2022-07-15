@@ -82,7 +82,7 @@ class DataIOSWIN: public DataIO {
 
  // Modify the visibilities read by "getNextMixedVis" by the calibration matrix supplied
  // Saves the result in the "bufferVis" pointer  
-  void applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, int thiAnt, FILE *plotFile);
+  void applyMatrix(std::complex<float> *M[2][2], bool swap, bool print, int thisAnt, FILE *plotFile);
 
 
  // Flag bad (unconvertible) data:
@@ -117,6 +117,7 @@ class DataIOSWIN: public DataIO {
     std::ifstream *olddifx;
     std::fstream *newdifx;
     bool isOverWrite, doWriteCirc, canPlot, isAutoCorr, isTwoLinear, doParang;
+    bool debugNewIF, convisok;
     long currEntries[MAXIF][4], nrec;
     long *filesizes;
     std::complex<float> *currentVis[4] ;

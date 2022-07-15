@@ -659,7 +659,8 @@ if(PCMode){
     if(PCMode){
        alldterms[i] = new CalTable(2,dtermsArrR1[i],dtermsArrI1[i],
            dtermsArrR2[i],dtermsArrI2[i],dtfreqsArr[i],dttimesArr[i],
-           nsumArr[i],ndttimeArr[i], nchanDt[i],dtflag[i],true,logFile,verbose);
+           nsumArr[i],ndttimeArr[i], nchanDt[i],dtflag[i],true,logFile,
+           false); // verbose);
 
        for (j=0; j<ngainTabs[i];j++){
 /*
@@ -678,7 +679,8 @@ if(PCMode){
          allgains[i][j] = new CalTable(kind[i][j],gainsArrR1[i][j],
            gainsArrI1[i][j],gainsArrR2[i][j],gainsArrI2[i][j],freqsArr[i][j],
            timesArr[i][j],nsumArr[i],ntimeArr[i][j], nchanArr[i][j],
-           gainflag[i][j],isLinear[i][j],logFile,verbose);
+           gainflag[i][j],isLinear[i][j],logFile,
+           false); // verbose);
        };
 
      // NON-ALMA CASE: DUMMY GAINS.
@@ -933,7 +935,9 @@ if(PCMode){
       for (im=0; im<nIFconv; im++) {
         ii = IFs2Conv[im];
         for (ij=0; ij<nchans[ii]; ij++){
-          PrioriGains[k][currAntIdx][im][ij] *= DifXData->getAmpRatio(currAntIdx, im, ij);
+          PrioriGains[k][currAntIdx][im][ij] *=
+            DifXData->getAmpRatio(currAntIdx, ii, ij);
+//          DifXData->getAmpRatio(currAntIdx, im, ij);
         };
       };
     };
@@ -1289,6 +1293,8 @@ if(PCMode){
                       Ktotal[currAntIdx][1][0][j].real(), Ktotal[currAntIdx][1][0][j].imag());
                  printf("Ktot11: %.3e %.3e\n",
                       Ktotal[currAntIdx][1][1][j].real(), Ktotal[currAntIdx][1][1][j].imag()); 
+                 if (allflagged) {printf("All flagged\n"); }
+                 else {printf("Not flagged\n"); };
                };
 
 
