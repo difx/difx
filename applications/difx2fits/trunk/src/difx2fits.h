@@ -77,6 +77,7 @@ struct CommandLineOptions
 	int localdir;		/* if 1, then *.calc, *.im, and *.difx are sought in the same directory as *.input files */
 	int allpcaltones;	/* if 1, then all phase calibration tones are extactred */
 	int relabelCircular;	/* if != 0, then relabel all polarizations as R/L regardless of their actual values */
+	int doVanVleck;		/* if != 0, then correct for Van Vleck (quantization correction) */
 	DifxMergeOptions mergeOptions;
 };
 

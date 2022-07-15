@@ -187,6 +187,10 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D, struct fitsPrivate *ou
 	{
 		fitsWriteString(out, "PRIBAND", opts->primaryBand, "");
 	}
+	if(opts->doVanVleck)
+	{
+		fitsWriteInteger(out, "VANVLECK", 1, "");
+	}
 	fitsWriteString(out, "DATE-OBS", ref_date, "");
 	mjd2fits((int)timeMjd(), strng);
 	fitsWriteString(out, "DATE-MAP", strng, "Correlation date");

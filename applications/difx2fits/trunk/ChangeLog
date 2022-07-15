@@ -6,7 +6,16 @@ Version 3.7.0
 * pass CommandLineOptions to more of the major subroutines to improve the code
 * (along with corresponding difxio commit) remove polxy2hv from DifxInput
 * various pulse cal and polarizations additions as described below:
-
+* option to perform van Vleck corections within difx2fits.
+  - Activated by one or more of the following conditions:
+    - command line argument --vanVleck
+    - different sampling on different antennas
+    - any antenna sampling with more than 2 bits per sample
+  - Currently coded for any combination of 1, 2, 4, and 8 bits per sample
+  - When in use, set the new VANVLECK keyword to "1"
+    - AIPS FITLD (and later CASA importfitsidi) will not attempt double correction
+      - AIPS from Aug 2022 or later is required.
+  - When not activated, behavior is unchanged from past versions
 
 Commit 10003 2021.04.30
 

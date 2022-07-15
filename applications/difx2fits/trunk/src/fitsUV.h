@@ -79,7 +79,7 @@ typedef struct
 	float *data;
 	int changed;
 	int first;
-	double *scale;			/* scale factor, indexed by 0-based antennaId */
+	double ***scale;		/* baseline-based scale factor, 1st index: polId, 2nd, 3rd indexes by 0-based antennaId */
 	int flagTransition;
 	int keepAC;			/* 0 prevents auto-correlations from being preserved */
 	int keepXC;			/* 0 prevents cross-correlations from being preserved */

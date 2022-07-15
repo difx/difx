@@ -161,6 +161,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --relabelCircular   Change naming of all polarizations to R/L\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --vanVleck          Force difx2fits to apply van Vleck correction\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "%s responds to the following environment variables:\n", program);
 	fprintf(stderr, "    DIFX_GROUP_ID             If set, run with umask(2).\n");
 	fprintf(stderr, "    DIFX_VERSION              The DiFX version to report.\n");
@@ -370,6 +372,10 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--relabelCircular") == 0)
 			{
 				opts->relabelCircular = 1;
+			}
+			else if(strcmp(argv[i], "--vanVleck") == 0)
+			{
+				opts->doVanVleck = 1;
 			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
@@ -1060,6 +1066,54 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 	return Dset;
 }
 
+static int needToVanVleck(DifxInput **Dset)
+{
+	const DifxInput *D;
+	int q;
+	int antennaId;
+	int i;
+
+	for(i = 0; Dset[i]; ++i)
+	{
+		D = Dset[i];
+		q = 0;
+
+		for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
+		{
+			const int maxDatastreams = 8;
+			int dsIds[maxDatastreams];
+			int n;
+			int quantBits;
+
+			n = DifxInputGetDatastreamIdsByAntennaId(dsIds, D, antennaId, maxDatastreams);
+
+			if(n < 1)	/* should never happen */
+			{
+				quantBits = D->quantBits;	/* a fallback in case of oddness */
+			}
+			else
+			{
+				quantBits = D->datastream[dsIds[0]].quantBits;
+			}
+
+			if(q == 0)
+			{
+				q = quantBits;
+			}
+			else if(q != quantBits)	/* if different antennas have different quantization, then we must do van vleck */
+			{
+				return 1;
+			}
+			if(q > 2)	/* any quantization more than two bits should be handled here */
+			{
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
 /* FIXME: use opts->eopMergeMode to drive merging of files */
 static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, int passNum, int *nWithoutPhaseCentre)
 {
@@ -1356,6 +1410,16 @@ int main(int argc, char **argv)
 		deleteCommandLineOptions(opts);
 
 		return EXIT_FAILURE;
+	}
+
+	if(needToVanVleck(Dset))
+	{
+		opts->doVanVleck = 1;
+	}
+	if(opts->doVanVleck)
+	{
+		printf("Will perform van Vleck corrections.\n");
+		printf("A recent version of AIPS (Aug 2022 or newer) is required.\n\n");
 	}
 
 	for(;;)
