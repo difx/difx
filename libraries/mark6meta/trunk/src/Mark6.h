@@ -28,6 +28,7 @@
 
 #include <string>
 #include <vector>
+#include <poll.h>
 
 #include "Mark6DiskDevice.h"
 #include "Mark6Module.h"
@@ -65,12 +66,15 @@ public:
 class Mark6
 {
 private:
-	int fd;		// file descriptor for the udev monitor
+//	int fd;		// file descriptor for the udev monitor
+        pollfd pollItems_m[1];
         struct udev *udev_m;
         struct udev_monitor *mon;
+        bool verifyDevices_m;
 	std::vector<Mark6DiskDevice> mountedDevices_m;
 	std::vector<Mark6DiskDevice> removedDevices_m;
         std::vector<Mark6DiskDevice> newDevices_m;
+        std::vector<std::string> newPartitions_m;
         std::vector<Mark6Controller> controllers_m;
         std::vector<Mark6Module> modules_m;
         std::vector<std::string>  slotIds_m;
@@ -84,6 +88,7 @@ private:
         void writeControllerConfig();
         
         void manageDeviceChange();
+        int verifyDevices();
 	void validateMountDevices();
         int parseControllerId(std::string devpath);
         long parseDiskId(std::string sasAddress);
@@ -102,6 +107,7 @@ public:
         void cleanUp();
         int getSlot(std::string eMSN);
         void sendStatusMessage();
+        void sendSlotStatusMessage();
         std::vector<Mark6DiskDevice> getMountedDevices() const {
             return mountedDevices_m;
         }

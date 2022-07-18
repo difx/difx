@@ -39,6 +39,7 @@
 #include <errno.h>
 #include <difxmessage.h>
 #include <set>
+#include <unistd.h>
 
 #include "Mark6.h"
 #include "Mark6DiskDevice.h"
@@ -56,6 +57,7 @@ Mark6::Mark6(void)
     //set defaults 
     mountRootData_m = "/mnt/disks/";               
     mountRootMeta_m =  mountRootData_m + ".meta/";
+    verifyDevices_m = false;
     
     // Create the udev object 
     udev_m = udev_new();
@@ -66,8 +68,10 @@ Mark6::Mark6(void)
     udev_monitor_filter_add_match_subsystem_devtype(mon, "block", NULL);
     udev_monitor_enable_receiving(mon);
 
-    // Get the file descriptor (fd) for the monitor. This fd will get passed to select() 
-    fd = udev_monitor_get_fd(mon);
+    // create the poll item
+    pollItems_m[0].fd = udev_monitor_get_fd(mon);
+    pollItems_m[0].events = POLLIN;
+    pollItems_m[0].revents = 0;
 
     // identify SAS controllers
     int numControllerDetect = enumerateControllers();
@@ -116,15 +120,6 @@ Mark6::Mark6(void)
     // check if required mount points exists; create them if not        
     validateMountPoints();
 
-    /*for(std::size_t i = 0; i < controllers_m.size(); ++i) {
-        clog << controllers_m[i].getName() << " " << controllers_m[i].getOrder() << endl;
-    }*/
-
-    //if (enumerateControllers() > 0)
-    //{
-    //}
-
-    //enumerateDevices();
 
     if (enumerateDevices() > 0)
     {
@@ -197,6 +192,49 @@ int Mark6::getSlot(string eMSN)
 /**
  * Sends out a Mark6StatusMessage
  */
+void Mark6::sendSlotStatusMessage()
+{
+    //clog << "Mark6::sendStatusMessage" << endl;
+    DifxMessageMark6SlotStatus dm;
+    
+    memset(&dm, 0, sizeof(DifxMessageMark6SlotStatus));
+
+    
+    // set module group for each bank
+    for (int slot=0; slot < numSlots_m; slot++)
+    {
+        // slot
+        dm.slot = slot+1;
+
+        // get MSN
+        string msn = "";
+        msn = modules_m[slot].getEMSN().substr(0,DIFX_MESSAGE_MARK6_MSN_LENGTH);
+        strncpy(dm.msn, msn.c_str(), DIFX_MESSAGE_MARK6_MSN_LENGTH);
+                
+        // construct group string
+        string group = "";
+        for (int i=0; i < modules_m[slot].getGroupMembers().size(); i++)
+        {
+            string groupMsn =  modules_m[slot].getGroupMembers()[i].substr(0,DIFX_MESSAGE_MARK6_MSN_LENGTH);;
+            group += groupMsn;
+            if (i+1 < modules_m[slot].getGroupMembers().size())
+                group += ":";
+        }
+        strncpy(dm.group, group.c_str(), DIFX_MESSAGE_MARK6_GROUP_LENGTH);
+        // number of disks
+        dm.numDisks = modules_m[slot].getNumDiskDevices();
+        // number of missing disks
+        dm.numMissingDisks = modules_m[slot].getNumTargetDisks() - modules_m[slot].getNumDiskDevices();
+        
+    }
+
+    difxMessageSendMark6SlotStatus(&dm);
+
+}
+
+/**
+ * Sends out a Mark6StatusMessage
+ */
 void Mark6::sendStatusMessage()
 {
     DifxMessageMark6Status dm;
@@ -264,6 +302,7 @@ void Mark6::sendStatusMessage()
 }
 
 
+
 /**
  * Manages devices that were added or removed by turning the Mark6 keys. Newly added devices will be mounted; removed devices will be unmounted. 
  * Prior to mounting validation is done to check if the new device is a Mark6 disk
@@ -289,11 +328,14 @@ void Mark6::manageDeviceChange()
                 continue;
             }
 
-	    if (tempDevices[i].getPartitions().size() < 2)
-	    {
+            // verify that both partitions have been detected for this device
+	    if (tempDevices[i].getPartitions().size() < 2) {
 		newDevices_m.push_back(tempDevices[i]);
 		continue;
 	    }
+            else {
+                // work around due to partitions not getting detected reliably by udev in case of many simulataneous events
+            }
             
             // mount both partitions
             tempDevices[i].mountDisk(mountRootData_m, mountRootMeta_m);
@@ -342,7 +384,7 @@ void Mark6::manageDeviceChange()
         // loop over all removed devices
         for(std::vector<Mark6DiskDevice>::size_type i = 0; i != tempRemoveDevices.size(); i++) {
                        
-	    clog << "Removing device: " << tempRemoveDevices[i].getName() << endl;
+	    //cout << "Removing device: " << tempRemoveDevices[i].getName() << endl;
             if ((disk = getMountedDevice(tempRemoveDevices[i].getName())) != NULL)
             {
                 // get the module slot           
@@ -353,14 +395,17 @@ void Mark6::manageDeviceChange()
                                 
                 if (disk->isMounted() == false)
                 {
-                    clog << " now is unmounted " << endl;    
+                    //cout << " now is unmounted " << endl;    
                       
                     // remove disk from the vector of mounted devices
                     removeMountedDevice(tempRemoveDevices[i]);
-                    clog << "Removed: " << tempRemoveDevices[i].getName() << " in slot: " << slot << endl;
+                    //cout << "Removed mount: " << tempRemoveDevices[i].getName() << " in slot: " << slot << endl;
                             
                     if (slot != -1)
+                    {
                         modules_m[slot].removeDiskDevice(tempRemoveDevices[i]);
+                        //cout << "Removed device: " << tempRemoveDevices[i].getName() << endl;
+                    }
                     else
                         throw  Mark6Exception("Trying to remove a disk device that has no associated slot.");
                 }
@@ -368,7 +413,7 @@ void Mark6::manageDeviceChange()
                 {
                     // something didn't work try again on the next go
                     removedDevices_m.push_back( tempRemoveDevices[i]);
-                    clog << " now is still mounted ";
+                    //cout << " now is still mounted ";
                 }
             }    
             
@@ -404,24 +449,26 @@ void  Mark6::validateMountPoints()
 
 /**
  * Adds a partition with the given name to the corresponding disk device object. 
- * @return 0 in case In case the corresponding disk device does not exist; 1 otherwise
+ * @return 1 in case the corresponding disk device does not exist; 0 otherwise
  */
 int Mark6::addPartitionDevice(string partitionName)
 {    
     // determine corresponding disk device (assuming less than 9 partitions per disk)
     string diskDevice = partitionName.substr(0, partitionName.size()-1);
+    //cout << "Adding partition " << partitionName << " to " << newDevices_m[i].getName() << endl;
     
      // check if disk device object already exists for this partition
     for(std::vector<Mark6DiskDevice>::size_type i = 0; i != newDevices_m.size(); i++) {
+        //cout << "Adding partition " << partitionName << " to " << newDevices_m[i].getName() << endl;
         if (newDevices_m[i].getName() == diskDevice)
         {
             //cout << "Adding partition " << partitionName << " to " << newDevices_m[i].getName() << endl;
             newDevices_m[i].addPartition(partitionName);
-            return(1);
+            return(0);
         }
     }
     
-    return(0);
+    return(1);
 }
 
 /**
@@ -460,6 +507,9 @@ Mark6DiskDevice *Mark6::getMountedDevice(string deviceName)
     return(NULL);
 }
 
+/**
+ * Removes the given device from the vector holding the currently mounted devices
+ */
 void Mark6::removeMountedDevice(Mark6DiskDevice device)
 {
     
@@ -472,6 +522,31 @@ void Mark6::removeMountedDevice(Mark6DiskDevice device)
             break;
         }
     }
+}
+
+/**
+ * Validates that the system devices corresponding to the currentlt mounted disk devices exist. This check is
+ * neccesary because catching remove events by libudev does not work reliably if many devices get turned off 
+ * simultaneously ( several Mark6 keys turned in a short time).
+ * If a system device does not exist anymore the device is removed from the vector of currently mounted devices.
+ */
+int Mark6::verifyDevices()
+{
+  int count = 0;
+
+  // loop over all mounted disks
+  for( vector<Mark6DiskDevice>::iterator iter = mountedDevices_m.begin(); iter != mountedDevices_m.end(); ++iter )
+  {
+      //cout << "verify " << (*iter).getName()  << endl;
+      if (access(("/dev/"+(*iter).getName()).c_str(), F_OK == -1))
+      {
+          //cout << "device " << (*iter).getName() << "does not exist anymore. Removing" << endl;
+          removedDevices_m.push_back(*iter);
+          count++;
+      }
+  }
+  return(count);
+  
 }
 
 /**
@@ -500,18 +575,24 @@ void Mark6::cleanUp()
  */
 void Mark6::pollDevices()
 {
-    clog << "Polling for new devices" << endl;
-  
+    vector<std::string> tempPartitions;
 
-       // create the poll item
-       pollfd items[1];
-       items[0].fd = udev_monitor_get_fd(mon);
-       items[0].events = POLLIN;
-       items[0].revents = 0;
-       int changeCount = 0;
+    //cout << "Polling for new devices" << endl;
+    clog << "Polling for new devices" << endl;
+
+    
+    /*for(std::vector<Mark6DiskDevice>::size_type i = 0; i != newDevices_m.size(); i++) {
+        cout << " new: " << newDevices_m[i].getName() << endl;
+    }
+    for(std::vector<Mark6DiskDevice>::size_type i = 0; i != removedDevices_m.size(); i++) {
+        cout << " remove : " << removedDevices_m[i].getName() << endl;
+    }*/
 
        // while there are hotplug events to process
-       while(poll(items, 1, 100) > 0)
+       // NOTE: the timeout parameter should be large enough to cope with
+       // the large number of events in case of all keys get turned simultaneously.
+       // Reducing the timeout too much will lead to dropped hitplugged events
+       while(poll(pollItems_m, 1, 3000) > 0)
        {
 
               // receive the relevant device
@@ -569,7 +650,6 @@ void Mark6::pollDevices()
                             disk.setSerial(udev_device_get_property_value(dev,"ID_SERIAL_SHORT") );
 
                             newDevices_m.push_back(disk);
-                            changeCount++;
 			}
                         //cout << "Controller ID=" << disk.getControllerId() << endl;
                         //cout << "Disk ID=" << disk.getDiskId() << endl;
@@ -581,34 +661,52 @@ void Mark6::pollDevices()
 			if(0 != udev_device_get_sysattr_value(grandparent, "sas_address"))
 			{
                             string partitionName = string(udev_device_get_sysname(dev));
-                            // add partition to disk device object
-                            if (addPartitionDevice(partitionName) == 0)
-                            {
-                                throw Mark6Exception (string("New hotplug partition found (" + partitionName + ") without corresponding disk device") );              
-                            }
+                            newPartitions_m.push_back(partitionName);
 			}
                     }
                }
                else if ((action ==  "remove") && (devtype == "disk"))
                {
-                       //cout << "remove device action" << endl;
-                        Mark6DiskDevice disk(string(udev_device_get_sysname(dev)));
+                       Mark6DiskDevice disk(string(udev_device_get_sysname(dev)));
                        removedDevices_m.push_back(disk);
-                       changeCount++;
                }
 
                // destroy the relevant device
                udev_device_unref(dev);
 
                // clear the revents
-               items[0].revents = 0;
+               pollItems_m[0].revents = 0;
        }
 
-       if (changeCount > 0)
-       {
-               manageDeviceChange();                
-       }
-                
+      if ((newDevices_m.size() > 0) || (removedDevices_m.size() > 0))
+      {
+          manageDeviceChange();                
+          verifyDevices_m = true;
+      }
+      else
+      {
+          if (verifyDevices_m)
+          {
+              
+              verifyDevices();
+              verifyDevices_m = false;
+          }
+      }
+
+      if (newPartitions_m.size() > 0)
+      {
+          tempPartitions.swap(newPartitions_m);
+
+          /*for(std::vector<std::string>::size_type i = 0; i != tempPartitions.size(); i++) {
+              cout << " new partition: " << tempPartitions[i] << endl;
+          }*/
+          for( vector<std::string>::iterator iter = tempPartitions.begin(); iter != tempPartitions.end(); ++iter ) {
+              // add partition to disk device object
+              if (addPartitionDevice( *iter ) != 0) {
+                  newPartitions_m.push_back(*iter);
+              }
+          }
+      }
                 
 /*
                 cout << "Currently mounted devices:" << endl;
@@ -619,17 +717,19 @@ void Mark6::pollDevices()
                 cout << endl;
 */
                 
+//                cout << "Currently mounted modules:" << endl;
                 clog << "Currently mounted modules:" << endl;
                 for (int iSlot=0; iSlot < controllers_m.size()*2; iSlot++)
                 {
                     //modules_m[iSlot].isComplete();
                     //cout << "Slot " << iSlot << " = " << modules_m[iSlot].getEMSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << modules_m[iSlot].isComplete() << endl;
+ //                   cout << "Slot " << iSlot+1 << " = " << modules_m[iSlot].getEMSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << endl;
                     clog << "Slot " << iSlot+1 << " = " << modules_m[iSlot].getEMSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << endl;
-		    if (modules_m[iSlot].getNumDiskDevices() > 0)
+		    /*if (modules_m[iSlot].getNumDiskDevices() > 0)
 		    {
 			//if (modules_m[iSlot].diskDevices_m.empty()) { continue; }
 			map<int, string> serials = modules_m[iSlot].getDiskDevice(0)->getMeta().getSerials();
-/*			
+
 			// loop over all serials found in the meta data
 			map<int, string>::iterator it;
 			for ( it = serials.begin(); it != serials.end(); it++ )
@@ -637,8 +737,7 @@ void Mark6::pollDevices()
 			   cout << "matching " << it->first << " " << it->second << endl;
 			}
                         cout << endl;
-*/
-		    }
+		    }*/
                 }
 
     }
@@ -688,6 +787,7 @@ void Mark6::writeControllerConfig()
 
     conf.close();
 
+    clog << "Wrote new sas controller configuration: /etc/default/mark6_slots. Check if automatic slot assignments matches local cabling" << endl;
     
 }
 
@@ -854,7 +954,7 @@ int Mark6::enumerateDevices()
 		{
 			string partitionName = string(udev_device_get_sysname(dev));
 			// add partition to disk device object
-			if (addPartitionDevice(partitionName) == 0)
+			if (addPartitionDevice(partitionName) != 0)
 			{
 			    throw Mark6Exception (string("Partition found (" + partitionName + ") without corresponding disk device") );              
 			}
