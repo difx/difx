@@ -203,7 +203,7 @@ bool Mark6Module::isComplete(){
     
    
     map<int, string> serials = diskDevices_m[diskIndex].getMeta().getSerials();
-     cout << diskIndex << " " << serials.size() << endl;
+    // cout << diskIndex << " " << serials.size() << endl;
     // loop over all serials found in the meta data
     map<int, string>::iterator it;
     for ( it = serials.begin(); it != serials.end(); it++ )
