@@ -28,9 +28,11 @@
 #include "Mark6Meta.h"
 
 #include <algorithm>
+#include <errno.h>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <string.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -195,9 +197,11 @@ int Mark6DiskDevice::mountPartition(int partitionNumber, string mountPath)
 
     if (ret == -1)
     {
+        char buffer[ 256 ];
+        char * errorMsg = strerror_r( errno, buffer, 256 );
         partitions_m[partitionNumber].mountPath = "";
         isMounted_m = false;
-        throw Mark6MountException (string("Cannot mount  device " + source + " under " + mountPath));
+        throw Mark6MountException (string("Cannot mount  partition " + source + " under " + mountPath + " Reason: " + errorMsg));
     }
 
     partitions_m[partitionNumber].mountPath = mountPath;
@@ -254,8 +258,11 @@ int Mark6DiskDevice::mountDisk(string dataPath, string metaPath)
     
         if (ret == -1)
         {
+            char buffer[ 256 ];
+            char *errorMsg = strerror_r( errno, buffer, 256 );
+
             isMounted_m = false;
-            throw Mark6MountException (string("Cannot mount  device " + source + " at " + dest.str()));
+            throw Mark6MountException (string("Cannot mount  device " + source + " at " + dest.str() + ".  Reason: " + errorMsg));
         }
         
         partitions_m[i].mountPath = dest.str();
