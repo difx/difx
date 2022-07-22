@@ -1066,14 +1066,14 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 	return Dset;
 }
 
-static int needToVanVleck(DifxInput **Dset)
+static int needToVanVleck(DifxInput **Dset, int n)
 {
 	const DifxInput *D;
 	int q;
 	int antennaId;
 	int i;
 
-	for(i = 0; Dset[i]; ++i)
+	for(i = 0; i < n; ++i)
 	{
 		D = Dset[i];
 		q = 0;
@@ -1412,7 +1412,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if(needToVanVleck(Dset))
+	if(needToVanVleck(Dset, opts->nBaseFile))
 	{
 		opts->doVanVleck = 1;
 	}
