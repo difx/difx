@@ -720,32 +720,31 @@ void mark6_sg_blocklist_store(int nfiles, const char** filenamelist, m6sg_blockm
         int fdtmp;
         char tmpname[] = "/tmp/fileXXXXXX";
         uint64_t nblks64 = nblocks;
-	size_t nwr = 0;
+        size_t nwr = 0;
 
         fdtmp = mkstemp(tmpname);
-	if (fdtmp == -1)
-	{
-	    fprintf(stderr, "Error: mark6_sg_blocklist_store: mkstemp failed.\n");
-	}
-	else
-	{
-	    nwr = write(fdtmp, &nblks64, sizeof(nblks64));
-	    nwr += write(fdtmp, *blocklist, sizeof(m6sg_blockmeta_t)*nblocks);
-	    close(fdtmp);
-	}
+        if (fdtmp == -1)
+        {
+            fprintf(stderr, "Error: mark6_sg_blocklist_store: mkstemp failed.\n");
+        }
+        else
+        {
+            nwr = write(fdtmp, &nblks64, sizeof(nblks64));
+            nwr += write(fdtmp, *blocklist, sizeof(m6sg_blockmeta_t)*nblocks);
+            close(fdtmp);
+        }
 
-	if (nwr != sizeof(nblks64) + sizeof(m6sg_blockmeta_t)*nblocks)
-	{
-	    fprintf(stderr, "Error: mark6_sg_blocklist_store: write failed.\n");
-	    remove(tmpname);
-	    // FIXME: should we also remove the old cache file if it exists?
-	}
-	else
-	{
+        if (nwr != sizeof(nblks64) + sizeof(m6sg_blockmeta_t)*nblocks)
+        {
+            fprintf(stderr, "Error: mark6_sg_blocklist_store: write failed.\n");
+            remove(tmpname);
+        // FIXME: should we also remove the old cache file if it exists?
+        }
+        else
+        {
             rename(tmpname, cachefilename);
             if (m_m6sg_dbglevel) { printf("mark6_sg_blocklist_rebuild: cached %zu metadata blocks in %s\n", nblocks, cachefilename); }
-
-	}
+        }
         free(cachefilename);
     }
 }
@@ -790,7 +789,7 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
     {
         int group = (disk/8) + 1;
         int gdisk = disk % 8;
-	size_t nrd;
+        size_t nrd;
 
         // Read the 'group' metadata first.
         // In the current Mark6 cplane v1.12 version it is a single text line without a terminating newline,
@@ -801,15 +800,18 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
         f = fopen(tmppath, "r");
         if (f != NULL)
         {
-             nrd = fread(group_meta_str, sizeof(group_meta_str)-1, 1, f);
-	     if (nrd != 1)
-	     {
-	         if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s read failed\n", tmppath); }
-	     }
-             fclose(f);
-	     memset(group_meta_str, 0, sizeof(group_meta_str));
+            nrd = fread(group_meta_str, sizeof(group_meta_str)-1, 1, f);
+            if (nrd != 1)
+            {
+                if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s read failed\n", tmppath); }
+                memset(group_meta_str, 0, sizeof(group_meta_str));
+            }
+            fclose(f);
         }
-        else if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s not found\n", tmppath); }
+        else
+        {
+            if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s not found\n", tmppath); }
+        }
 
         // Now read the 'slist' JSON metadata.
         memset(tmppath, 0, sizeof(tmppath));
@@ -826,11 +828,11 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
         json = malloc(json_strlen + 16);
         nrd = fread(json, json_strlen, 1, f);
         fclose(f);
-	if (nrd < 1)
-	{
-	    if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s could not be read\n", tmppath); }
-	    continue;
-	}
+        if (nrd < 1)
+        {
+            if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s could not be read\n", tmppath); }
+            continue;
+        }
 
         // Parse JSON using the he Jasmin (JSMN) JSON C parser library
         jsmn_init(&p);
@@ -859,9 +861,9 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
             // "{ 1:{scandata1}, ... }" missing
             if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: JSON data in %s looks bad (no top-level object)\n", tmppath); }
             continue;
-	}
+        }
 
-	tokcount = tok[0].size;
+        tokcount = tok[0].size;
         tokidx   = 1;
         if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: JSON data in %s has %ld scans\n", tmppath, tokcount); }
 
