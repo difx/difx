@@ -31,6 +31,7 @@ from .Freq import Freq
 from .Telescope import Telescope
 from .Baseline import Baseline
 from .Datastream import Datastream
+from .Data import Data
 
 M_SYNC_WORD = 0xFF00FF00
 
@@ -279,6 +280,34 @@ def put_baselinetable_info(fo,bl):
                 fo.write("%-20s%d\n" % ("D/STREAM A BAND %d:"%(k),b.dsabandindex[f][k]))
                 fo.write("%-20s%d\n" % ("D/STREAM B BAND %d:"%(k),b.dsbbandindex[f][k]))
     fo.write("\n")
+
+def get_datatable_info(inputfile, numDatastreams):
+    '''
+    Parses the DATA TABLE section and stores
+    information in a Data object
+    '''
+    input = open(inputfile)
+    lines = input.readlines()
+    input.close()
+
+    at = 0
+    while at < len(lines) and lines[at] != "# DATA TABLE #######!\n":
+        at += 1
+
+    val, lines = nextinputline(lines[at:])
+    datalines = []
+    for i in range(numDatastreams):
+        data = Data()
+        data.datastreamindex = i
+        media = []
+        val, lines = nextinputline(lines[1:])
+        for i in range(int(val)):
+            val, lines = nextinputline(lines[1:])
+            data.media.append(val)
+        
+        datalines.append(data)
+    return (datalines)
+        
 
 def get_datastreamtable_info(inputfile):
     input = open(inputfile)

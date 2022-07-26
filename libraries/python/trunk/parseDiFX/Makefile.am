@@ -8,6 +8,7 @@ nobase_dist_parsedifxlib_SCRIPTS = \
 	Telescope.py \
 	Baseline.py \
 	Datastream.py \
+	Data.py \
 	DiFXFile.py \
 	InputFile.py \
 	VisibilityHeader.py \

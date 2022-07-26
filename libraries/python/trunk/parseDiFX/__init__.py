@@ -41,6 +41,7 @@ from .Freq import Freq
 from .Telescope import Telescope
 from .Baseline import Baseline
 from .Datastream import Datastream
+from .Data import Data
 
 # DiFX full set: .input and .difx/DIFX_*
 from .InputFile import InputFile

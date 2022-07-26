@@ -24,7 +24,7 @@
 #
 #============================================================================
 
-from .Common import get_common_settings, get_freqtable_info, get_telescopetable_info, get_datastreamtable_info, get_baselinetable_info
+from .Common import get_common_settings, get_freqtable_info, get_telescopetable_info, get_datastreamtable_info, get_baselinetable_info, get_datatable_info
 
 class InputFile:
 
@@ -43,6 +43,7 @@ class InputFile:
         self.numfreqs, self.freqs = get_freqtable_info(inputfile)
         self.numtelescopes, self.telescopes = get_telescopetable_info(inputfile)
         self.numdatastreams, self.datastreams = get_datastreamtable_info(inputfile)
+        self.data = get_datatable_info(inputfile, self.numdatastreams)
         self.numbaselines, self.baselines = get_baselinetable_info(inputfile)
         self.numoutputfreqs, self.outputfreqs = self.determine_outputfreqs()
         self.version = self.determine_version() # TODO: currently relies on baseline table infos, make independent of that

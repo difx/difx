@@ -1,7 +1,16 @@
+Post DiFX-2.7
+----------------
+* parseDiFX: add parsing of DATA table
+
 1.2
+----------------
 * add difxplot package
+
 1.1
+----------------
 * add difmachines.py
 * add parseDiFX package
+
 1.0 
+-----------------
 * Initial version
