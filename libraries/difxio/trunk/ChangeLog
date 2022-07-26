@@ -19,6 +19,7 @@
 * new function: DifxInputGetSourceId()
 * when checking equality of antennas, verify mount type is the same
 * remove polxy2hv from DifxInput structure -- this was effectively a difx2fits private variable that slipped in.
+* increase observation code string length to 24
 
 3.6.0
 * Post DiFX 2.5
