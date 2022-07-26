@@ -16,6 +16,7 @@ Version 3.7.0
     - AIPS FITLD (and later CASA importfitsidi) will not attempt double correction
       - AIPS from Aug 2022 or later is required.
   - When not activated, behavior is unchanged from past versions
+* Increase observation code length to 24
 
 Commit 10003 2021.04.30
 
