@@ -68,6 +68,7 @@ typedef struct m6sg_virt_filedescr {
     char      scanname[1024];
     char**    filepathlist;
     char**    filenamelist; // (unused, although populated)
+    char      activeMSN[8]; // informative/optional, for difxmessage multicast; DIFX_MESSAGE_MARK6_MSN_LENGTH is 8
     int       fds[MARK6_SG_MAXFILES];
     void*     fmmap[MARK6_SG_MAXFILES];
     off_t     fsize[MARK6_SG_MAXFILES];

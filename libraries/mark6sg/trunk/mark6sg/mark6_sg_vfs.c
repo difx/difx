@@ -267,6 +267,7 @@ int mark6_sg_open(const char *scanname, int flags)
     if (1) {
         DifxMessageMark6Activity m6act;
         memset(&m6act, 0x00, sizeof(m6act));
+        memcpy(m6act.activeVsn, vfd->activeMSN, sizeof(m6act.activeVsn));
         m6act.state = MARK6_STATE_OPEN;
         snprintf(m6act.scanName, sizeof(m6act.scanName)-1, "%s", vfd->scanname);
         difxMessageSendMark6Activity(&m6act);
@@ -1039,6 +1040,39 @@ ssize_t mark6_sg_stripesize(int fd)
     }
 
     return 0;
+}
+
+/**
+ * Returns or optionally also sets Active MSN label.
+ * The "active MSN" is not written onto modules, it is only
+ * used as a label in difxmessage Mark6Activity multicast messages.
+ */
+const char* mark6_sg_active_msn(int fd, const char* new_label)
+{
+    m6sg_virt_filedescr_t* vfd;
+
+    // Catch some error conditions
+    if ((fd < 0) || (fd >= MARK6_SG_VFS_MAX_OPEN_FILES))
+    {
+        errno = EBADF;
+        return NULL;
+    }
+
+    vfd = m6sg_open_files_list.fd_list[fd];
+    if (!vfd->valid)
+    {
+        errno = EBADF;
+        return NULL;
+    }
+
+    // Get/set info about "active MSN"
+    if (new_label != NULL)
+    {
+        memset(vfd->activeMSN, 0x00, sizeof(vfd->activeMSN));
+        strncpy(vfd->activeMSN, new_label, sizeof(vfd->activeMSN));
+    }
+
+    return vfd->activeMSN; // or return strdup(vfd->activeMSN)?
 }
 
 //////////////////////////////////////////////////////////////////////////////////////

@@ -58,6 +58,8 @@ extern int     mark6_sg_packetsize(int fd);
 extern int     mark6_sg_packetsize_hint(int size_hint);
 extern ssize_t mark6_sg_stripesize(int fd);
 
+extern const char* mark6_sg_active_msn(int fd, const char* new_label);
+
 #ifdef __cplusplus
 }
 #endif
