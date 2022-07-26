@@ -194,6 +194,7 @@ int mark6_sg_open(const char *scanname, int flags)
     memset((void*)vfd, 0, sizeof(m6sg_virt_filedescr_t));
     vfd->valid = 1;
     vfd->mode = O_RDONLY;
+    snprintf(vfd->activeMSN, sizeof(vfd->activeMSN), "unkn_msn");
     snprintf(vfd->scanname, sizeof(vfd->scanname)-1, "%s", scanname);
     pthread_mutex_init(&vfd->lock, NULL);
     pthread_mutex_unlock(&vfs_lock);
@@ -267,7 +268,7 @@ int mark6_sg_open(const char *scanname, int flags)
     if (1) {
         DifxMessageMark6Activity m6act;
         memset(&m6act, 0x00, sizeof(m6act));
-        memcpy(m6act.activeVsn, vfd->activeMSN, sizeof(m6act.activeVsn));
+        memcpy(m6act.activeVsn, vfd->activeMSN, sizeof(vfd->activeMSN));
         m6act.state = MARK6_STATE_OPEN;
         snprintf(m6act.scanName, sizeof(m6act.scanName)-1, "%s", vfd->scanname);
         difxMessageSendMark6Activity(&m6act);
@@ -438,7 +439,7 @@ int mark6_sg_close(int fd)
     if (1) {
         DifxMessageMark6Activity m6act;
         memset(&m6act, 0x00, sizeof(m6act));
-        memcpy(m6act.activeVsn, vfd->activeMSN, sizeof(m6act.activeVsn));
+        memcpy(m6act.activeVsn, vfd->activeMSN, sizeof(vfd->activeMSN));
         m6act.state = MARK6_STATE_CLOSE;
         snprintf(m6act.scanName, sizeof(m6act.scanName)-1, "%s", vfd->scanname);
         difxMessageSendMark6Activity(&m6act);
@@ -650,7 +651,7 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
             dt = (now.tv_sec - prev_time.tv_sec) + 1e-6*(now.tv_usec - prev_time.tv_usec);
 
             memset(&m6act, 0x00, sizeof(m6act));
-            memcpy(m6act.activeVsn, vfd->activeMSN, sizeof(m6act.activeVsn));
+            memcpy(m6act.activeVsn, vfd->activeMSN, sizeof(vfd->activeMSN));
             m6act.state = MARK6_STATE_PLAY;
             m6act.position = rdoffset;
             m6act.rate = (delta_read*8e-6)/dt;
@@ -1067,11 +1068,12 @@ const char* mark6_sg_active_msn(int fd, const char* new_label)
         return NULL;
     }
 
-    // Get/set info about "active MSN"
+    // Get/set info about "active MSN", pad to 8 characters long plus Null
     if (new_label != NULL)
     {
-        memset(vfd->activeMSN, 0x00, sizeof(vfd->activeMSN));
-        strncpy(vfd->activeMSN, new_label, sizeof(vfd->activeMSN));
+        memset(vfd->activeMSN, ' ', 8);
+        vfd->activeMSN[8] = '\0';
+        strncpy(vfd->activeMSN, new_label, 8);
     }
 
     return vfd->activeMSN; // or return strdup(vfd->activeMSN)?
