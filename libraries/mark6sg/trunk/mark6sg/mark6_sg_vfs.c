@@ -194,7 +194,7 @@ int mark6_sg_open(const char *scanname, int flags)
     memset((void*)vfd, 0, sizeof(m6sg_virt_filedescr_t));
     vfd->valid = 1;
     vfd->mode = O_RDONLY;
-    snprintf(vfd->activeMSN, sizeof(vfd->activeMSN), "unkn_msn");
+    snprintf(vfd->activeMSN, sizeof(vfd->activeMSN), "none");
     snprintf(vfd->scanname, sizeof(vfd->scanname)-1, "%s", scanname);
     pthread_mutex_init(&vfd->lock, NULL);
     pthread_mutex_unlock(&vfs_lock);
