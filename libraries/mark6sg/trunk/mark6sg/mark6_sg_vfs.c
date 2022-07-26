@@ -438,6 +438,7 @@ int mark6_sg_close(int fd)
     if (1) {
         DifxMessageMark6Activity m6act;
         memset(&m6act, 0x00, sizeof(m6act));
+        memcpy(m6act.activeVsn, vfd->activeMSN, sizeof(m6act.activeVsn));
         m6act.state = MARK6_STATE_CLOSE;
         snprintf(m6act.scanName, sizeof(m6act.scanName)-1, "%s", vfd->scanname);
         difxMessageSendMark6Activity(&m6act);
@@ -649,6 +650,7 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
             dt = (now.tv_sec - prev_time.tv_sec) + 1e-6*(now.tv_usec - prev_time.tv_usec);
 
             memset(&m6act, 0x00, sizeof(m6act));
+            memcpy(m6act.activeVsn, vfd->activeMSN, sizeof(m6act.activeVsn));
             m6act.state = MARK6_STATE_PLAY;
             m6act.position = rdoffset;
             m6act.rate = (delta_read*8e-6)/dt;
