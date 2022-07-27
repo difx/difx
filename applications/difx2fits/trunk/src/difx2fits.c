@@ -623,7 +623,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	int i, j;
 	int fqindex = -1;
 
-	snprintf(FITS_OBS_CODE_LENGTH, "%s", keys->obscode, D->job->obsCode);
+	snprintf(keys->obscode, FITS_OBS_CODE_LENGTH, "%s", D->job->obsCode);
 	keys->no_stkd = D->nPolar;
 	if(D->AntPol == 1)
 	{
