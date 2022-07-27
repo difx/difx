@@ -71,11 +71,15 @@ class Mk6MessageParser:
         self.numActivityRows = 0
         self.rowsStatus = {}
         self.rowsActivity = {}
+        self.updateStatus = False
+        self.updateActivity = False
 
     def parseMessage (self, message):
 
         newStatus = False
         updateActivity = False
+        self.updateStatus = False
+        self.updateActivity = False
 
         dom = minidom.parseString(message)
         messageType = dom.getElementsByTagName('type')[0].firstChild.data
@@ -91,11 +95,14 @@ class Mk6MessageParser:
         if messageType == "Mark6StatusMessage":
             self.parseStatusMessage(dom, row)
             self.rowsStatus[nodeFrom] = row
+            self.updateStatus = True
         elif messageType == "Mark6SlotStatusMessage":
             self.parseSlotStatusMessage(dom, row)
             self.rowsStatus[nodeFrom] = row
+            self.updateStatus = True
         elif messageType == "Mark6ActivityMessage":
             updateActivity = self.parseActivityMessage(dom)
+            self.updateActivity = True
         else:
             return
 
@@ -223,9 +230,11 @@ class DisplayCurses:
 
         def displayAll(self, numSlots, status, activity):
 
+            #print ("tick")
             self.curs.clear()
             self.displayStatus(numSlots, status)
             self.displayActivity(activity, len(status))
+            self.curs.refresh()
 
 
         def displayActivity (self, activity, rowOffset):
@@ -264,7 +273,6 @@ class DisplayCurses:
 
             self.curs.addstr(rowOffset + 6, 0, formatStr.format("Machine","VSN","State","Data Rate","Position","Scan Name","Data MJD"))
 
-            self.curs.refresh()
 
 
         def displayStatus(self, numSlots, status):
@@ -298,16 +306,11 @@ class DisplayCurses:
                 idx += 1
 
                 self.curs.addstr(idx + 3, 0, line)
-
-            self.curs.refresh()
-
             
 def listen (port, group):
         dt = 0.0
         t = 0
         maxtime = 6000
-        lastStatus = None
-        lastActivity = None
 
         # Now listen for responses, until either time runs out or we get all we need
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -328,7 +331,8 @@ def listen (port, group):
                         continue
                 parser.parseMessage(message)
                 
-                display.displayAll(parser.numSlots, parser.rowsStatus,parser.rowsActivity)
+                if parser.updateStatus or parser.updateActivity: 
+                    display.displayAll(parser.numSlots, parser.rowsStatus,parser.rowsActivity)
 
 
 # main execution
