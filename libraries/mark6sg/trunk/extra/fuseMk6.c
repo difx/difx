@@ -149,7 +149,7 @@ static int fusem6_open(const char *path, struct fuse_file_info *fi)
 	// TODO: somehow determine actual MSN(s) list of the accessed module(s),
 	//       or the original MSN of off-module raw data
 	char fakeMSN[9] = { '\0' };
-	snprintf(fakeMSN, sizeof(fakeMSN), "fuse%04d", getpid());
+	snprintf(fakeMSN, sizeof(fakeMSN), "fuse%04d", getpid() % 10000);
 	mark6_sg_active_msn(fi->fh, fakeMSN);
 
 	return 0;
