@@ -7,10 +7,6 @@
  * is all that should be assumed
  */
 
-/* Sources of information (incomplete):
- *
- * https://ivscc.gsfc.nasa.gov/technology/vgos-sites.html
- */
 AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays? */
 {
 	{ "AGGO",           "AGGO",      2765116.7009,  -4449233.7840,  -3626420.5633,  6.0 },		/* ITRF2014, 2019d solution */
@@ -24,6 +20,7 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 	{ "ATCA",           "ATCA",     -4751685.98800,  2791621.22300, -3200491.70000, 22.0, 6.0 },
 	{ "Azores",         "AZORES",    4552174.62052, -2186664.67586,  3882779.78919, 3.9 },
 	{ "Badary",         "BADARY",    -838201.2618,   3865751.5589,   4987670.8708,  32.0 },		/* ITRF2014, 2019d solution */
+	{ "Badary 13m",     "BADAR13M",  -838326.334,    3865797.228,    4987598.328,   13.0 },
 	{ "Brewster",       "BR-VLBA",  -2112065.3082,  -3705356.5142,   4726813.6124,  25.0 },
 	{ "Cambridge",      "CAMBRIDG",  3920356.1500,      2542.0200,   5014284.4200,  32.0 },
 	{ "Chichijima",     "CHICHI10", -4490617.9108,   3483908.7523,   2884899.3203,  10.26 },	/* ITRF2014, 2019d solution */
@@ -59,6 +56,7 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 	{ "Effelsberg",     "EFLSBERG",  4033947.1525,    486990.8961,   4900431.0604,  25.0 },		/* ITRF2014, 2019d solution */
 	{ "Fort Davis",     "FD-VLBA",  -1324009.4120,  -5332181.9576,   3231962.3492,  25.0 },
 	{ "MacDonald",      "MACGO12M", -1330788.46447, -5328106.58850,  3236427.49718, 12.0 },		/* Chet; VGOS positions 2020 */
+	{ "MacDonald 13m",  "MCD 7850", -1330008.085,   -5328391.578,    3236502.734,   13.0 },
 	{ "Fortaleza",      "FORTLEZA",  4985369.9984,  -3955020.4158,   -428471.9983,  14.2 },
 	{ "GBT",            "GBT-VLBA",   882589.574,   -4924872.334,    3943729.336,   100.0 },	/* ITRF2014 */
 	{ "GBANK_TS",       "GBANK_TS",   884084.2636,  -4924578.7481,   3943734.3354,  0.0 },
@@ -99,6 +97,7 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 	{ "Metsahovi",      "METSAHOV",  2892584.7339,   1311715.6918,   5512640.2335,  14.0 },		/* ITRF2014, 2019d solution */
 	{ "Miyun",          "",         -2201304.5880,   4324789.2160,   4125367.9130,  50.0 },
 	{ "Mizusawa",       "VERAMZSW", -3857244.2418,   3108783.5264,   4003899.4149,  20.0 },		/* ITRF2014, 2019d solution */
+	{ "Mizusawa 10m",   "MIZNAO10", -3857236.086,    3108803.330,    4003883.012,   10.0 },
 	{ "Mopra",          "MOPRA",    -4682769.05850,  2802619.04217, -3291759.33837, 22.0 },
 	{ "North Liberty",  "NL-VLBA",   -130872.6044,  -4762317.0907,   4226850.9773,  25.0 },		/* ITRF2014, 2019d solution */
 	{ "Noto",           "NOTO",      4934562.7154,   1321201.6601,   3806484.8461,  32.0 },		/* ITRF2014, 2019d solution */
@@ -123,8 +122,9 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 	{ "Saint Croix",    "SC-VLBA",   2607848.6985,  -5488069.4801,   1932739.8169,  25.0 },		/* ITRF2014, 2019d solution */
 	{ "Sardinia",       "",          4865182.7660,    791922.6890,   4035137.1740,  65.0 },
 	{ "Santa Maria",    "RAEGSMAR",  4618524.3781,  -2166020.7378,   3816270.3654,  13.2 },		/* ITRF2014, 2019d solution */
-	{ "Santia12",       "SANTIA12",  1769693.5857,  -5044504.7132,  -3468434.7322,  12.0 },		/* ITRF2014, 2019d solution */
+	{ "Santia 12m",     "SANTIA12",  1769693.5857,  -5044504.7132,  -3468434.7322,  12.0 },		/* ITRF2014, 2019d solution */
 	{ "Sejong",         "SEJONG",   -3110080.2102,   4082066.5941,   3775076.7543,  22.0 },		/* ITRF2014, 2019d solution */
+	{ "Seshan 13m",     "SESHAN13", -2831647.050,    4675729.464,    3275365.079,   13.0 },
 	{ "Seshan",         "SESHAN25", -2831687.6066,   4675733.3922,   3275327.4239,  25.0 },		/* ITRF2014, 2019d solution */
 	{ "SEST",           "SEST",      1838237.9028,  -5258699.2884,  -3100588.8399,  15.0 },		/* ITRF2014, 2019d solution */
 	{ "SMA",            "",         -5464555.4930,  -2492927.9890,   2150797.1760,  6.0, 3.0, "NASL" },
@@ -134,6 +134,7 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 	{ "Syowa",          "SYOWA",     1766194.2549,   1460410.9101,  -5932273.3328,  11.0 },		/* ITRF2014, 2019d solution */
 	{ "Tabley",         "",          3817549.9560,   -163031.1410,   5089896.6540,  25.0 },
 	{ "Tamna",          "",         -3171731.4809,   4292677.3733,   3481040.4580,  21.0 },
+	{ "Tianma 13m",     "TIANMA13", -2826801.912,    4679253.999,    3274516.066,   13.0 },
 	{ "Tianma",         "TIANMA65", -2826708.8081,   4679236.9722,   3274667.4495,  65.0 },		/* ITRF2014, 2019d solution */
 	{ "Tidbinbilla",    "TIDBIN64", -4460895.4973,   2682361.5220,  -3674747.2763,  64.0 },		/* ITRF2014, 2019d solution */
 	{ "Torun",          "TORUN",     3638558.5100,   1221969.7200,   5077036.7600,  32.0 },
@@ -159,6 +160,7 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 	{ "Yebes VGOS",     "RAEGYEB",   4848831.338,    -261629.412,    4122976.448,   13.2 },		/* Chet; VGOS 2020 */
 	{ "Yonsei",         "",         -3042278.2562,   4045902.8094,   3867376.1435,  21.0 },
 	{ "Zelenchukskya",  "ZELENCHK",  3451207.3892,   3060375.5196,   4391915.1199,  32.0 },		/* ITRF2014, 2019d solution */
+	{ "Zelenchukskya13","ZELEN13M",  3451257.496,    3060268.081,    4391933.089,   13.0 },
 	{ "", "", 0.0, 0.0, 0.0, 0.0 },	/* this must terminate the list */
 
 	/* Known Missing:
@@ -166,11 +168,7 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 		Nyalesund 13N VGOS 13.2m
 		Gran Canaria VGOS 13.2m
 		Flores VGOS 13.2m
-		McDonald VGOS 12m
 		Matera VGOS
-		Mizusawa 10m Mn MIZNAO10
-		Seshan VGOS 13m
-		Tianma VGOS 13m
 		Urumqi VGOS 13.2m
 		Jilin VGOS 13m
 		Kashi VGOS 13m
@@ -178,14 +176,14 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 		Tahiti VGOS 12.0m
 		TNRT (Thailand)
 		Thailand VGOS
-		Badary VGOS 13.2m BADRT13V
 		Svetloe VGOS 13.2m
-		Zelenchukskya VGOS 13.2m
 		Evpatoria
 
 	 * Sources of info:
 	 	https://raw.githubusercontent.com/anothnagel/antenna-info/master/antenna-info.txt
 		https://ivscc.gsfc.nasa.gov/about/org/components/ns-list.html
+		https://ivscc.gsfc.nasa.gov/technology/vgos-sites.html
+		https://cddis.nasa.gov/archive/vlbi/gsfc/ancillary/solve_apriori/blokq.c11.dat
 	 */
 };
 
