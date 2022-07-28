@@ -17,6 +17,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>     
@@ -385,7 +386,7 @@ int main(int argc, char * const argv[]) {
       break;
 
     case 'G':
-      status = sscanf(optarg, "%llu", &tmp64);
+      status = sscanf(optarg, "%"PRIu64, &tmp64);
       if (status!=1)
 	fprintf(stderr, "Bad totalsamples option %s\n", optarg);
       else {
