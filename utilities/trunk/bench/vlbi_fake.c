@@ -79,7 +79,7 @@ int main(int argc, char * const argv[]) {
   char msg[MAXSTR+50], filetimestr[MAXSTR];
   char *buf, *headbuf, *ptr;
   long *lbuf;
-  uint64_t mjdsec, bwrote, totalpackets, totalsamples=0;
+  uint64_t mjdsec, bwrote, totalpackets, tmp64, totalsamples=0;
   double thismjd, finishmjd, ut, t0, t1, t2, dtmp;
   float speed, ftmp;
   unsigned long long filesize, networksize, nwritten, totalsize;
@@ -113,6 +113,7 @@ int main(int argc, char * const argv[]) {
   char filebase[MAXSTR+1]; /* Base name for output file */
   char hostname[MAXSTR+1] = ""; /* Host name to send data to */
   char timestr[MAXSTR] = "";
+  int period = -1;
 
   udp udp;
   udp.size = 0;
@@ -154,6 +155,8 @@ int main(int argc, char * const argv[]) {
     {"codif", 0, 0, 'c'},
     {"novtp", 0, 0, 'V'},
     {"complex", 0, 0, 'C'},
+    {"period", 1, 0, 'P'},
+    {"totalsamples", 1, 0, 'G'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
@@ -372,6 +375,24 @@ int main(int argc, char * const argv[]) {
       }
       break;
       
+    case 'P':
+      status = sscanf(optarg, "%d", &tmp);
+      if (status!=1)
+	fprintf(stderr, "Bad period option %s\n", optarg);
+      else {
+	period = tmp;
+      }
+      break;
+
+    case 'G':
+      status = sscanf(optarg, "%llu", &tmp64);
+      if (status!=1)
+	fprintf(stderr, "Bad totalsamples option %s\n", optarg);
+      else {
+	totalsamples = tmp64;
+      }
+      break;
+      
     case 'B':
       mode = MARK5B;
       break;
@@ -398,7 +419,7 @@ int main(int argc, char * const argv[]) {
       printf("  -p/-port <PORT>       Port number for transfer\n");
       printf("  -d/duration <DUR>     Time in (transferred) seconds to run (60)\n");
       printf("  -bandwidth <BANWIDTH> Channel bandwidth in MHz (16)\n");
-      printf("  -framesize <FRAMESIZE>(Data) frame size for VDIF data (bytes)\n");
+      printf("  -framesize <FRAMESIZE>(Data) frame size for VDIF/CODIF data (bytes)\n");
       printf("  -n/-nchan <N>         Number of channels to assume in stream\n");
       printf("  -b/-bits <N>          Number of bits/channel\n");
       printf("  -day <DAY>            Day of month of start time (now)\n");
@@ -420,8 +441,10 @@ int main(int argc, char * const argv[]) {
       printf("  -nthread <NUM>        Number of threads (VDIF only)\n");
       printf("  -threadid <NUM>       Thread ID of (first) threads (VDIF and CODIF only)\n");
       printf("  -drop <NUM>           Drop every NUM packets (UDP only)\n");
-      printf("  -complex              Complex samples (VDIF only)\n");
+      printf("  -complex              Complex samples (VDIF & CODIF only)\n");
       printf("  -novtp                Don't use VTP protocol (raw VLBI data)\n");
+      printf("  -period <SEC>         CODIF frame period (CODIF only)\n");
+      printf("  -totalsamples <N>     Number of time samples per CODIF period (CODIF only)\n");
       printf("  -h/-help              This list\n");
       return(1);
     break;
@@ -453,6 +476,20 @@ int main(int argc, char * const argv[]) {
     exit(1);
   }
 
+  if (mode!=CODIF && period>0) {
+    fprintf(stderr, "Only set period for CODIF format\n");
+    exit(1);
+  }
+  if (mode!=CODIF && totalsamples>0) {
+    fprintf(stderr, "Only set totalsamples for CODIF format\n");
+    exit(1);
+  }
+
+  if (mode==CODIF && ((totalsamples>0)!=(period>0))) {
+    fprintf(stderr, "Must set period and totalsamples for CODIF format\n");
+    exit(1);
+  }
+
   if (strlen(timestr)>0) {
     status = sscanf(timestr, "%d:%d:%d", &hour, &min, &sec);
     if (status!=3) {
@@ -479,9 +516,13 @@ int main(int argc, char * const argv[]) {
 
   printf("Using MJD=%.4f\n", mjd);
 
-  
-  datarate = numchan*bits*bandwidth*2; // Mbps (per thread if nthread>1), assuming Nyquist
+  if (mode==CODIF && period>0) {
+    datarate = (double)totalsamples*numchan*bits*2/period/1e6;
+  } else {
+    datarate = numchan*bits*bandwidth*2; // Mbps (per thread if nthread>1), assuming Nyquist
+  }
   printf("Datarate is %d Mbps\n", datarate*numthread);
+  printf("Nchan/bits = %d/%d\n", numchan, bits);
 
   if (udp.enabled) {
     if (mode==LBADR) {
@@ -491,7 +532,7 @@ int main(int argc, char * const argv[]) {
     udp.sequence = 0;
     udp.size -= 20; // IP header
     udp.size -= 4*2; // UDP header
-    udp.size -= sizeof(long long); // Sequence number
+    if (udp.vtp) udp.size -= sizeof(long long); // Sequence number
     udp.size &= ~0x7;  // Truncate to smallest multiple of 8
    
     if (udp.size<=0) {
@@ -509,40 +550,49 @@ int main(int argc, char * const argv[]) {
     init_bitreversal();
     initialise_mark5bheader(&mk5_header, datarate, mjd);
 
-    if (udp.enabled)  bufsize+=udp.size;
+    // Not sure this makes any sense need to check whats going on there - might be sending MARK5B over multiple packets
+    if (udp.enabled)  bufsize+=udp.size; 
 
   } else if (mode==VDIF || mode==CODIF) {
     if (mode==VDIF) 
       header_bytes = VDIF_HEADER_BYTES;
     else {
       header_bytes = CODIF_HEADER_BYTES;
+    }
+
+    if (mode==VDIF || totalsamples<=0) {
+      totalsamples = bandwidth*1e6;
+      if (!complex) totalsamples *=2;
+      period = 1;
+    }
+    
+    if (udp.enabled) framesize = udp.size-header_bytes;
+    framesize &= ~0x7;  // Multiple of 8
+
+    int completesample = numchan*bits; // bits
+    if (complex) completesample *= 2;
+    // Need to to have an integral number of frames/period (period==1 for VDIF)
+    while (framesize>0) {
+      int samplesperframe = (framesize*8) / completesample;
+      if (((framesize*8) % completesample==0) && (totalsamples % samplesperframe==0)) break;
+      framesize -= 8;
+    }
+    if (framesize==0) {
+      fprintf(stderr, "Could not find frame size to suit %d Mbps\n", datarate);
+      exit(1);
+    }
+    printf("Using data frame size of %d bytes\n", framesize);
+    framesize += header_bytes;
+    bufsize = framesize;
+    filesize = framesize;
+    if (udp.enabled) udp.size = framesize;
+
+    if (mode==CODIF) {
       sampleblocklength = numchan*bits;
       if (complex) sampleblocklength *= 2;
       sampleblocklength /= 8;
       if (sampleblocklength==0) sampleblocklength=1;
-      totalsamples = bandwidth*1e6;
-      if (!complex) totalsamples *=2;
     }
-    if (udp.enabled)
-      bufsize = udp.size-header_bytes;
-    else 
-      bufsize=framesize;
-
-    // Need to to have an integral number of frames/sec
-    while (bufsize>0) {
-      if ((int)(datarate*1e6) % bufsize==0) break;
-      bufsize -= 8;
-    }
-    if (bufsize==0) {
-      fprintf(stderr, "Could not find frame size to suit %d Mbps\n", datarate);
-      exit(1);
-    }
-    printf("Using data frame size of %d bytes\n", bufsize);
-    bufsize += header_bytes;
-    filesize = bufsize;
-    if (udp.enabled) udp.size = bufsize;
-
-    framepersec =  datarate*1e6/((bufsize-header_bytes)*8);
 
     mjdsec = llround(mjd*24*60*60);
     for (i=0;i<numthread;i++) {
@@ -557,10 +607,10 @@ int main(int argc, char * const argv[]) {
       } else {
  #ifdef CODIFV2
 	status = createCODIFHeader(&codif_headers[i], bufsize-header_bytes, i+threadid, 0, bits, numchan,
-				   sampleblocklength, 1, totalsamples, complex, "Tt", 0);
+				   sampleblocklength, period, totalsamples, complex, "Tt", 0);
 #else
 	status = createCODIFHeader(&codif_headers[i], bufsize-header_bytes, i+threadid, 0, bits, numchan,
-				   sampleblocklength, 1, totalsamples, complex, "Tt");
+				   sampleblocklength, period, totalsamples, complex, "Tt");
 #endif
 	if (status!=CODIF_NOERROR) {
 	  fprintf(stderr, "Error creating codif header (%d)\n", status);
@@ -570,6 +620,12 @@ int main(int argc, char * const argv[]) {
 	setCODIFFrameMJDSec(&codif_headers[i], mjdsec);
       }
     }
+
+    if (mode==CODIF)
+      framepersec = getCODIFFramesPerPeriod(&codif_headers[0]);  // Framesperperiod actually
+    else
+      framepersec = datarate*1e6/((bufsize-header_bytes)*8);
+    printf("Framepersec = %d\n", framepersec);
     
   } else if (mode==LBADR) {
     filesize = filetime*datarate*1e6/8;  // Seconds and Mbps => bytes
@@ -765,7 +821,6 @@ int main(int argc, char * const argv[]) {
         currentthread = 0;
 	mjd = getCODIFFrameDMJD(&codif_headers[currentthread], framepersec);
       }
-
     } else {
       mjd += filetime;
     }
