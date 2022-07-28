@@ -34,6 +34,7 @@ def parse_args(args: []):
 	parser.add_argument('-c', dest='cabling', default='5-9', help='link cabling config (default "%(default)s"; use "4-8" or "5-9")')
 	parser.add_argument('--if', '-i', dest='do_vex_if', action='store_true', help='also output VEX $IF section')
 	parser.add_argument('--bbc', '-b', dest='do_vex_bbc', action='store_true', help='also output VEX $BBC section')
+	parser.add_argument('--tracks', '-t', dest='do_vex_tracks', action='store_true', help='also output VEX $TRACKS section')
 	# todo? : parser.add_argument('--v2d', '-v', dest='do_v2d', action='store_true', help='also output v2d ANTENNA, DATASTREAM sections')
 
 	return parser.parse_args(args)
@@ -354,6 +355,22 @@ class NoemaVexFreqGenerator:
 		print('    BBC_assign = &BBC%02d :  2 : &IF_RCP;' % (self.pol2bbcnr['R']))
 		print('enddef;')
 
+	def generateTRACKS(self):
+
+		print('')
+		print('$TRACKS;')
+		print('def TRACKS_NN;')
+		print('    track_frame_format = INTERLACEDVDIF;')
+
+		if 5 in recorders:
+			Nchan = 2*16  # GMVA, 2pol x 16ch
+		else:
+			Nchan = 2*32  # EHT, 2pol x 32ch
+
+		for n in range(Nchan):
+			print('    fanout_def =   : &CH%02d : sign : 1 : %2d;' % (n+1, 4*n + 2))
+			print('    fanout_def =   : &CH%02d :  mag : 1 : %2d;' % (n+1, 4*n + 4))
+		print('enddef;')
 
 
 if __name__ == "__main__":
@@ -380,3 +397,5 @@ if __name__ == "__main__":
 		gen.generateIF()
 	if opts.do_vex_bbc:
 		gen.generateBBC()
+	if opts.do_vex_tracks:
+		gen.generateTRACKS()
