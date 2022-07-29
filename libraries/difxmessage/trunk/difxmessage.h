@@ -227,13 +227,14 @@ enum DifxStartFunction
 
 extern const char DifxStartFunctionString[][24];
 
-/* Note! Keep this in sync with DifxMessageTypeStrings[][24] in difxmessage.c */
+/* Note! Keep this in sync with DifxMessageTypeStrings[][25] in difxmessage.c */
 enum DifxMessageType
 {
 	DIFX_MESSAGE_UNKNOWN = 0,
 	DIFX_MESSAGE_LOAD,
 	DIFX_MESSAGE_ALERT,
 	DIFX_MESSAGE_MARK6STATUS,
+	DIFX_MESSAGE_MARK6SLOTSTATUS,
 	DIFX_MESSAGE_MARK5STATUS,
 	DIFX_MESSAGE_STATUS,
 	DIFX_MESSAGE_INFO,
@@ -260,7 +261,7 @@ enum DifxMessageType
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
-extern const char DifxMessageTypeStrings[][24];
+extern const char DifxMessageTypeStrings[][25];
 
 /* Note! Keep this in sync with DifxMessageTypeStrings[][24] in difxmessage.c */
 enum DriveStatsType
@@ -317,6 +318,15 @@ typedef struct
         float rate;             /* Mbps */
         double dataMJD;
 } DifxMessageMark6Status;
+
+typedef struct
+{
+        int slot;
+	char msn[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
+	char group[DIFX_MESSAGE_MARK6_GROUP_LENGTH+2];
+	int numDisks;
+	int numMissingDisks;
+} DifxMessageMark6SlotStatus;
 
 typedef struct
 {
@@ -584,6 +594,7 @@ typedef struct
 	{
 		DifxMessageMk5Status	mk5status;
 		DifxMessageMark6Status	mark6status;
+		DifxMessageMark6SlotStatus	mark6slotstatus;
 		DifxMessageMk5Version	mk5version;
 		DifxMessageLoad		load;
 		DifxMessageAlert	alert;
@@ -674,6 +685,7 @@ const char *getDifxMessageIdentifier();
 int difxMessageSend2(const char *message, int size);
 int difxMessageSendProcessState(const char *state);
 int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status);
+int difxMessageSendMark6SlotStatus(const DifxMessageMark6SlotStatus *mark6slotstatus);
 int difxMessageSendMark6Activity(const DifxMessageMark6Activity *mark6activity);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
 int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version);

@@ -112,12 +112,13 @@ const char DifxStateStrings[][24] =
 };
 
 /* Note! Keep this in sync with enum DifxMessageType in difxmessage.h */
-const char DifxMessageTypeStrings[][24] =
+const char DifxMessageTypeStrings[][25] =
 {
 	"Unknown",
 	"DifxLoadMessage",
 	"DifxAlertMessage",
 	"Mark6StatusMessage",
+	"Mark6SlotStatusMessage",
 	"Mark5StatusMessage",
 	"DifxStatusMessage",
 	"DifxInfoMessage",

@@ -1,4 +1,4 @@
-eersion 2.7.0
+Version 2.7.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.6
 * cpumon: clean up end of line
@@ -17,6 +17,7 @@ eersion 2.7.0
 * Remove incomplete and not used utility: mk5display
 * Python utilities: multicast receive buffer size to 8000 (from 1500)
 * mk6mon: rewrite; build in support for multislot (>4 slots) Mark6 units
+* difxmessage: new Mark6SlotStatusMessage to support Mark6 multislot
 
 Version 2.6.0
 ~~~~~~~~~~~~~
