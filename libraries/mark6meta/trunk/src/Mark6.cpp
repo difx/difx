@@ -225,10 +225,10 @@ void Mark6::sendSlotStatusMessage()
         dm.numDisks = modules_m[slot].getNumDiskDevices();
         // number of missing disks
         dm.numMissingDisks = modules_m[slot].getNumTargetDisks() - modules_m[slot].getNumDiskDevices();
-        
+
+        difxMessageSendMark6SlotStatus(&dm);
     }
 
-    difxMessageSendMark6SlotStatus(&dm);
 
 }
 
