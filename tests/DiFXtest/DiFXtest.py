@@ -54,7 +54,9 @@ def rm_output_files(testname):
   working_directory = current_directory + "/" + testname + "/"
   contents = os.listdir(working_directory)
   for item in contents:
-     if (item[-4:] != '.v2d' and item[-4:] != '.vex' and item != 'machines' and item != 'benchmark_results'):
+     if (item[-4:] != '.v2d' and item[-4:] != '.vex' and item != 'machines' and item != 'benchmark_results'  and \
+         item[-6:] != '.mark4' and item[-5:] != '.vlba' and item != 'README' and item[-4:] != '.lba' and       
+         item[-4:] != '.m5a' and item[-9:] != '.filelist' and item[-4:] != '.tar' and item[-8:] != ".threads"):
         fp_item = working_directory + item 
         if (item[-5:] == '.difx'):
           #print(fp_item)
@@ -64,7 +66,128 @@ def rm_output_files(testname):
   #quit()
 
 
+def get_real_data():
+
+  current_directory = os.getcwd()
+ 
+  
+  # Using fixed machines file with local host, could cause issues if there are not enough cores 
+  # on localhost 8 cores needed for rdv70 and v252
+
+  # Download data
+   
+  working_directory = current_directory + "/rdv70/"
+  rdv70tar_fp = working_directory + "rdv70.tar"
+  if (os.path.exists(rdv70tar_fp) == False):  
+    arg2 = "wget ftp://ftp.mpifr-bonn.mpg.de/vlbiarchive/DiFX_testdata/rdv70.tar ."
+    proc2 = subprocess.Popen(arg2,cwd=working_directory,shell=True)
+    proc2.wait()
+   
+  working_directory = current_directory + "/v252f/"  
+  v252ftar_fp = working_directory + "v252f.tar"
+  if (os.path.exists(v252ftar_fp) == False):
+    arg1 = "wget ftp://ftp.mpifr-bonn.mpg.de/vlbiarchive/DiFX_testdata/v252f.tar ."
+    proc1 = subprocess.Popen(arg1,cwd=working_directory,shell=True)
+    proc1.wait()
+ 
+  # Set up v252f input files for DiFX
+  working_directory = current_directory + "/v252f/"
+  v252fv2d_fp = working_directory + "test-v252f.v2d" 
+  if (os.path.exists(v252fv2d_fp) == False):
+    arg = "tar -xf v252f.tar"
+    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
+    proc.wait()
+    arg = "rm  -r reference*" 
+    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
+    proc.wait()
+    filelists = ["at.filelist","cd.filelist","hh.filelist","ho.filelist","mp.filelist","pa.filelist"]  
+    for filelist in filelists:
+      filelist = working_directory + filelist
+      fl = open(filelist,'r') 
+      lines = fl.readlines()
+      fl.close()
+      ii = 0 
+      for datafile in lines: 
+        if (datafile.isspace() == False):
+          lines[ii] = (working_directory + datafile).strip()   
+        ii = ii+1
+      fl = open(filelist,'w+')
+      for datafile in lines:
+         fl.write("%s\n" % datafile)     
+      fl.close()
+
+    # Remove unpacked vex file the online version is in dos format and not every 
+    # system had a converter so a preconveted format one is bundeled with DiFXtest
+    arg = "rm v252f.vex" 
+    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
+    proc.wait()
+
+    arg = "mv example.v2d test-v252f.v2d"
+    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
+    proc.wait()
+    vd2_fp = open(v252fv2d_fp,'r')
+    v2d_contents = vd2_fp.read() 
+    v2d_contents = v2d_contents.replace("vex = v252f.vex","vex = test-v252f.vex")
+    vd2_fp.close()
+    #print(v2d_contents)
+    v2d_fp = open(v252fv2d_fp,"w+")
+    v2d_fp.write(v2d_contents)
+    vd2_fp.close()  
+
+  # Set up rdv70 input files for DiFX
+  working_directory = current_directory + "/rdv70/" 
+  rdv70v2d_fp = working_directory + "test-rdv70.v2d"
+  #print(os.path.exists(rdv70v2d_fp))
+  #quit()
+  if (os.path.exists(rdv70v2d_fp) == False):
+     
+    arg = "tar -xf rdv70.tar"
+    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
+    proc.wait()
+    arg = "rm  -r reference*" 
+    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
+    proc.wait()
+    
+    # insert full path in .v2d file`  
+    v2dfile = working_directory + "example.v2d"
+    v2d_fp = open(v2dfile,"r")
+    v2d_contents = v2d_fp.read()
+    v2d_fp.close()
+    #print(v2d_contents)
+    data_filenames = ["RDV70-KK-00205015.mark4","RDV70-KP-00205015.vlba","RDV70-LA-00205015.vlba","RDV70-NL-00205015.vlba","RDV70-NY-00205015.mark4","RDV70-ON-00205015.mark4"]
+    for data_filename in data_filenames:
+      data_filename_fp = working_directory + data_filename
+      v2d_contents = v2d_contents.replace(data_filename,data_filename_fp)
+    #print(v2d_contents)
+    v2d_fp = open(v2dfile,"w+")
+    v2d_fp.write(v2d_contents)
+    v2d_fp.close()
+    
+    # Remove unpacked vex file the online version is in dos format and not every 
+    # system had a converter so a preconveted format one is bundeled with DiFXtest
+    arg = "rm rdv70.vex"  
+    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
+    proc.wait()
+
+   
+    arg = "mv example.v2d test-rdv70.v2d"
+    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
+    proc.wait()
+    rdv70v2d = working_directory + "test-rdv70.v2d"
+    vd2_fp = open(rdv70v2d,'r')
+    v2d_contents = vd2_fp.read()
+    v2d_contents = v2d_contents.replace("vex = rdv70.vex","vex = test-rdv70.vex")
+    vd2_fp.close()
+    v2d_fp = open(rdv70v2d,"w+")
+    v2d_fp.write(v2d_contents)
+    vd2_fp.close()
+
+       
+
 def runtest(testname):
+  
+  print("Running test " + testname)
+  
   current_directory = os.getcwd() 
   working_directory = current_directory + "/" + testname + "/"
 
@@ -73,21 +196,33 @@ def runtest(testname):
   f_vex2difxlog = open(vex2difxlogfile,"w")
   f_vex2difxerr = open(vex2difxerrfile,"w")
 
-
-
+  
   arg = "vex2difx test-" + testname + ".v2d"
+  #print(arg)
   proc =subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_vex2difxlog,stderr=f_vex2difxerr)
   proc.wait()
+
+  #quit()
 
   difxcalclogfile = working_directory + "/difxcalc.log"
   difxcalcerrfile = working_directory + "/difxcalc.error"
   f_difxcalclog = open(difxcalclogfile,"w")
   f_difxcalcerr = open(difxcalcerrfile,"w")
 
-  arg = "difxcalc test-" + testname + ".calc", 
+  if (testname == "rdv70" or testname == "v252f") : 
+    arg = "difxcalc test-" + testname + "_1.calc"
+  else:
+    arg = "difxcalc test-" + testname + ".calc", 
   subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_difxcalclog,stderr=f_difxcalcerr)
   proc.wait()
-  arg = "mpirun -machinefile machines -np 4 mpifxcorr test-" + testname + ".input"
+
+  #quit()
+  if (testname == "rdv70" or testname == "v252f") :
+    arg = "mpirun -machinefile machines -np 8 mpifxcorr test-" + testname + "_1.input"
+  else:
+    arg = "mpirun -machinefile machines -np 4 mpifxcorr test-" + testname + ".input"
+  #print(arg)
+  #quit()
   difxlogfile = working_directory + "/mpifxcorr.log"
   difxerrfile = working_directory + "/mpifxcorr.error"
   f_difxlog = open(difxlogfile,"w")
@@ -95,26 +230,38 @@ def runtest(testname):
 
   mpifxcorr_done = False
   # DiFX fails sometimes, re-run until it succeeds (need better fix here...)
+  # limited to 5 tries
+  cc = 0
   while (mpifxcorr_done == False):
+    cc = cc+1
+    #print(arg)
     proc = subprocess.call(arg,cwd=working_directory,shell=True,stdout=f_difxlog,stderr=f_difxerr)
     contents = os.listdir(working_directory)
     for item in contents: 
       if (item[-5:] == '.difx'):
         mpifxcorr_done = True
-  #proc.wait()
+    if (cc >= 5):
+      mpifxcorr_done = True
+  cc = 0
   difx2fitslogfile = working_directory + "/difx2fits.log"
   difx2fitserrfile = working_directory + "/difx2fits.error"
   f_difx2fitslog = open(difx2fitslogfile,"w")
   f_difx2fitserr = open(difx2fitserrfile,"w")
 
-
-  arg = "difx2fits test-" + testname
-  proc = subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_difx2fitslog,stderr=f_difx2fitserr)
-  proc.wait()
- # quit()
+  
+  if (testname == "rdv70" or testname == "v252f") :
+    arg = "difx2fits test-" + testname + "_1"
+    proc = subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_difx2fitslog,stderr=f_difx2fitserr)
+    proc.wait()
+  else:  
+    arg = "difx2fits test-" + testname
+    proc = subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_difx2fitslog,stderr=f_difx2fitserr)
+    proc.wait()
 
 
 def compare_results(testname, abstol, reltol):
+
+  print("Comparing results for test " + testname)
 
   # results list [Binary file same as benchmark?,FITS file same as benchmark?]
   results = ["",True]
@@ -131,7 +278,7 @@ def compare_results(testname, abstol, reltol):
   benchmark_binfile = binfiles2[0]
   arg = "diffDiFX.py " + binfile + " " + benchmark_binfile + " " + "-i " + inputfile + " > binary_diff.log"   
   proc = subprocess.Popen(arg,cwd=working_directory,shell=True) 
-  proc.wait()
+  proc.wait() 
   fits_file = get_fits_file(working_directory)
   fits_file_benchmark = get_fits_file(results_directory)
   #print(fits_file)
@@ -154,14 +301,19 @@ def compare_results(testname, abstol, reltol):
   #print(output)
 
   fp_binary_diff_file = working_directory + 'binary_diff.log'
-  with open(fp_binary_diff_file, 'r') as f:
+  #print(fp_binary_diff_file)
+  with open(fp_binary_diff_file, encoding="utf8", errors='ignore') as f:
+  #with open(fp_binary_diff_file) as f:
     last_line = f.readlines()[-1]
+  last_line = str(last_line)
   last_line = last_line.strip('\n')
   results[0] = last_line
 
   return(results)
 
 def update_test(testname):
+  print("Updating tests")
+
   current_directory = os.getcwd()
   working_directory = current_directory + "/" + testname + "/"
   results_directory = working_directory + "/benchmark_results/" 
@@ -187,24 +339,38 @@ def update_test(testname):
 def repackage_tests(testnames):
   current_directory = os.getcwd()
   tar_command = "tar -zcvf tests.tgz"
- 
+  print("repacked") 
   for testname in testnames:
     working_directory = testname + "/"
-    tar_command = tar_command + " " + working_directory + "/benchmark_results/*" + " " + working_directory + "test-" + testname + ".vex "+ working_directory + "test-" + testname + ".v2d " + working_directory + "machines"    
-     #end for loop
-  subprocess.call(tar_command,shell=True)
+    #print(testname)
+    if (testname == "rdv70" or testname == "v252f"):
+      tar_command = tar_command + " " + working_directory + "/benchmark_results/*" + " " + working_directory + "test-" + testname + ".vex "+ working_directory + "test-" + testname + "_1.threads " + working_directory + "machines" 
+      print(tar_command)
+    else:    
+      tar_command = tar_command + " " + working_directory + "/benchmark_results/*" + " " + working_directory + "test-" + testname + ".vex "+ working_directory + "test-" + testname + ".v2d " + working_directory + "machines"    
+ 
+
+
+    #end for loop
+  subprocess.call(tar_command,shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 
 def unpackage_tests(testnames):
+
+  print("Unpacking test tarball.")
+  
   unpack = False
   
   for testname in testnames:
     if (os.path.isdir(testname) == False):
       unpack = True
   if (unpack):
-    subprocess.call("tar -zxvf tests.tgz",shell=True)
+    subprocess.call("tar -zxvf tests.tgz",shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 def create_test_data():
+ 
+  print("Creating test data")
+
   # Create Synthetic VDIF Data
   DURATION=10
   
@@ -297,7 +463,7 @@ def create_test_data():
   f_TEST2_dsb_usbvdiflog.close()
   f_TEST2_dsb_usbvdiferrfile.close()
   f_TEST2_dsb_lsbvdiflog.close()
-  f_TEST2_dsb_lsbvdiferrfile.close()
+  u_TEST2_dsb_lsbvdiferrfile.close()
 
 
 def display_test_results(passfail):
@@ -330,29 +496,44 @@ def display_test_results(passfail):
 def main():
 
   parser = argparse.ArgumentParser()
-  parser.add_argument("--generateVDIF", help="Generate VDIF data? (yes/[no])",default="no")
-  parser.add_argument("--updatetest", help="Update the default test results (yes/[no])",default="no") 
-  parser.add_argument("--abstol",help="Update the absolute tolerance for FITS file comparison (default = 1e-6)",default=1e-6)
-  parser.add_argument("--reltol",help="relative tolerance for FITS file comparison (default = 1e-6)",default=1e-6)
+  parser.add_argument("-g","--generateVDIF", help="Generate VDIF data? (yes/[no])",default="no")
+  parser.add_argument("-u","--updatetest", help="Update the default test results (yes/[no])",default="no") 
+  parser.add_argument("-a","--abstol",help="Absolute tolerance for FITS file comparison (default = 1e-14)",default=1e-14)
+  parser.add_argument("-r","--reltol",help="Relative tolerance for FITS file comparison (default = 1e-1)",default=0.1)
+  parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? ([yes]/no)",default="yes")
 
   input_args = parser.parse_args()
   generateVDIF = input_args.generateVDIF
   generateVDIF = generateVDIF.upper()
   updatetest = input_args.updatetest
   updatetest = updatetest.upper()
-  reltol = float(input_args.reltol)
+  reltol = input_args.reltol
   abstol = float(input_args.abstol)
-
+  download = input_args.download
+  download = download.upper()
   pre_checks()
 
   # list of test names
   test_name_list = ["complex-complex","lsb","lsb-complex","lsb-dsb","usb","usb-complex","usb-dsb"]
+
+
+
   # Dictionary with pass/fail status of each test {"test name" : [binary file same (results), FITS file same (true/false)]} 
   passfail = {"complex-complex":["",True],"lsb":["",True],"lsb-complex":["",True],"lsb-dsb":["",True],"usb":["",True],"usb-complex":["",True],"usb-dsb":["",True]}
 
-  # Upack tests if they haven't been already
   unpackage_tests(test_name_list)
-  #quit()
+
+
+  # Download real data tests from the ftp site
+
+  if (download == "YES"):
+    test_name_list.append("rdv70") 
+    test_name_list.append("v252f")
+    passfail["rdv70"] = ["",True]  
+    passfail["v252f"] = ["",True] 
+    get_real_data() 
+  # Upack tests if they haven't been already
+    
   # Generate synthetic VDIF data
   if (generateVDIF == "YES" or (os.path.isdir("testdata") == False)):
     create_test_data()
@@ -361,6 +542,7 @@ def main():
   for testname in test_name_list:
     rm_output_files(testname)
     runtest(testname)
+  
   
   # Run comparison with the results
   for testname in test_name_list:
