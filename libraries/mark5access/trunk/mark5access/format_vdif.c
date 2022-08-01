@@ -37,8 +37,11 @@
 #include <string.h>
 #include <math.h>
 #include <stdint.h>
-#include <endian.h>
-
+#ifdef __APPLE__
+#include "osx_endian.h"
+#else
+#include <machine/endian.h>
+#endif
 static unsigned char VDIF_FILL_BYTES[4] = { 0x44, 0x33, 0x22, 0x11 };
 
 #include "mark5access/mark5_stream.h"
