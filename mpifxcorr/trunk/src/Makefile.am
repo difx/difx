@@ -30,7 +30,7 @@ mpifxcorr_SOURCES = \
 	mathutil.cpp \
 	sysutil.cpp \
 	mode.cpp \
-        model.cpp \
+	model.cpp \
 	mk5.cpp \
 	mk5mode.cpp \
 	datamuxer.cpp \
@@ -58,8 +58,8 @@ library_include_HEADERS = \
 	sysutil.h \
 	mk5.h \
 	mk5mode.h \
-        model.h \
-        mode.h \
+	model.h \
+	mode.h \
 	polyco.h \
 	nativemk5.h \
 	watchdog.h \
@@ -89,7 +89,7 @@ libmpifxcorr_a_SOURCES = \
 	fxmanager.cpp \
 	mathutil.cpp \
 	sysutil.cpp \
-        model.cpp \
+	model.cpp \
 	visibility.cpp \
 	alert.cpp \
 	switchedpower.cpp \
@@ -110,7 +110,7 @@ libfxcorr_a_SOURCES = \
 	mk5mode.cpp \
 	polyco.cpp \
 	visibility.cpp \
-        model.cpp \
+	model.cpp \
 	datamuxer.cpp \
 	alert.cpp
 
@@ -143,8 +143,8 @@ check_PROGRAMS = sysutil_test
 
 sysutil_test_SOURCES = \
 	test/sysutil_test.cpp \
-        alert.cpp \
-        sysutil.cpp
+	alert.cpp \
+	sysutil.cpp
 
 sysutil_test_CXXFLAGS = -g -I$(top_srcdir)/src/ -I $(AM_CXXFLAGS)
 
