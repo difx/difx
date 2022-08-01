@@ -921,6 +921,10 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 		writeDifxLineInt(out, "TCAL FREQUENCY", dd->tcalFrequency);
 	}
 	writeDifxLineDouble(out, "PHASE CAL INT (MHZ)", "%.4g", dd->phaseCalIntervalMHz);
+	if(dd->phaseCalBaseMHz != 0)
+	{
+		writeDifxLineDouble(out, "PHASE CAL BASE(MHZ)", "%.4g", dd->phaseCalBaseMHz);
+	}
 	writeDifxLineInt(out, "NUM RECORDED FREQS", dd->nRecFreq);
 	for(i = 0; i < dd->nRecFreq; ++i)
 	{
