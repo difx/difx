@@ -88,6 +88,7 @@ def getTimingsStr(logfile):
 	mpiDone = False
 	wallclockTime = -1
 	peakDatatime = -1
+	factor = -1
 
 	f = open(logfile, 'r')
 	f.seek(getLatestCorrelationOffset(logfile))
@@ -130,7 +131,7 @@ def getTimingsStr(logfile):
 	else:
 		s = s + bcolors.GREEN + 'MpiDone' + bcolors.ENDC
 
-	return s,wallclockTime,wallclockTime/peakDatatime
+	return s,wallclockTime,factor
 
 def weights2text(weights, labels, alltelescopes, weightfmt='%3.2f'):
 	s = ''
