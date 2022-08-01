@@ -40,7 +40,7 @@
 #ifdef __APPLE__
 #include "osx_endian.h"
 #else
-#include <machine/endian.h>
+#include <endian.h>
 #endif
 static unsigned char VDIF_FILL_BYTES[4] = { 0x44, 0x33, 0x22, 0x11 };
 
