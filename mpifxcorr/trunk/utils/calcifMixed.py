@@ -134,8 +134,14 @@ def mergeCalc(verb, stations, drylst, wetlst, job, normal, noatmo):
     f = open(im + '-' + noatmo, 'r')
     noatmolines = f.readlines()
     f.close()
+    # FIXME: 'difxcalc -noatmo' introduces STA X, STA Y, STA Z lines into .im-noatmo, calcifMixed.py does not cope with those
+    if True: # temporary workaround is to remove the lines before further processing
+        i = 0
+        while i < len(noatmolines):
+            if any([key in noatmolines[i] for key in ['STA X', 'STA Y', 'STA Z']]): del noatmolines[i]
+            else: i += 1
     if len(normallines) != len(noatmolines):
-        print('Calc output for %s have disparate lengths' % (
+        print('Calc output for %s have disparate lengths %d and %d' % (
             im, len(normallines), len(noatmolines)))
         return 1
     f = open(im, 'w')
