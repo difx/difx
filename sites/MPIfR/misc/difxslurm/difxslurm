@@ -82,12 +82,11 @@ stepcount=`echo $jobsteps | tr -cd ':' | wc -c | tr -d ' '`
 # speedup = scanDuration / correlationDuration   (desirable: 40)
 # np = numDS * dataRate * speedup / 85
 
-np=`difxresource -r 85 $job.input | tail -1`
+np=`difxresource -r 45 $job.input | tail -1`
 nodes=$(((np+threads-1)/threads))
 
 #echo $np
 #echo $jobsteps
-nodes=20
 
 echo "Using $nodes compute nodes with $threads threads to process this job"
 
@@ -100,20 +99,35 @@ echo "Using $nodes compute nodes with $threads threads to process this job"
 #chmod u+x $job.slurm
 #
 
+# obtained list of io nodes (to be excluded from computation)
+exclude=`sinfo -s -p correlator --format "%N" | grep -oP 'io.*?]'`
+
 # construct the hostfile
 HOSTFILE=$job.machines
 cat $job.dsmachines > $HOSTFILE
-cnodes=`srun -p correlator --cpus-per-task=$threads --ntasks-per-node=1 --nodes=$nodes  hostname -s`
+cnodes=`srun -p correlator --cpus-per-task=$threads --ntasks-per-node=1 --nodes=$nodes --exclude=$exclude,mark6-[01-11],frontend,fxmanager hostname -s`
+PID=$!
 
 cnodelist=`echo $cnodes | sed 's/ /,/g'`
 echo $cnodes | sed 's/ /\n/g' >> $HOSTFILE
 
 numtasks=`cat $HOSTFILE | wc -l`
+numds=`cat $job.dsmachines | wc -l`
+
+# check that hostfile contains the correct number 
+#echo $numtasks
+#echo $nodes
+#echo $(($numtasks - $nodes))
+if [[ $(($numtasks - $nodes)) -ne $numds ]]; then
+    echo "The $HOSTFILE is incomplete. Check state of SLURM nodes"
+    cleanExit
+fi
 
 rm -f /tmp/$job
 # make dummy allocation
 salloc -J $job $jobsteps : -p correlator --cpus-per-task=$threads --ntasks-per-node=1 --nodelist=$cnodelist &> /tmp/$job &
 echo $jobsteps
+#echo $cnodelist
 
 sleep 1
 # get pid of salloc process
