@@ -36,6 +36,7 @@ rate={}
 rate["MODULE"]=1400.0
 rate["MARK6"]=8000.0
 rate["FILE"]=16000.0
+rate["FAKE"]=1000.0
 
 maxNodes = 68
 maxThreads = 39
