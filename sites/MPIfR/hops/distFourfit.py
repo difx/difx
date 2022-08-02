@@ -333,7 +333,7 @@ if __name__ == "__main__":
 	handler = JobDispatch()
 
 	if args.difxmachinesfile:
-		nodepool.loadMachines(difxmachinesfile)
+		nodepool.loadMachines(args.difxmachinesfile)
 
 	expt_path = args.expt_root[0]
 	antennaSubset = [ant for ant in args.antennas.split(',') if len(ant)==1]
