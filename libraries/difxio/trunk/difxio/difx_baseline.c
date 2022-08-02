@@ -52,6 +52,10 @@ void DifxBaselineAllocFreqs(DifxBaseline *b, int nFreq)
 		fprintf(stderr, "Error: DifxBaselineAllocFreqs: b = 0\n");
 		return;
 	}
+	if(b->destFq)
+	{
+		free(b->destFq);
+	}
 	if(b->nPolProd)
 	{
 		free(b->nPolProd);
@@ -80,6 +84,7 @@ void DifxBaselineAllocFreqs(DifxBaseline *b, int nFreq)
 	}
 
 	b->nFreq = nFreq;
+	b->destFq = (int *)calloc(nFreq, sizeof(int));
 	b->nPolProd = (int *)calloc(nFreq, sizeof(int));
 	b->bandA = (int **)calloc(nFreq, sizeof(int *));
 	b->bandB = (int **)calloc(nFreq, sizeof(int *));
@@ -132,6 +137,11 @@ void deleteDifxBaselineInternals(DifxBaseline *db)
 {
 	int f;
 
+	if(db->destFq)
+	{
+		free(db->destFq);
+		db->destFq = 0;
+	}
 	if(db->nPolProd)
 	{
 		free(db->nPolProd);
@@ -179,17 +189,68 @@ void deleteDifxBaselineArray(DifxBaseline *db, int nBaseline)
 
 void fprintDifxBaseline(FILE *fp, const DifxBaseline *db)
 {
-	int f;
+	int f, p;
 	
 	fprintf(fp, "  Difx Baseline : %p\n", db);
 	fprintf(fp, "    datastream indices = %d %d\n", db->dsA, db->dsB);
 	fprintf(fp, "    nFreq = %d\n", db->nFreq);
+	if(db->destFq)
+	{
+		fprintf(fp, "    destFq[freq] =");
+		for(f = 0; f < db->nFreq; f++)
+		{
+			fprintf(fp, " %d", db->destFq[f]);
+		}
+		fprintf(fp, "\n");
+	}
 	if(db->nPolProd)
 	{
 		fprintf(fp, "    nPolProd[freq] =");
 		for(f = 0; f < db->nFreq; f++)
 		{
 			fprintf(fp, " %d", db->nPolProd[f]);
+		}
+		fprintf(fp, "\n");
+	}
+	if(db->bandA)
+	{
+		fprintf(fp, "    bandA[freq][prod] =");
+		for(f = 0; f < db->nFreq; f++)
+		{
+			if(db->bandA[f])
+			{
+				fprintf(fp, " {", f);
+				for(p = 0; p < db->nPolProd[f]; p++)
+				{
+					fprintf(fp, "%d", db->bandA[f][p]);
+					if((p+1) < db->nPolProd[f])
+					{
+						fprintf(fp, " ");
+					}
+				}
+				fprintf(fp, "}");
+			}
+		}
+		fprintf(fp, "\n");
+	}
+	if(db->bandB)
+	{
+		fprintf(fp, "    bandB[freq][prod] =");
+		for(f = 0; f < db->nFreq; f++)
+		{
+			if(db->bandB[f])
+			{
+				fprintf(fp, " {", f);
+				for(p = 0; p < db->nPolProd[f]; p++)
+				{
+					fprintf(fp, "%d", db->bandB[f][p]);
+					if((p+1) < db->nPolProd[f])
+					{
+						fprintf(fp, " ");
+					}
+				}
+				fprintf(fp, "}");
+			}
 		}
 		fprintf(fp, "\n");
 	}
@@ -229,6 +290,10 @@ int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2,
 		{
 			return 0;
 		}
+		if(db1->destFq[f] != db2->destFq[f]) // or, isSameDifxFreq() might be better?
+		{
+			return 0;
+		}
 		for(p = 0; p < db1->nPolProd[f]; p++)
 		{
 			if(db1->bandA[f][p] != db2->bandA[f][p] ||
@@ -261,6 +326,7 @@ void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
 	DifxBaselineAllocFreqs(dest, src->nFreq);
 	for(f = 0; f < dest->nFreq; f++)
 	{
+		dest->destFq[f] = src->destFq[f];
 		DifxBaselineAllocPolProds(dest, f, src->nPolProd[f]);
 		for(p = 0; p < dest->nPolProd[f]; p++)
 		{
@@ -274,6 +340,7 @@ void moveDifxBaseline(DifxBaseline *dest, DifxBaseline *src)
 {
 	dest->dsA = src->dsA;
 	dest->dsB = src->dsB;
+	dest->destFq = src->destFq;
 	dest->nPolProd = src->nPolProd;
 	dest->bandA = src->bandA;
 	dest->bandB = src->bandB;
@@ -352,7 +419,7 @@ int simplifyDifxBaselines(DifxInput *D)
 
 DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 	const DifxBaseline *db2, int ndb2, int *baselineIdRemap,
-	const int *datastreamIdRemap, int *ndb)
+	const int *datastreamIdRemap, const int *freqIdRemap, int *ndb)
 {
 	int i, j;
 	DifxBaseline *db;
@@ -391,8 +458,16 @@ DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 	{
 		if(baselineIdRemap[j] >= ndb1)
 		{
-			copyDifxBaseline(db + baselineIdRemap[j], db2 + j,
-				datastreamIdRemap);
+			DifxBaseline *bnew = db + baselineIdRemap[j];
+			copyDifxBaseline(bnew, db2 + j, datastreamIdRemap);
+			if(freqIdRemap)
+			{
+				int f;
+				for(f = 0; f < bnew->nFreq; f++)
+				{
+					bnew->destFq[f] = freqIdRemap[bnew->destFq[f]];
+				}
+			}
 		}
 	}
 
@@ -418,6 +493,7 @@ int writeDifxBaselineArray(FILE *out, int nBaseline, const DifxBaseline *db)
 
 		for(f = 0; f < b->nFreq; f++)
 		{
+			writeDifxLineInt2(out, "TARGET FREQ %d/%d", i, f, b->destFq[f]);
 			writeDifxLineInt2(out, "POL PRODUCTS %d/%d", i, f,
 				b->nPolProd[f]);
 			n++;

@@ -194,9 +194,10 @@ private:
   bool first, pulsarbinon, configuredok;
   int portnum;
   char * hostname;
-  cf32 ** autocorrcalibs;
-  f32 *** autocorrweights;
-  f32 **** baselineweights;
+  cf32 ** autocorrcalibs;	//[numdatastreams][numzoombands+numrecbands] - mean autocorr of a band
+  f32 *** autocorrweights;	//[numdatastreams][autocorrwidth 1|2][numzoombands+numrecbands]
+  int **** baselineweightcounts; //[numbaselines][freqtablelength][numbins][baseline::numpolproducts<[baseline::numfreqs]>]
+  f32 **** baselineweights;	//[numbaselines][freqtablelength][numbins][baseline::numpolproducts<[baseline::numfreqs]>]
   f32 ***  baselineshiftdecorrs;
   std::string * telescopenames;
   cf32 * results;

@@ -67,12 +67,20 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
             {
                                     // found matching channels with different freq id's
             if (pfb[nf].stn[REF].find < pfb[nf].stn[REM].find)
+                {
                                     // ref index lower, use it for remote antenna
+                if (pfb[nf].stn[REM].find >= MAX_DFRQ)
+                    printf ("out of bounds, pfb %d refers to REM freq idx %d which exceeds pmap array size MAX_DFRQ %d; redimension\n", nf, pfb[nf].stn[REM].find, MAX_DFRQ);
                 pmap[pfb[nf].stn[REM].find] = pfb[nf].stn[REF].find;
+                }
                  
             else
+                {
                                     // rem index lower, use it for reference antenna
+                if (pfb[nf].stn[REF].find >= MAX_DFRQ)
+                    printf ("out of bounds, pfb %d refers to REF freq idx %d which exceeds pmap array size MAX_DFRQ %d; redimension\n", nf, pfb[nf].stn[REM].find, MAX_DFRQ);
                 pmap[pfb[nf].stn[REF].find] = pfb[nf].stn[REM].find;
+                }
                  
             }
         }

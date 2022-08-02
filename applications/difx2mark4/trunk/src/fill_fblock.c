@@ -23,6 +23,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         ibandB,
         irfAfid,
         irfBfid,
+        idfABfid,
         ants[64],
         swapped,
         present,
@@ -44,7 +45,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
     DifxBaseline *pbl;
     DifxDatastream *pdsA,
                    *pdsB;
-    DifxFreq *pfr;
+    DifxFreq *pfr,
+             *pdfr;
 
 
                                     // first fill in the frequency block structure
@@ -55,6 +57,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         pdsB = D->datastream + pbl->dsB;
         for (i=0; i<pbl->nFreq; i++)
             {
+            idfABfid = pbl->destFq[i];
+            pdfr = D->freq + idfABfid;
             for (j=0; j<*pbl->nPolProd; j++)
                 {
                 ibandA = pbl->bandA[i][j];
@@ -75,6 +79,13 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                     pol = pdsA->zoomBandPolName[ibandA-pdsA->nRecBand];
                     irfAfid = pdsA->zoomFreqId[irbAfid];
                     pfr = D->freq + irfAfid;
+                    }
+                if (irfAfid != idfABfid)
+                    {               // bandA is member of outputband; register the output instead!
+                    //printf("info: .inp baseline %d pol %d: A fq %d != destFq %d, using destFq instead and mark as Zoom\n", i, j, irfAfid, idfABfid);
+                    pfr = pdfr;
+                    zoom = TRUE;
+                    irfAfid = idfABfid;
                     }
                                     // stuff ref station fblock structure
                 pfb[nprod].stn[0].pol      = pol;
@@ -104,6 +115,13 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                     pol = pdsB->zoomBandPolName[ibandB-pdsB->nRecBand];
                     irfBfid = pdsB->zoomFreqId[irbBfid];
                     pfr = D->freq + irfBfid;
+                    }
+                if (irfBfid != idfABfid)
+                    {               // bandB is member of outputband; register the output instead!
+                    //printf("info: .inp baseline %d pol %d: B fq %d != destFq %d, using destFq instead and mark as Zoom\n", i, j, irfBfid, idfABfid);
+                    pfr = pdfr;
+                    zoom = TRUE;
+                    irfBfid = idfABfid;
                     }
                                     // stuff rem station fblock structure
                 pfb[nprod].stn[1].pol      = pol;
@@ -173,7 +191,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                                     // sanity check
                     if (nfreq > MAX_DFRQ)
                         {
-                        printf ("too many frequencies; redimension\n");
+                        printf ("too many frequencies, exceeding MAX_DFRQ; redimension\n");
                         return -1;
                         }
                     }

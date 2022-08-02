@@ -12,10 +12,14 @@ LDADD = \
 vex2difx_SOURCES = \
 	applycorrparams.cpp \
 	applycorrparams.h \
+	autobands.cpp \
+	autobands.h \
 	corrparams.cpp \
 	corrparams.h \
 	freq.cpp \
 	freq.h \
+	zoomfreq.cpp \
+	zoomfreq.h \
 	job.cpp \
 	job.h \
 	jobflag.cpp \

@@ -443,14 +443,59 @@ int reorderDifxFreqs(DifxInput *D)
 
 int simplifyDifxFreqs(DifxInput *D)
 {
-	int f, n0, v;
+	int f, n0, v, b;
+	const int DEBUG_BOOKKEEPING = 0;
+	DifxFreq *oldFreq = NULL; // note: use only in if(DEBUG_BOOKKEEPING){} blocks!
 
 	n0 = D->nFreq;
+	D->nFreqUnsimplified = D->nFreq;
 	if(n0 < 2)
 	{
 		return 0;
 	}
 
+	if(DEBUG_BOOKKEEPING)
+	{
+		oldFreq = newDifxFreqArray(D->nFreqUnsimplified);
+		for(f = 0; f < D->nFreqUnsimplified; ++f)
+		{
+			copyDifxFreq(oldFreq+f, D->freq+f);
+		}
+
+		printf("simplifyDifxFreqs(): pre-simplify status is nFreqUnsimplified=%d nFreq=%d freqIdRemap={", D->nFreqUnsimplified, D->nFreq);
+		for(f = 0; f < D->nFreqUnsimplified; ++f)
+		{
+		  printf(" %d:%d", f, D->freqIdRemap[f]);
+		}
+		printf(" }\n");
+	}
+
+	/* Pass I: make a linear remapping list to weed out duplicate D->freqs, without modifying D->freqs in the loop */
+	for(f = 1; f < D->nFreqUnsimplified; f++)
+	  {
+		int f1, f2;
+
+		for(f1 = 0; f1 < f; ++f1)
+		{
+			if(isSameDifxFreq(D->freq+f, D->freq+f1, D->AllPcalTones))
+			{
+				break;
+			}
+		}
+		if(f1 != f) /* found match */
+		{
+			/* repoint the top freq 'f' to the matching earlier freq 'f1' */
+			D->freqIdRemap[f] = f1;
+
+			/* simulate deletion of duplicate freq 'f' as under Pass II, by shifting down the block of remaining freqs */
+			for(f2 = f + 1; f2 < D->nFreqUnsimplified; f2++)
+			{
+				--D->freqIdRemap[f2];
+			}
+		}
+	}
+
+	/* Pass II: actually simplify, modifying the D->freqs list during the loop */
 	for(f = 1;;)
 	{
 		int f1;
@@ -462,7 +507,7 @@ int simplifyDifxFreqs(DifxInput *D)
 
 		for(f1 = 0; f1 < f; ++f1)
 		{
-			if(isSameDifxFreq(D->freq+f, D->freq+f1, D->AllPcalTones) )
+			if(isSameDifxFreq(D->freq+f, D->freq+f1, D->AllPcalTones))
 			{
 				break;
 			}
@@ -515,7 +560,7 @@ int simplifyDifxFreqs(DifxInput *D)
 			/* 2. reduce number of freqs */
 			--D->nFreq;
 
-			/* 3. Delete this freq and bump up higher ones */
+			/* 3. Delete this freq and drop down higher ones */
 			if(f < D->nFreq)
 			{
 				for(f1 = f; f1 < D->nFreq; ++f1)
@@ -526,7 +571,43 @@ int simplifyDifxFreqs(DifxInput *D)
 		}
 	}
 
-	v = reorderDifxFreqs(D);
+	/* 4. Reorder the frequency table so that Datastream rec freq indices precede zoom freq indices */
+	v = reorderDifxFreqs(D); // note: also keeps D->freqIdRemap[] in sync with the reordering
+
+	/* 5. DiFX Outputbands -specific: adjust Baseline TARGET FREQ refs to reflect the above remap+reorder */
+	// note: difx_baseline.c might be another place to apply this, otoh all messing with the original FREQ table is confined here
+	for(b = 0; b < D->nBaseline; b++)
+	{
+		for(f = 0; f < D->baseline[b].nFreq; f++)
+		{
+			D->baseline[b].destFq[f] = D->freqIdRemap[D->baseline[b].destFq[f]];
+		}
+	}
+
+	if(DEBUG_BOOKKEEPING)
+	{
+		printf("simplifyDifxFreqs(): post-reorder status is nFreqUnsimplified=%d nFreq=%d freqIdRemap={", D->nFreqUnsimplified, D->nFreq);
+		for(f = 0; f < D->nFreqUnsimplified; ++f)
+		{
+			printf(" %d:%d", f, D->freqIdRemap[f]);
+		}
+		printf(" }\n");
+
+		/* Verify that the remapping table is intact */
+		for(f = 0; f < D->nFreqUnsimplified; ++f)
+		{
+			if(!isSameDifxFreq(oldFreq+f, D->freq+D->freqIdRemap[f], D->AllPcalTones))
+			{
+				printf("Programmer error in difxio simplifyDifxFreqs: freq Id %d after simplification now points to incompatible freq %d\n", f, D->freqIdRemap[f]);
+				printf("old %d ", f);
+				printDifxFreq(oldFreq+f);
+				printf("new %d ", D->freqIdRemap[f]);
+				printDifxFreq(D->freq+D->freqIdRemap[f]);
+			}
+		}
+
+		deleteDifxFreqArray(oldFreq, D->nFreqUnsimplified);
+	}
 
 	if(v < 0)
 	{

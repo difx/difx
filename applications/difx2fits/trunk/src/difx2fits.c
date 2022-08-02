@@ -668,7 +668,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 		{
 			double d_tmp;
 			
-			fqindex = DifxInputGetFreqIdByBaselineFreq(D, i, j);
+			fqindex = DifxInputGetOutputFreqIdByBaselineFreq(D, i, j);
 			if(fqindex < 0)
 			{
 				fprintf(stderr, "Error: populateFitsKeywords: fqindex=%d for baseline=%d freq=%d\n", fqindex, i, j);

@@ -196,7 +196,7 @@ Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int
   * @param subloopindex The "subloop" index to get the visibilities from
   * @return Pointer to the FFT'd data (complex 32 bit float)
   */
-  inline cf32* getFreqs(int outputband, int subloopindex) const { return fftoutputs[outputband][subloopindex]; };
+  inline const cf32* getFreqs(int outputband, int subloopindex) const { return fftoutputs[outputband][subloopindex]; };
 
  /**
   * Returns a pointer to the FFT'd and conjugated data of the specified product

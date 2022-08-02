@@ -132,7 +132,7 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
     minchans = 999999;
     for(int j=0;j<config->getFreqTableLength();j++)
     {
-      if(config->isFrequencyUsed(i,j) && config->getFNumChannels(j)/config->getFChannelsToAverage(j) < minchans)
+      if(config->isFrequencyOutput(i,j) && config->getFNumChannels(j)/config->getFChannelsToAverage(j) < minchans)
         minchans = config->getFNumChannels(j)/config->getFChannelsToAverage(j);
     }
     headerbloatfactor = 1.0 + ((double)(Visibility::HEADER_BYTES))/(minchans*8);
@@ -141,6 +141,11 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   }
 
   todiskbuffer = (char*)vectorAlloc_u8(todiskbufferlen);
+  if(!todiskbuffer)
+  {
+    cfatal << "Failed to allocate " << todiskbufferlen << " bytes in fxmanager for 'todiskbuffer' output writer buffer" << endl;
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
   estimatedbytes += todiskbufferlen;
   datastreamids = new int[numdatastreams];
   coreids = new int[numcores];

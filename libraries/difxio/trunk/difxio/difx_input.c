@@ -92,6 +92,7 @@ void deleteDifxInput(DifxInput *D)
 		deleteDifxJobArray(D->job, D->nJob);
 		deleteDifxRuleArray(D->rule);
 		DifxInputAllocThreads(D, 0);
+		free(D->freqIdRemap);
 		free(D);
 	}
 }
@@ -157,6 +158,14 @@ void fprintDifxInput(FILE *fp, const DifxInput *D)
 	{
 		fprintDifxConfig(fp, D->config + i);
 	}
+
+	fprintf(fp, "  nFreqUnsimplified = %d\n", D->nFreqUnsimplified);
+	fprintf(fp, "  freqIdRemap origId:simplifiedId = ");
+	for(i = 0; i < D->nFreqUnsimplified; ++i)
+	{
+		fprintf(fp, " %d:%d", i, D->freqIdRemap[i]);
+	}
+	fprintf(fp, "\n");
 
 	fprintf(fp, "  nFreq = %d\n", D->nFreq);
 	for(i = 0; i < D->nFreq; ++i)
@@ -494,6 +503,9 @@ static int generateFreqSets(DifxInput *D)
 				{
 					continue;
 				}
+
+				++freqIsUsed[db->destFq[f]];
+
 				for(p = 0; p < db->nPolProd[f]; ++p)
 				{
 					DifxDatastream *ds;
@@ -527,7 +539,6 @@ static int generateFreqSets(DifxInput *D)
 						polName = ds->zoomBandPolName[zb];
 						fqId = ds->zoomFreqId[localFqId];
 					}
-					++freqIsUsed[fqId];
 					polValue = polMaskValue(polName);
 					if(polValue == DIFXIO_POL_ERROR)
 					{
@@ -559,7 +570,6 @@ static int generateFreqSets(DifxInput *D)
 						polName = ds->zoomBandPolName[zb];
 						fqId = ds->zoomFreqId[localFqId];
 					}
-					++freqIsUsed[fqId];
 					polValue = polMaskValue(polName);
 					if(polValue == DIFXIO_POL_ERROR)
 					{
@@ -1269,6 +1279,8 @@ static DifxInput *parseDifxInputFreqTable(DifxInput *D, const DifxParameters *ip
 	}
 	D->nFreq    = atoi(DifxParametersvalue(ip, r));
 	D->freq     = newDifxFreqArray(D->nFreq);
+	D->nFreqUnsimplified = D->nFreq;
+	D->freqIdRemap = (int *)calloc(D->nFreqUnsimplified+1, sizeof(int));
 	rows[N_FREQ_ROWS-1] = 0;	/* initialize start */
 	for(b = 0; b < D->nFreq; ++b)
 	{
@@ -1288,6 +1300,7 @@ static DifxInput *parseDifxInputFreqTable(DifxInput *D, const DifxParameters *ip
 		D->freq[b].specAvg  = atoi(DifxParametersvalue(ip, rows[4]));
 		D->freq[b].overSamp = atoi(DifxParametersvalue(ip, rows[5]));
 		D->freq[b].decimation = atoi(DifxParametersvalue(ip, rows[6]));
+		D->freqIdRemap[b] = b;
 
 		r = DifxParametersfind1(ip, rows[2]+1, "RX NAME %d", b);
 		if(r > 0 && r < rows[2]+5)
@@ -1322,8 +1335,11 @@ static DifxInput *parseDifxInputFreqTable(DifxInput *D, const DifxParameters *ip
 			}
 		}
 
-		D->nInChan = D->freq[b].nChan;
-		D->nOutChan = D->freq[b].nChan/D->freq[b].specAvg;
+		//DiFX 2.6:
+		//D->nInChan = D->freq[b].nChan;
+		//D->nOutChan = D->freq[b].nChan/D->freq[b].specAvg;
+		//DiFX outputbands: nInChan, nOutChan update is postponed till parseDifxInputBaselineTable() because
+		// only the baseline table tells which visibility data/frequencies are outputted vs which are internal-temporary
 	}
 	
 	return D;
@@ -1560,6 +1576,12 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 			free(clockOffStr);
 			r = DifxParametersfind1(ip, r+1, "FREQ OFFSET %d (Hz)", i);
 			D->datastream[e].freqOffset[i] = atof(DifxParametersvalue(ip, r));
+			r2 = DifxParametersfind1(ip, r+1, "GAIN OFFSET %d", i);
+			if (r2 >= 0)
+			{
+				D->datastream[e].gainOffset[i] = atof(DifxParametersvalue(ip, r2));
+				r = r2;
+			}
 			r = DifxParametersfind1(ip, r+1, "NUM REC POLS %d", i);
 			D->datastream[e].nRecPol[i] = atoi(DifxParametersvalue(ip, r));
 			nRecBand += D->datastream[e].nRecPol[i];
@@ -1692,7 +1714,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 
 static DifxInput *parseDifxInputBaselineTable(DifxInput *D, const DifxParameters *ip)
 {
-	int b, r;
+	int b, r, r2;
 	
 	if(!D || !ip)
 	{
@@ -1740,7 +1762,14 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D, const DifxParameters
 		
 		for(f = 0; f < D->baseline[b].nFreq; ++f)
 		{
-			int p;
+			int p, fq = -1;
+
+			r2 = DifxParametersfind2(ip, r+1, "TARGET FREQ %d/%d", b, f);
+			if(r2 >= 0)
+			{
+				fq = atoi(DifxParametersvalue(ip, r2));
+				r = r2;
+			}
 
 			r = DifxParametersfind2(ip, r+1, "POL PRODUCTS %d/%d", b, f);
 			if(r < 0)
@@ -1768,7 +1797,19 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D, const DifxParameters
 					return 0;
 				}
 				D->baseline[b].bandB[f][p] = atoi(DifxParametersvalue(ip, r));
+
+				if(fq < 0)
+				{
+					// DiFX 2.5/2.6 has no explicit TARGET FREQ: for backwards compatibility,
+					// default to freq of band A as the TARGET freq, i.e., mapping of 1-to-1 (input band==output band)
+					fq = getDifxDatastreamBandFreqId(&D->datastream[D->baseline[b].dsA], D->baseline[b].bandA[f][p]);
+				}
 			}
+
+			D->baseline[b].destFq[f] = fq;
+			D->nInChan = D->freq[fq].nChan;
+			D->nOutChan = D->freq[fq].nChan/D->freq[fq].specAvg;
+
 		}
 	}
 
@@ -4441,6 +4482,10 @@ int DifxInputGetFreqIdByBaselineFreq(const DifxInput *D, int baselineId, int bas
 	{
 		return -4;
 	}
+	if(D->baseline[baselineId].dsB < 0 || D->baseline[baselineId].dsB > D->nDatastream)
+	{
+		return -4;
+	}
 
 	ds = D->datastream + D->baseline[baselineId].dsA;
 
@@ -4467,6 +4512,100 @@ int DifxInputGetFreqIdByBaselineFreq(const DifxInput *D, int baselineId, int bas
 	}
 
 	return freqId;
+}
+
+int DifxInputGetOutputFreqIdByBaselineFreq(const DifxInput *D, int baselineId, int baselineFreq)
+{
+	int band;
+	DifxDatastream *ds;
+	int freqId;
+
+	if(!D)
+	{
+		return -1;
+	}
+	if(baselineId > D->nBaseline || baselineId < 0)
+	{
+		return -2;
+	}
+	if(baselineFreq > D->baseline[baselineId].nFreq || baselineFreq < 0)
+	{
+		return -3;
+	}
+	if(D->baseline[baselineId].dsA < 0 || D->baseline[baselineId].dsA > D->nDatastream)
+	{
+		return -4;
+	}
+	if(D->baseline[baselineId].dsB < 0 || D->baseline[baselineId].dsB > D->nDatastream)
+	{
+		return -4;
+	}
+
+	ds = D->datastream + D->baseline[baselineId].dsA;
+
+	band = D->baseline[baselineId].bandA[baselineFreq][0];
+	if(band < 0 || band > ds->nRecBand + ds->nZoomBand)
+	{
+		return -5;
+	}
+
+	freqId = D->baseline[baselineId].destFq[baselineFreq];
+
+	return freqId;
+}
+
+/** Returns list of output frequencies from all baselines. The last entry is '-1'. User must free() the returned array when done. */
+int* DifxInputGetOutputFreqs(const DifxInput *D)
+{
+	int* outputfreqs = NULL;
+	int noutputfreqs = 0;
+	int configId;
+	int b, k, n, fqId;
+
+	if(!D || D->nFreq < 1)
+	{
+		return NULL;
+	}
+
+	outputfreqs = (int *)calloc(D->nFreq + 1, sizeof(int));
+	for(n = 0; n < D->nFreq + 1; ++n)
+	{
+		outputfreqs[n] = -1;
+	}
+	
+	for(configId = 0; configId < D->nConfig; ++configId)
+	{
+		const DifxConfig *dc = D->config + configId;
+		for(b = 0; b < dc->nBaseline; ++b)
+		{
+			const DifxBaseline *db = D->baseline + dc->baselineId[b];
+			if(dc->baselineId[b] < 0)
+			{
+				continue;
+			}
+
+			for(k = 0; k < db->nFreq; ++k)
+			{
+				if(db->nPolProd[k] < 0)
+				{
+					continue;
+				}
+	
+				fqId = db->destFq[k];
+				for(n = 0; n < noutputfreqs; ++n)
+				{
+					if (outputfreqs[n] == fqId) break;
+				}
+				if (n >= noutputfreqs)
+				{
+					outputfreqs[noutputfreqs] = fqId;
+					++noutputfreqs;
+				}
+			}
+		}
+	}
+
+	return outputfreqs;
 }
 
 int DifxInputGetDatastreamIdsByAntennaId(int *dsIds, const DifxInput *D, int antennaId, int maxCount)

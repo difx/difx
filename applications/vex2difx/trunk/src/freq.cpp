@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2022 by Walter Brisken                             *
+ *   Copyright (C) 2015 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -28,25 +28,33 @@
  *==========================================================================*/
 
 #include "freq.h"
+#include <iomanip>
 
-// Returns index of requested (fq, bw, sb, ...) from freqs.
-// If not in freqs, it is added first
-int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int d, int iz, unsigned int t, const std::string &rxName)
+/**
+ * getFreqId(freqs[], freq cstor params)
+ * Has side effects: If freq found in freqs but rxName disagrees, blanks out rxName in the matching entry
+ * \return Returns index of first freq identical to fqinfo if a match is found in vector freqs[], otherwise returns -1
+ */
+int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int d, int iz, unsigned int t, const std::string &rx)
+{
+	freq fqinfo(fq, bw, sb, isr, osr, d, iz, t, rx);
+	return getFreqId(freqs, fqinfo);
+}
+
+/**
+ * getFreqId(freqs[], freq object)
+ * Has side effects: If freq found in freqs but rxName disagrees, blanks out rxName in the matching entry
+ * \return Returns index of first freq identical to fqinfo if a match is found in vector freqs[], otherwise returns -1
+ */
+int getFreqId(std::vector<freq>& freqs, const freq& fqinfo)
 {
 	for(std::vector<freq>::iterator it = freqs.begin(); it != freqs.end(); ++it)
 	{
-		if(fq  == it->fq &&
-		   bw  == it->bw &&
-		   sb  == it->sideBand &&
-		   isr == it->inputSpecRes &&
-		   osr == it->outputSpecRes &&
-		   d   == it->decimation &&
-		   iz  == it->isZoomFreq &&
-		   t   == it->toneSetId)
+		if(fqinfo == *it)
 		{
-			if(rxName != it->rxName)
+			if(fqinfo.rxName != it->rxName)
 			{
-				it->rxName.clear();		// if we get disagreement, then blank it
+				it->rxName.clear();	// if we get disagreement, then blank it
 			}
 
 			// use iterator math to get index
@@ -54,8 +62,59 @@ int getFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double is
 		}
 	}
 
+	return -1;
+}
+
+/**
+ * addFreqId(freqs[], freq cstor params)
+ * If given freq not yet in vector freqs[], appends it as a new entry.
+ * If already found but rx (rxName) disagrees, blanks out rxName of the existing entry before returning its index.
+ * \return Returns index of added new frequency entry, or if existing entry if a match was found.
+ */
+int addFreqId(std::vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int d, int iz, unsigned int t, const std::string &rx)
+{
+	freq newfq(fq, bw, sb, isr, osr, d, iz, t, rx);
+	return addFreqId(freqs, newfq);
+}
+
+/**
+ * addFreqId(freqs[], freq object)
+ * If given freq not yet in vector freqs[], appends it as a new entry.
+ * If already found but rx (rxName) disagrees, blanks out rxName of the existing entry before returning its index.
+ * \return Returns index of added new frequency entry, or if existing entry if a match was found.
+ */
+int addFreqId(std::vector<freq>& freqs, const freq& newfq)
+{
+	int id = getFreqId(freqs, newfq);
+	if(id >= 0)
+	{
+		return id;
+	}
+
 	// not in list yet, so add
-	freqs.push_back(freq(fq, bw, sb, isr, osr, d, iz, t, rxName));
+	freqs.push_back(newfq);
 
 	return freqs.size() - 1;
+}
+
+void freq::flip()
+{
+	if (sideBand == 'U')
+	{
+		sideBand = 'L';
+		fq += bw;
+	}
+	else
+	{
+		sideBand = 'U';
+		fq -= bw;
+	}
+}
+
+std::ostream& operator << (std::ostream& os, const freq& f)
+{
+	os << std::setw(15) << std::setprecision(8)
+		<< f.fq*1e-6 << " MHz "<< f.bw*1e-6 << " MHz sb:" << f.sideBand
+		<< " z:" << f.isZoomFreq << " rx:" << f.rxName;
+	return os;
 }

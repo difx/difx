@@ -23,6 +23,7 @@ c_sources = \
 	difx_input.c \
 	difx_input_merge.c \
 	difx_job.c \
+	difx_outputbands.c \
 	difx_phasedarray.c \
 	difx_poly_model.c \
 	difx_polyco.c \

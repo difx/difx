@@ -339,7 +339,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxM
 	/* merge DifxBaseline table */
 	D->baseline = mergeDifxBaselineArrays(D1->baseline, D1->nBaseline,
 		D2->baseline, D2->nBaseline, baselineIdRemap,
-		datastreamIdRemap, &(D->nBaseline));
+		datastreamIdRemap, freqIdRemap, &(D->nBaseline));
 
 	/* merge DifxPulsar table */
 	D->pulsar = mergeDifxPulsarArrays(D1->pulsar, D1->nPulsar,

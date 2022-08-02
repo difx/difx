@@ -32,6 +32,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <iostream>
+#include <set>
 #include <math.h>
 #include "polyco.h"
 #include "model.h"
@@ -76,6 +77,13 @@ public:
 
   /// Constant for the TCP window size for monitoring
   static int MONITOR_TCP_WINDOWBYTES;
+
+private:
+  // Advance decl of contained private structs
+  struct freqdata_t;
+  struct baselinedata_t;
+
+public:
 
  /**
   * Constructor: Reads information from an input file and stores it internally
@@ -169,6 +177,8 @@ public:
     { return telescopetable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].telescopeindex].name; }
   inline double getDTsys(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].tsys; }
+  inline double getDGainOffset(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqgainoffsets[datastreamrecordedfreqindex]; }
   inline float getDPhaseCalIntervalMHz(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalmhz; }
   inline float getDPhaseCalBaseMHz(int configindex, int configdatastreamindex) const
@@ -264,10 +274,31 @@ public:
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].numfreqs; }
   inline int getBFreqIndex(int configindex, int configbaselineindex, int baselinefreqindex) const
     { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].freqtableindices[baselinefreqindex]; }
+  inline int getBFreqIndexRev(int configindex, int configbaselineindex, int freqindex) const
+    {
+      const struct baselinedata_t& bline = baselinetable[(configs[configindex].baselineindices[configbaselineindex])];
+      for(int baselinefreqindex=0;baselinefreqindex<bline.numfreqs;++baselinefreqindex) {
+        if(bline.freqtableindices[baselinefreqindex]==freqindex) {
+          return baselinefreqindex;
+        }
+      }
+      return -1;
+    }
+  inline int getBTargetFreqIndex(int configindex, int configbaselineindex, int baselinefreqindex) const
+    { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].targetfreqtableindices[baselinefreqindex]; }
+  inline int getBNumTargetFreqs(int configindex, int configbaselineindex) const
+    { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].targetfreqset.size(); }
+  inline int getBTargetFreqsOnlyIndex(int configindex, int configbaselineindex, int targetfreqindex) const
+    {
+      set<int>::const_iterator it = baselinetable[configs[configindex].baselineindices[configbaselineindex]].targetfreqset.begin();
+      advance(it, targetfreqindex);
+      return *it;
+    }
   inline int getBLocalFreqIndex(int configindex, int configbaselineindex, int freqtableindex) const { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].localfreqindices[freqtableindex]; }
   inline int getBFreqOddLSB(int configindex, int configbaselineindex, int freqtableindex) const { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].oddlsbfreqs[freqtableindex]; }
   inline int getBNumPolProducts(int configindex, int configbaselineindex, int baselinefreqindex) const
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].numpolproducts[baselinefreqindex]; }
+  int getBNumPolproductsOfFreqs(const vector<int>& freqs, const struct baselinedata_t& bldata) const;
   inline int getBDataStream1BandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int baselinefreqdatastream1index) const
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream1bandindex[baselinefreqindex][baselinefreqdatastream1index]; }
   inline int getBDataStream2BandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int baselinefreqdatastream2index) const
@@ -304,6 +335,7 @@ public:
   inline int getGuardNS(int configindex) const { return configs[configindex].guardns; }
   inline int getFreqTableLength() const { return freqtablelength; }
   inline double getFreqTableFreq(int index) const { return freqtable[index].bandedgefreq; }
+  inline double getFreqTableFreqLowedge(int index) const { return freqtable[index].bandlowedgefreq(); }
   inline string getFreqTableRxName(int index) const { return freqtable[index].rxName; }
   inline double getFreqTableBandwidth(int index) const { return freqtable[index].bandwidth; }
   inline bool getFreqTableLowerSideband(int index) const { return freqtable[index].lowersideband; }
@@ -313,9 +345,24 @@ public:
   inline int getFMatchingWiderBandIndex(int index) const { return freqtable[index].matchingwiderbandindex; }
   inline int getFMatchingWiderBandOffset(int index) const { return freqtable[index].matchingwiderbandoffset; }
   inline bool isFrequencyUsed(int configindex, int freqindex) const
-    { return configs[configindex].frequsedbybaseline[freqindex]; }
+    { return configs[configindex].frequsedbysomebaseline[freqindex]; }
   inline bool isEquivalentFrequencyUsed(int configindex, int freqindex) const
-    { return configs[configindex].equivfrequsedbybaseline[freqindex]; }
+    { return configs[configindex].equivfrequsedbysomebaseline[freqindex]; }
+  inline bool isFrequencyOutput(int configindex, int freqindex) const
+    { return configs[configindex].freqoutputbysomebaseline[freqindex]; }
+  inline bool isFrequencyOutput(int configindex, int baselineindex, int freqindex) const
+    { return configs[configindex].freqoutputbybaseline[freqindex][baselineindex]; }
+  inline bool isBFrequencyUsed(int configindex, int configbaselineindex, int freqindex) const
+    {
+      int baseline = configs[configindex].baselineindices[configbaselineindex];
+      return configs[configindex].frequsedbybaseline[freqindex][baseline];
+    }
+  inline bool isBFrequencyOutput(int configindex, int configbaselineindex, int freqindex) const
+    {
+      return isFrequencyOutput(configindex, configs[configindex].baselineindices[configbaselineindex], freqindex);
+    }
+  vector<int> getSortedInputfreqsOfTargetfreq(int configindex, int freqindex) const;
+  vector<int> getSortedInputfreqsOfTargetfreq(int configindex, int configbaselineindex, int freqindex) const;
   inline bool circularPolarisations() const
     { return datastreamtable[0].recordedbandpols[0] == 'R' || datastreamtable[0].recordedbandpols[0] == 'L'; }
   inline bool isReadFromFile(int configindex, int configdatastreamindex) const
@@ -706,7 +753,7 @@ private:
   enum sectionheader {COMMON, CONFIG, RULE, FREQ, TELESCOPE, DATASTREAM, BASELINE, DATA, NETWORK, INPUT_EOF, UNKNOWN};
 
   ///Storage struct for data from the frequency table of the input file
-  typedef struct {
+  typedef struct freqdata_t {
     double bandedgefreq;
     double bandwidth;
     bool lowersideband;
@@ -718,15 +765,19 @@ private:
     int matchingwiderbandindex;
     int matchingwiderbandoffset;
     string rxName;  // an optional name for the receiver producing this channel
+    friend bool operator>(const struct freqdata_t&, const struct freqdata_t&);
+    double bandlowedgefreq() const { return (!lowersideband) ? bandedgefreq : bandedgefreq-bandwidth; }
   } freqdata;
+  friend bool operator>(const struct Configuration::freqdata_t&, const struct Configuration::freqdata_t&);
 
   ///Storage struct for data from the baseline table of the input file
-  typedef struct {
+  typedef struct baselinedata_t {
     int datastream1index;
     int datastream2index;
     int numfreqs;
     int totalbands;
     int * freqtableindices;
+    int * targetfreqtableindices;
     int * oddlsbfreqs;
     int * localfreqindices; //given a freq table index, what local freq does it correspond to (-1 = none)
     int * numpolproducts;
@@ -735,10 +786,11 @@ private:
     int ** datastream1recordbandindex;
     int ** datastream2recordbandindex;
     char *** polpairs;
+    set<int> targetfreqset;
   } baselinedata;
 
   ///Storage struct for data from the config table of the input file
-  typedef struct {
+  typedef struct configdata_t {
     string name;
     double inttime;
     int blockspersend;
@@ -774,8 +826,13 @@ private:
     int  * datastreamindices; //[datastream]
     int  * ordereddatastreamindices;
     int  * baselineindices;
-    bool * frequsedbybaseline;
-    bool * equivfrequsedbybaseline;
+    bool * frequsedbysomebaseline;
+    bool * equivfrequsedbysomebaseline;
+    bool * freqoutputbysomebaseline;
+    //finer bookkeeping of freqs
+    bool ** frequsedbybaseline;         //[freq][baseline]
+    bool ** equivfrequsedbybaseline;    //[freq][baseline]
+    bool ** freqoutputbybaseline;       //[freq][baseline]
     //bookkeeping info for thread results
     int  * numxmacstrides;              //[freq]
     int  * completestridelength;        //[freq]
@@ -845,6 +902,7 @@ private:
     double * recordedfreqclockoffsetsdelta;
     double * recordedfreqphaseoffset;
     double * recordedfreqlooffsets;
+    double * recordedfreqgainoffsets;
     int * zoomfreqpols;
     int * zoomfreqtableindices;
     int * zoomfreqparentdfreqindices;
@@ -895,6 +953,13 @@ private:
   * @return True if the rules are all consistent, else false
   */
   bool populateScanConfigList();
+
+ /**
+  * Goes through configs and baselines working out which frequencies
+  * are really present, and determines the minimum number of channels.
+  * @return True if consistent
+  */
+  bool populateFrequencyDetails();
 
  /**
   * Goes through configs working out the result length for each
@@ -1059,6 +1124,11 @@ private:
   Model * model;
   outputformat outformat;
 };
+
+inline bool operator>(const struct Configuration::freqdata_t& f1, const struct Configuration::freqdata_t& f2)
+{
+  return f1.bandlowedgefreq() > f2.bandlowedgefreq();
+}
 
 #endif
 // vim: shiftwidth=2:softtabstop=2:expandtab
