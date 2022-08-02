@@ -82,7 +82,7 @@ int MeanStdDev(const float *src, int length, float *mean, float *StdDev);
 int pack2bit1chan(Ipp32f **in, int off, Ipp8u *out, float mean, float stddev, int len);
 int pack2bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len);
 int pack2bitNchan_complex(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len);
-int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len);
+int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len, int iscodif, int iscomplex);
 void dayno2cal (int dayno, int year, int *day, int *month);
 double cal2mjd(int day, int month, int year);
 double tm2mjd(struct tm date);
@@ -631,7 +631,7 @@ int main (int argc, char * const argv[]) {
 	  if (status) exit(1);
 	}
       } else if (nbits==8) {
-	status = pack8bitNchan(data, nchan, i*samplesperframe*cfact, framedata,  mean[0], stdDev[0], samplesperframe*cfact);
+	status = pack8bitNchan(data, nchan, i*samplesperframe*cfact, framedata,  mean[0], stdDev[0], samplesperframe*cfact, usecodif, iscomplex);
       } else {
 	printf("Unsupported number of bits\n");
 	exit(1);
@@ -872,7 +872,7 @@ Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
 }
 
 
-int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len) {
+int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len, int iscodif, int iscomplex) {
   // Should check 31bit "off" offset is enough bits
   int i, j, n, k;
 
@@ -880,11 +880,24 @@ int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float
 
   j = 0;
   k = 0;
-  for (i=off;i<len+off;i++) {
-    for (n=0; n<nchan; n++) {
-      out[j] = scaleclip(in[n][i], scale);
-      out[j] ^= 0x80;
-      j++;
+  if (iscomplex) {
+    for (i=off;i<len+off;i+=2) {
+      for (n=0; n<nchan; n++) {
+	out[j] = scaleclip(in[n][i], scale);
+	if (!iscodif) out[j] ^= 0x80;
+	j++;
+	out[j] = scaleclip(in[n][i+1], scale);
+	if (!iscodif) out[j] ^= 0x80;
+	j++;
+      }
+    }
+  } else {
+    for (i=off;i<len+off;i++) {
+      for (n=0; n<nchan; n++) {
+	out[j] = scaleclip(in[n][i], scale);
+	if (!iscodif) out[j] ^= 0x80;
+	j++;
+      }
     }
   }
   return 0;
