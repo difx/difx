@@ -83,6 +83,7 @@ int pack2bit1chan(Ipp32f **in, int off, Ipp8u *out, float mean, float stddev, in
 int pack2bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len);
 int pack2bitNchan_complex(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len);
 int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len, int iscodif, int iscomplex);
+int pack16bitNchan(Ipp32f **in, int nchan, int off, Ipp16u *out, float mean, float stddev, int len, int iscodif, int iscomplex);
 void dayno2cal (int dayno, int year, int *day, int *month);
 double cal2mjd(int day, int month, int year);
 double tm2mjd(struct tm date);
@@ -632,6 +633,8 @@ int main (int argc, char * const argv[]) {
 	}
       } else if (nbits==8) {
 	status = pack8bitNchan(data, nchan, i*samplesperframe*cfact, framedata,  mean[0], stdDev[0], samplesperframe*cfact, usecodif, iscomplex);
+      } else if (nbits==16) {
+	status = pack16bitNchan(data, nchan, i*samplesperframe*cfact, (Ipp16u*)framedata,  mean[0], stdDev[0], samplesperframe*cfact, usecodif, iscomplex);
       } else {
 	printf("Unsupported number of bits\n");
 	exit(1);
@@ -862,7 +865,7 @@ int pack2bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float
   return 0;
 }
 
-Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
+inline Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
   x *= scale;
   if (x>127) // Clip
     x = 127;
@@ -871,6 +874,14 @@ Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
   return lrintf(x);
 }
 
+inline Ipp16s scaleclip16(Ipp32f x, Ipp32f scale) {
+  x *= scale;
+  if (x>IPP_MAX_16S) // Clip  
+    x = IPP_MAX_16S;
+  else if (x<IPP_MIN_16S)
+    x = IPP_MIN_16S;
+  return lrintf(x);
+}
 
 int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len, int iscodif, int iscomplex) {
   // Should check 31bit "off" offset is enough bits
@@ -883,10 +894,10 @@ int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float
   if (iscomplex) {
     for (i=off;i<len+off;i+=2) {
       for (n=0; n<nchan; n++) {
-	out[j] = scaleclip(in[n][i], scale);
+	out[j] = (Ipp8u)scaleclip(in[n][i], scale);
 	if (!iscodif) out[j] ^= 0x80;
 	j++;
-	out[j] = scaleclip(in[n][i+1], scale);
+	out[j] = (Ipp8u)scaleclip(in[n][i+1], scale);
 	if (!iscodif) out[j] ^= 0x80;
 	j++;
       }
@@ -894,8 +905,39 @@ int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float
   } else {
     for (i=off;i<len+off;i++) {
       for (n=0; n<nchan; n++) {
-	out[j] = scaleclip(in[n][i], scale);
+	out[j] = (Ipp8u)scaleclip(in[n][i], scale);
 	if (!iscodif) out[j] ^= 0x80;
+	j++;
+      }
+    }
+  }
+  return 0;
+}
+
+int pack16bitNchan(Ipp32f **in, int nchan, int off, Ipp16u *out, float mean, float stddev, int len, int iscodif, int iscomplex) {
+  // Should check 31bit "off" offset is enough bits
+  int i, j, n, k;
+
+  float scale = 40/stddev;
+
+  j = 0;
+  k = 0;
+  if (iscomplex) {
+    for (i=off;i<len+off;i+=2) {
+      for (n=0; n<nchan; n++) {
+	out[j] = (Ipp16u)scaleclip(in[n][i], scale);
+	if (!iscodif) out[j] ^= 0x80;
+	j++;
+	out[j] = (Ipp16u)scaleclip16(in[n][i+1], scale);
+	if (!iscodif) out[j] ^= 0x8000;
+	j++;
+      }
+    }
+  } else {
+    for (i=off;i<len+off;i++) {
+      for (n=0; n<nchan; n++) {
+	out[j] = (Ipp16u)scaleclip16(in[n][i], scale);
+	if (!iscodif) out[j] ^= 0x8000;
 	j++;
       }
     }
