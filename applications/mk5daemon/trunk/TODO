@@ -10,6 +10,12 @@ Reboot under RHEL7:
   execl("/usr/bin/systemctl", "reboot", "--force", NULL);
 }
 
+? cope better with disks that generate I/O errors during startMk5Daemon, e.g., avoid this:
+   "The following error has occured: Cannot mount  device /dev/sdq1 at /mnt/disks/3/2.  Reason: Input/output error
+    This might be caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root!
+    Aborting
+    [Thread 0x2aaaae4d7700 (LWP 24125) exited]
+    [Inferior 1 (process 24117) exited with code 01]"
 
 
 mk5cp
