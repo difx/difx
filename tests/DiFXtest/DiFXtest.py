@@ -19,6 +19,27 @@ def pre_checks():
     quit()
 
 
+def filter_auto_correlations(fits_filename):
+
+  hdulist = fits.open(fits_filename)
+  tbdata = hdulist[8].data
+  hdulist.close()  
+
+  print()
+  print()
+  print(tbdata)
+
+  mask = (tbdata['BASELINE'] % 257) != 0
+  new_tbdata = tbdata[mask] 
+  print()
+  print()
+
+  fits.update(fits_filename,new_tbdata,8)
+  hdulist = fits.open(fits_filename)
+  tbdata = hdulist[8].data
+  print(tbdata)
+  hdulist.close()
+  #quit()
 
 def get_binary_files(directory):
   input_files = []
@@ -281,7 +302,12 @@ def compare_results(testname, abstol, reltol):
   proc.wait() 
   fits_file = get_fits_file(working_directory)
   fits_file_benchmark = get_fits_file(results_directory)
-  #print(fits_file)
+  
+  # filter autocorrelations out of fits file
+  print(fits_file)
+  filter_auto_correlations(fits_file) 
+
+
   hdu1 = fits.open(fits_file)
   hdu2 = fits.open(fits_file_benchmark) 
 
@@ -498,8 +524,8 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("-g","--generateVDIF", help="Generate VDIF data? (yes/[no])",default="no")
   parser.add_argument("-u","--updatetest", help="Update the default test results (yes/[no])",default="no") 
-  parser.add_argument("-a","--abstol",help="Absolute tolerance for FITS file comparison (default = 1e-14)",default=1e-14)
-  parser.add_argument("-r","--reltol",help="Relative tolerance for FITS file comparison (default = 1e-1)",default=0.1)
+  parser.add_argument("-a","--abstol",help="Absolute tolerance for FITS file comparison (default = 1e-17)",default=1e-17)
+  parser.add_argument("-r","--reltol",help="Relative tolerance for FITS file comparison (default = 1e-2)",default=0.01)
   parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? ([yes]/no)",default="yes")
 
   input_args = parser.parse_args()
