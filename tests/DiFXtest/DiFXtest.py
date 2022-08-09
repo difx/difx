@@ -25,21 +25,14 @@ def filter_auto_correlations(fits_filename):
   tbdata = hdulist[8].data
   hdulist.close()  
 
-  print()
-  print()
-  print(tbdata)
 
   mask = (tbdata['BASELINE'] % 257) != 0
   new_tbdata = tbdata[mask] 
-  print()
-  print()
 
   fits.update(fits_filename,new_tbdata,8)
   hdulist = fits.open(fits_filename)
   tbdata = hdulist[8].data
-  print(tbdata)
   hdulist.close()
-  #quit()
 
 def get_binary_files(directory):
   input_files = []
