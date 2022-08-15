@@ -34,6 +34,10 @@ def usage():
         print 'usage : %s <slot number> <module serial number>\n' % program
         #print 'Module serial number is in ccc%nnnn format.\n'
 
+# TODO: with 6-slot Mark6 (2 expansion chassis), will need to use
+# config /etc/defaults/mark6_slots_pci with per-line PCI IDs (like pci-0000:0a:00.0)
+# to determine which controller actually provides which pair of slots
+
 def unmount(slot):
   # unmount all partitions for slot
   rc = 1
@@ -61,33 +65,27 @@ def getdevices(slot):
   # build list of mpt3sas device numbers (should be 2 for 2 host bus adapters)
   for i in range (1,sl,2):
     # --- if the devices uses the mpt3sas driver
-    print all_scsi_dev[i]
     if all_scsi_dev[i] == "mpt3sas" or all_scsi_dev[i] == "mpt2sas" :
       val = all_scsi_dev[i-1]
       # --- extract the number from '[1]' string
       num_val = val[val.find('[')+1:val.find(']')]
       sas_dev_num.append(num_val)
 
-  # get block devices for both a and b host bus adapters
-  a = b = ""
+  # get block devices for all mptXsas host bus adapters
+  scsi_list = []
   num_dev = len(sas_dev_num)
   for i in range(num_dev):
     res = subprocess.Popen(["lsscsi", "-t", sas_dev_num[i]],  stdout=subprocess.PIPE)
     # --- since we should have only 2 sas devices attached to driver at most:
     out = res.communicate()[0]
-    if i == 0:
-      a = string.split(out)
-    else:
-      b = string.split(out)
+    devicesinfo = string.split(out)
+    if len(devicesinfo) > 2:
+       scsi_list += devicesinfo
 
   # --- IF THE LENGHT OF B IS > 0 THEN IT WAS ASSIGNED, CONCATENATE OUTPUT
-  if len(b) > 0:
-      scsi_list = a + b
-  elif len(a) > 0:
-      scsi_list = a
-  else:
+  if len(scsi_list) <= 0:
       print "no disk modules powered up"
-      return disks
+      return []
 
   # --- scsi_list number of items
   sll = len(scsi_list)
@@ -110,6 +108,10 @@ def getdevices(slot):
         if dev_num < 8 and slot == 1:
           disks.append({'dev_num': dev_num, 'slot': slot, 'disk': disk})
         elif dev_num >= 8 and slot == 2:
+          disks.append({'dev_num': dev_num - 8, 'slot': slot, 'disk': disk})
+        elif dev_num < 8 and slot == 5:
+          disks.append({'dev_num': dev_num, 'slot': slot, 'disk': disk})
+        elif dev_num >= 8 and slot == 6:
           disks.append({'dev_num': dev_num - 8, 'slot': slot, 'disk': disk})
       if host_id == 0:
         if dev_num < 8 and slot == 3:
@@ -145,8 +147,8 @@ def getdevices(slot):
         exit(1)
       print disks[i]['serial_num'],disks[i]['disk_size']
 
-  #print "disks", disks
-    
+  # print "disks", disks
+
   return disks
 
 def checkforerror(partcmd, subp, output):
@@ -163,7 +165,7 @@ if len(sys.argv) < 3:
 
 slot = int(sys.argv[1])
 
-if slot not in [1, 2, 3, 4]:
+if slot not in [1, 2, 3, 4, 5, 6]:
   usage()
   exit(1)
 
