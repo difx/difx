@@ -1655,8 +1655,6 @@ static bool exactMatchingFreq(const ZoomFreq &zoomfreq, const freq& f)
 {
 	//exactMatchingFreq: True only when freq is USB, and top+bottom edges match the zoomfreq
 	const double epsilon = 0.000001;
-	double parent_bottom,
-	parent_top;
 
 	if(f.sideBand == 'L')
 	{
@@ -1750,15 +1748,15 @@ static int bestMatchingFreq(const ZoomFreq &zoomfreq, const std::vector<int> mat
 	std::vector<freq> f_vec;
 	std::vector<double> input_bands_upper_edge;
 	std::vector<double> input_bands_lower_edge;
-	for(int ii=0; ii<matchingFreqs.size(); ++ii)
+	for(size_t ii = 0; ii < matchingFreqs.size(); ++ii)
 	{
 		f_vec.push_back(freqs[dd->recFreqId[matchingFreqs[ii]]]);
-		if (f_vec[ii].sideBand == 'U')
+		if(f_vec[ii].sideBand == 'U')
 		{
 			input_bands_upper_edge.push_back(f_vec[ii].fq + f_vec[ii].bw);
 			input_bands_lower_edge.push_back(f_vec[ii].fq);
 		}
-		else if (f_vec[ii].sideBand == 'L')
+		else if(f_vec[ii].sideBand == 'L')
 		{
 			input_bands_upper_edge.push_back(f_vec[ii].fq);
 			input_bands_lower_edge.push_back(f_vec[ii].fq - f_vec[ii].bw);
@@ -1774,7 +1772,7 @@ static int bestMatchingFreq(const ZoomFreq &zoomfreq, const std::vector<int> mat
 	std::vector<double> ed2_vec;
 	std::vector<double> input_center;
 	std::vector<double> input_centers;
-	for(int jj=0; jj<matchingFreqs.size(); ++jj)
+	for(size_t jj = 0; jj < matchingFreqs.size(); ++jj)
 	{
 		edge_dist_l = abs(lower_zoombandedge - input_bands_lower_edge[jj]);
 		edge_dist_u = abs(upper_zoombandedge - input_bands_upper_edge[jj]);
@@ -2176,12 +2174,13 @@ static void writeDifxChannelFlags(const DifxInput *D, const CorrSetup *corrSetup
 	if(!out)
 	{
 		cerr << "Error: cannot open " << chflagFile << " for write." << endl;
+
 		return;
 	}
 
 	for(int a = 0; a < D->nAntenna; a++)
 	{
-		for(int n = 0; n < corrSetup->autobands.outputbands.size(); n++)
+		for(size_t n = 0; n < corrSetup->autobands.outputbands.size(); n++)
 		{
 			// Locate DiFX freq Id
 			int outputFreqId = -1;
@@ -2202,7 +2201,7 @@ static void writeDifxChannelFlags(const DifxInput *D, const CorrSetup *corrSetup
 			// note2: <job>.channelflags refers to full difxfreq table freq Ids, in contrast to existing <job>.flag referring to recBand ids!
 			std::deque<int> channels;
 			int nflaggable = corrSetup->autobands.listEdgeChannels(n, channels, corrSetup->FFTSpecRes, corrSetup->outputSpecRes);
-			for(int m = 0; m < channels.size(); m++)
+			for(size_t m = 0; m < channels.size(); m++)
 			{
 				fprintf(out, "%s %lf %lf %d %d %d '%s'\n", D->antenna[a].name, D->mjdStart, D->mjdStop, outputFreqId, channels[m], channels[m], flagReason);
 			}
@@ -2404,7 +2403,6 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 		{
 			const std::string &antName = it->first;
 			const VexSetup &setup = it->second;
-			unsigned int startBand;
 
 			// do some prodding, any antenna
 			for(unsigned int ds = 0, startBand = 0; ds < setup.nStream(); ++ds)
@@ -2468,12 +2466,12 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 			if(corrSetup->outputBandwidthMode == OutputBandwidthAuto)
 			{
 				bw = corrSetup->autobands.autoBandwidth();
-				cout << "Determined outputBand 'auto' bandwidth of " << std::fixed << bw*1e-6 << "MHz\n";
+				cout << "Note: Determined outputBand 'auto' bandwidth of " << std::fixed << bw*1e-6 << "MHz\n";
 			}
 			if(bw <= 0)
 			{
 				bw = corrSetup->outputBandwidth;
-				cout << "Using user-specified outputBand bandwidth of " << std::fixed << bw*1e-6 << "MHz\n";
+				cout << "Note: Using user-specified outputBand bandwidth of " << std::fixed << bw*1e-6 << "MHz\n";
 			}
 			if(bw <= 0)
 			{
@@ -2497,7 +2495,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 				const AntennaSetup* antSetup = P->getAntennaSetup(antName);
 				if(antSetup->v2dZoomFreqs.size() > 0)
 				{
-					cout << "Adding " << antSetup->v2dZoomFreqs.size() << " user zoom freqs to outputbands\n";
+					cout << "Note: Adding " << antSetup->v2dZoomFreqs.size() << " user zoom freqs to outputbands\n";
 					corrSetup->autobands.addUserOutputbands(antSetup->v2dZoomFreqs);
 				}
 			}
@@ -2550,7 +2548,6 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 					continue;
 				}
 
-				const VexAntenna *antenna = V->getAntenna(antName);
 #warning "FIXME: get rid of the const -> nonconst cast in writeJob"
 				AntennaSetup* antSetup = ((CorrParams*)P)->getNonConstAntennaSetup(antName);
 				if(!antSetup)
@@ -2825,7 +2822,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 
 						// TODO: consider specifying gainOffsets per datastream rather than per antenna
 						// TODO: with complex bandpass calibration the gainOffsets are obsolete, remove?
-						int nGainOffsets = antennaSetup->gainOffsets.size();
+						size_t nGainOffsets = antennaSetup->gainOffsets.size();
 						if(nGainOffsets > 0)
 						{
 							if((startBand + D->datastream[currDatastream].nRecFreq) > nGainOffsets)
@@ -2901,7 +2898,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 	}
 	if(globalBandwidth == 0) // Implies no baselines found
 	{
-		cerr << "Warning: no correlatable baselines were found for scan " << vexScan->defName << "." << endl;
+		cerr << "Note: no correlatable baselines were found for scan " << vexScan->defName << "." << endl;
 	}
 
 	// Make sure all polarizations are capitalized before writing, and round up to 2^n record channels if needed

@@ -45,7 +45,7 @@ class freq;
 class AutoBands
 {
 public:
-	AutoBands() : outputbandwidth(-1), verbosity(0), permitgaps(false) { }
+	AutoBands() : outputbandwidth(-1), permitgaps(false), verbosity(0) { }
 	AutoBands(double outputbandwidth_Hz, int verbosity=0, bool permitgaps=false);
 	~AutoBands();
 

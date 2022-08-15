@@ -652,7 +652,7 @@ int AutoBands::generateOutputbandsExplicit(int Nant_min)
 		while(!newband.isComplete())
 		{
 			int startspan = -1;
-			for(int span=0; span<spans.size(); span++)
+			for(size_t span=0; span<spans.size(); span++)
 			{
 				if(spans[span].flow <= foutstart && foutstart < spans[span].fhigh)
 				{
