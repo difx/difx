@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
         # loop over calc files
         files = glob.glob(args[1])
-        if len(files) < 1: 
+        if (len(files) < 1) or not ('?' in args[1] or '*' in args[1]):
                 files = args[1:]
       
         includeList = []
