@@ -49,7 +49,7 @@ def getUsage():
         usage += '\n The fits file produced by the script will be named <outname>.fits'
         usage += '\n\n<outname> : base name for the output files <outname>.difx2fits and <outname>.fits)'
         usage += '\n<baseFileNameN> : name of the .difx output directories to consider.'
-        usage += '\n\tCan contain wildcards (e.g. r1111_*)\n'
+        usage += '\n\tCan contain wildcards (e.g. r1111_*.difx)\n'
         return usage
 
 def getVersion():
@@ -93,6 +93,7 @@ def buildCommandFile(baseName, fileList):
                 commandFile.write(ranges [:-2] + "\n")
         
         if len(fileList) == 0:
+                print("File list for %s turned out empty." % (commandFileName))
                 return
         commandFile.write("difx2fits \\\n")
         if options.d2fOptions is not None:
@@ -148,11 +149,14 @@ if __name__ == "__main__":
 
 
         # loop over calc files
-        files = glob.glob(args[0])
-        
+        files = glob.glob(args[1])
+        if len(files) < 1: 
+                files = args[1:]
+      
         includeList = []
-        for arg in args:
+        for arg in files:
                 if not arg.endswith(".difx"):
+                        print("Skipping %s which did not end with .difx" % (arg))
                         continue
 
                 # open the corresponding calc file
@@ -228,5 +232,6 @@ if __name__ == "__main__":
                         includeList.append(arg)
 
                 calc.close()
+        includeList.sort()
         buildCommandFile(baseName, includeList)
         print("Finished")
