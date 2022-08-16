@@ -2460,7 +2460,11 @@ static int getDatastreamsSetup(VexSetup &setup, Vex *v, const char *antDefName, 
 
 static int getModes(VexData *V, Vex *v)
 {
+	const char *antModeIncompleteFilename = "IncompleteModes.txt";
 	int nWarn = 0;
+	FILE *antModeIncompleteFile = 0;
+	int nIncomplete = 0;
+	int nTotal = 0;
 
 	for(const char *modeDefName = get_mode_def(v); modeDefName; modeDefName = get_mode_def_next())
 	{
@@ -2481,11 +2485,30 @@ static int getModes(VexData *V, Vex *v)
 			std::map<std::string,std::vector<unsigned int> > pcalMap;
 			std::vector<VexChannel> freqChannels;		// list of channels from relevant $FREQ section
 
+			++nTotal;
 			type = getSetupType(v, format, antDefName, modeDefName);
 
 			if(type == VexSetup::SetupIncomplete)
 			{
-				std::cerr << "Note: Incomplete description for " << antDefName << " in mode " << modeDefName << ". The vex file might need editing.  This antenna/mode will be ignored." << std::endl;
+				if(antModeIncompleteFile == 0)
+				{
+					antModeIncompleteFile = fopen(antModeIncompleteFilename, "w");
+					if(antModeIncompleteFile == 0)
+					{
+						std::cerr << "Error: cannot open " << antModeIncompleteFilename << " for write." << std::endl;
+					}
+					fprintf(antModeIncompleteFile, 
+						"An entry is made below for each combination of antenna and mode in which\n"
+						"minimal critical information ($FREQ, $BBC, and $IF) are not linked.  These\n"
+						"antenna/mode combinations will not be configured for correlation.  Note that\n"
+						"this situation can arise for legitimate reasons, but it might be worth\n"
+						"inspecting this list for anything that is not expected.\n\n");
+				}
+				
+				++nIncomplete;
+
+				fprintf(antModeIncompleteFile, "%d : Incomplete description for antenna %s in mode %s\n", nIncomplete, antDefName, modeDefName);
+
 				continue;
 			}
 
@@ -2520,6 +2543,15 @@ static int getModes(VexData *V, Vex *v)
 
 		} // End of antenna loop
 	} // End of mode loop
+
+	if(antModeIncompleteFile != 0)
+	{
+		std::cerr << "Note: There were " << nIncomplete << " incomplete antenna/mode combinations (out of " << nTotal << " total).  This might indicate the vex file needs editing.  See file '" << antModeIncompleteFilename << "' for the complete list." << std::endl;
+
+		fprintf(antModeIncompleteFile, "\n%d of %d antenna/mode combinations were found to be incomplete.\n", nIncomplete, nTotal);
+
+		fclose(antModeIncompleteFile);
+	}
 
 	return nWarn;
 }
