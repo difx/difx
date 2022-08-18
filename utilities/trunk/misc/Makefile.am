@@ -8,6 +8,7 @@ dist_bin_SCRIPTS = \
 	dir2filelist.pl \
 	filelist2human.pl \
 	filterDifx2Fits.py \
+	filterDifx2Mark4.py \
 	fslog2difx.pl \
 	geteop.pl \
 	mjd2day.py \
@@ -33,6 +34,7 @@ m5fb_makeheader_SOURCES = \
 
 install-exec-hook:
 	mv $(DESTDIR)$(bindir)/filterDifx2Fits.py $(DESTDIR)$(bindir)/filterDifx2Fits
+	mv $(DESTDIR)$(bindir)/filterDifx2Mark4.py $(DESTDIR)$(bindir)/filterDifx2Mark4
 	mv $(DESTDIR)$(bindir)/mjd2day.py $(DESTDIR)$(bindir)/mjd2day
 	mv $(DESTDIR)$(bindir)/day2mjd.py $(DESTDIR)$(bindir)/day2mjd
 	mv $(DESTDIR)$(bindir)/difxcopy.py $(DESTDIR)$(bindir)/difxcopy
