@@ -12,19 +12,21 @@ legends in all tables. The idea is that the detailed statistics are
 near the top and the most general cumulative tables are at the bottom.
 
 This script must be copied and run in the experiment correlation directory.
-A few lines must be modified in the main function:
-
- #### need to modify these ####
-   project_name = 'c211b'  # affects only the naming of output fules
-   ignore = ['Sc', 'Hn']
-   alistfile = 'alist_v6.out'
- #############################
+A few lines must be modified, cf. code block "need to modify these" in the script.
 
 The script can then be run in the root directory of the production correlation.
 '''
 
-
 from __future__ import division # division behaves like in Python 3
+
+#### need to modify these #####################################################
+project_name = 'c212c'          # project or observing block name
+# ignore = ['Sc', 'Hn']         # 2-letter codes of antennas to ignore
+alistfile = '3007.alist_v6'     # A-list file to compare against *.vex file
+mode_name = '43ghz'             # name of VEX mode, or None or just comment out
+###############################################################################
+# TODO: relocate the above hard-coded vars into argparse cmd line args
+
 import pyvexfile
 import os, sys
 import argparse
@@ -82,16 +84,16 @@ def clean_one_ant_scans(sched_dict):
   """
   return {k:v for k, v in sched_dict.items() if len(v) > 1}
 
-def cleaned_scans(vexfile):
+def cleaned_scans(vexfile,modename=None):
   """
      returns a dictionary of string keys in form scan number : source
      i. e. "No0015:BLLAC" and a list of all the stations in that scan
      i. e. ["Ef", "Mh", "Ys"] based on the $SCHED section of the vex-file,
      but with single antenna (pointing) scans removed 
   """
-  return clean_one_ant_scans(scans(vexfile))
+  return clean_one_ant_scans(scans(vexfile,modename))
 
-def scans(vexfile):
+def scans(vexfile,modename=None):
     """
      returns a dictionary of string keys in form scan number : source
      i. e. "No0015:BLLAC" and a list of all the stations in that scan
@@ -132,12 +134,22 @@ def scans(vexfile):
         start = v['SCHED'][key]['start']
         #rint (start)
 #start = 2021y275d04h52m30s; mode=43ghz; source=3C454.3;
-        m = re.search(".*source=(.*)", str(start))
+        m = re.search(".*source\s*=\s*([a-zA-Z0-9+-.]*)\s*;.*", str(start))
         if m:
             source = m.group(1).strip()
-            if source[-1] == ";":
-                source = source[:-1]
-            
+        else:
+            print('Scan %s source lookup failed. Full line: %s' % (str(key),str(start)))
+
+        if modename:
+            m = re.search(".*mode\s*=\s*([a-zA-Z0-9_]*)\s*;.*", str(start))
+            if m:
+                scanmode = m.group(1).strip()
+                if len(scanmode)>0 and scanmode != modename:
+                    continue
+                # print('Scan on ', source, ' in mode ', scanmode)
+            else:
+                print('Scan %s mode lookup failed. Full line: %s' % (str(key),str(start)))
+
         label = key + ":" + source
         if ants:
              sched_dict[label] = ants[:]
@@ -182,12 +194,12 @@ def scans(vexfile):
     #print (sched_dict)
     return sched_dict     
     
-def ordered_cleaned_labels(vexfile):
+def ordered_cleaned_labels(vexfile,modename=None):
   """
       gets a sorted list of 'labels', i. e. strings like '0052:BLLAC'
       for a vex-file, excluding one antenna scans.
   """
-  return sorted(cleaned_scans(vexfile).keys())
+  return sorted(cleaned_scans(vexfile,modename).keys())
 
 def stations(vexfile):
   """
@@ -269,8 +281,8 @@ def calc_files_dict(excllist):
       line = readf.readline()
       while line[:18] != 'SCAN 0 IDENTIFIER:' or not line:
         line = readf.readline()
-      print(line)
-      #scan_name = line[18:].strip()[-4:] # we cut 'No'
+      # print(line)
+      # scan_name = line[18:].strip()[-4:] # we cut 'No'
       scan_name = line.split(":")[1].strip()
     ### finished with .calc file
     ### now go to difxlog:
@@ -343,6 +355,7 @@ def calc_files_dict(excllist):
       print('correct the known_double_streams list accordingly.')
       sys.exit(1)
   return d
+
 def FileListWithExt(file_ext):
   """
       Generates a list of all files with the given extension
@@ -375,7 +388,8 @@ def alist_dict(alistfilenames, antlist):
           ant1 = one2two_dict[bs[0]]
           ant2 = one2two_dict[bs[1]]
           if (ant1 in antlist) and (ant2 in antlist):
-            scan = line.split()[8][2:] # scan name, cut 'No'
+            #scan = line.split()[8][2:] # scan name, cut 'No'
+            scan = line.split()[8]
             src = line.split()[13] # source name, e. g. BLLAC
             label = scan + ':' + src
             qual = int(line.split()[15][0]) # fringe code, e. g. 9 for 9D
@@ -425,19 +439,14 @@ def alist_dict(alistfilenames, antlist):
   return adict
   
 def main():
-
-  #### need to modify these ####
-  project_name = 'c211b'
-  #ignore = ['Sc', 'Hn']
-  alistfile = 'alist_v6.out'
-  ##############################
-  
   #### basic setup ####
   ign_str = ''
   if args.ignore:
       for _ in args.ignore:
         ign_str = ign_str + _ + ', '
       ign_str = ign_str[:-2]
+  else:
+      args.ignore = []
   if ign_str:
     print('\nIgnoring antennas:')
     print(ign_str)
@@ -474,8 +483,8 @@ i. e. the first number of the previous column is multiplied by two)
       vexfile=FileListWithExt('vex')[0]
     ######## preparing the databases #############
     myants = [_ for _ in stations(vexfile) if _ not in args.ignore]
-    dct = cleaned_scans(vexfile)
-    scns = ordered_cleaned_labels(vexfile)
+    dct = cleaned_scans(vexfile,mode_name)
+    scns = ordered_cleaned_labels(vexfile,mode_name)
     calcfilesdict = calc_files_dict(args.ignore)
     alistdict = alist_dict([args.alistfile], myants)
     maindict = {}
@@ -573,6 +582,7 @@ i. e. the first number of the previous column is multiplied by two)
             rep_lin = rep_lin + '\t.\t.'
         else:
           print('WARNING: Scan ' + s + ' is not in the alist file(s)!')
+          # print('All A-list scans:\n', str(alistdict.keys()))
           rep_lin = rep_lin + '\t?\t?'
         rep_lin = rep_lin + '\t' + missstr
         maindict[ant] = (src[:],sch[:],part[:],wgt[:],ebsl[:],cbsl[:],fr[:],snr7[:])
@@ -701,10 +711,10 @@ i. e. the first number of the previous column is multiplied by two)
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-e', '--exclude', dest="ignore", action="append", required=False, help='Exclude this station code from the report')
     parser.add_argument('alistfile', help='The alist file for the project.')
     args = parser.parse_args()
-    print (args)
+    # print (args)
 
     main()
