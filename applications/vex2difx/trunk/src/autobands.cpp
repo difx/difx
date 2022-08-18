@@ -666,7 +666,7 @@ int AutoBands::generateOutputbandsExplicit(int Nant_min)
 				break;
 			}
 
-			double f0 = spans[startspan].flow;
+			//double f0 = spans[startspan].flow;
 			double f1 = spans[startspan].fhigh;
 			double span_bw_remain = f1 - foutstart;
 			double bw_utilized = std::min(span_bw_remain, bw_needed);

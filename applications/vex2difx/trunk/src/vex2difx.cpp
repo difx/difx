@@ -584,7 +584,7 @@ static unsigned int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vecto
 			int streamRecChan;
 
 			streamRecChan = setupRecChan - startBand;
-			if(streamRecChan < 0 || streamRecChan >= stream.nRecordChan)
+			if(streamRecChan < 0 || streamRecChan >= (int)stream.nRecordChan)
 			{
 				cerr << "Error: setFormat: index to stream record channel=" << streamRecChan << " is out of range.  antName=" << antName << " mode=" << mode->defName << endl;
 				cerr << "nRecBand = " << D->datastream[dsId].nRecBand << endl;
@@ -1766,7 +1766,7 @@ static int bestMatchingFreq(const ZoomFreq &zoomfreq, const std::vector<int> mat
 	// Find the best matching input band by maximizing the distance from a band edge
 	double edge_dist_l = 0.0;
 	double edge_dist_u = 0.0;
-	int best_input_band_index = 0;
+	std::vector<int>::size_type best_input_band_index = 0;
 	double ed_min = 0.0;
 	std::vector<double> ed1_vec;
 	std::vector<double> ed2_vec;
@@ -2200,7 +2200,7 @@ static void writeDifxChannelFlags(const DifxInput *D, const CorrSetup *corrSetup
 			// note1: due to FITS FL#1 table structure, only one channel is named per flag file entry
 			// note2: <job>.channelflags refers to full difxfreq table freq Ids, in contrast to existing <job>.flag referring to recBand ids!
 			std::deque<int> channels;
-			int nflaggable = corrSetup->autobands.listEdgeChannels(n, channels, corrSetup->FFTSpecRes, corrSetup->outputSpecRes);
+			corrSetup->autobands.listEdgeChannels(n, channels, corrSetup->FFTSpecRes, corrSetup->outputSpecRes);
 			for(size_t m = 0; m < channels.size(); m++)
 			{
 				fprintf(out, "%s %lf %lf %d %d %d '%s'\n", D->antenna[a].name, D->mjdStart, D->mjdStop, outputFreqId, channels[m], channels[m], flagReason);
@@ -2444,14 +2444,13 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 				const std::string &antName = it->first;
 				const VexSetup &setup = it->second;
 				std::vector<freq> currantfreqs;
-				int startBand = 0;
 
 				if(find(J.jobAntennas.begin(), J.jobAntennas.end(), antName) == J.jobAntennas.end())
 				{
 					continue;
 				}
 
-				for(unsigned int ds = 0; ds < setup.nStream(); ++ds)
+				for(unsigned int ds = 0, startBand = 0; ds < setup.nStream(); ++ds)
 				{
 					const VexStream &stream = setup.streams[ds];
 					setFormat(D, 0, currantfreqs, toneSets, mode, antName, startBand, setup, stream, corrSetup, P->v2dMode);
