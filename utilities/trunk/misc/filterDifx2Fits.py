@@ -209,7 +209,7 @@ if __name__ == "__main__":
                 if options.mode is not None:
                         modeMatch = False
                         if mode in options.mode:
-                                print("mode found")     
+                                # print("mode found")     
                                 modeMatch = True
 
                 # check if source name in selected source list
