@@ -90,6 +90,8 @@ def fix_paths(inputfilename, calcfilename, indir, outdir):
             copy_calcfilename, "IM FILENAME:", indir, "./")
     espressolib.change_path(
             copy_calcfilename, "FLAG FILENAME:", indir, "./")
+    espressolib.change_path(
+            copy_calcfilename, "VEX FILENAME:", indir, "./")
 
 
 def fill_operator_log(logfile):

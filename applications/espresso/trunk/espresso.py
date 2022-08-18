@@ -121,6 +121,7 @@ def fix_paths(inputfilename, calcfilename, indir, outdir):
     change_path(copy_inputfilename, "PULSAR CONFIG FILE:", indir, "./")
     change_path(copy_calcfilename, "IM FILENAME:", indir, "./")
     change_path(copy_calcfilename, "FLAG FILENAME:", indir, "./")
+    change_path(copy_calcfilename, "VEX FILENAME:", indir, "./")
 
 
 def make_new_runfiles(
