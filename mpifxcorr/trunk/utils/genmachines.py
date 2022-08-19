@@ -314,11 +314,11 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
                 except socket.herror:
                         print('Weird: cannot gethostbyaddr for %s' % address[0])
 
-        print('final:')
-        print(results)
+        #print('final:')
+        #print(results)
 
-        #results.sort()
-        #conflicts.sort()
+        #results.sort() # commented out, can't sort list containing lists of unequal length
+        #conflicts.sort() # -"-
         missingVsns.sort()
         notidle.sort()
         incomplete.sort()
