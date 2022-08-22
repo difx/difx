@@ -406,7 +406,7 @@ typedef struct
 	
 	int freqSetId;		/* 0-based number -- unique FITS/AIPS IF index to the DifxInput freqSet array */
 
-/* This is obsolete, I think.  Equivalent functionality from job->antennaRemap */
+/* This is obsolete, I think.  Equivalent functionality from job->antennaIdRemap */
 	int *ant2dsId;		/* map from .input file antenna# to internal
 				 * DifxDatastream Id. [0..nAntenna-1]
 				 * this should be used only in conjunction

@@ -203,6 +203,8 @@ void copyDifxFreqSet(DifxFreqSet *dest, const DifxFreqSet *src)
 	{
 		dest->IF = 0;
 	}
+
+	dest->nFreq = src->nFreq;
 	if(dest->nFreq > 0)
 	{
 		int f;
@@ -215,7 +217,6 @@ void copyDifxFreqSet(DifxFreqSet *dest, const DifxFreqSet *src)
 	}
 	else
 	{
-		dest->nFreq = 0;
 		dest->freqId2IF = 0;
 	}
 }

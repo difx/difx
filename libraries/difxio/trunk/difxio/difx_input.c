@@ -3146,7 +3146,13 @@ static DifxInput *deriveFitsSourceIds(DifxInput *D)
 		int freqSetId;
 
 		D->source[i].numFitsSourceIds = D->nFreqSet;
+
+		if(D->source[i].fitsSourceIds != 0)
+		{
+			free(D->source[i].fitsSourceIds);
+		}
 		D->source[i].fitsSourceIds = (int*)calloc(D->nFreqSet, sizeof(int));
+
 		for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 		{
 			int a, j;
@@ -3472,7 +3478,6 @@ static int mergeDifxInputFreqSetsStrict(DifxInput *D)
 		}
 		if(newFreqSetId == n)	/* no match */
 		{
-			allocateDifxFreqSetFreqMap(newdfs + n, D->nFreq);
 			copyDifxFreqSet(newdfs + n, D->freqSet + freqSetId);
 			++n;
 		}
