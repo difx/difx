@@ -81,7 +81,6 @@ static int cmpfunc (const void * a, const void * b)
 void writeJobMatrix(const JobMatrix *jm, int passNum)
 {
 	int *jobList;
-	int *activeJobs;
 	FILE *out;
 	int nJob;
 	char label[DIFXIO_FILENAME_LENGTH];
@@ -114,7 +113,6 @@ void writeJobMatrix(const JobMatrix *jm, int passNum)
 
 	nJob = jm->D->nJob;
 	jobList = (int *)calloc(nJob, sizeof(int));
-	activeJobs = (int *)calloc(jm->nAntenna, sizeof(int));
 
 	// set jobList array to 0
 	for(i = 0; i < nJob; ++i)
@@ -144,6 +142,7 @@ void writeJobMatrix(const JobMatrix *jm, int passNum)
 	for(t = 0; t < jm->nTime; ++t)
 	{
 		int numActiveJobs = 0;
+		int *activeJobs;
 
 		activeJobs = (int *)calloc(jm->nAntenna, sizeof(int));	// jobIds in the active time slice
 		for(a = 0; a < jm->nAntenna; ++a)
@@ -203,6 +202,8 @@ void writeJobMatrix(const JobMatrix *jm, int passNum)
 		}
 
 		fprintf(out, "\n");
+		
+		free(activeJobs);
 	}
 
 	fclose(out);

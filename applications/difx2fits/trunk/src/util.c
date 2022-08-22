@@ -186,12 +186,10 @@ int sortjobpcal(const DifxInput *D, int antennaId, int *jobxref)
 	const int DatePrefixSize = 14;
 	const char pattern[] = ".difx/PCAL";
 	const char filler[] = "99999_999999_";
-	int ind, i, j, v;
-	glob_t globBuffer;
+	int ind, i, j;
 	char date_prefix[DatePrefixSize];
 	char **strarr;
 	char *str;
-	char globPattern[DIFXIO_FILENAME_LENGTH];
 
 	if(UTIL_DEBUG == 1)
 	{
@@ -211,6 +209,10 @@ int sortjobpcal(const DifxInput *D, int antennaId, int *jobxref)
 	strarr = (char **)malloc(D->nJob*sizeof(char*));
 	for(i = 0; i < D->nJob; ++i)
 	{
+		glob_t globBuffer;
+		char globPattern[DIFXIO_FILENAME_LENGTH];
+		int v;
+
 		strarr[i] = malloc(DIFXIO_FILENAME_LENGTH+1);
 		v = snprintf(globPattern, DIFXIO_FILENAME_LENGTH, "%s/PCAL*%s", D->job[i].outputFile, D->antenna[antennaId].name);
 		v = glob2(__FUNCTION__, globPattern, 0, 0, &globBuffer);
@@ -240,6 +242,8 @@ int sortjobpcal(const DifxInput *D, int antennaId, int *jobxref)
 			printf("%s line %4d  i= %d  strarr[i]= %s\n", __FILE__, __LINE__, i, strarr[i]);
 			fflush(stdout);
 		}
+
+		globfree(&globBuffer);
 	}
 	
 	/* Sort strarr arrayt alphabetically which is equivalent to chronological sorting */

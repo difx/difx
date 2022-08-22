@@ -216,6 +216,7 @@ static void deleteAccumulatorArray(Accumulator *A, int n)
 				free(A[a].ifSpectrum[i]);
 			}
 			free(A[a].spectrum);
+			free(A[a].ifSpectrum);
 			free(A[a].nRec);
 			free(A[a].isLSB);
 			free(A[a].weightSum);
@@ -1040,6 +1041,8 @@ static int dump(Sniffer *S, Accumulator *A)
 		fprintf(S->apd, "\n");
 		fprintf(S->apc, "\n");
 	}
+
+	free(amp);
 
 	return 0;
 }
