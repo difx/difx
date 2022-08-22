@@ -66,6 +66,8 @@ void deleteDifxRuleArray(DifxRule *dr)
 {
 	if(dr)
 	{
+		DifxStringArrayclear(&dr->sourceName);
+		DifxStringArrayclear(&dr->scanId);
 		free(dr);
 	}
 }
