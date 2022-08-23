@@ -181,6 +181,8 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 	free(plan);
 	free(cdata);
 
+	fftw_cleanup();
+
 	// If Double sideband need to move stuff around
 
 	if(doublesideband) 
@@ -301,6 +303,8 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 	}
 	free(plan);
 	free(data);
+
+	fftw_cleanup();
 
 	return 0;
 }
