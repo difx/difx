@@ -1732,6 +1732,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 				if(S)
 				{
 					deleteSniffer(S);
+					fftw_cleanup();
 					S = 0;
 				}
 #endif
@@ -1770,6 +1771,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	if(S)
 	{
 		deleteSniffer(S);
+		fftw_cleanup();
 		S = 0;
 	}
 #endif
