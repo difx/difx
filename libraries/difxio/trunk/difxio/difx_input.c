@@ -80,6 +80,7 @@ void deleteDifxInput(DifxInput *D)
 {
 	if(D)
 	{
+		deleteDifxSpacecraftArray(D->spacecraft, D->nSpacecraft);
 		deleteDifxConfigArray(D->config, D->nConfig);
 		deleteDifxDatastreamArray(D->datastream, D->nDatastream);
 		deleteDifxBaselineArray(D->baseline, D->nBaseline);
@@ -717,10 +718,11 @@ static int generateFreqSets(DifxInput *D)
  * @param extension Optional; default extension with dot (for example .difx or .calc)
  * @return Convenience pointer identical to 'filename' parameter
  */
-static const char* locateAltFilename(char* filename, const char* inputFileName, const char* extension)
+static const char *locateAltFilename(char *filename, const char *inputFileName, const char *extension)
 {
 	char altName[DIFXIO_FILENAME_LENGTH];
 	char *altPath, *basefile;
+	char *ifnCopy, *fnCopy;
 	int v;
 
 	/* Check arguments; auto-determine file extension for printout purposes if unspecified */
@@ -740,9 +742,11 @@ static const char* locateAltFilename(char* filename, const char* inputFileName, 
 	}
 
 	/* When 'filename' does NOT exist, try looking it up under <path> of <path/basename.input> */
-	altPath = dirname(strdup(inputFileName)); // TODO: strdup() -> free() later?
-	basefile = basename(strdup(filename));
+	altPath = dirname(ifnCopy = strdup(inputFileName));
+	basefile = basename(fnCopy = strdup(filename));
 	v = snprintf(altName, DIFXIO_FILENAME_LENGTH, "%s/%s", altPath, basefile);
+	free(ifnCopy);
+	free(fnCopy);
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		return filename;
