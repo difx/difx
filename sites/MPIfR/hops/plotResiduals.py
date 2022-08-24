@@ -156,7 +156,12 @@ fringeRateStat = "Fringe rate statistics\n{0:2s} {1:4s} {2:7s} {3:4s}\n".format(
 refTxt = "Reference station: " + refRemSt[0]
 polTxt = "Pol: " + ",".join(args.pol)
 
-color=iter(cm.Dark2(numpy.linspace(0,1,len(rates.keys()))))	
+if len(rates.keys()) <= 8:
+	# colormap Dark2 has 8 colors only
+	color=iter(cm.Dark2(numpy.linspace(0,1,len(rates.keys()))))
+else:
+	# use a wider palette to avoid duplicate colors for 9+ stations
+	color=iter(cm.rainbow(numpy.linspace(0,1,len(rates.keys()))))
 
 #print (scans)
 for st in rates.keys():
