@@ -70,6 +70,7 @@ def getdevices(slot):
       # --- extract the number from '[1]' string
       num_val = val[val.find('[')+1:val.find(']')]
       sas_dev_num.append(num_val)
+  sas_dev_num.sort()
 
   # get block devices for all mptXsas host bus adapters
   scsi_list = []
@@ -104,19 +105,24 @@ def getdevices(slot):
       host_id = int(host_info[1:host_info.find(':')])
 
       # build disk list for slot
-      if host_id != 0:
+      controller_index = sas_dev_num.index(str(host_id))
+      if controller_index == 0:
+        # mptsas 0 has slots 3+4
+        if dev_num < 8 and slot == 3:
+          disks.append({'dev_num': dev_num, 'slot': slot, 'disk': disk})
+        elif dev_num >= 8 and slot == 4:
+          disks.append({'dev_num': dev_num - 8, 'slot': slot, 'disk': disk})
+      elif controller_index == 1:
+        # mptsas 1 has slots 1+2
         if dev_num < 8 and slot == 1:
           disks.append({'dev_num': dev_num, 'slot': slot, 'disk': disk})
         elif dev_num >= 8 and slot == 2:
           disks.append({'dev_num': dev_num - 8, 'slot': slot, 'disk': disk})
-        elif dev_num < 8 and slot == 5:
+      elif controller_index == 2:
+        # mptsas 2 has slots 5+6
+        if dev_num < 8 and slot == 5:
           disks.append({'dev_num': dev_num, 'slot': slot, 'disk': disk})
         elif dev_num >= 8 and slot == 6:
-          disks.append({'dev_num': dev_num - 8, 'slot': slot, 'disk': disk})
-      if host_id == 0:
-        if dev_num < 8 and slot == 3:
-          disks.append({'dev_num': dev_num, 'slot': slot, 'disk': disk})
-        elif dev_num >= 8 and slot == 4:
           disks.append({'dev_num': dev_num - 8, 'slot': slot, 'disk': disk})
 
   # get serial number for disk
@@ -136,7 +142,7 @@ def getdevices(slot):
         if "Id:" in disk_info[j]:
           if len(tmp_disk_info) > 1:
             serial_num = tmp_disk_info[1][-8:]
-	    print serial_num
+            #print serial_num
             disks[i]['serial_num'] = serial_num
         elif "Size:" in disk_info[j]:
           if len(tmp_disk_info) > 1:
@@ -145,9 +151,10 @@ def getdevices(slot):
       if len(serial_num) == 0:
         print "serial number could not be determined for disk", i, "device", disk_dev
         exit(1)
-      print disks[i]['serial_num'],disks[i]['disk_size']
+      print disks[i]['serial_num'],disks[i]['disk_size'],disk_dev
 
   # print "disks", disks
+  print ('%s disks in total' % (len(disks)))
 
   return disks
 
