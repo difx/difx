@@ -51,8 +51,11 @@ def getStartingTime(difxlog):
 		line = df.readline()
 		# line = "Fri Aug 26 10:54:20 2022   2 io02 INFO  MPI Process 2 is running on host io02"
 		# line = "Tue Apr  5 17:13:37 2022  16 node15.service INFO  MPI Process 16 is running on host node15.service"
-		tstamp = datetime.datetime.strptime(line[:25].strip(), '%a %b %d %H:%M:%S %Y')
-		return tstamp.timestamp()
+		try:
+			tstamp = datetime.datetime.strptime(line[:25].strip(), '%a %b %d %H:%M:%S %Y')
+			return tstamp.timestamp()
+		except ValueError:
+			print ("Could not parse time from %s entry '%s'" % (difxlog, line))
 
 	return 0
 
@@ -153,7 +156,7 @@ if __name__ == "__main__":
 		else:
 			expt = getExperimentName(path)
 
-		data_tstartUnix, data_twall, data_nodecount = getDataSeries(path, Nmax=userargs.maxnodes)
+		data_tstartUnix, data_twall, data_nodecount = getDataSeries(path, Nmax=userargs.maxfiles)
 
 		plt.figure(1)
 		plt.hist(data_twall, bins_time, alpha=0.5, label=expt)
