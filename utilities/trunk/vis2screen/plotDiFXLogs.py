@@ -21,7 +21,7 @@ import glob
 import os, sys
 
 __author__ = "Jan Wagner (MPIfR)"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 def parse_args(args: []):
@@ -149,6 +149,8 @@ if __name__ == "__main__":
 
 	# Data and plots
 
+	fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(2, 2, constrained_layout=True)
+
 	for path in userargs.directories:
 
 		if userargs.use_dirname:
@@ -158,46 +160,36 @@ if __name__ == "__main__":
 
 		data_tstartUnix, data_twall, data_nodecount = getDataSeries(path, Nmax=userargs.maxfiles)
 
-		plt.figure(1)
-		plt.hist(data_twall, bins_time, alpha=0.5, label=expt)
-		plt.draw()
-	
-		plt.figure(2)
-		plt.hist(data_nodecount, bins_numnodes, alpha=0.5, label=expt)
-		plt.draw()
-
-		plt.figure(3)
-		plt.scatter(data_nodecount, data_twall, label=expt)
-		# plt.hist2d(data_nodecount, data_twall, bins=50, label=expt)
-
 		iasc = np.argsort(data_tstartUnix) # indices that provide data_tstartUnix sorted by increasing time
 		tstartUnixSorted = [data_tstartUnix[ii] for ii in iasc]
 		tendUnixSorted = [data_tstartUnix[ii] + data_twall[ii] for ii in iasc]
 		t_gaps = [tstartUnixSorted[i+1] - tendUnixSorted[i] for i in range(len(tstartUnixSorted)-1)]
-		plt.figure(4)
-		plt.hist(t_gaps, bins_idletime, alpha=0.5, label=expt)
+
+		ax1.hist(data_twall, bins_time, alpha=0.5, label=expt)
+		ax2.hist(data_nodecount, bins_numnodes, alpha=0.5, label=expt)
+		ax3.scatter(data_nodecount, data_twall, alpha=0.5, label=expt)
+		ax4.hist(t_gaps, bins_idletime, alpha=0.5, label=expt)
+
+		plt.draw()
 
 	# Captions
 
-	plt.figure(1)
-	plt.title("Histogram of wallclock times")
-	plt.legend(loc='upper right')
-	plt.xlabel('Time (seconds)')
+	ax1.set_title("Distribution of job durations")
+	ax1.legend(loc='upper right')
+	ax1.set_xlabel('Time (seconds)')
 
-	plt.figure(2)
-	plt.title("Histogram of total nodes")
-	plt.legend(loc='upper right')
-	plt.xlabel('Nodes used (#)')
+	ax2.set_title("Distribution of nodes per job")
+	ax2.legend(loc='upper right')
+	ax2.set_xlabel('Nodes used (#)')
 
-	plt.figure(3)
-	plt.title("Wallclock time vs number of nodes")
-	plt.legend(loc='upper right')
-	plt.xlabel('Nodes used (#)')
-	plt.ylabel('Wallclock Time (seconds)')
+	ax3.set_title("Job duration against nodes allocated")
+	ax3.legend(loc='upper right')
+	ax3.set_xlabel('Nodes used (#)')
+	ax3.set_ylabel('Time (seconds)')
 
-	plt.figure(4)
-	plt.title("Histogram of time DiFX spent idle between jobs")
-	plt.legend(loc='upper right')
-	plt.xlabel('Time (seconds)')
+	ax4.set_title("Distribution of time idle between jobs")
+	ax4.legend(loc='upper right')
+	ax4.set_xlabel('Time (seconds)')
 
+	fig.set_size_inches(10, 6)
 	plt.show()
