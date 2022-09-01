@@ -7,6 +7,7 @@ Version 2.99.3
 * add option to oms2v2d to override a station format from external file
 * introduce feature (a bit of a hack) to allow correlation of recorded interlaced VDIF data with non 2^n channels
 * in cases where it is known (e.g., vex2-based files) and the same across antennas, populate the "RX NAME" field in the .input file
+* increase maximum project code length to 24 (from 7)
 
 Version 2.99.2
 ~~~~~~~~~~~~~~

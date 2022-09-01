@@ -121,7 +121,6 @@ static DifxJob *makeDifxJob(string directory, const Job& J, int nAntenna, const 
 	job->jobId    = J.jobId;
 	job->subarrayId = 0;
 	snprintf(job->obsCode, DIFXIO_OBSCODE_LENGTH, "%s", obsCode.c_str());
-	job->obsCode[7] = 0;
 	job->taperFunction = TaperFunctionUniform;
 	job->polyOrder = 5;
 	job->polyInterval = 120;
