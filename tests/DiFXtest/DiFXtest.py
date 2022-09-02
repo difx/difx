@@ -297,7 +297,7 @@ def compare_results(testname, abstol, reltol):
   fits_file_benchmark = get_fits_file(results_directory)
   
   # filter autocorrelations out of fits file
-  print(fits_file)
+  #print(fits_file)
   filter_auto_correlations(fits_file) 
 
 
