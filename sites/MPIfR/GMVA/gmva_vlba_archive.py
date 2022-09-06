@@ -98,7 +98,6 @@ def readVEX(vexfile):
                 elif 'exper_nominal_stop' in line:
                     vexstop = r.search(line).groups()[0]
                 elif 'exper_name' in line:
-                    print (r.search(line).groups())
                     expt = r.search(line).groups()[0]
 
         return expt,vexstart,vexstop
