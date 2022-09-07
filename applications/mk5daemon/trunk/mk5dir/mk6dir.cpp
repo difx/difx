@@ -17,6 +17,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -275,14 +276,17 @@ void processMark6ScansSlot(int slot, char *vsn, char activityMsg, char verbose, 
 	char **fileList;
 	int n;
 	char summaryFilePath[256];
+	char *tempSummaryFilePath;
 	char filePattern[256];
 	FILE *summaryFile;
-	
+
 	sprintf(summaryFilePath, "%s/%s.filelist", mk5dirpath, vsn);
-	summaryFile = fopen(summaryFilePath, "w");
+	tempSummaryFilePath = tempnam(mk5dirpath, "m6d_"); // note: tempnam() in final directory, otherwise rename() can fail with err 18 'Invalid cross-device link'
+	summaryFile = fopen(tempSummaryFilePath, "w");
 	if(!summaryFile)
 	{
-		fprintf(stderr, "mk6dir in processMark6ScansSlot() could not open summaryFile %s!\n", summaryFilePath);
+		fprintf(stderr, "mk6dir in processMark6ScansSlot() could not open temporary summaryFile %s!\n", tempSummaryFilePath);
+		free(tempSummaryFilePath);
 		return;
 	}
 	setbuf(summaryFile, NULL);
@@ -318,6 +322,14 @@ void processMark6ScansSlot(int slot, char *vsn, char activityMsg, char verbose, 
 	}
 
 	fclose(summaryFile);
+
+	n = rename(tempSummaryFilePath, summaryFilePath);
+	if (n != 0)
+	{
+		fprintf(stderr, "mk6dir in processMark6ScansSlot() failed to move temp file %s to final %s: %s\n", tempSummaryFilePath, summaryFilePath, strerror(errno));
+	}
+
+	free(tempSummaryFilePath);
 }
 
 int getSlot(char *vsn)
