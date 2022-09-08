@@ -400,7 +400,7 @@ public:
 	/* rules to determine which setups to apply */
 	std::vector<CorrRule> rules;
 
-	/* global zoom bands (referenced from a setup; applies to all antennas) */
+	/* global named zoom band sets (available to all antennas; each AntennaSetup can refer to any one of these by name) */
 	std::vector<GlobalZoom> globalZooms;
 
 	enum V2D_Mode v2dMode;
