@@ -76,7 +76,7 @@ def getTransferFileCount(source, destination, options=""):
 
 def partialChecksum(filePath):
     
-   cmd = 'head -c 1000000 %s | md5sum' % ( filePath)
+   cmd = 'head -c 1000000 "%s" | md5sum' % ( filePath)
    output = ""
    checksum = ""
 
