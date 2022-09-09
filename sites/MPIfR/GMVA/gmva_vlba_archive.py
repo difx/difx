@@ -31,6 +31,7 @@
 import datetime
 import os
 import re
+import shutil
 import sys
 
 PROGRAM = 'gmva_vlba_archive'
@@ -197,4 +198,9 @@ meta.write('OBS_BANDS        = %s\n'%(bandcode))
 
 meta.close()
 
-print('Wrote %s' % (ofilename))
+pre, ext = os.path.splitext(mk4filenamegzip)
+onewfilename = pre + '.meta.txt'
+# os.replace(ofilename, onewfilename) # not in py2
+shutil.move(ofilename, onewfilename)
+
+print('Wrote %s' % (onewfilename))
