@@ -1804,7 +1804,106 @@ int GlobalZoom::setkv(const std::string &key, const std::string &value)
 	}
 	else
 	{
-		std::cerr << "Warning: ZOOM: Unknown parameter '" << key << "'." << std::endl; 
+		std::cerr << "Warning: ZOOM: Unknown parameter '" << key << "'." << std::endl;
+		++nWarn;
+	}
+
+	return nWarn;
+}
+
+int GlobalOutputband::setkv(const std::string &key, const std::string &value, ZoomFreq *zoomFreq)
+{
+	int nWarn = 0;
+
+	if(key == "freq" || key == "FREQ")
+	{
+		zoomFreq->frequency = atof(value.c_str())*1000000; //convert to Hz
+	}
+	else if(key == "bw" || key == "BW")
+	{
+		zoomFreq->bandwidth = atof(value.c_str())*1000000; //convert to Hz
+	}
+	else
+	{
+		std::cerr << "Warning: OUTPUTBAND: Unknown parameter '" << key << "'." << std::endl;
+		++nWarn;
+	}
+
+	return nWarn;
+}
+
+int GlobalOutputband::setkv(const std::string &key, const std::string &value)
+{
+	std::string::size_type at, last, splitat;
+	std::string nestedkeyval;
+	std::stringstream ss;
+	int nWarn = 0;
+
+	ss << value;
+
+	if(key == "outputBandwidth")
+	{
+		if (value == "auto")
+		{
+			outputBandwidthMode = OutputBandwidthAuto;
+		}
+		else
+		{
+			outputBandwidthMode = OutputBandwidthUser;
+			ss >> outputBandwidth;
+			outputBandwidth *= 1e6; // Users use MHz, vex2difx uses Hz
+		}
+	}
+	else if(key == "addOutputBand")
+	{
+		// Register explicit v2d user-specified output band into the autoband logic
+		// The syntax follows ZOOM addZoomFreq.  All parameters must be together, with @ replacing =, and separated by /
+		// e.g., addOutputBand = freq@1649.99/bw@32.0
+		// only freq is compulsory; bandwidth bw only if outputBandwidth=<x> was not specified prior to addOutputBand
+		ZoomFreq outputbandDef;
+		outputbandDef.initialise(0, 0, false, 1);
+		last = 0;
+		at = 0;
+		while(at != std::string::npos)
+		{
+			at = value.find_first_of('/', last);
+			nestedkeyval = value.substr(last, at-last);
+			splitat = nestedkeyval.find_first_of('@');
+			nWarn += setkv(nestedkeyval.substr(0, splitat), nestedkeyval.substr(splitat+1), &outputbandDef);
+			last = at+1;
+		}
+		if(outputbandDef.frequency <= 0)
+		{
+			std::cerr << "Error: Explicit outputband entry '" << value << "' parsed into unexpected frequency of " << outputbandDef.frequency << " MHz." << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+		if(outputBandwidth == 0 && outputbandDef.bandwidth == 0)
+		{
+			std::cerr << "Error: For explicit outputband placement please provide a bandwidth as part of 'addOutputBand' or in a preceding 'outputBandwidth'." << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+		if(outputBandwidth <= 0)
+		{
+			outputBandwidth = outputbandDef.bandwidth;
+		}
+		else if(outputbandDef.bandwidth == 0)
+		{
+			outputbandDef.bandwidth = outputBandwidth;
+		}
+		if(outputBandwidth != outputbandDef.bandwidth)
+		{
+			std::cerr << "Error: Bandwidth of outputBandwidth parameter (" << outputBandwidth*1e-6 << " MHz) conflicts with addOutputBand bw element (" << outputbandDef.bandwidth*1e-6 << " MHz)" << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+		outputBandwidthMode = OutputBandwidthUser;
+		autobands.addUserOutputband(outputbandDef);
+	}
+	else
+	{
+		std::cerr << "Warning: OUTPUTBAND: Unknown parameter '" << key << "'." << std::endl;
 		++nWarn;
 	}
 
@@ -2165,6 +2264,7 @@ int CorrParams::load(const std::string &fileName)
 		PARSE_MODE_DATASTREAM,
 		PARSE_MODE_ANTENNA,
 		PARSE_MODE_GLOBAL_ZOOM,
+		PARSE_MODE_GLOBAL_OUTPUTBAND,
 		PARSE_MODE_EOP,
 		PARSE_MODE_COMMENT
 	};
@@ -2180,6 +2280,7 @@ int CorrParams::load(const std::string &fileName)
 	DatastreamSetup *datastreamSetup=0;
 	AntennaSetup *antennaSetup=0;
 	GlobalZoom  *globalZoom=0;
+	GlobalOutputband *globalOutputband=0;
 	VexEOP       *eop=0;
 	Parse_Mode parseMode = PARSE_MODE_GLOBAL;
 	int nWarn = 0;
@@ -2418,6 +2519,34 @@ int CorrParams::load(const std::string &fileName)
 			key = "";
 			parseMode = PARSE_MODE_GLOBAL_ZOOM;
 		}
+		else if(*i == "OUTPUTBAND")
+		{
+			if(parseMode != PARSE_MODE_GLOBAL)
+			{
+				std::cerr << "Error: OUTPUTBAND out of place." << std::endl;
+				
+				exit(EXIT_FAILURE);
+			}
+			if(!globalOutputbands.empty())
+			{
+				std::cerr << "Error: Encountered more than one OUTPUTBAND section." << std::endl;
+				
+				exit(EXIT_FAILURE);
+			}
+			++i;
+			std::string blockName(*i);
+			globalOutputbands.push_back(GlobalOutputband(blockName));
+			globalOutputband = &globalOutputbands.back();
+			++i;
+			if(*i != "{")
+			{
+				std::cerr << "Error: OUTPUTBAND " << globalOutputband->difxName << ": '{' expected." << std::endl;
+
+				exit(EXIT_FAILURE);
+			}
+			key = "";
+			parseMode = PARSE_MODE_GLOBAL_OUTPUTBAND;
+		}
 		else if(*i == "EOP")
 		{
 			if(parseMode != PARSE_MODE_GLOBAL)
@@ -2510,6 +2639,9 @@ int CorrParams::load(const std::string &fileName)
 				break;
 			case PARSE_MODE_GLOBAL_ZOOM:
 				nWarn += globalZoom->setkv(key, value);
+				break;
+			case PARSE_MODE_GLOBAL_OUTPUTBAND:
+				nWarn += globalOutputband->setkv(key, value);
 				break;
 			case PARSE_MODE_COMMENT:
 				// nothing to do here

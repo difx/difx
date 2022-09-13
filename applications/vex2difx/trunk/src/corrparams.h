@@ -129,6 +129,8 @@ public:
 	int setkv(const std::string &key, const std::string &value);
 
 	std::string difxName;	// Name in .v2d file of this global outputband definitions set
+	double outputBandwidth; // Hz; target bw for assembly of output bands from slices depending on OutputBandwidthMod
+	enum OutputBandwidthMode outputBandwidthMode;   // mode in which to choose/generate output bands
 	AutoBands autobands;
 };
 
