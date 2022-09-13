@@ -134,7 +134,6 @@ int loadBasebandFilelistOld(const std::string &fileName, std::vector<VexBaseband
 bool loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandData> &basebandFiles)
 {
 	DirList D;
-	std::stringstream error;
 	std::string prefix;
 	int v;
 	int n = 0;
@@ -155,24 +154,27 @@ bool loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandDa
 		{
 			// here the file exists but was not in the dirlist format...
 
-			error.clear();
-			v = loadOldFileList(D, fileName.c_str(), error);
+			std::stringstream errorOldFList, errorOldDList;
+
+			v = loadOldFileList(D, fileName.c_str(), errorOldFList);
 			if(v != 0)	// this file is not an old-style file list
 			{
-				error.clear();
-				v = loadOldDirList(D, fileName.c_str(), error);
+				v = loadOldDirList(D, fileName.c_str(), errorOldDList);
 			}
 
 			if(v != 0)
 			{
-				std::cerr << "Error: cannot get filelist data from " << fileName << ".  The file is not in a recognized format or it contains invalid MJD times."  << std::endl;
+				std::cerr << "Error: cannot get filelist data from " << fileName << ".  The file is not in a recognized format or it contains invalid MJD times. Error might be related to:"  << std::endl;
+				std::cerr << errorOldFList.str(); // nb: loadOldXXXList() already append a newline themselves
+				std::cerr << errorOldDList.str();
+				std::cerr << std::endl;
 
 				return false;
 			}
 		}
 		else
 		{
-			std::cerr << "Error: cannot get filelist data from " << fileName << ".  Error might be related to: " << error.str() << std::endl;
+			std::cerr << "Error: cannot get filelist data from " << fileName << ".  Error might be related to: " << e.what() << std::endl;
 
 			return false;
 		}
