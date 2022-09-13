@@ -38,6 +38,7 @@ rate["MODULE"]=1400.0
 rate["MARK6"]=16000.0
 rate["MARK6MODULE"]=4000.0
 rate["FILE"]=16000.0
+rate["FAKE"]=16000.0 # needed for source=fake test-correlation v2d's
 
 maxNodes = 60
 
@@ -83,7 +84,10 @@ for ds in difx.metainfo.datastreams:
     if args.verbose:
         print ("DS={} type={} telescope={} media={}".format(dsIdx, ds.datasource, ds.telescopeindex, difx.metainfo.data[dsIdx].media))
     if ds.datasource == "FILE":
-        if difx.metainfo.data[dsIdx].media[0].startswith("/"):
+        if len(difx.metainfo.data[dsIdx].media) == 0:
+            # empty entry, happens e.g. when multi-datastream station lacks a recording on one of the streams
+            pass
+        elif difx.metainfo.data[dsIdx].media[0].startswith("/"):
             # get first part of path (assuming path starts with /)
             source = difx.metainfo.data[dsIdx].media[0].split("/")[1]
 
@@ -111,7 +115,10 @@ for ds in difx.metainfo.datastreams:
     
     # if several file-based datastreams play from the same source the rate must be reduced accordingly
     if ds.datasource == "FILE":
-      if difx.metainfo.data[dsIdx].media[0].startswith("/"):
+      if len(difx.metainfo.data[dsIdx].media) == 0:
+          # empty entry, happens e.g. when multi-datastream station lacks a recording on one of the streams
+          rateDiv = 1
+      elif difx.metainfo.data[dsIdx].media[0].startswith("/"):
           source = difx.metainfo.data[dsIdx].media[0].split("/")[1]
           if pFuseMark5.match(source):
               rateDiv = rate["MODULE"]
