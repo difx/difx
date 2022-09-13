@@ -121,6 +121,17 @@ public:
 	std::vector<ZoomFreq> zoomFreqs;
 };
 
+class GlobalOutputband
+{
+public:
+	GlobalOutputband(const std::string &name) : difxName(name) {};
+	int setkv(const std::string &key, const std::string &value, ZoomFreq * zoomFreq);
+	int setkv(const std::string &key, const std::string &value);
+
+	std::string difxName;	// Name in .v2d file of this global outputband definitions set
+	AutoBands autobands;
+};
+
 /* Datastreams...
 
 How do multi-datastreams work in vex2difx?
@@ -402,6 +413,9 @@ public:
 
 	/* global named zoom band sets (available to all antennas; each AntennaSetup can refer to any one of these by name) */
 	std::vector<GlobalZoom> globalZooms;
+
+	/* global named outputband set(s); for now only one makes sense, but keep the possibility for several */
+	std::vector<GlobalOutputband> globalOutputbands;
 
 	enum V2D_Mode v2dMode;
 
