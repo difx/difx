@@ -62,7 +62,7 @@ int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 	v = fgets(line, MaxLineLength, in);
 	if(!v)
 	{
-		error << "Directory file: " << fileName << " is corrupt.\n";
+		error << "Mark5 directory file: " << fileName << " is corrupt.\n";
 		fclose(in);
 
 		return -1;
@@ -72,7 +72,7 @@ int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 		dirLabel, &nscans, bankName, &signature, extra[0], extra[1], extra[2], extra[3], extra[4]);
 	if(n < 3)
 	{
-		error << "Directory file: " << fileName << " is corrupt.\n";
+		error << "Mark5 directory file: " << fileName << " is corrupt.\n";
 		fclose(in);
 
 		return -1;
@@ -119,7 +119,7 @@ int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 
 	if(nscans < 0)
 	{
-		error << "Directory file: " << fileName << " is corrupt (nscans < 0).\n";
+		error << "Mark5 directory file: " << fileName << " is corrupt (nscans < 0).\n";
 		fclose(in);
 
 		return -1;
@@ -153,7 +153,7 @@ int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 		ok = DM5->setFromOldString(line);
 		if(!ok)
 		{
-			error << "Directory file: " << fileName << " is corrupt: at least one scan line is invalid.\n";
+			error << "Mark5 directory file: " << fileName << " is corrupt: at least one scan line is invalid (scan " << s+1 << ", '" << line << "').\n";
 			fclose(in);
 
 			return -1;

@@ -85,7 +85,7 @@ int loadOldFileList(DirList &D, const char *fileName, std::stringstream &error)
 		ok = DD->setFromOldFileListString(line);
 		if(!ok)
 		{
-			error << "Directory file: " << fileName << " is corrupt: at least one scan line is invalid.\n";
+			error << "Directory file: " << fileName << " is corrupt: at least one scan line is invalid (scan " << s+1 << ", '" << line << "').\n";
 			fclose(in);
 
 			return -1;
