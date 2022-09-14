@@ -425,7 +425,6 @@ Configuration::~Configuration()
       delete [] datastreamtable[i].recordedfreqclockoffsetsdelta;
       delete [] datastreamtable[i].recordedfreqphaseoffset;
       delete [] datastreamtable[i].recordedfreqlooffsets;
-      delete [] datastreamtable[i].recordedfreqgainoffsets;
       delete [] datastreamtable[i].zoomfreqtableindices;
       delete [] datastreamtable[i].zoomfreqpols;
       delete [] datastreamtable[i].zoomfreqparentdfreqindices;
@@ -1595,7 +1594,6 @@ bool Configuration::processDatastreamTable(istream * input)
     datastreamtable[i].recordedfreqclockoffsetsdelta = new double[datastreamtable[i].numrecordedfreqs]();
     datastreamtable[i].recordedfreqphaseoffset = new double[datastreamtable[i].numrecordedfreqs]();
     datastreamtable[i].recordedfreqlooffsets = new double[datastreamtable[i].numrecordedfreqs]();
-    datastreamtable[i].recordedfreqgainoffsets = new double[datastreamtable[i].numrecordedfreqs]();
     estimatedbytes += 8*datastreamtable[i].numrecordedfreqs*3;
     datastreamtable[i].numrecordedbands = 0;
     for(int j=0;j<datastreamtable[i].numrecordedfreqs;j++)
@@ -1631,21 +1629,7 @@ bool Configuration::processDatastreamTable(istream * input)
         cwarn << startl << "Model accountability is compromised if the first band of a telescope has a non-zero clock offset! If this is the first/only datastream for " << telescopetable[datastreamtable[i].telescopeindex].name << ", you should adjust the telescope clock so that the offset for this band is ZERO!" << endl;
       getinputline(input, &line, "FREQ OFFSET ", j); //Freq offset is positive if recorded LO frequency was higher than the frequency in the frequency table
       datastreamtable[i].recordedfreqlooffsets[j] = atof(line.c_str());
-
-      //getinputline(input, &line, "GAIN OFFSET ", j); //Gain offset is non-zero if voltage spectra should be scaled, e.g. to amplitude-align frequency portions of outputbands
-      //datastreamtable[i].recordedfreqgainoffsets[j] = atof(line.c_str()); // TODO: deprecate after HOPS too supports bpass corrections
-      getinputkeyval(input, &key, &line);
-      if (key.find("GAIN OFFSET") != string::npos) {
-        datastreamtable[i].recordedfreqgainoffsets[j] = atof(line.c_str()); // TODO: deprecate after HOPS too supports bpass corrections
-        getinputkeyval(input, &key, &line);
-      } else {
-        datastreamtable[i].recordedfreqgainoffsets[j] = 0.0f;
-      }
-      //getinputline(input, &line, "NUM REC POLS ", j);
-      if (key.find("NUM REC POLS") == string::npos) {
-        cfatal << startl << "Went looking for NUM REC POLS (possibly after optional GAIN OFFSET), but got " << key << endl;
-        return false;
-      }
+      getinputline(input, &line, "NUM REC POLS ", j);
       datastreamtable[i].recordedfreqpols[j] = atoi(line.c_str());
       datastreamtable[i].numrecordedbands += datastreamtable[i].recordedfreqpols[j];
     }

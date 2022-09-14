@@ -451,7 +451,6 @@ typedef struct
 	double *clockOffsetDelta; /* (us) [recfreq] */
 	double *phaseOffset;	/* (degrees) [recfreq] */
 	double *freqOffset;	/* Freq offsets for each frequency in Hz */
-	double *gainOffset;	/* Voltage gain offsets for each frequency in Hz, TODO: deprecate */
 
 	char pol[2];		/* polarization codes (one per nPol) : L R X Y, H or V. */
 	

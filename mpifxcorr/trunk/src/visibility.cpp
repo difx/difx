@@ -543,34 +543,6 @@ void Visibility::writedata()
                   modifier /= config->getDRecordedBandwidth(currentconfigindex, ds2, config->getDZoomFreqParentFreqIndex(currentconfigindex, ds2, localfreqindex));
                   scale *= sqrt(modifier);
                 }
-                //Adjust by gain offsets.  TODO: deprecate
-                //Gain ds1 band:
-                //TODO: Ideally, parent autocorrs (not manual gain offsets!) should take out any power differences across a combined band, avoiding power "steps" at joined band boundaries?
-                if(ds1bandindex >= config->getDNumRecordedBands(currentconfigindex, ds1))
-                {
-                  int localzoomfreqindex = config->getDLocalZoomFreqIndex(currentconfigindex, ds1, ds1bandindex-config->getDNumRecordedBands(currentconfigindex, ds1));
-                  localfreqindex = config->getDZoomFreqParentFreqIndex(currentconfigindex, ds1, localzoomfreqindex);
-                }
-                else
-                  localfreqindex = config->getDRecordedFreqIndex(currentconfigindex, ds1, ds1bandindex);
-                if (config->getDGainOffset(currentconfigindex, ds1, localfreqindex) != 0.0)
-                {
-                  double gainadj = 1.0 + config->getDGainOffset(currentconfigindex, ds1, localfreqindex);
-                  scale *= gainadj;
-                }
-                //Gain ds2 band:
-                if(ds2bandindex >= config->getDNumRecordedBands(currentconfigindex, ds2))
-                {
-                  int localzoomfreqindex = config->getDLocalZoomFreqIndex(currentconfigindex, ds2, ds2bandindex-config->getDNumRecordedBands(currentconfigindex, ds2));
-                  localfreqindex = config->getDZoomFreqParentFreqIndex(currentconfigindex, ds2, localzoomfreqindex);
-                }
-                else
-                  localfreqindex = config->getDRecordedFreqIndex(currentconfigindex, ds2, ds2bandindex);
-                if (config->getDGainOffset(currentconfigindex, ds2, localfreqindex) != 0.0)
-                {
-                  double gainadj = 1.0 + config->getDGainOffset(currentconfigindex, ds2, localfreqindex);
-                  scale *= gainadj;
-                }
                 //Data format related scaling
                 if(config->getDataFormat(currentconfigindex, ds1) == Configuration::LBASTD || config->getDataFormat(currentconfigindex, ds1) == Configuration::LBAVSOP)
                   scale *= 4.0;

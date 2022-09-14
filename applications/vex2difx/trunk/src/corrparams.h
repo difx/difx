@@ -207,7 +207,6 @@ public:
 	std::vector<double> freqClockOffsDelta; // Clock offsets between pols for the individual frequencies
 	std::vector<double> freqPhaseDelta;	// Phase difference between pols for each frequency
 	std::vector<double> loOffsets;		// LO offsets for each individual frequency
-	std::vector<double> gainOffsets;    // Gains (V/V) for each individual frequency; todo deprecate in favour of post-proc bpass correction
 	VexClock clock;
 	double deltaClock;	// [sec]
 	double deltaClockRate;	// [sec/sec]

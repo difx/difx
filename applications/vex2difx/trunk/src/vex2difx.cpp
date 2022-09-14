@@ -2817,26 +2817,6 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 								D->datastream[currDatastream].freqOffset[i] = loOffset;
 							}
 						}
-
-						// TODO: consider specifying gainOffsets per datastream rather than per antenna
-						// TODO: with complex bandpass calibration the gainOffsets are obsolete, remove?
-						size_t nGainOffsets = antennaSetup->gainOffsets.size();
-						if(nGainOffsets > 0)
-						{
-							if((startBand + D->datastream[currDatastream].nRecFreq) > nGainOffsets)
-							{
-								cerr << endl;
-								cerr << "Error: AntennaSetup for " << antName << " has only " << nGainOffsets << " gainOffsets specified but " << (startBand + dd->nRecFreq) << " recorded frequencies needed." << endl;
-								exit(EXIT_FAILURE);
-							}
-							for(int i = 0; i < D->datastream[currDatastream].nRecFreq; ++i)
-							{
-								double freqGain;
-
-								freqGain = (startBand + i < nLoOffsets) ? antennaSetup->gainOffsets.at(startBand + i) : 0.0;
-								D->datastream[currDatastream].gainOffset[i] = freqGain;
-							}
-						}
 					} // if antennaSetup
 					++currDatastream;
 				} // if valid format

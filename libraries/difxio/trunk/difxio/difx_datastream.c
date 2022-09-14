@@ -173,11 +173,6 @@ void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nRecFreq)
 		free(dd->freqOffset);
 		dd->freqOffset = 0;
 	}
-	if(dd->gainOffset)
-	{
-		free(dd->gainOffset);
-		dd->gainOffset = 0;
-	}
 
 	dd->nRecFreq = nRecFreq;
 	if(nRecFreq > 0)
@@ -189,7 +184,6 @@ void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nRecFreq)
 		dd->clockOffsetDelta = (double *)calloc(nRecFreq, sizeof(double));
 		dd->phaseOffset = (double *)calloc(nRecFreq, sizeof(double));
 		dd->freqOffset = (double *)calloc(nRecFreq, sizeof(double));
-		dd->gainOffset = (double *)calloc(nRecFreq, sizeof(double));
 	}
 }
 
@@ -717,7 +711,6 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src, const i
 		dest->clockOffsetDelta[f] = src->clockOffsetDelta[f];
 		dest->phaseOffset[f] = src->phaseOffset[f];
 		dest->freqOffset[f]  = src->freqOffset[f];
-		dest->gainOffset[f]  = src->gainOffset[f];
 	}
 	for(c = 0; c < dest->nRecBand; ++c)
 	{
@@ -786,7 +779,6 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 	dest->clockOffsetDelta = src->clockOffsetDelta;
 	dest->phaseOffset = src->phaseOffset;
 	dest->freqOffset = src->freqOffset;
-	dest->gainOffset = src->gainOffset;
 	dest->recBandFreqId = src->recBandFreqId;
 	dest->recBandPolName = src->recBandPolName;
 	dest->nZoomFreq = src->nZoomFreq;
@@ -807,7 +799,6 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 	src->clockOffsetDelta = 0;
 	src->phaseOffset = 0;
 	src->freqOffset = 0;
-	src->gainOffset = 0;
 	src->recBandFreqId = 0;
 	src->recBandPolName = 0;
 	src->zoomFreqId = 0;
@@ -1018,7 +1009,6 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 		}
 
 		writeDifxLineDouble1(out, "FREQ OFFSET %d (Hz)", i, "%8.6f", dd->freqOffset[i]);
-		writeDifxLineDouble1(out, "GAIN OFFSET %d", i, "%8.6f", dd->gainOffset[i]); // TODO: deprecate once HOPS too supports complex bandpass calibration
 		writeDifxLineInt1(out, "NUM REC POLS %d", i, dd->nRecPol[i]);
 	}
 	for(i = 0; i < dd->nRecBand; ++i)
