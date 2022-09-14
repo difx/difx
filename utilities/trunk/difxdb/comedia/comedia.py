@@ -2153,7 +2153,8 @@ class PrintVSNLabelWindow(GenericWindow):
          
          
          vsnString = self.txtVSN.get()
-
+         vsnString = vsnString.upper()
+		
          printBarcode(vsnString, self.config.get("Comedia", "printCommand"))
              
          self.dlg.destroy()
