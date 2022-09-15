@@ -416,7 +416,7 @@ class MainWindow(GenericWindow):
         if  selectedExperiment.user is not None:
             self.expEdit += self.setChangeColor(self.cboUser, self.cboUserVar.get(), selectedExperiment.user.name)
         else:
-            self.expEdit += self.setChangeColor(self.cboUser, self.cboUserVar.get(), "")
+            self.expEdit += self.setChangeColor(self.cboUser, self.cboUserVar.get(), "select")
             
         if  selectedExperiment.releasedByUser is not None:
             self.expEdit += self.setChangeColor(self.cboReleasedBy, self.cboReleasedByVar.get(), selectedExperiment.releasedByUser.name)
@@ -618,7 +618,7 @@ class MainWindow(GenericWindow):
             if exp.user is not None:
                 self.cboUserVar.set(exp.user.name)
             else:
-                self.cboUserVar.set("")
+                self.cboUserVar.set("select")
 
             if exp.releasedByUser is not None:
                 self.cboReleasedByVar.set(none2String(exp.releasedByUser.name))
@@ -692,7 +692,10 @@ class MainWindow(GenericWindow):
         session = dbConn.session()
         
         selectedUsername = self.cboUserVar.get()
-        user = getUserByName(session, selectedUsername)
+        if selectedUsername != "select":
+            user = getUserByName(session, selectedUsername)
+        else:
+            return
         
         selectedCode = self.grdExps.get(self.selectedExpIndex)[0]
         exp = getExperimentByCode(session, selectedCode)
