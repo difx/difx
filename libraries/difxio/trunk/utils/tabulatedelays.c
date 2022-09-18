@@ -36,8 +36,8 @@
 
 const char program[] = "tabulatedelays";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.8";
-const char verdate[] = "20200624";
+const char version[] = "0.9";
+const char verdate[] = "20220918";
 
 void usage()
 {
@@ -59,6 +59,7 @@ void usage()
 	printf("--addclock include clock offset/rate in delay/rate values\n\n");
 	printf("--noaxis   remove effect of axis offset from delay/rate values\n\n");
 	printf("--showpos  print the antenna coordinates in a comment at the top of the file\n\n");
+	printf("--dontallowgap  when reading list of files, don't print values landing between scans\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 	printf("All normal program output goes to stdout.\n\n");
 	printf("This program reads through one or more difx datasets and evaluates\n");
@@ -161,6 +162,52 @@ int getPolyIndex(const DifxScan *ds, int antennaId, int mjd, double sec)
 	return -1;
 }
 
+int getScanNumber(const DifxInput *D, double mjd, int allowGap)
+{
+	int s;
+
+	for(s = 0; s < D->nScan; ++s)
+	{
+		if(D->scan[s].mjdStart <= mjd && D->scan[s].mjdEnd >= mjd)
+		{
+			return s;
+		}
+
+		if(s < D->nScan-1 && allowGap)
+		{
+			if(D->scan[s].mjdEnd < mjd && D->scan[s+1].mjdStart > mjd)	/* in a gap */
+			{
+				if(D->scan[s].pointingCentreSrc == D->scan[s+1].pointingCentreSrc)	/* sources match */
+				{
+					const DifxPolyModel *m;
+
+					/* first check the previous scan for model coverage */
+					if(D->scan[s].nPoly > 0)
+					{
+						m = D->scan[s].im[0][0] + (D->scan[s].nPoly - 1);
+						if(m->mjd + (m->sec + m->validDuration)/86400.0 > mjd)
+						{
+							return s;
+						}
+					}
+
+					/* then check the next scan for model coverage */
+					if(D->scan[s+1].nPoly > 0)
+					{
+						m = D->scan[s+1].im[0][0];
+						if(m->mjd + m->sec/86400.0 < mjd)
+						{
+							return s+1;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return s;
+}
+
 int main(int argc, char **argv)
 {
 	DifxInput *D = 0;
@@ -171,6 +218,7 @@ int main(int argc, char **argv)
 	int noAxis = 0;	/* if set, remove effect of axis offset from delay/rate */
 	int nNoIm = 0;	/* count of scans w/o model */
 	int showPos = 0;
+	int allowGap = 1; /* when tabulating in time, print values between scans of identical sources if model exists */
 	DifxMergeOptions mergeOptions;
 	FILE *mjdFile = 0;
 
@@ -232,6 +280,10 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "--showpos") == 0)
 			{
 				showPos = 1;
+			}
+			else if(strcmp(argv[a], "--dontallowgap") == 0)
+			{
+				allowGap = 0;
 			}
 			else if(strcmp(argv[a], "-m") == 0 || strcmp(argv[a], "--mjdfile") == 0)
 			{
@@ -449,21 +501,15 @@ int main(int argc, char **argv)
 			intmjd = (int)(mjd);
 			sec = (mjd - intmjd)*86400.0;
 
-			for(s = 0; s < D->nScan; ++s)
-			{
-				if(D->scan[s].mjdStart <= mjd && D->scan[s].mjdEnd >= mjd)
-				{
-					break;
-				}
-			}
+			s = getScanNumber(D, mjd, allowGap);
 
-			ds = D->scan + s;
-
-			if(s == D->nScan)
+			if(s >= D->nScan)
 			{
 				fprintf(stderr, "Skipping MJD value not in a scan: %f\n", mjd);
 				continue;
 			}
+
+			ds = D->scan + s;
 
 			if(!ds->im)
 			{
