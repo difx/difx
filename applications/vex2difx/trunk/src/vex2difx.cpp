@@ -2763,6 +2763,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 							   (startFreq + D->datastream[currDatastream].nRecFreq) > nFreqPhaseDelta)
 							{
 								cerr << endl;
+								// FIXME: message '<n> recorded frequencies needed' currently shows <n> that tends to be wrong, ignores yet unprocessed datastreams, TODO use total nr of expected rec freqs
 								cerr << "Error: AntennaSetup for " << antName << " has only " << nFreqClockOffsets << " freqClockOffsets specified but " << (startFreq + dd->nRecFreq) << " recorded frequencies needed, or" << endl;
 								cerr << "Error: AntennaSetup for " << antName << " has only " << nFreqClockOffsetsDelta << " freqClockOffsetsDelta specified but " << (startFreq + dd->nRecFreq) << " recorded frequencies needed, or" << endl;
 								cerr << "Error: AntennaSetup for " << antName << " has only " << nFreqPhaseDelta << " freqPhaseDelta specified but " << (startFreq + dd->nRecFreq) << " recorded frequencies needed." << endl;
