@@ -683,7 +683,7 @@ class MainWindow(GenericWindow):
     
     def updateExpEvent(self):
         '''
-        This event will execute any updates of the experiment details done bz the user.
+        This event will execute any updates of the experiment details done by the user.
         '''
         
         if self.selectedExpIndex == -1:
@@ -695,7 +695,7 @@ class MainWindow(GenericWindow):
         if selectedUsername != "select":
             user = getUserByName(session, selectedUsername)
         else:
-            return
+            user = None
         
         selectedCode = self.grdExps.get(self.selectedExpIndex)[0]
         exp = getExperimentByCode(session, selectedCode)
