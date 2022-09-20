@@ -213,6 +213,7 @@ def exitOnError(exception):
 	print "\nERROR: %s. Aborting\n\n" % exception
 	
 	sys.exit(1)
+
     
 
 #######################    
@@ -220,6 +221,7 @@ def exitOnError(exception):
 #######################
 parser = argparse.ArgumentParser(prog='PROG',description=description())
 
+parser.add_argument('--dry-run', dest='dryRun', action='store_true', default=False, help='Dry run only. Do not actually archive files.')
 parser.add_argument('exp', help='The experiment code')
 parser.add_argument('expDir', help='The full path to the experiment directory.')
 
@@ -289,7 +291,10 @@ if len(files) != 0:
     confirmAction()
     
 
-    deleteExportFiles(session, args.exp)
+    if args.dryRun == False:
+        # TODO re-enable deleting
+        sys.exit()
+        #deleteExportFiles(session, args.exp)
     
 exportFiles = []
 
@@ -309,7 +314,7 @@ for dir in dirs:
 	srcFiles[file] = partialChecksum(srcDir+file)
 
     # create directory on FTP server
-    if not os.path.exists(exportDir):
+    if not os.path.exists(exportDir) and not args.dryRun:
                 try:
                         os.makedirs(exportDir)
                 except:
@@ -323,10 +328,16 @@ for dir in dirs:
             break
 
         # copy files to the archive server
-        syncDir(srcDir, exportDir, total, False)
+        syncDir(srcDir, exportDir, total, args.dryRun)
+
+        if args.dryRun:
+            break
 
     # pause for a while to allow flushing of rsync 
     time.sleep(5)
+
+    if args.dryRun:
+        sys.exit(0)
 
     exportPath = exportDir 
     # loop over all files in the export dir and determine checksums
@@ -359,7 +370,6 @@ for dir in dirs:
 	sys.exit(1)
 
     # update database
-
     for file in srcFiles:
 	print "updating database with file %s" % file
 	exportFile = ExportFile()
