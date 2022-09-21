@@ -214,6 +214,19 @@ def exitOnError(exception):
 	
 	sys.exit(1)
 
+def getRemoteDirName(dir, files):
+
+    dirName = dirName = ftpPath + "/" + args.exp + "_" + dir + "_" + randomString()
+
+    # in the update case obtain the exiting export directory name
+    if args.update:
+        for file in files:
+            expDir = os.path.basename(os.path.normpath(file.exportPath)).split("_")
+            if (dir == expDir[1]):
+                dirName = ftpPath + "/" + args.exp + "_" + dir + "_" + expDir[2]
+                break
+
+    return(dirName)
     
 
 #######################    
@@ -222,6 +235,7 @@ def exitOnError(exception):
 parser = argparse.ArgumentParser(prog='PROG',description=description())
 
 parser.add_argument('--dry-run', dest='dryRun', action='store_true', default=False, help='Dry run only. Do not actually archive files.')
+parser.add_argument('--update', action='store_true', default=False, help='Update an existing export (files and checksums).')
 parser.add_argument('exp', help='The experiment code')
 parser.add_argument('expDir', help='The full path to the experiment directory.')
 
@@ -261,7 +275,6 @@ if not isSchemaVersion(session, minSchemaMajor, minSchemaMinor):
         print "Current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor)
         sys.exit(1)
 
-    
 # check that experiment exists
 if not experimentExists(session, args.exp):
     session.close()
@@ -278,35 +291,45 @@ expId = experiment.id
 files = getExportFiles(session, args.exp)
 
 if len(files) != 0:
-    print "-----------------------------------------------------------------------------"
-    print "The experiment %s already has one or more associated exported files:" % args.exp
-    print "name     path            checksum            creation date"
-    print "-----------------------------------------------------------------------------"
 
-    for file in files:
-        print file.filename, file.exportPath, file.checksum, file.dateCreated
-    print "-----------------------------------------------------------------------------"
-    
-    print "When proceeding all files will be deleted and will be replaced by the contents of %s\n\n" % args.rootDir
-    confirmAction()
-    
+    if args.update == False:
+        print "-----------------------------------------------------------------------------"
+        print "The experiment %s already has one or more associated exported files:" % args.exp
+        print "name     path            checksum            creation date"
+        print "-----------------------------------------------------------------------------"
 
-    if args.dryRun == False:
-        # TODO re-enable deleting
-        sys.exit()
-        #deleteExportFiles(session, args.exp)
-    
+        for file in files:
+            print file.filename, file.exportPath, file.checksum, file.dateCreated
+        print "-----------------------------------------------------------------------------"
+        
+        print "When proceeding all files will be deleted and will be replaced by the contents of %s\n\n" % args.rootDir
+        confirmAction()
+        
+
+        if args.dryRun == False:
+            deleteExportFiles(session, args.exp)
+
+    else:
+        for file in files:
+            session.delete(file)
+
+        session.flush()
+        session.commit()
+
+#for file in files:
+#    print file.filename, file.exportPath, file.checksum, file.dateCreated
+
 exportFiles = []
-
 session.close()
-
 
 # loop over all source directories
 for dir in dirs:
     srcFiles = {}
     dstFiles = {}
     srcDir = args.rootDir + "/" + dir + "/"
-    exportDir = ftpPath + "/" + args.exp + "_" + dir + "_" + randomString()
+    #exportDir = ftpPath + "/" + args.exp + "_" + dir + "_" + randomString()
+    exportDir = getRemoteDirName(dir, files)
+
            
     # loop over src files and determine checksum
     for file in  os.listdir(srcDir):
@@ -363,8 +386,13 @@ for dir in dirs:
 
     extra = 0
     for file in dstFiles:
+        if args.update:
+            os.remove(exportPath + "/" + file)
+            print "Removed: %s/%s" % (exportPath, file)
+            continue
+            
 	print "Export location contains a file not found at the src directory: %s" % (file)
-	extra += 1
+        extra += 1
     
     if extra > 0:
 	sys.exit(1)
