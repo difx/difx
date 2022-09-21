@@ -234,12 +234,13 @@ def getRemoteDirName(dir, files):
 #######################
 parser = argparse.ArgumentParser(prog='PROG',description=description())
 
-parser.add_argument('--dry-run', dest='dryRun', action='store_true', default=False, help='Dry run only. Do not actually archive files.')
+#parser.add_argument('--dry-run', dest='dryRun', action='store_true', default=False, help='Dry run only. Do not actually archive files.')
 parser.add_argument('--update', action='store_true', default=False, help='Update an existing export (files and checksums).')
 parser.add_argument('exp', help='The experiment code')
 parser.add_argument('expDir', help='The full path to the experiment directory.')
 
 args = parser.parse_args()
+args.dryRun = False
 
 if args.expDir.endswith('/'):
          args.expDir= args.expDir[:-1]
