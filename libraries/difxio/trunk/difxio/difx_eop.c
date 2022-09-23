@@ -124,11 +124,12 @@ void copyDifxEOP(DifxEOP *dest, const DifxEOP *src)
 
 int isSameDifxEOP(const DifxEOP *de1, const DifxEOP *de2)
 {
+	const double dut1tiny = 1e-7, poletiny = 1e-7;
 	if(de1->mjd == de2->mjd &&
 	   de1->tai_utc == de2->tai_utc &&
-	   de1->ut1_utc == de2->ut1_utc &&
-	   de1->xPole == de2->xPole &&
-	   de1->yPole == de2->yPole)
+	   fabs(de1->ut1_utc - de2->ut1_utc) < dut1tiny &&
+	   fabs(de1->xPole - de2->xPole) < poletiny &&
+	   fabs(de1->yPole - de2->yPole) < poletiny)
 	{
 		return 1;
 	}
@@ -219,7 +220,7 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, in
 			/* If they are different, return a null pointer and set nde to 0, */
 			/* indicating failure to merge.  */
 
-			if(isSameDifxEOP(de1 + i1, de2 + i2) == 0)
+			if((de1[i1].mjd == de2[i2].mjd) && !isSameDifxEOP(de1 + i1, de2 + i2))
 			{
 				/* OOPS! EOPs have differing values.  cannot merge! */
 				*nde = 0;
