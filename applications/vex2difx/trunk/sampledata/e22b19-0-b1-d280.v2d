@@ -1,0 +1,187 @@
+#==================================================================
+# Track e22b19 band 1, outputbands example for DiFX 2.8.0.
+#
+# Unlike DiFX 2.7.1, where addOutputBand=<zoomband-like definition>
+# and outputBandwidth=<auto|bw MHz> were in SETUP,
+# under DiFX-2.8 they are under their own also globally applicable 
+#   OUTPUTBAND <sectionName> { [definitions] }
+#
+# V2d was modified from the original for source=fake and less scans
+#
+# Translate with
+#
+#   vex2difx --force e22b19-0-b1.v2d
+#
+# where the forcing option is required because otherwise
+#
+#  "Warning: both linear and circular polarizations are listed in the .vex file.  Very partial support exists for such modes within DiFX.  Use at your own risk!
+#   Quitting since there was a warning and strict mode was enabled.
+#   Strict mode can be disabled with --force if needed."
+#
+# due to ALMA X,Y-pol. Correlator output is PolConverted later.
+#
+#==================================================================
+
+vex = e22b19-0-b1.vex.obs
+
+dataBufferFactor = 24
+visBufferLength = 40
+startSeries = 1000
+exhaustiveAutocorrs = True
+minSubarray = 1
+singleScan = True
+singleSetup = True
+# maxReadSize = 67108864
+
+#==================================================================
+# FREQUENCY AUTO-CONFIG
+#==================================================================
+
+OUTPUTBAND bands
+{
+  addOutputBand = freq@213979.203125/bw@58.0
+  addOutputBand = freq@213920.609375/bw@58.0
+  addOutputBand = freq@213862.015625/bw@58.0
+  addOutputBand = freq@213803.421875/bw@58.0
+  addOutputBand = freq@213744.828125/bw@58.0
+  addOutputBand = freq@213686.234375/bw@58.0
+  addOutputBand = freq@213627.640625/bw@58.0
+  addOutputBand = freq@213569.046875/bw@58.0
+  addOutputBand = freq@213510.453125/bw@58.0
+  addOutputBand = freq@213451.859375/bw@58.0
+  addOutputBand = freq@213393.265625/bw@58.0
+  addOutputBand = freq@213334.671875/bw@58.0
+  addOutputBand = freq@213276.078125/bw@58.0
+  addOutputBand = freq@213217.484375/bw@58.0
+  addOutputBand = freq@213158.890625/bw@58.0
+  addOutputBand = freq@213100.296875/bw@58.0
+  addOutputBand = freq@213041.703125/bw@58.0
+  addOutputBand = freq@212983.109375/bw@58.0
+  addOutputBand = freq@212924.515625/bw@58.0
+  addOutputBand = freq@212865.921875/bw@58.0
+  addOutputBand = freq@212807.328125/bw@58.0
+  addOutputBand = freq@212748.734375/bw@58.0
+  addOutputBand = freq@212690.140625/bw@58.0
+  addOutputBand = freq@212631.546875/bw@58.0
+  addOutputBand = freq@212572.953125/bw@58.0
+  addOutputBand = freq@212514.359375/bw@58.0
+  addOutputBand = freq@212455.765625/bw@58.0
+  addOutputBand = freq@212397.171875/bw@58.0
+  addOutputBand = freq@212338.578125/bw@58.0
+  addOutputBand = freq@212279.984375/bw@58.0
+  addOutputBand = freq@212221.390625/bw@58.0
+  addOutputBand = freq@212162.796875/bw@58.0
+}
+
+#==================================================================
+# ANTENNA DATA
+#==================================================================
+
+ANTENNA Aa {
+  datastreams = Aa_ds12,Aa_ds34
+}
+
+ANTENNA Ax {
+  datastreams = Ax_ds12,Ax_ds34
+  loOffsets = +15.022,+15.022
+}
+
+ANTENNA Gl {
+  datastreams = Glt_ds12,Glt_ds34
+}
+
+ANTENNA Kt {
+  datastreams = Kt_ds12,Kt_ds34
+}
+
+ANTENNA Lm {
+  datastreams = Lmt_ds12,Lmt_ds34
+}
+
+ANTENNA Mg { # SMT
+  datastreams = Smt_ds12,Smt_ds34
+}
+
+ANTENNA Mm { # JCMT
+  datastreams = Jcmt_ds12,Jcmt_ds34
+}
+
+ANTENNA Nn {
+  datastreams = Nn_rec1slot1,Nn_rec1slot2,Nn_rec1slot3,Nn_rec1slot4
+}
+
+ANTENNA Pv {
+  datastreams = Pv_ds12,Pv_ds34
+}
+
+ANTENNA Sw { # SMA APHIDS
+  datastreams = SmaAphids_ds12,SmaAphids_ds34
+  deltaClock = 0 # SMA extra offsets
+}
+
+ANTENNA Sz { # SPT
+  datastreams = Spt_ds12,Spt_ds34
+}
+
+DATASTREAM Aa_ds12        { source=fake }
+DATASTREAM Aa_ds34        { source=fake }
+DATASTREAM Ax_ds12        { source=fake }
+DATASTREAM Ax_ds34        { source=fake }
+DATASTREAM Glt_ds12       { source=fake }
+DATASTREAM Glt_ds34       { source=fake }
+DATASTREAM Jcmt_ds12      { source=fake }
+DATASTREAM Jcmt_ds34      { source=fake }
+DATASTREAM Kt_ds12        { source=fake }
+DATASTREAM Kt_ds34        { source=fake }
+DATASTREAM Lmt_ds12       { source=fake }
+DATASTREAM Lmt_ds34       { source=fake }
+DATASTREAM Spt_ds12       { source=fake }
+DATASTREAM Spt_ds34       { source=fake }
+DATASTREAM Pv_ds12        { source=fake }
+DATASTREAM Pv_ds34        { source=fake }
+DATASTREAM SmaAphids_ds12 { source=fake }
+DATASTREAM SmaAphids_ds34 { source=fake }
+DATASTREAM Smt_ds12       { source=fake }
+DATASTREAM Smt_ds34       { source=fake }
+DATASTREAM Nn_rec1slot1 {
+  format = INTERLACEDVDIF/0:1:2:3/8224/2
+  source = fake
+}
+DATASTREAM Nn_rec1slot2 {
+  format = INTERLACEDVDIF/0:1:2:3/8224/2
+  source = fake
+}
+DATASTREAM Nn_rec1slot3 {
+  format = INTERLACEDVDIF/0:1:2:3/8224/2
+  source = fake
+}
+DATASTREAM Nn_rec1slot4 {
+  format = INTERLACEDVDIF/0:1:2:3/8224/2
+  source = fake
+}
+
+#==================================================================
+# CORRELATION CONFIG
+#==================================================================
+
+SETUP outputbandSetup {
+  numBufferedFFTs = 20
+  tInt = 0.400
+  subintNS =  3200000
+  FFTSpecRes = 0.015625
+  outputSpecRes = 0.5
+  xmacLength = 0
+  strideLength = 0
+  guardNS = 2000
+
+  # outputSpecRes = 0.0625 # fringe search, ~1000 ch over 58 MHz
+  # outputSpecRes = 0.0156250 # fringe search, ~4000 ch over 58 MHz
+}
+
+RULE defaultRule {
+  setup = outputbandSetup
+  scan = 078-0327  # 078-0327 NGC4278      1mmlcp         AA  AX  KT  LM  NN  PV  --  GL  MG
+  scan = 078-0433  # 078-0433 3C279        1mmlcp         AA  AX  KT  LM  NN  PV  SZ  GL  MG
+  scan = 078-0724  # 078-0724 NGC4594      1mmlcp         AA  AX  KT  LM  --  --  SZ  --  MG  MM  SW
+  scan = 078-0730  # 078-0730 NGC4594      1mmlcp         AA  AX  KT  LM  --  --  SZ  --  MG  MM  SW
+}
