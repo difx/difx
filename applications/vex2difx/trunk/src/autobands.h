@@ -169,7 +169,7 @@ public:
 	/// Add user-specified outputband with a single consituent equal to a vex2difx ZoomFreq
 	void addUserOutputband(const ZoomFreq& zf);
 
-	/// Locate 'inputfreq' among consituents of iternal outputbands, then locate that outputband in 'allfreqs'.
+	/// Locate 'inputfreq' among consituents of internal outputbands, then locate that outputband in 'allfreqs'.
 	int lookupDestinationFreq(const freq& inputfreq, const std::vector<freq>& allfreqs) const;
 
 	/// Create a list of intra-outputband channels that contain no imaginary component (edge channels of consitituents)
@@ -194,6 +194,9 @@ private:
 	int verbosity;
 
 private:
+
+	/// Add a recorded band if it has not been added for the same antenna Id before
+	void addRecbandUnique(const AutoBands::Band& band);
 
 	/// Check if freq range falls in its entirety inside any of the recorded bands, at *all* antennas
 	bool covered(double f0, double f1) const;

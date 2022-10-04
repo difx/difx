@@ -145,6 +145,31 @@ void AutoBands::setBandwidth(double outputbandwidth_Hz)
 }
 
 /**
+ * Add a recorded band if it has not been added for the same antenna Id before
+ */
+void AutoBands::addRecbandUnique(const AutoBands::Band& recband)
+{
+	bool exists = false;
+
+	// Detect if duplicate exists
+	// NB: cannot use 'if(std::find(bands.begin(), bands.end(), AutoBands::Band(lo, hi, antId)) == bands.end())'
+	// here since on purpose our operator== compares just start/stop freqs and ignores antenna Id
+	for(std::vector<AutoBands::Band>::const_iterator b = bands.begin(); b != bands.end(); ++b)
+	{
+		if((*b == recband) && (b->antenna == recband.antenna))
+		{
+			exists = true;
+			break;
+		}
+	}
+
+	if(!exists)
+	{
+		bands.push_back(recband);
+	}
+}
+
+/**
  * Add information about the recorded bands of an antenna.
  */
 void AutoBands::addRecbands(const std::vector<double>& fstart, const std::vector<double>& fstop, int antId)
@@ -161,7 +186,7 @@ void AutoBands::addRecbands(const std::vector<double>& fstart, const std::vector
 		{
 			std::swap(lo, hi);
 		}
-		bands.push_back(AutoBands::Band(lo, hi, antId));
+		addRecbandUnique(AutoBands::Band(lo, hi, antId));
 	}
 	Nant++;
 }
@@ -183,7 +208,7 @@ void AutoBands::addRecbands(const std::vector<freq>& freqs, int antId)
 		{
 			std::swap(lo, hi);
 		}
-		bands.push_back(AutoBands::Band(lo, hi, antId));
+		addRecbandUnique(AutoBands::Band(lo, hi, antId));
 	}
 	Nant++;
 }
