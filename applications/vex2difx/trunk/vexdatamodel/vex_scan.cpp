@@ -42,6 +42,12 @@ const Interval *VexScan::getAntennaInterval(const std::string &antName) const
 	}
 }
 
+bool VexScan::hasAntenna(const std::string &antName) const
+{
+	return stations.find(antName) != stations.end();
+
+}
+
 bool VexScan::getRecordEnable(const std::string &antName) const
 {
 	std::map<std::string,bool>::const_iterator it = recordEnable.find(antName);
