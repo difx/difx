@@ -3196,11 +3196,11 @@ const GlobalZoom *CorrParams::getGlobalZoom(const std::string &name) const
 }
 
 /// If outputbands processing was requested, introduce automatic global zoom definitions where needed (TODO: actually add the zooms)
-void CorrParams::updateZoomBandsForOutputBands(const Job& J, const VexData *V, int verbose)
+void CorrParams::updateZoomBandsForOutputBands(const std::vector<Job>& alljobs, const VexData *V, int verbose)
 {
 	assert(globalOutputbands.size() <= 1);
 
-	if(globalOutputbands.empty())
+	if(globalOutputbands.empty() || alljobs.empty() || V == NULL)
 	{
 		return;
 	}
@@ -3220,38 +3220,43 @@ void CorrParams::updateZoomBandsForOutputBands(const Job& J, const VexData *V, i
 
 	typedef std::map<std::string,std::set<std::string> > antmodemap_t;
 
-	if(verbose > 2)
-	{
-		std::cout << "The current Job has " << J.jobAntennas.size() << " antennas, " << J.scans.size() << " scans." << std::endl;
-	}
-
 	antmodemap_t enabledAntennaModes;
-	for(std::vector<std::string>::const_iterator si = J.scans.begin(); si != J.scans.end(); ++si)
+
+	for(std::vector<Job>::const_iterator J = alljobs.begin(); J != alljobs.end(); J++)
 	{
-		const VexScan *vexScan = V->getScanByDefName(*si);
-		if(!vexScan)
-		{
-			std::cerr << "Developer error: scan[" << *si << "] not found!  This cannot be!" << std::endl;
-
-			exit(EXIT_FAILURE);
-		}
-
 		if(verbose > 2)
 		{
-			std::cout << "Job scan " << vexScan->defName << " mode " << vexScan->modeDefName << std::endl;
+			std::cout << "The currently inspected Job has " << J->jobAntennas.size() << " antennas, " << J->scans.size() << " scans." << std::endl;
 		}
 
-		for(std::vector<std::string>::const_iterator a = J.jobAntennas.begin(); a != J.jobAntennas.end(); ++a)
+		for(std::vector<std::string>::const_iterator si = J->scans.begin(); si != J->scans.end(); ++si)
 		{
-			if(vexScan->hasAntenna(*a))
+			const VexScan *vexScan = V->getScanByDefName(*si);
+			if(!vexScan)
 			{
-				if(enabledAntennaModes.find(*a) == enabledAntennaModes.end())
+				std::cerr << "Developer error: scan[" << *si << "] not found!  This cannot be!" << std::endl;
+
+				exit(EXIT_FAILURE);
+			}
+
+			if(verbose > 2)
+			{
+				std::cout << "Job scan " << vexScan->defName << " mode " << vexScan->modeDefName << std::endl;
+			}
+
+			for(std::vector<std::string>::const_iterator a = J->jobAntennas.begin(); a != J->jobAntennas.end(); ++a)
+			{
+				if(vexScan->hasAntenna(*a))
 				{
-					enabledAntennaModes[*a] = std::set<std::string>();
+					if(enabledAntennaModes.find(*a) == enabledAntennaModes.end())
+					{
+						enabledAntennaModes[*a] = std::set<std::string>();
+					}
+					enabledAntennaModes[*a].insert(vexScan->modeDefName);
 				}
-				enabledAntennaModes[*a].insert(vexScan->modeDefName);
 			}
 		}
+
 	}
 
 	// 2. For each antenna, look up the VEX chan_defs under its VEX Modes active in current Job.
@@ -3331,10 +3336,6 @@ void CorrParams::updateZoomBandsForOutputBands(const Job& J, const VexData *V, i
 	// ...
 	// as = & CorrParams::antennaSetups[] via this->getAntennaSetup(antName)
 	// as.copyGlobalZoom(ob->autobands zooms)
-	//
-	// Make sure that the set of zooms does not "grow" with each Job inspected.
-	// Otherwise, change iface to input 'const& vector<Job>' rather than 'const Job&'
-	// and loop over jobs here rather than per-Job calls to updateZoomBandsForOutputBands from vex2difx main().
 	//
 }
 

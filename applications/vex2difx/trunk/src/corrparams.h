@@ -424,7 +424,7 @@ public:
 	std::list<std::string> machines;	// List of computers for generation of .machines file
 
 	/* Introduce auto-determined zoom bands if necessary to support user-requested output bands */
-	void updateZoomBandsForOutputBands(const Job& J, const VexData *V, int verbose = 0);
+	void updateZoomBandsForOutputBands(const std::vector<Job>& alljobs, const VexData *V, int verbose = 0);
 
 private:
 	void addAntenna(const std::string &antName);
