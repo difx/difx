@@ -1,0 +1,105 @@
+vex = c212c.vex
+# https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx
+singleScan = True
+singleSetup = True
+minSubarray = 2
+tweakIntTime = 1
+exhaustiveAutocorrs = True
+nDataSegments = 256
+dataBufferFactor = 256
+startSeries = 1000
+
+antennas = BR,FD,KP,LA,MK,NL,OV,PT, EF,MH,ON,PV,YS, KT,KU,KY, SC,HN
+
+OUTPUTBAND bands
+{
+  addOutputBand = freq@86012.00/bw@64.0
+  addOutputBand = freq@86076.00/bw@64.0
+  addOutputBand = freq@86140.00/bw@64.0
+  addOutputBand = freq@86204.00/bw@64.0
+  addOutputBand = freq@86268.00/bw@64.0
+  addOutputBand = freq@86332.00/bw@64.0
+  addOutputBand = freq@86396.00/bw@64.0
+  addOutputBand = freq@86460.00/bw@64.0
+  #
+  addOutputBand = freq@42912.00/bw@64.0
+  addOutputBand = freq@42976.00/bw@64.0
+  addOutputBand = freq@43040.00/bw@64.0
+  addOutputBand = freq@43104.00/bw@64.0
+  addOutputBand = freq@43168.00/bw@64.0
+  addOutputBand = freq@43232.00/bw@64.0
+  addOutputBand = freq@43296.00/bw@64.0
+  addOutputBand = freq@43360.00/bw@64.0
+}
+
+ANTENNA EF { source = fake }
+ANTENNA MH { source = fake }
+ANTENNA ON { source = fake }
+ANTENNA YS { source = fake }
+#
+ANTENNA PV { datastreams = PVLCP, PVRCP }
+ANTENNA NN { datastreams = NNRCP, NNLCP }
+#
+ANTENNA BR { source = fake }
+ANTENNA FD { source = fake }
+ANTENNA KP { source = fake }
+ANTENNA LA { source = fake }
+ANTENNA MK { source = fake }
+ANTENNA NL { source = fake }
+ANTENNA OV { source = fake }
+ANTENNA PT { source = fake }
+#
+ANTENNA SC { source = fake }
+ANTENNA HN { source = fake }
+#
+ANTENNA KY { source = fake phaseCalInt = 200 }
+ANTENNA KU { source = fake phaseCalInt = 200 }
+ANTENNA KT { source = fake phaseCalInt = 200 }
+
+DATASTREAM PVLCP {
+    source = fake
+    format = VDIF_8224-2048-8-2
+}
+DATASTREAM PVRCP {
+    source = fake
+    format = VDIF_8224-2048-8-2
+}
+
+DATASTREAM NNRCP {
+    source = fake
+    format = INTERLACEDVDIF/4:5:6:7/8224/2
+}
+DATASTREAM NNLCP {
+    source = fake
+    format = INTERLACEDVDIF/4:5:6:7/8224/2
+}
+
+
+SETUP production86G
+{
+  tInt = 0.512
+  specRes = 0.5
+  doPolar = True
+}
+
+SETUP production43G
+{
+  tInt = 1.024
+  specRes = 0.5
+  doPolar = True
+}
+
+RULE rule86
+{
+  mode = 86ghz
+  setup = production86G
+  scan = No0024
+  scan = No0086
+}
+
+RULE rule43
+{
+  mode = 43ghz
+  setup = production43G
+  scan = No0106
+}
