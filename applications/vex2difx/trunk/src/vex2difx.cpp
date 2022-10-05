@@ -3592,6 +3592,7 @@ int main(int argc, char **argv)
 	}
 
 	makeJobs(J, V, P, events, removedAntennas, verbose);
+	P->updateZoomBandsForOutputBands(J, V, verbose);
 
 	if(verbose > 2)
 	{
