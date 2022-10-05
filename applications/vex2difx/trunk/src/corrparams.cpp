@@ -33,6 +33,7 @@
 #include <sstream>
 #include <algorithm>
 #include <fstream>
+#include <cassert>
 #include <cstdio>
 #include <cmath>
 #include <cctype>
@@ -2535,9 +2536,16 @@ int CorrParams::load(const std::string &fileName)
 			}
 			++i;
 			std::string blockName(*i);
+			if(*i == "{")
+			{
+				blockName = "default";
+			}
+			else
+			{
+				++i;
+			}
 			globalOutputbands.push_back(GlobalOutputband(blockName));
 			globalOutputband = &globalOutputbands.back();
-			++i;
 			if(*i != "{")
 			{
 				std::cerr << "Error: OUTPUTBAND " << globalOutputband->difxName << ": '{' expected." << std::endl;
@@ -3185,6 +3193,149 @@ const GlobalZoom *CorrParams::getGlobalZoom(const std::string &name) const
 	}
 
 	return z;
+}
+
+/// If outputbands processing was requested, introduce automatic global zoom definitions where needed (TODO: actually add the zooms)
+void CorrParams::updateZoomBandsForOutputBands(const Job& J, const VexData *V, int verbose)
+{
+	assert(globalOutputbands.size() <= 1);
+
+	if(globalOutputbands.empty())
+	{
+		return;
+	}
+
+	GlobalOutputband* ob = &globalOutputbands.back();
+	ob->autobands.setVerbosity(verbose);
+	if(ob->outputBandwidthMode == OutputBandwidthOff)
+	{
+		return;
+	}
+
+	// Need to know which antennas are active and which recorded bands they have,
+	// then map pieces of (or entire) recorded bands into the requested output bands.
+
+	// 1. Work through the scan(s) and their antennas in the current job,
+	// noting down which VEX Mode(s) are active
+
+	typedef std::map<std::string,std::set<std::string> > antmodemap_t;
+
+	if(verbose > 2)
+	{
+		std::cout << "The current Job has " << J.jobAntennas.size() << " antennas, " << J.scans.size() << " scans." << std::endl;
+	}
+
+	antmodemap_t enabledAntennaModes;
+	for(std::vector<std::string>::const_iterator si = J.scans.begin(); si != J.scans.end(); ++si)
+	{
+		const VexScan *vexScan = V->getScanByDefName(*si);
+		if(!vexScan)
+		{
+			std::cerr << "Developer error: scan[" << *si << "] not found!  This cannot be!" << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+
+		if(verbose > 2)
+		{
+			std::cout << "Job scan " << vexScan->defName << " mode " << vexScan->modeDefName << std::endl;
+		}
+
+		for(std::vector<std::string>::const_iterator a = J.jobAntennas.begin(); a != J.jobAntennas.end(); ++a)
+		{
+			if(vexScan->hasAntenna(*a))
+			{
+				if(enabledAntennaModes.find(*a) == enabledAntennaModes.end())
+				{
+					enabledAntennaModes[*a] = std::set<std::string>();
+				}
+				enabledAntennaModes[*a].insert(vexScan->modeDefName);
+			}
+		}
+	}
+
+	// 2. For each antenna, look up the VEX chan_defs under its VEX Modes active in current Job.
+	// The chan_defs are found in <VexMode>vmode.<VexSetup>setups[antname].<VexChannel>channels[..]
+
+	for(antmodemap_t::const_iterator ai = enabledAntennaModes.begin(); ai != enabledAntennaModes.end(); ++ai)
+	{
+		if(verbose > 2)
+		{
+			std::cout << "Antenna " << ai->first << " had scans in these mode(s) :" << std::endl;
+			for(std::set<std::string>::const_iterator mi = ai->second.begin(); mi != ai->second.end(); ++mi)
+			{
+				std::cout << " " << *mi;
+			}
+			std::cout << std::endl;
+		}
+
+		std::vector<freq> antennaAllFreqs;
+		for(std::set<std::string>::const_iterator mi = ai->second.begin(); mi != ai->second.end(); ++mi)
+		{
+			const VexMode *vmode = V->getModeByDefName(*mi);
+			const VexSetup *vsetup = vmode->getSetup(ai->first);
+
+			if(verbose > 2)
+			{
+				std::cout << "   Mode " << *mi << std::endl;
+				std::cout << "   Channels:" << std::endl;
+				for(std::vector<VexChannel>::const_iterator ch = vsetup->channels.begin(); ch != vsetup->channels.end(); ++ch)
+				{
+					const VexSubband& vband = vmode->subbands[ch->subbandId];
+					std::cout << "      " << vband << std::endl;
+				}
+			}
+
+			for(std::vector<VexChannel>::const_iterator ch = vsetup->channels.begin(); ch != vsetup->channels.end(); ++ch)
+			{
+				const VexSubband& vband = vmode->subbands[ch->subbandId];
+				const freq recfreq(vband.freq, vband.bandwidth, vband.sideBand, /*inputSpecRes[Hz]:*/1e6);
+				antennaAllFreqs.push_back(recfreq);
+			}
+		}
+		ob->autobands.addRecbands(antennaAllFreqs);
+
+		std::cout << std::endl;
+	}
+
+	// 3. Run auto-zoom segmentation
+	double bw = 0;
+	if(ob->outputBandwidthMode == OutputBandwidthAuto)
+	{
+		bw = ob->autobands.autoBandwidth();
+		std::cout << "Note: Determined outputBand 'auto' bandwidth of " << std::fixed << bw*1e-6 << "MHz" << std::endl;
+	}
+
+	if(bw <= 0)
+	{
+		bw = ob->outputBandwidth;
+		std::cout << "Note: Using user-specified outputBand bandwidth of " << std::fixed << bw*1e-6 << "MHz" << std::endl;
+	}
+
+	if(bw <= 0)
+	{
+		std::cerr << "Error: outputBand mode failed! You can try specifying 'auto' or a different bandwidth." << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
+
+	ob->autobands.setBandwidth(bw);
+	ob->autobands.generateOutputbands(this->minSubarraySize);
+	if(verbose > 2)
+	{
+		std::cout << ob->autobands << std::endl;
+	}
+
+	// 4. (TODO!) Add the zooms deemed necessary by AutoBands into each AntennaSetup's zoom freq set
+	//    (and remove the corresponding earlier d270 code from dtrunk vex2difx.cpp writeJob())
+	// ...
+	// as = & CorrParams::antennaSetups[] via this->getAntennaSetup(antName)
+	// as.copyGlobalZoom(ob->autobands zooms)
+	//
+	// Make sure that the set of zooms does not "grow" with each Job inspected.
+	// Otherwise, change iface to input 'const& vector<Job>' rather than 'const Job&'
+	// and loop over jobs here rather than per-Job calls to updateZoomBandsForOutputBands from vex2difx main().
+	//
 }
 
 void CorrParams::addSourceSetup(const SourceSetup &toAdd)

@@ -42,6 +42,7 @@ class AutoBands;
 
 #include "autobands.h"
 #include "interval.h"
+#include "job.h"
 #include "freq.h"
 #include "zoomfreq.h"
 #include "vex_data.h"
@@ -421,6 +422,9 @@ public:
 	enum V2D_Mode v2dMode;
 
 	std::list<std::string> machines;	// List of computers for generation of .machines file
+
+	/* Introduce auto-determined zoom bands if necessary to support user-requested output bands */
+	void updateZoomBandsForOutputBands(const Job& J, const VexData *V, int verbose = 0);
 
 private:
 	void addAntenna(const std::string &antName);
