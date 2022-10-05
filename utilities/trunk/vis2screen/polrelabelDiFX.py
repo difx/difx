@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 """
-Usage: polrelabelDiFX.py [--inplace] <station[,station,...]> <difx basename> [<difx basename> ...]
+Usage: polrelabelDiFX.py [--inplace] [--swap] <station[,station,...]> <difx basename> [<difx basename> ...]
 
 Changes data polarization *labels* of the given station(s) from linear to circular.
 
 The original SWIN data are retained intact and a new SWIN visibility data set is output,
 unless the --inplace option is specified, in which case changes are carried out on the
-original file.
+original file.  The default is X => RCP, Y => LCP, but Y => RCP, X => LCP with --swap.
 
 Output file:
   <difx basename>_polrelabeled/DIFX_*
@@ -20,7 +20,7 @@ import numpy
 import parseDiFX
 
 
-def polrelabelVisibilityfile(basename, targetAnts, doOverwrite=False, verbose=False):
+def polrelabelVisibilityfile(basename, targetAnts, doOverwrite=False, verbose=False, swap=False):
 	"""
 	Relabel polarization labels in a binary SWIN DiFX visibility data file
 	Currently relabels just ALMA X => RCP, Y => LCP
@@ -28,6 +28,10 @@ def polrelabelVisibilityfile(basename, targetAnts, doOverwrite=False, verbose=Fa
 
 	polrelabel = {'X':'R', 'Y':'L', 'R':'R', 'L':'L' }
 	nrelabeled, npassed = 0, 0
+
+	if swap:
+		polrelabel['X'] = 'L'
+		polrelabel['Y'] = 'R'
 
 	# Determine name of .input file
 	if basename.endswith(('.difx','.input','.calc','.im','.flag','.machines','.difxlog')):
@@ -119,6 +123,7 @@ if __name__ == '__main__':
 	args = sys.argv[1:]
 	doOverwrite = False
 	doVerbose = False
+	doSwap = False
 
 	if len(args) < 2 or args[0] in ['-h','--help']:
 		print (__doc__)
@@ -131,9 +136,12 @@ if __name__ == '__main__':
 		elif args[0] == '-v':
 			doVerbose = True
 			args = args[1:]
+		elif args[0] == '--swap':
+			doSwap = True
+			args = args[1:]
 
 	ants = args[0].upper()
 	ants = [a.upper() for a in ants.split(',')]
 
 	for difxf in args[1:]:
-		polrelabelVisibilityfile(difxf,ants,doOverwrite,doVerbose)
+		polrelabelVisibilityfile(difxf,ants,doOverwrite,doVerbose,doSwap)
