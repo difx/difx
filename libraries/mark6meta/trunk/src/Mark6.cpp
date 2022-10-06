@@ -983,8 +983,53 @@ long Mark6::parseDiskId(std::string sasAddress)
     if (sasAddress.size() < 11)
         return(-1);
 
+    // SAS Address does appear to encode the actual phy* iface number to which the disk is attached,
+    // but it is not clear if the encoding is consistent accross different systems.
+    // With mpt2sas-driven controllers the phy iface is apparently at addr_str[11],
+    // while for mpt3sas it is at the end of addr_str[].
+
+    // MPIfR mark6-06
+    //   slot 3, mpt2sas
+    //     sasAddress 0x4433221100000000
+    //     sasAddress 0x4433221101000000
+    //     sasAddress 0x4433221102000000
+    //     sasAddress 0x4433221103000000
+    //     sasAddress 0x4433221104000000
+    //     sasAddress 0x4433221105000000
+    //     sasAddress 0x4433221106000000
+    //     sasAddress 0x4433221107000000
+    //   slot 4, mpt2sas
+    //     sasAddress 0x4433221108000000
+    //     sasAddress 0x4433221109000000
+    //     sasAddress 0x443322110a000000
+    //     sasAddress 0x443322110b000000
+    //     sasAddress 0x443322110c000000
+    //     sasAddress 0x443322110d000000
+    //     sasAddress 0x443322110e000000
+    //     sasAddress 0x443322110f000000
+    //   slot 5, mpt3sas
+    //     sasAddress 0x300062b207676380
+    //     sasAddress 0x300062b207676381
+    //     sasAddress 0x300062b207676382
+    //     sasAddress 0x300062b207676383
+    //     sasAddress 0x300062b207676384
+    //     sasAddress 0x300062b207676385
+    //     sasAddress 0x300062b207676386
+    //     sasAddress 0x300062b207676387
+
     size_t strlen = sasAddress.size();
-    diskId = strtol(sasAddress.substr(strlen-1,1).c_str(), NULL, 16);
+
+    if(sasAddress[strlen-2] == '0' && sasAddress[strlen-1] == '0')
+    {
+        // TODO: "if(driver==mpt2sas) {...}"
+        diskId = strtol(sasAddress.substr(11,1).c_str(), NULL, 16);
+    }
+    else
+    {
+        // TODO: "if(driver==mpt3sas) {...}"
+        diskId = strtol(sasAddress.substr(strlen-1,1).c_str(), NULL, 16);
+    }
+
     //clog << "parseDiskId " << sasAddress << " -> disk id " << diskId << endl;
 
     return diskId;
