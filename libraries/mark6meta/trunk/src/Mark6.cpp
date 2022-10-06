@@ -977,12 +977,17 @@ int Mark6::enumerateDevices()
  */
 long Mark6::parseDiskId(std::string sasAddress)
 {
+    long diskId = -1;
+
     //cout << "DiskID = " << strtoul(sasAddress.substr(11,1).c_str(), NULL, 16) << " " << sasAddress << " " << sasAddress.substr(11,1) << sasAddress.substr(1,1) << endl;
-    if (sasAddress.size() < 11)     
+    if (sasAddress.size() < 11)
         return(-1);
-    
-    //clog << "parseDiskId " << sasAddress << endl;
-    return(strtol(sasAddress.substr(11,1).c_str(), NULL, 16));
+
+    size_t strlen = sasAddress.size();
+    diskId = strtol(sasAddress.substr(strlen-1,1).c_str(), NULL, 16);
+    //clog << "parseDiskId " << sasAddress << " -> disk id " << diskId << endl;
+
+    return diskId;
 }
 
 
