@@ -32,6 +32,8 @@
 
 #include <ostream>
 
+class freq;
+
 class ZoomFreq
 {
 public: 
@@ -40,6 +42,8 @@ public:
 
 	//method
 	void initialise(double freq, double bw, bool corrparent, int specavg); // Hz
+	bool matchesFreqSense(const freq* rhs);
+	bool matchesFreq(const freq* rhs);
 
 	//variables
 	double frequency, bandwidth; // Hz

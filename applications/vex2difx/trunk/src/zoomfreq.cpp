@@ -28,6 +28,9 @@
  *==========================================================================*/
 
 #include "zoomfreq.h"
+#include "freq.h"
+
+#include <cmath>
 #include <iomanip>
 
 ZoomFreq::ZoomFreq()
@@ -35,13 +38,80 @@ ZoomFreq::ZoomFreq()
 	initialise(-999e6, -999e6, false, -1);
 }
 
-// freq and bw supplied in Hz
+// Initialise, with freq and bw supplied in Hz
 void ZoomFreq::initialise(double freq, double bw, bool corrparent, int specavg)
 {
 	frequency = freq;
 	bandwidth = bw;
 	correlateparent = corrparent;
 	spectralaverage = specavg;
+}
+
+// Compare 'zoomfreq' against 'freq', ignoring spectral resolution.
+// Returns True when 'freq' is USB and the top and bottom edges match those of 'zoomfreq'
+bool ZoomFreq::matchesFreqSense(const freq* rhs)
+{
+	const double epsilon = 0.000001;
+	if(rhs->sideBand == 'L')
+	{
+		return false;
+	}
+
+	if(fabs(this->frequency - rhs->fq) > epsilon)
+	{
+		return false;
+	}
+
+	if(fabs(this->bandwidth - rhs->bw) > epsilon)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+// Compare 'zoomfreq' against 'freq', comparing also spectral resolution
+// Returns True when 'freq' top and bottom edge (regardless of sideband) are consistent with 'zoomfreq'
+bool ZoomFreq::matchesFreq(const freq* rhs)
+{
+	const double epsilon = 0.000001;
+	double channeloffset;
+	double parent_bottom, parent_top;
+
+	if(rhs->sideBand == 'L')           // is parent LSB?
+	{
+		channeloffset = (rhs->fq - this->frequency - this->bandwidth)/rhs->inputSpecRes;
+		parent_bottom = rhs->fq - rhs->bw;
+		parent_top = rhs->fq;
+	}
+	else                            // parent is USB
+	{
+		channeloffset = (this->frequency - rhs->fq)/rhs->inputSpecRes;
+		parent_bottom = rhs->fq;
+		parent_top = rhs->fq + rhs->bw;
+	}
+
+	if(this->frequency < parent_bottom - epsilon)
+	{
+		return false;
+	}
+
+	if(this->frequency + this->bandwidth > parent_top + epsilon)
+	{
+		return false;
+	}
+
+	if(this->spectralaverage > 0 && this->spectralaverage != rhs->specAvg()) //0 means default to parent
+	{
+		return false;
+	}
+
+	if(fabs(channeloffset - static_cast<int>(channeloffset+0.5)) > epsilon)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 std::ostream& operator << (std::ostream& os, const ZoomFreq& f)
