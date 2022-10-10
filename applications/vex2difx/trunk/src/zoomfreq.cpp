@@ -49,7 +49,7 @@ void ZoomFreq::initialise(double freq, double bw, bool corrparent, int specavg)
 
 // Compare 'zoomfreq' against 'freq', ignoring spectral resolution.
 // Returns True when 'freq' is USB and the top and bottom edges match those of 'zoomfreq'
-bool ZoomFreq::matchesFreqSense(const freq* rhs)
+bool ZoomFreq::matchesFreqSense(const freq* rhs) const
 {
 	const double epsilon = 0.000001;
 	if(rhs->sideBand == 'L')
@@ -72,7 +72,7 @@ bool ZoomFreq::matchesFreqSense(const freq* rhs)
 
 // Compare 'zoomfreq' against 'freq', comparing also spectral resolution
 // Returns True when 'freq' top and bottom edge (regardless of sideband) are consistent with 'zoomfreq'
-bool ZoomFreq::matchesFreq(const freq* rhs)
+bool ZoomFreq::matchesFreq(const freq* rhs) const
 {
 	const double epsilon = 0.000001;
 	double channeloffset;

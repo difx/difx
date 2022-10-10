@@ -42,8 +42,8 @@ public:
 
 	//method
 	void initialise(double freq, double bw, bool corrparent, int specavg); // Hz
-	bool matchesFreqSense(const freq* rhs);
-	bool matchesFreq(const freq* rhs);
+	bool matchesFreqSense(const freq* rhs) const;
+	bool matchesFreq(const freq* rhs) const;
 
 	//variables
 	double frequency, bandwidth; // Hz
