@@ -221,12 +221,10 @@ CorrSetup::CorrSetup(const std::string &name) : corrSetupName(name)
 	suppliedSpecAvg = 0;
 	FFTSpecRes = 250000.0;		// Hz; spectral resolution at FFT stage
 	outputSpecRes = 500000.0;	// Hz; spectral resolution in Output
-	outputBandwidth = 0;		// Hz; target bw for assembly of output bands from slices depending on OutputBandwidthMode
 	nFFTChan = 0;			// If this or nOutputChan != 0, these override SpecAvg params
 	nOutputChan = 0;
 	doPolar = true;
 	doAuto = true;
-	outputBandwidthMode = OutputBandwidthOff;
 	fringeRotOrder = 1;
 	strideLength = 0;
 	xmacLength = 0;
@@ -240,7 +238,6 @@ CorrSetup::CorrSetup(const std::string &name) : corrSetupName(name)
 	minRecordedBandwidth = 0.0;
 	maxRecordedBandwidth = 0.0;
 	onlyPol = ' ';
-	autobands.clear();
 }
 
 int CorrSetup::setkv(const std::string &key, const std::string &value, ZoomFreq *outputbandFreq)
@@ -311,66 +308,6 @@ int CorrSetup::setkv(const std::string &key, const std::string &value)
 		ss >> outputSpecRes;
 		outputSpecRes *= 1e6;	// Users use MHz, vex2difx uses Hz
 		explicitOutputSpecRes = true;
-	}
-	else if(key == "outputBandwidth")
-	{
-		if (value == "auto")
-		{
-			outputBandwidthMode = OutputBandwidthAuto;
-		}
-		else
-		{
-			outputBandwidthMode = OutputBandwidthUser;
-			ss >> outputBandwidth;
-			outputBandwidth *= 1e6; // Users use MHz, vex2difx uses Hz
-		}
-	}
-	else if(key == "addOutputBand")
-	{
-		// Register explicit v2d user-specified output band into the autoband logic
-		// The syntax follows ZOOM addZoomFreq.  All parameters must be together, with @ replacing =, and separated by /
-		// e.g., addOutputBand = freq@1649.99/bw@32.0
-		// only freq is compulsory; bandwidth bw only if outputBandwidth=<x> was not specified prior to addOutputBand
-		ZoomFreq outputbandDef;
-		outputbandDef.initialise(0, 0, false, 1);
-		last = 0;
-		at = 0;
-		while(at != std::string::npos)
-		{
-			at = value.find_first_of('/', last);
-			nestedkeyval = value.substr(last, at-last);
-			splitat = nestedkeyval.find_first_of('@');
-			nWarn += setkv(nestedkeyval.substr(0, splitat), nestedkeyval.substr(splitat+1), &outputbandDef);
-			last = at+1;
-		}
-		if(outputbandDef.frequency <= 0)
-		{
-			std::cerr << "Error: Explicit outputband entry '" << value << "' parsed into unexpected frequency of " << outputbandDef.frequency << " MHz." << std::endl;
-
-			exit(EXIT_FAILURE);
-		}
-		if(outputBandwidth == 0 && outputbandDef.bandwidth == 0)
-		{
-			std::cerr << "Error: For explicit outputband placement please provide a bandwidth as part of 'addOutputBand' or in a preceding 'outputBandwidth'." << std::endl;
-
-			exit(EXIT_FAILURE);
-		}
-		if(outputBandwidth <= 0)
-		{
-			outputBandwidth = outputbandDef.bandwidth;
-		}
-		else if(outputbandDef.bandwidth == 0)
-		{
-			outputbandDef.bandwidth = outputBandwidth;
-		}
-		if(outputBandwidth != outputbandDef.bandwidth)
-		{
-			std::cerr << "Error: Bandwidth of outputBandwidth parameter (" << outputBandwidth*1e-6 << " MHz) conflicts with addOutputBand bw element (" << outputbandDef.bandwidth*1e-6 << " MHz)" << std::endl;
-
-			exit(EXIT_FAILURE);
-		}
-		outputBandwidthMode = OutputBandwidthUser;
-		autobands.addUserOutputband(outputbandDef);
 	}
 	else if(key == "FFTSpecRes" || key == "fftSpecRes")
 	{
@@ -1812,6 +1749,14 @@ int GlobalZoom::setkv(const std::string &key, const std::string &value)
 	return nWarn;
 }
 
+GlobalOutputband::GlobalOutputband(const std::string &name)
+{
+	difxName = name;
+	outputBandwidth = 0;
+	outputBandwidthMode = OutputBandwidthOff;
+	autobands.clear();
+}
+
 int GlobalOutputband::setkv(const std::string &key, const std::string &value, ZoomFreq *zoomFreq)
 {
 	int nWarn = 0;
@@ -2890,16 +2835,14 @@ int CorrParams::checkSetupValidity()
 		}
 	}
 
-	// automatically switch to exhaustiveAutocorrs if any corr setup uses the outputbands feature, because
-	// this keeps the mpifxcorr implementation of outputbands simple and autocorrs need no special code path
-	if(!exhaustiveAutocorrs)
+	// Automatically switch to exhaustiveAutocorrs if corr params use the outputbands feature.
+	// This keeps the mpifxcorr implementation of outputbands simple and autocorrs need no special code path
+	if(!exhaustiveAutocorrs && globalOutputbands.size() >= 1)
 	{
-		for(std::vector<CorrSetup>::const_iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
+		GlobalOutputband* ob = &globalOutputbands.back();
+		if (ob->outputBandwidthMode != OutputBandwidthOff)
 		{
-			if (c->outputBandwidthMode != OutputBandwidthOff)
-			{
-				exhaustiveAutocorrs = true;
-			}
+			exhaustiveAutocorrs = true;
 		}
 		if(exhaustiveAutocorrs)
 		{
@@ -3195,7 +3138,7 @@ const GlobalZoom *CorrParams::getGlobalZoom(const std::string &name) const
 	return z;
 }
 
-/// If outputbands processing was requested, introduce automatic global zoom definitions where needed (TODO: actually add the zooms)
+/// If outputbands processing was requested, introduces automatic global zoom definitions and adds them to AntennaSetups where applicable
 void CorrParams::updateZoomBandsForOutputBands(const std::vector<Job>& alljobs, const VexData *V, int verbose)
 {
 	assert(globalOutputbands.size() <= 1);
@@ -3222,7 +3165,7 @@ void CorrParams::updateZoomBandsForOutputBands(const std::vector<Job>& alljobs, 
 
 	antmodemap_t enabledAntennaModes;
 
-	for(std::vector<Job>::const_iterator J = alljobs.begin(); J != alljobs.end(); J++)
+	for(std::vector<Job>::const_iterator J = alljobs.begin(); J != alljobs.end(); ++J)
 	{
 		if(verbose > 2)
 		{
@@ -3262,6 +3205,10 @@ void CorrParams::updateZoomBandsForOutputBands(const std::vector<Job>& alljobs, 
 	// 2. For each antenna, look up the VEX chan_defs under its VEX Modes active in current Job.
 	// The chan_defs are found in <VexMode>vmode.<VexSetup>setups[antname].<VexChannel>channels[..]
 
+	typedef std::map<std::string,std::vector<freq> > antfreqsmap_t;
+
+	antfreqsmap_t availableAntennaRecfreqs;
+
 	for(antmodemap_t::const_iterator ai = enabledAntennaModes.begin(); ai != enabledAntennaModes.end(); ++ai)
 	{
 		if(verbose > 2)
@@ -3289,6 +3236,7 @@ void CorrParams::updateZoomBandsForOutputBands(const std::vector<Job>& alljobs, 
 					const VexSubband& vband = vmode->subbands[ch->subbandId];
 					std::cout << "      " << vband << std::endl;
 				}
+				std::cout << std::endl;
 			}
 
 			for(std::vector<VexChannel>::const_iterator ch = vsetup->channels.begin(); ch != vsetup->channels.end(); ++ch)
@@ -3298,9 +3246,19 @@ void CorrParams::updateZoomBandsForOutputBands(const std::vector<Job>& alljobs, 
 				antennaAllFreqs.push_back(recfreq);
 			}
 		}
+
 		ob->autobands.addRecbands(antennaAllFreqs);
 
-		std::cout << std::endl;
+		if(availableAntennaRecfreqs.find(ai->first) == availableAntennaRecfreqs.end())
+		{
+			availableAntennaRecfreqs[ai->first] = antennaAllFreqs;
+		}
+		else
+		{
+			// note, appending here occurs when the antenna is in multiple VEX modes e.g. 43G/86G frequency switched observations
+			availableAntennaRecfreqs[ai->first].insert(availableAntennaRecfreqs[ai->first].end(), antennaAllFreqs.begin(), antennaAllFreqs.end());
+		}
+
 	}
 
 	// 3. Run auto-zoom segmentation
@@ -3331,12 +3289,79 @@ void CorrParams::updateZoomBandsForOutputBands(const std::vector<Job>& alljobs, 
 		std::cout << ob->autobands << std::endl;
 	}
 
-	// 4. (TODO!) Add the zooms deemed necessary by AutoBands into each AntennaSetup's zoom freq set
-	//    (and remove the corresponding earlier d270 code from dtrunk vex2difx.cpp writeJob())
-	// ...
-	// as = & CorrParams::antennaSetups[] via this->getAntennaSetup(antName)
-	// as.copyGlobalZoom(ob->autobands zooms)
-	//
+	// append explicitly user-defined v2d Zooms (if any) into the autoband logic as output bands
+	for(antmodemap_t::const_iterator ai = enabledAntennaModes.begin(); ai != enabledAntennaModes.end(); ++ai)
+	{
+		const AntennaSetup *as = this->getAntennaSetup(ai->first);
+		if(as->v2dZoomFreqs.size() > 0)
+		{
+			if(verbose > 2)
+	        {
+				std::cout << "Antenna " << ai->first << " has " << as->v2dZoomFreqs.size() << " zoom freqs in v2d, keeping these as outputbands." << std::endl;
+			}
+			ob->autobands.addUserOutputbands(as->v2dZoomFreqs);
+		}
+	}
+
+	// make a final list of zooms needed
+	GlobalZoom autozooms("autozooms");
+	for(std::vector<AutoBands::Outputband>::const_iterator oband=ob->autobands.outputbands.begin(); oband != ob->autobands.outputbands.end(); ++oband)
+	{
+		if (!oband->isComplete())
+		{
+			std::cerr << "Developer error: encountered internal incomplete Outputband " << *oband << " during GlobalZoom construction!" << std::endl;
+			continue;
+		}
+		// grow the list of all-band constituent zooms
+		for(std::vector<AutoBands::Band>::const_iterator zm = oband->constituents.begin(); zm != oband->constituents.end(); ++zm)
+		{
+			ZoomFreq zoom;
+			zoom.initialise(zm->flow, zm->bandwidth(), false, 0); // specAvg:0 means default to parent
+			autozooms.zoomFreqs.push_back(zoom);
+		}
+	}
+
+	// 4. Add the zooms into each AntennaSetup's zoom freq set, discarding corner cases
+	for(antmodemap_t::const_iterator ai = enabledAntennaModes.begin(); ai != enabledAntennaModes.end(); ++ai)
+	{
+		//const AntennaSetup *as = this->getAntennaSetup(ai->first);
+		AntennaSetup *as = this->getNonConstAntennaSetup(ai->first);
+		const std::vector<freq>* antfreqs = &availableAntennaRecfreqs[ai->first];
+
+		// determine which automatic zooms are required for *this* antenna (string ai->first), while
+		// filtering out a corner case: any zoom that is identical to a USB freq
+		// recorded by this antenna is redundant (and detrimental)
+		GlobalZoom antautozooms("antennaextrazooms");
+		for(std::vector<ZoomFreq>::const_iterator zfit = autozooms.zoomFreqs.begin(); zfit != autozooms.zoomFreqs.end(); ++zfit)
+		{
+			bool redundant = false;
+			for(std::vector<freq>::const_iterator fqit = antfreqs->begin(); fqit != antfreqs->end(); ++fqit)
+			{
+				//if(zfit->matchesFreqSense(fqit)) // g++: 'no known conversion for argument 1 from ‘std::vector<freq>::const_iterator {aka __gnu_cxx::__normal_iterator<const freq*, std::vector<freq> >}’ to ‘const freq*’' !?
+				if(zfit->matchesFreqSense(&(*fqit)))
+				{
+					if(verbose > 2)
+					{
+						std::cout << "Ignoring auto-zoom at antenna " << ai->first << " of " << *zfit << " since identical to recband " << *fqit << std::endl;
+					}
+					redundant = true;
+					break;
+				}
+			}
+			if(!redundant)
+			{
+				antautozooms.zoomFreqs.push_back(*zfit);
+			}
+		}
+
+		// append the useful zooms into this antennas zoom band list
+		if(verbose > 2)
+		{
+			std::cout << "For antenna " << ai->first << ", adding " << antautozooms.zoomFreqs.size() << " out of " << autozooms.zoomFreqs.size() << " auto-determined zooms "
+			  << "to its " << as->zoomFreqs.size() << " existing v2d-defined zooms." << std::endl;
+		}
+		as->copyGlobalZoom(antautozooms); // NB: is called "copy()" but actually appends
+	}
 }
 
 void CorrParams::addSourceSetup(const SourceSetup &toAdd)

@@ -114,7 +114,7 @@ public:
 class GlobalZoom
 {
 public:
-	GlobalZoom(const std::string &name) : difxName(name) {};
+	GlobalZoom(const std::string &name) : difxName(name) { zoomFreqs.clear(); }
 	int setkv(const std::string &key, const std::string &value, ZoomFreq * zoomFreq);
 	int setkv(const std::string &key, const std::string &value);
 
@@ -125,7 +125,7 @@ public:
 class GlobalOutputband
 {
 public:
-	GlobalOutputband(const std::string &name) : difxName(name) {};
+	GlobalOutputband(const std::string &name);
 	int setkv(const std::string &key, const std::string &value, ZoomFreq * zoomFreq);
 	int setkv(const std::string &key, const std::string &value);
 
@@ -275,7 +275,6 @@ public:
 	int guardNS;		// Number of "guard" ns tacked on to end of a send
 	double FFTSpecRes;	// Hz; resolution of initial FFTs
 	double outputSpecRes;	// Hz; resolution of averaged output FFTs
-	double outputBandwidth;	// Hz; target bw for assembly of output bands from slices depending on OutputBandwidthMode
 	double suppliedSpecAvg;	// specAvg supplied by .v2d file
 	int nFFTChan;		// This and the next parameter can be used to override the above two if all channels are the same width
 	int nOutputChan;	//
@@ -287,8 +286,6 @@ public:
 	int xmacLength;		// Number of channels to do at a time when xmac'ing
 	int numBufferedFFTs;	// Number of FFTs to do in Mode before XMAC'ing
 	std::set<int> freqIds;	// which bands to correlate
-	enum OutputBandwidthMode outputBandwidthMode;	// mode in which to choose/generate output bands
-	mutable AutoBands autobands;	// generator for output bands
 	std::string binConfigFile;
 	std::string phasedArrayConfigFile;
 	char onlyPol;		// which polarization to correlate
