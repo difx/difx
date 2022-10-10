@@ -256,8 +256,7 @@ sub get_simple_field ($$$$$) {
   my ($statement, $which, $lowl, $what, $where) = @_;
 
   my ($islink, $isname, $value, $units);
-  my $status = vex_field($statement, $lowl, $which, $islink, $isname, $value,
-			 $units);
+  my $status = vex_field($statement, $lowl, $which, $islink, $isname, $value, $units);
   if ($status) {
     carp "Error reading $what in $where\n";
     return undef;
@@ -270,8 +269,7 @@ sub get_unit_field ($$$$$) {
   my ($statement, $which, $lowl, $what, $where, ) = @_;
 
   my ($islink, $isname, $value, $units);
-  my $status = vex_field($statement, $lowl, $which, $islink, $isname, $value,
-			 $units);
+  my $status = vex_field($statement, $lowl, $which, $islink, $isname, $value, $units);
   if ($status) {
     carp "Error reading $what in $where\n";
     return undef;
@@ -653,7 +651,7 @@ use Astro::Time qw( str2rad );
 =head2 Fields
 
     source_name
-    ra Source          RA in radians
+    ra                 Source RA in radians
     rastr              Source RA as a string (same format as in vex file)
     dec                Source Declination in radians
     decstr             Source Declination as a string (same format as in
@@ -1161,6 +1159,60 @@ make_field('phasecal', 'PHASECAL');
 #  return $self->[CHAN];
 #}
 
+package Astro::Vex::Tracks::Fanout;
+use Carp;
+use Astro::VexParser;
+use Astro::Vex qw(make_field get_global_field get_global_unit_field);
+
+=head1 Astro::Vex::Tracks::Fanout
+
+  fanout_def within $TRACK def
+
+=head2 Fields
+
+    subpass
+    trackID
+    signmag
+    headstack
+    tracks
+
+=head2 Missing
+
+    none
+
+=cut
+
+use constant SUBPASS => 0;
+use constant TRACKID => 1;
+use constant SIGNMAG => 2;
+use constant HEADSTACK => 3;
+use constant TRACKS => 4;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my $self = [@_];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('subbpass', 'SUBBPASS');
+make_field('trackID', 'TRACKID');
+make_field('signmag', 'SIGNMAG');
+make_field('headstack', 'HEADSTACK');
+#make_field('tracks', 'TRACKS');
+
+sub tracks {
+  my $self = shift;
+  if (@_) {
+    $self->[TRACKS] = [@_];
+  }
+  return @{$self->[TRACKS]};
+}
+
 package Astro::Vex::Tracks;
 use Carp;
 use Astro::VexParser;
@@ -1176,11 +1228,11 @@ use Astro::Vex qw(make_field get_global_field get_global_unit_field);
     S2_recording_mode
     data_modulation
     track_frame_format
+    fanout
 
 =head2 Missing
 
-    fanout_def
-    Lots 
+     none
 
 =cut
 
@@ -1188,6 +1240,7 @@ use constant S2_DATA_SOURCE => 0;
 use constant S2_RECORDING_MODE => 1;
 use constant DATA_MODULATION => 2;
 use constant TRACK_FRAME_FORMAT => 3;
+use constant FANOUT => 4;
 
 sub new {
   my $proto = shift;
@@ -1204,6 +1257,14 @@ make_field('S2_data_source', 'S2_DATA_SOURCE');
 make_field('S2_recording_mode', 'S2_RECORDING_MODE');
 make_field('data_modulation', 'DATA_MODULATION');
 make_field('track_frame_format', 'TRACK_FRAME_FORMAT');
+
+sub fanout {
+  my $self = shift;
+  if (@_) {
+    $self->[FANOUT] = [@_];
+  }
+  return @{$self->[FANOUT]};
+}
 
 package Astro::Vex;
 use Astro::Quanta;
@@ -1474,7 +1535,31 @@ sub mode {
 					      'DATA_MODULATION', $_);
 	}
 
-	my $tracks = new Astro::Vex::Tracks($s2_data_source, $s2_recording_mode, $data_modulation, $track_frame_format);
+	# fanout/tracks
+	# fanout_def = SUBPADD: trackID:  sign/mag : headstack : track1 [: track2...]
+	my @fanoutdef = ();
+	my $subpass = undef;
+	my $chanref = undef;
+	my $signmag = undef;
+	my $headstack = undef;
+	
+	for ($lowl = get_all_lowl($_, $mode, T_FANOUT_DEF, B_TRACKS, $vexptr); $lowl; $lowl = get_all_lowl_next()) {
+	  $subpass = get_simple_field(T_FANOUT_DEF, 1, $lowl, 'FANOUT_DEF:SUBPASS', $_);
+	  $chanref = get_simple_field(T_FANOUT_DEF, 2, $lowl, 'FANOUT_DEF:TRACKID', $_);
+	  $signmag = get_simple_field(T_FANOUT_DEF, 3, $lowl, 'FANOUT_DEF:SIGNMAG', $_);
+	  $headstack = get_simple_field(T_FANOUT_DEF, 4, $lowl, 'FANOUT_DEF:HEADSTACK', $_);
+
+	  my ($islink, $isname, $value, $units, $status);
+	  my $itrack = 5;
+	  my @tracks = ();
+	  while (!vex_field(T_FANOUT_DEF, $lowl, $itrack, $islink, $isname, $value, $units)) {
+	    push @tracks, $value;
+	    $itrack++;
+	  }
+	  push @fanoutdef, new Astro::Vex::Tracks::Fanout($subpass, $chanref, $signmag, $headstack, \@tracks);
+	}
+	
+	my $tracks = new Astro::Vex::Tracks($s2_data_source, $s2_recording_mode, $data_modulation, $track_frame_format, \@fanoutdef);
 
 	my $s2_transport_type = undef;
 	$lowl = get_all_lowl($_, $mode, T_RECORD_TRANSPORT_TYPE, B_DAS, $vexptr);
