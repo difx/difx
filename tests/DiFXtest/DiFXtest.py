@@ -223,19 +223,26 @@ def runtest(testname):
   f_difxcalclog = open(difxcalclogfile,"w")
   f_difxcalcerr = open(difxcalcerrfile,"w")
 
-  if (testname == "rdv70" or testname == "v252f") : 
+  if (testname == "rdv70" or testname == "v252f" or testname == "rdv70-gpu" or testname == "v252f-gpu") : 
     arg = "difxcalc test-" + testname + "_1.calc"
   else:
     arg = "difxcalc test-" + testname + ".calc", 
+
+  print(arg)
+
   subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_difxcalclog,stderr=f_difxcalcerr)
   proc.wait()
 
   #quit()
   if (testname == "rdv70" or testname == "v252f") :
     arg = "mpirun -machinefile machines -np 8 mpifxcorr test-" + testname + "_1.input"
+  elif (testname == "rdv70-gpu" or testname == "v252f-gpu") :
+    arg = "mpirun -machinefile machines -np 8 mpifxcorr --usegpu test-" + testname + "_1.input"
+  elif ((testname != "rdv70-gpu" or testname != "v252f-gpu") and testname[-4:] == "-gpu"):
+    arg = "mpirun -machinefile machines -np 4 mpifxcorr --usegpu test-" + testname + ".input"
   else:
     arg = "mpirun -machinefile machines -np 4 mpifxcorr test-" + testname + ".input"
-  #print(arg)
+  print(arg)
   #quit()
   difxlogfile = working_directory + "/mpifxcorr.log"
   difxerrfile = working_directory + "/mpifxcorr.error"
@@ -330,8 +337,92 @@ def compare_results(testname, abstol, reltol):
 
   return(results)
 
+def compare_results_gpu_v_cpu(testname, abstol, reltol):
+
+  print("Comparing results for test " + testname)
+
+  # results list [Binary file same as benchmark?,FITS file same as benchmark?]
+  results = ["",True]
+
+  current_directory = os.getcwd()
+
+  #usb-gpu-vs-cpu
+
+  substring = "-vs-cpu" 
+  testname_gpu = testname.replace(substring,"")  
+  substring = "-gpu-vs-cpu"  
+  testname_cpu = testname.replace(substring,"")
+
+  
+  working_directory = current_directory + "/" + testname_gpu + "/"   
+  #print(working_directory)
+  binfiles,inputfiles = get_binary_files(working_directory)
+  #print(binfiles)
+  binfile = binfiles[0] 
+  inputfile = inputfiles[0]
+ 
+  results_directory = current_directory + "/" + testname_cpu + "/benchmark_results/"
+  binfiles2,inputfiles2 = get_binary_files(results_directory) 
+  benchmark_binfile = binfiles2[0]
+
+  #print(working_directory)
+  #print(benchmark_binfile)
+  #print()
+  print(binfile)
+  print(benchmark_binfile)
+  print()
+  arg = "diffDiFX.py " + binfile + " " + benchmark_binfile + " " + "-i " + inputfile + " > binary_diff_vs_cpu.log"   
+  proc = subprocess.Popen(arg,cwd=working_directory,shell=True) 
+  proc.wait() 
+  fits_file = get_fits_file(working_directory)
+  fits_file_benchmark = get_fits_file(results_directory)
+  
+  # filter autocorrelations out of fits file
+  filter_auto_correlations(fits_file) 
+  
+  print()
+  print(fits_file)
+  print(fits_file_benchmark)
+  print() 
+
+  hdu1 = fits.open(fits_file)
+  hdu2 = fits.open(fits_file_benchmark) 
+
+  warnings.resetwarnings()
+  warnings.filterwarnings('ignore', category=UserWarning, append=True) 
+
+  fd = fits.FITSDiff(hdu1, hdu2, ignore_keywords=['DATE-MAP','CDATE','HISTORY'], atol=abstol , rtol=reltol)  
+  diff_fitslog = working_directory + "/fits_diff_vs_cpu.log"  
+  output = fd.report(fileobj=diff_fitslog, indent=0, overwrite=True) 
+  results[1] = fd.identical
+  hdu1.close()
+  hdu2.close()
+  #warnings.resetwarnings()
+  #warnings.filterwarnings('always', category=UserWarning, append=True)
+  #print("comparing fits_file = " + fits_file + " VS. benchmark fits file = " + fits_file_benchmark)
+  #print(fd.identical)
+  #print(output)
+
+  fp_binary_diff_file = working_directory + 'binary_diff_vs_cpu.log'
+  #print(fp_binary_diff_file)
+  with open(fp_binary_diff_file, encoding="utf8", errors='ignore') as f:
+  #with open(fp_binary_diff_file) as f:
+    last_line = f.readlines()[-1]
+  last_line = str(last_line)
+  last_line = last_line.strip('\n')
+  results[0] = last_line
+
+  return(results)
+
+
+
+
+
+
+
+
 def update_test(testname):
-  print("Updating tests")
+  print("Updating test " + testname)
 
   current_directory = os.getcwd()
   working_directory = current_directory + "/" + testname + "/"
@@ -520,6 +611,7 @@ def main():
   parser.add_argument("-a","--abstol",help="Absolute tolerance for FITS file comparison (default = 1e-17)",default=1e-17)
   parser.add_argument("-r","--reltol",help="Relative tolerance for FITS file comparison (default = 1e-2)",default=0.01)
   parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? ([yes]/no)",default="yes")
+  parser.add_argument("-t","--testgpu",help="run difx in gpu mode and compare results with benchmark (yes/[no])",default="no")
 
   input_args = parser.parse_args()
   generateVDIF = input_args.generateVDIF
@@ -530,16 +622,32 @@ def main():
   abstol = float(input_args.abstol)
   download = input_args.download
   download = download.upper()
+  testgpu = input_args.testgpu
+  testgpu = testgpu.upper()
+
+
+  # Check basic installation/compatability issues
   pre_checks()
 
   # list of test names
   test_name_list = ["complex-complex","lsb","lsb-complex","lsb-dsb","usb","usb-complex","usb-dsb"]
+  gpu_compatable_test_name_list = ["usb-gpu"]
 
+
+  # Add gpu mode tests to list of tests to be run 
+  if (testgpu == "YES"):
+    test_name_list.extend(gpu_compatable_test_name_list)
+     
 
 
   # Dictionary with pass/fail status of each test {"test name" : [binary file same (results), FITS file same (true/false)]} 
   passfail = {"complex-complex":["",True],"lsb":["",True],"lsb-complex":["",True],"lsb-dsb":["",True],"usb":["",True],"usb-complex":["",True],"usb-dsb":["",True]}
 
+  if (testgpu == "YES"):
+    for item in gpu_compatable_test_name_list:
+      passfail[item] = ["",True]
+      new_key = item + "-vs-cpu"
+      passfail[new_key] = ["",True]
   unpackage_tests(test_name_list)
 
 
@@ -557,15 +665,21 @@ def main():
   if (generateVDIF == "YES" or (os.path.isdir("testdata") == False)):
     create_test_data()
    
-  # Run DiFX on  
+  # Run DiFX on all compatable tests 
   for testname in test_name_list:
     rm_output_files(testname)
     runtest(testname)
   
-  
-  # Run comparison with the results
-  for testname in test_name_list:
-    passfail[testname] = compare_results(testname,abstol,reltol)
+   
+
+ 
+  # Run comparison with the results, gpu comparisons also compare gpu vs. cpu results
+  for key in passfail:
+    print(key)
+    if (key[-7:] == "-vs-cpu"):
+      passfail[key] = compare_results_gpu_v_cpu(key,abstol,reltol)
+    else:
+      passfail[key] = compare_results(key,abstol,reltol)
   
   if (updatetest == "YES"):
     for testname in test_name_list:
