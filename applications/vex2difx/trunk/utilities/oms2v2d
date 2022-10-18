@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2009-2020 by Walter Brisken                             *
+#   Copyright (C) 2009-2022 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -37,9 +37,9 @@ from os.path import isfile, isdir
 from os import umask, popen, system, getenv
 
 program = 'oms2v2d'
-version = '1.17'
-verdate = '20220401'
-author = 'Walter Brisken'
+version = '1.18'
+verdate = '20221018'
+author = 'Walter Brisken, Mark Wainright'
 
 def usage(pgm):
 	print('%s ver. %s  %s  %s\n' % (program, version, author, verdate))
@@ -161,6 +161,42 @@ def readOMS(filename, verbose):
 
 	return current
 
+# read the dbs.start file and return a dictionary of DBS start date-times
+def readDBSStart():
+	dbsStart = {}
+
+	difxBase = getenv('DIFX_BASE')
+	dbsStartPath = difxBase + '/dbs.start'
+	
+	try:
+		dbsStartLines = open(dbsStartPath).readlines()
+		if len(dbsStartLines) > 0:
+			for line in dbsStartLines:
+				if line[0] != '#':
+					pair = line.split()
+					dbsStart[pair[0]] = pair[1]
+	except FileNotFoundError:
+		# continue if file not found
+		pass
+
+	return dbsStart
+
+# check if DBS start is earlier than project info start and if format is Mark5B
+def dbsFormatChange(site, dbsStart, oms):
+	
+	siteStart = dbsStart[site]
+
+	# get PROJECT_INFO START date-time
+	projectInfoStart = oms['PROJECT_INFO'][0]['START'][0]
+
+	# get STATION_SETUP FORMAT
+	stationSetupFormat = oms['STATION_SETUP'][0]['FORMAT'][0]
+
+	if stationSetupFormat == 'MARK5B' and siteStart < projectInfoStart:
+		return True
+	else:
+		return False
+
 # return list of (host, filesystem)
 def getDatacopyInfo():
 	data = popen('dcadmin listfs', 'r')
@@ -232,7 +268,7 @@ def dropzeros(s):
 		ss = '0' + ss
 	return ss
 
-def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, profile, verbose):
+def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, profile, dbsStart, verbose):
 	machineMap = {'BR':'swc001', 'FD':'swc002', 'HN':'swc003', 'KP':'swc004', 'LA':'swc005', 'MK':'swc006', 'NL':'swc007', 'OV':'swc008', 'PT':'swc009', 'SC':'swc010', 'Y':'swc011', 'GB':'swc012'}
 	corr = oms['CORRELATOR_PARAMETERS'][0]
 
@@ -367,6 +403,12 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 			nds += 1
 		if nds > 0:
 			extra += ' '
+
+		# check if DBS changed Mark5B to VDIF
+		if len(dbsStart) > 0 and dbsFormatChange(s, dbsStart, oms) == True:
+			# DBS changed record format to VDIF5032
+			extra += 'format=VDIF5032 '
+
 		out.write('ANTENNA %s { toneSelection=smart %s}\n' % (s, extra))
 		if nds > 0:
 			out.write('\n')
@@ -500,7 +542,9 @@ if isfile(v2dFile):
 
 oms = readOMS(omsFile, verbose)
 
-writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, profile, verbose)
+dbsStart = readDBSStart()
+
+writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, profile, dbsStart, verbose)
 
 if evlbiType != None:
 	print('\nNOTE: if running in eVLBI mode for VLBA, consider using fiberLock.py to ensure routine network monitornig is turned off\n\n')
