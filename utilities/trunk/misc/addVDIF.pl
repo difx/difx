@@ -14,6 +14,8 @@ sub parseline ($);
 sub arrayOverlap(\@\@);
 sub inArray ($\@);
 sub printTracks(@);
+sub printFreqs(%);
+sub sortChannels($$);
 
 use constant NONE         => 0;
 use constant MODEBLOCK    => 1;
@@ -25,7 +27,8 @@ use constant DASREF       => 6;
 use constant TRACKBLOCK   => 7;
 use constant NEXTBLOCK    => 8;
 use constant DASBLOCK     => 9;
-
+use constant FREQREF      => 10;
+use constant FREQBLOCK    => 11;
 my $value;
 
 my $debug=0;
@@ -35,7 +38,6 @@ my $dasname='VDIF';
 my $complex = 0;
 
 GetOptions('debug'=>\$debug, 'bits=i'=>\$bits, 'framesize=i'=>\$framesize, 'das=s'=>\$dasname, 'complex'=>\$complex);
-
 
 if (@ARGV<2) {
   print<<EOF;
@@ -93,12 +95,11 @@ foreach my $ant (@stations) {
   die "Could not find $ant in $vexname\n" if (!$found);
 }
 
-
 my %modes = $vex->mode();
 
-
 my %updateModes = (); # Hash of Hash of number of channels for each ant for each mode
-my %usedChans = (); # Keep track of number of channels so we can create the right $TRACK section numb
+my %usedChans = ();   # Keep track of number of channels so we can create the right $TRACK section
+my %freqRefs = ();    # Hash of changed freq refs, which will need to be sorted
 
 foreach my $mode (keys %modes) {
   my $stationModes = $modes{$mode};
@@ -137,7 +138,7 @@ while (<VEX>) {
   if ($linetype==MODEBLOCK || $linetype==STATIONBLOCK) {
     $state = $linetype;
     $thisdef = undef;
-  } elsif ($linetype==TRACKBLOCK || $linetype==DASBLOCK) {
+  } elsif ($linetype==TRACKBLOCK || $linetype==DASBLOCK || $linetype==FREQBLOCK) {
     $state = $linetype;
   } elsif ($linetype==NEXTBLOCK) {
     $state = NONE;
@@ -159,7 +160,7 @@ while (<VEX>) {
       if (@trackants==0) {
 	close(VEX);
 	close(VEXOUT);
-	die "Error parsing track reference $_\n";
+	die "Error parsing \$TRACK reference $_\n";
       }
       if (arrayOverlap(@modeAnts,@trackants)) {
 	chomp;
@@ -187,14 +188,51 @@ EOF
 
 	my $nchan = $updateModes{$thisdef}->{$changeAnts[0]};
 	my ($startline) = /(^.*ref\s+\$TRACKS\s*=\s*)/;
-	print VEXOUT $startline, "VDIF.${nchan}Ch${bits}bit:", join(':', @changeAnts), ";\n";
-
+	print VEXOUT $startline, "VDIF${complex}.${nchan}Ch${bits}bit:", join(':', @changeAnts), ";\n";
       } else {
 	print VEXOUT;
       }
+    } elsif ($linetype==FREQREF) {
+      # Need to check if any of our antenna are in this line
+      my @freqants = split ':', $value;
+      my $origFreq = shift @freqants;
+      if (@freqants==0) {
+	close(VEX);
+	close(VEXOUT);
+	die "Error parsing \$FREQ reference $_\n";
+      }
+      if (arrayOverlap(@modeAnts,@freqants)) {
+	chomp;
+	print VEXOUT<<EOF;
+* Freq lines replaced my addVDIF.pl $nowStr
+*$_
+EOF
+	# Need to split antenna in this freq section to those which
+	# need to stay the same and those which should change
+	my @changeAnts = ();
+	my @keepAnts = ();
+	foreach (@freqants) {
+	  if (inArray($_,@modeAnts)) {
+	    push @changeAnts, $_;
+	  } else {
+	    push @keepAnts, $_;
+	  }
+	}
+	if (@keepAnts) {
+	  my @tmp = split /:/;
+	  print VEXOUT $tmp[0],':',join(':',@keepAnts), ";\n";
+	}
+	die "Internal error at $_" if (@changeAnts==0);
+	# Assume all changeAnts are the same - I think they have to be
 
-
-
+	my ($startline, $freqref) = /(^.*ref\s+\$FREQ\s*=\s*([^:]+))/;
+	print VEXOUT $startline, "-VDIF:", join(':', @changeAnts), ";\n";
+	if (! exists $freqRefs{$freqref}) {
+	  $freqRefs{$freqref} = sortChannels($thisdef, $changeAnts[0]);
+	}
+      } else {
+	print VEXOUT;
+      }
     } elsif ($linetype==ENDDEF) {
       $thisdef = undef;
       print VEXOUT;
@@ -207,6 +245,11 @@ EOF
     $state = NONE;
     printTracks(keys(%usedChans));
 
+  } elsif ($state==FREQBLOCK) {
+    print VEXOUT;
+    $state = NONE;
+    printFreqs(%freqRefs);
+    
   } elsif ($state==DASBLOCK) {
     print VEXOUT;
     $state = NONE;
@@ -246,7 +289,6 @@ EOF
     } else {
       print VEXOUT;
     }
-    
   }
 }
 
@@ -270,8 +312,6 @@ if ($vexname =~ /^(.*)\.([^\.]+)$/) {
   warn "Could not rename $vexname. Output left as $outvex\n";
 }
 
-# mv $outvex -> $newvex
-
 sub parseline ($) {
   $_ = shift;
 
@@ -279,6 +319,8 @@ sub parseline ($) {
     return MODEBLOCK;
   } elsif (/\$TRACKS\s*;/) {
     return TRACKBLOCK;
+  } elsif (/\$FREQ\s*;/) {
+    return FREQBLOCK;
   } elsif (/\$STATION\s*;/) {
     return STATIONBLOCK;
   } elsif (/\$DAS\s*;/) {
@@ -291,6 +333,9 @@ sub parseline ($) {
   } elsif (/ref\s+\$TRACKS\s*=\s*(\S+)\s*;/) {
     $value = $1;
     return TRACKREF;
+  } elsif (/ref\s+\$FREQ\s*=\s*(\S+)\s*;/) {
+    $value = $1;
+    return FREQREF;
   } elsif (/ref\s+\$DAS\s*=\s*(\S+)\s*;/) {
     $value = $1;
     return DASREF;
@@ -318,6 +363,33 @@ sub arrayOverlap(\@\@) {
   return 0;
 }
 
+sub track_sort {
+  my @a_tracks = $a->tracks;
+  my @b_tracks = $b->tracks;
+
+  die "Do not support fanout" if scalar @a_tracks>1 or scalar @b_tracks>1;
+  
+  return $a_tracks[0] <=> $b_tracks[0];
+}
+
+sub sortChannels ($$) {
+  my ($mode, $ant) = @_;
+  if (! exists $modes{$mode}->{$ant}) {
+    die "Internal error (vex or code). $ant is not in mode $mode\n";
+  }
+  my $stationmode = $modes{$mode}->{$ant};
+  my $tracks = $stationmode->tracks;
+  my @tracks = sort track_sort $tracks->fanout;
+  my @sortedChan = ();
+  my %seenChan = ();
+  foreach (@tracks) {
+    next if (exists $seenChan{$_->trackID});
+    $seenChan{$_->trackID} = 1;
+    push @sortedChan, $_->trackID;
+  }
+  return [@sortedChan];
+}
+
 sub printTracks(@) {
 
   print VEXOUT<<EOF;
@@ -329,7 +401,7 @@ EOF
   
   foreach (@_) {
     print VEXOUT<<EOF;
-def VDIF.${_}Ch${bits}bit;
+def VDIF${complex}.${_}Ch${bits}bit;
   track_frame_format = VDIF${complex}/$framesize/$bits;
 EOF
     
@@ -341,5 +413,66 @@ EOF
       $track++;
     }
     print VEXOUT "enddef;\n*\n";
+  }
+}
+
+sub isChandef ($) {
+  my $line = shift;
+  if ($line=~/chan_def\s*=[^:]*:[^:]*:[^:]*:[^:]*:\s*\&(\S+)\s*:\s*\&BBC\d+\s*:[^\;]*\;/i) {
+    return($1);
+  } else {
+    return undef;
+  }
+}
+
+sub printFreqs(%) {
+  my %changedFreqs = @_;
+  
+  # Read vexfile again so we can find $FREQ section
+  my $vexstr;
+  {
+    local $/;
+    open my $fh, '<', $vexname or die "can't open $vexname: $!";
+    $vexstr = <$fh>;
+    close($fh);
+  }
+
+ 
+  my ($freqstr) = $vexstr =~ /(\$FREQ\s*\;.*?)\$\S+\s*\;/is;
+
+  # split /^/m, $text
+  my %freqs = ();
+  while ( $freqstr =~ /(def\s+(\S+)\s*\;.*?enddef\s*\;)/gis) {
+    $freqs{$2} = [split /^/m, $1];  # Break on newline onto a list of lines
+  }
+  
+  print VEXOUT<<EOF;
+*
+* Extra Freq defs added by addVDIF.pl $nowStr
+*
+*
+EOF
+
+  foreach my $f (keys %changedFreqs) {
+    my %chandefs = ();
+    die "Cannot find \$FREQ def $f\n" if (! exists $freqs{$f});
+    # Find all the channel defs
+    $freqs{$f}->[0] =~ s/def\s*(\S+)\s*\;/def ${1}-VDIF\;/;
+    foreach (@{$freqs{$f}}) {
+      my $ch = isChandef($_);
+      if (defined $ch) {
+	$chandefs{$ch} = $_;
+      } elsif (!/enddef/) {
+	print VEXOUT;
+      }
+    }
+    my $ichan = 1;
+    foreach (@{$freqRefs{$f}}){
+      my $newchan = sprintf("&CH%02d", $ichan);
+      $ichan++;
+      $chandefs{$_} =~ s/&$_/$newchan/i;
+      print(VEXOUT $chandefs{$_});
+    }
+    printf(VEXOUT "enddef;\n");
   }
 }
