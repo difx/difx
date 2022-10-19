@@ -15,6 +15,7 @@ Config file example:
   extra_chavg: 1                           further spectral averaging before output
   stitch_antennas: AA, PV
   stitch_basefreqs: 86476.00, 86412.00
+  stitch_nstokes: 4
   verbose: false
 
   [phases_deg]
