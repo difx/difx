@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2009-2019 by Walter Brisken                             *
+#   Copyright (C) 2009-2022 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -33,6 +33,7 @@
 # Note: this utility can run under python2.7 or python3
 
 from sys import argv, exit
+from datetime import datetime
 from glob import glob
 from os import getenv, chdir, system, getcwd, rmdir, umask
 from os.path import isfile, isdir, getsize
@@ -41,7 +42,7 @@ from time import gmtime, time
 program = 'makefits'
 version = '1.1'
 author  = 'Walter Brisken'
-verdate = '20191007'
+verdate = '20221020'
 
 calfiles = 'tsys flag pcal weather *.*.flag *.*.weather *.*.pcal *.*.tsys *.*.cablecal *.*.gain'
 
@@ -275,7 +276,7 @@ class JobList:
 
 		datestr = genDateStr(t)
 
-		tmp = dir + '/' + 'makefits.tmp'
+		tmp = dir + '/' + 'makefits.tmp.' + self.kv['pass']
 		if isdir(tmp):
 			print('\nError: temporary directory %s already exists.  Aborting.' % tmp)
 			exit(0)
@@ -332,10 +333,17 @@ class JobList:
 		j = 1
 		fitslistfile = '%s/%s.fitslist' % (cwd, self.kv['pass'])
 		if isfile(fitslistfile):
-			print("FITS listing file " + fitslistfile + " already exists; not proceeding!")
-			print("Remove this file if the FITS files listed within have already been")
-			print("archived or are not required")
-			exit(0)
+			ts = f"{datetime.now():%Y-%m-%d.%H:%M:%S}"
+			fitslistfilets = fitslistfile + '.' + ts
+			cmd = 'mv %s %s' % (fitslistfile, fitslistfilets)
+			print("FITS listing file " + fitslistfile + " already exists")
+			print("Renaming to %s" % fitslistfilets)
+			print("Executing: %s" % cmd)
+			system(cmd)
+			if isfile(fitslistfile):
+				printf("File rename failed.  Quitting.")
+				exit(0)
+
 		out = open(fitslistfile, 'w')
 		out.write('exper=%s  pass=%s  jobs=%s  mjd=%9.7f  DiFX=%s  difx2fits=0' % \
 			(self.kv['exper'], self.kv['pass'], self.filename, getmjd(t), self.kv['DiFX']))

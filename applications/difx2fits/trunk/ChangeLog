@@ -17,6 +17,7 @@ Version 3.7.0
       - AIPS from Aug 2022 or later is required.
   - When not activated, behavior is unchanged from past versions
 * Increase observation code length to 24
+* makefits: a few minor changes requested by VLBA analysts
 
 Commit 10003 2021.04.30
 
