@@ -148,7 +148,7 @@ while (<VEX>) {
     print VEXOUT;
   } elsif ($state==MODEBLOCK) {
     if ($linetype==DEF) {
-      die "Error parsing vexfile. \$MODE def $thisdef not closed before def $value\n"
+      die "Error parsingvexfile. \$MODE def $thisdef not closed before def $value\n"
 	if (defined $thisdef);
       $thisdef = $value;
       @modeAnts = keys(%{$updateModes{$thisdef}});
@@ -313,33 +313,35 @@ if ($vexname =~ /^(.*)\.([^\.]+)$/) {
 }
 
 sub parseline ($) {
-  $_ = shift;
+  my $line = = shift;
 
-  if (/\$MODE\s*;/) {
+  $line =~ s/\*.*$//;  # Remove comments
+
+  if ($line =~ /\$MODE\s*;/) {
     return MODEBLOCK;
-  } elsif (/\$TRACKS\s*;/) {
+  } elsif ($line =~ /\$TRACKS\s*;/) {
     return TRACKBLOCK;
-  } elsif (/\$FREQ\s*;/) {
+  } elsif ($line =~ /\$FREQ\s*;/) {
     return FREQBLOCK;
-  } elsif (/\$STATION\s*;/) {
+  } elsif ($line =~ /\$STATION\s*;/) {
     return STATIONBLOCK;
-  } elsif (/\$DAS\s*;/) {
+  } elsif ($line =~ /\$DAS\s*;/) {
     return DASBLOCK;
-  } elsif (/def\s+(\S+)\s*;/) {
+  } elsif ($line =~ /def\s+(\S+)\s*;/) {
     $value = $1;
     return DEF;
-  } elsif (/def\s*;/) {
+  } elsif ($line =~ /def\s*;/) {
     return ENDDEF;
-  } elsif (/ref\s+\$TRACKS\s*=\s*(\S+)\s*;/) {
+  } elsif ($line =~ /ref\s+\$TRACKS\s*=\s*(\S+)\s*;/) {
     $value = $1;
     return TRACKREF;
-  } elsif (/ref\s+\$FREQ\s*=\s*(\S+)\s*;/) {
+  } elsif ($line =~ /ref\s+\$FREQ\s*=\s*(\S+)\s*;/) {
     $value = $1;
     return FREQREF;
-  } elsif (/ref\s+\$DAS\s*=\s*(\S+)\s*;/) {
+  } elsif ($line =~ /ref\s+\$DAS\s*=\s*(\S+)\s*;/) {
     $value = $1;
     return DASREF;
-  } elsif (/\$\S+\s*;/) {
+  } elsif ($line =~ /\$\S+\s*;/) {
     return NEXTBLOCK;
   } else {
     return NONE;
