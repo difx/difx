@@ -5,6 +5,7 @@
 #  - one vex value per line
 #  - All antenna with the same original $TRACK ref have the same setup
 
+use strict;
 use Astro::Vex;
 
 use POSIX qw(floor);
@@ -226,9 +227,9 @@ EOF
 	# Assume all changeAnts are the same - I think they have to be
 
 	my ($startline, $freqref) = /(^.*ref\s+\$FREQ\s*=\s*([^:]+))/;
-	print VEXOUT $startline, "-VDIF:", join(':', @changeAnts), ";\n";
-	if (! exists $freqRefs{$freqref}) {
-	  $freqRefs{$freqref} = sortChannels($thisdef, $changeAnts[0]);
+	foreach my $a (@changeAnts) {
+	  print VEXOUT $startline, "-VDIF-", $a, ":", $a, ";\n";
+	  $freqRefs{"$freqref-$a"} = sortChannels($thisdef, $a);
 	}
       } else {
 	print VEXOUT;
@@ -400,10 +401,15 @@ sub printTracks(@) {
 *
 *
 EOF
-  
+
+  my %doneTracks = ();
   foreach (@_) {
+    my $trackDef = "VDIF${complex}.${_}Ch${bits}bit";
+    next if (exists $doneTracks{$trackDef});
+    $doneTracks{$trackDef} = 1;
+
     print VEXOUT<<EOF;
-def VDIF${complex}.${_}Ch${bits}bit;
+def $trackDef;
   track_frame_format = VDIF${complex}/$framesize/$bits;
 EOF
     
@@ -456,11 +462,13 @@ sub printFreqs(%) {
 EOF
 
   foreach my $f (keys %changedFreqs) {
+    my ($ref, $ant) = $f =~ /(.*)-(..)$/;
     my %chandefs = ();
-    die "Cannot find \$FREQ def $f\n" if (! exists $freqs{$f});
+    die "Cannot find \$FREQ def $f" if (! exists $freqs{$ref});
     # Find all the channel defs
-    $freqs{$f}->[0] =~ s/def\s*(\S+)\s*\;/def ${1}-VDIF\;/;
-    foreach (@{$freqs{$f}}) {
+    my $origFreqDef = $freqs{$ref}->[0];
+    $freqs{$ref}->[0] =~ s/def\s*(\S+)\s*\;/def ${1}-VDIF-$ant\;/;
+    foreach (@{$freqs{$ref}}) {
       my $ch = isChandef($_);
       if (defined $ch) {
 	$chandefs{$ch} = $_;
@@ -468,6 +476,7 @@ EOF
 	print VEXOUT;
       }
     }
+    $freqs{$ref}->[0] = $origFreqDef;
     my $ichan = 1;
     foreach (@{$freqRefs{$f}}){
       my $newchan = sprintf("&CH%02d", $ichan);
