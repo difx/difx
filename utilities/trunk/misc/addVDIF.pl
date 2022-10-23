@@ -313,7 +313,7 @@ if ($vexname =~ /^(.*)\.([^\.]+)$/) {
 }
 
 sub parseline ($) {
-  my $line = = shift;
+  my $line = shift;
 
   $line =~ s/\*.*$//;  # Remove comments
 
