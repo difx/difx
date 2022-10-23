@@ -25,7 +25,8 @@ dist_bin_SCRIPTS = \
 	mk5bheader.pl \
 	m6modinit.py \
 	updateDelay.pl \
-	updateRate.pl
+	updateRate.pl \
+	mjd2hms.pl
 
 bin_PROGRAMS = m5fb_makeheader
 
