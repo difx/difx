@@ -1909,6 +1909,9 @@ doPolar		& bool		&	& True		& correlate cross hands when possible \\
 postFFringe	& bool		&	& False		& do fringe rotation after FFT? \\
 binConfig	& string	&	& none		& if specified, apply this pulsar bin config file to this setup \\
 freqId		& $[$int$]$	&	& $[ ]$ = all	& frequency bands to correlate \\
+outputBandwidth & float\textbar{}'auto' & MHz & n/a & Target bandwidth when auto determining outputbands, or, \\
+addOutputBand   & $[$string$]$          &     & n/a & Add an outputband with explicit placement and bandwidth \\
+	            &                       &     &     & freq@1810.0/bw@4.0  \\
 \hline
 \hline
 \end{tabular}
@@ -1918,6 +1921,10 @@ Note that either ``FFTSpecRes'' and ``specRes'' can be used, or ``nChan'' and ``
 
 Zoom channels can be configured in a special section and referenced from ANTENNA sections to minimize complexity of the {\tt .v2d} file.
 Each ZOOM section has a name and one or more ``addZoomFreq'' parameters, with the same format as they would have in the ANTENNA block.
+
+Output bands can be defined in the SETUP block in DiFX~2.7 (OUTPUTBAND block in DiFX~2.8) via ``outputBandwidth'' or alternatively ``addOutputBand''.
+Permitted ``outputBandwidth'' values are 'auto' to auto-determine the bandwidth, or, an explicit bandwidth as a decimal value in MHz.
+Band placement is automatic. For explicit placement and bandwith instead use ``addOutputBand''.
 
 Earth Orientation Parameter (EOP) data can be provided via one or more EOP sections.
 EOP data should be provided either in the {\tt .v2d} file or in the vex file, but not both.
@@ -1996,9 +2003,6 @@ calCode	& $[$char$]$	&	& one or more calibration code to select with this rule \
 mode	& $[$string$]$	&	& one or more modes as defined in the vex file to select with this rule \\
 setup	& string	&	& The name of the SETUP section to use, or SKIP if this rule describes scans \\
 	&		&	& not to correlate \\
-outputBandwidth & float        & MHz & Target bandwidth for auto-determined bands. Enables outputband mode. DiFX~2.7. \\
-addOutputBand   & $[$string$]$ &     & Explicit outputband definition. Enables outputband mode. DiFX~2.7. \\
-	&		&	& freq@1810.0/bw@4.0 \\
 \hline
 \hline
 \end{tabular}
