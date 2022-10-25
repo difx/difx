@@ -42,7 +42,7 @@ from time import gmtime, time
 program = 'makefits'
 version = '1.1'
 author  = 'Walter Brisken'
-verdate = '20221020'
+verdate = '20221025'
 
 calfiles = 'tsys flag pcal weather *.*.flag *.*.weather *.*.pcal *.*.tsys *.*.cablecal *.*.gain'
 
@@ -312,7 +312,7 @@ class JobList:
 		files = glob('*.*.*.*.FITS')
 		if len(files) == 0:
 			print('Error: No fits files made')
-			print('Please clean remove %s when you are done picking up the pieces.' % tmp)
+			print('Please clean up and remove %s when you are done picking up the pieces.' % tmp)
 			exit(0)
 		if verbose:
 			print('Made %d FITS files' % len(files))
@@ -324,7 +324,7 @@ class JobList:
 			s = f.split('.')
 			if s[0] != expt:
 				print('Error: Unexpected variety of FITS files found:', files)
-				print('Please clean remove %s when you are done picking up the pieces.' % tmp)
+				print('Please clean up and remove %s when you are done picking up the pieces.' % tmp)
 				exit(0)
 			indices.append([int(s[1]), int(s[2][3:]), int(s[3][6:])])
 
@@ -442,7 +442,24 @@ class JobList:
 
 		chdir(cwd)
 
-		if len(glob('%s/*' % tmp)) == 0:
+		unexpectedFileCount = 0
+		cpolCount = 0
+		jobmatrixCount = 0
+		G = glob('%s/*' % tmp)
+		for g in G:
+			if g[-5:] == '.cpol':
+				cpolCount += 1
+				continue
+			if g[-10:] == '.jobmatrix':
+				jobmatrixCount += 1
+				continue
+			unexpectedFileCount += 1
+
+		if unexpectedFileCount == 0:
+			cmd = 'rm --force %s/*.cpol %s/*.jobmatrix' % (tmp, tmp)
+			if verbose:
+				print('Executing: %s' % cmd)
+			system(cmd)
 			rmdir(tmp)
 		
 		if isdir(tmp):
