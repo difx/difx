@@ -24,7 +24,8 @@ int fplot (esum *data)
     extern struct plot_info pdata[];
     static struct mk4_fringe fringe4;
     int index, ret;
-    char *fname, *fringename(), fullname[256], localname[256];
+    char *fname, fullname[256], localname[256];
+    extern char* fringename(fringesum *);
     char c, *argv[2];
     int argc = 1;
     extern char datadir[];

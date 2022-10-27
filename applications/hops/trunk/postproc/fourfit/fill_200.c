@@ -14,8 +14,10 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
+#include "msg.h"
 #include "vex.h"
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 #include "param_struct.h"
 #ifdef HAVE_CONFIG_H
 #include "hops_config.h"
@@ -30,7 +32,7 @@ struct type_200 *t200)
     {
     extern struct mk4_corel cdata; 
     time_t tm;
-    struct tm *utc_now, *gmtime();
+    struct tm *utc_now, *gmtime(const time_t*);
     int int_reftime, year, day, hour, minute, second;
 
     clear_200 (t200);

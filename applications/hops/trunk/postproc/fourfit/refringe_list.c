@@ -23,9 +23,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
+#include "msg.h"
 #include "adata.h"
 #include "refringe.h"
 #include "fstruct.h"
+#include "mk4_afio.h"
 
 #define NF_ALLOC    1000
 #define NB_ALLOC    (5*NF_ALLOC)
@@ -37,7 +39,6 @@ refringe_list (char* afile_name, fstruct** files, bsgstruct**  base_sgrp)
     int ret, i, fc, version, type, nfalloc, nballoc, nroot, nbsg;
     int len, nbadline, nbadname;
     char *fname;
-    char *fringename();
     bsgstruct *bsg;
     fringesum fdata;
     FILE *fp;

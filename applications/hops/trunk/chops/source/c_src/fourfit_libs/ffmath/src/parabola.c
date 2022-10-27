@@ -26,7 +26,8 @@ int parabola (double y[3], double lower, double upper, double* x_max, double* am
     {
     int i,
         rc;
-    double x, range, dwin();
+    double x, range;
+    extern double dwin(double, double, double);
 
     range = fabs (upper - lower);
 

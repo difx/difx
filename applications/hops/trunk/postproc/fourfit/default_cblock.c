@@ -7,6 +7,7 @@
 ***********************************************************************/
 
 #include "control.h"
+#include "ffcontrol.h"
 #include "mk4_sizes.h"
 #include <string.h>
 

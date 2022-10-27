@@ -16,9 +16,10 @@
 #include <stdlib.h>
 #include "fringex.h"
 #include "fstruct.h"
+#include "msg.h"
 
-char progname[8] = "fringex";
-int msglev = 1;
+// char progname[8] = "fringex";
+// int msglev = 1;
 
 int main (int argc, char **argv)
     {
@@ -31,6 +32,9 @@ int main (int argc, char **argv)
     struct loops loops;
     fstruct *files;
     double set_reffreq();
+
+    set_progname("fringex");
+    set_msglev(1);
                                         /* Start accounting */
     account ("!BEGIN");
                                         /* Initialize parameter structure */

@@ -33,7 +33,7 @@ int
 check_intrange (int value,
                 char *range)
     {
-    int i, len, ncolon, nrng, inequality, operator, intval;
+    int i, len, ncolon, nrng, inequality, oper, intval;
     int start, end;
     int cpos[MAXRNG-1];
     char rng_fld[50], junk[50];
@@ -78,9 +78,9 @@ check_intrange (int value,
             if (rng_fld[1] == '=') 
                 {
                 ptr2++;
-                operator = LEQ;
+                oper = LEQ;
                 }
-            else operator = LT;
+            else oper = LT;
             }
         else if (rng_fld[0] == '>')
             {
@@ -88,11 +88,11 @@ check_intrange (int value,
             if (rng_fld[1] == '=') 
                 {
                 ptr2++;
-                operator = GEQ;
+                oper = GEQ;
                 }
-            else operator = GT;
+            else oper = GT;
             }
-        else operator = EQ;
+        else oper = EQ;
                                         /* Get integer value */
         if (sscanf (ptr2, "%d%s", &intval, junk) != 1)
             {
@@ -100,7 +100,7 @@ check_intrange (int value,
             return (FALSE);
             }
                                         /* Perform range test */
-        switch (operator)
+        switch (oper)
             {
             case LEQ:
                 if (value > intval) return (FALSE);

@@ -19,10 +19,12 @@
 /*                                                                      */
 /************************************************************************/
 #include <math.h>
+#include "msg.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
-#include "ff_misc_if.h"
+#include "ffcontrol.h"
+//#include "ff_misc_if.h"
 
 int
 gate_off (struct type_pass* pass, int frq, int ap)

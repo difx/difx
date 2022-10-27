@@ -1,4 +1,1010 @@
 ------------------------------------------------------------------------
+r3740 | dhoak | 2022-10-25 14:12:30 -0400 (Tue, 25 Oct 2022) | 1 line
+Changed paths:
+   A /trunk/chops/source/python_src/scripts/parallactic_plots.py.in
+
+added parallactic plotting script back in
+
+------------------------------------------------------------------------
+r3739 | dhoak | 2022-10-25 14:11:46 -0400 (Tue, 25 Oct 2022) | 1 line
+Changed paths:
+   D /trunk/chops/source/python_src/scripts/parallactic_plots.py.in
+   M /trunk/chops/source/python_src/scripts/summarize_report.py.in
+
+resolve conflict, fixed typo in makefile
+
+------------------------------------------------------------------------
+r3738 | dhoak | 2022-10-25 14:06:19 -0400 (Tue, 25 Oct 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+
+edit to dtec search range for ionex predictions
+
+------------------------------------------------------------------------
+r3737 | dhoak | 2022-10-25 14:01:00 -0400 (Tue, 25 Oct 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/get_ionex_dtec_bounds.py.in
+
+edit to VGOS ionex dtec script
+
+------------------------------------------------------------------------
+r3735 | gbc | 2022-10-20 08:36:38 -0400 (Thu, 20 Oct 2022) | 1 line
+Changed paths:
+   M /trunk/postproc/average/parse_cmdline.c
+
+boosted filename length
+
+------------------------------------------------------------------------
+r3718 | barrettj | 2022-09-21 13:46:42 -0400 (Wed, 21 Sep 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+bugfix in pcc_generate to allow it to gracefully handle channels with missing pcal data
+
+------------------------------------------------------------------------
+r3683 | gbc | 2022-08-04 14:41:50 -0400 (Thu, 04 Aug 2022) | 1 line
+Changed paths:
+   M /trunk/ompi/readme.sh
+
+added sk29
+
+------------------------------------------------------------------------
+r3682 | gbc | 2022-08-04 13:38:50 -0400 (Thu, 04 Aug 2022) | 1 line
+Changed paths:
+   M /trunk/ompi/readme.sh
+
+cleaned up the help
+
+------------------------------------------------------------------------
+r3646 | gbc | 2022-06-08 10:06:46 -0400 (Wed, 08 Jun 2022) | 1 line
+Changed paths:
+   A /trunk/ASCL.txt
+
+saving a reference
+
+------------------------------------------------------------------------
+r3645 | gbc | 2022-06-08 10:05:27 -0400 (Wed, 08 Jun 2022) | 1 line
+Changed paths:
+   M /trunk/Copyright
+
+updated year
+
+------------------------------------------------------------------------
+r3643 | dhoak | 2022-06-07 12:08:00 -0400 (Tue, 07 Jun 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/get_ionex_dtec_bounds.py.in
+
+added GPL to IONEX script
+
+------------------------------------------------------------------------
+r3635 | gbc | 2022-05-31 13:08:08 -0400 (Tue, 31 May 2022) | 1 line
+Changed paths:
+   M /trunk/ompi/test.sh
+
+better logic to the bd var if not set
+
+------------------------------------------------------------------------
+r3634 | gbc | 2022-05-31 12:34:42 -0400 (Tue, 31 May 2022) | 1 line
+Changed paths:
+   M /trunk/ompi/readme.sh
+
+shifted test arena to /tmp/ompi
+
+------------------------------------------------------------------------
+r3627 | dhoak | 2022-05-28 18:47:59 -0400 (Sat, 28 May 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+   M /trunk/chops/source/python_src/scripts/get_ionex_dtec_bounds.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+
+option to batch_fourfit to use ionex prediction file; edit indentation in get_ionex script
+
+------------------------------------------------------------------------
+r3611 | dhoak | 2022-05-12 15:09:14 -0400 (Thu, 12 May 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/get_ionex_dtec_bounds.py.in
+
+fixed typos and bugs
+
+------------------------------------------------------------------------
+r3610 | dhoak | 2022-05-12 12:54:25 -0400 (Thu, 12 May 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   A /trunk/chops/source/python_src/scripts/get_ionex_dtec_bounds.py.in
+   M /trunk/configure.ac
+
+script to calculate station TEC with IONEX maps
+
+------------------------------------------------------------------------
+r3590 | dhoak | 2022-04-28 13:32:06 -0400 (Thu, 28 Apr 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/channel_phase_resid.py.in
+
+modifications to vgos plotting tools
+
+------------------------------------------------------------------------
+r3574 | gbc | 2022-04-22 14:47:08 -0400 (Fri, 22 Apr 2022) | 1 line
+Changed paths:
+   M /trunk/ompi/ringload.c
+
+shut up compiler
+
+------------------------------------------------------------------------
+r3573 | gbc | 2022-04-22 14:46:32 -0400 (Fri, 22 Apr 2022) | 1 line
+Changed paths:
+   M /trunk/ompi/ringload.c
+
+friendlier
+
+------------------------------------------------------------------------
+r3572 | gbc | 2022-04-22 14:04:23 -0400 (Fri, 22 Apr 2022) | 1 line
+Changed paths:
+   M /trunk/ompi/test.sh
+
+fixed up the help
+
+------------------------------------------------------------------------
+r3557 | dhoak | 2022-04-07 11:20:47 -0400 (Thu, 07 Apr 2022) | 1 line
+Changed paths:
+   A /trunk/chops/source/python_src/scripts/az_el_amp_plot.py.in
+
+missing script that caused the nightly build to fail
+
+------------------------------------------------------------------------
+r3555 | dhoak | 2022-04-06 17:22:37 -0400 (Wed, 06 Apr 2022) | 1 line
+Changed paths:
+   A /trunk/chops/source/python_src/scripts/compare_pol_hands.py.in
+
+script for polarization amplitude comparison
+
+------------------------------------------------------------------------
+r3554 | dhoak | 2022-04-06 17:21:37 -0400 (Wed, 06 Apr 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/ffres2pcp.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+   M /trunk/configure.ac
+
+edits to config for new scripts
+
+------------------------------------------------------------------------
+r3553 | dhoak | 2022-04-06 17:19:40 -0400 (Wed, 06 Apr 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+   A /trunk/chops/source/python_src/scripts/channel_phase_resid.py.in
+   M /trunk/chops/source/python_src/scripts/parallactic_plots.py.in
+
+script for plotting channel residuals
+
+------------------------------------------------------------------------
+r3550 | dhoak | 2022-03-23 15:52:41 -0400 (Wed, 23 Mar 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/Makefile.am
+
+update makefile
+
+------------------------------------------------------------------------
+r3549 | dhoak | 2022-03-23 15:52:09 -0400 (Wed, 23 Mar 2022) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+update configure for script
+
+------------------------------------------------------------------------
+r3548 | dhoak | 2022-03-23 15:51:04 -0400 (Wed, 23 Mar 2022) | 1 line
+Changed paths:
+   A /trunk/chops/source/python_src/scripts/parallactic_plots.py.in
+
+script for plotting parallactic angle vs normalized pol products
+
+------------------------------------------------------------------------
+r3538 | barrettj | 2022-02-28 23:15:09 -0500 (Mon, 28 Feb 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/afio/src/check_sizes.c
+   M /trunk/chops/source/c_src/applications/aedit/include/aedit.h
+   M /trunk/chops/source/c_src/applications/aedit/src/active_filter.c
+   M /trunk/chops/source/c_src/applications/aedit/src/edit_families.c
+   M /trunk/chops/source/c_src/applications/aedit/src/init_inputs.c
+   M /trunk/chops/source/c_src/applications/aedit/src/pr_inputs.c
+   M /trunk/chops/source/c_src/applications/aedit/src/summ_fringe.c
+   M /trunk/chops/source/c_src/applications/aedit/src/summ_triangle.c
+   M /trunk/chops/source/c_src/dfio/src/clear_110.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/ffcontrol.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/copy_cblock_parts.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/lex.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/create_lockfile.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_205.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/display_fplot.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_postplot.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/compute_qf.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/freq_spacing.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_xf.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/parse_cmdline.c
+   M /trunk/chops/source/c_src/mk4util/src/check_name.c
+   M /trunk/chops/source/c_src/vex/src/do_das.c
+   M /trunk/chops/source/c_src/vex/src/get_trm_config.c
+   M /trunk/correlator/CorAsc2/CorAsc2.c
+   M /trunk/correlator/CorAsc2/CorPrune.c
+   M /trunk/postproc/aedit/active_filter.c
+   M /trunk/postproc/aedit/aedit.h
+   M /trunk/postproc/aedit/edit_families.c
+   M /trunk/postproc/aedit/init_inputs.c
+   M /trunk/postproc/aedit/pr_inputs.c
+   M /trunk/postproc/aedit/summ_fringe.c
+   M /trunk/postproc/aedit/summ_triangle.c
+   M /trunk/postproc/fourfit/compute_qf.c
+   M /trunk/postproc/fourfit/copy_cblock_parts.c
+   M /trunk/postproc/fourfit/create_lockfile.c
+   M /trunk/postproc/fourfit/display_fplot.c
+   M /trunk/postproc/fourfit/ffcontrol.h
+   M /trunk/postproc/fourfit/fill_205.c
+   M /trunk/postproc/fourfit/freq_spacing.c
+   M /trunk/postproc/fourfit/generate_graphs.c
+   M /trunk/postproc/fourfit/lex.c
+   M /trunk/postproc/fourfit/make_postplot.c
+   M /trunk/postproc/fourfit/norm_xf.c
+   M /trunk/postproc/fourfit/parse_cmdline.c
+   M /trunk/postproc/search/read_data.c
+   M /trunk/sub/afio/check_sizes.c
+   M /trunk/sub/dfio/clear_110.c
+   M /trunk/sub/msg/msg.c
+   M /trunk/sub/util/check_name.c
+   M /trunk/sub/vex/do_das.c
+   M /trunk/sub/vex/get_trm_config.c
+
+importing a bunch of compiler warning fixes from hops4, make check passes locally, need to see nightly
+
+------------------------------------------------------------------------
+r3536 | barrettj | 2022-02-28 12:03:47 -0500 (Mon, 28 Feb 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/pass_struct.h
+   M /trunk/postproc/fourfit/pass_struct.h
+
+cast string const to char* -- for c++ compiler warning
+
+------------------------------------------------------------------------
+r3533 | barrettj | 2022-02-28 09:44:58 -0500 (Mon, 28 Feb 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/create_fsm.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/init_tokens.c
+   M /trunk/postproc/fourfit/create_fsm.c
+   M /trunk/postproc/fourfit/init_tokens.c
+
+fix return value for functions init_tokens.c and create_fsm
+
+------------------------------------------------------------------------
+r3528 | barrettj | 2022-02-18 09:40:38 -0500 (Fri, 18 Feb 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/proxy_cable_cal.py
+
+fix problem in progress.Bar iteration for py3 as reported by Eskil
+
+------------------------------------------------------------------------
+r3525 | dhoak | 2022-02-17 12:35:13 -0500 (Thu, 17 Feb 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/scripts/vgoscf_generate.py.in
+
+Added some error handling for vgoscf_generate
+
+------------------------------------------------------------------------
+r3461 | gbc | 2021-11-23 11:12:10 -0500 (Tue, 23 Nov 2021) | 1 line
+Changed paths:
+   M /trunk/misc/plan/plotAlistResids.py
+
+py3ified the thing
+
+------------------------------------------------------------------------
+r3459 | gbc | 2021-11-22 11:55:08 -0500 (Mon, 22 Nov 2021) | 4 lines
+Changed paths:
+   M /trunk/misc/plan/Makefile.am
+   M /trunk/misc/plan/dsolv3_main.c
+   M /trunk/misc/plan/plotAlistResids.py
+   A /trunk/misc/plan/position_dsolv_ave.sh
+
+first crack (failed) at modernizing helge program
+
+also cleaned up the help text.
+
+
+------------------------------------------------------------------------
+r3453 | gbc | 2021-11-17 16:53:29 -0500 (Wed, 17 Nov 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/mk4util/src/environment.c
+   M /trunk/sub/util/Makefile.am
+   M /trunk/sub/util/environment.c
+
+now has the intended semantics
+
+------------------------------------------------------------------------
+r3450 | gbc | 2021-11-16 17:16:32 -0500 (Tue, 16 Nov 2021) | 4 lines
+Changed paths:
+   M /trunk/chops/source/c_src/mk4util/src/environment.c
+   M /trunk/hops.bash.in
+   M /trunk/sub/util/Makefile.am
+   M /trunk/sub/util/environment.c
+   A /trunk/sub/util/test_vextext.c
+
+butchered environment.c so that we have options
+
+This may be good enough for now.
+
+
+------------------------------------------------------------------------
+r3449 | gbc | 2021-11-16 15:38:39 -0500 (Tue, 16 Nov 2021) | 1 line
+Changed paths:
+   A /trunk/chops/source/python_src/tests/3593.tvf.gz
+   M /trunk/chops/source/python_src/tests/Makefile.am
+
+added a listing
+
+------------------------------------------------------------------------
+r3434 | barrettj | 2021-11-10 09:14:12 -0500 (Wed, 10 Nov 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/msg/src/msg.c
+   M /trunk/sub/msg/msg.c
+
+make sure msg is silent by default
+
+------------------------------------------------------------------------
+r3432 | gbc | 2021-11-03 11:31:48 -0400 (Wed, 03 Nov 2021) | 1 line
+Changed paths:
+   M /trunk/postproc/search/Makefile.am
+
+fixing a test
+
+------------------------------------------------------------------------
+r3430 | gbc | 2021-11-02 14:58:43 -0400 (Tue, 02 Nov 2021) | 1 line
+Changed paths:
+   M /trunk/postproc/search/Makefile.am
+   M /trunk/postproc/search/search.c
+
+fixed BIGGER for new world order
+
+------------------------------------------------------------------------
+r3428 | gbc | 2021-11-02 09:12:08 -0400 (Tue, 02 Nov 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/mk4util/include/mk4_util.h
+
+matching chops update
+
+------------------------------------------------------------------------
+r3426 | gbc | 2021-11-01 14:36:43 -0400 (Mon, 01 Nov 2021) | 1 line
+Changed paths:
+   M /trunk/include/mk4_util.h
+   M /trunk/sub/util/Makefile.am
+   A /trunk/sub/util/test_syntax.c
+
+added an isolated test that syntax and version work
+
+------------------------------------------------------------------------
+r3425 | barrettj | 2021-11-01 11:30:02 -0400 (Mon, 01 Nov 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/aedit/include/aedit.h
+   M /trunk/chops/source/c_src/applications/aedit/src/get_param_list.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_text.c
+   M /trunk/chops/source/c_src/mk4util/src/extract_filenames.c
+   M /trunk/chops/source/c_src/mk4util/src/syntax.c
+   M /trunk/postproc/aedit/aedit.h
+   M /trunk/postproc/aedit/get_param_list.c
+   M /trunk/postproc/fourfit/generate_text.c
+   M /trunk/sub/util/extract_filenames.c
+   M /trunk/sub/util/syntax.c
+
+sync with git repo, remove some uneeded extern progname decl.
+
+------------------------------------------------------------------------
+r3424 | gbc | 2021-11-01 11:19:35 -0400 (Mon, 01 Nov 2021) | 5 lines
+Changed paths:
+   M /trunk/chops/source/c_src/mk4util/src/syntax.c
+   M /trunk/postproc/fourfit/Makefile.am
+   A /trunk/postproc/fourfit/attic/ff_misc_if.c (from /trunk/postproc/fourfit/ff_misc_if.c:3423)
+   A /trunk/postproc/fourfit/attic/ff_misc_if.h (from /trunk/postproc/fourfit/ff_misc_if.h:3423)
+   D /trunk/postproc/fourfit/ff_misc_if.c
+   D /trunk/postproc/fourfit/ff_misc_if.h
+   M /trunk/sub/util/syntax.c
+
+fixed syntax failure if no doc file
+
+ff_misc_if now replaced by inclusion in the new headers
+moved to attic for reference.
+
+
+------------------------------------------------------------------------
+r3419 | barrettj | 2021-10-29 17:23:10 -0400 (Fri, 29 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/include/ffmath.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/src/minvert.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/fit_vbp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/ion_covariance.c
+   M /trunk/postproc/fourfit/ffmath.h
+   M /trunk/postproc/fourfit/fit_vbp.c
+   M /trunk/postproc/fourfit/ion_covariance.c
+   M /trunk/postproc/fourfit/minvert.c
+
+break minvert into two functions (3x3 and 5x5) to resolve function signature conflict
+
+------------------------------------------------------------------------
+r3418 | barrettj | 2021-10-29 17:23:10 -0400 (Fri, 29 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/postproc/fourfit/fourfit.c
+
+merge in fourfit exe c/c++ compat changes
+
+------------------------------------------------------------------------
+r3417 | barrettj | 2021-10-29 17:23:09 -0400 (Fri, 29 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/adjust_snr.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_cmplxbp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_filter.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_video_bp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/calc_normalization.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/calc_rms.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/compute_field_rotations.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/create_fname.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/delay_rate.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/freq_spacing.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/fringe_search.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/gate_off.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/interp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/ion_search.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_fx.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/norm_xf.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/organize_data.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/parse_cmdline.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/pcalibrate.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/precorrect.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/rotate_pcal.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/sampler_delays.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/search_windows.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/update.c
+   M /trunk/postproc/fourfit/adjust_snr.c
+   M /trunk/postproc/fourfit/apply_cmplxbp.c
+   M /trunk/postproc/fourfit/apply_filter.c
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/apply_video_bp.c
+   M /trunk/postproc/fourfit/calc_normalization.c
+   M /trunk/postproc/fourfit/calc_rms.c
+   M /trunk/postproc/fourfit/compute_field_rotations.c
+   M /trunk/postproc/fourfit/create_fname.c
+   M /trunk/postproc/fourfit/delay_rate.c
+   M /trunk/postproc/fourfit/est_pc_manual.c
+   M /trunk/postproc/fourfit/freq_spacing.c
+   M /trunk/postproc/fourfit/fringe_search.c
+   M /trunk/postproc/fourfit/gate_off.c
+   M /trunk/postproc/fourfit/interp.c
+   M /trunk/postproc/fourfit/ion_search.c
+   M /trunk/postproc/fourfit/norm_fx.c
+   M /trunk/postproc/fourfit/norm_xf.c
+   M /trunk/postproc/fourfit/organize_data.c
+   M /trunk/postproc/fourfit/parse_cmdline.c
+   M /trunk/postproc/fourfit/pcalibrate.c
+   M /trunk/postproc/fourfit/precorrect.c
+   M /trunk/postproc/fourfit/rotate_pcal.c
+   M /trunk/postproc/fourfit/sampler_delays.c
+   M /trunk/postproc/fourfit/search.c
+   M /trunk/postproc/fourfit/search_windows.c
+   M /trunk/postproc/fourfit/update.c
+
+merge in c/c++ ffsearch compat changes
+
+------------------------------------------------------------------------
+r3416 | barrettj | 2021-10-29 17:23:07 -0400 (Fri, 29 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/include/ffmath.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/display_fplot.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_graphs.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/generate_text.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/grid.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_plotdata.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/make_postplot.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/output.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/plot_complex.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/plot_data_dir.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/src/plot_graph.c
+   M /trunk/postproc/fourfit/display_fplot.c
+   M /trunk/postproc/fourfit/ffmath.h
+   M /trunk/postproc/fourfit/generate_graphs.c
+   M /trunk/postproc/fourfit/generate_text.c
+   M /trunk/postproc/fourfit/grid.c
+   M /trunk/postproc/fourfit/make_plotdata.c
+   M /trunk/postproc/fourfit/make_postplot.c
+   M /trunk/postproc/fourfit/output.c
+   M /trunk/postproc/fourfit/plot_complex.c
+   M /trunk/postproc/fourfit/plot_data_dir.c
+   M /trunk/postproc/fourfit/plot_graph.c
+
+merging in ffplot c/c++ compat changes
+
+------------------------------------------------------------------------
+r3415 | barrettj | 2021-10-29 17:23:06 -0400 (Fri, 29 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/src/ap_mean.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/src/linterp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/src/max555.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/src/parabola.c
+   M /trunk/postproc/fourfit/ap_mean.c
+   M /trunk/postproc/fourfit/linterp.c
+   M /trunk/postproc/fourfit/max555.c
+   M /trunk/postproc/fourfit/parabola.c
+
+import hops4 c/c++ compat changes to ffmath
+
+------------------------------------------------------------------------
+r3414 | barrettj | 2021-10-29 17:23:05 -0400 (Fri, 29 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/applications/aedit/aedit.c
+   M /trunk/chops/source/c_src/applications/aedit/src/execute.c
+   M /trunk/chops/source/c_src/applications/aedit/src/extract_parms.c
+   M /trunk/chops/source/c_src/applications/aedit/src/fplot.c
+   M /trunk/chops/source/c_src/applications/aedit/src/parse_commands.c
+   M /trunk/chops/source/c_src/applications/aedit/src/ps_fplot.c
+   M /trunk/chops/source/c_src/applications/aedit/src/psfile4.c
+   M /trunk/chops/source/c_src/applications/aedit/src/psplot4.c
+   M /trunk/chops/source/c_src/applications/aedit/src/pstag_process.c
+   M /trunk/chops/source/c_src/applications/aedit/src/run_com_file.c
+   M /trunk/chops/source/c_src/applications/aedit/src/set_baselines.c
+   M /trunk/chops/source/c_src/applications/aedit/src/set_pols.c
+   M /trunk/chops/source/c_src/applications/aedit/src/set_qcodes.c
+   M /trunk/chops/source/c_src/applications/aedit/src/set_quads.c
+   M /trunk/chops/source/c_src/applications/aedit/src/set_sources.c
+   M /trunk/chops/source/c_src/applications/aedit/src/set_triangles.c
+   M /trunk/chops/source/c_src/applications/alist/alist.c
+   M /trunk/postproc/aedit/aedit.c
+   M /trunk/postproc/aedit/execute.c
+   M /trunk/postproc/aedit/extract_parms.c
+   M /trunk/postproc/aedit/fplot.c
+   M /trunk/postproc/aedit/parse_commands.c
+   M /trunk/postproc/aedit/ps_fplot.c
+   M /trunk/postproc/aedit/psfile4.c
+   M /trunk/postproc/aedit/psplot4.c
+   M /trunk/postproc/aedit/pstag_process.c
+   M /trunk/postproc/aedit/run_com_file.c
+   M /trunk/postproc/aedit/set_baselines.c
+   M /trunk/postproc/aedit/set_pols.c
+   M /trunk/postproc/aedit/set_qcodes.c
+   M /trunk/postproc/aedit/set_quads.c
+   M /trunk/postproc/aedit/set_sources.c
+   M /trunk/postproc/aedit/set_triangles.c
+   M /trunk/postproc/alist/alist.c
+
+c/c++ compat changes for alist aedit
+
+------------------------------------------------------------------------
+r3413 | barrettj | 2021-10-29 17:23:04 -0400 (Fri, 29 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/refringe.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/clear_pass.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/fill_param.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/fourfit_signal_handler.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/generate_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/get_corel_data.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/make_flist.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/make_passes.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/pcal_interp.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/read_sdata.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/refringe_list.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/set_defaults.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/set_pointers.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/time_range.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/vrot.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/compute_model.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/compute_qf.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/update.c
+   M /trunk/postproc/fourfit/clear_pass.c
+   M /trunk/postproc/fourfit/compute_model.c
+   M /trunk/postproc/fourfit/compute_qf.c
+   M /trunk/postproc/fourfit/diff_file_phase.c
+   M /trunk/postproc/fourfit/fill_param.c
+   M /trunk/postproc/fourfit/fourfit_signal_handler.c
+   M /trunk/postproc/fourfit/generate_cblock.c
+   M /trunk/postproc/fourfit/get_corel_data.c
+   M /trunk/postproc/fourfit/make_flist.c
+   M /trunk/postproc/fourfit/make_passes.c
+   M /trunk/postproc/fourfit/pcal_interp.c
+   M /trunk/postproc/fourfit/read_sdata.c
+   M /trunk/postproc/fourfit/refringe.h
+   M /trunk/postproc/fourfit/refringe_list.c
+   M /trunk/postproc/fourfit/set_defaults.c
+   M /trunk/postproc/fourfit/set_pointers.c
+   M /trunk/postproc/fourfit/stcount_interp.c
+   M /trunk/postproc/fourfit/time_range.c
+   M /trunk/postproc/fourfit/update.c
+   M /trunk/postproc/fourfit/vrot.c
+
+import ffcore c/c++ compat changes
+
+------------------------------------------------------------------------
+r3412 | barrettj | 2021-10-29 17:23:02 -0400 (Fri, 29 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_200.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_201.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_202.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_203.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_204.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_205.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_206.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_207.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_208.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_210.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_212.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_222.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_230.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/src/fill_fringe_info.c
+   M /trunk/postproc/fourfit/fill_200.c
+   M /trunk/postproc/fourfit/fill_201.c
+   M /trunk/postproc/fourfit/fill_202.c
+   M /trunk/postproc/fourfit/fill_203.c
+   M /trunk/postproc/fourfit/fill_204.c
+   M /trunk/postproc/fourfit/fill_205.c
+   M /trunk/postproc/fourfit/fill_206.c
+   M /trunk/postproc/fourfit/fill_207.c
+   M /trunk/postproc/fourfit/fill_208.c
+   M /trunk/postproc/fourfit/fill_210.c
+   M /trunk/postproc/fourfit/fill_212.c
+   M /trunk/postproc/fourfit/fill_222.c
+   M /trunk/postproc/fourfit/fill_230.c
+   M /trunk/postproc/fourfit/fill_fringe_info.c
+
+importing ffio c/c++ compat changes
+
+------------------------------------------------------------------------
+r3411 | barrettj | 2021-10-29 17:23:01 -0400 (Fri, 29 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/import_ffcontrol.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/ffcontrol.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/copy_cblock_parts.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/create_fsm.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/criteria_match.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/default_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/get_bfstring.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/init_tokens.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/lex.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/nullify_cblock.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parse_control_file.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/parser.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/read_control_file.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/skip_data.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/src/skip_index.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/import_ffcore.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffcore/include/ffcore.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/import_ffio.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/include
+   A /trunk/chops/source/c_src/fourfit_libs/ffio/include/ffio.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/import_ffmath.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/include
+   A /trunk/chops/source/c_src/fourfit_libs/ffmath/include/ffmath.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/import_ffsearch.sh
+   A /trunk/chops/source/c_src/fourfit_libs/ffsearch/include/ffsearch.h
+   M /trunk/chops/source/c_src/mk4util/Makefile.am
+   M /trunk/chops/source/c_src/mk4util/import_mk4util.sh
+   A /trunk/chops/source/c_src/mk4util/src/hops_complex.c
+   M /trunk/postproc/fourfit/Makefile.am
+   M /trunk/postproc/fourfit/copy_cblock_parts.c
+   M /trunk/postproc/fourfit/create_fsm.c
+   M /trunk/postproc/fourfit/criteria_match.c
+   M /trunk/postproc/fourfit/default_cblock.c
+   M /trunk/postproc/fourfit/get_bfstring.c
+   M /trunk/postproc/fourfit/init_tokens.c
+   M /trunk/postproc/fourfit/lex.c
+   M /trunk/postproc/fourfit/nullify_cblock.c
+   M /trunk/postproc/fourfit/parse_control_file.c
+   M /trunk/postproc/fourfit/parser.c
+   M /trunk/postproc/fourfit/read_control_file.c
+   M /trunk/postproc/fourfit/skip_data.c
+   M /trunk/postproc/fourfit/skip_index.c
+
+importing ff headers to chops, and adding ffcontrol c/c++ compat changes
+
+------------------------------------------------------------------------
+r3410 | barrettj | 2021-10-29 17:22:59 -0400 (Fri, 29 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/include/Makefile.am
+   D /trunk/include/ffcontrol.h
+   D /trunk/include/ffcore.h
+   D /trunk/include/ffio.h
+   D /trunk/include/ffmath.h
+   D /trunk/include/ffsearch.h
+   A /trunk/postproc/fourfit/ffcontrol.h (from /trunk/include/ffcontrol.h:3409)
+   A /trunk/postproc/fourfit/ffcore.h (from /trunk/include/ffcore.h:3409)
+   A /trunk/postproc/fourfit/ffio.h (from /trunk/include/ffio.h:3409)
+   A /trunk/postproc/fourfit/ffmath.h (from /trunk/include/ffmath.h:3409)
+   A /trunk/postproc/fourfit/ffsearch.h (from /trunk/include/ffsearch.h:3409)
+
+move fourfit specific headers into /postproc/fourfit
+
+------------------------------------------------------------------------
+r3409 | barrettj | 2021-10-29 17:22:58 -0400 (Fri, 29 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/sub/util/Makefile.am
+   A /trunk/sub/util/hops_complex.c
+
+add hops_complex.c for function wrappers
+
+------------------------------------------------------------------------
+r3408 | barrettj | 2021-10-29 17:22:58 -0400 (Fri, 29 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/include/Makefile.am
+   A /trunk/include/ffcontrol.h
+   A /trunk/include/ffcore.h
+   A /trunk/include/ffio.h
+   A /trunk/include/ffmath.h
+   A /trunk/include/ffsearch.h
+
+adding headers for break-out fourfit libs
+
+------------------------------------------------------------------------
+r3405 | barrettj | 2021-10-27 17:03:35 -0400 (Wed, 27 Oct 2021) | 7 lines
+Changed paths:
+   M /trunk/chops/source/c_src/mk4util/src/extract_filenames.c
+   M /trunk/chops/source/c_src/mk4util/src/get_abs_path.c
+   M /trunk/chops/source/c_src/mk4util/src/get_filelist.c
+   M /trunk/chops/source/c_src/mk4util/src/syntax.c
+   M /trunk/chops/source/c_src/vex/src/check_intrange.c
+   M /trunk/chops/source/c_src/vex/src/check_realrange.c
+   M /trunk/chops/source/c_src/vex/src/cvex_info.c
+   M /trunk/chops/source/c_src/vex/src/get_chip_mode.c
+   M /trunk/chops/source/c_src/vex/src/get_corr_mode.c
+   M /trunk/chops/source/c_src/vex/src/get_mode_deflist.c
+   M /trunk/chops/source/c_src/vex/src/get_section_mode.c
+   M /trunk/chops/source/c_src/vex/src/get_station_deflist.c
+   M /trunk/chops/source/c_src/vex/src/get_vex.c
+   M /trunk/chops/source/c_src/vex/src/parse_vexfile.c
+   M /trunk/chops/source/c_src/vex/src/scan_info.c
+   M /trunk/chops/source/c_src/vex/src/write_vexfile.c
+   M /trunk/sub/util/extract_filenames.c
+   M /trunk/sub/util/get_abs_path.c
+   M /trunk/sub/util/get_filelist.c
+   M /trunk/sub/util/syntax.c
+   M /trunk/sub/vex/check_intrange.c
+   M /trunk/sub/vex/check_realrange.c
+   M /trunk/sub/vex/cvex_info.c
+   M /trunk/sub/vex/get_chip_mode.c
+   M /trunk/sub/vex/get_corr_mode.c
+   M /trunk/sub/vex/get_mode_deflist.c
+   M /trunk/sub/vex/get_section_mode.c
+   M /trunk/sub/vex/get_station_deflist.c
+   M /trunk/sub/vex/get_vex.c
+   M /trunk/sub/vex/parse_vexfile.c
+   M /trunk/sub/vex/scan_info.c
+   M /trunk/sub/vex/write_vexfile.c
+
+Squashed commit of the following:
+
+commit 40284e247ace492209b2f8affc3c84444621388e
+Author: John Barrett <barrettj@mit.edu>
+Date:   Wed Oct 27 17:02:51 2021 -0400
+
+    fix func sigs in mk4util and vex, remove keyword operator name collision
+
+------------------------------------------------------------------------
+r3404 | barrettj | 2021-10-27 16:41:00 -0400 (Wed, 27 Oct 2021) | 7 lines
+Changed paths:
+   M /trunk/chops/source/c_src/afio/src/get_unique_name.c
+   M /trunk/chops/source/c_src/afio/src/read_afile.c
+   M /trunk/chops/source/c_src/dfio/src/addr_203.c
+   M /trunk/chops/source/c_src/dfio/src/addr_212.c
+   M /trunk/chops/source/c_src/dfio/src/addr_221.c
+   M /trunk/chops/source/c_src/dfio/src/addr_222.c
+   M /trunk/chops/source/c_src/dfio/src/addr_307.c
+   M /trunk/chops/source/c_src/dfio/src/addr_309.c
+   M /trunk/chops/source/c_src/dfio/src/compress.c
+   M /trunk/chops/source/c_src/dfio/src/copy_203.c
+   M /trunk/chops/source/c_src/dfio/src/copy_221.c
+   M /trunk/chops/source/c_src/dfio/src/copy_222.c
+   M /trunk/chops/source/c_src/dfio/src/copy_307.c
+   M /trunk/chops/source/c_src/dfio/src/copy_309.c
+   M /trunk/chops/source/c_src/dfio/src/init_000.c
+   M /trunk/chops/source/c_src/mk4util/src/swap.c
+   M /trunk/sub/afio/get_unique_name.c
+   M /trunk/sub/afio/read_afile.c
+   M /trunk/sub/dfio/addr_203.c
+   M /trunk/sub/dfio/addr_212.c
+   M /trunk/sub/dfio/addr_221.c
+   M /trunk/sub/dfio/addr_222.c
+   M /trunk/sub/dfio/addr_307.c
+   M /trunk/sub/dfio/addr_309.c
+   M /trunk/sub/dfio/compress.c
+   M /trunk/sub/dfio/copy_203.c
+   M /trunk/sub/dfio/copy_221.c
+   M /trunk/sub/dfio/copy_222.c
+   M /trunk/sub/dfio/copy_307.c
+   M /trunk/sub/dfio/copy_309.c
+   M /trunk/sub/dfio/init_000.c
+   M /trunk/sub/util/swap.c
+
+Squashed commit of the following:
+
+commit 868aff4b7e8489088be06b5b132fac08c7819569
+Author: John Barrett <barrettj@mit.edu>
+Date:   Wed Oct 27 16:22:48 2021 -0400
+
+    update dfio and afio for c/c++ compat changes...mostly fix extern func signature decl.
+
+------------------------------------------------------------------------
+r3403 | barrettj | 2021-10-27 15:33:35 -0400 (Wed, 27 Oct 2021) | 7 lines
+Changed paths:
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/dfio/include/bytflp.h
+   M /trunk/chops/source/c_src/dfio/include/mk4_data.h
+   M /trunk/chops/source/c_src/dfio/include/type_120.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/control.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/include/parser.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/ff_misc_if.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/create_lockfile.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/src/wait_for_write_lock.c
+   M /trunk/chops/source/c_src/mk4util/include/account.h
+   M /trunk/chops/source/c_src/mk4util/include/fileset.h
+   M /trunk/chops/source/c_src/mk4util/include/general.h
+   M /trunk/chops/source/c_src/mk4util/include/hops_complex.h
+   M /trunk/chops/source/c_src/mk4util/include/mk4_util.h
+   M /trunk/chops/source/c_src/mk4util/src/account.c
+   M /trunk/chops/source/c_src/mk4util/src/fileset.c
+   M /trunk/chops/source/c_src/vex/include/vex.h
+   M /trunk/include/account.h
+   M /trunk/include/fileset.h
+   M /trunk/include/general.h
+   M /trunk/include/hops_complex.h
+   M /trunk/include/mk4_data.h
+   M /trunk/include/mk4_util.h
+   M /trunk/include/type_120.h
+   M /trunk/include/vex.h
+   M /trunk/postproc/fourfit/control.h
+   M /trunk/postproc/fourfit/create_lockfile.c
+   M /trunk/postproc/fourfit/ff_misc_if.h
+   M /trunk/postproc/fourfit/fourfit.c
+   M /trunk/postproc/fourfit/parser.h
+   M /trunk/postproc/fourfit/wait_for_write_lock.c
+   M /trunk/postproc/fourmer/do_record_merge.c
+   M /trunk/postproc/fourmer/fourmer.c
+   M /trunk/sub/dfio/bytflp.h
+   M /trunk/sub/util/account.c
+   M /trunk/sub/util/fileset.c
+
+Squashed commit of the following:
+
+commit baf1aa83add5fda69e9563560d1e4f1ec8970a49
+Author: John Barrett <barrettj@mit.edu>
+Date:   Wed Oct 27 15:10:00 2021 -0400
+
+    partially merge of cpp compatibility changes; hops_complex, acccount(), rename fileset() to get_fileset() to avoid name collision with struct, add cp_uint to bytflp.h, remove istats dup in general.h
+
+------------------------------------------------------------------------
+r3402 | gbc | 2021-10-27 13:55:02 -0400 (Wed, 27 Oct 2021) | 1 line
+Changed paths:
+   M /trunk/sub/mk4py/extern.c
+   M /trunk/sub/mk4py/extern.h
+
+let us see if this fixes the builds
+
+------------------------------------------------------------------------
+r3401 | gbc | 2021-10-27 09:44:20 -0400 (Wed, 27 Oct 2021) | 1 line
+Changed paths:
+   A /trunk/doc/vfish-adhoc-phases
+   A /trunk/doc/vfish-adhoc-phases/adhoc-baseline.pl
+   A /trunk/doc/vfish-adhoc-phases/phases.pl
+   A /trunk/doc/vfish-adhoc-phases/print_adhoc_lines.pl
+   A /trunk/doc/vfish-adhoc-phases/recipe-for-geoff.txt
+
+temporary home
+
+------------------------------------------------------------------------
+r3399 | barrettj | 2021-10-26 16:05:16 -0400 (Tue, 26 Oct 2021) | 1 line
+Changed paths:
+   M /trunk
+   M /trunk/chops/source/c_src/Makefile.am
+   M /trunk/chops/source/c_src/afio/Makefile.am
+   M /trunk/chops/source/c_src/afio/src/afile_header.c
+   M /trunk/chops/source/c_src/afio/src/parse_fsumm.c
+   M /trunk/chops/source/c_src/applications/aedit/Makefile.am
+   M /trunk/chops/source/c_src/applications/aedit/aedit.c
+   M /trunk/chops/source/c_src/applications/alist/Makefile.am
+   M /trunk/chops/source/c_src/applications/alist/alist.c
+   M /trunk/chops/source/c_src/applications/fourfit/Makefile.am
+   M /trunk/chops/source/c_src/applications/fourfit/fourfit.c
+   M /trunk/chops/source/c_src/dfio/Makefile.am
+   M /trunk/chops/source/c_src/dfio/src/display_221.c
+   M /trunk/chops/source/c_src/dfio/src/read_mk4fringe.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffcontrol/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffcore/include/ff_misc_if.h
+   M /trunk/chops/source/c_src/fourfit_libs/ffio/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffmath/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffplot/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/Makefile.am
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_notches.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_passband.c
+   M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/apply_video_bp.c
+   M /trunk/chops/source/c_src/mk4util/Makefile.am
+   M /trunk/chops/source/c_src/mk4util/include/mk4_util.h
+   M /trunk/chops/source/c_src/mk4util/src/confirm.c
+   M /trunk/chops/source/c_src/mk4util/src/extract_filenames.c
+   M /trunk/chops/source/c_src/mk4util/src/syntax.c
+   A /trunk/chops/source/c_src/msg (from /branches/cpp_compat/chops/source/c_src/msg:3398)
+   M /trunk/chops/source/c_src/vex/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/Makefile.am
+   M /trunk/chops/source/python_src/mk4_module/include/mk4_module_extern.h
+   M /trunk/chops/source/python_src/mk4_module/src/mk4_module_extern.c
+   M /trunk/chops/source/python_src/vex_module/Makefile.am
+   M /trunk/chops/source/python_src/vex_module/include/vexpy_module_extern.h
+   M /trunk/chops/source/python_src/vex_module/src/vexpy_module_extern.c
+   M /trunk/configure.ac
+   M /trunk/include/Makefile.am
+   M /trunk/include/mk4_util.h
+   A /trunk/include/msg.h (from /branches/cpp_compat/include/msg.h:3398)
+   M /trunk/misc/plan/Makefile.am
+   M /trunk/misc/plan/dsolv3_main.c
+   M /trunk/postproc/adump/Makefile.am
+   M /trunk/postproc/adump/adump.c
+   M /trunk/postproc/aedit/Makefile.am
+   M /trunk/postproc/aedit/aedit.c
+   M /trunk/postproc/alist/Makefile.am
+   M /trunk/postproc/alist/alist.c
+   M /trunk/postproc/average/Makefile.am
+   M /trunk/postproc/average/average.c
+   M /trunk/postproc/bispec/Makefile.am
+   M /trunk/postproc/bispec/bispec.c
+   M /trunk/postproc/calamp/Makefile.am
+   M /trunk/postproc/calamp/calamp.c
+   M /trunk/postproc/cofit/Makefile.am
+   M /trunk/postproc/cofit/cofit.c
+   M /trunk/postproc/coterp/Makefile.am
+   M /trunk/postproc/coterp/coterp.c
+   M /trunk/postproc/fourfit/Makefile.am
+   M /trunk/postproc/fourfit/apply_notches.c
+   M /trunk/postproc/fourfit/apply_passband.c
+   M /trunk/postproc/fourfit/apply_video_bp.c
+   M /trunk/postproc/fourfit/ff_misc_if.h
+   M /trunk/postproc/fourfit/fourfit.c
+   M /trunk/postproc/fourmer/Makefile.am
+   M /trunk/postproc/fourmer/fourmer.c
+   M /trunk/postproc/fplot/Makefile.am
+   M /trunk/postproc/fplot/fplot.c
+   M /trunk/postproc/fplot/fplot.h
+   M /trunk/postproc/fringex/Makefile.am
+   M /trunk/postproc/fringex/fringex.c
+   M /trunk/postproc/hfold/Makefile.am
+   M /trunk/postproc/hfold/fold.c
+   M /trunk/postproc/pratio/Makefile.am
+   M /trunk/postproc/pratio/pratio.c
+   M /trunk/postproc/search/Makefile.am
+   M /trunk/postproc/search/search.c
+   M /trunk/postproc/snratio/Makefile.am
+   M /trunk/postproc/snratio/snratio.c
+   M /trunk/sub/Makefile.am
+   M /trunk/sub/afio/afile_header.c
+   M /trunk/sub/afio/parse_fsumm.c
+   M /trunk/sub/dfio/Makefile.am
+   M /trunk/sub/dfio/copypage/Makefile.am
+   M /trunk/sub/dfio/copypage/fplot_test.c
+   M /trunk/sub/dfio/display_221.c
+   M /trunk/sub/dfio/mk4fringe_test.c
+   M /trunk/sub/dfio/read_mk4fringe.c
+   M /trunk/sub/mk4py/Makefile.am
+   M /trunk/sub/mk4py/extern.c
+   M /trunk/sub/mk4py/extern.h
+   A /trunk/sub/msg (from /branches/cpp_compat/sub/msg:3398)
+   M /trunk/sub/util/Makefile.am
+   M /trunk/sub/util/confirm.c
+   M /trunk/sub/util/extract_filenames.c
+   D /trunk/sub/util/msg.c
+   M /trunk/sub/util/root_id_test.c
+   M /trunk/sub/util/syntax.c
+
+merging in work needed to move msg to a separate library
+
+------------------------------------------------------------------------
 r3380 | gbc | 2021-09-29 16:02:57 -0400 (Wed, 29 Sep 2021) | 1 line
 Changed paths:
    M /trunk/chops/source/c_src/fourfit_libs/ffsearch/src/est_pc_manual.c

@@ -33,7 +33,7 @@ grid(
   char ch, 
   char altch)
     {
-	
+	extern void put_char_at (char**, int, int, char);
     int tempx, tempy;
     char out;
 

@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <ctype.h>
+#include "msg.h"
 #include "adata.h"
 #include "afile_structure.h"
 
@@ -23,6 +24,11 @@ int read_afile(char *filename, afile_structure* adata_element)
     int i, nfilt, bad, nkbr, nkbc, nkbf, nkbt, nkbq, year_ok, pret, frac, ck[12];
     int nadded[5], expand, type;
     char line[512];
+    extern int afile_comment(char*);
+    extern int parse_csumm(char*, corelsum*);
+    extern int parse_fsumm(char*, fringesum*);
+    extern int parse_rsumm(char*, rootsum*);
+    extern int parse_tsumm(char*, trianglesum*);
 
     if(stat(filename,&statbuf) != 0)
     {
@@ -80,11 +86,11 @@ int read_afile(char *filename, afile_structure* adata_element)
     }
 
     //now malloc the space we need
-    if(adata_element->nroot != 0){ adata_element->rootdata = malloc( (adata_element->nroot)*sizeof(rootsum) ); };
-    if(adata_element->ncorel != 0){ adata_element->coreldata = malloc( (adata_element->ncorel)*sizeof(corelsum) ); };
-    if(adata_element->nfringe != 0){ adata_element->fringedata = malloc( (adata_element->nfringe)*sizeof(fringesum) ); };
-    if(adata_element->ntriangle != 0){ adata_element->triangledata = malloc( (adata_element->ntriangle)*sizeof(trianglesum) ); };
-    if(adata_element->nquad != 0){ adata_element->quaddata = malloc( (adata_element->nquad)*sizeof(quadsum) ); };
+    if(adata_element->nroot != 0){ adata_element->rootdata = (rootsum*) malloc( (adata_element->nroot)*sizeof(rootsum) ); };
+    if(adata_element->ncorel != 0){ adata_element->coreldata = (corelsum*) malloc( (adata_element->ncorel)*sizeof(corelsum) ); };
+    if(adata_element->nfringe != 0){ adata_element->fringedata = (fringesum*) malloc( (adata_element->nfringe)*sizeof(fringesum) ); };
+    if(adata_element->ntriangle != 0){ adata_element->triangledata = (trianglesum*) malloc( (adata_element->ntriangle)*sizeof(trianglesum) ); };
+    if(adata_element->nquad != 0){ adata_element->quaddata = (quadsum*) malloc( (adata_element->nquad)*sizeof(quadsum) ); };
 
     //reset the file pointer back to the begin
     rewind(fp);

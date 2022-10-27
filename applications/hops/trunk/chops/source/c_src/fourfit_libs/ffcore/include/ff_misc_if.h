@@ -8,11 +8,12 @@
 #ifndef FF_MISC_IF_H_
 #define FF_MISC_IF_H_
 
+#include "msg.h"
+#include "mk4_util.h"
 // this file must be included last
 
 extern int fcode(char c, char *);
-extern void msg (char *, int, ...);
-extern char *account (char *);
+// extern char *account (char *);
 
 /* make_plotdata */
 extern int parabola (double *, double, double, double *, double *, double *);

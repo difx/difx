@@ -20,6 +20,8 @@
 *******************************************************************************/
 #include <string.h>
 #include "control.h"
+#include "ffcontrol.h"
+#include "msg.h"
 
 #define TRUE 1
 #define FALSE 0

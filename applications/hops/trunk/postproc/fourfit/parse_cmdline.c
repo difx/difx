@@ -19,12 +19,16 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
+#include "msg.h"
 #include "mk4_data.h"
+#include "mk4_util.h"
 #include "fstruct.h"
 #include "control.h"
 #include "refringe.h"
 #include "param_struct.h"
 #include "pass_struct.h"
+#include "ffcontrol.h"
 
 #define FALSE 0
 #define TRUE 1
@@ -37,14 +41,14 @@ char *control_string;
 char afile_name[512];
 int displayopt = FALSE;
 
-parse_cmdline (
+int parse_cmdline (
 int argc,
 char **argv,
 fstruct **files,
 bsgstruct **base_sgrp,
 struct type_param *param)
     {
-    char c, base_freq[21], *bf_string();
+    char c, base_freq[21];
     int i, set, cslen, filenum;
     struct stat file_status;
     extern char *optarg;
@@ -57,6 +61,8 @@ struct type_param *param)
     char *get_bfstring (char *);
                                         // local prototype
     int parse_polar (char *, short int *);
+
+    extern int refringe_list(char*, fstruct**, bsgstruct**);
 
     strcpy (control_filename, "default");
                                         /* Default polarization */
@@ -193,7 +199,7 @@ struct type_param *param)
                                         /* Make space, start with enough for -b option */
     cslen = 65;
     for (i=set+1; i<argc; i++) cslen += strlen (argv[i]) + 1;
-    if ((control_string = malloc (cslen)) == NULL)
+    if ((control_string = (char*) malloc (cslen)) == NULL)
         {
         msg ("Could not allocate memory for -b and/or set override options", 3);
         return (1);

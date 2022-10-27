@@ -25,10 +25,10 @@ get_corr_mode (char *modename)
     struct block *blk;
     struct param_val p_val;
     struct Cvex_Section *bsect;
-    struct Cvex_SectionMode *get_section_mode();
+    struct Cvex_SectionMode *get_section_mode(char*);
     struct Cvex_Board *board_struct;
     struct Cvex_XPolPair *xpol_struct;
-    struct Cvex_BoardParms *get_corr_bd_parms();
+    struct Cvex_BoardParms *get_corr_bd_parms(char*);
     static struct Cvex_Mode mode;
     char *str, *board_parms, *smode;
     extern struct statement *stlist;

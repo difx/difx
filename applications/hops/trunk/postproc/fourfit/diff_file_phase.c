@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include "msg.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 

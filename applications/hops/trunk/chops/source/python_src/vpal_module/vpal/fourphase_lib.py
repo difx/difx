@@ -485,6 +485,29 @@ class ExperimentReportData( report_lib.JsonSerializableObject ):
             data = json.load(report)
             self.import_json(data)
 
+    def update_config(self, configuration_obj):
+        self.config_obj.exp_dir = configuration_obj.exp_directory
+        self.config_obj.stations = configuration_obj.stations
+        self.config_obj.control_file_path = os.path.abspath( configuration_obj.control_file )
+        
+        #force all fringe files generated to save the control file
+        #information in the type_222 records
+        self.config_obj.set_commands = "set gen_cf_record true"
+        self.config_obj.min_snr = configuration_obj.min_snr
+        self.config_obj.max_snr = configuration_obj.max_snr
+        self.config_obj.verbosity = configuration_obj.verbosity
+        self.config_obj.valid_qcodes = [ x for x in list(range(configuration_obj.min_qcode, 10)) ]
+        self.config_obj.num_proc = configuration_obj.num_proc
+        self.config_obj.start = configuration_obj.start_scan_limit
+        self.config_obj.stop = configuration_obj.stop_scan_limit
+        self.config_obj.netref_baselines_only = False
+        self.config_obj.only_complete_blc = True
+        self.config_obj.max_num_scans = configuration_obj.max_number_to_select
+        self.config_obj.dtec_nom = configuration_obj.dtec_nominal_error
+        self.config_obj.dtec_tolerance = configuration_obj.dtec_tolerance
+        self.config_obj.pol_products = configuration_obj.pol_products
+
+            
 ################################################################################
 ################################################################################
 ################################################################################
@@ -678,6 +701,8 @@ def generate_fourphase_control_file(config_obj, output_control_filename):
     #report data object
     report_data = ExperimentReportData()
 
+    report_data.update_config(config_obj)
+    
     #generate the station phase/delay offsets
     station_delay_phase_results = generate_station_phase_delay_corrections(config_obj, report_data)
     report_data.generated_station_offsets = station_delay_phase_results

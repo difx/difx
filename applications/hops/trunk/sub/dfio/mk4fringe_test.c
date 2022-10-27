@@ -5,9 +5,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "mk4_data.h"
+#include "msg.h"
 
-char progname[] = "test_mk4fringe";
-int msglev = 1;
+// char progname[] = "test_mk4fringe";
+// int msglev = 1;
 int verb = 0;
 
 #define FRINGE_SAMPLE \
@@ -52,6 +53,8 @@ char *argv[];
     int i;
     char *src = getenv("srcdir");
     char *ff, *tv = getenv("testverb");
+    set_progname("test_mk4fringe");
+    set_msglev(1);
 
     verb = tv ? atoi(tv) : 0;
 

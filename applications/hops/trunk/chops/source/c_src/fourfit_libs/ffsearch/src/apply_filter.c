@@ -10,6 +10,7 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include "msg.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
@@ -28,6 +29,8 @@ int apply_filter (struct type_pass *pass)
     float xperror, yperror, frq_x_perr[8], frq_y_perr[8], tot_x_perr, tot_y_perr;
     int totbits, pcalbits, totacc, flagbit;
     int pol, sbpol, frq, ap, sb, mk3a;
+
+    extern int gate_off (struct type_pass*, int, int);
 
     msg ("Number of AP's: %d",-1,pass->num_ap);
                                         /* Initialize counts to 0 for each pass */

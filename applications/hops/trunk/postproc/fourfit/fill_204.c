@@ -15,7 +15,9 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include "msg.h"
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 
 int
 fill_204 (
@@ -24,7 +26,7 @@ struct type_204 *t204)
     extern char control_filename[], *control_string, version_no[];
     char *dummy;
     struct stat buf;
-    struct tm *mod_time, *gmtime();
+    struct tm *mod_time, *gmtime(const time_t*);
 
     clear_204 (t204);
                                         /* Insert ff_version number */

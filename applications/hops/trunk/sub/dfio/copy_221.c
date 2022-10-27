@@ -31,9 +31,10 @@ copy_221 (struct type_221 *t221,
           char **ptr,
           int *alloced)
     {
-    int n8, version, size_v0, pplot_len, clen, padded;
+    int n8, version, size_v0, pplot_len, padded;
+    unsigned int clen;
     struct type_221_v0 *t221_v0;
-    char workspace[32784], *compressed;
+    unsigned char workspace[32784], *compressed;
                                         /* How big is it? */
     size_v0 = sizeof (struct type_221_v0) - 1 + t221->ps_length;
     pplot_len = t221->ps_length;
@@ -51,13 +52,13 @@ copy_221 (struct type_221 *t221,
         {
                                         /* Compress the postscript plot */
                                         /* Result guaranteed no longer than this */
-        compressed = (char *)malloc (pplot_len + 4);
+        compressed = (unsigned char *)malloc (pplot_len + 4);
         if (compressed == NULL)
             {
             msg ("Memory allocation failure in copy_221()", 2);
             return (-1);
             }
-        compress_compress (workspace, t221->pplot, pplot_len, compressed, &clen);
+        compress_compress((unsigned char*) workspace, (unsigned char*) t221->pplot, pplot_len, compressed, &clen);
                                         /* Allocate space for output record */
         size_v0 = sizeof (struct type_221_v0) - 1 + clen;
                                         /* Make sure it's multiple of 8 bytes */

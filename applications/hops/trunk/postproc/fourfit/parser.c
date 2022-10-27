@@ -11,20 +11,119 @@
 #include <string.h>
 #include "parser.h"
 #include "control.h"
+#include "ffcontrol.h"
 #include "mk4_sizes.h"
-
-#include "ff_misc_if.h"
+#include "msg.h"
+//#include "ff_misc_if.h"
 
 /* eliminate some messages */
 extern int    nullify_cblock (struct c_block *cb_ptr);
 static int append_cblocks (struct c_block **cb_start, struct c_block **cb_end, int num);
 static void parsing_error (int state_num, int ntok);
 
+
+
+
+
 #define FALSE 0
 #define TRUE 1
                                     // multiple pols. mapped into index 0 and 1
 #define LXH 0
 #define RYV 1
+
+
+
+
+/*******************************************************************************
+*    append_cblocks appends an arbitrary number (num) of c_blocks to the end   *
+*    of the current chain. On entry, cb_end points to the pointer to the tail  *
+*    of the current c_block chain. Pointers to the start and end of the new    *
+*    section are returned in *cb_start and *cb_end.        rjc  92.2.19        *
+*******************************************************************************/
+
+static int append_cblocks (struct c_block **cb_start, struct c_block **cb_end, int num)
+   {
+   int i;
+   struct c_block *cb_ptr;
+
+   for (i=0; i<num; i++)
+      {
+      if ((cb_ptr = (struct c_block *) malloc (sizeof (struct c_block))) == NULL)
+         {
+         msg ("Error allocating c_block memory.",2);
+         return (-1);
+         }
+
+      if (i == 0)
+         *cb_start = cb_ptr;     /* need to return pointer to first new block */
+
+      nullify_cblock (cb_ptr);                     /* nullify the new c_block */
+
+      (*cb_end) -> cb_chain = cb_ptr;           /* splice into existing chain */
+      *cb_end = cb_ptr;
+      }
+   return (0);
+   }
+
+
+
+/*******************************************************************************
+*     parsing_error reports an error in parsing of the control file            *
+*                                                                              *
+*     Input:                                                                   *
+*       state_num   - number of the current state in the FSM table             *
+*       ntok        - token number of the encountered token                    *
+*                                                                              *
+*       94.1.13  rjc  initial code                                             *
+*******************************************************************************/
+
+static void parsing_error (int state_num, int ntok)
+   {
+   extern struct token_struct *tokens;   /* input struct of tokens & values   */
+   extern char *token_string[];
+
+   char *state[MAX_STATES];
+
+                                    /* Initialize names of various FSM states */
+   state[BLOCK_INTERIOR]    = "BLOCK_INTERIOR";    
+   state[NEED_INT]          = "NEED_INT";         
+   state[NEED_FLOAT]        = "NEED_FLOAT";      
+   state[NEED_TWO_FLOAT_1]  = "NEED_TWO_FLOAT_1";
+   state[NEED_TWO_FLOAT_2]  = "NEED_TWO_FLOAT_2";
+   state[NEED_VECTOR_INT]   = "NEED_VECTOR_INT";
+   state[NEED_VECTOR_FLOAT] = "NEED_VECTOR_FLOAT";
+   state[NEED_CONDITION]    = "NEED_CONDITION";  
+   state[NEED_F_GROUP]      = "NEED_F_GROUP";   
+   state[END_STATE]         = "END_STATE";     
+   state[NEED_STATION]      = "NEED_STATION"; 
+   state[NEED_SCAN]         = "NEED_SCAN";   
+   state[NEED_SOURCE]       = "NEED_SOURCE"; 
+   state[NEED_BASELINE]     = "NEED_BASELINE";  
+   state[NEED_VECTOR_CHAR]  = "NEED_VECTOR_CHAR";  
+   state[NEED_CODES]        = "NEED_CODES";        
+   state[NEED_OR]           = "NEED_OR";        
+   state[MAY_HAVE_TO]       = "MAY_HAVE_TO";  
+   state[NEED_2ND_SCAN]     = "NEED_2ND_SCAN";  
+
+   msg ("Parser semantic error, line %d of control file:",2,tokens[ntok].line);
+   msg ("In state %s, encountered illegal token %s", 2,
+         state[state_num], token_string[tokens[ntok].symbol]);
+   }
+
+int fcode (char c, char *codes)
+	{
+	int i;
+	
+	for (i = 0; i < MAXFREQ; i++)
+		if (c == codes[i]) 
+            return i;
+    return -1;
+	}
+
+
+
+
+
 
 int parser (void)
    {
@@ -1073,91 +1172,4 @@ int parser (void)
 
    return (0);                                          /* successful return! */
    }
-
-
-/*******************************************************************************
-*    append_cblocks appends an arbitrary number (num) of c_blocks to the end   *
-*    of the current chain. On entry, cb_end points to the pointer to the tail  *
-*    of the current c_block chain. Pointers to the start and end of the new    *
-*    section are returned in *cb_start and *cb_end.        rjc  92.2.19        *
-*******************************************************************************/
-
-static int append_cblocks (struct c_block **cb_start, struct c_block **cb_end, int num)
-   {
-   int i;
-   struct c_block *cb_ptr;
-
-   for (i=0; i<num; i++)
-      {
-      if ((cb_ptr = (struct c_block *) malloc (sizeof (struct c_block))) == NULL)
-         {
-         msg ("Error allocating c_block memory.",2);
-         return (-1);
-         }
-
-      if (i == 0)
-         *cb_start = cb_ptr;     /* need to return pointer to first new block */
-
-      nullify_cblock (cb_ptr);                     /* nullify the new c_block */
-
-      (*cb_end) -> cb_chain = cb_ptr;           /* splice into existing chain */
-      *cb_end = cb_ptr;
-      }
-   return (0);
-   }
-
-
-
-/*******************************************************************************
-*     parsing_error reports an error in parsing of the control file            *
-*                                                                              *
-*     Input:                                                                   *
-*       state_num   - number of the current state in the FSM table             *
-*       ntok        - token number of the encountered token                    *
-*                                                                              *
-*       94.1.13  rjc  initial code                                             *
-*******************************************************************************/
-
-static void parsing_error (int state_num, int ntok)
-   {
-   extern struct token_struct *tokens;   /* input struct of tokens & values   */
-   extern char *token_string[];
-
-   char *state[MAX_STATES];
-
-                                    /* Initialize names of various FSM states */
-   state[BLOCK_INTERIOR]    = "BLOCK_INTERIOR";    
-   state[NEED_INT]          = "NEED_INT";         
-   state[NEED_FLOAT]        = "NEED_FLOAT";      
-   state[NEED_TWO_FLOAT_1]  = "NEED_TWO_FLOAT_1";
-   state[NEED_TWO_FLOAT_2]  = "NEED_TWO_FLOAT_2";
-   state[NEED_VECTOR_INT]   = "NEED_VECTOR_INT";
-   state[NEED_VECTOR_FLOAT] = "NEED_VECTOR_FLOAT";
-   state[NEED_CONDITION]    = "NEED_CONDITION";  
-   state[NEED_F_GROUP]      = "NEED_F_GROUP";   
-   state[END_STATE]         = "END_STATE";     
-   state[NEED_STATION]      = "NEED_STATION"; 
-   state[NEED_SCAN]         = "NEED_SCAN";   
-   state[NEED_SOURCE]       = "NEED_SOURCE"; 
-   state[NEED_BASELINE]     = "NEED_BASELINE";  
-   state[NEED_VECTOR_CHAR]  = "NEED_VECTOR_CHAR";  
-   state[NEED_CODES]        = "NEED_CODES";        
-   state[NEED_OR]           = "NEED_OR";        
-   state[MAY_HAVE_TO]       = "MAY_HAVE_TO";  
-   state[NEED_2ND_SCAN]     = "NEED_2ND_SCAN";  
-
-   msg ("Parser semantic error, line %d of control file:",2,tokens[ntok].line);
-   msg ("In state %s, encountered illegal token %s", 2,
-         state[state_num], token_string[tokens[ntok].symbol]);
-   }
-
-int fcode (char c, char *codes)
-	{
-	int i;
-	
-	for (i = 0; i < MAXFREQ; i++)
-		if (c == codes[i]) 
-            return i;
-    return -1;
-	}
 

@@ -26,6 +26,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include "msg.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 
@@ -48,7 +49,6 @@ double *ref_stn_delay)
     double ref_delay, ref_rate, ref_accel;
     double rem_delay, rem_rate, rem_accel;
     double ref_doppler;
-    double floor();
     struct mk4_sdata *refsd, *remsd;
     struct type_301 *ref301, *rem301;
 

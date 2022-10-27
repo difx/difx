@@ -25,9 +25,9 @@
 int set_qcodes(char *arg1, char *arg2, char *remarg)
 {
         extern struct inputs inp;
-        int i, j, k, n, not, lq, first, last;
-	char *p1, *p2;
-        char c, qlist[20], buf[50], *string, *strtok(), allargs[200], allq[20];
+        int i, j, k, n, knot, lq, first, last;
+        char *p1, *p2;
+        char c, qlist[20], buf[50], *string, allargs[200], allq[20];
 
         sprintf(allq,"ABCDEFGH0123456789");
         qlist[0] = '\0';
@@ -37,7 +37,7 @@ int set_qcodes(char *arg1, char *arg2, char *remarg)
             inp.qcodes[0] = '\0';
             return(0);
         }
-                                        /* Check for "not" string in 1st arg */
+                                        /* Check for "knot" string in 1st arg */
         for(i=0;i<n;i++) {              /* Convert to lower case */
             c = arg1[i];
             if(isupper(c)) c = tolower(c);
@@ -45,11 +45,11 @@ int set_qcodes(char *arg1, char *arg2, char *remarg)
         }
         buf[n] = '\0';
         if(strcmp(buf,"not") == 0) {
-            not = TRUE;
+            knot = TRUE;
             sprintf(allargs,"%s,%s",arg2,remarg);       /* Concatenate strings */
         }
         else {
-            not = FALSE;
+            knot = FALSE;
             sprintf(allargs,"%s,%s,%s",arg1,arg2,remarg);
         }
         n = strlen(allargs);
@@ -110,7 +110,7 @@ int set_qcodes(char *arg1, char *arg2, char *remarg)
         }
 
         j = 0; k = 0;
-        if(not) {                               /* Invert code list */
+        if(knot) {                               /* Invert code list */
             while((c=allq[j++]) != '\0') {
                 if(strchr(qlist,c) == NULL) inp.qcodes[k++] = c;
             }

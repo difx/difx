@@ -81,9 +81,8 @@ do_das (struct def_list *dl,
             else if (strcmp (ptr, "adaptive") == 0) stn->tape_motion = ADAPTIVE;
             else if (strcmp (ptr, "continuous") == 0) stn->tape_motion = CONTINUOUS;
 
-            if ((stn->tape_motion == START_STOP)
-                        || (stn->tape_motion == ADAPTIVE))
-                stn->early_start - p_val.dval[1].data.realval;
+            // if ((stn->tape_motion == START_STOP) || (stn->tape_motion == ADAPTIVE))
+            //     stn->early_start - p_val.dval[1].data.realval;
             }
         }
 

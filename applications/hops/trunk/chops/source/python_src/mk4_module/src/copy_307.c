@@ -65,12 +65,12 @@ copy_307 (struct type_307 *t307,
         cp_double (t307_v0->tot, t307->tot);
         cp_double (t307_v0->rot, t307->rot);
         cp_double (t307_v0->accum_period, t307->accum_period);
-        cp_int (t307_v0->frame_count, t307->frame_count);
+        cp_uint (t307_v0->frame_count, t307->frame_count);
         for (i=0; i<16; i++)
             {
-            for (j=0; j<8; j++) cp_int (t307_v0->counts[i].count[j],
+            for (j=0; j<8; j++) cp_uint (t307_v0->counts[i].count[j],
                                                 t307->counts[i].count[j]);
-            cp_int (t307_v0->counts[i].val_count, t307->counts[i].val_count);
+            cp_uint (t307_v0->counts[i].val_count, t307->counts[i].val_count);
             }
 
         return (sizeof (struct type_307_v0));

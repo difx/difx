@@ -40,7 +40,7 @@
 #include "mk4_util.h"
 
 char *
-account (char *segment_name)
+account (const char *segment_name)
     {
     static struct time_account t_acc[MAX_PSEGS];
     static int prior = MAX_PSEGS - 1;	/* aka "Other" */

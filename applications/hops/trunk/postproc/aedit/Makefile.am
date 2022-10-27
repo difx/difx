@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1393 2016-08-03 21:35:13Z gbc $
+# $Id: Makefile.am 3399 2021-10-26 20:05:16Z barrettj $
 #
 
 SUBDIRS = .
@@ -66,9 +66,9 @@ aedit_SOURCES = active_filter.c aeclr_corel.c aeclr_fringe.c \
 #aedit_LDADD = @PGP_LIB@ @PNG_LIB@ @X_FPLOT_LIB@ \
 #	      @VEX_LIB@ @AFIO_LIB@ @DFIO_LIB@ @UTIL_LIB@ @X11_LIB@
 # more logical order:
-aedit_LDADD = @VEX_LIB@ @AFIO_LIB@ @DFIO_LIB@ @UTIL_LIB@ \
+aedit_LDADD = @MSG_LIB@ @VEX_LIB@ @AFIO_LIB@ @DFIO_LIB@ @UTIL_LIB@ \
 	      @PGP_LIB@ @PNG_LIB@ @X_FPLOT_LIB@ @X11_LIB@
-aedit_DEPENDENCIES = @VEX_DEP@ @AFIO_DEP@ @DFIO_DEP@ @UTIL_DEP@
+aedit_DEPENDENCIES = @MSG_DEP@ @VEX_DEP@ @AFIO_DEP@ @DFIO_DEP@ @UTIL_DEP@
 
 else !HAVE_PNG
 aedit_SOURCES = you_lose.c

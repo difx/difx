@@ -32,7 +32,8 @@ int psfile4 (esum *data, char *fname, int mode)
     int i, s, j, ch, len, ret, nst, expno;
     char vexname[128], stnlist[32], global_fglist[10], scan_fglist[10];
     char st_id, fg, cmdname[7];
-    struct scan_struct *scn, *scan_info();
+    struct scan_struct *scn;
+    extern struct scan_struct* scan_info (char *scanname, char *stations);
     struct psplot_scantime *psscan;
     struct stat statbuf;
     static struct ps_array psarray;

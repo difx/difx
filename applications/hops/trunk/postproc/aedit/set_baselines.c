@@ -21,7 +21,7 @@ int set_baselines(char *arg1, char *arg2, char *remarg)
 {
 	extern struct inputs inp;
 	static char outbuf[5*MAXBASE], buf[5*MAXBASE];
-	char *baseline, *strtok();
+	char *baseline;
 
 	outbuf[0] = '\0';
 

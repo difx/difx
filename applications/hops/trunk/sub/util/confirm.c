@@ -25,7 +25,6 @@ confirm (char *string)
     {
     char buf[100];
     int max = 10;
-    extern char progname[];		/* *progname no good here */
     static int interactive = TRUE;
 
     if (strcmp (string, "OFF") == 0) 

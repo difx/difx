@@ -78,8 +78,8 @@ copy_222 (struct type_222 *t222,
         strncpy (t222_v0->version_no, "00", 2);
         padded = 1;
         cp_short (t222_v0->padded, padded);
-        cp_int (t222_v0->setstring_hash, t222->setstring_hash);
-        cp_int (t222_v0->control_hash, t222->control_hash);
+        cp_uint (t222_v0->setstring_hash, t222->setstring_hash);
+        cp_uint (t222_v0->control_hash, t222->control_hash);
         cp_int (t222_v0->setstring_length, t222->setstring_length);
         cp_int (t222_v0->cf_length, t222->cf_length);
         

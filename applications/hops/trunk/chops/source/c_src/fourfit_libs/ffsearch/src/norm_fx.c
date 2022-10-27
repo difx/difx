@@ -26,12 +26,14 @@
 #include <math.h>
 #include "hops_complex.h"
 #include <fftw3.h>
+#include "msg.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "adhoc_flag.h"
 #include "apply_funcs.h"
-#include "ff_misc_if.h"
+#include "ffcontrol.h"
+//#include "ff_misc_if.h"
 
 #define signum(a) (a>=0 ? 1.0 : -1.0)
 
@@ -109,7 +111,7 @@ void norm_fx (struct type_pass *pass,
     if (param->nlags != nlags)
         {
         nlags = param->nlags;
-        fftplan = fftw_plan_dft_1d (4 * nlags, S, xlag, FFTW_FORWARD, FFTW_MEASURE);
+        fftplan = fftw_plan_dft_1d (4 * nlags, (fftw_complex*) S, (fftw_complex*) xlag, FFTW_FORWARD, FFTW_MEASURE);
         }
     freq_no = fcode(pass->pass_data[fr].freq_code, pass->control.chid);
 
@@ -360,12 +362,12 @@ void norm_fx (struct type_pass *pass,
                                     // add in iff this is a requested pol product
             else if (param->pol & 1<<ip || param->pol == 0)
                 {           
-                z = t120->ld.spec[i].re + I * t120->ld.spec[i].im;
+                z = (double) t120->ld.spec[i].re + cmplx_unit_I * (double) t120->ld.spec[i].im;
                                     // rotate each pol prod by pcal prior to adding in
                 if (sb==0)
                     z = z * datum->pc_phasor[ip];
                 else                // use conjugate of usb pcal tone for lsb
-                    z = z * conj (datum->pc_phasor[ip]);
+                    z = z * conjugate (datum->pc_phasor[ip]);
                                     // scale phasor by polarization coefficient
                                     // cpolrotfac is unity except for CIRC_PAREL
                 z = z * polcof * cpolrotfac;
@@ -396,7 +398,7 @@ void norm_fx (struct type_pass *pass,
                         phase_shift = -phase_shift;
                     }
                                     // apply phase ramp to spectral points 
-                z = z * cexp (-2.0 * M_PI * I * (diff_delay * deltaf + phase_shift));
+                z = z * exp_complex(-2.0 * M_PI * cmplx_unit_I * (diff_delay * deltaf + phase_shift));
                 xp_spec[i] += z;
                 }
             }                       // bottom of lags loop
@@ -544,8 +546,8 @@ void norm_fx (struct type_pass *pass,
               factor = datum->lsbfrac;
                                     // DC+highest goes into middle element of the S array
               sindex = i ? 4 * nlags - i : 2 * nlags;
-              S[sindex] += factor * conj (xp_spec[i] * 
-                  cexp (I * (status->lsb_phoff[0] - status->lsb_phoff[1])));
+              S[sindex] += factor * conjugate (xp_spec[i] * 
+                  exp_complex ( cmplx_unit_I * (status->lsb_phoff[0] - status->lsb_phoff[1])));
               }
           }
       }                             // bottom of sideband loop 
@@ -613,9 +615,9 @@ void norm_fx (struct type_pass *pass,
                                     // nlags-1 norm. iff zeroed-out DC
                                     // factor of 2 for skipped lags
             if (pass->control.dc_block)
-                datum->sbdelay[i] = xlag[j] / (nlags / 2 - 1.0);
+                datum->sbdelay[i] = xlag[j] / (double) (nlags / 2 - 1.0);
             else
-                datum->sbdelay[i] = xlag[j] / (nlags / 2);
+                datum->sbdelay[i] = xlag[j] / (double) (nlags / 2);
             }
         status->apbyfreq[fr]++;
         }

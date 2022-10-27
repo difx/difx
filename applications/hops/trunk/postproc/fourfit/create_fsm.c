@@ -13,6 +13,7 @@
 *******************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
+#include "ffcontrol.h"
 #include "parser.h"
 
 #define fsm_table(aa,bb,cc,dd)                                        \
@@ -119,4 +120,8 @@ create_fsm ()
     fsm_table (NEED_VECTOR_STRING,MANY_CHAR,         INSERT_STRING,  NEED_VECTOR_STRING);
 
     fsm_table (0, 0, 0, 0);                                 /* mark table end */
+
+    //return value needed to correct function signature (value is not used, this function should be void)
+    //if this return value is not present, fourfit segfaults when compiled as C++...how interesting
+    return 0;
     }

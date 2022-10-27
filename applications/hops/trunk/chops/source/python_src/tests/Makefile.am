@@ -2,7 +2,7 @@
 # $Id$
 #
 
-EXTRA_DIST = 3593.tar.gz
+EXTRA_DIST = 3593.tar.gz 3593.tvf.gz
 
 dist_pkgdata_DATA = $(EXTRA_DIST)
 

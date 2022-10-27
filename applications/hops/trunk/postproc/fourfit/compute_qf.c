@@ -10,15 +10,16 @@
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
-#include "hops_complex.h"
 #include <string.h>
+#include "msg.h"
+#include "hops_complex.h"
 #include "mk4_data.h"
 #include "pass_struct.h"
 #include "param_struct.h"
 #include "control.h"
 #include "statistics.h"
 #include "filter.h"
-#include "ff_misc_if.h"
+//#include "ff_misc_if.h"
 
 int
 compute_qf (
@@ -51,7 +52,7 @@ char *tape_qcode)
                                            cause a D-code */
         if ((status->ap_num[0][i] == 0) && (status->ap_num[1][i] == 0))
             missing_track = TRUE;
-        if (cabs (status->fringe[i]) < (param->weak_channel * status->inc_avg_amp_freq))
+        if (abs_complex(status->fringe[i]) < (param->weak_channel * status->inc_avg_amp_freq))
             low_chan = TRUE;
                                         /* re-enable the following test;
                                          * change threshold units  rjc 2001.10.25
@@ -201,7 +202,7 @@ char *tape_qcode)
 /*     t1000_index = (baseline - 1) / 8; */
 /*     btable_index = (baseline - 1) % 8; */
 /*     dur = root->t1000[t1000_index].barray[btable_index].bduration; */
-/*     if (dur == 0) dur = root->t1000[0].duration;   /* duration same on all baselines */
+/*     if (dur == 0) dur = root->t1000[0].duration;   duration same on all baselines */
 /*     intg_time = status->total_ap * param->acc_period / pass->channels; */
 /*     fract = 10.0 * intg_time / dur; */
 /*     if (fract == 10.0) fract = 9.9; */

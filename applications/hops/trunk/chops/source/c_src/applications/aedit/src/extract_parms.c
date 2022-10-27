@@ -25,7 +25,8 @@
 int extract_parms (esum *data, struct usearray *user_param)
     {
     int i, nbadname, nbadread, nbadfill, fringe_needed, id, mk4;
-    char *fname, *fringename(), fullname[256];
+    char *fname, fullname[256];
+    extern char* fringename(fringesum *);
     fringearray *fdata;
     static struct mk4_fringe fringe4;
     extern char datadir[];

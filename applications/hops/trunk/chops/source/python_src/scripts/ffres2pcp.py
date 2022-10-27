@@ -96,6 +96,13 @@ def main():
     #if this option is passed we need to mirror the experiment directory into some scratch space
     #so that we don't pollute it with extraneous fringe files
     if args.use_scratch is True:
+
+        # check that experiment directory is constructed properly
+        if any([xx in os.path.abspath(exp_dir) for xx in ['prepass', 'scratch']]) or len(exp_name)!=4 or not(exp_name.isdigit()):
+            print("path to experiment directory is: " + os.path.abspath(exp_dir))
+            print( "error: path to experiment directory cannot contain 'prepass' or 'scratch' and must point to a folder with a 4-digit name")
+            sys.exit(1)
+
         scratch_topdir = os.path.join(exp_dir, 'scratch')
         if not os.path.exists(scratch_topdir):
             os.makedirs(scratch_topdir)

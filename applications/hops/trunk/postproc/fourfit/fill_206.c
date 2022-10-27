@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "vex.h"

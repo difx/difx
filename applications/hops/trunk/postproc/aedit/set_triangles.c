@@ -20,7 +20,7 @@ int set_triangles (char *arg1, char *arg2, char *remarg)
     {
     extern struct inputs inp;
     char outbuf[250], buf[250];
-    char *triangle, *strtok();
+    char *triangle;
 
     outbuf[0] = '\0';
 

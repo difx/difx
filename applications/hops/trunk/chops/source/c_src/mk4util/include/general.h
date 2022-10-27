@@ -3,10 +3,17 @@
 #define TRUE 1
 #define FALSE 0
 
-
+/*
 struct istats {
 	short		ref;
 	short		rem;
+};
+*/
+
+struct istats 
+{
+    int             ref;
+    int             rem;
 };
 
 struct fstats {

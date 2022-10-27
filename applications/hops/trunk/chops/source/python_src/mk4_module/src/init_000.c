@@ -30,7 +30,7 @@ init_000 (struct type_000 *t000,
     int i, err, len, nslash;
     char *dataname, *stripname, date[64];
     time_t tm;
-    struct tm *utc_now, *gmtime();
+    struct tm *utc_now, *gmtime (const time_t*);
     fstruct f_info;
                                         /* Version fixed at zero */ 
     strncpy (t000->record_id, "000", 3);

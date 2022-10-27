@@ -1,15 +1,15 @@
 #
-# $Id: Makefile.am 1304 2016-02-12 13:43:45Z gbc $
+# $Id: Makefile.am 3399 2021-10-26 20:05:16Z barrettj $
 #
 
 if HAVE_DEVEL
 if HAVE_PYTHON
-SUBDIRS = . afio dfio util vex @M4PYDIR@
+SUBDIRS = . msg afio dfio util vex @M4PYDIR@
 else
-SUBDIRS = . afio dfio util vex
+SUBDIRS = . msg afio dfio util vex
 endif
 else
-SUBDIRS = . afio dfio util vex
+SUBDIRS = . msg afio dfio util vex
 endif
 DIST_SUBDIRS = $(SUBDIRS)
 

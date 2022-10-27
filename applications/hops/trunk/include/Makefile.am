@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 3253 2021-07-30 18:17:53Z barrettj $
+# $Id: Makefile.am 3410 2021-10-29 21:22:59Z barrettj $
 #
 
 SUBDIRS = .
@@ -7,7 +7,7 @@ SUBDIRS = .
 # first cut at hops-required list:
 hops_headers =  account.h adata.h cvex.h data.h evex.h \
 		fileset.h fringe_records.h fstruct.h general.h \
-		ivex.h lvex.h \
+		ivex.h lvex.h msg.h\
 		mk4_afio.h mk4_data.h mk4_dfio.h \
 		mk4_records.h mk4_sizes.h mk4_typedefs.h mk4_util.h \
 		mk4_vex.h ovex.h root_records.h svex.h T1.h tapeDB.h \
@@ -18,7 +18,7 @@ hops_headers =  account.h adata.h cvex.h data.h evex.h \
 		type_300.h type_301.h type_302.h \
 		type_303.h type_304.h type_305.h type_306.h \
 		type_307.h type_308.h type_309.h \
-	        hops_complex.h vex.h afile_structure.h \
+		hops_complex.h vex.h afile_structure.h \
 		fourfit_signal_handler.h write_lock_mechanism.h \
 		adler32_checksum.h
 

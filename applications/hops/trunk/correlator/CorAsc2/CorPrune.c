@@ -42,6 +42,7 @@
 #include "type_308.h"
 #include "type_309.h"
 #include "tapeDB.h"
+#include "hops_complex.h"
 
 #define flip_short(a)   (flip ? r_short_reverse(a)  : a)
 #define flip_unsig(a)   (flip ? r_unsig_reverse(a)  : a)
@@ -482,7 +483,7 @@ int main (int argc, char *argv[])
         else if (strncmp (t1->recId, "230", 3) == 0)
             {
             /* Special case variable-length record */
-            nbuff = sizeof (struct type_230) + (flip_short(t230->nspec_pts) - 1) * sizeof (complex) - k;
+            nbuff = sizeof (struct type_230) + (flip_short(t230->nspec_pts) - 1) * sizeof (hops_complex) - k;
             countt[25]++;       /* Increment record count */
             }
         /* ** Type-300 record? ** */

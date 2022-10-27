@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "write_lock_mechanism.h"
+#include "msg.h"
 
 
 void init_lockfile_data(lockfile_data_struct* data)
@@ -74,17 +75,17 @@ int parse_lockfile_name(char* lockfile_name_base, lockfile_data_struct* result)
     
     ptr = strtok(NULL, ".");
 
-    if(ptr != NULL){sscanf(ptr, "%x", &(result->time_sec));}
+    if(ptr != NULL){sscanf(ptr, "%lx", &(result->time_sec));}
     else{return LOCK_PARSE_ERROR;}
     
     ptr = strtok(NULL, ".");
     
-    if(ptr != NULL){sscanf(ptr, "%x", &(result->time_usec));}
+    if(ptr != NULL){sscanf(ptr, "%lx", &(result->time_usec));}
     else{return LOCK_PARSE_ERROR;}
     
     ptr = strtok(NULL, ".");
     
-    if(ptr != NULL){sscanf(ptr, "%s", &(result->hostname));}
+    if(ptr != NULL){sscanf(ptr, "%s", &(result->hostname[0]));}
     else{return LOCK_PARSE_ERROR;}
 
     result->validity = LOCK_VALID;
@@ -199,7 +200,7 @@ int create_lockfile(char *rootname, char* lockfile_name)
     strcpy(lockfile_name, rootname);
     char* end_ptr = strrchr(lockfile_name, '/');
     end_ptr++;
-    sprintf(end_ptr, "%u.%u.%x.%x.%s.lock", pid, sequence_to_reserve, epoch_sec, micro_sec, host_name);
+    sprintf(end_ptr, "%u.%u.%lx.%lx.%s.lock", pid, sequence_to_reserve, epoch_sec, micro_sec, host_name);
     
     FILE* lockfile = fopen(lockfile_name, "w+" );
     if (lockfile!=NULL)

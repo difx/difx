@@ -31,7 +31,7 @@ def main():
     parser.add_argument('control_file', help='the control file to be applied to all scans')
     parser.add_argument('network_reference_station', help='single character code of station used as network reference')
     parser.add_argument('stations', help='concatenated string of single codes of non-network-reference stations of interest')
-    parser.add_argument('data_directory', help='relative path to directory containing experiment or scan data')
+    parser.add_argument('data_directory', help='relative path to directory containing experiment or scan data, cannot contain "prepass" or "scratch" and must point to a folder with a 4-digit name')
 
     parser.add_argument('-v', '--verbosity', type=int, dest='verbosity', help='verbosity level: 0 (least verbose) to 3 (most verbose), default=2.', default=2)
     parser.add_argument('-n', '--num-proc', type=int, dest='num_proc', help='number of concurrent fourfit jobs to run, default=1', default=1)
@@ -88,6 +88,15 @@ def main():
     work_dir = exp_dir
 
     if args.use_scratch is True:
+
+        exp_name = os.path.split( os.path.abspath(exp_dir) )[1]
+        
+        # check that experiment directory is constructed properly
+        if any([xx in os.path.abspath(exp_dir) for xx in ['prepass', 'scratch']]) or len(exp_name)!=4 or not(exp_name.isdigit()):
+            print("path to experiment directory is: " + os.path.abspath(exp_dir))
+            print( "error: path to experiment directory cannot contain 'prepass' or 'scratch' and must point to a folder with a 4-digit name")
+            sys.exit(1)
+
         #we need to mirror the experiment directory into some scratch space
         #so that we don't pollute it with extraneous fringe files
         scratch_topdir = os.path.join(exp_dir, 'scratch')
@@ -100,8 +109,8 @@ def main():
             os.makedirs(scratch_dir)
 
         #mirror the experiment directory to the scratch space directory
-        exp_name = os.path.split( os.path.abspath(exp_dir) )[1]
         work_dir = os.path.join(scratch_dir, exp_name)
+
         ht.mirror_directory_with_symlinks(exp_dir, work_dir, exclude_list=['prepass', 'scratch'])
 
     #check the format of the scan limit formats:

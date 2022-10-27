@@ -10,6 +10,7 @@
 #include "param_struct.h"
 #include "control.h"
 #include "mk4_data.h"
+#include "msg.h"
 
 static int sampler_fcode (struct freq_corel *fdata,
                           int nfreq,

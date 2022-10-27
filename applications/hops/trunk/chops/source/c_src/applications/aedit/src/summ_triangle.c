@@ -111,7 +111,7 @@ int summ_triangle (trianglearray *tdata, int mode)
             tsumm.nsource += 
                 update_sinfo (tsumm.source, datum->source, tsumm.nsource);
                                         /* Fill in freq/exp/source-specific summary */
-        if (ret = update_fqex (datum, &tsumm, TRIANGLE)) break;
+        if ( (ret = update_fqex (datum, &tsumm, TRIANGLE) ) ) break;
 
         }               /* End for loop */
     return (ret);

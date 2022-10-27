@@ -4,6 +4,7 @@
 // force interpolation to lie within specified bounds - rjc 2013.9.23
 
 #include <stdio.h>
+#include "msg.h"
 
 #define min(a,b) (a<b)?(a):(b)
 #define max(a,b) (a<b)?(b):(a)
@@ -28,9 +29,10 @@ void max555 (double drf[5][5][5],   // input: real function
            value,
            bestval,
            xbest[3],
-           dwin(),
            epsilon = 0.0001;        // convergence criterion
-  
+    extern double dwin(double, double, double);
+    extern void interp555(double [5][5][5], double [3], double* );
+
                                     // initialize search to center of cube
     for (l=0; l<3; l++)
         center[l] = 0.0;

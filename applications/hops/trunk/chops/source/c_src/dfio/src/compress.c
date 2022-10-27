@@ -138,8 +138,7 @@ U32 *p_dst_len)      /* Address of longword for length of output data.      */
 
 /******************************************************************************/
 
-void compress_compress
-           (p_wrk_mem,p_src_first,src_len,p_dst_first,p_dst_len)
+void compress_compress(U8* p_wrk_mem, U8* p_src_first, U32 src_len, U8* p_dst_first, U32* p_dst_len)
 /* Input  : Hand over the required amount of working memory in p_wrk_mem.     */
 /* Input  : Specify input block using p_src_first and src_len.                */
 /* Input  : Point p_dst_first to the start of the output zone (OZ).           */
@@ -149,11 +148,11 @@ void compress_compress
 /* Output : Output block in Mem[p_dst_first..p_dst_first+*p_dst_len-1]. May   */
 /* Output : write in OZ=Mem[p_dst_first..p_dst_first+src_len+MAX_CMP_GROUP-1].*/
 /* Output : Upon completion guaranteed *p_dst_len<=src_len+FLAG_BYTES.        */
-U8 *p_wrk_mem;
-U8 *p_src_first;
-U32  src_len;
-U8 *p_dst_first;
-U32 *p_dst_len;
+// U8 *p_wrk_mem;
+// U8 *p_src_first;
+// U32  src_len;
+// U8 *p_dst_first;
+// U32 *p_dst_len;
 {
  /* p_src and p_dst step through the source and destination blocks.           */
  U8 *p_src = p_src_first;
@@ -308,8 +307,7 @@ U32 *p_dst_len;
 
 /******************************************************************************/
 
-void compress_decompress
-           (p_wrk_mem,p_src_first,src_len,p_dst_first,p_dst_len)
+void compress_decompress( U8* p_wrk_mem, U8* p_src_first, U32 src_len, U8* p_dst_first, U32* p_dst_len)
 /* Input  : Hand over the required amount of working memory in p_wrk_mem.     */
 /* Input  : Specify input block using p_src_first and src_len.                */
 /* Input  : Point p_dst_first to the start of the output zone.                */
@@ -320,11 +318,11 @@ void compress_decompress
 /* Output : Length of output block written to *p_dst_len.                     */
 /* Output : Output block in Mem[p_dst_first..p_dst_first+*p_dst_len-1].       */
 /* Output : Writes only  in Mem[p_dst_first..p_dst_first+*p_dst_len-1].       */
-U8 *p_wrk_mem;
-U8 *p_src_first;
-U32  src_len;
-U8 *p_dst_first;
-U32 *p_dst_len;
+// U8 *p_wrk_mem;
+// U8 *p_src_first;
+// U32  src_len;
+// U8 *p_dst_first;
+// U32 *p_dst_len;
 {
  /* Byte pointers p_src and p_dst scan through the input and output blocks.   */
  register U8 *p_src = p_src_first+FLAG_BYTES;

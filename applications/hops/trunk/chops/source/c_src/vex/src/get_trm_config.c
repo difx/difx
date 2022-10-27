@@ -158,4 +158,5 @@ bitstream (char *stream)
     if (strcmp (stream, "mag1") == 0) return TRM_MAG1;
     if (strcmp (stream, "mag2") == 0) return TRM_MAG2;
     if (strcmp (stream, "mag3") == 0) return TRM_MAG3;
+    return -1;
     }

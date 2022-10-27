@@ -21,6 +21,7 @@
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
+#include "msg.h"
 #include "mk4_data.h"
 #include "vex.h"
 #include "freqlist.h"

@@ -14,7 +14,7 @@
 #include "param_struct.h"
 #include "pass_struct.h"
 
-delay_rate (struct type_pass *pass,
+void delay_rate (struct type_pass *pass,
             int fr,
             hops_complex rate_spectrum[MAXAP])
     {
@@ -43,7 +43,7 @@ delay_rate (struct type_pass *pass,
     if (size != fft_size)               // recompute fft quantities when size changes
         {
         fft_size = size;
-        fftplan = fftw_plan_dft_1d (fft_size, X, X, FFTW_FORWARD, FFTW_MEASURE);
+        fftplan = fftw_plan_dft_1d (fft_size, (fftw_complex*) X, (fftw_complex*) X, FFTW_FORWARD, FFTW_MEASURE);
         }
 
                                         /* Fill data array */

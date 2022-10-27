@@ -29,6 +29,7 @@
 int run_com_file (esum *data, char *filename)
     {
     extern int batch, rundepth;
+    extern int afile_comment(char *);
     FILE *fp;
     int oldbatch, retcod, i, n;
     struct stat statbuf;

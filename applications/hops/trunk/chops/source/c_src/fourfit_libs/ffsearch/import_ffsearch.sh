@@ -18,6 +18,7 @@ else
     declare -a header_list=(
         "adhoc_flag.h"
         "apply_funcs.h"
+        "ffsearch.h"
     )
 
     header_src_dir="${HOPS_SRC_DIR}/postproc/fourfit"

@@ -23,7 +23,7 @@
 int parse_commands (char *line, struct com *commands, int *n)
 {
 	char *field[10];
-	char *string, *strtok();
+	char *string;
 	int i, nfields;
 
 /****************************************************************************/

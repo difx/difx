@@ -9,12 +9,16 @@
 *  Increase range of pcal rate peak search             rjc 2012.2.3            *
 *******************************************************************************/
 
-#include "mk4_data.h"
 #include <math.h>
+#include <stdio.h>
+#include "msg.h"
+#include "mk4_data.h"
+#include "mk4_util.h"
 #include "hops_complex.h"
 #include "param_struct.h"
 #include "pass_struct.h"
-#include <stdio.h>
+#include "ffmath.h"
+
 
 #define DR  1
 #define MD 2
@@ -26,11 +30,12 @@ void interp (struct type_pass *pass)
     {
     extern struct type_status status;
     extern struct type_param param;
-    hops_complex X, pcal, delay[3], vrot();
+    hops_complex X, pcal, delay[3];
+    extern hops_complex vrot (int, double, double, int, int, struct type_pass*);
     double sp, max, r_max, r, ph, peak, d_dr, d_mbd, dr, mbd,
            pcr, theta, center_mag, q[3],lower,upper,frac,
            dr_lower,dr_upper,mbd_lower,mbd_upper,sbd_lower,sbd_upper,
-           dmin(),dmax(), dwin(), delay_mag[3], drpt, delta_dr, divisor, eks,
+           delay_mag[3], drpt, delta_dr, divisor, eks,
            xlim[3][2];
     int i, st, v, station, fr, lag, ap, inter, index, sbd, sband, flagbit,
         d_sbd,center_lag,ret_code, nl, ret, n, ndrpts, first;
@@ -73,9 +78,9 @@ void interp (struct type_pass *pass)
                                         // FIXME!! these pols shouldn't be added together
                         pcal = isd->phasecal_lcp[pass->pci[station][fr]]
                              + isd->phasecal_rcp[pass->pci[station][fr]];
-                        if (cabs (pcal) > 0.0)
+                        if (abs_complex(pcal) > 0.0)
                             {
-                            ph = carg (pcal);
+                            ph = arg_complex(pcal);
 
                             ph -= (status.pc_phase[fr][station][stnpol[station][pass->pol]]
                                + M_PI * status.pc_offset[fr][station][stnpol[station][pass->pol]] / 180.0);
@@ -85,13 +90,13 @@ void interp (struct type_pass *pass)
                             msg  ("fr %d ap %d st %d freq %g pcal %f %f ph %g", -4,
                                    fr, ap, station, frq->frequency, pcal, ph);
 
-                            delay[index] = delay[index] + cexp(I * ph);
+                            delay[index] = delay[index] + exp_complex(cmplx_unit_I * ph);
                             }
                         }
                     }
                 }
             for (i=0; i<3; i++)
-                delay_mag[i] = cabs (delay[i]);
+                delay_mag[i] = abs_complex(delay[i]);
             ret = parabola (delay_mag, -1.0, 1.0, &r_max, &max, q);
             msg ("Interp: inter=%d station=%d delay_mag= [%lf,%lf,%lf] max=%lf r_max=%lf, ret=%d",-1,
                              inter,   station,   delay_mag[0],
@@ -197,8 +202,8 @@ void interp (struct type_pass *pass)
                                 z = z + X;
                                 }
                         }
-                    z = z * 1.0 / status.total_ap_frac;
-                    drf[isbd][imbd][idr] = cabs (z);
+                    z = z * 1.0 / (double) status.total_ap_frac;
+                    drf[isbd][imbd][idr] = abs_complex(z);
                     msg ("drf[%d][%d][%d] %lf", 0, isbd, imbd, idr, drf[isbd][imbd][idr]);
                     }
                                     // form the search bounds in all 3 dimensions
@@ -324,8 +329,8 @@ void interp (struct type_pass *pass)
                                     delay[index] = delay[index] + X;
                                     }
                             }
-                        delay[index] = delay[index] * 1.0 / status.total_ap_frac;
-                        delay_mag[index] = cabs (delay[index]);
+                        delay[index] = delay[index] * 1.0 / (double) status.total_ap_frac;
+                        delay_mag[index] = abs_complex(delay[index]);
                         }
                     else            // do incoherent averaging by counter-rotating and
                         {           // summing data to form a hops_complex delay value; then, by
@@ -371,8 +376,8 @@ void interp (struct type_pass *pass)
                                         delay[index] = delay[index] + X;
                                         }
                                 }
-                            delay[index] = delay[index] * 1.0 / status.total_ap_frac;
-                            delay_mag[index] += cabs (delay[index]);
+                            delay[index] = delay[index] * 1.0 / (double) status.total_ap_frac;
+                            delay_mag[index] += abs_complex(delay[index]);
                             eks = n * pass->num_ap * param.acc_period / status.drsp_size * 2.0 * M_PI;
                             if (eks != 0.0)
                                 divisor += sin(eks) / eks * sin(eks) / eks;
@@ -453,7 +458,7 @@ void interp (struct type_pass *pass)
        status.corr_dr_max += status.pc_rate[1];
 
     msg ("phase cal rate %lg %lg", 0, status.pc_rate[0],status.pc_rate[1]);
-    msg ("fringe phase = %lf", 0, carg (delay[1]) * 180.0 / M_PI);
+    msg ("fringe phase = %lf", 0, arg_complex(delay[1]) * 180.0 / M_PI);
     msg ("single band delay : %lg", 0, status.sbd_max);
     msg ("dr %lg mbd %lg dmax %lf",  0, status.corr_dr_max,
                                 status.mbd_max_global, status.delres_max);

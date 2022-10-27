@@ -20,6 +20,7 @@
 #include "mk4_dfio.h"
 #include "fstruct.h"
 #include "fplot.h"
+#include "msg.h"
 
 #ifdef P_tmpdir
 # define P_tmpdir "/tmp"
@@ -29,8 +30,8 @@
 # define PS2PDF "false"
 #endif /* PS2PDF */
 
-char progname[6] = "fplot";
-int msglev = 2;
+// char progname[6] = "fplot";
+// int msglev = 2;
 
 int
 main (int argc, char* argv[])
@@ -49,6 +50,8 @@ main (int argc, char* argv[])
                                         /* in the files structure array, */
                                         /* checking the file type implied */
                                         /* by the name in each case */
+    set_progname("fplot");
+    set_msglev(2);
     if (parse_cmdline (argc, argv, &files, &display, &file_name) != 0)
         {
         msg ("Fatal error interpreting command line", 2);

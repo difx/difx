@@ -18,6 +18,7 @@ else
     declare -a header_list=(
     "control.h"
     "parser.h"
+    "ffcontrol.h"
     )
 
     header_src_dir="${HOPS_SRC_DIR}/postproc/fourfit"

@@ -2,7 +2,7 @@
 #
 # (Ba)sh startup
 #
-# $Id: hops.bash.in 3202 2021-03-03 22:09:44Z barrettj $
+# $Id: hops.bash.in 3450 2021-11-16 22:16:32Z gbc $
 #
 # Version @VERSION@
 #
@@ -34,7 +34,8 @@ will set up your HOPS environment by modifying the following variables:
     PGPLOT_FONT     may be set to location of grfont.dat
     PGPLOT_RGB      may be set to location of rgb.txt
     PROGDOC         used by HOPS vhelp to find help texts
-    TEXT            used by HOPS for text configuration files
+    HOPS_VEX_DIR    used by HOPS for vex parsing
+    TEXT            legacy synonym for the above
     AHELP           used by aedit for help texts
     DEF_CONTROL     used by fourfit
     GS_DEVICE       used by ghostscript
@@ -91,7 +92,7 @@ esac
     export PYTHONPATH=$Pyp
     [ "$HOPS_SETUP" = false ] && HOPS_SETUP=''
     unset HOPS_ROOT HOPS_VERS HOPS_ARCH HOPS_DOCS HOPS_PREFIX
-    unset PROGDOC TEXT AHELP DEF_CONTROL DATADIR TESTDATADIR
+    unset PROGDOC TEXT HOPS_VEX_DIR AHELP DEF_CONTROL DATADIR TESTDATADIR
     unset SCHEDDIR AFILEDIR SYSVEX TASK BIN TMP
     unset PGPLOT_DIR PGPLOT_TYPE PGPLOT_DEV PGPLOT_FONT PGPLOT_RGB
     unset prefix exec_prefix datarootdir pythondir
@@ -151,6 +152,7 @@ hops_pythondir=$pythondir
     export PROGDOC=$HOPS_DOCS/vhelp
     export AHELP=$HOPS_DOCS/vhelp/aedit
     export TEXT=$HOPS_DOCS/text
+    export HOPS_VEX_DIR=$HOPS_DOCS/text
 
     # miscellany
     [ -z "$DEF_CONTROL" ] && export DEF_CONTROL=/dev/null

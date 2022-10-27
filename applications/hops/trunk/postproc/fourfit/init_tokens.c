@@ -6,9 +6,19 @@
 ******************************************************************************/
 #include "parser.h"
 #include "control.h"
+#include "ffcontrol.h"
 #include <stdio.h>
 
 #define tokenize(aa,bb,cc) {token_string[aa] = bb; token_cat[aa] = cc;}
+
+//could use the below lines to actually allocate memory for the strings instead (would need to be freed)
+//since the currenct implementation compiled under c++ renders:
+//warning: ISO C++11 does not allow conversion from string literal to 'char *' [-Wwritable-strings]
+ 
+//#include <string.h>
+//#include <stdlib.h>
+//#define tokenize(aa,bb,cc) { token_string[aa] = (char*) malloc(sizeof(char)* strlen(bb) ); strcpy(token_string[aa], bb); token_cat[aa] = cc;}
+
 
 int
 init_tokens ()
@@ -148,4 +158,8 @@ init_tokens ()
     tokenize (CASSEGRAIN_,    "cassegrain",   INT_CONST + CASSEGRAIN)
     tokenize (NASMYTHLEFT_,   "nasmythleft",  INT_CONST + NASMYTHLEFT)
     tokenize (NASMYTHRIGHT_,  "nasmythright", INT_CONST + NASMYTHRIGHT)
+
+    //return value needed to correct function signature (value is not used, this function should be void)
+    //if this return value is not present, fourfit segfaults when compiled as C++...how interesting
+    return 0; 
     }

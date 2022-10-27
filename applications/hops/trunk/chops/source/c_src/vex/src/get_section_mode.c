@@ -33,7 +33,7 @@ get_section_mode (char *sect_mode)
     struct block *blk;
     struct Cvex_Chip *chip_struct;
     struct Cvex_SectionMode *sm;
-    struct Cvex_ChipMode *get_chip_mode();
+    struct Cvex_ChipMode *get_chip_mode(char*);
     struct param_val p_val;
     extern struct statement *stlist;
     extern struct block blist[];

@@ -25,7 +25,7 @@
 int
 check_name(char *name, fstruct *f_info)
     {
-    char buf[256], *field1, *field2, *field3, *field4, *field5, *strtok();
+    char buf[256], *field1, *field2, *field3, *field4, *field5;
     char *baseline, *filenum, *rootcode, *freq;
     int i, len, nfield, errcode, l;
                                         /* Init */

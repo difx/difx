@@ -121,7 +121,7 @@ int summ_fringe (esum *data, int mode)
         if(datum->snr < fsumm.snrmin) fsumm.snrmin = datum->snr;
 
                                         /* Fill in freq/exp/source-specific summary */
-        if (ret = update_fqex (datum, &fsumm, BASELINE)) break;
+        if ( (ret = update_fqex (datum, &fsumm, BASELINE) ) ) break;
         }               /* End for loop */
                                         /* Calculate the closure quantities */
     if (mode == CLOSURE)

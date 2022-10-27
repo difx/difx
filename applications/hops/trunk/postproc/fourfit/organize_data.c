@@ -14,9 +14,12 @@
 #include <stdio.h>
 #include <math.h>
 #include "mk4_data.h"
+#include "mk4_util.h"
+#include "msg.h"
 #include "vex.h"
 #include "pass_struct.h"
 #include "param_struct.h"
+
 
 int 
 organize_data (
@@ -36,6 +39,23 @@ struct c_block *cb_head
     struct mk4_sdata *sd1, *sd2;
     int i;
     char st1, st2;
+
+    extern int stcount_interp(struct mk4_sdata*, struct mk4_sdata*, struct type_param*, struct freq_corel*, struct type_status*);
+    extern int set_pointers(struct station_struct*, struct station_struct*, struct mk4_corel*, struct type_param*, struct freq_corel*);
+    extern int fill_param (struct scan_struct*,
+                struct ivex_struct*,
+                struct station_struct*,
+                struct station_struct*,
+                struct mk4_corel*,
+                struct type_param*,
+                struct c_block*);
+    extern int time_range (struct scan_struct*, struct station_struct*, struct station_struct*, struct mk4_corel*, struct type_param*);
+    extern int pcal_interp (struct mk4_sdata*,
+                     struct mk4_sdata*,
+                     struct type_param*,
+                     struct freq_corel*,
+                     struct mk4_corel*);
+
                                         /* Get the station structs */
     st1 = cdata->t100->baseline[0];
     st2 = cdata->t100->baseline[1];

@@ -19,6 +19,7 @@
 
 #include "fourfit_signal_handler.h"
 #include "write_lock_mechanism.h"
+#include "msg.h"
 
 void
 fourfit_signal_handler(int signal_value)

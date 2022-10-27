@@ -4,6 +4,7 @@
 /*----------------------------------------------------------------------------*/
 #include <stdarg.h>
 #include <sys/times.h>
+#include "msg.h"
 #include "account.h"
 #include "fileset.h"
 #include "fstruct.h"
@@ -11,7 +12,7 @@
 #include "mk4_typedefs.h"
 
 /*----------------------------------------------------------------------------*/
-extern char   *account (char *);
+//extern char   *account (const char *);
 extern int    check_name (char *, fstruct *);
 extern void   clear_date (date_struct *);
 extern void   clear_fstruct (fstruct *);
@@ -21,7 +22,7 @@ extern void   datef_to_datec (struct datef *, struct datec *);
 extern short  day_of_datef (struct datef);
 extern void   environment (void);
 extern int    extract_filenames (char *, int, fstruct **, int *, int *, int *);
-extern int    fileset (char *, struct fileset *);
+// extern int    fileset (char *, struct fileset *);
 extern int    get_abs_path (char [], char []);
 extern int    get_filelist (int, char **, int, fstruct **);
 extern int    hptoie4 (float *, float *);
@@ -35,7 +36,7 @@ extern int    iwin (int, int, int);
 extern double dmin (double, double);
 extern double dmax (double, double);
 extern double dwin (double, double, double);
-extern void   msg (char *, int, ...);
+// extern void   msg (char *, int, ...);
 extern void   report_wallclock(int, int);
 extern int    report_times (struct time_account *, int, struct tms *, int,
                             double);
@@ -47,10 +48,12 @@ extern int    sort_names (fstruct *, int);
 extern void   short_reverse (short *);
 extern void   unsig_reverse (unsigned short *);
 extern void   int_reverse (int *);
+extern void   uint_reverse (unsigned int *);
 extern void   long_reverse (long *);
 extern void   float_reverse (float *);
 extern void   double_reverse (double *);
 extern void   syntax (char *);
+extern void   version (char *);
 extern double time_to_double (struct date);
 extern int    time_to_int (int, int, int, int, int);
 

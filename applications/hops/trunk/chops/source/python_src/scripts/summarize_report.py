@@ -251,8 +251,9 @@ def process_ffres2pcp_plot(report_data, result_table):
 
     ch_defs = vpal.ffres2pcp_lib.DefaultChannelDefines()
     if len(channel_freqs) != len(ch_defs.vgos):
-        print("Error: report file does not contain the requisite number (32) of channel definitions")
-        sys.exit(1)
+        #print("Error: report file does not contain the requisite number (32) of channel definitions")
+        print("Warning: report file does not contain the requisite number (32) of channel definitions")
+        #sys.exit(1)
 
     Hz_to_GHz = 1e-9
     chan_codes = [ x[0] for x in channel_freqs]

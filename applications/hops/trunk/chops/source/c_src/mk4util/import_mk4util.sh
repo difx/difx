@@ -23,7 +23,7 @@ else
         "mk4_sizes.h"
         "mk4_typedefs.h"
         "mk4_util.h"
-	"adler32_checksum.h"
+        "adler32_checksum.h"
         "hops_complex.h"
     )
 
@@ -82,6 +82,7 @@ else
         "syntax.c"
         "time_to_double.c"
         "time_to_int.c"
+        "hops_complex.c"
     )
 
     source_src_dir="${HOPS_SRC_DIR}/sub/util"

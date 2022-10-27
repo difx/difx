@@ -10,7 +10,9 @@
 *  2009.8.27 rjc Allow pcal freqs to be entered as tone #'s          *
 *  2010.2.3  rjc consolidate remote and reference code into 1 loop   *
 *********************************************************************/
+#include "msg.h"
 #include "mk4_data.h"
+#include "mk4_util.h"
 #include "ovex.h"
 #include "pass_struct.h"
 #include "param_struct.h"
@@ -19,7 +21,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "hops_complex.h"
-#include "ff_misc_if.h"
+#include "ffcontrol.h"
+//#include "ff_misc_if.h"
 
 int precorrect (struct scan_struct* ovex, struct type_pass* pass)
     {

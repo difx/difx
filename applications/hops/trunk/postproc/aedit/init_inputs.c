@@ -58,5 +58,8 @@ int init_inputs(void)
     inp.mode = 0;
     strcpy(inp.device,"?");
     inp.dev_auto = 0;
+
+    /*return value is unused */
+    return 0;
     }
 

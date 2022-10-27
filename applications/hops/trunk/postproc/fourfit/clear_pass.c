@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include "mk4_data.h"
 #include "control.h"
+#include "ffcontrol.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 
@@ -15,6 +16,7 @@ void
 clear_pass (struct type_pass *pass)
     {
     int i;
+    extern void clear_freq_corel (struct freq_corel*);
 
     for (i=0; i<MAXFREQ; i++) clear_freq_corel (pass->pass_data + i);
     pass->nfreq = 0;

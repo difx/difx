@@ -91,7 +91,8 @@ addr_212 (short version,
         if (good_address) 
             t212_v0 = (struct type_212_v0 *)address;
         else 
-            t212_v0 = (void *) t212;
+            t212_v0 = (struct type_212_v0 *) t212; // t212_v0 = (void *) t212; ---Why was this originally cast as void ??!
+            
                                         /* Start copying structure elements, */
                                         /* with hidden byte flipping if needed */
                                         /* (see bytflp.h) */

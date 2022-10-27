@@ -204,4 +204,7 @@ int pr_inputs(char *string)
             msg ("Device:      Device for graphics output = hpgl", 2);
         msg ("", 2);
         }
+
+        /*return value is not used */
+        return 0;
     }

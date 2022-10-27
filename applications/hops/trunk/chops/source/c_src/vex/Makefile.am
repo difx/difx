@@ -6,7 +6,7 @@ SUBDIRS = .
 
 nobase_dist_pkgdata_DATA = text/blk_stmt.txt text/pformat.txt
 
-AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../mk4util/include -DHAVE_CONFIG_H
+AM_CPPFLAGS = -I. -I$(srcdir)/../msg/include -I$(srcdir)/include -I$(srcdir)/../mk4util/include -DHAVE_CONFIG_H
 
 pkginclude_HEADERS = ./include/cvex.h ./include/evex.h ./include/ivex.h ./include/lvex.h ./include/mk4_vex.h ./include/ovex.h ./include/svex.h ./include/vex.h
 
@@ -16,7 +16,7 @@ libvexb_la_SOURCES = ./src/block_params.c ./src/check_intrange.c ./src/check_rea
 
 libvexb_la_LDFLAGS = -avoid-version
 
-libvexb_la_LIBADD = ../mk4util/libmk4utilb.la
+libvexb_la_LIBADD = ../msg/libmsgb.la ../mk4util/libmk4utilb.la
 
 check_SCRIPTS = ./import_vex.sh
 EXTRA_DIST = ./import_vex.sh

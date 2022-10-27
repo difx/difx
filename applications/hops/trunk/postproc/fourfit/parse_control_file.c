@@ -12,7 +12,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "control.h"
+#include "ffcontrol.h"
 #include "parser.h"
+#include "msg.h"
 
 #define IS_CONTROL_FILE 1
 #define IS_SET_STRING 2

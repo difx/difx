@@ -13,14 +13,13 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
+#include "msg.h"
 #include "hops_complex.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "meta_struct.h"
 #include "ovex.h"
 #include <stdlib.h>
-
-extern void msg (char *, int, ...);
 
 #define pi 3.141592654
                                         // polarization bit masks
@@ -73,7 +72,7 @@ void generate_text (struct scan_struct *root,
     extern int msglev;
     extern char control_filename[];
     extern char *pexec;
-    extern char version_no[], progname[];
+    extern char version_no[];
     extern char *sprint_char_arr();
     struct stat xeq_stat;
     int i, j, n, k;
@@ -81,7 +80,7 @@ void generate_text (struct scan_struct *root,
     char *rootname;
     char buf[2560], psbuf[2560], output_filename[256];
     char input_filename[256], polstr[13], polstrx[13];
-    struct tm *gmtime(), *utc_pgm;
+    struct tm *gmtime(const time_t* ), *utc_pgm;
     float sec1, sec2, plotwidth;
     float xpos, xposref,xposrem, ypos, spacing, offset, labelpos, yplace;
     float digitwidth;
@@ -486,11 +485,11 @@ void generate_text (struct scan_struct *root,
         psleft (xpos, ypos, buf);
         if (i == start_plot) psleft (labelpos, ypos, "Freq (MHz)");
         ypos -= spacing;
-        sprintf (buf, "%.1f", carg (status.fringe[i]) * 180.0 / pi);
+        sprintf (buf, "%.1f", arg_complex (status.fringe[i]) * 180.0 / pi);
         psleft (xpos, ypos, buf);
         if (i == start_plot) psleft (labelpos, ypos, "Phase");
         ypos -= spacing;
-        sprintf (buf, "%.1f", cabs (status.fringe[i]));
+        sprintf (buf, "%.1f", abs_complex (status.fringe[i]));
         psleft (xpos, ypos, buf);
         if (i == start_plot) psleft (labelpos, ypos, "Ampl.");
         ypos -= spacing;
@@ -733,7 +732,7 @@ void generate_text (struct scan_struct *root,
 	}  /* end of if(polstr[0] != 'I') */
         if (msglev < 2)
             {
-            fprintf (stderr, "%6.1f ", fmod(carg (status.fringe[i]) * 180.0 / pi
+            fprintf (stderr, "%6.1f ", fmod(arg_complex (status.fringe[i]) * 180.0 / pi
               + 360 * delta_delay * (pass->pass_data[i].frequency
                       - fringe.t205->ref_freq), 360.0));
             }

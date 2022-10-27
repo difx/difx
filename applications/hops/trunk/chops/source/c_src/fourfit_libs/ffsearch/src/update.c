@@ -5,6 +5,7 @@
 *******************************************************************************/
 
 #include <math.h>
+#include "msg.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"

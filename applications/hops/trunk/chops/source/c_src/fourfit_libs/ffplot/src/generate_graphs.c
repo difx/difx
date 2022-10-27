@@ -8,14 +8,14 @@
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
+#include <time.h>
+#include "msg.h"
 #include "hops_complex.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "meta_struct.h"
 #include "ovex.h"
 #include "cpgplot.h"
-
-extern void msg (char *, int, ...);
 
 int generate_graphs (struct scan_struct *root,
                      struct type_pass *pass,
@@ -32,7 +32,6 @@ int generate_graphs (struct scan_struct *root,
     int start_plot, limit_plot;
     char buf[2560], device[256], pbfr[2][44];
     double drate, mbd, sbd;
-    struct tm *gmtime();
     static float xr[2*MAXMAX], yr[2*MAXMAX], zr[2*MAXMAX];
     float xmin, xmax, ymin, ymax, plotwidth;
     float xpos, offset, lwid, yplace;
@@ -291,8 +290,8 @@ int generate_graphs (struct scan_struct *root,
     for (i=0; i<ncp; i++)
         {
         xr[i] = xstart + (xend - xstart) * i / ncp;
-        yr[i] = cabs (plot.cp_spectrum[i+izero]);
-        zr[i] = carg (plot.cp_spectrum[i+izero]) * 57.3;
+        yr[i] = abs_complex (plot.cp_spectrum[i+izero]);
+        zr[i] = arg_complex (plot.cp_spectrum[i+izero]) * 57.3;
         if (yr[i] > ymax) ymax = yr[i];
         msg ("cp_spectrum[%d] %6.1f %7.1f", -3, i, yr[i], zr[i]);
         }

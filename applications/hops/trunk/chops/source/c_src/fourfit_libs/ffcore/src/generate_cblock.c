@@ -15,6 +15,8 @@
 #include "control.h"
 #include "pass_struct.h"
 #include "param_struct.h"
+#include "msg.h"
+#include "ffcontrol.h"
 
 
 

@@ -36,8 +36,8 @@
 int
 get_unique_name(char *input, char *output)
     {
-    DIR *dpexp, *dpscan, *opendir();
-    struct dirent *dsexp, *dsscan, *readdir();
+    DIR *dpexp, *dpscan, *opendir(const char*);
+    struct dirent *dsexp, *dsscan, *readdir(DIR*);
     char directory[200], rel_dir[200], scandir[200], tempout[256], *scanname, *fname;
     extern char datadir[];
     int i, j, slen, match;

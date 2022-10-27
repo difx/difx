@@ -15,6 +15,7 @@
 #include "vex.h"
 #include "param_struct.h"
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 
 int fill_201 (struct scan_struct *root,
               struct type_param *param,

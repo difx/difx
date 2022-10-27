@@ -15,7 +15,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "msg.h"
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 #include "param_struct.h"
 #include "adler32_checksum.h"
 
@@ -61,8 +63,8 @@ struct type_222 **t222)
         }
 
     //now do the hashing
-    setstr_hash = adler32_checksum(param->set_string_buff, setstr_len);
-    cf_hash = adler32_checksum(param->control_file_buff, cf_len);
+    setstr_hash = adler32_checksum( (unsigned char*) param->set_string_buff, setstr_len);
+    cf_hash = adler32_checksum( (unsigned char*) param->control_file_buff, cf_len);
     
     /* Fill it in */
     strncpy ( (*t222)->record_id, "222", 3);

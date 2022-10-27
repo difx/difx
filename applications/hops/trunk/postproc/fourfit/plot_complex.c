@@ -27,6 +27,21 @@ plot_complex (char** matrix, int x, int y, int width, int height,
     double seg_len,data,wt, wtsum;
     hops_complex segsum;
 
+    extern void grid(
+      char** matrix,
+      int pos_x,
+      int pos_y,
+      int width,
+      int height,
+      double winstart,
+      double winstop,
+      double xscale, 
+      double yscale,
+      double x,
+      double y,
+      char ch, 
+      char altch);
+
     if (segment)
         {
         seg_len = (scale_x / (double)width);
@@ -40,7 +55,7 @@ plot_complex (char** matrix, int x, int y, int width, int height,
                                         /* Accumulate vector sum, weights, */
                                         /* and usb/lsb counts */
             for (index = start; index < stop; index++)
-                if ((index<numpoints) && (cabs(points[index]) != 0.))
+                if ((index<numpoints) && (abs_complex(points[index]) != 0.))
                     {
                     wt = weights[index];
                     wtsum += fabs (wt);
@@ -53,7 +68,7 @@ plot_complex (char** matrix, int x, int y, int width, int height,
                 {
                 if(amp_phase_flag == 0)
                     {
-                    data = cabs (segsum) / wtsum;
+                    data = abs_complex (segsum) / wtsum;
                     if (nlsb < nusb) symbol = '+';
                     else if (nusb < nlsb) symbol = '-';
                     else symbol = COMCHAR;
@@ -62,7 +77,7 @@ plot_complex (char** matrix, int x, int y, int width, int height,
                     }
                 else
                     {
-                    data = carg(segsum) *180./M_PI + 180.;
+                    data = arg_complex(segsum) *180./M_PI + 180.;
                     symbol = ch;
                     }
                 grid (matrix, x, y, width, height,
@@ -78,9 +93,9 @@ plot_complex (char** matrix, int x, int y, int width, int height,
         for(index=0;index<numpoints;index++)
             {
             if(amp_phase_flag == 0)
-                data = cabs(points[index]);
+                data = abs_complex(points[index]);
             else
-                data = carg(points[index]) *180./M_PI + 180.;
+                data = arg_complex(points[index]) *180./M_PI + 180.;
             if (weights[index] != 0)
                 grid(matrix,x,y,width,height,
                     scale_x,scale_y,

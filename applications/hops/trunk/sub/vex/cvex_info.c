@@ -30,7 +30,7 @@ cvex_info (char *key)
     char *str, *ptr;
     struct ref ref;
     struct block *blk;
-    struct Cvex_Mode *cm, *get_corr_mode();
+    struct Cvex_Mode *cm, *get_corr_mode(char *);
     static struct Cvex_Config cconfig;
     struct param_val p_val;
     extern struct statement *stlist;

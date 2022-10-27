@@ -24,7 +24,8 @@
 #include "vex.h"
 #include "param_struct.h"
 #include "control.h"
-#include "ff_misc_if.h"
+#include "msg.h"
+//#include "ff_misc_if.h"
 
 int
 fill_param (struct scan_struct *ovex,

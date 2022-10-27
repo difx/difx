@@ -15,4 +15,7 @@ struct fileset
     fstruct	    file[MAXFSET];	/* Files belonging to fileset */
     };
 
+extern int get_fileset(char *rootname, struct fileset *fset);
+
 #endif
+

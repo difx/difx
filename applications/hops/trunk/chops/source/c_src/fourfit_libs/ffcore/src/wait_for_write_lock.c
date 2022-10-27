@@ -23,6 +23,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include "fileset.h"
+#include "msg.h"
 #include "write_lock_mechanism.h"
 
 //returns LOCK_PROCESS_HAS_PRIORITY if this process is at the front of the queue
@@ -163,7 +164,7 @@ int wait_for_write_lock(char* rootname, char* lockfile_name, struct fileset *fse
     {
     //this function gets the max file extent number seen at time of lock file creation 
     //(or rather, the time which fileset() was run)
-    extern int fileset(char*, struct fileset* );
+    extern int get_fileset(char*, struct fileset* );
     extern int max_seq_no;
     
     int ret_val;
@@ -174,7 +175,7 @@ int wait_for_write_lock(char* rootname, char* lockfile_name, struct fileset *fse
     do
         {
         //check for max sequence number
-        ret_val = fileset(rootname, fset);
+        ret_val = get_fileset(rootname, fset);
         if(ret_val != 0)
             {
             return LOCK_FILESET_FAIL;
@@ -205,7 +206,7 @@ int wait_for_write_lock(char* rootname, char* lockfile_name, struct fileset *fse
 
     //made it here, so we have write priority now, just need to
     //check/update the extent number for type-2 files and return it
-    ret_val = fileset(rootname, fset);
+    ret_val = get_fileset(rootname, fset);
     if(ret_val == 0)
     {
         return LOCK_STATUS_OK;

@@ -27,7 +27,7 @@ get_mode_deflist (struct def *modedef,
     {
     int i, m, blockno, defno, found;
     struct ref ref;
-    struct def *newdef, *get_def();
+    struct def *newdef, *get_def(char*, char*, int*, int*);
     extern int defspace, ndefs;
 
                                         /* Loop over refs */

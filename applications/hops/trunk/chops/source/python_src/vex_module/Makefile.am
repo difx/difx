@@ -4,6 +4,7 @@
 # MAKEFLAGS = -k if desperate
 
 AM_CPPFLAGS = -I. -I$(srcdir)/include \
+	-I$(srcdir)/../../c_src/msg/include \
 	-I$(srcdir)/../../c_src/mk4util/include \
 	-I$(srcdir)/../../c_src/vex/include  -Wall -Wextra -DHAVE_CONFIG_H
 
@@ -63,7 +64,7 @@ importstamp: $(srcdir)/src $(srcdir)/../../c_src/vex/src
 
 libvexpyb_la_SOURCES = $(vexyorigsources) $(vexyhacksources)
 
-libvexpyb_la_LIBADD = ../../c_src/mk4util/libmk4utilb.la
+libvexpyb_la_LIBADD = ../../c_src/msg/libmsgb.la ../../c_src/mk4util/libmk4utilb.la
 
 libvexpyb_la_LDFLAGS = -avoid-version
 

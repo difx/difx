@@ -9,13 +9,16 @@
 #include <stdio.h>
 #include "control.h"
 #include "param_struct.h"
+#include "ffcontrol.h"
+#include "msg.h"
 
 static char def_control_null[] = "/dev/null";
 
 int
 set_defaults()
     {
-    char *default_cfile, *getenv();
+    char *default_cfile;
+    extern char* getenv(const char *);
     extern struct c_block *cb_head;
     extern struct type_param param;
 

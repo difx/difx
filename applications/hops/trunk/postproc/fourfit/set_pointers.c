@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include "msg.h"
 #include "mk4_data.h"
 #include "vex.h"
 #include "pass_struct.h"
@@ -47,6 +48,8 @@ struct freq_corel *corel)
     char st1, st2;
     struct index_tag *idx;
     struct freqlist flist[MAXFREQ];
+    extern void clear_freq_corel(struct freq_corel*);
+    extern int make_flist(struct station_struct*, struct station_struct*, struct freqlist*);
     
                                         /* Some initialization */
     for (i=0; i<MAXFREQ; i++) clear_freq_corel (corel+i);
@@ -222,7 +225,7 @@ struct freq_corel *corel)
             if (fc->data == NULL)
                 {
                 perror("Calloc failure");
-                msg ("Memory allocation failure for data pointer array");
+                msg ("Memory allocation failure for data pointer array",0);
                 fc->data_alloc = FALSE;
                 return(-1);
                 }

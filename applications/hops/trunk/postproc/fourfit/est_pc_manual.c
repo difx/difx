@@ -11,11 +11,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "msg.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 
-extern void msg (char *, int, ...);
 extern char control_filename[];
 extern char progname[];
 extern struct mk4_fringe fringe;
@@ -139,7 +139,7 @@ static void est_phases(struct type_pass *pass, int first, int final,
                     : fringe.t208->resid_mbd - fringe.t208->resid_sbd;
         /* allow this factor to be adjusted */
         delta_delay *= (epd) ? atof(epd) : 1.0;
-        est_phase += sbmult * (carg (status.fringe[ch]) * 180.0 / M_PI
+        est_phase += sbmult * (arg_complex(status.fringe[ch]) * 180.0 / M_PI
                   + 360.0 * delta_delay *
                     (pass->pass_data[ch].frequency - fringe.t205->ref_freq));
 

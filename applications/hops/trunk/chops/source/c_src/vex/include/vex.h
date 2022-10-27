@@ -227,4 +227,6 @@ struct param_val
     struct data_value dval[MAXNVAL];
     };
 
+extern int get_vex (char *filename, int vextype, char *key, struct vex *vex);
+
 #endif

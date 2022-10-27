@@ -300,7 +300,6 @@ afile_header(int version, int type, FILE* fp)
     {
     int vertype, ret;
     time_t now;
-    extern char progname[];
 					/* Start with a time-stamp */
     now = time (NULL);
     fprintf(fp,"%c This file processed by %s, %s",

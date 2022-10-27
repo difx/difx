@@ -13,9 +13,10 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "hops_complex.h"
 #include <string.h>
 #include <fftw3.h>
+#include "msg.h"
+#include "hops_complex.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
@@ -89,7 +90,7 @@ void pcalibrate (struct type_pass *pass,
                                     // pre-calculate fft quantities only once
     if (do_once)
         {
-        fftplan = fftw_plan_dft_1d (FFTSIZE, phasors, delay_fn, FFTW_FORWARD, FFTW_MEASURE);
+        fftplan = fftw_plan_dft_1d (FFTSIZE, (fftw_complex*) phasors, (fftw_complex*) delay_fn, FFTW_FORWARD, FFTW_MEASURE);
         do_once = FALSE;
         }
 
@@ -194,7 +195,7 @@ void pcalibrate (struct type_pass *pass,
                                     // normalize the pcal phasors
               for (i=ilo; i<ihi; i++)
                   if (status.pcals_accum[stn] > 0.0)
-                      pc_avg[stn][i] = pc_avg[stn][i] * 1 / status.pcals_accum[stn];
+                      pc_avg[stn][i] = pc_avg[stn][i] * 1.0 / status.pcals_accum[stn];
                   else
                       pc_avg[stn][i] = 0.0;
 
@@ -211,7 +212,7 @@ void pcalibrate (struct type_pass *pass,
                         msg ("stn %d subint ap %d..%d tone %d freq %10.f pc phasor %7.2f %7.2f",
                         0, stn, ap_subint_start, ap, i,
                         fdata->pc_freqs[stn][pass->pcinband[stn][fr][i]],
-                        1e3 * cabs (pc_avg[stn][i]), 180.0 / M_PI * carg (pc_avg[stn][i]));
+                        1e3 * abs_complex (pc_avg[stn][i]), 180.0 / M_PI * arg_complex (pc_avg[stn][i]));
 
                                     // find lowest (USB) or highest (LSB) tone frequency
                 minf = 1e12;
@@ -244,15 +245,15 @@ void pcalibrate (struct type_pass *pass,
                                     // find peak of fft
                 peak = -1.0;
                 for (i=0; i<FFTSIZE; i++)
-                    if (cabs (delay_fn[i]) > peak)
+                    if (abs_complex (delay_fn[i]) > peak)
                         {
-                        peak = cabs (delay_fn[i]);
+                        peak = abs_complex (delay_fn[i]);
                         indpeak = i;
                         }
                                     // interpolate to optimal value
                 y[1] = peak;
-                y[0] = cabs (delay_fn[(indpeak+FFTSIZE-1)%FFTSIZE]);
-                y[2] = cabs (delay_fn[(indpeak+FFTSIZE+1)%FFTSIZE]);
+                y[0] = abs_complex (delay_fn[(indpeak+FFTSIZE-1)%FFTSIZE]);
+                y[2] = abs_complex (delay_fn[(indpeak+FFTSIZE+1)%FFTSIZE]);
                 parabola (y, -1.0, 1.0, &ymax, &ampmax, q);
 
                                     // DC is in 0th element
@@ -285,11 +286,11 @@ void pcalibrate (struct type_pass *pass,
                             deltaf = -deltaf;
                         theta = 2.0 * M_PI * delay * deltaf;
 
-                        rotval[i] = pc_avg[stn][i] * cexp (I * theta);
+                        rotval[i] = pc_avg[stn][i] * exp_complex (cmplx_unit_I * theta);
                         msg ("stn %d chan %02d pol %d ap %02d-%02d tone %02d "
                              "rotated pcal phasor %7.2f %7.2f", 0,
                              stn, fr, ipol, ap_subint_start, ap, i,
-                             1e3 * cabs(rotval[i]), 180.0 / M_PI * carg (rotval[i]));
+                             1e3 * abs_complex(rotval[i]), 180.0 / M_PI * arg_complex (rotval[i]));
                         nin++;
                         }
                 if (nin >  0)       // use mean iff it exists
@@ -302,7 +303,7 @@ void pcalibrate (struct type_pass *pass,
                     kdatum = fdata->data + kap;
                     ksd = (stn == 0) ? &(kdatum->ref_sdata) : &(kdatum->rem_sdata);
                                     // also rotate by offsets and ionosphere
-                    ksd->mt_pcal[ipol] = pc_sub[stn] * cexp(I * delta_phase[stn]);
+                    ksd->mt_pcal[ipol] = pc_sub[stn] * exp_complex(cmplx_unit_I * delta_phase[stn]);
                                     // invert delay sign when derived from lsb tones
                     ksd->mt_delay[ipol] = lsb ? -delay : delay;
                                     // keep track of avg delay for ch/stn/pol
@@ -319,7 +320,7 @@ void pcalibrate (struct type_pass *pass,
                                     // find average pcal phasor for multitone
           if (param.pc_mode[stn] == MULTITONE)
               {
-              pc_adj[stn] = pc_adj[stn] * 1.0 / nsubs;
+              pc_adj[stn] = pc_adj[stn] * 1.0 / (double) nsubs;
               }
           else                      // if not multitone, just copy in phasor from
               {                     // single tone, and continue on with next freq
@@ -327,13 +328,13 @@ void pcalibrate (struct type_pass *pass,
                   pc_adj[stn] = pc_avg[stn][ilo];
               else
                                     // manual pcal - set to unit amp, zero phase
-                  pc_adj[stn] = 1.0 + 0.0 * I;
+                  pc_adj[stn] = 1.0 + 0.0 * cmplx_unit_I;
 
               msg ("non-multitone pcal phasor %7.2f %7.2f", -1,
-                      1e3 * cabs (pc_adj[stn]), 180.0 / M_PI * carg (pc_adj[stn]));
+                      1e3 * abs_complex (pc_adj[stn]), 180.0 / M_PI * arg_complex (pc_adj[stn]));
               }
                                     // make copies of amplitude and phase
-          status.pc_meas[fr][stn][ipol] = carg (pc_adj[stn]);
+          status.pc_meas[fr][stn][ipol] = arg_complex (pc_adj[stn]);
           status.pc_phase[fr][stn][ipol] = status.pc_meas[fr][stn][ipol];
                                     // store delay average per channel, stn, and pol
           status.pc_delay[fr][stn][ipol] = del_avg / ndelpts;
@@ -341,7 +342,7 @@ void pcalibrate (struct type_pass *pass,
           if (param.pc_mode[stn] != MULTITONE)
               status.pc_phase[fr][stn][ipol] += delta_phase[stn];
 
-          status.pc_amp[fr][stn][ipol] = cabs (pc_adj[stn]);
+          status.pc_amp[fr][stn][ipol] = abs_complex (pc_adj[stn]);
           msg ("chan %d stn %d ipol %d pc_amp %6.2f pc_phase %7.2f\n", 0,
                fr, stn, ipol, 1e3 * status.pc_amp[fr][stn][ipol],
                180.0 / M_PI * status.pc_phase[fr][stn][ipol]);
@@ -359,7 +360,7 @@ hops_complex c_mean (hops_complex *z, int n)
     sum = 0.0;
     for (i=0; i<n; i++)
         sum = sum + *(z+i);
-    sum = sum / n;
+    sum = sum / (double) n;
     return (sum);
     }
 

@@ -10,27 +10,19 @@
 /* mod. 2005.4.14 rjc  use stdarg.h instead of varargs.h     */
 /*                                                           */
 /*************************************************************/
+#ifndef MSG_H_
+#define MSG_H_
 
+#include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
 
-					/* To understand this, check stdarg man pages */
-void msg (char *string, 
-          int level, 
-          ...)	
+extern char progname[256];
+extern int msglev;
 
-    {
-    extern int msglev;
-    extern char progname[];
-    va_list args;
+extern void set_progname(const char* local_progname);
+extern const char* get_progname();
+extern void set_msglev(int lev);
+extern void msg (const char *string, int level, ...);
 
-    if (level >= msglev)
-        {
-        va_start (args, level);
-        if (*progname) fprintf (stderr, "%s: ", progname);
-        vfprintf (stderr, string, args);
-        putc ('\n', stderr);
-        va_end (args);
-        fflush (stderr);
-        }
-    }
+#endif

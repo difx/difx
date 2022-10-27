@@ -77,7 +77,7 @@ int do_record_merge(char *fileAName, char *fileBName,
     get_abs_path (fileAName, fileAFullName);
     get_abs_path (fileBName, fileBFullName);
     
-    fileset (fileAFullName, &fsetA);
+    get_fileset (fileAFullName, &fsetA);
                         // loop through all type-1 files related to A
     msg ("fsetA.maxfile is %d", 1, fsetA.maxfile);
     while (fsetA.file[++k].type > 0)
@@ -103,7 +103,7 @@ int do_record_merge(char *fileAName, char *fileBName,
             msg ("Scanning for file B...", 1);
     
             i = -1;
-            fileset (fileBFullName, &fsetB);
+            get_fileset (fileBFullName, &fsetB);
             msg ("fsetB.maxfile is %d", 1, fsetB.maxfile);
     
                             // find matching (same baseline) file for B
@@ -351,8 +351,8 @@ int do_record_merge(char *fileAName, char *fileBName,
     msg("Finished with type 1 (corel) files, on to type 3 (station) files", 1);
 
     i = j = -1;
-    fileset(fileAFullName, &fsetA);
-    fileset(fileBFullName, &fsetB);
+    get_fileset(fileAFullName, &fsetA);
+    get_fileset(fileBFullName, &fsetB);
     
                             // loop through type-3 (station) files
     while (fsetA.file[++i].type > 0)

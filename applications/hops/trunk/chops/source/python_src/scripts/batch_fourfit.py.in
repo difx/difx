@@ -34,6 +34,7 @@ def main():
     parser.add_argument('-a', '--auto-corrs', action="store_true", dest='auto_corrs', help='enable auto-correlations', default='False')
     parser.add_argument('-d', '--disable-cf-caching', action="store_true", dest='disable_caching', help='disable type_222 control file record caching in fringe files (caching is on by default).', default='False')
     parser.add_argument('-p', '--progress', action='store_true', dest='use_progress_ticker', help='monitor process with progress indicator', default=False)
+    parser.add_argument('-t', '--tec-file', dest='tec_file', help='JSON file with per-scan, per-station TEC estimates', default=None)
 
     args = parser.parse_args()
 
@@ -101,12 +102,12 @@ def main():
     stop_scan_limit = args.end_scan_limit
 
     ff_list = vpal.processing.load_and_batch_fourfit(abs_exp_dir, stations[0], stations[1:], \
-        control_file_path, set_commands, \
-        network_reference_baselines_only=False, num_processes=args.num_proc, \
-        start_scan_limit=start_scan_limit, stop_scan_limit=stop_scan_limit, \
-        pol_products=polprods, use_progress_ticker=args.use_progress_ticker, log_fourfit_processes=True \
-    )
-
+                                                     control_file_path, set_commands, \
+                                                     network_reference_baselines_only=False, num_processes=args.num_proc, \
+                                                     start_scan_limit=start_scan_limit, stop_scan_limit=stop_scan_limit, \
+                                                     pol_products=polprods, use_progress_ticker=args.use_progress_ticker, \
+                                                     log_fourfit_processes=True, use_ionex_file=args.tec_file )
+	
 
 
 if __name__ == '__main__':          # official entry point

@@ -17,6 +17,8 @@
 #include "psplot.h"
 #include "aedit.h"
 
+#define ANSIFY_THIS
+
 void pstag_process (struct ps_array *psarray, esum *data)
     {
     char filename[512], line[256], *s;
@@ -70,8 +72,15 @@ void pstag_process (struct ps_array *psarray, esum *data)
                 if (cell->data_index[band] < 0) continue;
                 if (cell->flag[band] == 0) continue;
                 if (zap) fdata[cell->data_index[band]].flag |= ZAPPED;
-#warning "LOOK AT THIS CAREFULLY"
-                else if (write_fsumm (fdata+cell->data_index[band], fp) != 0)
+                else if
+                (
+                    #ifdef ANSIFY_THIS
+                    write_fsumm ( &( (fdata+cell->data_index[band])->data), fp) != 0
+                    #else 
+                    #warning "LOOK AT THIS CAREFULLY"
+                    write_fsumm (fdata+cell->data_index[band], fp) != 0
+                    #endif
+                )
                     {
                     msg ("Problem writing out tagged records", 2);
                     fclose (fp);

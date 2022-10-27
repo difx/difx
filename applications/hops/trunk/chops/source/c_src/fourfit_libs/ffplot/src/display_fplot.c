@@ -13,9 +13,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "msg.h"
 #include "mk4_data.h"
 
-extern void msg (char *, int, ...);
 extern char display_221 (struct type_221 *, int);
 
 #ifdef P_tmpdir
@@ -32,7 +32,7 @@ extern char display_221 (struct type_221 *, int);
 int 
 display_fplot (struct mk4_fringe *fringe)
     {
-    FILE *fp, *fopen();
+    FILE *fp, *fopen(const char*, const char*);
     char c;
     int i, size, ofs;
     extern int displayopt;
@@ -59,7 +59,7 @@ display_fplot (struct mk4_fringe *fringe)
         return (0);
 
     i = 0;
-    while (c = temp[i++]) 
+    while ( (c = temp[i++]) ) 
         if (isupper(c)) temp[i-1] = tolower(c);
     for (i=0; i<noptions; i++)
 	if (strncmp (options[i], temp, 6) == 0) break;

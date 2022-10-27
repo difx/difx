@@ -21,7 +21,7 @@ int set_pols (char *arg1, char *arg2, char *remarg)
     {
     extern struct inputs inp;
     char outbuf[150], buf[150];
-    char *pol, *strtok();
+    char *pol;
     char pol_list[5] = {"LRXY"};
 
     outbuf[0] = '\0';

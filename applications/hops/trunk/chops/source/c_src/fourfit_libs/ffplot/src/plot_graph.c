@@ -17,6 +17,21 @@ plot_graph(char** matrix, int x, int y, int width, int height,
     int index,seg,pts;
     double seg_len,z;
 
+    extern void grid(
+      char** matrix,
+      int pos_x,
+      int pos_y,
+      int width,
+      int height,
+      double winstart,
+      double winstop,
+      double xscale, 
+      double yscale,
+      double x,
+      double y,
+      char ch, 
+      char altch);
+
     if(segment_flag==1)
 	{
 	seg_len = (scale_x / (double)width);

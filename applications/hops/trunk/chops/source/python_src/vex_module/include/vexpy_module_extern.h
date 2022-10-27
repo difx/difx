@@ -1,8 +1,6 @@
 #ifndef FFCONTROLPY_EXTERN_H__
 #define FFCONTROLPY_EXTERN_H__
 
-extern char *progname;
-extern int *msglev;
 extern char *datadir;
 
 extern struct token_struct *tokens;   /* input struct of tokens & values   */

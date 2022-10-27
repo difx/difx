@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 3205 2021-03-04 17:53:07Z gbc $
+# $Id: Makefile.am 3386 2021-10-15 13:14:34Z gbc $
 #
 
 #
@@ -180,7 +180,7 @@ svnrev.txt:
 # only if it has changed.
 ChangeLog.txt: svnrev.txt $(srcdir)/capture-log.py
 	-[ -d $(srcdir)/.svn -a -d "/swc" ] && \
-	 [ `hostname` = 'po' -a x$USER = xgbc ] && \
+	 [ `hostname` = 'po' -a x$(USER) = xgbc ] && \
 	    python $(srcdir)/capture-log.py $(srcdir) > ChangeLog.tmp && \
 	    { cmp -s $(srcdir)/ChangeLog.txt ChangeLog.tmp || \
 	      ( mv ChangeLog.tmp $(srcdir)/ChangeLog.txt && \

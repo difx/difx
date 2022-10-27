@@ -1,16 +1,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include "msg.h"
 #include "mk4_util.h"
 
-char progname[]= "testutil";
-int msglev = 2;
 
 main (argc, argv)
 int argc;
 char *argv[];
     {
+    set_progname("testutil");
+    set_msglev(2);
     char *tv = getenv("testverb"), *r2000, *r1999;
     int verb = (tv) ? atoi(tv) : 0, errs = 0;
 

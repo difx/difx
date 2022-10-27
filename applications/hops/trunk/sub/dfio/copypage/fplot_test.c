@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "msg.h"
 #include "mk4_data.h"
 #include "mk4_dfio.h"
 #include "fstruct.h"
@@ -22,10 +23,8 @@
 #define GSDEVICE 4
 //#define DISKFILE 5
 
-char progname[6] = "fplot";
-int msglev = 2;
-
-extern void msg(char*, int, ...);
+// char progname[6] = "fplot";
+// int msglev = 2;
 
 #define SAMPLE "AI.X.2.oifhak"
 
@@ -39,6 +38,8 @@ int main (int argc, char* argv[])
     static char ps_file[1024] = "fplot_";
     char *srcdir = getenv("srcdir");
     int sleepy;
+    set_progname("fplot");
+    set_msglev(2);
 
     msg ("DISPLAY is '%s'", 3, getenv("DISPLAY"));
     if (!getenv("DISPLAY") || (strlen(getenv("DISPLAY")) == 0))

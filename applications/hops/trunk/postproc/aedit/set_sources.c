@@ -21,7 +21,7 @@ int set_sources(char *arg1, char *arg2, char *remarg)
     {
     extern struct inputs inp;
     char outbuf[500], buf[500];
-    char *src, *strtok();
+    char *src;
 
     outbuf[0] = '\0';
 

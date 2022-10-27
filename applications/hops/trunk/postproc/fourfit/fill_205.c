@@ -2,7 +2,7 @@
 /*                                                                      */
 /*  Fills in a type_205 record                                          */
 /*                                                                      */
-/*      Inputs:         
+/*      Inputs:                                                         */
 /*                                                                      */
 /*      Output:         t205        Filled in type_205 record           */
 /*                                                                      */
@@ -11,7 +11,9 @@
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
+#include "msg.h"
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "vex.h"

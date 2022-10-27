@@ -1,3 +1,6 @@
+#ifndef PARSER_H__
+#define PARSER_H__
+
               /* Structure definitions for the FSM table */
 
 struct fsm_table_entry
@@ -237,3 +240,5 @@ struct token_struct
 #define SAVE_2ND_SCAN       18
 #define INSERT_STRING       19
 #define SAVE_CSV_LIST       20
+
+#endif

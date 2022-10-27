@@ -123,8 +123,8 @@ addr_222_impl (short version,
             strncpy(t222->record_id, "222", 3);
             strncpy(t222->version_no, "00", 2);
             cp_short(t222->padded, t222_v0->padded);
-            cp_int(t222->setstring_hash, t222_v0->setstring_hash);
-            cp_int(t222->control_hash, t222_v0->control_hash);
+            cp_uint(t222->setstring_hash, t222_v0->setstring_hash);
+            cp_uint(t222->control_hash, t222_v0->control_hash);
             cp_int(t222->setstring_length, t222_v0->setstring_length);
             cp_int(t222->cf_length, t222_v0->cf_length);
 

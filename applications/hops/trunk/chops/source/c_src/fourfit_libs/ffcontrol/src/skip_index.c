@@ -6,6 +6,7 @@
 *                                                      rjc  93.3.23            *
 *******************************************************************************/
 #include "control.h"
+#include "ffcontrol.h"
 #include "mk4_sizes.h"
 
 #define FALSE 0

@@ -73,12 +73,12 @@ addr_307 (short version,
         cp_double (t307->tot, t307_v0->tot);
         cp_double (t307->rot, t307_v0->rot);
         cp_double (t307->accum_period, t307_v0->accum_period);
-        cp_int (t307->frame_count, t307_v0->frame_count);
+        cp_uint (t307->frame_count, t307_v0->frame_count);
         for (i=0; i<16; i++)
             {
-            for (j=0; j<8; j++) cp_int (t307->counts[i].count[j],
+            for (j=0; j<8; j++) cp_uint (t307->counts[i].count[j],
                                                 t307_v0->counts[i].count[j]);
-            cp_int (t307->counts[i].val_count, t307_v0->counts[i].val_count);
+            cp_uint (t307->counts[i].val_count, t307_v0->counts[i].val_count);
             }
 
         return (t307);

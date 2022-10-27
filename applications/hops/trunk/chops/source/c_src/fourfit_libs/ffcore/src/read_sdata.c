@@ -13,9 +13,11 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include "msg.h"
 #include "mk4_data.h"
 #include "fileset.h"
 #include "mk4_dfio.h"
+
 
 int
 read_sdata (

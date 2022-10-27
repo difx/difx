@@ -8,7 +8,8 @@
 #include "pass_struct.h"
 #include "param_struct.h"
 #include "apply_funcs.h"
-#include "ff_misc_if.h"
+#include "msg.h"
+//#include "ff_misc_if.h"
 
 void apply_cmplxbp(int sb, struct freq_corel *fdata,
     hops_complex *xp_spectrum, int npts, struct type_pass *pass)

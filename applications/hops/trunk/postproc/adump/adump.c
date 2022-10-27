@@ -18,9 +18,10 @@
 #include "adump.h"
 #include "mk4_util.h"
 #include "mk4_afio.h"
+#include "msg.h"
 
-char progname[6] = "adump";
-int msglev = 1;
+// char progname[6] = "adump";
+// int msglev = 1;
 
 int
 main (int argc, char* argv[])
@@ -29,6 +30,8 @@ main (int argc, char* argv[])
     char line[512], outline[512];
     struct flist fields[MAXFIELDS];
     FILE *fpin, *fpout;
+    set_progname("adump");
+    set_msglev(1);
 /*  extern int errno, sys_nerr; */
 /*  extern char const *sys_errlist[]; */
 					/* Check for option flags, open files as */

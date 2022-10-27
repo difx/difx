@@ -36,8 +36,9 @@ addr_221_impl (short version,
           void *address,
           int *size, int truncate_data)
     {
-    int clen, dlen, reclen, n8;
-    char *decompressed, workspace[32784];
+    int clen, reclen, n8;
+    unsigned int dlen;
+    unsigned char *decompressed, workspace[32784];
     struct type_221 *t221;
     struct type_221_v0 *t221_v0;
                                         /* This needs work for 221 records ... */
@@ -86,10 +87,10 @@ addr_221_impl (short version,
             //go ahead and actually read the post-script and load it into memory
                                             /* Allocate space for decompressed plot */
                                             /* Assume compression never exceeds factor 8 */
-            decompressed = (char *)malloc (clen * 8);
+            decompressed = (unsigned char *)malloc (clen * 8);
             msg ("Allocated memory block %d", -1, decompressed);
                                             /* Decompress into new pplot location */
-            compress_decompress (workspace, t221_v0->pplot, clen, decompressed, &dlen);
+            compress_decompress (workspace, (unsigned char*) t221_v0->pplot, clen, decompressed, &dlen); //TODO FIXME nasty char->uchar static cast!!
                                             /* Allocate output record, allow for null term. */
                                             /* Should condition this to be multiple of 8? */
             reclen = sizeof (struct type_221) - 1 + dlen + 1;

@@ -12,9 +12,11 @@
 /*									*/
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "mk4_util.h"
 #include "hops_config.h"
+#include "msg.h"
 
 #define FALSE 0
 #define TRUE  1
@@ -39,8 +41,7 @@ void version(char *headurl)
 
 void syntax(char *headurl)
     {
-    extern char progname[];
-    char *evar, *getenv(), docdir[256], helpfile[512], line[256];
+    char *evar, docdir[256], helpfile[512], line[256];
     int len, print;
     FILE *fp;
 					/* Start with a blank line for appearance */
@@ -69,9 +70,9 @@ void syntax(char *headurl)
 		msg ("%s", 3, line);
 		}
 	    }
+        fclose (fp);
 	}
 
-    fclose (fp);
     version(headurl);
     return;
     }

@@ -26,6 +26,7 @@ else
     "refringe.h"
     "statistics.h"
     "ff_misc_if.h"
+    "ffcore.h"
     )
 
     header_src_dir="${HOPS_SRC_DIR}/postproc/fourfit"

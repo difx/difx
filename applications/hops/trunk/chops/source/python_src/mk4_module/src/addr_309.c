@@ -82,7 +82,7 @@ addr_309 (short version,
 
             for (j=0; j<16; j++)    // loop over tones
                 for (k=0; k<2; k++) // loop over quadratures
-                    cp_int (t309->chan[i].acc[j][k], t309_v0->chan[i].acc[j][k]);
+                    cp_uint (t309->chan[i].acc[j][k], t309_v0->chan[i].acc[j][k]);
             }
         return (t309);
         }
@@ -112,7 +112,7 @@ addr_309 (short version,
 
             for (j=0; j<64; j++)    // loop over tones
                 for (k=0; k<2; k++) // loop over quadratures
-                    cp_int (t309->chan[i].acc[j][k], t309_v1->chan[i].acc[j][k]);
+                    cp_uint (t309->chan[i].acc[j][k], t309_v1->chan[i].acc[j][k]);
             }
         return (t309);
         }

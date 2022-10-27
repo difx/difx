@@ -20,12 +20,12 @@
 #include <errno.h>
 #include <time.h>
 #include <ctype.h>
-
 #include "fourmer.h"
-
-                                //required by libutil
-int msglev = 2;
-char progname[] = "fourmer";
+#include "msg.h"
+#include "fileset.h"
+//                                 //required by libutil
+// int msglev = 2;
+// char progname[] = "fourmer";
 
                                 // from root_id.c: returns
                                 //   a six-letter timestamp
@@ -90,6 +90,9 @@ int main(int argc, char **argv)
     
 				// which field to sort by
     const int sortField[5] =     {0, 2, 6, 0, 5    };
+
+    set_progname("fourmer");
+    set_msglev(2);
     
     if (getcwd (pwd, MAX_FPATH) == NULL)
         {

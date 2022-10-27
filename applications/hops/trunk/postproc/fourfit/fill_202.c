@@ -13,8 +13,10 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include "msg.h"
 #include "vex.h"
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 #include "param_struct.h"
 
 int
@@ -25,7 +27,8 @@ struct type_202 *t202)
     {
     char refst, remst;
     int i;
-    double refepoch, remepoch, frt, refdiff, remdiff, time_to_double(), lambda;
+    double refepoch, remepoch, frt, refdiff, remdiff, lambda;
+    extern double time_to_double(struct date);
     struct station_struct *ref, *rem;
     struct station_log *lref, *lrem;
     struct date tempdate;

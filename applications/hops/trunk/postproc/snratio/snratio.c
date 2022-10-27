@@ -67,7 +67,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> 
-
+#include "msg.h"
 #include "mk4_afio.h"
 
 /*  max baselines, sources and scans defined:   */
@@ -100,8 +100,8 @@ struct {                          /* struct for bl means by source */
 void addsec();
 int parse_station_name (char *in_line, int nbl, char *ref, char *rem);
 
-char progname[8] = "snratio";
-int msglev = 3;
+// char progname[8] = "snratio";
+// int msglev = 3;
 
 int main(int argc, char *argv[])
 {
@@ -115,7 +115,9 @@ int main(int argc, char *argv[])
   int bln[MAXBL],n,nbl,nc,nsc,nsor,nline,nb,ns,type,exp,isnro,m,mm,colns;
   int return_code, done, stat_index, head_done, i;
   int offset;
- 
+
+  set_progname("snratio");
+  set_msglev(3);
 
 /* open snr apriori file (created from sked) */
 

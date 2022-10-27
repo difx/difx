@@ -38,7 +38,6 @@ int get_param_list (struct usearray *user_param, int maxfreq, char *args)
     char buf[256], string1[40], string2[40], idstr[10], *str, *eol;
     int i, j, nparms, param_id, nelement, try_again, ask, split_at;
     extern struct udat parameter_list[];
-    extern char progname[];
     extern int batch;
                                         /* Do we have numbers in arg list? */
     ask = TRUE;

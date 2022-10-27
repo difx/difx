@@ -12,10 +12,15 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <math.h>
+#include "msg.h"
 #include "vex.h"
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 #include "param_struct.h"
 #include "pass_struct.h"
+#include "ffio.h"
+
 
 
 int
@@ -35,7 +40,7 @@ char *filename)
     static struct type_208 t208;
     static struct type_210 t210;
     static struct type_000 t2_id;
-    double sband_err, ref_freq, sqrt(), fabs();
+    double sband_err, ref_freq;
     int error, nap, xpow_len, fr, ap, size_of_t212, size_of_t230, recno;
     char buf[256];
     char *t212_array, *t230_array, *address;
@@ -43,6 +48,7 @@ char *filename)
     extern struct mk4_fringe fringe;
     extern struct type_param param;
     extern struct type_status status;
+
                                         /* Init */
     clear_mk4fringe (&fringe);
 

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 3359 2021-09-15 14:51:45Z gbc $
+# $Id: Makefile.am 3424 2021-11-01 15:19:35Z gbc $
 #
 
 SUBDIRS = .
@@ -7,16 +7,18 @@ SUBDIRS = .
 AM_CPPFLAGS = @HOPS_INC@
 
 TESTS_ENVIRONMENT = srcdir=$(srcdir)
-TESTS             = fft_chk ff_misc_if
+TESTS             = fft_chk
 
 noinst_HEADERS = adhoc_flag.h control.h filter.h freqlist.h meta_struct.h \
 		 param_struct.h  parser.h pass_struct.h plot_struct.h \
 		 plot_data_dir.h refringe.h statistics.h apply_funcs.h \
-		 ff_misc_if.h
+		 ffcontrol.h ffmath.h ffcore.h \
+                 ffio.h ffsearch.h
+
 
 bin_PROGRAMS = fourfit
 bin_SCRIPTS = 
-check_PROGRAMS = fft_chk ff_misc_if
+check_PROGRAMS = fft_chk
 text_docs = new_parameters.txt data-flagging.txt channel_aliasing.txt \
 	parallactic-angle-correction.txt
 EXTRA_DIST = $(bin_SCRIPTS) $(text_docs)
@@ -67,9 +69,9 @@ fourfit_CPPFLAGS = -DFF_PROGNAME=\"fourfit\" \
 		   -DFF_VER_NO=\"@PACKAGE_VERSION@\" \
 		   -DPS2PDF=\"@PS2PDF@\" \
 		   $(AM_CPPFLAGS)
-fourfit_LDADD = @DFIO_LIB@ @VEX_LIB@ @AFIO_LIB@ @UTIL_LIB@ \
+fourfit_LDADD = @MSG_LIB@ @DFIO_LIB@ @VEX_LIB@ @AFIO_LIB@ @UTIL_LIB@ \
 		@PGP_LIB@ @PNG_LIB@ @X_FPLOT_LIB@ @X11_LIB@ @FFTW3_LIBS@
-fourfit_DEPENDENCIES = @DFIO_DEP@ @VEX_DEP@ @AFIO_DEP@ @UTIL_DEP@
+fourfit_DEPENDENCIES = @MSG_DEP@ @DFIO_DEP@ @VEX_DEP@ @AFIO_DEP@ @UTIL_DEP@
 
 # check the fft code
 fft_chk_SOURCES = fft_chk.c

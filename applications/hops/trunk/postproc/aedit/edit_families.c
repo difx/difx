@@ -6,7 +6,7 @@
 /*									*/
 /*	Inputs:		data		all types			*/
 /*			mode		0=parents, 1=children		*/
-/*	
+/*	                                 */
 /*									*/
 /*	Output:		nedit1, nedit2	Number pts flagged in this op.	*/
 /*									*/

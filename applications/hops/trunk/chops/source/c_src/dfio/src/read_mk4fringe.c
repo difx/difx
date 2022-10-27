@@ -15,6 +15,7 @@
 #include "mk4_data.h"
 #include "mk4_dfio.h"
 #include "mk4_util.h"
+#include "msg.h"
 
 int
 read_mk4fringe_impl (char *filename, struct mk4_fringe *fringe, int truncate_data)

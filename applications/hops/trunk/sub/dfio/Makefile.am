@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 2458 2018-07-19 21:30:23Z gbc $
+# $Id: Makefile.am 3399 2021-10-26 20:05:16Z barrettj $
 #
 
 SUBDIRS = . copypage
@@ -48,7 +48,7 @@ libdfio_a_SOURCES = init_000.c addr_100.c copy_100.c clear_100.c \
 check_PROGRAMS = test_mk4fringe test_compress
 
 test_mk4fringe_SOURCES = mk4fringe_test.c
-test_mk4fringe_LDADD = -L. -ldfio @AFIO_LIB@ @UTIL_LIB@
+test_mk4fringe_LDADD = -L. -ldfio @MSG_LIB@ @AFIO_LIB@ @UTIL_LIB@
 
 test_compress_SOURCES = test_compress.c compress.c
 test_compress_LDADD = 

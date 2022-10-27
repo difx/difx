@@ -14,14 +14,18 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
+#include "msg.h"
 #include "mk4_data.h"                       /* Definitions of data structures */
+#include "mk4_dfio.h"
+#include "mk4_util.h"
 //#include "print_page.h"
 #include "pass_struct.h"
 #include "param_struct.h"
 #include "meta_struct.h"
 #include "vex.h"
-
+#include "ffio.h"
 #include "fileset.h"
 #include "write_lock_mechanism.h"
 #include "plot_data_dir.h"
@@ -29,7 +33,7 @@
 int
 output (struct vex* root, struct type_pass* pass)
     {
-    char fringe_name[256], *create_fname();
+    char fringe_name[256];
     char sg;
     int i, dret;
     extern int base, test_mode, do_accounting;
@@ -43,6 +47,15 @@ output (struct vex* root, struct type_pass* pass)
     extern struct type_status status;
     extern struct type_meta meta;
     extern struct type_plot plot;
+
+    extern int make_plotdata(struct type_pass*);
+    extern int create_fname (struct scan_struct*, struct type_pass*, char fname[]);
+    extern int display_fplot (struct mk4_fringe*);
+    extern int make_postplot (struct scan_struct*,
+                       struct type_pass*,
+                       char*,
+                       struct type_221**);
+    extern void est_pc_manual(int, char*, struct type_pass*);
 
                                         /* Generate information to create fringe plot */
                                         /* Some of this also goes into fringe file */

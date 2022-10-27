@@ -6,7 +6,7 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.23, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.24, gbc@haystack.mit.edu)
 AM_INIT_AUTOMAKE([foreign -Wno-extra-portability subdir-objects])
 
 AC_CONFIG_SRCDIR([hops.bash.in])
@@ -711,6 +711,7 @@ AC_SUBST(PNG_LIB)
 HOPS_INC=['-I$(top_srcdir)/include']
 AC_SUBST(HOPS_INC)
 AC_GBC_LIBDEP(MK4IO,sub/mk4py,mk4io)
+AC_GBC_LIBDEP(MSG,sub/msg,msg)
 AC_GBC_LIBDEP(AFIO,sub/afio,afio)
 AC_GBC_LIBDEP(DFIO,sub/dfio,dfio)
 AC_GBC_LIBDEP(UTIL,sub/util,mk4util)
@@ -813,6 +814,7 @@ if [ "$have_hops" = true ] ; then
 	postproc/fringex/Makefile
 	postproc/snratio/Makefile
 	sub/Makefile
+        sub/msg/Makefile
 	sub/afio/Makefile
 	sub/dfio/Makefile
 	sub/dfio/copypage/Makefile
@@ -864,6 +866,7 @@ if [ "$have_chops" = true ] ; then
      chops/Makefile
      chops/source/Makefile
      chops/source/c_src/Makefile
+     chops/source/c_src/msg/Makefile
      chops/source/c_src/mk4util/Makefile
      chops/source/c_src/dfio/Makefile
      chops/source/c_src/afio/Makefile
@@ -903,10 +906,15 @@ if [ "$have_chops" = true ] ; then
     AC_CONFIG_FILES( [chops/source/python_src/vpal_module/setup.py] )
     AC_CONFIG_FILES( [chops/source/python_src/vex_module/setup.py] )
     AC_CONFIG_FILES( [chops/source/python_src/scripts/pcc_generate.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/parallactic_plots.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/az_el_amp_plot.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/compare_pol_hands.py] )
     AC_CONFIG_FILES( [chops/source/python_src/scripts/pcc_select.py] )
     AC_CONFIG_FILES( [chops/source/python_src/scripts/pcc_plot.py] )
     AC_CONFIG_FILES( [chops/source/python_src/scripts/vgoscf_generate.py] )
     AC_CONFIG_FILES( [chops/source/python_src/scripts/phase_resid.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/get_ionex_dtec_bounds.py] )
+    AC_CONFIG_FILES( [chops/source/python_src/scripts/channel_phase_resid.py] )
     AC_CONFIG_FILES( [chops/source/python_src/scripts/batch_fourfit.py] )
     AC_CONFIG_FILES( [chops/source/python_src/scripts/ffres2pcp.py] )
     AC_CONFIG_FILES( [chops/source/python_src/scripts/fourphase.py] )

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 2458 2018-07-19 21:30:23Z gbc $
+# $Id: Makefile.am 3399 2021-10-26 20:05:16Z barrettj $
 # 
 
 SUBDIRS = .
@@ -11,7 +11,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DGS_EXEC=\"@GS_EXEC@\" \
 		-DGS_COPYPAGE_OK=@GS_COPYPAGE_OK@
 
 fplot_test_SOURCES = fplot_test.c
-fplot_test_LDADD = -L.. -ldfio @UTIL_LIB@
+fplot_test_LDADD = -L.. -ldfio @MSG_LIB@ @UTIL_LIB@
 
 check_PROGRAMS = fplot_test
 

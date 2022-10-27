@@ -11,6 +11,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include "msg.h"
 #include "hops_complex.h"
 
 #include "param_struct.h"
@@ -48,7 +49,7 @@ compute_field_rotations_fixed(hops_complex cpolvalue[4],
         default:
             msg ("this cannot happen", 3);
         }
-        cpolvalue[pp] = cexp( - I * radangle );
+        cpolvalue[pp] = exp_complex( - cmplx_unit_I * radangle );
     }
 }
 /*

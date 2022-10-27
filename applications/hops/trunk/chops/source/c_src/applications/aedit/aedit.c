@@ -54,17 +54,18 @@ struct datasumm rsumm, csumm, fsumm, tsumm, qsumm;
 struct usearray user_param;
 
 
-char progname[6] = "aedit";
-int msglev = 1;
-
 int main (int argc, char *argv[])
     {
     extern char *optarg;
     extern int optind;
     esum data;
-    int file, runfile, c, i, j, n, len, execute(), filelist, ret;
+    int file, runfile, c, i, j, n, len, filelist, ret;
+    extern int execute (esum *, struct com*);
     char run_fname[512], line[512], *eol;
     struct com commands[10];    /* Structure contains parsed command info */
+
+    set_progname("aedit");
+    set_msglev(2);
 
     environment();                      /* Set up directories according to env't */
     check_env();                        /* Aedit-specific ones */

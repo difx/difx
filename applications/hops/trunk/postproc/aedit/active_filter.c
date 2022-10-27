@@ -46,4 +46,7 @@ int active_filter(void)
     if (inp.fraction != 0) fcheck[nfilt++] = F_FRACTION;
     if ((inp.nfreq[0] != 1) || (inp.nfreq[1] != MAXFREQ)) fcheck[nfilt++] = F_NFREQ;
     if (inp.parameter[0] > .01) fcheck[nfilt++] = F_PARAMETER;
+
+    /* should never reach this return */
+    return -1;
     }

@@ -73,7 +73,7 @@ addr_203 (short version,
         for (i=0; i<32; i++)
             {
             cp_short (t203->channels[i].index, t203_v0->channels[i].index);
-            cp_short (t203->channels[i].sample_rate, t203_v0->channels[i].sample_rate);
+            cp_unsig (t203->channels[i].sample_rate, t203_v0->channels[i].sample_rate);
             t203->channels[i].refsb = t203_v0->channels[i].refsb;
             t203->channels[i].remsb = t203_v0->channels[i].remsb;
             t203->channels[i].refpol = t203_v0->channels[i].refpol;
@@ -101,7 +101,7 @@ addr_203 (short version,
         for (i=0; i<8*MAXFREQ; i++)
             {
             cp_short (t203->channels[i].index, t203_v1->channels[i].index);
-            cp_short (t203->channels[i].sample_rate, t203_v1->channels[i].sample_rate);
+            cp_unsig (t203->channels[i].sample_rate, t203_v1->channels[i].sample_rate);
             t203->channels[i].refsb = t203_v1->channels[i].refsb;
             t203->channels[i].remsb = t203_v1->channels[i].remsb;
             t203->channels[i].refpol = t203_v1->channels[i].refpol;

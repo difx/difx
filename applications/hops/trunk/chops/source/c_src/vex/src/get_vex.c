@@ -41,12 +41,12 @@ get_vex (char *filename,
          struct vex *vex)
     {
     static char last_filename[256] = "";
-    struct Cvex_Config *cvex_info();
-    struct scan_struct *scan_info();
-    struct evex_struct *evex_info();
-    struct ivex_struct *ivex_info();
-    struct svex_struct *svex_info();
-    struct lvex_struct *lvex_info();
+    struct Cvex_Config *cvex_info(char*);
+    struct scan_struct *scan_info(char*, char*);
+    struct evex_struct *evex_info(char*);
+    struct ivex_struct *ivex_info(char*);
+    struct svex_struct *svex_info(char*);
+    struct lvex_struct *lvex_info(char*);
     extern int do_output;
    
                                        /* sanity check */

@@ -7,14 +7,16 @@
 *  00.10.20 cjl modify for fractional APs          *
 ***************************************************/
 
+#include "msg.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
+#include "ffmath.h"
 #include <math.h>
 #include <stdio.h>
 #include "hops_complex.h"
 #include "apply_funcs.h"
-#include "ff_misc_if.h"
+//#include "ff_misc_if.h"
 #include <fftw3.h>
 
 // MAXLAG == 8192 so 4*MAXLAG is 4x MBDMXPTS which is 3x more than needed for MBD.
@@ -35,7 +37,8 @@ int make_plotdata(struct type_pass *pass)
     struct data_corel *datum;
     hops_complex Z, sum;
     static hops_complex X[2*MAXMAX], Y[4*MAXLAG+3], sbsp[MAXFREQ][2*MAXLAG], sum_ap[MAXAP];
-    hops_complex vrot(), sum_all, sum_freq;
+    hops_complex sum_all, sum_freq;
+    extern hops_complex vrot(int, double, double, int, int, struct type_pass*);
     hops_complex wght_phsr;
     int maxchan[MAXFREQ], i, j, np, fr, ap, lag, st, seg, lagbit;
     double ap_seg, max[MAXFREQ], maxv, peak, frac,
@@ -47,8 +50,9 @@ int make_plotdata(struct type_pass *pass)
     int n, ij,
         maxi, npmax, nl;
                                         // function prototypes
-    int minvert (double [3][3], double [3][3]);
+    //int minvert (double [3][3], double [3][3]);
     void ion_covariance (struct type_pass *);
+    extern void calc_rms (struct type_pass* );
 
                                         /* Make sure data will fit */
     if (param.nlags*param.num_ap > MAX_APXLAG)
@@ -92,7 +96,7 @@ int make_plotdata(struct type_pass *pass)
             }
                                         /* Then perform FFT over time to obtain */
                                         /* d-r spectrum avg'd over all frequencies */
-    fftplan = fftw_plan_dft_1d (npmax, X, X, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftplan = fftw_plan_dft_1d (npmax, (fftw_complex*) X, (fftw_complex*) X, FFTW_FORWARD, FFTW_ESTIMATE);
     fftw_execute (fftplan);
     for (i = 0; i < npmax; i++)
         {
@@ -103,7 +107,7 @@ int make_plotdata(struct type_pass *pass)
         if (rj < -0.5) rj += (double)npmax;
         if (rj > (npmax - 0.5)) rj -= (double)npmax;
         j = (int)(rj + 0.5);
-        plot.d_rate[i] = cabs (X[j]) / (double)status.total_ap_frac;
+        plot.d_rate[i] = abs_complex (X[j]) / (double)status.total_ap_frac;
         }
                                         /* adjust dr plot for effects of coherence time
                                          * if that feature has been invoked  rjc 2006.4.27 */
@@ -176,14 +180,14 @@ int make_plotdata(struct type_pass *pass)
             Y[status.mb_index[fr]] = X[fr];
         }
                                         /* FFt across freq to mbdelay spectrum */
-    fftplan = fftw_plan_dft_1d (plot.num_mb_pts, Y, Y, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftplan = fftw_plan_dft_1d (plot.num_mb_pts, (fftw_complex*) Y, (fftw_complex*) Y, FFTW_FORWARD, FFTW_ESTIMATE);
     fftw_execute (fftplan);
     for (i = 0; i < plot.num_mb_pts; i++)
         {
         j = i - plot.num_mb_pts / 2;
         if (j < 0)
             j += plot.num_mb_pts;
-        plot.mb_amp[i] = cabs(Y[j]) / status.total_ap_frac;
+        plot.mb_amp[i] = abs_complex(Y[j]) / status.total_ap_frac;
         }
 
                                         /* Calculate single band delay, */
@@ -225,16 +229,16 @@ int make_plotdata(struct type_pass *pass)
             sbsp[fr][lag] = sum;
             X[lag] = X[lag] + sum;
                                         /* Find the max lag for each frequency */
-            if (cabs(sum) > max[fr])
+            if (abs_complex(sum) > max[fr])
                 {
-                max[fr] = cabs (sum);
+                max[fr] = abs_complex (sum);
                 maxchan[fr] = lag;
                 }
             }
-        plot.sb_amp[lag] = cabs(X[lag]) / status.total_ap_frac;
+        plot.sb_amp[lag] = abs_complex(X[lag]) / status.total_ap_frac;
 
         if (lag == status.max_delchan)
-            status.coh_avg_phase = carg (X[lag]);
+            status.coh_avg_phase = arg_complex (X[lag]);
         j = lag - nl;
         if (j < 0)
             j += 4 * nl;
@@ -243,7 +247,7 @@ int make_plotdata(struct type_pass *pass)
         Y[j] = X[lag];
         }
                                         /* FFT sband spectrum -> XPower spectrum */
-    fftplan = fftw_plan_dft_1d (4 * nl, Y, Y, FFTW_FORWARD, FFTW_ESTIMATE);
+    fftplan = fftw_plan_dft_1d (4 * nl, (fftw_complex*) Y, (fftw_complex*) Y, FFTW_FORWARD, FFTW_ESTIMATE);
     fftw_execute (fftplan);
                                         // scale crosspower spectra for correct amplitude
     for (i = 0; i < 2*nl; i++)
@@ -261,7 +265,7 @@ int make_plotdata(struct type_pass *pass)
 
        plot.cp_spectrum[i] = Y[j] * sb_factor;
                                         /* Counter rotate to eliminate sband delay */
-       Z = cexp(-I * (status.sbd_max * (i-nl) * M_PI / (status.sbd_sep * 2*nl)));
+       Z = exp_complex(-cmplx_unit_I * (status.sbd_max * (i-nl) * M_PI / (status.sbd_sep * 2*nl)));
        plot.cp_spectrum[i] = Z * plot.cp_spectrum[i];
        }
                                         // if requested, fit video bandpass params
@@ -275,7 +279,7 @@ int make_plotdata(struct type_pass *pass)
     for (fr = 0; fr < pass->nfreq; fr++)
        {
        for (i=0; i<3; i++)
-           yy[i] = cabs (sbsp[fr][maxchan[fr]-1+i]);
+           yy[i] = abs_complex (sbsp[fr][maxchan[fr]-1+i]);
        parabola (yy, -1.0, 1.0, &peak, &maxv, q);
        status.sbdbox[fr] = maxchan[fr] + peak + 1;
        }
@@ -353,7 +357,7 @@ int make_plotdata(struct type_pass *pass)
 
         status.fringe[fr] = sum_freq * c;
         msg ("status.fringe[%d] %f %f", 0, fr, status.fringe[fr]);
-        status.inc_avg_amp_freq += cabs(sum_freq) * status.amp_corr_fact;
+        status.inc_avg_amp_freq += abs_complex(sum_freq) * status.amp_corr_fact;
         }
 
     ion_covariance (pass);              // do ionosphere covariance analysis
@@ -363,7 +367,7 @@ int make_plotdata(struct type_pass *pass)
         plot.phasor[pass->nfreq][ap] = sum_ap[ap];
         plot.weights[pass->nfreq][ap] = ap_cnt[ap];
         }
-    status.coh_avg_phase = carg (sum_all);
+    status.coh_avg_phase = arg_complex (sum_all);
     status.inc_avg_amp_freq /= status.total_ap_frac;
                                         /* Noise bias correction ? */
     status.inc_avg_amp_freq /= ((1.0 + 1.0/(2.0 * status.snr

@@ -24,7 +24,7 @@ get_station_deflist (char *stname,
     {
     int st, bno, dno;
     struct ref ref;
-    struct def *newdef, *stdef, *get_def();
+    struct def *newdef, *stdef, *get_def(char*, char*, int*, int*);
     extern int defspace, ndefs;
 
                                         /* get the station def */

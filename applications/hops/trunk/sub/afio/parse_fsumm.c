@@ -62,7 +62,6 @@ parse_fsumm(char *line, fringesum *file)
     int n, syear, sday, shour, smin, ssec, pyear, pday, phour, pmin, psec, yearok, type;
     int version, incomplete;
     char c, afile[6], name[7], parents[20];
-    char *strcpy(), *strncpy(), *strcat();
 
     yearok = TRUE;                              /* Flag for scan year info */
     incomplete = FALSE;

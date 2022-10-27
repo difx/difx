@@ -23,6 +23,7 @@
 /************************************************************************/
 #include <stdio.h>
 #include "mk4_data.h"
+#include "msg.h"
 #define MAXSTATAP 100
 
 int
@@ -37,7 +38,8 @@ int *nstart,
 double *result1,
 double *result2)
     {
-    int i, fst, np, ret, linterp();
+    int i, fst, np, ret;
+    extern int linterp (double, double, double, double, double, double*);
     static int nxy;
 
     double apcoord[MAXSTATAP], apval1[MAXSTATAP], apval2[MAXSTATAP], val;

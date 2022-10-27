@@ -28,8 +28,6 @@
 #include "mk4_dfio.h"
 #include "mk4_util.h"
 
-char progname[6] = "alist";
-int msglev = 2;
 int output_version = CURRENT_VERSION;
 
 extern int parse_cmdline (int argc, char **argv,
@@ -48,7 +46,7 @@ int main (int argc, char *argv[])
     corelsum csumm;
     fringesum fsumm;
     fstruct *files;
-    FILE *fp, *open_output();
+    FILE *fp;
                                         /* Initialize.  No fstruct entry with a NULL */
                                         /* filename is valid ... don't need to clear */
                                         /* the whole structure */
@@ -56,6 +54,9 @@ int main (int argc, char *argv[])
                                         /* Check for option flags, then fill in the */
                                         /* files structure array, checking the file */
                                         /* type implied by the name in each case */
+
+    set_progname("alist");
+    set_msglev(2);
 
     environment();			/* Set up directories by env() */
 

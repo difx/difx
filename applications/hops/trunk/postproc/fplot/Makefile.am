@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 3300 2021-08-27 19:40:06Z gbc $
+# $Id: Makefile.am 3399 2021-10-26 20:05:16Z barrettj $
 #
 
 SUBDIRS = .
@@ -14,8 +14,8 @@ if HAVE_X11
 
 fplot_SOURCES = fplot.c parse_cmdline.c
 
-fplot_LDADD = @DFIO_LIB@ @UTIL_LIB@ @X_FPLOT_LIB@ @X11_LIB@
-fplot_DEPENDENCIES = @DFIO_DEP@ @UTIL_DEP@
+fplot_LDADD = @MSG_LIB@ @DFIO_LIB@ @UTIL_LIB@ @X_FPLOT_LIB@ @X11_LIB@
+fplot_DEPENDENCIES = @MSG_DEP@ @DFIO_DEP@ @UTIL_DEP@
 
 else !HAVE_X11
 fplot_SOURCES = you_lose.c

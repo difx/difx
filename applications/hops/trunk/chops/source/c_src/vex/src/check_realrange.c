@@ -33,7 +33,7 @@ int
 check_realrange (double value,
                  char *range)
     {
-    int i, len, ncolon, nrng, inequality, operator;
+    int i, len, ncolon, nrng, inequality, oper;
     int start, end;
     int cpos[MAXRNG-1];
     double realval;
@@ -79,9 +79,9 @@ check_realrange (double value,
             if (rng_fld[1] == '=') 
                 {
                 ptr2++;
-                operator = LEQ;
+                oper = LEQ;
                 }
-            else operator = LT;
+            else oper = LT;
             }
         else if (rng_fld[0] == '>')
             {
@@ -89,11 +89,11 @@ check_realrange (double value,
             if (rng_fld[1] == '=') 
                 {
                 ptr2++;
-                operator = GEQ;
+                oper = GEQ;
                 }
-            else operator = GT;
+            else oper = GT;
             }
-        else operator = EQ;
+        else oper = EQ;
                                         /* Get integer value */
         if (sscanf (ptr2, "%lf%s", &realval, junk) != 1)
             {
@@ -101,7 +101,7 @@ check_realrange (double value,
             return (FALSE);
             }
                                         /* Perform range test */
-        switch (operator)
+        switch (oper)
             {
             case LEQ:
                 if (value > realval) return (FALSE);

@@ -19,7 +19,7 @@ struct inputs {
         char    stations[2*MAXSTEXP];  /*2 chars per station (1 char + space) */
         char    baselines[3*MAXBASE];  /*3 chars per baseline */
 
-        /*4 chars per triangle, for 40 stations (MAXSTEXP) this is around 50kb 
+        /*4 chars per triangle, for 40 stations (MAXSTEXP) this is around 50kb */
         /*on the stack which is probably unecessarily large */
         /*however, this shouldn't be a problem for most modern computers */
         char    triangles[4*MAXCLOSE]; 
@@ -59,3 +59,4 @@ struct ptrilist { int present; char triangle[4]; };
 
 #include "aedit_proto.h"
 #include "mk4_util.h"
+#include "msg.h"

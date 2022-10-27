@@ -29,7 +29,8 @@ int psplot4 (esum *data)
     {
     int i, s, j, nst, ch, ret, len, expno, isv, isa;
     char fg, st_id, vexname[256], altname[256];
-    struct scan_struct *scn, *scan_info();
+    struct scan_struct *scn;
+    extern struct scan_struct* scan_info (char *scanname, char *stations);
     struct psplot_scantime *psscan;
     struct stat statbuf;
     static struct ps_array psarray;

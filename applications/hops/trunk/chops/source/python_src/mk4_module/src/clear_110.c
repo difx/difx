@@ -29,7 +29,7 @@ clear_110 (struct type_110 *t110)
     t110->baseline[0] = ' ';
     t110->baseline[1] = ' ';
     t110->filenum = 0;
-    strcpy (t110->rootcode, "      ");
+    memcpy (t110->rootcode, "      ",6);
     t110->index = 0;
     t110->ap = 0;
     t110->flag = 0;

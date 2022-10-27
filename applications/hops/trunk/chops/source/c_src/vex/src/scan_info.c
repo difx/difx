@@ -38,7 +38,7 @@ scan_info (char *scanname,
     char stkey[64][128];
     static struct scan_struct scan;
     static int first = TRUE;
-    struct def *thisdef, *sourcedef, *experdef, *eopdef, *modedef, *get_def();
+    struct def *thisdef, *sourcedef, *experdef, *eopdef, *modedef, *get_def(char*, char*, int*, int*);
     static struct def_list *deflist = NULL;
     struct station_struct st_temp;
     extern struct scan slist[];

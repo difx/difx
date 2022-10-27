@@ -1,3 +1,6 @@
+#ifndef  REFRINGE_H__
+#define  REFRINGE_H__ 
+
 #define ALREADY_USED -1
 #define END_OF_LIST  -2
 
@@ -7,3 +10,7 @@ typedef struct
     char baseline[3];
     char subgroup;
     } bsgstruct;
+
+
+#endif
+

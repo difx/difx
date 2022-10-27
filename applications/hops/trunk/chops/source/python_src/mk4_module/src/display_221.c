@@ -83,7 +83,6 @@ display_221 (struct type_221 *t221,
     static FILE *gs;
     static char psbuf[2560], cmd[1280], response[1024], fname[1024];
     static char ps_file[1024] = "sub-dfio_", gse[1024];
-    extern char progname[];
     FILE *fp, *fdbg;
 
     if (mode == -2)

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 2206 2018-01-23 13:32:12Z barrettj $
+# $Id: Makefile.am 3399 2021-10-26 20:05:16Z barrettj $
 #
 
 SUBDIRS = .
@@ -20,8 +20,8 @@ fringex_c = accum_segs.c clear_fxp.c fringex.c \
 fringex_CPPFLAGS = -DBIGGER=1 $(AM_CPPFLAGS)
 fringex_SOURCES = $(fringex_c)
 
-fringex_LDADD = @DFIO_LIB@ @AFIO_LIB@ @UTIL_LIB@ @VEX_LIB@
-fringex_DEPENDENCIES = @DFIO_DEP@ @AFIO_DEP@ @UTIL_DEP@ @VEX_DEP@
+fringex_LDADD = @MSG_LIB@ @DFIO_LIB@ @AFIO_LIB@ @UTIL_LIB@ @VEX_LIB@
+fringex_DEPENDENCIES = @MSG_DEP@ @DFIO_DEP@ @AFIO_DEP@ @UTIL_DEP@ @VEX_DEP@
 
 #
 # eof

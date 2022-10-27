@@ -32,7 +32,8 @@ int execute (esum *data, struct com *command)
         extern int fscan, batch, output_version;
         extern int rsortstat[], csortstat[], fsortstat[], 
                                         tsortstat[], qsortstat[];
-        int i, ret, comno, oldvrs, command_id(), comax;
+        int i, ret, comno, oldvrs, comax;
+        extern int command_id(char*);
         float snr;
 
         ret = 0;                        /* Assume success */

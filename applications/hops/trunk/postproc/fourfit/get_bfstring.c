@@ -16,6 +16,8 @@
 /************************************************************************/
 #include <stdio.h>
 #include <string.h>
+#include "msg.h"
+#include "ffcontrol.h"
 
 #define FALSE 0
 #define TRUE 1

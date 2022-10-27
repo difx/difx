@@ -6,12 +6,15 @@
 *  initial code from matlab prototype      2019.9.13 rjc *
 *********************************************************/
 
+#include "msg.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 #include <math.h>
 #include <stdio.h>
+#include "ffmath.h"
 #include "hops_complex.h"
+
 
 void fit_vbp (int npts)
     {
@@ -32,9 +35,6 @@ void fit_vbp (int npts)
     extern struct type_status status;
     extern struct type_param  param;
     extern struct type_plot   plot;
-    extern int msglev;
-                                        // function prototypes
-    int minvert (int, double [5][5], double[5][5]);
 
     for (i=0; i<5; i++)                 // pre-clear the normal matrix
         {
@@ -48,7 +48,7 @@ void fit_vbp (int npts)
 
     for (k=0; k<2*npts; k++)
         {
-        wgt = cabs(plot.cp_spectrum[k]);
+        wgt = abs_complex(plot.cp_spectrum[k]);
         wgt *= wgt;             // weight is square of xpower amplitude
 
         if (k < npts)           // LSB
@@ -68,12 +68,12 @@ void fit_vbp (int npts)
                 a[i][j] += pow (f, 6 - i - j) * wgt;
                                         // also add into the RHS, just once per i & k
                 if (j == 0)
-                    b[i] += carg (plot.cp_spectrum[k]) / conrad * pow (f, 3 - i) * sb * wgt;
+                    b[i] += arg_complex (plot.cp_spectrum[k]) / conrad * pow (f, 3 - i) * sb * wgt;
                 }
         }
 
                                     // invert the normal matrix to get covariance matrix
-    if (minvert (5, a, a_inv))      // error returned?
+    if (minvert5( a, a_inv))      // error returned?
         {                           // if so, report it
         msg ("unable to compute vbp model due to singular matrix", 2);
         }

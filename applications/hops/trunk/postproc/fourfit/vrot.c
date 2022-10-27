@@ -54,5 +54,6 @@ hops_complex vrot (int ap, double dr, double mbd, int fr, int sb, struct type_pa
 
     theta *= (-2.0 * M_PI);             // convert to radians
 
-    return (cexp(I * theta));              // return unit phasor
+    // return (cexp(cmplx_unit_I * theta));              // return unit phasor
+    return (exp_complex(cmplx_unit_I * theta));              // return unit phasor
     }

@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 #include <string.h>
-
+#include "msg.h"
 #include "vex.h"
 #include "mk4_data.h"                   /* Definitions of data structures */
 #include "param_struct.h"               /* Definition of 2 structures (param & status) */
@@ -26,7 +26,8 @@ int
 create_fname (struct scan_struct *root, struct type_pass *pass, char fname[])
     {
     static char buf[256], buf2[256];
-    char *directory, *rname, *strrchr(), *strtok(), *scan, *rootcode;
+    char *directory, *rname, *scan, *rootcode;
+    //char *strrchr(), *strtok(),
     extern struct type_param param;
     extern int max_seq_no;
 

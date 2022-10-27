@@ -28,24 +28,24 @@ write_vexfile (int *del_list,
                struct insert *ins_list,
                FILE *fp)
     {
-    int i, nchar, delete, nw, ni, nd;
+    int i, nchar, delete_this, nw, ni, nd;
     extern struct statement *stlist;
     extern int nstmt;
 
     for (i=0; i<nstmt; i++)
         {
-        delete = FALSE;
+        delete_this = FALSE;
         nd = 0;
         if (del_list != NULL)
             {
             while (del_list[nd] >= 0)
                 if (i == del_list[nd++])
                     {
-                    delete = TRUE;
+                    delete_this = TRUE;
                     break;
                     }
             }
-        if (! delete)
+        if (! delete_this)
             {
                                         /* Write the statement */
             nchar = stlist[i].end - stlist[i].start + 1;

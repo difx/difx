@@ -8,6 +8,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "msg.h"
+#include "mk4_util.h"
+#include "ffmath.h"
 #include "pass_struct.h"
 #include "param_struct.h"
                                     // number of points in fine search
@@ -49,6 +52,8 @@ int ion_search (struct type_pass *pass)
     double values[MAX_ION_PTS];
     int parabola (double *, double, double, double *, double *, double *);
     void sort_tecs (void);
+    extern void interp (struct type_pass*);
+    extern int search (struct type_pass*);
 
 
                                         // prepare for ionospheric search
@@ -168,9 +173,9 @@ int ion_search (struct type_pass *pass)
                 rc = parabola (y, -1.0, 1.0, &xmax, &ampmax, q);
 
                 if (rc == 1)
-                    msg ("TEC fine interpolation error; peak out of search range");
+                    msg ("TEC fine interpolation error; peak out of search range",1);
                 else if (rc == 2)
-                    msg ("TEC fine interpolation error; positive curvature");
+                    msg ("TEC fine interpolation error; positive curvature",1);
 
                 center = xlo + (xmax + 1.0) * step;
 
@@ -269,7 +274,8 @@ int ion_search_smooth (struct type_pass *pass)
     int parabola (double *, double, double, double *, double *, double *);
     void sort_tecs (void);
     void smoother (double *, double *, double *, int *);
-
+    extern void interp (struct type_pass*);
+    extern int search (struct type_pass*);
 
                                         // prepare for ionospheric search
     center = (param.win_ion[0] + param.win_ion[1]) / 2.0;
@@ -370,9 +376,9 @@ int ion_search_smooth (struct type_pass *pass)
                 rc = parabola (y, -1.0, 1.0, &xmax, &ampmax, q);
 
                 if (rc == 1)
-                    msg ("TEC fine interpolation error; peak out of search range");
+                    msg ("TEC fine interpolation error; peak out of search range",1);
                 else if (rc == 2)
-                    msg ("TEC fine interpolation error; positive curvature");
+                    msg ("TEC fine interpolation error; positive curvature",1);
 
                 center = xlo + (xmax + 1.0) * step;
 

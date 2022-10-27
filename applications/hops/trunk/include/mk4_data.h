@@ -62,6 +62,12 @@
 
 #include "mk4_records.h"
 
+struct index_tag
+    {
+    struct type_101 *t101;
+    int ap_space;
+    struct type_120 **t120;
+    };;
 
 struct mk4_corel
     {
@@ -71,12 +77,7 @@ struct mk4_corel
     struct type_000 *id;
     struct type_100 *t100;
     int index_space;
-    struct index_tag
-        {
-        struct type_101 *t101;
-        int ap_space;
-        struct type_120 **t120;
-        } *index;
+    struct index_tag* index;
     };
 
 struct mk4_fringe

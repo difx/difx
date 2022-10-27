@@ -34,7 +34,7 @@ get_chip_mode (char *chip_mode)
     struct Cvex_Block *block_struct;
     struct Cvex_Snake *snake_struct;
     struct Cvex_ChipMode *cm;
-    struct Cvex_BlockMode *get_block_mode();
+    struct Cvex_BlockMode *get_block_mode(char *);
     struct param_val p_val;
     extern struct statement *stlist;
     extern struct block blist[];

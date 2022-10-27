@@ -29,15 +29,17 @@ struct counts_per_lag
     int sinbits;
     };
 
+struct lag_tag
+    {
+        int coscor;
+        int sincor;
+    };
+
 struct counts_global
     {
     int cosbits;
     int sinbits;
-    struct lag_tag
-    {
-        int coscor;
-        int sincor;
-    } lags[1];
+    struct lag_tag lags[1];
     };
 
 struct auto_per_lag

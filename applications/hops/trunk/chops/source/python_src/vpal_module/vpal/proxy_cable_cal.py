@@ -454,8 +454,8 @@ class SingleChannelPhasorCollection(object):
             else:
                 ave = complex(0.0,0.0)
             if len(data_vec)==0:
-                pcc_logger.error("Error, phasor data for this scan are not present.")
-                sys.exit('Error, phasor data not present.')
+                pcc_logger.error("Error, phasor data for channel: ", self.channel_name, " are missing from this scan.")
+                self.freq_phasor_pairs[tone_index] = [freq, ave, ComplexReImCovarianceMatrix(), False]
             else:
                 self.freq_phasor_pairs[tone_index] = [freq, ave, ComplexReImCovarianceMatrix(data_vec), True]
 
@@ -810,7 +810,7 @@ class StationExperimentPhasorCollection(object):
                 delay_fitter.channel_bandwidth = sspc.max_channel_bandwidth
                 sspc.fit_band_delay(self.channel_to_band_map, bp, delay_fitter, cut_threshold, verbosity)
             if use_progress_ticker is True:
-                next(prog_bar)
+                prog_bar.next()
         if use_progress_ticker is True:
             prog_bar.finish()
 

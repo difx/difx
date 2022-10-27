@@ -2,6 +2,7 @@
 #define control_done
 
 #include "mk4_sizes.h"
+#include "general.h"
 
 #define MAX_SAMP 16
 #define MAXNOTCH (8*MAXFREQ)
@@ -13,6 +14,7 @@ struct gat_struct
    short duration;                 /* in secs */
    };
 
+/*
 struct istats 
     {
     int             ref;
@@ -24,6 +26,7 @@ struct dstats
     double          ref;
     double          rem;
     };
+*/
 
 struct c_block                     /* Elemental control block structure */
    {

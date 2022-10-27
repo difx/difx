@@ -13,6 +13,7 @@
 /* Refactored into subroutines                    2014.7.30  rjc        */
 /************************************************************************/
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,6 +21,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <string.h>
+#include "msg.h"
 #include "pass_struct.h"
 #include "ovex.h"
 
@@ -35,7 +37,6 @@ int make_postplot (struct scan_struct *root,
     {
     extern char *sprint_char_arr();
     struct stat file_status;
-    struct tm *gmtime();
     int fd;
     size_t nb, size, filesize;
     int rc;
@@ -43,6 +44,19 @@ int make_postplot (struct scan_struct *root,
     char *pplot, *showpage, *end, trailer[1024];
     static char ps_file[1024];
     double tickinc;
+
+    extern int generate_graphs (struct scan_struct*,
+                         struct type_pass*,
+                         char*,
+                         char*,
+                         double*);
+
+    extern void generate_text (struct scan_struct*,
+                        struct type_pass*,
+                        char*,
+                        char*,
+                        double);
+
                                         /* Create a temporary file to hold */
                                         /* the postscript output */
     strcpy(ps_file, P_tmpdir "/fourfit_XXXXXX");
@@ -53,7 +67,7 @@ int make_postplot (struct scan_struct *root,
     rc = generate_graphs (root, pass, fringename, ps_file, &tickinc);
     if (rc)
         {
-        msg ("error generating fringe plot graphs");
+        msg ("error generating fringe plot graphs",0);
         return (-1);
         }
                                         /* Now need to read in the resulting */

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 265 2011-05-20 15:39:47Z gbc $
+# $Id: Makefile.am 3399 2021-10-26 20:05:16Z barrettj $
 #
 
 SUBDIRS = .
@@ -12,8 +12,8 @@ bin_PROGRAMS = adump
 
 adump_SOURCES = adump.c parse_cmdline.c parse_bfields.c parse_tfields.c \
 		strip_bline.c strip_tline.c write_header.c
-adump_LDADD = @AFIO_LIB@ @UTIL_LIB@
-adump_DEPENDENCIES = @AFIO_DEP@ @UTIL_DEP@
+adump_LDADD = @MSG_LIB@ @AFIO_LIB@ @UTIL_LIB@
+adump_DEPENDENCIES = @MSG_DEP@ @AFIO_DEP@ @UTIL_DEP@
 
 #
 # eof

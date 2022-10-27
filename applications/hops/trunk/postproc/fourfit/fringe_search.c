@@ -17,9 +17,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "mk4_data.h"
+#include "msg.h"
 #include "vex.h"
 #include "pass_struct.h"
 #include "param_struct.h"
+#include "ffsearch.h"
 
 int fringe_search ( struct vex* root, struct type_pass* pass)
     {
@@ -27,11 +29,14 @@ int fringe_search ( struct vex* root, struct type_pass* pass)
     oret = 0;
 
     struct data_corel *datum;
-    complex *sbarray, *sbptr;
+    hops_complex *sbarray, *sbptr;
 
     extern int do_accounting;
     extern struct type_status status;
     extern struct type_param param;
+
+    extern int output (struct vex*, struct type_pass*);
+
 
     msg  ("Baseline %c%c subgroup %c", 1, 
            param.baseline[0], param.baseline[1], pass->pass_data[0].fgroup);
@@ -57,11 +62,11 @@ int fringe_search ( struct vex* root, struct type_pass* pass)
                                         /* on data extent */
     size = 2 * param.nlags * pass->nfreq * pass->num_ap;
 
-    sbarray = (complex *)calloc (size, sizeof (complex));
+    sbarray = (hops_complex *)calloc (size, sizeof (hops_complex));
     if (sbarray == NULL)
         {
         msg ("Memory allocation failure (%d bytes with ap %d nlags %d nfreq %d) in fringe_search()",
-              2, size * sizeof (complex), pass->num_ap, param.nlags, pass->nfreq);
+              2, size * sizeof (hops_complex), pass->num_ap, param.nlags, pass->nfreq);
         return (-1);
         }
     sbptr = sbarray;

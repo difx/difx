@@ -16,11 +16,13 @@
 /************************************************************************/
 #include <stdio.h>
 #include <string.h>
+#include "msg.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "math.h"
 #include "mk4_sizes.h"
+#include "ffmath.h"
                                         /* criterion for changes in state
                                          * count ratios implying a slipped
                                          * sync in the SU rjc 2002.7.18 */
@@ -38,7 +40,8 @@ struct mk4_sdata *sd1,
 struct mk4_sdata *sd2,
 struct type_param *param,
 struct freq_corel *corel,
-struct type_status *status)
+struct type_status* status
+)
     {
     int stn, j, sc, ap, ch, f, i, n;
     double start, stop, time[MAXSTATPER];
@@ -55,6 +58,7 @@ struct type_status *status)
     struct mk4_sdata *sd;
     struct type_306 *t306;
     struct interp_sdata *isd;
+    //extern struct type_status status;
                                         /* flag to control stc err message */
     first_mess = 1;
     status->stc_present = 0;         // indicate neither station having state counts

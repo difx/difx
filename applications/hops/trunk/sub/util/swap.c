@@ -44,6 +44,24 @@ void int_reverse(int *j)
     *p-- = b[i];
 }
 
+/* int_reverse: reverse the order of bytes in an unsigned integer */
+void uint_reverse(unsigned int *j)
+{
+  char *p = (char *)j, b[4];		/* p points to the first byte of j */
+  int i;
+
+  for (i = 0; i < 4; i++)
+    b[i] = *p++;
+
+  p = (char *) j + 3;		/* p points to the last(4th) byte of j */
+
+  for (i = 0; i < 4; i++)
+    *p-- = b[i];
+}
+
+
+
+
 /* long_reverse: reverse the order of bytes in a 64-bit integer */
 void long_reverse(long *j)
 {

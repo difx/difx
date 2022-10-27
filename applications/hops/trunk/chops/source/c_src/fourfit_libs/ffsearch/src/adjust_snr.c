@@ -86,11 +86,12 @@
  * When the effective bandwidth has been reduced, the SNR must be as well.
  */
 #include <math.h>
+#include "msg.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "apply_funcs.h"
-#include "ff_misc_if.h"
+//#include "ff_misc_if.h"
 
 double adjust_snr(struct type_pass *pass, struct type_status *status)
 {

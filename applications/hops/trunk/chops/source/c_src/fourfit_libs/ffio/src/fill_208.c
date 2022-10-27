@@ -15,8 +15,10 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
+#include "msg.h"
 #include "pass_struct.h"
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 #include "param_struct.h"
 
 #define POLCHAR_OFFSET 64
@@ -37,6 +39,29 @@ struct type_208 *t208)
     double delta_mbd;               // change in mbd to get into desired ambiguity
     double delta_f;                 // difference between ref freq and nearest freq grid pt
     char qcode, errcode, tqcode[6];
+
+
+    extern int
+    compute_model (
+    struct type_param *param,
+    struct mk4_sdata *sdata,
+    struct type_202 *t202,
+    double *delay,
+    double *rate,
+    double *accel,
+    double *delay_ref,
+    double *rate_ref,
+    double *ref_stn_delay);
+
+    extern int
+    compute_qf (
+    struct type_pass *pass,
+    struct type_param *param,
+    struct type_status *status,
+    char *qcode,
+    char *errcode,
+    char *tape_qcode);
+
 
     clear_208 (t208);
 

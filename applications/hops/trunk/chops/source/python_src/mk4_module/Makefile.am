@@ -3,7 +3,9 @@
 #
 # MAKEFLAGS = -k if desperate
 
-AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../../c_src/mk4util/include \
+AM_CPPFLAGS = -I. -I$(srcdir)/include \
+	-I$(srcdir)/../../c_src/msg/include \
+	-I$(srcdir)/../../c_src/mk4util/include \
 	-I$(srcdir)/../../c_src/dfio/include \
 	-I$(srcdir)/../../c_src/afiob/include -Wall -Wextra -DHAVE_CONFIG_H
 
@@ -80,7 +82,7 @@ importstamp: $(srcdir)/src $(srcdir)/../../c_src/dfio/src
 
 libmk4iob_la_SOURCES =  $(dfioorigsources) $(dfiohacksources)
 
-libmk4iob_la_LIBADD = ../../c_src/afio/libafiob.la ../../c_src/mk4util/libmk4utilb.la
+libmk4iob_la_LIBADD =  ../../c_src/msg/libmsgb.la ../../c_src/afio/libafiob.la ../../c_src/mk4util/libmk4utilb.la
 
 libmk4iob_la_LDFLAGS = -avoid-version
 

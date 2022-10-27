@@ -11,13 +11,14 @@
 *****************************************************************/
 #include <stdio.h>
 #include <math.h>
+
 #include "hops_complex.h"
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 
 
-rotate_pcal(struct type_pass *pass)
+void rotate_pcal(struct type_pass *pass)
     {
     int ap, fr, i, ip;
     int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
@@ -94,27 +95,27 @@ rotate_pcal(struct type_pass *pass)
                         case NORMAL:
                         case MANUAL:
                                         // apply constant pcal to whole scan
-                            rrpcal[i] = cexp (I * status.pc_phase[fr][i][stnpol[i][ip]]);
+                            rrpcal[i] = exp_complex (cmplx_unit_I * status.pc_phase[fr][i][stnpol[i][ip]]);
                             break;
                         case AP_BY_AP:
                                         // form difference with correct pol
                             rrpcal[i] = (stnpol[i][ip]) ?
                                 rrisd[i]->phasecal_rcp[pass->pci[i][fr]]:
                                 rrisd[i]->phasecal_lcp[pass->pci[i][fr]];
-                            rrpcal[i] = conj (rrpcal[i]);
+                            rrpcal[i] = conjugate (rrpcal[i]);
                             break;
                         case MULTITONE:
                             rrpcal[i] = rrisd[i]->mt_pcal[stnpol[i][ip]];
                             break;
                         }
-                    theta += (2*i-1) * carg (rrpcal[i]);
+                    theta += (2*i-1) * arg_complex (rrpcal[i]);
                     }
                                         // Zero pcal ampl => missing pcal data
                                         // so don't rotate
-                if (cabs (rrpcal[0]) + cabs (rrpcal[1]) == 0.0)
+                if (abs_complex (rrpcal[0]) + abs_complex (rrpcal[1]) == 0.0)
                     theta = 0.0;
                                         // save resulting phasor in time-freq array
-                cor_data->pc_phasor[ip] = cexp (I * (theta - zeta + eta[ip]));
+                cor_data->pc_phasor[ip] = exp_complex (cmplx_unit_I * (theta - zeta + eta[ip]));
                 }
             }
         }

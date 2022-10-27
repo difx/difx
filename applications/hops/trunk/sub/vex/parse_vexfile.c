@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include "vex.h"
 #include "mk4_vex.h"
+#include "msg.h"
 
 int
 parse_vexfile (char *filename)

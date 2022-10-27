@@ -13,8 +13,10 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include "msg.h"
 #include "vex.h"
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 #include "param_struct.h"
 #include "mk4_sizes.h"
 
