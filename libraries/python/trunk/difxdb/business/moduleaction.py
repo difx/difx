@@ -76,7 +76,7 @@ def isCheckOutAllowed(session, vsn):
     
     # all experiments contained on this module must be released
     for exp in module.experiments:
-	expCount += 1
+        expCount += 1
         if exp.status.statuscode < 100:
             return(False)
         
@@ -92,9 +92,9 @@ def isMark6(vsn):
     Returns True if this is a Mark6 VSN; False otherwise
     '''
     if '%' in vsn:
-	return(True)
+        return(True)
     else:
-	return(False)
+        return(False)
 
     
 def hasDir(vsn, dirPath=None):
@@ -109,12 +109,12 @@ def hasDir(vsn, dirPath=None):
         if (dirPath == None):
             return(False)
              
-	if isMark6(vsn):
-	    if (os.path.isfile(dirPath + "/" + vsn + ".filelist")):
-		return(True)
-	else:
-	    if (os.path.isfile(dirPath + "/" + vsn + ".dir")):
-		return(True)
+        if isMark6(vsn):
+            if (os.path.isfile(dirPath + "/" + vsn + ".filelist")):
+                return(True)
+        else:
+            if (os.path.isfile(dirPath + "/" + vsn + ".dir")):
+                return(True)
         
     return(False)
     
@@ -143,14 +143,14 @@ def retire(session, moduleId):
     Sets the retired field for a module and removes the module from its slot
     '''
     try:
-    	module=getModuleById(session, moduleId)
-	module.retired = 1
-	module.slot = None
-	session.commit()
-	session.flush()
+        module=getModuleById(session, moduleId)
+        module.retired = 1
+        module.slot = None
+        session.commit()
+        session.flush()
 
     except:
-    	return
-    	
+        return
+        
 
     
