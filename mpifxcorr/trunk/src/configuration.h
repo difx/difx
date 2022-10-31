@@ -765,6 +765,7 @@ private:
     string rxName;  // an optional name for the receiver producing this channel
     friend bool operator>(const struct freqdata_t&, const struct freqdata_t&);
     double bandlowedgefreq() const { return (!lowersideband) ? bandedgefreq : bandedgefreq-bandwidth; }
+    int npcalsout; // not used by mpifxcorr, but used to quash a warning
   } freqdata;
   friend bool operator>(const struct Configuration::freqdata_t&, const struct Configuration::freqdata_t&);
 

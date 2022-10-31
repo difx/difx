@@ -1980,8 +1980,8 @@ bool Configuration::processFreqTable(istream * input)
     getinputline(input, &line, "DECIMATION FAC. ");
     freqtable[i].decimationfactor = atoi(line.c_str());
     getinputline(input, &line, "PHASE CALS ");
-    int npcals = atoi(line.c_str()); //mpifxcorr doesn't need to store this information
-    for(int j=0;j<npcals;j++)
+    freqtable[i].npcalsout = atoi(line.c_str()); //mpifxcorr doesn't need to store this information
+    for(int j=0;j<freqtable[i].npcalsout;j++)
     {
       getinputline(input, &line, "PHASE CAL ");
     }
@@ -3097,8 +3097,9 @@ bool Configuration::consistencyCheck()
           f1 -= freqtable[freq1index].bandwidth;
         if(freqtable[freq2index].lowersideband)
           f2 -= freqtable[freq2index].bandwidth;
-        if(freqtable[freq1index].bandedgefreq == freqtable[freq2index].bandedgefreq &&  freqtable[freq1index].bandwidth == freqtable[freq2index].bandwidth)
+        if(freqtable[freq1index].bandedgefreq == freqtable[freq2index].bandedgefreq && freqtable[freq1index].bandwidth == freqtable[freq2index].bandwidth && freqtable[freq1index].npcalsout == freqtable[freq2index].npcalsout)
         {
+          //note: Check for different npcalsout is likely to be a good indicator that the freqs are indeed different, but this is not a strictly correct test.  Better would be to store all the pulse cals to extract and do a detailed comparison.  Very low priority.
           //different freqs, same value??
           if(mpiid == 0) //only write one copy of this error message
             cwarn << startl << "Baseline " << i << " frequency " << j << " points at two different frequencies that are apparently identical - this is not wrong, but strange (unless PCal intervals differ).  Check the input file" << endl;
