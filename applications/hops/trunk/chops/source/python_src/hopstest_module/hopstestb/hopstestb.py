@@ -805,7 +805,7 @@ def compare_alist_files_field(filenameA, filenameB, field_name, verbose=True, ex
 def recursive_find_root_files(base_directory, sort_list=True, exclude_list=None, max_depth=None):
     """ returns a list of all the root files found in any directory (up to max_depth) under the given base_directory"""
     if exclude_list == None:
-        exclude_list=['prepass', 'scratch']
+        exclude_list=['prepass', 'scratch', 'pre_production']
 
     root_file_list = []
     #exlude and root files that might exist under a directory with the word 'prepass', etc in it
@@ -902,7 +902,7 @@ def recursive_find_station_files(base_directory):
 def recursive_find_fringe_files(base_directory, include_autos=False, exclude_list=None):
     """r eturns a list of all the fringe (type-2) files found in any directory under the base_directory """
     if exclude_list == None:
-        exclude_list=['prepass', 'scratch']
+        exclude_list=['prepass', 'scratch', 'pre_production']
     fringe_file_list = []
     #exlude and root files that might exist under a directory with the word 'prepass',etc in it
     exclude = set(exclude_list)
@@ -927,7 +927,7 @@ def recursive_find_fringe_files(base_directory, include_autos=False, exclude_lis
 def recursive_find_corel_files(base_directory, include_autos=False, exclude_list=None):
     """returns a list of all the corel (type-1) files found in any directory under the current one """
     if exclude_list == None:
-        exclude_list=['prepass', 'scratch']
+        exclude_list=['prepass', 'scratch', 'pre_production']
     corel_file_list = []
     #exlude and root files that might exist under a directory with the word 'prepass', etc in it
     exclude = set(exclude_list)

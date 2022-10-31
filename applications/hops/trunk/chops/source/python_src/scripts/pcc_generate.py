@@ -172,6 +172,7 @@ def main():
             pcc_plotter.plot_phasor_amplitude_surface(dat, pcc_config)
 
     #run fit diagnostics plotting if needed
+    #this plots the bandfits and the tone-phasors
     if args.diagnostics == 2:
         for dat in station_delay_data.values():
             pcc_plotter.plot_bandfits(dat, pcc_config)

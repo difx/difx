@@ -56,6 +56,35 @@ def time_to_int(year, day, hour, minute, sec):
     secs_since_80 = year80*31536000 + (day+nleaps-1)*86400 + hour*3600 + minute*60 + sec
     return secs_since_80
 
+
+def int_to_time(t):
+    """ported from int_to_time.c"""    
+    tim = int(t)
+    
+    sec = tim%60
+    tim /= 60
+    minute = tim%60
+    tim /= 60
+    hour = tim%24
+    tim /= 24
+    for i in range(0,99):
+        # /* Can't think of anything neater */
+        if i%4 == 0 and tim <= 366:
+            break
+        elif tim <= 365:
+            break
+        if i%4 == 0:
+            tim -= 366
+        else:
+            tim -= 365
+            
+    year = i + 80 + 1900
+    day = tim + 1
+    
+    return year, int(day), int(hour), int(minute), sec
+
+
+
 class DiscreteQuantityFilter(object):
     """representation of a filter which passes objects that have
     a named quantity present in a discrete list.

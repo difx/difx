@@ -329,7 +329,7 @@
 #define HOPS_REVISION 3.24
 
 /* Haystack SVN rev number */
-#define HOPS_SVN_REV 3744
+#define HOPS_SVN_REV 3753
 
 /* Define to 1 if `lstat' dereferences a symlink specified with a trailing
    slash. */

@@ -55,6 +55,83 @@ def load_directory_fringe_files(dir_name, baselines_list, include_autos=False):
 
     return fringe_objects
 
+
+################################################################################
+def gather_fringe_files(base_directory, control_file, blines, pol_products=['I'], include_autos=False, exclude_list=None, max_depth=2):
+    """
+    Returns a list of all the fringe (type-2) files found in any directory up to max_depth under the base_directory 
+    In a typical VGOS experiment directory, the fringe files are two levels below the base_directory (the first 
+    level below the base directory is the scan name).
+
+    Assumes fringe files have a six-digit extension with three '.' in the filename.
+    """
+    if exclude_list == None:
+        exclude_list=['prepass', 'pre_production', 'make_links', 'test', 'bad_eop', 'setup']
+    exclude = set(exclude_list)
+    assert os.path.isdir(base_directory)
+
+    fringe_file_list = []
+    
+    base_dir = base_directory.rstrip(os.path.sep)
+    num_sep = base_dir.count(os.path.sep)
+    
+    control_file_hash = ffcontrol.get_control_file_hash(control_file)
+    
+    counter=0
+    for current_root, subdirectories, files in os.walk(base_directory, topdown=True):
+
+        for filename in files:
+
+            # apply the exclude filter
+            if any([e in current_root for e in exclude]):
+                continue
+            
+            # apply the max depth filter
+            if current_root.count(os.path.sep) > num_sep+max_depth:
+                continue
+
+            abs_filename = os.path.abspath(filename)
+            filename_base = os.path.split(abs_filename)[1]
+            
+            
+            #look for root files using some simple checks
+            if filename_base.count('.') == 3: #check that there are three dots in the filename base
+                bline = filename_base.split('.')[0]
+                if len(bline)==2 and bline in blines: #make sure leading section of file name is 2-char baseline
+                    full_name = os.path.join(current_root, filename)
+                    if (include_autos is True) or (bline[0] != bline[1]): #check that this is a cross correlation if autos excluded
+                        extension = filename_base.split('.')[3] #get the file extension (root_id)
+                        if len(extension) == 6:     #check that the extension has a length of 6 chars
+                            
+                            counter+=1
+                            
+                            ff_cf_hash = ht.get_control_file_hash_from_fringe(full_name)
+                        
+                            if control_file_hash == ff_cf_hash:
+                                fringe_file_list.append(full_name)
+                                
+
+    # Now we have a list of fringe files that used the prescribed control file.  Check for the correct polproduct:                                
+    ff_list = []
+                                
+    # apply the check on pol products
+    for ff in fringe_file_list:
+        ff_pp_list = ht.get_file_polarization_product_provisional(ff)
+                                    
+        for pp in ff_pp_list:
+            if pp in pol_products:
+
+                # Now that we are sure we have the correct polproduct, create a FringeFileHandle object and append to the list
+                f_obj = ffm.FringeFileHandle()
+                f_obj.load(ff)
+                ff_list.append(f_obj)
+                                            
+                    
+    print(base_directory, 'Number of fringe files considered:', counter)
+    return ff_list
+                
+
+
 ################################################################################
 def join_fringes_into_baseline_collection(exp_directory, fringe_object_list, station_list, include_autos=False, required_polprod_list=None, only_complete=True):
     """this function takes individual fringe files (for each scan, baseline, and polarization product)
@@ -355,7 +432,7 @@ def load_and_batch_fourfit(exp_directory, network_reference_station, remote_stat
                     needed_corel_file = os.path.join( os.path.dirname( os.path.abspath(root) ), base + ".." + root_code )
                     if os.path.isfile(needed_corel_file):
                         missing_fringe_counter += 1
-                        print(root)
+                        #print(root)
                         #now we check to make sure this type of pol-product is actually available in the corel file
                         #this is to avoid problems with mixed-mode
                         pp_present_list = ht.get_polarization_products_present(needed_corel_file)
@@ -396,9 +473,6 @@ def load_and_batch_fourfit(exp_directory, network_reference_station, remote_stat
     print("load_and_batch_fourfit: will run a total of " + str(len(arg_list)) + " fourfit processes, with up to: " + str(num_processes) + " running simultaneously")
     #for ii in range(len(arg_list)):
     #	print(arg_list[ii])
-	
-    sys.exit()
-
         
     #run the fourfit processes
     processed_args_list = []
@@ -408,14 +482,6 @@ def load_and_batch_fourfit(exp_directory, network_reference_station, remote_stat
     #now reload the fringe files (no-auto-corrs) meta data for this directory, and filter by control file and time-range
     ff_list = load_directory_fringe_files(work_dir, baseline_list)
     ff_filtered = apply_fringe_file_cuts(ff_list, control_file_hash, start_scan_limit=start_scan_limit, stop_scan_limit=stop_scan_limit)
-
-    # if the polarization product of the fringe file is not what we requested, remove it
-    for ff in ff_filtered:
-        ff_pp_list = ht.get_file_polarization_product_provisional(ff.filename)
-        for pp in ff_pp_list:
-            if pp not in pol_products:
-                #print(ff.filename)
-                ff_filtered.remove(ff)
 
     return ff_filtered
 

@@ -1,4 +1,46 @@
 ------------------------------------------------------------------------
+r3753 | gbc | 2022-10-31 12:50:48 -0400 (Mon, 31 Oct 2022) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+shifting back to 3.24 to nail a bug
+
+------------------------------------------------------------------------
+r3752 | dhoak | 2022-10-31 12:14:44 -0400 (Mon, 31 Oct 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+
+fixing exit statement in load_and_batch_fourfit
+
+------------------------------------------------------------------------
+r3751 | dhoak | 2022-10-31 10:37:54 -0400 (Mon, 31 Oct 2022) | 1 line
+Changed paths:
+   M /trunk/chops/source/python_src/hopstest_module/hopstestb/hopstestb.py
+   M /trunk/chops/source/python_src/scripts/batch_fourfit.py.in
+   M /trunk/chops/source/python_src/scripts/pcc_generate.py.in
+   M /trunk/chops/source/python_src/scripts/phase_resid.py.in
+   M /trunk/chops/source/python_src/vpal_module/vpal/fourphase_lib.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/processing.py
+   M /trunk/chops/source/python_src/vpal_module/vpal/utility.py
+
+catching up with edits from curie
+
+------------------------------------------------------------------------
+r3749 | gbc | 2022-10-29 11:22:57 -0400 (Sat, 29 Oct 2022) | 1 line
+Changed paths:
+   M /trunk/scripts/Makefile.am
+   A /trunk/scripts/alma-vex-defs.py
+
+might as well have this one in HOPS
+
+------------------------------------------------------------------------
+r3745 | gbc | 2022-10-27 10:56:26 -0400 (Thu, 27 Oct 2022) | 1 line
+Changed paths:
+   M /trunk/configure.ac
+
+bump to 2.25
+
+------------------------------------------------------------------------
 r3740 | dhoak | 2022-10-25 14:12:30 -0400 (Tue, 25 Oct 2022) | 1 line
 Changed paths:
    A /trunk/chops/source/python_src/scripts/parallactic_plots.py.in

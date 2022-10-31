@@ -138,7 +138,7 @@ class VGOSFourphaseSingleScanProcessor(object):
             else:
                 #error, this baseline collection does not have consistent dTEC solution for all pols
                 self.error_condition = 1
-                fourphase_logger.debug( '\n**** WARNING **** check ionosphere fit! dtec on baseline ' + bl + ' differed by '  + str( round(blc.get_dtec_max_deviation(),1) ) + ' TEC units' )
+                fourphase_logger.debug( '\n**** WARNING **** check ionosphere fit! dtec on baseline ' + bl + ' differed by '  + str( round(blc.get_dtec_max_deviation(),1) ) + ' TEC units ' + str(self.dtec_tolerance) )
 
         #ionosphere determined separately for each baseline, over the 4 pol-products (no global combined fit)
         self.baseline_dtec = { bl:x[0] for bl, x in list(baseline_info.items()) }
@@ -637,6 +637,7 @@ def generate_station_phase_delay_corrections(config_obj, report_data_obj=None):
         scan_processor.use_progress_ticker = False
         scan_processor.num_proc = num_proc
         scan_processor.set_stations(stations)
+        scan_processor.dtec_tolerance = config_obj.dtec_tolerance
         scan_processor.determine_ionosphere()
         scan_processor.calculate_delay_phase_offsets()
         station_delays = scan_processor.get_raw_station_delay_offsets()

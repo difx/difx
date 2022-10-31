@@ -11,6 +11,7 @@ import sys
 import os
 import math
 import re
+from datetime import datetime
 
 #non-core imports
 #set the plotting back-end to 'agg' to avoid display
@@ -71,9 +72,23 @@ def main():
     exp_name = os.path.split(os.path.abspath(exp_dir))[1]
     rnsigma = float(args.remove_outlier_nsigma)
 
+    if not os.path.isfile(os.path.abspath(control_file)):
+        print("could not find control file: ", control_file)
+        sys.exit(1)
+
+    #pol product:
+    if polprod not in ['XX', 'YY', 'XY', 'YX', 'I']:
+        print("polarization product must be one of: XX, YY, XY, YX, or I")
+        sys.exit(1)
+
+    
     #determine all possible baselines
+    print('Calculating baselines')
+
     baseline_list = vpal.processing.construct_valid_baseline_list(abs_exp_dir, stations[0], stations[1:], network_reference_baselines_only=False)
 
+    print('Baselines:', baseline_list)
+    
     qcode_list = []
     for q in list(range(args.quality_lower_limit, 10)):
         qcode_list.append( str(q) )
@@ -87,15 +102,9 @@ def main():
         if args.z_axis != 'none':
             plot_name += "_" + args.z_axis
 
-        if not os.path.isfile(os.path.abspath(control_file)):
-            print("could not find control file: ", control_file)
-            sys.exit(1)
+        print('Collecting fringe files for baseline',bline)
 
-        #pol product:
-        if polprod not in ['XX', 'YY', 'XY', 'YX', 'I']:
-            print("polarization product must be one of: XX, YY, XY, YX, or I")
-            sys.exit(1)
-
+            
         #need to:
         #(1) collect all of the type_210 phase residuals,
         #(2) apply the snr, and quality code cuts
@@ -113,7 +122,7 @@ def main():
         )
 
         print("n fringe files  =", str(len(ff_list)))
-
+        
         #apply cuts
         filter_list = []
         filter_list.append( vpal.utility.DiscreteQuantityFilter("quality", qcode_list) )
@@ -222,7 +231,6 @@ def main():
             ax.set_title(plottitle)
             ax.set_ylabel('Phase (degrees)')
 
-
             maps = plt.colormaps()
             if 'viridis' not in maps:
                 cmap = cmx.get_cmap(maps[0])
@@ -288,10 +296,10 @@ def main():
             auto_fig_name = plot_name + ".png"
             print("generating plot: ", auto_fig_name)
             auto_fig.savefig(auto_fig_name, bbox_inches='tight')
-            plt.ion()
-            plt.show()
+            #plt.ion()
+            #plt.show()
             plt.close(auto_fig)
-
+            print('Done\n')
 
 
 if __name__ == '__main__':          # official entry point
