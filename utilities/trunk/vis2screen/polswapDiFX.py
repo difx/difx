@@ -4,12 +4,14 @@ Usage: polswapDiFX.py [--inplace] <station[,station,station,...]> <difx basename
 
 Swaps the polarization labels for the given station(s).
 
-Polarization swaps are performend on the labels in the binary DiFX SWIN visibility data.
-The script will retain the original SWIN file and produce a pol-swapped copy, unless the
+Polarization swaps are performend on the labels in the binary DiFX SWIN visibility data,
+as well as in the DiFX text format PCal file data if present.
+
+The script will retain the original SWIN .difx and produce a pol-swapped copy, unless the
 option --inplace is used which carries out the swap on the original data.
 
 Output file without --inplace option:
-  <difx basename>_swapped/DIFX_*
+  <difx basename>swapped/DIFX_*
 """
 
 import glob, sys, os
@@ -17,13 +19,15 @@ import shutil
 import numpy
 import parseDiFX
 
+polswap = {'R':'L', 'L':'R', 'X':'Y', 'Y':'X', 'H':'V', 'V':'H'}
+polnames = 'RLXYHV'
 
-def polswapVisibilityfile(basename, targetAnts, doOverwrite=False, verbose=False):
+def polswapDifxFile(basename, targetAnts, doOverwrite=False, doPcal=True, verbose=False):
 	"""
 	Swap polarization labels in a binary SWIN DiFX visibility data file
 	"""
+	global polswap, polnames
 
-	polswap = {'R':'L', 'L':'R', 'X':'Y', 'Y':'X', 'H':'V', 'V':'H'}
 	nswapped, npassed = 0, 0
 
 	# Determine name of .input file
@@ -58,6 +62,7 @@ def polswapVisibilityfile(basename, targetAnts, doOverwrite=False, verbose=False
 	else:
 		difxoutdir = difx.difxfilename[0:difx.difxfilename.rfind('/')]
 		difxoutname = str(difx.difxfilename) + '_polswapped'
+
 	difxout = open(difxoutname, 'w')
 
 	# Parse each visibility entry
@@ -96,6 +101,22 @@ def polswapVisibilityfile(basename, targetAnts, doOverwrite=False, verbose=False
 
 	difxout.close()
 
+	# Process PCal files
+	if doPcal:
+
+		pcalfiles = glob.glob(basename + '.difx/PCAL_*_*')
+		npcalfound = len(pcalfiles)
+
+		if not doOverwrite:
+			for pcalfile in pcalfiles:
+				shutil.copy2(pcalfile, difxoutdir + '/')
+
+		npcalswapped = 0
+		if npcalfound > 0:
+			n = polswapPCalFiles(difxoutdir + '/', targetAnts, verbose)
+			npcalswapped += n
+
+	# In-place?
 	if doOverwrite:
 		difxoriginalname = str(difx.difxfilename)
 		del difx # for closing the input file
@@ -106,9 +127,65 @@ def polswapVisibilityfile(basename, targetAnts, doOverwrite=False, verbose=False
 	print ('\nDone! Final statistics:')
 	print ('    vis. passed through : %d' % (npassed))
 	print ('    vis. pol-swapped    : %d' % (nswapped))
+	if doPcal and (npcalfound > 0):
+		print ('    pc files pol-swapped: %d' % (npcalswapped))
 	print ('\nOutput file:')
-	print ('    visbility data     : %s' % (difxoutname))
+	print ('    visibility data    : %s' % (difxoutname))
+	if doPcal and (npcalfound > 0):
+		print ('    pcal data          : %s/PCAL_*' % (difxoutdir))
 	print (' ')
+
+
+def polswapPCalFiles(difxjobdir, targetAnts, verbose=False):
+	"""
+	In-place swap the polarization labels in ascii pcal files ([<path>/]<basename>.difx/PCAL_<mjd>_<station>)
+	"""
+	global polswap, polnames
+
+	nswapped = 0
+
+	for ant in targetAnts:
+
+		globpattern = difxjobdir + '/PCAL_*_' + ant
+		pcalfiles = glob.glob(globpattern)
+
+		# print ('Looking for %s found %d files' % (globpattern, len(pcalfiles)))
+
+		for pcalfile in pcalfiles:
+
+			tempfile = difxjobdir + '/' + ant + '.pcaltmp'
+			# print (ant, pcalfile, tempfile)
+
+			fin = open(pcalfile, 'rt')
+			lines = fin.readlines()
+			fin.close()
+
+			for n in range(len(lines)):
+
+				if lines[n][0] == '#':
+					continue
+
+				items = lines[n].split(' ')  # note: separator provided here so join() can restore identical whitespace lengths
+				for m in range(len(items)):
+					if items[m] and items[m] in polnames:
+						items[m] = polswap[items[m]]
+				replacement = ' '.join(items)
+				# todo: the above could perhaps be done more efficiently or more prettily
+
+				# print ('before :', lines[n])
+				# print ('after  :', replacement)
+				lines[n] = replacement
+
+			fout = open(tempfile, 'wt')
+			fout.writelines(lines)
+			fout.close()
+			del fout
+
+			shutil.move(tempfile, pcalfile)
+
+		nswapped += len(pcalfiles)
+
+	return nswapped
 
 
 if __name__ == '__main__':
@@ -128,4 +205,4 @@ if __name__ == '__main__':
 	ants = [a.upper() for a in ants.split(',')]
 
 	for difxf in args[1:]:
-		polswapVisibilityfile(difxf,ants,doOverwrite)
+		polswapDifxFile(difxf,ants,doOverwrite,doPcal=True)
