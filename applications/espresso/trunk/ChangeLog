@@ -1,3 +1,10 @@
+Version 2.8
+~~~~~~~~~~~~~
+* python3
+* Support execution from a singularity/docker image (split espresso.py into two parts - espressoprep.py and espressolaunch.py)
+* fsclock.py extracts clocks from FS log files.
+* Minor feature enhancements and bug fixes throughout.
+
 Version 2.5.2
 ~~~~~~~~~~~~~
 * Comply with "delay_model" parameter in v2d file.
