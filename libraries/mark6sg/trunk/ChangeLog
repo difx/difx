@@ -10,6 +10,7 @@ Version 2.0.3
 * mark6Gather() : operations on Mark6 files that are smaller than a block size seem to work now.
 * mk6gather: fail if output file cannot be created
 * mk6gather: all output goes to stderr to protect piping operation
+* Version for DiFX-2.8, Nov 4, 2022
 
 Version 2.0.2
 * Post DiFX-2.6
