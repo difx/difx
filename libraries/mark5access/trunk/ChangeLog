@@ -1,4 +1,5 @@
 Version 1.6
+* Post DiFX-2.6
 * All examples: Added support for new, generalised CODIF and VDIF naming scheme
 * Changed Mbps to a float, dealt with this by casting to int in legacy formats
 * m5d, mark5streamunpacker: harmonise the way CODIF and VDIF files are treated
@@ -26,7 +27,7 @@ Version 1.6
   - 16 and 32 bit values had errors in converting to signed values
 * add 24 channel decoder for 1 and 2 bits real VDIF
 * add state counters for all 2-bit real VDIF modes with decoders
-* Post DiFX-2.6
+* Version for DiFX-2.8, Nov 4, 2022
 
 Version 1.5.4
 * Post DiFX-2.5
