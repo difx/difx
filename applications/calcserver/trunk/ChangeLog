@@ -3,6 +3,7 @@ Version 1.8
 * minor clean-up on the c-side (most compile warnings, dead code removal)
 * support systemd
   - for now, manually copy the calcserver.system file to /etc/systemd/system
+* Version for DifX-2.8, Nov 4, 2022
 
 Version 1.7
 * looks for tirpc via pkgconfig to provide rpc/rpc.h
