@@ -1,4 +1,4 @@
-AC_INIT([rcwlib], [0.99], [Craig Walker <cwalker@nrao.edu>])
+AC_INIT([rcwlib], [1.0], [Craig Walker <cwalker@nrao.edu>])
 
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 
@@ -8,7 +8,7 @@ AC_LANG_C
 AM_PROG_LIBTOOL
 AC_PROG_F77
 
-AC_OUTPUT([ \
+AC_CONFIG_FILES([
 	Makefile \
 	rcwlib.pc \
 	citlib.pc \
@@ -16,3 +16,5 @@ AC_OUTPUT([ \
 	Cit/Makefile \
 	tests/Makefile \
 ])
+
+AC_OUTPUT()
