@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2008-2022 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "difxio/difx_input.h"
 #include "difxio/difx_write.h"
 
@@ -665,6 +666,18 @@ DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1, const DifxFreq *df2
 	return df;
 }
 
+/* Use this to see if a frequency or bandwidth (in Hz) has meaningful
+ * non-integral value (e.g., differs from integer by more than 1 part
+ * in 10^4 or 100 microHz, less than ten turns per day)
+ *
+ * Note that use of DiFX with fractional Hz bandwidth or frequency
+ * likely results in unstable phases
+ */
+static int isQuasiInteger(double d)
+{
+	return fabs(d - (long long int)d) < 0.0001 ? 1 : 0;
+}
+
 int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df)
 {
 	int n, i;
@@ -676,8 +689,26 @@ int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df)
 
 	for(i = 0; i < nFreq; ++i)
 	{
-		writeDifxLineDouble1(out, "FREQ (MHZ) %d", i, "%17.15f", df[i].freq);
-		writeDifxLineDouble1(out, "BW (MHZ) %d", i, "%17.15f", df[i].bw);
+		/* For FREQ and BW: use the above function to determine
+		 * how many digits to write.  It seems that some spurious
+		 * non-zero digits can be appended in some cases.
+		 */
+		if(isQuasiInteger(df[i].freq*1000000.0))
+		{
+			writeDifxLineDouble1(out, "FREQ (MHZ) %d", i, "%8.6f", df[i].freq);
+		}
+		else
+		{
+			writeDifxLineDouble1(out, "FREQ (MHZ) %d", i, "%17.15f", df[i].freq);
+		}
+		if(isQuasiInteger(df[i].bw*1000000.0))
+		{
+			writeDifxLineDouble1(out, "BW (MHZ) %d", i, "%8.6f", df[i].bw);
+		}
+		else
+		{
+			writeDifxLineDouble1(out, "BW (MHZ) %d", i, "%17.15f", df[i].bw);
+		}
 		sb[0] = df[i].sideband;
 		writeDifxLine1(out, "SIDEBAND %d", i, sb);
 		if(strlen(df[i].rxName) > 0)

@@ -21,6 +21,8 @@
 * when checking equality of antennas, verify mount type is the same
 * remove polxy2hv from DifxInput structure -- this was effectively a difx2fits private variable that slipped in.
 * increase observation code string length to 24
+* write FREQ table frequencies only to 1 Hz resolution when it is clear that no additional precision is needed to avoid numerical issues
+* Version for DiFX-2.8, Nov 4, 2022
 
 3.6.0
 * Post DiFX 2.5
