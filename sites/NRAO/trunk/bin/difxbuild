@@ -13,8 +13,8 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '1.04'
-verdate = '20221027'
+version = '1.05'
+verdate = '20221104'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -1914,7 +1914,7 @@ component_mark6sg_2_8 = \
 component_codifio_2_8 = \
 [ \
 	'codifio', \
-	'https://svn.atnf.csiro.au/difx/libraries/DiFX-2.8/libraries/codifio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8/libraries/codifio', \
 	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
 ]
 
