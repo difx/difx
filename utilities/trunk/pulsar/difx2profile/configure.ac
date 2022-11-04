@@ -1,5 +1,5 @@
 AC_PREREQ(2.50)
-AC_INIT([DIFX2PROFILE], [0.5], [difxusers at googlegroups.com])
+AC_INIT([DIFX2PROFILE], [0.6], [difxusers at googlegroups.com])
 PACKAGE_VERSION=AC_PACKAGE_VERSION
 AC_SUBST([PACKAGE_VERSION])
 AC_SUBST([LIBRARY_VERSION])
@@ -17,9 +17,9 @@ AC_PROG_RANLIB
 dnl **********************************************************
 
 # Checks for libraries.
-PKG_CHECK_MODULES(DIFXIO, difxio >= 3.3.0)
-PKG_CHECK_MODULES(FXCORR, fxcorr >= 2.3)
-PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= 2.3.0)
+PKG_CHECK_MODULES(DIFXIO, difxio >= 3.7.0)
+PKG_CHECK_MODULES(FXCORR, fxcorr >= 2.8)
+PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= 2.8.0)
 
 # Checks for header files.
 
@@ -31,4 +31,4 @@ CXXFLAGS="${CXXFLAGS} ${DIFXIO_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${FXCORR_CFLAGS}"
 LIBS=" ${FXCORR_LIBS} ${DIFXIO_LIBS} ${DIFXMESSAGE_LIBS} -lpthread"
 
 AC_CONFIG_FILES([Makefile src/Makefile scripts/Makefile])
-AC_OUTPUT
+AC_OUTPUT()
