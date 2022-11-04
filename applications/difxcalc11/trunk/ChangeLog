@@ -3,6 +3,7 @@
 * Allow to build outside the DiFX environment
 * Add option to print the station ITRF positions to .im file
   - these include EOP, earth deformation, axis offset
+* Version for DiFX-2.8, Nov 4, 2022
 
 11.0.2
 ------
