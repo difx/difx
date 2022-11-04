@@ -1,6 +1,7 @@
 Version 0.2
 -----------
 * Fix rounding in calculating start nanoseconds
+* Version for DiFX-2.8, Nov 4, 2022
 
 Version 0.1
 -----------
