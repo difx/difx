@@ -1,5 +1,8 @@
+Version 1.7
+~~~~~~~~~~~
 * rjc 2020.6.26
 * fix parallactic angle bug in first t303 record
+* Version for DiFX-2.8, Nov 4, 2022
 
 Version 1.6
 ~~~~~~~~~~~
