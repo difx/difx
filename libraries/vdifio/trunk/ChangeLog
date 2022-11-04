@@ -28,6 +28,7 @@ Version 1.5
   - New 8-bit corner turners: 9, 11, 13, 15 threads
   - New 16-bit corner turners: 3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15 threads
 * New 24 thread corner turners for 1 and 2 bits
+* Version for DiFX-2.8 branch, Nov 4, 2022
 
 Version 1.4
 ~~~~~~~~~~~
