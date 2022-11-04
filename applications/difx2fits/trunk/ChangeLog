@@ -18,6 +18,7 @@ Version 3.7.0
   - When not activated, behavior is unchanged from past versions
 * Increase observation code length to 24
 * makefits: a few minor changes requested by VLBA analysts
+* Version for DiFX-2.8, Nov 4, 2022
 
 Commit 10003 2021.04.30
 
