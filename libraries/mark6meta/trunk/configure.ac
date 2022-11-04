@@ -32,7 +32,7 @@ AM_SANITY_CHECK
 
 AC_LANG(C++)
 
-PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.4.0])
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.8.0])
 #PKG_CHECK_MODULES(LIBUDEV, [libudev >= 1.0.0], [], [AC_MSG_ERROR(libudev not found)])
 AC_CHECK_LIB(udev, udev_ref)
 AC_CHECK_HEADERS(libudev.h)
