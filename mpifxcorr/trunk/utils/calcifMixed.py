@@ -69,6 +69,7 @@ def genPatterns(verb, stations, normallines):
     if verb: print('No atmosphere on these:')
     patt = re.compile(r'TELESCOPE\s+(\d+)\s+NAME:\s*(\w\w)')
     patterns = [r'MATCHES-NOTHING' for x in range(len(stations))]
+    antindex = [-1 for x in range(len(stations))]
     for line in normallines:
         tele = patt.search(line)
         if tele != None:
@@ -76,10 +77,11 @@ def genPatterns(verb, stations, normallines):
                 if tele.group(2) == stations[ii]:
                     patterns[ii] = re.compile(
                         r'SRC\s+\d+\s+ANT\s+' + tele.group(1))
+                    antindex[ii] = tele.group(1)
                     if verb: print('',line.rstrip(),\
                         'matches SRC\s+\d+\s+ANT\s+' + tele.group(1) + \
-                        'at index ' + str(ii))
-    return patterns
+                        ' at index ' + str(ii) + ' ANT ' + antindex[ii])
+    return patterns, antindex
 
 def writeDelayDryWet(save, dryfac, wetfac, f):
     '''
@@ -134,18 +136,13 @@ def mergeCalc(verb, stations, drylst, wetlst, job, normal, noatmo):
     f = open(im + '-' + noatmo, 'r')
     noatmolines = f.readlines()
     f.close()
-    # FIXME: 'difxcalc -noatmo' introduces STA X, STA Y, STA Z lines into .im-noatmo, calcifMixed.py does not cope with those
-    if True: # temporary workaround is to remove the lines before further processing
-        i = 0
-        while i < len(noatmolines):
-            if any([key in noatmolines[i] for key in ['STA X', 'STA Y', 'STA Z']]): del noatmolines[i]
-            else: i += 1
     if len(normallines) != len(noatmolines):
-        print('Calc output for %s have disparate lengths %d and %d' % (
+        print('Calc output for %s have disparate lengths' % (
             im, len(normallines), len(noatmolines)))
         return 1
     f = open(im, 'w')
-    srelist = genPatterns(verb, stations, normallines)
+    srelist,antlist = genPatterns(verb, stations, normallines)
+    if verb: print('Have %d items in srelist'%len(srelist))
     aber = re.compile(r'ABERRATION CORR:')
     delay = re.compile(r'SRC\s+\d+\s+ANT\s+\d+\s+DELAY\s+.us.:')
     dry = re.compile(r'SRC\s+\d+\s+ANT\s+\d+\s+DRY\s+.us.:')
@@ -188,13 +185,18 @@ def mergeCalc(verb, stations, drylst, wetlst, job, normal, noatmo):
                 # UNCORRECTED, APPROXIMATE, EXACT, NO ATMOS, or:
                 f.write('ABERRATION CORR:    MIXED\n')
             else:   # these are the U,V,W lines which should differ
+              match = None
               for patt in srelist:
                 if patt != r'MATCHES-NOTHING' and patt.match(norm):
-                    f.write(natm)
-                    natmout += 1
-                else:
+                    #f.write(natm)
+                    #natmout += 1
+                    match = natm
+              if match is None:
                     f.write(norm)
                     normout += 1
+              else:
+                    f.write(natm)
+                    natmout += 1
     f.close()
     if verb: print('%s w/ %d common %d mathout %d normal %d noatmo lines' % (
         im, commout, mathout, normout, natmout))
@@ -225,6 +227,7 @@ def runCalc(verb, calc, options, extra, label, job):
 
 # main entry point
 if __name__ == '__main__':
+    print(sys.argv)
     o = parseOptions()
     if len(o.nargs) > 0:
         jobs = o.nargs
@@ -240,10 +243,14 @@ if __name__ == '__main__':
         dry = list(map(float, o.dry.split(',')))
     else:
         dry = [ float(o.dry) ]
+        while len(dry) < len(stations):
+            dry.append(dry[0])
     if ',' in o.wet:
         wet = list(map(float, o.wet.split(',')))
     else:
         wet = [ float(o.wet) ]
+        while len(wet) < len(stations):
+            wet.append(wet[0])
     errors = 0
     for j in jobs:
         errors += runCalc(o.verb, o.calc, o.options, '',   'normal', j)
