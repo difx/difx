@@ -33,6 +33,7 @@ import os
 import re
 import shutil
 import sys
+import pyfits
 
 PROGRAM = 'gmva_vlba_archive'
 VERSION = '1.3'
@@ -40,7 +41,6 @@ VERDATE = '20220609'
 AUTHOR  = 'Laura La Porta, Hermann Sturm, Walter Alef, Jan Wagner'
 
 #####################################################################################
-
 
 def vlba2mjd(d, t):
         '''Take strings date d ('yyyyMONdd') and time of day t ('hh mm ss'), and convert to fractional MJD'''
@@ -103,6 +103,16 @@ def readVEX(vexfile):
 
         return expt,vexstart,vexstop
 
+def input_with_default(query, defaultchoice):
+	msg = '%s [%s] ? ' % (query, defaultchoice)
+	try:
+		t = raw_input(msg) or defaultchoice
+	except:
+		# when cat /dev/null | gmva_vlba_archive.py ...
+		# raw_input() errors out with "EOFError: EOF when reading a line":
+		t = defaultchoice
+	return str(t)
+
 ######################################################################################
 
 
@@ -111,58 +121,36 @@ if len(sys.argv) == 1:
 
 if '-h' in sys.argv or '--help' in sys.argv:
     print('Produces a metadata file to use when uploading GMVA data to the NRAO Archive')
-    print('Usage: gmva_vlba_archive.py <vexfile.vex>')
+    print('Usage: gmva_vlba_archive.py <vexfile.vex> [<segment> <fitsfile>]')
     sys.exit(0)
 
+default_segment  = 'none'
+default_fitsfile = ''
+default_tscope   = 'VLBA'
+default_archfmt  = 'IDIFITS'
+segmlist = ['none','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
+
 exper, vexstart, vexstop = readVEX(sys.argv[1])
+if len(sys.argv) >= 3:
+	default_segment = sys.argv[2]
+if len(sys.argv) >= 4:
+	default_fitsfile = sys.argv[3]
 
 print ("Please insert the Project Code of the experiment, that is composed by")
 print ("2 letter and 3 numbers plus possibly a capital letter (called segment) at the end")
 print ("E.g. gb077a")
 
-ex = raw_input("Project Code (default: %s) ? " % (exper))
-t1 = raw_input("Observations started - vex time (format <yyyy>y<doy>d<hh>h<mm>m<ss>s, default: %s) ? " % (vexstart))
-t2 = raw_input("Observations ended   - vex time (format <yyyy>y<doy>d<hh>h<mm>m<ss>s, default: %s) ? " % (vexstop))
-if len(ex) > 0:
-        exper = ex
-if len(t1) > 0:
-        vexstart = t1
-if len(t2) > 0:
-        vexstop = t2
-
-expname = exper.lower()
-ofilename = str(expname) + '.metadata.txt'
-meta = open(ofilename,'w')
-meta.write('PROJECT_CODE     = %s\n'%(exper))
-
-segmlist = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
-
-while True:
-    segm = str(raw_input("Segment (must be a capital letter; default = none)?"))
-    if segm == '':
-        meta.write('SEGMENT          = none \n')
-        break
-    if segm in segmlist:
-        meta.write('SEGMENT          = %s\n' % (segm))
-        break
-    else:
-        print("Segment must be a capital letter. Try again...")
-
-meta.write('STARTTIME        = %13.7f\n' % (vex2mjd(vexstart)))
-meta.write('STOPTIME         = %13.7f\n' % (vex2mjd(vexstop)))
-
-tscope = str(raw_input("Telescope ? (default = VLBA)"))
-if tscope == '':
-   meta.write('TELESCOPE        = VLBA\n')
-else :
-   meta.write('TELESCOPE        = %s\n'%(tscope))
-
-arch_fmt = str (raw_input("Archive format (UV_FITS or IDIFITS, default: IDIFITS)"))
-if arch_fmt == '':
-   arch_fmt = 'IDIFITS'
-
-meta.write('ARCH_FORMAT      = %s\n' % (arch_fmt))
-meta.write('DATA_TYPE        = raw\n')
+ex       = input_with_default("Project Code", exper)
+vexstart = input_with_default("Observations started - vex time (format <yyyy>y<doy>d<hh>h<mm>m<ss>s)", vexstart)
+vexstop  = input_with_default("Observations ended   - vex time (format <yyyy>y<doy>d<hh>h<mm>m<ss>s)", vexstop)
+segm     = input_with_default("Segment (must be a capital letter, or 'none')", default_segment)
+if segm not in segmlist:
+	print("Error: Segment should be one of 'A' to 'Z' or 'none")
+	sys.exit()
+	
+tscope   = input_with_default("Telescope", default_tscope)
+arch_fmt = input_with_default("Archive format (UV_FITS or IDIFITS)", default_archfmt)
+expname  = exper.lower()
 
 suggestedName = 'GMVA_'+ expname + 'Part1.' + arch_fmt.lower()
 
@@ -171,36 +159,53 @@ print ("The filename must be composed as follows: ")
 print ("GMVA_<experiment name><part>.uvfits or with ending .idifits")
 print ("(e.g. %s)." % (suggestedName))
 
-mk4filenamegzip = str (raw_input("Filename of the FITS file ?"))
+fitsfilename = input_with_default("Filename of the FITS file", default_fitsfile)
 
 check = 0
 for i in range (26):
-   rightname = 'GMVA_'+ expname + 'Part' + str(i) + '.uvfits'
-   leftname = 'GMVA_'+ expname + 'Part' + str(i) + '.idifits'
-   if  mk4filenamegzip == rightname or  mk4filenamegzip == leftname : check = 1
+	rightname = 'GMVA_'+ expname + 'Part' + str(i) + '.uvfits'
+	leftname = 'GMVA_'+ expname + 'Part' + str(i) + '.idifits'
+	if  fitsfilename == rightname or  fitsfilename == leftname : check = 1
+if check == 0:
+	print ("The filename should be :")
+	print (rightname)
+	print ("Please check the filename and run again the program.")
+	meta.close()
+	sys.exit()
 
-if check == 1:
-   meta.write('ARCH_FILE        = %s\n'%(mk4filenamegzip))
-else :
-   print ("The filename should be :")
-   print (rightname)
-   print ("Please check the filename and run again the program.")
-   meta.close()
-   sys.exit()
+pre, ext = os.path.splitext(fitsfilename)
+ofilename = pre + '.meta.txt'
 
-file_size = float(os.path.getsize(mk4filenamegzip))/float(1000)
-meta.write('FILE_SIZE        = %f \n'%file_size)
+file_size = float(os.path.getsize(fitsfilename))/float(1000)
 
+suggested_bandcode = ''
+try:
+	ff = pyfits.open(fitsfilename)
+	nu0_GHz = ff['FREQUENCY'].header['REF_FREQ'] * 1e-9
+	if nu0_GHz >= 36 and nu0_GHz <= 46:
+		suggested_bandcode = 'Q'
+	elif nu0_GHz >= 75 and nu0_GHz <= 110:
+		suggested_bandcode = 'W'
+	print("Ref freq in FITS file was %.3f GHz, assuming band %s" % (nu0_GHz,suggested_bandcode))
+except:
+	pass
+if suggested_bandcode == '':
+	suggested_bandcode = 'W'
+
+bandcode = input_with_default("Band code (Q, W, 'Q,W')", suggested_bandcode)
+
+meta = open(ofilename,'w')
+meta.write('PROJECT_CODE     = %s\n' % (exper))
+meta.write('SEGMENT          = %s\n' % (segm))
+meta.write('STARTTIME        = %13.7f\n' % (vex2mjd(vexstart)))
+meta.write('STOPTIME         = %13.7f\n' % (vex2mjd(vexstop)))
+meta.write('TELESCOPE        = %s\n'%(tscope))
+meta.write('ARCH_FORMAT      = %s\n' % (arch_fmt))
+meta.write('DATA_TYPE        = raw\n')
+meta.write('ARCH_FILE        = %s\n'%(fitsfilename))
+meta.write('FILE_SIZE        = %f\n'%file_size)
 meta.write('RAW_PROJECT_CODE = %s\n'%(exper))
-
-bandcode = str(raw_input("Observing bands ('Q', 'W', or 'Q,W')?"))
 meta.write('OBS_BANDS        = %s\n'%(bandcode))
-
 meta.close()
 
-pre, ext = os.path.splitext(mk4filenamegzip)
-onewfilename = pre + '.meta.txt'
-# os.replace(ofilename, onewfilename) # not in py2
-shutil.move(ofilename, onewfilename)
-
-print('Wrote %s' % (onewfilename))
+print('Wrote %s' % (ofilename))
