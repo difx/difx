@@ -2,7 +2,8 @@ AC_INIT([CODIFIO], [0.2], [Chris.Philips@csiro.au])
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.69])
+#AC_PREREQ([2.69])
+AC_PREREQ([2.59])
 PACKAGE_VERSION=AC_PACKAGE_VERSION
 AC_SUBST([PACKAGE_VERSION])
 AC_SUBST([LIBRARY_VERSION])
