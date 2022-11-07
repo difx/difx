@@ -174,7 +174,7 @@ if check == 0:
 	sys.exit()
 
 pre, ext = os.path.splitext(fitsfilename)
-ofilename = pre + '.meta.txt'
+ofilename = pre + '.metadata.txt'
 
 file_size = float(os.path.getsize(fitsfilename))/float(1000)
 
