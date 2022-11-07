@@ -137,7 +137,7 @@ def mergeCalc(verb, stations, drylst, wetlst, job, normal, noatmo):
     noatmolines = f.readlines()
     f.close()
     if len(normallines) != len(noatmolines):
-        print('Calc output for %s have disparate lengths' % (
+        print('Calc output for %s have disparate lengths (%d,%d)' % (
             im, len(normallines), len(noatmolines)))
         return 1
     f = open(im, 'w')
