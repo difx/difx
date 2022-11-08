@@ -1694,7 +1694,7 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
   channelbandwidth = bandwidth/double(freqchannels);
   outchannelplacementpreavg = fabs(config->getFreqTableFreqLowedge(freqindex) - config->getFreqTableFreqLowedge(targetfreqindex)) / channelbandwidth;
 
-  assert(targetfreqchannels == (int)((bandwidthoftarget / bandwidth)*freqchannels));
+  assert(targetfreqchannels == (int)(0.5 + (bandwidthoftarget / bandwidth)*freqchannels));
   assert(targetchannelinc == channelinc); // required for the old striding logic to work out... TODO?: allow multi-stage averaging?
 
   rotatorlength = rotatestridelen+numstrides*rotatesperstride;
