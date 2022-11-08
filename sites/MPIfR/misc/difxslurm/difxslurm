@@ -63,6 +63,7 @@ mv $job.machines $job.dsmachines
 # contruct slurm jobsteps
 # for all datastream processes
 jobsteps=""
+rm -f mypipe
 mkfifo mypipe
 sort $job.dsmachines | uniq -c > mypipe &
 
