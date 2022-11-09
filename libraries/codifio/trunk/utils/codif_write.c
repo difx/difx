@@ -303,7 +303,7 @@ int main (int argc, char * const argv[]) {
       printf("  -f/-filesize <N>       Write files N seconds long\n");
       printf("  -s/-scale <S>          Reduce data to 8 bits, dividing by S\n");
       printf("  -S/-split              Write threads to separate files\n");
-      printf("  -w/-wait               Wait for first packet before starting recording timer/n");
+      printf("  -w/-wait               Wait for first packet before starting recording timer\n");
       printf("  -V/-verbose            Verbose output/n");
       printf("  -h/-help               This list\n");
       return(1);
