@@ -141,8 +141,9 @@ int main (int argc, char **argv) {
       int iscomplex = getCODIFComplex(header);
       int period = getCODIFPeriod(header);
       int framesize = getCODIFFrameBytes(header)+CODIF_HEADER_BYTES;
-      double framepersec = getCODIFFramepersec(header);
-      double mjd = getCODIFFrameDMJD(header, 0.0);
+      int sampleperframe = getCODIFFrameBytes(header)*8/(bits*nchan*(iscomplex+1));
+      double framepersec = getCODIFTotalSamples(header)/(double)sampleperframe/period;
+      double mjd = getCODIFFrameDMJD(header, framepersec);
       if (verbose && !first) mjd += 1.0/framepersec/(24.0*60*60); // Adjust for time at end of frame
 
       mjd2cal(mjd, &day, &month, &year, &ut);
@@ -151,48 +152,42 @@ int main (int argc, char **argv) {
 	if (first) {
 	  char complextype[2] = "";
 	  if (iscomplex) complextype[0] = 'C';
-	  printf("CODIF%s/%d/%d/%d", complextype, period, framesize, bits);
-	  printf("    CODIF%s_%d-%dm%d-%d-%d\n", complextype, framesize-CODIF_HEADER_BYTES, getCODIFFrameperperiod(header), period, nchan, bits);
+	  printf("CODIF%s/%d/%d/%d\n", complextype, period, framesize, bits);
 	  printf(" %02d/%02d/%d  %s\n", day, month, year, timestr);       	
 	} else {
 	  printf(" %02d/%02d/%d  %s\n", day, month, year, timestr);       	
 	}
       } else {
       
-	printf("FRAME#:      %d\n", getCODIFFrameNumber(header));
-	printf("SECONDS:     %d     %02d/%02d/%d  %s\n", getCODIFFrameEpochSecOffset(header),
-	       day, month, year, timestr);
-
-	printf("\n");
-	printf("EPOCH:       %d\n", getCODIFEpoch(header));
-	printf("NBITS:       %d\n", bits);
-	printf("POWER:       %d\n", getCODIFIsPower(header));
 	printf("INVALID:     %d\n", getCODIFFrameInvalid(header));
 	printf("COMPLEX:     %d\n", iscomplex);
-	printf("CALON:       %d\n", getCODIFCalEnabled(header));
-	printf("REPRESENT:   %d\n", getCODIFRepresentation(header));
-	printf("VERSION:     %d\n", getCODIFVersion(header));
-	printf("PROTOCOL:    %d\n", getCODIFProtocol(header));
-	printf("PERIOD:      %d\n", period);
-
 	printf("\n");
-	printf("THREADID:    %d\n", getCODIFThreadID(header));
-	printf("GROUPID:     %d\n", getCODIFGroupID(header));
-	printf("SECONDARYID: %d\n", getCODIFSecondaryID(header));
+	printf("SECONDS:     %d     %02d/%02d/%d  %s\n", getCODIFFrameEpochSecOffset(header),
+	       day, month, year, timestr);
+	printf("\n");
+	printf("FRAME#:      %d\n", getCODIFFrameNumber(header));
+	printf("\n");
+	printf("VERSION:     %d\n", getCODIFVersion(header));
+	printf("NBITS:       %d\n", bits);
+	printf("FRAMELENGTH: %d\n", getCODIFFrameBytes(header));
+	printf("\n");
+	printf("EPOCH:       %d\n", getCODIFEpoch(header));
+	printf("REPRESENT:   %d\n", getCODIFRepresentation(header));
 	if(stnCode[0] >= ' ' && stnCode[0] <= 127 && (stnCode[1] >= ' ' || stnCode[1] == 0) && stnCode[1] <= 127) {
 	printf("ANTID:       %c%c\n", stnCode[1], stnCode[0]);
 	} else {
 	  printf("ANTID:       %d\n", stationID);
 	}
-
 	printf("\n");
-	printf("NCHAN:       %d\n", nchan);
 	printf("SAMPLEBLOCK: %d\n", getCODIFSampleblockLength(header));
-	printf("FRAMELENGTH: %d\n", getCODIFFrameBytes(header));
-
+	printf("NCHAN:       %d\n", nchan);
+	printf("\n");
+	printf("THREADID:    %d\n", getCODIFThreadID(header));
+	printf("GROUPID:     %d\n", getCODIFGroupID(header));
+	printf("\n");
+	printf("PERIOD:      %d\n", period);
 	printf("\n");
 	printf("#SAMPLES:    %"PRIu64"\n", getCODIFTotalSamples(header));
-
 	printf("\n");
 	printf("SYNC:        0X%X\n", getCODIFSync(header));
 	

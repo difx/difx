@@ -37,24 +37,24 @@
 #include "codifio.h"
 
 
-#define CODIF_VERSION 3
+#define CODIF_VERSION 1
 
 
-int createCODIFHeader(codif_header *header, uint32_t dataarraylength, uint16_t threadid, uint16_t groupid, uint8_t bits,
-		      uint16_t nchan, uint16_t sampleblocklength, uint16_t period, uint64_t totalsamples, int iscomplex,
-		      char stationid[3], uint16_t secondaryid) {
+int createCODIFHeader(codif_header *header, int dataarraylength, uint16_t threadid, uint16_t groupid, int bits, uint16_t nchan,
+		      int sampleblocklength, int period, uint64_t totalsamples, int iscomplex, char stationid[3]) {
   
-  if (CODIF_VERSION>31) return(CODIF_ERROR);
-  if (dataarraylength%8!=0) return(CODIF_ERROR);
-  if (nchan==0) return(CODIF_ERROR);
+  if (CODIF_VERSION>7) return(CODIF_ERROR);
+  if (bits>32 || bits<1) return(CODIF_ERROR);
+  if (dataarraylength%8!=0 || dataarraylength<0) return(CODIF_ERROR);
+  if (threadid>USHRT_MAX || threadid<0) return(CODIF_ERROR);
+  if (groupid>USHRT_MAX || groupid<0) return(CODIF_ERROR);
+
+  if (nchan<1 || nchan>USHRT_MAX) return(CODIF_ERROR);
 
   memset(header, 0, CODIF_HEADER_BYTES);
 
   header->version = CODIF_VERSION;
-  header->protocol = 7;
   header->invalid = 0;
-  header->calEnabled = 0;
-  header->power = 0;
   setCODIFNumChannels(header, nchan);
   setCODIFFrameBytes(header, dataarraylength);
   if (iscomplex)
@@ -62,20 +62,18 @@ int createCODIFHeader(codif_header *header, uint32_t dataarraylength, uint16_t t
   else
     header->iscomplex = 0;
   setCODIFBitsPerSample(header, bits);
-  setCODIFVersion(header, 2);
-  setCODIFRepresentation(header, 1);
-  setCODIFThreadID(header, threadid);
-  setCODIFGroupID(header, groupid);
+  setCODIFVersion(header, 1);
+  setCODIFRepresentation(header, 0);
+  header->threadid = threadid;
+  header->groupid = groupid;
   header->stationid = stationid[0]<<8 | stationid[1];
-  header->secondaryid = secondaryid;
   setCODIFPeriod(header, period);
   header->totalsamples = totalsamples;
   setCODIFSampleblockLength(header, sampleblocklength);
-  header->seconds=0;
   header->frame=0;
-  header->epoch=0;
-  header->sync = 0xFEEDCAFE;
- 
+  header->sync = 0xADEADBEE;
+  
+
   return(CODIF_NOERROR);
 }
 
@@ -90,12 +88,12 @@ int setCODIFFrameBytes(codif_header *header, int bytes)
 int getCODIFEpochMJD(const codif_header *header)
 {
   int epoch = (int)header->epoch;
-  return ymd2mjd(2020 + epoch/2, (epoch%2)*6+1, 1);
+  return ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1);
 }
 
 int setCODIFNumChannels(codif_header *header, int numchannels)
 {
-  header->nchan = numchannels;
+  header->nchan = numchannels-1;
   return(CODIF_NOERROR);
 }
 
@@ -106,28 +104,15 @@ int getCODIFFrameMJD(const codif_header *header)
   return mjd + header->seconds/86400; // Seconds will usually be greater than one day
 }
 
-int getCODIFFrameperperiod(const codif_header *header) {
-  int bits = getCODIFBitsPerSample(header);
-  int nchan = getCODIFNumChannels(header);
-  int iscomplex = getCODIFComplex(header);
-  int datasize = getCODIFFrameBytes(header);
-  int sampleperframe = datasize*8/(bits*nchan*(iscomplex+1));
-  return getCODIFTotalSamples(header)/sampleperframe;
-}
-
-double getCODIFFramepersec(const codif_header *header) {
-  return (double)getCODIFFrameperperiod(header)/(double)getCODIFPeriod(header);
-}
-
-double getCODIFFrameDMJD(const codif_header *header, double framepersec) {
-  if (framepersec==0.0) framepersec=getCODIFFramepersec(header);
+double getCODIFFrameDMJD(const codif_header *header, double framepersec) 
+{
   int mjd = getCODIFFrameMJD(header);
   int sec = getCODIFFrameSecond(header);
   return (double)mjd+(sec+(double)header->frame/(double)framepersec)/(24*60*60);
 }
 
-double CODIFframe2mjd(const codif_header *header, int sec, int frame, double framepersec) {
-  if (framepersec==0.0) framepersec=getCODIFFramepersec(header);
+double CODIFframe2mjd(const codif_header *header, int sec, int frame, int framepersec) 
+{
   double mjd = getCODIFEpochMJD(header);
   mjd += (sec + frame/(double)framepersec)/86400.0;
   return mjd;
@@ -170,39 +155,36 @@ int setCODIFFrameSecond(codif_header *header, int seconds)
 int setCODIFEpochMJD(codif_header *header, int mjd) {
   int year, month, day;
   mjd2ymd(mjd, &year, &month, &day);
-  header->epoch = (year-2020)*2;
+  header->epoch = (year-2000)*2;
   if (month>6) header->epoch++;
   return(CODIF_NOERROR);
 }
 
-int nextCODIFHeader(codif_header *header, int frameperperiod) {
-  if (frameperperiod==0) frameperperiod=getCODIFFrameperperiod(header);
+int nextCODIFHeader(codif_header *header, int framepersec) {
   // This would fail if there were 16777216 frames/sec (ie 2^24) due to overflow so at least fail in this case
-  assert(frameperperiod!=16777216);
+  assert(framepersec!=16777216);
   header->frame++; 
-  if (header->frame>frameperperiod) {
+  if (header->frame>framepersec) {
     return(CODIF_ERROR);
-  } else if (header->frame==frameperperiod) {
+  } else if (header->frame==framepersec) {
     header->seconds += header->period;
     header->frame = 0;
   }
   return(CODIF_NOERROR);
 }
 
-int incrementCODIFHeader(codif_header *header, int frameperperiod, int64_t inc) {
+int incrementCODIFHeader(codif_header *header, int framepersec, int64_t inc) {
   int secinc=0;
   int64_t frame = header->frame;
-  if (frameperperiod==0) frameperperiod=getCODIFFrameperperiod(header);
-
   frame += inc;
-  if (frame>frameperperiod) {
-    secinc = frame/frameperperiod;
-    frame -= secinc*frameperperiod;
+  if (frame>framepersec) {
+    secinc = frame/framepersec;
+    frame -= secinc*framepersec;
     header->seconds += secinc;
   } else { // Negative - could optimise this but risk of off by one moderately high
     while (frame<0) {
       secinc++;
-      frame += frameperperiod;
+      frame += framepersec;
     }
   
     assert(abs(secinc)<header->seconds); // Otherwise before epoch started
@@ -222,8 +204,8 @@ int setCODIFEpochTime(codif_header *header, time_t time) {
   struct tm t;
 
   gmtime_r(&time, &t);
-  epoch = (t.tm_year-120)*2;
-  if (epoch<0)     // Year is year since 2020
+  epoch = (t.tm_year-100)*2;
+  if (epoch<0)     // Year is year since 2000
     return(CODIF_ERROR);
   if (t.tm_mon>=6) {
     epoch++;
