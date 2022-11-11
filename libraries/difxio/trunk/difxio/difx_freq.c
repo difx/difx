@@ -433,6 +433,11 @@ int reorderDifxFreqs(DifxInput *D)
 		}
 	}
 
+	for(j = 0; j < D->nFreqUnsimplified; j++)
+	{
+		D->freqIdRemap[j] = newOrder[D->freqIdRemap[j]];
+	}
+
 	/* 6. Final cleanup */
 
 	deleteDifxFreqArray(oldFreq, n);
