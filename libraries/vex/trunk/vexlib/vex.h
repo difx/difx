@@ -1145,6 +1145,6 @@ create_headstack_pos(char *str, char *str2);
 void *
 create_test(struct llist *start, char *str);
 
-FILE *fp;
-char *filename;
+extern FILE *fp;
+extern char *filename;
 
