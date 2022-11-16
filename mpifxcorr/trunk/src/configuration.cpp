@@ -1671,7 +1671,7 @@ bool Configuration::processDatastreamTable(istream * input)
       datastreamtable[i].recordedbandlocalfreqindices[j] = atoi(line.c_str());
       if(datastreamtable[i].recordedbandlocalfreqindices[j] >= datastreamtable[i].numrecordedfreqs) {
         if(mpiid == 0) //only write one copy of this error message
-          cerror << startl << "Attempting to refer to freq outside local table!!!" << endl;
+          cerror << startl << "Attempting to refer to freq outside local table!!!  REC BAND " << j << " max=" << datastreamtable[i].numrecordedfreqs << endl;
         return false;
       }
     }
@@ -1723,7 +1723,7 @@ bool Configuration::processDatastreamTable(istream * input)
       datastreamtable[i].zoombandlocalfreqindices[j] = atoi(line.c_str());
       if(datastreamtable[i].zoombandlocalfreqindices[j] >= datastreamtable[i].numzoomfreqs) {
         if(mpiid == 0) //only write one copy of this error message
-          cerror << startl << "Attempting to refer to freq outside local table!!!" << endl;
+          cerror << startl << "Attempting to refer to freq outside local table!!!  ZOOM BAND " << j << "max=" << datastreamtable[i].numzoomfreqs << endl;
         return false;
       }
     }
