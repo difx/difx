@@ -118,7 +118,8 @@ for ds in difx.metainfo.datastreams:
     if ds.datasource == "FILE":
       if len(difx.metainfo.data[dsIdx].media) == 0:
           # empty entry, happens e.g. when multi-datastream station lacks a recording on one of the streams
-          rateDiv = 1
+          dsIdx += 1
+          continue
       elif difx.metainfo.data[dsIdx].media[0].startswith("/"):
           source = difx.metainfo.data[dsIdx].media[0].split("/")[1]
           if pFuseMark5.match(source):
