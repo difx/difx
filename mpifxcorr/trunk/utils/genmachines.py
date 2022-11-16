@@ -614,8 +614,13 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
 
                 elif len(matchNodes) == 1:
                     dsnodes.append(matchNodes[0])
+                elif args.nocompute:
+                    # Datastream has no unique responsible node, or is blank ie no actual recording
+                    # Under --nocompute mode, arbitrarily assign the first storage node
+                    dsnodes.append((difxmachines.getStorageNodes()[0]).name)
                 else:
-                    # use compute node             
+                    # Datastream has no unique responsible node, or is blank ie no actual recording,
+                    # default to a compute node
                     nodecount = 0
                     for node in difxmachines.getComputeNodes():
                         # skip if already used as datastream node
