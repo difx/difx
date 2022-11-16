@@ -1048,7 +1048,7 @@ int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *r
 		localFqId = dd->recBandFreqId[r];
 		if(localFqId < 0 || localFqId >= dd->nRecFreq)
 		{
-			fprintf(stderr, "Error: DifxDatastreamGetRecChans: localFqId=%d out of range (%d)\n", localFqId, dd->nRecFreq);
+			fprintf(stderr, "Error: DifxDatastreamGetRecBands: localFqId=%d out of range (%d) r=%d\n", localFqId, dd->nRecFreq, r);
 		}
 		else if(dd->recFreqId[localFqId] == freqId)
 		{
