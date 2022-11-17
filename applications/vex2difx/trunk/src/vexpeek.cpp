@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2021 by Walter Brisken and Jan Wagner              *
+ *   Copyright (C) 2009-2022 by Walter Brisken and Jan Wagner              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -41,8 +41,8 @@
 #include "testvex.h"
 
 const std::string program("vexpeek");
-const std::string version("0.16");
-const std::string verdate("20210914");
+const std::string version("0.17");
+const std::string verdate("20220915");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -61,7 +61,7 @@ void usage(const char *pgm)
 	std::cout << "  -t or --doTime : add detailed time data to some output" << std::endl;
 	std::cout << "  -b or --bands : print list of band codes" << std::endl;
 	std::cout << "  -s or --scans : print list of scans and their stations" << std::endl;
-	std::cout << "        --scans2 : print list of scans with bands and times" << std::endl;
+	std::cout << "        --scans2 : print list of scans with bands, number of stations and times" << std::endl;
 	std::cout << "                 - include twice to see nChan, nBit and bandwidth as well" << std::endl;
 	std::cout << "  --scans=<ant> : print list of scans for antenna <ant>" << std::endl;
 	std::cout << "  -r or --sources : print list of sources and their coordinates" << std::endl;

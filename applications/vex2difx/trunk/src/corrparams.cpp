@@ -1547,7 +1547,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			}
 		}
 	}
-	else if(key =="loOffsets")
+	else if(key == "loOffsets")
 	{
 		double d;
 

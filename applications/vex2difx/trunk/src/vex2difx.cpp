@@ -60,7 +60,7 @@ using namespace std;
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20211025");
+const string verdate("20221115");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -362,7 +362,7 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int n
 						}
 					}
 					break;
-				case DataSourceMark6: 
+				case DataSourceMark6:
 					{
 						// mark6 has both files and vsns
 						int nFile = ant->files.size();
@@ -835,6 +835,10 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 						freqId = D->datastream[ds1].recFreqId[f];
 						destFreqId = D->datastream[ds1].recFreqDestId[f];
 
+						if(strcmp(D->freq[freqId].rxName, "null") == 0)
+						{
+							continue;
+						}
 						if(!corrSetup->correlateFreqId(freqId))
 						{
 							continue;
@@ -939,7 +943,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 		else // Not profile mode
 		{
 			// Beware those who try to follow the logic below!
-			// Its actually not to tricky.  There are 8 cases of matching between 
+			// Its actually not to tricky.  There are 8 cases of matching between
 			// sub-bands to consider.
 			// First all antenna 1 recorded bands to be correlated are considered.  Pairing
 			// with sub-bands from antenna 2 is done with the following priority:
@@ -1033,11 +1037,15 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 							for(int f = 0; f < D->datastream[ds1].nRecFreq; ++f)
 							{
-								bool zoom2 = false;	// did antenna 2 zoom band make match? 
+								bool zoom2 = false;	// did antenna 2 zoom band make match?
 
 								freqId = D->datastream[ds1].recFreqId[f];
 								destFreqId = D->datastream[ds1].recFreqDestId[f];
 
+								if(strcmp(D->freq[freqId].rxName, "null") == 0)
+								{
+									continue;
+								}
 								if(!corrSetup->correlateFreqId(freqId))
 								{
 									continue;
@@ -1053,6 +1061,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								}
 
 								DifxBaselineAllocPolProds(bl, nFreq, 4);
+
 
 								n1 = DifxDatastreamGetRecBands(D->datastream+ds1, freqId, a1p, a1c);
 								n2 = DifxDatastreamGetRecBands(D->datastream+ds2, freqId, a2p, a2c);
@@ -1178,7 +1187,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 							for(int f = 0; f < D->datastream[ds1].nZoomFreq; ++f)
 							{
-								bool zoom2 = false;	// did antenna 2 zoom band make match? 
+								bool zoom2 = false;	// did antenna 2 zoom band make match?
 
 								n2 = 0;
 
@@ -1518,8 +1527,8 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 				int64_t testsubintNS = tintNS / divisor;
 				msgSize = (testsubintNS*1.0e-9)*dataRate/8.0;
 				readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
-				if(readSize > P->minReadSize && readSize < P->maxReadSize && 
-					testsubintNS <= 1020000000 && testsubintNS > config->subintNS && 
+				if(readSize > P->minReadSize && readSize < P->maxReadSize &&
+					testsubintNS <= 1020000000 && testsubintNS > config->subintNS &&
 					fabs(testsubintNS/floatFFTDurNS - static_cast<int>(testsubintNS/floatFFTDurNS + 0.5)) < 1e-9)
 				{
 					config->subintNS = testsubintNS;
@@ -1607,7 +1616,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		}
 		else
 		{
-			cerr << "Error: The provided tInt (" << config->tInt << ") is not an integer multiple of the subint (" << floatSubintDurNS/1.0e9 << ")" << endl; 
+			cerr << "Error: The provided tInt (" << config->tInt << ") is not an integer multiple of the subint (" << floatSubintDurNS/1.0e9 << ")" << endl;
 			cerr << "Either change your integration time to a more friendly value, or tweak number of channels or subint time, or set tweakIntTime = true" << endl;
 
 			exit(EXIT_FAILURE);
@@ -1633,7 +1642,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	else
 	{
 		config->nBaseline = nDatastream*(nDatastream-1)/2;	// this is a worst case (but typical) scenario; may shrink later.
-									// FIXME: it seems the shrinking causes seg faults.  
+									// FIXME: it seems the shrinking causes seg faults.
 		if(P->exhaustiveAutocorrs)
 		{
 			config->nBaseline += 2*nDatastream;		// worst case if every datastream has a corresponding partner
@@ -1799,28 +1808,26 @@ static int fixDatastreamTable(DifxInput *D)
 
 				delta = power2 - ds->nRecBand;
 
-				N = ds->nRecFreq + delta;
+				N = ds->nRecFreq + 1;
 				ds->clockOffset = (double *)realloc(ds->clockOffset, N*sizeof(double));
 				ds->clockOffsetDelta = (double *)realloc(ds->clockOffsetDelta, N*sizeof(double));
 				ds->phaseOffset = (double *)realloc(ds->phaseOffset, N*sizeof(double));
 				ds->nRecPol = (int *)realloc(ds->nRecPol, N*sizeof(int));
 				ds->recFreqId = (int *)realloc(ds->recFreqId, N*sizeof(int));
-				for(r = ds->nRecFreq; r < N; ++r)
-				{
-					ds->clockOffset[r] = 0.0;
-					ds->clockOffsetDelta[r] = 0.0;
-					ds->phaseOffset[r] = 0.0;
-					ds->nRecPol[r] = 1;
-					ds->recFreqId[r] = addedFreq;
-				}
-
+				ds->clockOffset[N-1] = 0.0;
+				ds->clockOffsetDelta[N-1] = 0.0;
+				ds->phaseOffset[N-1] = 0.0;
+				ds->nRecPol[N-1] = delta;
+				ds->recFreqId[N-1] = addedFreq;
 				ds->nRecFreq = N;
+
+
 				N = ds->nRecBand + delta;
 				ds->recBandFreqId = (int *)realloc(ds->recBandFreqId, N*sizeof(int));
 				ds->recBandPolName = (char *)realloc(ds->recBandPolName, N*sizeof(char));
 				for(r = ds->nRecBand; r < N; ++r)
 				{
-					ds->recBandFreqId[r] = addedFreq;
+					ds->recBandFreqId[r] = ds->nRecFreq - 1;
 					ds->recBandPolName[r] = 'R';
 				}
 				ds->nRecBand = N;
@@ -1922,7 +1929,7 @@ static void populateScanTable(DifxInput *D, const Job& J, const VexData *V, cons
 		}
 		difxScan->configId = getConfigIndex(configs, D, V, P, vexScan);
 		difxScan->maxNSBetweenUVShifts = corrSetup->maxNSBetweenUVShifts;
-		fftDurNS = static_cast<int>(1000000000.0/corrSetup->FFTSpecRes);  
+		fftDurNS = static_cast<int>(1000000000.0/corrSetup->FFTSpecRes);
 		if(corrSetup->maxNSBetweenACAvg > 0)
 		{
 			difxScan->maxNSBetweenACAvg = corrSetup->maxNSBetweenACAvg;
@@ -2012,10 +2019,10 @@ static void populateSpacecraftTable(DifxInput *D, const VexData *V, const std::s
 				exit(EXIT_FAILURE);
 			}
 
-			v = computeDifxSpacecraftEphemeris(ds, mjd0, deltaT/86400.0, nPoint, 
+			v = computeDifxSpacecraftEphemeris(ds, mjd0, deltaT/86400.0, nPoint,
 				vexSource->bspObject.c_str(),
 				0,
-				vexSource->bspFile.c_str(), 
+				vexSource->bspFile.c_str(),
 				vexSource->ephemStellarAber,
 				vexSource->ephemClockError);
 			if(v != 0)
@@ -2042,11 +2049,11 @@ static void populateSpacecraftTable(DifxInput *D, const VexData *V, const std::s
 				exit(EXIT_FAILURE);
 			}
 
-			v = computeDifxSpacecraftTwoLineElement(ds, mjd0, deltaT/86400.0, nPoint, 
+			v = computeDifxSpacecraftTwoLineElement(ds, mjd0, deltaT/86400.0, nPoint,
 				vexSource->defName.c_str(),
 				0,
-				vexSource->tle[1].c_str(), 
-				vexSource->tle[2].c_str(), 
+				vexSource->tle[1].c_str(),
+				vexSource->tle[2].c_str(),
 				vexSource->ephemStellarAber,
 				vexSource->ephemClockError);
 			if(v != 0)
@@ -2058,7 +2065,7 @@ static void populateSpacecraftTable(DifxInput *D, const VexData *V, const std::s
 		}
 		else if(vexSource->type == VexSource::Fixed)
 		{
-			v = computeDifxSpacecraftEphemerisFromXYZ(ds, mjd0, deltaT/86400.0, nPoint, 
+			v = computeDifxSpacecraftEphemerisFromXYZ(ds, mjd0, deltaT/86400.0, nPoint,
 				vexSource->X, vexSource->Y, vexSource->Z,
 				0,
 				vexSource->ephemClockError);
@@ -2703,6 +2710,9 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 	// Make frequency table
 	populateFreqTable(D, freqs, toneSets);
 
+	// Make sure all polarizations are capitalized before writing, and round up to 2^n record channels if needed
+	fixDatastreamTable(D);	// be sure to call simplifyDifxFreqs(D) after doing this
+
 	// Make baseline table
 	globalBandwidth = populateBaselineTable(D, P, corrSetup, blockedfreqids);
 	if(globalBandwidth < 0)	// Implies conflicting bandwidths found
@@ -2713,9 +2723,6 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 	{
 		cerr << "Note: no correlatable baselines were found for scan " << vexScan->defName << "." << endl;
 	}
-
-	// Make sure all polarizations are capitalized before writing, and round up to 2^n record channels if needed
-	fixDatastreamTable(D);	// be sure to call simplifyDifxFreqs(D) after doing this
 
 	// Merge identical table entries
 	simplifyDifxFreqs(D);
@@ -2931,7 +2938,7 @@ static void usage(int argc, char **argv)
 	cout << endl;
 	cout << "NOTE: This version now supports much of the vex2 specification (as well as the" << endl;
 	cout << "vex 1.5 specification) but it is only lightly tested.  Proceed with caution." << endl;
-	cout << endl;  
+	cout << endl;
 }
 
 static void runCommand(const char *cmd, int verbose)
