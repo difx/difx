@@ -363,10 +363,23 @@ void Mark6::manageDeviceChange()
                 if (modules_m[slot].getEMSN() == "")
                 {
                     modules_m[slot].setEMSN(tempDevices[i].getMeta().getEMSN());
-                    modules_m[slot].setGroupMembers(tempDevices[i].getMeta().getGroup());                  
+                    if (tempDevices[i].getMeta().getGroup().size() != 0)
+                    {
+                        modules_m[slot].setGroupMembers(tempDevices[i].getMeta().getGroup());
+                    }
+                    else
+                    {
+                        // Bug(?) from VLBA Mark6:
+                        //  - only one disk has a 'group' file on its .meta partition, vs. normally all disks
+                        //  - grouping unclear, default to single group identical to disk eMSN metadata
+                        std::string defaultGroup(tempDevices[i].getMeta().getEMSN());
+                        defaultGroup.resize(DIFX_MESSAGE_MARK6_MSN_LENGTH);
+                        clog << "Warning: metadata partition of disk " << tempDevices[i].getName() << " lacks 'group', defaulting group to " << defaultGroup << endl;
+                        std::vector<std::string> tempGroup;
+                        tempGroup.push_back(defaultGroup);
+                        modules_m[slot].setGroupMembers(tempGroup);
+                    }
                 }
-                
-
             }
             else
             {
