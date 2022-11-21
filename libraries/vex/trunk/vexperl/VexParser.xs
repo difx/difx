@@ -3,6 +3,7 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#undef YYEMPTY
 //#undef YYSTYPE /* Remove these comments it you get compile problems */
 
 #define block vexblock
