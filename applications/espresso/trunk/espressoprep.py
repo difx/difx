@@ -160,7 +160,7 @@ def get_options(usage):
             " Default=%default")
     parser.add_option(
             "--ntasks_per_node",
-            type="int", dest="ntasks_per_node", default=2,
+            type="int", dest="ntasks_per_node", default=1,
             help="Number of MPI processes per node. Default=%default")
     parser.add_option(
             "--interactive", "-i",
