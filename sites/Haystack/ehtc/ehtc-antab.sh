@@ -28,12 +28,16 @@ none are listed is to find all such files in the current directory.
 A number of environment variables are available to modify the plot if
 you need make some adjustments for understanding the plot or producing
 different versions (default values are given):
-    decimation=$decimation      use one value in this many
+    verb=$verb                  true or false for commentary
+    decimation=$decimation      use one value out of this many
     plotrange=$plotrange        Hours and Tsys for gnuplot
     dayoffset=$dayoffset        offset in days for QA2 ANTAB files
-The plotrange defaults to [][0:10] allowing for nominal Tsys performance.
 
-You may set verb=true in the environment for some commentary.
+The plotrange defaults to [][0:10] allowing for nominal Tsys performance.
+On days with poor performance you should redo plots with a wider scale.
+
+There are sometimes issues with doy calculations.  You may sometimes
+need to set dayoffset to 0 to get the QA2 and local antabs to overlay.
 "
 # parse arguments
 band=${1-'noband'}
@@ -71,9 +75,16 @@ dpfac=`echo $DPFU / $dpfu | bc -lq 2>&- | cut -c 1-6` || dpfix=''
 $verb && echo dpfac $dpfac
 
 # find the polconvert products
-[ $# -gt 0 ] || set -- `ls *.polconvert-*/*ANTAB`
-[ $# -gt 0 ] || { echo no ANTAB files found to process ; exit 3 ; }
-$verb && echo found $# ANTABs to plot
+[ $# -eq 1 ] && {
+    [ -f $1 ] || { echo $1 not found ; exit 3; }
+    tag=`basename $1`-$pcal
+    $verb && echo plotting a single ANTAB to $tag
+    true
+} || {
+    [ $# -gt 0 ] || set -- `ls *.polconvert-*/*ANTAB`
+    [ $# -gt 0 ] || { echo no ANTAB files found to process ; exit 3 ; }
+    $verb && echo found $# ANTABs to plot
+}
 
 # use awk for processing of the antab files
 # NR>6 is processing for the data lines
@@ -201,5 +212,5 @@ erlines=`cat $tag.err | wc -l`
 $save || { rm -f $tag.gnu $tag.out $tag.err; }
 
 #
-# eof
+# eof vim: nospell
 #

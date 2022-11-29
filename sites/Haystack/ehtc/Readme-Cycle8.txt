@@ -100,6 +100,11 @@ export npcf=4
 # note that non-ALMA time still needs pcal and qpar defined
 # (due to the script checking; but the values are not used).
 #
+# If there is no ALMA in the track, there will be no polconversion
+# and you need to pay attention as some of the setup does not happen.
+# If drivepolconvert -l does not respect the 'none' label, you will
+# need to create the tables it expects to see.
+#
 # if there is only one ALMA track, you may set that QA2_proj variable
 # as true for the initial setup (unpacking DELIVERABLES, &c)... and even
 # comment out some of the checking logic; but once you create the
@@ -385,17 +390,21 @@ false && {
 # This command (without false) generates blocks of commands to insert here:
 false &&
 $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -L
-# but you must be sure to adjust these grind jobs to respect QA2_proj logic
+#
+
+###
+### log of $ers commands goes here
+###
+### make absolutely sure that all grinds are contained within
+### $QA... && { ... } so that the file can be sourced to set vars.
+###
+
 #
 # Once you have edited this file to run a block of grinding jobs with correct
 # true/false controls, you can launch with this (only one matching logfile):
 #
 # sh *.logfile & disown
-
-###
-### log of $ers commands goes here
-###
-
+#
 #--------------------------------------------------------------------------
 # Final Steps ======================
 # This section is always MANUAL as you must LOOK at things.
@@ -451,6 +460,8 @@ compare-baselines-v6.pl -n 10000 -m 10 -f -x AL \
 # (delete lines  that are only x because of missing stations)
 cat *fits*/*pclist | egrep ' AA |x ' | sort | uniq |\
     grep -v '#' > $ers-fits-missing.txt
+cat *fits*/*pclist | egrep ' AA |x |o ' | sort | uniq |\
+    grep -v '#' > $ers-fits-allscans.txt
 cp -p $ers-fits-missing.txt $release/logs
 cat $ers-fits-missing.txt | sed 's/^/### /'
 # and paste it here
