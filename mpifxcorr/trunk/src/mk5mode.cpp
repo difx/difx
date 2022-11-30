@@ -113,6 +113,13 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
   if(usecomplex) 
   {
     goodsamples = mark5_unpack_complex_with_offset(mark5stream, data, unpackstartsamples, (mark5_float_complex**)unpackedcomplexarrays, samplestounpack);
+    if(config->useVGOSComplexVDIFHack())
+    {
+      for(int i = 0; i < mark5stream->nchan; ++i)
+      {
+        vectorConj_cf32_I(unpackedcomplexarrays[i], samplestounpack);
+      }
+    }
   }
   else
   {

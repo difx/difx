@@ -34,6 +34,7 @@ Version 2.7
 * configuration.cpp: fix logic in populating equivfrequsedbybaseline[]
 * VDIF processing: remove check after vdifmux() that checks input usage vs. output generation
   - This check is wrong to perform in the case of considerably out-of-order data or data with a lot of gaps
+* Add flag 'mpifxcorr <job.input> --vgoscomplex' that flips the sideband of complex data recordings at all complex stations
 
 Version 2.6
 ~~~~~~~~~~~

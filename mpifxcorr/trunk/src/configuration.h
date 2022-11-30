@@ -116,6 +116,8 @@ public:
   void setJobNameFromConfigfilename(string configfilename);
   inline string getObsCode() const { return obscode; }
   inline void setObsCode(string ocode) { obscode = ocode; }
+  inline void setVGOSComplexVDIFHack(bool enable) { vgoscomplexvdifhack = enable; }
+  inline bool useVGOSComplexVDIFHack() { return vgoscomplexvdifhack; }
   inline long long getEstimatedBytes() const { return estimatedbytes; }
   inline int getVisBufferLength() const { return visbufferlength; }
   inline bool consistencyOK() const { return consistencyok; }
@@ -1100,6 +1102,7 @@ private:
   char header[MAX_KEY_LENGTH];
   bool commonread, configread, datastreamread, freqread, ruleread, baselineread;
   bool consistencyok, commandthreadinitialised, commandthreadfailed, dumpsta, dumplta, dumpkurtosis;
+  bool vgoscomplexvdifhack;
   int visbufferlength, databufferfactor, numdatasegments;
   int numdatastreams, numbaselines, numcoreconfs;
   int executeseconds, startmjd, startseconds, startns;
