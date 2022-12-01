@@ -36,9 +36,8 @@
 #include "dateutils.h"
 #include "codifio.h"
 
-
 #define CODIF_VERSION 3
-
+#define CODIF_EPOCH 2000
 
 int createCODIFHeader(codif_header *header, uint32_t dataarraylength, uint16_t threadid, uint16_t groupid, uint8_t bits,
 		      uint16_t nchan, uint16_t sampleblocklength, uint16_t period, uint64_t totalsamples, int iscomplex,
@@ -90,7 +89,7 @@ int setCODIFFrameBytes(codif_header *header, int bytes)
 int getCODIFEpochMJD(const codif_header *header)
 {
   int epoch = (int)header->epoch;
-  return ymd2mjd(2020 + epoch/2, (epoch%2)*6+1, 1);
+  return ymd2mjd(CODIF_EPOCH + epoch/2, (epoch%2)*6+1, 1);
 }
 
 int setCODIFNumChannels(codif_header *header, int numchannels)
@@ -170,7 +169,7 @@ int setCODIFFrameSecond(codif_header *header, int seconds)
 int setCODIFEpochMJD(codif_header *header, int mjd) {
   int year, month, day;
   mjd2ymd(mjd, &year, &month, &day);
-  header->epoch = (year-2020)*2;
+  header->epoch = (year-CODIF_EPOCH)*2;
   if (month>6) header->epoch++;
   return(CODIF_NOERROR);
 }
@@ -223,7 +222,7 @@ int setCODIFEpochTime(codif_header *header, time_t time) {
 
   gmtime_r(&time, &t);
   epoch = (t.tm_year-120)*2;
-  if (epoch<0)     // Year is year since 2020
+  if (epoch<0)     // Year is year since CODIF_EPOCH
     return(CODIF_ERROR);
   if (t.tm_mon>=6) {
     epoch++;
