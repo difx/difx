@@ -157,24 +157,8 @@ static void initluts()
 static int mark5_stream_frame_time_codif(const struct mark5_stream *ms, int *mjd, int *sec, double *ns)
 {
 	struct mark5_format_codif *v;
-	int seconds, days;
-	int refepoch;
 	unsigned long long fullframens;
 	codif_header *header;
-
-	/* table below is valid for year 2000.0 to 2032.0 and contains mjd on Jan 1 and Jul 1
-	 * for each year. */
-	static int mjdepochs[64] = 
-	{
-		51544, 51726, 51910, 52091, 52275, 52456, 52640, 52821,  /* 2000-2003 */
-		53005, 53187, 53371, 53552, 53736, 53917, 54101, 54282,  /* 2004-2007 */
-		54466, 54648, 54832, 55013, 55197, 55378, 55562, 55743,  /* 2008-2011 */
-		55927, 56109, 56293, 56474, 56658, 56839, 57023, 57204,  /* 2012-2015 */
-		57388, 57570, 57754, 57935, 58119, 58300, 58484, 58665,  /* 2016-2019 */
-		58849, 59031, 59215, 59396, 59580, 59761, 59945, 60126,  /* 2020-2023 */
-		60310, 60492, 60676, 60857, 61041, 61222, 61406, 61587,  /* 2024-2027 */
-		61771, 61953, 62137, 62318, 62502, 62683, 62867, 63048   /* 2028-2031 */
-	};
 
 	if(!ms)
 	{
@@ -187,25 +171,20 @@ static int mark5_stream_frame_time_codif(const struct mark5_stream *ms, int *mjd
 #endif
 	header = (codif_header*)(ms->frame);
 
-
-	seconds = getCODIFFrameEpochSecOffset(header);
-	refepoch = getCODIFEpoch(header);
-
-#warning "***** Where does leapseconds come from"
-	seconds += v->leapsecs;
-	days = seconds/86400;
-	seconds -= days*86400;
-	days += mjdepochs[refepoch];
-
 	fullframens = getCODIFFrameNumber(header)*ms->framens;
 	
 	if(mjd)
 	{
-		*mjd = days;
+	  *mjd = getCODIFFrameMJD(header);
 	}
 	if(sec)
 	{
-		*sec = seconds+fullframens/1000000000;
+#warning "***** Where does leapseconds come from"
+	  *sec = getCODIFFrameSecond(header)+fullframens/1000000000 + v->leapsecs;;
+	  if (*sec>86400) { // Could have bumped to next day. Max period ~ 18hrs)
+	    *sec -= 86400;
+	    if(mjd) *mjd++;
+	  }
 	}
 	if(ns)
 	{
