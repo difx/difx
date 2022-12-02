@@ -53,6 +53,14 @@ public:
 	std::vector<int> mag;
 };
 
+int reportIncompleteModes = 0;
+
+/* Call with report=1 to cause IncompleteModes.txt to be produced */
+void setReportIncompleteModes(int report)
+{
+	reportIncompleteModes = report;
+}
+
 std::ostream& operator << (std::ostream &os, const BitAssignments &x)
 {
 	int s = x.sign.size();
@@ -2490,24 +2498,27 @@ static int getModes(VexData *V, Vex *v)
 
 			if(type == VexSetup::SetupIncomplete)
 			{
-				if(antModeIncompleteFile == 0)
-				{
-					antModeIncompleteFile = fopen(antModeIncompleteFilename, "w");
-					if(antModeIncompleteFile == 0)
-					{
-						std::cerr << "Error: cannot open " << antModeIncompleteFilename << " for write." << std::endl;
-					}
-					fprintf(antModeIncompleteFile, 
-						"An entry is made below for each combination of antenna and mode in which\n"
-						"minimal critical information ($FREQ, $BBC, and $IF) are not linked.  These\n"
-						"antenna/mode combinations will not be configured for correlation.  Note that\n"
-						"this situation can arise for legitimate reasons, but it might be worth\n"
-						"inspecting this list for anything that is not expected.\n\n");
-				}
-				
 				++nIncomplete;
 
-				fprintf(antModeIncompleteFile, "%d : Incomplete description for antenna %s in mode %s\n", nIncomplete, antDefName, modeDefName);
+				if(reportIncompleteModes)
+				{
+					if(antModeIncompleteFile == 0)
+					{
+						antModeIncompleteFile = fopen(antModeIncompleteFilename, "w");
+						if(antModeIncompleteFile == 0)
+						{
+							std::cerr << "Error: cannot open " << antModeIncompleteFilename << " for write." << std::endl;
+						}
+						fprintf(antModeIncompleteFile, 
+							"An entry is made below for each combination of antenna and mode in which\n"
+							"minimal critical information ($FREQ, $BBC, and $IF) are not linked.  These\n"
+							"antenna/mode combinations will not be configured for correlation.  Note that\n"
+							"this situation can arise for legitimate reasons, but it might be worth\n"
+							"inspecting this list for anything that is not expected.\n\n");
+					}
+					
+					fprintf(antModeIncompleteFile, "%d : Incomplete description for antenna %s in mode %s\n", nIncomplete, antDefName, modeDefName);
+				}
 
 				continue;
 			}

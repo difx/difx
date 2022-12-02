@@ -3215,6 +3215,9 @@ int main(int argc, char **argv)
 	command = "rm -f " + missingDataFile;
 	system(command.c_str());
 
+	/* All reports of incomplete modes to be presented */
+	setReportIncompleteModes(1);
+
 	V = loadVexFile(P->vexFile, &nWarn);
 	if(!V)
 	{
