@@ -53,7 +53,7 @@ void usage()
 	printf("Environment variables used:\n");
 	printf("  DIFX_VERSION : to enforce DiFX version compatibility\n");
 	printf("  DIFX_VMF_DATA : writable directory for caching downloaded VMF coefficients\n\n");
-	printf("This program takes a DiFX fileset (including the .imfile) and modifies the wet\n");
+	printf("This program takes a DiFX fileset (including the .im file) and modifies the wet\n");
 	printf("and dry troposphere values based on the Vienna Mapping Functions.  This program\n");
 	printf("retrieves the needed external data from http://vmf.geo.tuwien.ac.at .  The .im\n");
 	printf("file will be replaced with an updated version.\n\n");
