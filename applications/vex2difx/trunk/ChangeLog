@@ -52,7 +52,7 @@ Version 2.7.0
 * Don't quit if unused antenna's filelist is absent
 * In ANTENNA {} now can set ds_filelist to a list of filelists, each one creating its own DATASTREAM
 * oms2v2d: some new functionality to assist VLBA eVLBI
-* vex2difx: support override of data frame size with frameSize parametr of DATASTREAM
+* vex2difx: support override of data frame size with frameSize parameter of DATASTREAM
 * vexpeek: new verbose mode
 * oms2v2d: fix crash in some modes if no data for project is found
 * vexpeek: option to view station coordinates
