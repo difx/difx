@@ -42,7 +42,7 @@ from time import gmtime, time
 program = 'makefits'
 version = '1.1'
 author  = 'Walter Brisken'
-verdate = '20221025'
+verdate = '20221203'
 
 calfiles = 'tsys flag pcal weather *.*.flag *.*.weather *.*.pcal *.*.tsys *.*.cablecal *.*.gain'
 
@@ -299,8 +299,7 @@ class JobList:
 			binrange = self.npsrbins
 		for b in range(binrange):
 			for s in range(self.nsrcfiles):
-				initcmd = 'difx2fits -B %d --phasecentre %d %%s ' % (b, s)
-				cmd = initcmd % options
+				cmd = 'difx2fits -B %d --phasecentre %d %s ' % (b, s, options)
 				if profilemode:
 					cmd += '--profilemode '
 				for j in self.jobs:
