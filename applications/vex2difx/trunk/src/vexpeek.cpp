@@ -41,8 +41,8 @@
 #include "testvex.h"
 
 const std::string program("vexpeek");
-const std::string version("0.17");
-const std::string verdate("20220915");
+const std::string version("0.18");
+const std::string verdate("20221209");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -64,6 +64,7 @@ void usage(const char *pgm)
 	std::cout << "        --scans2 : print list of scans with bands, number of stations and times" << std::endl;
 	std::cout << "                 - include twice to see nChan, nBit and bandwidth as well" << std::endl;
 	std::cout << "  --scans=<ant> : print list of scans for antenna <ant>" << std::endl;
+	std::cout << "  --scanfreqs : print tuning information for each scan" << std::endl;
 	std::cout << "  -r or --sources : print list of sources and their coordinates" << std::endl;
 	std::cout << "  -u or --diskusage : print disk usage (GB)" << std::endl;
 	std::cout << "  -m or --modules : print disk modules used (from TAPELOG_OBS)" << std::endl;
@@ -263,6 +264,26 @@ void scanList(const VexData *V)
 	}
 }
 
+void scanFreqs(const VexData *V)
+{
+	for(unsigned int s = 0; s < V->nScan(); ++s)
+	{
+		const VexScan *scan = V->getScan(s);
+		const VexMode *mode = V->getModeByDefName(scan->modeDefName);
+
+		std::cout << std::left << std::setw(8) << scan->defName << " ";
+		std::cout << std::left << std::setw(12) << scan->sourceDefName << " ";
+		std::cout << std::left << std::setw(12) << scan->modeDefName << "   ";
+
+		for(std::vector<VexSubband>::const_iterator it = mode->subbands.begin(); it != mode->subbands.end(); ++it)
+		{
+			std::cout << (it->freq *1.0e-6) << " " << (it->bandwidth*1.0e-6) << " " << it->sideBand << " " << it->pol << "  ";
+		}
+		std::cout << std::endl;
+	}
+
+}
+
 void scanListWithTimes(const VexData *V)
 {
 	for(unsigned int s = 0; s < V->nScan(); ++s)
@@ -424,6 +445,7 @@ int main(int argc, char **argv)
 	int doScanList = 0;
 	int doScan2List = 0;
 	int doSourceList = 0;
+	int doScanFreqs = 0;
 	int doFormat = 0;
 	int doUsage = 0;
 	int doModules = 0;
@@ -477,6 +499,11 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[a], "--scans2") == 0)
 		{
 			++doScan2List;
+			doSummary = 0;
+		}
+		else if(strcmp(argv[a], "--scanfreqs") == 0)
+		{
+			++doScanFreqs;
 			doSummary = 0;
 		}
 		else if(strcmp(argv[a], "-r") == 0 ||
@@ -627,6 +654,10 @@ int main(int argc, char **argv)
 	if(doCoords)
 	{
 		antCoords(V);
+	}
+	if(doScanFreqs)
+	{
+		scanFreqs(V);
 	}
 
 	delete V;

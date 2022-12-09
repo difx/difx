@@ -1,6 +1,7 @@
 Version 3.0.0
 -------------
 * Version bump prior to DiFX 2.8 branching
+* vexpeek: --scanfreqs option
 
 Version 2.99.3
 ~~~~~~~~~~~~~~
