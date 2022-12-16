@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '3.0.6'
-VERDATE = '20210914'
+VERSION = '3.0.7'
+VERDATE = '20221216'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -661,7 +661,7 @@ def runDirect(fileBase, machinesCache, restartSeconds):
                 print(args.commentStart.replace('%B', fileBase).replace('%b', fileBase.split('/')[-1]))
         t0 = time()
         if args.logFile != None:
-                system(cmd + " >> " + args.logFile + " 2>&1")
+                system(cmd + " >> " + args.logFile.replace('%b', fileBase.split('/')[-1]) + " 2>&1")
         else:
                 system(cmd)
         t1 = time()
