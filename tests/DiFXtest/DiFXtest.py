@@ -212,11 +212,15 @@ def runtest(testname):
 
   
   arg = "vex2difx test-" + testname + ".v2d"
-  #print(arg)
-  proc =subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_vex2difxlog,stderr=f_vex2difxerr)
-  proc.wait()
 
-  #quit()
+  try:
+    proc =subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_vex2difxlog,stderr=f_vex2difxerr,check=True)
+  except subprocess.CalledProcessError as e:
+    print("vex2difx failed check log files:")
+    print(vex2difxlogfile)
+    print(vex2difxerrfile)
+    print()
+    raise()
 
   difxcalclogfile = working_directory + "/difxcalc.log"
   difxcalcerrfile = working_directory + "/difxcalc.error"
@@ -228,12 +232,22 @@ def runtest(testname):
   else:
     arg = "difxcalc test-" + testname + ".calc", 
 
-  print(arg)
+  
+ 
+  proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_difxcalclog,stderr=f_difxcalcerr,check=True)
+  contents = os.listdir(working_directory)
+  im_filename = "" 
+  for item in contents:
+    if (item[-3:] == ".im"):
+      im_filename = item
 
-  subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_difxcalclog,stderr=f_difxcalcerr)
-  proc.wait()
+  if not im_filename:
+    print("difxcalc failed check log files:")
+    print(difxcalclogfile)
+    print(difxcalcerrfile)
+    quit()
 
-  #quit()
+
   if (testname == "rdv70" or testname == "v252f") :
     arg = "mpirun -machinefile machines -np 8 mpifxcorr test-" + testname + "_1.input"
   elif (testname == "rdv70-gpu" or testname == "v252f-gpu") :
@@ -242,28 +256,20 @@ def runtest(testname):
     arg = "mpirun -machinefile machines -np 4 mpifxcorr --usegpu test-" + testname + ".input"
   else:
     arg = "mpirun -machinefile machines -np 4 mpifxcorr test-" + testname + ".input"
-  print(arg)
+ 
   #quit()
   difxlogfile = working_directory + "/mpifxcorr.log"
   difxerrfile = working_directory + "/mpifxcorr.error"
   f_difxlog = open(difxlogfile,"w")
   f_difxerr = open(difxerrfile,"w")
-
-  mpifxcorr_done = False
-  # DiFX fails sometimes, re-run until it succeeds (need better fix here...)
-  # limited to 5 tries
-  cc = 0
-  while (mpifxcorr_done == False):
-    cc = cc+1
-    #print(arg)
-    proc = subprocess.call(arg,cwd=working_directory,shell=True,stdout=f_difxlog,stderr=f_difxerr)
-    contents = os.listdir(working_directory)
-    for item in contents: 
-      if (item[-5:] == '.difx'):
-        mpifxcorr_done = True
-    if (cc >= 5):
-      mpifxcorr_done = True
-  cc = 0
+  try:
+    proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_difxlog,stderr=f_difxerr,check=True)
+  except subprocess.CalledProcessError as e:
+    print("mpifxcorr failed check log files:")
+    print(difxlogfile)
+    print(difxerrfile) 
+    print()
+    raise()
   difx2fitslogfile = working_directory + "/difx2fits.log"
   difx2fitserrfile = working_directory + "/difx2fits.error"
   f_difx2fitslog = open(difx2fitslogfile,"w")
@@ -272,14 +278,19 @@ def runtest(testname):
   
   if (testname == "rdv70" or testname == "v252f") :
     arg = "difx2fits test-" + testname + "_1"
-    proc = subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_difx2fitslog,stderr=f_difx2fitserr)
-    proc.wait()
   else:  
     arg = "difx2fits test-" + testname
-    proc = subprocess.Popen(arg,cwd=working_directory,shell=True,stdout=f_difx2fitslog,stderr=f_difx2fitserr)
-    proc.wait()
+ 
+  try:
+    proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_difx2fitslog,stderr=f_difx2fitserr,check=True)
+  except subprocess.CalledProcessError as e:
+    print("difx2fits failed check log files:")
+    print(difx2fitslogfile)
+    print(difx2fitserrfile)
+    print()
+    raise()
 
-
+  
 def compare_results(testname, abstol, reltol):
 
   print("Comparing results for test " + testname)
@@ -298,8 +309,7 @@ def compare_results(testname, abstol, reltol):
   binfiles2,inputfiles2 = get_binary_files(results_directory) 
   benchmark_binfile = binfiles2[0]
   arg = "diffDiFX.py " + binfile + " " + benchmark_binfile + " " + "-i " + inputfile + " > binary_diff.log"   
-  proc = subprocess.Popen(arg,cwd=working_directory,shell=True) 
-  proc.wait() 
+  proc = subprocess.run(arg,cwd=working_directory,shell=True,check=True) 
   fits_file = get_fits_file(working_directory)
   fits_file_benchmark = get_fits_file(results_directory)
   
@@ -496,8 +506,8 @@ def create_test_data():
   TEST1vdiferrfile = "testdata/TEST1.vdif.error"
   f_TEST1vdiflog = open(TEST1vdiflog,"w")
   f_TEST1vdiferrfile = open(TEST1vdiferrfile,"w")
-  args = "generateVDIF -seed="+str(SEED1)+" -w 4 -b 2 -C 1 -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.5 -year 2020 -dayno 100 -time 07:00:00 testdata/TEST1.vdif"
-  subprocess.call(args,shell=True,stdout=f_TEST1vdiflog,stderr=f_TEST1vdiferrfile)
+  args = "generateVDIF -seed="+str(SEED1)+" -w 4 -b 2 -C 1 -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.5 -year 2020 -dayno 100 -time 07:00:00 testdata/TEST1.vdif" 
+  subprocess.run(args,shell=True,stdout=f_TEST1vdiflog,stderr=f_TEST1vdiferrfile,check=True)
 
 
   TEST2_usbvdiflog = "testdata/TEST2-usb.vdif.log"
@@ -505,7 +515,7 @@ def create_test_data():
   f_TEST2_usbvdiflog = open(TEST2_usbvdiflog,"w")
   f_TEST2_usbvdiferrfile = open(TEST2_usbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l " + str(DURATION) + " -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 testdata/TEST2-usb.vdif"
-  subprocess.call(args,shell=True,stdout=f_TEST2_usbvdiflog,stderr=f_TEST2_usbvdiferrfile)
+  subprocess.run(args,shell=True,stdout=f_TEST2_usbvdiflog,stderr=f_TEST2_usbvdiferrfile,check=True)
   
   
   ## LSB Real
@@ -514,7 +524,7 @@ def create_test_data():
   f_TEST2_lsbvdiflog = open(TEST2_lsbvdiflog,"w")
   f_TEST2_lsbvdiferrfile = open(TEST2_lsbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l " + str(DURATION) + " -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -lsb testdata/TEST2-lsb.vdif"
-  subprocess.call(args,shell=True,stdout=f_TEST2_lsbvdiflog,stderr=f_TEST2_lsbvdiferrfile)
+  subprocess.run(args,shell=True,stdout=f_TEST2_lsbvdiflog,stderr=f_TEST2_lsbvdiferrfile,check=True)
   
   
   ## Complex (single side band)
@@ -523,21 +533,21 @@ def create_test_data():
   f_TEST1_complex_usbvdiflog = open(TEST1_complex_usbvdiflog,"w")
   f_TEST1_complex_usbvdiferrfile = open(TEST1_complex_usbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED1)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.5 -year 2020 -dayno 100 -time 07:00:00 -complex testdata/TEST1-complex-usb.vdif"
-  subprocess.call(args,shell=True,stdout=f_TEST1_complex_usbvdiflog,stderr=f_TEST1_complex_usbvdiferrfile)
+  subprocess.run(args,shell=True,stdout=f_TEST1_complex_usbvdiflog,stderr=f_TEST1_complex_usbvdiferrfile,check=True)
 
   TEST2_complex_usbvdiflog = "testdata/TEST2-complex-usb.vdif.log"
   TEST2_complex_usbvdiferrfile = "testdata/TEST2-complex-usb.vdif.error"
   f_TEST2_complex_usbvdiflog = open(TEST2_complex_usbvdiflog,"w")
   f_TEST2_complex_usbvdiferrfile = open(TEST2_complex_usbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert testdata/TEST2-complex-usb.vdif"
-  subprocess.call(args,shell=True,stdout=f_TEST2_complex_usbvdiflog,stderr=f_TEST2_complex_usbvdiferrfile)
+  subprocess.run(args,shell=True,stdout=f_TEST2_complex_usbvdiflog,stderr=f_TEST2_complex_usbvdiferrfile,check=True)
   
   TEST2_complex_lsbvdiflog = "testdata/TEST2-complex-lsb.vdif.log"
   TEST2_complex_lsbvdiferrfile = "testdata/TEST2-complex-lsb.vdif.error"
   f_TEST2_complex_lsbvdiflog = open(TEST2_complex_lsbvdiflog,"w")
   f_TEST2_complex_lsbvdiferrfile = open(TEST2_complex_lsbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -lsb testdata/TEST2-complex-lsb.vdif"
-  subprocess.call(args,shell=True,stdout=f_TEST2_complex_lsbvdiflog,stderr=f_TEST2_complex_lsbvdiferrfile)
+  subprocess.run(args,shell=True,stdout=f_TEST2_complex_lsbvdiflog,stderr=f_TEST2_complex_lsbvdiferrfile,check=True)
   
 
 
@@ -547,7 +557,7 @@ def create_test_data():
   f_TEST2_dsb_usbvdiflog = open(TEST2_dsb_usbvdiflog,"w")
   f_TEST2_dsb_usbvdiferrfile = open(TEST2_dsb_usbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -doublesideband testdata/TEST2-dsb-usb.vdif"
-  subprocess.call(args,shell=True,stdout=f_TEST2_dsb_usbvdiflog,stderr=f_TEST2_dsb_usbvdiferrfile)
+  subprocess.run(args,shell=True,stdout=f_TEST2_dsb_usbvdiflog,stderr=f_TEST2_dsb_usbvdiferrfile,check=True)
 
 
 
@@ -556,7 +566,7 @@ def create_test_data():
   f_TEST2_dsb_lsbvdiflog = open(TEST2_dsb_lsbvdiflog,"w")
   f_TEST2_dsb_lsbvdiferrfile = open(TEST2_dsb_lsbvdiferrfile,"w")
   args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -doublesideband -lsb testdata/TEST2-dsb-lsb.vdif"
-  subprocess.call(args,shell=True,stdout=f_TEST2_dsb_lsbvdiflog,stderr=f_TEST2_dsb_lsbvdiferrfile)
+  subprocess.run(args,shell=True,stdout=f_TEST2_dsb_lsbvdiflog,stderr=f_TEST2_dsb_lsbvdiferrfile,check=True)
   
   f_TEST1vdiflog.close()
   f_TEST1vdiferrfile.close()
@@ -573,7 +583,7 @@ def create_test_data():
   f_TEST2_dsb_usbvdiflog.close()
   f_TEST2_dsb_usbvdiferrfile.close()
   f_TEST2_dsb_lsbvdiflog.close()
-  u_TEST2_dsb_lsbvdiferrfile.close()
+  f_TEST2_dsb_lsbvdiferrfile.close()
 
 
 def display_test_results(passfail):
@@ -608,8 +618,8 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("-g","--generateVDIF", help="Generate VDIF data? (yes/[no])",default="no")
   parser.add_argument("-u","--updatetest", help="Update the default test results (yes/[no])",default="no") 
-  parser.add_argument("-a","--abstol",help="Absolute tolerance for FITS file comparison (default = 1e-17)",default=1e-17)
-  parser.add_argument("-r","--reltol",help="Relative tolerance for FITS file comparison (default = 1e-2)",default=0.01)
+  parser.add_argument("-a","--abstol",help="Absolute tolerance for FITS file comparison (default = 1e-6)",default=1e-6)
+  parser.add_argument("-r","--reltol",help="Relative tolerance for FITS file comparison (default = 0.0)",default=0.00)
   parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? ([yes]/no)",default="yes")
   parser.add_argument("-t","--testgpu",help="run difx in gpu mode and compare results with benchmark (yes/[no])",default="no")
 
@@ -618,7 +628,7 @@ def main():
   generateVDIF = generateVDIF.upper()
   updatetest = input_args.updatetest
   updatetest = updatetest.upper()
-  reltol = input_args.reltol
+  reltol = float(input_args.reltol)
   abstol = float(input_args.abstol)
   download = input_args.download
   download = download.upper()
