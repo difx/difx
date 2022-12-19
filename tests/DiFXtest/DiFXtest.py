@@ -475,6 +475,7 @@ def repackage_tests(testnames):
   subprocess.call(tar_command,shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 
+
 def unpackage_tests(testnames):
 
   print("Unpacking test tarball.")
@@ -684,13 +685,17 @@ def main():
 
  
   # Run comparison with the results, gpu comparisons also compare gpu vs. cpu results
-  for key in passfail:
-    print(key)
+  for key in passfail: 
     if (key[-7:] == "-vs-cpu"):
       passfail[key] = compare_results_gpu_v_cpu(key,abstol,reltol)
     else:
       passfail[key] = compare_results(key,abstol,reltol)
-  
+    
+  # Always want to make sure the gpu test gets added to the tar ball even if it wasn't run
+  # this way the setup files and directory will be there if it is run in the future
+  if (testgpu == "NO"):
+    test_name_list.extend(gpu_compatable_test_name_list)  
+
   if (updatetest == "YES"):
     for testname in test_name_list:
       update_test(testname)
