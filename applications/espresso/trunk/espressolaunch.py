@@ -184,7 +184,7 @@ def run_batch(corrjoblist, outdir):
         except:
             pass
 
-    # Just wait until the jobs have completed. Operator hits ^C to progress.
+    # Just wait until the jobs have completed. Operator hits ^C to cancel jobs and exit.
     # Enter will provide queue report.
     #jobids = get_jobids(sorted(corrjoblist.keys()), batch_launch)
     while True:

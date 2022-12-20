@@ -454,7 +454,7 @@ class batchenv:
             self.cancel = "scancel"
             self.stats = (
                     "sacct -j {:s} -X --format "
-                    "JobName%-15,JobId,elapsed,NNodes,Time,Reserved")
+                    "JobName%-15,JobId,elapsed,NNodes,NCPUS,Time,Reserved")
             self.q = self._batchq_slurm(self._jobnames)
             self.speedup = self._slurm_speedup
         elif self._style == "pbs":
@@ -513,7 +513,7 @@ class batchenv:
             if len(jobname) > longest:
                 longest = len(jobname)
         squeue_format = (
-                "%8i %8u %.{:d}j %.3t %.19S %.19e %.10L %.5D %.10Q".format(
+                "%8i %8u %.{:d}j %.3t %.19S %.19e %.10L %.5D %.5C %.10Q".format(
                 longest+3))
         batch_q = 'squeue -o "{0:s}" -n {1:s}'.format(
                 squeue_format, ",".join(jobnames))
