@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2021 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2007-2022 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1345,7 +1345,7 @@ static DifxInput *parseDifxInputFreqTable(DifxInput *D, const DifxParameters *ip
 		//D->nOutChan = D->freq[b].nChan/D->freq[b].specAvg;
 		//DiFX outputbands: nInChan, nOutChan update is postponed till parseDifxInputBaselineTable() because
 		// only the baseline table tells which visibility data/frequencies are outputted vs which are internal-temporary
-                D->corrSpecAvg = D->freq[b].specAvg;
+		D->corrSpecAvg = D->freq[b].specAvg;
 	}
 	
 	return D;
@@ -4646,14 +4646,44 @@ int DifxInputGetDatastreamIdsByAntennaId(int *dsIds, const DifxInput *D, int ant
 	return n;
 }
 
+int DifxInputGetMaxDatastreamsPerAntenna(const DifxInput *D)
+{
+	int a;
+	int m = 0;
+
+	if(!D)
+	{
+		return 0;
+	}
+
+	for(a = 0; a < D->nAntenna; ++a)
+	{
+		int am, d;
+
+		am = 0;
+		for(d = 0; d < D->nDatastream; ++d)
+		{
+			if(D->datastream[d].antennaId == a)
+			{
+				++am;
+			}
+		}
+		if(am > m)
+		{
+			m = am;
+		}
+	}
+
+	return m;
+}
+
 /* Here "Original" means indexes within the job rather than remapped indices */
-int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInput *D, int antennaId, int jobId, int maxCount, int **Ds_overflow)
+int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInput *D, int antennaId, int jobId, int maxCount)
 {
 	int n;
 	int *antennaDsIds;
 	int nds = 0;
 
-        *Ds_overflow = 0;
 	if(D->nJob <= jobId)
 	{
 		return -2;
@@ -4662,13 +4692,6 @@ int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInpu
 	/* get all datastreams associated with the particular antenna */
 	antennaDsIds = (int *)calloc(maxCount, sizeof(int));
 	n = DifxInputGetDatastreamIdsByAntennaId(antennaDsIds, D, antennaId, maxCount);
-
-        if ( n > maxCount){
-/*
-/* --------- Signaling of a mistake: the number of datastreams > maxCount
-*/
-             *Ds_overflow = n;
-        }
 
 	if(n > 0)
 	{
