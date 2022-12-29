@@ -273,7 +273,11 @@ static double ***getDifxScaleFactor(const DifxInput *D, const struct CommandLine
 	int *bits;
 	double ***scale;
 	int polId, antennaId, a1, a2;
+	int maxDatastreams;
+	int *dsIds;
 	
+	maxDatastreams = DifxInputGetMaxDatastreamsPerAntenna(D);
+	dsIds = (int *)malloc(maxDatastreams*sizeof(int));
 	antScale = (double *)calloc(D->nAntenna, sizeof(double));
 	bits = (int *)calloc(D->nAntenna, sizeof(int));
 	if(!antScale || !bits)
@@ -314,9 +318,6 @@ static double ***getDifxScaleFactor(const DifxInput *D, const struct CommandLine
 	for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 	{
 		/* Now all scale factors here are antenna-based voltage scalings -WFB 20120312 */
-
-		const int maxDatastreams = 8;
-		int dsIds[maxDatastreams];
 		int n;
 		int quantBits;
 
@@ -401,6 +402,7 @@ static double ***getDifxScaleFactor(const DifxInput *D, const struct CommandLine
 
 	free(antScale);
 	free(bits);
+	free(dsIds);
 
 	return scale;
 }

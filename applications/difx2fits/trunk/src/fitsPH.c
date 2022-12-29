@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2021 by Walter Brisken & John Morgan & Leonid Petrov *
+ *   Copyright (C) 2008-2022 by Walter Brisken & John Morgan & Leonid Petrov *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -959,8 +959,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
 	const struct CommandLineOptions *opts)
 {
-	const int maxDatastreams = 256;	// per antenna
-
 	char stateFormFloat[8];
 	char toneFormDouble[8];
 	char toneFormFloat[8];
@@ -1037,7 +1035,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int use_cable_cal;
 	const char* use_cable_cal_str;
 	char antName[DIFXIO_NAME_LENGTH];
-	static int nDs_overflowError = 0;
+	int maxDatastreams;	/* per antenna */
+	int *originalDsIds;	/* datastream IDs in the jobs that were run */
 
 	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
 	 * wants, namely 0xFFFFFFFF, or 0xFFFFFFFFFFFFFFFF for double */
@@ -1053,6 +1052,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	{
 		return D;
 	}
+
+	maxDatastreams = DifxInputGetMaxDatastreamsPerAntenna(D);
+	originalDsIds = (int *)malloc(maxDatastreams * sizeof(int));
 
 	printf("\n");
 	nBand = D->nIF;
@@ -1188,6 +1190,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	if(nTone == 0)
 	{
 		free(pcalSourceFile);
+		free(fitsbuf);
+		free(jobxref);
+		free(originalDsIds);
 
 		return D;
 	}
@@ -1229,26 +1234,17 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 	{
 		int maxDifxTones;	/* maximum number of tones expected for any job on a given antenna, summed over all datastreams */
-		int jobId, jobIdUnsorted, *Ds_overflow ;
+		int jobId, jobIdUnsorted;
 
 		maxDifxTones = 0;
 
 		for(jobId = 0; jobId < D->nJob; ++jobId)
 		{
-			int originalDsIds[maxDatastreams];	/* datastream IDs in the jobs that was run */
 			int nds, nt;
 			int d;
 
-			nds = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(originalDsIds, D, antennaId, jobId, maxDatastreams, &Ds_overflow);
-                        if ( Ds_overflow > 0 ){
-			     if ( nDs_overflowError < 8 ){
-			          printf("\nWarning: DifxInput2FitsPH: antenna %s has %d datastreams which exceeds the maximum of %d datastreams. Output pcal may be grabage. Need increase constant maxDatastreams ", antName, Ds_overflow, maxDatastreams);
-                             }
-			     if ( nDs_overflowError == 8 ){
-			          printf(" ^-NOte: No more warnings of this kind will be produced\n");
-                             }
-                             nDs_overflowError = nDs_overflowError + 1;
-                        }
+			nds = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(originalDsIds, D, antennaId, jobId, maxDatastreams);
+
 			if(nds <= 0)
 			{
 				/* antenna not present in this job */
@@ -1340,12 +1336,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			double mjdLast = 0.0;
 			int nDifxAntennaTones;
 			int freqSetId;
-			int originalDsIds[maxDatastreams];
 			int originalDsId = -1;
 			int nds;	// number of datastreams for this antenna for this job
 			int d;
 			int ndumps = 0;	// How many times pcal data have been dumped
-                        int *Ds_overflow;
 			int nLine, nLines;
 
 			printf(".");
@@ -1362,7 +1356,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				/* Antenna antennaId did not observe in this job and did not produce a phase calibration file to parse */
 				break;
 			}
-			nds = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(originalDsIds, D, antennaId, jobId, maxDatastreams, &Ds_overflow);
+			nds = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(originalDsIds, D, antennaId, jobId, maxDatastreams);
 
 			if(nds <= 0)
 			{
@@ -1939,9 +1933,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	}	/* end antenna loop */
 
-	free(fitsbuf);
-	free(jobxref);
-
 	for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 	{
 		if(pcalSourceFile[antennaId])
@@ -1950,6 +1941,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		}
 	}
 	free(pcalSourceFile);
+	free(fitsbuf);
+	free(jobxref);
+	free(originalDsIds);
 
 	printf("\n");
 

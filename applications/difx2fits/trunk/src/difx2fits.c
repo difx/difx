@@ -1075,13 +1075,17 @@ static int needToVanVleck(DifxInput **Dset, int n)
 
 	for(i = 0; i < n; ++i)
 	{
+		int maxDatastreams;
+		int *dsIds;
+
 		D = Dset[i];
 		q = 0;
 
+		maxDatastreams = DifxInputGetMaxDatastreamsPerAntenna(D);
+		dsIds = (int *)malloc(maxDatastreams*sizeof(int));
+
 		for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 		{
-			const int maxDatastreams = 8;
-			int dsIds[maxDatastreams];
 			int n;
 			int quantBits;
 
@@ -1102,12 +1106,21 @@ static int needToVanVleck(DifxInput **Dset, int n)
 			}
 			else if(q != quantBits)	/* if different antennas have different quantization, then we must do van vleck */
 			{
-				return 1;
+				q = -1;
+				break;
 			}
 			if(q > 2)	/* any quantization more than two bits should be handled here */
 			{
-				return 1;
+				q = -1;
+				break;
 			}
+		}
+		
+		free(dsIds);
+
+		if(q == -1)
+		{
+			return 1;
 		}
 	}
 
