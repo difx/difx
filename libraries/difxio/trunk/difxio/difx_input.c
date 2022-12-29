@@ -255,6 +255,7 @@ void fprintDifxInputSummary(FILE *fp, const DifxInput *D)
 	//fprintf(fp, "  Input Channels = %d\n", D->nInChan);
 	fprintf(fp, "  Start Channel = %d\n", D->startChan);
 	fprintf(fp, "  Spectral Avg = %d\n", D->specAvg);
+	fprintf(fp, "  Corr Spectral Avg = %d\n", D->corrSpecAvg);
 	//fprintf(fp, "  Output Channels = %d\n", D->nOutChan);
 
 	fprintf(fp, "  nJob = %d\n", D->nJob);
@@ -1344,6 +1345,7 @@ static DifxInput *parseDifxInputFreqTable(DifxInput *D, const DifxParameters *ip
 		//D->nOutChan = D->freq[b].nChan/D->freq[b].specAvg;
 		//DiFX outputbands: nInChan, nOutChan update is postponed till parseDifxInputBaselineTable() because
 		// only the baseline table tells which visibility data/frequencies are outputted vs which are internal-temporary
+                D->corrSpecAvg = D->freq[b].specAvg;
 	}
 	
 	return D;
@@ -4645,12 +4647,13 @@ int DifxInputGetDatastreamIdsByAntennaId(int *dsIds, const DifxInput *D, int ant
 }
 
 /* Here "Original" means indexes within the job rather than remapped indices */
-int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInput *D, int antennaId, int jobId, int maxCount)
+int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInput *D, int antennaId, int jobId, int maxCount, int **Ds_overflow)
 {
 	int n;
 	int *antennaDsIds;
 	int nds = 0;
 
+        *Ds_overflow = 0;
 	if(D->nJob <= jobId)
 	{
 		return -2;
@@ -4659,6 +4662,13 @@ int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInpu
 	/* get all datastreams associated with the particular antenna */
 	antennaDsIds = (int *)calloc(maxCount, sizeof(int));
 	n = DifxInputGetDatastreamIdsByAntennaId(antennaDsIds, D, antennaId, maxCount);
+
+        if ( n > maxCount){
+/*
+/* --------- Signaling of a mistake: the number of datastreams > maxCount
+*/
+             *Ds_overflow = n;
+        }
 
 	if(n > 0)
 	{

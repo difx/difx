@@ -694,6 +694,7 @@ typedef struct
 	double refFreq;		/* some sort of reference frequency, (MHz) */
 	int startChan;		/* first (unaveraged) channel to write, only set for difx2fits */
 	int specAvg;		/* number of channels to average post corr. */
+	int corrSpecAvg;	/* number of channels to average by the correlator. */
 	int nInChan;		/* number of correlated channels, only set for difx2fits */
 	int nOutChan;		/* number of channels to write to FITS, only set for difx2fits */
 				/* Statchan, nInChan and nOutChan are all set haphazardly, and
@@ -1043,7 +1044,7 @@ int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId);
 int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, int antennaId);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
 int DifxInputGetDatastreamIdsByAntennaId(int *dsIds, const DifxInput *D, int antennaId, int maxCount);
-int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInput *D, int antennaId, int jobId, int maxCount);
+int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInput *D, int antennaId, int jobId, int maxCount, int** ds_overflow);
 int DifxInputGetMaxTones(const DifxInput *D);
 int DifxInputGetMaxPhaseCentres(const DifxInput *D);
 int DifxInputGetFreqIdByBaselineFreq(const DifxInput *D, int baselineId, int baselineFreq);

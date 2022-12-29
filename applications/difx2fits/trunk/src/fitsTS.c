@@ -812,7 +812,7 @@ static int processTsysFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
-	const int MaxDatastreamsPerAntenna=8;
+	const int MaxDatastreamsPerAntenna = 256;
 
 	char bandFormFloat[8];
 	int origDsIds[MaxDatastreamsPerAntenna];
@@ -843,6 +843,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 	const char *tcalFilename;
 	int year, month, day;
 	int nRec = 0;
+	int *Ds_overflow;
 
 	if(D == 0)
 	{
@@ -919,7 +920,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 			{
 				int i;
 
-				n = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(origDsIds, D, antId, jobId, MaxDatastreamsPerAntenna);
+				n = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(origDsIds, D, antId, jobId, MaxDatastreamsPerAntenna, &Ds_overflow);
 				for(i = 0; i < n; ++i)
 				{
 					v = getDifxTsys(D, p_fits_keys, jobId, antId, origDsIds[i], opts, nRowBytes, fitsbuf, nColumn, columns, out, T, nRec);
