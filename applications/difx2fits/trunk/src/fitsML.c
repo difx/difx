@@ -80,7 +80,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 	int nRowBytes;
 	char str[80];
 	int32_t arrayId1;
-	int a, i, k, p, s;
+	int i, k, p, s;
 	double shiftedClock[array_N_POLY];
 	float freqVar[array_MAX_BANDS];
 	float faraday;
@@ -201,29 +201,17 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 
 		for(p = 0; p < np; ++p)
 		{
-			for(a = 0; a < config->nAntenna; ++a)
+			int antId;
+
+			for(antId = 0; antId < scan->nAntenna; ++antId)
 			{
 				const DifxAntenna *da;
 				const DifxPolyModel *P;
-				int dsId, antId;
 				int32_t antId1;
 				double ppoly[array_MAX_BANDS][array_N_POLY];
 				double gpoly[array_N_POLY];
 				double prate[array_MAX_BANDS][array_N_POLY];
 				double grate[array_N_POLY];
-
-				dsId = config->ant2dsId[a];
-				if(dsId < 0 || dsId >= D->nDatastream)
-				{
-					continue;
-				}
-				/* convert to D->antenna[] index ... */
-				antId = D->datastream[dsId].antennaId;
-
-				if(antId < 0 || antId >= scan->nAntenna)
-				{
-					continue;
-				}
 
 				da = D->antenna + antId;
 
