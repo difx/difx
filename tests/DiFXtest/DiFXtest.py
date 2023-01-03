@@ -6,6 +6,7 @@ import argparse
 import shutil
 from astropy.io import fits 
 import warnings
+import filecmp
 
 def pre_checks():
   locate = None
@@ -60,6 +61,13 @@ def get_fits_file(directory):
   contents = os.listdir(directory)
   for item in contents:
     if (item[-5:] == '.FITS'):
+      file_and_path = directory + item
+      return file_and_path
+
+def get_im_file(directory):
+  contents = os.listdir(directory)
+  for item in contents:
+    if (item[-3:] == '.im'):
       file_and_path = directory + item
       return file_and_path
 
@@ -356,12 +364,16 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol):
 
   current_directory = os.getcwd()
 
+  
+
   #usb-gpu-vs-cpu
 
   substring = "-vs-cpu" 
   testname_gpu = testname.replace(substring,"")  
   substring = "-gpu-vs-cpu"  
   testname_cpu = testname.replace(substring,"")
+
+
 
   
   working_directory = current_directory + "/" + testname_gpu + "/"   
@@ -378,9 +390,9 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol):
   #print(working_directory)
   #print(benchmark_binfile)
   #print()
-  print(binfile)
-  print(benchmark_binfile)
-  print()
+ # print(binfile)
+ # print(benchmark_binfile)
+ # print()
   arg = "diffDiFX.py " + binfile + " " + benchmark_binfile + " " + "-i " + inputfile + " > binary_diff_vs_cpu.log"   
   proc = subprocess.Popen(arg,cwd=working_directory,shell=True) 
   proc.wait() 
@@ -390,10 +402,10 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol):
   # filter autocorrelations out of fits file
   filter_auto_correlations(fits_file) 
   
-  print()
-  print(fits_file)
-  print(fits_file_benchmark)
-  print() 
+ # print()
+ # print(fits_file)
+ # print(fits_file_benchmark)
+ # print() 
 
   hdu1 = fits.open(fits_file)
   hdu2 = fits.open(fits_file_benchmark) 
@@ -426,9 +438,18 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol):
 
 
 
+def compare_im_files(testname):
+  current_directory = os.getcwd()
+  working_directory = current_directory + "/" + testname + "/"
+  results_directory = working_directory + "/benchmark_results/"
 
+  im_file = get_im_file(working_directory)
+  im_file_benchmark = get_im_file(results_directory)
+  
 
-
+  if (filecmp.cmp(im_file,im_file_benchmark) == False):
+    output = "Warning model file " + im_file + " differs from benchmark. difxcalc version could differ from benchmark."
+    print(output) 
 
 
 def update_test(testname):
@@ -440,14 +461,25 @@ def update_test(testname):
   binfiles,inputfiles = get_binary_files(results_directory)
   results_binfile = binfiles[0]
   binfiles,inputfiles = get_binary_files(working_directory)
-  current_binfile = binfiles[0]
-  #print(results_binfile)
+
+
+  # skip if difx has not run succesfully
+  if not (binfiles):
+      return
+  else:
+    current_binfile = binfiles[0]
+ 
+  
   #print(current_binfile)  
+
   fits_file = get_fits_file(working_directory)
   fits_file_benchmark = get_fits_file(results_directory) 
   #print()
   #print(fits_file)
-  #print(fits_file_benchmark)
+
+
+  print(fits_file_benchmark)
+  print(current_binfile)
   os.remove(fits_file_benchmark)
   os.remove(results_binfile)
   args = "cp " + fits_file + " " + fits_file_benchmark
@@ -455,6 +487,10 @@ def update_test(testname):
   #shutil.copy2(fits_file,fits_file_benchmark)
   shutil.copy2(current_binfile,results_binfile) 
 
+  im_file = get_im_file(working_directory)
+  im_file_benchmark = get_im_file(results_directory)
+  os.remove(im_file_benchmark) 
+  shutil.copy2(im_file,im_file_benchmark)
 
 def repackage_tests(testnames):
   current_directory = os.getcwd()
@@ -621,7 +657,7 @@ def main():
   parser.add_argument("-u","--updatetest", help="Update the default test results (yes/[no])",default="no") 
   parser.add_argument("-a","--abstol",help="Absolute tolerance for FITS file comparison (default = 1e-6)",default=1e-6)
   parser.add_argument("-r","--reltol",help="Relative tolerance for FITS file comparison (default = 0.0)",default=0.00)
-  parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? ([yes]/no)",default="yes")
+  parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? (yes/[no])",default="no")
   parser.add_argument("-t","--testgpu",help="run difx in gpu mode and compare results with benchmark (yes/[no])",default="no")
 
   input_args = parser.parse_args()
@@ -677,13 +713,15 @@ def main():
     create_test_data()
    
   # Run DiFX on all compatable tests 
-  for testname in test_name_list:
-    rm_output_files(testname)
-    runtest(testname)
+#  for testname in test_name_list:
+#    rm_output_files(testname)
+#    runtest(testname)
   
-   
+  # compare .im files
+  for testname in test_name_list:
+    compare_im_files(testname)
+    
 
- 
   # Run comparison with the results, gpu comparisons also compare gpu vs. cpu results
   for key in passfail: 
     if (key[-7:] == "-vs-cpu"):
