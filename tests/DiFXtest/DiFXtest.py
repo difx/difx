@@ -713,9 +713,9 @@ def main():
     create_test_data()
    
   # Run DiFX on all compatable tests 
-#  for testname in test_name_list:
-#    rm_output_files(testname)
-#    runtest(testname)
+  for testname in test_name_list:
+    rm_output_files(testname)
+    runtest(testname)
   
   # compare .im files
   for testname in test_name_list:
