@@ -615,7 +615,7 @@ static unsigned int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vecto
 				toneSetId = getToneSetId(toneSets, ch->tones);
 			}
 			
-			fqId = addFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand, corrSetup->FFTSpecRes, corrSetup->outputSpecRes, /*decimation*/1, /*isZoom:*/0, toneSetId, rxName);
+			fqId = addFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand, corrSetup->FFTSpecRes, corrSetup->outputSpecRes, /*decimation*/1, /*isZoom*/0, toneSetId, rxName);
 
 			// index into the difxio datastream object arrays is by "present band"
 			D->datastream[dsId].recBandFreqId[streamPresentChan] = getBand(bandMap, fqId);
@@ -1046,6 +1046,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								{
 									continue;
 								}
+
 								if(!corrSetup->correlateFreqId(freqId))
 								{
 									continue;
@@ -1061,7 +1062,6 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								}
 
 								DifxBaselineAllocPolProds(bl, nFreq, 4);
-
 
 								n1 = DifxDatastreamGetRecBands(D->datastream+ds1, freqId, a1p, a1c);
 								n2 = DifxDatastreamGetRecBands(D->datastream+ds2, freqId, a2p, a2c);
@@ -2185,7 +2185,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 	int decimation, worstcaseguardns;
 	DifxDatastream *dd;
 	double globalBandwidth;
-	vector<set <int> > blockedfreqids;	// vector index is over antennaId
+	vector<set<int> > blockedfreqids;	// vector index is over antennaId
 
 	// Initialize toneSets with the trivial case, which is used for all zoom bands
 	vector<unsigned int> noTones;
@@ -2261,7 +2261,6 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 
 	// now run through all scans, populating things as we go
 	populateScanTable(D, J, V, P, corrSetup, configs, maxScanPhaseCentres);
-
 
 	// look for pulsars
 	for(int configId = 0; configId < D->nConfig; ++configId)
