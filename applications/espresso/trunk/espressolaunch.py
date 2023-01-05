@@ -324,12 +324,15 @@ def chk_difxlog(logfile):
             job_finish = True
         elif "ERROR" in line:
             job_errors.append(line)
+        elif "FATAL" in line:
+            job_errors.append(line)
 
-    job_ok = False
-    if job_finish and not job_errors:
-        job_ok = True
+    job_ok = True
     if not job_finish:
-        job_errors.append(jobname + " did not finish\n")
+        job_ok = False
+        job_errors.append("did not finish\n")
+    if job_errors:
+        pass # may want to add specific non-fatal errors here
 
     return job_ok, job_errors
 
