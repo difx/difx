@@ -631,9 +631,9 @@ supported.
 \end{enumerate}
 
 
-\section{DiFX 2.5.2}
+\subsection{DiFX 2.5.2}
 
-\subsection{Bug fixes}
+\subsubsection{Bug fixes}
 
 \begin{enumerate}
 
@@ -643,9 +643,9 @@ supported.
 \end{enumerate}
 
 
-\section{DiFX 2.5.3}
+\subsection{DiFX 2.5.3}
 
-\subsection{Updates}
+\subsubsection{Updates}
 
 \begin{enumerate}
 
@@ -670,9 +670,9 @@ supported.
 
 DiFX 2.5.3 was released on March 28, 2019.
 
-\section{DiFX 2.5.4}
+\subsection{DiFX 2.5.4}
 
-\subsection{New features}
+\subsubsection{New features}
 
 \begin{enumerate}
 \item HOPS updated to 3.22
@@ -692,7 +692,7 @@ DiFX 2.5.3 was released on March 28, 2019.
 \item Includes copies of more recent utilities: packHops.py, distFourfit.py, fplot2pdf, plotResiduals.py
 \end{enumerate}
 
-\subsection{Bug fixes}
+\subsubsection{Bug fixes}
 
 \begin{enumerate}
 \item Mark6 native playback fixed to support other than VLBA VDIF recording
@@ -716,7 +716,7 @@ DiFX 2.5.3 was released on March 28, 2019.
 \item Startdifx no longer piles up difxlog processes
 \end{enumerate}
 
-\subsection{Caveats}
+\subsubsection{Caveats}
 
 Support for Complex VDIF is incomplete in 2.5.3 and 2.5.4, both treat Complex VDIF LSB as USB data. This handling was retained in 2.5.4
 for VGOS compatibility reasons in order to have all-LSB(-mislabeled) data products, and avoid postprocessing issues with
@@ -726,16 +726,16 @@ The issue affects only VDIFC (complex VDIF), not VDIF nor other formats.
 DiFX 2.5.4 was released on August 27, 2021.
 
 
-\section{DiFX 2.5.5}
+\subsection{DiFX 2.5.5}
 
-\subsection{New features}
+\subsubsection{New features}
 
 \begin{enumerate}
 \item genmachines extended to support Mark6 with multiple expansion chassis
 \item update polconvert scripts
 \end{enumerate}
 
-\subsection{Bug fixes}
+\subsubsection{Bug fixes}
 
 \begin{enumerate}
 \item genmachines fix to support December i.e. doy 335 and later
@@ -748,9 +748,9 @@ DiFX 2.5.4 was released on August 27, 2021.
 
 DiFX 2.5.5 was released on October 24, 2022.
 
-\section{DiFX 2.6.1}
+\subsection{DiFX 2.6.1}
 
-\subsection{New features}
+\subsubsection{New features}
 
 \begin{enumerate}
 \item Improved VDIF support
@@ -782,7 +782,7 @@ DiFX 2.5.5 was released on October 24, 2022.
 \item polconvert: to rev 1.7.5 (see notes on 2.5.3 above for details)
 \end{enumerate}
 
-\subsection{Bug fixes}
+\subsubsection{Bug fixes}
 
 \begin{enumerate}
 \item mpifxcorr: Retry on NFS open errors of kind: ``EAGAIN Resource temporarily unavailable''
@@ -794,7 +794,7 @@ DiFX 2.5.5 was released on October 24, 2022.
 \item Sun RPC is on its way out; support for ``tirpc'' added to calcif2 and calcserver
 \end{enumerate}
 
-\subsection{Caveats}
+\subsubsection{Caveats}
 
 \begin{enumerate}
 \item Moved “mark6gather” functions from vdifio to mark6sg; this changes the order of dependencies!
@@ -807,21 +807,21 @@ DiFX 2.5.5 was released on October 24, 2022.
 DiFX 2.6.1 was released on August 28, 2019.
 
 
-\section{DiFX~2.6.2}
+\subsection{DiFX~2.6.2}
 
-\subsection{New features}
+\subsubsection{New features}
 \begin{enumerate}
 \item Python parseDiFX package added
 \end{enumerate}
 
-\subsection{Updates}
+\subsubsection{Updates}
 \begin{enumerate}
 \item HOPS updated to version 3.21
 \item PolConvert updated to version 1.7.8
 \item Former FTP access to CDDIS servers changed to FTP-SSL (geteop.pl)
 \end{enumerate}
 
-\subsection{Bug fixes}
+\subsubsection{Bug fixes}
 \begin{enumerate}
 \item mpifxcorr: Fix correlation of Complex LSB data, restore fringes. Note: DiFX 2.5.x and 2.6.1 treated Complex LSB as if Complex USB, while Trunk prior to r9647 05aug2020 treated LSB nearly correctly except for a off-by-one channel bug
 \item difx2mark4: Fix seg-fault in createType3s.c when a station has only a single entry in the PCAL file
@@ -845,7 +845,7 @@ DiFX 2.6.1 was released on August 28, 2019.
 \item Python3 support in many/most places
 \end{enumerate}
 
-\subsection{Caveats}
+\subsubsection{Caveats}
 \begin{enumerate}
 \item difx2mark4: Some LSB-LSB baselines do not get converted in mixed-sideband correlation setups (DiFX 2.6.1, 2.6.2); if affected, use difx2mark4 2.5.3 with –override-version. A bugfix is pending for DiFX 2.6.3 later this year.
 \item difx2mark4: Performance regression with p-cal files, conversion of p-cal data may take noticeably longer than before
@@ -854,6 +854,68 @@ DiFX 2.6.1 was released on August 28, 2019.
 
 DiFX 2.6.2 was released on September 11, 2020.
 
+
+\subsection{DiFX~2.6.3}
+
+This version has never been officially released.
+
+\subsection{DiFX~2.7.1}
+
+This version has never been officially released.
+The 2.7 series was used by the Event Horizon Telescope.
+
+
+\subsection{DiFX~2.8.1}
+
+The DiFX~2.8 series collected updates and fixes from many DiFX users and is the first version universally usable on VGOS, EHT, and ``traditional'' VLBI data.
+Because the 2.7 series was never formally released, the notes below include all changes since the 2.6 series.
+
+\subsubsection{New features}
+\begin{enumerate}
+\item Support for appending contiguous subbands together to create outputbands
+\item Initial support for vex2
+\item Complete conversion to Python 3
+\item Support for CODIF format
+\item mark5access programs: error output to stderr to allow piping
+\item Support for IPP 2019 series
+\item Experimental support for Vienna Mapping Functions in calcif2
+\item Some features (within mpifxcorr and vex2difx) that provide additional options for real-time correlation
+\item Espresso modification to work with singularity (or docker) image
+\end{enumerate}
+
+\subsubsection{Updates}
+\begin{enumerate}
+\item HOPS updated to version 3.24
+\item PolConvert updated to version 2.0.3
+\item Several new VDIF decoders and corner turners introduced to widen range of support
+\item Improved support for more than 2 bits per sample (see \url{https://library.nrao.edu/public/memos/vlba/up/VLBASU_52.pdf})
+\item Mark6: support for larger number of expansion units
+\item Add a few more stations to ocean loading tables within difxcalc
+\item Several new options in the tabulatedelays program
+\item difxio programs (e.g., vex2difx and difx2fits) can support project codes up to 24 characters long (was 7)
+\end{enumerate}
+
+\subsubsection{Bug fixes}
+\begin{enumerate}
+\item difx2mark4: fix a parallactic angle calculation bug
+\item vdifmux() function had some logic errors causing bad performance in gappy data; fixed.
+\item In subarray cases difx2fits could provide incorrect pulse cal values; fixed.
+\item mark5access bug fix to prevent crash
+\item mpifxcorr: fix bug affecting data weights when nBufferedFFTs $> 1$ and datastreams weight $< 1$
+\item mpifxcorr could end early due to bug in receiving a DifxParameter message; fixed.
+\item some of the vdif python utilities (e.g., vdifd) had errors in parsing the command line: nbit and offset were swapped
+\end{enumerate}
+
+\subsubsection{Caveats}
+\begin{enumerate}
+\item Outputbands support can only work on one frequency setup at a time.
+\item The DiFX-2.8 series may be the last to support Mark5 recordings. 
+\end{enumerate}
+
+Many additional non-user-visible improvements were made to the code as well as many small user-visible improvements that do not warrant specific mention.
+The {\tt Changelog} files that are packaged with most of the DiFX software modules contain more detailed lists of code changes.
+DiFX 2.8.1 was released on XXX 2023.
+A wide array of testing has been done and this version is considered ready to be adopted by all DiFX users.
 
 
 %%%%  Future releases:

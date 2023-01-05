@@ -280,6 +280,35 @@ An example is: {\tt x`pkg-config --modversion streamstor` < "x9.0"}
 
 
 
+
+
+
+
+% .cablecal -------------------------------------------------------------------
+
+\subsection{.cablecal} \label{sec:cablecal}
+
+Cable calibration is used to measure the electrical pathlength of the oscillator signals being sent from the control building to the antenna vertex room.
+The VLBA was designed to minimize pathlength variations over time, but inevitably some temperature change and stretching due to antenna motion is to be expected.
+At the VLBA, the program {\tt db2cc} is used to pull cable cal from the VLBA monitor database and format it in a manner that can be read by {\tt difx2fits}.
+There will be one file per antenna which is given filename of {\it exp}.{\it stn}.cablecal, where {\it exp} is the experiment code and {\it stn} is the antenna station code.
+
+The {\tt .cablecal} files are text format files.
+Comments within the file start with \#.
+Valid data lines have four space-separated columns of data:
+\begin{itemize}
+  \item station code (in capital letters, usually two characters long)
+  \item MJD timestamp
+  \item integration period for the measurement (measured in seconds, or zero if not specified)
+  \item the cable cal round-trip pathlenght (measured in picoseconds)
+\end{itemize}
+
+
+
+
+
+
+
 % cal.vlba --------------------------------------------------------------------
 
 \subsection{cal.vlba} \label{sec:cal}
@@ -288,6 +317,7 @@ Monitor data that gets attached to FITS files is extracted by {\tt tsm} into a f
 A single file contains the monitor data for all VLBA antennas, maybe also including GBT, Effelsberg and Arecibo, for the duration of the project.
 The file is left in {\tt /home/vlbiobs} and is compressed with {\tt gzip} after some time to save disk space, resulting in additional file extension {\tt .gz}.
 A program called {\tt vlog} (sec \S\ref{sec:vlog}) reads this file and produces files called {\tt flag}, {\tt pcal}, {\tt tsys}, and {\tt weather} in the software correlator project directory.
+This file type can be read by AIPS task ANTAB.
 
 
 

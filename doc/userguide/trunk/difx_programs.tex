@@ -5,6 +5,7 @@
 % calcifMixed
 % checkCalcServer
 % difxcalc11
+% difxfilelist
 % plotpcal2
 % mvdifxhere
 % computetotals (not yet tested)
@@ -21,10 +22,9 @@
 % m6sg_mount
 % m6sg_gather
 % m6sg_blocknrs
-% 2dirlist 
 % calcsig
 % printdirlist
-% stripVDIF
+% splitVDIFbygap
 
 
 % document whole mark6sg packages in here
@@ -721,7 +721,7 @@ The user does not have to be in any particular directory when running this progr
 
 % difxcopy --------------------------------------------------------------------
 
-\subsection{difxcopy {\small $\mathrm{(package: difxio)}$}} \label{sec:difxcopy}
+\subsection{difxcopy {\small $\mathrm{(package: misc\_utils)}$}} \label{sec:difxcopy}
 
 Python program {\tt difxcopy} is used to copy DiFX input (and other) files to a different directory.
 In the process, explicit references to other files that are being copied are changed to reflect their
@@ -2146,6 +2146,8 @@ The columns being displayed are:
 \end{enumerate}
 
 
+% mk6copy ---------------------------------------------------------------------
+
 
 % mk6cp -----------------------------------------------------------------------
 
@@ -2538,6 +2540,12 @@ The main purpose of this program is to evaluate the impact of using different po
 
 \subsection{searchVDIF {\small $\mathrm{(package: vdifio)}$}} \label{sec:searchVDIF}
 
+
+
+
+% splitVDIFbygap ------------------------------------------- INCOMPLETE -------
+
+\subsection{splitVDIFbygap {\small $\mathrm{(package: vdifio)}$}} \label{sec:splitVDIFbygap}
 
 
 
