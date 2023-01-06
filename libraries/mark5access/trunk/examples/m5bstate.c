@@ -76,6 +76,7 @@ void process_realdata(struct mark5_stream *ms, int nframes, int nstates, int eve
   long **bstate = (long **)malloc(nif*sizeof(long *));
   /*Haystack gain's calculation*/
   double *gfact = (double *)malloc(nif*sizeof(double));
+  int nBlank = 0;
 
 
 /* a is required for Haystack gain calculation*/
@@ -142,8 +143,12 @@ void process_realdata(struct mark5_stream *ms, int nframes, int nstates, int eve
     {
       /*       printf("%lf\n", data[i][k]); */
       /* now start to count the states from data[i][k]*/
-		      
-      if (ms->nbit == 1)
+
+      if(data[i][k] == 0)
+      {
+        ++nBlank;
+      }
+      else if (ms->nbit == 1)
       {
 	if (data[i][k] > 0) bstate[i][1]++;
 	if (data[i][k] < 0) bstate[i][0]++;
@@ -165,6 +170,10 @@ void process_realdata(struct mark5_stream *ms, int nframes, int nstates, int eve
   if(evenodd != 0x03)
   {
     fprintf(stderr, "Only the %s samples were examined\n", evenodd == 0x01 ? "EVEN" : "ODD");
+  }
+  if(nBlank > 0)
+  {
+    fprintf(stderr, "%d samples were flagged as invalid and not counted\n", nBlank);
   }
 
   /* header of the output bstate table based on Haystack bstate output*/
