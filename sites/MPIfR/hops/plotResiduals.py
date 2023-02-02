@@ -13,12 +13,14 @@ from matplotlib.pyplot import cm
 import sys
 
 parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("-n","--no-plot", dest="noPlot",action='store_true',  help="do not do graphical output")
 parser.add_argument("-q", "--min-quality", dest="minQual", type=int, choices=range(1,10),default=5, help="min. fringe quality to consider (default: 5)")
 parser.add_argument("-s", "--min-snr", dest="minSnr", type=int, default=7, help="min. SNR to consider (default: 7)")
 parser.add_argument("-m", "--max-fr", dest="maxFr", type=float, default=100, help="max. fringe rate in mHz. Any fringe rate larger than this value will be reported. (default: 100mHz)")
 parser.add_argument("-f", "--plot-fr", dest="plotFR", action='store_true', help="plot fringe rate instead of delay rate")
 parser.add_argument("-p", "--pol", dest="pol", action='append',  help="polarization pair to evaluate. Can be given multiple times if more than one pair is wanted. (default: LL and RR)") 
 parser.add_argument("-S", "--src", dest="src", action='append',  help="source to evaluate (when none specified: all)") 
+parser.add_argument("-xS", "--exclude-src", dest="excl_src", action='append',  help="source to exclude.") 
 parser.add_argument("refRemSt", metavar="reference-station-code", help="One letter code of the station to serve as delay & rate reference. Two letters indicate a specific baseline.")
 parser.add_argument("alistFile", nargs='+', type=argparse.FileType('r'), metavar="Alist-file", help="The input alist file(s). Note: Each file should be produced with alist -v 6.")
 
@@ -87,8 +89,11 @@ for alist in args.alistFile:
 			continue
 
 		# only consider specific source(s) if desired
+		if (args.excl_src != None) and (srcname in args.excl_src):
+			continue
 		if (args.src != None) and (srcname not in args.src):
 			continue
+
 
 		scan = field[8]
 		doy,time = field[11].split("-")
@@ -194,11 +199,26 @@ ax1.legend(loc='center left', bbox_to_anchor=(1, 0.0), fancybox=True)
 fig.text(0.75, 0.55, delayStat, family='courier', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
 print (delayStat)
 
+ylims = ax1.get_ylim()
+if ylims[0] > -0.15:
+    ylims = (-0.15, ylims[1])
+if ylims[1] < 0.15:
+    ylims = (ylims[0], 0.15)
+ax1.set_ylim(ylims)
+
 if args.plotFR:
     ax2.set_title("fringe rate")
     ax2.set_ylabel('fringe rate [mHz]')
     fig.text(0.75, 0.09, fringeRateStat,  family='courier', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
     print (fringeRateStat)
+
+    ylims = ax2.get_ylim()
+    if ylims[0] > -args.maxFr/2:
+        ylims = (-args.maxFr/2, ylims[1])
+    if ylims[1] < args.maxFr/2:
+        ylims = (ylims[0], args.maxFr/2)
+    ax2.set_ylim(ylims)
+
 else:
     ax2.set_title("delay rate")
     ax2.set_ylabel('delay rate [ps/s]')
@@ -209,4 +229,5 @@ fig.text(0.01, 0.01, refTxt,  family='courier', bbox={'facecolor':'white', 'alph
 fig.text(0.20, 0.01, polTxt,  family='courier', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
 
 plt.gcf().autofmt_xdate()
-plt.show()
+if args.noPlot == False:
+    plt.show()
