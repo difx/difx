@@ -41,6 +41,12 @@ exportName = "EXPORT"
 minSchemaMajor = 1
 minSchemaMinor = 5
 
+try:
+    unichr
+except NameError:
+    unichr = chr
+
+
 def description():
     desc = "A program to export the correlation data products (e.g. FITS files) to the FTP server for download by the PIs. "
     desc += "The export path contains a randomly generated name (default 10 characters). "
@@ -49,13 +55,14 @@ def description():
     desc += "When re-running the program on an experiment all previously exported files will be removed from the FTP server and the database references will be deleted! "
     return desc
 
+
 def getTransferFileCount(source, destination, options=""):
     '''
     Determines the number of files to be transfered by rsync operation
     '''
         
     cmd = 'rsync -az --stats --dry-run %s %s %s' % ( options, source, destination) 
-    proc = subprocess.Popen(cmd,
+    proc = subprocess.Popen(cmd, encoding='utf8',
                             shell=True,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
@@ -73,13 +80,14 @@ def getTransferFileCount(source, destination, options=""):
     
     return(totalCount, fileCount)
 
+
 def partialChecksum(filePath):
     
     cmd = 'head -c 1000000 "%s" | md5sum' % ( filePath)
     output = ""
     checksum = ""
 
-    proc = subprocess.Popen(cmd,
+    proc = subprocess.Popen(cmd, encoding='utf8',
                            shell=True,
                            stdin=subprocess.PIPE,
                            stdout=subprocess.PIPE,
@@ -90,6 +98,7 @@ def partialChecksum(filePath):
             break
         checksum = output.split(" ")[0]
     return checksum
+
 
 def syncDir(srcPath, destPath, fileCount, dryRun):
     '''
@@ -102,7 +111,7 @@ def syncDir(srcPath, destPath, fileCount, dryRun):
     else:    
         cmd = 'rsync -av  --progress %s %s' % (srcPath, destPath) 
         
-    proc = subprocess.Popen(cmd,
+    proc = subprocess.Popen(cmd, encoding='utf8',
                            shell=True,
                            stdin=subprocess.PIPE,
                            stdout=subprocess.PIPE,
@@ -130,15 +139,16 @@ def syncDir(srcPath, destPath, fileCount, dryRun):
     if not dryRun:
         cmd = '/usr/bin/chmod 2775 %s' % (destPath)
         print('Updating FTP directory permissions: %s' % (cmd))
-        proc = subprocess.Popen(cmd, shell=False)
+        proc = subprocess.Popen(cmd, shell=True)
         proc.wait()
 
         cmd = '/usr/bin/chmod 644 %s/*' % (destPath)
         print('Updating file permissions: %s' % (cmd))
-        proc = subprocess.Popen(cmd, shell=False)
+        proc = subprocess.Popen(cmd, shell=True)
         proc.wait()
     
     return    
+
 
 def readConfig():
     '''
@@ -171,6 +181,7 @@ def confirmAction():
 
         sys.exit(0)
 
+
 def randomString(len=10):
     '''
     Build string of random characters
@@ -180,6 +191,7 @@ def randomString(len=10):
     for i in range(len):
         randomString += (str(unichr(random.randint(97,122)))) #intended to put tab space.
     return randomString       
+
 
 def deleteExportFiles(session, expCode):
     '''
@@ -218,6 +230,7 @@ def deleteExportFiles(session, expCode):
     session.flush()
     session.commit()
 
+
 def exitOnError(exception):
     '''
     Exit routine to be called whenever an error/exception has occured
@@ -225,6 +238,7 @@ def exitOnError(exception):
     print("\nERROR: %s. Aborting\n\n" % (exception))
         
     sys.exit(1)
+
 
 def getRemoteDirName(dir, files):
 
