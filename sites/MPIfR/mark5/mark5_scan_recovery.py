@@ -33,7 +33,7 @@ from socket import create_connection
 
 debug = False
 Nmaxdisks = 8             # expected nr of disks
-userdir_offset = 11272704 # location of user dir before from EOF
+usedir_offset = 11272704  # location of user dir before from EOF
 block_size = 2**16-8      # StreamStor hardware block size, without 8-byte block header
 outdir = './recovered/'
 
@@ -141,7 +141,7 @@ def get_scans_mark5a(inputs_):
     udirinfo = UserDirMark5A()
     for input in inputs_:
         if input == None: continue
-        input.seek(-userdir_offset, 2)
+        input.seek(-usedir_offset, 2)
         input.readinto(udirinfo)
         if udirinfo.numscans > MK5A_DIR_MAXSCANS:
             continue
@@ -151,12 +151,17 @@ def get_scans_mark5a(inputs_):
         for n in range(udirinfo.numscans):
             fileext = '.m5a'
             scanname = ''.join([chr(i) for i in udirinfo.allnames[(n*MK5A_EXTNAME_MAXLEN):((n+1)*MK5A_EXTNAME_MAXLEN)]]).rstrip('\x00')
-            print(n,fileext,scanname)
+            #print(n,fileext,scanname)
 
             try:
                 scanfile = open(outdir+scanname+fileext, 'r+b')
             except Exception as e:
                 scanfile = open(outdir+scanname+fileext, 'wb')
+
+            if udirinfo.length[n] <= 16:
+                print(n,fileext,scanname,udirinfo.startbyte[n],udirinfo.startbyte[n] + udirinfo.length[n],'skipping this scan')
+                continue
+            print(n,fileext,scanname,udirinfo.startbyte[n],udirinfo.startbyte[n] + udirinfo.length[n])
 
             scans.append(
                 {'name': scanname,
@@ -182,7 +187,7 @@ def get_scans_mark5bc(inputs_):
     scan = UserDirMark5BCEntry()
     for input in inputs_:
         if input == None: continue
-        input.seek(-userdir_offset, 2)
+        input.seek(-usedir_offset, 2)
         input.readinto(udir)
         print('Module has VSN %s' % (udir.VSN))
         for n in range(8192):
@@ -194,6 +199,11 @@ def get_scans_mark5bc(inputs_):
             if scan.datatype == 9:
                 fileext = '.vdif'
             scanname = '_'.join([scan.exp, scan.station, scan.scanname])
+
+            if scan.stop <= scan.start:
+                print(n,fileext,scanname,scan.start,scan.stop,'skipping this scan')
+                continue
+            print(n,fileext,scanname,scan.start,scan.stop)
 
             try:
                 scanfile = open(outdir+scanname+fileext, 'r+b')
