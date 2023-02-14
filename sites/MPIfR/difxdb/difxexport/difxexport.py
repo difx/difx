@@ -399,7 +399,7 @@ for dir in dirs:
     # verify src against dst
     print("Verfifying export to: %s" % (exportDir))
     for file in srcFiles:
-        if not dstFiles.has_key(file):
+        if file not in dstFiles:
             print("Source file: %s is missing in the export location: %s" % (file, exportPath))
             # TODO REMOVE exported files
             sys.exit(1)
