@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 '''
-A script to plot delay and rate residuals based on alist (v6) output.
+A script to plot A-list fringe SNRs in all polarizations.
+Useful to catch polarization swaps and misbehaving receivers.
 '''
 
 import afiob  # From HOPS of DiFX 2.6.x+
