@@ -62,6 +62,8 @@ def getdevices(slot):
   all_scsi_dev = string.split(out)
   sl = len(all_scsi_dev)
 
+  mpt3sasdevices = []
+
   # build list of mpt3sas device numbers (should be 2 for 2 host bus adapters)
   for i in range (1,sl,2):
     # --- if the devices uses the mpt3sas driver
@@ -70,6 +72,8 @@ def getdevices(slot):
       # --- extract the number from '[1]' string
       num_val = val[val.find('[')+1:val.find(']')]
       sas_dev_num.append(num_val)
+      if all_scsi_dev[i] == "mpt3sas":
+        mpt3sasdevices.append(num_val)
   sas_dev_num.sort()
 
   # get block devices for all mptXsas host bus adapters
@@ -98,8 +102,14 @@ def getdevices(slot):
     if "/dev/sd" in disk:
       # get the sas address
       (ty, sas_address) = string.split(scsi_list[i+2],":")
+      controllerID = string.split(scsi_list[i],":")[0][1:]
+
       # --- the device number on the SAS controller, since it can be hex, convert from base 16 string format
-      dev_num = int(sas_address[11],16)
+      # apparently sas3 controller encode the device id differently then sas2
+      if controllerID in mpt3sasdevices:
+        dev_num = int(sas_address[17],16)
+      else:
+        dev_num = int(sas_address[11],16)
       # get the host id
       host_info = scsi_list[i]
       host_id = int(host_info[1:host_info.find(':')])
@@ -151,10 +161,10 @@ def getdevices(slot):
       if len(serial_num) == 0:
         print "serial number could not be determined for disk", i, "device", disk_dev
         exit(1)
-      print disks[i]['serial_num'],disks[i]['disk_size'],disk_dev
+      #print disks[i]['serial_num'],disks[i]['disk_size'],disk_dev
 
   # print "disks", disks
-  print ('%s disks in total' % (len(disks)))
+  #print ('%s disks in total' % (len(disks)))
 
   return disks
 
@@ -193,7 +203,7 @@ if len(disks) == 0:
 serial_list = []
 size_list = []
 print "\n", program, "will initialize module in slot", slot, "with MSN", msn, "\n"
-print "The following disks will be initialized:\n"
+print "The following %d disks will be initialized:\n" % (len (disks))
 for i in range(len(disks)):
   serial_list.append(str(i) + ':' + disks[i]['serial_num'] + '\n')
   size_list.append(disks[i]['disk_size'])
