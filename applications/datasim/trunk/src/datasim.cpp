@@ -53,7 +53,7 @@ static void usage(int argc, char **argv)
   cout << "     -s" << endl;
   cout << "     --sefd        antenna SEFDs in a comma-seperated list in Jansky.\n"
        << "                   If there are more antennas than provided SEFDs,\n"
-       << "                   SEFD of the remaining antennas is set to 1000 Jansky."
+       << "                   SEFD of the remaining antennas is set to 1000 Jansky.\n"
        << "                   Maximum number of antennas supported is 20."<< endl;
   cout << endl;
   cout << "     -d" << endl;
