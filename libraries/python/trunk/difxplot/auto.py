@@ -1,4 +1,4 @@
-"""Contains the plotting classes for difxPlot.py"""
+"""Contains the plotting classes used for autocorrelations by difxPlot.py"""
 import os
 import itertools
 from time import sleep
