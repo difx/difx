@@ -155,6 +155,27 @@ def get_real_data():
     v2d_fp = open(v252fv2d_fp,"w+")
     v2d_fp.write(v2d_contents)
     vd2_fp.close()  
+    #endif os.path.exists(v252fv2d_fp) == False
+
+  # Setup v252f gpu test case
+  arg  = "cp test-v252f.v2d ../v252f-gpu/test-v252f-gpu.v2d"
+  proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
+  proc.wait()
+  arg  = "cp *.filelist ../v252f-gpu"
+  proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
+  proc.wait()
+  working_directory = current_directory + "/v252f-gpu/"
+  v2d_gpu = working_directory + "test-v252f-gpu.v2d"
+  v2d_fp = open(v2d_gpu,'r')
+  v2d_fp.seek(0)
+  v2d_contents = v2d_fp.read()  
+  v2d_fp.close()
+
+  v2d_contents = v2d_contents.replace("vex = test-v252f.vex","vex = test-v252f-gpu.vex")
+  print(v2d_contents)
+  v2d_fp = open(v2d_gpu,"w+")
+  v2d_fp.write(v2d_contents)
+  v2d_fp.close()
 
   # Set up rdv70 input files for DiFX
   working_directory = current_directory + "/rdv70/" 
@@ -203,6 +224,27 @@ def get_real_data():
     v2d_fp = open(rdv70v2d,"w+")
     v2d_fp.write(v2d_contents)
     vd2_fp.close()
+    # endif os.path.exists(rdv70v2d_fp) == False     
+    # Setup rdv70 gpu test case
+  print("copying...")
+  print(working_directory)
+  arg  = "cp test-rdv70.v2d ../rdv70-gpu/test-rdv70-gpu.v2d"
+  proc = subprocess.Popen(arg,cwd=working_directory,shell=True) 
+  proc.wait() 
+  working_directory = current_directory + "/rdv70-gpu/" 
+  rdv70v2d = working_directory + "test-rdv70-gpu.v2d"
+  print(rdv70v2d)
+  v2d_fp_gpu = open(rdv70v2d,'r')
+  v2d_fp_gpu.seek(0)
+  v2d_contents = v2d_fp_gpu.read()
+ 
+   
+  v2d_contents = v2d_contents.replace("vex = test-rdv70.vex","vex = test-rdv70-gpu.vex")
+  v2d_fp_gpu.close()
+  print(v2d_contents)  
+  v2d_fp_gpu = open(rdv70v2d,"w+")
+  v2d_fp_gpu.write(v2d_contents)
+  v2d_fp_gpu.close()
 
        
 
@@ -277,7 +319,7 @@ def runtest(testname):
     print(difxlogfile)
     print(difxerrfile) 
     print()
-    raise()
+    return
   difx2fitslogfile = working_directory + "/difx2fits.log"
   difx2fitserrfile = working_directory + "/difx2fits.error"
   f_difx2fitslog = open(difx2fitslogfile,"w")
@@ -310,7 +352,21 @@ def compare_results(testname, abstol, reltol):
   working_directory = current_directory + "/" + testname + "/"   
   #print(working_directory)
   binfiles,inputfiles = get_binary_files(working_directory)
-  #print(binfiles)
+  #print("*******")
+  #print(binfiles[0])
+  if (binfiles[0] == None):
+    results[0] = "FAILED"
+    results[1] = False
+    return(results)
+
+  binfile_stat = os.stat(binfiles[0])
+  binfile_size = binfile_stat.st_size
+  #print(binfile_size)
+  if (binfile_size < 1): 
+    results[0] = "FAILED"
+    results[1] = False
+    return(results)
+
   binfile = binfiles[0] 
   inputfile = inputfiles[0]
   results_directory = working_directory + "/benchmark_results/" 
@@ -379,6 +435,24 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol):
   working_directory = current_directory + "/" + testname_gpu + "/"   
   #print(working_directory)
   binfiles,inputfiles = get_binary_files(working_directory)
+
+  #print("*******")
+  #print(binfiles[0])
+  if (binfiles[0] == None):
+    results[0] = "FAILED"
+    results[1] = False
+    return(results)
+
+  binfile_stat = os.stat(binfiles[0])
+  binfile_size = binfile_stat.st_size
+  #print(binfile_size)
+  if (binfile_size < 1):
+    results[0] = "FAILED"
+    results[1] = False
+    return(results)
+
+
+
   #print(binfiles)
   binfile = binfiles[0] 
   inputfile = inputfiles[0]
@@ -445,7 +519,12 @@ def compare_im_files(testname):
 
   im_file = get_im_file(working_directory)
   im_file_benchmark = get_im_file(results_directory)
-  
+
+  if (im_file == None):
+    return
+
+  if (im_file_benchmark == None):
+    return  
 
   if (filecmp.cmp(im_file,im_file_benchmark) == False):
     output = "Warning model file " + im_file + " differs from benchmark. difxcalc version could differ from benchmark."
@@ -455,20 +534,28 @@ def compare_im_files(testname):
 def update_test(testname):
   print("Updating test " + testname)
 
+  
+
   current_directory = os.getcwd()
   working_directory = current_directory + "/" + testname + "/"
   results_directory = working_directory + "/benchmark_results/" 
-  binfiles,inputfiles = get_binary_files(results_directory)
-  results_binfile = binfiles[0]
   binfiles,inputfiles = get_binary_files(working_directory)
 
 
   # skip if difx has not run succesfully
-  if not (binfiles):
-      return
-  else:
-    current_binfile = binfiles[0]
- 
+  if (binfiles[0] == None):
+    return
+
+  binfile_stat = os.stat(binfiles[0])
+  binfile_size = binfile_stat.st_size
+  if (binfile_size < 1):
+    return
+  
+  current_binfile = binfiles[0]
+
+  binfiles,inputfiles = get_binary_files(results_directory)
+  results_binfile = binfiles[0]
+
   
   #print(current_binfile)  
 
@@ -478,8 +565,8 @@ def update_test(testname):
   #print(fits_file)
 
 
-  print(fits_file_benchmark)
-  print(current_binfile)
+  #print(fits_file_benchmark)
+  #print(current_binfile)
   os.remove(fits_file_benchmark)
   os.remove(results_binfile)
   args = "cp " + fits_file + " " + fits_file_benchmark
@@ -493,9 +580,10 @@ def update_test(testname):
   shutil.copy2(im_file,im_file_benchmark)
 
 def repackage_tests(testnames):
+  print("repacking tarball")
   current_directory = os.getcwd()
   tar_command = "tar -zcvf tests.tgz"
-  print("repacked") 
+  #print("repacked") 
   for testname in testnames:
     working_directory = testname + "/"
     #print(testname)
@@ -632,7 +720,7 @@ def display_test_results(passfail):
   for testname in passfail:
     fits_result = "FAIL"
     if (passfail[testname][1]): fits_result = "PASS"
-    string = "{0:20}{1}".format(testname, fits_result)
+    string = "{0:30}{1}".format(testname, fits_result)
     print(string)
 
   print()
@@ -641,7 +729,7 @@ def display_test_results(passfail):
   print()
   for testname in passfail:
     binary_result = passfail[testname][0]
-    string = "{0:20}{1}".format(testname,binary_result)
+    string = "{0:30}{1}".format(testname,binary_result)
     print(string)
   print()
   print()
@@ -678,7 +766,23 @@ def main():
 
   # list of test names
   test_name_list = ["complex-complex","lsb","lsb-complex","lsb-dsb","usb","usb-complex","usb-dsb"]
-  gpu_compatable_test_name_list = ["usb-gpu"]
+  gpu_compatable_test_name_list = ["complex-complex-gpu","lsb-gpu","lsb-complex-gpu","lsb-dsb-gpu","usb-gpu","usb-complex-gpu","usb-dsb-gpu"]
+
+  # Dictionary with pass/fail status of each test {"test name" : [binary file same (results), FITS file same (true/false)]} 
+  passfail = {"complex-complex":["",True],"lsb":["",True],"lsb-complex":["",True],"lsb-dsb":["",True],"usb":["",True],"usb-complex":["",True],"usb-dsb":["",True]}
+
+
+
+  # Download real data tests from the ftp site
+
+  if (download == "YES"):
+    test_name_list.append("rdv70") 
+    test_name_list.append("v252f")
+    gpu_compatable_test_name_list.append("rdv70-gpu")
+    gpu_compatable_test_name_list.append("v252f-gpu")
+    passfail["rdv70"] = ["",True]  
+    passfail["v252f"] = ["",True] 
+    get_real_data() 
 
 
   # Add gpu mode tests to list of tests to be run 
@@ -686,9 +790,6 @@ def main():
     test_name_list.extend(gpu_compatable_test_name_list)
      
 
-
-  # Dictionary with pass/fail status of each test {"test name" : [binary file same (results), FITS file same (true/false)]} 
-  passfail = {"complex-complex":["",True],"lsb":["",True],"lsb-complex":["",True],"lsb-dsb":["",True],"usb":["",True],"usb-complex":["",True],"usb-dsb":["",True]}
 
   if (testgpu == "YES"):
     for item in gpu_compatable_test_name_list:
@@ -698,14 +799,6 @@ def main():
   unpackage_tests(test_name_list)
 
 
-  # Download real data tests from the ftp site
-
-  if (download == "YES"):
-    test_name_list.append("rdv70") 
-    test_name_list.append("v252f")
-    passfail["rdv70"] = ["",True]  
-    passfail["v252f"] = ["",True] 
-    get_real_data() 
   # Upack tests if they haven't been already
     
   # Generate synthetic VDIF data
