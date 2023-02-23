@@ -27,7 +27,7 @@ class Plot:
         self.app = QtGui.QApplication([])
         self.view = pg.GraphicsView()
         self.win = pg.GraphicsLayout()
-        self.app.setApplicationDisplayName(f"Baseline Fringes for {self.exp_info.source_name}")
+        self.app.setApplicationDisplayName(f"Autocorrelations for {self.exp_info.source_name}")
         self.view.setCentralItem(self.win)
         self.view.resize(1900, 1000)
         self.win.layout.setSpacing(0.0)
