@@ -1,0 +1,51 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include "options.h"
+#include "sim.h"
+
+int main(int argc, char **argv)
+{
+	CommandLineOptions *opts;
+	int rv = 0;
+
+	opts = newCommandLineOptions(argc, argv);
+	if(!opts)
+	{
+		return EXIT_FAILURE;
+	}
+
+	if(opts->usage)
+	{
+		usage(opts);
+		deleteCommandLineOptions(opts);
+
+		return EXIT_SUCCESS;
+	}
+
+	if(opts->verbose > 1)
+	{
+		printCommandLineOptions(opts);
+	}
+
+	/* set to UTC */
+	setenv("TZ", "", 1);
+	tzset();
+
+	printf("Starting program: %s ver %s\n", opts->program, opts->version);
+
+	simulate(opts);
+
+	printf("Ending program: %s ver %s\n", opts->program, opts->version);
+
+	deleteCommandLineOptions(opts);
+
+	if(rv == 0)
+	{
+		return EXIT_SUCCESS;
+	}
+	else
+	{
+		return EXIT_FAILURE;
+	}
+}

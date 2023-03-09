@@ -1,0 +1,13 @@
+To install from a fresh svn checkout, run the following:
+
+aclocal
+libtoolize
+autoconf
+autoheader
+automake -a -c
+
+CC=mpicc ./configure --prefix=${DIFXROOT}
+make
+# (su root?)
+make install
+
