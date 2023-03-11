@@ -1,5 +1,6 @@
 #include <difxio/difx_input.h>
 #include <pthread.h>
+#include <mpi.h>
 #include "sim.h"
 #include "common.h"
 #include "datastream.h"
@@ -32,6 +33,9 @@ static int work(const DifxInput *D, const CommandLineOptions *opts, const Config
 	int i;
 	pthread_t *threads;
 	DatastreamInfo *info;
+	int mpiRank;
+
+	MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank);
 
 	/* 1. Configure working arrays */
 	C = newCommonSignal(D, opts, config);
@@ -60,13 +64,13 @@ static int work(const DifxInput *D, const CommandLineOptions *opts, const Config
 	}
 	if(opts->verbose > 0)
 	{
-		printf("Starting loop over time: mjd=%d sec=%d dur=%d\n", mjd, sec, dur);
+		printf("Rank %d : Starting loop over time: mjd=%d sec=%d dur=%d\n", mpiRank, mjd, sec, dur);
 	}
 	for(t = 0; t < dur; ++t)
 	{
 		if(opts->verbose > 0)
 		{
-			printf("Starting second %d / %d\n", t, dur);
+			printf("Rank %d : Starting second %d / %d\n", mpiRank, t, dur);
 		}
 
 		/* 2.1. Generate common signal */
@@ -169,6 +173,14 @@ int simulate(const CommandLineOptions *opts)
 	int N = 0;
 	int i;
 	Configuration *config = 0;
+	int mpiRank;
+
+	MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank);
+
+	if(opts->verbose > 0)
+	{
+		printf("Rank %d / %d is running\n", mpiRank, opts->nProcess);
+	}
 
 	if(opts->configFile)
 	{
@@ -188,19 +200,26 @@ int simulate(const CommandLineOptions *opts)
 	{
 		DifxInput *D;
 
-		printf("Running on input file %d/%d = %s\n", i+1, opts->nInputFile, opts->inputFile[i]);
+		if(i % opts->nProcess != mpiRank)
+		{
+			/* a different MPI process will handle this file */
+
+			continue;
+		}
+
+		printf("Rank %d running on input file %d/%d = %s\n", mpiRank, i+1, opts->nInputFile, opts->inputFile[i]);
 
 		D = loadDifxInput(opts->inputFile[i]);
 		if(!D)
 		{
-			fprintf(stderr, "Error loading %s\n", opts->inputFile[i]);
+			fprintf(stderr, "Rank %d : error loading %s\n", mpiRank, opts->inputFile[i]);
 
 			break;
 		}
 		D = updateDifxInput(D, 0);
 		if(!D)
 		{
-			fprintf(stderr, "Update failed: D == 0.\n");
+			fprintf(stderr, "Rank %d : update failed: D == 0.\n", mpiRank);
 
 			break;
 		}
@@ -212,7 +231,7 @@ int simulate(const CommandLineOptions *opts)
 
 		if(!complianceCheck(D))
 		{
-			fprintf(stderr, "Error: %s doesn't meet the requirements of this program.\n\n", opts->inputFile[i]);
+			fprintf(stderr, "Rank %d : error: %s doesn't meet the requirements of this program.\n\n", mpiRank, opts->inputFile[i]);
 		}
 		else
 		{

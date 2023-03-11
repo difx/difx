@@ -1,7 +1,5 @@
 TODO
 
-* Create new DiFX repo for this: vdifsim
-
 * Parameterize a few things / couple with options:
   x SEFD
   - Default source brightness
@@ -20,18 +18,22 @@ TODO
 
 * Integrate with difxmessage?
 
+* Add polarization leakage
+
 
 STRETCH GOALS
-
-* integrate with MPI
-  - option 1: simply parallelize across .input files
-  - option 2: divide up time range and combine VDIFs at end
 
 * multi-phase-center -> source with structure
 
 * SEFD depends on elevation
 
+
 RESOLVED ISSUES
+
+X integrate with MPI
+  - option 1: simply parallelize across .input files
+
+X Create new DiFX repo for this: vdifsim
 
 X Resolve phase/delay drift issue  (~10ns on long baselines)
 

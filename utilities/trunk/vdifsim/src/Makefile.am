@@ -6,6 +6,9 @@ AM_CPPFLAGS = \
 bin_PROGRAMS = \
 	vdifsim
 
+dist_bin_SCRIPTS = \
+	makesimfilelist
+
 noinst_PROGRAMS = \
 	testccr
 

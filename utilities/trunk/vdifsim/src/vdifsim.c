@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <mpi.h>
 #include "options.h"
 #include "sim.h"
 
@@ -8,6 +9,8 @@ int main(int argc, char **argv)
 {
 	CommandLineOptions *opts;
 	int rv = 0;
+
+	MPI_Init(&argc, &argv);
 
 	opts = newCommandLineOptions(argc, argv);
 	if(!opts)
@@ -39,6 +42,8 @@ int main(int argc, char **argv)
 	printf("Ending program: %s ver %s\n", opts->program, opts->version);
 
 	deleteCommandLineOptions(opts);
+
+	MPI_Finalize();
 
 	if(rv == 0)
 	{

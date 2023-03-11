@@ -12,26 +12,30 @@ To run a full schedule, simulate, correlate cycle:
 
   - change machines, nCore, nThread 
 
-4. Generate correlator jobs
+4. generate filelists
+
+  makesimfilelist cband1.vex
+
+5. Generate correlator jobs
 
   vex2difx cband1.v2d
  
-5. Generate delay model
+6. Generate delay model
 
   difxcalc cband1*.calc
 
-6. Update the filelist files for appropriate destinations
+7. Update the filelist files for appropriate destinations
 
   - default is to place them in the local directory
 
-7. Generate simulated data
+8. Generate simulated data
 
   vdifsim -v cband1_*.input
 
-8. Correlate the data
+9. Correlate the data
 
   startdifx -v -f -n cband1_*.input
 
-9. Generate a FITS file
+10. Generate a FITS file
 
   difx2fits cband1_*.difx CBAND1.FITS

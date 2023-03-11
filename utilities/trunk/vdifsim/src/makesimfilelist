@@ -1,0 +1,66 @@
+#!/bin/env python3
+
+from os import popen
+from sys import argv, exit
+from os.path import isfile
+
+# Usage
+#  makesimfilelist <prj.vex> [ <directory> ]
+
+vex = None
+outPath = ''
+force = False
+
+for a in argv[1:]:
+    if a[0] == '-':
+        if a in ['-h', '--help']:
+            print('Usage: %s <prj.vex> [ <directory> ]' % argv[0])
+            exit(0)
+        elif a in ['-f', '--force']:
+            force = True
+        else:
+            print('Unknown parameter: %s\n' % a)
+            exit(0)
+    elif vex == None:
+        vex = a
+    elif outPath == '':
+        outPath = a
+        if a[-1] != '/':
+            outPath += '/'
+    else:
+        print('Unexpected command line parameter : %s\n' % a)
+        exit(0)
+
+if vex == None:
+    print('A vex file must be provided')
+    exit(0)
+
+antennas = []
+project = None
+
+data = popen('vexpeek %s' % vex).readlines();
+for d in data:
+    l = d.strip()
+    if project == None:
+        project = l
+    else:
+        s = l.split()
+        antennas.append(s[0])
+
+print('Project: ', project, '  Antennas: ', antennas)
+
+for a in antennas:
+    outFile = project.lower() + '.' + a.lower() + '.filelist'
+    if isfile(outFile) and not force:
+        print('Output file %s exists.  Will not overwrite.  Run with --force to proceed.' % outFile)
+        exit(0)
+    out = open(outFile, 'w')
+    data = popen('vexpeek --scans=%s %s' % (a, vex)).readlines()
+    for d in data:
+        s = d.strip().split()
+        if len(s) == 6:
+            scan = s[0]
+            start = s[4]
+            stop = s[5]
+            out.write('%s%s_%s_%s.sim %s %s\n' % (outPath, project.upper(), a.upper(), scan, start, stop))
+    out.close()

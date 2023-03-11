@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <mpi.h>
 #include "config.h"
 #include "options.h"
 
@@ -34,6 +35,7 @@ void resetCommandLineOptions(CommandLineOptions *opts)
 	opts->fluxDensity = DEFAULT_FLUX_DENSITY;
 	opts->SEFD = DEFAULT_SEFD;
 	opts->filterTransition = DEFAULT_FILTER_TRANSITION;
+	opts->nProcess = 1;
 }
 
 CommandLineOptions *newCommandLineOptions(int argc, char **argv)
@@ -50,6 +52,12 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	resetCommandLineOptions(opts);
+
+	MPI_Comm_size(MPI_COMM_WORLD, &opts->nProcess);
+	if(opts->nProcess < 1)
+	{
+		opts->nProcess = 1;
+	}
 
 	opts->version = version;
 	opts->program = argv[0];
