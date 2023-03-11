@@ -18,7 +18,7 @@ swc017
 swc018
 swc019
 swc020
-swc006 # this one has been running slow. put at end
+swc006 # this one has been running slow; put at end
 
 # data destinations
 BR /home/datacopy-13/Simulated/BR
@@ -31,4 +31,4 @@ NL /home/datacopy-07/Simulated/NL
 OV /home/datacopy-08/Simulated/OV
 PT /home/datacopy-07/Simulated/PT
 SC /home/datacopy-08/Simulated/SC
-
+*  /home/datacopy-18/Simulated/Other	# stations not explicitly configured above will go here

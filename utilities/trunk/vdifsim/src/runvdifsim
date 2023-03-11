@@ -1,0 +1,57 @@
+#!/bin/env python3
+
+from os import getenv, system
+from sys import argv, exit
+from os.path import expanduser
+
+program = 'runvdifsim'
+version = 0.1
+verdate = '20230311'
+author = 'Walter Brisken <wbrisken@nrao.edu>'
+
+force = False
+
+dotFile = expanduser('~/.vdifsim')
+
+def loadDotFile():
+    try:
+        data = open(dotFile, 'r').readlines()
+        print('Found %s' % dotFile)
+        machines = []
+        outPaths = {}
+        for d in data:
+            s = d.strip().split('#')[0].split()
+            if len(s) == 1:
+                machines.append(s[0])
+            elif len(s) == 2:
+                p = s[1]
+                if p[-1] != '/':
+                    p += '/'
+                outPaths[s[0].upper()] = p
+        return machines, outPaths
+    except IOError:
+        print('Note: %s not found' % dotFile)
+        return None, None
+
+label = getenv('DIFX_LABEL')
+if label == None:
+	print('Error: DIFX_LABEL env. var. must be defined.  Are you in a Difx Environment?\n');
+	exit(0)
+
+machines, outPaths = loadDotFile()
+
+if machines == None:
+	print('Error: cannot load %s .\n' % dotFile)
+	exit(0)
+
+nFile = 0
+for a in argv[1:]:
+	if a[-6:] == '.input':
+		nFile += 1
+	
+hosts = ','.join(machines[:nFile])
+args = ' '.join(argv[1:])
+
+cmd = 'mpirun --host %s rungeneric.%s vdifsum %s' % (hosts, args)
+print('Executing: %s' % cmd)
+system(cmd)

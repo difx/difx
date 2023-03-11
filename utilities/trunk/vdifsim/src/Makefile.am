@@ -7,7 +7,8 @@ bin_PROGRAMS = \
 	vdifsim
 
 dist_bin_SCRIPTS = \
-	makesimfilelist
+	makesimfilelist \
+	runvdifsim
 
 noinst_PROGRAMS = \
 	testccr

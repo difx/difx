@@ -45,7 +45,13 @@ def usage():
     print('Options can include:')
     print('  -f or --force  : continue even if destination files exist.\n')
     print('  -h or --help   : print this help info.\n')
-    print('  --name=<name>  : change output file names to include <name>\n')
+    print('  --name=<name>  : change output file names to include <name>\n\n')
+    print('<prj.vex> is the vex file.  Start and stop times in the $SCHED')
+    print('section is used.\n')
+    print('<directory> is an optional parameter for location of the .vdif files')
+    print('to be created.  If not supplied, they will go into the current directory.\n')
+    print('If a ~/.vdifsim file exists, that will be used to specify .vdif file')
+    print('locations.  See sample.vdifsim.\n')
 
 for a in argv[1:]:
     if a[0] == '-':
@@ -70,7 +76,7 @@ for a in argv[1:]:
         exit(0)
 
 if vex == None:
-    print('A vex file must be provided')
+    print('A vex file must be provided.  Run with --help for more details.')
     exit(0)
 
 if outPath == '':
@@ -113,7 +119,10 @@ for a in antennas:
                 try:
                     P = outPaths[a.upper()]
                 except NameError:
-                    P = outPath
+                    try:
+                        P = outPaths['*']
+                    except NameError:
+                        P = outPath
             else:
                 P = outPath
             if not isdir(P):
