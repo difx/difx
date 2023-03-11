@@ -1,23 +1,61 @@
 #!/bin/env python3
 
-from os import popen
+from os import popen, getcwd
 from sys import argv, exit
-from os.path import isfile
+from os.path import isfile, isdir, expanduser
 
 # Usage
 #  makesimfilelist <prj.vex> [ <directory> ]
 
+program = 'makesimfilelist'
+version = 0.1
+verdate = '20230311'
+author = 'Walter Brisken <wbrisken@nrao.edu>'
+
 vex = None
+name = None
 outPath = ''
 force = False
+
+dotFile = expanduser('~/.vdifsim')
+
+def loadDotFile():
+    try:
+        data = open(dotFile, 'r').readlines()
+        print('Found %s' % dotFile)
+        machines = []
+        outPaths = {}
+        for d in data:
+            s = d.strip().split('#')[0].split()
+            if len(s) == 1:
+                machines.append(s[0])
+            elif len(s) == 2:
+                p = s[1]
+                if p[-1] != '/':
+                    p += '/'
+                outPaths[s[0].upper()] = p
+        return machines, outPaths
+    except IOError:
+        print('Note: %s not found' % dotFile)
+        return None, None
+
+def usage():
+    print('\n%s ver %s  %s  %s\n' % (program, version, verdate, author))
+    print('Usage: %s [options] <prj.vex> [ <directory> ]\n' % argv[0])
+    print('Options can include:')
+    print('  -f or --force  : continue even if destination files exist.\n')
+    print('  -h or --help   : print this help info.\n')
+    print('  --name=<name>  : change output file names to include <name>\n')
 
 for a in argv[1:]:
     if a[0] == '-':
         if a in ['-h', '--help']:
-            print('Usage: %s <prj.vex> [ <directory> ]' % argv[0])
+            usage()
             exit(0)
         elif a in ['-f', '--force']:
             force = True
+        elif a[0:7] == '--name=':
+            name = a[7:]
         else:
             print('Unknown parameter: %s\n' % a)
             exit(0)
@@ -35,6 +73,12 @@ if vex == None:
     print('A vex file must be provided')
     exit(0)
 
+if outPath == '':
+    machines, outPaths = loadDotFile()
+    if machines == None:
+        print('Cannot open %s .  Will put files in current directory.' % dotFile)
+        outPath = getcwd() + '/'
+
 antennas = []
 project = None
 
@@ -47,10 +91,13 @@ for d in data:
         s = l.split()
         antennas.append(s[0])
 
-print('Project: ', project, '  Antennas: ', antennas)
+if name == None:
+    name = project.lower()
+
+print('Project: ', project, '  Antennas: ', antennas, '  Base name: ', name)
 
 for a in antennas:
-    outFile = project.lower() + '.' + a.lower() + '.filelist'
+    outFile = name + '.' + a.lower() + '.filelist'
     if isfile(outFile) and not force:
         print('Output file %s exists.  Will not overwrite.  Run with --force to proceed.' % outFile)
         exit(0)
@@ -62,5 +109,14 @@ for a in antennas:
             scan = s[0]
             start = s[4]
             stop = s[5]
-            out.write('%s%s_%s_%s.sim %s %s\n' % (outPath, project.upper(), a.upper(), scan, start, stop))
+            if outPaths != None:
+                try:
+                    P = outPaths[a.upper()]
+                except NameError:
+                    P = outPath
+            else:
+                P = outPath
+            if not isdir(P):
+                print('Warning: %s does not exist as a directory.  You might want to correct that!' % P)
+            out.write('%s%s_%s_%s.sim %s %s\n' % (P, name.upper(), a.upper(), scan, start, stop))
     out.close()

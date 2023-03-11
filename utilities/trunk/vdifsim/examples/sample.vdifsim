@@ -1,0 +1,34 @@
+# Processing computers
+swc001
+swc002
+swc003
+swc004
+swc005
+swc007
+swc008
+swc009
+swc010
+swc011
+swc012
+swc013
+swc014
+swc015
+swc016
+swc017
+swc018
+swc019
+swc020
+swc006 # this one has been running slow. put at end
+
+# data destinations
+BR /home/datacopy-13/Simulated/BR
+FD /home/datacopy-18/Simulated/FD
+HN /home/datacopy-17/Simulated/HN
+KP /home/datacopy-18/Simulated/KP
+LA /home/datacopy-19/Simulated/LA
+MK /home/datacopy-20/Simulated/MK
+NL /home/datacopy-07/Simulated/NL
+OV /home/datacopy-08/Simulated/OV
+PT /home/datacopy-07/Simulated/PT
+SC /home/datacopy-08/Simulated/SC
+
