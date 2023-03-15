@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <mpi.h>
+#include <difxmessage.h>
 #include "options.h"
 #include "sim.h"
 
@@ -34,6 +35,14 @@ int main(int argc, char **argv)
 	/* set to UTC */
 	setenv("TZ", "", 1);
 	tzset();
+
+	if(opts->useDifxMessage)
+	{
+		int mpiRank;
+
+		MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank);
+		difxMessageInit(mpiRank, "vdifsim");
+	}
 
 	printf("Starting program: %s ver %s\n", opts->program, opts->version);
 

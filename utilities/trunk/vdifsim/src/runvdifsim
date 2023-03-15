@@ -52,6 +52,6 @@ for a in argv[1:]:
 hosts = ','.join(machines[:nFile])
 args = ' '.join(argv[1:])
 
-cmd = 'mpirun --host %s rungeneric.%s vdifsum %s' % (hosts, args)
+cmd = 'mpirun --host %s rungeneric.%s vdifsim %s' % (hosts, label, args)
 print('Executing: %s' % cmd)
 system(cmd)

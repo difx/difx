@@ -118,10 +118,10 @@ for a in antennas:
             if outPaths != None:
                 try:
                     P = outPaths[a.upper()]
-                except NameError:
+                except KeyError:
                     try:
                         P = outPaths['*']
-                    except NameError:
+                    except KeyError:
                         P = outPath
             else:
                 P = outPath

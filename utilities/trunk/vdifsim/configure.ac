@@ -19,6 +19,7 @@ AC_CHECK_LIB(pthread, pthread_create,,[AC_MSG_ERROR("need libpthread")])
 PKG_CHECK_MODULES(GLIB, glib-2.0)
 PKG_CHECK_MODULES(DIFXIO, difxio >= 3.7.0)
 PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.5)
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.8.0])
 PKG_CHECK_MODULES(FFTW, fftw3)
 PKG_CHECK_MODULES(GSL, gsl, [hasgsl=true], [hasgsl=false])
 if test "$hasgsl" == "true"; then
@@ -26,8 +27,8 @@ if test "$hasgsl" == "true"; then
 fi
 AM_CONDITIONAL(WITH_GSL, $hasgsl)
 
-LIBS="${LIBS} ${GLIB_LIBS} ${DIFXIO_LIBS} ${VDIFIO_LIBS} ${GSL_LIBS} ${FFTW_LIBS}"
-CFLAGS="${CFLAGS} ${GLIB_CFLAGS} ${DIFXIO_CFLAGS} ${VDIFIO_CFLAGS} ${GSL_CFLAGS} ${FFTW_CFLAGS}"
+LIBS="${LIBS} ${GLIB_LIBS} ${DIFXIO_LIBS} ${DIFXMESSAGE_LIBS} ${VDIFIO_LIBS} ${GSL_LIBS} ${FFTW_LIBS}"
+CFLAGS="${CFLAGS} ${GLIB_CFLAGS} ${DIFXIO_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${VDIFIO_CFLAGS} ${GSL_CFLAGS} ${FFTW_CFLAGS}"
 CXXFLAGS="${CFLAGS} -std=c++11 -Wno-unknown-pragmas -Wno-reorder"
 
 AC_CONFIG_FILES([ \

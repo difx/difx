@@ -21,6 +21,7 @@ typedef struct
 	double fluxDensity;	/* [Jy] default point source flux density; resets to zero if configFile is provided */
 	double filterTransition;/* fractional bandwidth of band edge transition zone */
 	int nProcess;		/* fed by MPI_Comm_size() */
+	int useDifxMessage;	/* if true, multicast status */
 } CommandLineOptions;
 
 void usage(const CommandLineOptions *opts);

@@ -25,6 +25,8 @@ void usage(const CommandLineOptions *opts)
 	fprintf(stderr, "  -d                  Write some debug information to files\n\n");
 	fprintf(stderr, "  --test\n");
 	fprintf(stderr, "  -t                  Enter test mode\n\n");
+	fprintf(stderr, "  --message\n");
+	fprintf(stderr, "  -m                  Broadcast status using difxmessage\n\n");
 	fprintf(stderr, "  --config <file>\n");
 	fprintf(stderr, "  -c <file>           Read <file> as a configuration file\n\n");
 };
@@ -104,6 +106,10 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 			else if(strcmp(argv[a], "--test") == 0 || strcmp(argv[a], "-t") == 0)
 			{
 				opts->testMode = 1;
+			}
+			else if(strcmp(argv[a], "--message") == 0 || strcmp(argv[a], "-m") == 0)
+			{
+				opts->useDifxMessage = 1;
 			}
 			else if(a < argc - 1)
 			{

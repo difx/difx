@@ -1,6 +1,9 @@
+#include <stdio.h>
+#include <string.h>
 #include <difxio/difx_input.h>
 #include <pthread.h>
 #include <mpi.h>
+#include <difxmessage.h>
 #include "sim.h"
 #include "common.h"
 #include "datastream.h"
@@ -71,6 +74,15 @@ static int work(const DifxInput *D, const CommandLineOptions *opts, const Config
 		if(opts->verbose > 0)
 		{
 			printf("Rank %d : Starting second %d / %d\n", mpiRank, t, dur);
+		}
+		if(opts->useDifxMessage)
+		{
+			const int MessageSize = 128;
+			char message[MessageSize];
+
+			snprintf(message, MessageSize, "Starting second %d/%d %5.2f%% complete.", t, dur, (100.0*t)/dur);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+			printf("Sending %s\n", message);
 		}
 
 		/* 2.1. Generate common signal */
@@ -205,6 +217,11 @@ int simulate(const CommandLineOptions *opts)
 			/* a different MPI process will handle this file */
 
 			continue;
+		}
+
+		if(opts->useDifxMessage)
+		{
+			difxMessageSetInputFilename(opts->inputFile[i]);
 		}
 
 		printf("Rank %d running on input file %d/%d = %s\n", mpiRank, i+1, opts->nInputFile, opts->inputFile[i]);

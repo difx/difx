@@ -28,9 +28,14 @@ To run a full schedule, simulate, correlate cycle:
 
   - default is to place them in the local directory
 
-8. Generate simulated data
+8a. (option 1 -- single server) Generate simulated data
 
   vdifsim -v cband1_*.input
+
+8b. (option 2 -- MPI-based)
+
+  runvdifsim -v cband1_*.input
+  # note: you must have a ~/.vdifsim file with cluster members listed
 
 9. Correlate the data
 

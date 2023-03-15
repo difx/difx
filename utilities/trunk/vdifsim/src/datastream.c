@@ -46,6 +46,8 @@ Datastream *newDatastream(const DifxInput *D, int dsId, const CommonSignal *C, c
 	if(!d->out)
 	{
 		fprintf(stderr, "Error: cannot open %s for write.\n", dd->file[0]);
+
+		exit(0);
 	}
 		
 	d->datastreamId = dsId;
@@ -412,7 +414,7 @@ void writeVDIF(const Datastream *d, const CommonSignal *C)
 	frameLength = d->dataBytes + VDIF_HEADER_BYTES;
 
 	vh = (vdif_header *)calloc(1, frameLength);
-	data = (unsigned char *)vh + VDIF_HEADER_BYTES;
+	data = (unsigned char *)(vh) + VDIF_HEADER_BYTES;
 	setVDIFEpochMJD(vh, C->mjd);
 	setVDIFFrameMJD(vh, C->mjd);
 	setVDIFFrameSecond(vh, C->sec);
