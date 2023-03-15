@@ -101,7 +101,6 @@ std::string Mark6DiskDevice::getName() const {
  */
 bool Mark6DiskDevice::isValid()
 {
-    //clog << diskId_m << " " << controllerId_m << endl;
     if (diskId_m == -1)
         return(false);
     if (controllerId_m == -1)
