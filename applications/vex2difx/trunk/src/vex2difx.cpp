@@ -233,7 +233,7 @@ static DifxAntenna *makeDifxAntennas(const Job &J, const VexData *V, int *n)
 	for(i = 0, a = J.jobAntennas.begin(); a != J.jobAntennas.end(); ++i, ++a)
 	{
 		const VexAntenna *ant = V->getAntenna(*a);
-		
+
 		snprintf(A[i].name, DIFXIO_NAME_LENGTH, "%s", ant->difxName.c_str());
 		A[i].X = ant->x + ant->dx*(mjd-ant->posEpoch)*86400.0;
 		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
@@ -2438,19 +2438,37 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 		}
 
 		// iterate over all antennas and fill in zoom band, LO offset, clock offset details
-		int currDatastream = 0;
 		minChans = corrSetup->minInputChans();
 		for(std::map<std::string,VexSetup>::const_iterator it = mode->setups.begin(); it != mode->setups.end(); ++it)
 		{
 			const std::string &antName = it->first;
 			const VexSetup &setup = it->second;
 			unsigned int startBand, startFreq;
+			int currDatastream;
+
 			startBand = 0;
 			startFreq = 0;
 
 			if(find(J.jobAntennas.begin(), J.jobAntennas.end(), antName) == J.jobAntennas.end())
 			{
 				continue;
+			}
+
+			for(currDatastream = 0; currDatastream < config->nDatastream; ++currDatastream)
+			{
+				int ai = D->datastream[currDatastream].antennaId;
+
+				if(antName == D->antenna[ai].name)
+				{
+					break;
+				}
+			}
+
+			if(currDatastream == -1)
+			{
+				std::cerr << "Developer error: currDatastream=-1  antenna=" << antName << std::endl;
+
+				exit(0);
 			}
 
 			const VexAntenna *antenna = V->getAntenna(antName);
