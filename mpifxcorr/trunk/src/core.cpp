@@ -1358,13 +1358,13 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
             {
               if(config->getDLocalRecordedFreqIndex(procslots[index].configindex, j, l) == parentfreqindex && config->getDZoomBandPol(procslots[index].configindex, j, k-numrecordedbands) == config->getDRecordedBandPol(procslots[index].configindex, j, l))
               {
-                procslots[index].floatresults[resultindex] += modes[j]->getWeight(false, l);
+                procslots[index].floatresults[resultindex] += modes[j]->getWeight(true, l);
               }
             }
           }
           else
           {
-            procslots[index].floatresults[resultindex] += modes[j]->getWeight(false, k);
+            procslots[index].floatresults[resultindex] += modes[j]->getWeight(true, k);
           }
           resultindex++;
         }
