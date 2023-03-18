@@ -42,7 +42,7 @@ static int work(const DifxInput *D, const CommandLineOptions *opts, const Config
 
 	/* 1. Configure working arrays */
 	C = newCommonSignal(D, opts, config);
-	ds = newDatastreams(D, C, opts);
+	ds = newDatastreams(D, C, opts, config);
 	threads = (pthread_t *)calloc(D->nDatastream, sizeof(pthread_t));
 	info = (DatastreamInfo *)calloc(D->nDatastream, sizeof(DatastreamInfo));
 	for(i = 0; i < D->nDatastream; ++i)

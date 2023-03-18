@@ -8,6 +8,7 @@
 #include <difxio/difx_input.h>
 #include "options.h"
 #include "common.h"
+#include "configuration.h"
 
 /* major steps
  *
@@ -59,13 +60,12 @@ typedef struct
 	double SEFD;			/* [Jy] amount of additive noise */
 	GRand *random;
 	double *filter;			/* channelization filter */
-
-	/* Need here: destination real-valued array, fft plans, sub-second buffers (spec and samps) */
+	const AntennaParameters *parameters;	/* from configuration file; null if no config is set */
 } Datastream;
 
-Datastream *newDatastream(const DifxInput *D, int dsId, const CommonSignal *C, const CommandLineOptions *opts);
+Datastream *newDatastream(const DifxInput *D, int dsId, const CommonSignal *C, const CommandLineOptions *opts, const Configuration *config);
 
-Datastream **newDatastreams(const DifxInput *D, const CommonSignal *C, const CommandLineOptions *opts);
+Datastream **newDatastreams(const DifxInput *D, const CommonSignal *C, const CommandLineOptions *opts, const Configuration *config);
 
 void deleteDatastream(Datastream *d);
 

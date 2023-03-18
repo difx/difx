@@ -9,7 +9,7 @@
 #include "datastream.h"
 #include "model.h"
 
-Datastream *newDatastream(const DifxInput *D, int dsId, const CommonSignal *C, const CommandLineOptions *opts)
+Datastream *newDatastream(const DifxInput *D, int dsId, const CommonSignal *C, const CommandLineOptions *opts, const Configuration *config)
 {
 	Datastream *d;
 	const DifxDatastream *dd;
@@ -52,6 +52,10 @@ Datastream *newDatastream(const DifxInput *D, int dsId, const CommonSignal *C, c
 		
 	d->datastreamId = dsId;
 	d->antennaName = D->antenna[dd->antennaId].name;
+	if(config)
+	{
+		d->parameters = getAntennaParametersConst(config, d->antennaName);
+	}
 	d->da = D->antenna + dd->antennaId;
 	d->dd = dd;
 	d->filename = dd->file[0];
@@ -128,7 +132,7 @@ Datastream *newDatastream(const DifxInput *D, int dsId, const CommonSignal *C, c
 	return d;
 }
 
-Datastream **newDatastreams(const DifxInput *D, const CommonSignal *C, const CommandLineOptions *opts)
+Datastream **newDatastreams(const DifxInput *D, const CommonSignal *C, const CommandLineOptions *opts, const Configuration *config)
 {
 	Datastream **ds;
 	int dsId;
@@ -137,7 +141,7 @@ Datastream **newDatastreams(const DifxInput *D, const CommonSignal *C, const Com
 
 	for(dsId = 0; dsId < D->nDatastream; ++dsId)
 	{
-		ds[dsId] = newDatastream(D, dsId, C, opts);
+		ds[dsId] = newDatastream(D, dsId, C, opts, config);
 	}
 
 	ds[D->nDatastream] = 0;
@@ -435,6 +439,7 @@ void writeVDIF(const Datastream *d, const CommonSignal *C)
 
 			ds = d->subband + s;
 			vh->threadid = ds->threadId;
+			vh->invalid = 0;
 
 			switch(d->bits)
 			{
@@ -455,6 +460,21 @@ void writeVDIF(const Datastream *d, const CommonSignal *C)
 				exit(0);
 			}
 
+			if(d->parameters)
+			{
+				double v;
+
+				v = g_rand_double_range(d->random, 0.0, 1.0);
+				if(v < d->parameters->droppedPacketRate)
+				{
+					continue;
+				}
+				else if(v > 1.0-d->parameters->invalidPacketRate)
+				{
+					vh->invalid = 1;
+				}
+				
+			}
 			fwrite(vh, frameLength, 1, d->out);
 		}
 	}
@@ -499,21 +519,29 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			int startSample;
 			int i;
 			double delay_center_samples;
+			double clockOffset_us;	/* [us] clock offset (error) */
 
 /* 1. coarse delay -- sample selection */
 			/* compute delay model at center of chunk */
 			t = C->sec + (c + 0.5)/ds->nChunk;
 
+			if(d->parameters)
+			{
+				clockOffset_us = d->parameters->clockOffset;
+			}
+			else
+			{
+				clockOffset_us = 0.0;
+			}
+
 			/* apply delay model to get appropriate time at the geocenter */
-			delay_us = getDelay(d->im, D->scan->nPoly, C->mjd, t, 1.0/ds->nChunk) + evaluateDifxAntennaClock(d->da, C->mjd + t/86400.0);
+			delay_us = getDelay(d->im, D->scan->nPoly, C->mjd, t, 1.0/ds->nChunk) + evaluateDifxAntennaClock(d->da, C->mjd + t/86400.0) + clockOffset_us;
 			t += delay_us*1e-6;
 			
-			delay_us = getDelay(d->im, D->scan->nPoly, C->mjd, t, 1.0/ds->nChunk) + evaluateDifxAntennaClock(d->da, C->mjd + t/86400.0);
+			delay_us = getDelay(d->im, D->scan->nPoly, C->mjd, t, 1.0/ds->nChunk) + evaluateDifxAntennaClock(d->da, C->mjd + t/86400.0) + clockOffset_us;
 			int_delay_us = (int)delay_us;
 			frac_delay_us = delay_us - int_delay_us;
 			rate_us_s = getRate(d->im, D->scan->nPoly, C->mjd, t) + evaluateDifxAntennaClockRate(d->da, C->mjd + t/86400.0);
-
-			// FIXME: add clock error here
 
 			startSample = c*ds->nSamp;
 			desiredSample = startSample + delay_us*1e-6*ds->nSample1sec;

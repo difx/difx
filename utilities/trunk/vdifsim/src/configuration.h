@@ -29,6 +29,7 @@ typedef struct
 	double droppedPacketRate;	/* between 0 and 1 */
 	double invalidPacketRate;	/* between 0 and 1 */
 	double clockOffset;		/* [us] */
+	/* FIXME: add filter parameters, cross polarization, ... */
 } AntennaParameters;
 
 typedef struct
@@ -64,6 +65,9 @@ typedef struct
 } Configuration;
 
 
+AntennaParameters *getAntennaParameters(Configuration *config, const char *antName);
+
+const AntennaParameters *getAntennaParametersConst(const Configuration *config, const char *antName);
 
 Configuration *loadConfigration(const char *filename);
 

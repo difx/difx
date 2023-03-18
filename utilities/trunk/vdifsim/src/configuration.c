@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <regex.h>
 #include "configuration.h"
 
 
@@ -38,16 +39,52 @@ Tone      8850.00                   10              # add a tone at 8850.0 MHz w
  */
 
 
+AntennaParameters *getAntennaParameters(Configuration *config, const char *antName)
+{
+	int p;
+
+	for(p = 0; p < config->nAntParm; ++p)
+	{
+		if(strcasecmp(config->antParms[p].name, antName) == 0)
+		{
+			return config->antParms + p;
+		}
+	}
+
+	return 0;
+}
+
+const AntennaParameters *getAntennaParametersConst(const Configuration *config, const char *antName)
+{
+	int p;
+
+	for(p = 0; p < config->nAntParm; ++p)
+	{
+		if(strcasecmp(config->antParms[p].name, antName) == 0)
+		{
+			return config->antParms + p;
+		}
+	}
+
+	return 0;
+}
+
+
 Configuration *loadConfigration(const char *filename)
 {
 	const int MaxLineLength = 1024;
 	Configuration *config;
 	FILE *in;
 	int lineNumber = 0;
-	Feature *f;
+	Feature *F;
+	AntennaParameters *A = 0;
+	regex_t headingMatch;
+	regmatch_t matchPtr[2];
+
+	regcomp(&headingMatch, "\\[[a-zA-Z0-9]+\\]", REG_EXTENDED);
 
 	config = newConfiguration();
-	f = config->features;
+	F = config->features;
 
 	in = fopen(filename, "r");
 	if(!in)
@@ -57,7 +94,6 @@ Configuration *loadConfigration(const char *filename)
 		return 0;
 	}
 
-	/* FIXME: parse file */
 	for(;;)
 	{
 		int i;
@@ -92,98 +128,155 @@ Configuration *loadConfigration(const char *filename)
 		{
 			continue;	/* must be a blank line or a pure comment */
 		}
-		if(strcasecmp(typeStr, "FluxDensity") == 0)
+		if(regexec(&headingMatch, typeStr, 2, matchPtr, 0) == 0)
 		{
-			if(n != 2)
+			typeStr[matchPtr[0].rm_eo] = 0;
+			A = getAntennaParameters(config, typeStr + matchPtr[0].rm_so);
+			if(A == 0)
 			{
-				fprintf(stderr, "%s line %d: FluxDensity needs <flux density>\n", filename, lineNumber);
-				break;
+				if(config->nAntParm < MAX_ANTENNA_PARAMETERS)
+				{
+					A = config->antParms + config->nAntParm;
+					++config->nAntParm;
+					snprintf(A->name, DIFXIO_NAME_LENGTH, "%s", typeStr + matchPtr[0].rm_so);
+				}
+				else
+				{
+					fprintf(stderr, "Error: too many antennas in %s.  Max is %d\n", filename, MAX_ANTENNA_PARAMETERS);
+					break;
+				}
 			}
-			config->fluxDensity = p[0];
 		}
-		else if(strcasecmp(typeStr, "Index") == 0)
+		else if(A)
 		{
-			if(n != 3)
+			if(strcasecmp(typeStr, "DroppedPacketRate") == 0)
 			{
-				fprintf(stderr, "%s line %d: Index needs <ref freq> <spec index>\n", filename, lineNumber);
+				if(n != 2)
+				{
+					fprintf(stderr, "%s line %d: DroppedPacketRate needs <rate>\n", filename, lineNumber);
+					break;
+				}
+				A->droppedPacketRate = p[0];
+			}
+			else if(strcasecmp(typeStr, "InvalidPacketRate") == 0)
+			{
+				if(n != 2)
+				{
+					fprintf(stderr, "%s line %d: InvalidPacketRate needs <rate>\n", filename, lineNumber);
+					break;
+				}
+				A->invalidPacketRate = p[0];
+			}
+			else if(strcasecmp(typeStr, "ClockOffset") == 0)
+			{
+				if(n != 2)
+				{
+					fprintf(stderr, "%s line %d: ClockOffset needs <offset> (in microseconds)\n", filename, lineNumber);
+					break;
+				}
+				A->clockOffset = p[0];
+			}
+			else
+			{
+				fprintf(stderr, "%s line %d : Unknown antenna parameter: %s\n", filename, lineNumber, typeStr);
 				break;
 			}
-			config->specIndexFreq = p[0];
-			config->specIndex = p[1];
-		}
-		else if(strcasecmp(typeStr, "Gaussian") == 0)
-		{
-			if(n != 4)
-			{
-				fprintf(stderr, "%s line %d: Gaussian needs <freq> <width> <flux density>\n", filename, lineNumber);
-				break;
-			}
-			f->type = Feature_Gaussian;
-			f->freq = p[0];
-			f->width = p[1];
-			f->fluxDensity = p[2];
-			++f;
-			++config->nFeature;
-		}
-		else if(strcasecmp(typeStr, "Sinc") == 0)
-		{
-			if(n != 4)
-			{
-				fprintf(stderr, "%s line %d: Sinc needs <freq> <width> <flux density>\n", filename, lineNumber);
-				break;
-			}
-			f->type = Feature_Sinc;
-			f->freq = p[0];
-			f->width = p[1];
-			f->fluxDensity = p[2];
-			++f;
-			++config->nFeature;
-		}
-		else if(strcasecmp(typeStr, "Triangle") == 0)
-		{
-			if(n != 4)
-			{
-				fprintf(stderr, "%s line %d: Triangle needs <freq> <width> <flux density>\n", filename, lineNumber);
-				break;
-			}
-			f->type = Feature_Triangle;
-			f->freq = p[0];
-			f->width = p[1];
-			f->fluxDensity = p[2];
-			++f;
-			++config->nFeature;
-		}
-		else if(strcasecmp(typeStr, "Box") == 0)
-		{
-			if(n != 4)
-			{
-				fprintf(stderr, "%s line %d: Box needs <freq> <width> <flux density>\n", filename, lineNumber);
-				break;
-			}
-			f->type = Feature_Box;
-			f->freq = p[0];
-			f->width = p[1];
-			f->fluxDensity = p[2];
-			++f;
-			++config->nFeature;
-		}
-		else if(strcasecmp(typeStr, "Tone") == 0)
-		{
-			if(n != 3)
-			{
-				fprintf(stderr, "%s line %d: Tone needs <freq> <flux>\n", filename, lineNumber);
-				break;
-			}
-			f->type = Feature_Tone;
-			f->freq = p[0];
-			f->flux = p[1] * 1e9;
-			++f;
-			++config->nFeature;
 		}
 		else
 		{
-			fprintf(stderr, "%s line %d : Unknown feature type: %s\n", filename, lineNumber, typeStr);
-			break;
+			if(strcasecmp(typeStr, "FluxDensity") == 0)
+			{
+				if(n != 2)
+				{
+					fprintf(stderr, "%s line %d: FluxDensity needs <flux density>\n", filename, lineNumber);
+					break;
+				}
+				config->fluxDensity = p[0];
+			}
+			else if(strcasecmp(typeStr, "Index") == 0)
+			{
+				if(n != 3)
+				{
+					fprintf(stderr, "%s line %d: Index needs <ref freq> <spec index>\n", filename, lineNumber);
+					break;
+				}
+				config->specIndexFreq = p[0];
+				config->specIndex = p[1];
+			}
+			else if(strcasecmp(typeStr, "Gaussian") == 0)
+			{
+				if(n != 4)
+				{
+					fprintf(stderr, "%s line %d: Gaussian needs <freq> <width> <flux density>\n", filename, lineNumber);
+					break;
+				}
+				F->type = Feature_Gaussian;
+				F->freq = p[0];
+				F->width = p[1];
+				F->fluxDensity = p[2];
+				++F;
+				++config->nFeature;
+			}
+			else if(strcasecmp(typeStr, "Sinc") == 0)
+			{
+				if(n != 4)
+				{
+					fprintf(stderr, "%s line %d: Sinc needs <freq> <width> <flux density>\n", filename, lineNumber);
+					break;
+				}
+				F->type = Feature_Sinc;
+				F->freq = p[0];
+				F->width = p[1];
+				F->fluxDensity = p[2];
+				++F;
+				++config->nFeature;
+			}
+			else if(strcasecmp(typeStr, "Triangle") == 0)
+			{
+				if(n != 4)
+				{
+					fprintf(stderr, "%s line %d: Triangle needs <freq> <width> <flux density>\n", filename, lineNumber);
+					break;
+				}
+				F->type = Feature_Triangle;
+				F->freq = p[0];
+				F->width = p[1];
+				F->fluxDensity = p[2];
+				++F;
+				++config->nFeature;
+			}
+			else if(strcasecmp(typeStr, "Box") == 0)
+			{
+				if(n != 4)
+				{
+					fprintf(stderr, "%s line %d: Box needs <freq> <width> <flux density>\n", filename, lineNumber);
+					break;
+				}
+				F->type = Feature_Box;
+				F->freq = p[0];
+				F->width = p[1];
+				F->fluxDensity = p[2];
+				++F;
+				++config->nFeature;
+			}
+			else if(strcasecmp(typeStr, "Tone") == 0)
+			{
+				if(n != 3)
+				{
+					fprintf(stderr, "%s line %d: Tone needs <freq> <flux>\n", filename, lineNumber);
+					break;
+				}
+				F->type = Feature_Tone;
+				F->freq = p[0];
+				F->flux = p[1] * 1e9;
+				++F;
+				++config->nFeature;
+			}
+			else
+			{
+				fprintf(stderr, "%s line %d : Unknown feature type: %s\n", filename, lineNumber, typeStr);
+				break;
+			}
 		}
 	}
 
@@ -228,44 +321,54 @@ void printConfiguration(const Configuration *config)
 		}
 		for(i = 0; i < config->nFeature; ++i)
 		{
-			const Feature *f;
+			const Feature *F;
 
-			f = config->features + i;
-			switch(f->type)
+			F = config->features + i;
+			switch(F->type)
 			{
 			case Feature_Gaussian:
 				printf("  Gaussian:\n");
-				printf("    Center = %f MHz\n", f->freq);
-				printf("    FWHM = %f MHz\n", f->width);
-				printf("    Peak flux density = %f Jy\n", f->fluxDensity);
+				printf("    Center = %f MHz\n", F->freq);
+				printf("    FWHM = %f MHz\n", F->width);
+				printf("    Peak flux density = %f Jy\n", F->fluxDensity);
 				break;
 			case Feature_Sinc:
 				printf("  Sinc:\n");
-				printf("    Center = %f MHz\n", f->freq);
-				printf("    Width = %f MHz\n", f->width);
-				printf("    Peak flux density = %f Jy\n", f->fluxDensity);
+				printf("    Center = %f MHz\n", F->freq);
+				printf("    Width = %f MHz\n", F->width);
+				printf("    Peak flux density = %f Jy\n", F->fluxDensity);
 				break;
 			case Feature_Triangle:
 				printf("  Triange:\n");
-				printf("    Center = %f MHz\n", f->freq);
-				printf("    Width = %f MHz\n", f->width);
-				printf("    Peak flux density = %f Jy\n", f->fluxDensity);
+				printf("    Center = %f MHz\n", F->freq);
+				printf("    Width = %f MHz\n", F->width);
+				printf("    Peak flux density = %f Jy\n", F->fluxDensity);
 				break;
 			case Feature_Box:
 				printf("  Box:\n");
-				printf("    Center = %f MHz\n", f->freq);
-				printf("    Width = %f MHz\n", f->width);
-				printf("    Flux density = %f Jy\n", f->fluxDensity);
+				printf("    Center = %f MHz\n", F->freq);
+				printf("    Width = %f MHz\n", F->width);
+				printf("    Flux density = %f Jy\n", F->fluxDensity);
 				break;
 			case Feature_Tone:
 				printf("  Tone:\n");
-				printf("    Freq = %f MHz\n", f->freq);
-				printf("    Flux = %f Jy.GHz\n", f->fluxDensity * 1e-9);
+				printf("    Freq = %f MHz\n", F->freq);
+				printf("    Flux = %f Jy.GHz\n", F->fluxDensity * 1e-9);
 				break;
 			default:
-				printf("  Unknown feature %d\n", f->type);
+				printf("  Unknown feature %d\n", F->type);
 				break;
 			}
+		}
+		for(i = 0; i < config->nAntParm; ++i)
+		{
+			const AntennaParameters *A;
+
+			A = config->antParms + i;
+			printf("  Antenna %s\n", A->name);
+			printf("    Dropped packet rate = %f\n", A->droppedPacketRate);
+			printf("    Invalid packet rate = %f\n", A->invalidPacketRate);
+			printf("    Clock offset = %f us\n", A->clockOffset);
 		}
 	}
 }
