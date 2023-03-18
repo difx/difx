@@ -15,11 +15,14 @@ TODO
 
 * Consider horizon
 
+* Add antenna-based defects
+  - bandpass features
+  - clock errors
+  - packet loss / invalid packets
+
 * Support complex-valued VDIF output
 
 * Respect thread-id included in the format specifier
-
-* Integrate with difxmessage?
 
 * Add polarization leakage
 
@@ -39,6 +42,9 @@ STRETCH GOALS
 
 
 RESOLVED ISSUES
+
+X Integrate with difxmessage
+  - more integration still possible
 
 X integrate with MPI
   - option 1: simply parallelize across .input files

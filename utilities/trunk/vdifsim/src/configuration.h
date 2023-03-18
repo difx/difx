@@ -1,7 +1,10 @@
 #ifndef __CONFIGURATION_H__
 #define __CONFIGURATION_H__
 
-#define MAX_FEATURES	100
+#include <difxio/difx_input.h>
+
+#define MAX_FEATURES			100
+#define MAX_ANTENNA_PARAMETERS		25
 #define MAX_FEATURE_TYPE_STRING_LENGTH	32
 
 /* this file contains info supplied by an externa configuration file */
@@ -20,6 +23,13 @@ enum FeatureType
 
 extern const char FeatureTypeStrings[][MAX_FEATURE_TYPE_STRING_LENGTH];
 
+typedef struct
+{
+	char name[DIFXIO_NAME_LENGTH];
+	double droppedPacketRate;	/* between 0 and 1 */
+	double invalidPacketRate;	/* between 0 and 1 */
+	double clockOffset;		/* [us] */
+} AntennaParameters;
 
 typedef struct
 {
@@ -44,6 +54,10 @@ typedef struct
 	/* spectral features */
 	Feature features[MAX_FEATURES];
 	int nFeature;
+
+	/* antenna-specific parameters */
+	AntennaParameters antParms[MAX_ANTENNA_PARAMETERS];
+	int nAntParm;
 
 /* other settable parameters */
 
