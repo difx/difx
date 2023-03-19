@@ -23,7 +23,7 @@ def loadDotFile():
             s = d.strip().split('#')[0].split()
             if len(s) == 1:
                 machines.append(s[0])
-            elif len(s) == 2:
+            elif len(s) >= 2:
                 p = s[1]
                 if p[-1] != '/':
                     p += '/'

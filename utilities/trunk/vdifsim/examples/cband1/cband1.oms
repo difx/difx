@@ -1,0 +1,122 @@
+
+No cover letter provided.
+
+BEGIN = PROJECT_INFO
+
+    PROJECT_CODE       = cband1  
+    TITLE              = cband1
+    PI_NAME            = Walter Brisken
+    PI_ADDRESS         = NRAO/DSOC
+    PI_PHONE           = 505-234-5912
+    PI_OBS_PHONE       = 
+    PI_EMAIL           = wbrisken@nrao.edu
+    PI_FAX             = 
+    START              = 2023-078/21:00:00
+    STOP               = 2023-078/21:00:20
+    CORRELATOR         = SOCORRO
+
+END = PROJECT_INFO
+
+
+BEGIN = STATION_SETUP
+
+    STATION            = VLBA    
+    RECORD_SCANS       =    2
+    RECORD_HOURS       =   0.01
+    FE                 =  6cm omit 6cm omit
+    NUM_CHANNELS       =    2
+    FORMAT             = VDIF    
+    SPEEDUP            =  1.00
+    IF                 =  A  C   
+    BBC_SB             =  U  U   
+    NET_SB             =  U  U   
+    POL                =  R  L   
+
+    BEGIN = FREQUENCY_SET
+
+        LO_SUM         =   4909.00  4909.00
+        BBC_FREQUENCY  =    809.00   809.00
+        BANDWIDTH      =      8.00     8.00
+
+    END = FREQUENCY_SET
+
+END = STATION_SETUP
+
+BEGIN = STATION_INFO
+
+    STATION_ID         = HN 
+    STATION_NAME       = VLBA_HN 
+    TAPES              =   0
+    PASSES             =    0
+    DISK               =     0.1
+    START              = 2023-078/21:00:00
+    STOP               = 2023-078/21:00:20
+
+END = STATION_INFO
+
+
+BEGIN = STATION_INFO
+
+    STATION_ID         = FD 
+    STATION_NAME       = VLBA_FD 
+    TAPES              =   0
+    PASSES             =    0
+    DISK               =     0.1
+    START              = 2023-078/21:00:00
+    STOP               = 2023-078/21:00:20
+
+END = STATION_INFO
+
+
+BEGIN = STATION_INFO
+
+    STATION_ID         = OV 
+    STATION_NAME       = VLBA_OV 
+    TAPES              =   0
+    PASSES             =    0
+    DISK               =     0.1
+    START              = 2023-078/21:00:00
+    STOP               = 2023-078/21:00:20
+
+END = STATION_INFO
+
+
+BEGIN = STATION_INFO
+
+    STATION_ID         = SC 
+    STATION_NAME       = VLBA_SC 
+    TAPES              =   0
+    PASSES             =    0
+    DISK               =     0.1
+    START              = 2023-078/21:00:00
+    STOP               = 2023-078/21:00:20
+
+END = STATION_INFO
+
+
+BEGIN = SOURCE_INFO
+
+    SOURCE_NAME       = J2005+7752
+    CAL_CODE          = V
+    SOURCE_RA         = 20h05m30.998526s
+    SOURCE_DEC        = 77d52'43.24754"
+
+END = SOURCE_INFO
+
+BEGIN = CORRELATOR_PARAMETERS
+
+    POLARIZATION      = YES
+    TIME_AVERAGE      =    2.000000
+    TWEAK_INT_TIME    = YES 
+    FFT_SIZE          =      512
+    SPECTRAL_AVERAGE  =    1
+    WINDOW            = UNIFORM         
+    OUTPUT_TAPE       = FTP             
+    OUTPUT_FORMAT     = FITS    
+    NOTE              = Test generation and correlation of data
+    DATA_OUTPUT_RATE  =    40.96
+    DATA_SET_SIZE     =      0.8
+    SOURCE_POS_ORIGIN = NOT SPECIFIED.
+
+END = CORRELATOR_PARAMETERS
+
