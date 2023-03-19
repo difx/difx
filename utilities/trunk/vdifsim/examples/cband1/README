@@ -1,5 +1,8 @@
 To run a full schedule, simulate, correlate cycle:
 
+Note: you must have a ~/.vdifsim file with cluster members listed
+
+
 1. (optional) Generate .vex file
 
   sched < cband1.key
@@ -8,34 +11,31 @@ To run a full schedule, simulate, correlate cycle:
 
   vex2obs --preobs cband1.vex
 
-3. Edit .v2d file as appropriate
+3. Create .v2d file from .oms file
 
-  - change machines, nCore, nThread 
+  oms2v2d --sim cband1.oms
 
-4. generate filelists
+4. Edit .v2d file if needed
+
+5. generate filelists
 
   makesimfilelist cband1.vex
 
-5. Generate correlator jobs
+6. Generate correlator jobs
 
   vex2difx cband1.v2d
  
-6. Generate delay model
+7. Generate delay model
 
   difxcalc cband1*.calc
 
-7. Update the filelist files for appropriate destinations
+8. MPI-based -- run jobs in parallel
 
-  - default is to place them in the local directory
+  runvdifsim -v -m cband1_*.input
 
-8a. (option 1 -- single server) Generate simulated data
+or if you have a vdifsim config file:
 
-  vdifsim -v cband1_*.input
-
-8b. (option 2 -- MPI-based)
-
-  runvdifsim -v cband1_*.input
-  # note: you must have a ~/.vdifsim file with cluster members listed
+  runvdifsim -v -m -c cband1.vdifsim cband1_*.input
 
 9. Correlate the data
 

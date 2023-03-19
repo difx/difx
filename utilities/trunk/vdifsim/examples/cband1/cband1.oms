@@ -106,16 +106,16 @@ END = SOURCE_INFO
 BEGIN = CORRELATOR_PARAMETERS
 
     POLARIZATION      = YES
-    TIME_AVERAGE      =    2.000000
+    TIME_AVERAGE      =    0.250000
     TWEAK_INT_TIME    = YES 
-    FFT_SIZE          =      512
+    FFT_SIZE          =      640
     SPECTRAL_AVERAGE  =    1
     WINDOW            = UNIFORM         
     OUTPUT_TAPE       = FTP             
     OUTPUT_FORMAT     = FITS    
     NOTE              = Test generation and correlation of data
-    DATA_OUTPUT_RATE  =    40.96
-    DATA_SET_SIZE     =      0.8
+    DATA_OUTPUT_RATE  =   409.60
+    DATA_SET_SIZE     =      8.2
     SOURCE_POS_ORIGIN = NOT SPECIFIED.
 
 END = CORRELATOR_PARAMETERS

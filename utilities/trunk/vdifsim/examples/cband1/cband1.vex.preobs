@@ -33,8 +33,8 @@ def cband1;
 *
      target_correlator = SOCORRO;
 *
-*    integr_time    :     2.000 s
-*    number_channels:   256
+*    integr_time    :     0.250 s
+*    number_channels:   320
 *    number_antenna :  4
 *    cross_polarize : Yes
 *    weight_func    : UNIFORM
@@ -414,20 +414,20 @@ endscan;
 *------------------------------------------------------------------------------
 $CLOCK;
 def Fd;
-  clock_early = 2023y078d21h00m00s : -1.15440632e-06 sec : 2023y055d02h52m01s : -1.19422060e-13;  * offset = -0.46 usec
-    * clock_start = -1399.52 ns  clock_end = -1399.52 ns
+  clock_early = 2023y078d21h00m00s : -1.21486045e-06 sec : 2023y060d18h22m32s : -1.03324311e-13;  * offset = -0.46 usec
+    * clock_start = -1376.53 ns  clock_end = -1376.53 ns
 enddef;
 def Hn;
-  clock_early = 2023y078d21h00m00s : -4.81379305e-06 sec : 2023y055d02h51m33s : -2.38971487e-13;  * offset = -0.26 usec
-    * clock_start = -5304.28 ns  clock_end = -5304.29 ns
+  clock_early = 2023y078d21h00m00s : -4.92828061e-06 sec : 2023y060d18h22m04s : -2.42127969e-13;  * offset = -0.26 usec
+    * clock_start = -5307.13 ns  clock_end = -5307.14 ns
 enddef;
 def Ov;
-  clock_early = 2023y078d21h00m00s : -1.61566772e-05 sec : 2023y054d10h52m15s : -8.39680047e-15;  * offset = -0.22 usec
-    * clock_start = -16174.40 ns  clock_end = -16174.40 ns
+  clock_early = 2023y078d21h00m00s : -1.61586205e-05 sec : 2023y060d02h22m17s : -9.97813791e-15;  * offset = -0.22 usec
+    * clock_start = -16174.81 ns  clock_end = -16174.81 ns
 enddef;
 def Sc;
-  clock_early = 2023y078d21h00m00s : -3.34413339e-05 sec : 2023y055d18h51m23s : -2.18236502e-13;  * offset = -0.35 usec
-    * clock_start = -33876.70 ns  clock_end = -33876.70 ns
+  clock_early = 2023y078d21h00m00s : -3.35330905e-05 sec : 2023y060d18h21m55s : -2.22568353e-13;  * offset = -0.35 usec
+    * clock_start = -33881.34 ns  clock_end = -33881.34 ns
 enddef;
 *------------------------------------------------------------------------------
 $EOP;
@@ -437,10 +437,10 @@ def EOP60021_PREDICT;
   eop_ref_epoch=2023y077d;
   num_eop_points=1;
   eop_interval=24 hr;
-  ut1-utc  = -0.018970 sec;
-  x_wobble = -0.03840 asec;
-  y_wobble = 0.36640 asec;
-  * data version = 2023y067d00h00m00s;
+  ut1-utc  = -0.020149 sec;
+  x_wobble = -0.03923 asec;
+  y_wobble = 0.36696 asec;
+  * data version = 2023y078d00h00m00s;
 enddef;
 def EOP60022_PREDICT;
   TAI-UTC= 37 sec;
@@ -448,10 +448,10 @@ def EOP60022_PREDICT;
   eop_ref_epoch=2023y078d;
   num_eop_points=1;
   eop_interval=24 hr;
-  ut1-utc  = -0.019367 sec;
-  x_wobble = -0.03767 asec;
-  y_wobble = 0.36914 asec;
-  * data version = 2023y067d00h00m00s;
+  ut1-utc  = -0.020503 sec;
+  x_wobble = -0.03855 asec;
+  y_wobble = 0.36940 asec;
+  * data version = 2023y078d00h00m00s;
 enddef;
 def EOP60023_PREDICT;
   TAI-UTC= 37 sec;
@@ -459,10 +459,10 @@ def EOP60023_PREDICT;
   eop_ref_epoch=2023y079d;
   num_eop_points=1;
   eop_interval=24 hr;
-  ut1-utc  = -0.020096 sec;
-  x_wobble = -0.03692 asec;
-  y_wobble = 0.37186 asec;
-  * data version = 2023y067d00h00m00s;
+  ut1-utc  = -0.021144 sec;
+  x_wobble = -0.03766 asec;
+  y_wobble = 0.37196 asec;
+  * data version = 2023y078d00h00m00s;
 enddef;
 def EOP60024_PREDICT;
   TAI-UTC= 37 sec;
@@ -470,10 +470,10 @@ def EOP60024_PREDICT;
   eop_ref_epoch=2023y080d;
   num_eop_points=1;
   eop_interval=24 hr;
-  ut1-utc  = -0.021102 sec;
-  x_wobble = -0.03613 asec;
-  y_wobble = 0.37457 asec;
-  * data version = 2023y067d00h00m00s;
+  ut1-utc  = -0.021999 sec;
+  x_wobble = -0.03669 asec;
+  y_wobble = 0.37461 asec;
+  * data version = 2023y078d00h00m00s;
 enddef;
 def EOP60025_PREDICT;
   TAI-UTC= 37 sec;
@@ -481,8 +481,8 @@ def EOP60025_PREDICT;
   eop_ref_epoch=2023y081d;
   num_eop_points=1;
   eop_interval=24 hr;
-  ut1-utc  = -0.022255 sec;
-  x_wobble = -0.03530 asec;
-  y_wobble = 0.37727 asec;
-  * data version = 2023y067d00h00m00s;
+  ut1-utc  = -0.022948 sec;
+  x_wobble = -0.03571 asec;
+  y_wobble = 0.37735 asec;
+  * data version = 2023y078d00h00m00s;
 enddef;

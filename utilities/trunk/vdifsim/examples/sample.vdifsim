@@ -21,14 +21,14 @@ swc020
 swc006 # this one has been running slow; put at end
 
 # data destinations
-BR /home/datacopy-13/Simulated/BR
-FD /home/datacopy-18/Simulated/FD
-HN /home/datacopy-17/Simulated/HN
-KP /home/datacopy-18/Simulated/KP
-LA /home/datacopy-19/Simulated/LA
-MK /home/datacopy-20/Simulated/MK
-NL /home/datacopy-07/Simulated/NL
-OV /home/datacopy-08/Simulated/OV
-PT /home/datacopy-07/Simulated/PT
-SC /home/datacopy-08/Simulated/SC
-*  /home/datacopy-18/Simulated/Other	# stations not explicitly configured above will go here
+BR /home/datacopy-13/Simulated/BR swc001
+FD /home/datacopy-18/Simulated/FD swc004
+HN /home/datacopy-17/Simulated/HN swc003
+KP /home/datacopy-18/Simulated/KP swc004
+LA /home/datacopy-19/Simulated/LA swc005
+MK /home/datacopy-20/Simulated/MK swc006
+NL /home/datacopy-07/Simulated/NL swc007
+OV /home/datacopy-08/Simulated/OV swc008
+PT /home/datacopy-07/Simulated/PT swc007
+SC /home/datacopy-08/Simulated/SC swc008
+*  /home/datacopy-18/Simulated/Other swc004	# stations not explicitly configured above will go here

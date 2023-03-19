@@ -33,8 +33,8 @@ def cband1;
 *
      target_correlator = SOCORRO;
 *
-*    integr_time    :     2.000 s
-*    number_channels:   256
+*    integr_time    :     0.250 s
+*    number_channels:   320
 *    number_antenna :  4
 *    cross_polarize : Yes
 *    weight_func    : UNIFORM

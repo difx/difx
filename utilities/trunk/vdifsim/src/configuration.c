@@ -130,15 +130,15 @@ Configuration *loadConfigration(const char *filename)
 		}
 		if(regexec(&headingMatch, typeStr, 2, matchPtr, 0) == 0)
 		{
-			typeStr[matchPtr[0].rm_eo] = 0;
-			A = getAntennaParameters(config, typeStr + matchPtr[0].rm_so);
+			typeStr[matchPtr[0].rm_eo - 1] = 0;
+			A = getAntennaParameters(config, typeStr + matchPtr[0].rm_so + 1);
 			if(A == 0)
 			{
 				if(config->nAntParm < MAX_ANTENNA_PARAMETERS)
 				{
 					A = config->antParms + config->nAntParm;
 					++config->nAntParm;
-					snprintf(A->name, DIFXIO_NAME_LENGTH, "%s", typeStr + matchPtr[0].rm_so);
+					snprintf(A->name, DIFXIO_NAME_LENGTH, "%s", typeStr + matchPtr[0].rm_so + 1);
 				}
 				else
 				{
