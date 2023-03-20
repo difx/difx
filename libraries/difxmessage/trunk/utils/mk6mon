@@ -85,7 +85,9 @@ class Mk6MessageParser:
         messageType = dom.getElementsByTagName('type')[0].firstChild.data
 
         nodeFrom = dom.getElementsByTagName('from')[0].firstChild.data
-        
+        if '.' in nodeFrom:
+            nodeFrom = nodeFrom[:nodeFrom.find('.')]
+
         if nodeFrom not in self.rowsStatus.keys():
             row = {}
             newStatus = True
@@ -158,11 +160,14 @@ class Mk6MessageParser:
         host = dom.getElementsByTagName("from")[0].firstChild.data
         activeVSN = dom.getElementsByTagName("activeVSN")[0].firstChild.data
 
+        if '.' in host:
+            host = host[:host.find('.')]
+
         key = host + "_" + activeVSN
 
         if key not in self.rowsActivity.keys():
-                row = {}
-                updateActivity = True
+            row = {}
+            updateActivity = True
         else:
             row = self.rowsActivity[key]
 
