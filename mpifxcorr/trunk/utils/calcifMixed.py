@@ -134,7 +134,8 @@ def mergeCalc(verb, stations, drylst, wetlst, job, normal, noatmo):
     normallines = f.readlines()
     f.close()
     f = open(im + '-' + noatmo, 'r')
-    noatmolines = f.readlines()
+    noatmolines_tmp = f.readlines()
+    noatmolines = [line for line in noatmolines_tmp if ' STA ' not in line]
     f.close()
     if len(normallines) != len(noatmolines):
         print('Calc output for %s have disparate lengths (%d,%d)' % (
