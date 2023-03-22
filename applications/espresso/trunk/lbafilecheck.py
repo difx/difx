@@ -177,7 +177,7 @@ def write_run(expname, np, nthreads, options):
     else:
         # in case no prototype run file, this basic run file will work for
         # many sites
-        RUNFILE.write("mpirun -np ", np, options)
+        RUNFILE.write("mpirun -np {:d} {:s}".format(np, options))
         RUNFILE.write(" -machinefile {JOBNAME}.machines")
         RUNFILE.write(" $DIFXROOT/bin/mpifxcorr {JOBNAME}.input\n")
         RUNFILE.close()
