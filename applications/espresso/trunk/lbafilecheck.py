@@ -325,7 +325,7 @@ for line in sorted(telescopedirs):
 nprocs = min(8, multiprocessing.cpu_count())
 if not options.nofilelist:
     with multiprocessing.Pool(nprocs) as pool:
-        print (makefilelist_args[0])
+        #print (makefilelist_args[0])
         try:
             file_results = pool.starmap(makefilelists, makefilelist_args)
         except:
