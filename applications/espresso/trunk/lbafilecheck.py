@@ -250,6 +250,10 @@ parser.add_option(
         "-r", "--refmjd",
         type="str", dest="refmjd", default=None,
         help="Reference date for resolving Mk5B date ambiguity.")
+parser.add_option(
+        "-j", --nprocs,
+        type="int", dest="nprocs", default=8,
+        help="Number of processes to run in parallel when making filelists. Default=%default")
 
 #parser.add_option( "--nproc_per_node", "-p",
 #        type='int', dest="nproc_per_node", default=1,
@@ -321,10 +325,9 @@ for line in sorted(telescopedirs):
                 (telescope, data_area, machine, dir_patterns, globpatterns,
                 expname, options.refmjd))
 
-# don't use more than 8 processes on setonix, it doesn't like it
-nprocs = min(8, multiprocessing.cpu_count())
+#nprocs = min(8, multiprocessing.cpu_count())
 if not options.nofilelist:
-    with multiprocessing.Pool(nprocs) as pool:
+    with multiprocessing.Pool(options.nprocs) as pool:
         #print (makefilelist_args[0])
         try:
             file_results = pool.starmap(makefilelists, makefilelist_args)
