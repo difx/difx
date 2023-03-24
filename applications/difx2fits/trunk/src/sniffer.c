@@ -405,7 +405,6 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 		S->cpol = 0;
 	}
 
-
 	/* Open weights file */
 	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.wts", filebase);
 	if(v >= DIFXIO_FILENAME_LENGTH)
@@ -461,7 +460,6 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 		return 0;
 	}
 	
-#warning "FIXME: I think almost twice as much memory is being allocated as is needed -WFB"
 	S->accum = (Accumulator **)malloc(S->nAntenna*sizeof(Accumulator *));
 	for(a1 = 0; a1 < S->nAntenna; ++a1)
 	{
@@ -476,7 +474,6 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	}
 
 	/* Prepare FFT stuff */
-
 	S->fft_nx = S->fftOversample*S->nChan;
 	S->fft_ny = S->fftOversample*S->nTime;
 	S->fftbuffer = (fftw_complex*)fftw_malloc(S->fft_nx*S->fft_ny*sizeof(fftw_complex));
@@ -563,6 +560,10 @@ void deleteSniffer(Sniffer *S)
 	}
 }
 
+/* Perhaps modify this function to better conform to the 2D version below:
+ *  - determine actual peak value
+ *  - don't care about actual coordinate system -- leave that to the calling function
+ */
 static double peakup(double peak[3], int i, int n, double w)
 {
 	double d, f;
@@ -585,25 +586,255 @@ static double peakup(double peak[3], int i, int n, double w)
 	return f/w;
 }
 
+/* unlike above function, this just returns the offset in pixels from the center pixel */
+static void peakup2D(double peak[3][3], double *deltaj, double *deltai, double *value)
+{
+	double dzdj = (peak[2][1] - peak[0][1]) / 2.0;
+	double dzdi = (peak[1][2] - peak[1][0]) / 2.0;
+	double dzdjj = (peak[2][1] + peak[0][1] - 2.0 * peak[1][1]);
+	double dzdii = (peak[1][2] + peak[1][0] - 2.0 * peak[1][1]);
+	double dzdji = (peak[2][2] - peak[2][0] - peak[0][2] + peak[0][0]) / 4.0;
+
+	double det = 1.0/(dzdjj*dzdii - dzdji*dzdji);
+	double dj = -(dzdii*dzdj - dzdji*dzdi) * det;
+ 	double di = -(dzdjj*dzdi - dzdji*dzdj) * det;
+	if(deltaj)
+	{
+		*deltaj = dj;
+	}
+	if(deltai)
+	{
+		*deltai = di;
+	}
+	if(value)
+	{
+		*value = peak[1][1] + 0.5*(dzdjj*dj*dj + 2.0*dzdji*dj*di + dzdii*di*di) + dzdj*dj + dzdi*di; 
+	}
+}
+
+/* Add here a priori delay and rate parameters to be removed before populating */
+static void populateFFTArray(Sniffer *S, const Accumulator *A, int bbc, int timeBinFactor, int chanBinFactor)
+{
+	const double edge = 0.02;	/* exclude this fraction of band from each end */
+	fftw_complex * const *array;
+	int j;
+	int chan0, chan1;
+
+	chan0 = round(edge * A->nChan);
+	chan1 = A->nChan - chan0;
+
+	array = A->spectrum[bbc];
+	memset(S->fftbuffer, 0, S->fft_nx*S->fft_ny*sizeof(fftw_complex));
+	if(timeBinFactor == 1 && chanBinFactor == 1)
+	{
+		for(j = 0; j < A->nTime; ++j)
+		{
+			int i;
+
+			for(i = chan0; i < chan1; ++i)
+			{
+				S->fftbuffer[j*S->fft_nx + i] = array[j][i];
+			}
+		}
+	}
+	else
+	{
+		for(j = 0; j < A->nTime; ++j)
+		{
+			int i;
+
+			for(i = chan0; i < chan1; ++i)
+			{
+				S->fftbuffer[j*S->fft_nx + i] += array[j/timeBinFactor][i/chanBinFactor];
+			}
+		}
+	}
+}
+
+static void populateFFTArrayCrossPol(Sniffer *S, const Accumulator *A, int ifNum, int pol, int timeBinFactor, int chanBinFactor)
+{
+	const double edge = 0.02;	/* exclude this fraction of band from each end */
+	fftw_complex * const *array;
+	int j;
+	int chan0, chan1;
+
+	chan0 = round(edge * A->nChan);
+	chan1 = A->nChan - chan0;
+
+	array = A->ifSpectrum[ifNum][pol];
+	memset(S->fftbuffer, 0, S->fft_nx*S->fft_ny*sizeof(fftw_complex));
+	if(timeBinFactor == 1 && chanBinFactor == 1)
+	{
+		for(j = 0; j < A->nTime; ++j)
+		{
+			int i;
+
+			for(i = chan0; i < chan1; ++i)
+			{
+				S->fftbuffer[j*S->fft_nx + i] = array[j][i];
+			}
+		}
+	}
+	else
+	{
+		for(j = 0; j < A->nTime; ++j)
+		{
+			int i;
+
+			for(i = chan0; i < chan1; ++i)
+			{
+				S->fftbuffer[j*S->fft_nx + i] += array[j/timeBinFactor][i/chanBinFactor];
+			}
+		}
+	}
+}
+
+static void findChanRatePeak(const Sniffer *S, int *specChan, double *specRate, double *specAmp, double *specPhase)
+{
+	fftw_complex z;
+	double max2, amp2;
+	int besti, bestj;
+	int j;
+
+	max2 = 0.0;
+	besti = bestj = 0;
+
+	for(j = 0; j < S->fft_ny; ++j)
+	{
+		int i;
+
+		for(i = 0; i < S->fft_nx; ++i)
+		{
+			z = S->fftbuffer[j*S->fft_nx + i];
+			amp2 = z*~z;
+			if(amp2 > max2)
+			{
+				besti = i;
+				bestj = j;
+				max2 = amp2;
+			}
+		}
+	}
+	z = S->fftbuffer[bestj*S->fft_nx + besti];
+	if(specAmp)
+	{
+		*specAmp = sqrt(max2);
+	}
+	if(specChan)
+	{
+		*specChan = besti;
+	}
+	if(specPhase)
+	{
+		*specPhase = (180.0/M_PI)*atan2(cimag(z), creal(z));
+	}
+	if(specRate)
+	{
+		double peak[3];
+
+		peak[1] = sqrt(max2);
+		if(bestj == 0)
+		{
+			z = S->fftbuffer[(S->fft_ny-1)*S->fft_nx+besti];
+		}
+		else
+		{
+			z = S->fftbuffer[(bestj-1)*S->fft_nx + besti];
+		}
+		peak[0] = sqrt(z*~z);
+		if(bestj == S->fft_ny-1)
+		{
+			z = S->fftbuffer[besti];
+		}
+		else
+		{
+			z = S->fftbuffer[(bestj+1)*S->fft_nx + besti];
+		}
+		peak[2] = sqrt(z*~z);
+		*specRate = peakup(peak, bestj, S->fft_ny, S->solInt*S->fftOversample);
+	}
+}
+
+static void findDelayRatePeak(const Sniffer *S, double *delay, double *rate, double *amp, double *phase)
+{
+	fftw_complex z;
+	double max2, amp2;
+	double peak2D[3][3];
+	double di, dj;
+	int besti, bestj;
+	int j;
+
+	max2 = 0.0;
+	besti = bestj = 0;
+	for(j = 0; j < S->fft_ny; ++j)
+	{
+		int i;
+
+		for(i = 0; i < S->fft_nx; ++i)
+		{
+			z = S->fftbuffer[j*S->fft_nx + i];
+			amp2 = creal(z*~z);
+			if(amp2 > max2)
+			{
+				besti = i;
+				bestj = j;
+				max2 = amp2;
+			}
+		}
+	}
+	z = S->fftbuffer[bestj*S->fft_nx + besti];
+	
+	if(phase)
+	{
+		*phase = (180.0/M_PI)*atan2(cimag(z), creal(z));
+	}
+
+	for(j = -1; j <= 1; ++j)
+	{
+		int i;
+
+		for(i = -1; i <= 1; ++i)
+		{
+			int ii, jj;
+
+			ii = (besti + i + S->fft_nx) % S->fft_nx;
+			jj = (bestj + j + S->fft_ny) % S->fft_ny;
+			z = S->fftbuffer[jj*S->fft_nx + ii];
+			peak2D[j+1][i+1] = sqrt(creal(z*~z));
+		}
+	}
+
+	peakup2D(peak2D, &dj, &di, amp);
+
+	if(besti > S->fft_nx/2)
+	{
+		besti -= S->fft_nx;
+	}
+	if(bestj > S->fft_ny/2)
+	{
+		bestj -= S->fft_ny;
+	}
+
+	if(delay)
+	{
+		*delay = (besti + di)/(S->bw*S->fftOversample/1000.0);
+	}
+	if(rate)
+	{
+		*rate = (bestj + dj)/(S->solInt*S->fftOversample);
+	}
+}
+
 static int dump(Sniffer *S, Accumulator *A)
 {
-	int b, j, p, a1, a2, besti, bestj;
-	fftw_complex **array;
-	double amp2, max2;
-	double phase, delay, rate;
+	int b, p, a1, a2;
 	double *amp;
-	double specAmp, specPhase, specRate;
-	int specChan;
-	double peak[3];
 	double w;
 	char startStr[32], stopStr[32];
 	FILE *fp;
 	const DifxConfig *config;
 	const DifxFreqSet *dfs;
-	const DifxIF *IF;
-	char pol, side;
-	double freq;
-	int chan=1;
+	int chan = 1;
 	int maxNRec = 0;
 	double mjd;
 
@@ -641,11 +872,11 @@ static int dump(Sniffer *S, Accumulator *A)
 		srvMjd2str(A->mjdStart, startStr);
 		srvMjd2str(A->mjdMax, stopStr);
 
-		if(a1 == a2)	/* Autocorrelation? */
+		if(a1 == a2)	/* Autocorrelation */
 		{
 			fp = S->acb;
 		}
-		else		/* Cross corr? */
+		else		/* Cross corr */
 		{
 			fp = S->xcb;
 		}
@@ -654,11 +885,16 @@ static int dump(Sniffer *S, Accumulator *A)
 		fprintf(fp, "source: %s bandw: %6.3f MHz\n", S->D->source[A->sourceId].name, S->bw);
 		for(i = 0; i < S->nIF; ++i)
 		{
+			const DifxIF *IF;
+			double freq;		/* [GHz] */
+			char side;
+			
 			IF = dfs->IF + i;
-			freq = IF->freq/1000.0;	/* freq in GHz */
+			freq = IF->freq/1000.0;
 			side = IF->sideband;
 			for(p = 0; p < S->nPol; ++p)
 			{
+				char pol;
 				pol = IF->pol[p];
 				fprintf(fp, "bandfreq: %9.6f GHz polar: %c%c side: %c bbchan: 0\n", freq, pol, pol, side);
 			}
@@ -685,7 +921,9 @@ static int dump(Sniffer *S, Accumulator *A)
 						}
 						z /= A->weightSum[b];
 					}
+
 					fprintf(fp, "%2d %-3s %5d %7.5f\n", a1+1, S->D->antenna[a1].name, chan, creal(z));
+					
 					++chan;
 				}
 			}
@@ -717,12 +955,9 @@ static int dump(Sniffer *S, Accumulator *A)
 					{
 						x = y = 0.0;
 					}
-					fprintf(fp, "%2d %2d %-3s %-3s %5d %7.5f %8.3f\n",
-						a1+1, a2+1, 
-						S->D->antenna[a1].name,
-						S->D->antenna[a2].name,
-						chan, sqrt(x*x+y*y), 
-						atan2(y, x)*180.0/M_PI);
+
+					fprintf(fp, "%2d %2d %-3s %-3s %5d %7.5f %8.3f\n", a1+1, a2+1, S->D->antenna[a1].name, S->D->antenna[a2].name, chan, sqrt(x*x+y*y), atan2(y, x)*180.0/M_PI);
+					
 					++chan;
 				}
 			}
@@ -782,33 +1017,19 @@ static int dump(Sniffer *S, Accumulator *A)
 
 		/* fringe fit */
 
-		fprintf(S->apd, "%5d %10.7f %2d %-10s %2d %2d %-3s %-3s %2d",
-			(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
-			S->D->source[A->sourceId].name, a1+1, a2+1,
-			S->D->antenna[a1].name,
-			S->D->antenna[a2].name,
-			A->nBBC);
-
-		fprintf(S->apc, "%5d %10.7f %2d %-10s %2d %2d %-3s %-3s %2d",
-			(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
-			S->D->source[A->sourceId].name, a1+1, a2+1,
-			S->D->antenna[a1].name,
-			S->D->antenna[a2].name,
-			A->nBBC);
+		fprintf(S->apd, "%5d %10.7f %2d %-10s %2d %2d %-3s %-3s %2d", (int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1, S->D->source[A->sourceId].name, a1+1, a2+1, S->D->antenna[a1].name, S->D->antenna[a2].name, A->nBBC);
+		fprintf(S->apc, "%5d %10.7f %2d %-10s %2d %2d %-3s %-3s %2d", (int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1, S->D->source[A->sourceId].name, a1+1, a2+1, S->D->antenna[a1].name, S->D->antenna[a2].name, A->nBBC);
 
 		if(S->cpol)
 		{
-			fprintf(S->cpol, "%5d %10.7f %2d %-10s %2d %2d %-3s %-3s %2d",
-				(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
-				S->D->source[A->sourceId].name, a1+1, a2+1,
-				S->D->antenna[a1].name,
-				S->D->antenna[a2].name,
-				S->nIF);
+			fprintf(S->cpol, "%5d %10.7f %2d %-10s %2d %2d %-3s %-3s %2d", (int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1, S->D->source[A->sourceId].name, a1+1, a2+1, S->D->antenna[a1].name, S->D->antenna[a2].name, S->nIF);
 		}
 
 		for(bbc = 0; bbc < A->nBBC; ++bbc)
 		{
-			fftw_complex z;
+			double specAmp, specPhase, specRate;
+			double phase, delay, rate;
+			int specChan;
 
 			if(A->nRec[bbc] < S->nTime/2 || A->weightSum[bbc] == 0.0)
 			{
@@ -816,129 +1037,19 @@ static int dump(Sniffer *S, Accumulator *A)
 				fprintf(S->apc, " 0 0 0 0");
 				continue;
 			}
-			array = A->spectrum[bbc];
-			memset(S->fftbuffer, 0, S->fft_nx*S->fft_ny*sizeof(fftw_complex));
-			for(j = 0; j < A->nTime; ++j)
-			{
-				int i;
-
-				for(i = 0; i < A->nChan; ++i)
-				{
-					S->fftbuffer[j*S->fft_nx + i] = array[j][i];
-				}
-			}
+			populateFFTArray(S, A, bbc, 1, 1);
 
 			/* First transform in time to form rates.  Here we do
                          * the spectral line sniffing to look for peak in
-                         * rate/chan space*/
+                         * rate/chan space */
                         fftw_execute(S->plan1);
-                        max2 = 0.0;
-                        besti = bestj = 0;
-                        for(j = 0; j < S->fft_ny; ++j)
-                        {
-				int i;
 
-                                for(i = 0; i < S->fft_nx; ++i)
-                                {
-                                        z = S->fftbuffer[j*S->fft_nx + i];
-                                        amp2 = z*~z;
-                                        if(amp2 > max2)
-                                        {
-                                                besti = i;
-                                                bestj = j;
-                                                max2 = amp2;
-                                        }
-                                }
-                        }
-                        z = S->fftbuffer[bestj*S->fft_nx + besti];
-                        specAmp = sqrt(max2);
-                        specChan = besti;
-                        specPhase = (180.0/M_PI)*atan2(cimag(z), creal(z));
-
-                        peak[1] = specAmp;
-                        if(bestj == 0)
-                        {
-                                z = S->fftbuffer[(S->fft_ny-1)*S->fft_nx+besti];
-                        }
-			else
-                        {
-                                z = S->fftbuffer[(bestj-1)*S->fft_nx + besti];
-                        }
-                        peak[0] = sqrt(z*~z);
-                        if(bestj == S->fft_ny-1)
-                        {
-                                z = S->fftbuffer[besti];
-                        }
-                        else
-                        {
-                                z = S->fftbuffer[(bestj+1)*S->fft_nx + besti];
-                        }
-                        peak[2] = sqrt(z*~z);
-                        specRate = peakup(peak, bestj, S->fft_ny, S->solInt*S->fftOversample);
+			findChanRatePeak(S, &specChan, &specRate, &specAmp, &specPhase);
 
                         /* Now do second axis of FFT (frequency) to look for a peak in rate/delay space */
 			fftw_execute(S->plan2);
 
-			max2 = 0.0;
-			besti = bestj = 0;
-			for(j = 0; j < S->fft_ny; ++j)
-			{
-				int i;
-
-				for(i = 0; i < S->fft_nx; ++i)
-				{
-					z = S->fftbuffer[j*S->fft_nx + i];
-					amp2 = creal(z*~z);
-					if(amp2 > max2)
-					{
-						besti = i;
-						bestj = j;
-						max2 = amp2;
-					}
-				}
-			}
-			z = S->fftbuffer[bestj*S->fft_nx + besti];
-			phase = (180.0/M_PI)*atan2(cimag(z), creal(z));
-			amp[bbc] = sqrt(max2);
-			peak[1] = amp[bbc];
-			if(besti == 0)
-			{
-				z = S->fftbuffer[(bestj+1)*S->fft_nx - 1];
-			}
-			else
-			{
-				z = S->fftbuffer[bestj*S->fft_nx + besti - 1];
-			}
-			peak[0] = sqrt(creal(z*~z));
-			if(besti == S->fft_nx-1)
-			{
-				z = S->fftbuffer[bestj*S->fft_nx];
-			}
-			else
-			{
-				z = S->fftbuffer[bestj*S->fft_nx + besti + 1];
-			}
-			peak[2] = sqrt(creal(z*~z));
-			delay = peakup(peak, besti, S->fft_nx, S->bw*S->fftOversample/1000.0);
-			if(bestj == 0)
-			{
-				z = S->fftbuffer[(S->fft_ny-1)*S->fft_nx+besti];
-			}
-			else
-			{
-				z = S->fftbuffer[(bestj-1)*S->fft_nx + besti];
-			}
-			peak[0] = sqrt(creal(z*~z));
-			if(bestj == S->fft_ny-1)
-			{
-				z = S->fftbuffer[besti];
-			}
-			else
-			{
-				z = S->fftbuffer[(bestj+1)*S->fft_nx + besti];
-			}
-			peak[2] = sqrt(creal(z*~z));
-			rate = peakup(peak, bestj, S->fft_ny, S->solInt*S->fftOversample);
+			findDelayRatePeak(S, &delay, &rate, amp + bbc, &phase);
 
 			/* correct for negative frequency axis if LSB */
 			if(A->isLSB[bbc])
@@ -950,28 +1061,19 @@ static int dump(Sniffer *S, Accumulator *A)
 				specRate = -specRate;
 			}
 
-			fprintf(S->apd, " %10.4f %7.5f %10.4f %10.6f", 
-				delay, 
-				2.0*amp[bbc]/(A->weightSum[bbc]*S->nChan), 
-				phase, 
-				rate);
-
-			fprintf(S->apc, " %4d %7.5f %10.4f %10.6f",
-				specChan+1,
-				2.0*specAmp/(A->weightSum[bbc]*S->nChan), 
-				specPhase,
-				specRate);
+			fprintf(S->apd, " %10.4f %7.5f %10.4f %10.6f", delay, 2.0*amp[bbc]/(A->weightSum[bbc]*S->nChan), phase, rate);
+			fprintf(S->apc, " %4d %7.5f %10.4f %10.6f", specChan+1, 2.0*specAmp/(A->weightSum[bbc]*S->nChan), specPhase, specRate);
 		}
 
 		if(S->cpol)
 		{
 			for(ifNum = 0; ifNum < S->nIF; ++ifNum)
 			{
-				fftw_complex z;
+				double stokesAmp[4];
+				double phase;
+				double norm;
 				int bbc0, bbc1;
 				int pol;
-				double stokesAmp[4];
-				double norm;
 
 				bbc0 = A->if2bbc[ifNum][0];
 				bbc1 = A->if2bbc[ifNum][1];
@@ -984,47 +1086,13 @@ static int dump(Sniffer *S, Accumulator *A)
 
 				for(pol = 2; pol < 4; ++pol)	/* start at 2 because parallel hands are already done */
 				{
-					array = A->ifSpectrum[ifNum][pol];
-					memset(S->fftbuffer, 0, S->fft_nx*S->fft_ny*sizeof(fftw_complex));
-					for(j = 0; j < A->nTime; ++j)
-					{
-						int i;
+					populateFFTArrayCrossPol(S, A, ifNum, pol, 1, 1);
 
-						for(i = 0; i < A->nChan; ++i)
-						{
-							S->fftbuffer[j*S->fft_nx + i] = array[j][i];
-						}
-					}
-
-					/* First transform in time to form rates.  Here we do
-					 * the spectral line sniffing to look for peak in
-					 * rate/chan space*/
+					/* Do both rate and delay transforms back to back */
 					fftw_execute(S->plan1);
-
-					/* Now do second axis of FFT (frequency) to look for a peak in rate/delay space */
 					fftw_execute(S->plan2);
 
-					max2 = 0.0;
-					besti = bestj = 0;
-					for(j = 0; j < S->fft_ny; ++j)
-					{
-						int i;
-
-						for(i = 0; i < S->fft_nx; ++i)
-						{
-							z = S->fftbuffer[j*S->fft_nx + i];
-							amp2 = creal(z*~z);
-							if(amp2 > max2)
-							{
-								besti = i;
-								bestj = j;
-								max2 = amp2;
-							}
-						}
-					}
-					z = S->fftbuffer[bestj*S->fft_nx + besti];
-					phase = (180.0/M_PI)*atan2(cimag(z), creal(z));
-					stokesAmp[pol] = sqrt(max2);
+					findDelayRatePeak(S, 0, 0, stokesAmp + pol, &phase);
 				}
 				norm = sqrt(amp[bbc0]*amp[bbc1]);
 				if(norm == 0.0)
