@@ -251,7 +251,7 @@ parser.add_option(
         type="str", dest="refmjd", default=None,
         help="Reference date for resolving Mk5B date ambiguity.")
 parser.add_option(
-        "-j", --nprocs,
+        "-j", "--nprocs",
         type="int", dest="nprocs", default=8,
         help="Number of processes to run in parallel when making filelists. Default=%default")
 
