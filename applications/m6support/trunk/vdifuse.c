@@ -2,7 +2,7 @@
  * (c) Massachusetts Institute of Technology, 2013..2023
  * (c) Geoffrey B. Crew, 2013..2023
  *
- * $Id: vdifuse.c 5775 2023-03-27 14:21:32Z gbc $
+ * $Id: vdifuse.c 5782 2023-03-27 19:37:40Z gbc $
  *
  * Fuse for vdif files for use with Mark6 or other
  * applications where vdif files are scattered around.
@@ -374,7 +374,7 @@ int main(int argc, char *argv[])
         vdiftrace(0, VDT("alldone heap %p + 0x20\n"), h3);
         if (vdifuse_enable == VDIFUSE_ENABLE_HELP) rv = 0;
         if (rv) fprintf(stderr, "Fuse error %d\n", rv);
-	vdifuse_rmtrace(rv);
+        vdifuse_rmtrace(rv);
     }
     return(rv);
 }

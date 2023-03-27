@@ -2,7 +2,7 @@
  * (c) Massachusetts Institute of Technology, 2013..2023
  * (c) Geoffrey B. Crew, 2013..2023
  *
- * $Id: vdifopt.c 5773 2023-03-26 23:55:18Z gbc $
+ * $Id: vdifopt.c 5782 2023-03-27 19:37:40Z gbc $
  *
  * This file provides support for the fuse interface.
  * Here we do the command-line processing to drive the support for fuse.
@@ -135,7 +135,7 @@ static int vdifsup_help(char *fullname, char *help)
 static int vdifsup_vers(void)
 {
     fprintf(stderr, "vdifuse version %.2f\n", VDIFUSE_VERSION);
-    vdifuse_enable = VDIFUSE_ENABLE_HELP;   /* just to fuse_main() help */
+    vdifuse_enable = VDIFUSE_ENABLE_SKIP;   /* just to fuse_main() help */
     return(1);                              /* yes, this was version */
 }
 
