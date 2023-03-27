@@ -1,5 +1,9 @@
 /*
- * $Id: bmr_time_main.c 978 2011-02-04 18:39:30Z gbc $
+ * (c) Massachusetts Institute of Technology, 2012..2023
+ * (c) Geoffrey B. Crew, 2012..2023
+ *
+ * $Id: vdif_time_main.c 5710 2023-03-10 19:15:25Z gbc $
+ * .Id: bmr_time_main.c 978 2011-02-04 18:39:30Z gbc.
  *
  * A simple time utility for times needed in VDIF work.
  */

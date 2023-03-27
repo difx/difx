@@ -1,10 +1,19 @@
 /*
- * $Id: sg_spwrda.c 5277 2021-08-06 16:21:22Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: sg_spwrda.c 5755 2023-03-26 16:47:18Z gbc $
  *
  * Code to support thread creation to use readhead to supplement
  *
  * addr is the address relative to the start of mapped memory,
  * and we are interested in len more bytes.
+ *
+ * NOTION: create a new ADVICE method that creates a pool of threads once
+ * and then merely tasks them with the read-ahead work.  More efficient....
+ * NOTION: investigate omp.h for cheap thread usage
+ *
+ * vdifuse_trace is available in this file.
  */
 
 #define _GNU_SOURCE
@@ -57,7 +66,7 @@ void spawn_readahead_thread(int fd, off_t addr, size_t len, size_t size)
         task_data.count *= RHMULT;
 
     (void)pthread_create(&tid, NULL, &readahead_task, &task_data);
-    vdifuse_trace(VDT("RH-%lu on %02d at %lu for %lu\n"),
+    vdiftrace(-1,VDT("RH-%lu on %02d at %lu for %lu\n"),
         tid, task_data.fd, task_data.offset, task_data.count);
 }
 
@@ -67,8 +76,7 @@ void spawn_readahead_thread(int fd, off_t addr, size_t len, size_t size)
  * kernel reading ahead (before the real reader catches up).
  * Again the return value is ignored.
  *
- * FIXME:  munmap will occur after sg_advice_term(mmfd) is called.
- *         logic in that call should cause this thread to be cancelled first.
+ * FIXME:  it is not clear that this toucher method works....
  */
 void *toucher_task(void *arg)
 {
@@ -109,9 +117,8 @@ void spawn_toucher_thread(int fd, void *addr, size_t len, long page)
     task_data.p = page;
 
     (void)pthread_create(tidp, NULL, &toucher_task, &task_data);
-    vdifuse_trace(VDT("TH-%lu on %02d at %p on %lu pages of %lu\n"),
+    vdiftrace(-1,VDT("TH-%lu on %02d at %p on %lu pages of %lu\n"),
         *tidp, task_data.f, task_data.a, task_data.c, task_data.p);
-    vdifuse_flush_trace();
 }
 
 /*

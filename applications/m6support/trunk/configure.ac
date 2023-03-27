@@ -1,8 +1,12 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
+#
+# (c) Massachusetts Institute of Technology, 2010..2023
+# (c) Geoffrey B. Crew, 2010..2023
+#
 
 AC_PREREQ([2.59])
-AC_INIT([m6support], [0.36], [gbc@haystack.mit.edu])
+AC_INIT([m6support], [0.40], [gbc@haystack.mit.edu])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([vdifuse.h])
 AC_CONFIG_HEADERS([config.h])

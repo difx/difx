@@ -1,5 +1,8 @@
 #!/bin/bash
 #
+# (c) Massachusetts Institute of Technology, 2013..2023
+# (c) Geoffrey B. Crew, 2013..2023
+#
 # Script to hammer on the disks, aka conditioning.
 #
 size=10g
@@ -12,8 +15,10 @@ cps=8
 label=unknown
 slot=0
 purge=true
-cullrate=64.25
+nominal=64.25
 cullrate=0.00
+idle=0.00
+doit=true
 hammerkill=$HOME/hammerkill
 hammerpause=$HOME/hammerpause
 
@@ -25,8 +30,10 @@ bcalc=/usr/bin/bc
 fmt=%Y%m%d%H%M%S
 
 # see the table at end of file
-canon="10m 40m 100m 1g 10g 40g"
-canon='   '`grep '^.cksum' $0 | cut -c8-11 | tr -s \\\\012 ' '`
+xanon="100g 40g 10g 1g 100m 40m 10m "
+canon=`grep '^.cksum' $0 | cut -c8-11 | tr -s \\\\012 ' '`
+
+[ x"$xanon" = x"$canon" ] || { echo scripting error ; exit 13 ; }
 
 USAGE='Usage: '`basename $0`" [options]
 
@@ -39,12 +46,14 @@ where the options are any of these:
     maxfiles=$maxfiles   maximum number of files / disk
     purge=$purge       remove files when done
     cullrate=$cullrate    cull files slower than this
+    idle=$idle        insert sleeps to work slower
+    doit=$doit        if false, only report the plan
 
 will write empty files to all the disks of the slots appearing
 in the slots argument, up to a maximum of maxfiles per disk.
 It should also stop after the disk is too full to continue.
 The canonical write sizes are ones where the checksum is known
-for comparison on the read stage.  The canonical list is:
+for comparison on the read stage; use one of these:
 $canon
 
 Once launched, the script spawns several jobs per slot, logging
@@ -72,6 +81,13 @@ each disk and consequently will survive the purge.  This will
 thereby reduce the module capacity, but retain the required
 write speed across the remaining module capacity.
 
+If for some reason you want the process to take longer, set the
+'idle' parameter to something greater than the default, 0.00.  When
+nonzero, the script will insert pauses between files.  You can
+and should use 'doit=false' to see what would happen.  These calculation
+use a nominal read/write rate of 'nominal=$nominal' which you can adjust
+for higher fidelity if you have more information than this script.
+
 The script expects to use these programs (which must be installed):
 $timer
 $maker
@@ -82,11 +98,32 @@ $bcalc
 args="$@"
 while [ $# -gt 0 ] ; do eval "$1"; shift; done
 
+# make sure the user set this correctly
+[ "x$doit" = 'xtrue' -o x"$doit" = 'xfalse' ] || {
+    echo "doit must be true or false, not '$doit'"
+    exit 2
+}
+
 # find out how many CPUs so we can share the resources
 [ "$cpus" -eq 0 ] && cpus=`grep processor /proc/cpuinfo | wc -l`
 
-for e in $timer $maker $chker $bcalc 
+for e in $maker $chker $bcalc 
 do [ -x $e ] || { echo $e is not installed ; exit 1; } ; done
+
+dotime() {
+    first=`date +%s`
+    didit=`$3 $4 $5 $6`
+    final=`date +%s`
+    ff=`expr $final - $first`
+    echo $didit $ff
+}
+
+[ -x $timer ] || {
+    timer=dotime
+# test:
+#   $timer -f %e xfs_mkfile -v 1g /mnt/disks/1/0/data/junk
+#   exit 5
+}
 
 [ -f "$hammerkill" ] && {
     echo "I see $hammerkill, you need to remove it"
@@ -107,19 +144,27 @@ do [ -x $e ] || { echo $e is not installed ; exit 1; } ; done
     [ `expr $slots : '.*3.*'` -gt 0 ] && s="$s 3" && c=$(($c + 1))
     [ `expr $slots : '.*4.*'` -gt 0 ] && s="$s 4" && c=$(($c + 1))
     [ "$cps" -eq 0 ] && cps=$(($cpus / $c))
+    echo
     echo Assigning $cps CPUs per slot
     for sl in $s
     do
         [ -f /mnt/disks/.meta/$sl/0/eMSN ] &&
             lab=`cat /mnt/disks/.meta/$sl/0/eMSN | cut -c1-8 | tr -d /` ||
             lab=Module%$sl
-        $0 "$args" slot=$sl label=$lab cpus=$cps &
+        xrgs=${args/slots=$slots/}
+        echo && echo $0 \\ && echo \
+        "   $xrgs" slot=$sl label=$lab cpus=$cps \&
+        $0 "$xrgs" slot=$sl label=$lab cpus=$cps &
         j="$j $!"
+        sleep .5
     done
 
+    echo
     trap "kill $j 2>/dev/null" 0 1 2 15
     echo "# waiting for $j to complete ..."
+    $doit || echo " ... which should not be long ..."
     wait
+    echo done && echo
 }
 
 # for cull activities
@@ -130,8 +175,17 @@ cull=false
 [ `greater $cullrate 0.00` -eq 1 ] && cull=true
 
 # for rate calculations
-dorate() {
+dorate() { # MB secs
     ( echo scale=2 ; echo $1 / 1024 / 1024 / $2 ) | $bcalc -lq
+}
+
+# for time estimation
+dopause() { # pause = secs * idle * 64.25 / nominal
+    ( echo scale=2 ; echo $1 \* $2 \* 64.25 / $3 ) | $bcalc -lq
+}
+dototal() { # hours = maxfiles pause secs nominal
+    (echo scale=2;echo $1 \* \( $2 + 1.7 \* $3 \* 64.25 / $4 \) / 3600) |\
+    $bcalc -lq
 }
 
 #
@@ -141,15 +195,20 @@ dorate() {
     host=`hostname`
     [ -d $HOME/logs ] && ldir=$HOME/logs || ldir=.
     log=$ldir/$host-$label-hammer-`date -u +$fmt`.log
-    exec 1>$log 2>&1
+    exec 1>$log 4>&2 2>&1
 
     eval set -- {1..$cpus}
     cpees="$@"
 
     set -- `grep '^#cksum' $0`
     sum=0 bytes=0
-    while [ $# -ge 4 ]; do [ $2 = $size ] && sum=$3 && bytes=$4; shift 4; done
+    while [ $# -ge 5 ]
+    do [ $2 = $size ] && sum=$3 && bytes=$4 && secs=$5 ; shift 5; done
     kilos=$(($bytes / 1024))
+
+    # convert maxfiles secs idle into pause and total
+    pause=`dopause $secs $idle $nominal` || pause=0
+    total=`dototal $maxfiles $pause $secs $nominal` || total='unknown'
 
     set -- `ls -d /mnt/disks/$slot/?`
     disks="$@"
@@ -157,12 +216,20 @@ dorate() {
     disk4=0 disk5=0 disk6=0 disk7=0
     ndisks=$#
 
-    header="$label is working on $host
-            $label was assigned $cpus CPU resources
-            $label logging to $log
-            $label working on $ndisks disks with $maxfiles files / disk
-            $label writing files of size $size ($bytes) w/cksum $sum"
+    header="$label is working on $host with $cpus assigned CPU resources
+            $label to $log
+            $label handling $ndisks disks with $maxfiles files / disk
+            $label writing files of size $size ($bytes) w/cksum $sum
+            $label cull is $cull, purge is $purge, doit is $doit
+            $label secs is $secs, idle is $idle, pause is $pause
+            $label nominal read/write rate is $nominal MB/s, and the
+            $label total duration of the work might be $total hours."
     echo "$header" | sed -e 's/^[ ]*/# /'
+    # share the log with the human
+    echo "$header" | sed -e 's/^[ ]*/# /' 1>&4
+
+    # stop here if only reporting the plan
+    $doit || { rm $log ; exit 0 ; }
 
     # make sure data directories exist
     for disk in $disks
@@ -207,18 +274,21 @@ dorate() {
             file=$disk/data/$prefix-$tag.$suffix
             [ -d $disk/data ] || continue
             ( set -- `$timer -f %e $maker -v $size $file 2>&1`
-              #rate=$(($bytes / 1024 / 1024 / $4))
+              [ $# -eq 4 ] || echo MAKER timer error: "$@"
+              # filename size 'bytes' elapsedsecs
               rate=`dorate $bytes $4`
               echo $@ $rate MB/s write
               set -- `$timer -f %e $chker $file 2>&1`
+              [ $# -eq 4 ] || echo CHKER timer error: "$@"
+              # cksum bytes filename elapsedsecs
               # rename file by write rate
               mv $3 $3.$rate
               file=$3.$rate
               [ "$1" -eq $sum ] && cs=$1-aok || cs=$1-err
               [ "$2" -eq $bytes ] && bs=$2-aok || bs=$2-err
-              #rate=$(($bytes / 1024 / 1024 / $4))
               rate=`dorate $bytes $4`
-              echo $file $cs $bs $4 $rate MB/s read ) &
+              echo $file $cs $bs $4 $rate MB/s read
+              echo sleeping for $pause ... ; sleep $pause ) &
             jb="$jb $!"
             working=true
         done
@@ -275,15 +345,16 @@ dorate() {
 }
 
 #
-# Table of canonical checksum values and file sizes
-#
-#cksum 100g 2435306624 107374182400
-#cksum  40g 3497339177  42949672960
-#cksum  10g 1961958409  10737418240
-#cksum   1g 3413741448   1073741824
-#cksum 100m 2755649025    104857600
-#cksum  40m 1961958409     41943040
-#cksum  10m  248556017     10485760
+# Table of canonical checksum values and file sizes.
+# secs was calculated using 64.25 MB/s (64.25 * 1024 * 1024)
+#  xum name   checksum        bytes  secs
+#cksum 100g 2435306624 107374182400  1600
+#cksum  40g 3497339177  42949672960  640
+#cksum  10g 1961958409  10737418240  160
+#cksum   1g 3413741448   1073741824  16
+#cksum 100m 2755649025    104857600  2
+#cksum  40m 1961958409     41943040  1
+#cksum  10m  248556017     10485760  1
 #
 
 exit 0

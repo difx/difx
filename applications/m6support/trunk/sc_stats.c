@@ -1,5 +1,8 @@
 /*
- * $Id: sc_stats.c 5211 2021-07-29 19:28:17Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: sc_stats.c 5690 2023-03-06 22:59:34Z gbc $
  *
  * Statistics checker for scan check
  */
@@ -45,9 +48,9 @@ char *stats_repstr(BSInfo *bsi, char *label)
     strcat(buf, msk);
     return(buf);
 }
-void stats_report(BSInfo *bsi, char *label)
+void stats_report(BSInfo *bsi, char *label, FILE *fp)
 {
-    fputs(stats_repstr(bsi, label), stdout);
+    fputs(stats_repstr(bsi, label), fp ? fp : stdout);
 }
 
 /* Accumulator(s) of statistics on the packet data starting with optr */

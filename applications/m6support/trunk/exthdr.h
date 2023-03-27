@@ -1,5 +1,8 @@
 /*
- * $Id: exthdr.h 4135 2016-09-09 21:07:15Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: exthdr.h 5677 2023-03-04 19:06:02Z gbc $
  *
  * Support for extended headers
  */

@@ -1,5 +1,8 @@
 /*
- * $Id: vdif_time_util.h 2420 2014-08-28 16:24:37Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: vdif_time_util.h 5677 2023-03-04 19:06:02Z gbc $
  *
  * VDIF time utilities
  */

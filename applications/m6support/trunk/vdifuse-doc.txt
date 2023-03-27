@@ -1,0 +1,146 @@
+Notes on the developmental roadmap to vdifuse.
+----------------------------------------------
+(c) Massachusetts Institute of Technology, 2010..2023
+(c) Geoffrey B. Crew, 2010..2023
+
+Work began with the burst mode recorder (BMR) in May, 2010.  That
+system worked well in tests, but a field deployment in science
+observations was never funded (two units were needed and funds were
+spent long before I showed up).  It did serve to validate the single
+channel mode (Whitney et al. 2013) on the Westford-GGAO (Goddard, MD)
+baseline.  That DBE was the prototype for the eventual R2DBE deployed
+by the EHT at all single-antenna sites (Vertatschitsch et al., 2015).
+
+Later, when it became clear that something more than a Mark5 was needed
+for both VGOS and the EHTC, work began on a true Mark6 successor.  The
+initial version was developed by G. Crew and D. Lapsley and presented
+at the TOW (May 2012) using the X-Cube storage system (M. Taveniku).
+However discussions with X-Cube broke down (money or IP, perhaps) late in
+that year and the plan shifted (early 2013) to the current cplane/dplane
+arrangement implemented by C. Ruszczyk and R. Cappallo.  The first used
+a raid implementation on the modules, and then later went through two
+versions of the scatter-gather (sg) plan.  To be honest, a 3rd version that
+used packet-sized headers for the packet blocks would have been much easier
+to deal with, but that has never been implemented.  Components of the burst
+mode system (grab and push) were used to develop support tools for the Mark6.
+
+One of the driving features of vdifuse was that "scan check" for the Mark5
+was a somewhat challenging process as the data needed to be read off the
+storage modules into a local file for examination...at that was a
+sequential start.  (I.e. the file might be fine at the beginning and
+then seriously corrupt later on in the recordings. Worse, the proprietary
+nature of the Mark5 implementations meant that it was not possible to
+recover in such cases.)  Early birthing pains with the sg system made it
+clear that a complete examination of the fragments was necesary to be
+sure that the recordings would be usable.  Thus the need for random
+access to the sg fragments was needed, and the sg_access.? library was
+born to be used in the Mark6 "scan check" tool.  Unfortunately while
+resources were barely available for the Mark6 cplane/dplane development
+(as is usual with such things, the effort was grossly underestimated to
+meet the resources available) and a production-ready plan for using the
+recordings was not seriously addressed.  The developmental tools included
+a dqa program that could check and then assemble flat recording files from
+the sg fragments, but this requires substantial RAID space and is highly
+inefficient.  This has ultimately worked well enough for VGOS with its
+lower data rates, but for the EHTC (where money for the media was barely
+available) it would be a non-starter.
+
+Thus vdifuse was born to create a FUSE layer that could make the native
+recordings on the Mark6 available as flat files.  Since DIFX already had
+an interface for flat file recordings, the EHTC need was solved.  That
+this sort of thing could be done had previously been proven for the Mark5;
+however, the development here of vdifuse was ab initio.  As the ETHC case
+required only a single thread, that case was worked out first.  And since
+the block numbering of the sg format was in early cases suspect, the approach
+taken was to fully validate the flow of data through the packet times (as is
+done in DIFX once the data read was processed.)  It was also unclear what
+all the thread use cases were going to be (and indeed, the plan in dplane
+evolved at the same time so it was hard to code to a moving target).
+
+So threads became a "later" thing.  It became urgent for the EHTC when NOEMA
+appeared.  In the meantime, however, it seems the prejudices against a fuse
+approach within the DiFX community (which was not popular when vdifuse was
+started) yielded to eventually embrace that, with other efforts to support
+Mark6 recordings "natively" in DiFX.  (I.e. develop infrastructure in DiFX
+to support module access and automated access to the recordings as had
+previously been done for the Mark5 at the VLBA and Bonn correlators.)
+
+It is unclear that all the potential use cases are addressed, and thus
+it seems sensible to finish up the vdifuse application with proper thread
+support and perhaps other features for the known use cases.
+
+-----
+Whitney, A. R., Beaudoin, C. J., Cappallo, R. J., Corey, B. E., Crew, G. B.,
+    Doeleman, S. S., Lapsley, D. E., Hinton, A. A., McWhirter, S. R.,
+    Niell, A, E., Rogers, A. E. E., Ruszczyk, C. A., Smythe, D. L.,
+    SooHoo, J. and Titus, M. A.,  "Demonstration of a 16 Gbps Station
+    Broadband-RF VLBI System", PASP 125, 196, 2013, 10.1086/669718,
+    https://ui.adsabs.harvard.edu/abs/2013PASP..125..196W.
+Vertatschitsch, L., Primiani, R, Young, A, Weintroub, J, Crew, G. B.,
+    McWhirter, S. R., Beaudoin, C. J., Doeleman, S. S., and Blackburn, L,
+    "R2DBE: A Wideband Digital Backend for the Event Horizon Telescope",
+    PASP 127, 1226, 2015, 10.1086/684513,
+    https://ui.adsabs.harvard.edu/abs/2015PASP..127.1226V.
+
+General FUSE:
+    http://fuse.sourceforge.net/doxygen/fusexmp__fh_8c.html &c.
+    man mount.fuse
+    . user_allow_other is required in /etc/fuse.conf for non-private usage
+    . the with the default (async_read), the kernel read requests sometimes
+      get out of order.
+
+Error numbers (used by vdifuse):
+    /usr/include/asm-generic/errno-base.h
+    Currently return only these (not 100% sure about usage):
+     2 ENOENT   No such file or directory
+     5 EIO      I/O error
+     9 EBADF    Bad file number
+    14 EFAULT   Bad address
+    29 ESPIPE   Illegal seek
+    30 EROFS    Read-only file
+    No longer used:
+     1 EPERM    Operation not permitted (EROFS is clearer)
+
+Wisdom:
+    About io performance tuning
+        http://cromwell-intl.com/linux/performance-tuning/disks.html
+    About xfs tuning:
+        http://everything2.com/index.pl?node_id=1479435
+    To clear out cached pages and memory for (repeat) benchmarking:
+        free && sync && echo 3 > /proc/sys/vm/drop_caches && free
+    See context-example.c for how to save and restore context.
+    For improved performance (on sd?):
+        echo 4096 > /sys/block/sd?/queue/read_ahead_kb
+        home=/data-sk31/alma-apr2016 \
+        mount=/data-sk31/alma-apr2016/rc48 prep-one-scan.sh 099
+    (unclear if this is necessary on all kernels)
+    Note that the Mark6 module disks are grouped by 4 {0..3} and {4..7}
+        to share an e-SATA cable which limits each disk to 3 Gbps, so
+        the read rate is capped at 11.2 Gbps or 1.4 GB/s.
+    Several methods are coded to improve read performance.  This can be
+        adjusted via an environment variable SG_ACCESS_ADVICE.  The default
+        (2) uses the normal linux kernel advice machinery on paging.  The
+        POSIX version (3) works as well.  A version using p-threads (4) to
+        access and deal with the page fault waits is also coded.  A version
+        that does this with re-usable p-threads is coded, but buggy.
+
+Nomenclature: since we have two types of threading (VDIF and CPU core)
+    going on, the comments and variables use p-threads and v-threads
+    (and variations) to distinguish the two usages.  With regard to VDIF:
+    note that whether we have v-thread handling engaged or not, there is
+    always at least one thread.  (It may be that the DBEs are not populating
+    those bits, however.)
+
+Pending changes to be checked:
+    More than 6 epoch bits: the current VDIF epoch rolls-over in 2032.
+    The options are to indeed roll it over, or to co-opt the one or two
+    reserved bits above it in the header.  A ROLLOVER define with if..else
+    logic is now coded into these:  fix_the_file.?, push_vdif.c, sg_access.c,
+    vdif_epochs.h, vdif.h and vdiftst.c.
+
+The current implementation was driven by EHT needs, but has been demonstrated
+    to work efficiently on all of the VLBA, ALMA, NOEMA use cases.  Support
+    for VGOS (which handles threads differently) is still a work in progress.
+
+More complete documentation is pending.
+

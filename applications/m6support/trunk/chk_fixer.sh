@@ -1,5 +1,8 @@
 #!/bin/bash
 #
+# (c) Massachusetts Institute of Technology, 2013..2023
+# (c) Geoffrey B. Crew, 2013..2023
+#
 # Script to check scan_fixer
 #
 [ -n "$testverb" ] && v=-v || v=''

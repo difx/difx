@@ -1,6 +1,14 @@
 #!/bin/sh
 #
+# (c) Massachusetts Institute of Technology, 2013..2023
+# (c) Geoffrey B. Crew, 2013..2023
+#
 # Script to plot statsplot.py output
+#
+# This was written to investigate changes in statistics during the
+# gap between ALMA BLC subscans (about 2 seconds).  Since Cy8, the
+# gap was eliminated (as the BLC requires no reprogramming) and the
+# glitch naturally disappears.
 #
 # Ideally sort foo* > something.data
 #

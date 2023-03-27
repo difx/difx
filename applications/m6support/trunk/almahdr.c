@@ -1,5 +1,8 @@
 /*
- * $Id: almahdr.c 4126 2016-09-08 16:24:32Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: almahdr.c 5677 2023-03-04 19:06:02Z gbc $
  *
  * Support for ALMA extended headers
  */

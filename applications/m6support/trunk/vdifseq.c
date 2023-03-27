@@ -1,7 +1,12 @@
 /*
- * $Id: vdifseq.c 5211 2021-07-29 19:28:17Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: vdifseq.c 5716 2023-03-11 15:04:07Z gbc $
  *
  * This file does the work of building sequences.
+ *
+ * vdiflog should be used for this file as it is non-fuse work.
  */
 
 #include <stdio.h>
@@ -36,7 +41,7 @@ static int thier_comp(const void *p1, const void *p2)
 {
     THIERnode *e1 = (THIERnode *)p1;
     THIERnode *e2 = (THIERnode *)p2;
-    if (vdifuse_debug>6) fprintf(vdflog,
+    vdiflog(6,
         "H-CMP: %s and %s\n", e1->path, e2->path);
     return(strcmp(e1->path, e2->path));
 }
@@ -46,19 +51,19 @@ static void thier_dump(const void *nodep, const VISIT which, const int depth)
     THIERnode *hn;
     int print;
     switch (which) {
-    case preorder:  what = " preorder:-"; print = vdifuse_debug>4; break;
-    case endorder:  what = " endorder:-"; print = vdifuse_debug>4; break;
-    case postorder: what = "postorder:*"; print = vdifuse_debug>2; break;
-    case leaf:      what = "     leaf:*"; print = vdifuse_debug>2; break;
-    default:        what = "    error";   print = 1;               break;
+    case preorder:  what = " preorder:-"; print = 4;  break;
+    case endorder:  what = " endorder:-"; print = 4;  break;
+    case postorder: what = "postorder:*"; print = 2;  break;
+    case leaf:      what = "     leaf:*"; print = 2;  break;
+    default:        what = "    error";   print = -1; break;
     }
     hn = *(THIERnode **)nodep;
-    if (print) fprintf(vdflog,
-        "hier:%s%d:'%47s' %p %c\n", what, depth, hn->path, hn, hn->type);
+    vdiflog(print, "hier:%s%d:'%47s' %p %c\n",
+        what, depth, hn->path, hn, hn->type);
 }
 static void thier_free(void *nodep)
 {
-    if (vdifuse_debug>4) fprintf(vdflog, "Freeing (hier) %p\n", nodep);
+    vdiflog(4, "Freeing (hier) %p\n", nodep);
     free(nodep);
 }
 
@@ -73,7 +78,7 @@ static VDIFUSEntry *find_seq_parent(char *path)
     VDIFUSEntry *vp;
 
     basename = strrchr(strcpy(tmp.path, path), '/');
-    if (vdifuse_debug>3) fprintf(vdflog, " (tfind)child: %s\n", tmp.path);
+    vdiflog(3, " (tfind)child: %s\n", tmp.path);
     if (!basename) return((VDIFUSEntry *)0);
     *basename++ = 0;
 
@@ -81,7 +86,7 @@ static VDIFUSEntry *find_seq_parent(char *path)
     if (!hp) vp = current_cache_start() + VDIFUSE_TOPDIR_SEQUENCE;
     else vp = (current_cache_start() + (*hp)->hvdei);
 
-    if (vdifuse_debug>3) fprintf(vdflog, "(tfind)parent: %s\n", vp->fuse);
+    vdiflog(3, "(tfind)parent: %s\n", vp->fuse);
     return(vp);
 }
 
@@ -136,7 +141,7 @@ static VDIFUSEntry *check_continuation(VDIFUSEntry *vx, int stype)
         if (vx->ccount == VDIFUSE_MAX_SEQI)
             vx = add_continuation(vx->index, stype);
     } else {
-        fprintf(vdflog, "Illegal cindex value %d in...\n", vx->cindex);
+        vdiflog(-1, "Illegal cindex value %d in...\n", vx->cindex);
         describe_cache_entry(vx);
     }
     return(vx);
@@ -151,14 +156,14 @@ static void add_to_parent_dir(VDIFUSEntry *vc)
     uint32_t vp_index, vc_index = vc->index;
     //uint32_t vx_index;
     if (!(vp = find_seq_parent(vc->hier))) {
-        fprintf(vdflog, "No parent for %s\n", vc->hier);
+        vdiflog(-1, "No parent for %s\n", vc->hier);
         twalk_thier_errors ++;
         return;
     }
     vp_index = vp->index;
     if (!(vx = check_continuation(vp, VDIFUSE_STYPE_SDIR))) {
         // vc = current_cache_start() + vc_index;
-        fprintf(vdflog, "No room in parent for %s\n", vc->hier);
+        vdiflog(-1, "No room in parent for %s\n", vc->hier);
         twalk_thier_errors ++;
         return;
     }
@@ -168,7 +173,7 @@ static void add_to_parent_dir(VDIFUSEntry *vc)
     vp = current_cache_start() + vp_index;
 
     /* ok, safe to do the update */
-    if (vdifuse_debug>3) fprintf(vdflog,
+    vdiflog(3,
         "Subdir: %s ->\n   Dir: %s\n", vc->hier, vp->hier);
     vp->u.vfuse.st_nlink ++;
     vp->u.vfuse.st_size += sizeof(VDIFUSEntry);
@@ -189,7 +194,7 @@ static void thier_sdir(const void *nodep, const VISIT which, const int depth)
 
     if (which != postorder && which != leaf) return;
     if (hn->type == 'X') {      /* top-level /segments */
-        fprintf(vdflog, "Have 'X' type subdir entry!\n");
+        vdiflog(-1, "Have 'X' type subdir entry!\n");
         twalk_thier_errors ++;
         return;
     }
@@ -238,7 +243,7 @@ static int tfrag_comp(const void *p1, const void *p2)
 {
     TFRAGnode *e1 = (TFRAGnode *)p1;
     TFRAGnode *e2 = (TFRAGnode *)p2;
-    if (vdifuse_debug>6) fprintf(vdflog,
+    vdiflog(6,
         "F-CMP: %s and %s\n", e1->path, e2->path);
     /* check the signatures */
     if (e1->vsig < e2->vsig) return(-1);
@@ -254,8 +259,8 @@ static int tfrag_comp(const void *p1, const void *p2)
     if (e1->final.tv_nsec < e2->final.tv_nsec) return(-1);
     if (e1->final.tv_nsec > e2->final.tv_nsec) return( 1);
     /* well shucks, duplicate data? */
-    /* TODO: invalidate one of them? */
-    fprintf(vdflog,
+    /* NOTION: invalidate one of them? */
+    vdiflog(-1,
         "F-CMP: %s and %s are duplicates\n", e1->path, e2->path);
     return(0);
 }
@@ -265,19 +270,18 @@ static void tfrag_dump(const void *nodep, const VISIT which, const int depth)
     TFRAGnode *vf;
     int print = 0;
     switch (which) {
-    case preorder:  what = " preorder:-"; print = vdifuse_debug>4; break;
-    case endorder:  what = " endorder:-"; print = vdifuse_debug>4; break;
-    case postorder: what = "postorder:*"; print = vdifuse_debug>2; break;
-    case leaf:      what = "     leaf:*"; print = vdifuse_debug>2; break;
-    default:        what = "    error";   print = 1;               break;
+    case preorder:  what = " preorder:-"; print = 4;  break;
+    case endorder:  what = " endorder:-"; print = 4;  break;
+    case postorder: what = "postorder:*"; print = 2;  break;
+    case leaf:      what = "     leaf:*"; print = 2;  break;
+    default:        what = "    error";   print = -1; break;
     }
     vf = *(TFRAGnode **)nodep;
-    if (print) fprintf(vdflog,
-        "frag:%s%d:'%47s' %p %c\n", what, depth, vf->path, vf, 'f');
+    vdiflog(print, "frag:%s%d:'%47s' %p %c\n", what, depth, vf->path, vf, 'f');
 }
 static void tfrag_free(void *nodep)
 {
-    if (vdifuse_debug>4) fprintf(vdflog, "Freeing (frag) %p\n", nodep);
+    vdiflog(4, "Freeing (frag) %p\n", nodep);
     free(nodep);
 }
 
@@ -289,13 +293,13 @@ static VDIFUSEntry *find_frag_parent(char *path, VDIFUSEntry *vc)
     static THIERnode tmp;
     THIERnode **hp;
     VDIFUSEntry *vp = 0;
-    if (vdifuse_debug>4) fprintf(vdflog,
+    vdiflog(4,
         "   thier lookup '%s' ...\n", path); 
-    if (vdifuse_debug>4) describe_fragment(vc);
+    describe_fragment(vc);
     strcpy(tmp.path, path);
     if ((hp = tfind(&tmp, &thier_root, &thier_comp)))
         vp = (current_cache_start() + (*hp)->hvdei);
-    if (vdifuse_debug>4) fprintf(vdflog,
+    vdiflog(4,
         "   thier lookup '%s' produced [%d] %p\n"
         "                '%s'\n",
             path, (*hp)->hvdei, vp, vp->hier); 
@@ -313,23 +317,23 @@ static void tfrag_sadd(const void *nodep, const VISIT which, const int depth)
 
     if (which != postorder && which != leaf) return;
 
-    if (vdifuse_debug>4) fprintf(vdflog,
+    vdiflog(4,
         "tfrag_sadd: node %p %s\n", vf, vf->path);
     vz = (current_cache_start() + vf->fvdei);
     vz_index = vz->index;
 
     if (!(vp = find_frag_parent(vz->hier, vz))) {
-        if (vdifuse_debug>3) fprintf(vdflog,
+        vdiflog(3,
             "No sequence entry for fragment %s\n as '%s'\n",
             vf->path, vz->hier);
         return;
     }
     vp_index = vp->index;
-    if (vdifuse_debug>4) fprintf(vdflog,
+    vdiflog(4,
         "tfrag_sadd: parent %s\n", vp->hier);
 
     if (!(vx = check_continuation(vp, VDIFUSE_STYPE_PART))) {
-        if (vdifuse_debug>3) fprintf(vdflog,
+        vdiflog(3,
             "No room in parent for %s\n", vf->path);
         return;
     }
@@ -340,11 +344,11 @@ static void tfrag_sadd(const void *nodep, const VISIT which, const int depth)
     if (vp->stype == VDIFUSE_STYPE_NULL) {
         vp->stype = vz->stype;
     } else if (vp->stype != vz->stype) {
-        if (vdifuse_debug>3) fprintf(vdflog,
+        vdiflog(3,
             "Inhomogeneous sequence %s\n", vp->path);
         return;
     }
-    if (vdifuse_debug>3) fprintf(vdflog,
+    vdiflog(3,
         "Frag %s ->\n seq %s\n", vf->path, vp->hier);
     /* ok, safe to do the update */
     /* st_size updated later */
@@ -366,7 +370,7 @@ static int finalize_sequences(void)
     for (ii = 0; ii < vne; ii++) {
         if (vdc[ii].etype != VDIFUSE_ENTRY_SEQUENCE) continue;
         if (!vdc[ii].cindex) {
-            fprintf(vdflog, "No continuation for seq %s\n", vdc[ii].hier);
+            vdiflog(-1, "No continuation for seq %s\n", vdc[ii].hier);
             errs ++;
             continue;
         }
@@ -393,8 +397,8 @@ static int finalize_sequences(void)
  *   create the cache entries for the required (sub)directories (thier_sdir)
  *   load them with their subdirectories or fragments (tfrag_sadd),
  *   provide the sequence sizes in vfuse data (finalize_sequences())
- * TODO: collapse fragments within the gap threshold into same sequence
- * TODO: split sequences of different threads?
+ * NOTION: collapse fragments within the gap threshold into same sequence
+ * NOTION: split sequences of different threads?
  *   delete the trees (thier_free, tfrag_free) since we no longer need them.
  */
 int create_sequences(void)
@@ -429,7 +433,7 @@ static int fragment_in_fragtree(VDIFUSEntry *vc)
     TFRAGnode *node = (TFRAGnode *)malloc(sizeof(TFRAGnode));
     TFRAGnode **leaf;
     if (!node) { perror("malloc-frag"); return(1); }
-    if (vdifuse_debug>4) fprintf(vdflog, "frag:malloc %p\n", node);
+    vdiflog(4, "frag:malloc %p\n", node);
     VDIFUSEntry *vx;
     node->vsig = vc->vsig;
     node->first.tv_sec = vc->u.vfuse.st_mtime;
@@ -440,8 +444,8 @@ static int fragment_in_fragtree(VDIFUSEntry *vc)
     node->fvdei = vc->index;
     leaf = tsearch(node, &tfrag_root, &tfrag_comp);
     if (!leaf) { perror("tsearch-frag"); return(2); }
-    if (vdifuse_debug>5) describe_fragment(vc);
-    if (vdifuse_debug>4) fprintf(vdflog,
+    describe_fragment(vc);
+    vdiflog(4,
         "    Leaf %p %016lX %p\n"
         "    Node %p %016lX %lu.%09lu..%lu.%09lu\n"
         "    Path '%s'\n"
@@ -452,7 +456,7 @@ static int fragment_in_fragtree(VDIFUSEntry *vc)
         node->final.tv_sec, node->final.tv_nsec,
         node->path, (current_cache_start() + node->fvdei)->hier);
     vx = (current_cache_start() + node->fvdei);
-    if (vdifuse_debug>4) fprintf(vdflog, "   VC: %d:%d %p:%p %s\n",
+    vdiflog(4, "   VC: %d:%d %p:%p %s\n",
         vc->index, node->fvdei, vc, vx, vc->hier);
     return(0);
 }
@@ -466,10 +470,10 @@ static int fragment_in_fragtree(VDIFUSEntry *vc)
  *   (NULL,-1) to finish it
  *      which enters it into the hierachy "/...", and
  *      returns a temporary string for copying to the cache entry.
- * TODO: force vdif termination.  This must be done carefully to
+ * NOTION: force vdifuse termination.  This must be done carefully to
  *       avoid breaking the heirarchy (a tdelete() and a tsearch()
  *       are needed on the revised leaf path).
- * TODO: might consider putting the full scan name at depth.
+ * NOTION: might consider putting the full scan name at depth.
  */
 static THIERnode *dir_hier_add(char *part, int depth)
 {
@@ -477,7 +481,7 @@ static THIERnode *dir_hier_add(char *part, int depth)
     THIERnode **leaf, *node;
     if (!part && (depth<0)) { /* finish up */
         leaf = tfind(&tmp, &thier_root, &thier_comp);
-        if (!leaf) return(fprintf(vdflog,
+        if (!leaf) return(vdiflog(-1,
             "tfind-hier error: no leaf\n"), NULL);
         if ((*leaf)->type == 'D') (*leaf)->type = 'S';
         return(*leaf);
@@ -491,15 +495,15 @@ static THIERnode *dir_hier_add(char *part, int depth)
         tmp.path[VDIFUSE_MAX_PATH-1] = 0;
         tmp.type = 'D';
         node = (THIERnode *)malloc(sizeof(THIERnode));
-        if (!node) return(fprintf(vdflog,
+        if (!node) return(vdiflog(-1,
             "malloc-hier error: no node\n"), NULL);
-        if (vdifuse_debug>4) fprintf(vdflog,
+        vdiflog(4,
             "hier:malloc %p %s\n", node, tmp.path);
         memcpy(node, &tmp, sizeof(THIERnode));
         leaf = tsearch(node, &thier_root, &thier_comp);
-        if (!leaf) return(fprintf(vdflog,
+        if (!leaf) return(vdiflog(-1,
             "tsearch-hier error: find/create: no leaf\n"), NULL);
-        if (strcmp(tmp.path, (*leaf)->path)) fprintf(vdflog,
+        if (strcmp(tmp.path, (*leaf)->path)) vdiflog(-1,
             "Tree Search Corrupt Dir with %s v %s\n", tmp.path, (*leaf)->path);
     }
     return(NULL);
@@ -539,7 +543,7 @@ static int fragment_in_hierarchy(VDIFUSEntry *vc, uint32_t limit)
     }
     free(copy);
     hn = dir_hier_add(NULL, -1);
-    if (!vc->hier || !hn || !hn->path) return(fprintf(vdflog,
+    if (!hn) return(vdiflog(-1,
         "frag_in_hier: dir_hier_add misbehaved\n"), 3);
     strcpy(vc->hier, hn->path);
     return( fragment_in_fragtree(vc) );
@@ -559,7 +563,7 @@ int create_fragtree(void)
     uint32_t limit = vp->seqhierarchy;
     int errors = 0;
 
-    if (vdifuse_debug>0) fprintf(vdflog, limit
+    vdiflog(0, limit
         ? "Sequence hierarchy depth is %u.\n"
         : "Sequence hierarchy disabled (%u).\n", limit);
 
@@ -567,7 +571,7 @@ int create_fragtree(void)
         if (vc[ii].etype != VDIFUSE_ENTRY_FRAGMENT) continue;
         fhe = fragment_in_hierarchy(&vc[ii], limit);
         if (fhe) {
-            /* TODO: mark frag as invalid as an alternative to error return */
+            /* NOTION: mark frag as invalid as an alternative to error return */
             errors ++;
             fprintf(stderr, "Problem adding frag %d to tree\n", ii);
         }

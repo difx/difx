@@ -1,5 +1,8 @@
 /*
- * $Id: per_file.c 5224 2021-08-02 16:18:24Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: per_file.c 5700 2023-03-08 22:40:48Z gbc $
  *
  * Scan checker for Mark6.  Files are presumed to be:
  *   SGv2 files of VDIF packets
@@ -46,6 +49,7 @@ static struct checker_work {
     int32_t     pkts_runs;          /* number of packets in a row */
     uint32_t    pkts_seqstarter;    /* starting point for seq check */
     uint32_t    pkts_seqoffset;     /* seq check current offset */
+    uint32_t    pkts_seqdelta;      /* seq check step to next offset */
     char        stat_chans[256];    /* csv list of channels */
     uint32_t    stat_octets;        /* max number of samples/packet */
     uint32_t    stat_delta;         /* dump stats after so many pkts */
@@ -76,23 +80,55 @@ static struct checker_work {
     /* delta stats */
     BSInfo      bdel, blst;         /* used by stat_delta */
     off_t       np0, np1;           /* packet offsets */
+
+    /* logging */
+    char        *logfmt;            /* if used, may have %d in it */
+    char        *logfile;           /* actual file name if used */
+    int         logcount;           /* if log= used */
+    FILE        *logfp;             /* if open */
 } work = {
     /* initialize the non-zero values */
     .alarm_secs = 60.0,             /* a minute per file is alot */
     .trial_seed = 17,               /* doesn't really matter */
     .pkts_loops = 5,                /* briefest of touches */
     .pkts_runs = 20,                /* a really small patch */
+    .pkts_seqdelta = 1,             /* how many pkts to step by */
     .stat_toler = 0.1,              /* default tolerance */
     .stat_octets = SG_MAX_VDIF_BYTES,
     .station_mask = SG_STATION_MASK
 };
+
+/* simple mechanisms to generate a sequence of logs with sg_logger */
+static void bump_logfile(void)
+{
+    int nn;
+    if (work.logfmt == NULL) return;
+    nn = strlen(work.logfmt) + 64;
+    if (!work.logfile) work.logfile = calloc(nn, 1);
+    else work.logfile = realloc(work.logfile, nn);
+    if (!work.logfile) {
+        perror("bump_logfile");
+        return;
+    }
+    snprintf(work.logfile, nn, work.logfmt, work.logcount++);
+    sg_logger((work.logfp = fopen(work.logfile, "w")));
+}
+static void start_logfile(const char *fname)
+{
+    work.logfmt = (char*)fname;
+    work.logcount = 0;
+}
+static void close_logfile(void)
+{
+    if (work.logfp) fclose(work.logfp);
+}
 
 /*
  * Returns 1 if we have exceeded the limit
  */
 static int time_to_bail(void)
 {
-    work.file_process_secs = current_or_elapsed_secs(&work.file_start_secs);
+    work.file_process_secs = sg_current_or_elapsed_secs(&work.file_start_secs);
     if (work.file_process_secs > work.alarm_secs) return(1);
     return(0);
 }
@@ -119,12 +155,13 @@ static uint32_t *sequence_packet_er(int *nlp, uint32_t **endp)
 }
 
 /*
- * Pick a packet at random in the file using one of the 3 sg methods
+ * Pick a packet at random in the file using one of the 6 sg methods
  */
 static uint32_t *random_packet_sg(int *nlp, uint32_t **endp)
 {
-    int how = (int)floor( 3.0 * (double)random() / (double)RAND_MAX ) ;
-    off_t ww;
+    int how = (int)floor( 6.0 * (double)random() / (double)RAND_MAX ), nl;
+    off_t ww, pbb, pba;
+    int prev, this, next;
     uint32_t *pkt;
     switch (how) {
     case 0:
@@ -132,10 +169,26 @@ static uint32_t *random_packet_sg(int *nlp, uint32_t **endp)
                    (double)random() / (double)RAND_MAX );
         pkt = sg_pkt_by_num(&work.sgi, ww, nlp, endp);
         break;
-    case 1:
+    case 1: case 3: case 4: case 5:
         ww = rint( (double)(work.sgi.sg_total_blks - 1) *
                    (double)random() / (double)RAND_MAX );
-        pkt = sg_pkt_by_blk(&work.sgi, ww, nlp, endp);
+        switch (how) {
+        case 1:
+            pkt = sg_pkt_by_blk(&work.sgi, ww, nlp, endp);
+            break;
+        case 3:
+            pkt = sg_pkt_blkby(&work.sgi, ww, nlp, &pbb, &pba);
+            *endp = pkt + (*nlp)*work.sgi.read_size;
+            break;
+        case 4:
+            pkt = sg_pkt_by_blknm(&work.sgi, ww, nlp, endp,
+                &prev, &this, &next);
+            break;
+        case 5:
+            pkt = sg_pkt_by_blkall(&work.sgi, ww, nlp, endp,
+                &pbb, &pba, &prev, &this, &next);
+            break;
+        }
         break;
     case 2:
         ww = rint( (double)(work.sgi.smi.size - 1) *
@@ -155,6 +208,12 @@ static uint32_t *random_packet_sg(int *nlp, uint32_t **endp)
 static uint32_t *sequence_packet_sg(int *nlp, uint32_t **endp)
 {
     uint32_t *pkt = sg_pkt_by_num(&work.sgi, work.pkts_seqoffset, nlp, endp);
+    work.pkts_seqoffset += work.pkts_seqdelta;
+    return(pkt);
+}
+static uint32_t *sequence_packet_sb(int *nlp, uint32_t **endp)
+{
+    int32_t *pkt = sg_pkt_by_blk(&work.sgi, work.pkts_seqoffset, nlp, endp);
     work.pkts_seqoffset ++;
     return(pkt);
 }
@@ -195,7 +254,7 @@ static uint32_t *sequence_packet_fl(int *nlp, uint32_t **endp)
     *endp = work.sgi.smi.eomem;
     *nlp = (work.sgi.smi.eomem - pktp) / (off_t)work.sgi.read_size;
     pktp += work.sgi.pkt_offset;
-    work.pkts_seqoffset ++;
+    work.pkts_seqoffset += work.pkts_seqdelta;
     return((uint32_t *)pktp);
 }
 /*
@@ -220,6 +279,7 @@ static char *picker_name(Random_Picker *picker)
     if (picker == random_packet_sg) return("rndsg"); else
     if (picker == random_packet_fl) return("rndfl"); else
     if (picker == random_packet_er) return("rnder"); else
+    if (picker == sequence_packet_sb) return("seqsb"); else
     if (picker == sequence_packet_sg) return("seqsg"); else
     if (picker == sequence_packet_fl) return("seqfl"); else
     if (picker == sequence_packet_er) return("seqer"); else
@@ -275,9 +335,11 @@ static void check_sequence(Random_Picker *rp)
     int nl, fails, fills;
     uint32_t tt, num_check, *pkt, *end, *pkt0 = 0;
     num_check = (work.pkts_runs == 0)
-              ? work.sgi.total_pkts : (uint32_t)work.pkts_runs;
+              ? work.sgi.total_pkts / work.pkts_seqdelta
+              : (uint32_t)work.pkts_runs;
     if (work.pkts_seqoffset + num_check > work.sgi.total_pkts)
-        num_check = work.sgi.total_pkts - work.pkts_seqoffset - 1;
+        num_check = work.sgi.total_pkts / work.pkts_seqdelta
+            - work.pkts_seqoffset - 1;
     for (tt = 0; tt < num_check; ) {
         pkt = (*rp)(&nl, &end);
         if (pkt0 == 0) pkt0 = pkt;
@@ -388,13 +450,14 @@ static void flist_report(void)
  */
 static void thread_summary(char *lab, short *threads)
 {
-    int ii;
-    fprintf(stdout, "%s:threads", lab);
+    int ii, cnt=0;
+    fprintf(stdout, "%s:vdifthreadlist:", lab);
     for (ii = 0; ii < MAX_VDIF_THREADS; ii++) {
         if (threads[ii] < 0 || threads[ii] > 1023) break;
         fprintf(stdout, " %d", threads[ii]);
+        cnt += 1;
     }
-    fprintf(stdout, "\n");
+    fprintf(stdout, " (%d in total)\n", cnt);
 }
 
 /*
@@ -406,7 +469,7 @@ static void summary_report(void)
     static char lab[] = "0000               ";
     
     snprintf(lab, 6, "%05d", work.cur_numb);
-    if (verb>0) fprintf(stdout,
+    if (verb>0) fprintf(sg_logfile(),
         "%s:%s (%.1fms) %s\n"
         "%s:%s %lu pass + %lu fail | %lu time %lu fill / %lu tested\n",
         lab, work.cur_file, 1.0e3 * work.total_process_secs,
@@ -417,12 +480,12 @@ static void summary_report(void)
     strcat(lab, ":");
     if (verb>0) sg_report(&work.sgi, lab);
     strcat(lab, "stats:");
-    if (verb>0) stats_report(&work.bsi, lab);
+    if (verb>0) stats_report(&work.bsi, lab, sg_logfile());
 #if EXTEND_HCHK
     if (work.extend_hchk) extended_hdr_sum(work.extend_hchk);
     if (work.pps_search > 0) extended_report(lab, &work.srch_state);
 #endif /* EXTEND_HCHK */
-    fflush(stdout);
+    fflush(sg_logfile());
 }
 
 /*
@@ -630,15 +693,17 @@ static void all_done(int signum)
     if (signum == SIGINT) fprintf(stdout, "signal: Interrupt!\n");
     if (signum == SIGBUS) fprintf(stdout, "signal: bus error!\n");
 
-    /* now perform the cleanup work from m6sc_per_file() */
-    sg_close(&work.sgi);
-
-    work.file_process_secs = current_or_elapsed_secs(&work.file_start_secs);
+    work.file_process_secs = sg_current_or_elapsed_secs(&work.file_start_secs);
     work.total_process_secs += work.file_process_secs;
     work.avail_process_secs -= work.file_process_secs;
 
     if (work.flist_only)          flist_report();
     else                          summary_report();
+
+    /* now perform the cleanup work from m6sc_per_file() */
+    sg_close(&work.sgi);
+    close_logfile();
+
     exit(0);
 }
 
@@ -734,6 +799,7 @@ static int help_chk_opt(void)
     fprintf(stdout, "\n");
     fprintf(stdout, "  version          of m6support toolset (%g)\n",
         M6_VERSION);
+    fprintf(stdout, "  log=<filename>   send output to logfile (stdout)\n");
     fprintf(stdout, "  alarm=<float>    per-file check time limit (%g s)\n",
         work.alarm_secs);
     fprintf(stdout, "  seed=<int>       seed for trials (%u)\n",
@@ -746,6 +812,8 @@ static int help_chk_opt(void)
         work.pkts_runs);
     fprintf(stdout, "  starter=<int>    start packet (%u) in sequential mode\n",
         work.pkts_seqstarter);
+    fprintf(stdout, "  delta=<int>      packet step (%u) in sequential mode\n",
+        work.pkts_seqdelta);
     fprintf(stdout, "  chans=<csv>      list of channels for stats (\"\")\n"
         /*work.stat_chans*/);
     fprintf(stdout, "  stats=<int>      # octets/packet to test (%u)\n",
@@ -769,6 +837,12 @@ static int help_chk_opt(void)
         work.showthreads);
     /* ispy is not settable from command line */
     fprintf(stdout, "\n");
+    fprintf(stdout, "Use '-cmore' to get a discussion of the above\n");
+    fprintf(stdout, "\n");
+    return(1);
+}
+static int more_chk_opt(void)
+{
     fprintf(stdout, "Generally speaking, you can increase the amount\n");
     fprintf(stdout, "of checking by increasing loops (how many random\n");
     fprintf(stdout, "locations to check) and/or runs (how many packets\n");
@@ -777,6 +851,9 @@ static int help_chk_opt(void)
     fprintf(stdout, "through the number of packets specified by runs.\n");
     fprintf(stdout, "To do the whole file sequentially, set runs=0.\n");
     fprintf(stdout, "To start in the middle, set starter > 0.\n");
+    fprintf(stdout, "To step over packets, use delta>1.\n");
+    fprintf(stdout, "As a special case, if delta is equal to the typical\n");
+    fprintf(stdout, "write block size, then step though by sg blocks.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "Use exthdr=help for help with those options.\n");
     fprintf(stdout, "-c exthdr= activates the capability, but you will\n");
@@ -794,6 +871,12 @@ static int help_chk_opt(void)
     fprintf(stdout, "Minimal support for threads is provided.  If you\n");
     fprintf(stdout, "set a max value for legal thread id, you will get\n");
     fprintf(stdout, "a list of thread ids that are less than that value.\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "Logging to file is supported and if %%d is in the\n");
+    fprintf(stdout, "name, then a serious of numbered files will be made.\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "Use '-chelp' to get the option variables and defaults.\n");
+    fprintf(stdout, "\n");
     return(1);
 }
 
@@ -813,8 +896,14 @@ static int init_for_python(void)
 int m6sc_set_chk_opt(const char *arg)
 {
     if (!arg) return(init_for_python());
+    // if (verb>1) fprintf(stdout, "Considering argument %s", arg);
     if (!strncmp(arg, "help", 4)) return(help_chk_opt());
-    if (!strncmp(arg, "alarm=", 6)) {
+    if (!strncmp(arg, "more", 4)) return(more_chk_opt());
+    if (!strncmp(arg, "log=", 4)) {
+        start_logfile(arg+4);
+        if (verb>1) fprintf(stdout,
+            "opt: logging output to %s\n", work.logfmt);
+    } else if (!strncmp(arg, "alarm=", 6)) {
         work.alarm_secs = atof(arg+6);
         if (work.alarm_secs > 3600.0) work.alarm_secs = 3600.0;
         if (work.alarm_secs < 0.0) work.alarm_secs = 0.0;
@@ -840,6 +929,11 @@ int m6sc_set_chk_opt(const char *arg)
         work.pkts_seqstarter = atoi(arg+8);
         if (verb>1) fprintf(stdout,
             "opt: Starting %u packets into file\n", work.pkts_seqstarter);
+    } else if (!strncmp(arg, "delta=", 6)) {
+        work.pkts_seqdelta = atoi(arg+6);
+        if (work.pkts_seqdelta<=0) work.pkts_seqdelta = 1;
+        if (verb>1) fprintf(stdout,
+            "opt: Packet step %u packets through file\n", work.pkts_seqdelta);
     } else if (!strncmp(arg, "chans=", 6)) {
         strncpy(work.stat_chans, arg+6, sizeof(work.stat_chans)-1);
         if (verb>1) fprintf(stdout,
@@ -896,10 +990,10 @@ int m6sc_set_chk_opt(const char *arg)
     } else if (!strncmp(arg, "threads=", 8)){
         work.showthreads = atoi(arg+8);
         if (work.showthreads > 0 || work.showthreads < MAX_LEGAL_THREAD_ID)
-            sg_set_max_legal_thread_id(work.showthreads);
+            sg_set_max_legal_vthread_id(work.showthreads);
         if (verb>1) fprintf(stdout,
             "opt: %s showing threads; max legal thread id is %d\n",
-            work.showthreads ? "am" : "not", sg_get_max_legal_thread_id());
+            work.showthreads ? "am" : "not", sg_get_max_legal_vthread_id());
     } else {
         fprintf(stderr, "Unknown option %s\n", arg);
         return(1);
@@ -976,6 +1070,7 @@ int m6sc_per_file(const char *file, int files, int verbose)
     /* per-file initializations */
     work.cur_numb = n;
     work.pkts_seqoffset = work.pkts_seqstarter;
+    if (work.pkts_seqdelta <= 0) work.pkts_seqdelta = 1;
     strcpy((work.cur_file = malloc(strlen(file) + 2)), file);
     work.pkts_timing = work.pkts_tested = 0;
     work.pkts_passed = work.pkts_failed = 0;
@@ -988,9 +1083,11 @@ int m6sc_per_file(const char *file, int files, int verbose)
     if (work.extend_hchk) extended_hdr_verb(verb, work.cur_file);
 #endif /* EXTEND_HCHK */
     work.file_process_secs = 0.0;
-    work.file_start_secs = current_or_elapsed_secs((double *)0);
+    work.file_start_secs = sg_current_or_elapsed_secs((double *)0);
 
     (void)sg_open(file, &work.sgi);
+    bump_logfile();
+    if (verb>1) fprintf(stdout, "file: Have Opened-%d: %s\n", n, file);
 
     stats_chmask(&work.bsi, work.stat_chans);
     work.bsi.packet_octets = work.sgi.vdif_signature.bits.df_len - 4;
@@ -999,6 +1096,7 @@ int m6sc_per_file(const char *file, int files, int verbose)
     work.bsi.bits_sample = work.sgi.vdif_signature.bits.bps + 1;
 
     if (work.pps_search > 0) {
+        if (verb>1) fprintf(stdout, "mode: pps-search-%d\n", work.pps_search);
         switch (work.sgi.sg_version) {
         case SG_VERSION_OK_2: picker = search_packet_sg; break;
         case SG_VERSION_FLAT: picker = search_packet_fl; break;
@@ -1007,6 +1105,7 @@ int m6sc_per_file(const char *file, int files, int verbose)
         work.pickername = picker_name(picker);
         check_search(picker);
     } else if (work.pkts_loops > 0) {
+        if (verb>1) fprintf(stdout, "mode: pkt-loops-%d\n", work.pkts_loops);
         switch (work.sgi.sg_version) {
         case SG_VERSION_OK_2: picker = random_packet_sg; break;
         case SG_VERSION_FLAT: picker = random_packet_fl; break;
@@ -1015,8 +1114,20 @@ int m6sc_per_file(const char *file, int files, int verbose)
         work.pickername = picker_name(picker);
         check_random(picker);
     } else {
+        if (verb>1) fprintf(stdout, "mode: sequential-%d\n",work.pkts_seqdelta);
         switch (work.sgi.sg_version) {
-        case SG_VERSION_OK_2: picker = sequence_packet_sg; break;
+        case SG_VERSION_OK_2:
+            if (work.sgi.sg_wr_block == work.pkts_seqdelta) {
+                              picker = sequence_packet_sb;
+            } else {
+                if (verb>1) fprintf(stdout, "mode: by pkt stepping\n");
+                              picker = sequence_packet_sg;
+            }
+            if (verb>1)
+                fprintf(stdout, "mode: by sg block (delta %d WB %d) %s\n",
+                    work.pkts_seqdelta, work.sgi.sg_wr_block,
+                    picker_name(picker));
+                                                           break;
         case SG_VERSION_FLAT: picker = sequence_packet_fl; break;
         default:              picker = sequence_packet_er; break;
         }
@@ -1024,15 +1135,17 @@ int m6sc_per_file(const char *file, int files, int verbose)
         check_sequence(picker);
     }
 
-    sg_close(&work.sgi);
-
     // work.file_process_secs = capture_process_secs(1); // DEAD_OLD_CODE
-    work.file_process_secs = current_or_elapsed_secs(&work.file_start_secs);
+    work.file_process_secs = sg_current_or_elapsed_secs(&work.file_start_secs);
     work.total_process_secs += work.file_process_secs;
     work.avail_process_secs -= work.file_process_secs;
 
     if (work.flist_only)          flist_report();
     else                          summary_report();
+
+    sg_close(&work.sgi);
+    close_logfile();
+
     free(work.cur_file);
     work.cur_file = 0;
     n++;

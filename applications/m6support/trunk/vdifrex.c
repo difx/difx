@@ -1,9 +1,14 @@
 /*
- * $Id: vdifrex.c 3815 2016-02-25 18:04:37Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: vdifrex.c 5714 2023-03-10 21:31:00Z gbc $
  *
  * This file provides support for the fuse interface.
  * This file provides support for regex(7) matching of paths for
  * inclusion/exclusion.
+ *
+ * vdiflog should be used for this file as it is non-fuse work.
  */
 
 #include <stdio.h>
@@ -13,9 +18,8 @@
 #include <sys/types.h>
 #include <regex.h>
 
-/* all we need from vdifuse.h */
-extern int vdifuse_debug;
-extern FILE *vdflog;
+/* all we need from vdifuse.h is this */
+extern void vdiflog(int gate, char *fmt, ...);
 
 #include "vdifuse.h"
 
@@ -34,15 +38,15 @@ RexPatt  *rxlist = 0;   /* list of patterns */
 /*
  * Provide the user with some help
  */
-void regexhelp(FILE *fp)
+void regexhelp(void)
 {
-    fprintf(fp, "\nFile scanning can be controlled with RE-type patterns:\n");
-    fprintf(fp, "  exclpatt=<patt>  exclude paths matching pattern\n");
-    fprintf(fp, "  inclpatt=<patt>  include paths matching pattern\n");
-    fprintf(fp, "  exclfile=<file>  exclude paths patterns of file\n");
-    fprintf(fp, "  inclfile=<file>  include paths patterns of file\n");
-    fprintf(fp, "You can use any of these--but order matters.  The\n");
-    fprintf(fp, "files should contain precisely one pattern per line.\n");
+    vdiflog(-1, "\nFile scanning can be controlled with RE-type patterns:\n");
+    vdiflog(-1, "  exclpatt=<patt>  exclude paths matching pattern\n");
+    vdiflog(-1, "  inclpatt=<patt>  include paths matching pattern\n");
+    vdiflog(-1, "  exclfile=<file>  exclude paths patterns of file\n");
+    vdiflog(-1, "  inclfile=<file>  include paths patterns of file\n");
+    vdiflog(-1, "You can use any of these--but order matters.  The\n");
+    vdiflog(-1, "files should contain precisely one pattern per line.\n");
 }
 
 /*
@@ -80,7 +84,7 @@ static int regcommon(char *patt, RexPatt **rxpp)
     rxcr = regcomp(rxp->preg, rxp->regex, REG_EXTENDED|REG_NOSUB|REG_NEWLINE);
     if (rxcr) {
         nerr = regerror(rxcr, rxp->preg, errbuf, sizeof(errbuf));
-        fprintf(vdflog, "regexclude: %s [%d]\n", errbuf, nerr);
+        vdiflog(-1, "regexclude: %s [%d]\n", errbuf, nerr);
         return(4);
     }
     regcnt++;
@@ -118,7 +122,7 @@ static int regcommonfile(char *file, int type)
     while (fgets(rb, sizeof(rb), rp)) {
         if (type == VREX_EXCL) rs = regexclude(rb);
         else                   rs = reginclude(rb);
-        if (vdifuse_debug>0) fprintf(vdflog,
+        vdiflog(0,
             "%sclude patt %s from %s was %sted\n",
             type == VREX_EXCL ? "Ex" : "In", rb, file, rs ? "rejec" : "accep");
     }
@@ -160,7 +164,7 @@ int regexcheck(char *path)
             /* if it doesn't match an inclusion rule it is rejected */
             rv = rs ? 1 : rv;
         }
-        if (vdifuse_debug>1) fprintf(vdflog,
+        vdiflog(1,
             "    Path %s\n      %s match %sclude patt %s [%s]\n", path,
             rs ? "didn't" : "did", exin, rxp->regex, rv?"drop":"keep");
     }

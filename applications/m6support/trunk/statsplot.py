@@ -1,5 +1,8 @@
 #!/usr/bin/python
 #
+# (c) Massachusetts Institute of Technology, 2013..2023
+# (c) Geoffrey B. Crew, 2013..2023
+#
 # Script to ingest scan check stats and reduce it; presumes you did something
 # like this:
 #
@@ -83,7 +86,8 @@ def process(o):
     for line in o.si.readlines():
         stamp = stamp_re.search(line)
         if stamp:
-            if (o.verb): print(stamp.group(4),stamp.group(5),stamp.group(6), end=' ')
+            if (o.verb):
+                print(stamp.group(4),stamp.group(5),stamp.group(6), end=' ')
             time = (float(stamp.group(3))*3600.0 +
                     float(stamp.group(4))*60.0 +
                     float(stamp.group(5))*1.0 +

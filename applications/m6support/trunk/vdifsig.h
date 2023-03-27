@@ -1,5 +1,8 @@
 /*
- * $Id: vdifsig.h 3894 2016-04-17 22:30:56Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: vdifsig.h 5704 2023-03-09 22:18:13Z gbc $
  *
  * This file provides (optional) trapping of bus errors to allow
  * paging over bad blocks (to the extent possible).
@@ -35,6 +38,9 @@ extern void vdsig_release_prep(FFInfo *ffi);
 extern void vdsig_release_done(FFInfo *ffi, int res);
 
 extern volatile int vdsig_trap_rv;
+
+/* general catcher of SIGQUIT */
+extern void vdsig_info(void);
 
 /*
  * eof

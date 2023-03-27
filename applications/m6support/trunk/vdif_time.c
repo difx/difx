@@ -1,5 +1,9 @@
 /*
- * $Id: bmr_time.c 1695 2012-02-22 20:21:45Z gbc $
+ * (c) Massachusetts Institute of Technology, 2012..2023
+ * (c) Geoffrey B. Crew, 2012..2023
+ *
+ * $Id: vdif_time.c 5710 2023-03-10 19:15:25Z gbc $
+ * .Id: bmr_time.c 1695 2012-02-22 20:21:45Z gbc.
  *
  * BMR Server time utilities
  *

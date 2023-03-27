@@ -1,7 +1,16 @@
 /*
- * $Id: sg_access.c 5241 2021-08-03 12:57:34Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
  *
- * Code to understand and access sg files efficiently.
+ * $Id: sg_access.c 5776 2023-03-27 16:42:34Z gbc $
+ *
+ * Code to understand and access sg(2) files efficiently.
+ *
+ * The code is a bit contorted as it was developed for the original
+ * sg version; issues with that resulted in the sg2 version which is
+ * at this point the only one that needs to be supported.  Some of
+ * the tools and code are adapted from the burst mode recorder and
+ * earlier (non-scatter gather) Mark6 prototypes.
  */
 
 #ifndef _GNU_SOURCE
@@ -26,6 +35,8 @@
 #include "vdif.h"
 #include "sg_access.h"
 
+/* bring in vdif_epochs[] */
+#include "vdif_epochs.h"
 
 /* macros to simplify updating sgi->frame_cnt_max */
 #define update_fr_cnt_max_fr_frame(T,M) do {\
@@ -34,17 +45,28 @@
     uint32_t frame = ((VDIFHeader *)(P))->w2.df_num_insec;\
     if (frame > (M)) (M) = frame; } while(0)
 
-/* bring in vdif_epochs[] */
-#include "vdif_epochs.h"
-
+/* TODO: internalize sgalog and provide connection to trace */
 static FILE *sgalog = 0;
 
 /*
- * For logging to something other than stdout
+ * For logging to something other than stdout; however, logging
+ * to stdout is legal and we should be careful not to close it.
+ * If we are already logging to the same place, do nothing.
+ *
+ * A method to get the FILE handle is also provided.
  */
 void sg_logger(FILE *fp)
 {
+    if (fp == sgalog || !fp) return;
+    if (sgalog && (sgalog != stdout)) {
+        fclose(sgalog);
+        sgalog = NULL;
+    }
     sgalog = fp;
+}
+FILE *sg_logfile(void)
+{
+    return(sgalog);
 }
 
 /*
@@ -61,26 +83,37 @@ int sg_get_station_id_mask(void)
 }
 
 /*
- * Compute and return vdif signature.
- *
- * vc (if not null) points to the expected signature.
- * If the packet is marked invalid, then if vc is not null, it will be returned
- * assuming the packet header is zero except for the invalid bit and length.
- * (I.e. fill packets are presumed to be filled correctly.)
+ * Compute and return a checksum from an open file; to be efficient,
+ * we'll just use the first few bytes in the file.  Caller shouldn't
+ * be calling without data, but might as well be safe and robust.
  */
-uint64_t sg_get_vsig(uint32_t *vhp, void *o, int verb, char *lab,
-    VDIFsigu *vc, short *thp)
+uint32_t sg_checksum(SGInfo *sgi)
+{
+    uint32_t *ptr = (sgi ? (uint32_t*)(sgi->smi.start) : NULL), sum = 0;
+    if (!ptr) return(0);
+    int bytes = 23;
+    while (bytes-- > 0) sum ^= *ptr++;
+    return(sum);
+}
+
+/*
+ * Compute and return vdif signature for the packet found at vh.
+ *
+ * VDIF packets should be uint64_t aligned, but the original
+ * specification is by 4B word.  This function is a wrapper
+ * around the more complicated method that follows.
+ */
+uint64_t sg_signature(uint32_t *vhp)
 {
     VDIFsigu vdif_signature;
     VDIFHeader *vh = (VDIFHeader *)vhp;
-    static char *labs[5] = { "??", "ok", "nv", "OK", "NV" };
-    static char threp[THREP_BUFFER];
-    int labi = 0, thup = 0;
-    /* compute signature */
+    if (!vh) return(0x0);
     vdif_signature.word              = 0LL;
     vdif_signature.bits.df_len       = vh->w3.df_len;
     vdif_signature.bits.ref_epoch    = vh->w2.ref_epoch;
-    vdif_signature.bits.UA           = vh->w2.UA;
+#if ROLLOVER < 2
+    vdif_signature.bits.UA           = vh->w2.UA;   /* ROLLOVER < 2 */
+#endif /* ROLLOVER < 2 uses UA */
     vdif_signature.bits.stationID    = vh->w4.stationID & sg_station_id_mask;
     vdif_signature.bits.num_channels = vh->w3.num_channels;
     vdif_signature.bits.ver          = vh->w3.ver;
@@ -88,7 +121,36 @@ uint64_t sg_get_vsig(uint32_t *vhp, void *o, int verb, char *lab,
     vdif_signature.bits.dt           = vh->w4.dt;
     vdif_signature.bits.legacy       = vh->w1.legacy;
     vdif_signature.bits.unused       = 0x1;
-    if (vc) {       /* have a basis for checking/fixing */
+    return(vdif_signature.word);
+}
+
+/*
+ * More complicated version that does checking and updating.
+ *
+ * o is an origin for debugging when verb is nonzero.
+ * vc (if not null) points to the expected signature.
+ * If the packet is marked invalid, then if vc is not null, it will be returned
+ * assuming the packet header is zero except for the invalid bit and length.
+ * (I.e. fill packets are presumed to be filled correctly.)
+ * When thp is not null, vdif thread info is captured and optionally reported.
+ */
+uint64_t sg_get_vsig(uint32_t *vhp, void *o, int verb, char *lab,
+    VDIFsigu *vc, short *thp)
+{
+    VDIFsigu vdif_signature;
+    VDIFHeader *vh = (VDIFHeader *)vhp;
+    static char *labs[5] = { "??", "ok", "nv", "OK", "NV" };
+    static char threp[VTHREP_BUFFER];
+    int labi = 0, thup = 0;
+
+    vdif_signature.word = sg_signature(vhp);
+    if (vdif_signature.word == 0x0) {
+        if (verb>0) fprintf(sgalog, "%s%18p %016lX (%s) at %lu\n",
+            lab, vhp, vdif_signature.word, labs[labi], (void *)vhp - o);
+        return(0x0);
+    }
+
+    if (vhp && vc) {       /* have a basis for checking/fixing */
         if (vh->w1.invalid) {
             labi = (vdif_signature.word == (1LLU<<63 | vh->w3.df_len)) ? 1 : 2;
             if (1 == labi) vdif_signature.word = vc->word;
@@ -111,15 +173,15 @@ uint64_t sg_get_vsig(uint32_t *vhp, void *o, int verb, char *lab,
 }
 
 /* Set a bound on legality since lower thread ids are the norm */
-static int max_legal_thread_id = MAX_LEGAL_THREAD_ID;
-void sg_set_max_legal_thread_id(int max)
+static int max_legal_vthread_id = MAX_LEGAL_THREAD_ID;
+void sg_set_max_legal_vthread_id(int max)
 {
     if (max < 0 || max > MAX_LEGAL_THREAD_ID) return;
-    max_legal_thread_id = max;
+    max_legal_vthread_id = max;
 }
-int sg_get_max_legal_thread_id(void)
+int sg_get_max_legal_vthread_id(void)
 {
-    return(max_legal_thread_id);
+    return(max_legal_vthread_id);
 }
 
 /*
@@ -132,12 +194,12 @@ int sg_vthreads(short *thp, short tid, char *threp)
 {
     static int bads = 0;
     int ii = 0, rv = 0;
-    if (tid < 0 || tid > max_legal_thread_id) {
+    if (tid < 0 || tid > max_legal_vthread_id) {
         bads++;
     } else for (ii = 0; ii < MAX_VDIF_THREADS; ii++) {
         if (tid == thp[ii]) {
             break;                      /* already have it */
-        } else if (thp[ii] >= 0 && thp[ii] <= max_legal_thread_id) {
+        } else if (thp[ii] >= 0 && thp[ii] <= max_legal_vthread_id) {
             continue;                   /* skip legal entries */
         } else {
             rv = 1;                     /* for caller's benefit */
@@ -145,17 +207,22 @@ int sg_vthreads(short *thp, short tid, char *threp)
             break;                      /* legally added */
         }
     }
-    if (threp) snprintf(threp, THREP_BUFFER,
-        "vthreads: %d %s[%d:%d] %d,%d,%d,%d,%d,%d,%d,%d\n",
-        tid, ii < MAX_VDIF_THREADS ? "ok" : "er", bads, rv,
-        thp[0], thp[1], thp[2], thp[3], thp[4], thp[5], thp[6], thp[7]);
+    if (threp) snprintf(threp, VTHREP_BUFFER,
+        "vthreads: #%d %s[bd%d:rv%d(%s)] "
+        "%d,%d,%d,%d,%d,%d,%d,%d,"
+        "%d,%d,%d,%d,%d,%d,%d,%d\n",
+        tid, ii < MAX_VDIF_THREADS ? "ok" : "er", bads, rv, rv?"new":"old",
+        thp[0], thp[1], thp[2], thp[3], thp[4], thp[5], thp[6], thp[7],
+        thp[8], thp[9], thp[10], thp[11], thp[12], thp[13], thp[14], thp[15]);
     return(rv);
 }
-char *sg_threads_rep(short *thp)
+char *sg_vthreads_rep(short *thp)
 {
-    static char threp[THREP_BUFFER];
-    snprintf(threp, THREP_BUFFER, "vthreads: %d,%d,%d,%d,%d,%d,%d,%d",
-        thp[0], thp[1], thp[2], thp[3], thp[4], thp[5], thp[6], thp[7]);
+    static char threp[VTHREP_BUFFER];
+    snprintf(threp, VTHREP_BUFFER,
+        "vthreads: %d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+        thp[0], thp[1], thp[2], thp[3], thp[4], thp[5], thp[6], thp[7],
+        thp[8], thp[9], thp[10], thp[11], thp[12], thp[13], thp[14], thp[15]);
     return(threp);
 }
 
@@ -181,7 +248,7 @@ char *sg_vextime(int re, int secs)
  *   otherwise, just return the current time.
  * Either way, the value is seconds to us precision.
  */
-double current_or_elapsed_secs(double *previous)
+double sg_current_or_elapsed_secs(double *previous)
 {
     struct timeval now;
     double dnow = (!gettimeofday(&now, 0))
@@ -189,6 +256,22 @@ double current_or_elapsed_secs(double *previous)
                 : 0.0;
     if (previous) dnow -= *previous;
     return(dnow);
+}
+/*
+ * Compute and return the time since *when, if a pointer
+ * is provided; then store the current time in *when.
+ *
+ * using gprof is better...so this could go away.
+ */
+void sg_secs_since(struct timeval *when, double *secs)
+{
+    struct timeval now;
+    gettimeofday(&now, 0);
+    if (secs) {
+        *secs  = (double)(now.tv_sec - when->tv_sec);
+        *secs += (double)(now.tv_usec - when->tv_usec) * 1e-6;
+    }
+    *when = now;
 }
 
 /*
@@ -228,7 +311,7 @@ static int mm_uchk(SGMMInfo *smi, off_t st_size, int verb)
 static int mm_init(const char *file, SGMMInfo *smi, int verb)
 {
     struct stat mm_stb;
-    if (!sgalog) sgalog = stdout;
+    if (!sgalog) sg_logger(stdout);
     if (stat(file, &mm_stb) || mm_stb.st_size <= 0)
         return(perror("mm_init:stat"),1);
     if (mm_uchk(smi, mm_stb.st_size, verb)) return(0);
@@ -283,20 +366,25 @@ static void mm_term(SGMMInfo *smi, int verb)
  *  int blocknum;
  *  int wb_size;
  * }
+ *
+ * The read_size might include a per-packet offset,
+ * e.g. in VTP, a sequence number might precede the
+ * packet and it might have been recorded.
  */
 static void sg_file_header_tag_ok(SGInfo *sgi)
 {
     uint32_t *words = (uint32_t *)(sgi->smi.start);
 
     if (words[0] != SG_VERSION_MAGIC) return;
-    /* (words[3] != 0x0) it is mark5 fmt -> vdif; ok? */
     if (words[1] == 0x2) sgi->sg_version = SG_VERSION_OK_2;
     else return;
 
-    sgi->read_size = words[4];
-    sgi->sg_fht_size = 20;      /* sizeof(file_header_tag) */
-    sgi->sg_wbht_size = 8;      /* sizeof(wb_header_tag) */
-    sgi->sg_wr_block = words[2];
+
+    sgi->sg_fht_size = sizeof(SGV2Header);
+    sgi->sg_wbht_size = sizeof(SGV2BlkNum);
+    sgi->sg_wr_block = words[2];    /* block_size */
+    /* (words[3] != 0x0) packet format: 0 for VDIF */
+    sgi->read_size = words[4];      /* packet_size */
     sgi->frame_cnt_max = 0;
 
     /* need at least 4 packets */
@@ -431,7 +519,7 @@ static uint64_t valid_first_signature(SGInfo *sgi, off_t foff, uint32_t rdsize)
                 return(vds0.word);
         }
         vhp0 = vhp1;
-	count ++;
+        count ++;
     } while (vh0->w1.invalid || vh1->w1.invalid || count < 1200);
     return(0LL);
 }
@@ -445,6 +533,7 @@ static void sg_first_packet(SGInfo *sgi)
     off_t rwds = sgi->read_size / sizeof(uint32_t);
     sgi->vdif_signature.word =
         valid_first_signature(sgi, foff, sgi->read_size);
+    sgi->sg_first_bnum = *(int*)(sgi->smi.start + sgi->sg_fht_size);
     sg_first_packet_common(sgi, foff, &rwds);
 }
 static void flat_first_packet(SGInfo *sgi)
@@ -884,6 +973,43 @@ static void sg_normal_block(SGInfo *sgi)
 }
 
 /*
+ * Get the number of the final block which should be directly
+ * calculable more directly than is done in sg_pkt_by_blk().
+ *
+ * If the last block is short, go direct to the answer.
+ * Otherwise compute the location and read out the answer.
+ *
+ * Note that the block numbers depend on the total collection of
+ * fragments, so we cannot do any decent checking at this point.
+ */
+static int sg_get_final_bnum(SGInfo *sgi)
+{
+    void *lb;
+    int final_bnum = SG_BLOCKNUM_INIT;
+    uint32_t *bp;
+    if (sgi->sg_se_blk_off) {
+        /* the short end blk offset is to the final short block */
+        lb = sgi->smi.start + sgi->sg_se_blk_off;
+        final_bnum = ((SGV2BlkNum*)lb)->blocknum;
+        if (sgi->verbose>1) {
+            bp = (uint32_t*)lb;
+            fprintf(sgalog, "final_bnum shend %lu %d %04X %04X\n",
+                lb - (void*)sgi->smi.start, final_bnum, bp[0], bp[1]);
+        }
+    } else {
+        /* back up from the end by a block of the correct size */
+        lb = sgi->smi.eomem - sgi->sg_wr_block;
+        final_bnum = ((SGV2BlkNum*)lb)->blocknum;
+        if (sgi->verbose>1) {
+            bp = (uint32_t*)lb;
+            fprintf(sgalog, "final_bnum else  %lu %d %04X %04X\n",
+                lb - (void*)sgi->smi.start, final_bnum, bp[0], bp[1]);
+        }
+    }
+    return(final_bnum);
+}
+
+/*
  * Finalize a few bookkeeping parameters.
  */
 static void sg_final_update(SGInfo *sgi)
@@ -893,6 +1019,7 @@ static void sg_final_update(SGInfo *sgi)
         sgi->sg_wr_pkts_as + sgi->sg_se_pkts;
     sgi->sg_total_blks = sgi->sg_wr_blks_bs + sgi->sg_wr_blks_as +
         ((sgi->sg_sh_blk_off) ? 1 : 0) + ((sgi->sg_se_blk_off) ? 1 : 0);
+    sgi->sg_final_bnum = sg_get_final_bnum(sgi);
     if (sgi->verbose>1) fprintf(sgalog, "Have %u total packets in %u blocks\n",
         sgi->total_pkts, sgi->sg_total_blks);
 }
@@ -973,7 +1100,7 @@ static void sg_vthreadsdone(SGInfo *sgi)
     /* first set sgi->vthreads */
     sgi->nvthreads = 0;     /* should be zero anyway */
     if (sgi->verbose>1) fprintf(sgalog,
-        "sg_vthreadsdone found %s\n", sg_threads_rep(sgi->vthreads));
+        "sg_vthreadsdone found %s\n", sg_vthreads_rep(sgi->vthreads));
     for (vv = 0; vv < MAX_VDIF_THREADS; vv++) {
         if (sgi->vthreads[vv] > 0) {
             if (sgi->verbose>1) fprintf(sgalog,
@@ -983,7 +1110,7 @@ static void sg_vthreadsdone(SGInfo *sgi)
         pkt[vv] = (VDIFHeader*)sg_pkt_by_num(sgi, vv, 0, 0);
     }
     if (sgi->verbose>1)
-        fprintf(sgalog, "sg_vthreadsdone %d vthreads\n", sgi->nvthreads);
+        fprintf(sgalog, "sg_vthreadsdone X %d vthreads\n", sgi->nvthreads);
     /* Cf seq_pkt_times() */
     notseq = check_vthread_seq(sgi->nvthreads, pkt, "by-num", sgi->verbose);
 
@@ -1002,6 +1129,9 @@ static void sg_vthreadsdone(SGInfo *sgi)
         if (sgi->verbose>1) fprintf(sgalog,
             "vthreadsdone B vthreadsep = %d, %d\n", sgi->vthreadsep, notseq);
     }
+    if (sgi->verbose>1) fprintf(sgalog,
+        "vthreadsdone finally %d threads %d sep\n",
+        sgi->nvthreads, sgi->vthreadsep);
 }
 
 /*
@@ -1141,6 +1271,8 @@ char *sg_error_str(int err)
  * All unassigned data in the structure are zeroed at the start
  * and should be set to valid values at the end (if all is well).
  * A few things from the sgi object are retained, but most are rebuilt.
+ * The checksum here refers to the checksum of the data just loaded.
+ * The caller may want to check that against a reference value, if known.
  */
 void sg_info(const char *file, SGInfo *sgi)
 {
@@ -1155,7 +1287,7 @@ void sg_info(const char *file, SGInfo *sgi)
     for (ii = 0; ii < MAX_VDIF_THREADS; ii++) sgi->vthreads[ii] = -1;
     sgi->smi = smicopy;
     sgi->verbose = verbcopy;
-    sgi->eval_time = current_or_elapsed_secs((double *)0);
+    sgi->eval_time = sg_current_or_elapsed_secs((double *)0);
     sgi->sg_version = SG_VERSION_NOT;
     sgi->name = malloc(strlen(file)+4);
     strcpy(sgi->name, file);
@@ -1163,6 +1295,9 @@ void sg_info(const char *file, SGInfo *sgi)
     /* if the caller has supplied a plausible frame count max, use it */
     if (fcmxcopy > 1 && fcmxcopy < SG_FR_CNT_MAX)
         sgi->frame_cnt_max = fcmxcopy;
+
+    /* initialize these to a bogus value to avoid confusion */
+    sgi->sg_first_bnum = sgi->sg_final_bnum = SG_BLOCKNUM_BOGUS;
 
     sg_file_header_tag_ok(sgi);
     if (sgi->sg_version == SG_VERSION_OK_2) {
@@ -1182,8 +1317,10 @@ void sg_info(const char *file, SGInfo *sgi)
     }
     sg_first_time_check(sgi);
     sg_final_time_check(sgi);
+    sgi->checksum = sg_checksum(sgi);
 }
 
+/* The preceding makes an 'open' function simple... */
 SGMMInfo *sg_open(const char *file, SGInfo *sgi)
 {
     if (mm_init(file, &(sgi->smi), sgi->verbose)) return((SGMMInfo *)0);
@@ -1191,27 +1328,32 @@ SGMMInfo *sg_open(const char *file, SGInfo *sgi)
     return(&(sgi->smi));
 }
 
+/* ... which may be closed ... */
+void sg_close(SGInfo *sgi)
+{
+    mm_term(&sgi->smi, sgi->verbose);
+    sgi->eval_time = sg_current_or_elapsed_secs(&sgi->eval_time);
+}
+
+/* ... and also re-opened .... */
 SGMMInfo *sg_reopen(SGInfo *sgi)
 {
     if (!sgi || !sgi->name) return((SGMMInfo *)0);
     if (mm_init(sgi->name, &(sgi->smi), sgi->verbose)) return((SGMMInfo *)0);
     /* sg_info would be redundant, but eval time is new since we opened it */
-    if (sgi) sgi->eval_time = current_or_elapsed_secs((double *)0);
+    if (sgi) sgi->eval_time = sg_current_or_elapsed_secs((double *)0);
+    /* since only a pointer is returned, any checking is up to the caller */
     return(&(sgi->smi));
 }
 
-void sg_close(SGInfo *sgi)
-{
-    mm_term(&sgi->smi, sgi->verbose);
-    sgi->eval_time = current_or_elapsed_secs(&sgi->eval_time);
-}
-
+/* ... and also open+close to gather information. */
 void sg_access(const char *file, SGInfo *sgi)
 {
     SGMMInfo *smi = sg_open(file, sgi);
     if (smi) sg_close(sgi);
 }
 
+/* dig out the station 2-letter code */
 char *sg_scode(int station)
 {
     static char buf[20];
@@ -1239,13 +1381,14 @@ char *sg_repstr(SGInfo *sgi, char *label)
     switch (sgi->sg_version) {
     case SG_VERSION_OK_2:
         eval_time = (sgi->smi.start)
-                  ? current_or_elapsed_secs(&sgi->eval_time)    /* open */
+                  ? sg_current_or_elapsed_secs(&sgi->eval_time) /* open */
                   : sgi->eval_time;                             /* closed */
         snprintf(buf, sizeof(buf),
             "%s%s %d@%d+%06d..%d+%06d\n"
             "%sSGv%d(%s) %luB %uB/Pkt %uP/b %ub %uP %.3lfms\n"
             "%swb:%u,%u,%uB %u(%u)+%ux%u+%u(%u)+%ux%u b(P)\n"
-            "%ssg:%0lX >%dP/s :%lu:%lu %u|%u|%u:%u| %s %u#\n",
+            "%ssg:%0lX >%dP/s :%lu:%lu %u|%u|%u:%u| %s %u#\n"
+            "%sck:%08X=%08X bs %5d be %5d v:%d th:%d end: %s\n",
             lab, sgi->name, sgi->ref_epoch,
                  sgi->first_secs, sgi->first_frame,
                  sgi->final_secs, sgi->final_frame,
@@ -1264,17 +1407,23 @@ char *sg_repstr(SGInfo *sgi, char *label)
                  sgi->sg_fht_size, sgi->sg_wbht_size,
                  sgi->pkt_offset, sgi->pkt_size,
                  sg_scode(sgi->vdif_signature.bits.stationID),
-                 sgi->vdif_signature.bits.num_channels
+                 sgi->vdif_signature.bits.num_channels,
+            lab, sgi->checksum, sg_checksum(sgi),
+                 sgi->sg_first_bnum, sgi->sg_final_bnum, sgi->verbose,
+                 sgi->nvthreads, sg_vextime(sgi->ref_epoch, sgi->final_secs +
+                 (int)(0.5 + (
+                 (double)sgi->final_frame / (double)sgi->frame_cnt_max)))
         );
         break;
     case SG_VERSION_FLAT:
         eval_time = (sgi->smi.start)
-                  ? current_or_elapsed_secs(&sgi->eval_time)    /* open */
+                  ? sg_current_or_elapsed_secs(&sgi->eval_time) /* open */
                   : sgi->eval_time;                             /* closed */
         snprintf(buf, sizeof(buf),
             "%s%s %d@%d+%06d..%d+%06d\n"
             "%sFLAT(%s) %luB %uB/Pkt %uP %.3lfms\n"
-            "%ssg:%0lX >%dP/s |%u:%u| %s %u#\n",
+            "%ssg:%0lX >%dP/s |%u:%u| %s %u#\n"
+            "%sck:%08X=%08X v:%d th:%d end: %s\n",
             lab, sgi->name, sgi->ref_epoch,
                  sgi->first_secs, sgi->first_frame,
                  sgi->final_secs, sgi->final_frame,
@@ -1285,7 +1434,12 @@ char *sg_repstr(SGInfo *sgi, char *label)
             lab, sgi->vdif_signature.word, sgi->frame_cnt_max,
                  sgi->pkt_offset, sgi->pkt_size,
                  sg_scode(sgi->vdif_signature.bits.stationID),
-                 sgi->vdif_signature.bits.num_channels
+                 sgi->vdif_signature.bits.num_channels,
+            lab, sgi->checksum, sg_checksum(sgi),
+                 sgi->verbose, sgi->nvthreads,
+                 sg_vextime(sgi->ref_epoch, sgi->final_secs +
+                 (int)(0.5 + (
+                 (double)sgi->final_frame / (double)sgi->frame_cnt_max)))
         );
         break;
     default:
@@ -1304,15 +1458,32 @@ void sg_report(SGInfo *sgi, char *label)
 }
 
 /*
+ * Collecting common code for the sg2 file structure.
+ */
+static inline void load_ptr_pkt_values(SGInfo *sgi,
+    off_t ptrdel[4], off_t pktcnt[4])
+{
+    ptrdel[0] = (off_t)sgi->sg_wr_blks_bs * (off_t)sgi->sg_wr_block;
+    pktcnt[0] = sgi->sg_wr_pkts;
+    ptrdel[1] = sgi->sg_sh_block;
+    pktcnt[1] = sgi->sg_sh_pkts;
+    ptrdel[2] = (off_t)sgi->sg_wr_blks_as * (off_t)sgi->sg_wr_block;
+    pktcnt[2] = sgi->sg_wr_pkts;
+    ptrdel[3] = sgi->sg_se_block;
+    pktcnt[3] = sgi->sg_se_pkts;
+}
+
+/*
  * Random access methods: get the nn-th packet in the file.
  * On return, *end points to the end of the block, and *nl
  * to the number of packets left in the block.
  */
 uint32_t *sg_pkt_by_num(SGInfo *sgi, off_t nn, int *nl, uint32_t **end)
 {
-    void *pktp, *endp;
+    void *pktp, *endp, *pptr;
     off_t nmpkts[4], ptrdel[4], pktcnt[4], bb, rr, ninp = nn;
-    int ii, nlft;
+    int ii, nlft, this = SG_BLOCKNUM_INIT, next = SG_BLOCKNUM_INIT;
+    int prev = SG_BLOCKNUM_INIT;
 
     if (nl) *nl = 0;
     if (!sgi || !sgi->smi.start) return(NULL32P);
@@ -1322,26 +1493,30 @@ uint32_t *sg_pkt_by_num(SGInfo *sgi, off_t nn, int *nl, uint32_t **end)
     nlft = 0;
 
     nmpkts[0] = sgi->sg_wr_pkts_bs;
-    ptrdel[0] = (off_t)sgi->sg_wr_blks_bs * (off_t)sgi->sg_wr_block;
-    pktcnt[0] = sgi->sg_wr_pkts;
     nmpkts[1] = sgi->sg_sh_pkts;
-    ptrdel[1] = sgi->sg_sh_block;
-    pktcnt[1] = sgi->sg_sh_pkts;
     nmpkts[2] = sgi->sg_wr_pkts_as;
-    ptrdel[2] = (off_t)sgi->sg_wr_blks_as * (off_t)sgi->sg_wr_block;
-    pktcnt[2] = sgi->sg_wr_pkts;
     nmpkts[3] = sgi->sg_se_pkts;
-    ptrdel[3] = sgi->sg_se_block;
-    pktcnt[3] = sgi->sg_se_pkts;
+    load_ptr_pkt_values(sgi, ptrdel, pktcnt);
 
     for (ii = 0; ii < 4; ii++) {
         if (nn < nmpkts[ii]) {
-            bb = nn / sgi->sg_wr_pkts;
-            rr = nn % sgi->sg_wr_pkts;
-            pktp += bb * sgi->sg_wr_block + rr * sgi->read_size;
+            bb = nn / sgi->sg_wr_pkts;              /* how many blocks */
+            pktp += bb * sgi->sg_wr_block;
+            this = ((SGV2BlkNum*)pktp)->blocknum;   /* w/packet */
+            /* the first block after the short block is special for prev: */
+            if (ii == 2 && nn == 0) /* go back a short block */
+                pptr = (void*)pktp - sgi->sg_sh_block;
+            else /* (most of the time) go back a full block */
+                pptr = (void*)pktp - sgi->sg_wr_block;
+            prev = (pptr >= sgi->smi.start)
+                ? ((SGV2BlkNum*)pptr)->blocknum : SG_BLOCKNUM_NOPREV;
+            rr = nn % sgi->sg_wr_pkts;              /* how many packets */
+            pktp += rr * sgi->read_size;
             pktp += sgi->sg_wbht_size + sgi->pkt_offset;
             nlft = pktcnt[ii] - rr;
             endp = pktp + nlft * sgi->read_size;
+            next = (endp < sgi->smi.eomem)          /* following */
+                 ? ((SGV2BlkNum*)endp)->blocknum : SG_BLOCKNUM_NONEXT;
             endp -= sgi->pkt_offset;
             break;
         } else {
@@ -1349,12 +1524,13 @@ uint32_t *sg_pkt_by_num(SGInfo *sgi, off_t nn, int *nl, uint32_t **end)
             pktp += ptrdel[ii];
         }
     }
-    if (ii == 4) pktp = NULL32P;
+    if (ii == 4) { pktp = NULL32P; this = next = SG_BLOCKNUM_BADPKT; }
     if (nl) *nl = nlft;
     if (end) *end = (uint32_t *)endp;
-    if (sgi->verbose>1) fprintf(sgalog, "sg_pkt_by_num(%lu<%lu<%lu)[%ld]\n",
-        pktp - sgi->smi.start, endp - sgi->smi.start,
-        sgi->smi.eomem - sgi->smi.start, ninp);
+    if (sgi->verbose>1) fprintf(sgalog,
+        "sg_pkt_by_num[%ld](%lu<%lu<%lu)blk{%d:%d:%d}\n",
+        ninp, pktp - sgi->smi.start, endp - sgi->smi.start,
+        sgi->smi.eomem - sgi->smi.start, prev, this, next);
     if (pktp < sgi->smi.start || pktp >= sgi->smi.eomem) return(NULL32P);
     return((uint32_t *)pktp);
 }
@@ -1364,101 +1540,94 @@ uint32_t *sg_pkt_by_num(SGInfo *sgi, off_t nn, int *nl, uint32_t **end)
  * On return, *end points to the end of the block, and *nl
  * to the number of packets left in the block.
  */
-uint32_t *sg_pkt_by_blk(SGInfo *sgi, off_t nn, int *nl, uint32_t **end)
-{
-    void *pktp, *endp;
-    off_t nmblks[4], ptrdel[4], pktcnt[4], ninp = nn;
-    int ii, nlft;
-
-    if (nl) *nl = 0;
-    if (!sgi || !sgi->smi.start) return(NULL32P);
-    if (nn < 0 || nn >= sgi->sg_total_blks) return(NULL32P);
-    pktp = sgi->smi.start + sgi->sg_fht_size;
-    endp = sgi->smi.start;
-    nlft = 0;
-
-    nmblks[0] = sgi->sg_wr_blks_bs;
-    ptrdel[0] = (off_t)sgi->sg_wr_blks_bs * (off_t)sgi->sg_wr_block;
-    pktcnt[0] = sgi->sg_wr_pkts;
-    nmblks[1] = (sgi->sg_sh_blk_off) ? 1 : 0;
-    ptrdel[1] = sgi->sg_sh_block;
-    pktcnt[1] = sgi->sg_sh_pkts;
-    nmblks[2] = sgi->sg_wr_blks_as;
-    ptrdel[2] = (off_t)sgi->sg_wr_blks_as * (off_t)sgi->sg_wr_block;
-    pktcnt[2] = sgi->sg_wr_pkts;
-    nmblks[3] = (sgi->sg_se_blk_off) ? 1 : 0;
-    ptrdel[3] = sgi->sg_se_block;
-    pktcnt[3] = sgi->sg_se_pkts;
-
-    for (ii = 0; ii < 4; ii++) {
-        if (nn < nmblks[ii]) {
-            pktp += nn * sgi->sg_wr_block;
-            pktp += sgi->sg_wbht_size + sgi->pkt_offset;
-            nlft = pktcnt[ii];
-            endp = pktp + nlft * sgi->read_size;
-            endp -= sgi->pkt_offset;
-            break;
-        } else {
-            nn   -= nmblks[ii];
-            pktp += ptrdel[ii];
-        }
-    }
-    if (ii == 4) pktp = NULL32P;
-    if (nl) *nl = nlft;
-    if (end) *end = (uint32_t *)endp;
-    if (sgi->verbose>1) fprintf(sgalog, "sg_pkt_by_blk(%lu<%lu<%lu)[%ld]\n",
-        pktp - sgi->smi.start, endp - sgi->smi.start,
-        sgi->smi.eomem - sgi->smi.start, ninp);
-    if (pktp < sgi->smi.start || pktp >= sgi->smi.eomem) return(NULL32P);
-    return((uint32_t *)pktp);
-}
 
 /*
  * A variant of the above that also returns the number of packet
  * bytes before the block in question and the bytes after it.
- * It differs in that we don't compute endp, and we compute after
- * we find the block in question.
+ * This version did not originally compute endp, but adding the
+ * blocknum extraction was easier with endp computed.
  * 
  * (*nl * packet_size) + *pktbytesbefore + *pktbytesafter should
- * == total_packets * packet_size in a sane universe.
+ * be equal to total_packets * packet_size in a sane universe.
  */
-uint32_t *sg_pkt_blkby(SGInfo *sgi, off_t nn, int *nl,
-    off_t *pktbytesbefore, off_t *pktbytesafter)
+static inline char *whence_sg_pkt(
+    off_t *pktbytesbefore, off_t *pktbytesafter,
+    int *prevp, int *thisp, int *nextp, size_t bsz)
 {
-    void *pktp;
-    off_t nmblks[4], ptrdel[4], pktcnt[4], pbb, pba;
-    int ii, nlft;
+    char *whence = "sg_pkt_by_blkall";
+    if (!prevp && !thisp && !nextp) {
+        if (!pktbytesbefore && !pktbytesafter)
+            whence = "sg_pkt_by_blk";
+        else
+            whence = "sg_pkt_blkby";
+    } else {
+        if (!pktbytesbefore && !pktbytesafter)
+            whence = "sg_pkt_by_blknm";
+        else if (bsz)
+            whence = "sg_pkt_by_blkall_dbg";
+        else
+            whence = "sg_pkt_by_blkall";
+    }
+    return(whence);
+}
+uint32_t *sg_pkt_by_blkall_dbg(SGInfo *sgi, off_t nn, int *nl,
+    uint32_t **end, off_t *pktbytesbefore, off_t *pktbytesafter,
+    int *prevp, int *thisp, int *nextp, char *buff, size_t bsz)
+{
+    void *pktp, *endp = NULL32P, *pptr;
+    off_t nmblks[4], ptrdel[4], pktcnt[4], pbb, pba, ninp = nn;
+    off_t pbbzero = 0, *pbbp = &pbbzero, pbazero = 0, *pbap = &pbazero;
+    int ii, iibrk = -1, nlft, this = SG_BLOCKNUM_INIT, next = SG_BLOCKNUM_INIT;
+    int prev = SG_BLOCKNUM_INIT, nlzero = 0, *nlp = &nlzero;
+    uint32_t endz = 0, *endx = &endz;
+    char *whence = whence_sg_pkt(
+        pktbytesbefore, pktbytesafter, prevp, thisp, nextp, bsz);
 
-    if (nl) *nl = 0;
-    if (pktbytesbefore) *pktbytesbefore = 0;
-    if (pktbytesafter)  *pktbytesafter = 0;
+    /* ensure safe return values */
+    if (nl) *nl = 0; else nl = nlp;
+    if (pktbytesbefore) *pktbytesbefore = 0; else pktbytesbefore = pbbp;
+    if (pktbytesafter)  *pktbytesafter = 0; else pktbytesafter = pbap;
+    if (prevp) *prevp = prev; else prevp = &prev;
+    if (thisp) *thisp = this; else thisp = &this;
+    if (nextp) *nextp = next; else nextp = &next;
+    if (end) *end = NULL32P; else end = &endx;
+
+    /* now initial checks and preparations */
     if (!sgi || !sgi->smi.start) return(NULL32P);
     if (nn < 0 || nn >= sgi->sg_total_blks) return(NULL32P);
     pktp = sgi->smi.start + sgi->sg_fht_size;
     nlft = 0;
-    pbb = 0;    /* packets before */
-    pba = 0;    /* packets after */
+    pbb = 0;    /* packets bytes before this block */
+    pba = 0;    /* packets bytes after this block */
 
+    /* static tables of layout */
     nmblks[0] = sgi->sg_wr_blks_bs;
-    ptrdel[0] = (off_t)sgi->sg_wr_blks_bs * (off_t)sgi->sg_wr_block;
-    pktcnt[0] = sgi->sg_wr_pkts;
     nmblks[1] = (sgi->sg_sh_blk_off) ? 1 : 0;
-    ptrdel[1] = sgi->sg_sh_block;
-    pktcnt[1] = sgi->sg_sh_pkts;
     nmblks[2] = sgi->sg_wr_blks_as;
-    ptrdel[2] = (off_t)sgi->sg_wr_blks_as * (off_t)sgi->sg_wr_block;
-    pktcnt[2] = sgi->sg_wr_pkts;
     nmblks[3] = (sgi->sg_se_blk_off) ? 1 : 0;
-    ptrdel[3] = sgi->sg_se_block;
-    pktcnt[3] = sgi->sg_se_pkts;
+    load_ptr_pkt_values(sgi, ptrdel, pktcnt);
 
     for (ii = 0; ii < 4; ii++) {
         if (nn < nmblks[ii]) {
+            /* this block is nn blocks from pktp */
             pktp += nn * sgi->sg_wr_block;
+            this = ((SGV2BlkNum*)pktp)->blocknum;   /* w/packet */
+            /* the first block after the short block is special for prev: */
+            if (ii == 2 && nn == 0) /* go back a short block */
+                pptr = (void*)pktp - sgi->sg_sh_block;
+            else /* (most of the time) go back a full block */
+                pptr = (void*)pktp - sgi->sg_wr_block;
+            prev = (pptr >= sgi->smi.start)
+                ? ((SGV2BlkNum*)pptr)->blocknum : SG_BLOCKNUM_NOPREV;
             pktp += sgi->sg_wbht_size + sgi->pkt_offset;
             nlft = pktcnt[ii];
+            /* finally endp requires and end of memory check */
+            endp = pktp + nlft * sgi->read_size;
+            next = (endp < sgi->smi.eomem)          /* following */
+                 ? ((SGV2BlkNum*)endp)->blocknum : SG_BLOCKNUM_NONEXT;
             pbb  += nn * pktcnt[ii];         /* packets of this block type */
             pba  = (nmblks[ii] - nn - 1) * pktcnt[ii];
+            iibrk = ii;
             break;
         } else {
             nn   -= nmblks[ii];
@@ -1466,16 +1635,77 @@ uint32_t *sg_pkt_blkby(SGInfo *sgi, off_t nn, int *nl,
             pbb  += nmblks[ii] * pktcnt[ii]; /* packets of this block type */
         }
     }
-    if (ii == 4) pktp = NULL32P;
+    if (ii == 4) { pktp = NULL32P; prev = this = SG_BLOCKNUM_BADPKT; }
     for (ii++ ; ii < 4; ii++) {
         pba += nmblks[ii] * pktcnt[ii];      /* packets of this block type */
     }
-    if (nl) *nl = nlft;
-    *pktbytesbefore = pbb * sgi->pkt_size;
-    *pktbytesafter  = pba * sgi->pkt_size;
+
+    /* convert packets to packet bytes */
+    pbb *= sgi->pkt_size;
+    pba *= sgi->pkt_size;
+    /* update output values */
+    *nl = nlft;
+    *pktbytesbefore = pbb;
+    *pktbytesafter  = pba;
+    *prevp = prev;
+    *thisp = this;
+    *nextp = next;
+    *end = endp;
+    /* provide some information */
+    if (buff && bsz) snprintf(buff, bsz,
+        "%s[%ld](%ld<%ld#%ld<%ld)%d-pkts-blk{%d:%d:%d}/%d",
+        whence, ninp, *pktbytesbefore, pktp - sgi->smi.start,
+        *pktbytesafter, sgi->smi.eomem - pktp,
+        *nl, prev, this, next, iibrk);
+    else if (sgi->verbose>1) fprintf(sgalog,
+        "%s[%ld](%ld<%ld#%ld<%ld)%d-pkts-blk{%d:%d:%d}/%d\n",
+        whence, ninp, *pktbytesbefore, pktp - sgi->smi.start,
+        *pktbytesafter, sgi->smi.eomem - pktp,
+        *nl, prev, this, next, iibrk);
     return((uint32_t *)pktp);
 }
 
+/*
+ * The variant that skips the debugging
+ */
+uint32_t *sg_pkt_by_blkall(SGInfo *sgi, off_t nn, int *nl,
+    uint32_t **end, off_t *pktbytesbefore, off_t *pktbytesafter,
+    int *prevp, int *thisp, int *nextp)
+{
+    uint32_t *pkt = sg_pkt_by_blkall_dbg(sgi, nn, nl, end,
+        pktbytesbefore, pktbytesafter, prevp, thisp, nextp, NULL, 0);
+    return(pkt);
+}
+/*
+ * This is the original variant
+ */
+uint32_t *sg_pkt_by_blknm(SGInfo *sgi, off_t nn, int *nl,
+    uint32_t **end, int *prevp, int *thisp, int *nextp)
+{
+    uint32_t *pkt = sg_pkt_by_blkall(sgi, nn, nl, end, NULL, NULL,
+        prevp, thisp, nextp);
+    return(pkt);
+}
+/*
+ * The simplest version of the above, using more complicated routine.
+ */
+uint32_t *sg_pkt_by_blk(SGInfo *sgi, off_t nn, int *nl, uint32_t **end)
+{
+    uint32_t *pkt = sg_pkt_by_blkall(sgi, nn, nl, end, NULL, NULL,
+        NULL, NULL, NULL);
+    return(pkt);
+}
+/*
+ * The variant that only provides the bytes before and after
+ */
+uint32_t *sg_pkt_blkby(SGInfo *sgi, off_t nn, int *nl,
+    off_t *pktbytesbefore, off_t *pktbytesafter)
+{
+    uint32_t *end;
+    uint32_t *pkt = sg_pkt_by_blkall(sgi, nn, nl, &end,
+        pktbytesbefore, pktbytesafter, NULL, NULL, NULL);
+    return(pkt);
+}
 
 /*
  * Random access methods: get the packet at (or just before) offset nn
@@ -1486,7 +1716,7 @@ uint32_t *sg_pkt_by_off(SGInfo *sgi, off_t nn, int *nl, uint32_t **end)
 {
     void *pktp, *endp;
     off_t ptrdel[4], pktcnt[4], bb, rr, pp, ninp = nn;
-    int ii, nlft;
+    int ii, nlft, this, next;
 
     if (nl) *nl = 0;
     if (!sgi || !sgi->smi.start) return(NULL32P);
@@ -1497,18 +1727,11 @@ uint32_t *sg_pkt_by_off(SGInfo *sgi, off_t nn, int *nl, uint32_t **end)
 
     if (nn < sgi->sg_fht_size) nn = 0;
     else nn -= sgi->sg_fht_size;
-
-    ptrdel[0] = (off_t)sgi->sg_wr_blks_bs * (off_t)sgi->sg_wr_block;
-    pktcnt[0] = sgi->sg_wr_pkts;
-    ptrdel[1] = sgi->sg_sh_block;
-    pktcnt[1] = sgi->sg_sh_pkts;
-    ptrdel[2] = (off_t)sgi->sg_wr_blks_as * (off_t)sgi->sg_wr_block;
-    pktcnt[2] = sgi->sg_wr_pkts;
-    ptrdel[3] = sgi->sg_se_block;
-    pktcnt[3] = sgi->sg_se_pkts;
+    load_ptr_pkt_values(sgi, ptrdel, pktcnt);
 
     for (ii = 0; ii < 4; ii++) {
         if (nn < ptrdel[ii]) {
+            this = ((SGV2BlkNum*)pktp)->blocknum;   /* w/packet */
             bb = nn / sgi->sg_wr_block;
             rr = nn % sgi->sg_wr_block;
             if (rr < sgi->sg_wbht_size) rr = sgi->sg_wbht_size;
@@ -1518,6 +1741,8 @@ uint32_t *sg_pkt_by_off(SGInfo *sgi, off_t nn, int *nl, uint32_t **end)
             pktp += sgi->sg_wbht_size + sgi->pkt_offset;
             nlft = pktcnt[ii] - pp;
             endp = pktp + nlft * sgi->read_size;
+            next = (endp < sgi->smi.eomem)          /* following */
+                 ? ((SGV2BlkNum*)endp)->blocknum : SG_BLOCKNUM_NONEXT;
             endp -= sgi->pkt_offset;
             break;
         } else {
@@ -1525,12 +1750,13 @@ uint32_t *sg_pkt_by_off(SGInfo *sgi, off_t nn, int *nl, uint32_t **end)
             pktp += ptrdel[ii];
         }
     }
-    if (ii == 4) pktp = NULL32P;
+    if (ii == 4) { pktp = NULL32P; this = next = SG_BLOCKNUM_BADPKT; }
     if (nl) *nl = nlft;
     if (end) *end = (uint32_t *)endp;
-    if (sgi->verbose>1) fprintf(sgalog, "sg_pkt_by_off(%lu<%lu<%lu)[%ld]\n",
-        pktp - sgi->smi.start, endp - sgi->smi.start,
-        sgi->smi.eomem - sgi->smi.start, ninp);
+    if (sgi->verbose>1) fprintf(sgalog,
+        "sg_pkt_by_off[%ld](%lu<%lu<%lu)blk{%d:%d}\n",
+        ninp, pktp - sgi->smi.start, endp - sgi->smi.start,
+        sgi->smi.eomem - sgi->smi.start, this, next);
     if (pktp < sgi->smi.start || pktp >= sgi->smi.eomem) return(NULL32P);
     return((uint32_t *)pktp);
 }
@@ -1558,6 +1784,11 @@ int seq_pkt_check(SGInfo *sgi, uint32_t *pkt, int nl, uint32_t *end, int *nv)
         update_fr_cnt_max_fr_ptr32(pkt, sgi->frame_cnt_max);
         pkt += sgi->read_size / sizeof(uint32_t);
         if (((VDIFHeader *)pkt)->w1.invalid) fill++;
+        if (sgi->verbose>4) fprintf(sgalog,
+            "pchk[%d] nbad %d fill %d end %s (%p>=%p by %ld)\n"
+            "pchk[%d] %16lX\npchk[%d] %16lX\n",
+            nl, nbad, fill, ((pkt >= end)?"ERR":"OK "), pkt, end, pkt - end,
+            nl, vds.word, nl, sgi->vdif_signature.word );
     }
     if (nv) *nv = fill;
     return(nbad);

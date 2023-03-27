@@ -1,13 +1,20 @@
 /*
- * $Id: vdiftst.c 5288 2021-08-14 13:18:11Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: vdiftst.c 5714 2023-03-10 21:31:00Z gbc $
  *
  * This file provides support for the fuse interface.
  * This file contains methods to label a file as valid VDIF.
  * They return 1 if the file is accepted at the level of rigor.
  *
- * TODO: this version requires first/other offsets to be same for all frags
- * TODO: make better use of sg_* methods
- * TODO: cope gracefully with initially unknown rate
+ * NOTION: make better use of sg_* methods
+ * NOTION: cope gracefully with initially unknown rate
+ *
+ * COMMENT: this version requires first/other offsets to be same
+ *   for all frags, but really, that is almost certainly the case.
+ *
+ * vdiflog should be used for this file as it is non-fuse work.
  */
 
 #include <stdio.h>
@@ -174,8 +181,7 @@ static int update_vthread_list(SGInfo *sgip, VDIFUSEpars *pars)
         /* found all threads */
         if (vv == VDIFUSE_MAX_VTHREADS && vc == ccp->vthr_per_seq)
             return(1);
-        if (vdifuse_debug>3) fprintf(vdflog,
-            "    update_vthread_list: fail %d %d\n", vv, vc);
+        vdiflog(3, "    update_vthread_list: fail %d %d\n", vv, vc);
     }
     return(0);
 }
@@ -246,8 +252,7 @@ int vdif_rigor_frag(char *path, VDIFUSEpars *pars)
         rigor |= vdif_rigor_by_vthrseq(path, pars);
         rigor |= vdif_rigor_by_vthrdir(path, pars);
     }
-    if (vdifuse_debug>3) fprintf(vdflog,
-        "    passed tests " VDIFUSE_RIGOR_PRINTF "\n", rigor);
+    vdiflog(3, "    passed tests " VDIFUSE_RIGOR_PRINTF "\n", rigor);
     return(rigor);
 }
 
@@ -261,7 +266,7 @@ static void notice_maxfrcounter(VDIFHeader *vh)
  * Compare two headers; between is the number of intervening packets.
  * (We assume a difference of much less than one second here.)
  *
- * TODO:
+ * COMMENT we are ignoring station and thread ids here:
  *  stationID could be masked with params.station_mask
  *  threadID is a completely different problem
  */
@@ -269,7 +274,9 @@ static int headers_differ(VDIFHeader *v0, VDIFHeader *v1, int between)
 {
     int delta, secs;
     if (v0->w1.legacy       != v1->w1.legacy      ) return(1);
-    if (v0->w2.UA           != v1->w2.UA          ) return(2);
+#if ROLLOVER < 2
+    if (v0->w2.UA           != v1->w2.UA          ) return(2);/* ROLLOVER < 2 */
+#endif /* ROLLOVER < 2 uses UA */
     if (v0->w2.ref_epoch    != v1->w2.ref_epoch   ) return(3);
     if (v0->w3.ver          != v1->w3.ver         ) return(4);
     if (v0->w3.df_len       != v1->w3.df_len      ) return(5);
@@ -289,7 +296,7 @@ static int headers_differ(VDIFHeader *v0, VDIFHeader *v1, int between)
                                                     return(12);
         }
     } else {
-        /* TODO: -- code this case if needed */
+        /* NOTION: -- code this case if it is ever needed */
                                                     return(0 /* 13 */);
     }
     return(0);
@@ -311,8 +318,7 @@ static size_t find_the_damn_rate_vdif(FILE *fp, size_t read_len,
 
     /* less than 1 sec of data, no math here */
     if (vo->w1.secs_inre == vf->w1.secs_inre) return(pkt_rate);
-    if (vdifuse_debug>3) fprintf(vdflog,
-        "      Finding the damn rate: "
+    vdiflog(3, "      Finding the damn rate: "
         "Pkt rate %u+%06u | %u+%06u [x]\n",
         vo->w1.secs_inre, vo->w2.df_num_insec,
         vf->w1.secs_inre, vf->w2.df_num_insec);
@@ -327,24 +333,21 @@ static size_t find_the_damn_rate_vdif(FILE *fp, size_t read_len,
     vm = (VDIFHeader *)mid;
     vn = (VDIFHeader *)(mid + read_len);
     rv = headers_differ(vm, vn, 0);
-    if (vdifuse_debug>3) fprintf(vdflog,
-        "      Finding the damn rate: "
+    vdiflog(3, "      Finding the damn rate: "
         "Pkt rate %u+%06u | %u+%06u [%lu]\n",
         vm->w1.secs_inre, vm->w2.df_num_insec,
         vn->w1.secs_inre, vn->w2.df_num_insec, rv);
-    if (rv) return(fprintf(vdflog, "Pkts differ\n"), pkt_rate);
+    if (rv) return(vdiflog(-1, "Pkts differ\n"), pkt_rate);
 
     notice_maxfrcounter(vm);
     notice_maxfrcounter(vn);
     if ((vn->w1.secs_inre == (vm->w1.secs_inre + 1)) &&
         (vn->w2.df_num_insec == 0)) {
             pkt_rate = vm->w2.df_num_insec + 1;
-            if (vdifuse_debug>3) fprintf(vdflog,
-            "      Finding the damn rate: got %lu pps\n", pkt_rate);
+            vdiflog(3, "      Finding the damn rate: got %lu pps\n", pkt_rate);
             return(pkt_rate);
     } else {
-        if (vdifuse_debug>3) fprintf(vdflog,
-            "      Finding the damn rate: no luck on edge\n");
+        vdiflog(3, "      Finding the damn rate: no luck on edge\n");
     }
     return(pkt_rate);
 }
@@ -356,8 +359,7 @@ static size_t find_the_damn_rate_vdif(FILE *fp, size_t read_len,
 static size_t find_the_damn_rate_sgv2(FILE *fp, size_t read_len,
     VDIFHeader *vo, VDIFHeader *vf, size_t ofo, size_t off, size_t pkt_rate)
 {
-    if (vdifuse_debug>3) fprintf(vdflog,
-        "SGV2 rate finding not implemented\n");
+    vdiflog(3, "SGV2 rate finding not implemented\n");
     return(pkt_rate);
 }
 
@@ -440,7 +442,8 @@ static int analyze_fragment_vdif(const char *path, struct stat *vfuse,
     VDIFHeader *v0, *v1, *vp, *vf;
     FILE *fp = fopen(path, "r");
 
-    if (!fp) return(fprintf(vdflog,"%s: ",path),perror("fopen"),1);
+    if (!fp) return(vdiflog(-1,"%s: ",path),perror("fopen"),1);
+    vdiflog(2, "      analyze_fragment_vdif\n");
 
     /* get the first two headers, and the length */
     head_off = prefix + offset;
@@ -452,7 +455,7 @@ static int analyze_fragment_vdif(const char *path, struct stat *vfuse,
     v0 = (VDIFHeader *)buf;
     pkt_len = 8 * v0->w3.df_len;
     if ((pkt_len < 32) || (pkt_len > (BUF_SIZ - 32)))
-        return(fprintf(vdflog,
+        return(vdiflog(-1,
             "Error: unusual frame length of %lu(>%d) bytes in %s\n",
             pkt_len, BUF_SIZ-32, path), 4);
 
@@ -486,7 +489,7 @@ static int analyze_fragment_vdif(const char *path, struct stat *vfuse,
     pkt_rate = find_the_damn_rate_vdif(fp, read_len, v0, vf,
         head_off, tail_off + read_len, pars->est_pkt_rate);
     if (pars->pkts_per_sec > 0 && pkt_rate > pars->pkts_per_sec)
-        return(400 + fprintf(vdflog, "Corrupt pkt rate %lu\n", pkt_rate));
+        return(vdiflog(-1, "Corrupt pkt rate %lu\n", pkt_rate), 400);
 
     if (fclose(fp)) return(perror("fread"),500);
     update_vfuse(vfuse, v0, vf, prefix, offset, read_len, pkt_rate, num_pkts);
@@ -512,21 +515,22 @@ static int analyze_fragment_sgv2(const char *path, struct stat *vfuse,
     FILE *fp = fopen(path, "r");
     VDIFHeader *v0, *v1, *vp, *vf;
 
-    if (!fp) return(fprintf(vdflog,"%s: ",path),perror("fopen"),1);
+    if (!fp) return(vdiflog(-1,"%s: ",path),perror("fopen"),1);
+    vdiflog(2, "      analyze_fragment_sgv2\n");
 
     /* get the file and block headers and some checks */
     if (7 != fread(words, 4, 7, fp)) return(2 + fclose(fp));
     if (words[0] != 0xfeed6666) return(3 + fclose(fp));
     if (words[1] != 0x2) return(4 + fclose(fp));
     block_size = words[2];
-    if (block_size > pars->writeblocker) return(fprintf(vdflog,
+    if (block_size > pars->writeblocker) return(vdiflog(-1,
         "Error: blocksize %lu>%u\n", block_size, pars->writeblocker),
         5 + fclose(fp));
     if (block_size > pars->writeblocker) return(5 + fclose(fp));
     if (words[3] != 0x0) return(6 + fclose(fp));     /* VDIF */
     header_pkt_len = words[4];
     if ((header_pkt_len < 32) || (header_pkt_len > (BUF_SIZ - 32)))
-        return(fprintf(vdflog, "Error: unusual frame length of %lu bytes"
+        return(vdiflog(-1, "Error: unusual frame length of %lu bytes"
             "(<32|>%d) in %s\n", header_pkt_len, BUF_SIZ-32, path), 7);
 
     /* get the first two headers, and the length */
@@ -565,9 +569,9 @@ static int analyze_fragment_sgv2(const char *path, struct stat *vfuse,
     /* see if we can improve on the packet rate estimate */
     pkt_rate = find_the_damn_rate_sgv2(fp, read_len, v0, vf,
         head_off, tail_off + read_len, pars->pkts_per_sec);
-        /* TODO: pars->est_pkt_rate    ^^^^^^^^^^^^^^^^^^  later */
+    /* COMMENT: pars->est_pkt_rate & pars->pkts_per_sec is never */
     if (pars->pkts_per_sec > 0 && pkt_rate > pars->pkts_per_sec)
-        return(400 + fprintf(vdflog, "Corrupt pkt rate %lu\n", pkt_rate));
+        return(vdiflog(-1, "Corrupt pkt rate %lu\n", pkt_rate), 400);
 
     if (fclose(fp)) return(perror("fread"),500);
     update_vfuse(vfuse, v0, vf, 0, offset, read_len, pkt_rate, num_pkts);
@@ -682,12 +686,13 @@ static int analyze_fragment_sgv2_harder(const char *path, struct stat *vfuse,
     FILE *fp = fopen(path, "r");
     VDIFHeader *v0 = 0, *vf = 0;
 
-    if (!fp) return(fprintf(vdflog,"%s: ",path),perror("fopen"),1);
+    if (!fp) return(vdiflog(-1,"%s: ",path),perror("fopen"),1);
+    vdiflog(2, "      analyze_fragment_sgv2_harder\n");
     /* get the file and block headers and some checks */
     err = basic_checks_sgv2_harder(fp, pars, &read_len, &block_size);
     if (err) err *= 1000;
 
-    /* TODO: this logic requires knowing the rate! */
+    /* NOTION: this logic requires knowing the rate! */
     pkt_rate = pars->pkts_per_sec;
 
     /* get an initial header, and the length */
@@ -713,10 +718,9 @@ static int analyze_fragment_sgv2_harder(const char *path, struct stat *vfuse,
         vfuse->st_size, read_len, pkt_len);
     if (!vf) err += 20000;
 
-    /* TODO: call find_the_damn_rate_sgv2() when it isn't a no-op */
-    // pkt_rate = pars->pkts_per_sec;
+    /* NOTION: fix find_the_damn_rate_sgv2() and call it here */
 
-    if ((vdifuse_debug>1) && (failcode && !err)) fprintf(vdflog,
+    if ((vdifuse_debug>1) && (failcode && !err)) vdiflog(1,
         "Problematic file %s [%d -> %d] saved\n", path, failcode, err);
     fclose(fp);
     if (err) return(err);
@@ -747,8 +751,7 @@ static int analyze_fragment(const char *path, struct stat *vfuse,
         if (rv) rvh = analyze_fragment_sgv2_harder(path, vfuse, pars, rv);
         if (rvh) rv += rvh;
         else rv = rvh;
-        /*
-         * Note that the next calls are to attach_sgv2_anc() so
+        /* NOTION: the next calls are to attach_sgv2_ancllary() so
          * if we make arrangements to update the fuse entry for the
          * fragment, we can simplify the work here.
          */
@@ -767,17 +770,14 @@ static int analyze_fragment(const char *path, struct stat *vfuse,
 static void update_rate_params(VDIFUSEpars *pars)
 {
     size_t pkt_rate = pars->est_pkt_rate;
-    if (vdifuse_debug>0) fprintf(vdflog,
-        "Default rate was revised to %lu packets per second\n", pkt_rate);
+    vdiflog(0, "Default rate revised to %lu packets per second\n", pkt_rate);
     if (pars->max_pkts_gap == 0 && pars->max_secs_gap > 0) {
         pars->max_pkts_gap = pars->max_secs_gap * pkt_rate;
-        if (vdifuse_debug>0) fprintf(vdflog,
-            "Max gap now set to %u packets\n", pars->max_pkts_gap);
+        vdiflog(0, "Max gap now set to %u packets\n", pars->max_pkts_gap);
     }
     if (pars->max_secs_gap == 0 && pars->max_pkts_gap > 0) {
         pars->max_secs_gap = (float)pars->max_pkts_gap / (float)pkt_rate;
-        if (vdifuse_debug>0) fprintf(vdflog,
-            "Max gap(s) now set to %g seconds\n", pars->max_secs_gap);
+        vdiflog(0, "Max gap(s) now set to %g seconds\n", pars->max_secs_gap);
     }
 }
 
@@ -799,13 +799,12 @@ int create_fragment_vfuse(VDIFUSEntry *vc, int index,
     if (stat(vc->path, &vc->u.vfuse)) return(perror("stat"),1);
     if ((rv = analyze_fragment(vc->path,
         &vc->u.vfuse, pars, rigor, &vc->stype))) {
-        if (vdifuse_debug>1) fprintf(vdflog,
-            "      analyze_fragment tossed it by reason %d\n", rv);
+        vdiflog(1, "      analyze_fragment tossed it by reason %d\n", rv);
         return(rv);
     }
 
     /* if there was a problem constructing a signature, we are toast */
-    if (vdif_signature == 0LL) return(fprintf(vdflog, "!Signature\n"));
+    if (vdif_signature == 0LL) return(vdiflog(-1, "!Signature\n"), 600);
     vc->vsig = vdif_signature;
 
     /* if the packet rate of this file was larger than we had */
@@ -821,7 +820,7 @@ int create_fragment_vfuse(VDIFUSEntry *vc, int index,
     if (!xf) return(fprintf(stderr, "No / in path %s\n", vc->path));
 
     /* ok:  go on and create the fusename for it */
-    snprintf(fusename, VDIFUSE_MAX_PATH, xf+1);
+    snprintf(fusename, VDIFUSE_MAX_PATH - VDIFUSE_TOPDIR_SIZE - 2, xf+1);
     /* if names are not unique, construct unique name using index */
     if (!pars->noduplicates) {
         xf = strstr(fusename, ".vdif");
@@ -830,14 +829,12 @@ int create_fragment_vfuse(VDIFUSEntry *vc, int index,
             "_vf%08X.vdif", index);
     }
     snprintf(vc->fuse, VDIFUSE_MAX_PATH, "%s/%s", fragments_topdir, fusename);
-    if (vdifuse_debug>1) fprintf(vdflog,
-        "    real '%s'\n"
-        "    fuse '%s' [%016lX]\n", vc->path, vc->fuse, vc->vsig);
+    vdiflog(1, "    real '%s'\n"
+               "    fuse '%s' [%016lX]\n", vc->path, vc->fuse, vc->vsig);
 
     if (maxfrcounter_seen > pars->maxfrcounter)
         pars->maxfrcounter = maxfrcounter_seen;
-    if (vdifuse_debug>3) fprintf(vdflog,
-        "FrameCounter %u %u\n", maxfrcounter_seen, pars->maxfrcounter);
+    vdiflog(3, "FrameCounter %u %u\n", maxfrcounter_seen, pars->maxfrcounter);
 
     vc->hier[0] = '-';  /* overwritten later */
     vc->hier[1] = 0;

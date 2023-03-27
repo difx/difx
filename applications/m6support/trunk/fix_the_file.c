@@ -1,5 +1,8 @@
 /*
- * $Id: fix_the_file.c 5211 2021-07-29 19:28:17Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: fix_the_file.c 5677 2023-03-04 19:06:02Z gbc $
  *
  * Code to pull good packets from a bad file.
  */
@@ -134,7 +137,9 @@ int fx_init(Fixer *fxp)
     /* but we'll populate signature bits as well */
     vhf->w1.legacy = vhi->w1.legacy;
     vhf->w2.ref_epoch = vhi->w2.ref_epoch;
-    vhf->w2.UA = vhi->w2.UA;
+#if ROLLOVER < 2
+    vhf->w2.UA = vhi->w2.UA;    /* ROLLOVER < 2 */
+#endif /* ROLLOVER < 2 uses UA */
     vhf->w3.num_channels = vhi->w3.num_channels;
     vhf->w3.ver = vhi->w3.ver;
     vhf->w4.stationID = vhi->w4.stationID;

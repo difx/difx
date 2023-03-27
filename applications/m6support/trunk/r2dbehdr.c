@@ -1,5 +1,8 @@
 /*
- * $Id: r2dbehdr.c 4173 2016-11-28 15:40:30Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: r2dbehdr.c 5677 2023-03-04 19:06:02Z gbc $
  *
  * Support for R2DBE extended headers
  *   v0 was deployed for Mar2015 campaign

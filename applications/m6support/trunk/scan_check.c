@@ -1,5 +1,8 @@
 /*
- * $Id: scan_check.c 4508 2017-12-04 20:02:49Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: scan_check.c 5677 2023-03-04 19:06:02Z gbc $
  *
  * Code to verify scans at time of recording.
  */

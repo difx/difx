@@ -1,18 +1,21 @@
 #
 # Makefile for Mark6 & ALMA support
 #
+# (c) Massachusetts Institute of Technology, 2010..2023
+# (c) Geoffrey B. Crew, 2010..2023
+#
 
 SUBDIRS = .
 
 AM_CPPFLAGS = -Wall
 
-EXTRA_DIST = readme.sh gpl-3.0.txt
+EXTRA_DIST = readme.sh gpl-3.0.txt vdifuse-doc.txt
 
 if WITH_FUSE
 if HAVE_FUSE
 if HAVE_LINUX
 vdifuse = vdifuse
-vdifuse_h = vdifuse.h vdifsg2.h vdifsig.h
+vdifuse_h = vdifuse.h vdifsg2.h vdifsig.h vdifprc.h vdfxmsg.h vdifthr.h
 prepone = prep-one-scan.sh set-read-ahead.sh
 else
 vdifuse =
@@ -34,7 +37,7 @@ dist_noinst_HEADERS = vdif.h vdif_epochs.h vdif_time_util.h \
 	sg_access.h sc_stats.h exthdr.h m6scmodule.h $(vdifuse_h) \
 	fix_the_file.h
 test_scripts = hammer.sh hammerplot.sh fillerfrac.sh \
-	statsplot.py glitchplot.sh chk_fixer.sh
+	statsplot.py glitchplot.sh chk_fixer.sh vdif_epochs.py
 
 check_PROGRAMS =
 TESTS =
@@ -55,9 +58,11 @@ endif
 if WITH_FUSE
 if HAVE_FUSE
 if HAVE_LINUX
-vdsrc = vdifuse.c vdifopt.c vdifsup.c vdiftst.c vdifseq.c vdiftrc.c vdifsig.c \
-	vdiforr.c vdifsg2.c sg_access.c sg_advice.c sg_spwrda.c \
-	vdiflat.c vdifrex.c vdifthr.c
+vdsrc = vdifuse.c vdifsig.c vdiftrc.c vdifopt.c \
+	vdifpar.c vdifsup.c vdiftst.c vdifseq.c \
+	vdiforr.c vdiflat.c vdifrex.c vdfxmsg.c \
+	vdifsg2.c vdifsp2.c vdifprc.c vdifthr.c \
+	sg_access.c sg_advice.c sg_spwrda.c
 dist_vdifuse_SOURCES = $(vdsrc)
 else
 dist_vdifuse_SOURCES =
@@ -85,5 +90,5 @@ DISTCLEANFILES = \
 	depcomp install-sh test-driver missing compile config.guess config.sub
 
 #
-# eof
+# eof vim: ts=8
 #

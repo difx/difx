@@ -7,7 +7,7 @@
 #ifndef m6scmodule_h
 #define m6scmodule_h
 
-#define M6_VERSION 0.36
+#define M6_VERSION 0.40
 
 /*
  * Scan check links to main()

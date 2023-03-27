@@ -1,5 +1,8 @@
 #!/bin/bash
 #
+# (c) Massachusetts Institute of Technology, 2013..2023
+# (c) Geoffrey B. Crew, 2013..2023
+#
 # Stupid script to report on filled fraction by
 # dplane since we seem to be doing this alot.
 #

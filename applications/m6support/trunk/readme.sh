@@ -5,7 +5,8 @@
 #
 # $Id: readme.sh.in 2045 2014-05-24 16:18:09Z gbc $
 # -----------------------------------------------------------------------------
-# (c) Massachusetts Institute of Technology, 2013-2016
+# (c) Massachusetts Institute of Technology, 2013-2023
+# (c) Geoffrey B. Crew, 2013..2023
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,9 +31,10 @@
 # You will need to have installed fuse, fuse-libs and fuse-devel
 # (the libraries to link to, the fuse-devel to compile).
 
-# untar:
-# tar zxf m6support-0.16.tar.gz
-# cd m6support-0.15
+# cd somewhere
+# tar zxf m6support-?.??.tar.gz
+# cd m6support-?.??
+# ./readme.sh
 
 [ $# -eq 0 ] && {
 

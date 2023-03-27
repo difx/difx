@@ -1,13 +1,24 @@
 /*
- * $Id: vdif.h 4154 2016-10-17 14:10:07Z gbc $
+ * (c) Massachusetts Institute of Technology, 2010..2023
+ * (c) Geoffrey B. Crew, 2010..2023
+ *
+ * $Id: vdif.h 5677 2023-03-04 19:06:02Z gbc $
  *
  * Hack code to generate a simple packet stream for testing
+ *
+ * The VDIF epoch is a count of semesters from 2000 and as originally
+ * defined rolls-over at 2032.  The UA bits are originally declared to
+ * be 0-filled.  Not much breaks if ref_epoch is expanded to 7 or 8 bits.
  */
 
 #ifndef vdif_h
 #define vdif_h
 
 #include <stdint.h>
+
+#ifndef ROLLOVER
+#define ROLLOVER    0
+#endif /* ROLLOVER using UA */
 
 /* bitfields are not portable, but our applicability is limited */
 typedef struct vdif_hdr {
@@ -18,8 +29,10 @@ typedef struct vdif_hdr {
     } w1;
     struct word2 {
         uint32_t df_num_insec:24;
-        uint32_t ref_epoch:6;
-        uint32_t UA:2;
+        uint32_t ref_epoch:6+ROLLOVER;
+#if ROLLOVER < 2
+        uint32_t UA:2-ROLLOVER;  /* ROLLOVER < 2 */
+#endif /* ROLLOVER < 2 uses UA */
     } w2;
     struct word3 {
         uint32_t df_len:24;
@@ -46,8 +59,10 @@ typedef struct vdif_hdr {
 typedef union vdif_signature_union {
     struct vdif_signature_bits {
         uint64_t df_len:24;
-        uint64_t ref_epoch:6;
-        uint64_t UA:2;
+        uint64_t ref_epoch:6+ROLLOVER;
+#if ROLLOVER < 2
+        uint64_t UA:2-ROLLOVER;  /* ROLLOVER < 2 */
+#endif /* ROLLOVER < 2 uses UA */
         uint64_t stationID:16;
         uint64_t num_channels:5;
         uint64_t ver:3;

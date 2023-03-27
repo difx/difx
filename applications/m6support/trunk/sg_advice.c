@@ -1,5 +1,8 @@
 /*
- * $Id: sg_advice.c 5282 2021-08-09 13:39:28Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: sg_advice.c 5754 2023-03-26 16:22:50Z gbc $
  * 
  * Code to boost performance on reads to sg files
  *
@@ -24,9 +27,8 @@
  *     880.110 MB/s net with  50000000L
  *   based on cat <300GBfile>  > /dev/null
  *   mileage varies depending on file corruption and other (unknown) factors.
- *
- * TODO: create a new ADVICE method that creates a pool of threads once
- * and then merely tasks them with the read-ahead work.  More efficient....
+ * 
+ * vdifuse_trace is available in this file.
  */
 
 #include <errno.h>
@@ -76,13 +78,13 @@ static void sg_advice_init(void)
 
     open_max = sysconf(_SC_OPEN_MAX);
     pagesize = sysconf(_SC_PAGESIZE);
-    vdifuse_trace(VDT("pagesize is %d\n"), pagesize);
-    vdifuse_trace(VDT("open_max is %d\n"), open_max);
+    vdiftrace(-1,VDT("pagesize is %d\n"), pagesize);
+    vdiftrace(-1,VDT("open_max is %d\n"), open_max);
     addrmask = ~(pagesize - 1);
     advice_type = hint ? atoi(hint) : SG_ADVICE_DEFAULT;
     blockage = blks ? atol(blks) : SG_ADVICE_BLOCKS;
-    vdifuse_trace(VDT("SG_ACCESS_ADVICE is %d\n"), advice_type);
-    vdifuse_trace(VDT("SG_ACCESS_BLOCKS is %ld\n"), blockage);
+    vdiftrace(-1,VDT("SG_ACCESS_ADVICE is %d\n"), advice_type);
+    vdiftrace(-1,VDT("SG_ACCESS_BLOCKS is %ld\n"), blockage);
 
     switch (advice_type) {
     case SG_ADVICE_DISABLE:
@@ -92,23 +94,23 @@ static void sg_advice_init(void)
     case SG_ADVICE_MADV_WILLNEED:
     case SG_ADVICE_POSIX_FADVISE:
     default:
-        vdifuse_trace(VDT("Advice %d selected\n"), advice_type);
+        vdiftrace(-1,VDT("Advice %d selected\n"), advice_type);
         break;
     case SG_ADVICE_SPAWN_READAHEAD:
         /* initialize for threads */
-        vdifuse_trace(VDT("SG_ADVICE_SPAWN_READAHEAD selected\n"));
+        vdiftrace(-1,VDT("SG_ADVICE_SPAWN_READAHEAD selected\n"));
         /* persistent thread information not needed */
         break;
     case SG_ADVICE_SPAWN_READTHREAD:
         /* initialize for threads */
-        vdifuse_trace(VDT("SG_ADVICE_SPAWN_READTHREAD selected\n"));
+        vdiftrace(-1,VDT("SG_ADVICE_SPAWN_READTHREAD selected\n"));
         sg_advice_pthreads = (Pidex *)calloc(open_max, sizeof(Pidex));
         break;
     }
     if (hint || blks) {
-        vdifuse_trace(VDT("Page size is %luB Blockage is %luB Mask is %lx\n"),
+        vdiftrace(-1,VDT("Page size is %luB Blockage is %luB Mask is %lx\n"),
             pagesize, blockage, addrmask);
-        vdifuse_trace(VDT("Advice is %d and Disable is %d hint %s type %d\n"),
+        vdiftrace(-1,VDT("Advice is %d and Disable is %d hint %s type %d\n"),
             advice_type, sg_advice_disable, hint, advice_type);
     }
 }
@@ -127,7 +129,7 @@ void sg_advice_term(int mmfd)
     (void)pthread_cancel(sg_advice_pthreads[mmfd].tid);
     (void)pthread_join(sg_advice_pthreads[mmfd].tid, 0);
     pthread_mutex_unlock(&sg_advice_pthreads[mmfd].tmx);
-    vdifuse_trace(VDT("Cancelled %lu on %02d\n"),
+    vdiftrace(-1,VDT("Cancelled %lu on %02d\n"),
         sg_advice_pthreads[mmfd].tid, mmfd);
     sg_advice_pthreads[mmfd].tid = 0;
 }
@@ -146,7 +148,7 @@ void sg_advice(SGInfo *sgi, void *pkt, int dir)
 
     if (pthread_once(&sg_advice_control, &sg_advice_init)) {
         perror("pthread_once");
-        vdifuse_trace(VDT("pthread_once: errno is %d\n"), errno);
+        vdiftrace(-1,VDT("pthread_once: errno is %d\n"), errno);
         errno = sg_advice_disable = 0;
     }
     if (sg_advice_disable || pagesize == 0L) return;

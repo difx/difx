@@ -1,5 +1,8 @@
 /*
- * $Id: vdiflat.c 3815 2016-02-25 18:04:37Z gbc $
+ * (c) Massachusetts Institute of Technology, 2013..2023
+ * (c) Geoffrey B. Crew, 2013..2023
+ *
+ * $Id: vdiflat.c 5723 2023-03-13 20:53:47Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -21,7 +24,7 @@
  * nlink is the total count of fragments, and we check
  * it and a few other things for consistency.
  *
- * FIXME: update remaining vp->u.vfuse entries
+ * NOTION: update remaining vp->u.vfuse entries, if this is ever used.
  * + blksize_t st_blksize; // packet size
  * + blkcnt_t  st_blocks;  // number of packets
  * + time_t    st_mtime;   // data start time
@@ -70,14 +73,14 @@ int finalize_vdif_sequence(VDIFUSEntry *vp)
 }
 
 /*
- * vorr support
+ * vorr support...
+ *
+ * ...for sequences of flat files...FIXME: NYI...
  */
-
-/* FIXME: private structures */
-/* FIXME: un-stub flat case */
 
 int open_flat_seq(VDIFUSEntry *vs, FFInfo *ffi)
 {
+    /* open vproc directories for info about sdp */
     return(vorrfd);
 }
 void release_flat_seq(FFInfo *ffi)
@@ -86,7 +89,7 @@ void release_flat_seq(FFInfo *ffi)
 }
 int read_flat_seq(char *buf, FFInfo *ffi)
 {
-    return(-ENOENT);    /* stub */
+    return(-ENOENT);
 }
 
 /*
