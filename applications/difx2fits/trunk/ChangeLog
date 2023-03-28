@@ -4,6 +4,8 @@ Version 3.8.0
 * Fix some possible memory leaks in cases where there are sometimes no pulse cal tones.
 * Streamline some logic in ML and MC tables (and fix incorrect use of ant2dsId[] in both cases)
 * Improve logical flow of sniffer; do proper 2-D interpolation.
+* Sniffer: do two-pass FFT; fringe fit quality seems equivalent to that in AIPS now  
+* Add external utility (apd2antenna) that converts .apd file into antenna-based quantities
 
 Version 3.7.0
 * Post DiFX-2.6

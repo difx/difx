@@ -1,0 +1,128 @@
+#!/bin/env python3.8
+
+from sys import argv
+import numpy as np
+
+program = 'apd2antenna'
+version = '0.1'
+author = 'Walter Brisken <wbrisken@nrao.edu>'
+verdate = '20230328'
+
+def usage():
+	print('%s %s  %s %s\n' % (program, version, author, verdate))
+	print('Usage: %s <apd file> <refant>\n\n')
+	print('<apd file> is produced by difx2fits\n')
+	print('<refant> is the reference antenna to use; either a 1-based number or antenna code.\n')
+	print('This program uses linear least squares to turn a series of baseline-determined')
+	print('relay, rate, and phase values into antenna-based quantities.')
+
+def SolveClosure(M, W, R):
+	dim = len(M)
+	Ek = np.zeros(dim)
+	for k in range(dim):
+		for j in range(dim):
+			Ek[k] += 4.0*W[j][k]*W[j][k]*M[j][k]
+
+	Ekl = np.zeros([dim, dim])
+	for k in range(dim):
+		for l in range(dim):
+			Ekl[k][l] = -4.0*W[k][l]*W[k][l]
+		for j in range(dim):
+			Ekl[k][k] += 4.0*W[k][j]*W[k][j]
+
+	ERk = Ek.copy()
+	ERk[R] = 0.0
+
+	ERkl = Ekl.copy()
+	for j in range(dim):
+		ERkl[j][R] = 0.0
+		ERkl[R][j] = 0.0
+	ERkl[R][R] = 1.0
+
+	ERklInv = np.linalg.inv(ERkl)
+
+	x = -np.matmul(ERklInv, ERk)
+
+	return x
+	
+# Return:
+#   obsCode, times
+#
+# times = [intmjd, hours, source, data]
+# data = [ant1, ant2, antname1, antname2, meas]  (zero-based ants)
+# meas = [delay(ns), amp, phase(rad), rate(Hz)]
+def loadAPD(filename):
+	data = open(filename).readlines()
+	s = data[0].strip().split()
+	if s[0] == 'obscode:':
+		obscode = s[1]
+	else:
+		print('Unrecognized APD file format')
+		return None, None
+	
+	currentTime = [-1.0, -1.0, []]
+	times = []
+	for d in data[1:]:
+		s = d.strip().split()
+		intmjd = s[0]
+		hour = s[1]
+		if intmjd != currentTime[0] or hour != currentTime[1] or s[3] != currentTime[2]:
+			currentTime = [intmjd, hour, s[3], []]
+			times.append(currentTime)
+		data = [int(s[4])-1, int(s[5])-1, s[6], s[7], []]
+		currentTime[3].append(data)
+		n = int(s[8])
+		for i in range(n):
+			meas = [float(s[9+4*i]), float(s[10+4*i]), float(s[11+4*i]), float(s[12+4*i])]
+			data[4].append(meas)
+	
+	return obscode, times
+
+
+# ------
+
+obscode, times = loadAPD(argv[1])
+
+refant = argv[2] # zero-based
+
+print('obscode:  %s' % obscode)
+
+for T in times:
+	D = T[3]
+	maxAnt = 0
+	for d in D:
+		if d[0] > maxAnt:
+			maxAnt = d[0]
+		if d[1] > maxAnt:
+			maxAnt = d[1]
+	ants = [None] * (maxAnt+1)
+	for d in D:
+		ants[d[0]] = d[2]
+		ants[d[1]] = d[3]
+	dim = len(ants)
+	try:
+		R = int(refant)
+	except:
+		R = ants.index(refant)
+	
+	results = []
+	for b in range(len(D[0][4])):
+		for i in [0, 2, 3]:	# D, P, R
+			M = np.zeros([dim, dim])
+			W = np.zeros([dim, dim])
+			for d in D:
+				a1 = d[0]
+				a2 = d[1]
+				v = d[4][b][i]
+				w = d[4][b][1]
+				M[a1][a2] = -v
+				M[a2][a1] = v
+				W[a1][a2] = w
+				W[a2][a1] = w
+			x = SolveClosure(M, W, R)
+			results.append(x)
+	for a in range(len(ants)):
+		line = '%s %s %s %d %s %d' % (T[0], T[1], T[2], a+1, ants[a], len(D[0][4]))
+		for x in results:
+			line += ' %f' % x[a]
+		print(line)

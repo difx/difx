@@ -465,6 +465,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	{
 		int a2;
 
+		/* FIXME: this allocates a square array, where a triangle array would do... */
 		S->accum[a1] = newAccumulatorArray(S, S->nAntenna);
 		for(a2 = 0; a2 < S->nAntenna; ++a2)
 		{
@@ -612,8 +613,17 @@ static void peakup2D(double peak[3][3], double *deltaj, double *deltai, double *
 	}
 }
 
-/* Add here a priori delay and rate parameters to be removed before populating */
-static void populateFFTArray(Sniffer *S, const Accumulator *A, int bbc, int timeBinFactor, int chanBinFactor)
+/* FIXME:
+ *   - figure out phase
+ */
+
+/* Inputs:
+ *   delay [ns]
+ *   rate [rad/s]
+ *   delayRate [ns/s]
+ *   phase [rad]
+ */
+static void populateFFTArray(Sniffer *S, const Accumulator *A, int bbc, int timeBinFactor, int chanBinFactor, double delay, double rate, double delayRate, double phase)
 {
 	const double edge = 0.02;	/* exclude this fraction of band from each end */
 	fftw_complex * const *array;
@@ -625,27 +635,77 @@ static void populateFFTArray(Sniffer *S, const Accumulator *A, int bbc, int time
 
 	array = A->spectrum[bbc];
 	memset(S->fftbuffer, 0, S->fft_nx*S->fft_ny*sizeof(fftw_complex));
-	if(timeBinFactor == 1 && chanBinFactor == 1)
+	if(delay == 0.0 && rate == 0.0 && delayRate == 0.0 && phase == 0.0)
 	{
-		for(j = 0; j < A->nTime; ++j)
+		if(timeBinFactor == 1 && chanBinFactor == 1)
 		{
-			int i;
-
-			for(i = chan0; i < chan1; ++i)
+			for(j = 0; j < A->nTime; ++j)
 			{
-				S->fftbuffer[j*S->fft_nx + i] = array[j][i];
+				int i;
+
+				for(i = chan0; i < chan1; ++i)
+				{
+					S->fftbuffer[j*S->fft_nx + i] = array[j][i];
+				}
+			}
+		}
+		else
+		{
+			for(j = 0; j < A->nTime; ++j)
+			{
+				int i;
+
+				for(i = chan0; i < chan1; ++i)
+				{
+					S->fftbuffer[(j/timeBinFactor)*S->fft_nx + (i/chanBinFactor)] += array[j][i];
+				}
 			}
 		}
 	}
 	else
 	{
-		for(j = 0; j < A->nTime; ++j)
+		if(timeBinFactor == 1 && chanBinFactor == 1)
 		{
-			int i;
-
-			for(i = chan0; i < chan1; ++i)
+			for(j = 0; j < A->nTime; ++j)
 			{
-				S->fftbuffer[j*S->fft_nx + i] += array[j/timeBinFactor][i/chanBinFactor];
+				double delay_now;	/* [ns] */
+				double phase_now;	/* [rad] */
+				int i;
+
+				delay_now = delay + delayRate*S->solInt*j/(double)(A->nTime);
+				phase_now = phase - 2.0*M_PI*rate*j*S->solInt/A->nTime;
+
+				for(i = chan0; i < chan1; ++i)
+				{
+					fftw_complex phasor;
+					double phi;
+
+					phi = -(phase_now + 2.0*M_PI*delay_now*S->bw*i/(1000.0*A->nChan));
+					phasor = cos(phi) + 1.0I*sin(phi);
+					S->fftbuffer[j*S->fft_nx + i] = array[j][i] * phasor;
+				}
+			}
+		}
+		else
+		{
+			for(j = 0; j < A->nTime; ++j)
+			{
+				double delay_now;	/* [ns] */
+				double phase_now;	/* [rad] */
+				int i;
+
+				delay_now = delay + delayRate*S->solInt*j/(double)(A->nTime);
+				phase_now = phase - 2.0*M_PI*rate*j*S->solInt/A->nTime;
+
+				for(i = chan0; i < chan1; ++i)
+				{
+					fftw_complex phasor;
+					double phi;
+
+					phi = -(phase_now + 2.0*M_PI*delay_now*S->bw*i/(1000.0*A->nChan));
+					phasor = cos(phi) + 1.0I*sin(phi);
+					S->fftbuffer[(j/timeBinFactor)*S->fft_nx + (i/chanBinFactor)] += array[j][i] * phasor;
+				}
 			}
 		}
 	}
@@ -683,7 +743,7 @@ static void populateFFTArrayCrossPol(Sniffer *S, const Accumulator *A, int ifNum
 
 			for(i = chan0; i < chan1; ++i)
 			{
-				S->fftbuffer[j*S->fft_nx + i] += array[j/timeBinFactor][i/chanBinFactor];
+				S->fftbuffer[(j/timeBinFactor)*S->fft_nx + (i/chanBinFactor)] += array[j][i];
 			}
 		}
 	}
@@ -755,7 +815,16 @@ static void findChanRatePeak(const Sniffer *S, int *specChan, double *specRate, 
 	}
 }
 
-static void findDelayRatePeak(const Sniffer *S, double *delay, double *rate, double *amp, double *phase)
+/* return values:
+ *   delay [ns]
+ *   (phase) rate [cycles/sec = Hz]
+ *   phase [deg]
+ *   amp [arbitrary]
+ *
+ * FIXME: rereference phase; make it consistent with AIPS FRING
+ * FIXME: form proper SNR estimate
+ */
+static void findDelayRatePeak(const Sniffer *S, double *delay, double *rate, double *amp, double *phase, int timeBinFactor, int chanBinFactor)
 {
 	fftw_complex z;
 	double max2, amp2;
@@ -817,11 +886,11 @@ static void findDelayRatePeak(const Sniffer *S, double *delay, double *rate, dou
 
 	if(delay)
 	{
-		*delay = (besti + di)/(S->bw*S->fftOversample/1000.0);
+		*delay = (besti + di)/(S->bw*S->fftOversample*chanBinFactor/1000.0);
 	}
 	if(rate)
 	{
-		*rate = (bestj + dj)/(S->solInt*S->fftOversample);
+		*rate = (bestj + dj)/(S->solInt*S->fftOversample*timeBinFactor);
 	}
 }
 
@@ -1027,9 +1096,31 @@ static int dump(Sniffer *S, Accumulator *A)
 
 		for(bbc = 0; bbc < A->nBBC; ++bbc)
 		{
-			double specAmp, specPhase, specRate;
-			double phase, delay, rate;
+			double specAmp, amp2;			/* arbitrary units */
+			double specPhase, phase, phase2;	/* [rad] */
+			double specRate, rate, rate2;		/* [cycles per second] */
+			double delay, delay2;			/* [ns] */
+			double delayRate = 0.0;			/* [ns/s] */
 			int specChan;
+			int chanBinFactor, timeBinFactor;
+
+			/* Perhaps calculation of the binning factors could be more intelligent, but this is a good starting point */
+			if(A->nTime >= 12)
+			{
+				timeBinFactor = 3;
+			}
+			else
+			{
+				timeBinFactor = 1;
+			}
+			if(A->nChan >= 25)
+			{
+				chanBinFactor = 5;
+			}
+			else
+			{
+				chanBinFactor = 1;
+			}
 
 			if(A->nRec[bbc] < S->nTime/2 || A->weightSum[bbc] == 0.0)
 			{
@@ -1037,7 +1128,7 @@ static int dump(Sniffer *S, Accumulator *A)
 				fprintf(S->apc, " 0 0 0 0");
 				continue;
 			}
-			populateFFTArray(S, A, bbc, 1, 1);
+			populateFFTArray(S, A, bbc, 1, 1, 0, 0, 0, 0);
 
 			/* First transform in time to form rates.  Here we do
                          * the spectral line sniffing to look for peak in
@@ -1049,7 +1140,27 @@ static int dump(Sniffer *S, Accumulator *A)
                         /* Now do second axis of FFT (frequency) to look for a peak in rate/delay space */
 			fftw_execute(S->plan2);
 
-			findDelayRatePeak(S, &delay, &rate, amp + bbc, &phase);
+			findDelayRatePeak(S, &delay, &rate, amp + bbc, &phase, 1, 1);
+
+
+/* FIXME: need to implement the delayRate portion of the logic: delayRate = rate/(freq/1000.0) */
+/* FIXME: rename "rate" to "phaseRate" to make that clear */
+
+
+			/* Now that we have a first estimate of delay and rate, repopulate the FFT array
+			 * with those estimated phase slopes removed.  Then look for residual delay and rate
+			 * In doing this repopulation, bin the pixels a bit so that the FFT reveals a zoomed
+			 * in version of the delay rate plane, perhaps allowing for better interpolation.
+			 */
+
+			populateFFTArray(S, A, bbc, timeBinFactor, chanBinFactor, delay, rate, delayRate, phase);
+                        fftw_execute(S->plan1);
+			fftw_execute(S->plan2);
+			findDelayRatePeak(S, &delay2, &rate2, &amp2, &phase2, timeBinFactor, chanBinFactor);
+			delay += delay2;
+			rate += rate2;
+			phase += phase2;
+			amp[bbc] = amp2;
 
 			/* correct for negative frequency axis if LSB */
 			if(A->isLSB[bbc])
@@ -1092,7 +1203,7 @@ static int dump(Sniffer *S, Accumulator *A)
 					fftw_execute(S->plan1);
 					fftw_execute(S->plan2);
 
-					findDelayRatePeak(S, 0, 0, stokesAmp + pol, &phase);
+					findDelayRatePeak(S, 0, 0, stokesAmp + pol, &phase, 1, 1);
 				}
 				norm = sqrt(amp[bbc0]*amp[bbc1]);
 				if(norm == 0.0)
