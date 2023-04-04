@@ -2,7 +2,7 @@
  * (c) Massachusetts Institute of Technology, 2013..2023
  * (c) Geoffrey B. Crew, 2013..2023
  *
- * $Id: vdifpar.c 5734 2023-03-15 18:03:05Z gbc $
+ * $Id: vdifpar.c 5790 2023-04-02 15:27:35Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -457,7 +457,7 @@ int describe_params(VDIFUSEntry *vp)
     time_t birth = vp->u.vpars.creation.tv_sec;
     if (vdifuse_debug>2) describe_struct();
     vdiflog(1, 
-        "[%04d]Cache (vers.%g) %lu.%06lu (%24.24s)\n",
+        "[%05d]Cache (vers.%g) %lu.%06lu (%24.24s)\n",
         vp->index,
         vp->u.vpars.vdifuse_vers,
         vp->u.vpars.creation.tv_sec, vp->u.vpars.creation.tv_usec,

@@ -6,7 +6,7 @@
 #
 
 AC_PREREQ([2.59])
-AC_INIT([m6support], [0.40], [gbc@haystack.mit.edu])
+AC_INIT([m6support], [0.41], [gbc@haystack.mit.edu])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([vdifuse.h])
 AC_CONFIG_HEADERS([config.h])
