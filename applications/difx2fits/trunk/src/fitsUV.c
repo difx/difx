@@ -1531,7 +1531,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	    (opts->phaseCentre == 0 || opts->sniffAllPhaseCentres) &&
 	    opts->sniffTime > 0.0 )
 	{
-		S = newSniffer(D, dv->nComplex, fileBase, opts->sniffTime);
+		S = newSniffer(D, dv->nComplex, fileBase, opts->sniffTime, opts->writeBandpass);
 		if(S && opts->verbose > 1)
 		{
 			printf("    Sniffer memory usage ~= %lldMB\n", getSnifferMemoryUsage(S)/1000000);

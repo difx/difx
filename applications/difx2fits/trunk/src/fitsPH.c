@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & John Morgan & Leonid Petrov *
+ *   Copyright (C) 2008-2023 by Walter Brisken & John Morgan & Leonid Petrov *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1190,7 +1190,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	if(nTone == 0)
 	{
 		free(pcalSourceFile);
-		free(fitsbuf);
 		free(jobxref);
 		free(originalDsIds);
 

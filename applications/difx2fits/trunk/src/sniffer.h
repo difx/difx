@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2019 by Walter Brisken                             *
+ *   Copyright (C) 2008-2023 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,7 +40,7 @@ struct _Sniffer;
 
 typedef struct _Sniffer Sniffer;
 
-Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, double solint);
+Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, double solint, int writeBandpass);
 
 void deleteSniffer(Sniffer *S);
 

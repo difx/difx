@@ -6,7 +6,7 @@ import numpy as np
 program = 'apd2antenna'
 version = '0.1'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
-verdate = '20230328'
+verdate = '20230330'
 
 def usage():
 	print('%s %s  %s %s\n' % (program, version, author, verdate))
@@ -101,7 +101,7 @@ for T in times:
 		ants[d[1]] = d[3]
 	dim = len(ants)
 	try:
-		R = int(refant)
+		R = int(refant) - 1	# zero based
 	except:
 		R = ants.index(refant)
 	
