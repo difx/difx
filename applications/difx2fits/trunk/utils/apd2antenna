@@ -16,7 +16,7 @@ def usage():
 	print('This program uses linear least squares to turn a series of baseline-determined')
 	print('relay, rate, and phase values into antenna-based quantities.')
 
-def SolveClosure(M, W, R):
+def SolvePhaseClosure(M, W, R):
 	dim = len(M)
 	Ek = np.zeros(dim)
 	for k in range(dim):
@@ -26,24 +26,20 @@ def SolveClosure(M, W, R):
 	Ekl = np.zeros([dim, dim])
 	for k in range(dim):
 		for l in range(dim):
-			Ekl[k][l] = -4.0*W[k][l]*W[k][l]
+			Ekl[k][l] = 4.0*W[k][l]*W[k][l]
 		for j in range(dim):
-			Ekl[k][k] += 4.0*W[k][j]*W[k][j]
+			Ekl[k][k] -= 4.0*W[k][j]*W[k][j]
 
-	ERk = Ek.copy()
-	ERk[R] = 0.0
-
-	ERkl = Ekl.copy()
+	# constrain reference value to be zero
+	Ek[R] = 0.0
 	for j in range(dim):
-		ERkl[j][R] = 0.0
-		ERkl[R][j] = 0.0
-	ERkl[R][R] = 1.0
+		Ekl[j][R] = 0.0
+		Ekl[R][j] = 0.0
+	Ekl[R][R] = 1.0
 
-	ERklInv = np.linalg.inv(ERkl)
+	EklInv = np.linalg.inv(Ekl)
 
-	x = -np.matmul(ERklInv, ERk)
-
-	return x
+	return np.matmul(EklInv, Ek)
 	
 # Return:
 #   obsCode, times
@@ -119,7 +115,7 @@ for T in times:
 				M[a2][a1] = v
 				W[a1][a2] = w
 				W[a2][a1] = w
-			x = SolveClosure(M, W, R)
+			x = SolvePhaseClosure(M, W, R)
 			results.append(x)
 	for a in range(len(ants)):
 		line = '%s %s %s %d %s %d' % (T[0], T[1], T[2], a+1, ants[a], len(D[0][4]))

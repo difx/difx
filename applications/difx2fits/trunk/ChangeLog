@@ -7,6 +7,7 @@ Version 3.8.0
 * Sniffer: do two-pass FFT; fringe fit quality seems equivalent to that in AIPS now  
 * Add external utility (apd2antenna) that converts .apd file into antenna-based quantities
 * Sniffer: option to write out bandpass
+* Add external utility (bp2antenna) that converts .bandpass file into antenna-based quantities
 
 Version 3.7.0
 * Post DiFX-2.6
