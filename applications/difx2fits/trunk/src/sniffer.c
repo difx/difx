@@ -504,7 +504,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 			
 			return 0;
 		}
-		fprintf(S->bp, "# obscode:  %s\n", D->job->obsCode);
+		fprintf(S->bp, "obscode:  %s\n", D->job->obsCode);
 	}
 	
 	S->accum = (Accumulator **)malloc(S->nAntenna*sizeof(Accumulator *));
@@ -575,7 +575,7 @@ static void dumpAccumulatorBandpass(const Sniffer *S, int bbc, const Accumulator
 		bw = -bw;
 	}
 	df = bw / S->nChan;
-	fprintf(S->bp, "Bandpass %d %d %d %d %f %f %c\n", A->a1, A->a2, bbc, A->nChan, freq, bw, S->pol[bbc]);
+	fprintf(S->bp, "Bandpass %d %d %s %s %d %d %f %f %c\n", A->a1, A->a2, S->D->antenna[A->a1].name, S->D->antenna[A->a2].name, bbc, A->nChan, freq, bw, S->pol[bbc]);
 	for(c = 0; c < S->nChan; ++c)
 	{
 		fprintf(S->bp, "%f %f %f\n", freq + c*df, creal(bandpass[c])*scale, cimag(bandpass[c])*scale);
