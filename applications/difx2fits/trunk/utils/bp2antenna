@@ -4,20 +4,17 @@ from sys import argv, exit
 from math import log, exp, sin, cos, sqrt, atan2, pi
 import numpy as np
 
-# TODO:
-# * fix Low Pass Filter "cutoff"
-
 program = 'bp2antenna'
 version = '0.2'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
-verdate = '20230420'
+verdate = '20230424'
 
 def usage():
 	print('%s %s  %s %s\n' % (program, version, author, verdate))
 	print('Usage: %s <bandpass file> <refant> [ <LPF> [ <pcaldata> ] ]\n' % program)
 	print('<bandpass file> is produced by difx2fits when run with the --bandpass option\n')
 	print('<refant> is the reference antenna to use; either a 1-based number or antenna code.  If negative, a prescription will be used that makes the average phase across all antenans to be zero at each frequency.\n')
-	print('<LPF> allows the bandpass phases to be low-pass filtered as a means of smoothing them. (currently somewhat broken)\n')
+	print('<LPF> [MHz] allows the bandpass phases to be low-pass filtered as a means of smoothing them.\n')
 	print('<pcaldata> is the .pcal_bandpass file created by pcalanal .\n')
 	
 
@@ -71,7 +68,7 @@ def SolveAmpClosure(M, W):
 	return x
 
 # return obscode, [record], nAnt, bbcs
-# record = [a1_num, a2_num, a1_name, a2_name, bbc, freq, bw, pol, freq[], amp[], phase[]
+# record = [a1_num, a2_num, a1_name, a2_name, bbc, freq, bw, pol, freqMHz[], amp[], phaseRad[]
 def loadBP(filename):
 	data = open(filename).readlines()
 	nAnt = 0
@@ -122,8 +119,9 @@ def loadBP(filename):
 			
 	return obscode, records, nAnt, bbcs
 
-# cutoff measured as fraction of bandwidth
-def lowPassFilterPhases(x, cutoff):
+# cutoff measured in microseconds
+# bw [MHz]
+def lowPassFilterPhases(x, cutoff, bw):
 	size = len(x)
 	n = len(x[0])
 	for a in range(n):
@@ -135,7 +133,7 @@ def lowPassFilterPhases(x, cutoff):
 
 		f = np.fft.rfft(y)
 		l = len(f)
-		c = cutoff*(l-1.0)
+		c = (cutoff/bw)*(l-1.0)
 		t = c/5.0	# half of transition width
 		for i in range(l):
 			if i > c + t:
@@ -182,7 +180,7 @@ def loadPcal(filename):
 
 	return records
 
-# output (freqs, phases)
+# output (freqs [MHz], phases [rad])
 def pcalAvgPhase(pcalData, bbc):
 	x = {}
 	for rec in pcalData:
@@ -198,7 +196,6 @@ def pcalAvgPhase(pcalData, bbc):
 	phases = np.zeros(len(freqs))
 	for i in range(len(freqs)):
 		phases[i] = x[freqs[i]][0]/x[freqs[i]][1]
-		print('XX %f %f' % (freqs[i], phases[i]))
 
 	return (np.array(freqs), phases)
 
@@ -272,7 +269,8 @@ def process(records, nAnt, bbc, refant, lpf, zeroMean, pcalAvg):
 			addPcalAvg(freqs[s], phases, pcalAvg)
 		p.append(phases)
 
-	lowPassFilterPhases(p, lpf/bw)
+	if lpf > 0.0:
+		lowPassFilterPhases(p, 1.0/lpf, bw)
 
 	for ant in range(nAnt):
 		print('Bandpass %d %s %d %d %f %f %s' % (ant, antName[ant], bbc, size, freq, bw, pol))
@@ -298,7 +296,7 @@ else:
 if len(argv) > 3:
 	lpf = float(argv[3])
 else:
-	lpf = 2.0
+	lpf = 0.0
 
 if len(argv) > 4:
 	pcalData = loadPcal(argv[4])
