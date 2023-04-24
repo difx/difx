@@ -1331,6 +1331,16 @@ static int dump(Sniffer *S, Accumulator *A)
 			phase += phase2;
 			amp[bbc] = amp2;
 
+			/* keep phase within standard range */
+			if(phase > M_PI)
+			{
+				phase -= 2.0*M_PI;
+			}
+			else if(phase <= -M_PI)
+			{
+				phase += 2.0*M_PI;
+			}
+
 			if(A->bandpass)
 			{
 				addToBandpass(S, A, bbc, delay, phaseRate, delayRate, phase);
