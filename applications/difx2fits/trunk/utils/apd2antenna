@@ -6,7 +6,7 @@ import numpy as np
 program = 'apd2antenna'
 version = '0.2'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
-verdate = '20230412'
+verdate = '20230424'
 
 def usage():
 	print('%s %s  %s %s\n' % (program, version, author, verdate))
@@ -44,7 +44,7 @@ def SolvePhaseClosure(M, W, R):
 # Return:
 #   obsCode, times
 #
-# times = [intmjd, hours, source, data]
+# times = [intmjd, hours, sourceNum, sourceName, data]
 # data = [ant1, ant2, antname1, antname2, meas]  (zero-based ants)
 # meas = [delay(ns), amp, phase(rad), rate(Hz)]
 def loadAPD(filename):
@@ -56,22 +56,23 @@ def loadAPD(filename):
 		print('Unrecognized APD file format')
 		return None, None
 	
-	currentTime = [-1.0, -1.0, []]
+	currentTime = [-1, -1.0, 1, '', []]
 	times = []
 	for d in data[1:]:
 		s = d.strip().split()
-		intmjd = s[0]
-		hour = s[1]
-		if intmjd != currentTime[0] or hour != currentTime[1] or s[3] != currentTime[2]:
-			currentTime = [intmjd, hour, s[3], []]
+		intmjd = int(s[0])
+		hour = float(s[1])
+		srcNum = int(s[2])
+		if intmjd != currentTime[0] or hour != currentTime[1] or srcNum != currentTime[2]:
+			currentTime = [intmjd, hour, srcNum, s[3], []]
 			times.append(currentTime)
 		data = [int(s[4])-1, int(s[5])-1, s[6], s[7], []]
-		currentTime[3].append(data)
+		currentTime[4].append(data)
 		n = int(s[8])
 		for i in range(n):
 			meas = [float(s[9+4*i]), float(s[10+4*i]), float(s[11+4*i]), float(s[12+4*i])]
 			data[4].append(meas)
-	
+
 	return obscode, times
 
 
@@ -88,7 +89,7 @@ refant = argv[2] # zero-based
 print('obscode:  %s' % obscode)
 
 for T in times:
-	D = T[3]
+	D = T[4]
 	maxAnt = 0
 	for d in D:
 		if d[0] > maxAnt:
@@ -127,7 +128,7 @@ for T in times:
 	for a in range(len(ants)):
 		if len(results) != 3*len(D[0][4]):
 			continue
-		line = '%s %s %s %d %s %d' % (T[0], T[1], T[2], a+1, ants[a], len(D[0][4]))
+		line = '%s %s %d %s %d %s %d' % (T[0], T[1], T[2], T[3], a+1, ants[a], len(D[0][4]))
 		for x in results:
 			line += ' %f' % x[a]
 		print(line)
