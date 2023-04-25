@@ -13,6 +13,40 @@ File names beginning with a period (e.g., {\tt .acb}) represent file name extens
 
 
 
+% .aapd -----------------------------------------------------------------------
+
+\subsection{.aapd} \label{sec:aapd}
+
+The program {\tt apd2antenna} (see Sec.~\ref{sec:apd2antenna}) takes the {\tt .apd} file (Sec.~\ref{sec:apd} created by {\tt difx2fits} (Sec.~\ref{sec:difx2fits}) and performs least-squares fits to reference the phase, delay, and rate measurements to a specified reference antenna.
+
+The first line in the file is {\tt obscode:} followed by the observation code, e.g., {\tt MT831} .
+
+Each subsequent line has the same format with the following fields:
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+{\it MJD}            & integer $\ge 1$    & MJD day number corresponding to line \\
+{\it hour}           & $\ge 0.0$, $< 24.0$ & hour within day \\
+{\it source name}    & string             & name of source; no spaces allowed \\
+{\it antenna number} & integer $\ge 1$    & antenna table index for first antenna \\
+{\it antenna name}   & string             & name of antenna 1; no spaces allowed \\
+{\it n}$_{\mathrm{BBC}}$  & integer $\ge 1$    & number of baseband channels, $n_{\mathrm{BBC}}$ \\
+& & The next four columns are repeated $n_{\mathrm{BBC}}$ times \\
+\hline
+{\it delay}         & ns                 & the fringe fit delay \\
+{\it phase}         & degrees            & phase of fringe fit peak \\
+{\it rate}          & Hz                 & the fringe fit rate \\
+\hline
+\end{tabular}
+\end{center}
+
+
+
+
+
 % .acb ------------------------------------------------------------------------
 
 \subsection{.acb} \label{sec:acb}
@@ -155,6 +189,48 @@ Key & Units/allowed values & Comments \\
 
 
 
+
+
+
+
+% .bandpass -------------------------------------------------------------------
+
+\subsection{.bandpass} \label{sec:filebandpass}
+
+When run with the {\tt --bandpass} option, {\tt difx2fits} will create a {\tt .bandpass} file.
+The data in this file is created after applying the results of the fringe fit process and then averaging over all data.
+This option should only be used when it is expected that all of the data being processed is on a source strong enough for valid fringe fit solutions.
+The contents of the file complex-valued bandpasses determined on each of the baselines.
+In its current form (2023/04/24) only cross-correlations are considered, but the option remains open to write real-valued autocorrelations as well.
+
+It is possible that line comments, starting with \#, are present in the file.
+
+The first line of the file is {\tt obscode:} followed by the project code.
+
+A header line starting with {\tt Bandpass} will signify the start of the data for one baseline for one baseband channel.
+Such a line has exactly ten space-separated fields:
+\begin{enumerate}
+  \item The keyword {\tt Bandpass}
+  \item Zero-based antenna number for first antenna
+  \item Zero-based antenna number for second antenna
+  \item Uppercase antenna code for first antenna
+  \item Uppercase antenna code for second antenna
+  \item Baseband channel number (zero-based)
+  \item Number of points in the bandpass
+  \item Signed Sum of Local Oscillator (SSLO) for the baseband channel frequency (MHz)
+  \item Baseband channel bandwidth (MHz)
+  \item Polarization (typically {\tt R}, {\tt L}, {\tt H}, or {\tt V})
+\end{enumerate}
+
+Following a header line should be the specified number of data lines, each with three space-separated values:
+\begin{enumerate}
+  \item Sky frequency (MHz)
+  \item Real part of bandpass at this frequency
+  \item Imaginary part of bandpass at this frequency
+\end{enumerate}
+
+Note that the bandpass is represented as the measurements.
+The correction factor to flatten the bandpass would be the complex-valued inverse of these measurements.
 
 
 

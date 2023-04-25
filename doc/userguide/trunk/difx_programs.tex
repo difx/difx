@@ -55,6 +55,31 @@ The code for these programs can be made available upon request.
 
 
 
+% apd2antenna -----------------------------------------------------------------
+
+\subsection{apd2antenna {\small $\mathrm{(package: difx2fits)}$}} \label{sec:apd2antenna}
+
+Python program {\tt apd2antenna} will read a {\tt .apd file} (see Sec.~\ref{sec:apd}), which stores baseline-based fringe-fit solutions, and writes to {\tt stdout} an antenna-based set of fringe-fit values.
+These are determined through a least-squares fit.
+A reference antenna must be specfied.
+
+\begin{itemize}
+\item[] Usage: {\tt apd2antenna} {\em apdFile refAnt}
+\item[] {\em apdFile} is a {\tt .apd} file (\S\ref{sec:apd}), created by {\tt difx2fits}
+\item[] {\em refAnt} is a 1-based number or text string indicating the reference antenna to be used
+\item[] Example: {\tt apd2antenna DQ1206.bandpass 2} 
+\end{itemize}
+
+A reference antenna is required as the least-squares solution is ill-determined otherwise.
+The reference antenna has its delay, rate, and phase set to zero in the process.
+
+The output of this program, which is sent to {\tt stdout} is documented in Sec.~\ref{sec:aapd}.
+It is conventional to redirect the output of this program to a file ending in {\tt .aapd} .
+
+
+
+
+
 % avgDiFX ---------------------------------------------------------------------
 
 \subsection{avgDiFX {\small $\mathrm{(package: difxio)}$}} \label{sec:avgDiFX}
@@ -505,6 +530,7 @@ As the visibility file ({\tt .difx}) is read, any records that are all zero are 
 \item[] {\tt --bin} {\em b} : Select on this pulsar bin number
 \item[] {\tt --phasecentre} {\em p} : (U.S.\ spelling okay too) Create a FITS file for all the {\em p}$^{\rm th}$ phase centers (default 0)
 \item[] {\tt --override-version} : ignore difx version clashes
+\item[] {\tt --bandpass} : write the {\tt .bandpass} file (see Sec.~\ref{sec:filebandpass})
 \item[] {\tt -m} {\em nJob} or {\tt --max-jobs} {\em nJob} : split into more FITS files after reaching {\em nJob} input files.
 \item[] {\tt --eop-merge-mode} {\em mode} : sets conditions for allowing jobs with different EOPs to be merged or not; options are {\tt strict} (default), {\tt drop}, {\tt relaxed}
 \item[] {\tt --clock-merge-mode} {\em mode} : sets conditions for allowing jobs with different clock models to be merged or not; options are {\tt strict} (default) or {\tt drop}
