@@ -67,7 +67,7 @@ A reference antenna must be specfied.
 \item[] Usage: {\tt apd2antenna} {\em apdFile refAnt}
 \item[] {\em apdFile} is a {\tt .apd} file (\S\ref{sec:apd}), created by {\tt difx2fits}
 \item[] {\em refAnt} is a 1-based number or text string indicating the reference antenna to be used
-\item[] Example: {\tt apd2antenna DQ1206.bandpass 2} 
+\item[] Example: {\tt apd2antenna DQ1206.apd 2} 
 \end{itemize}
 
 A reference antenna is required as the least-squares solution is ill-determined otherwise.
@@ -94,6 +94,36 @@ Certain pulsar processing may benefit from this capability.
 \item[] Usage: {\tt avgDiFX} {\em configFile1 configFile2 outputConfigFile}
 \item[] Example: {\tt avgDiFX pass1\_01.input pass2\_01.input output\_01.input} 
 \end{itemize}
+
+
+
+% bp2antenna ------------------------------------------------------------------
+
+\subsection{bp2antenna {\small $\mathrm{(package: difx2fits)}$}} \label{sec:bp2antenna}
+
+Python program {\tt bp2antenna} will read a {\tt .bandpass file} (see Sec.~\ref{sec:filebandpass}), which stores baseline-based bandpass solutions determined by {\tt difx2fits}, and writes to {\tt stdout} an antenna-based set of bandpasses.
+These are determined through a least-squares fit separately to phase and amplitude.
+This program requests a reference antenna be provided.
+This antenna's phases are fixed to be zero and all other antennas' phases are determined relative to that antenna.
+If a negative number is provided for the reference antenna, the antenna phases will be adjusted after antenna-based solutions are found such that the average bandpass phase at each frequency is zero.
+The bandpass can be smoothed using the low-pass filter {\tt LPF} option.
+The value to be provided is measured in MHz; bandpass features smaller than this are smoothed out.
+Optionally a pulse cal data file (determined by non-DiFX program pcalanal) can be applied to create ``absolute phase'' antenna-based bandpasses.
+This feature is experimental.
+
+\begin{itemize}
+\item[] Usage: {\tt bp2antenna} {\em bandpassFile refAnt} $[$ {\em LPF} $[$ {\em pcalFile} $]$ $]$
+\item[] {\em bandpassFile} is a {\tt .bandpass} file (\S\ref{sec:filebandpass}), created by {\tt difx2fits}
+\item[] {\em refAnt} is a 1-based number or text string indicating the reference antenna to be used
+\item[] {\em LPF} is the low pass filter parameter, measured in MHz
+\item[] {\em pcalFile} contains pulse cal phases after removing dominant delays (FIXME: to be documented...)
+\item[] Example: {\tt bp2antenna DQ1206.bandpass 2} 
+\end{itemize}
+
+The output of this program, which is sent to {\tt stdout} is documented in Sec.~\ref{sec:abp}.
+It is conventional to redirect the output of this program to a file ending in {\tt .abp} .
+
+
 
 
 

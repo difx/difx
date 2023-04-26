@@ -47,6 +47,14 @@ Key & Units/allowed values & Comments \\
 
 
 
+% .abp ------------------------------------------------------------------------
+
+\subsection{.abp} \label{sec:abp}
+
+
+
+
+
 % .acb ------------------------------------------------------------------------
 
 \subsection{.acb} \label{sec:acb}
@@ -216,13 +224,13 @@ Such a line has exactly ten space-separated fields:
   \item Uppercase antenna code for first antenna
   \item Uppercase antenna code for second antenna
   \item Baseband channel number (zero-based)
-  \item Number of points in the bandpass
+  \item Number of points in the bandpass, $N_{\rm point}$
   \item Signed Sum of Local Oscillator (SSLO) for the baseband channel frequency (MHz)
   \item Baseband channel bandwidth (MHz)
   \item Polarization (typically {\tt R}, {\tt L}, {\tt H}, or {\tt V})
 \end{enumerate}
 
-Following a header line should be the specified number of data lines, each with three space-separated values:
+Following a header line should be the specified number, $N_{\rm point}$, of data lines, each with three space-separated values:
 \begin{enumerate}
   \item Sky frequency (MHz)
   \item Real part of bandpass at this frequency
