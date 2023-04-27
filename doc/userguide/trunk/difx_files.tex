@@ -51,6 +51,39 @@ Key & Units/allowed values & Comments \\
 
 \subsection{.abp} \label{sec:abp}
 
+When run with the {\tt --bandpass} option, {\tt difx2fits} will create a {\tt .bandpass} file.
+This file can be run through {\tt bp2antenna} (Sec.~\ref{sec:bp2antenna} to convert the baseline-based bandpasses to antenna-based bandpasses.
+
+It is possible that line comments, starting with \#, are present in the file.
+
+The first line of the file is {\tt obscode:} followed by the project code.
+
+A header line starting with {\tt Bandpass} will signify the start of the data for one antenna for one baseband channel.
+Such a line has exactly eight space-separated fields:
+\begin{enumerate}
+  \item The keyword {\tt Bandpass}
+  \item Zero-based antenna number for the antenna
+  \item Uppercase antenna code for the antenna
+  \item Baseband channel number (zero-based)
+  \item Number of points in the bandpass, $N_{\rm point}$
+  \item Signed Sum of Local Oscillator (SSLO) for the baseband channel frequency (MHz)
+  \item Baseband channel bandwidth (MHz)
+  \item Polarization (typically {\tt R}, {\tt L}, {\tt H}, or {\tt V})
+\end{enumerate}
+
+Following a header line should be the specified number, $N_{\rm point}$, of data lines, each with three space-separated values:
+\begin{enumerate}
+  \item Sky frequency (MHz)
+  \item Real part of bandpass at this frequency
+  \item Imaginary part of bandpass at this frequency
+\end{enumerate}
+
+Note that the bandpass is represented as the measurements.
+The correction factor to flatten the bandpass would be the complex-valued reciprocal of these measurements.
+
+
+
+
 
 
 
@@ -238,7 +271,7 @@ Following a header line should be the specified number, $N_{\rm point}$, of data
 \end{enumerate}
 
 Note that the bandpass is represented as the measurements.
-The correction factor to flatten the bandpass would be the complex-valued inverse of these measurements.
+The correction factor to flatten the bandpass would be the complex-valued reciprocal of these measurements.
 
 
 
