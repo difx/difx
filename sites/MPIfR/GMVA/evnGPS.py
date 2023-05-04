@@ -10,8 +10,12 @@ $ evnGPS.py Ef mar22 apr22 jun22
 '''
 
 import datetime
+import configparser, pathlib
+import getpass
 import requests
+import ftplib
 import sys
+
 from scipy.optimize import curve_fit
 
 __version__ = "1.0.0"
@@ -19,27 +23,63 @@ __author__="Jan Wagner <jwagner@mpifr.de>"
 __build__= "$Revision$"
 __date__ ="$Date$"
 
-EVN_GPS_ARCHIVE = "https://www.ira.inaf.it/vlb_arc/gps/"
+# EVN_GPS_ARCHIVE = "https://www.ira.inaf.it/vlbi_arch/gps/"	# superseded in 2023 by
+EVN_GPS_ARCHIVE = "vlbeer.ira.inaf.it"							# new FTP-only server
+USER_AUTH_FILE = '~/.vlbeer_ftp.conf'
+
 MONTH_SUBDIRS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
 
 
-def getGPSLog(station, month_year):
+def getCredentials(configfile: str = USER_AUTH_FILE):
+	'''
+	Load FTP user name and password (plain text...) from a config file
+	'''
+
+	config = configparser.ConfigParser()
+	config.optionxform = lambda option: option	# Preserve case
+	configfullpath = pathlib.PosixPath(configfile).expanduser()  # turn ~ into a full path, since Python ConfigParser doesn't cope with ~/<file>
+
+	config.read(configfullpath)
+
+	if 'ftp' in config.sections() and all(key in ['User','Password'] for (key,value) in config.items('ftp')):
+		user = config['ftp'].get('User')
+		passwd = config['ftp'].get('Password')
+	else:
+		print('Config file %s not found, or lacks section [ftp] with both User = ... and Password = ...' % (configfile))
+		user = input("User (most likely evn):")
+		passwd = getpass.getpass("Password for {:}: ".format(user))
+
+	return user, passwd
+
+
+def fetchGPSLogData(station, month_year):
 	'''
 	Download GPS log of station (2-letter ID) of a certain  month-year (e.g. oct21)
 	'''
 
-	remotefile = EVN_GPS_ARCHIVE + month_year.lower() + "/gps." + station.lower()
-	remotedata = requests.get(remotefile, verify=True)
+	## HTTPS, server no longer in use due to break-in (late 2022)
+	# remotefile = EVN_GPS_ARCHIVE + month_year.lower() + "/gps." + station.lower()
+	# remotedata = requests.get(remotefile, verify=True)
+	# lines = [line.decode('ascii').strip() for line in remotedata.iter_lines()]
+	# if remotedata.status_code != 200:
+	#	print('Could not access %s - Error %d' % (remotefile,remotedata.status_code))
+	#	return mjds,offsets,rmses
+
+	## FTP, replacement server (2023 yet does not do HTTP(S)...)
+	remotefile = 'gps/' + month_year.lower() + "/gps." + station.lower()
+
+	ftp = ftplib.FTP(EVN_GPS_ARCHIVE)
+	ftp.connect()
+	ftpuser, ftppasswd = getCredentials()
+	ftp.login(ftpuser, ftppasswd)
+
+	lines = []
+	ftp.retrlines('RETR ' + remotefile, lines.append)
 
 	mjds, offsets, rmses = [], [], []
 
-	if remotedata.status_code != 200:
-		print('Could not access %s - Error %d' % (remotefile,remotedata.status_code))
-		return mjds,offsets,rmses
+	for line in lines:
 
-	for line in remotedata.iter_lines():
-
-		line = line.decode('ascii').strip()
 		if not line or line[0]=='#':
 			continue
 
@@ -59,7 +99,7 @@ def getGPSLogs(station, month_year_list):
 	mjds, offsets, rmses = [], [], []
 
 	for month_year in sys.argv[2:]:
-		ep_mjds, ep_offsets, ep_rmses = getGPSLog(station, month_year)
+		ep_mjds, ep_offsets, ep_rmses = fetchGPSLogData(station, month_year)
 		mjds += ep_mjds
 		offsets += ep_offsets
 		rmses += ep_rmses
@@ -105,18 +145,10 @@ if __name__ == "__main__":
 		sys.exit(-1)
 
 	station = sys.argv[1].lower()
+
 	if len(station) != 2:
 		print('Error: Station must be a 2-letter code, like Ef')
 		sys.exit(-1)
-
-	if False:
-		# Removed: User input for 'apr22' -like observing month string
-		now = datetime.date.today()
-		def_year, def_month = now.year % 100, now.month
-		year = input("Year, last two digits [%d]: " % (def_year % 100)) or '%d'%(def_year)
-		month = input("Month (1-12) [%d]: " % (def_month)) or '%d'%(def_month)
-		month_year = MONTH_SUBDIRS[int(month)-1] + year
-		mjds,offsets,rmses = getGPSLog(station,month_year)
 
 	if True:
 		mjds, offsets, rmses = getGPSLogs(station, sys.argv[2:])
