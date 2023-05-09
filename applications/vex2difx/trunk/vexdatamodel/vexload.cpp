@@ -1290,6 +1290,10 @@ static int collectIFInfo(VexSetup &setup, VexData *V, Vex *v, const char *antDef
 		{
 			vif.phaseCalIntervalMHz = 200.0f;
 		}
+		else if(fabs(phaseCal-77777000) < 1.0)
+		{
+			vif.phaseCalIntervalMHz = 77.777f;
+		}
 		else
 		{
 			std::cerr << "Warning: Unsupported pulse cal interval of " << (phaseCal/1000000.0) << " MHz requested for antenna " << antDefName << "." << std::endl;

@@ -655,7 +655,7 @@ static void applyCorrParams_PulseCal(VexData *V, const CorrParams &params, unsig
 		if(as->toneSelection == ToneSelectionNone)
 		{
 			// change to having no injected tones
-			V->setPhaseCalInterval(A->name, -1);
+			V->setPhaseCalInterval(A->name, -1.0f);
 
 			continue;
 		}

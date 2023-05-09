@@ -61,7 +61,7 @@ public:
 	double getAverageSampleRate() const;	/* samples per second */
 	void swapPolarization(const std::string &antName);
 	void setSampling(const std::string &antName, unsigned int streamId, enum SamplingType dataSampling);
-	void setPhaseCalInterval(const std::string &antName, int phaseCalIntervalMHz);
+	void setPhaseCalInterval(const std::string &antName, float phaseCalIntervalMHz);
 	void selectTones(const std::string &antName, enum ToneSelection selection, double guardBandMHz);
 	void generateRecordChans();
 	bool hasDuplicateBands() const;

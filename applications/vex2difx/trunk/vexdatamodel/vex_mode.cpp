@@ -447,7 +447,7 @@ void VexMode::setSampling(const std::string &antName, unsigned int streamId, enu
 	}
 }
 
-void VexMode::setPhaseCalInterval(const std::string &antName, int phaseCalIntervalMHz)
+void VexMode::setPhaseCalInterval(const std::string &antName, float phaseCalIntervalMHz)
 {
 	std::map<std::string,VexSetup>::iterator it = setups.find(antName);
 	if(it != setups.end())
