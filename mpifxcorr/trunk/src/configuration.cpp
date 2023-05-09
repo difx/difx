@@ -3097,12 +3097,15 @@ bool Configuration::consistencyCheck()
           f1 -= freqtable[freq1index].bandwidth;
         if(freqtable[freq2index].lowersideband)
           f2 -= freqtable[freq2index].bandwidth;
-        if(freqtable[freq1index].bandedgefreq == freqtable[freq2index].bandedgefreq && freqtable[freq1index].bandwidth == freqtable[freq2index].bandwidth && freqtable[freq1index].npcalsout == freqtable[freq2index].npcalsout)
+        if(freqtable[freq1index].bandedgefreq == freqtable[freq2index].bandedgefreq && freqtable[freq1index].bandwidth == freqtable[freq2index].bandwidth)
         {
           //note: Check for different npcalsout is likely to be a good indicator that the freqs are indeed different, but this is not a strictly correct test.  Better would be to store all the pulse cals to extract and do a detailed comparison.  Very low priority.
           //different freqs, same value??
-          if(mpiid == 0) //only write one copy of this error message
-            cwarn << startl << "Baseline " << i << " frequency " << j << " points at two different frequencies that are apparently identical - this is not wrong, but strange (unless PCal intervals differ).  Check the input file" << endl;
+          if(freqtable[freq1index].npcalsout == freqtable[freq2index].npcalsout)
+          {
+            if(mpiid == 0) //only write one copy of this error message
+              cwarn << startl << "Baseline " << i << " frequency " << j << " points at two different frequencies that are apparently identical - this is not wrong, but strange (unless PCal intervals differ).  Check the input file" << endl;
+          }
         }
         else if(f1 == f2 && freqtable[freq1index].bandwidth == freqtable[freq2index].bandwidth)
         {
@@ -3125,7 +3128,7 @@ bool Configuration::consistencyCheck()
         }
       }
       //catch the case of LSB against LSB where there is a USB somewhere
-      else if(freqtable[freq1index].lowersideband && freqtable[freq2index].correlatedagainstupper)
+      else if(freqtable[freq1index].lowersideband && freqtable[freq2index].correlatedagainstupper) /* FIXME: Check the if-else nesting level, here we have freq1index==freq2index, this test might be at the wrong spot? */
       {
         baselinetable[i].oddlsbfreqs[j] = 3; //both are lower, but still need to be shifted
       }
