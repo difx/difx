@@ -14,15 +14,15 @@ void usage()
 {
 	printf(
 		"\n"
-		"Usage: m5pcal_test [--conj] <infile> <format> <if_nr> <spacing Hz> <offset from 0Hz in Hz> <0,S:ssb | 1,D:dsb> <0,U:usb | 1,L:lsb>\n\n"
+		"Usage: m5pcal_test [--conj] <infile> <format> <if_nr> <spacing MHz> <offset from 0Hz in MHz> <0,S:ssb | 1,D:dsb> <0,U:usb | 1,L:lsb>\n\n"
 		"Optional arguments:\n"
 		"   --conj   Conjugate the raw signal (invert the sideband) before phase-cal extraction. For complex data only.\n\n"
 		"Arguments:\n"
 		"   infile   Input file\n"
 		"   format   Data format for mark5access decoder library, <FORMAT>-<Mbps>-<nchan>-<nbit>\n"
 		"   if_nr    Zero based index of the IF from which to extract phase-cal\n"
-		"   spacing  Phase cal tone spacing in Hz\n"
-		"   offset   Phase cal tone offset from band edge; is translated into FFT bin number interally\n"
+		"   spacing  Phase cal tone spacing in MHz\n"
+		"   offset   Phase cal tone offset from band edge in MHz; is translated into FFT bin number interally\n"
 		"   bandtype Either single sideband (0 or S), or double sideband (1 or D)\n"
 		"   sideband Either upper sideband (0 or U), or lower sideband (1 or L)\n\n"
 	);
