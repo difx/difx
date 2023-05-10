@@ -76,7 +76,7 @@ void summarizeFile(const char *fileName, const char* filePattern, char *vsn, cha
 {
     uint64_t filesize;
     uint64_t datasize = 0;
-    uint64_t blocksize;
+    uint64_t blocksize = 0;
     uint64_t maxblocksize;
     int packetformat;
     int packetsize;
@@ -119,8 +119,8 @@ void summarizeFile(const char *fileName, const char* filePattern, char *vsn, cha
             m6header = (Mark6Header*)readbuf;
             maxblocksize = m6header->block_size;
             packetformat = m6header->packet_format;
-	    packetsize = m6header->packet_size;
-	    m6blockheadersize = mark6BlockHeaderSize(m6header->version);
+			packetsize = m6header->packet_size;
+            m6blockheadersize = mark6BlockHeaderSize(m6header->version);
             stat(pattern, &st);
                 
             mjd1 = 0;
@@ -155,7 +155,7 @@ void summarizeFile(const char *fileName, const char* filePattern, char *vsn, cha
 		}
             }
             // vdif format
-            else if(packetformat == 0)
+            else if(packetformat == 0 && packetsize > 0)
             {
                 sum.frameSize = packetsize;
                 r = determinevdifframeoffset(readbuf, READBUF_SIZE, packetsize);
@@ -230,8 +230,14 @@ void summarizeFile(const char *fileName, const char* filePattern, char *vsn, cha
 	        mjdend = mjd2;
 	    }
 
-            stat(pattern, &st);
-            filesize = st.st_size;
+		if (packetsize <= 0)
+		{
+			printf("Skipping fragment file %s due to too short packet size %d\n", pattern, packetsize);
+			continue;
+		}
+
+		stat(pattern, &st);
+		filesize = st.st_size;
 	    blocksize = maxblocksize - ((maxblocksize - m6blockheadersize) % packetsize);
 	    numblocks = (filesize - m6headersize) / blocksize;
 	    if(((filesize - m6headersize) % blocksize) != 0)
