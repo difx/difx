@@ -1,6 +1,11 @@
+v2.0.4
+- added options for variable table names
+- starting another round of reconciliation
+
 v2.0.3
 - Synchronized ALMA/non-ALMA buildables; python codes still not unified
 - This version appears to reproduce the ALMA behaviors of v1.8.5
+- This version pushed to DiFX 2.8 and tagged as DiFX 2.8.1
 
 v2.0b
 - Improved the GCPFF algorithm. Implemented the interface for CASA 6.
