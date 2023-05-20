@@ -74,6 +74,20 @@ try:
             del calgains[3+int(g)]
         print('Revised calgains list is:')
         for c in calgains: print('    ', c)
+    elif type(gainDel) == str and gainDel != '':
+        try:
+            g = int(gainDel)
+            what = calgains[3+g]
+            del calgains[3+g]
+            print('Deleted %s' % what)
+        except:
+            try:
+                g = gdblst.index(gainDel)
+                what = calgains[3+g]
+                del calgains[3+g]
+                print('Deleted %s' % what)
+            except:
+                raise Exception('gainDel arg %s not understood'%gainDel)
     elif gainDel == '':
         print('No gain deletion requested')
     else:

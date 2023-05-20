@@ -78,13 +78,24 @@ def parseOptions():
             'label.  For v4-v11 and subsequent the label is just the '
             'uid name (and/or other identifiers).   The default is "v8". '
             'Examine the script for the details....')
+    parser.add_argument('-Y', '--XYtable', dest='XYtable',
+        default='XY0.APP', metavar='STRING',
+        help='Normally the XY phase is captured in ...XY0.APP, but '
+        'if an alternate table is needed, you can use, e.g. XY0kcrs.APP')
+    parser.add_argument('-B', '--BPzphs', dest='BPzphs',
+        default='bandpass-zphs', metavar='STRING',
+        help='Normally bandpass-zphs, but bandpassAPP or other is '
+        'sometimes delivered with QA2; this lets you use it directly.')
     # about making a copy
     parser.add_argument('-c', '--copy', dest='copy',
         default='', metavar='STRING',
         help='prefix to use for the copy of the QA2 tables')
     parser.add_argument('-k', '--nuke', dest='nuke',
         default=False, action='store_true',
-        help='if set, delete any tables bearing the copy name')
+        help='if set, delete (at the start) any tables bearing the copy name')
+    parser.add_argument('-K', '--tidy', dest='tidy',
+        default=False, action='store_true',
+        help='if set, delete (at when done) any table links created')
     parser.add_argument('-b', '--begin', dest='begin',
         default='', metavar='TIME',
         help='something timelike for qa.time() for start of interval')
@@ -123,27 +134,27 @@ def calibrationChecks(o):
                'flux_inf', 'phase_int.APP', 'XY0.APP' ]
     ### production default
     elif o.qa2 == 'v4' or o.qa2 == 'v8': # v3+D-APP/G-APP
-        o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', 'bandpass-zphs',
-               'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.APP' ]
+        o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', o.BPzphs,
+               'flux_inf.APP', 'phase_int.APP', o.XYtable, 'Gxyamp.APP' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
         if o.qa2 == 'v8': o.qal[5] += '.XYsmooth'
     ### or other desperation plans
     elif o.qa2 == 'v5' or o.qa2 == 'v9': # v3+D-ALMA/G-ALMA
-        o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', 'bandpass-zphs',
-               'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.ALMA' ]
+        o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', o.BPzphs,
+               'flux_inf.APP', 'phase_int.APP', o.XYtable, 'Gxyamp.ALMA' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
         if o.qa2 == 'v9': o.qal[5] += '.XYsmooth'
     elif o.qa2 == 'v6' or o.qa2 == 'v10': # v3+D-ALMA/G-APP
-        o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', 'bandpass-zphs',
-               'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.APP' ]
+        o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', o.BPzphs,
+               'flux_inf.APP', 'phase_int.APP', o.XYtable, 'Gxyamp.APP' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
         if o.qa2 == 'v10': o.qal[5] += '.XYsmooth'
     elif o.qa2 == 'v7' or o.qa2 == 'v11': # v3+D-APP/G-ALMA
-        o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', 'bandpass-zphs',
-               'flux_inf.APP', 'phase_int.APP', 'XY0.APP', 'Gxyamp.ALMA' ]
+        o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', o.BPzphs,
+               'flux_inf.APP', 'phase_int.APP', o.XYtable, 'Gxyamp.ALMA' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
         if o.qa2 == 'v11': o.qal[5] += '.XYsmooth'
@@ -156,6 +167,7 @@ def calibrationChecks(o):
     o.qa2_dict = dict(zip(keys,o.qal))
     o.qa2_full = dict()
     o.qa2_copy = dict()
+    o.symlinks = list()
     for key in o.qa2_dict:
         d = 'programmer-error'
         c = ''
@@ -167,6 +179,7 @@ def calibrationChecks(o):
             if o.ldir != '' and os.path.exists(o.ldir):
                 os.symlink(o.ldir + '/' + d, d)
                 print('Linked %s from %s' % (d, o.ldir))
+                if o.tidy: o.symlinks.append('rm ' + d)
         if not os.path.exists(d) or not os.path.isdir(d):
             raise Exception('Required directory %s is missing' % d)
         elif o.verb:
@@ -250,8 +263,12 @@ def checkTemplate(key, caltab):
     key='%s'
     tab='%s'
     print('Table (%%s) %%s' %% (key,tab))
-    cnames, nmrows, tcname, tshape, tfirst, tfinal, tm_col = calopen(key, tab)
+    (cnames, nmrows, tcname, tshape, tfirst, tfinal, tm_col, varcol
+        ) = calopen(key, tab)
     for line in textwrap.wrap('  columns: %%s' %% str(cnames),
+        break_long_words=False, subsequent_indent='    '):
+            print(line)
+    for line in textwrap.wrap('  varcols: %%s' %% str(varcol),
         break_long_words=False, subsequent_indent='    '):
             print(line)
     if tcname in cnames:
@@ -379,7 +396,8 @@ def duTemplate(key, qa2full, qa2copy):
 
 def getInputTemplate(copy, begin, end, qa2full, qa2copy, nuke):
     '''
-    This is the input script with %-able adjustments.
+    Here is the top part of the input script with %-able adjustments.
+    Below, per-table commands will be added with checkTemplate()
     '''
     template='''    #!/usr/bin/python
     # This file contains python commands that may either be fed
@@ -410,6 +428,9 @@ def getInputTemplate(copy, begin, end, qa2full, qa2copy, nuke):
     def calopen(key,tab):
         tb.open(tab)
         cnames = tb.colnames()
+        varcol = list()
+        for cn in cnames:
+            if tb.isvarcol(cn): varcol.append(cn)
         nmrows = tb.nrows()
         if key in 'bdgpxy':
             tcname = 'TIME'
@@ -429,7 +450,7 @@ def getInputTemplate(copy, begin, end, qa2full, qa2copy, nuke):
             tm_sort = sorted(tm_col)
             tfirst = float(tm_sort[0])
             tfinal = float(tm_sort[-1])
-        return cnames, nmrows, tcname, tshape, tfirst, tfinal, tm_col
+        return (cnames, nmrows, tcname, tshape, tfirst, tfinal, tm_col, varcol)
 
     def strToTime(targ):
         tm = float(qa.convert(targ, 's')['value'])
@@ -501,7 +522,7 @@ def executeCasa(o):
     cmd3 = '[ -d casa-logs ] || mkdir casa-logs'
     cmd4 = 'mv casa*.log ipython-*.log casa-logs 2>&-'
     cmd5 = 'mv %s %s casa-logs 2>&-' % (o.input, o.output)
-    cmd6 = ' '
+    cmd6 = 'true'
     casanow = o.exp + '-casa-logs.' + datetime.datetime.now().isoformat()[:-7]
     if o.run:
         if os.system(cmd1):
@@ -526,7 +547,8 @@ def executeCasa(o):
         for m in misc:
             if os.path.exists(m):
                 print('caching',m)
-                cmd6 += '[ -f %s ] && mv %s casa-logs && echo %s ;' % (m,m,m)
+                cmd6 += (' && [ -f %s ] && mv %s casa-logs && echo %s ;' %
+                    (m,m,m))
         if os.system(cmd3 + ' ; ' + cmd4 + ' ; ' + cmd5):
             logerr = True
         if os.system(cmd6):
@@ -536,9 +558,13 @@ def executeCasa(o):
         if logerr: print('  There was a problem collecting CASA logs')
         if mscerr: print('  There was a problem collecting misc trash')
         os.rename('casa-logs', casanow)
+        for tidycmd in o.symlinks: os.system(tidycmd)
+        print("Table details are in\n  %s/%s" % (casanow, o.output))
+        if o.verb:
+            os.system("ls -s %s/%s" % (casanow, o.output))
     else:
         for m in misc:
-            cmd6 += '[ -f %s ] && mv %s casa-logs ;' % (m,m)
+            cmd6 += ' && [ -f %s ] && mv %s casa-logs ;' % (m,m)
         print('')
         print('You can run casa manually with input from ' + o.input)
         print('Or just do what this script would do now, viz: ')
@@ -550,6 +576,8 @@ def executeCasa(o):
         print('    ' + cmd5)
         print('    ' + cmd6)
         print('    mv casa-logs ' + casanow)
+        for tidycmd in o.symlinks:
+            print('    ' + tidycmd)
         print('')
 
 #

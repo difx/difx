@@ -93,6 +93,10 @@ def parseOptions():
         default='XY0.APP', metavar='STRING',
         help='Normally the XY phase is captured in ...XY0.APP, but '
         'if an alternate table is needed, you can use, e.g. XY0kcrs.APP')
+    secondy.add_argument('-B', '--BPzphs', dest='BPzphs',
+        default='bandpass-zphs', metavar='STRING',
+        help='Normally bandpass-zphs, but bandpassAPP or bandpass is '
+        'sometimes delivered with QA2; this lets you use it directly.')
     secondy.add_argument('-P', '--parallel', dest='parallel',
         default=6, metavar='INT', type=int,
         help='Number of jobs to run in parallel. '
@@ -287,26 +291,26 @@ def calibrationChecks(o):
         tbwarn = True
     ### production default
     elif o.qa2 == 'v4' or o.qa2 == 'v8': # v3+D-APP/G-APP
-        o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', 'bandpass-zphs',
+        o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', o.BPzphs,
                'flux_inf.APP', 'phase_int.APP', o.XYtable, 'Gxyamp.APP' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
         if o.qa2 == 'v8': o.qal[5] += '.XYsmooth'
     ### or other desperation plans
     elif o.qa2 == 'v5' or o.qa2 == 'v9': # v3+D-ALMA/G-ALMA
-        o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', 'bandpass-zphs',
+        o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', o.BPzphs,
                'flux_inf.APP', 'phase_int.APP', o.XYtable, 'Gxyamp.ALMA' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
         if o.qa2 == 'v9': o.qal[5] += '.XYsmooth'
     elif o.qa2 == 'v6' or o.qa2 == 'v10': # v3+D-ALMA/G-APP
-        o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', 'bandpass-zphs',
+        o.qal = ['ANTENNA', 'calappphase', 'Df0.ALMA', o.BPzphs,
                'flux_inf.APP', 'phase_int.APP', o.XYtable, 'Gxyamp.APP' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
         if o.qa2 == 'v10': o.qal[5] += '.XYsmooth'
     elif o.qa2 == 'v7' or o.qa2 == 'v11': # v3+D-APP/G-ALMA
-        o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', 'bandpass-zphs',
+        o.qal = ['ANTENNA', 'calappphase', 'Df0.APP', o.BPzphs,
                'flux_inf.APP', 'phase_int.APP', o.XYtable, 'Gxyamp.ALMA' ]
         o.conlabel = o.label + '.concatenated.ms'
         o.callabel = o.label + '.calibrated.ms'
