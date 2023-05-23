@@ -201,7 +201,7 @@ static PyObject *XPCal(PyObject *self, PyObject *args)
   Tini = 0.0;
   NEntry = 0.0;
 
-
+  Pol='R';
 // Read line by line. The frequencies of all tones will be read from the first line 
 // (i.e., when start = false).  
 
@@ -523,7 +523,7 @@ static PyObject *XPCal(PyObject *self, PyObject *args)
 	 	T = Tbuf;
 		// Time in seconds, referred to the first integration:
                 T -= Tini; T *= 86400. ;
-		i=0; j=0;
+		i=0; j=0; 
                 while(std::getline(tempStr,auxStr,' ')){
                         if (auxStr.length() > 0){
                                 switch(i){
@@ -532,6 +532,7 @@ static PyObject *XPCal(PyObject *self, PyObject *args)
                                 // (i.e., case 0, 1, 2, 3).
 
                                         case 0: nui = atof(auxStr.c_str());
+                                                Pol = 'R';
                                                 RepNu = false; // Is this tone NEW (i.e., not found in the previous times??)
                                                 if (nui<0.0){j=-1;} else {
                                                         for(j=0;j<Aux;j++){
@@ -585,6 +586,10 @@ static PyObject *XPCal(PyObject *self, PyObject *args)
 double *Phases = new double[Aux];
 double *DFreqs = new double[Aux];
 double *Rates = new double[Aux];
+double *Delays = new double[Aux];
+double *RefPhases = new double[Aux];
+double *RefFreqs = new double[Aux];
+
 
 // Auxiliary variables:
 double AvT, AvP;
@@ -660,8 +665,9 @@ for(j=0;j<Aux;j++){
   double DNu = DFreqs[1] - DFreqs[0];
 
   // Auxiliary variables to fit the group delay at each IF:
-  double FracP, IntP;
+  double FracP, IntP, fitDelay, IFPhase;
   double IFDel00, IFDel01, IFDel0, IFDel1, NtoneIF;
+  cplx64d AvPhasor;
   int iJump = 0;
 
 
@@ -693,9 +699,24 @@ for(j=0;j<Aux;j++){
       };	      
       iJump = i+1; // Now, iJump will be the index of the first tone in the NEW IF.
       IFDel0 /= NtoneIF ; IFDel1 /= NtoneIF;
+      
+      
+      // Estimate the cross-polarization tone delay for this IF:
+      fitDelay = (IFDel01 - NtoneIF*IFDel0*IFDel1)/(IFDel00 - NtoneIF*IFDel0*IFDel0);
+
+      // Estimate the cross-polarization tone phase:
+      AvPhasor = 0.0;
+      for (j=iJump; j<=i; j++){
+        AvPhasor += std::polar(1.0,(Phases[j] - fitDelay*(DFreqs[j] - IFDel0))/R2D);
+      };
+      IFPhase = std::arg(AvPhasor)*R2D;
+
+      // Store the results:
+      Delays[i] = fitDelay; RefPhases[i] = IFPhase; RefFreqs[i] = IFDel0;
+
 
       // Estimated phase of the iJump-th tone (group-delay extrapolation from the previous IF):
-      NWrap[i] = (IFDel01 - NtoneIF*IFDel0*IFDel1)/(IFDel00 - NtoneIF*IFDel0*IFDel0)*(DFreqs[i+1]-DFreqs[i]) + Phases[i]-Phases[i+1];
+      NWrap[i] = fitDelay*(DFreqs[i+1]-DFreqs[i]) + Phases[i]-Phases[i+1];
 
       // Convert this difference into an integer number of wraps:
       NWrap[i] /= 360.; FracP = modf(NWrap[i], &IntP);
@@ -731,7 +752,9 @@ for(j=0;j<Aux;j++){
   PyObject *XYnu =  PyArray_SimpleNewFromData(1, dims, NPY_FLOAT64, DFreqs);
   PyObject *XRates =  PyArray_SimpleNewFromData(1, dims, NPY_FLOAT64, Rates);
   PyObject *XAmps =  PyArray_SimpleNewFromData(1, dims, NPY_FLOAT64, PCalsAX);
-
+  PyObject *XYDels =  PyArray_SimpleNewFromData(1, dims, NPY_FLOAT64, Delays);
+  PyObject *XYPhases =  PyArray_SimpleNewFromData(1, dims, NPY_FLOAT64, RefPhases);
+  PyObject *XYFreqs =  PyArray_SimpleNewFromData(1, dims, NPY_FLOAT64, RefFreqs);
 
   // Return the 2D phase matrix (i.e., contiguous in time and frequency), if asked to:
       dims[0] = (long) NTimes[0];	  
@@ -748,7 +771,7 @@ for(j=0;j<Aux;j++){
     PyObject *PDiOutput = PyArray_SimpleNewFromData(2, dims2, NPY_FLOAT64, AllOutput);
 
     delete[] NTimes;
-    ret = Py_BuildValue("[O,O,O,d,O,O,O]",XYnu,XYadd,XRates,Tini,XAmps,TimesOutput,PDiOutput);
+    ret = Py_BuildValue("[O,O,O,O,O,O,d,O,O,O]",XYnu,XYadd,XRates,XYDels,XYPhases,XYFreqs,Tini,XAmps,TimesOutput,PDiOutput);
     return ret;
 
 
@@ -785,7 +808,7 @@ static PyObject *XPConvert(PyObject *self, PyObject *args)
   int i, j, k, nui=0.0; 
   bool isX = false, RepNu = false;
   char Pol;
-  long currP, lastP, Nbytes;
+  long currP=0, lastP, Nbytes;
 
 // Size of pcal buffer:
   int BuffSize = 1024;

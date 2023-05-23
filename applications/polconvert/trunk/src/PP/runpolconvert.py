@@ -20,7 +20,7 @@ if sys.version_info.major < 3:
 else:
     from polconvertpkg.private.task_polconvert import polconvert as polconvert
 
-pcvers='2.0.3'
+pcvers='2.0.5'
 
 # Begin by verifying everthing that should be defined at this point.
 # If we can't print something, that's probably enough for a test.

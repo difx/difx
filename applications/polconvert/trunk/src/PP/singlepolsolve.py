@@ -64,8 +64,8 @@ def parseOptions():
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     primary = parser.add_argument_group('Primary Options')
     secondy = parser.add_argument_group('Secondary Options')
-    ### develop = parser.add_argument_group(
-    ###    'Development Options (that may disappear some day)')
+    develop = parser.add_argument_group(
+        'Development Options (that may disappear some day)')
     # essential options
     primary.add_argument('-v', '--verbose', dest='verb',
         default=False, action='store_true',
@@ -87,10 +87,10 @@ def parseOptions():
         'generally not a good idea unless you are certain it will work')
     secondy.add_argument('-a', '--ant', dest='ant',
         default=1, metavar='INT', type=int,
-        help='1-based index of linear (ALMA) antenna (normally 1)')
+        help='mandatory 1-based index of linear antenna (normally 1)')
     secondy.add_argument('-L', '--lin', dest='lin',
         default='AA', metavar='SC', # 'alma'
-        help='2-letter station code (all caps) for linear pol station (AA)')
+        help='mandatory 2-letter station code (all caps) for linear pol station (AA)')
     secondy.add_argument('-I', '--indices', dest='indices',
         default='ZOOM', metavar='INDICES',
         help='comma-sep list of indices or index ranges (this-that, '
@@ -138,6 +138,20 @@ def parseOptions():
         default='1,1', metavar='LIST',
         help='comma-sep list of "solint" values; 0,...for MBD mode, '
             'C,... for BP mode (with average of C channels')
+    # developmental or convenience arguments
+    develop.add_argument('--IFlist', dest='iflist',
+        default='', metavar='LIST',
+        help='comma-sep list of frequency-table entries as found in the'
+            ' DiFX input file, which will be converted to an IF list for'
+            ' PolConvert to process.  Using this bypasses the normal logic'
+            ' that deduces this from ZOOM or TARGET bands.'
+            ' For regression testing, this may be set to "original" to'
+            ' recover the pre-Cycle7 zoom-based index deduction logic.')
+    develop.add_argument('-z', '--zmchk', dest='zmchk',
+        default=False, action='store_true',
+        help='the default (False) assumes that a PolConvert fix (to not'
+            ' crash if the IFs mentioned cannot be converted); set this'
+            ' to recover the original behavior which protects PolConvert.')
     # the remaining arguments provide the list of input files
     parser.add_argument('nargs', nargs='*',
         help='List of DiFX input job files to process')
@@ -369,14 +383,14 @@ def createCasaInput(o, joblist, caldir, workdir):
     # xyadd/xydel/xyratio are one constant for all chans of the
     # one linear antenna, but type is a string to allow other options.
     print('  .' +verb+verb+ '.\n',
-        '  ',o.nargs[0], str(joblist), caldir, workdir, '\n',
+        '  ',o.nargs, str(joblist), caldir, workdir, '\n',
         '  ',o.label, o.zfirst, o.zfinal, o.ant, o.lin, o.remote, '\n',
         '  ',o.xyadd, o.xydel, o.xyratio, o.npix,
         '  ',str(o.exAntList), str(o.exBaseLists), '\n',
         '  ',o.solve, str(o.solint), o.method, '\n',
         '  ','True', o.label, o.label)
     script = template % (verb, verb,
-        o.nargs[0], str(joblist), caldir, workdir,
+        o.nargs, str(joblist), caldir, workdir,
         o.label, o.zfirst, o.zfinal, o.ant, o.lin, o.remote,
         o.xyadd, o.xydel, o.xyratio, o.npix,
         str(o.exAntList), str(o.exBaseLists),
@@ -478,14 +492,27 @@ if __name__ == '__main__':
     checkOptions(opts)
     if opts.prep:
         runPrePolconvert(opts)
-    if opts.indices == 'ZOOM':
-        if opts.verb: print('deducing indices for ZOOM case')
-        dpc.deduceZoomIndices(opts)
+    # this is somewhat "temporary"
+    if opts.iflist == 'original':
+        print('Original zoom logic requested -- iflist ignored')
+        opts.iflist = ''
+        opts.ozlogic = True
     else:
-        if opts.verb: print('mapping antenna names and indices')
-        parseInputIndices(opts)
-        if opts.verb: print('setting up remote antenna list')
-        populateRemotelist(opts)
+        print('Using user specified iflist "',opts.iflist,'" if any')
+        opts.ozlogic = False
+    # various work in preparation for job creation and execution
+    dpc.commonInputGrokkage(opts)
+    print('CommonInputGrokkage done')
+    if dpc.useTheUserIFlist(opts):
+        print('Proceeding with the User-provide list')
+    elif dpc.deduceOutputBands(opts):
+        print('Proceeding with list from output bands')
+    elif dpc.deduceZoomIndices(opts):
+        print('Proceeding with list from zoom bands')
+    else:
+        print('Proceeding with the original zoom logic')
+        dpc.oldDeduceZoomIndices(opts)     # original derived from ZOOMs
+    print('Zoom/Output Band deductions done')
     # finally
     checkAntBase(opts)
     # run the jobs in parallel
@@ -494,7 +521,7 @@ if __name__ == '__main__':
     dpc.createCasaInputParallel(opts)
     dpc.executeCasaParallel(opts)
     if opts.verb:
-        print('\nDrivePolconvert execution is complete\n')
+        print('\nsinglepolsolve execution is complete\n')
     # explicit 0 exit
     sys.exit(0)
 

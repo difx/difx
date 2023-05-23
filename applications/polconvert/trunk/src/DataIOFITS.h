@@ -42,7 +42,7 @@ class DataIOFITS: public DataIO {
 
    ~DataIOFITS();
 
-   DataIOFITS(std::string outputfile, int Nant, int *Ants, double *doRange, bool Overwrite, bool doConj, bool doSolve, int saveSource, ArrayGeometry *Geom, bool doPar, FILE *logF);
+   DataIOFITS(std::string outputfile, int Nant, int *Ants, double *doRange, int nIF2Conv, int *IF2Conv, bool Overwrite, bool doConj, bool doSolve, int saveSource, ArrayGeometry *Geom, bool doPar, FILE *logF);
 
    bool setCurrentIF(int i);
 
@@ -89,12 +89,16 @@ class DataIOFITS: public DataIO {
     int uu, vv, ww, ss;
 
     double *Times;
-    bool doConjugate, doWriteCirc, canPlot, doParang;
+    bool doConjugate, doWriteCirc, canPlot, doParang, isTwoLinear;
     char polOrder[4], message[512];
     long jump, Nentry, djump, dsize, TotSize;
     int currIF, currBand;
+    int nDoIF;
+    int *DoIF;
     std::complex<float> *currentVis ;
     std::complex<float> *bufferVis ;
+    std::complex<float> *TwoLinearVis ;
+
     float *currentData ;
     float *bufferData ;
 

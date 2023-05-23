@@ -8,9 +8,9 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 <task type="function" name="polconvert" category="analysis">
 
-  <shortdescription>Version 2.0.3 -- Converts VLBI visibilities polarization basis.</shortdescription>
+  <shortdescription>Version 2.0.5 -- Converts VLBI visibilities polarization basis.</shortdescription>
       
-       <description>Version 2.0.3 -- Converts VLBI visibilities from mixed-polarization (linear-circular) into a circular basis. Works with single VLBI stations as well as with calibrated phased arrays (e.g., phased ALMA).</description>
+       <description>Version 2.0.5 -- Converts VLBI visibilities from mixed-polarization (linear-circular) into a circular basis. Works with single VLBI stations as well as with calibrated phased arrays (e.g., phased ALMA).</description>
 
 
 <input>

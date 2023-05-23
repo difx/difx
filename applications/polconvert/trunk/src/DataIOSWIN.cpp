@@ -1,4 +1,4 @@
-/* Copyright (C) 2013-2022 Ivan Marti-Vidal
+/* Copyright (C) 2013-2022 Ivan Marti-Vidal  
                  Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
                  Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
                  University of Valencia (Spain)  
@@ -43,6 +43,7 @@ DataIOSWIN::~DataIOSWIN() {
   free(is2orig);
   free(is1);
   free(is2);
+  free(UVDist);
   for (i=0; i<nautos; i++){
     delete[] AutoCorrs[i].AC;
   };
@@ -53,6 +54,7 @@ DataIOSWIN::~DataIOSWIN() {
   delete[] Freqs;
   delete[] is1;
   delete[] is2;
+  delete[] UVDist;
 
   for (i=0; i<4; i++){
     delete[] currentVis[i];
@@ -74,11 +76,11 @@ DataIOSWIN::~DataIOSWIN() {
 
 
 DataIOSWIN::DataIOSWIN(int nfiledifx, std::string* difxfiles, int NlinAnt, 
-         int *LinAnt, double *Range, int nIF, int *nChan, int nIF2Conv,
-         int *IF2Conv, int IFoffset, int Afilt, int *NchanAC,
+         int *LinAnt, double *Range, int nIF, int *nChan, int nIF2Conv, 
+	 int *IF2Conv, int IFoffset, int Afilt, int *NchanAC, 
          double **FreqVal, bool Overwrite, bool doTest, bool doSolve, 
-         int saveSource, double jd0, ArrayGeometry *Geom, bool doPar,
-         FILE *logF) {
+         int saveSource, double jd0, ArrayGeometry *Geom, bool doPar, 
+	 FILE *logF) {
 
 
   doWriteCirc = doSolve;
@@ -113,6 +115,7 @@ DataIOSWIN::DataIOSWIN(int nfiledifx, std::string* difxfiles, int NlinAnt,
   is2orig = (bool *) malloc(RECBUFFER*sizeof(bool)); 
   ParAng[0] = (double *) malloc(RECBUFFER*sizeof(double));  
   ParAng[1] = (double *) malloc(RECBUFFER*sizeof(double)); 
+  UVDist = (double *) malloc(RECBUFFER*sizeof(double));
 
   is1 = new bool[RECBUFFER];
   is2 = new bool[RECBUFFER];
@@ -340,7 +343,7 @@ bool DataIOSWIN::setCurrentIF(int i){
     success=false; return success;
   };
 
-  debugNewIF = true;
+  debugNewIF = true;  
 
   currFreq = i;
   currVis = 0;
@@ -404,6 +407,7 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
   free(Records);
   free(ParAng[0]);
   free(ParAng[1]);
+  free(UVDist);
   free(is1orig);
   free(is2orig);
   delete is1;
@@ -417,6 +421,7 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
   is2orig = (bool *) malloc(RECBUFFER*sizeof(bool));  
   ParAng[0] = (double *) malloc(RECBUFFER*sizeof(double));  
   ParAng[1] = (double *) malloc(RECBUFFER*sizeof(double));  
+  UVDist = (double *) malloc(RECBUFFER*sizeof(double));  
 
   nautos = 0;
   nrec = 0;
@@ -458,7 +463,9 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
      newdifx[auxI].ignore(sizeof(int)+sizeof(double)); // Pulsar bin + Weight
      newdifx[auxI].read(reinterpret_cast<char*>(UVW), UVWsize);
 
-     sidx += auxI;
+// OBSOLETE! Now, source ids in SWIN are self-consistent among 
+// (concatenated) scans:
+    // sidx += auxI;
 
 ////////////////
 // WHAT IS THE DIFFERENCE BETWEEN CFIDX AND FRIDX !!!!!!!!
@@ -499,6 +506,7 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
         };
         ParAng[0] = (double *) realloc(ParAng[0], CURRSIZE*sizeof(double));
         ParAng[1] = (double *) realloc(ParAng[1], CURRSIZE*sizeof(double));
+        UVDist = (double *) realloc(UVDist, CURRSIZE*sizeof(double));
         if(!ParAng[0] || !ParAng[1]){
           success = false; 
           goto FREE;
@@ -537,7 +545,7 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
 // Derive the parallactic angles:
         daytemp2 = (daytemp + day0)*86400.;
         getParAng(sidx,ant1-1,ant2-1,UVW,daytemp2,AuxPA1,AuxPA2);
-  
+ 
 // Read auto-correlations:
         if (ant1==ant2){
           auxD = 0.0;
@@ -619,7 +627,7 @@ void DataIOSWIN::readHeader(bool doTest, int saveSource) {
 
 // Derive the parallactic angles:
          ParAng[0][nrec] = AuxPA1 ; ParAng[1][nrec] = AuxPA2;
- 
+         UVDist[nrec] = UVW[0]*UVW[0] + UVW[1]*UVW[1];
 
 /////////
 // Overwrite pol label entry in SWIN file:
@@ -663,8 +671,9 @@ FREE:
     free(is2orig);
     free(is1);
     free(is2);
+    free(UVDist);
     Records = nullptr; ParAng[0]=nullptr; ParAng[1]=nullptr;
-    is1orig=nullptr; is2orig=nullptr;
+    is1orig=nullptr; is2orig=nullptr; UVDist=nullptr;
   };
 
 
@@ -734,6 +743,7 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
 //
 // isTwoLinear means both antennas are linear-feed
 // complete true means otherwise
+
     while(true){
 
       idx = 0;
@@ -741,8 +751,8 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
         if (Records[rec].notUsed && (Records[rec].freqIndex==currFreq)) {
           indices[idx] = rec;
           complete = !(is1[rec] && is2[rec]) ; 
-
           if(!complete){isTwoLinear=true;};
+
           if (complete){
             canPlot = true;
             Records[rec].notUsed = false;}; // since used as idx==0
@@ -753,16 +763,16 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
           field = Records[rec].Source;
           currVis = rec;
           for (rec1=rec+1; rec1<nrec; rec1++) {
-              if (Records[rec1].Baseline==basel &&
-                  Records[rec1].Time==time &&
+              if (Records[rec1].Baseline==basel && 
+                  Records[rec1].Time==time && 
                   Records[rec1].freqIndex==currFreq) {
                   indices[idx] = rec1; idx ++;
                   if (complete){
                     Records[rec1].notUsed = false;};
                   if (idx==4) {break;}; // since we have 4 products
               };
-           };
-           break;  // since we have searched the entire output
+           }; 
+	   break; // since we have searched the entire output
            // FIXME: optimization: DIFX cannot infinitely buffer data,
            // so one could potentially break out here after a sufficient
            // amount of due dilligence.
@@ -794,9 +804,9 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
         };
         if(idx==1){
           indices[1] = -1; indices[2] = -1; indices[3] = -1; 
-          convisok = false;
-//        sprintf(message,"\n ERROR! ONLY ONE LINEAR POLARIZATION CHANNEL WILL NOT WORK!!");
-//        fprintf(logFile,"%s",message); fflush(logFile);
+	      convisok = false;
+          sprintf(message,"\n ERROR! ONLY ONE LINEAR POLARIZATION CHANNEL WILL NOT WORK!!");
+          fprintf(logFile,"%s",message); fflush(logFile);
           break;
         };
 
@@ -829,7 +839,6 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
 
     for (rec = 0; rec < 4; rec++) {
 
-      //if (indices[rec]>0){
       if (indices[rec]>=0){
         p1 = Records[indices[rec]].Pol[i];
         p2 = Records[indices[rec]].Pol[1-i];
@@ -848,6 +857,7 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
       };
     };
 
+
 // Get the data and return them:
     for (i=0; i<4; i++) {
       if (currEntries[currFreq][i]>=0){
@@ -864,6 +874,8 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
       };
     };
 
+
+
 // Case of auto-correlations (in the 2nd round of conversion):
 // Recover the fringe after the 1st round (since sometimes the 
 // file is not flushed properly, so we need an "aux" variable):
@@ -879,6 +891,10 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
         };
       };
     }; 
+
+
+
+
 
     if (isAutoCorr && !complete){
 // 1st round of autocorrs. Zero the cross-terms (XY and YX):
@@ -898,17 +914,18 @@ else if (isAutoCorr) {
         };
     };
 */
-
    calField = field; 
    JDTime = time;
    currConj = conj ;
+
 
    if (debugNewIF) {    // share information
       sprintf(message, "  source %d JDTime %lf RelTime %lf conj = %d\n",
         field, time, time - Records[0].Time, conj);
       fprintf(logFile,"%s",message); fflush(logFile);
       debugNewIF = false;
-   };
+   };   
+
  
    return true;
 
@@ -944,7 +961,7 @@ int DataIOSWIN::getFileNumber(){
 bool DataIOSWIN::setCurrentMixedVis() { 
 
   long rec;
-  int i, k,l,fnum = 0;
+  int i, k, l, fnum = 0;
 
       if (isAutoCorr){
        int TotMedianWindow = 2*AutoCorrMedianFilter+1;
@@ -1061,7 +1078,6 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap,
    };
 
 
-
    if (print && canPlot) {
      if (currConj){
      if (k==0){
@@ -1071,6 +1087,7 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap,
        fwrite(&Records[currVis].Antennas[1],sizeof(int),1,plotFile);
        fwrite(&ParAng[0][currVis],sizeof(double),1,plotFile);
        fwrite(&ParAng[1][currVis],sizeof(double),1,plotFile);
+       fwrite(&UVDist[currVis],sizeof(double),1,plotFile);
      };
      fwrite(&currentVis[a11][k],sizeof(std::complex<float>),1,plotFile);
      fwrite(&currentVis[a12][k],sizeof(std::complex<float>),1,plotFile);
@@ -1092,6 +1109,7 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap,
        fwrite(&Records[currVis].Antennas[0],sizeof(int),1,plotFile);
        fwrite(&ParAng[1][currVis],sizeof(double),1,plotFile);
        fwrite(&ParAng[0][currVis],sizeof(double),1,plotFile);
+       fwrite(&UVDist[currVis],sizeof(double),1,plotFile);
      };
      auxVisApply = std::conj(currentVis[a11][k]);
      fwrite(&auxVisApply,sizeof(std::complex<float>),1,plotFile);
@@ -1121,7 +1139,6 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap,
 
    };  // end of print && canPlot
   };  // end of for loop
-
 
 
 

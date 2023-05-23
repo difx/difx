@@ -38,21 +38,25 @@ action=${1-'help'} ; shift
 }
 
 # things that do not end up in DiFX vendor branch
-skip="INSTALL build QA2 TODO.txt setup.py TOP/contents PP/wtf.txt"
+skip="INSTALL build QA2 TODO.txt setup.py TOP/contents PP/notes"
 skip="$skip __init__.py polconvert_CASA.py polconvert_standalone.py"
 
-skipdir="EU-VGOS QA2"
+skipdir="EU-VGOS EVN QA2 GMVA"
 
 [ $# -eq 0 ] && set -- 'no-such-file'
 
 for f
 do
+
   # more help
   [ "$f" = 'no-such-file' ] && {
-    echo you need to supply file arguments
-    echo "you can use '* */*' for everything"
-    exit 2
+    [ $action = 'help' -o "$action" = '--help' -o "$action" = vers ] || {
+        echo you need to supply file arguments
+        echo "you can use '* */*' for everything"
+        exit 2
+    }
   }
+
   # ignore directories
   [ -d $f ] && continue
   # ignore things that don't go to DiFX but are in git
@@ -68,6 +72,7 @@ do
   [ "$F" = "../setup.py" ] && F=setup.py
   [ "$F" = "../polconvert.xml" ] && F=polconvert.xml
   [ "$F" = "../task_polconvert.py" ] && F=task_polconvert.py
+
   # decide what to do
   case $action in
   dir)
@@ -87,13 +92,22 @@ do
   sdif)
     echo sdiff -lw164 $git/$f $dfx/$F
     sdiff -lw164 $git/$f $dfx/$F
+    echo '========================================================='
     ;;
   vdif)
     echo vimdiff $git/$f $dfx/$F
+    cmp $git/$f $dfx/$F 2>&- ||
     vimdiff $git/$f $dfx/$F
+    echo sleep 1 for control-C escape
+    sleep 1
     ;;
   cmp)
-    cmp $git/$f $dfx/$F || { echo cmp $git/$f $dfx/$F ; echo ; }
+    cmp $git/$f $dfx/$F || {
+        difflines=`diff $git/$f $dfx/$F | wc -l`
+        dlc=`echo $difflines'        ' | cut -c1-8`
+        echo "$dlc lines differ: cmp" $git/$f $dfx/$F
+        echo
+    }
     ;;
   dcp)
     [ -f $dfx/$F ] || { echo \#\#\# skipping $f ; continue ; }
@@ -110,10 +124,13 @@ do
     cp -p $dfx/$F $git/$f
     ;;
   vers)
-    head -5 TOP/ChangeLog Changelog
+    v='2\.[0-9]*\.[0-9]*'
+    echo "================================="
+    echo "--> Change[Ll]ogs: <--"
+    grep -E "(elease|ersion|v).*$v" TOP/ChangeLog Changelog
     echo "==> polconvert_standalone.py <=="
     grep '__version__[ ]*=' polconvert_standalone.py
-    grep 'date*=' polconvert_standalone.py
+    grep '^date.*=' polconvert_standalone.py
     echo "==> polconvert_CASA.py <=="
     grep 'VERSION' polconvert_CASA.py
     grep '__version__[ ]*=' polconvert_CASA.py
@@ -126,6 +143,8 @@ do
     echo "==> TOP/task_polconvert.py <=="
     grep '__version__[ ]*=' TOP/task_polconvert.py
     grep 'date[ ]*=' TOP/task_polconvert.py
+    echo "==> TOP/configure.ac <=="
+    grep 'AC_INIT' TOP/configure.ac
     echo "================================="
     ;;
   tidy)
@@ -143,7 +162,7 @@ do
       cmpls -- list the files with cmp issues
       cmp   -- run cmp (and echo cmp cmd if it fails)
       diff  -- run diff ( and echo diff cmd if it fails)
-      sdif  -- run sdiff (you will need window width 164)
+      sdif  -- run sdiff (you will need window width 164 and |less)
       vdif  -- run vimdiff (you will need window width 164)
       cp    -- git to difx (i.e. push from git to DiFX)
       push  -- git to difx (i.e. push from git to DiFX)
@@ -165,7 +184,7 @@ do
       (DiFX branch)  dxb=$dxb
       dfx=\$DFX/\$tag/applications/polconvert/\$dxb/src
 
-    The EU-VGOS is currently not imported to DiFX.
+    The $skipdir directories are currently not imported to DiFX.
     The build directory contains specific linux builds.
 
     The previous bzr, brz repositories are considered obsolete;

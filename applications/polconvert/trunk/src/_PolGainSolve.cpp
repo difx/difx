@@ -119,7 +119,7 @@ static PyObject *GetNScan(PyObject *self, PyObject *args);
 static PyObject *FreeData(PyObject *self, PyObject *args);
 static PyObject *SetFit(PyObject *self, PyObject *args);
 
-bool solveSystem(int Neq, double *Hessian, double *Residuals, double *Solution);
+bool solveSystem(int Neq, double *Hessian, double *Residuals, double *Solution, double *Errors);
 
 
 /* Module specification */
@@ -193,6 +193,8 @@ PyMODINIT_FUNC init_PolGainSolve(void)
 
    char message[512];
 
+   bool doParang;
+
    static double TWOPI = 6.283185307179586;
 
    int MaxChan = 1;
@@ -206,13 +208,14 @@ PyMODINIT_FUNC init_PolGainSolve(void)
    int NIF, NIFComp;
    int NBas, NantFit, Npar=-1;
    int npix = 0;
-   double **Frequencies, ***Rates[4], ***Delays[4];
+   double **Frequencies, ***Rates[5], ***Delays[5];
    double *Tm = nullptr;
    double *BasWgt;
    int *doIF, *antFit; 
    
    double *feedAngle;
    double **DStokes; // = new double*[1];
+   double UVTAPER = 1.e9;
 
    double Chi2Old = 0.0;
    double TAvg = 1.0;
@@ -220,10 +223,12 @@ PyMODINIT_FUNC init_PolGainSolve(void)
    double T0, T1, DT;
    int **Ant1, **Ant2, **BasNum, **Scan;
    double **Times, **ScanDur, **Weights, *CovMat, *IndVec, *SolVec;
+   double **UVGauss;
    cplx64f **PA1, **PA2, **auxC00, **auxC01, **auxC10, **auxC11;
    cplx64f **auxC00Flp, **auxC11Flp; // To better check Parangle Flip.
    cplx64f ***RR, ***RL, ***LR, ***LL, **CrossSpec00, **CrossSpec11;
-
+   double *UVWeights;
+   double SNR_CUTOFF;
    double Lambda;
    bool doCov;
    double Stokes[4];
@@ -250,7 +255,12 @@ PyMODINIT_FUNC init_PolGainSolve(void)
 
 
 
-bool solveSystem(int Neq, double *HessianOrig, double *ResidualsOrig, double *Solution){
+bool solveSystem(int Neq, double *HessianOrig, double *ResidualsOrig, double *Solution, double *Errors){
+
+
+
+
+
 
     bool isSingular;
     int i,j,k;
@@ -262,14 +272,48 @@ bool solveSystem(int Neq, double *HessianOrig, double *ResidualsOrig, double *So
     memcpy((void *)Hessian, (void *)HessianOrig, sizeof(double)*Neq*Neq);
     memcpy((void *)Residuals, (void *)ResidualsOrig, sizeof(double)*Neq);
 
+    int Nmissing = 0;
+    int *missing = new int[Neq];
+
+    double *L = new double[Neq*Neq];
+    double *U = new double[Neq*Neq];
+
     for(i=0;i<Neq;i++){Solution[i]=0.0;};
-  
-    isSingular = false;
+    for(i=0;i<Neq*Neq;i++){L[i]=0.0;U[i]=0.0;};
+    for(i=0;i<Neq;i++){L[i*Neq+i]=1.0;};
+
+// Getting null rows out of the computation:
+    for(i=0;i<Neq;i++){
+      isSingular=true;
+      for(j=0;j<Neq;j++){
+        if(HessianOrig[i*Neq+j]!=0.0){isSingular=false;break;};
+      };
+      if(isSingular){
+        missing[Nmissing]=i;Nmissing+=1;
+   //     printf("Antenna %i does not seem to have valid data.\n",i);
+      };
+    };  
 
      /* performing Gaussian elimination */
     for(i=0;i<Neq-1;i++){
 // PIVOTING:
+
+    isSingular = false;
+    for(k=0;k<Nmissing;k++){
+      if(i==missing[k]){isSingular=true;break;};
+    };   
+
+    if(!isSingular){
+
       for(j=i+1;j<Neq;j++){
+
+       isSingular = false;
+       for(k=0;k<Nmissing;k++){
+         if(j==missing[k]){isSingular=true;break;};
+       };    
+
+       if(!isSingular){
+
         if(abs(Hessian[i*Neq + i]) < abs(Hessian[j*Neq + i])){
           for(k=0;k<Neq;k++){
             buffer[k] = Hessian[i*Neq + k];
@@ -281,33 +325,145 @@ bool solveSystem(int Neq, double *HessianOrig, double *ResidualsOrig, double *So
           Residuals[j] = buffer[Neq]; 
         };
       };
+    };
 
-      if(Hessian[i*Neq + i]==0.0){isSingular=true; return isSingular;};
-
+      if(Hessian[i*Neq + i]==0.0){  //isSingular=true; return isSingular;
+        missing[Nmissing] = i;
+        Nmissing += 1;
+   //     printf("Antenna %i does not seem to have valid data EITHER.\n",i);
+      } else {
       for(j=i+1;j<Neq;j++){
+
+       isSingular = false;
+       for(k=0;k<Nmissing;k++){
+         if(j==missing[k]){isSingular=true;break;};
+       };      
+
+       if(!isSingular){
         f=Hessian[j*Neq + i]/Hessian[i*Neq + i];
+        L[j*Neq+i] = f;
         for(k=0;k<Neq;k++){
           Hessian[j*Neq + k]=Hessian[j*Neq + k]-f*Hessian[i*Neq + k];
         };
         Residuals[j] = Residuals[j]-f*Residuals[i];
-      };
+      } else {L[j*Neq+i]=0.0;};
+
     };
+    };
+   };
+
+  };
+
+  // if(Hessian[Neq*Neq-1]==0.0){
+  //   missing[Nmissing]=Neq-1;Nmissing+=1;
+  //   printf("Antenna %i does not seem to have valid data EITHER.\n",i);
+  // };
+
+   for(i=0;i<Neq*Neq;i++){U[i]=Hessian[i];};
+
 
     /* Backward substitution for discovering values of unknowns */
-    for(i=Neq-1;i>=0;i--){                     
-      Solution[i]=Residuals[i];
-      for(j=i+1;j<Neq;j++){
-        if(i!=j){
-          Solution[i]=Solution[i]-Hessian[i*Neq + j]*Solution[j];
-        };          
+    for(i=Neq-1;i>=0;i--){   
+      isSingular=false;                  
+      for(j=0; j<Nmissing; j++){
+        if(missing[j]==i){isSingular=true;Solution[i]=0.0;break;};
       };
-      Solution[i]=Solution[i]/Hessian[i*Neq + i];  
+      if(!isSingular){
+        Solution[i]=Residuals[i];
+        for(j=i+1;j<Neq;j++){
+          if(i!=j){
+            Solution[i]=Solution[i]-Hessian[i*Neq + j]*Solution[j];
+          };          
+        };
+        Solution[i]=Solution[i]/Hessian[i*Neq + i];  
+      };
     };
     
+
+
+  int Nfree;
+  Nfree = Neq - Nmissing;
+  double *invL = new double[Nfree*Nfree];
+  double *invU = new double[Nfree*Nfree];
+  double *Ufree = new double[Nfree*Nfree];
+
+  int ifree, jfree;
+  ifree=0; jfree=0;
+
+ // printf("Nfree: %i %i %i\n",Neq,Nmissing,Nfree);
+
+
+  for(i=0;i<Neq;i++){
+    isSingular=false;
+    for(k=0;k<Nmissing;k++){
+      if(i==missing[k]){isSingular=true;break;};
+    };
+    if(!isSingular){
+      jfree=0;
+      for(j=0;j<Neq;j++){
+        isSingular = false;
+        for(k=0;k<Nmissing;k++){
+          if(j==missing[k]){isSingular=true;break;};
+        };
+        if(!isSingular){
+          invL[ifree*Nfree+jfree]=L[i*Neq+j]; Ufree[ifree*Nfree+jfree]=U[i*Neq+j]; 
+          jfree+=1;
+        };
+      };
+      ifree += 1;
+    };
+  };  
+
+
+
+
+// Now, invert the smaller (nonSingular) matrices L and U:
+  double *ident = new double[Nfree];
+
+  for(k=0;k<Nfree;k++){
+    for(j=0;j<Nfree;j++){ident[j]=0.0;};
+      ident[k]=1.0;
+      for(i=Nfree-1;i>=0;i--){                   
+        invU[i*Nfree + k]=ident[i];
+        for(j=i+1;j<Nfree;j++){
+          if(i!=j){
+            invU[i*Nfree+k]=invU[i*Nfree+k]-Ufree[i*Nfree + j]*invU[j*Nfree+k];
+          };          
+        };
+        invU[i*Nfree+k]=invU[i*Nfree+k]/Ufree[i*Nfree + i];  
+    };
+  };
+
+
+// The parameter errors are just the (sqrt of) the diagonal cov. matrix:
+  ifree = 0;
+  for(i=0;i<Neq;i++){
+    isSingular=false;
+    Errors[i]=0.0;
+    for(k=0;k<Nmissing;k++){
+      if(missing[k]==i){isSingular=true;Errors[i]=-1.0; break;};
+    };
+    if(!isSingular){
+      for(j=0;j<Nfree;j++){
+        Errors[i] += invU[ifree*Nfree+j]*invL[j*Nfree+ifree];
+      };
+      ifree += 1;
+      Errors[i] = std::sqrt(Errors[i]);
+    };
+  };
+
+
+
   delete Hessian;
   delete Residuals;
+  delete invU;
+  delete Ufree; 
+  delete invL;
+  delete ident;
 
+  isSingular = Nmissing>0;
   return isSingular;
+
 
 };
 
@@ -398,7 +554,7 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
   PyObject *calant, *linant, *solints, *flagBas, *logNameObj;
 
 
-  if (!PyArg_ParseTuple(args, "dOOOOO",&RelWeight, &solints, &calant, 
+  if (!PyArg_ParseTuple(args, "ddOOOOO",&RelWeight, &UVTAPER, &solints, &calant, 
         &linant,&flagBas, &logNameObj)){
      sprintf(message,"Failed initialization of PolGainSolve! Check inputs!\n"); 
      std::cout<<message;
@@ -406,6 +562,7 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
     return ret;
   };
 
+  UVTAPER = 2.*UVTAPER*UVTAPER;
 
   // truncate for first call
   std::string logName = PyString_AsString(logNameObj);
@@ -516,6 +673,7 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
   auxC11 = new cplx64f*[k];
   auxC00Flp = new cplx64f*[k]; 
   auxC11Flp = new cplx64f*[k];
+  UVWeights = new double[k];
 
   for(i=0;i<k;i++){
     auxC00[i] = new cplx64f[3*NCalAnt+1];
@@ -553,12 +711,13 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
   ScanDur = (double**) malloc(MAXIF*sizeof(double*));
   PA1 = (cplx64f**) malloc(MAXIF*sizeof(cplx64f*));
   PA2 = (cplx64f**) malloc(MAXIF*sizeof(cplx64f*));
+  UVGauss = (double**) malloc(MAXIF*sizeof(double*));
   RR = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
   LR = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
   RL = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
   LL = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
  // Rates = (double ***) malloc(MAXIF*sizeof(double**));
-  for(i=0;i<4;i++){
+  for(i=0;i<5;i++){
     Rates[i] = (double ***) malloc(MAXIF*sizeof(double**));
     Delays[i] = (double ***) malloc(MAXIF*sizeof(double**));
   };
@@ -589,10 +748,12 @@ static PyObject *FreeData(PyObject *self, PyObject *args) {
       free(LR[i][j]);free(LL[i][j]);
     };
     free(Ant1[i]);free(Ant2[i]);free(Scan[i]);free(Times[i]);
-    free(PA1[i]);free(PA2[i]);free(RR[i]);free(RL[i]);
+    free(PA1[i]);free(PA2[i]);free(RR[i]);free(RL[i]);free(UVGauss[i]);
     free(LR[i]);free(LL[i]);free(ScanDur[i]);free(Weights[i]);
     delete Frequencies[i];
   };
+
+  delete(UVWeights);
 
   if(NIF>0){
     free(NScan);free(Nchan);free(NVis);
@@ -640,7 +801,7 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 
 
   int i, j, k;
-  double AuxT, AuxPA1, AuxPA2;
+  double AuxT, AuxPA1, AuxPA2, AuxUV;
   bool is1, is2;
 
 
@@ -679,24 +840,25 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
     ScanDur = (double**) realloc(ScanDur,MAXIF*sizeof(double*));
     PA1 = (cplx64f**) realloc(PA1,MAXIF*sizeof(cplx64f*));
     PA2 = (cplx64f**) realloc(PA2,MAXIF*sizeof(cplx64f*));
+    UVGauss = (double**) realloc(UVGauss,MAXIF*sizeof(double*));
     RR = (cplx64f***) realloc(RR,MAXIF*sizeof(cplx64f**));
     LR = (cplx64f***) realloc(LR,MAXIF*sizeof(cplx64f**));
     RL = (cplx64f***) realloc(RL,MAXIF*sizeof(cplx64f**));
     LL = (cplx64f***) realloc(LL,MAXIF*sizeof(cplx64f**));
    // Rates = (double ***) realloc(Rates,MAXIF*sizeof(double**));
-    for(i=0;i<4;i++){
+    for(i=0;i<5;i++){
       Delays[i] = (double ***) realloc(Delays[i],MAXIF*sizeof(double**));
       Rates[i] = (double ***) realloc(Rates[i],MAXIF*sizeof(double**));
     };
     if(!Ant1 || !Ant2 || !Times || !Weights || !PA1 || !PA2 || !RR || !LR || !RL || !LL){
-      Ant1=nullptr; Ant2=nullptr; Times=nullptr; PA1=nullptr; PA2=nullptr; 
+      Ant1=nullptr; Ant2=nullptr; Times=nullptr; PA1=nullptr; PA2=nullptr; UVGauss=nullptr;
       RR=nullptr; LR=nullptr; RL=nullptr; LL=nullptr; ScanDur=nullptr; Weights=nullptr;
       fprintf(logFile,"(return -3)"); fflush(logFile);
       PyObject *ret = Py_BuildValue("i",-3);
       return ret;
     };
     if(!Rates[0] || !Delays[0] || !Delays[1] || !Delays[2] || !Delays[3]){
-      for(i=0;i<4;i++){Rates[i] = nullptr; Delays[i]=nullptr;};
+      for(i=0;i<5;i++){Rates[i] = nullptr; Delays[i]=nullptr;};
       fprintf(logFile,"(return -4)"); fflush(logFile);
       PyObject *ret = Py_BuildValue("i",-4);
       return ret;
@@ -731,6 +893,10 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 
 // ignores noI
   MPfile.ignore(sizeof(int));
+
+// Have we applied parang??
+  MPfile.read(reinterpret_cast<char*>(&doParang), sizeof(bool));
+
 
 // Get frequencies for this IF:
   Frequencies[NIF-1] = new double[Nchan[NIF-1]];
@@ -771,7 +937,7 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
       NCVis[NIF-1] += 1;
     };
 // here we are ignoring all the visibility data
-  CPfile.ignore(2*sizeof(double)+4*Nchan[NIF-1]*sizeof(cplx32f)); 
+  CPfile.ignore(3*sizeof(double)+4*Nchan[NIF-1]*sizeof(cplx32f)); 
   };
   fprintf(logFile,"Finished CPfile...\n"); fflush(logFile);
 
@@ -795,7 +961,7 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
     if(is1 && is2 && AuxA1 != AuxA2){
       NLVis[NIF-1] += 1;
     };
-    MPfile.ignore(2*sizeof(double)+12*Nchan[NIF-1]*sizeof(cplx32f)); 
+    MPfile.ignore(3*sizeof(double)+12*Nchan[NIF-1]*sizeof(cplx32f)); 
   };
 
   fprintf(logFile,"Finished MPfile...\n"); fflush(logFile);
@@ -815,6 +981,7 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
   Weights[NIF-1] = (double*) malloc(j*sizeof(double));
   PA1[NIF-1] = (cplx64f*) malloc(j*sizeof(cplx64f)); 
   PA2[NIF-1] = (cplx64f*) malloc(j*sizeof(cplx64f)); 
+  UVGauss[NIF-1] = (double*) malloc(j*sizeof(double));
   RR[NIF-1] = (cplx64f**) malloc(j*sizeof(cplx64f*)); 
   LR[NIF-1] = (cplx64f**) malloc(j*sizeof(cplx64f*));
   RL[NIF-1] = (cplx64f**) malloc(j*sizeof(cplx64f*)); 
@@ -831,7 +998,7 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
   CPfile.seekg(sizeof(int)+Nchan[NIF-1]*sizeof(double),CPfile.beg);
 
   MPfile.clear();
-  MPfile.seekg(sizeof(int),MPfile.beg);
+  MPfile.seekg(sizeof(int)+sizeof(bool),MPfile.beg);
 
   fprintf(logFile, "\nFiles rewound\n"); fflush(logFile);
 
@@ -850,7 +1017,8 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
     MPfile.read(reinterpret_cast<char*>(&AuxA2), sizeof(int));
     MPfile.read(reinterpret_cast<char*>(&AuxPA1), sizeof(double));
     MPfile.read(reinterpret_cast<char*>(&AuxPA2), sizeof(double));
-
+    MPfile.read(reinterpret_cast<char*>(&AuxUV), sizeof(double));
+    
 // Check if visib is observed by CalAnts:
     isGood = false; is1 = false; is2 = false;
     isFlipped = false;
@@ -865,6 +1033,7 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
       Exp1 = std::polar(1.0,AuxPA1);
       Exp2 = std::polar(1.0,AuxPA2);
       Times[NIF-1][currI] = AuxT;
+      UVGauss[NIF-1][currI] = std::exp(-AuxUV/UVTAPER);
       isTime=false;
      for(j=0;j<NDiffTimes;j++){
         if(DiffTimes[j]==AuxT){isTime=true;break;};
@@ -911,6 +1080,15 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
          LR[NIF-1][currI][k] = (cplx64f) AuxLR;
          LL[NIF-1][currI][k] = (cplx64f) AuxLL;
        };
+
+  if(doParang){
+         RR[NIF-1][currI][k] *= PA2[NIF-1][currI]/PA1[NIF-1][currI];
+         RL[NIF-1][currI][k] /= PA2[NIF-1][currI]*PA1[NIF-1][currI];
+         LR[NIF-1][currI][k] *= PA2[NIF-1][currI]*PA1[NIF-1][currI];
+         LL[NIF-1][currI][k] *= PA1[NIF-1][currI]/PA2[NIF-1][currI];
+  };
+
+
      };
      currI += 1; isGood = true;
    };
@@ -939,7 +1117,7 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
     CPfile.read(reinterpret_cast<char*>(&AuxA2), sizeof(int));
     CPfile.read(reinterpret_cast<char*>(&AuxPA1), sizeof(double));
     CPfile.read(reinterpret_cast<char*>(&AuxPA2), sizeof(double));
-
+    CPfile.read(reinterpret_cast<char*>(&AuxUV), sizeof(double));
 // Check if visib is observed by CalAnts:
     isGood = false; is1 = false; is2 = false;
     isFlipped = false;
@@ -961,6 +1139,7 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 
 
     Times[NIF-1][currI] = AuxT;
+    UVGauss[NIF-1][currI] = std::exp(-AuxUV/UVTAPER);
     isTime=false;
 
 
@@ -1061,6 +1240,9 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
   ScanTimes[0] = DiffTimes[0];
   ScanDur[NIF-1] = (double*) malloc(NDiffTimes*sizeof(double));
 
+// By default, a difference of just 2 int. times (for all antennas) implies a scan change:
+  if(MaxDT==0.0){MaxDT=2.*(DiffTimes[1]-DiffTimes[0]);};
+
   for(j=1;j<NDiffTimes;j++){
     if (std::abs(DiffTimes[j]-DiffTimes[j-1])>MaxDT){
       ScanTimes[NScan[NIF-1]] = DiffTimes[j];
@@ -1075,27 +1257,40 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 
 
 // Assign scan number to each visibility:
-  for(j=1;j<NVis[NIF-1];j++){
+  for(j=0;j<NVis[NIF-1];j++){
     for(i=0;i<NScan[NIF-1];i++){
       if(Times[NIF-1][j]>=ScanTimes[i] && Times[NIF-1][j]<ScanTimes[i+1]){Scan[NIF-1][j]=i;break;};
     };
   };
 
 
+
+
+// FOR TESTING: PRINT PARANGLES AT START OF EACH SCAN:
+//int kk;
+//for(i=0;i<NScan[NIF-1];i++){
+// kk = 0;
+//  for(j=0;j<NVis[NIF-1];j++){
+//    if(Scan[NIF-1][j]==i && kk<50){kk+=1; 
+//      printf("Scan %i: Time: %.3e, ANT: %i-%i, Psi: %.3e , %.3e | %.3e , %.3e \n",i,Times[NIF-1][j]-ScanTimes[0],Ant1[NIF-1][j],Ant2[NIF-1][j],PA1[NIF-1][j].real(),PA1[NIF-1][j].imag(), PA2[NIF-1][j].real(), PA2[NIF-1][j].imag());
+//    };
+//  };
+//};
+
 //  Rates[NIF-1] = (double **) malloc(NCalAnt*sizeof(double*));
-  for(i=0;i<4;i++){
+  for(i=0;i<5;i++){
     Delays[i][NIF-1] = (double **) malloc(NCalAnt*sizeof(double*));
     Rates[i][NIF-1] = (double **) malloc(NCalAnt*sizeof(double*));
   };
   for(i=0;i<NCalAnt;i++){
    // Rates[NIF-1][i] = (double *) malloc(NScan[NIF-1]*sizeof(double));
-    for(k=0;k<4;k++){
+    for(k=0;k<5;k++){
       Delays[k][NIF-1][i] = (double *) malloc(NScan[NIF-1]*sizeof(double));
       Rates[k][NIF-1][i] = (double *) malloc(NScan[NIF-1]*sizeof(double));
     };
     for(k=0;k<NScan[NIF-1];k++){
    //   Rates[NIF-1][i][k] = 0.0;
-      for (j=0;j<4;j++){Delays[j][NIF-1][i][k] = 0.0; Rates[j][NIF-1][i][k] = 0.0;};
+      for (j=0;j<5;j++){Delays[j][NIF-1][i][k] = 0.0; Rates[j][NIF-1][i][k] = 0.0;};
     };
   };
 
@@ -1122,7 +1317,51 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 
 
 
+#if 0
+/// GetIFs(ifNr) for invocation from Python like
+///    AllFreqs = []; ifsofIF = PS.GetIFs(pli); AllFreqs.append(ifsofIF)
+static PyObject *GetIFs(PyObject *self, PyObject *args) {
+int i,j,k;
 
+  PyObject *FreqsObj = PyList_New(0);
+
+  if (!logFile) logFile = fopen("PolConvert.GainSolve.log","a");
+
+  if (!PyArg_ParseTuple(args, "i", &i)){
+     sprintf(message,"Failed GetIFs! Check inputs!\n");
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+     fclose(logFile);
+    PyObject *ret = Py_BuildValue("i",-1);
+    return ret;
+  };
+
+  sprintf(message,"Locating IFNum as %d \n", i);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+
+  k=-1;
+  for (j=0; j<NIF; j++){
+    if(IFNum[j] == i){k=j;break;};
+  };
+
+  if(k<0){
+    sprintf(message,"IF %d not found\n", i);
+    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+    PyObject *ret = Py_BuildValue("i",-2);
+    return ret;
+  };
+
+  sprintf(message,"IF %d with %d chans, copying their freqs into Python PyList\n", i, Nchan[k]);
+  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+
+  for (j=0; j<Nchan[k]; j++){
+    PyList_Append(FreqsObj, PyFloat_FromDouble(Frequencies[k][j]));
+  };
+
+  return FreqsObj;
+};
+#else
+/// GetIFs(ifNr) for invocation from Python like
+///    AllFreqs = [];  AllFreqs.append(np.zeros(PS.GetNchan(pli), order="C", dtype=np.float)); rc = PS.GetIFs(pli, AllFreqs[-1])
 static PyObject *GetIFs(PyObject *self, PyObject *args) {  
 int i,j,k;
 
@@ -1174,7 +1413,7 @@ int i,j,k;
 
   return ret;
 };
-
+#endif
 
 
 
@@ -1266,7 +1505,7 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
   PyObject *antList;
 
   if (!logFile) logFile = fopen("PolConvert.GainSolve.log","a");
-  if (!PyArg_ParseTuple(args, "Oiii", &antList,&npix, &applyRate,&cScan)){
+  if (!PyArg_ParseTuple(args, "Oiiid", &antList,&npix, &applyRate,&cScan,&SNR_CUTOFF)){
      sprintf(message,"Failed DoGFF! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
@@ -1356,6 +1595,26 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
 
 
     for(j=0; j<NBas; j++){   // baseline loop
+    
+    
+             for (gotAnts = false, a1=0; a1<NCalAnt; a1++){
+              for (a2=a1+1;a2<NCalAnt;a2++){
+                if(j == BasNum[CalAnts[a1]-1][CalAnts[a2]-1]){
+                  sprintf(message,"PROCESSING BASELINE %i (ANTS %i-%i)\n",j,CalAnts[a1]-1,CalAnts[a2]-1);
+                  fprintf(logFile,"%s",message); // std::cout<<message; 
+                  fflush(logFile);  
+                  gotAnts = true;
+                  break;
+                };
+              };
+            };
+            if (!gotAnts) {
+              sprintf(message,"NO ANTENNAS FOUND FOR BASELINE %i!\n",j);
+              fprintf(logFile,"%s",message); // std::cout<<message; 
+              fflush(logFile);  
+            };   
+    
+    
       for (i=0; i<NIF; i++){  // IF loop
         inMatrix = new int[NVis[i]];
         NinMatrix = 0;
@@ -1390,12 +1649,12 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
             memcpy(&BufferC[3][NcurrVis*Nchan[i]],&LR[i][k][0],Nchan[i]*sizeof(cplx64f));
 
 // Apply parangle correction:
-            for(l=0;l<Nchan[i];l++){
-               BufferC[0][NcurrVis*Nchan[i]+l] *= PA1[i][k]/PA2[i][k];
-               BufferC[1][NcurrVis*Nchan[i]+l] *= PA2[i][k]/PA1[i][k];
-               BufferC[2][NcurrVis*Nchan[i]+l] *= PA1[i][k]*PA2[i][k];
-               BufferC[3][NcurrVis*Nchan[i]+l] /= (PA1[i][k]*PA2[i][k]);
-            };
+         //   for(l=0;l<Nchan[i];l++){
+         //      BufferC[0][NcurrVis*Nchan[i]+l] *= PA1[i][k]/PA2[i][k];
+         //      BufferC[1][NcurrVis*Nchan[i]+l] *= PA2[i][k]/PA1[i][k];
+         //      BufferC[2][NcurrVis*Nchan[i]+l] *= PA1[i][k]*PA2[i][k];
+         //      BufferC[3][NcurrVis*Nchan[i]+l] /= (PA1[i][k]*PA2[i][k]);
+         //   };
 
             NcurrVis += 1;
             if (T1[j] < Times[i][k]){
@@ -1415,7 +1674,10 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
 /////////////////
 // FFT the fringe and find the peak:
         if (NcurrVis > 2){
-          sprintf(message,"FFT on baseline %i IF %i\n",j,i+1);
+        
+        
+        
+          sprintf(message,"FFT on IF %i\n",i+1);
           fprintf(logFile,"%s",message); // std::cout<<message; 
           fflush(logFile);  
 
@@ -1452,6 +1714,8 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
       //    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
           Dnpix = (double) Nchan[i]*NcurrVis; 
 
+
+          Peak[0]=0.0; Peak[1]=0.0; Peak[2]=0.0; Peak[3]=0.0;
 
 // First Quadrant:
           for (l=0; l<ti; l++){
@@ -1517,10 +1781,12 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
 // Unwrap:
 
           for(m=0;m<4;m++){
+            sprintf(message,"%i /  %i %i \n",m,time[m][1],nu[m][1]);
+            fprintf(logFile,"%s",message); // std::cout<<message; 
             if (nu[m][1]==0){nu[m][0]=Nchan[i]-1;} else{nu[m][0]=nu[m][1]-1;};
             if (nu[m][1]==Nchan[i]-1){nu[m][2]=0;} else{nu[m][2]=nu[m][1]+1;};
-            if (time[m][1]==0){time[m][0]=Nchan[i]-1;} else{time[m][0]=time[m][1]-1;};
-            if (time[m][1]==Nchan[i]-1){time[m][2]=0;} else{time[m][2]=time[m][1]+1;};
+            if (time[m][1]==0){time[m][0]=NcurrVis-1;} else{time[m][0]=time[m][1]-1;};
+            if (time[m][1]==NcurrVis-1){time[m][2]=0;} else{time[m][2]=time[m][1]+1;};
           };
 
 
@@ -1548,6 +1814,7 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
              for(m=0;m<4;m++){Weights[i][k] += BLWeights[m][i][j];};
              Weights[i][k] /= 4.0;
           };  
+                 
 
 //////////////////
 ////////////////////
@@ -1590,10 +1857,16 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
             fprintf(logFile,"%s",message); // std::cout<<message; 
             fflush(logFile);  
 
+            
+
+
+
+
+            /*
             for (gotAnts = false, a1=0; a1<NCalAnt; a1++){
               for (a2=a1+1;a2<NCalAnt;a2++){
                 if(j == BasNum[CalAnts[a1]-1][CalAnts[a2]-1]){
-                  sprintf(message,"ANTS: %i-%i\n",a1+1,a2+1);
+                  sprintf(message,"ANTS: %i-%i\n",CalAnts[a1]-1,CalAnts[a2]-1);
                   fprintf(logFile,"%s",message); // std::cout<<message; 
                   fflush(logFile);  
                   gotAnts = true;
@@ -1606,6 +1879,7 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
               fprintf(logFile,"%s",message); // std::cout<<message; 
               fflush(logFile);  
             };
+            */
 
           };
 
@@ -1629,6 +1903,12 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
         };  // end IF loop
 ////////////////////
       };  // end baseline loop
+
+
+
+//////////////////////
+//// PRELIMINARY ESTIMATE OF CROSS-POLARIZATION GAINS!
+
 
 
 
@@ -1672,7 +1952,15 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
    for (a1=0; a1<NCalAnt; a1++){
      for (a2=a1+1;a2<NCalAnt;a2++){
         BNum = BasNum[CalAnts[a1]-1][CalAnts[a2]-1];
-        printf("Bas: %i-%i | Rates: %.2e %.2e %.2e %.2e | Delays: %.2e %.2e %.2e %.2e\n",CalAnts[a1],CalAnts[a2],BLRates[0][i][BNum],BLRates[1][i][BNum],BLRates[2][i][BNum],BLRates[3][i][BNum],BLDelays[0][i][BNum],BLDelays[1][i][BNum],BLDelays[2][i][BNum],BLDelays[3][i][BNum]);fflush(stdout);
+        for(j=0; j<Ntwin; j++) {
+           if((Twins[0][j]==CalAnts[a1] && Twins[1][j]==CalAnts[a2])||
+             (Twins[0][j]==CalAnts[a2] && Twins[1][j]==CalAnts[a1])){
+               BNum = -1; break;
+           };
+        };
+        if(BNum>=0){
+          printf("Bas: %i-%i | Rates: %.2e %.2e %.2e %.2e | Delays: %.2e %.2e %.2e %.2e\n",CalAnts[a1],CalAnts[a2],BLRates[0][i][BNum],BLRates[1][i][BNum],BLRates[2][i][BNum],BLRates[3][i][BNum],BLDelays[0][i][BNum],BLDelays[1][i][BNum],BLDelays[2][i][BNum],BLDelays[3][i][BNum]);fflush(stdout);
+        };
      };
    };
  };
@@ -1699,7 +1987,7 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
               };
             };
 
-            if (BNum>=0 && BLWeights[0][i][BNum]>0.0 && BLWeights[1][i][BNum]>0.0){
+            if (BNum>=0 && BLWeights[0][i][BNum]>SNR_CUTOFF && BLWeights[1][i][BNum]>SNR_CUTOFF){
 
               if (af1>=0){
                 for(m=0;m<4;m++){
@@ -1748,7 +2036,7 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
 
         for (j=0; j<NCalAnt; j++){
       //    Rates[i][j][cScan] = 0.0;
-          for(m=0;m<4;m++){
+          for(m=0;m<5;m++){
             Rates[m][i][j][cScan] = 0.0;
             Delays[m][i][j][cScan] = 0.0;
           };
@@ -1769,7 +2057,7 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
     isSingular=false;
     for (i=0; i<NantFit; i++){
       printf("  ");
-      if (HessianDel[0][i*NantFit+i]==0.0){isSingular=true;};
+     // if (HessianDel[0][i*NantFit+i]==0.0){isSingular=true;};
       for (j=0; j<NantFit; j++){
         printf("%.2e ",HessianDel[0][i*NantFit+j]);
       };
@@ -1790,27 +2078,34 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
     printf("\n");
 
 
-    double **SolRat = new double*[4]; //[NantFit];
+    double **SolRat = new double*[4];
     double **SolDel = new double*[4];
-    for (i=0; i<4; i++){SolDel[i] = new double[NantFit]; SolRat[i] = new double[NantFit];};
+    double **SolErrRat = new double*[4];
+    double **SolErrDel = new double*[4];
+    for (i=0; i<4; i++){
+      SolDel[i] = new double[NantFit]; SolRat[i] = new double[NantFit];
+      SolErrDel[i] = new double[NantFit]; SolErrRat[i] = new double[NantFit];
+    };
 
 
 
-    isSingular = false; // solveSystem(NantFit,Hessian,RateResVec,SolRat);
+    isSingular = false;
       for(i=0;i<4;i++){
-        if (!isSingular){
-          isSingular = solveSystem(NantFit,HessianDel[i],DelResVec[i],SolDel[i]);
-          isSingular = solveSystem(NantFit,HessianDel[i],RateResVec[i],SolRat[i]);
-        };
+          isSingular = solveSystem(NantFit,HessianDel[i],DelResVec[i],SolDel[i], SolErrDel[i]);
+          isSingular = solveSystem(NantFit,HessianDel[i],RateResVec[i],SolRat[i],SolErrRat[i]);
       };
 
 
+    double WgtTemp, WgtTot;
 
     if (NantFit>1){
 
     for (i=0; i<NCalAnt; i++){
 
-      for(j=0;j<4;j++){Delays[j][0][i][cScan] = 0.0; Rates[j][0][i][cScan] = 0.0;};
+      WgtTot = 0.0; WgtTemp = 0.0;
+
+
+      for(j=0;j<5;j++){Delays[j][0][i][cScan] = 0.0; Rates[j][0][i][cScan] = 0.0;};
         af1 = -1;
 
         for(j=0; j<NantFit; j++) {
@@ -1821,10 +2116,18 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
         };
        if (af1 >=0){
          if(applyRate>0){
+           Rates[4][0][i][cScan] = 0.0;
+           Delays[4][0][i][cScan] = 0.0;
            for(j=0;j<4;j++){
              Rates[j][0][i][cScan] = -SolRat[j][af1]; //gsl_vector_get(dd[j],af1);
              Delays[j][0][i][cScan] = -SolDel[j][af1]; //gsl_vector_get(dd[j],af1);
+             WgtTemp = 1./(SolErrDel[j][af1]*SolErrDel[j][af1]);
+             WgtTot += WgtTemp;
+             Delays[4][0][i][cScan] += -SolDel[j][af1]*WgtTemp;
+             Rates[4][0][i][cScan] += -SolRat[j][af1]*WgtTemp;
            };
+           Rates[4][0][i][cScan] /= WgtTot;
+           Delays[4][0][i][cScan] /= WgtTot;
          };
        };
     };
@@ -1996,6 +2299,12 @@ static PyObject *SetFit(PyObject *self, PyObject *args) {
   NantFit = (int) PyList_Size(antList);
   antFit = new int[NantFit];
 
+
+// Temporary code for testing: reset the solution algorithm, depending on whether
+// we have SBDs in the parameter list:
+  if (Npar<NantFit*3){SolAlgor=1;}else{SolAlgor=0;};
+
+
   for (i=0; i<NantFit; i++){
     antFit[i] = (int) PyInt_AsLong(PyList_GetItem(antList,i));
   };
@@ -2076,15 +2385,16 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
   int i, k,l, end;
   int j= -1;
   double *CrossG;
-  double dx = 1.0e-8;
-  double Drate1, Drate2, Ddelay1R, Ddelay2R, Ddelay1L, Ddelay2L;
-  double *DerAux1, *DerAux2;
-  DerAux1 = new double[2];
-  DerAux2 = new double[2];
+//  double dx = 1.0e-8;
+  double Drate1R, Drate1L, Drate2R, Drate2L, Ddelay1R, Ddelay2R, Ddelay1L, Ddelay2L;
+//  double *DerAux1, *DerAux2;
+//  DerAux1 = new double[2];
+//  DerAux2 = new double[2];
   PyObject *pars, *ret,*LPy;
+  bool useRates;
 
   if (!logFile) logFile = fopen("PolConvert.GainSolve.log","a");
-  if (!PyArg_ParseTuple(args, "OOiii", &pars, &LPy, &Ch0, &Ch1,&end)){
+  if (!PyArg_ParseTuple(args, "OOiiib", &pars, &LPy, &Ch0, &Ch1,&end,&useRates)){
      sprintf(message,"Failed GetChi2! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
@@ -2104,7 +2414,6 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
   Lambda = PyFloat_AsDouble(LPy);
   doCov = Lambda >= 0.0;
 
-//if (chisqcount==1){sprintf(message,"%.2e ",Lambda); fprintf(auxFile,"%s",message);};
 
 
 // Find out IFs to compute and do sanity checks:
@@ -2140,7 +2449,6 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 
 
 
-//if (chisqcount==1){sprintf(message,"%.4e ",RefNu); fprintf(auxFile,"%s",message);};
 
 
 
@@ -2152,8 +2460,8 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 
 
   int currIF, a1, a2, ac1,ac2,af1, af2, currDer, currScan, nextScan;
-  int is1, is2, auxI1, auxI2;
-  auxI1 = 0;
+  int is1, is2; //, auxI1, auxI2;
+  //auxI1 = 0;
 
 
 
@@ -2176,35 +2484,47 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 // instead of multipyling the parhand)
   if (RelWeight<1.0){ParHandWgt=RelWeight;}else{CrossHandWgt=1./RelWeight;};
 
- // if (chisqcount==1){sprintf(message,"%.2e\n",RelWeight); fprintf(auxFile,"%s",message);};
 
-  for(i=0;i<Npar;i++){
-    IndVec[i] = 0.0;
-    for(j=0;j<Npar;j++){
-      CovMat[i*Npar+j]=0.0;
-    };
-  };
+
+//  for(i=0;i<Npar;i++){
+//    IndVec[i] = 0.0;
+//   for(j=0;j<Npar;j++){
+//      CovMat[i*Npar+j]=0.0;
+//    };
+//  };
+
+
   oneC= cplx64f(1.0,0.0);
 
-  int Nder = 0;
+ // int Nder = 0;
   int MBD1p, MBD2p, G1pA,G1pF, G2pA, G2pF;
   int BNum;
   double Chi2 = 0.0;
   double auxD1, auxD2;
+  double *chanFreq; 
 
-  for(l=0;l<Npar+1;l++){
-    for(i=0;i<4;i++){DStokes[l][i] = Stokes[i];};
-  };
+//  for(l=0;l<Npar+1;l++){
+//    for(i=0;i<4;i++){DStokes[l][i] = Stokes[i];};
+//  };
+
+
+
 
 
 /// Loop over IFs:
   for (i=0; i<NIFComp; i++){
 
-//  if (chisqcount==1){sprintf(message,"IF %i ",i); fprintf(auxFile,"%s",message);};
+    chanFreq = new double[Nchan[doIF[i]]];
+    for (j=0;j<Nchan[doIF[i]];j++){
+      chanFreq[j] = (double) (j-Nchan[doIF[i]]/2);
+    };
+
+
 
 // Reset temporary arrays to store visibilities:
     currIF = doIF[i];
     for (k=0;k<NBas;k++){
+      UVWeights[k]= 0.0;
       for(j=0;j<Npar+1;j++){
         auxC00[k][j] = cplx64f(0., 0.);
         auxC01[k][j] = cplx64f(0., 0.);
@@ -2240,7 +2560,6 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
         if (a2==antFit[j]){af2 = j;};
       };
 
- // if (chisqcount==1){sprintf(message,"%i %i ",af1, af2); fprintf(auxFile,"%s",message);};
 
 
 ///////////////////////////////////////////////
@@ -2259,14 +2578,11 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
     };
 
 
- //   if(is1 || is2){
- //     printf("%i %i - %i %i - %i %i\n",a1,a2,is1,is2,af1,af2); fflush(stdout);
- //   };
 
 // The crossGains at the ref. channel: 
 
-    Nder = 1;
-    DerIdx[0] = 0;
+  //  Nder = 1;
+  //  DerIdx[0] = 0;
      
 
 // Figure out the antenna gains being used now:
@@ -2275,27 +2591,27 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
       if (af1 >= 0){
         G1pA = -1; G1pF = af1;
         G1[0] = std::polar(1.0, CrossG[af1]); 
-        if(doCov){
-        for(j=1;j<Npar+1;j++){
-          G1[j] = G1[0]; 
-        };
-        G1[G1pF+1] = std::polar(1.0, CrossG[af1]+dx);
-        DerIdx[Nder] = G1pF+1;
-        Nder += 1;};
+     //   if(doCov){
+     //   for(j=1;j<Npar+1;j++){
+     //     G1[j] = G1[0]; 
+     //   };
+     //   G1[G1pF+1] = std::polar(1.0, CrossG[af1]+dx);
+     //   DerIdx[Nder] = G1pF+1;
+     //   Nder += 1;};
       } else { G1[0] = std::polar(1.0, 0.0); G1pA = -1; G1pF = -1;}; 
 
         if (af2 >= 0){
           G2pA = -1; G2pF = af2;
           G2[0] = std::polar(1.0, -CrossG[af2]); 
 
-          if(doCov){
-            for(j=1;j<Npar+1;j++){
-              G2[j] = G2[0]; 
-            };
-            G2[G2pF+1] = std::polar(1.0, -CrossG[af2]-dx);
-            DerIdx[Nder] = G2pF+1;
-            Nder += 1;
-          };
+    //      if(doCov){
+    //        for(j=1;j<Npar+1;j++){
+    //          G2[j] = G2[0]; 
+    //        };
+    //        G2[G2pF+1] = std::polar(1.0, -CrossG[af2]-dx);
+    //        DerIdx[Nder] = G2pF+1;
+    //        Nder += 1;
+    //      };
         } else { G2[0] = std::polar(1.0, 0.0); G2pA = -1; G2pF = -1;}; 
 
       
@@ -2305,31 +2621,31 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
       if (af1 >= 0){
         G1pA = af1*2; G1pF = G1pA+1;
         G1[0] = std::polar(CrossG[G1pA], CrossG[G1pF]);  // AMP+PHASE SPACE
-        if(doCov){
-          for(j=1;j<Npar+1;j++){
-            G1[j] = G1[0]; 
-          };
-          G1[G1pA+1] = std::polar(CrossG[G1pA]+dx, CrossG[G1pF]); // AMP+PHASE SPACE
-          G1[G1pF+1] = std::polar(CrossG[G1pA], CrossG[G1pF]+dx); // AMP+PHASE SPACE
-          DerIdx[Nder] = G1pA+1;
-          DerIdx[Nder+1] = G1pF+1;
-          Nder += 2;
-        };
+      //  if(doCov){
+      //    for(j=1;j<Npar+1;j++){
+      //      G1[j] = G1[0]; 
+      //    };
+      //    G1[G1pA+1] = std::polar(CrossG[G1pA]+dx, CrossG[G1pF]); // AMP+PHASE SPACE
+      //    G1[G1pF+1] = std::polar(CrossG[G1pA], CrossG[G1pF]+dx); // AMP+PHASE SPACE
+     //     DerIdx[Nder] = G1pA+1;
+     //     DerIdx[Nder+1] = G1pF+1;
+     //     Nder += 2;
+     //   };
 
       } else { G1[0] = std::polar(1.0, 0.0); G1pA=-1; G1pF=-1;};
 
         if (af2 >= 0){
           G2pA = af2*2; G2pF = G2pA+1;
           G2[0] = std::polar(CrossG[G2pA], -CrossG[G2pF]); // AMP+PHASE SPACE
-          if(doCov){
-            for(j=1;j<Npar+1;j++){
-              G2[j] = G2[0]; 
-            };
-            G2[G2pA+1] = std::polar(CrossG[G2pA]+dx, -CrossG[G2pF]); // AMP+PHASE SPACE
-            G2[G2pF+1] = std::polar(CrossG[G2pA], -CrossG[G2pF]-dx); // AMP+PHASE SPACE
-            DerIdx[Nder] = G2pA+1;
-            DerIdx[Nder+1] = G2pF+1;
-            Nder += 2;};
+      //    if(doCov){
+      //      for(j=1;j<Npar+1;j++){
+      //        G2[j] = G2[0]; 
+      //      };
+      //      G2[G2pA+1] = std::polar(CrossG[G2pA]+dx, -CrossG[G2pF]); // AMP+PHASE SPACE
+      //      G2[G2pF+1] = std::polar(CrossG[G2pA], -CrossG[G2pF]-dx); // AMP+PHASE SPACE
+      //      DerIdx[Nder] = G2pA+1;
+      //      DerIdx[Nder+1] = G2pF+1;
+      //      Nder += 2;};
       } else { G2[0] = std::polar(1.0, 0.0);G2pA=-1; G2pF=-1;}; 
 
     };
@@ -2348,54 +2664,52 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
       for (j=Ch0; j<Ch1; j++){
 
 
-  //  if (chisqcount==1){sprintf(message,"\n CHANNEL %i: \n",j); fprintf(auxFile,"%s",message);};
-
 
 // Add the multi-band delays:
         if (SolAlgor == 0){
           if (af1 >= 0){
             if(solveAmp==0){
               MBD1p = NantFit+af1;
-              MBD1[0] = CrossG[MBD1p]*(Frequencies[currIF][j]-RefNu);
+              MBD1[0] = CrossG[MBD1p]*(chanFreq[j]);
             } else {
               MBD1p = NantFit*2+af1;
-              MBD1[0] = CrossG[MBD1p]*(Frequencies[currIF][j]-RefNu);
+              MBD1[0] = CrossG[MBD1p]*(chanFreq[j]);
             };
-            if (j==Ch0 && doCov){
-              MBD1[MBD1p+1] = CrossG[MBD1p] + dx; DerIdx[Nder] = MBD1p+1; Nder += 1;
-            };
+    //        if (j==Ch0 && doCov){
+    //          MBD1[MBD1p+1] = CrossG[MBD1p] + dx; DerIdx[Nder] = MBD1p+1; Nder += 1;
+    //        };
         } else {
            MBD1[0] = 0.0; MBD1p=-1;
         };
         if (af2 >= 0){
           if(solveAmp==0){
             MBD2p = NantFit+af2;
-            MBD2[0] = CrossG[MBD2p]*(Frequencies[currIF][j]-RefNu);
+            MBD2[0] = CrossG[MBD2p]*(chanFreq[j]);
           } else {
             MBD2p = NantFit*2+af2;
-            MBD2[0] = CrossG[NantFit*2+af2]*(Frequencies[currIF][j]-RefNu);
+            MBD2[0] = CrossG[MBD2p]*(chanFreq[j]);
           };
-          if (j==Ch0 && doCov){
-            MBD2[MBD2p+1] = CrossG[MBD2p] + dx; DerIdx[Nder] = MBD2p+1; Nder += 1;
-          };
+      //    if (j==Ch0 && doCov){
+      //      MBD2[MBD2p+1] = CrossG[MBD2p] + dx; DerIdx[Nder] = MBD2p+1; Nder += 1;
+      //    };
         } else {
            MBD2[0] = 0.0; MBD2p = -1;
         };
         G1nu[0] = G1[0]*(std::polar(1.0,MBD1[0]));
         G2nu[0] = G2[0]*(std::polar(1.0,-MBD2[0]));
 
-        if(doCov){
-          for (l=1;l<Npar+1;l++){
-            G1nu[l] = G1nu[0];
-            G2nu[l] = G2nu[0];
-          };
-          G1nu[G1pA+1] = G1[G1pA+1]*(std::polar(1.0,MBD1[0]));
-          G2nu[G2pA+1] = G2[G2pA+1]*(std::polar(1.0,-MBD2[0]));
-          G1nu[G1pF+1] = G1[G1pF+1]*(std::polar(1.0,MBD1[0]));
-          G2nu[G2pF+1] = G2[G2pF+1]*(std::polar(1.0,-MBD2[0]));
-          G1nu[MBD1p+1] = G1[0]*(std::polar(1.0,MBD1[MBD1p+1]*(Frequencies[currIF][j]-RefNu)));
-          G2nu[MBD2p+1] = G2[0]*(std::polar(1.0,-MBD2[MBD2p+1]*(Frequencies[currIF][j]-RefNu)));
-        };
+    //    if(doCov){
+    //      for (l=1;l<Npar+1;l++){
+    //        G1nu[l] = G1nu[0];
+    //        G2nu[l] = G2nu[0];
+    //      };
+    //      G1nu[G1pA+1] = G1[G1pA+1]*(std::polar(1.0,MBD1[0]));
+    //      G2nu[G2pA+1] = G2[G2pA+1]*(std::polar(1.0,-MBD2[0]));
+    //      G1nu[G1pF+1] = G1[G1pF+1]*(std::polar(1.0,MBD1[0]));
+    //      G2nu[G2pF+1] = G2[G2pF+1]*(std::polar(1.0,-MBD2[0]));
+    //      G1nu[MBD1p+1] = G1[0]*(std::polar(1.0,MBD1[MBD1p+1]*(chanFreq[j])));
+    //      G2nu[MBD2p+1] = G2[0]*(std::polar(1.0,-MBD2[MBD2p+1]*(chanFreq[j])));
+    //    };
 
       } else {
 
@@ -2403,22 +2717,22 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
         G1nu[0] = G1[0]; 
         G2nu[0] = G2[0]; 
 
-        if(doCov){
-          for (l=1;l<Npar+1;l++){
-            G1nu[l] = G1nu[0];
-            G2nu[l] = G2nu[0];
-          };
-          G1nu[G1pA+1] = G1[G1pA+1];
-          G2nu[G2pA+1] = G2[G2pA+1];
-          G1nu[G1pF+1] = G1[G1pF+1];
-          G2nu[G2pF+1] = G2[G2pF+1];
-        };
+   //     if(doCov){
+   //       for (l=1;l<Npar+1;l++){
+   //         G1nu[l] = G1nu[0];
+   //         G2nu[l] = G2nu[0];
+   //       };
+   //       G1nu[G1pA+1] = G1[G1pA+1];
+   //       G2nu[G2pA+1] = G2[G2pA+1];
+   //       G1nu[G1pF+1] = G1[G1pF+1];
+   //       G2nu[G2pF+1] = G2[G2pF+1];
+   //     };
      };
 
-     if(StokesSolve){
-       DerIdx[Nder]=Npar-1; DStokes[Npar-1][1] = DStokes[0][1]+dx; Nder += 1;
-       DerIdx[Nder]=Npar; DStokes[Npar][2] = DStokes[0][2]+dx; Nder += 1;
-     };
+   //  if(StokesSolve){
+   //    DerIdx[Nder]=Npar-1; DStokes[Npar-1][1] = DStokes[0][1]+dx; Nder += 1;
+   //    DerIdx[Nder]=Npar; DStokes[Npar][2] = DStokes[0][2]+dx; Nder += 1;
+   //  };
 
 
 
@@ -2431,39 +2745,47 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 // NOTE: if useDelay=false, the cross-pol delays from GFF are NOT used. Only the rates:
 
   RateFactor=1.0;
-  Ddelay1R = 0.0; Ddelay1L = 0.0; Drate1 = 0.0;
-  Ddelay2R = 0.0; Ddelay2L = 0.0; Drate2 = 0.0;
+  Ddelay1R = 0.0; Ddelay1L = 0.0; Drate1R = 0.0; Drate1L = 0.0;
+  Ddelay2R = 0.0; Ddelay2L = 0.0; Drate2R = 0.0; Drate2L = 0.0;
 
     if(ac1>=0){ // and !is1){
-         //   Ddelay1 = TWOPI*((Delays[0][0][ac1][currScan]+Delays[1][0][ac1][currScan])*0.5*(Frequencies[currIF][j]-RefNu));
             Ddelay1R = TWOPI*((Delays[0][0][ac1][currScan])*(Frequencies[currIF][j]-RefNu));
             Ddelay1L = TWOPI*((Delays[1][0][ac1][currScan])*(Frequencies[currIF][j]-RefNu));
-	//    Drate1 = TWOPI*((Rates[0][0][ac1][currScan]+Rates[1][0][ac1][currScan])*(Times[currIF][k]-T0));
-	    Drate2 = TWOPI*((Rates[0][0][ac2][currScan]+Rates[1][0][ac2][currScan])*0.5*(Times[currIF][k]-T0));
+	    if(useRates){
+              Drate1R =  TWOPI*((Rates[0][0][ac1][currScan])*(Times[currIF][k]-T0));
+              Drate1L =  TWOPI*((Rates[1][0][ac1][currScan])*(Times[currIF][k]-T0));
+            } else {Drate1R=0.0;Drate1L=0.0;};
+            
     };
  
     if(ac2>=0){ // and !is2){
-         //   Ddelay2 = TWOPI*((Delays[0][0][ac2][currScan]+Delays[1][0][ac2][currScan])*0.5*(Frequencies[currIF][j]-RefNu));
             Ddelay2R = TWOPI*((Delays[0][0][ac2][currScan])*(Frequencies[currIF][j]-RefNu));
             Ddelay2L = TWOPI*((Delays[1][0][ac2][currScan])*(Frequencies[currIF][j]-RefNu));
-	 //   Drate2 = TWOPI*((Rates[0][0][ac2][currScan]+Rates[1][0][ac2][currScan])*0.5*(Times[currIF][k]-T0));
-	    Drate2 = TWOPI*((Rates[0][0][ac2][currScan]+Rates[1][0][ac2][currScan])*0.5*(Times[currIF][k]-T0));
+            if(useRates){
+	      Drate2R =  TWOPI*((Rates[0][0][ac2][currScan])*(Times[currIF][k]-T0));
+	      Drate2L =  TWOPI*((Rates[1][0][ac2][currScan])*(Times[currIF][k]-T0));
+            } else { Drate2R=0.0;Drate2L=0.0;};
     };
 
     if(useDelay){
-      RateFactor = std::polar(1.0, Drate1-Drate2 + Ddelay1R-Ddelay2R);
+      RateFactor = std::polar(1.0, Drate1R-Drate2R + Ddelay1R-Ddelay2R);
       RRRate = RateFactor*FeedFactor1/FeedFactor2; 
-      RateFactor = std::polar(1.0, Drate1-Drate2 + Ddelay1R-Ddelay2L);
+      RateFactor = std::polar(1.0, Drate1R-Drate2L + Ddelay1R-Ddelay2L);
       RLRate = RateFactor*FeedFactor1/FeedFactor2; 
-      RateFactor = std::polar(1.0, Drate1-Drate2 + Ddelay1L-Ddelay2R);
+      RateFactor = std::polar(1.0, Drate1L-Drate2R + Ddelay1L-Ddelay2R);
       LRRate = RateFactor*FeedFactor1/FeedFactor2; 
-      RateFactor = std::polar(1.0, Drate1-Drate2 + Ddelay1L-Ddelay2L);
+      RateFactor = std::polar(1.0, Drate1L-Drate2L + Ddelay1L-Ddelay2L);
       LLRate = RateFactor*FeedFactor1/FeedFactor2; 
     } else {
-      RateFactor = std::polar(1.0, Drate1-Drate2);
-      RRRate = RateFactor*FeedFactor1/FeedFactor2; 
+      // TODO: Activate the rate correction, to improve gain estimates.
+      // BUT some baselines usually give crazy rates (around 1Hz!!)
+      RateFactor = std::polar(1.0, Drate1R-Drate2R);  
+      RRRate = RateFactor*FeedFactor1/FeedFactor2;
+      RateFactor = std::polar(1.0, Drate1L-Drate2L);   
       LLRate = RateFactor/FeedFactor1*FeedFactor2; 
+      RateFactor = std::polar(1.0, Drate1R-Drate2L);  
       RLRate = RateFactor*FeedFactor1*FeedFactor2; 
+      RateFactor = std::polar(1.0, Drate1L-Drate2R);  
       LRRate = RateFactor/FeedFactor1/FeedFactor2; 
     };
 
@@ -2480,17 +2802,15 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 
 
 
-   // if (chisqcount==1){sprintf(message,"\n RFACs: %.3e %.3e; %.3e %.3e; %.3e %.3e; %.3e %.3e\n",RRRate.real(),RRRate.imag(),RLRate.real(),RLRate.imag(),LRRate.real(),LRRate.imag(),LLRate.real(),LLRate.imag()); fprintf(auxFile,"%s",message);};
 
 
 // Compute all the model derivatives:
 
-    for (l=0; l<Nder; l++){
-      currDer = DerIdx[l];
+  //  for (l=0; l<Nder; l++){
+      currDer = 0; //DerIdx[l];
       RM1 = (oneC - G1nu[currDer]); RM2 = (oneC - G2nu[currDer]); 
       RP1 = (oneC + G1nu[currDer]); RP2 = (oneC + G2nu[currDer]); 
 
-  //  if (chisqcount==1){sprintf(message,"\n DTs (der %i): %.3e %.3e; %.3e %.3e; %.3e %.3e; %.3e %.3e",l,RM1.real(),RM1.imag(),RM2.real(),RM2.imag(),RP1.real(),RP1.imag(),RP2.real(),RP2.imag()); fprintf(auxFile,"%s",message);};
 
       
 // USE MINIMIZATION OF THE CROSS-HAND CORRELATIONS:
@@ -2546,10 +2866,11 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
          auxC3 = (PA2[currIF][k]/PA1[currIF][k])*(PA2[currIF][k]/PA1[currIF][k]);
          auxC00Flp[BNum][0] += auxC1*auxC3;
          auxC11Flp[BNum][0] += auxC2/auxC3;
+         UVWeights[BNum] += UVGauss[currIF][k];
        };
 
 
-   };  // Comes from   for (l=0; l<Nder; l++){
+  // };  // Comes from   for (l=0; l<Nder; l++){
 
 
 
@@ -2569,22 +2890,21 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
     if ((Times[currIF][k]>=Tm[BNum] + DT) || !(currScan==nextScan)){
 
 
-    //  printf("%.3e  %.3e %i %i\n",Times[currIF][k]-Tm[BNum],ScanDur[currIF][currScan]/DT, currScan,nextScan); fflush(stdout);
 
-  //  if (chisqcount==1){sprintf(message,"\n Time Acquisition %.3e: %.3e %.3e; %.3e %.3e; %.3e %.3e; %.3e %.3e\n",Times[currIF][k],auxC00[BNum][0].real(),auxC00[BNum][0].imag(),auxC01[BNum][0].real(),auxC01[BNum][0].imag(),auxC10[BNum][0].real(),auxC10[BNum][0].imag(),auxC11[BNum][0].real(),auxC11[BNum][0].imag()); fprintf(auxFile,"%s",message);};
-    //  printf("SCAN BOUND\n");fflush(stdout);
+
+
 
       if(k<NVis[currIF]-1){Tm[BNum] = Times[currIF][k+1];};
 
       Itot = 0.5*(std::abs(auxC00[BNum][0]) + std::abs(auxC11[BNum][0]));
 
       if (abs(auxC11[BNum][0])>0.0){
-        Error = auxC00[BNum][0]/auxC11[BNum][0];
+        Error = auxC00[BNum][0] - auxC11[BNum][0];
       };
 
- //   if (chisqcount==1){sprintf(message,"%.3e %.3e %.3e",Itot,Error.real(),Error.imag()); fprintf(auxFile,"%s",message);};
 
 
+/*
 // Compute covariance matrix:
       if(doCov){
 	
@@ -2593,7 +2913,7 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
         if (RelWeight>0.0 && abs(auxC11[BNum][0])>0.0){
           for(j=1;j<Nder;j++){
             auxI1 = DerIdx[j];
-            auxC1 = (auxC00[BNum][auxI1]/auxC11[BNum][auxI1]-Error)/dx;
+            auxC1 = (auxC00[BNum][auxI1]-auxC11[BNum][auxI1]-Error)/dx;
 // Incoherent approach:
             DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
             CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*ParHandWgt*BasWgt[BNum];
@@ -2601,7 +2921,7 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
               for(l=j+1;l<Nder;l++){
                 auxI2 = DerIdx[l];
 // Incoherent approach:
-                 auxC2 = (auxC00[BNum][auxI2]/auxC11[BNum][auxI2]-Error)/dx;
+                 auxC2 = (auxC00[BNum][auxI2]-auxC11[BNum][auxI2]-Error)/dx;
                  DerAux2[0] = auxC1.real()*auxC2.real(); DerAux2[1] = auxC1.imag()*auxC2.imag();
                  CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*ParHandWgt*BasWgt[BNum];
                  CovMat[(auxI2-1)*Npar+auxI1-1] = CovMat[(auxI1-1)*Npar+auxI2-1];
@@ -2670,7 +2990,7 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
          };
        };
      }; // Comes from if(doCov)
-
+*/
 
 
 
@@ -2678,25 +2998,34 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 // UPDATE THE CHI SQUARE
      if(AddCrossHand){
        auxD1 = std::abs(auxC01[BNum][0])/Itot; auxD2 = std::abs(auxC10[BNum][0])/Itot; 
-       Chi2 += (auxD1*auxD1 + auxD2*auxD2)*CrossHandWgt*BasWgt[BNum]*Weights[currIF][k];   
-  //  if (chisqcount==1){sprintf(message,"  %.3e %.3e %.3e",auxD1,auxD2,Chi2); fprintf(auxFile,"%s",message);};
+       Chi2 += (auxD1*auxD1 + auxD2*auxD2)*CrossHandWgt*BasWgt[BNum]*Weights[currIF][k]*UVWeights[BNum]; 
      };
      if (RelWeight>0.0){
        if (abs(auxC11[BNum][0])>0.0){
-         auxC1 = Error - (Stokes[0]+Stokes[3])/(Stokes[0]-Stokes[3]);
+// ALTERNATIVE OPTION: DIFFERENCE OF PARALLEL HANDS:
+         auxC1 = Error - ((Stokes[0]+Stokes[3]) - (Stokes[0]-Stokes[3]));
          auxD1 = auxC1.real()*auxC1.real() + auxC1.imag()*auxC1.imag();
-         Chi2 += auxD1*ParHandWgt*BasWgt[BNum]*Weights[currIF][k];
-  //  if (chisqcount==1){sprintf(message,"  %.3e %.3e %.3e",auxC1.real(),auxC1.imag(),Chi2); fprintf(auxFile,"%s",message);};
+         Chi2 += auxD1*ParHandWgt*BasWgt[BNum]*Weights[currIF][k]*UVWeights[BNum];
+
+// XPOLGFF OPTION: RATIO OF PARALLEL HANDS:
+//         auxC1 = Error - (Stokes[0]+Stokes[3])/(Stokes[0]-Stokes[3]);
+//         auxD1 = auxC1.real()*auxC1.real() + auxC1.imag()*auxC1.imag();
+//         Chi2 += auxD1*ParHandWgt*BasWgt[BNum]*Weights[currIF][k]*UVWeights[BNum];
        };
      };
      if(end==1){
 // Figure out if flipping R->L improves the phase of the RR/LL ratio:
        for(l=0; l<NLinBas; l++){
          if (LinBasNum[l]==BNum){  
-           double GoodPhase = std::arg(Error);
-	   double FlippedPhase = std::arg(auxC00Flp[BNum][0]/auxC11Flp[BNum][0]);
-           if (std::abs(FlippedPhase)<std::abs(GoodPhase)){Nflipped += 1;}else{Nflipped -= 1;};	 
-  //  if (chisqcount==1){sprintf(message,"  ;  %i",Nflipped); fprintf(auxFile,"%s",message);};
+// ALTERNATIVE OPTION:
+           double GoodAmp = std::abs(Error);
+	   double FlippedAmp = std::abs(auxC00Flp[BNum][0]-auxC11Flp[BNum][0]);
+           if (FlippedAmp<GoodAmp){Nflipped += 1;}else{Nflipped -= 1;};	 
+
+// XPOLGFF OPTION:
+//           double GoodPhase = std::arg(Error);
+//	   double FlippedPhase = std::arg(auxC00Flp[BNum][0]/auxC11Flp[BNum][0]);
+//           if (std::abs(FlippedPhase)<std::abs(GoodPhase)){Nflipped += 1;}else{Nflipped -= 1;};	 
            break;
          };
        };   
@@ -2715,6 +3044,7 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 
     };
     AvVis[BNum] = 0;
+    UVWeights[BNum] = 0.0;
 // TODO: DIVIDE AvPA BY NUMBER OF VISIBS!!!!!
 //    AvPA1[BNum] = oneC; AvPA2[BNum] = oneC;
 
@@ -2724,28 +3054,28 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 
   };  // Comes from loop over visibilities
 
+  delete[] chanFreq;
+
 };  // Comes from loop over NIFComp
 
 
-double TheorImpr = 0.0;
 
+//double TheorImpr = 0.0;
 
-
-
-if(doCov){
+//if(doCov){
 // Solve the system:
 
 // Find the largest gradient:
-double Largest = 0.0;
-for(i=0;i<Npar;i++){
-  if(CovMat[i*Npar+i]>Largest){Largest=CovMat[i*Npar+i];};
-};
+//double Largest = 0.0;
+//for(i=0;i<Npar;i++){
+//  if(CovMat[i*Npar+i]>Largest){Largest=CovMat[i*Npar+i];};
+//};
 
 // Fill in the Hessian's lower part:
-for(i=0;i<Npar;i++){
-  DirDer[i] = CovMat[i*Npar+i];
-  CovMat[i*Npar+i] += Lambda*(Largest);
-};
+//for(i=0;i<Npar;i++){
+//  DirDer[i] = CovMat[i*Npar+i];
+//  CovMat[i*Npar+i] += Lambda*(Largest);
+//};
 
 
 /*
@@ -2763,15 +3093,15 @@ if (gsl_death_by != GSL_SUCCESS) {
 */
 
 
-for(i=0;i<Npar;i++){SolVec[i] = Lambda*IndVec[i]/CovMat[i*Npar+i];};
+//for(i=0;i<Npar;i++){SolVec[i] = Lambda*IndVec[i]/CovMat[i*Npar+i];};
 
-for(i=0;i<Npar;i++){
-  TheorImpr += DirDer[i]*SolVec[i]*SolVec[i] - 2.*IndVec[i]*SolVec[i];
-  CrossG[i] += SolVec[i];
-};
+//for(i=0;i<Npar;i++){
+//  TheorImpr += DirDer[i]*SolVec[i]*SolVec[i] - 2.*IndVec[i]*SolVec[i];
+//  CrossG[i] += SolVec[i];
+//};
 
 
-}; // comes from id(doCov)
+//}; // comes from if(doCov)
 
 
 
@@ -2791,9 +3121,9 @@ if (chisqcount==0){
 };
 */
 
-  if (SolAlgor==0){
-     printf("\n Chi Squared: %.5e. Expected improvement: %.5e",Chi2,TheorImpr);
-   };
+ // if (SolAlgor==0){
+ //    printf("\n Chi Squared: %.5e. Expected improvement: %.5e",Chi2,TheorImpr);
+ //  };
 
   Chi2Old = Chi2;
 
@@ -2804,6 +3134,7 @@ if (chisqcount==0){
 
 //  delete[] AvPA1;
 //  delete[] AvPA2;
+
 
 
   return ret;

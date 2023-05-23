@@ -1,4 +1,10 @@
-v2.0.4
+v2.0.5
+- reconciled version, on DIFX trunk, May 23, 2023.
+
+v2.0.4 
+- Normalized python code (spaces).
+- Added new features to VGOS mode (UVTaper, multi-scan fitting, etc.)
+- Corrected bugs in PolGainSolve (bad rate estimates degraded solution quality).
 - added options for variable table names
 - starting another round of reconciliation
 
