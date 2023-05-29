@@ -2547,7 +2547,8 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
 #   frfile = open("POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i"%pli,"rb")
 
     alldats = frfile.read(5)
-    nchPlot, isParang = stk.unpack("ib", alldats)
+    #   isParang is a 1-byte bool
+    nchPlot, isParang = stk.unpack("i?", alldats)
     dtype = np.dtype(
         [
             ("FILE", np.int32),

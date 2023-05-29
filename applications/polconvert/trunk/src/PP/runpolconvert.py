@@ -6,7 +6,6 @@
 # Script to run PolConvert at the correlators from with CASA
 # This version only works with SWIN files
 #
-
 from __future__ import absolute_import
 from __future__ import print_function
 import datetime
@@ -15,12 +14,11 @@ import shutil
 import re
 import sys
 
+pcvers='2.0.5'
 if sys.version_info.major < 3:
     pass
 else:
     from polconvertpkg.private.task_polconvert import polconvert as polconvert
-
-pcvers='2.0.5'
 
 # Begin by verifying everthing that should be defined at this point.
 # If we can't print something, that's probably enough for a test.

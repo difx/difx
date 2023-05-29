@@ -926,7 +926,7 @@ if(PCMode){
         if (!plotFile[ii]) {
           sprintf(message,"Could not create plot non-PCMode file "
             "POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i, errno %d\n", IFs2Conv[ii]+1, errno);
-          fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+          fprintf(logFile,"%s\n",message); std::cout<<message; fflush(logFile);
         };
         if (IFs2Conv[ii]>=0 && IFs2Conv[ii]<nnu){
           fwrite(&nchans[IFs2Conv[ii]],sizeof(int),1,plotFile[ii]);
