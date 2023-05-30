@@ -9,7 +9,7 @@
 # control rather quickly.  However this ends up as a bit of a mini-fourfit.
 #
 '''
-checkfringedata.py -- a program to check POLCONVERT.FRINGE binary files
+checkpolconvertfringe.py -- a program to check POLCONVERT.FRINGE binary files
 '''
 
 import argparse
@@ -750,12 +750,12 @@ def fringeexam():
     To generate a plot from the fringe data in pdir for the 1,8 antenna
     baseline pair, put the result in pdir and display the result with eog:
 
-    checkfringedata.py -d pdir -a 1,8 -g eog -f 50 -P
+    checkpolconvertfringe.py -d pdir -a 1,8 -g eog -f 50 -P
 
     A more verbose version with padding of 25 pixels and a 0.1-sigma
     noise floor:
 
-    checkfringedata.py -d pdir -a 1,8 -g eog -f 50,25,0.1 -P
+    checkpolconvertfringe.py -d pdir -a 1,8 -g eog -f 50,25,0.1 -P
     '''
 def somehelp(o):
     if o.pcvers == 'help':

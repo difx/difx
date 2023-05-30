@@ -23,7 +23,7 @@ BuiltSources = $(PolConvertSources) $(PostPolScripts)
 
 bin_SCRIPTS = PP/prepolconvert.py PP/drivepolconvert.py \
 	PP/checkpolconvert.py PP/comparepolconvert.py \
-	PP/singlepolsolve.py PP/checkfringedata.py
+	PP/singlepolsolve.py PP/checkpolconvertfringe.py
 pkgdata_DATA = _PolConvert.so _getAntInfo.so _PolGainSolve.so \
 	_XPCal.so _XPCalMF.so \
 	PP/runpolconvert.py task_polconvert.py polconvert.xml \

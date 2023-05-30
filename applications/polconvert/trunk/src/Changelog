@@ -2,7 +2,7 @@ v2.0.5
 - TOP/task_polconvert.py fixed for new FRINGE binary format (UVdist, &c).
 - more whitespace cleanup
 - reconciled version, on DIFX trunk, May 23, 2023.
-- added PP/checkfringedata.py
+- added PP/checkpolconvertfringe.py
 
 v2.0.4 
 - Normalized python code (spaces).
