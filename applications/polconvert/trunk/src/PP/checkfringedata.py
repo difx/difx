@@ -8,9 +8,6 @@
 # As usual with stupid python-numpy-pylab crap...things get rather out of
 # control rather quickly.  However this ends up as a bit of a mini-fourfit.
 #
-# pylab is "deprecated" so we've converted to matplotlib.* and played with
-# it a bit further to try for a make for a more useful postmortem tool.
-#
 '''
 checkfringedata.py -- a program to check POLCONVERT.FRINGE binary files
 '''
@@ -18,14 +15,23 @@ checkfringedata.py -- a program to check POLCONVERT.FRINGE binary files
 import argparse
 import glob
 import numpy as np
-import matplotlib.pyplot as pl
-import matplotlib.cm as cm
 import os
 import re
 import struct as stk
 import subprocess
 import sys
 import warnings
+
+# pylab is "deprecated" so we've converted to matplotlib.* and played with
+# it a bit further to try for a make for a more useful postmortem tool.
+try:
+    import matplotlib.pyplot as pl
+except:
+    try:
+        import pylab as pl
+    except Exception as ex:
+        print('at least one of matplotlib or pylab must be available')
+        raise(ex)
 
 def formatDescription(o):
     '''
@@ -491,7 +497,7 @@ def plotProcessing(plotdata, o):
             ax.set_xlabel('delay\n')
             ax.set_ylabel('delay rate')
             im = ax.imshow(vis[ndx], vmin=vxn[0], vmax=vxn[1],
-                interpolation='nearest', cmap=cm.viridis, origin='lower')
+                interpolation='nearest', cmap=pl.cm.viridis, origin='lower')
     # common colorbar, with updated labels for scaling: replace('−','-')
     cbar = fig.colorbar(im, ax=axs,
         label='('+o.scale+'-scaled) |Vis(LL,LR,RL,RR)|',
