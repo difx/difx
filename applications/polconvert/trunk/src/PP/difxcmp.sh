@@ -66,12 +66,15 @@ do
   for dd in $skipdir
   do [ `dirname $f` = "$dd" ] && punt=true ; done
   $punt && echo skipping $f && continue
-  F=$f
+  F=$f  # $f is local path, $F is dfx path
   [ `expr $F : 'TOP.*'` -ge 3 ] && F=../`basename $f`
   # pretty dodgy way to put TOP things into src
   [ "$F" = "../setup.py" ] && F=setup.py
   [ "$F" = "../polconvert.xml" ] && F=polconvert.xml
   [ "$F" = "../task_polconvert.py" ] && F=task_polconvert.py
+  # convenient to have these along
+  [ "$F" = "../configure.ac" ] && F=../configure.ac
+  [ "$F" = "../Makefile.am" ] && F=Makefile.am
 
   # decide what to do
   case $action in
@@ -145,6 +148,8 @@ do
     grep 'date[ ]*=' TOP/task_polconvert.py
     echo "==> TOP/configure.ac <=="
     grep 'AC_INIT' TOP/configure.ac
+    echo "==> PP/pcvers.py <=="
+    grep 'pcvers' PP/pcvers.py
     echo "================================="
     ;;
   tidy)

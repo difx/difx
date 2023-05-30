@@ -29,11 +29,6 @@ import time
 # import solvepclib as spc
 
 def getVersion():
-    try:
-        import pcvers
-        return pcvers
-    except:
-        pass
     difxroot = os.getenv('DIFXROOT')
     if not type(difxroot) is str: return 'unknown'
     rcpath = difxroot + '/share/polconvert/runpolconvert.py'
