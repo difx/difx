@@ -13,8 +13,8 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '1.08'
-verdate = '20230323'
+version = '1.09'
+verdate = '20230603'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -616,7 +616,7 @@ component_vdifsim_trunk = \
 [ \
 	'vdifsim', \
 	'https://svn.atnf.csiro.au/difx/utilities/trunk/vdifsim', \
-	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'mpicc'] \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'mpicc'] \
 ]
 
 component_calcserver_trunk = \
