@@ -88,7 +88,7 @@ std::ostream& operator << (std::ostream &os, const VexScan &x)
 			os << (iter == x.phaseCenters.begin() ? '=' : ',') << *iter;
 		}
 	}
-	os <<   "\n  size=" << x.size << " bytes \n";
+	os <<   "\n  size=" << x.size << " bytes\n";
 
 	for(std::map<std::string,Interval>::const_iterator iter = x.stations.begin(); iter != x.stations.end(); ++iter)
 	{

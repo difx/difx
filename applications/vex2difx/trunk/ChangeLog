@@ -2,6 +2,7 @@ Version 3.0.1
 -------------
 * Fix for datastream to antenna mapping when not sorting antennas
 * oms2v2d: add mode to generate .v2d file that is useful for use with vdifsim
+* oms2v2d: do not require DIFX_BASE to be set
 
 Version 3.0.0
 -------------
