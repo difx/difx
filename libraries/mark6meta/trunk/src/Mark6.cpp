@@ -784,7 +784,6 @@ void Mark6::writeControllerConfig()
     conf << "# each line contains the name of a SAS controller present in the system" << endl;
     conf << "# the order determines the mount location (first line will mount slots 1&2, second line slots 3&4 etc.)" << endl;
     conf << "# adapt the order to match the local cabling" << endl;
-    
 
     for( std::set<std::string>::iterator it = sorted.begin(); it != sorted.end(); ++it )
     {
@@ -792,7 +791,7 @@ void Mark6::writeControllerConfig()
         {
           conf << "host0" << endl;
           host0 = false;
-        } 
+        }
         conf << *it << endl;
     }
     if (host0)
@@ -826,10 +825,10 @@ int Mark6::readControllerConfig()
         clog << "opened /etc/default/mark6_slots" << endl;
         while ( getline (conf,line) )
         {
-            if (line.rfind("#", 0) == 0) 
+            if (line.rfind("#", 0) == 0 || line.size() < 1) // todo: " lrtrim(line).size() "
                 continue;
             for(std::size_t i = 0; i < controllers_m.size(); ++i) {
-                if (line.compare (controllers_m[i].getName()) == 0) 
+                if (line.compare (controllers_m[i].getName()) == 0)
                 {
                     controllers_m[i].setOrder(count);
                     break;
