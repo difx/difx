@@ -1808,19 +1808,23 @@ static int fixDatastreamTable(DifxInput *D)
 
 				delta = power2 - ds->nRecBand;
 
+				// FIXME: the below would be tidier if relocated into difxio; padDifxDatastreamFreq(DifxDatastream* srcdst, int deltaNumRecbands)
+				// NB: manually keep the below realloc()'s in sync with any changes made to difx_input.h struct DifxDatastream
 				N = ds->nRecFreq + 1;
 				ds->clockOffset = (double *)realloc(ds->clockOffset, N*sizeof(double));
 				ds->clockOffsetDelta = (double *)realloc(ds->clockOffsetDelta, N*sizeof(double));
 				ds->phaseOffset = (double *)realloc(ds->phaseOffset, N*sizeof(double));
+				ds->freqOffset = (double *)realloc(ds->freqOffset, N*sizeof(double));
 				ds->nRecPol = (int *)realloc(ds->nRecPol, N*sizeof(int));
 				ds->recFreqId = (int *)realloc(ds->recFreqId, N*sizeof(int));
+				ds->recFreqDestId = (int *)realloc(ds->recFreqDestId, N*sizeof(int));
 				ds->clockOffset[N-1] = 0.0;
 				ds->clockOffsetDelta[N-1] = 0.0;
 				ds->phaseOffset[N-1] = 0.0;
 				ds->nRecPol[N-1] = delta;
 				ds->recFreqId[N-1] = addedFreq;
+				ds->recFreqDestId[N-1] = addedFreq;
 				ds->nRecFreq = N;
-
 
 				N = ds->nRecBand + delta;
 				ds->recBandFreqId = (int *)realloc(ds->recBandFreqId, N*sizeof(int));
