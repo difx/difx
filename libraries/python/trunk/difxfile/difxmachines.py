@@ -35,10 +35,11 @@ import sys
 
 class DifxMachines(object):
 	"""
-	class for parsing the DiFX cluster definition file
+	class for parsing the DiFX cluster definition file, optionally
+	augmenting those entries with node infos from a SLURM config file
 	"""
 
-	def __init__(self, machinefile):
+	def __init__(self, machinefile, slurmconfigfile='/etc/slurm/slurm.conf'):
 		""" 
 		Constructor. Checks that machinefile exists. If not, an IOError is raised.
 		"""
@@ -46,11 +47,22 @@ class DifxMachines(object):
 		self.machinefile = machinefile
 		self.version = ""
 		self.nodes = {}
+		self.slurm_config = slurmconfigfile
 
 		if (not os.path.isfile(self.machinefile)):
 			raise IOError("DiFX machinefile: %s does not exist. " % self.machinefile)
 
 		self._parse()
+
+		self.slurmConf = self.SlurmMachines(self.slurm_config)
+
+		if self.slurmConf.isValid():
+			for nodename in self.nodes.keys():
+				m = self.slurmConf.getNodeMaxProcesses(nodename)
+				if m > 0:
+					self.nodes[nodename].isInSlurm = True
+					self.nodes[nodename].slurm_maxProc = m
+
 
 	def __str__(self):
 		"""
@@ -171,6 +183,72 @@ class DifxMachines(object):
 			versionParts.append('0')
 		return versionParts
 
+
+	### Nested classes
+
+	class SlurmMachines:
+		"""
+		nested class in DifxMachines that parses a SLURM config file and follows 'include' statements,
+		with accessor funcs for by-name look up of details for a DifxMachines node
+		"""
+
+		def __init__(self, slurm_conf = '/etc/slurm/slurm.conf'):
+			"""
+			Constructor. Loads all node definitions from a SLURM config file, if it exists.
+			"""
+			txtNodeDefs = self._readSlurmConfNodes(slurm_conf)
+			self.nodeDefs = [self._parseNodeDef(nodedef) for nodedef in txtNodeDefs]
+
+		def _readSlurmConfNodes(self, slurm_conf):
+			"""recursively reads NodeName lines from slurm.conf and any included slurm.d/* conf files"""
+			node_lines = []
+			if os.path.isfile(slurm_conf):
+				fd = open(slurm_conf, 'r')
+				for line in fd.readlines():
+					line = line.strip()
+					if len(line) < 1 or line[0] == '#':
+						continue
+					if line.startswith("NodeName"):
+						node_lines.append(line)
+					elif line.startswith("include "):
+						inc_file = line[8:].strip()
+						inc_nodes = self._readSlurmConfNodes(inc_file)
+						node_lines += inc_nodes
+				fd.close()
+			return node_lines
+
+
+		def _parseNodeDef(self, namedef):
+			"""parse a SLURM NodeName line and split it into key-value pairs"""
+			# Name def example: 'NodeName=mark6-01,mark6-02 CPUs=12 Sockets=1 CoresPerSocket=6 ThreadsPerCore=2 Feature=mark6 State=UNKNOWN'
+			items = namedef.split()
+			keys = [item.split('=')[0] for item in items]
+			values = [item.split('=')[1] for item in items]
+			data = dict(zip(keys,values))
+
+			if 'NodeName' in data:
+				if '[' in data['NodeName']:
+					print("TODO: node name definition '%s' would apparently need expansion, currently not implemented in script." % (data['NodeName']))
+				if ',' in data['NodeName']:
+					data['NodeName'] = data['NodeName'].split(',')
+
+			return data
+
+
+		def isValid(self):
+			return len(self.nodeDefs) > 0
+
+
+		def getNodeMaxProcesses(self, difxnodename):
+			"""return the maximum nr of processes the SLURM config permits to be launched on the given node"""
+			m = -1
+			for nodedef in self.nodeDefs:
+				if difxnodename in nodedef['NodeName']:
+					m = int(nodedef['CPUs']) / int(nodedef['ThreadsPerCore'])
+			return m				
+
+
+
 	def _parse(self):
 		'''
 		Parses the machinefile
@@ -278,9 +356,10 @@ class DifxMachines(object):
 		if len(self.version) == 0:
 			sys.exit("ERROR: Missing or malformed version statement in the machines file: %s" % self.machinefile)
 
+
 class Node:
 	"""
-	Storage class representing a node found in the cluster definition file
+	Storage class representing a node found in the DiFX cluster definition file
 	"""
 	name = ""
 	threads = 0
@@ -289,11 +368,17 @@ class Node:
 	isHeadnode = 0
 	fileUrls = []
 	networkUrls = []
+	isInSlurm = False
+	slurm_maxProc = -1
+	slurm_numProc = 0
 
 	def __str__(self):
 		result = "name=%s threads=%s isHeadnode=%s isMk5=%s isMk6=%s fileUrls=%s networkUrls=%s" % (self.name, self.threads, self.isHeadnode, self.isMk5, self.isMk6, self.fileUrls, self.networkUrls)
+		if self.isInSlurm:
+			result += " slurm:maxProc=%d slurm:numProc=%d" % (self.slurm_maxProc, self.slurm_numProc)
 		return(result)
-		
+
+
 if __name__ == "__main__":
 	# run python difxmachines <machinefile> to execute this test code
 	
