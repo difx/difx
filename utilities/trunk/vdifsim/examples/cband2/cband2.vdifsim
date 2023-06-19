@@ -1,0 +1,12 @@
+
+Gaussian 4913 1 200
+
+# Have some fun: drop / invalidate some packets and add some uncorrected clock offsets
+[HN]
+DroppedPacketRate  0.05
+InvalidPacketRate  0.02
+ClockOffset        0.055   # [us]
+
+[FD]
+ClockOffset       -0.015   # [us]
+

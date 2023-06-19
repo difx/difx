@@ -1,0 +1,46 @@
+To run a full schedule, simulate, correlate cycle:
+
+Note: you must have a ~/.vdifsim file with cluster members listed
+
+
+1. (optional) Generate .vex file
+
+  sched < cband2.key
+
+2. (optional, at NRAO only) Append clock and EOPs to .vex file
+
+  vex2obs --preobs cband2.vex
+
+3. Create .v2d file from .oms file
+
+  oms2v2d --sim cband2.oms
+
+4. Edit .v2d file if needed
+
+5. generate filelists
+
+  makesimfilelist cband2.vex
+
+6. Generate correlator jobs
+
+  vex2difx cband2.v2d
+ 
+7. Generate delay model
+
+  difxcalc cband2*.calc
+
+8. MPI-based -- run jobs in parallel
+
+  runvdifsim -v -m cband2_*.input
+
+or if you have a vdifsim config file:
+
+  runvdifsim -v -m -c cband2.vdifsim cband2_*.input
+
+9. Correlate the data
+
+  startdifx -v -f -n cband2_*.input
+
+10. Generate a FITS file
+
+  difx2fits cband2_*.difx CBAND2.FITS

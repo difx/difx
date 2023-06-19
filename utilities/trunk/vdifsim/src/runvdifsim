@@ -5,13 +5,22 @@ from sys import argv, exit
 from os.path import expanduser
 
 program = 'runvdifsim'
-version = 0.1
-verdate = '20230311'
+version = 0.2
+verdate = '20230619'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 force = False
 
 dotFile = expanduser('~/.vdifsim')
+
+def usage():
+	print('\n%s ver. %s  %s  %s\n' % (program, version, verdate, author))
+	print('Usage: %s <input file 1> [ <input file 2> [ ... ] ]\n' % program)
+	print('This program spawns instances of vdifsim across multiple computers')
+	print('to parallelize generation of synthetic VDIF baseband data using')
+	print('vdifsim.  The input files should have corresponding .calc and .im')
+	print('files and should have one filename associated with each antenna')
+	print('for each scan.  Only VDIF data format is supported.\n')
 
 def loadDotFile():
     try:
@@ -33,9 +42,10 @@ def loadDotFile():
         print('Note: %s not found' % dotFile)
         return None, None
 
-label = getenv('DIFX_LABEL')
-if label == None:
-	print('Error: DIFX_LABEL env. var. must be defined.  Are you in a Difx Environment?\n');
+# ----------------------------
+
+if len(argv) < 2 or argv[1] in ['-h', '--help']:
+	usage()
 	exit(0)
 
 machines, outPaths = loadDotFile()
@@ -45,6 +55,7 @@ if machines == None:
 	exit(0)
 
 nFile = 0
+
 for a in argv[1:]:
 	if a[-6:] == '.input':
 		nFile += 1
@@ -52,6 +63,16 @@ for a in argv[1:]:
 hosts = ','.join(machines[:nFile])
 args = ' '.join(argv[1:])
 
-cmd = 'mpirun --host %s rungeneric.%s vdifsim %s' % (hosts, label, args)
-print('Executing: %s' % cmd)
-system(cmd)
+label = getenv('DIFX_LABEL')
+if label == None:
+	cmd = 'mpirun --host %s vdifsim %s' % (hosts, args)
+	print('\nDIFX_LABEL env. var. must be defined for automatic running.')
+	print('You might be able to start the process manually by running:\n')
+	print('  %s\n')
+	print('Note: you may need to adjust the above command to match your environment.\n')
+	exit(0)
+
+else:
+	cmd = 'mpirun --host %s rungeneric.%s vdifsim %s' % (hosts, label, args)
+	print('Executing: %s' % cmd)
+	system(cmd)
