@@ -982,6 +982,20 @@ int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts)
 	dv->sourceId = scan->phsCentreSrcs[dv->phaseCentre];
 	dv->freqId   = config->freqSetId;
 	dv->bandId   = dfs->freqId2IF[freqId];
+	if (opts->relabelCircular)
+	{
+		for(i = 0; i < 2; ++i)
+		{
+			if (polPair[i] == 'X')
+			{
+				polPair[i] = 'R';
+			}
+			else if (polPair[i] == 'Y')
+			{
+				polPair[i] = 'L';
+			}
+		}
+	}
 	dv->polId    = getPolProdId(dv, polPair, opts);
 
 	/* freqId should correspond to the freqId table for the actual sideband produced in the 
