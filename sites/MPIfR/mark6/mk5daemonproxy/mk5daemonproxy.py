@@ -18,14 +18,16 @@ import os
 import re
 import socket
 import struct
+import time
 
 author  = 'Jan Wagner'
 version = '1.0.0'
-verdate = '20200822'
+verdate = '20221102'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
 acceptedMessageTypes = ['mark5Status', 'mark6Status', 'mark6SlotStatus']
+
 
 class MarkXMulticast:
 	"""
@@ -34,7 +36,7 @@ class MarkXMulticast:
 
 	def __init__(self, group, port):
 
-		self.socktimeout_sec = 10
+		self.socktimeout_sec = 1
 		self.localname = socket.gethostname()
 		self.mcastaddr = str(group)
 		self.mcastport = int(port)
@@ -48,6 +50,8 @@ class MarkXMulticast:
 		mreq = struct.pack("4sl", socket.inet_aton(self.mcastaddr), socket.INADDR_ANY)
 		self.s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 		self.s.settimeout(self.socktimeout_sec)
+
+		self.regexpMsgtype = re.compile("<type>(\w*)<\/type>")
 
 
 	def requestMSNs(self):
@@ -82,7 +86,7 @@ class MarkXMulticast:
 
 	def receive(self):
 
-		result = ()
+		result = ('',b'')
 
 		try:
 			msg, addr = self.s.recvfrom(8000)
@@ -96,16 +100,27 @@ class MarkXMulticast:
 		return result
 
 
+	def getType(self, msg):
+
+		type = ''
+		mgrp = self.regexpMsgtype.search(str(msg))
+		if mgrp:
+			type = str(mgrp.group(1))
+
+		return type
+
+
+
 class MessageStore:
 	"""
 	Internal storage of multicasted messages, with last-seen counter.
-	proxydata{'hostname'} = { 'last_seen_counter':<int>, messages{'slot':'all|1|2|3|4|5|6'}=msg} }
+	proxydata{'hostname'} = { 'last_seen_time':<int>, messages{'slot':'all|1|2|3|4|5|6'}=msg} }
 	"""
 
-	def __init__(self):
+	def __init__(self, timelimit_secs=30):
 
 		# Arbitrary unit, depends on update interval used outside of this class
-		self.inactivity_count_limit = 4
+		self.inactivity_secs_limit = timelimit_secs
 
 		self.proxydata = {} 
 		self.regexpSlotStatus = re.compile("<slot>([0-9]+)<\/slot>")
@@ -131,29 +146,30 @@ class MessageStore:
 	def update(self, hostname, message):
 		'''Store a new message and reset the last-seen count of the associated host'''
 
+		tnow = int(time.time())
 		slotname = self._messageToSlotStr(message)
 
 		if hostname not in self.proxydata:
 
 			# register a new host
-			self.proxydata[hostname] = { 'last_seen_counter':0, 'messages':{slotname:message} }
+			self.proxydata[hostname] = { 'last_seen_time':tnow, 'messages':{slotname:message} }
 
 		else:
 
 			# purge all old messages when an offline host comes back online
-			if self.proxydata[hostname]['last_seen_counter'] >= self.inactivity_count_limit:
+			if abs(tnow - self.proxydata[hostname]['last_seen_time']) >= self.inactivity_secs_limit:
 				self.proxydata[hostname]['messages'] = {}
 
 			# refresh the host and message
 			self.proxydata[hostname]['messages'][slotname] = message
-			self.proxydata[hostname]['last_seen_counter'] = 0
+			self.proxydata[hostname]['last_seen_time'] = tnow
 
 
 	def increment(self):
 		'''Increment the last-seen counts for all hosts'''
 
-		for hostname in self.proxydata.keys():
-			self.proxydata[hostname]['last_seen_counter'] += 1
+		#for hostname in self.proxydata.keys():
+		#	self.proxydata[hostname]['last_seen_time'] += 1
 		
 
 	def getMessages(self, hostname):
@@ -180,75 +196,106 @@ class MessageStore:
 
 	def printHostStatuses(self):
 
+		tnow = int(time.time())
+
 		for host in self.proxydata.keys():
 			hostmessages = self.getMessages(host)
 			hostslots = self.getSlots(host)
-			print("%s : last seen since %d ticks : %d, %s" % (host, self.proxydata[host]['last_seen_counter'], len(hostmessages), str(hostslots)))
+			print("%s : last seen %d sec ago : %d, %s" % (host, tnow - self.proxydata[host]['last_seen_time'], len(hostmessages), str(hostslots)))
 
 
 	def getOnlineHosts(self):
 
 		hosts = []
+		tnow = int(time.time())
 
 		for hostname in self.proxydata.keys():
-			if self.proxydata[hostname]['last_seen_counter'] < self.inactivity_count_limit:
+			if abs(tnow - self.proxydata[hostname]['last_seen_time']) < self.inactivity_secs_limit:
 				hosts += [hostname]
 
-		return hosts
+		return sorted(hosts)
 
 
 	def getOfflineHosts(self):
 
 		hosts = []
+		tnow = int(time.time())
 
 		for hostname in self.proxydata.keys():
-			if self.proxydata[hostname]['last_seen_counter'] >= self.inactivity_count_limit:
+			if abs(tnow - self.proxydata[hostname]['last_seen_time']) >= self.inactivity_secs_limit:
 				hosts += [hostname]
 
-		return hosts
+		return sorted(hosts)
 
 
+class Mark5DaemonProxy:
 
-def mk5daemonproxy(mgroup, mport, update_interval_secs=5, verbose=0):
+	def __init__(self, mgroup, mport, update_interval_secs=5, timelimit_secs=30, verbose=0, logfile=None):
 
-	tstart = datetime.datetime.utcnow()
-	msgapi = MarkXMulticast(mgroup, mport)
-	msgstore = MessageStore()
+		self.msgapi = MarkXMulticast(mgroup, mport)
+		self.msgstore = MessageStore(timelimit_secs)
 
-	msgapi.requestMSNs()
+		self.update_interval_secs = update_interval_secs
+		self.verbose = verbose
+		self.logfile = logfile
 
-	tlast = tstart
+		if self.verbose:
+			print ('Started repeater on %s port %d' % (str(mgroup), int(mport)))
 
-	while True:
 
-		# Grab a new multicast message and remember it
-		(sender, msg) = msgapi.receive()	
-		if ('mark' in sender) and any(msgtype in str(msg) for msgtype in acceptedMessageTypes):
-			msgstore.update(sender, msg)
+	def run(self):
 
-		# Periodically check for downed hosts and repeat their multicast messages
-		tnow = datetime.datetime.utcnow()
-		if (tnow - tlast).seconds >= update_interval_secs:
+		tstart = datetime.datetime.utcnow()
+
+		self.msgapi.requestMSNs()
+
+		tlast = tstart
+
+		while True:
+
+			# Grab a new multicast message (or time-out)
+			(sender, msg) = self.msgapi.receive()
+			msgtype = self.msgapi.getType(msg)
+			msgstr = str(msg.decode('utf-8'))
+			if ('mark' in sender) and any(msgtype in msgstr for msgtype in acceptedMessageTypes):
+				self.msgstore.update(sender, msg)
+				if self.verbose > 2:
+					print ('RX: %s: %s' % (sender, msgtype))
+			else:
+				if self.verbose > 3:
+					if sender:
+						print ('DROP: %s: %s' % (sender, msgtype))
+					else:
+						print ('Rx TIMEOUT')
+
+			# Time for a periodic re-check?
+			tnow = datetime.datetime.utcnow()
+			if (tnow - tlast).seconds < self.update_interval_secs:
+				continue
 
 			tlast = tnow
+			online = self.msgstore.getOnlineHosts()
+			offline = self.msgstore.getOfflineHosts()
 
 			if verbose > 0:
-				msgstore.printHostStatuses()
+				self.msgstore.printHostStatuses()
 
-			msgstore.increment()
-			online = msgstore.getOnlineHosts()
-			offline = msgstore.getOfflineHosts()
+			print('Runtime  : %d sec' % ( (tnow-tstart).seconds ))
+			print('Online   : %s' % ( str(online) ))
+			print('Offline  : %s' % ( str(offline) ))
 
-			print('Time         : %d sec' % ( (tnow-tstart).seconds ))
-			print('Online hosts : %s' % ( str(online) ))
-			print('Offline hosts: %s' % ( str(offline) ))
-
+			# Repeat last multicast msgs on behalf of downed hosts
 			for host in offline:
-				hostmessages = msgstore.getMessages(host)
-				hostslots = msgstore.getSlots(host)
+				hostmessages = self.msgstore.getMessages(host)
+				hostslots = self.msgstore.getSlots(host)
 				print('   retransmitting on behalf of %s : %d, %s' % ( host, len(hostmessages), str(hostslots) ))
 				for message in hostmessages:
-					msgapi.send(message)
+					if self.verbose > 2:
+						print('TX: %s' % (message))
+					self.msgapi.send(message)
+
+			# Re-request MSNs from hosts that might have come back up
+			self.msgapi.requestMSNs()
 
 			print('-' * 60)
 
@@ -273,4 +320,5 @@ if __name__ == "__main__":
 	if not port:
 		port = defaultDifxMessagePort
 
-	mk5daemonproxy(group, port, verbose=verbose)
+	m5proxy = Mark5DaemonProxy(group, port, verbose=verbose)
+	m5proxy.run()
