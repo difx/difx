@@ -20,6 +20,8 @@ import socket
 import struct
 import time
 
+import systemd
+
 author  = 'Jan Wagner'
 version = '1.0.0'
 verdate = '20221102'
@@ -321,4 +323,8 @@ if __name__ == "__main__":
 		port = defaultDifxMessagePort
 
 	m5proxy = Mark5DaemonProxy(group, port, verbose=verbose)
+
+	state = systemd.daemon.Notification.READY
+	systemd.daemon.notify(state)
+
 	m5proxy.run()
