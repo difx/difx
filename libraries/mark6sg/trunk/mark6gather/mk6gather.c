@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2022 by Walter Brisken                             *
+ *   Copyright (C) 2015-2023 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -37,8 +37,8 @@
 #include "mark6gather.h"
 
 const char program[] = "mk6gather";
-const char version[] = "1.5";
-const char verdate[] = "20220503";
+const char version[] = "1.6";
+const char verdate[] = "20230623";
 
 const char defaultOutfile[] = "gather.out";
 
@@ -105,7 +105,6 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-a") == 0 || strcmp(argv[a], "--append") == 0)
 			{
 				doAppend = 1;
-				fprintf(stderr, "Warning: the --append option of %s is still experimental\n", program);
 			}
 			else if(a < argc-1)
 			{
