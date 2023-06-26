@@ -13,8 +13,8 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '1.09'
-verdate = '20230603'
+version = '1.10'
+verdate = '20230626'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -22,7 +22,7 @@ difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 pythonProgram = 'python'
 openmpiVersion = 'https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.4.tar.bz2'       
 pgplotVersion = '5.2'
-schedVersion = '11.6'
+schedVersion = '11.8'
 schedUpdate = ''
 skedVersion = '2013jan23'
 m4Version = '1.4.16'
@@ -3232,7 +3232,7 @@ def sched(origComps, params, args, verbose, pretend):
 		exit(0)
 		
 	arch = platform.machine()
-	schedSrcFile = 'sched-%s%s.tar.gz' % (schedVersion, schedUpdate)
+	schedSrcFile = 'sched_%s%s.tar.gz' % (schedVersion, schedUpdate)
 	schedUrl = 'ftp://ftp.aoc.nrao.edu/pub/sched/sched_%s/%s' % (schedVersion, schedSrcFile)
 	difxBase = environ['DIFX_BASE'] + '/'
 	archDir = environ['DIFX_ARCH_ROOT'] + '/'
@@ -3253,7 +3253,7 @@ def sched(origComps, params, args, verbose, pretend):
 	rv = ftpFile(schedUrl, tarDir, schedSrcFile, args, verbose, pretend)
 	if rv < 0:
 		tarOptions = '--strip-components 1'
-		schedSrcFile = 'sched-%s%s.tgz' % (schedVersion, schedUpdate)
+		schedSrcFile = 'sched-%s%s.tar.gz' % (schedVersion, schedUpdate)
 		schedUrl = 'ftp://ftp.aoc.nrao.edu/pub/sched/sched-%s/%s' % (schedVersion, schedSrcFile)
 		rv = ftpFile(schedUrl, tarDir, schedSrcFile, args, verbose, pretend)
 		if rv < 0:
@@ -3269,15 +3269,16 @@ def sched(origComps, params, args, verbose, pretend):
 	if isdir(schedDir):
 		print('Stopping because %s exists' % schedDir)
 		return
-	execute('mkdir -p %s' % schedDir, verbose, pretend)
+	#execute('mkdir -p %s' % schedDir, verbose, pretend)
+
+	chdir(archDir)
+	execute('tar zxf %s/%s %s' % (tarDir, schedSrcFile, tarOptions), verbose, pretend)
 
 	if islink('%s/sched' % archDir) and isdir('%s/sched' % archDir):
 		execute('rm %s/sched' % archDir, verbose, pretend)
 	if not isfile('%s/sched' % archDir):
 		execute('ln -f -s %s %s/sched' % (schedDir, archDir), verbose, pretend)
 	
-	chdir(schedDir)
-	execute('tar zxf %s/%s %s' % (tarDir, schedSrcFile, tarOptions), verbose, pretend)
 	chdir(schedDir + '/src')
 
 	# make sed expression that converts Makefile.master into Makefile
