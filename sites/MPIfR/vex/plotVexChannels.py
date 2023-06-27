@@ -23,6 +23,7 @@ data records to be produced according to the BASELINE table are shown
 underlaid in the plot in light-green.
 '''
 
+import argparse
 import math, fractions, os, re, sys
 import vex  # same as utilized by autozooms module
 
@@ -45,15 +46,19 @@ except:
 __title__ = "plotVexChannels - A graphical overview of channels in a VEX file"
 __author__ = "Jan Wagner"
 __license__ = "GNU GPL v3"
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __copyright__ = "(C) 2020 by Jan Wagner, MPIfR"
 
 
-def usage():
-	print('')
-	print(__title__)
-	print(__copyright__)
-	print(__doc__)
+def parse_args(args):
+
+	parser = argparse.ArgumentParser(description=__doc__, add_help=True, formatter_class=argparse.RawDescriptionHelpFormatter)
+	parser.add_argument('-Z', '--no-zoom',       help='Do not plot zoom bands', action='store_true')
+	parser.add_argument('-O', '--no-outputband', help='Do not plot output bands', action='store_true')
+	parser.add_argument('-V', '--no-vex',        help='Do not plot VEX chan_defs', action='store_true')
+	parser.add_argument('--version', action='version', version='%(prog)s {version}'.format(version=__version__))
+	parser.add_argument('files', nargs='*')
+	return parser.parse_args(args)
 
 
 class VexFreq:
@@ -152,6 +157,7 @@ class ZoomFreqs:
 		self.zoomBlocks = {}
 		self.zoomBlockNames = []
 		self.zoomBlockLowestFreq = {}
+		self.zoomBlockHighestFreq = {}
 
 	def loadInput(self, inputfilename):
 		"""Gather all baseline -referenced zoom frequencies listed in the .input file"""
@@ -191,6 +197,7 @@ class ZoomFreqs:
 			zoomsetName = 'inputfile'
 			self.zoomBlocks[zoomsetName] = [VexFreq(cfg.freqs[fq].low_edge(), cfg.freqs[fq].high_edge(), +1) for fq in fqIDs]
 			self.zoomBlockLowestFreq[zoomsetName] = min([cfg.freqs[fq].low_edge() for fq in fqIDs])
+			self.zoomBlockHighestFreq[zoomsetName] = max([cfg.freqs[fq].high_edge() for fq in fqIDs])
 			self.zoomBlockNames = self.zoomBlocks.keys()
 
 	def loadV2D(self, v2dfilename):
@@ -212,12 +219,14 @@ class ZoomFreqs:
 				currZoomBlock = line.split()[1]
 				self.zoomBlocks[currZoomBlock] = []
 				self.zoomBlockLowestFreq[currZoomBlock] = 1e99
+				self.zoomBlockHighestFreq[currZoomBlock] = 0
 			if 'addZoomFreq' in line and 'freq@' in line:
 				r = line.find('freq@')
 				args = re.split(r'[@/]', line[r:])  # example: ['freq', '86268.000000', 'bw', '32.000000', 'noparent', 'true']
 				fqEntry = VexFreq(float(args[1]), float(args[1])+float(args[3]), +1)
 				self.zoomBlocks[currZoomBlock].append(fqEntry)
 				self.zoomBlockLowestFreq[currZoomBlock] = min(self.zoomBlockLowestFreq[currZoomBlock], fqEntry.flow)
+				self.zoomBlockHighestFreq[currZoomBlock] = max(self.zoomBlockHighestFreq[currZoomBlock], fqEntry.fhigh)
 
 		self.zoomBlockNames = self.zoomBlocks.keys()
 
@@ -231,6 +240,7 @@ class OutputbandFreqs:
 	def clear(self):
 		self.outputFreqs = []
 		self.outputLowestFreq = 1e99
+		self.outputHighestFreq = 0
 
 	def loadInput(self, inputfilename):
 		"""Gather all baseline-outputted frequencies listed in the .input file"""
@@ -251,6 +261,7 @@ class OutputbandFreqs:
 			fqEntry = VexFreq(cfg.freqs[fq].low_edge(), cfg.freqs[fq].high_edge(), +1 if cfg.freqs[fq].lsb else -1)
 			self.outputFreqs.append(fqEntry)
 			self.outputLowestFreq = min(self.outputLowestFreq, fqEntry.flow)
+			self.outputHighestFreq = max(self.outputHighestFreq, fqEntry.fhigh)
 
 	def loadV2D(self, v2dfilename):
 		"""Add all outputbands from SETUP section of a v2d file"""
@@ -275,6 +286,7 @@ class OutputbandFreqs:
 				fqEntry = VexFreq(float(args[1]), float(args[1])+float(args[3]), +1)
 				self.outputFreqs.append(fqEntry)
 				self.outputLowestFreq = min(self.outputLowestFreq, fqEntry.flow)
+				self.outputHighestFreq = max(self.outputHighestFreq, fqEntry.fhigh)
 
 
 class Charting:
@@ -353,10 +365,8 @@ class Charting:
 			selectedFreqs.append(freq)
 
 		numFreqs = len(selectedFreqs)
-		if numFreqs < 1:
-			print("No frequency blocks were plotted out of %s" % (str(allFreqs)))
-			return
-		print("Showing VEX $FREQ blocks %s" % (str(selectedFreqs)))
+		if numFreqs > 0:
+			print("Showing VEX $FREQ blocks %s" % (str(selectedFreqs)))
 
 		# Colors
 		fig, ax = plt.subplots()
@@ -370,6 +380,8 @@ class Charting:
 				zooms = zoomChannels.zoomBlocks[zoomblock]
 				for zoom_nr in range(0,len(zooms)): 
 					self.plotZoomChannelBar(ax, ymin, ymax, zooms[zoom_nr])
+				minfreq = min(minfreq, zoomChannels.zoomBlockLowestFreq[zoomblock])
+				maxfreq = max(maxfreq, zoomChannels.zoomBlockHighestFreq[zoomblock])
 				ax.text(zoomChannels.zoomBlockLowestFreq[zoomblock], ymin+0.25, 'ZOOM "' + str(zoomblock) + '"', fontsize=10, alpha=0.8)
 
 		# Outputbands; generally identical to zooms
@@ -377,7 +389,8 @@ class Charting:
 			ofreqs = outputBands.outputFreqs
 			for outputband_nr in range(len(ofreqs)):
 				self.plotOutputbandBar(ax, ymin, ymax, ofreqs[outputband_nr])
-
+			minfreq = min(minfreq, outputBands.outputLowestFreq)
+			maxfreq = max(maxfreq, outputBands.outputHighestFreq)
 
 		# VEX channels
 		ylevel = 1
@@ -416,32 +429,26 @@ class Charting:
 
 if __name__ == "__main__":
 
-	# User args
-	if len(sys.argv) < 2:
-		usage()
+
+	userargs = parse_args(sys.argv[1:])
+	if len(userargs.files) < 1:
 		sys.exit(0)
 
 	subset = []
 	v2dfile = None
 	vexfile = None
 	inputfile = None
-	for n in range(1,len(sys.argv)):
-		if sys.argv[n].endswith('.vex.obs') or sys.argv[n].endswith('.vex'):
-			vexfile = sys.argv[n]
-		elif sys.argv[n].endswith('.v2d'):
-			v2dfile = sys.argv[n]
-		elif sys.argv[n].endswith('.input'):
-			inputfile = sys.argv[n]
-		else:
-			subset.append(sys.argv[n])
 
-	# Help/Version?
-	if sys.argv[1]=='-h' or sys.argv[1]=='--help':
-		usage()
-		sys.exit(1)
-	if sys.argv[1]=='-v' or sys.argv[1]=='--version':
-		print(__version__)
-		sys.exit(1)
+	for fname in userargs.files:
+		if fname.endswith('.vex.obs') or fname.endswith('.vex'):
+			vexfile = fname
+		elif fname.endswith('.v2d'):
+			v2dfile = fname
+		elif fname.endswith('.input'):
+			inputfile = fname
+		else:
+			subset.append(fname)
+
 	if not vexfile:
 		print('Please specify a VEX file')
 		sys.exit(1)
@@ -452,14 +459,23 @@ if __name__ == "__main__":
 	ob = OutputbandFreqs(verbosity=0)
 	chart = Charting(verbosity=4)
 
-	# Load vex file and v2d file if any
+	# Load vex file, other files if any
 	vx.loadVEX(vexfile)
+
 	if v2dfile:
 		zf.loadV2D(v2dfile)
 		ob.loadV2D(v2dfile)
+
 	if inputfile:
 		zf.loadInput(inputfile)
 		ob.loadInput(inputfile)
+
+	if userargs.no_zoom:
+		zf.clear()
+	if userargs.no_outputband:
+		ob.clear()
+	if userargs.no_vex:
+		vx.clear()
 
 	# Plot
 	chart.visualize(vx, zoomChannels=zf, outputBands=ob, fqNameSubset=subset)
