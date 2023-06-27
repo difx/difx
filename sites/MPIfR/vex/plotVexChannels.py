@@ -45,7 +45,7 @@ except:
 __title__ = "plotVexChannels - A graphical overview of channels in a VEX file"
 __author__ = "Jan Wagner"
 __license__ = "GNU GPL v3"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __copyright__ = "(C) 2020 by Jan Wagner, MPIfR"
 
 
@@ -153,6 +153,46 @@ class ZoomFreqs:
 		self.zoomBlockNames = []
 		self.zoomBlockLowestFreq = {}
 
+	def loadInput(self, inputfilename):
+		"""Gather all baseline -referenced zoom frequencies listed in the .input file"""
+
+		if not gotParseDiFX:
+			print ('No parseDiFX library found, cannot process %s' % (inputfilename))
+			return
+
+		difx = parseDiFX.DiFXFile(inputfile)
+		if not difx.isvalid():
+			print("Could not parse input file %s correctly, skipping it." % (inputfilename))
+			return
+
+		cfg = difx.metainfo
+
+		fqIDs = set()
+
+		for b in cfg.baselines:
+			ds1 = cfg.datastreams[b.dsaindex]
+			ds2 = cfg.datastreams[b.dsbindex]
+			for n in range(len(b.dsabandindex)):
+				bandnr = min(b.dsabandindex[n])
+				if bandnr >= len(ds1.recbandindex):
+					f = ds1.zoombandindex[bandnr - len(ds1.recbandindex)]
+					fq = ds1.zoomfreqindex[f]
+					fqIDs.add(fq)
+			for n in range(len(b.dsbbandindex)):
+				bandnr = min(b.dsbbandindex[n])
+				if bandnr >= len(ds2.recbandindex):
+					f = ds2.zoombandindex[bandnr - len(ds2.recbandindex)]
+					fq = ds2.zoomfreqindex[f]
+					fqIDs.add(fq)
+
+		fqIDs = sorted(list(fqIDs))
+
+		if len(fqIDs) > 0:
+			zoomsetName = 'inputfile'
+			self.zoomBlocks[zoomsetName] = [VexFreq(cfg.freqs[fq].low_edge(), cfg.freqs[fq].high_edge(), +1) for fq in fqIDs]
+			self.zoomBlockLowestFreq[zoomsetName] = min([cfg.freqs[fq].low_edge() for fq in fqIDs])
+			self.zoomBlockNames = self.zoomBlocks.keys()
+
 	def loadV2D(self, v2dfilename):
 		"""Add all zoom setups (whether actually used or not!) from a v2d file"""
 
@@ -241,7 +281,8 @@ class Charting:
 
 	def __init__(self, verbosity=0):
 		self.verbosity = verbosity
-
+		self.wedgecount = 0 
+		self.barcount = 0
 
 	def plotFreqchannelWedge(self, ax, yy, height, channelID, channel, color=[109.0/255,155.0/255,194.0/255]):
 		"""Plots a channel:VexFreq in graphical style of a frequency band, as a slanted (USB/LSB) wedge"""
@@ -261,7 +302,11 @@ class Charting:
 			y = [yy-hh, yy-hh, yy+(1-slant)*hh, yy+hh]
 		else:
 			y = [yy-hh, yy-hh, yy+hh, yy+(1-slant)*hh]
-		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color))
+
+		self.wedgecount += 1
+		a = 0.9 + 0.1*(self.wedgecount % 2)
+
+		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color, alpha=a))
 
 		ax.text(channel.flow + bw/4, yy-height/4, str(channelID), fontsize=10)
 
@@ -271,7 +316,11 @@ class Charting:
 
 		x = [channel.flow, channel.fhigh, channel.fhigh, channel.flow]
 		y = [ymin, ymin, ymax, ymax]
-		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='white', facecolor=color, alpha=0.3))
+
+		self.barcount += 1
+		a = 0.3 + 0.1*(self.barcount % 2)
+
+		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='white', facecolor=color, alpha=a))
 
 
 	def plotOutputbandBar(self, ax, ymin, ymax, channel, color=[0.0/255,152.0/255,143.0/255]):
@@ -279,7 +328,11 @@ class Charting:
 
 		x = [channel.flow, channel.fhigh, channel.fhigh, channel.flow]
 		y = [ymin, ymin, ymax, ymax]
-		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color, alpha=0.1))
+
+		self.barcount += 1
+		a = 0.1 + 0.1*(self.barcount % 2)
+
+		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color, alpha=a))
 
 
 	def visualize(self, vexChannels, zoomChannels=None, outputBands=None, fqNameSubset=None):
@@ -317,7 +370,7 @@ class Charting:
 				zooms = zoomChannels.zoomBlocks[zoomblock]
 				for zoom_nr in range(0,len(zooms)): 
 					self.plotZoomChannelBar(ax, ymin, ymax, zooms[zoom_nr])
-				ax.text(zoomChannels.zoomBlockLowestFreq[zoomblock], ymin+0.25, 'v2d ZOOM "' + str(zoomblock) + '"', fontsize=10, alpha=0.8)
+				ax.text(zoomChannels.zoomBlockLowestFreq[zoomblock], ymin+0.25, 'ZOOM "' + str(zoomblock) + '"', fontsize=10, alpha=0.8)
 
 		# Outputbands; generally identical to zooms
 		if outputBands:
@@ -405,6 +458,7 @@ if __name__ == "__main__":
 		zf.loadV2D(v2dfile)
 		ob.loadV2D(v2dfile)
 	if inputfile:
+		zf.loadInput(inputfile)
 		ob.loadInput(inputfile)
 
 	# Plot
