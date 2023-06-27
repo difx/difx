@@ -3,6 +3,13 @@
 echo "Unmounting previously mounted FUSE filesystems"
 fusermount -u /`hostname -s`_fuse/12
 fusermount -u /`hostname -s`_fuse/34
+fusermount -u /`hostname -s`_fuse/56
+fusermount -u /`hostname -s`_fuse/1
+fusermount -u /`hostname -s`_fuse/2
+fusermount -u /`hostname -s`_fuse/3
+fusermount -u /`hostname -s`_fuse/4
+fusermount -u /`hostname -s`_fuse/5
+fusermount -u /`hostname -s`_fuse/6
 
 . /data/cluster/difx/DiFX-trunk_64/setup_difx
 

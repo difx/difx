@@ -14,7 +14,7 @@ if [[ `ps axuf|grep "bin\/mk5daemon"` == "" ]]; then
 	startMk5daemon
 fi
 
-while [[ $dcount != $DISKS_EXPECTED ]]; do
+while [[ $dcount -lt $DISKS_EXPECTED ]]; do
 	sleep 1
 	echo "Detected $dcount of $DISKS_EXPECTED disks, waiting for more..."
 	dcount=`mount|grep disks|grep -v meta|wc -l`
