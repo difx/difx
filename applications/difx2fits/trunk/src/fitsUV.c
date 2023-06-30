@@ -39,6 +39,7 @@
 #include "fitsUV.h"
 #include "jobmatrix.h"
 #include "util.h"
+#include "bandpass.h"
 #ifdef HAVE_FFTW
 #include "sniffer.h"
 #endif
@@ -694,13 +695,11 @@ static double evalPoly(const double *p, int n, double x)
 }
 	
 /* Auxilliary debugging routine for printing the contents of visilibity record */
-static void UVfitsDump(const DifxVis *dv)
+static void UVfitsDump(const DifxVis *dv, double utcmin, double utcmax)
 {
 	int a1, a2, i,j,k,m;
 	int startChan;
-	double utcmin, utcmax;
 	const double eps = 0.01;
-	char *str;
 	const DifxInput *D;
 
 	D = dv->D;
@@ -711,24 +710,6 @@ static void UVfitsDump(const DifxVis *dv)
 
 	m=dv->nFreq*dv->D->nPolar;
 
-	str = getenv("DIFX2FITS_UVFITS_DUMP_UTCMIN");
-	if(!str)
-	{
-		utcmin = 0.0;
-	}
-	else
-	{
-		utcmin = atof(str);
-	}
-	str = getenv("DIFX2FITS_UVFITS_DUMP_UTCMAX");
-	if(!str)
-	{
-		utcmax = 8640000;
-	}
-	else
-	{
-		utcmax = atof(str);
-	}
 	if(dv->record->utc*86400.0 < utcmax + eps  && dv->record->utc*86400.0 > utcmin - eps)
 	{
 		printf("UV head utc: %9.7f ista %1d %1d fi %3d pol %1d start: %d stop: %d nfreq: %3d npol: %1d ncha: %4d nd: %8d wei %f scale: %g\n",
@@ -752,7 +733,7 @@ static void UVfitsDump(const DifxVis *dv)
 	}
 }
 
-int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts)
+int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const Bandpass *B)
 {
 	int i, i1, v;
 	int antId1, antId2;	/* These reference the DifxInput Antenna */
@@ -1114,6 +1095,15 @@ int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts)
 		}
 	}
 
+	/* apply bandpass if provided */
+	if(nFloat == 2)	/* currently this is all that is supported */
+	{
+		if(B)
+		{
+			applyBandpass((float complex *)(dv->spectrum), dv->D->nOutChan, freqId, antId1, polPair[0], antId2, polPair[1], B);
+		}
+	}
+
 	/* don't read weighted data into unweighted slot */
 	if(nFloat > dv->nComplex)
 	{
@@ -1355,7 +1345,7 @@ static int storevis(DifxVis *dv)
 	return 0;
 }
 
-static int readvisrecord(DifxVis *dv, const struct CommandLineOptions *opts, int *nSkipped_recs)
+static int readvisrecord(DifxVis *dv, const struct CommandLineOptions *opts, const Bandpass *B, int *nSkipped_recs)
 {
 	/* blank array */
 	memset(dv->weight, 0, dv->nFreq*dv->D->nPolar*sizeof(float));
@@ -1371,7 +1361,7 @@ static int readvisrecord(DifxVis *dv, const struct CommandLineOptions *opts, int
 		{
 			storevis(dv);
 		}
-		dv->changed = DifxVisNewUVData(dv, opts);
+		dv->changed = DifxVisNewUVData(dv, opts, B);
 		if(opts->verbose > 3)
 		{
 			printf("readvisrecord: changed is %d\n", dv->changed);
@@ -1421,9 +1411,34 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	int dvId;
 	double firstMJD = 1.0e7;
 	double lastMJD = 0.0;
+	int doUVDump = 0;
+	double utcmin = 0.0, utcmax = 8640000.0;
 #ifdef HAVE_FFTW
 	Sniffer *S = 0;
 #endif
+	Bandpass *B = 0;
+
+	if(opts->applyBandpassFile)
+	{
+		B = loadBandpass(opts->applyBandpassFile, D);
+	}
+
+	str = getenv("DIFX2FITS_UVFITS_DUMP");
+	if(str && strcasecmp(str, "yes") == 0)
+	{
+		doUVDump = 1;
+
+		str = getenv("DIFX2FITS_UVFITS_DUMP_UTCMIN");
+		if(str)
+		{
+			utcmin = atof(str);
+		}
+		str = getenv("DIFX2FITS_UVFITS_DUMP_UTCMAX");
+		if(str)
+		{
+			utcmax = atof(str);
+		}
+	}
 
 	/* define the columns in the UV data FITS Table */
 	struct fitsBinTableColumn columns[] =
@@ -1633,7 +1648,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			fprintf(stdout, "Priming, dv=%d/%d\n", dvId, nDifxVis);
 		}
-		readvisrecord(dvs[dvId], opts, &nSkipped_recs);
+		readvisrecord(dvs[dvId], opts, B, &nSkipped_recs);
 		if(opts->verbose > 3)
 		{
 			fprintf(stdout, "Done priming DifxVis objects\n");
@@ -1704,13 +1719,9 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 				feedJobMatrix(jobMatrix, dv->record, dv->jobId);
 			}
 
-			str = getenv("DIFX2FITS_UVFITS_DUMP");
-			if(str)
+			if(doUVDump)	/* diagnostic; set by environment variables (see above in this function) */
 			{
-				if(strncpy(str, "yes", 4))
-				{
-					UVfitsDump(dv);
-				}
+				UVfitsDump(dv, utcmin, utcmax);
 			}
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, dv->record);
@@ -1755,7 +1766,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 				return 0;
 			}
 
-			readvisrecord(dv, opts, &nSkipped_recs);
+			readvisrecord(dv, opts, B, &nSkipped_recs);
 			nSkipped = nSkipped + nSkipped_recs;
 		}
 	}
@@ -1791,6 +1802,12 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		S = 0;
 	}
 #endif
+	if(B)
+	{
+		deleteBandpass(B);
+		B = 0;
+	}
+
 	if(jobMatrix)
 	{
 		writeJobMatrix(jobMatrix, passNum);

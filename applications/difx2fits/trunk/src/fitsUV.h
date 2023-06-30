@@ -35,6 +35,7 @@
 #include <sys/types.h>
 #include "difxio/parsedifx.h"
 #include "difx2fits.h"
+#include "bandpass.h"
 
 struct __attribute__((packed)) UVrow
 {
@@ -93,7 +94,7 @@ typedef struct
 DifxVis *newDifxVis(const DifxInput *D, int jobId, const struct CommandLineOptions *opts, int pulsarBin, int phaseCentre);
 void deleteDifxVis(DifxVis *dv);
 int DifxVisNextFile(DifxVis *dv);
-int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts);
+int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const Bandpass *B);
 int DifxVisCollectRandomParams(const DifxVis *dv);
 
 

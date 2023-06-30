@@ -8,6 +8,8 @@ Version 3.8.0
 * Add external utility (apd2antenna) that converts .apd file into antenna-based quantities
 * Sniffer: option to write out bandpass
 * Add external utility (bp2antenna) that converts .bandpass file into antenna-based quantities with possibility to smooth in frequency
+* Clean up and fix some logic related to diagostic UV dumping
+* Add option to apply a complex bandpass prior to writing .FITS file.  see top of src/bandpass.h for some additional info. 
 
 Version 3.7.0
 * Post DiFX-2.6

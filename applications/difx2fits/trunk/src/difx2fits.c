@@ -165,6 +165,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --bandpass          Write baseline-based bandpass to .bandpass file\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --applybandpass <file>\n");
+	fprintf(stderr, "                      Read <file> and apply it as a bandpass to the output\n");
 	fprintf(stderr, "%s responds to the following environment variables:\n", program);
 	fprintf(stderr, "    DIFX_GROUP_ID             If set, run with umask(2).\n");
 	fprintf(stderr, "    DIFX_VERSION              The DiFX version to report.\n");
@@ -491,6 +493,13 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				{
 					++i;
 					opts->historyFile = strdup(argv[i]);
+				}
+				else if(strcmp(argv[i], "--applybandpass") == 0)
+				{
+					++i;
+					opts->applyBandpassFile = argv[i];
+					printf("** Note: the --applybandpass option is experimental at this time.\n");
+					printf("** Use at your own risk.\n");
 				}
 				else
 				{
