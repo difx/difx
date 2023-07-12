@@ -26,7 +26,7 @@ author  = 'Jan Wagner'
 version = '1.0.0'
 verdate = '20221102'
 
-defaultDifxMessagePort = 50200
+defaultDifxMessagePort = 50201
 defaultDifxMessageGroup = '224.2.2.1'
 acceptedMessageTypes = ['mark5Status', 'mark6Status', 'mark6SlotStatus']
 
@@ -115,7 +115,7 @@ class MarkXMulticast:
 
 class MessageStore:
 	"""
-	Internal storage of multicasted messages, with last-seen counter.
+	Internal storage of multicasted messages, with last-seen timestamps.
 	proxydata{'hostname'} = { 'last_seen_time':<int>, messages{'slot':'all|1|2|3|4|5|6'}=msg} }
 	"""
 
@@ -166,13 +166,6 @@ class MessageStore:
 			self.proxydata[hostname]['messages'][slotname] = message
 			self.proxydata[hostname]['last_seen_time'] = tnow
 
-
-	def increment(self):
-		'''Increment the last-seen counts for all hosts'''
-
-		#for hostname in self.proxydata.keys():
-		#	self.proxydata[hostname]['last_seen_time'] += 1
-		
 
 	def getMessages(self, hostname):
 
@@ -232,7 +225,7 @@ class MessageStore:
 
 class Mark5DaemonProxy:
 
-	def __init__(self, mgroup, mport, update_interval_secs=5, timelimit_secs=30, verbose=0, logfile=None):
+	def __init__(self, mgroup, mport, update_interval_secs=5, timelimit_secs=30, verbose=0, logfile=None, notify_systemd=False):
 
 		self.msgapi = MarkXMulticast(mgroup, mport)
 		self.msgstore = MessageStore(timelimit_secs)
@@ -243,6 +236,11 @@ class Mark5DaemonProxy:
 
 		if self.verbose:
 			print ('Started repeater on %s port %d' % (str(mgroup), int(mport)))
+
+		if notify_systemd:
+			state = systemd.daemon.Notification.READY
+			systemd.daemon.notify(state)
+
 
 
 	def run(self):
@@ -309,6 +307,7 @@ if __name__ == "__main__":
 	epilog +=  '\nDIFX_PORT: if not defined a default of %s will be used.' % defaultDifxMessagePort
 
 	parser = argparse.ArgumentParser(epilog=epilog, formatter_class=argparse.RawDescriptionHelpFormatter, description=__doc__)
+	parser.add_argument("-d", "--systemd", action="store_true", help="notify Linux systemd upon start of the proxy");
 	parser.add_argument("-v", "--verbose", action="count", dest="verbose", default=0, help="increase verbosity level");
         
 	args = parser.parse_args()
@@ -322,9 +321,6 @@ if __name__ == "__main__":
 	if not port:
 		port = defaultDifxMessagePort
 
-	m5proxy = Mark5DaemonProxy(group, port, verbose=verbose)
-
-	state = systemd.daemon.Notification.READY
-	systemd.daemon.notify(state)
+	m5proxy = Mark5DaemonProxy(group, port, verbose=verbose, notify_systemd=args.systemd)
 
 	m5proxy.run()
