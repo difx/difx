@@ -7558,9 +7558,17 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		}
 		else if(f->databytesperpacket != dataframelength - f->frameheadersize)
 		{
-			fprintf(m5stderr, "VDIF Warning: Changing databytesperpacket from %d to %d\n",
-				f->databytesperpacket, dataframelength - f->frameheadersize);
-			f->databytesperpacket = dataframelength - f->frameheadersize;
+			if ((((char*)ms->frame) + dataframelength) <= (((char*)ms->datawindowsize) + ms->datawindowsize))
+			{
+				fprintf(m5stderr, "VDIF Warning: Changing databytesperpacket from %d to %d\n",
+					f->databytesperpacket, dataframelength - f->frameheadersize);
+				f->databytesperpacket = dataframelength - f->frameheadersize;
+			}
+			else
+			{
+				fprintf(m5stderr, "VDIF Warning: Ignoring databytesperpacket change from %d to %d as it would exceed buffer\n",
+					f->databytesperpacket, dataframelength - f->frameheadersize);
+			}
 		}
 
 		ms->payloadoffset = f->frameheadersize;
