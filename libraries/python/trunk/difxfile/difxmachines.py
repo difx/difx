@@ -65,7 +65,7 @@ class DifxMachines(object):
 					self.nodes[nodename].slurm_numProc = 0
 					nstate = self.slurmConf.getNodeState(nodename)
 					if 'CPUAlloc' in nstate:
-						self.nodes[nodename].slurm_numProc = int(nstate['CPUAlloc'])
+						self.nodes[nodename].slurm_numProc = int(nstate['CPUAlloc'])/int(nstate['ThreadsPerCore'])
 
 
 	def __str__(self):
@@ -244,7 +244,7 @@ class DifxMachines(object):
 			try:
 				out = subprocess.check_output(['scontrol', 'show', 'node', difxnodename])
 				for line in out.split('\n'):
-					if 'CPUAlloc' in line or 'Threads' in line or 'AllocMem' in line:
+					if 'CPUAlloc' in line or 'Threads' in line or 'AllocMem' in line or 'ThreadsPerCore' in line:
 						d = dict(x.split('=') for x in line.strip().split(' '))
 						values.update(d)
 			except Exception as e:
