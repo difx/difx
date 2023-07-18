@@ -243,6 +243,7 @@ class DifxMachines(object):
 			values = {}
 			try:
 				out = subprocess.check_output(['scontrol', 'show', 'node', difxnodename])
+				out = out.decode('utf8')
 				for line in out.split('\n'):
 					if 'CPUAlloc' in line or 'Threads' in line or 'AllocMem' in line or 'ThreadsPerCore' in line:
 						d = dict(x.split('=') for x in line.strip().split(' '))
