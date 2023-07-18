@@ -30,8 +30,8 @@ import os
 import os.path
 #from string import upper,strip
 import re
+import subprocess
 import sys
-
 
 class DifxMachines(object):
 	"""
@@ -62,6 +62,10 @@ class DifxMachines(object):
 				if m > 0:
 					self.nodes[nodename].isInSlurm = True
 					self.nodes[nodename].slurm_maxProc = m
+					self.nodes[nodename].slurm_numProc = 0
+					nstate = self.slurmConf.getNodeState(nodename)
+					if 'CPUAlloc' in nstate:
+						self.nodes[nodename].slurm_numProc = int(nstate['CPUAlloc'])
 
 
 	def __str__(self):
@@ -234,6 +238,18 @@ class DifxMachines(object):
 
 			return data
 
+		def getNodeState(self, difxnodename):
+			"""Return some of 'scontrol show node <difxnodename>' fields as a dictionary"""
+			values = {}
+			try:
+				out = subprocess.check_output(['scontrol', 'show', 'node', difxnodename])
+				for line in out.split('\n'):
+					if 'CPUAlloc' in line or 'Threads' in line or 'AllocMem' in line:
+						d = dict(x.split('=') for x in line.strip().split(' '))
+						values.update(d)
+			except Exception as e:
+				pass
+			return values
 
 		def isValid(self):
 			return len(self.nodeDefs) > 0
