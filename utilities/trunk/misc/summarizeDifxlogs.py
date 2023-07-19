@@ -75,7 +75,7 @@ def getWeightlabels(inputfile):
 			break
 		elif 'TELESCOPE NAME ' in l:
 			antindex = int(l[15:20].replace(':',' '))
-			name = l[17:].strip()
+			name = l[20:].strip()
 			if not name in telescopes:
 				telescopes[antindex] = name
 		elif 'TELESCOPE INDEX:' in l:
