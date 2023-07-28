@@ -3,7 +3,7 @@ import os
 import itertools
 from time import sleep
 from copy import deepcopy
-from pyqtgraph.Qt import QtGui
+from PyQt5 import QtWidgets
 import numpy
 import pyqtgraph as pg
 from difxplot.vis import read_vis, AverageVis
@@ -12,24 +12,29 @@ from difxplot.util import InputDetail, check_for_difx_file
 class RefantNotFound(Exception):
     """refant not found"""
 
-class Plot:
-    """Base plotting class"""
-    def __init__(self, exp_info):
-        self.exp_info = exp_info
-        self.bl_plots = {}
-        self.nrows = 0
-        self.ncols = 0
+class App:
+    """Stores the app and view for reuse in case of live view- this should allow position/size to not change"""
+    def __init__(self):
         # need to use openGL for pen width > 1
         pg.setConfigOptions(foreground="k", background="w", useOpenGL=True)
         # Enable antialiasing for prettier plots - doesn't work for openGL
         pg.setConfigOptions(antialias=True)
-
-        self.app = QtGui.QApplication([])
+    
+        self.app = QtWidgets.QApplication([])
         self.view = pg.GraphicsView()
-        self.win = pg.GraphicsLayout()
-        self.app.setApplicationDisplayName(f"Autocorrelations for {self.exp_info.source_name}")
-        self.view.setCentralItem(self.win)
         self.view.resize(1900, 1000)
+
+class Plot:
+    """Base plotting class"""
+    def __init__(self, exp_info, app):
+        self.exp_info = exp_info
+        self.bl_plots = {}
+        self.nrows = 0
+        self.ncols = 0
+        # setup the window (i.e. inside the app and view)
+        self.win = pg.GraphicsLayout()
+        app.view.setWindowTitle(f"Autocorrelations on {self.exp_info.source_name}")
+        app.view.setCentralItem(self.win)
         self.win.layout.setSpacing(0.0)
 
         # make list of all baselines (telescope pairs) we still want this even though only plotting autos so that the averages doesn't care
@@ -102,8 +107,8 @@ class Plot:
 class PlotAll(Plot):
     """subclass of Plot, handle plotting all baseline pairs, without splitting frequencies"""
 
-    def __init__(self, exp_info, ncols=False):
-        super().__init__(exp_info)
+    def __init__(self, exp_info, app, ncols=False):
+        super().__init__(exp_info, app)
         self.calc_ncols(ncols)
         self.nrows = int(numpy.ceil(exp_info.numtelescopes / self.ncols))
         self.setup_plots()
@@ -112,8 +117,8 @@ class PlotAll(Plot):
 class PlotRef(Plot):
     """subclass of Plot, handle plotting to a reference station, without splitting frequencies"""
 
-    def __init__(self, exp_info, refant, ncols=False):
-        super().__init__(exp_info)
+    def __init__(self, exp_info, refant, app, ncols=False):
+        super().__init__(exp_info, app)
         self.refant = refant.upper()
         if self.refant not in [t.name for t in exp_info.telescopes]:
             raise RefantNotFound
@@ -131,8 +136,8 @@ class PlotRef(Plot):
 class PlotAllSplit(Plot):
     """subclass of Plot, handle plotting all baseline pairs, but split frequencies"""
 
-    def __init__(self, exp_info, ncols=False):
-        super().__init__(exp_info)
+    def __init__(self, exp_info, app, ncols=False):
+        super().__init__(exp_info, app)
         self.exp_info.numbaselines*=2
         new_bl = []
         for bl in self.baselines:
@@ -164,8 +169,8 @@ class PlotAllSplit(Plot):
 class PlotRefSplit(Plot):
     """subclass of Plot, handle plotting baseline pairs, to a refant but split frequencies"""
 
-    def __init__(self, exp_info, refant, ncols=False):
-        super().__init__(exp_info)
+    def __init__(self, exp_info, refant, app, ncols=False):
+        super().__init__(exp_info, app)
         self.refant = refant.upper()
         if self.refant not in [t.name for t in exp_info.telescopes]:
             raise RefantNotFound
@@ -206,7 +211,7 @@ class PlotRefSplit(Plot):
 
 class PlotAuto:
     """Plots autocorrs from a difx file."""
-    def __init__(self, input_base, wait_for_file=False, refant=False, aver=1, live=False, ncols=4, write_fringes = False):
+    def __init__(self, input_base, wait_for_file=False, refant=False, aver=1, live=False, ncols=4, write_fringes = False, app=None):
         self.fin = None
         self.input_base = input_base
         self.refant = refant
@@ -217,6 +222,11 @@ class PlotAuto:
         self.write_fringes = write_fringes
         self.exp_info = InputDetail(input_base)
         self.difx_in = check_for_difx_file(self.input_base)
+        #startup the app/window/view if needed
+        if app is None:
+            app = App()
+        self.app = app
+        
         if not self.difx_in:
             if wait_for_file:
                 while not self.difx_in:
@@ -239,27 +249,29 @@ class PlotAuto:
                 max_diff = abs(item - last_val)
             last_val = item
         return max_diff
-            
+
+
+
     def choose_plot(self):
         """Chooses the plot type depending on if a refant is set and if S/X mode or similar is used"""
-        split_plot = self.max_diff([f.freq for f in self.exp_info.freqs if f.freq != 0.999]) > 300 #MHz so split if subbands have a split of more than 300 MHz, ignore dummy zoom band freq
+        split_plot = self.max_diff([f.freq for f in self.exp_info.freqs if f.freq !=0.999]) > 300 #MHz so split if subbands have a split of more than 300 MHz, also ignore dummy zoom band freqs
         if self.refant:
             if split_plot:
-                plot = PlotRefSplit(self.exp_info, self.refant)
+                plot = PlotRefSplit(self.exp_info, self.refant, self.app)
             else:
-                plot = PlotRef(self.exp_info, self.refant)
+                plot = PlotRef(self.exp_info, self.refant, self.app)
         else:
             if split_plot:
-                plot = PlotAllSplit(self.exp_info)
+                plot = PlotAllSplit(self.exp_info, self.app)
             else:
-                plot = PlotAll(self.exp_info)
+                plot = PlotAll(self.exp_info, self.app)
         return plot
 
     def plot(self):
         """Starts plotting"""
         print(f"Opening {self.difx_in}")
         self.averager = AverageVis(self.exp_info, self.aver, self.plot_instance)
-        self.plot_instance.view.show()  # move this?
+        self.app.view.show()  # move this?
         with open(self.difx_in, "rb") as self.fin:
             plotter_outp = self.run_plotter()
         if self.write_fringes:
@@ -267,18 +279,16 @@ class PlotAuto:
         if plotter_outp:
             #open a new file (and close old)
             print("Opening next file, {}".format(self.potential_new_file))
-            self.plot_instance.app.exit(0)
             self.plot_instance.win.close()
-            self.plot_instance.view.close()
             del self.plot_instance
-            self.__init__(self.potential_new_file, True, self.refant, self.aver, self.live, self.ncols, self.write_fringes)
-
+            self.__init__(self.potential_new_file, True, self.refant, self.aver, self.live, self.ncols, self.write_fringes, app=self.app)
+    
 
     def run_plotter(self):
         """Main loop for file read/plot"""
         first_eof = True
         while True:
-            if not self.plot_instance.view.isVisible():
+            if not self.app.view.isVisible():
                 print("Window closed - exiting")
                 return False
             current_vis = read_vis(self.fin, self.exp_info)
@@ -291,14 +301,14 @@ class PlotAuto:
                     sleep(0.1)
                     if self.check_for_new_file():
                         return True
-                    pg.QtGui.QApplication.processEvents()
+                    QtWidgets.QApplication.processEvents()
                     continue
                 print("EOF")
                 break
             if (not current_vis.is_auto_corr()) or current_vis.polpair in ["RL", "LR"]:
                 continue
             self.averager.handle(current_vis)
-        QtGui.QApplication.instance().exec_()
+        QtWidgets.QApplication.instance().exec_()
         return False
 
     def check_for_new_file(self):
