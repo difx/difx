@@ -11,7 +11,6 @@
 '''
 checkpolconvertfringe.py -- a program to check POLCONVERT.FRINGE binary files
 '''
-
 import argparse
 import glob
 import numpy as np
@@ -520,14 +519,18 @@ def plotProcessing(plotdata, o):
             ax.set_ylabel('delay rate')
             im = ax.imshow(vis[ndx], vmin=vxn[0], vmax=vxn[1],
                 interpolation='nearest', cmap=pl.cm.viridis, origin='lower')
-    # common colorbar, with updated labels for scaling: replace('−','-')
     cbar = fig.colorbar(im, ax=axs,
         label='('+o.scale+'-scaled) |Vis(LL,LR,RL,RR)|',
         location='bottom', shrink=0.60, pad=0.12)
-    ttt = ['%.0f'%scalor(float(text.get_text().replace('\u2212','\u002d')))
-        for text in cbar.ax.get_xticklabels()]
-    warnings.filterwarnings(action='ignore', category=UserWarning)
-    cbar.ax.set_xticklabels(ttt)
+    # common colorbar, with updated labels for scaling: replace('-','-'),
+    # but not all cbar implementations have working text.get_text(), &c.
+    try:
+        ttt = ['%.0f'%scalor(float(text.get_text().replace('\u2212','\u002d')))
+            for text in cbar.ax.get_xticklabels()]
+        warnings.filterwarnings(action='ignore', category=UserWarning)
+        cbar.ax.set_xticklabels(ttt)
+    except:
+        print('warning: plot colorbar axes not corrected for scaling')
     fig.savefig(saved)
     plotCoda(header, footer, saved, pname, o)
     return 0

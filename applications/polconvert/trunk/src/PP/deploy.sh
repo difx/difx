@@ -73,6 +73,7 @@ if loadPolConvert: loadPolConvertFun()
 
 case ${1-'help'} in
 tldr)   echo "$TLDR" ; exit 0 ;;
+--help) echo "$USAGE" ; exit 0 ;;
 help)   echo "$USAGE" ; exit 0 ;;
 casa)   echo "$CASAHELP" ; exit 0 ;;
 check)  action='check'  ;;
@@ -153,7 +154,9 @@ done
     rm -rf "$trunk"
     mkdir -p "$trunk/src" "$trunk/src/PP"
 
-    ( cd "$source" ; git="$source" dfx="$trunk/src" $dfxcmp cp * */* ) |\
+    echo DFX=/ git="$source" dfx="$trunk/src" $dfxcmp cp ...
+    ( cd "$source" ;
+      DFX=/ git="$source" dfx="$trunk/src" $dfxcmp cp * */* ) |\
     grep -v skipping
     echo "SUBDIRS = . src" > $trunk/Makefile.am
 
@@ -199,12 +202,26 @@ done
 
     Installation complete; to use these tools
 
+    export DIFXCASAPATH=$DIFXCASAPATH
     export DIFXROOT=$DIFXPC
     export PATH=$DIFXPC/bin:\$PATH
 
     and adjust your CASA startup to load polconvert
 
 ....EOF
+    # hack for institutions that do not have py3 available
+    pv=`python --version 2>&1`
+    [ `expr "$pv" : 'Python 2'` -eq 8 ] && {
+        echo fixing python scripts use CASA python3...
+        for pp in checkpolconvertfringe.py
+        do
+            mv $DIFXPC/bin/$pp $DIFXPC/bin/$pp.orig
+            echo "#!$DIFXCASAPATH/python3" > $DIFXPC/bin/$pp
+            cat $DIFXPC/bin/$pp.orig >> $DIFXPC/bin/$pp
+            chmod +x $DIFXPC/bin/$pp
+            ls -l $DIFXPC/bin/$pp
+        done
+    }
     ${ok-'false'} && exit 0
     ${ok-'false'} || { echo something went wrong... ; exit 18 ; }
 }

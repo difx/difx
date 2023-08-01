@@ -151,6 +151,7 @@ do
     echo "==> PP/pcvers.py <=="
     grep 'pcvers' PP/pcvers.py
     echo "================================="
+    exit 0
     ;;
   tidy)
     rm -rf build

@@ -14,7 +14,7 @@ import shutil
 import re
 import sys
 
-pcvers='2.0.5'
+pcvers='2.0.6'
 if sys.version_info.major < 3:
     pass
 else:
@@ -30,14 +30,16 @@ print('\nRunning PolConvert (v%s) Wrapper with label %s on data in %s' % (
     pcvers, label, DiFXout))
 v4tables = None
 lm = re.match('(.*)\.concatenated.ms', label)
-if lm:
+if lm:  #development v3
     conlabel = lm.group(1) + '.concatenated.ms'
     callabel = lm.group(1) + '.concatenated.ms'
     v4tables = False
-else:
+else:   #production v4
     conlabel = label + '.concatenated.ms'
     callabel = label + '.calibrated.ms'
     v4tables = True
+if v4tables is None:
+    raise Exception('only support v3 onward')
 
 # Things that we are expecting to be provided from the QA2 processing
 # We use a dictionary to allow name changes (which happened in development).
@@ -50,12 +52,14 @@ try:
     phsgains = ('%s/%s.'+qa2['p'])%(DiFXout,conlabel) # phase_int.APP*
     xyrelphs = ('%s/%s.'+qa2['x'])%(DiFXout,callabel) # XY0.APP or XY0.ALMA
     gxyampli = ('%s/%s.'+qa2['y'])%(DiFXout,callabel) # Gxyamp.APP/Gxyamp.ALMA
-    if v4tables:
+    if v4tables:    #production v4
         calgains = [aantpath, calapphs, dtermcal,
                     bandpass, ampgains, phsgains, xyrelphs, gxyampli]
-    else:
+        calintrp = ['linear', 'nearest', 'linear', 'linear', 'linear']
+    else:           #development v3
         calgains = [aantpath, calapphs, dtermcal,
                     bandpass, ampgains, phsgains, xyrelphs]
+        calintrp = ['linear', 'nearest', 'linear', 'linear']
     for f in calgains:
         if not os.path.exists(f):
             raise Exception('Required calibration %s is missing'%f)
@@ -68,8 +72,10 @@ try:
     gdblst = ['bandpass', 'ampgains', 'phsgains', 'xyrelphs', 'gxyampli']
     if type(gainDel) == str and ',' in gainDel:
         for g in gainDel.split(','):
+            if g == '': continue
             print('Deleting ' + gdblst[int(g)])
             del calgains[3+int(g)]
+            del calintrp[int(g)]
         print('Revised calgains list is:')
         for c in calgains: print('    ', c)
     elif type(gainDel) == str and gainDel != '':
@@ -77,12 +83,14 @@ try:
             g = int(gainDel)
             what = calgains[3+g]
             del calgains[3+g]
+            del calintrp[3+g]
             print('Deleted %s' % what)
         except:
             try:
                 g = gdblst.index(gainDel)
                 what = calgains[3+g]
                 del calgains[3+g]
+                del calintrp[3+g]
                 print('Deleted %s' % what)
             except:
                 raise Exception('gainDel arg %s not understood'%gainDel)
@@ -168,6 +176,8 @@ try:
     if type(constXYadd) == bool:
         if constXYadd: print('Disabling XY phase table')
         else:          print('Using XY phase table ' + xyrelphs)
+        if constXYadd and v4tables:
+            raise Exception('constXYadd may only be used in v3')
     else:
         raise Exception('constXYadd must be set True or False')
 except Exception as ex:
@@ -211,22 +221,33 @@ def runPolConvert(label, spw=-1, DiFXinput='',
     npix=50, gainmeth='T', XYavgTime=0.0):
     # based on common drivepolconvert inputs above
     gains = calgains[3:]
-    interpolation = ['linear', 'nearest', 'linear', 'linear']
+    #interpolation = ['linear', 'nearest', 'linear', 'linear']
+    interpolation = calintrp
     dterm = calgains[2]
     Range = []              # do the entire scan
     calAPPTime = [0.0, 8.0] # half-a scan of tolerance
 
     # allow XY phase table to be dropped if it is noisy
-    if constXYadd:
+    # this option is only allowed with v3 tables (see above)
+    if constXYadd and len(gains) == 4:
         gains = gains[0:3]
         interpolation = interpolation[0:3]
 
+    # set the gaintype array to gainmeth, except for bandpass and XY0
     gaintype = ['G' if ('XY0' in g or 'bandpass' in g or
         'Gxyamp' in g) else gainmeth for g in gains]
 
+    # PolConvert gets upset with no gains
+    if len(gains) == 0:
+        print('no gains, so inserting NONE')
+        gains = ['NONE']
+
     # cover for optional tables
     while len(interpolation) < len(gains):
+        print('appending linear')
         interpolation.append('linear')
+    while len(interpolation) > len(gains):
+        print('dropping interpolation', interpolation.pop())
     print('gains', len(gains), gains)
     print('interpolation', len(interpolation), interpolation)
     print('gaintype', len(gaintype), gaintype)

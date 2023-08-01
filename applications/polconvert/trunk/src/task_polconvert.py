@@ -50,8 +50,8 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-__version__ = "2.0.5"
-date = 'May 23, 2023'
+__version__ = "2.0.6"
+date = 'Aug 1, 2023'
 
 
 ################
@@ -1741,6 +1741,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
       tabants = tb.getcol('NAME')
       tb.close()
       tb.open(gain)
+      gainType = tb.getkeyword('VisCal')
       spmask = tb.getcol('SPECTRAL_WINDOW_ID')==int(spw)
       trowns = tb.getcol('TIME')[spmask]
       tsort = np.argsort(trowns)
@@ -1796,19 +1797,28 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
           if gainmode[i][j] in ['G','S']:
             dd0 = data[0,:,:]
             dd1 = data[1,:,:]
-          else:  # DUAL-POL GAIN FORCED TO 'T' MODE:
-            Aux = np.sqrt(data[0,:,:]*data[1,:,:])
-            dd0 = Aux
-            dd1 = Aux
-        else:  # A GAIN ALREADY IN MODE 'T'
+          else:  # DUAL-POL GAIN FORCED TO 'T' MODE OR NEW XY-PHASE:
+            if gainType == 'Xfparang Jones':
+               dd0 = data[0,:,:]
+               dd1 = data[0,:,:]; dd1[:] = 1.0
+            else:
+               Aux = np.sqrt(data[0,:,:]*data[1,:,:])
+               dd0 = Aux
+               dd1 = Aux
+        else:  # A GAIN ALREADY IN MODE 'T' OR NEW XY-PHASE:
           dd0 = data[0,:,:]
           dd1 = data[0,:,:]
+          if gainType == 'Xfparang Jones':
+            dd1[:] = 1.0
         antrowant = antrow==ant
         dims = np.shape(dd0[:,antrowant])
         isFlagged=False
    # All antennas MUST have the re-ref XY0 phase, even if not used 
-   # in the pol. calibration!
-        if ".XY0" in gain:
+   # in the pol. calibration!  Traditionally .XY0 appears in the file
+   # name, but there may be other gainTypes defined now or in the future.
+        if (gainType == 'Xfparang Jones' or
+            gainType == 'GlinXphf Jones' or
+            ".XY0" in gain):
           if dims[1]==0:
             antrowant = antrow==refants[0]
             dims = np.shape(dd0[:,antrowant])
@@ -2795,7 +2805,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
 
           cbar = fig2.colorbar(im, cax=cbar_ax)
           cbar.set_label("Amplitude (Norm)")
-          pl.suptitle('CAL. MATRIX FOR IF %i FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i - FREQ = X ; TIME = Y'%tuple([pli]+plotRange))
+          pl.suptitle('CAL.MATRIX.AMP IF %i - FREQ = Y - TIME = X'%pli)
 
           pl.savefig('CONVERSION.MATRIX/Kmatrix_AMP_IF%i-ANT%i.png'%(pli,ant1))
 
@@ -2835,7 +2845,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
 
           cbar = fig2.colorbar(im, cax=cbar_ax)
           cbar.set_label("Phase (deg.)")
-          pl.suptitle('CAL. MATRIX FOR IF %i FROM %i-%02i:%02i:%02i TO %i-%02i:%02i:%02i - FREQ = X ; TIME = Y'%tuple([pli]+plotRange))
+          pl.suptitle('CAL.MATRIX.PHAS IF %i - FREQ = Y - TIME = X'%pli)
 
           pl.savefig('CONVERSION.MATRIX/Kmatrix_PHAS_IF%i-ANT%i.png'%(pli,ant1))
  

@@ -1125,7 +1125,7 @@ def createCasaCommand(o, job, workdir):
     cmd[4]  = '%s --nologger --nogui -c %s > %s 2>&1 < /dev/null' % (
         o.casa, o.input, o.output)
     cmd[5]  = 'casarc=$?'
-    cmd[6]  = ('if [ "$casarc" == 0 ]; then echo "conversion"; ' +
+    cmd[6]  = ('if [ "$casarc" = 0 ]; then echo "conversion"; ' +
         'else echo "conversion failed with code $casarc"; fi > ./status')
     cmd[7]  = 'mv casa*.log ipython-*.log casa-logs 2>&-'
     # do not move self (basecmd) until self is done.
@@ -1133,7 +1133,7 @@ def createCasaCommand(o, job, workdir):
     cmd[8]  = 'mv %s %s casa-logs' % (o.input, o.output)
     # until CASA tasks are working properly, polconvert.last may not exist
     cmd[9]  = '[ -f polconvert.last ] && mv polconvert.last casa-logs'
-    cmd[10] = ('if [ "$casarc" == 0 ]; then echo "completed"; ' +
+    cmd[10] = ('if [ "$casarc" = 0 ]; then echo "completed"; ' +
         'else echo "failed with code $casarc"; fi > ./status')
     cmd[11] = 'date -u +%Y-%m-%dT%H:%M:%S >> ./timing'
     cmd[12] = ('echo " "CASA for job %s finished with return code $casarc.' %

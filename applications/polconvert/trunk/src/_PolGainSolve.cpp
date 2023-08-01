@@ -2386,15 +2386,16 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
   int j= -1;
   double *CrossG;
 //  double dx = 1.0e-8;
-  double Drate1R, Drate1L, Drate2R, Drate2L, Ddelay1R, Ddelay2R, Ddelay1L, Ddelay2L;
+  double Drate1R, Drate1L, Drate2R, Drate2L, Drate1, Drate2; 
+  double Ddelay1R, Ddelay2R, Ddelay1L, Ddelay2L, Ddelay1, Ddelay2;
 //  double *DerAux1, *DerAux2;
 //  DerAux1 = new double[2];
 //  DerAux2 = new double[2];
   PyObject *pars, *ret,*LPy;
-  bool useRates;
+  bool useRates, useDelays;
 
   if (!logFile) logFile = fopen("PolConvert.GainSolve.log","a");
-  if (!PyArg_ParseTuple(args, "OOiiib", &pars, &LPy, &Ch0, &Ch1,&end,&useRates)){
+  if (!PyArg_ParseTuple(args, "OOiiibb", &pars, &LPy, &Ch0, &Ch1,&end,&useRates,&useDelays)){
      sprintf(message,"Failed GetChi2! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
      fclose(logFile);
@@ -2403,7 +2404,7 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
   };
 
 
-  bool useDelay = false;
+//  bool useDelay = false;
 
 
   chisqcount++;
@@ -2747,45 +2748,50 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
   RateFactor=1.0;
   Ddelay1R = 0.0; Ddelay1L = 0.0; Drate1R = 0.0; Drate1L = 0.0;
   Ddelay2R = 0.0; Ddelay2L = 0.0; Drate2R = 0.0; Drate2L = 0.0;
+  Ddelay1 = 0.0; Ddelay2 = 0.0; Drate1 = 0.0; Drate2 = 0.0;
 
     if(ac1>=0){ // and !is1){
             Ddelay1R = TWOPI*((Delays[0][0][ac1][currScan])*(Frequencies[currIF][j]-RefNu));
             Ddelay1L = TWOPI*((Delays[1][0][ac1][currScan])*(Frequencies[currIF][j]-RefNu));
+            Ddelay1 = 0.5*(Ddelay1R + Ddelay1L);
 	    if(useRates){
               Drate1R =  TWOPI*((Rates[0][0][ac1][currScan])*(Times[currIF][k]-T0));
               Drate1L =  TWOPI*((Rates[1][0][ac1][currScan])*(Times[currIF][k]-T0));
-            } else {Drate1R=0.0;Drate1L=0.0;};
+              Drate1 = 0.5*(Drate1R + Drate1L);
+            } else {Drate1R=0.0;Drate1L=0.0;Drate1=0.0;};
             
     };
  
     if(ac2>=0){ // and !is2){
             Ddelay2R = TWOPI*((Delays[0][0][ac2][currScan])*(Frequencies[currIF][j]-RefNu));
             Ddelay2L = TWOPI*((Delays[1][0][ac2][currScan])*(Frequencies[currIF][j]-RefNu));
+            Ddelay2 = 0.5*(Ddelay2R + Ddelay2L);
             if(useRates){
 	      Drate2R =  TWOPI*((Rates[0][0][ac2][currScan])*(Times[currIF][k]-T0));
 	      Drate2L =  TWOPI*((Rates[1][0][ac2][currScan])*(Times[currIF][k]-T0));
-            } else { Drate2R=0.0;Drate2L=0.0;};
+              Drate2 = 0.5*(Drate2R + Drate2L);
+            } else { Drate2R=0.0;Drate2L=0.0;Drate2=0.0;};
     };
 
-    if(useDelay){
-      RateFactor = std::polar(1.0, Drate1R-Drate2R + Ddelay1R-Ddelay2R);
+    if(useDelays){
+      RateFactor = std::polar(1.0, Drate1-Drate2 + Ddelay1-Ddelay2);
       RRRate = RateFactor*FeedFactor1/FeedFactor2; 
-      RateFactor = std::polar(1.0, Drate1R-Drate2L + Ddelay1R-Ddelay2L);
+    //  RateFactor = std::polar(1.0, Drate1R-Drate2L + Ddelay1R-Ddelay2L);
       RLRate = RateFactor*FeedFactor1/FeedFactor2; 
-      RateFactor = std::polar(1.0, Drate1L-Drate2R + Ddelay1L-Ddelay2R);
+    //  RateFactor = std::polar(1.0, Drate1L-Drate2R + Ddelay1L-Ddelay2R);
       LRRate = RateFactor*FeedFactor1/FeedFactor2; 
-      RateFactor = std::polar(1.0, Drate1L-Drate2L + Ddelay1L-Ddelay2L);
+    //  RateFactor = std::polar(1.0, Drate1L-Drate2L + Ddelay1L-Ddelay2L);
       LLRate = RateFactor*FeedFactor1/FeedFactor2; 
     } else {
       // TODO: Activate the rate correction, to improve gain estimates.
       // BUT some baselines usually give crazy rates (around 1Hz!!)
-      RateFactor = std::polar(1.0, Drate1R-Drate2R);  
+      RateFactor = std::polar(1.0, Drate1-Drate2);  
       RRRate = RateFactor*FeedFactor1/FeedFactor2;
-      RateFactor = std::polar(1.0, Drate1L-Drate2L);   
+   //   RateFactor = std::polar(1.0, Drate1L-Drate2L);   
       LLRate = RateFactor/FeedFactor1*FeedFactor2; 
-      RateFactor = std::polar(1.0, Drate1R-Drate2L);  
+   //   RateFactor = std::polar(1.0, Drate1R-Drate2L);  
       RLRate = RateFactor*FeedFactor1*FeedFactor2; 
-      RateFactor = std::polar(1.0, Drate1L-Drate2R);  
+   //   RateFactor = std::polar(1.0, Drate1L-Drate2R);  
       LRRate = RateFactor/FeedFactor1/FeedFactor2; 
     };
 

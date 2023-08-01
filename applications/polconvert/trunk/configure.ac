@@ -3,7 +3,7 @@
 # autoconf config file for building PolConvert within DiFX tree.
 #
 AC_PREREQ([2.63])
-AC_INIT([polconvert],[2.0.5],
+AC_INIT([polconvert],[2.0.6],
     [Ivan Marti-Vidal <ivan.marti-vidal@i.marti-vidal@uv.es>])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_HEADERS([config.h])
