@@ -1,6 +1,7 @@
 v2.0.6
 - fixes for XYfparang issue
 - misc updates during valencia regression testing (July 29, 2023)
+- continued code cleanup
 
 v2.0.5
 - TOP/task_polconvert.py fixed for new FRINGE binary format (UVdist, &c).
