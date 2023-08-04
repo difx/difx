@@ -100,14 +100,21 @@ def get_real_data():
    
   working_directory = current_directory + "/rdv70/"
   rdv70tar_fp = working_directory + "rdv70.tar"
+
   if (os.path.exists(rdv70tar_fp) == False):  
+    if (os.path.exists(working_directory) == False):  
+      mkdir_arg = "mkdir " + working_directory
+      subprocess.call(mkdir_arg,shell=True)
     arg2 = "wget ftp://ftp.mpifr-bonn.mpg.de/vlbiarchive/DiFX_testdata/rdv70.tar ."
     proc2 = subprocess.Popen(arg2,cwd=working_directory,shell=True)
     proc2.wait()
-   
+
   working_directory = current_directory + "/v252f/"  
   v252ftar_fp = working_directory + "v252f.tar"
   if (os.path.exists(v252ftar_fp) == False):
+    if (os.path.exists(working_directory) == False):  
+      mkdir_arg = "mkdir " + working_directory
+      subprocess.call(mkdir_arg,shell=True)
     arg1 = "wget ftp://ftp.mpifr-bonn.mpg.de/vlbiarchive/DiFX_testdata/v252f.tar ."
     proc1 = subprocess.Popen(arg1,cwd=working_directory,shell=True)
     proc1.wait()
@@ -782,7 +789,6 @@ def main():
     gpu_compatable_test_name_list.append("v252f-gpu")
     passfail["rdv70"] = ["",True]  
     passfail["v252f"] = ["",True] 
-    get_real_data() 
 
 
   # Add gpu mode tests to list of tests to be run 
@@ -796,10 +802,15 @@ def main():
       passfail[item] = ["",True]
       new_key = item + "-vs-cpu"
       passfail[new_key] = ["",True]
+
+  # Unpack tests if they haven't been already
   unpackage_tests(test_name_list)
 
+  if (download == "YES"):
+    get_real_data()
 
-  # Upack tests if they haven't been already
+
+
     
   # Generate synthetic VDIF data
   if (generateVDIF == "YES" or (os.path.isdir("testdata") == False)):
