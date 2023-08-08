@@ -2,6 +2,7 @@ Version 2.9
 ~~~~~~~~~~~
 * Fix missing/broken autocorrelations (ported to DiFX 2.8)
 * Fix for cross-polar autocorrelation weights (ported to DiFX 2.8)
+* Support for IPP 2021.*
 
 
 Version 2.8
