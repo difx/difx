@@ -149,9 +149,7 @@ static void TEME2J2000(double et, double state[6])
 	/* Rotate from TEME to J2000 frame */
 	/* Get rotation matrix from TEME @ET (sec past J2000 epoch) to J2000 */
 	/* PRECM is 6x6, goes from J2000 -> TEME */
-	zzteme_(&et, precm);
-	/* Invert state transformation matrix to go from TEME -> J2000 */
-	invstm_(precm, invprecm);
+	zzteme_(&et, precm, invprecm);
 	/* Do transformation of state from EV2LIN's TEME to J2000 */
 	mxvg_(invprecm, state, &six, &six, tmpstate);
 	for(i = 0; i < 6; ++i)
