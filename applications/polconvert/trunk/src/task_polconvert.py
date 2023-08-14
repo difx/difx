@@ -50,19 +50,12 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-__version__ = "2.0.6  "  # 7 characters
-date = 'Aug 1, 2023'
+__version__ = "2.0.7  "  # 7 characters
+date = 'Aug 14, 2023'
 
 
 ################
 # Import all necessary modules. 
-
-try: 
- import _PolConvert as PC
- print('\nC++ shared library loaded successfully\n')
-except Exception as ex:
- print('\nNo, the shared library did not load successfully\n')
- raise ex
 
 import os,sys,shutil,re
 import gc
@@ -73,6 +66,13 @@ import numpy as np
 import pylab as pl
 import datetime as dt
 import pickle as pk
+
+try:
+ import _PolConvert as PC
+ print('\nC++ shared library loaded successfully\n')
+except Exception as ex:
+ print('\nNo, the shared library did not load successfully\n')
+ raise ex
 
 if sys.version_info.major < 3:
   try:
@@ -91,26 +91,229 @@ else:
     print('unable to load casa tools in python3\n\n')
     raise ex
 ################
-    
-NEWPCSO = False   # 2.7.1 and earlier...
-NEWPCSO = True    # 2.7.2 and earlier...
 
-# this is the CASA xml-based command sequence
-def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
-  Range, ALMAant, spw, calAPP, calAPPTime, APPrefant,
-  gains, interpolation, gainmode, XYavgTime,
-  dterms, amp_norm, XYadd, XYdel, XYratio,
-  usePcal, swapXY, swapRL, feedRotation,
-  # correctParangle
-  IDI_conjugated, plotIF,
-  plotRange, plotAnt, excludeAnts, excludeBaselines,
-  doSolve, solint, doTest, npix, solveAmp,
-  solveMethod, calstokes, calfield
-  # saveArgs
-  ):
+# this is the CASA xml-based command sequence:
+# defaults are supplied & consistent with version 2.0.7
+def polconvert(IDI='', OUTPUTIDI='', DiFXinput='', DiFXcalc='', doIF=[], linAntIdx=[1],
+               Range=[], ALMAant='', spw=-1, calAPP='', calAPPTime=[0.,5.], APPrefant='',
+               gains=[['NONE']], interpolation=[], gainmode=[], XYavgTime=0.0,
+               dterms=['NONE'], amp_norm=0.01, XYadd={}, XYdel={}, XYratio={},
+               usePcal={}, swapXY=[False], swapRL=False, feedRotation=[],
+               correctParangle=False, IDI_conjugated=False, plotIF=-1,
+               plotRange=[], plotAnt=-1, excludeAnts=[], excludeBaselines=[],
+               doSolve=-1, solint=[1,1], doTest=True, npix=50, solveAmp=True,
+               solveMethod='COBYLA', calstokes=[1.,0.,0.,0.], calfield=-1,
+               saveArgs=False):
+
+# Note that runPolConvert invokes PolConvert with standard values
+# to some of the above arguments.
+
+### polconvert_standalone.py has extra arguments...
+  UVTaper=1.e9
+
+  NEWPCSO = False   # 2.7.1 and earlier...
+  NEWPCSO = True    # 2.7.2 and earlier...
 
 # polconvert_CASA.py has two additional arguments (as of 2.0.6).
 # TOP/polconvert.xml would need to be updated to use these.
+###
+
+  """ POLCONVERT - CASA INTERFACE VERSION 2.0.7.
+
+Converts VLBI visibilities from mixed-polarization (linear-circular)
+into a circular basis. Works with single VLBI stations as well as with
+calibrated phased arrays (i.e., phased ALMA).
+
+  IDI: Input FITS-IDI file with VLBI visibilities. It can also be a
+       directory containing SWIN files from DiFX.
+
+  OUTPUTIDI: Output FITS-IDI file (or SWIN directory). If equal to
+             IDI, the file(s) will be overwritten.
+
+  DiFXinput: If SWIN files are being converted, this must be the
+             *.input file used by DiFX.
+
+  DiFXcalc: If SWIN files are being converted, this must be the
+            *.calc file used by DiFX.  This is optional, but if it is not
+            provided, the cross-polarization gain estimates may be incorrect
+            if doSolve>0.
+
+  doIF = List of IFs to convert (starts from 1). Default means all.
+
+  linAntIdx: List of indices of the linear-polarization antennas
+             in the IDI/SWIN file (lowest index starts with 1).
+             It can also be a list of the antenna code names.
+
+  Range: Time range to convert (integer list; AIPS format). Default
+         (empty list) means all data.
+
+  ALMAant: If ALMA has been used, this is the antenna table from
+           the MS with the intra-ALMA visibilities.
+
+  spw: Spectral window in ALMA visibilities that contains the VLBI band. If
+       negative, the program will derive it automatically.
+
+  calAPP: If ALMA has been used, this is the combined
+          ASDM_CALAPPPHASE table from the ASDM. The list of
+          measurement sets can also be given (so the table is
+          concatenated from all of them).
+
+  calAPPTime: Time shift and time tolerance (in sec) for the
+              CALAPPPHASE table obtained from the ASDM.
+
+  APPrefant: If not empty, re-reference the TelCal phases, assuming
+             that the X-Y phase-difference table provided in 'gains'
+             (see keyword below) uses APPrefant as the reference
+             antenna. Notice that the name of the gain table with
+             the X-Y phase differences has to contain the string
+             '.XY0'.
+
+  gains: Gain tables to pre-calibrate the linear-pol VLBI stations
+         (one list of gains per linear-pol station).
+
+  interpolation: Interpolation type to use (one per calibration
+                 table). Tells whether to apply linear or nearest
+                 interpolation. Default is to use linear for all
+                 tables.
+
+  gainmode: Mode of gain calibration to impose (one per calibration
+            table). Default is 'T' for all tables, unless either
+            the string 'XY0', 'bandpass' or 'Gxyamp' appears in the
+            table name. The gain types can be either 'G' (i.e.,
+            split gains per polarization) or 'T' (i.e., combine
+            polarizations).
+
+  XYavgTime: Re-compute the G-mode gains by adding a time smoothing
+             of X-Y differences to the T-mode gains. Default is NOT
+             to do this (i.e., use the G-mode gains as given). If
+             positive, use a running time average with this size
+             (in seconds).
+
+  dterms: D-term tables to pre-calibrate the linear-pol VLBI
+          stations (one table per linear-pol station).
+
+  amp_norm: If positive, normalize the amplitude correction to the
+            X-Y average, and save the scaling factor (vs time) in
+            an external (ASCII) file (ANTAB format, assuming a
+            DPFU=amp_norm). If zero, or negative, apply the
+            amplitude correction as is.
+
+  XYadd: Add manually a phase between X and Y before conversion (in
+         deg.). This is a dictionary (antenna codes as keywords) with
+         elements set to either a list of one value per IF OR a
+         list of lists (one value per channel, for each IF).
+
+  XYdel: Add manually a multiband delay between X and Y before
+         conversion (in deg./chanel). This is a dictionary (antenna codes
+         as keywords) with one value per linear-pol station.
+
+  XYratio: Add manually an amplitude ratio between X and Y before
+           conversion (R=X/Y). Follows the same format as XYadd. If
+           a negative value is given for an antenna, the X/Y ratio
+           will be estimated from its autocorrelations (the
+           spectrum for antenna i will be computed using a
+           running-median filter of width equal to -1/XYratio[i] of
+           the IF bandwidth). If 0.0 is given for an antenna, the
+           ratio will be estimated from the phasecal amplitudes (as
+           long as usePcal is True and there are pcal files
+           available; not supported for FITS-IDI).
+
+  usePcal: Dictionary (antenna codes as keywords), whose elements
+           are booleans (i.e., one boolean per linear-polarization
+           station). If True, use the X-Y difference of phasecal
+           tones as an estimate of the X-Y cross-polarization
+           phase. Default means to NOT use the phasecals.
+
+  swapXY: If true, swap the X-Y channels (one boolean per antenna).
+
+  swapRL: Swap R-L of the OTHER antenna(s) when plotting the
+          fringes.
+
+  feedRotation: Rotation angle of the feed (one value per antenna,
+                in degrees). Default means zero degrees (so that
+                X is truly horizontal for the linear-pol.
+                antennas). These angles are used in the
+                gain-solver step.
+
+  correctParangle: If True, the correction for parallactic angle
+                   is applied to the converted antenna(s).
+
+  IDI_conjugated: Assume a swap in the baseline defintion (i.e.,
+                  conjugation) of the FITS-IDI file. This has NO
+                  effect on SWIN files.
+
+  plotIF: IF index(es) to plot. Default means to NOT plot. An
+          empty list, [], means to plot ALL IFs being converted
+          (but do not forget to set plotRange and plotAnt!)
+
+  plotRange: Time range to plot (integer list; AIPS format).
+             Default means to NOT plot.
+
+  plotAnt: Index of the other antenna in the baseline to plot.
+           Default means to NOT plot.
+
+  excludeAnts: List of antennas (i.e., list of antenna codenames)
+               to NOT use in the cross-polarization gain
+               estimates.
+
+  excludeBaselines: List of baselines (i.e., a list of lists of
+                    two antenna codenames) to NOT use in the
+                    cross-polarization gain estimates.
+
+  doSolve: If negative, do not estimate the cross-polarization
+           gains. If positive or zero, estimate the gains using
+           a Global Cross-Pol Fringe Fitting (GCPFF). The gains
+           are fitted with an error function (Chi Square)
+           defined as:
+
+               sum( doSolve*(RR/LL-1)^2 + (RL^2 + LR^2) ),
+
+           so that doSolve=0 minimizes the cross-hand
+           polarizations (so it assumes a small linear
+           polarization of the source),  whereas doSolve >> 1
+           assumes a negligible Stokes V.
+
+  solint: If solint[0] null or negative, solve the
+          cross-polarization phase plus a multi-band delay (MBD).
+          If not, solve in bandpass mode by averaging solint[0]
+          channels per solution. Divide the solution time range
+          (per scan) in solint[1] chunks (i.e., in solint[1]
+          subscans). I.e., if solint[1]==1, the fringes are fully
+          averaged in time for each scan (but corrected for the
+          scan fringe rates) before the GPLFF condition is
+          computed. solint[2] is the minimum time jump (in
+          seconds) to split the data into different scans
+          (default: 50 seconds).
+
+  doTest: If true, only compute (and eventually plot), the data,
+          but leave OUTPUTIDI untouched.
+
+  npix: Number of pixels for the fringe plots (and fringe search).
+
+  solveAmp: If the cross-polarization gains are being estimated,
+            solve also for the X/Y amplitude ratios.
+
+  solveMethod: Method for the minimization of the Chi squared in
+               the GCPFF. Can be, for instance: 'COBYLA'.
+
+  calstokes: Stokes parameters, [I,Q,U,V] of the calibrator (of
+             course, this is only used if doSolve is not negative).
+             The total intensity is not needed in the calibration
+             (i.e., calstokes[0] can be left to 1.0, so that the
+             other parameters will correspond to fractional
+             polarization).
+
+  calfield: If not negative, field ID of the calibrator (useful
+            if a time range covering several scans is being used
+            in the GCPFF). If negative, use all data in the time
+            range, regardless of the field ID.
+
+  saveArgs: If true, arguments are saved in a file PolConvert_CASA.last
+            (a pickled dictionary); note that nothing currently reads this file.
+  """
+
+
+############################################
 
   # this turns into the verbosity argument of _PolConvert.so
   print('Entered task_polconvert::polconvert()')
@@ -387,6 +590,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
     plsub.set_ylim((-250,250))
     pl.savefig('%s_RE-REF_XYPHASES.png'%XY0)
 
+#### this block INPC
 # Auxiliary function: derive job label from DiFXinput
   def jobLabel(inputname):
     label = inputname
@@ -465,6 +669,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
 
   tic = time.time()
 
+#### this block INPC
   greet  = '''
 ##########################################################################
 # POLCONVERT -- version.                                                 #
@@ -489,6 +694,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
   except:
     printError("ERROR! doSolve should be a float!")
 
+#### these blocks INPC
   allMethods = ['gradient','Levenberg-Marquardt','COBYLA','Nelder-Mead']
   scipyMethods = ['COBYLA','Nelder-Mead']
   if solveMethod not in allMethods:
@@ -570,6 +776,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
     solint[2] = float(solint[2])
   else: # Default dt
     solint.append(100.)
+#### above INPC
 
   nALMA = len(linAntIdx)
 
@@ -600,6 +807,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
     else:
       isPhased = True
 
+#### this block INPC
   if type(OUTPUTIDI) is not str:
     printError("ERROR! OUTPUTIDI should be a string!")
   if type(plotIF) is int:
@@ -696,6 +904,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
 
 
 
+#### these blocks INPC
   if type(usePcal) is not list:
     printError("Invalid format for usePcal! Should be a list of booleans!\n")
   elif len(usePcal)==0:
@@ -729,6 +938,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
   for rr in plotRange:
     if type(rr) is not int:
       printError("Invalid format for Range! Should be either an empty list or a list of 8 integers!")
+#### INPC
 
 
   if len(calAPPTime) != 2:
@@ -739,9 +949,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
   except:
     printError("Bad format for calAPPTime. Should be a list of 2 floats!")
 
-  printMsg("XYadd is %s"%str(XYadd))
-  printMsg("XYdel is %s"%str(XYdel))
-  printMsg("XYratio is %s"%str(XYratio))
 
 #########################################
 
@@ -835,7 +1042,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
   else:  # is(not)Phased
 
 # Not a phased array. Dummy values for phasing info:
-   allants = [0]
+   allants = [1]
    allantidx = [0]
    antimes = [np.array([0.,1.e20])]
    nphtimes = [1]
@@ -847,6 +1054,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
 
 
 
+#### some of the following is INPC
 #######
 # CHECK IF THIS IS A FITS-IDI FILE OR A SWIN DIR.:
   if os.path.isdir(IDI):
@@ -994,7 +1202,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
         IFchan = max([IFchan,int(nchan/chav)])
       sb = {True: 1.0 , False: -1.0}[FrInfo['SIDEBAND'][nu] == 'U']
       FrInfo['SIGN'][nu] = float(sb)
-      # freqs = (nu0 + np.linspace((sb-1.)/2.,(sb+1.)/2., ... )
       if float(nchan//chav) != nchan/chav:
         printMsg("linspace check chan: %d / %d = %f" %
             (nchan, chav, nchan/chav))
@@ -1170,6 +1377,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
 ########################
 
 
+#### these blocks INPC
 # Get the REAL number (and names) of linear-pol antennas in this dataset:
   nALMATrue = 0
   linAntIdxTrue = []
@@ -1642,8 +1850,6 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
       data = (np.array(data)).transpose(1,2,0)[:,:,tsort]
       flagrow = (np.array(flagrow)).transpose(1,2,0)[:,:,tsort]
 
-
-   #   antrow = np.array([allants.index(tabants[ai]) for ai in tb.getcol('ANTENNA1')[spmask]])[tsort]
 #############
 
       antrow = []
@@ -2110,7 +2316,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
      #MySolve = PS.PolGainSolve(doSolveD,solint,selAnts,lAnts,FlagBas1,FlagBas2)
     printMsg('\n%%% initializing PolGainSolve\n')
     # using a null for a logfile should be harmless...  NOPE! --> "basic_string::_S_construct null not valid"
-    MySolve = PS.PolGainSolve(doSolveD,solint,selAnts,lAnts,[FlagBas1,FlagBas2],'PolConvert.GainSolve.log')
+    MySolve = PS.PolGainSolve(doSolveD,UVTaper,solint,selAnts,lAnts,[FlagBas1,FlagBas2],'PolConvert.GainSolve.log')
     printMsg(PS.__doc__ + ('\nInitialization rv %d\n'%MySolve) + '%%%\n')
 #   else:
 #    printMsg("Using 4 argument method of PolGainSolve:")
@@ -2348,6 +2554,7 @@ def polconvert(IDI, OUTPUTIDI, DiFXinput, DiFXcalc, doIF, linAntIdx,
   if plotFringe and didit==0:
    printMsg("proceding to fringe plots with plotAnt %d..." % plotAnt)
 
+#### remainder of file INPC
 
    fig = pl.figure(figsize=(12,6))
 

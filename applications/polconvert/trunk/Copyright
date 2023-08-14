@@ -1,6 +1,10 @@
-# Copyright (c) Ivan Marti-Vidal 2013-2022. 
+# Copyright (c) Ivan Marti-Vidal 2013-2023.
 #               EU ALMA Regional Center. Nordic node.
 #               Observatori Astronomic, Universitat de Valencia
+#
+# Portions relevant to ALMA are also
+# Copyright (c) Geoffrey Crew 2015-2023,
+#               Massachusetts Institute of Technology
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

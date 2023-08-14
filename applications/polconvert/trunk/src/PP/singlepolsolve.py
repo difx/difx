@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #
-# Copyright (c) Ivan Marti-Vidal 2015-2022, University of Valencia (Spain)
-#       and Geoffrey Crew 2015-2022, Massachusetts Institute of Technology
+# Copyright (c) Ivan Marti-Vidal 2015-2023, University of Valencia (Spain)
+#       and Geoffrey Crew 2015-2023, Massachusetts Institute of Technology
 #
 # Script to run PolConvert in Solve mode for non-ALMA case.
 # Derived from POLCONVERT_EVN script.
@@ -112,7 +112,7 @@ def parseOptions():
         help='comma-sep list of 2-letter station codes (XX,YY,...) to try'
             ' (in this order) to use as a reference antenna')
     secondy.add_argument('-s', '--solve', dest='solve',
-        default=1000.0, metavar='FLOAT', type=float,
+        default=0.1, metavar='FLOAT', type=float,
         help='doSolve argument: for the chi^2 minimizer function which is '
             'computed as sum[ dosolve*(RR/LL-1)^2 + (RL^2 + LR^2) ].  If '
             'doSolve == 0 you minimize the cross-hands; if doSolve >> 1, '
@@ -396,7 +396,8 @@ def createCasaInput(o, joblist, caldir, workdir):
     # xyadd/xydel/xyratio are one constant for all chans of the
     # one linear antenna, but type is a string to allow other options.
     print('  .' +verb+verb+ '.\n',
-        '  ',o.nargs, str(joblist), caldir, workdir, '\n',
+        '  ',o.nargs, str(joblist), caldir, '\n',
+        '  ',workdir, '\n',
         '  ',o.label, o.zfirst, o.zfinal, o.ant, o.lin, o.remote, '\n',
         '  ',o.xyadd, o.xydel, o.xyratio, o.npix,
         '  ',str(o.exAntList), str(o.exBaseLists), '\n',
@@ -495,8 +496,8 @@ def checkOptions(o):
     compatChecks(o)
     methodChecks(o)
     solintChecks(o)
-    dpc.inputRelatedChecks(o)
-    dpc.runRelatedChecks(o)
+    #dpc.inputRelatedChecks(o)
+    #dpc.runRelatedChecks(o)
 
 #
 # enter here to do the work
@@ -508,6 +509,7 @@ if __name__ == '__main__':
     checkOptions(opts)
     if opts.prep:
         dpc.runPrePolconvert(opts)
+    dpc.inputRelatedChecks(opts)
     # this is somewhat "temporary"
     if opts.iflist == 'original':
         print('Original zoom logic requested -- iflist ignored')
@@ -531,6 +533,7 @@ if __name__ == '__main__':
     print('Zoom/Output Band deductions done')
     checkAntBase(opts)
     # run the jobs in parallel
+    dpc.runRelatedChecks(opts)
     if opts.verb:
         print('\nParallel execution with %d threads\n' % opts.parallel)
     dpc.createCasaInputParallel(opts)

@@ -49,7 +49,7 @@ if DO_SOLVE:
   #   export POLGAINSOLVELIBS='gsl,cblas,fftw3'
   #   export POLGAINSOLVELIBS='gsl,fftw3'
   try:    pgsliblist = os.environ['POLGAINSOLVELIBS'].split(',')
-  except: pgsliblist =['gsl','fftw3']
+  except: pgsliblist =['gsl','cblas','fftw3']
   print('# for PolGainSolve, libraries is',pgsliblist)
 
 sourcefiles1 = ['CalTable.cpp', 'DataIO.cpp', 'DataIOFITS.cpp',

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #
-# Copyright (c) Ivan Marti-Vidal 2015-2022, University of Valencia (Spain)
-#       and Geoffrey Crew 2015-2022, Massachusetts Institute of Technology
+# Copyright (c) Ivan Marti-Vidal 2015-2023, University of Valencia (Spain)
+#       and Geoffrey Crew 2015-2023, Massachusetts Institute of Technology
 #
 # Script to compare PolConvert text products with a previous execution
 #

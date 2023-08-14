@@ -1,5 +1,5 @@
 #
-# Copyright (c) Ivan Marti-Vidal 2015-2022, University of Valencia (Spain)
+# Copyright (c) Ivan Marti-Vidal 2015-2023, University of Valencia (Spain)
 #
 # Invoke this file with casa as follows:
 #

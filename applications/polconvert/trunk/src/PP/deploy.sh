@@ -55,7 +55,7 @@ when placed in \$HOME/.casa/startup.py (or \$HOME/.casa/init.py):
 import sys, os
 loadPolConvert = True
 
-def loadPolConvertFun():
+if loadPolConvert:
   try:
     sys.path.append(os.environ['DIFXROOT'] + '/share/polconvert')
     from polconvert import polconvert
@@ -68,7 +68,8 @@ def loadPolConvertFun():
         print('Could not load polconvert from this path')
         print(\"os.environ['DIFXROOT']\" + '/share/polconvert')
 
-if loadPolConvert: loadPolConvertFun()
+More generally, the code is available via:
+    from polconvertpkg.private.task_polconvert import polconvert as polconvert
 "
 
 case ${1-'help'} in
