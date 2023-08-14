@@ -39,7 +39,6 @@
 #include "fitsUV.h"
 #include "jobmatrix.h"
 #include "util.h"
-#include "bandpass.h"
 #ifdef HAVE_FFTW
 #include "sniffer.h"
 #endif
@@ -733,7 +732,7 @@ static void UVfitsDump(const DifxVis *dv, double utcmin, double utcmax)
 	}
 }
 
-int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const Bandpass *B)
+int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const DelayCal *DC, DelayCalCache *DCC, const Bandpass *B)
 {
 	int i, i1, v;
 	int antId1, antId2;	/* These reference the DifxInput Antenna */
@@ -1095,9 +1094,20 @@ int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const B
 		}
 	}
 
-	/* apply bandpass if provided */
+	/* apply delay calibration and/or bandpass if provided */
 	if(nFloat == 2)	/* currently this is all that is supported */
 	{
+		if(DC)
+		{
+			double df;
+
+			df = dv->D->freq[freqId].bw / dv->D->nOutChan;
+			if(dv->D->freq[freqId].sideband == 'L')
+			{
+				df = -df;
+			}
+			applyDelayCal((float complex *)(dv->spectrum), dv->D->nOutChan, df, freqId, antId1, polPair[0], antId2, polPair[1], mjd+utc, DC, DCC);
+		}
 		if(B)
 		{
 			applyBandpass((float complex *)(dv->spectrum), dv->D->nOutChan, freqId, antId1, polPair[0], antId2, polPair[1], B);
@@ -1345,7 +1355,7 @@ static int storevis(DifxVis *dv)
 	return 0;
 }
 
-static int readvisrecord(DifxVis *dv, const struct CommandLineOptions *opts, const Bandpass *B, int *nSkipped_recs)
+static int readvisrecord(DifxVis *dv, const struct CommandLineOptions *opts, const DelayCal *DC, DelayCalCache *DCC, const Bandpass *B, int *nSkipped_recs)
 {
 	/* blank array */
 	memset(dv->weight, 0, dv->nFreq*dv->D->nPolar*sizeof(float));
@@ -1361,7 +1371,7 @@ static int readvisrecord(DifxVis *dv, const struct CommandLineOptions *opts, con
 		{
 			storevis(dv);
 		}
-		dv->changed = DifxVisNewUVData(dv, opts, B);
+		dv->changed = DifxVisNewUVData(dv, opts, DC, DCC, B);
 		if(opts->verbose > 3)
 		{
 			printf("readvisrecord: changed is %d\n", dv->changed);
@@ -1416,8 +1426,16 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 #ifdef HAVE_FFTW
 	Sniffer *S = 0;
 #endif
+	DelayCal *DC = 0;
+	DelayCalCache DCC;
 	Bandpass *B = 0;
 
+	if(opts->applyDelayCalFile)
+	{
+		DC = loadDelayCal(opts->applyDelayCalFile, D);
+printDelayCal(DC);
+	}
+	resetDelayCalCache(&DCC);
 	if(opts->applyBandpassFile)
 	{
 		B = loadBandpass(opts->applyBandpassFile, D);
@@ -1648,7 +1666,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			fprintf(stdout, "Priming, dv=%d/%d\n", dvId, nDifxVis);
 		}
-		readvisrecord(dvs[dvId], opts, B, &nSkipped_recs);
+		readvisrecord(dvs[dvId], opts, DC, &DCC, B, &nSkipped_recs);
 		if(opts->verbose > 3)
 		{
 			fprintf(stdout, "Done priming DifxVis objects\n");
@@ -1766,7 +1784,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 				return 0;
 			}
 
-			readvisrecord(dv, opts, B, &nSkipped_recs);
+			readvisrecord(dv, opts, DC, &DCC, B, &nSkipped_recs);
 			nSkipped = nSkipped + nSkipped_recs;
 		}
 	}

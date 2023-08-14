@@ -11,6 +11,8 @@ endif
 difx2fits_SOURCES = \
 	bandpass.c \
 	bandpass.h \
+	delaycal.c \
+	delaycal.h \
 	difx2fits.c \
 	fits.c \
 	fitsHeader.c \

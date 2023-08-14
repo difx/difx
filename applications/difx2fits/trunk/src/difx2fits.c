@@ -167,6 +167,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --applybandpass <file>\n");
 	fprintf(stderr, "                      Read <file> and apply it as a bandpass to the output\n");
+	fprintf(stderr, "  --applydelaycal <file>\n");
+	fprintf(stderr, "                      Read <file> and apply it as delay corrections to the output\n");
 	fprintf(stderr, "%s responds to the following environment variables:\n", program);
 	fprintf(stderr, "    DIFX_GROUP_ID             If set, run with umask(2).\n");
 	fprintf(stderr, "    DIFX_VERSION              The DiFX version to report.\n");
@@ -499,6 +501,13 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 					++i;
 					opts->applyBandpassFile = argv[i];
 					printf("** Note: the --applybandpass option is experimental at this time.\n");
+					printf("** Use at your own risk.\n");
+				}
+				else if(strcmp(argv[i], "--applydelaycal") == 0)
+				{
+					++i;
+					opts->applyDelayCalFile = argv[i];
+					printf("** Note: the --applydelaycal option is experimental at this time.\n");
 					printf("** Use at your own risk.\n");
 				}
 				else
