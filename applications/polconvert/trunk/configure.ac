@@ -56,12 +56,14 @@ if [test $have_casa = true] ; then
         CASAPYTHON=$casapy3
         have_casa6=true
         AC_MSG_NOTICE([Invoking CASAPYTHON as $CASAPYTHON])
+        casapythonincludedir=`ls -d $DIFXCASAPATH/../lib/py/python3.* 2>&-`
     elif [test x$casapy2 = x$DIFXCASAPATH/python] ; then
         BMTASKMOD=''
         BMTASKXML=''
         CASAPYTHON=$casapy2
         have_casa6=false
         AC_MSG_NOTICE([Invoking CASAPYTHON as $CASAPYTHON])
+        casapythonincludedir=`ls -d $DIFXCASAPATH/../lib/python2.* 2>&-`
     else
         AC_MSG_NOTICE([Did not find python within CASA])
         CASAPYTHON=/bin/false
@@ -69,6 +71,12 @@ if [test $have_casa = true] ; then
         have_casa6=false
     fi
 fi
+if [test -d $casapythonincludedir ] ; then
+    AC_MSG_NOTICE([casapythonincludedir exists])
+else
+    casapythonincludedir=no-casa-python-include-directory
+fi
+AC_MSG_NOTICE([casapythonincludedir is $casapythonincludedir])
 # try to use whatever is in CASA
 DIFXCASALIBPATH=$DIFXCASAPATH/../lib
 AC_SUBST(BMTASKXML)
@@ -78,9 +86,60 @@ AC_SUBST(DIFXCASAPATH)
 AC_SUBST(DIFXCASALIBPATH)
 AM_CONDITIONAL(HAVE_CASA, $have_casa)
 AM_CONDITIONAL(HAVE_CASA6, $have_casa6)
+
+# more variables in setup...
+if [test -d /usr/include/cfitsio ] ; then
+    POLCONVERTCFITSIODIR=/usr/include/cfitsio
+    AC_MSG_NOTICE([POLCONVERTCFITSIODIR is $POLCONVERTCFITSIODIR])
+else
+    # not sure where else it might be these days
+    AC_MSG_NOTICE([WARNING: you need to find include files for cfitsio])
+fi
+AC_SUBST(POLCONVERTCFITSIODIR)
+
+# make DO_SOLVE controllable here
+if [test x$POLCONVERTDOSOLVE = x] ; then
+    POLCONVERTDOSOLVE=True
+    AC_MSG_NOTICE([POLCONVERTDOSOLVE set to $POLCONVERTDOSOLVE])
+else
+    AC_MSG_NOTICE([POLCONVERTDOSOLVE is $POLCONVERTDOSOLVE])
+fi
+AC_SUBST(POLCONVERTDOSOLVE)
+
 # until we figure out how to automatically write setup.py
 # this environment variable may be needed
-AC_MSG_NOTICE([POLGAINSOLVELIBS is $POLGAINSOLVELIBS])
+AC_MSG_NOTICE([POLGAINSOLVELIBS is initially $POLGAINSOLVELIBS])
+
+# AC_CHECK_LIB could be used, but setup.py isn't set up for that...
+# so, this is a pass at building the list the setup.py wants.
+if [test x$POLGAINSOLVELIBS = x] ; then
+    pcgsl=`ls $DIFXCASALIBPATH/libgsl.so.* | tail -1`
+    if [test -f $pcgsl] ; then
+        POLGAINSOLVELIBS=gsl
+        AC_MSG_NOTICE([gsl is $pcgsl])
+    fi
+    pcgslcblas=`ls $DIFXCASALIBPATH/libgslcblas.so.* | tail -1`
+    if [test -f $pcgslcblas] ; then
+        if [test x$POLGAINSOLVELIBS = x] ; then comma='' ; else comma=',' ; fi
+        POLGAINSOLVELIBS=$POLGAINSOLVELIBS${comma}gslcblas
+        AC_MSG_NOTICE([gslcblas is $pcgslcblas])
+    else
+        pccblas=`ls $DIFXCASALIBPATH/libcblas.so.* | tail -1`
+        if [test -f $pccblas] ; then
+            if [test x$POLGAINSOLVELIBS = x] ; then comma='' ; else comma=',' ; fi
+            POLGAINSOLVELIBS=$POLGAINSOLVELIBS${comma}cblas
+            AC_MSG_NOTICE([cblas is $pcblas])
+        fi
+    fi
+    pcfftw3=`ls $DIFXCASALIBPATH/libfftw3.so.* | tail -1`
+    if [test -f $pcfftw3] ; then
+        if [test x$POLGAINSOLVELIBS = x] ; then comma='' ; else comma=',' ; fi
+        POLGAINSOLVELIBS=$POLGAINSOLVELIBS${comma}fftw3
+        AC_MSG_NOTICE([fftw3 is $pcfftw3])
+    fi
+    AC_MSG_NOTICE([POLGAINSOLVELIBS is finally $POLGAINSOLVELIBS])
+fi
+AC_SUBST(POLGAINSOLVELIBS)
 
 # Checks for programs.
 AC_PROG_CXX
@@ -98,7 +157,7 @@ fi
 AM_CONDITIONAL(HAVE_JAVA, $have_java)
 
 # Checks for header files.
-CPPFLAGS="$CPPFLAGS -I/usr/include/cfitsio -I/usr/include/python2.7"
+CPPFLAGS="$CPPFLAGS -I$POLCONVERTCFITSIODIR -I$casapythonincludedir"
 AC_CHECK_HEADERS([fitsio.h stdlib.h string.h Python.h])
 
 # Checks for typedefs, structures, and compiler characteristics.

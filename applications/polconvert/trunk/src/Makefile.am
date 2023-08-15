@@ -109,6 +109,9 @@ $(BuiltSources): copy.them
 build.sos: copy.them
 	export PATH=@DIFXCASAPATH@${PATH_SEPARATOR}${PATH} ;\
 	export LD_LIBRARY_PATH=@DIFXCASALIBPATH@${PATH_SEPARATOR}${LD_LIBRARY_PATH} ;\
+	export POLGAINSOLVELIBS=@POLGAINSOLVELIBS@ ;\
+	export POLCONVERTDOSOLVE=@POLCONVERTDOSOLVE@ ;\
+	export POLCONVERTCFITSIODIR=@POLCONVERTCFITSIODIR@ ;\
 	[ -n "${DIFXCASAVENV}" ] && source ${DIFXCASAVENV} ;\
 	@CASAPYTHON@ setup.py build_ext --inplace
 	ls _*.so > build.sos
