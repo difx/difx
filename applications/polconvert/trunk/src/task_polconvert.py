@@ -905,19 +905,20 @@ calibrated phased arrays (i.e., phased ALMA).
 
 
 #### these blocks INPC
-  if type(usePcal) is not list:
-    printError("Invalid format for usePcal! Should be a list of booleans!\n")
-  elif len(usePcal)==0:
-    usePcal = [False for i in range(nALMA)]
-  else:
-    for pi in usePcal:
-      if type(pi) is not bool:
-        printError("Invalid format for usePcal! " +
-            "It should be a list of booleans!\n")
-  if len(np.where(usePcal)[0]) > 0:
-    isPcalUsed = True
-    printMsg("Info: Pcal used in %s" % str(np.where(usePcal)[0])) 
-  else:
+# if type(usePcal) is not list:
+#   printError("Invalid format for usePcal! Should be a list of booleans!\n")
+# elif len(usePcal)==0:
+#   usePcal = [False for i in range(nALMA)]
+# else:
+#   for pi in usePcal:
+#     if type(pi) is not bool:
+#       printError("Invalid format for usePcal! " +
+#           "It should be a list of booleans!\n")
+# if len(np.where(usePcal)[0]) > 0:
+#   isPcalUsed = True
+#   printMsg("Info: Pcal used in %s" % str(np.where(usePcal)[0])) 
+# else:
+  if True:
     isPcalUsed = False
     printMsg("Info: Pcal is not in use")
 
@@ -1541,7 +1542,8 @@ calibrated phased arrays (i.e., phased ALMA).
 #########################
 #### CORRECTIONS BASED ON PHASECAL TONES:
 
-    if usePcal[i]:
+#   if usePcal[i]:
+    if isPcalUsed:
         printMsg("Using Pcal for %d" % i)
         PCFile = filter(lambda x: x.endswith(doant),PHASECALS)
         if len(PCFile)==0:
