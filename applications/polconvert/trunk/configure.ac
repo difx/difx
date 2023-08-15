@@ -69,10 +69,11 @@ if [test $have_casa = true] ; then
         CASAPYTHON=/bin/false
         have_casa=false
         have_casa6=false
+        casapythonincludedir=no-python-within-casa
     fi
 fi
-if [test -d $casapythonincludedir ] ; then
-    AC_MSG_NOTICE([casapythonincludedir exists])
+if [test -n "$casapythonincludedir" -a -d $casapythonincludedir ] ; then
+    AC_MSG_NOTICE([casapythonincludedir exists as $casapythonincludedir])
 else
     casapythonincludedir=no-casa-python-include-directory
 fi

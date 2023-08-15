@@ -18,10 +18,12 @@ import sys
 pcvers='2.0.7'
 if sys.version_info.major < 3:
     print('py2 polconvert execution in runpolconvert v' + pcvers)
-elif 'CASASTANDALONE' in os.environ:
+elif 'CASASTANDALONE' in os.environ and bool(os.environ['CASASTANDALONE'] is 'True'):
     print('py3 polconvert_CASA execution in runpolconvert v' + pcvers)
     from polconvert_CASA import polconvert as polconvert
 else:
+    if 'CASASTANDALONE' in os.environ:
+        print('CASASTANDALONE was',os.environ['CASASTANDALONE'],'which is not "True"')
     print('py3 task_polconvert execution in runpolconvert v' + pcvers)
     from polconvertpkg.private.task_polconvert import polconvert as polconvert
 

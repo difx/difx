@@ -916,7 +916,7 @@ calibrated phased arrays (i.e., phased ALMA).
 #           "It should be a list of booleans!\n")
 # if len(np.where(usePcal)[0]) > 0:
 #   isPcalUsed = True
-#   printMsg("Info: Pcal used in %s" % str(np.where(usePcal)[0])) 
+#   printMsg("Info: Pcal used in %s" % str(np.where(usePcal)[0]))
 # else:
   if True:
     isPcalUsed = False
