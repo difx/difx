@@ -43,6 +43,8 @@ public:
     void setSysNum(std::string path);
     int getOrder() const;
     void setOrder(int order);
+    std::string getDriver() const;
+    void setDriver(std::string driver);
     
 private:
     
@@ -50,6 +52,7 @@ private:
     std::string path_m;
     std::string sysnum_m;
     int order_m;
+    std::string driver_m;
 };
 
 #endif	/* MARK6CONTROLLER_H */

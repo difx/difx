@@ -89,6 +89,18 @@ int Mark6Controller::getOrder() const {
 void Mark6Controller::setOrder(int order) {
     this->order_m = order;
 }
+/**
+ * @return the device driver of the controller
+ */
+std::string Mark6Controller::getDriver() const {
+    return driver_m;
+}
+/** 
+ * Set the device driver of the controller
+ * */
+void Mark6Controller::setDriver(std::string driver) {
+    this->driver_m = driver;
+}
 
 
 /**
