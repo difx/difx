@@ -69,6 +69,7 @@ Mark6DiskDevice::Mark6DiskDevice(const Mark6DiskDevice &device)
     controllerId_m = device.controllerId_m;
     serial_m = device.serial_m;
     meta_m = device.meta_m;
+    sasAddress_m = device.sasAddress_m;
 }
 
 /**
@@ -101,6 +102,7 @@ std::string Mark6DiskDevice::getName() const {
  */
 bool Mark6DiskDevice::isValid()
 {
+    // cout << diskId_m << " " << controllerId_m << endl;
     if (diskId_m == -1)
         return(false);
     if (controllerId_m == -1)
@@ -133,7 +135,7 @@ int Mark6DiskDevice::getPosition() const {
  */
 int Mark6DiskDevice::getSlot() const {
     
-    //cout << "device: " << name_m << " diskid= " << diskId_m << " controllerid= " << controllerId_m << endl;
+   //cout << "device: " << name_m << " diskid= " << diskId_m << " controllerid= " << controllerId_m << endl;
     if ((controllerId_m == -1) || (diskId_m == -1))
         return(-1);
 
@@ -246,7 +248,7 @@ int Mark6DiskDevice::mountDisk(string dataPath, string metaPath)
         else if (i==1)
             dest << metaPath << getSlot()+1 << "/" <<  getPosition();
         
-        //cout << "mount path = " << dest.str() <<endl;
+        // cout << "mounting: " << source << " on "  << dest.str() << " controller: " << controllerId_m << " sasadress: " << sasAddress_m << endl;
         
         if (stat(dest.str().c_str(), &file) != 0)
         {
@@ -343,6 +345,14 @@ void Mark6DiskDevice::setSerial(std::string serial_m) {
 
 std::string Mark6DiskDevice::getSerial() const {
     return serial_m;
+}
+
+void Mark6DiskDevice::setSasAddress(std::string sasAddress) {
+    this->sasAddress_m = sasAddress;
+}
+
+std::string Mark6DiskDevice::getSasAddress() const {
+    return sasAddress_m;
 }
 
 /*std::string Mark6DiskDevice::getMountPath() const {

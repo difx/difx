@@ -321,7 +321,7 @@ void Mark6::manageDeviceChange()
         // validate all new devices
         for(std::vector<Mark6DiskDevice>::size_type i = 0; i != tempDevices.size(); i++) {
        
-            //cout << "Processing device: " << i << endl;
+           // cout << "Processing device: " << i << endl;
             if (tempDevices[i].isValid() == false)
             {
                 clog << "disk " << tempDevices[i].getName() << " is not a valid Mark6 disk device. Discarding." << endl;
@@ -592,6 +592,7 @@ void Mark6::pollDevices()
 
     //cout << "Polling for new devices" << endl;
     clog << "Polling for new devices" << endl;
+    //cout << "Polling for new devices" << endl;
 
     
     /*for(std::vector<Mark6DiskDevice>::size_type i = 0; i != newDevices_m.size(); i++) {
@@ -656,14 +657,19 @@ void Mark6::pollDevices()
                        
                         // add new disk device
                         Mark6DiskDevice disk(string(udev_device_get_sysname(dev)));
-                        disk.setControllerId( parseControllerId(udev_device_get_devpath(dev)) );
+                        int controllerId = parseControllerId(udev_device_get_devpath(dev));
+                        string driver = (getControllerById(controllerId))->getDriver();
+                        disk.setControllerId( controllerId );
+
 			if(0 != udev_device_get_sysattr_value(parent,"sas_address"))
 			{
-                            disk.setDiskId(parseDiskId(udev_device_get_sysattr_value(parent,"sas_address")));
+                            disk.setSasAddress (udev_device_get_sysattr_value(parent,"sas_address"));
+                            disk.setDiskId(parseDiskId(udev_device_get_sysattr_value(parent,"sas_address"), driver));
                             disk.setSerial(udev_device_get_property_value(dev,"ID_SERIAL_SHORT") );
 
                             newDevices_m.push_back(disk);
 			}
+                        //cout << disk.getControllerId()  << endl;
                         //cout << "Controller ID=" << disk.getControllerId() << endl;
                         //cout << "Disk ID=" << disk.getDiskId() << endl;
                         //cout << "Disk serial=" << disk.getSerial() << endl;
@@ -878,18 +884,26 @@ struct udev_enumerate *enumerate;
 
         path = udev_list_entry_get_name(dev_list_entry);
         dev = udev_device_new_from_syspath(udev_m, path);
-/*        cout << udev_device_get_sysname(dev) <<  " " << path << " " << udev_device_get_devpath(dev) << endl;
+        /*cout << udev_device_get_sysname(dev) <<  " " << path << " " << udev_device_get_devpath(dev) << endl;
         cout << udev_device_get_subsystem(dev) << endl;
         cout << udev_device_get_sysnum(dev) << endl;
         cout << udev_device_get_devnum(dev) << endl;
-        cout << udev_device_get_seqnum(dev) << endl;
-*/
+        cout << udev_device_get_seqnum(dev) << endl; */
+
         Mark6Controller controller;
         controller.setName(udev_device_get_sysname(dev));
         controller.setPath(udev_device_get_devpath(dev));
         controller.setSysNum(udev_device_get_sysnum(dev));
 
-        clog << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << endl;
+        // get driver in order to distinguish between sas2 and sas3 controllers
+        udev_device  *parent = udev_device_get_parent(dev);
+        udev_device  *grand = udev_device_get_parent(parent);
+        
+        controller.setDriver(udev_device_get_driver(grand));
+        //cout << udev_device_get_driver(grand) << endl;
+
+        clog << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << endl;
+        //cout << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << endl;
 
         controllers_m.push_back(controller);
     }
@@ -936,26 +950,42 @@ int Mark6::enumerateDevices()
 
 	if (devtype =="disk")
 	{
-		//cout << devtype << path <<endl;
+                        //cout << devtype << path <<endl;
                         // add new disk device
                         const char *sysname = udev_device_get_sysname(dev);
                         const char *devpath = udev_device_get_devpath(dev);
                         const char *sasaddress = udev_device_get_sysattr_value(parent,"sas_address");
 			const char *serial = udev_device_get_property_value(dev,"ID_SERIAL_SHORT");
+                        string driver = "";
 	
 			if (sysname != NULL)
 			{ 
 				string devName = string(sysname);                               
 				Mark6DiskDevice disk(devName);
 
-				if (sasaddress != NULL)
-					disk.setDiskId(parseDiskId(string(sasaddress)));
 				if (devpath != NULL)
-					disk.setControllerId( parseControllerId(string(devpath)) );
+                                {
+                                        //cout <<  devpath << endl;
+                                        int controllerId = parseControllerId(string(devpath));
+                                        if (controllerId == -1)
+                                            break;
+                                        Mark6Controller *controller = getControllerById(controllerId);
+                                        
+                                        
+                                        driver = controller->getDriver();
+					disk.setControllerId( controllerId );
+                                }
+
+				if (sasaddress != NULL)
+                                {
+                                        disk.setSasAddress(sasaddress);
+					disk.setDiskId(parseDiskId(string(sasaddress), driver));
+                                }
 				if (serial != NULL)
 					disk.setSerial(string(serial));
 							       
 				//cout << "device " << devName << " serial " << serial <<endl;
+                                //cout << disk.getSasAddress() << endl;
 				newDevices_m.push_back(disk);			
 				devCount++;
 				//cout << "Controller ID=" << disk.getControllerId() << endl;
@@ -990,7 +1020,7 @@ int Mark6::enumerateDevices()
  * Note that the disk id corresponds to the SAS phy* parameter not the port number which can be arbitrary
  * @returns the disk id; -1 if the id could not be parsed from the given sas address
  */
-long Mark6::parseDiskId(std::string sasAddress)
+long Mark6::parseDiskId(std::string sasAddress, std::string driver)
 {
     long diskId = -1;
 
@@ -1034,25 +1064,45 @@ long Mark6::parseDiskId(std::string sasAddress)
 
     size_t strlen = sasAddress.size();
 
-    if(sasAddress[strlen-2] == '0' && sasAddress[strlen-1] == '0')
+    //if(sasAddress[strlen-2] == '0' && sasAddress[strlen-1] == '0')
+  
+    //cout << "parseDiskId " << sasAddress << " -> disk id " << diskId << " driver: " << driver << endl;
+    if (driver == "mpt2sas")
     {
-        // TODO: "if(driver==mpt2sas) {...}"
         diskId = strtol(sasAddress.substr(11,1).c_str(), NULL, 16);
+    }
+    else if (driver == "mpt3sas")
+    {
+        diskId = strtol(sasAddress.substr(strlen-1,1).c_str(), NULL, 16);
     }
     else
     {
-        // TODO: "if(driver==mpt3sas) {...}"
-        diskId = strtol(sasAddress.substr(strlen-1,1).c_str(), NULL, 16);
+        return (-1);
     }
 
-    //clog << "parseDiskId " << sasAddress << " -> disk id " << diskId << endl;
+    //cout << "parseDiskId " << sasAddress << " -> disk id " << diskId << " driver: " << driver << endl;
 
     return diskId;
 }
 
+/**
+ * Obtains the controller object having the given id
+ * @returns the Mark6Controller instance; NULL if no controller with matching id was found
+ **/
+Mark6Controller *Mark6::getControllerById(int id)
+{
+    for(std::size_t i = 0; i < controllers_m.size(); ++i) {
+	if (controllers_m[i].getOrder() == id)
+        {
+	    return(&controllers_m[i]);
+        }
+
+    }
+  return(NULL);
+}
 
 /**
- * Obtains the controller id (should be either 0 or 1) by parsing the output 
+ * Obtains the controller id by parsing the output 
  * of the devpath information provided by UDEV. If the internal cabling
  * of the Mark6 machine is done correctly module slots 1 and 2 should be
  * located on controller id=1 whereas slots 3 and 4 should have a controller id=0
@@ -1081,6 +1131,7 @@ int Mark6::parseControllerId(string devpath)
 
     // lookup controller id
     for(std::size_t i = 0; i < controllers_m.size(); ++i) {
+        //cout << controllers_m[i].getName()<< " " << name << " " << controllers_m[i].getOrder() << endl;
 	if (controllers_m[i].getName() == name)
         {
 	    return(controllers_m[i].getOrder());
