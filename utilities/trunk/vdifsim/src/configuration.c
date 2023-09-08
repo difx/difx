@@ -149,7 +149,16 @@ Configuration *loadConfigration(const char *filename)
 		}
 		else if(A)
 		{
-			if(strcasecmp(typeStr, "DroppedPacketRate") == 0)
+			if(strcasecmp(typeStr, "SEFD") == 0)
+			{
+				if(n != 2)
+				{
+					fprintf(stderr, "%s line %d: SEFD needs <rate>\n", filename, lineNumber);
+					break;
+				}
+				A->SEFD = p[0];
+			}
+			else if(strcasecmp(typeStr, "DroppedPacketRate") == 0)
 			{
 				if(n != 2)
 				{

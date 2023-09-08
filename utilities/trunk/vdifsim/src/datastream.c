@@ -65,6 +65,13 @@ Datastream *newDatastream(const DifxInput *D, int dsId, const CommonSignal *C, c
 	d->samplesPerFrame = 8*d->dataBytes/d->bits;
 	d->framesPerSecond = (int)(d->bw*2/d->samplesPerFrame + 0.5);
 	d->SEFD = opts->SEFD;
+	if(d->parameters)
+	{
+		if(d->parameters->SEFD > 0.0)
+		{
+			d->SEFD = d->parameters->SEFD;
+		}
+	}
 	d->random = g_rand_new();
 
 	d->filter = (double *)fftw_malloc((D->nInChan + 1)*sizeof(complex));
