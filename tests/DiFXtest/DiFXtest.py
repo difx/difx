@@ -547,10 +547,11 @@ def update_test(testname):
   working_directory = current_directory + "/" + testname + "/"
   results_directory = working_directory + "/benchmark_results/" 
   binfiles,inputfiles = get_binary_files(working_directory)
-
+  print(working_directory)
+  print(binfiles)
 
   # skip if difx has not run succesfully
-  if (binfiles[0] == None):
+  if len(binfiles)==0:
     return
 
   binfile_stat = os.stat(binfiles[0])
