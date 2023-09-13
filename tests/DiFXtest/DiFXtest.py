@@ -361,7 +361,7 @@ def compare_results(testname, abstol, reltol):
   binfiles,inputfiles = get_binary_files(working_directory)
   #print("*******")
   #print(binfiles[0])
-  if (binfiles[0] == None):
+  if (len(binfiles) == 0):
     results[0] = "FAILED"
     results[1] = False
     return(results)
@@ -445,7 +445,7 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol):
 
   #print("*******")
   #print(binfiles[0])
-  if (binfiles[0] == None):
+  if (len(binfiles) == 0):
     results[0] = "FAILED"
     results[1] = False
     return(results)
@@ -670,14 +670,14 @@ def create_test_data():
   TEST2_complex_usbvdiferrfile = "testdata/TEST2-complex-usb.vdif.error"
   f_TEST2_complex_usbvdiflog = open(TEST2_complex_usbvdiflog,"w")
   f_TEST2_complex_usbvdiferrfile = open(TEST2_complex_usbvdiferrfile,"w")
-  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert testdata/TEST2-complex-usb.vdif"
+  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -complex testdata/TEST2-complex-usb.vdif"
   subprocess.run(args,shell=True,stdout=f_TEST2_complex_usbvdiflog,stderr=f_TEST2_complex_usbvdiferrfile,check=True)
   
   TEST2_complex_lsbvdiflog = "testdata/TEST2-complex-lsb.vdif.log"
   TEST2_complex_lsbvdiferrfile = "testdata/TEST2-complex-lsb.vdif.error"
   f_TEST2_complex_lsbvdiflog = open(TEST2_complex_lsbvdiflog,"w")
   f_TEST2_complex_lsbvdiferrfile = open(TEST2_complex_lsbvdiferrfile,"w")
-  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -lsb testdata/TEST2-complex-lsb.vdif"
+  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -complex -lsb testdata/TEST2-complex-lsb.vdif"
   subprocess.run(args,shell=True,stdout=f_TEST2_complex_lsbvdiflog,stderr=f_TEST2_complex_lsbvdiferrfile,check=True)
   
 
@@ -687,7 +687,7 @@ def create_test_data():
   TEST2_dsb_usbvdiferrfile = "testdata/TEST2-dsb-usb.vdif.error"
   f_TEST2_dsb_usbvdiflog = open(TEST2_dsb_usbvdiflog,"w")
   f_TEST2_dsb_usbvdiferrfile = open(TEST2_dsb_usbvdiferrfile,"w")
-  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -doublesideband testdata/TEST2-dsb-usb.vdif"
+  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -complex -doublesideband testdata/TEST2-dsb-usb.vdif"
   subprocess.run(args,shell=True,stdout=f_TEST2_dsb_usbvdiflog,stderr=f_TEST2_dsb_usbvdiferrfile,check=True)
 
 
@@ -696,7 +696,7 @@ def create_test_data():
   TEST2_dsb_lsbvdiferrfile = "testdata/TEST2-dsb-lsb.vdif.error"
   f_TEST2_dsb_lsbvdiflog = open(TEST2_dsb_lsbvdiflog,"w")
   f_TEST2_dsb_lsbvdiferrfile = open(TEST2_dsb_lsbvdiferrfile,"w")
-  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -doublesideband -lsb testdata/TEST2-dsb-lsb.vdif"
+  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -complex -doublesideband -lsb testdata/TEST2-dsb-lsb.vdif"
   subprocess.run(args,shell=True,stdout=f_TEST2_dsb_lsbvdiflog,stderr=f_TEST2_dsb_lsbvdiferrfile,check=True)
   
   f_TEST1vdiflog.close()
