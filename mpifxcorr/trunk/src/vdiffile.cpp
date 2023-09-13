@@ -609,8 +609,10 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 			snprintvdiffilesummary(fileSummaryString, MaxSummaryLength, &fileSummary);
 			cinfo << startl << fileSummaryString << endl;
 
-			// If verbose...
-			printvdiffilesummary(&fileSummary);
+		        if (verbose)	
+                        {
+                          printvdiffilesummary(&fileSummary);
+                        }
 
 			// Here set readseconds to time since beginning of job
 			readseconds = 86400*(vdiffilesummarygetstartmjd(&fileSummary)-corrstartday) + vdiffilesummarygetstartsecond(&fileSummary)-corrstartseconds + intclockseconds;
