@@ -270,6 +270,7 @@ int main(int argc, char *argv[])
   bool monitor = false;
   bool nocommandthread = false;
   bool vgoscomplexvdifhack = false;
+  bool verbose = false;
   string monitoropt;
   pthread_t commandthread;
   //pthread_attr_t attr;
@@ -293,9 +294,9 @@ int main(int argc, char *argv[])
   MPI_Comm_dup(world, &return_comm);
   MPI_Get_processor_name(processor_name, &namelen);
 
-  if(argc < 2 || argc > 5)
+  if(argc < 2 || argc > 6)
   {
-    cerr << "Error: invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]] [-rNewStartSec] [--nocommandthread] [--vgoscomplex]" << endl;
+    cerr << "Error: invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]] [-rNewStartSec] [--nocommandthread] [--vgoscomplex] [--verbose] " << endl;
     MPI_Barrier(world);
     MPI_Finalize();
     return EXIT_FAILURE;
@@ -349,9 +350,13 @@ int main(int argc, char *argv[])
       cwarn << startl << "Enabling VGOS hack; raw samples of *all* VDIFC stations will have the sign of the imaginary part reversed i.e. the sideband inverted during unpacking!" << endl;
       vgoscomplexvdifhack = true;
     }
+    else if (strcmp(argv[i], "--verbose") == 0)
+    {
+      verbose = true;
+    }
     else
     {
-      cfatal << startl << "Invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]] [-rNewStartSec] [--nocommandthread] [--vgoscomplex]" << endl;
+      cfatal << startl << "Invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]] [-rNewStartSec] [--nocommandthread] [--vgoscomplex] [--verbose]" << endl;
       MPI_Barrier(world);
       MPI_Finalize();
       return EXIT_FAILURE;
@@ -438,36 +443,46 @@ int main(int argc, char *argv[])
       int datastreamnum = myID - fxcorr::FIRSTTELESCOPEID;
       if(config->isVDIFFile(datastreamnum)) {
         stream = new VDIFDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        stream->verbose = verbose;
         cverbose << startl << "Opening VDIFDataStream" << endl;
 #ifdef HAVE_MARK6SG
       } else if(config->isVDIFMark6(datastreamnum)) {
         stream = new VDIFMark6DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        stream->verbose = verbose;
         cverbose << startl << "Opening VDIFMark6DataStream" << endl;
       } else if(config->isMark5BMark6(datastreamnum)) {
         stream = new Mark5BMark6DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        stream->verbose = verbose;
         cverbose << startl << "Opening Mark5BMark6DataStream" << endl;
 #endif
       } else if(config->isVDIFNetwork(datastreamnum)) {
         stream = new VDIFNetworkDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        stream->verbose = verbose;
         cverbose << startl << "Opening VDIFNetworkDataStream" << endl;
       } else if(config->isVDIFFake(datastreamnum)) {
         stream = new VDIFFakeDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        stream->verbose = verbose;
         cverbose << startl << "Opening VDIFFakeDataStream" << endl;
       } else if(config->isMark5BFile(datastreamnum)) {
         stream = new Mark5BDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        stream->verbose = verbose;
           cverbose << startl << "Opening Mark5BDataStream" << endl;
       } else if(config->isMark5BMark5(datastreamnum)) {
         stream = new Mark5BMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        stream->verbose = verbose;
         cverbose << startl << "Opening Mark5BMark5DataStream" << endl;
       } else if(config->isMkV(datastreamnum)) {
         stream = new Mk5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        stream->verbose = verbose;
         cverbose << startl << "Opening Mk5DataStream" << endl;
       } else if(config->isNativeMkV(datastreamnum)){
         stream = new NativeMk5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        stream->verbose = verbose;
           cverbose << startl << "Opening NativeMk5DataStream" << endl;
       }
       else {
         stream = new DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        stream->verbose = verbose;
     cverbose << startl << "Opening generic DataStream" << endl;
     }
 
