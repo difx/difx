@@ -22,6 +22,7 @@ typedef struct
 	double filterTransition;/* fractional bandwidth of band edge transition zone */
 	int nProcess;		/* fed by MPI_Comm_size() */
 	int useDifxMessage;	/* if true, multicast status */
+	int randSeed;		/* random number seed */
 } CommandLineOptions;
 
 void usage(const CommandLineOptions *opts);

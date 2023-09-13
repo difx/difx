@@ -228,7 +228,14 @@ CommonSignal *newCommonSignal(const DifxInput *D, const CommandLineOptions *opts
 	C = (CommonSignal *)calloc(1, sizeof(CommonSignal));
 	C->D = D;
 	C->fluxDensity = opts->fluxDensity;
-	C->random = g_rand_new();
+	if(opts->randSeed)
+	{
+		g_rand_new_with_seed(opts->randSeed);
+	}
+	else
+	{
+		C->random = g_rand_new();
+	}
 	C->subband = (CommonSubband *)calloc(2*D->nFreq, sizeof(CommonSubband));	/* may be more storage than needed */
 
 	/* loop over all datastreams.  In each case add to the list of subbands as un-used ones are identified */

@@ -72,7 +72,14 @@ Datastream *newDatastream(const DifxInput *D, int dsId, const CommonSignal *C, c
 			d->SEFD = d->parameters->SEFD;
 		}
 	}
-	d->random = g_rand_new();
+	if(opts->randSeed)
+	{
+		d->random = g_rand_new_with_seed(opts->randSeed + dsId + 1);
+	}
+	else
+	{
+		d->random = g_rand_new();
+	}
 
 	d->filter = (double *)fftw_malloc((D->nInChan + 1)*sizeof(complex));
 	f = sqrt(2)/D->nInChan;
