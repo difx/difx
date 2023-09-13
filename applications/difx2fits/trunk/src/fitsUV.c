@@ -1394,7 +1394,7 @@ static int *generateExcludedSourceList(const char *includeSourceList, const Difx
 	char srcName[32];	/* DIFXIO_NAME_LENGTH = 32 */
 	int *l;
 	int i, n = 0;
-	char *p;
+	const char *p;
 	int q;
 
 	l = (int *)calloc(D->nSource + 1, sizeof(int));
