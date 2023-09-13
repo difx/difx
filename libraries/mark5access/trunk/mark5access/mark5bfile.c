@@ -56,6 +56,10 @@ void resetmark5bfilesummary(struct mark5b_file_summary *sum)
 	sum->framesPerSecond = 25600;	/* 2 Gbps */
 }
 
+/**
+ * Deprecated. Use snprintmark5bfilesummary instead and
+ * do message output outside mark5access library
+ **/
 void printmark5bfilesummary(const struct mark5b_file_summary *sum)
 {
 	printf("Mark5B file: %s\n", sum->fileName);
