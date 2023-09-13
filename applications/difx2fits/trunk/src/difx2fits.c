@@ -169,6 +169,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "                      Read <file> and apply it as a bandpass to the output\n");
 	fprintf(stderr, "  --applydelaycal <file>\n");
 	fprintf(stderr, "                      Read <file> and apply it as delay corrections to the output\n");
+	fprintf(stderr, "  --sourcelist <list>\n");
+	fprintf(stderr, "                      Only propagate source(s) listed (comma separated)\n");
 	fprintf(stderr, "%s responds to the following environment variables:\n", program);
 	fprintf(stderr, "    DIFX_GROUP_ID             If set, run with umask(2).\n");
 	fprintf(stderr, "    DIFX_VERSION              The DiFX version to report.\n");
@@ -235,6 +237,11 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 		{
 			free(opts->historyFile);
 			opts->historyFile = 0;
+		}
+		if(opts->includeSourceList)
+		{
+			free(opts->includeSourceList);
+			opts->includeSourceList = 0;
 		}
 		free(opts);
 	}
@@ -495,6 +502,22 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				{
 					++i;
 					opts->historyFile = strdup(argv[i]);
+				}
+				else if(strcmp(argv[i], "--sourcelist") == 0)
+				{
+					int j;
+
+					++i;
+					opts->includeSourceList = strdup(argv[i]);
+
+					/* turn into space-separated list */
+					for(j = 0; opts->includeSourceList[j]; ++j)
+					{
+						if(opts->includeSourceList[j] == ',')
+						{
+							opts->includeSourceList[j] = ' ';
+						}
+					}
 				}
 				else if(strcmp(argv[i], "--applybandpass") == 0)
 				{

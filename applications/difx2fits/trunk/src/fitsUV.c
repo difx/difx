@@ -1389,6 +1389,66 @@ static int readvisrecord(DifxVis *dv, const struct CommandLineOptions *opts, con
 	return 0;
 }
 
+static int *generateExcludedSourceList(const char *includeSourceList, const DifxInput *D)
+{
+	char srcName[32];	/* DIFXIO_NAME_LENGTH = 32 */
+	int *l;
+	int i, n = 0;
+	char *p;
+	int q;
+
+	l = (int *)calloc(D->nSource + 1, sizeof(int));
+
+	p = includeSourceList;
+	while(sscanf(p, "%31s%n", srcName, &q) == 1)
+	{
+		for(i = 0; i < D->nSource; ++i)
+		{
+			if(strcasecmp(srcName, D->source[i].name) == 0)
+			{
+				l[n++] = i;
+				break;
+			}
+		}
+		
+		if(i == D->nSource)
+		{
+			fprintf(stderr, "Warning: requested source '%s' is not in any of the contributing files\n", srcName);
+		}
+
+		p += q;
+	}
+
+	l[n] = -1;	/* terminator */
+
+	return l;
+}
+
+/* excludeSourceList should be terminated with -1, or can be a null pointer */
+static int ExcludeSource(const DifxVis *dv, const int *includeSourceIdList)
+{
+	if(includeSourceIdList == 0)
+	{
+		/* No list provided, so no filtering */
+
+		return 0;
+	}
+	else
+	{
+		int i;
+
+		for(i = 0; includeSourceIdList[i] >= 0; ++i)
+		{
+			if(dv->sourceId == includeSourceIdList[i])
+			{
+				return 0;	/* keep it -- it is on the include list */
+			}
+		}
+	}
+
+	return 1;	/* turf it -- it is not on the provided list */
+}
+
 const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts, int passNum)
 {
 	int i, l, v;
@@ -1410,6 +1470,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	int nTrans = 0;
 	int nWritten = 0;
 	int nOld = 0;
+	int nSourceFiltered = 0;	/* number of records discarded due to being on source exclusion list */
 	int nSkipped = 0;
 	int nSkipped_recs;
 	double mjd, bestmjd;
@@ -1429,11 +1490,16 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	DelayCal *DC = 0;
 	DelayCalCache DCC;
 	Bandpass *B = 0;
+	int *includeSourceIdList = 0;
+
+	if(opts->includeSourceList)
+	{
+		includeSourceIdList = generateExcludedSourceList(opts->includeSourceList, D);
+	}
 
 	if(opts->applyDelayCalFile)
 	{
 		DC = loadDelayCal(opts->applyDelayCalFile, D);
-printDelayCal(DC);
 	}
 	resetDelayCalCache(&DCC);
 	if(opts->applyBandpassFile)
@@ -1724,6 +1790,10 @@ printDelayCal(DC);
 		{
 			++nOld;
 		}
+		else if(ExcludeSource(dv, includeSourceIdList))
+		{
+			++nSourceFiltered;
+		}
 		else
 		{
 #ifdef HAVE_FFTW
@@ -1799,6 +1869,7 @@ printDelayCal(DC);
 	printf("      %d negative weight records\n", nNegWeight);
 	printf("      %d scan boundary records dropped\n", nTrans);
 	printf("      %d out-of-time-range records dropped\n", nOld);
+	printf("      %d records from excluded sources dropped\n", nSourceFiltered);
 	printf("      %d records skipped\n", nSkipped);
 	printf("      %d records written\n", nWritten);
 	if(nWritten > 0)
@@ -1830,6 +1901,12 @@ printDelayCal(DC);
 	{
 		writeJobMatrix(jobMatrix, passNum);
 		deleteJobMatrix(jobMatrix);
+	}
+
+	if(includeSourceIdList)
+	{
+		free(includeSourceIdList);
+		includeSourceIdList = 0;
 	}
 
 	if(nNegWeight > 0)

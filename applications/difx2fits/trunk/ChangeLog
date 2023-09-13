@@ -17,6 +17,7 @@ Version 3.8.0
     - As a consequence of this, decorrelation corrections cannot be done properly.
     - Derived total delays are _not_ invariant to this
 * Create a .channels file that lists the frequency set as a function of time.
+* Add option to only propagate a finite list of sources
 
 Version 3.7.0
 * Post DiFX-2.6
