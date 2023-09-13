@@ -214,6 +214,7 @@ void delete_mark5_stream(struct mark5_stream *ms);
 int mark5_stream_resync(struct mark5_stream *ms);
 
 int mark5_stream_print(const struct mark5_stream *ms);
+int mark5_stream_snprint(char *str, int maxLength, const struct mark5_stream *ms);
 
 int mark5_stream_get_frame_time(struct mark5_stream *ms, int *mjd, int *sec, double *ns);
 
