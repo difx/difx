@@ -42,7 +42,7 @@
 #define MAXENTRIES		8000UL
 #define MAXTOKEN		512
 #define MAXTAB			6
-#define N_VLBA_BANDS		12
+#define N_VLBA_BANDS		13
 #define ANTENNA_NAME_LENGTH	4
 
 typedef struct
@@ -65,7 +65,8 @@ static const float bandEdges[N_VLBA_BANDS+1] =
 	900, 	/* 21cm L  */
 	1550, 	/* 18cm L  Different from above due to two separate gain curve files */
 	2000,	/* 13cm S  */
-	4000,	/* 6cm  C  */
+	3900,	/* 6cm  C  */
+	6000,	/* 5cm  C  Different from above due to two separate gain curve files */
 	8000,	/* 4cm  X  */
 	10000,	/* 2cm  U  */
 	18000, 	/* 1cm  K  */
@@ -88,6 +89,7 @@ static void nullifyGainRows(GainRow *G, int nRow, const char *antenna)
 		}
 	}
 }
+
 
 /* freq in MHz, t in days since ref day */
 /* if sxFlag is set, only look for 4cmsx or 13cmsx */
@@ -145,6 +147,38 @@ static int getGainRow(GainRow *G, int nRow, const char *antName, double freq, do
 	return bestr;
 }
 
+
+/* This gets the 4995 gain, extrapolates based off of the frequency focus relationship, adds a new row containing that information to the array of GainRows *G */
+static int handleCbandGain(GainRow *G, int nRow, const char *antName, double freq, double mjd)
+{
+  int cLowRow, i;
+  float newDPFU[2];
+
+  cLowRow = getGainRow(G, nRow, antName, 4900, mjd, 0); //0 is sxFlag
+
+  if(cLowRow == -1) {
+    //We didn't get a gain so return what we normally would (which might still be -1)
+    return getGainRow(G, nRow, antName, freq, mjd, 0);
+  }
+
+
+  //-2.294x10^-6 from fit to full data
+  //-1.11x10^-6 from two gains (perhaps more accurate as these are based off much more data)
+  //Calc new gain based off 6cm gain +- freq change * above value
+  for(i=0; i<2; i++) {
+    newDPFU[i] = (G[cLowRow].DPFU[i]-(freq - G[cLowRow].freq[i])*0.00000111);
+  }
+  //make a new GainRow, copy off old one, ok to go over nRow as size is MAXENTRIES, we don't update nRow as we can overwrite this for subsequent stations/subbands
+  G[nRow] = G[cLowRow];
+  G[nRow].freq[0] = (float)freq;
+  G[nRow].DPFU[0] = newDPFU[0];
+  G[nRow].DPFU[1] = newDPFU[1];
+
+  return nRow;
+}
+
+
+
 static int isHSAAntenna(const char *token)
 {
 	const char antennas[] = " AR BR EB FD GB HN KP LA MK NL OV PT SC Y ";
@@ -164,6 +198,27 @@ static int isHSAAntenna(const char *token)
 		return 0;
 	}
 }
+
+static int isVLBAAntenna(const char *token)
+{
+	const char antennas[] = " BR FD HN KP LA MK NL OV PT SC ";
+	char matcher[8];
+
+	if(strlen(token) >= ANTENNA_NAME_LENGTH)
+	{
+		return 0;
+	}
+	sprintf(matcher, " %s ", token);
+	if(strstr(antennas, matcher) != 0)
+	{
+		return 1;
+	}
+	else
+	{	
+		return 0;
+	}
+}
+
 
 static int isVLITEAntenna(const char *token)
 {
@@ -719,7 +774,14 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 			for(i = 0; i < dfs->nIF; ++i)
 			{
 				freq = dfs->IF[i].freq;	/* MHz */
-				r = getGainRow(G, nRow, antName, freq, mjd, sxFlag);
+
+				if((3900 <= freq) && (freq < 8000) && isVLBAAntenna(antName)) { //we are at C-band VLBA/eb/gb/y1-> inter/extrapolate gains
+				  r = handleCbandGain(G, nRow, antName, freq, mjd);
+				}
+				else {
+				  r = getGainRow(G, nRow, antName, freq, mjd, sxFlag);
+				}
+
 				if(r < 0)
 				{
 					if(messages == 0)
