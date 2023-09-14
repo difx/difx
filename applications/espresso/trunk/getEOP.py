@@ -36,7 +36,7 @@ import os
 import optparse
 #import requests
 import ftplib
-import espressolib
+from espressolib import espressolib
 #try:
 #    import urllib2
 #except:

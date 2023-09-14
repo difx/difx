@@ -24,7 +24,7 @@
 
 from __future__ import print_function, division
 import optparse
-import espressolib
+from espressolib import espressolib
 
 
 # parse the options

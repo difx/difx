@@ -28,7 +28,7 @@ import os
 import subprocess
 import re
 import optparse
-import espressolib
+from espressolib import espressolib
 import multiprocessing
 #import queue
 

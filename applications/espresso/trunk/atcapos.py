@@ -25,7 +25,7 @@ from __future__ import print_function, division
 import optparse
 import re
 import requests
-import espressolib
+from espressolib import espressolib
 
 
 def vexdate2atca(date):

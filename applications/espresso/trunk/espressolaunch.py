@@ -31,7 +31,7 @@ import os
 import sys
 import time
 import pprint
-import espressolib
+from espressolib import espressolib
 
 
 def backup_oldrun(jobname, outdir, backupdir):

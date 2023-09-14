@@ -34,7 +34,7 @@ import fileinput
 import pprint
 import getpass
 import psutil
-import espressolib
+from espressolib import espressolib
 import datetime
 
 

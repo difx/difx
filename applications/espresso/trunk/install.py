@@ -19,35 +19,48 @@
 # =======================================================================
 
 # Cormac Reynolds, December 2011: almost trivial install script for espresso
+# Cormac Reynolds, September 2023: use the standard DiFX install invocation
 
 
 from __future__ import print_function, division
 import os
+import sys
 import shutil
 import optparse
-import re
+#import re
+
+verb = False
+force = True
+errors = []
+
+
+def run(cmd):
+    # Subroutine to run a command and raise error on non-zero return - from DiFX install.py
+    if verb:
+        print("Run(" + cmd + ") in " + os.getcwd())
+    sys.stdout.flush()
+    if os.system(cmd):
+        if force:
+            errors.append(os.getcwd() + ' ' + cmd + " failed.")
+        else:
+            raise RuntimeError("Error running " + cmd + " in " + os.getcwd())
+
 
 usage = """%prog <difxroot>
-will install the scripts in <difxroot>/bin
+will install the scripts in <difxroot>/bin and espressolib <difxroot>/lib/python
 """
 
 parser = optparse.OptionParser(usage=usage, version="%prog " + "1.0")
 (options, args) = parser.parse_args()
 
-difxroot = args[0]
-if not difxroot:
-    raise RuntimeError("DIFXROOT must be given")
+try:
+    difxroot = args[0]
+except:
+    difxroot = os.environ.get("DIFXROOT", None)
+if difxroot is None:
+    raise RuntimeError("$DIFXROOT must be set or <difxroot> must be given as argument")
 
-difxbin = difxroot + os.sep + "bin"
-
-if not os.path.exists(difxbin):
-    raise RuntimeError(difxbin + " does not exist!")
-
-dirlist = os.listdir(os.environ.get("PWD"))
-
-for filename in dirlist:
-    if (
-            re.search(".py$", filename) or re.search(".pl$", filename) or
-            re.search(".sh$", filename)):
-        print (filename, difxbin)
-        shutil.copy2(filename, difxbin)
+run("aclocal")
+run("autoconf")
+run("automake -a")
+run("make install")

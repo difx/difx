@@ -28,7 +28,7 @@ import re
 import optparse
 import time
 import os
-import espressolib
+from espressolib import espressolib
 
 
 def parseparam(param, line):

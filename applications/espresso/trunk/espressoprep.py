@@ -33,7 +33,7 @@ import sys
 import time
 import fileinput
 import pprint
-import espressolib
+from espressolib import espressolib
 
 
 def run_vex2difx(v2dfilename, vex2difx_options):
