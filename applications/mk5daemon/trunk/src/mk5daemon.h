@@ -153,7 +153,7 @@ typedef struct
 	int swapMonInterval;		/* seconds */
 	volatile int dieNow;
 	int activeBank;
-	char vsns[N_BANK][10];
+	char vsns[N_BANK_MARK6][10];
 	char hostName[MK5DAEMON_HOSTNAME_LENGTH];
 	time_t lastMpifxcorrUpdate;
 	time_t lastMark5AUpdate;
