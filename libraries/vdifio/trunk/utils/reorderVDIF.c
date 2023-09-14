@@ -5,7 +5,7 @@
 const char program[] = "reorderVDIF";
 const char author[]  = "Jan Wagner <jwagner@mpifr.de>";
 const char version[] = "0.1";
-const char verdate[] = "20190130";
+const char verdate[] = "20230914";
 
 static void usage()
 {
@@ -27,8 +27,6 @@ int main(int argc, char **argv)
   struct vdif_file_reader reader;
   struct vdif_file_reader_stats st;
 
-  buffer = (char*)malloc(buffer_size);
-
   if(argc != 3)
   {
     usage();
@@ -43,6 +41,13 @@ int main(int argc, char **argv)
   }
   fprintf(stderr, "The input VDIF seems to have %d threads. Processing...\n", info.nThread);
 
+  n = vdifreaderOpen(&info, &reader);
+  if (n < 0)
+  {
+    fprintf(stderr, "Error: vdifreader_open() failed with return value %d\n\n", n);
+    exit(EXIT_FAILURE);
+  }
+
   output = fopen(argv[2], "w");
   if(output == NULL)
   {
@@ -50,12 +55,7 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
 
-  n = vdifreaderOpen(&info, &reader);
-  if (n < 0)
-  {
-    fprintf(stderr, "Error: vdifreader_open() failed with return value %d\n\n", n);
-    exit(EXIT_FAILURE);
-  }
+  buffer = (char*)malloc(buffer_size);
 
   while (1)
   {
