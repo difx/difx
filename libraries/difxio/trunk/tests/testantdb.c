@@ -85,5 +85,29 @@ int main(int argc, char **argv)
 		findxyz(2388896.2, 5043350.1, 3078590.8);
 	}
 
+	{
+		double X = -1324009.4120;	/* [m] FD */
+		double Y = -5332181.9576;	/* [m] FD */
+		double Z = 3231962.3492;	/* [m] FD */
+
+		if(isAntennaInGroup(X, Y, Z, VLBI_GROUP_VLBA))
+		{
+			printf("Antenna at (%f,%f,%f) (FD) is in the VLBA\n", X, Y, Z);
+		}
+		else
+		{
+			printf("Antenna at (%f,%f,%f) (FD) is not in the VLBA\n", X, Y, Z);
+		}
+
+		if(isAntennaInGroup(X, Y, Z, VLBI_GROUP_EVN))
+		{
+			printf("Antenna at (%f,%f,%f) (FD) is in the EVN\n", X, Y, Z);
+		}
+		else
+		{
+			printf("Antenna at (%f,%f,%f) (FD) is not in the EVN\n", X, Y, Z);
+		}
+	}
+
 	return 0;
 }
