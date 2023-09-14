@@ -2,6 +2,7 @@ Version 1.6
 ~~~~~~~~~~~
 * Post DiFX-2.8
 * vdifbstate: add option to look at only even or odd samples
+* filterVDIF: fix fclose on null pointer
 
 Version 1.5
 ~~~~~~~~~~~
