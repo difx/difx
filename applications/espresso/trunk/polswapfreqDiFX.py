@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 """
 Usage: polswapDiFX.py <station[,station,station,...]> <difx basename>
 
