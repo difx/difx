@@ -7,6 +7,7 @@ import shutil
 from astropy.io import fits 
 import warnings
 import filecmp
+import requests
 
 def pre_checks():
   locate = None
@@ -18,6 +19,13 @@ def pre_checks():
   if (locate == None):
     print('generateVDIF not found, please make sure it is installed.')  
     quit()
+
+def get_results_and_setup_files():
+  current_directory = os.getcwd()
+  url = "https://github.com/Ramenth86/DiFXtest.py-benchmark-results/raw/main/tests.tgz"
+  r = requests.get(url, allow_redirects=True)
+  filename = current_directory + "/tests.tgz"
+  open(filename,'wb').write(r.content)
 
 
 def filter_auto_correlations(fits_filename):
@@ -233,8 +241,8 @@ def get_real_data():
     vd2_fp.close()
     # endif os.path.exists(rdv70v2d_fp) == False     
     # Setup rdv70 gpu test case
-  print("copying...")
-  print(working_directory)
+  #print("copying...")
+  #print(working_directory)
   arg  = "cp test-rdv70.v2d ../rdv70-gpu/test-rdv70-gpu.v2d"
   proc = subprocess.Popen(arg,cwd=working_directory,shell=True) 
   proc.wait() 
@@ -248,26 +256,20 @@ def get_real_data():
    
   v2d_contents = v2d_contents.replace("vex = test-rdv70.vex","vex = test-rdv70-gpu.vex")
   v2d_fp_gpu.close()
-  print(v2d_contents)  
+  #print(v2d_contents)  
   v2d_fp_gpu = open(rdv70v2d,"w+")
   v2d_fp_gpu.write(v2d_contents)
   v2d_fp_gpu.close()
 
-       
 
-def runtest(testname):
-  
-  print("Running test " + testname)
-  
-  current_directory = os.getcwd() 
+def run_vex2difx(testname):
+  current_directory = os.getcwd()
   working_directory = current_directory + "/" + testname + "/"
-
   vex2difxlogfile = working_directory + "/vex2difx.log"
   vex2difxerrfile = working_directory + "/vex2difx.error"
   f_vex2difxlog = open(vex2difxlogfile,"w")
   f_vex2difxerr = open(vex2difxerrfile,"w")
 
-  
   arg = "vex2difx test-" + testname + ".v2d"
 
   try:
@@ -279,6 +281,9 @@ def runtest(testname):
     print()
     raise()
 
+def run_difxcalc(testname):
+  current_directory = os.getcwd()
+  working_directory = current_directory + "/" + testname + "/"
   difxcalclogfile = working_directory + "/difxcalc.log"
   difxcalcerrfile = working_directory + "/difxcalc.error"
   f_difxcalclog = open(difxcalclogfile,"w")
@@ -303,6 +308,15 @@ def runtest(testname):
     print(difxcalclogfile)
     print(difxcalcerrfile)
     quit()
+     
+
+def runtest(testname):
+  
+  print("Running test " + testname)
+  
+  current_directory = os.getcwd() 
+  working_directory = current_directory + "/" + testname + "/"
+
 
 
   if (testname == "rdv70" or testname == "v252f") :
@@ -753,6 +767,7 @@ def main():
   parser.add_argument("-r","--reltol",help="Relative tolerance for FITS file comparison (default = 0.0)",default=0.00)
   parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? (yes/[no])",default="no")
   parser.add_argument("-t","--testgpu",help="run difx in gpu mode and compare results with benchmark (yes/[no])",default="no")
+  parser.add_argument("-i","--usebenchmarkimfile",help="Use the benchmark .im file from a previous run rather than running difxcalc (yes/[no])",default="no") 
 
   input_args = parser.parse_args()
   generateVDIF = input_args.generateVDIF
@@ -765,10 +780,14 @@ def main():
   download = download.upper()
   testgpu = input_args.testgpu
   testgpu = testgpu.upper()
-
+  usebenchmarkimfile = input_args.usebenchmarkimfile
+  usebenchmarkimfile = usebenchmarkimfile.upper()
 
   # Check basic installation/compatability issues
   pre_checks()
+
+  # Grab benchmark results and setup files
+  get_results_and_setup_files()
 
   # list of test names
   test_name_list = ["complex-complex","lsb","lsb-complex","lsb-dsb","usb","usb-complex","usb-dsb"]
@@ -818,6 +837,16 @@ def main():
   # Run DiFX on all compatable tests 
   for testname in test_name_list:
     rm_output_files(testname)
+    run_vex2difx(testname)
+    if (usebenchmarkimfile == "YES"):
+      # copy benchmark im file to working directory
+      current_directory = os.getcwd()
+      working_directory = current_directory + "/" + testname + "/"
+      results_directory = working_directory + "/benchmark_results/" 
+      benchmark_im_file = get_im_file(results_directory) 
+      shutil.copy2(benchmark_im_file, working_directory)
+    else:
+      run_difxcalc(testname)
     runtest(testname)
   
   # compare .im files
