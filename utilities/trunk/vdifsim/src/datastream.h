@@ -37,7 +37,7 @@ typedef struct
 	double complex *spec;		/* spectral representation of data */
 	double *samples1sec;		/* full 1 second of output data */
 	fftw_plan c2cPlan;		/* for step 4 */
-	fftw_plan c2rPlan;		/* for step 7 */
+	fftw_plan ifftPlan;		/* for step 7 */
 	char pol;
 } DatastreamSubband;
 

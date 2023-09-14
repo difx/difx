@@ -120,7 +120,7 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 					++a;
 					opts->configFile = argv[a];
 				}
-				if(strcmp(argv[a], "--seed") == 0 || strcmp(argv[a], "-s") == 0)
+				else if(strcmp(argv[a], "--seed") == 0 || strcmp(argv[a], "-s") == 0)
 				{
 					++a;
 					opts->randSeed = atoi(argv[a]);

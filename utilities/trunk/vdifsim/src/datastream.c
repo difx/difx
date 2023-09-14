@@ -140,7 +140,20 @@ Datastream *newDatastream(const DifxInput *D, int dsId, const CommonSignal *C, c
 		ds->samples1sec = (double *)fftw_malloc(ds->nSample1sec * sizeof(double));
 		ds->spec = (double complex *)fftw_malloc((ds->nSamp + 1) * sizeof(double complex));
 		ds->c2cPlan = fftw_plan_dft_1d(ds->nSamp, ds->frSamps, ds->spec, FFTW_FORWARD, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
-		ds->c2rPlan = fftw_plan_dft_c2r_1d(ds->nSamp, ds->spec, ds->samps, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
+		if(dd->dataSampling == SamplingReal)
+		{
+			ds->ifftPlan = fftw_plan_dft_c2r_1d(ds->nSamp, ds->spec, ds->samps, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
+		}
+		else if(dd->dataSampling == SamplingComplex)
+		{
+			ds->ifftPlan = fftw_plan_dft_1d(ds->nSamp/2, ds->spec, (double complex *)(ds->samps), FFTW_BACKWARD, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
+		}
+		else if(dd->dataSampling == SamplingComplexDSB)
+		{
+			fprintf(stderr, "Double sideband complex not yet supported\n");
+
+			exit(1);
+		}
 	}
 
 	return d;
@@ -183,7 +196,7 @@ void deleteDatastream(Datastream *d)
 				ds = d->subband + s;
 
 				fftw_destroy_plan(ds->c2cPlan);
-				fftw_destroy_plan(ds->c2rPlan);
+				fftw_destroy_plan(ds->ifftPlan);
 				fftw_free(ds->samps);
 				fftw_free(ds->frSamps);
 				fftw_free(ds->spec);
@@ -589,7 +602,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 
 /* 5. fine delay -- fractional sample correction */
 /* 6. apply channel filter (which has FFT scaling compensation built in) */
-			for(i = 0; i <= ds->nSamp; ++i)
+			for(i = 0; i <= ds->nSamp/2; ++i)
 			{
 				double phi;
 
@@ -597,8 +610,8 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 				ds->spec[i] *= d->filter[i] * (cos(phi) + I*sin(phi));
 			}
 
-/* 7. iFFT, C->R */
-			fftw_execute(ds->c2rPlan);
+/* 7. iFFT, C->R for real data or C->C for complex data */
+			fftw_execute(ds->ifftPlan);
 
 /* 8. place real-valued results in 1-second duration array */
 			memcpy(ds->samples1sec + startSample, ds->samps, ds->nSamp*sizeof(double));
