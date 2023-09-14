@@ -452,6 +452,11 @@ void writeVDIF(const Datastream *d, const CommonSignal *C)
 	vh->framelength8 = frameLength/8;
 	vh->nbits = d->bits - 1;
 
+	if(d->dd->dataSampling != SamplingReal)
+	{
+		vh->iscomplex = 1;
+	}
+
 	for(f = 0; f < d->framesPerSecond; ++f)
 	{
 		int start;
