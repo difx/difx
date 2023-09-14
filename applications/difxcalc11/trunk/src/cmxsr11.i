@@ -20,7 +20,7 @@
 !   $MK5_ROOT/include/dbedit_sitstr.i). (mark3 mode only)
 !
       Integer*4 MAX_ARC_SRC
-      Parameter(MAX_ARC_SRC=300)
+      Parameter(MAX_ARC_SRC=1001)
 !
       Real*8     CD, CRA, RADEC(2,MAX_ARC_SRC), SD, SRA,                &
      &           P_motion(3,MAX_ARC_SRC), D_psec(MAX_ARC_SRC),          &

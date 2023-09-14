@@ -1859,7 +1859,7 @@
 !     Program specifications -
       Real*8  CFSTAR(3,2), CFTOTC(3,3), R2K(3,3,3), SITLAT(2),          &
      &        K_EWNS(3,4), TCSTAR(3,2), TCTOCF(3,3,2), TR2000(3,3,2),   &
-     &        TAZ(2),K_EWNS_ab(3,4)
+     &        TAZ(4),K_EWNS_ab(3,4)
 !
       Real*8 DOTP, EARTH(3,3), VR, SITEV(3,2), Earthplus(3)
       Real*8 Vecmg, starcheck, K_Unit_Aberr(3), Vel_dif(3)
@@ -1881,7 +1881,7 @@
 !           4. TR2000(3,3,2) - The complete J2000.0 to crust fixed rotation
 !                              matrix and its first CT time derivative.
 !                              (unitless, 1/sec)
-!           5. TAZ(2)        - A temporary array used in the computation of AZ
+!           5. TAZ(4)        - A temporary array used in the computation of AZ
 !                              (rad)
 !           6. AZQUAD        - A variable used to force the source azimuth into
 !                              the range 0 to TWOPI rather than -PI to PI.
@@ -1926,6 +1926,8 @@
 !  Compute the aberrated elevation angles.
             EL_ab(L) = DASIN ( TCSTAR(1,1) )
 !  Compute the aberrated azimuth angles.
+!  ATD: TAZ has been changed to length 4, but it seems that it could be
+!  a scalar quantity in any case?
             TAZ(L) = DATAN2(TCSTAR(2,1),TCSTAR(3,1))
             AZQUAD = 0.0D0
             IF (TAZ(L) .LT. 0.0D0) AZQUAD = TWOPI
@@ -2011,7 +2013,7 @@
 !
 !     Program specifications -
       Real*8 CFSTAR(3,2), CFTOTC(3,3), R2K(3,3,3), STAR2(3,4),          &
-     &       TCSTAR(3,2), TCTOCF(3,3,2), TR2000(3,3,2), TAZ(2,2),       &
+     &       TCSTAR(3,2), TCTOCF(3,3,2), TR2000(3,3,2), TAZ(4,2),       &
      &        AZQUAD, STAR2_ab(3,4),STAR12(3,2), SITEV(3,2)
       Real*8 Vec_ab(3), EL_ab(4), AZ_ab(4), Vel_dif(3)
       Real*8 DOTP, VR, VECMG
@@ -2031,7 +2033,7 @@
 !           4. TR2000(3,3,2) - The complete J2000.0 to crust fixed rotation
 !                              matrix and its first CT time derivative.
 !                              (unitless, 1/sec)
-!           5. TAZ(2,2)      - A temporary array used in the computation of AZ
+!           5. TAZ(4,2)      - A temporary array used in the computation of AZ
 !                              (rad,rad/sec)
 !           6. AZQUAD        - A variable used to force the source azimuth into
 !                              the range 0 to TWOPI rather than -PI to PI.
@@ -2077,6 +2079,8 @@
 !  Compute the elevation angle of the aberrated source.
             EL_ab(L) = DASIN ( TCSTAR(1,1) )
 !  Compute the azimuth angle of the aberrated source.
+!  ATD: TAZ has been changed to length 4, but it seems that it could be
+!  a scalar quantity in any case?
             TAZ(L,1) = DATAN2(TCSTAR(2,1),TCSTAR(3,1))
             AZQUAD = 0.0D0
             IF (TAZ(L,1) .LT. 0.0D0) AZQUAD = TWOPI

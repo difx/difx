@@ -7,9 +7,9 @@
 !                                 Maxstat-1 for baseline mode
       Parameter (Nstation1 = 1)     
 !
+!     Nstation2 must be kept in sync with Max_Stat, MaxStat from other files
       Integer*4  Nstation2      ! Maximum # of stations
-      Parameter (Nstation2 = 41) 
-!      Use Maxstat instead from d_input.i
+      Parameter (Nstation2 = 256)
 !
       Integer*4  Max_Source     ! Maximum # of sources, 
 !                                 (pointing and phase center sources)
@@ -44,8 +44,7 @@
      &   StaZ_f(IB,Max_Epochs,Nstation1,Nstation2,Max_Source)
       Character*20 Xsource
 ! ???????
-!???  Character*8 Site1(Max_base,Max_Epoch), Site2(Max_base,Max_Epoch)
-      Character*8 Site1( 300, 6           ), Site2( 300, 6           )
+      Character*8 Site1(Nstation2,Max_Epochs), Site2(Nstation2,Max_Epochs)
 !
       Integer*4 Numsite, Iymdhms_f(Max_Epochs,6), Numbaseline,          &
      &          NumPhCenter 

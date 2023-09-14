@@ -1,10 +1,10 @@
 !   cmxst.i
 !
 !***The maximum number of stations can be changed in the following parameter
-!***statement and is the only change necessary:
+!***statement, but must also be changed in d_input.i and c2poly.i:
 !
       Integer*4 Max_Stat      ! Maximum number of stations in the database
-      Parameter(Max_Stat = 41)
+      Parameter(Max_Stat = 256)
 !
       Real*8           CFRAD(Max_Stat), PLAT(3,Max_Stat), &
      &                 PLON(3,Max_Stat), SITAXO(Max_Stat), &
