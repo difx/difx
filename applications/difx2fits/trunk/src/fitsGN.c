@@ -37,7 +37,7 @@
 #include "difx2fits.h"
 #include "util.h"
 #include "other.h"
-
+#include "difxio/antenna_db.h"
 
 #define MAXENTRIES		8000UL
 #define MAXTOKEN		512
@@ -93,14 +93,19 @@ static void nullifyGainRows(GainRow *G, int nRow, const char *antenna)
 
 /* freq in MHz, t in days since ref day */
 /* if sxFlag is set, only look for 4cmsx or 13cmsx */
-static int getGainRow(GainRow *G, int nRow, const char *antName, double freq, double mjd, int sxFlag)
+static int getVLBAGainRow(GainRow *G, int nRow, const DifxAntenna *da, double freq, double mjd, int sxFlag)
 {
 	int i, r;
 	int bestr = -1;
 	int band = -1;
 	int eband, dband;
 	double efreq, dfreq;
+	const char *antName = da->name;
 
+	if (!(isDifxAntennaInGroup(da, VLBI_GROUP_HSA) || isDifxAntennaInGroup(da, VLBI_GROUP_VLA)))
+	  {
+	    fprintf(stderr, "\nWarning: You are using VLBA gain curve handling for non VLBA antenna: %s\n", antName);
+	  }
 	efreq = 1e11;
 	eband = N_VLBA_BANDS;
 
@@ -149,18 +154,17 @@ static int getGainRow(GainRow *G, int nRow, const char *antName, double freq, do
 
 
 /* This gets the 4995 gain, extrapolates based off of the frequency focus relationship, adds a new row containing that information to the array of GainRows *G */
-static int handleCbandGain(GainRow *G, int nRow, const char *antName, double freq, double mjd)
+static int handleCbandGain(GainRow *G, int nRow, const DifxAntenna *da, double freq, double mjd)
 {
   int cLowRow, i;
   float newDPFU[2];
 
-  cLowRow = getGainRow(G, nRow, antName, 4900, mjd, 0); //0 is sxFlag
+  cLowRow = getVLBAGainRow(G, nRow, da, 4900, mjd, 0); //0 is sxFlag
 
   if(cLowRow == -1) {
     //We didn't get a gain so return what we normally would (which might still be -1)
-    return getGainRow(G, nRow, antName, freq, mjd, 0);
+    return getVLBAGainRow(G, nRow, da, freq, mjd, 0);
   }
-
 
   //-2.294x10^-6 from fit to full data
   //-1.11x10^-6 from two gains (perhaps more accurate as these are based off much more data)
@@ -168,6 +172,7 @@ static int handleCbandGain(GainRow *G, int nRow, const char *antName, double fre
   for(i=0; i<2; i++) {
     newDPFU[i] = (G[cLowRow].DPFU[i]-(freq - G[cLowRow].freq[i])*0.00000111);
   }
+
   //make a new GainRow, copy off old one, ok to go over nRow as size is MAXENTRIES, we don't update nRow as we can overwrite this for subsequent stations/subbands
   G[nRow] = G[cLowRow];
   G[nRow].freq[0] = (float)freq;
@@ -199,25 +204,6 @@ static int isHSAAntenna(const char *token)
 	}
 }
 
-static int isVLBAAntenna(const char *token)
-{
-	const char antennas[] = " BR FD HN KP LA MK NL OV PT SC ";
-	char matcher[8];
-
-	if(strlen(token) >= ANTENNA_NAME_LENGTH)
-	{
-		return 0;
-	}
-	sprintf(matcher, " %s ", token);
-	if(strstr(antennas, matcher) != 0)
-	{
-		return 1;
-	}
-	else
-	{	
-		return 0;
-	}
-}
 
 
 static int isVLITEAntenna(const char *token)
@@ -481,7 +467,7 @@ static int parseGN(const char *filename, int row, GainRow *G)
 			else
 			{
 				if(isHSAAntenna(token) || isVLITEAntenna(token))
-				{
+				  {  
 					v = snprintf(G[row].antName, ANTENNA_NAME_LENGTH, "%s", token);
 					if(v >= ANTENNA_NAME_LENGTH)
 					{
@@ -770,17 +756,19 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 			freqId1 = freqSetId + 1;
 			
 			sxFlag = isDifxFreqSetSX(dfs);
-			
+
 			for(i = 0; i < dfs->nIF; ++i)
 			{
 				freq = dfs->IF[i].freq;	/* MHz */
 
-				if((3900 <= freq) && (freq < 8000) && isVLBAAntenna(antName)) { //we are at C-band VLBA/eb/gb/y1-> inter/extrapolate gains
-				  r = handleCbandGain(G, nRow, antName, freq, mjd);
-				}
-				else {
-				  r = getGainRow(G, nRow, antName, freq, mjd, sxFlag);
-				}
+				if((3900 <= freq) && (freq < 8000) && isDifxAntennaInGroup(&D->antenna[antId], VLBI_GROUP_VLBA))
+				  { //we are at C-band VLBA -> inter/extrapolate gains
+				    r = handleCbandGain(G, nRow, &D->antenna[antId], freq, mjd);
+				  }
+				else 
+				  {
+				  r = getVLBAGainRow(G, nRow, &D->antenna[antId], freq, mjd, sxFlag);
+				  }
 
 				if(r < 0)
 				{
