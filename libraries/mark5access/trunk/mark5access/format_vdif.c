@@ -3131,7 +3131,7 @@ static int vdif_decode_1channel_32bit_decimation1(struct mark5_stream *ms, int n
 		}
 		else
 		{
-			data[0][o] = (le32toh(buf[i]) - (1<<31))/8.0;
+			data[0][o] = (le32toh(buf[i])/8.0 - (1<<28));
 		}
 
 		++i;
@@ -6235,7 +6235,7 @@ static int vdif_complex_decode_1channel_32bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = (le32toh(buf[i]) - (1<<31))/8.0 + (le32toh(buf[i+1]) - (1<<31))/8.0*I;
+			data[0][o] = (le32toh(buf[i])/8.0 - (1<<28)) + (le32toh(buf[i+1])/8.0 - (1<<28))*I;
 		}
 
 		i += 2;
