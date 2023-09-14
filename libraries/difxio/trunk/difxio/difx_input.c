@@ -3592,7 +3592,7 @@ static int mergeDifxInputFreqSetsUnion(DifxInput *D)
 static int mergeDifxInputFreqSets(DifxInput *D, const DifxMergeOptions *mergeOptions)
 {
 	static const DifxMergeOptions defaultMergeOptions;      /* initialized to zeros */
-	int nError;
+	int nError = 0;
 
 	if(!D)
 	{

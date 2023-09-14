@@ -612,7 +612,7 @@ static int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *recei
 		int g = -1;
 		char lowercaseAntenna[MAX_DIFX_TCAL_ANTENNA_LENGTH];
 
-		for(v = 0; v < MAX_DIFX_TCAL_ANTENNA_LENGTH && antenna[v]; ++v)
+		for(v = 0; v < MAX_DIFX_TCAL_ANTENNA_LENGTH-1 && antenna[v]; ++v)
 		{
 			lowercaseAntenna[v] = tolower(antenna[v]);
 		}
