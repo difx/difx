@@ -164,6 +164,7 @@ int main(int argc, char** argv)
     if (ntotal <= 0)
     {
         fprintf(stderr, "Scan seems to have no data. Stopping.\n");
+	free(buf);
         return 0;
     }
 
