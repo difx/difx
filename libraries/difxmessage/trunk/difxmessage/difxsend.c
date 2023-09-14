@@ -169,8 +169,8 @@ int difxMessageSendLoad(const DifxMessageLoad *load)
 		  "<cpuLoad>%4.2f</cpuLoad>"
 		  "<totalMemory>%d</totalMemory>"
 		  "<usedMemory>%d</usedMemory>"
-		  "<netRXRate>%d</netRXRate>"
-		  "<netTXRate>%d</netTXRate>"
+		  "<netRXRate>%u</netRXRate>"
+		  "<netTXRate>%u</netTXRate>"
 		  "<nCore>%d</nCore>"
 		"</difxLoad>",
 
@@ -869,8 +869,8 @@ int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
 		    "<PCBSubType>%s</PCBSubType>"
 		    "<FPGAConfig>%s</FPGAConfig>"
 		    "<FPGAConfigVer>%s</FPGAConfigVer>"
-		    "<SerialNum>%d</SerialNum>"
-		    "<NumChannels>%d</NumChannels>"
+		    "<SerialNum>%u</SerialNum>"
+		    "<NumChannels>%u</NumChannels>"
 		  "</DaughterBoard>",
 
 		mk5version->DB_PCBVersion,
