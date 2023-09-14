@@ -429,6 +429,7 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
         if(mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
             {
                 fprintf (stderr, "Error creating output directory %s\n", path);
+                free(fblock);
                 return 0;
             }
         }
@@ -447,6 +448,7 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
     if (createRoot (D, fblock, startJobId, scanId, node, path, rcode, stns, opts, rootname) < 0)
         {
         fprintf (stderr, "Could not create root file\n");
+        free(fblock);
         return -1;
         }
                                 // create type1 files for each baseline
@@ -455,6 +457,7 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
     if (nextScanId < 0)
         {
         fprintf (stderr, "Could not create type 1 files\n");
+        free(fblock);
         return -1;
         }
 
@@ -464,6 +467,7 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
     if (createType3s (D, fblock, startJobId, endJobId, scanId, path, rcode, stns, opts) < 0)
         {
         fprintf (stderr, "Could not create type 3 files\n");
+        free(fblock);
         return -1;
         }
     fprintf (stdout, "    Completed root file %s\n", rootname);
