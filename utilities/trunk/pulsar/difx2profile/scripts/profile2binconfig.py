@@ -86,13 +86,13 @@ zeronoise   = not options.dontzeronoise
 
 #Check everything necessary was supplied
 if (profilefile == "" and doscrunch) or options.polyco == "" or binconffile == "":
-    print "You must always supply a binconfig filename, polyco filenames(s), and (if scrunching) and profile file!"
-    print "doscrunch was " + str(doscrunch) + " and profilefile was " + profilefile
-    print "the polyco parameter contained " + options.polyco
-    print "binconffile was " + binconffile
+    print("You must always supply a binconfig filename, polyco filenames(s), and (if scrunching) and profile file!")
+    print("doscrunch was " + str(doscrunch) + " and profilefile was " + profilefile)
+    print("the polyco parameter contained " + options.polyco)
+    print("binconffile was " + binconffile)
     sys.exit(1)
 if hannwidth > 0 and hannwidth % 2 == 0:
-    print "Hanning width, if on, must be odd! Aborting"
+    print("Hanning width, if on, must be odd! Aborting")
     sys.exit(1)
 
 #Write the header of the output file
@@ -123,7 +123,7 @@ else:
         profilelines = profilelines[:-1]
     profilein.close()
     numprofilebins = len(profilelines)
-    print "Num profile bins is " + str(numprofilebins)
+    print("Num profile bins is " + str(numprofilebins))
     profile = numpy.zeros(numprofilebins, numpy.float64)
     adjprofile = numpy.zeros(numprofilebins, numpy.float64)
     orgprofile = numpy.zeros(numprofilebins, numpy.float64)
@@ -156,7 +156,7 @@ else:
             zerophase = zerophase - 1.0
     else:
         zerophase = -1.0
-    print "Zero phase is " + str(zerophase)
+    print("Zero phase is " + str(zerophase))
     for i in range(numprofilebins):
         xvals[i] = xvals[i] + 1.0 + zerophase
 
@@ -197,7 +197,7 @@ else:
                 if profile[i-1] == 0 and profile[(i+1)%numprofilebins] == 0:
                     if profile[i-2] == 0 or profile[(i+2)%numprofilebins] == 0:
                         profile[i] = 0.0
-            print "Windowsize is " + str(windowsize) + ", stddev is " + str(stddev) + ", numprofilebins is " + str(numprofilebins)
+            print("Windowsize is " + str(windowsize) + ", stddev is " + str(stddev) + ", numprofilebins is " + str(numprofilebins))
         else:
             # Kill anything less than 0.5% of peak profile
             for i in range(numprofilebins):
@@ -206,7 +206,7 @@ else:
 
     #Now merge bins until you reach required number
     outputbins = getNumMergedBins(profile, numprofilebins)
-    print "Number of merged bins is " + str(outputbins)
+    print("Number of merged bins is " + str(outputbins))
     while outputbins > numbins:
         mergeSmallestDifference(profile, numprofilebins)
         outputbins = getNumMergedBins(profile, numprofilebins)
@@ -234,7 +234,7 @@ else:
     for j in range(widthcount):
         adjprofile[numprofilebins-j-1] = profile[numprofilebins-j-1] + totaldiff / (widthcount + 0.0000000001)
     if len(binphases) != numbins:
-        print "Whoops - I somehow averaged down to " + str(len(binphases)) + " bins, rather than " + str(numbins) + " like you asked! Sorry - aborting!"
+        print("Whoops - I somehow averaged down to " + str(len(binphases)) + " bins, rather than " + str(numbins) + " like you asked! Sorry - aborting!")
         sys.exit(1)
     startpos = 0
     while startpos < numbins and (binphases[startpos]+zerophase)< 0.0:
