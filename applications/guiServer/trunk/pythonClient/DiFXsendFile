@@ -49,24 +49,24 @@ try:
 		#  Check against legal argument types.  Anything we don't recognize is assumed
 		#  to be an argument or a path.
 		if sys.argv[i] in [ "-h", "--help" ]:
-			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-			print "Send data from either a named file or stdin to a destination file"
-			print "on the server."
-			print "Usage: %s [options] [source] <destination>" % ( sys.argv[0] )
-			print ""
-			print "Options can include:"
-			print ""
-			print "   --help"
-			print "   -h         Print this help information and quit."
-			print ""
-			print "   --hostname NAME"
-			print "   -H NAME    Use NAME as the host of the difxServer program."
-			print "              Default is to use DIFX_CONTROL_HOST environment variable."
-			print ""
-			print "   --port PORT"
-			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
-			print "              Default is to use DIFX_CONTROL_PORT environment variable."
-			print ""
+			print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
+			print("Send data from either a named file or stdin to a destination file")
+			print("on the server.")
+			print("Usage: %s [options] [source] <destination>" % ( sys.argv[0] ))
+			print("")
+			print("Options can include:")
+			print("")
+			print("   --help")
+			print("   -h         Print this help information and quit.")
+			print("")
+			print("   --hostname NAME")
+			print("   -H NAME    Use NAME as the host of the difxServer program.")
+			print("              Default is to use DIFX_CONTROL_HOST environment variable.")
+			print("")
+			print("   --port PORT")
+			print("   -P PORT    Use PORT as the TCP port to communicated with the difxServer.")
+			print("              Default is to use DIFX_CONTROL_PORT environment variable.")
+			print("")
 			exit( 0 )
 		elif sys.argv[i] in [ "-H", "--hostname" ]:
 			host = sys.argv[i+1]
@@ -87,7 +87,7 @@ try:
 		i = i + 1
 		
 except RuntimeError:
-	print "Usage: %s [options] [source] <destination>" % ( sys.argv[0] )
+	print("Usage: %s [options] [source] <destination>" % ( sys.argv[0] ))
 	exit( 0 )
 	
 #  If only one path was specified, it is a destination - so we have to fix our
@@ -106,7 +106,7 @@ difx.connect( host, port )
 if difx.socketOK:
 	difx.monitor()
 	fileSize = difx.sendFile( destination, data )
-	print "wrote " + str( fileSize ) + " bytes"
+	print("wrote " + str( fileSize ) + " bytes")
 difx.close()
 
 

@@ -113,29 +113,29 @@ try:
 		#  Check against legal argument types.  Anything we don't recognize is assumed
 		#  to be part of a list of message types.
 		if sys.argv[i] in [ "-h", "--help" ]:
-			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-			print "Runs an iterative process to determine delays and delay rates for observations"
-			print "described in a user-specified .vex file."
-			print "Usage: %s [options] VEX_FILE" % ( sys.argv[0] )
-			print ""
-			print "Options can include:"
-			print ""
-			print "   --difx VERSION"
-			print "   -D VERSION Run using a specific DiFX version.  If not specified"
-			print "              the value of the DIFX_VERSION environment variable will"
-			print "              be used.  Failing that, \"DIFX-DEVEL\" will be used."
-			print ""
-			print "   --help"
-			print "   -h         Print this help information and quit."
-			print ""
-			print "   --difxhost NAME"
-			print "   -dh NAME   Use NAME as the host of the difxServer program."
-			print "              Default is to use DIFX_CONTROL_HOST environment variable."
-			print ""
-			print "   --difxport PORT"
-			print "   -dp PORT   Use PORT as the TCP port to communicated with the difxServer."
-			print "              Default is to use DIFX_CONTROL_PORT environment variable."
-			print ""
+			print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
+			print("Runs an iterative process to determine delays and delay rates for observations")
+			print("described in a user-specified .vex file.")
+			print("Usage: %s [options] VEX_FILE" % ( sys.argv[0] ))
+			print("")
+			print("Options can include:")
+			print("")
+			print("   --difx VERSION")
+			print("   -D VERSION Run using a specific DiFX version.  If not specified")
+			print("              the value of the DIFX_VERSION environment variable will")
+			print("              be used.  Failing that, \"DIFX-DEVEL\" will be used.")
+			print("")
+			print("   --help")
+			print("   -h         Print this help information and quit.")
+			print("")
+			print("   --difxhost NAME")
+			print("   -dh NAME   Use NAME as the host of the difxServer program.")
+			print("              Default is to use DIFX_CONTROL_HOST environment variable.")
+			print("")
+			print("   --difxport PORT")
+			print("   -dp PORT   Use PORT as the TCP port to communicated with the difxServer.")
+			print("              Default is to use DIFX_CONTROL_PORT environment variable.")
+			print("")
 			exit( 0 )
 		elif sys.argv[i] in [ "-dh", "--difxhost" ]:
 			difxHost = sys.argv[i+1]
@@ -157,13 +157,13 @@ except RuntimeError:
 	usageError = True
 	
 if verbose > 0:
-	print "difxVersion is " + str( difxVersion )
-	print "difxHost is " + str( difxHost )
-	print "difxPort is " + str( difxPort )
-	print "hopsHost is " + str( hopsHost )
-	print "hopsPort is " + str( hopsPort )
-	print "workingDir is " + str( workingDir )
-	print "vexFile is " + str( vexFile )
+	print("difxVersion is " + str( difxVersion ))
+	print("difxHost is " + str( difxHost ))
+	print("difxPort is " + str( difxPort ))
+	print("hopsHost is " + str( hopsHost ))
+	print("hopsPort is " + str( hopsPort ))
+	print("workingDir is " + str( workingDir ))
+	print("vexFile is " + str( vexFile ))
 
 #  To begin with, we need a .vex file that hopefully has delay values of some sort
 #  in it.  Open in vex parser.

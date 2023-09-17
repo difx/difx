@@ -72,10 +72,10 @@ import DiFXvex2difx
 import DiFXControl
 
 def newFileCallback( newFile ):
-	print newFile + " was created"
+	print(newFile + " was created")
 
 def processCompleteCallback():
-	print "calc process complete"
+	print("calc process complete")
 
 #===============================================================================
 #  MAIN
@@ -104,37 +104,37 @@ try:
 		#  Check against legal argument types.  Anything we don't recognize is assumed
 		#  to be an argument or a path.
 		if sys.argv[i] in [ "-h", "--help" ]:
-			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-			print "Run calc on jobs in the specified directory on the DiFX software correlator."
-			print "Usage: %s [options] <directory>" % ( sys.argv[0] )
-			print ""
-			print "Options can include:"
-			print ""
-			print "   --calc APP"
-			print "   -c APP     Run the given APP as the calc application instead of the"
-			print "              default \"calcif2\"."
-			print ""
-			print "   --difx VERSION"
-			print "   -D VERSION Run using a specific DiFX version.  If not specified"
-			print "              the value of the DIFX_VERSION environment variable will"
-			print "              be used.  Failing that, \"DIFX-DEVEL\" will be used."
-			print ""
-			print "   --help"
-			print "   -h         Print this help information and quit."
-			print ""
-			print "   --hostname NAME"
-			print "   -H NAME    Use NAME as the host of the difxServer program."
-			print "              Default is to use DIFX_CONTROL_HOST environment variable."
-			print ""
-			print "   --jobs JOBS"
-			print "   -j JOBS    Run calc on the specified jobs within the directory."
-			print "              Wildcard characters are permitted.  Job names do not"
-			print "              contain any file extensions."
-			print ""
-			print "   --port PORT"
-			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
-			print "              Default is to use DIFX_CONTROL_PORT environment variable."
-			print ""
+			print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
+			print("Run calc on jobs in the specified directory on the DiFX software correlator.")
+			print("Usage: %s [options] <directory>" % ( sys.argv[0] ))
+			print("")
+			print("Options can include:")
+			print("")
+			print("   --calc APP")
+			print("   -c APP     Run the given APP as the calc application instead of the")
+			print("              default \"calcif2\".")
+			print("")
+			print("   --difx VERSION")
+			print("   -D VERSION Run using a specific DiFX version.  If not specified")
+			print("              the value of the DIFX_VERSION environment variable will")
+			print("              be used.  Failing that, \"DIFX-DEVEL\" will be used.")
+			print("")
+			print("   --help")
+			print("   -h         Print this help information and quit.")
+			print("")
+			print("   --hostname NAME")
+			print("   -H NAME    Use NAME as the host of the difxServer program.")
+			print("              Default is to use DIFX_CONTROL_HOST environment variable.")
+			print("")
+			print("   --jobs JOBS")
+			print("   -j JOBS    Run calc on the specified jobs within the directory.")
+			print("              Wildcard characters are permitted.  Job names do not")
+			print("              contain any file extensions.")
+			print("")
+			print("   --port PORT")
+			print("   -P PORT    Use PORT as the TCP port to communicated with the difxServer.")
+			print("              Default is to use DIFX_CONTROL_PORT environment variable.")
+			print("")
 			exit( 0 )
 		elif sys.argv[i] in [ "-H", "--hostname" ]:
 			host = sys.argv[i+1]
@@ -159,11 +159,11 @@ try:
 			i = i + 1
 	
 except RuntimeError:
-	print "Usage: %s [options] <.input path>" % ( sys.argv[0] )
+	print("Usage: %s [options] <.input path>" % ( sys.argv[0] ))
 	exit( 0 )
 	
 #  Start the vex2difx class, set the version, etc.
-print "Making client connection..."
+print("Making client connection...")
 difx = DiFXvex2difx.Client()
 difx.connect()
 if not difx.socketOK:
@@ -180,7 +180,7 @@ if calcApp != None:
 	difx.calcCommand( calcApp )
 difx.calcOnly( True )
 if passDir == None:
-	print "Please specify a directory path for this operation."
+	print("Please specify a directory path for this operation.")
 else:
 	difx.passPath( passDir )
 	difx.runVex2Difx()

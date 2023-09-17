@@ -78,7 +78,7 @@ def progress():
 #	while n > 0:
 #		outStr += "\b"
 #		n -= 1
-	print outStr,
+	print(outStr, end=' ')
 	sys.stdout.flush()
 
 #===============================================================================
@@ -86,7 +86,7 @@ def progress():
 #===============================================================================
 def finished():
 	progress()
-	print ""
+	print("")
 
 #===============================================================================
 #  MAIN
@@ -102,24 +102,24 @@ try:
 		#  Check against legal argument types.  Anything we don't recognize is assumed
 		#  to be an argument or a path.
 		if sys.argv[i] in [ "-h", "--help" ]:
-			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-			print "Gets the content of a specified path on the DiFX server, writing to an"
-			print "optional destination (or stdout)."
-			print "Usage: %s [options] <path> [destination]" % ( sys.argv[0] )
-			print ""
-			print "Options can include:"
-			print ""
-			print "   --help"
-			print "   -h         Print this help information and quit."
-			print ""
-			print "   --hostname NAME"
-			print "   -H NAME    Use NAME as the host of the difxServer program."
-			print "              Default is to use DIFX_CONTROL_HOST environment variable."
-			print ""
-			print "   --port PORT"
-			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
-			print "              Default is to use DIFX_CONTROL_PORT environment variable."
-			print ""
+			print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
+			print("Gets the content of a specified path on the DiFX server, writing to an")
+			print("optional destination (or stdout).")
+			print("Usage: %s [options] <path> [destination]" % ( sys.argv[0] ))
+			print("")
+			print("Options can include:")
+			print("")
+			print("   --help")
+			print("   -h         Print this help information and quit.")
+			print("")
+			print("   --hostname NAME")
+			print("   -H NAME    Use NAME as the host of the difxServer program.")
+			print("              Default is to use DIFX_CONTROL_HOST environment variable.")
+			print("")
+			print("   --port PORT")
+			print("   -P PORT    Use PORT as the TCP port to communicated with the difxServer.")
+			print("              Default is to use DIFX_CONTROL_PORT environment variable.")
+			print("")
 			exit( 0 )
 		elif sys.argv[i] in [ "-H", "--hostname" ]:
 			host = sys.argv[i+1]
@@ -140,7 +140,7 @@ try:
 		i = i + 1
 		
 except RuntimeError:
-	print "Usage: %s [options] <path>" % ( sys.argv[0] )
+	print("Usage: %s [options] <path>" % ( sys.argv[0] ))
 	exit( 0 )
 	
 #  Open a new connection to the difxServer using the DiFXFileTransfer package...
@@ -155,10 +155,10 @@ if difx.socketOK:
 		difx.finalCallback( finished )
 	fileContent = difx.getFile( pathStr )
 	if fileContent == None:
-		print "No such file or directory"
+		print("No such file or directory")
 	else:
 		if destination == None:
-			print fileContent
+			print(fileContent)
 		else:
 			f = open( destination, "w" )
 			f.write( fileContent )

@@ -841,7 +841,7 @@ class Client( DiFXControl.Client ):
 						self.jobComplete = True			
 					self.wait -= 0.01
 					if self.wait == 0.0:
-						print "timeout!"
+						print("timeout!")
 						self._client.doTimeoutCallback()
 				self._client.closeChannel( self.channel )
 				return
@@ -1592,7 +1592,7 @@ class Client( DiFXControl.Client ):
 					sendData += self._client.i.pack( socket.htonl( self.productRequestData[product][1] ) )
 					self._client.sendChannelPacket( self.monitorChannel, self.PRODUCT_REQUEST, sendData )
 				except:
-					print "product", product, "was not found"
+					print("product", product, "was not found")
 			self._client.sendChannelPacket( self.monitorChannel, self.END_PRODUCT_REQUESTS, "" )
 	
 	

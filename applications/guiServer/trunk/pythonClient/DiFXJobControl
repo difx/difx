@@ -67,34 +67,34 @@ difx = None
 configOnly = False
 
 def messageCallback( argstr ):
-	print str( argstr )
+	print(str( argstr ))
 	
 def warningCallback( argstr ):
-	print "WARNING: " + str( argstr )
+	print("WARNING: " + str( argstr ))
 	
 def errorCallback( argstr ):
-	print "ERROR: " + str( argstr )
+	print("ERROR: " + str( argstr ))
 	
 def ampCB():
-	print "got amplitude callback"
-	print difx.amplitude
-	print difx.amplitudeIProduct, difx.amplitudeNChannels, difx.amplitudeTimeStamp, difx.amplitudeIntegrationTime
+	print("got amplitude callback")
+	print(difx.amplitude)
+	print(difx.amplitudeIProduct, difx.amplitudeNChannels, difx.amplitudeTimeStamp, difx.amplitudeIntegrationTime)
 
 def phaseCB():
-	print "got phase callback"
-	print difx.phase
-	print difx.phaseIProduct, difx.phaseNChannels, difx.phaseTimeStamp, difx.phaseIntegrationTime
+	print("got phase callback")
+	print(difx.phase)
+	print(difx.phaseIProduct, difx.phaseNChannels, difx.phaseTimeStamp, difx.phaseIntegrationTime)
 
 def lagCB():
-	print "got lag callback"
-	print difx.lag
-	print difx.lagIProduct, difx.lagHalfSize, difx.lagTimeStamp, difx.lagIntegrationTime
-	print difx.lagDelay, difx.lagSnr
+	print("got lag callback")
+	print(difx.lag)
+	print(difx.lagIProduct, difx.lagHalfSize, difx.lagTimeStamp, difx.lagIntegrationTime)
+	print(difx.lagDelay, difx.lagSnr)
 
 def meanLagCB():
 	#  Get the frequency for these values...
 	freq = difx.productByIndex()[difx.meanLagIProduct][1]
-	print freq, "Delay:", difx.meanLagDelay, "SNR:", difx.meanLagSnr
+	print(freq, "Delay:", difx.meanLagDelay, "SNR:", difx.meanLagSnr)
 
 #===============================================================================
 #  Class used to respond to callbacks.
@@ -126,7 +126,7 @@ class Responder:
 						pass
 					else:
 						self.jobProgress = 0
-				print xmlDat.state + "   " + str( int( self.jobProgress ) ) + "% complete"
+				print(xmlDat.state + "   " + str( int( self.jobProgress ) ) + "% complete")
 
 #===============================================================================
 #  MAIN
@@ -158,53 +158,53 @@ try:
 		#  Check against legal argument types.  Anything we don't recognize is assumed
 		#  to be an argument or a path.
 		if sys.argv[i] in [ "-h", "--help" ]:
-			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-			print "Run a job on the DiFX software correlator using its .input file path."
-			print "Usage: %s [options] <.input path>" % ( sys.argv[0] )
-			print ""
-			print "Options can include:"
-			print ""
-			print "   --config_only"
-			print "   -c         Run only the configuration test, not the job itself."
-			print ""
-			print "   --datasource NODE"
-			print "   -d NODE    Add a data source node to the list of such sources."
-			print ""
-			print "   --difx VERSION"
-			print "   -D VERSION Run using a specific DiFX version.  If not specified"
-			print "              the value of the DIFX_VERSION environment variable will"
-			print "              be used.  Failing that, \"DIFX-DEVEL\" will be used."
-			print ""
-			print "   --help"
-			print "   -h         Print this help information and quit."
-			print ""
-			print "   --hostname NAME"
-			print "   -H NAME    Use NAME as the host of the difxServer program."
-			print "              Default is to use DIFX_CONTROL_HOST environment variable."
-			print ""
-			print "   --manager NODE"
-			print "   -m NODE    Use NODE as the \"head node\" (or \"manager\" node)"
-			print ""
-			print "   --processor NODE"
-			print "   -p NODE    Add a processor node to the list of processors.  There"
-			print "              must be a corresponding threads entry."
-			print ""
-			print "   --port PORT"
-			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
-			print "              Default is to use DIFX_CONTROL_PORT environment variable."
-			print ""
-			print "   --realtime"
-			print "   -r         Turn on the real time monitor - this will produce a list of"
-			print "              real time \"products\" from which the user will be prompted"
-			print "              to select one or more."
-			print ""
-			print "   --threads NUM"
-			print "   -t NUM     Assign NUM threads to the corresponding processor entry."
-			print ""
-			print "   --waitTime NUM"
-			print "   -w NUM     Wait NUM seconds before timing out of an operation due to inactivity."
-			print "              This applies only to the \"start()\" method call."
-			print ""
+			print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
+			print("Run a job on the DiFX software correlator using its .input file path.")
+			print("Usage: %s [options] <.input path>" % ( sys.argv[0] ))
+			print("")
+			print("Options can include:")
+			print("")
+			print("   --config_only")
+			print("   -c         Run only the configuration test, not the job itself.")
+			print("")
+			print("   --datasource NODE")
+			print("   -d NODE    Add a data source node to the list of such sources.")
+			print("")
+			print("   --difx VERSION")
+			print("   -D VERSION Run using a specific DiFX version.  If not specified")
+			print("              the value of the DIFX_VERSION environment variable will")
+			print("              be used.  Failing that, \"DIFX-DEVEL\" will be used.")
+			print("")
+			print("   --help")
+			print("   -h         Print this help information and quit.")
+			print("")
+			print("   --hostname NAME")
+			print("   -H NAME    Use NAME as the host of the difxServer program.")
+			print("              Default is to use DIFX_CONTROL_HOST environment variable.")
+			print("")
+			print("   --manager NODE")
+			print("   -m NODE    Use NODE as the \"head node\" (or \"manager\" node)")
+			print("")
+			print("   --processor NODE")
+			print("   -p NODE    Add a processor node to the list of processors.  There")
+			print("              must be a corresponding threads entry.")
+			print("")
+			print("   --port PORT")
+			print("   -P PORT    Use PORT as the TCP port to communicated with the difxServer.")
+			print("              Default is to use DIFX_CONTROL_PORT environment variable.")
+			print("")
+			print("   --realtime")
+			print("   -r         Turn on the real time monitor - this will produce a list of")
+			print("              real time \"products\" from which the user will be prompted")
+			print("              to select one or more.")
+			print("")
+			print("   --threads NUM")
+			print("   -t NUM     Assign NUM threads to the corresponding processor entry.")
+			print("")
+			print("   --waitTime NUM")
+			print("   -w NUM     Wait NUM seconds before timing out of an operation due to inactivity.")
+			print("              This applies only to the \"start()\" method call.")
+			print("")
 			exit( 0 )
 		elif sys.argv[i] in [ "-c", "--config_only" ]:
 			configOnly = True
@@ -242,34 +242,34 @@ try:
 			i = i + 1
 	
 except RuntimeError:
-	print "Usage: %s [options] <.input path>" % ( sys.argv[0] )
+	print("Usage: %s [options] <.input path>" % ( sys.argv[0] ))
 	exit( 0 )
 	
 #  Check a few things...
 if inputFile == None:
-	print "ERROR: .input file required to identify the job"
+	print("ERROR: .input file required to identify the job")
 	bail = True
 	
 if len( dataSources ) > 0 or headNode != None or len( processors ) > 0:
 	problem = False
 	if len( processors ) == 0:
-		print "ERROR: No processors included!"
+		print("ERROR: No processors included!")
 		problem = True
 	if len( dataSources ) == 0:
-		print "ERROR: No data sources included!"
+		print("ERROR: No data sources included!")
 		problem = True
 	if headNode == None:
-		print "ERROR: Head node not defined!"
+		print("ERROR: Head node not defined!")
 		problem = True
 	if problem:
-		print "ERROR: ALL datasources, processors and the head node must be specified if any of them are."
+		print("ERROR: ALL datasources, processors and the head node must be specified if any of them are.")
 		bail = True
 	if len( processors ) != len( threads ):
-		print "ERROR: There must be one thread specification for each processor specification."
+		print("ERROR: There must be one thread specification for each processor specification.")
 		bail = True
 	
 if bail:
-	print "Usage: %s [options] <.input path>" % ( sys.argv[0] )
+	print("Usage: %s [options] <.input path>" % ( sys.argv[0] ))
 	exit( 0 )
 	
 difx = DiFXJobControl.Client()
@@ -277,7 +277,7 @@ difx.connect()
 difx.monitor()
 #  Check the existence of the .input file.
 if difx.ls( inputFile ) == None:
-	print "ERROR: .input file not found"
+	print("ERROR: .input file not found")
 	difx.close()
 	exit( 0 )
 difx.version( DiFXVersion )
@@ -302,10 +302,10 @@ elif configOnly:
 else:
 	#  Make sure threads and machines files exist.
 	if difx.ls( inputFile.replace( ".input", ".machines" ) ) == None:
-		print "ERROR: .machines file \"" + inputFile.replace( ".input", ".machines" ) + "\" does not exist"
+		print("ERROR: .machines file \"" + inputFile.replace( ".input", ".machines" ) + "\" does not exist")
 		bail = True
 	if difx.ls( inputFile.replace( ".input", ".threads" ) ) == None:
-		print "ERROR: .threads file \"" + inputFile.replace( ".input", ".threads" ) + "\" does not exist"
+		print("ERROR: .threads file \"" + inputFile.replace( ".input", ".threads" ) + "\" does not exist")
 		bail = True
 	if bail:
 		difx.close()
@@ -325,19 +325,19 @@ if realtime:
 	difx.startMonitor()
 	monScans = difx.getMonitorProducts()
 	if monScans != None:
-		print "The following products are available for real time monitoring:"
+		print("The following products are available for real time monitoring:")
 		for scan in monScans:
-			print "", scan[0]
+			print("", scan[0])
 			for baseline in scan[7]:
 				if len( baseline[3] ) > 0:
-					print "\t", baseline[0] + " -", baseline[1], "frequencies"
+					print("\t", baseline[0] + " -", baseline[1], "frequencies")
 					for frequency in baseline[3]:
-						print frequency[0], "\t", frequency[1]
+						print(frequency[0], "\t", frequency[1])
 				if len( baseline[4] ) > 0:
-					print "\tAutocorrelations (frequency, telescope)"
+					print("\tAutocorrelations (frequency, telescope)")
 					for ac in baseline[4]:
-						print ac[0], "\t", ac[2], ac[1]
-	l = raw_input( "select products: " )
+						print(ac[0], "\t", ac[2], ac[1])
+	l = input( "select products: " )
 	#  Assuming the user typed something...
 	if len( l.strip() ) > 0:
 		#  split by commas

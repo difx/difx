@@ -157,7 +157,7 @@ class MonitorThread( threading.Thread ):
                                 self.bytesReceived += len( tmpBuf )
                                 if not tmpBuf:
                                     self.status = self.packetDataFail
-                                    print "Failure after reading", len( data ), "/", nBytes, "packet data"
+                                    print("Failure after reading", len( data ), "/", nBytes, "packet data")
                                     break
                                 data += tmpBuf
                         else:
@@ -167,11 +167,11 @@ class MonitorThread( threading.Thread ):
                             self.cb( packetId, data )
                     else:
                         self.status = self.packetLengthFail
-                        print "Failure to read data length"
+                        print("Failure to read data length")
                 else:
                     if self.bytesReceived > 0:
                         self.status = self.packetIDFail
-                        print "Failure to read packetID"
+                        print("Failure to read packetID")
                     else:
                         #  We failed on our first attempt to read data - assume the
                         #  connection was no good to begin with.
@@ -349,8 +349,8 @@ class Client:
         self.socketOK = True
         try:
             self.sock = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
-        except socket.error, ( value, message ):
-            print "Could not open socket", message
+        except socket.error as e:
+            print("Could not open socket ", e)
             self.socketOK = False
         self.i = struct.Struct( "I" )
         self.d = struct.Struct( "!d" )
@@ -711,8 +711,8 @@ class Client:
         connectInfo = ( host, port )
         try:
             self.sock.connect( connectInfo )
-        except socket.error, ( value, message ):
-            print "Could not connect socket (" + str( host ) + ", " + str( port ) + "):", message
+        except socket.error as e:
+            print("Could not connect socket (" + str( host ) + ", " + str( port ) + "): ", e)
             self.socketOK = False
             
     #<!------------------------------------------------------------------------>
@@ -1047,7 +1047,7 @@ class Client:
         packetData += "     <path>" + path + "</path>\n"
         if dataNode != None:
             packetData += "     <dataNode>" + dataNode + "</dataNode>\n"
-        print("packetData = " + packetData)
+        print(("packetData = " + packetData))
         self.sendCommandPacket( "DifxFileOperation", packetData )
         
     #<!------------------------------------------------------------------------>
@@ -1078,7 +1078,7 @@ class Client:
                 name = data[0:data.find( "=" )]
                 self.serverEnvironment[name] = data[data.find( "=" ) + 1:]
             else:
-                print "something wrong with environment definition: " + str( data )
+                print("something wrong with environment definition: " + str( data ))
         elif packetId == self.CHANNEL_ALL_DATA:
             #  This is received at the end of a response to a version request.  We
             #  use it to indicate that the request has been completed.
@@ -1153,10 +1153,10 @@ class Client:
                 #  version.
                 self.setVersionRunFile( self.versionPreference )
             except:
-                print "Version \"" + preference + "\" is not available."
+                print("Version \"" + preference + "\" is not available.")
         else:
             self.socketOK = False
-            print "SERVER DID NOT RESPOND!"
+            print("SERVER DID NOT RESPOND!")
                 
     #<!------------------------------------------------------------------------>
     ## Set the generic run file based on a version name.
@@ -1175,9 +1175,9 @@ class Client:
             if base != None:
                 self.runFile( base + "/bin/rungeneric." + version )
             else:
-                print "setVersionRunFile: no DIFX_BASE environment variable defined."
+                print("setVersionRunFile: no DIFX_BASE environment variable defined.")
         except:
-            print "setVersionRunFile: requested version \"" + str( version ) + "\" is not available."
+            print("setVersionRunFile: requested version \"" + str( version ) + "\" is not available.")
         
     #<!------------------------------------------------------------------------>
     ##  Set the generic run file for all DiFX processes.  
@@ -1405,7 +1405,7 @@ class Client:
                 if self.channelCallbacks[channel] != None:
                     self.channelCallbacks[channel]( newData )
             except KeyError:
-                print "effort to direct channeled data to channel number " + str( channel ) + " failed - no defined callback"
+                print("effort to direct channeled data to channel number " + str( channel ) + " failed - no defined callback")
 
 #===============================================================================
 #  Below are a series of classes for parsing and storing the information
