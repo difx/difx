@@ -516,6 +516,7 @@ void writeVDIF(const Datastream *d, const CommonSignal *C)
 	free(vh);
 }
 
+/* Note: To handle lower sideband, fringe rotate as if SSLO was at freq minus bandwidth and then swap sign of alternate samples (real) or conjugate (complex) */
 void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 {
 	int s;
@@ -534,6 +535,10 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		cs = ds->cs;
 		//freq_MHz = ds->df->freq + 0.5*ds->df->bw;
 		freq_MHz = ds->df->freq;
+		if(ds->df->sideband == 'L')
+		{
+			freq_MHz -= ds->df->bw;
+		}
 		int_freq_MHz = (int)freq_MHz;
 		frac_freq_MHz = freq_MHz - int_freq_MHz;
 
@@ -624,6 +629,17 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 
 /* 9. "AGC" -- normalize array prior to quantization */
 		normalize(ds->samples1sec, ds->nSample1sec);
+
+		/* if LSB, flip sign of alternate samples */
+		if(ds->df->sideband == 'L')
+		{
+			int i;
+
+			for(i = 1; i < ds->nSample1sec; i+=2)
+			{
+				ds->samples1sec[i] = -ds->samples1sec[i];
+			}
+		}
 	}
 /* 10. Quantize and create VDIF */
 	writeVDIF(d, C);

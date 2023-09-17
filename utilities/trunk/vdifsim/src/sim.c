@@ -167,16 +167,6 @@ int complianceCheck(const DifxInput *D)
 		}
 	}
 
-	/* Upper sideband */
-	for(f = 0; f < D->nFreq; ++f)
-	{
-		if(D->freq[f].sideband != 'U')
-		{
-			fprintf(stderr, "! frequency %d is not upper sideband.  It reports %c\n", f, D->freq[f].sideband);
-			rv = 0;
-		}
-	}
-
 	return rv;
 }
 
