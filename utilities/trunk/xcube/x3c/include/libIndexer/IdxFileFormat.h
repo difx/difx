@@ -24,7 +24,8 @@ namespace x3c {
          */
         const UINT32 INDEX_MAGIC_COOKIE     = 0xa5b4c3d2;
         const UINT32 TRAILER_MAGIC_COOKIE   = 0xcafebabe;
-        const std::string INDEX_FILE_EXT    = "idx";
+        const std::string INDEX_FILE_EXT    = "ix1";
+        const std::string INDEX_FILE_EXT_WDOT    = ".ix1";
 
         typedef struct _IndexRecord
         {

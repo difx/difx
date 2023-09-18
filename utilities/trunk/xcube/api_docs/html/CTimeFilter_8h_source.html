@@ -114,11 +114,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00063"></a>00063 
 <a name="l00067"></a>00067     <span class="keywordtype">void</span> <a class="code" href="classCTimeFilter.html#aadb4ec17a63ca2489914c7bb389d67be">setStartTime</a>(UINT32 sec, UINT32 nsec);
 <a name="l00068"></a>00068 
-<a name="l00072"></a>00072     <span class="keywordtype">void</span> <a class="code" href="classCTimeFilter.html#aadb4ec17a63ca2489914c7bb389d67be">setStartTime</a>(<span class="keyword">struct</span> <a class="code" href="structx3c__timeval.html">x3c_timeval</a> &amp;tm);
+<a name="l00072"></a>00072     <span class="keywordtype">void</span> <a class="code" href="classCTimeFilter.html#aadb4ec17a63ca2489914c7bb389d67be">setStartTime</a>(<span class="keyword">struct</span> x3c_timeval &amp;tm);
 <a name="l00073"></a>00073 
 <a name="l00077"></a>00077     <span class="keywordtype">void</span> <a class="code" href="classCTimeFilter.html#a0e557d91b1d292e5ca84b218b761b751">setEndTime</a>(UINT32 sec, UINT32 nsec);
 <a name="l00078"></a>00078 
-<a name="l00082"></a>00082     <span class="keywordtype">void</span> <a class="code" href="classCTimeFilter.html#a0e557d91b1d292e5ca84b218b761b751">setEndTime</a>(<span class="keyword">struct</span> <a class="code" href="structx3c__timeval.html">x3c_timeval</a> &amp;tm);
+<a name="l00082"></a>00082     <span class="keywordtype">void</span> <a class="code" href="classCTimeFilter.html#a0e557d91b1d292e5ca84b218b761b751">setEndTime</a>(<span class="keyword">struct</span> x3c_timeval &amp;tm);
 <a name="l00083"></a>00083 
 <a name="l00084"></a>00084 
 <a name="l00091"></a>00091     <span class="keywordtype">void</span> <a class="code" href="classCTimeFilter.html#a0e557d91b1d292e5ca84b218b761b751">setEndTime</a>(timespec <span class="keyword">const</span>&amp; ts);
@@ -153,8 +153,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00168"></a>00168     std::string          mEndFmt;
 <a name="l00169"></a>00169     <span class="keywordtype">bool</span>                 mIsRelativeTime;
 <a name="l00170"></a>00170     UINT32               mBaseTime;
-<a name="l00171"></a>00171     <a class="code" href="structx3c__timeval.html">x3c_timeval</a>          mX3cStartTime;
-<a name="l00172"></a>00172     <a class="code" href="structx3c__timeval.html">x3c_timeval</a>          mX3cEndTime;
+<a name="l00171"></a>00171     x3c_timeval          mX3cStartTime;
+<a name="l00172"></a>00172     x3c_timeval          mX3cEndTime;
 <a name="l00173"></a>00173 
 <a name="l00184"></a>00184     <span class="keywordtype">void</span> setBaseTime(UINT32 baseTime);
 <a name="l00185"></a>00185 
@@ -181,7 +181,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00206"></a>00206 }
 <a name="l00207"></a>00207 
 <a name="l00208"></a>00208 
-<a name="l00209"></a>00209 <span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="classCTimeFilter.html#aadb4ec17a63ca2489914c7bb389d67be">CTimeFilter::setStartTime</a>(<span class="keyword">struct</span> <a class="code" href="structx3c__timeval.html">x3c_timeval</a> &amp;tm)
+<a name="l00209"></a>00209 <span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="classCTimeFilter.html#aadb4ec17a63ca2489914c7bb389d67be">CTimeFilter::setStartTime</a>(<span class="keyword">struct</span> x3c_timeval &amp;tm)
 <a name="l00210"></a>00210 {
 <a name="l00211"></a>00211     mX3cStartTime.tv_sec = tm.tv_sec;
 <a name="l00212"></a>00212     mX3cStartTime.tv_nsec = tm.tv_nsec;
@@ -199,7 +199,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00224"></a>00224 }
 <a name="l00225"></a>00225 
 <a name="l00226"></a>00226 
-<a name="l00227"></a>00227 <span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="classCTimeFilter.html#a0e557d91b1d292e5ca84b218b761b751">CTimeFilter::setEndTime</a>(<span class="keyword">struct</span> <a class="code" href="structx3c__timeval.html">x3c_timeval</a> &amp;tm)
+<a name="l00227"></a>00227 <span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="classCTimeFilter.html#a0e557d91b1d292e5ca84b218b761b751">CTimeFilter::setEndTime</a>(<span class="keyword">struct</span> x3c_timeval &amp;tm)
 <a name="l00228"></a>00228 {
 <a name="l00229"></a>00229     mX3cEndTime.tv_sec = tm.tv_sec;
 <a name="l00230"></a>00230     mX3cEndTime.tv_nsec = tm.tv_nsec;
@@ -238,7 +238,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 
 
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 2 2013 17:12:28 for XCube Stream Reader SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat May 10 2014 01:37:42 for XCube Stream Reader SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.7.6.1
 </small></address>

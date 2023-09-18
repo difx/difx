@@ -112,7 +112,8 @@ public:
 	 * @param chunkSz		-	the requested read size from disk
 	 * @return 				- 	true if successful, if false
 	 * 							(delete this object and start over)          */
-	bool initialize(int fileCnt, char **fileNames, size_t bufSz, size_t chunkSz);
+	bool initialize(std::vector<std::string> const& fileNames, size_t bufSz,
+                    size_t chunkSz);
 
 
 	//! Start packet reader
@@ -146,6 +147,10 @@ public:
 	 *  @param hdl		-	packet handle to free                            */
 	void freePacketHandle(packet_handle_t *hdl);
 
+    //! Reset the packet reader state
+	/*! Reset the packet reader state to its initial state                   */
+    void reset();
+
 private:
 	//! Get a packet
 	/*! Internal helper function to really get pkt                           */
@@ -164,6 +169,14 @@ private:
 	//! initialize the list of packet handles
 	void initPktHandles();
 
+    //! Reset the CFileReaders to the beginning of the stream
+    void resetFileReaders();
+
+    //! Reset the CPacketBuffers to the beginning of the stream
+    void resetPacketBuffers();
+
+    //! Resume the CFileReaders after being reset
+    void resumeFileReaders();
 
 	//! based on the time filters, should this packet
 	/*! be filtered out?
@@ -172,7 +185,6 @@ private:
 	 *          -1 - past last value
 	 */
 	CStreamFilter::FilterReturn getShouldBeTimeFiltered(X3cPacket *pkt);
-
 
 	//! Flag to indicating whether packet reader is stared
 	/*! if started, this value is set as true, otherwise, it is set as false */
@@ -188,7 +200,7 @@ private:
 
 	//! List of filenames
 	/*! List of input file names                                             */
-	vector<char*> mFileNames;
+	vector<std::string> mFileNames;
 
 	//! Size of data chunk for reading
 	/*! Size in MByte of data to read from the disk system (should be set

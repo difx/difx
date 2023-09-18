@@ -21,6 +21,8 @@
 #include <sys/time.h>
 #include "xcTypes.h"
 
+//#include "Lf1PacketHeader.h"
+
 //Logger FILE TYPE SUFFIX, as in "myDataFile.x3c"
 //Note there is not '.' file type separator defined here.
 //History: For the first year and a half (2010, 2011) the Logger used the ".x3c"
@@ -36,22 +38,7 @@
 #define X3C_VERSION_MINOR 0x0001
 #define X3C_VERSION_MAJOR 0x0000
 
-/*
- * This is a timeval as stored in the X3C file.
- * It has to use the same types everywhere, independent of the actual
- * `struct timeval'. `struct timeval' has 32-bit tv_sec values on some
- * platforms and 64-bit tv_sec values on other platforms, and writing
- * out native `struct timeval' values would mean files could only be
- * read on systems with the same tv_sec size as the system on which
- * the file was written.
- */
-struct x3c_timeval {
-    UINT32 tv_sec;		//Seconds since 00:00:00 GMT, 1 January 1970
-    union{
-       UINT32 tv_usec;	// Additional microseconds since tv_sec
-       UINT32 tv_nsec;	// Additional nanoseconds since tv_sec
-    };
-};
+//struct x3c_timeval  is now defined in Lf1PacketHeader.h
 
 // GLOBAL FILE HEADER
 typedef struct _X3C_HEADER_ {
@@ -65,11 +52,7 @@ typedef struct _X3C_HEADER_ {
 		UINT32 opt[2];          /* optional data		*/
 		}X3C_HEADER;
 
-// PACKET HEADER
-typedef struct _X3C_PACKET_HEADER_ {
-		struct x3c_timeval ts;
-        UINT32 len;             /* packet data length */
-} X3C_PACKET_HEADER;
+//// PACKET HEADER is now defined in Lf1PacketHeader.h
 
 
 class CX3cFile {
@@ -77,9 +60,9 @@ public:
 	CX3cFile();
 	virtual ~CX3cFile();
 
-	// Init Data Buffer
+	// Initialize Data Buffer
 	int    createDataBuffer(int len);
-	int    getDataBufferSize() { return(mDataBufferSize); };
+	unsigned    getDataBufferSize() { return(mDataBufferSize); };
 
 	// TBD
 	X3C_HEADER        * getX3cHeaderPtr()    { return(&mX3cHeader); };
@@ -93,23 +76,23 @@ public:
 
 	// Get/Set Packet Data
 	char * getPacketDataPtr()   { return(mPacketData); };
-	int    getPacketDataLen()   { return(mPacketDataLen); };
+	unsigned    getPacketDataLen()   { return(mPacketDataLen); };
 	int    setPacketData(char * buffer, UINT32 len);
 	void   setPacketDataLen(UINT32 len) { mPacketDataLen = len; };
 
 
 	// Get/Set X3C_Header
-	UINT32 getX3cMagicNumber()  { return(mX3cHeader.magic); };
+	unsigned getX3cMagicNumber()  { return(mX3cHeader.magic); };
 	UINT16 getX3cVersionMajor() { return(mX3cHeader.version_major); };
 	UINT16 getX3cVersionMinor() { return(mX3cHeader.version_minor); };
 	UINT16 getX3cTaskType()     { return(mX3cHeader.task_type); };
 	UINT16 getX3cTaskEnum()     { return(mX3cHeader.task_enum); };
 	INT32  getX3cTimeZone()     { return(mX3cHeader.thiszone); };
-	INT32  getX3cOpt1()         { return(mX3cHeader.opt[0]); };
-	INT32  getX3cOpt2()         { return(mX3cHeader.opt[1]); };
-	INT32  getX3cTimeSec()      { return(mX3cHeader.ts.tv_sec); };
-	INT32  getX3cTimeUSec()     { return(mX3cHeader.ts.tv_usec); };
-	INT32  getX3cTimeNSec()     { return(mX3cHeader.ts.tv_nsec); };
+	unsigned  getX3cOpt1()         { return(mX3cHeader.opt[0]); };
+	unsigned  getX3cOpt2()         { return(mX3cHeader.opt[1]); };
+	unsigned  getX3cTimeSec()      { return(mX3cHeader.ts.tv_sec); };
+	unsigned  getX3cTimeUSec()     { return(mX3cHeader.ts.tv_usec); };
+	unsigned  getX3cTimeNSec()     { return(mX3cHeader.ts.tv_nsec); };
 	void   getX3cTime(timeval * tv) {  // sec and usec
 				tv->tv_sec  = mX3cHeader.ts.tv_sec;
 				tv->tv_usec = mX3cHeader.ts.tv_usec;
@@ -123,9 +106,9 @@ public:
 
 	// Get/Set X3C_PACKET_HEADER
     UINT32 getPacketDataLength() { return(mPacketHeader.len); };
-	INT32  getPacketTimeSec()    { return(mPacketHeader.ts.tv_sec); };
-	INT32  getPacketTimeUSec()   { return(mPacketHeader.ts.tv_usec); };
-	INT32  getPacketTimeNSec()   { return(mPacketHeader.ts.tv_nsec); };
+	unsigned  getPacketTimeSec()    { return(mPacketHeader.ts.tv_sec); };
+	unsigned  getPacketTimeUSec()   { return(mPacketHeader.ts.tv_usec); };
+	unsigned  getPacketTimeNSec()   { return(mPacketHeader.ts.tv_nsec); };
 	void   getPacketTime(timeval * tv) {  // sec and usec
 				tv->tv_sec  = mPacketHeader.ts.tv_sec;
 				tv->tv_usec = mPacketHeader.ts.tv_usec;

@@ -96,7 +96,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00015"></a>00015 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_STATSMGR  &quot;STATS_MGR&quot;</span>
 <a name="l00016"></a>00016 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_USERMGR   &quot;USER_MGR&quot;</span>
 <a name="l00017"></a>00017 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_BUFMGR    &quot;BUF_MGR&quot;</span>
-<a name="l00018"></a>00018 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_ETHERNET  &quot;ENET_MGR&quot;</span>
+<a name="l00018"></a>00018 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_ETHERNET  &quot;ENET_MGR&quot;          //Ethernet, RAW Packets</span>
 <a name="l00019"></a>00019 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_1394A     &quot;1394A_MGR&quot;</span>
 <a name="l00020"></a>00020 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_1394B     &quot;1394B_MGR&quot;</span>
 <a name="l00021"></a>00021 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_CANK      &quot;CANK_MGR&quot;</span>
@@ -106,66 +106,80 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00025"></a>00025 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_CANP      &quot;CANP_MGR&quot;</span>
 <a name="l00026"></a>00026 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_HRFT      &quot;HRFT_MGR&quot;</span>
 <a name="l00027"></a>00027 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_GPU       &quot;GPU_MGR&quot;</span>
-<a name="l00028"></a>00028 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_MRR       &quot;MRR_MGR&quot;  //Medium Range Radar</span>
-<a name="l00029"></a>00029 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_OTHER     &quot;OTHER_TASK&quot;</span>
-<a name="l00030"></a>00030 <span class="preprocessor"></span>
-<a name="l00031"></a>00031 <span class="preprocessor">#define TASK_NAME_SIMXMGR   &quot;SIMEXEC_MGR&quot;</span>
-<a name="l00032"></a>00032 <span class="preprocessor"></span>
-<a name="l00033"></a>00033 <span class="comment">//Identifies the TYPE of task,</span>
-<a name="l00034"></a>00034 <span class="keyword">typedef</span> <span class="keyword">enum</span> _TASK_TYPE_
-<a name="l00035"></a>00035 {
-<a name="l00036"></a>00036     TASK_TYPE_UNKNOWN=0,
-<a name="l00037"></a>00037     TASK_TYPE_LGRMGR,
-<a name="l00038"></a>00038     TASK_TYPE_MSGMGR,
-<a name="l00039"></a>00039     TASK_TYPE_STATSMGR,
-<a name="l00040"></a>00040     TASK_TYPE_USERMGR,
-<a name="l00041"></a>00041     TASK_TYPE_BUFMGR,
-<a name="l00042"></a>00042     TASK_TYPE_SIMXMGR,          <span class="comment">// RESIM_BUILD</span>
-<a name="l00043"></a>00043 
-<a name="l00044"></a>00044     <span class="comment">// DSSC Interfaces</span>
-<a name="l00045"></a>00045     TASK_TYPE_DSSC_INTERFACES = 30,
-<a name="l00046"></a>00046     TASK_TYPE_GENERIC_PLAYER,
-<a name="l00047"></a>00047     TASK_TYPE_ASC_PLAYER,
-<a name="l00048"></a>00048     TASK_TYPE_CAN_PLAYER,
-<a name="l00049"></a>00049     TASK_TYPE_AVI_PLAYER,
-<a name="l00050"></a>00050     TASK_TYPE_CAM_PLAYER,
-<a name="l00051"></a>00051     TASK_TYPE_BAN_PLAYER,
-<a name="l00052"></a>00052     TASK_TYPE_GEN5PGM_PLAYER,
-<a name="l00053"></a>00053 
-<a name="l00054"></a>00054     TASK_TYPE_INTERFACES=50,    <span class="comment">// Not really a task - it separates IFs from others</span>
-<a name="l00055"></a>00055     TASK_TYPE_IF_ETHERNET,
-<a name="l00056"></a>00056     TASK_TYPE_IF_CANK,          <span class="comment">// Kvaser</span>
-<a name="l00057"></a>00057     TASK_TYPE_IF_USB,
-<a name="l00058"></a>00058     TASK_TYPE_IF_1394A,
-<a name="l00059"></a>00059     TASK_TYPE_IF_1394B,
-<a name="l00060"></a>00060     TASK_TYPE_IF_DGEN,
-<a name="l00061"></a>00061     TASK_TYPE_IF_AVTCAMERA,
-<a name="l00062"></a>00062     TASK_TYPE_IF_CANP,          <span class="comment">// PEAK/Grid Connect</span>
-<a name="l00063"></a>00063     TASK_TYPE_IF_HRFT,          <span class="comment">// FOI HRFT Bus Master DMA Hardware</span>
-<a name="l00064"></a>00064     TASK_TYPE_IF_GPU,           <span class="comment">// 60</span>
-<a name="l00065"></a>00065     TASK_TYPE_IF_MRR,           <span class="comment">// Denso Medium Range Radar</span>
-<a name="l00066"></a>00066     TASK_TYPE_IF_XML,           <span class="comment">// XML</span>
-<a name="l00067"></a>00067     TASK_TYPE_OTHER,
-<a name="l00068"></a>00068 
-<a name="l00069"></a>00069     TASK_TYPE_IF_USER=256
-<a name="l00070"></a>00070 } LGR_TASK_TYPE;
-<a name="l00071"></a>00071 
-<a name="l00072"></a>00072 <span class="comment">//What is the Task currently doing?</span>
-<a name="l00073"></a>00073 <span class="keyword">typedef</span> <span class="keyword">enum</span> _TASK_STATE_
-<a name="l00074"></a>00074 {
-<a name="l00075"></a>00075     TASK_STATE_UNKNOWN   = 0,
-<a name="l00076"></a>00076     TASK_STATE_INIT,
-<a name="l00077"></a>00077     TASK_STATE_EXIT,
-<a name="l00078"></a>00078     TASK_STATE_IDLE,
-<a name="l00079"></a>00079     TASK_STATE_RUNNING,
-<a name="l00080"></a>00080     TASK_STATE_PAUSED,
-<a name="l00081"></a>00081     TASK_STATE_ERROR,
-<a name="l00082"></a>00082     TASK_STATE_FINISHED,
-<a name="l00083"></a>00083     TASK_STATE_LAST
-<a name="l00084"></a>00084 } LGR_TASK_STATE;
+<a name="l00028"></a>00028 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_MRR       &quot;MRR_MGR&quot;           //Medium Range Radar</span>
+<a name="l00029"></a>00029 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_SOCKET    &quot;SOCK_MGR&quot;          //Socket Mgr</span>
+<a name="l00030"></a>00030 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_SERIAL    &quot;SERIAL_MGR&quot;        //Serial Port Mgr</span>
+<a name="l00031"></a>00031 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_PTGCAMERA &quot;PTGCAMERA_MGR&quot; //Point Grey Camera Mgr</span>
+<a name="l00032"></a>00032 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_GPS       &quot;GPS_MGR&quot;           //GPS</span>
+<a name="l00033"></a>00033 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_IDC       &quot;IDC_MGR&quot;           //IBEO</span>
+<a name="l00034"></a>00034 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_IPCAM     &quot;IPCAM_MGR&quot;         //IP Camera, Point Grey Cricket.</span>
+<a name="l00035"></a>00035 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_PCAP      &quot;PCAP_MGR&quot;      //Ethernet, PCAP formatted</span>
+<a name="l00036"></a>00036 <span class="preprocessor"></span><span class="preprocessor">#define TASK_NAME_OTHER     &quot;OTHER_TASK&quot;</span>
+<a name="l00037"></a>00037 <span class="preprocessor"></span>
+<a name="l00038"></a>00038 <span class="preprocessor">#define TASK_NAME_SIMXMGR   &quot;SIMEXEC_MGR&quot;</span>
+<a name="l00039"></a>00039 <span class="preprocessor"></span>
+<a name="l00040"></a>00040 <span class="comment">//Identifies the TYPE of task,</span>
+<a name="l00041"></a>00041 <span class="keyword">typedef</span> <span class="keyword">enum</span> _TASK_TYPE_
+<a name="l00042"></a>00042 {
+<a name="l00043"></a>00043     TASK_TYPE_UNKNOWN=0,
+<a name="l00044"></a>00044     TASK_TYPE_LGRMGR,
+<a name="l00045"></a>00045     TASK_TYPE_MSGMGR,
+<a name="l00046"></a>00046     TASK_TYPE_STATSMGR,
+<a name="l00047"></a>00047     TASK_TYPE_USERMGR,
+<a name="l00048"></a>00048     TASK_TYPE_BUFMGR,
+<a name="l00049"></a>00049     TASK_TYPE_SIMXMGR,          <span class="comment">// RESIM_BUILD</span>
+<a name="l00050"></a>00050 
+<a name="l00051"></a>00051     <span class="comment">// DSSC Interfaces</span>
+<a name="l00052"></a>00052     TASK_TYPE_DSSC_INTERFACES = 30,
+<a name="l00053"></a>00053     TASK_TYPE_GENERIC_PLAYER,
+<a name="l00054"></a>00054     TASK_TYPE_ASC_PLAYER,
+<a name="l00055"></a>00055     TASK_TYPE_CAN_PLAYER,
+<a name="l00056"></a>00056     TASK_TYPE_AVI_PLAYER,
+<a name="l00057"></a>00057     TASK_TYPE_CAM_PLAYER,
+<a name="l00058"></a>00058     TASK_TYPE_BAN_PLAYER,
+<a name="l00059"></a>00059     TASK_TYPE_GEN5PGM_PLAYER,
+<a name="l00060"></a>00060     TASK_TYPE_IDC_PLAYER,
+<a name="l00061"></a>00061 
+<a name="l00062"></a>00062     TASK_TYPE_INTERFACES=50,    <span class="comment">// 50 Not really a task - it separates IFs from others</span>
+<a name="l00063"></a>00063     TASK_TYPE_IF_ETHERNET,      <span class="comment">// 51 Ethernet, RAW Packets</span>
+<a name="l00064"></a>00064     TASK_TYPE_IF_CANK,          <span class="comment">// 52 CAN Kvaser</span>
+<a name="l00065"></a>00065     TASK_TYPE_IF_USB,                   <span class="comment">// 53</span>
+<a name="l00066"></a>00066     TASK_TYPE_IF_1394A,         <span class="comment">// 54</span>
+<a name="l00067"></a>00067     TASK_TYPE_IF_1394B,         <span class="comment">// 55</span>
+<a name="l00068"></a>00068     TASK_TYPE_IF_DGEN,          <span class="comment">// 56 Data Generator</span>
+<a name="l00069"></a>00069     TASK_TYPE_IF_AVTCAMERA,     <span class="comment">// 57 AVT Camera</span>
+<a name="l00070"></a>00070     TASK_TYPE_IF_CANP,          <span class="comment">// 58 CAN PEAK/Grid Connect</span>
+<a name="l00071"></a>00071     TASK_TYPE_IF_HRFT,          <span class="comment">// 59 FOI HRFT Bus Master DMA Hardware</span>
+<a name="l00072"></a>00072     TASK_TYPE_IF_GPU,           <span class="comment">// 60</span>
+<a name="l00073"></a>00073     TASK_TYPE_IF_MRR,           <span class="comment">// 61 Denso Medium Range Radar</span>
+<a name="l00074"></a>00074     TASK_TYPE_IF_XML,           <span class="comment">// 62 XML</span>
+<a name="l00075"></a>00075     TASK_TYPE_IF_SOCKET,                <span class="comment">// 63 Socket Listener</span>
+<a name="l00076"></a>00076     TASK_TYPE_IF_SERIAL,                <span class="comment">// 64 Serial Port</span>
+<a name="l00077"></a>00077     TASK_TYPE_IF_PTGCAMERA,     <span class="comment">// 65 Point Grey Camera</span>
+<a name="l00078"></a>00078     TASK_TYPE_IF_GPS,           <span class="comment">// 66 GPD</span>
+<a name="l00079"></a>00079     TASK_TYPE_IF_IDC,           <span class="comment">// 67 Ibeo IDC</span>
+<a name="l00080"></a>00080     TASK_TYPE_IF_IPCAM,         <span class="comment">// 68 IP Camera, Point Grey Cricket.</span>
+<a name="l00081"></a>00081     TASK_TYPE_IF_PCAP,          <span class="comment">// 69 Ethernet, PCAP formatted</span>
+<a name="l00082"></a>00082     TASK_TYPE_OTHER,            <span class="comment">// 70</span>
+<a name="l00083"></a>00083     TASK_TYPE_IF_USER=256
+<a name="l00084"></a>00084 } LGR_TASK_TYPE;
 <a name="l00085"></a>00085 
-<a name="l00086"></a>00086 
-<a name="l00087"></a>00087 <span class="preprocessor">#endif </span><span class="comment">/* X3CTASKDEFS_H_ */</span>
+<a name="l00086"></a>00086 <span class="comment">//What is the Task currently doing?</span>
+<a name="l00087"></a>00087 <span class="keyword">typedef</span> <span class="keyword">enum</span> _TASK_STATE_
+<a name="l00088"></a>00088 {
+<a name="l00089"></a>00089     TASK_STATE_UNKNOWN   = 0,
+<a name="l00090"></a>00090     TASK_STATE_INIT,
+<a name="l00091"></a>00091     TASK_STATE_EXIT,
+<a name="l00092"></a>00092     TASK_STATE_IDLE,
+<a name="l00093"></a>00093     TASK_STATE_RUNNING,
+<a name="l00094"></a>00094     TASK_STATE_PAUSED,
+<a name="l00095"></a>00095     TASK_STATE_ERROR,
+<a name="l00096"></a>00096     TASK_STATE_FINISHED,
+<a name="l00097"></a>00097     TASK_STATE_LAST
+<a name="l00098"></a>00098 } LGR_TASK_STATE;
+<a name="l00099"></a>00099 
+<a name="l00100"></a>00100 
+<a name="l00101"></a>00101 <span class="preprocessor">#endif </span><span class="comment">/* X3CTASKDEFS_H_ */</span>
 </pre></div></div><!-- contents -->
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
@@ -184,7 +198,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 
 
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 2 2013 17:12:28 for XCube Stream Reader SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat May 10 2014 01:37:42 for XCube Stream Reader SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.7.6.1
 </small></address>

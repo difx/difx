@@ -209,7 +209,9 @@ void extractAll(int nloop, int nblock, int bufsize, uint64_t **data) {
   printf("Frame/sec = %d\n", framespersec);
 
   createVDIFHeader(&header, vdif_packetsize+VDIF_HEADER_BYTES, 0,  2, nchan, 1, "Tt");
-  setVDIFTime(&header, time(NULL));
+  time_t t = time(NULL);
+  setVDIFEpochTime(&header, t);
+  setVDIFFrameTime(&header, t);
   
   t0 = tim();
   vdifwords = 0;
@@ -316,7 +318,9 @@ void extractGeneric(uint64_t chans, int nloop, int nblock, int bufsize, uint64_t
   printf("Frame/sec = %d\n", framespersec);
 
   createVDIFHeader(&header, vdif_packetsize+VDIF_HEADER_BYTES, 0,  2, nchan, 1, "Tt");
-  setVDIFTime(&header, time(NULL));
+  time_t t = time(NULL);
+  setVDIFEpochTime(&header, t);
+  setVDIFFrameTime(&header, t);
   
   t0 = tim();
   vdifNybles = 0;
@@ -404,7 +408,9 @@ void extract2chanPair(int nloop, int nblock, int bufsize, uint64_t **data) {
   printf("Frame/sec = %d\n", framespersec);
 
   createVDIFHeader(&header, vdif_packetsize+VDIF_HEADER_BYTES, 0,  2, nchan, 1, "Tt");
-  setVDIFTime(&header, time(NULL));
+  time_t t = time(NULL);
+  setVDIFEpochTime(&header, t);
+  setVDIFFrameTime(&header, t);
   
   t0 = tim();
   vdifbytes = 0;
@@ -489,7 +495,9 @@ void extract4chanPair(int nloop, int nblock, int bufsize, uint64_t **data) {
   printf("Frame/sec = %d\n", framespersec);
 
   createVDIFHeader(&header, vdif_packetsize+VDIF_HEADER_BYTES, 0,  2, nchan, 1, "Tt");
-  setVDIFTime(&header, time(NULL));
+  time_t t = time(NULL);
+  setVDIFEpochTime(&header, t);
+  setVDIFFrameTime(&header, t);
   
   t0 = tim();
   vdifbytes = 0;
@@ -583,7 +591,9 @@ void extract4chan(int nloop, int nblock, int bufsize, uint64_t **data) {
   printf("Frame/sec = %d\n", framespersec);
 
   createVDIFHeader(&header, vdif_packetsize+VDIF_HEADER_BYTES, 0,  2, nchan, 1, "Tt");
-  setVDIFTime(&header, time(NULL));
+  time_t t = time(NULL);
+  setVDIFEpochTime(&header, t);
+  setVDIFFrameTime(&header, t);
   
   t0 = tim();
   vdifbytes = 0;
@@ -688,7 +698,9 @@ void extract4chanAlt(int nloop, int nblock, int bufsize, uint64_t **data) {
   printf("Frame/sec = %d\n", framespersec);
 
   createVDIFHeader(&header, vdif_packetsize+VDIF_HEADER_BYTES, 0,  2, nchan, 1, "Tt");
-  setVDIFTime(&header, time(NULL));
+  time_t t = time(NULL);
+  setVDIFEpochTime(&header, t);
+  setVDIFFrameTime(&header, t);
   
   t0 = tim();
   vdifwords = 0;
@@ -798,7 +810,9 @@ void extract8chan(int nloop, int nblock, int bufsize, uint64_t **data) {
   printf("Frame/sec = %d\n", framespersec);
 
   createVDIFHeader(&header, vdif_packetsize+VDIF_HEADER_BYTES, 0,  2, nchan, 1, "Tt");
-  setVDIFTime(&header, time(NULL));
+  time_t t = time(NULL);
+  setVDIFEpochTime(&header, t);
+  setVDIFFrameTime(&header, t);
   
   t0 = tim();
   vdifbytes = 0;

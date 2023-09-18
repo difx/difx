@@ -107,8 +107,11 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a4b33e51316f19f306f40ae349a41073a"></a><!-- doxytag: member="CFileReader::stop" ref="a4b33e51316f19f306f40ae349a41073a" args="()" -->
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCFileReader.html#a4b33e51316f19f306f40ae349a41073a">stop</a> ()</td></tr>
 <tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Stop the reader thread and close the files. <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCFileReader.html#af77671ac8afe5f628dc59d9fbc60ed28">seek</a> (UINT64 pos)</td></tr>
-<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Seek in the current file to position pos in bytes.  <a href="#af77671ac8afe5f628dc59d9fbc60ed28"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCFileReader.html#adf27382af7e3a5a6a22067dce00d3277">reset</a> (UINT64 timeVal)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the <a class="el" href="classCFileReader.html" title="Class definition of file reader.">CFileReader</a>.  <a href="#adf27382af7e3a5a6a22067dce00d3277"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a40ad3c3e62effe4b13a556bb0c15db1c"></a><!-- doxytag: member="CFileReader::resume" ref="a40ad3c3e62effe4b13a556bb0c15db1c" args="()" -->
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCFileReader.html#a40ad3c3e62effe4b13a556bb0c15db1c">resume</a> ()</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Resume the <a class="el" href="classCFileReader.html" title="Class definition of file reader.">CFileReader</a> after calling <a class="el" href="classCFileReader.html#adf27382af7e3a5a6a22067dce00d3277" title="Reset the CFileReader.">CFileReader::reset()</a> <br/></td></tr>
 </table>
 <hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
 <div class="textblock"><p>Class definition of file reader. </p>
@@ -204,30 +207,24 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 
 </div>
 </div>
-<a class="anchor" id="af77671ac8afe5f628dc59d9fbc60ed28"></a><!-- doxytag: member="CFileReader::seek" ref="af77671ac8afe5f628dc59d9fbc60ed28" args="(UINT64 pos)" -->
+<a class="anchor" id="adf27382af7e3a5a6a22067dce00d3277"></a><!-- doxytag: member="CFileReader::reset" ref="adf27382af7e3a5a6a22067dce00d3277" args="(UINT64 timeVal)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int <a class="el" href="classCFileReader.html#af77671ac8afe5f628dc59d9fbc60ed28">CFileReader::seek</a> </td>
+          <td class="memname">void <a class="el" href="classCFileReader.html#adf27382af7e3a5a6a22067dce00d3277">CFileReader::reset</a> </td>
           <td>(</td>
           <td class="paramtype">UINT64&#160;</td>
-          <td class="paramname"><em>pos</em></td><td>)</td>
+          <td class="paramname"><em>timeVal</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div>
 <div class="memdoc">
 
-<p>Seek in the current file to position pos in bytes. </p>
-<p>Not Implemented </p>
-<dl class="params"><dt><b>Parameters:</b></dt><dd>
-  <table class="params">
-    <tr><td class="paramname">pos</td><td>- position in file to seek to </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="return"><dt><b>Returns:</b></dt><dd>- the current file position </dd></dl>
+<p>Reset the <a class="el" href="classCFileReader.html" title="Class definition of file reader.">CFileReader</a>. </p>
+<p>Reset the <a class="el" href="classCFileReader.html" title="Class definition of file reader.">CFileReader</a> to a position in the stream corresponding to <code>timeVal</code></p>
+<p>After calling this funcion the <a class="el" href="classCFileReader.html" title="Class definition of file reader.">CFileReader</a> will be reset but will not be restarted until a call to <code><a class="el" href="classCFileReader.html#a40ad3c3e62effe4b13a556bb0c15db1c" title="Resume the CFileReader after calling CFileReader::reset()">CFileReader::resume()</a></code> is made. </p>
 
 </div>
 </div>
@@ -252,7 +249,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 
 
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 2 2013 17:12:28 for XCube Stream Reader SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat May 10 2014 01:37:42 for XCube Stream Reader SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.7.6.1
 </small></address>
