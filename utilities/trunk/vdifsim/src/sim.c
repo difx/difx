@@ -124,7 +124,7 @@ static int work(const DifxInput *D, const CommandLineOptions *opts, const Config
 /* return 0 if requirements are not met */
 int complianceCheck(const DifxInput *D)
 {
-	int d, f;
+	int d;
 	int rv = 1;
 
 	/* single job */

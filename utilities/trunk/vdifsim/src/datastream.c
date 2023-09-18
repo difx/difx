@@ -81,20 +81,44 @@ Datastream *newDatastream(const DifxInput *D, int dsId, const CommonSignal *C, c
 		d->random = g_rand_new();
 	}
 
+	/* allocate one extra array element to make logic below easier */
 	d->filter = (double *)fftw_malloc((D->nInChan + 1)*sizeof(complex));
 	f = sqrt(2)/D->nInChan;
 	for(i = 0; i <= D->nInChan; ++i)
 	{
 		d->filter[i] = f;
 	}
-	ft = D->nInChan * opts->filterTransition;
-	for(i = 0; i < ft; ++i)
+	if(dd->dataSampling == SamplingComplexDSB)
 	{
-		double taper;
+		/* For double-sideband, use smaller edge transitions and reduce gain near band center */
+		ft = D->nInChan * opts->filterTransition/2.0;
+		for(i = 0; i < ft; ++i)
+		{
+			double taper;
 
-		taper = 0.5*(1.0-cos(M_PI*i/ft));
-		d->filter[i] *= taper;
-		d->filter[D->nInChan-i] *= taper;
+			taper = 0.5*(1.0-cos(M_PI*i/ft));
+			d->filter[i] *= taper;
+			d->filter[D->nInChan - i] *= taper;
+
+			taper = 0.25*(3.0-cos(M_PI*i/ft));
+			d->filter[i + D->nInChan/2] *= taper;
+			if(i != 0)
+			{
+				d->filter[D->nInChan/2 - i] *= taper;
+			}
+		}
+	}
+	else
+	{
+		ft = D->nInChan * opts->filterTransition;
+		for(i = 0; i < ft; ++i)
+		{
+			double taper;
+
+			taper = 0.5*(1.0-cos(M_PI*i/ft));
+			d->filter[i] *= taper;
+			d->filter[D->nInChan-i] *= taper;
+		}
 	}
 
 	if(opts->debug)
@@ -144,13 +168,13 @@ Datastream *newDatastream(const DifxInput *D, int dsId, const CommonSignal *C, c
 		{
 			ds->ifftPlan = fftw_plan_dft_c2r_1d(ds->nSamp, ds->spec, ds->samps, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
 		}
-		else if(dd->dataSampling == SamplingComplex)
+		else if(dd->dataSampling == SamplingComplex || dd->dataSampling == SamplingComplexDSB)
 		{
 			ds->ifftPlan = fftw_plan_dft_1d(ds->nSamp/2, ds->spec, (double complex *)(ds->samps), FFTW_BACKWARD, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);
 		}
-		else if(dd->dataSampling == SamplingComplexDSB)
+		else
 		{
-			fprintf(stderr, "Double sideband complex not yet supported\n");
+			fprintf(stderr, "Sampling type %d is unsupported.\n", (int)(dd->dataSampling));
 
 			exit(1);
 		}
@@ -285,6 +309,8 @@ void normalize(double *array, int N)
 	}
 }
 
+/* Move to vdifio? */
+/* for optimal results, src[] should be zero mean */
 void encode1bit(unsigned char *dest, double *src, int N)
 {
 	int i;
@@ -315,6 +341,7 @@ void encode1bit(unsigned char *dest, double *src, int N)
 }
 
 /* Move to vdifio? */
+/* For optimal results, src[] should be zero mean with RMS=1.0 */
 void encode2bit(unsigned char *dest, double *src, int N)
 {
 	const double thresh = 0.96;	/* for optimal SNR */
@@ -362,6 +389,7 @@ void encode2bit(unsigned char *dest, double *src, int N)
 }
 
 /* Move to vdifio? */
+/* For optimal results, src[] should be zero mean with RMS=1.0 */
 void encode4bit(unsigned char *dest, double *src, int N)
 {
 	const double v0 = 0.3356;	/* see https://library.nrao.edu/public/memos/vlba/up/VLBASU_52.pdf */
@@ -407,6 +435,7 @@ void encode4bit(unsigned char *dest, double *src, int N)
 }
 
 /* Move to vdifio? */
+/* For optimal results, src[] should be zero mean with RMS=1.0 */
 void encode8bit(unsigned char *dest, double *src, int N)
 {
 	const double v0 = 0.3356;	/* see https://library.nrao.edu/public/memos/vlba/up/VLBASU_52.pdf */
@@ -535,7 +564,20 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		cs = ds->cs;
 		//freq_MHz = ds->df->freq + 0.5*ds->df->bw;
 		freq_MHz = ds->df->freq;
-		if(ds->df->sideband == 'L')
+		if(d->dd->dataSampling == SamplingComplexDSB)
+		{
+			/* In Duoble-Sideband mode, the sampled band is centered on the specified frequency */
+			/* The total bandwidth (sum of both sidebands) is given by specifed bandwidth */
+			if(ds->df->sideband == 'L')
+			{
+				freq_MHz += ds->df->bw / 2.0;
+			}
+			else
+			{
+				freq_MHz -= ds->df->bw / 2.0;
+			}
+		}
+		else if(ds->df->sideband == 'L')
 		{
 			freq_MHz -= ds->df->bw;
 		}
