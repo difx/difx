@@ -31,6 +31,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <inttypes.h>
 #include <vdifio.h>
 
 const char program[] = "vmux";
