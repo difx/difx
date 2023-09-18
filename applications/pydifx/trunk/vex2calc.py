@@ -14,16 +14,16 @@ import sys
 import getopt
 from math import floor
 
-import observation
+from . import observation
 
-import vex2calc.vex2calcheader as vex2calcheader
-import vex2calc.vex2calcantenna as vex2calcantenna
-import vex2calc.vex2sched as vex2sched
-import vex2calc.eop as eop
-import vex2calc.calcfooter as calcfooter
+from . import vex2calc.vex2calcheader as vex2calcheader
+from . import vex2calc.vex2calcantenna as vex2calcantenna
+from . import vex2calc.vex2sched as vex2sched
+from . import vex2calc.eop as eop
+from . import vex2calc.calcfooter as calcfooter
 
-from astro import datetime2mjd
-from vex2calc.readvex import VexSched
+from .astro import datetime2mjd
+from .vex2calc.readvex import VexSched
 
 
 def main():
@@ -65,19 +65,19 @@ For more information on the options, see the docstrings of the individual
 scripts in the vex2calc directory
     """
     if len(sys.argv) < 2:
-        print main.__doc__
+        print(main.__doc__)
         sys.exit(2)
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "p:i:a:o:t:e:dfn:",
                      ["vexpath=",
                       "obscode=", "jobid=", "increment=", "spectralaverage=", "taperfunction=",
                       "antennas=", "offset=", "tail=",  "extra=", "download", "force", "ndays="])
-    except getopt.GetoptError, err:
-        print err
-        print main.__doc__
+    except getopt.GetoptError as err:
+        print(err)
+        print(main.__doc__)
         sys.exit(2)
     if not len(args) == 1:
-        print 'Error: Wrong number of arguments.'
+        print('Error: Wrong number of arguments.')
 
     # read arguments
     root = args[0]

@@ -6,13 +6,13 @@ import sys
 import getopt
 from shutil import rmtree
 
-import observation
-from spawn import spawn, EOF
+from . import observation
+from .spawn import spawn, EOF
 
 defreg = ["\r\n", EOF]
 
 def spawnfunc(i, child, funcobj):
-    import difxlog as log
+    from . import difxlog as log
     if i == 0:
         log.debug(child.before)
         return 0
@@ -64,17 +64,17 @@ def main():
 
     """
     if len(sys.argv) < 2:
-        print main.__doc__
+        print(main.__doc__)
         sys.exit(2)
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "a:b:no:s:vv", ["average=", "beginchan=", "no-model", "outchans=", "scale=", "verbose"])
-    except getopt.GetoptError, err:
-        print err
-        print main.__doc__
+    except getopt.GetoptError as err:
+        print(err)
+        print(main.__doc__)
         sys.exit(2)
     if not 1 <= len(args) <= 2:
-        print "Error: Wrong number of Arguments"
-        print main.__doc__
+        print("Error: Wrong number of Arguments")
+        print(main.__doc__)
         sys.exit(2)
 
     # set defaults
@@ -99,7 +99,7 @@ def main():
     else:
         options = None
     
-    import difxlog as log
+    from . import difxlog as log
     if not scale:
         log.warning("No scaling of fits file!")
 

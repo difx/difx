@@ -10,13 +10,13 @@ import os.path
 import getopt
 from time import time
 from shutil import rmtree
-import difxlog as log
+from . import difxlog as log
 
 
-import observation
+from . import observation
 
-from spawn import spawn, EOF
-from pfile import get_parameter
+from .spawn import spawn, EOF
+from .pfile import get_parameter
 
 defreg = ["\r\n", EOF]
 retimestep = re.compile("""FXMANAGER telling visbuffer\[(\d+)\] to write out - this refers to time (\d+) - the previous buffer has time (\d+), and the next one has (\d+)""")
@@ -51,9 +51,9 @@ def check_threads(machine_file, input_file):
     ncores = int(tf.next().split(':')[1].strip())
     for i in range(ncores):
         try:
-            threads.append(int(tf.next()))
+            threads.append(int(next(tf)))
         except StopIteration:
-            raise RuntimeError, 'faulty .threads file'
+            raise RuntimeError('faulty .threads file')
         try:
             cores.append(mf.next().strip())
         except StopIteration:
@@ -73,7 +73,7 @@ def check_outfile(input_file):
     output_file = get_parameter('OUTPUT FILENAME', input_file)
     if os.path.exists(output_file):
         log.error('Output file ' + output_file + ' exists.')
-        raise RuntimeError, "Output file exists."
+        raise RuntimeError("Output file exists.")
 
 def spawn_func(i, child, funcobj):
     if i == 0:
@@ -106,7 +106,7 @@ def run_mpifxcorr(rootname, np, mpi = None,  machine_file = None, mpifxcorr = No
 
     check_outfile(input_file)
 
-    import difxlog as log
+    from . import difxlog as log
     command = mpi + ' -nolocal -np ' + str(np) + ' -machinefile ' +\
               machine_file + ' ' + mpifxcorr + ' ' + input_file
     exec_time = get_parameter('EXECUTE TIME (SEC)', input_file)
@@ -127,17 +127,17 @@ def main():
     -d --delete    delete the previous .difx file as defined in the .input file 
     """
     if len(sys.argv) < 2:
-        print main.__doc__
+        print(main.__doc__)
         sys.exit(2)
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "t:d", ["timeout=", "mpi=", "mpifxcorr=", "np=", "delete"])
-    except getopt.GetoptError, err:
-        print err
-        print main.__doc__
+    except getopt.GetoptError as err:
+        print(err)
+        print(main.__doc__)
         sys.exit(2)
     if not len(args) == 1:
-        print "Error: Wrong number of Arguments"
-        print main.__doc__
+        print("Error: Wrong number of Arguments")
+        print(main.__doc__)
         sys.exit(2)
 
     # set defaults

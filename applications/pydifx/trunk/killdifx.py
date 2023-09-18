@@ -4,8 +4,8 @@ Function to ssh into all machines in machine file and kill all mpifxcorr jobs.
 """
 import getopt, sys
 
-import observation
-import execall
+from . import observation
+from . import execall
 
 def run_killall(machine_file, executable = None, options = None, rsh = None):
     if executable == None:
@@ -41,7 +41,7 @@ killall options supported (see killall man page)
 -V  --version
     """
     if len(sys.argv) < 2:
-        print main.__doc__
+        print(main.__doc__)
         sys.exit(0)
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "x:Z:egiqrs:u:vwIVl",
@@ -49,17 +49,17 @@ killall options supported (see killall man page)
                       "context=", "exact", "process-group", "interactive",
                       "quiet", "regexp", "signal", "user=", "verbose", "wait",
                       "ignore-case", "version"])
-    except getopt.GetoptError, err:
-        print err
-        print main.__doc__
+    except getopt.GetoptError as err:
+        print(err)
+        print(main.__doc__)
         sys.exit(2)
     if len(args) < 1:
-        print "Error: Not enough arguments"
-        print main.__doc__
+        print("Error: Not enough arguments")
+        print(main.__doc__)
         sys.exit(2)
     if len(args) > 1:
-        print "Error: Too many arguments"
-        print main.__doc__
+        print("Error: Too many arguments")
+        print(main.__doc__)
         sys.exit(2)
 
     #read arguments

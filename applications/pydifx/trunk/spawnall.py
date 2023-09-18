@@ -6,8 +6,8 @@ spawn
 import getopt, sys
 from sets import Set
 
-import observation
-from spawn import deffunc, defreg, funcobj, pspawn
+from . import observation
+from .spawn import deffunc, defreg, funcobj, pspawn
 
 def spawnall(command, machines, rsh = None, reg = defreg, refunc = deffunc, funcobj = funcobj, timeout = None):
     """
@@ -48,7 +48,7 @@ def execall(command, machine_path, rsh = None):
     try:
         machine_file = open(machine_path, 'r')
     except IOError:
-        print 'Error opening machine file'
+        print('Error opening machine file')
         sys.exit(2)
     machines = Set()
     for line in machine_file:
@@ -57,8 +57,8 @@ def execall(command, machine_path, rsh = None):
     machines = tuple(machines)
     output = spawnall(command, machines, rsh)
     for i in range(len(machines)):
-        print "output on " + machines[i]
-        print output[i]
+        print("output on " + machines[i])
+        print(output[i])
 
 def main():
     """
@@ -74,13 +74,13 @@ Commands with more than one argument should be surrounded with
 "double quotes"
     """
     if len(sys.argv) < 3:
-        print main.__doc__
+        print(main.__doc__)
         sys.exit(2)
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "", ["rsh="])
-    except getopt.GetoptError, err:
-        print err
-        print main.__doc__
+    except getopt.GetoptError as err:
+        print(err)
+        print(main.__doc__)
         sys.exit(2)
 
     # set defaults

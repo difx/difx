@@ -6,8 +6,8 @@ TODO change to be compatible also with difx machines file
 
 import sys
 
-from pfile import get_parameter
-from observation import cluster_path
+from .pfile import get_parameter
+from .observation import cluster_path
 
 def parse_clusterfile(cluster_file):
     """
@@ -28,7 +28,7 @@ def parse_clusterfile(cluster_file):
             try:
                 machines.append([line[0], int(line[1]), int(line[2]), int(line[3])])
             except:
-                raise(RuntimeError, 'Error in line ' + str(i + 1) + 'of .cluster file:')
+                raise (RuntimeError, 'Error in line ' + str(i + 1) + 'of .cluster file:')
         #next sort by datastream, but zero comes after all other numbers
 
     return machines
@@ -45,7 +45,7 @@ def machine_gen(machines, machine_file, input_file):
     except:
         raise(RuntimeError, "Can't open machine file" + machine_file)
     #Manager:
-    print machines 
+    print(machines) 
     machinefile.write(machines[0][0] + '\n')
     #Datastreams
     for i in range(nstreams):
@@ -74,7 +74,7 @@ def thread_gen(input_file, ncores, machines):
     try:
         threadfile = open(threadfilename, 'w')
     except:
-        raise(RuntimeError, "Can't open machine file" + machine_file)
+        raise(RuntimeError, "Can't open thread file" + threadfilename)
     threadfile.write('NUMBER OF CORES:   ' + str(ncores) + '\n')
     for i in machines:
         for j in range(i[1]):
@@ -106,7 +106,7 @@ def main():
     The manager will be put on the same computer as datastream 1.
     """
     if len(sys.argv) < 2:
-        print main.__doc__
+        print(main.__doc__)
         sys.exit(2)
     root = sys.argv[1]
     if len(sys.argv) == 3:
@@ -114,8 +114,8 @@ def main():
     else:
         clusterfile = cluster_path
     if len(sys.argv) > 3:
-        print "Error: Too many arguments"
-        print main.__doc__
+        print("Error: Too many arguments")
+        print(main.__doc__)
         sys.exit(2)
     thread_machine_gen(root, clusterfile)
 

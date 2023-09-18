@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timedelta
 from time import strptime, strftime
 
-import difxlog as log
+from . import difxlog as log
 
 ##############################################################################
 searchstring = '/tsys/'
@@ -39,8 +39,8 @@ def get_tsys(logfile, bandlist = None):
                             band[i].append(band[i][-1])
                         else:
                             band[i].append(0.)
-                        print 'Warning, error reading lines at time ' + times[-1].isotime()
-                        print line.strip()
+                        print('Warning, error reading lines at time ' + times[-1].isotime())
+                        print(line.strip())
             count += 1
 
             l = line.split(',')
@@ -54,7 +54,7 @@ def get_tsys(logfile, bandlist = None):
     if not bandlist:
         bandlist = ifs
     for b in bandlist:
-        print b.center(8),
+        print(b.center(8), end=' ')
     print_antab(times, band, bandlist)
     #mygraph(times, band, logfilename )
 
@@ -63,28 +63,28 @@ def print_ifs(ifs, band, bandlist = None):
     Print the ifs (not their values)
     """
     if not bandlist:
-        bandlist = band.keys()
-    print
-    print ''.rjust(12),
-    for i in range(len(band[band.keys()[0]])): #long way of saying length of the first dictionary
+        bandlist = list(band.keys())
+    print()
+    print(''.rjust(12), end=' ')
+    for i in range(len(band[list(band.keys())[0]])): #long way of saying length of the first dictionary
         for b in ifs:
-            print str(band[b][i]).center(8) + ' ',
-        print 
+            print(str(band[b][i]).center(8) + ' ', end=' ')
+        print() 
 
 def print_antab(times, band, bandlist = None):
     """
     print antab without first line
     """
     if not bandlist:
-        bandlist = band.keys()
+        bandlist = list(band.keys())
     else:
-        print bandlist
-    print
-    for i in range(len(band[band.keys()[0]])): #long way of saying length of the first dictionary
-        print strftime("%j %H:%M:%S", times[i].utctimetuple()).zfill(12) + ' ',
+        print(bandlist)
+    print()
+    for i in range(len(band[list(band.keys())[0]])): #long way of saying length of the first dictionary
+        print(strftime("%j %H:%M:%S", times[i].utctimetuple()).zfill(12) + ' ', end=' ')
         for b in bandlist:
-            print str(band[b][i]).rjust(8),
-        print 
+            print(str(band[b][i]).rjust(8), end=' ')
+        print() 
 
 def main():
     """
@@ -98,17 +98,17 @@ def main():
     log2tsys.py exampleef.log "1u 2u 3u 4u"
     """
     if len(sys.argv) < 2:
-        print main.__doc__
+        print(main.__doc__)
         sys.exit(2)
     try:
         logfilename = sys.argv[1]
     except IndexError:
-        print main.__doc__
+        print(main.__doc__)
     try:
         logfile = open(logfilename, 'r')
     except IOError:
-        print "Error: can't find logfile"
-        print main.__doc__
+        print("Error: can't find logfile")
+        print(main.__doc__)
         sys.exit(2)
     try:
         bandlist = sys.argv[2]

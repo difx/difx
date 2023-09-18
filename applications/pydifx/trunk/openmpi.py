@@ -10,14 +10,14 @@ import os.path
 import getopt
 from time import time
 from shutil import rmtree
-import difxlog as log
-from astro import df2hhms
+from . import difxlog as log
+from .astro import df2hhms
 
 
-import observation
+from . import observation
 
-from spawn import spawn, EOF, spawnClass
-from pfile import get_parameter
+from .spawn import spawn, EOF, spawnClass
+from .pfile import get_parameter
 
 defreg = ["\r\n", EOF]
 retimestep = re.compile("""FXMANAGER telling visbuffer\[(\d+)\] to write out - this refers to time (\d+\.\d+|\d+) - the previous buffer has time (\d+\.\d+|\d+), and the next one has (\d+\.\d+|\d+)""")
@@ -55,11 +55,11 @@ def check_threads(machine_file, input_file):
         node = {}
         node['host'] = host['host']
         node['processes'] = []
-        if host.has_key('max_slots'):
+        if 'max_slots' in host:
             node['np'] = host['max_slots']
             node['ncores'] = node['np']
             np += node['np']
-        elif host.has_key('slots'):
+        elif 'slots' in host:
             node['np'] = host['slots']
             node['ncores'] = node['np']
             np += node['np']
@@ -69,13 +69,13 @@ def check_threads(machine_file, input_file):
             np += node['np']
         if node['np'] > 0:
             nodes.append(node)
-        print node['host'], str(node['np']), str(np)
+        print(node['host'], str(node['np']), str(np))
 
-    print nodes
+    print(nodes)
     # note which machine will be the manager
     # note which machines will be the datastreams
     if not np > active_datastreams:
-        raise RuntimeError, "Not enough available slots to run FXManager and datastreams"
+        raise RuntimeError("Not enough available slots to run FXManager and datastreams")
     manager = None
     datastreams = []
     datastreams_assigned = 0
@@ -111,7 +111,7 @@ def check_outfile(input_file):
     output_file = get_parameter('OUTPUT FILENAME', input_file)
     if os.path.exists(output_file):
         log.error('Output file ' + output_file + ' exists.')
-        raise RuntimeError, "Output file exists."
+        raise RuntimeError("Output file exists.")
 
 class mpifxcorrSpawnClass(spawnClass):
     def __init__(self, classobj, child):
@@ -171,7 +171,7 @@ def run_mpifxcorr(rootname, np, mpi = None,  machine_file = None, mpifxcorr = No
 
     check_outfile(input_file)
 
-    import difxlog as log
+    from . import difxlog as log
     #        ' -x LD_LIBRARY_PATH' +\
     command = mpi + ' -np ' + str(np) +\
               ' -machinefile ' + machine_file + ' ' +\
@@ -204,17 +204,17 @@ def main():
     -d --delete      delete the previous .difx file as defined in the .input file 
     """
     if len(sys.argv) < 2:
-        print main.__doc__
+        print(main.__doc__)
         sys.exit(2)
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "t:d", ["timeout=", "mpi=", "mpifxcorr=", "np=", "delete", "machinefile=", "inputfile="])
-    except getopt.GetoptError, err:
-        print err
-        print main.__doc__
+    except getopt.GetoptError as err:
+        print(err)
+        print(main.__doc__)
         sys.exit(2)
     if not len(args) == 1:
-        print "Error: Wrong number of Arguments"
-        print main.__doc__
+        print("Error: Wrong number of Arguments")
+        print(main.__doc__)
         sys.exit(2)
 
 

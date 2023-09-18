@@ -15,8 +15,8 @@ TODO make passing default command line options a bit cleverer
 import sys
 import getopt
 
-import observation
-from spawn import spawn, EOF
+from . import observation
+from .spawn import spawn, EOF
 
 checkreg = "CALCServer is running normally."
 defreg = ["\r\n", EOF]
@@ -48,7 +48,7 @@ def run_calcif(calcfile, options, timeout):
     """
     run calcif
     """
-    import difxlog as log
+    from . import difxlog as log
     spawn(' '.join(('calcif', options, calcfile)), timeout = timeout)
 
 def run_calc(calcfile, options = None, timeout = None):
@@ -63,11 +63,11 @@ def run_calc(calcfile, options = None, timeout = None):
     while 1:
         if start_calc() == True:
             break
-        print 'killing calc'
+        print('killing calc')
         kill_calc()
-        print 'starting calc'
+        print('starting calc')
         start_calc()
-    print 'running calcif'
+    print('running calcif')
     run_calcif(calcfile, options, timeout)
 
 def main():
@@ -84,17 +84,17 @@ def main():
     """
 
     if len(sys.argv) < 2:
-        print main.__doc__
+        print(main.__doc__)
         sys.exit(2)
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "s:v", ["server=", "verbose"])
-    except getopt.GetoptError, err:
-        print err
-        print main.__doc__
+    except getopt.GetoptError as err:
+        print(err)
+        print(main.__doc__)
         sys.exit(2)
     if not 1 <= len(args) == 1:
-        print "Error: Wrong number of Arguments"
-        print main.__doc__
+        print("Error: Wrong number of Arguments")
+        print(main.__doc__)
         sys.exit(2)
 
 
