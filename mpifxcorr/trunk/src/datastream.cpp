@@ -769,7 +769,7 @@ void DataStream::updateConfig(int segmentindex)
   do {
     nsaccumulate += bufferinfo[segmentindex].bytespersampledenom*bufferinfo[segmentindex].sampletimens;
     bufferinfo[segmentindex].bytesbetweenintegerns += bufferinfo[segmentindex].bytespersamplenum;
-  } while (!(fabs(nsaccumulate - int(nsaccumulate+0.5)) < Mode::TINY));
+  } while (!(fabs(nsaccumulate - int(nsaccumulate+0.5)) < 50*Mode::TINY)); //floating point errors can exceed Mode::TINY, so be a bit more flexible
   bufferinfo[segmentindex].nsinc = int((bufferinfo[segmentindex].sampletimens*(bufferbytes/numdatasegments)*bufferinfo[segmentindex].bytespersampledenom)/(bufferinfo[segmentindex].bytespersamplenum) + 0.5);
 
   /* in theory these parameters below can change but in practice that would lead to major complications.  In any case
