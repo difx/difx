@@ -12,6 +12,11 @@
 #
 [ -n "$srcdir" ] || srcdir=.
 [ -n "$verbose" ] && verbose=true || verbose=false
+$verbose && cat <<EOF
+    grep Max_Stat $srcdir/src/cmxst11.i | ...
+    grep MaxStat $srcdir/src/d_input.i | ...
+    grep Nstation2 $srcdir/src/c2poly.i | ...
+EOF
 set -- `grep Max_Stat $srcdir/src/cmxst11.i |& grep = | tr -s ')(=' '   '` \
     `grep MaxStat $srcdir/src/d_input.i |& grep = | tr -s ')(=' '   '` \
     `grep Nstation2 $srcdir/src/c2poly.i |& grep = | tr -s ')(=' '   '`
@@ -29,6 +34,12 @@ b=$((b - 1))
 err=0
 [ $a -eq $b ] || { echo Max_Stat is $a and MaxStat-1 is $b ; err=$(($err+1)); }
 [ $c -eq $b ] || { echo Nstation2 is $c and MaxStat-1 is $b ; err=$(($err+1)); }
+[ $err -eq 0 ] || cat <<EOF
+    the source code is inconsistent:
+    Max_Stat is $a
+    MaxStat-1 is $b
+    Nstation2 is $c
+EOF
 $verbose && echo Exit status $err
 exit $err
 #
