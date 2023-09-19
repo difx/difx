@@ -4,7 +4,7 @@
 !***statement, but must also be changed in d_input.i and c2poly.i:
 !
       Integer*4 Max_Stat      ! Maximum number of stations in the database
-      Parameter(Max_Stat = 256)
+      Parameter(Max_Stat = 254)
 !
       Real*8           CFRAD(Max_Stat), PLAT(3,Max_Stat), &
      &                 PLON(3,Max_Stat), SITAXO(Max_Stat), &

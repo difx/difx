@@ -9,7 +9,7 @@
 !
 !     Nstation2 must be kept in sync with Max_Stat, MaxStat from other files
       Integer*4  Nstation2      ! Maximum # of stations
-      Parameter (Nstation2 = 256)
+      Parameter (Nstation2 = 254)
 !
       Integer*4  Max_Source     ! Maximum # of sources, 
 !                                 (pointing and phase center sources)
