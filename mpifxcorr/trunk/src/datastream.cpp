@@ -873,7 +873,16 @@ void DataStream::loopfileread()
       rbytes = readonedemux(false);
     }
     diskToMemory(numread++);
-    diskToMemory(numread++);
+    //check for super short files...
+    while(!dataremaining && keepreading) {
+      openfile(bufferinfo[0].configindex, filesread[bufferinfo[0].configindex]++);
+      if(!dataremaining)
+        closefile();
+    }
+    if(keepreading)
+      diskToMemory(numread++);
+    else
+      csevere << startl << "Only found a tiny bit of data - will be shutting down gracefully!!!" << endl;
     lastvalidsegment = numread;
     //cdebug << startl << "READTHREAD: loopfileread: Try lock buffer " << numread << endl;
     perr = pthread_mutex_lock(&(bufferlock[numread]));
