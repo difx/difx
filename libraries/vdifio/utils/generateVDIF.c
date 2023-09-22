@@ -114,13 +114,13 @@ typedef enum {FLOAT, FLOAT8, INT} data_type;
 
 int main (int argc, char * const argv[]) {
   char *filename, msg[MAXSTR], *header;
-  int i, frameperbuf, loopframes, status, outfile, opt, tmp, flipGroup, headerBytes=0;
+  int i, frameperbuf, loopframes, status, outfile, opt, tmp, headerBytes=0;
   int complexOutput;
   uint64_t nframe, tmp64;
   float **data, ftmp, *stdDev, *mean;
-  Ipp64f *taps64;
-  Ipp32f *taps;
-  Ipp32fc *tapsC;
+  Ipp64f *taps64=0;
+  Ipp32f *taps=0;
+  Ipp32fc *tapsC=0;
   ssize_t nr;
   vdif_header vheader;
 #if USE_CODIFIO
@@ -362,7 +362,7 @@ int main (int argc, char * const argv[]) {
 
   if (duration==0) { // Just create BUFSIZE bytes
     nframe = frameperbuf;
-    printf("DEBUG:   Using %llu frames\n", nframe);
+    printf("DEBUG:   Using %" PRIu64 " frames\n", nframe);
   } else {
     nframe = duration*framesperperiod/period;
   }
@@ -885,12 +885,11 @@ inline Ipp16s scaleclip16(Ipp32f x, Ipp32f scale) {
 
 int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float stddev, int len, int iscodif, int iscomplex) {
   // Should check 31bit "off" offset is enough bits
-  int i, j, n, k;
+  int i, j, n;
 
   float scale = 10/stddev;
 
   j = 0;
-  k = 0;
   if (iscomplex) {
     for (i=off;i<len+off;i+=2) {
       for (n=0; n<nchan; n++) {
@@ -916,12 +915,11 @@ int pack8bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float
 
 int pack16bitNchan(Ipp32f **in, int nchan, int off, Ipp16u *out, float mean, float stddev, int len, int iscodif, int iscomplex) {
   // Should check 31bit "off" offset is enough bits
-  int i, j, n, k;
+  int i, j, n;
 
   float scale = 40/stddev;
 
   j = 0;
-  k = 0;
   if (iscomplex) {
     for (i=off;i<len+off;i+=2) {
       for (n=0; n<nchan; n++) {
@@ -1020,8 +1018,6 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
 		  int noise, int bandwidth, float tone, float amp, float tone2, float amp2, int lsb,
 		  int doublesideband, int hilbert, float *mean, float *stdDev) {
   int n, nsamp, cfact;
-  float s;
-  Ipp32f thismean, thisStdDev;
   IppStatus status;
   if (iscomplex)
     cfact = 2;

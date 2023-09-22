@@ -51,16 +51,16 @@ public:
 	/*
 	 * Get the header part of the packet.
 	 */
-	X3C_PACKET_HEADER *getHeader();
+	X3C_PACKET_HEADER *getHeader() const;
 	/*
 	 * Get the length of the data in the packet.
 	 * Also available through the header data.
 	 */
-	UINT32 getLen();
+	UINT32 getLen() const;
 	/*
 	 * Get the timestamp for the packet.
 	 */
-	UINT64 getTimestamp();
+	UINT64 getTimestamp() const;
 	/*
 	 * Set timestamp for the packet.
 	 */
@@ -68,14 +68,19 @@ public:
 	/*
 	 * Get a pointer to the data in the packet.
 	 */
-	char *getData();
+	char *getData() const;
 
 	/*
 	 * Get the file position for this packet
 	 */
-	UINT64 getPosition();
+	UINT64 getPosition() const;
 
 private:
+
+    // Assignment and copy assignment are not supported
+    X3cPacket(X3cPacket const&);
+    X3cPacket& operator=(X3cPacket const&);
+
 	X3C_PACKET_HEADER *xph;
 	char *data;
 	UINT64 timeStamp;

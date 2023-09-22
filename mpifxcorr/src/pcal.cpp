@@ -1506,7 +1506,7 @@ uint64_t PCalExtractorDummy::getFinalPCal(cf32* out)
 pthread_mutex_t FFTinitMutex = PTHREAD_MUTEX_INITIALIZER; // required by non-ipp compile by architecture.h despite not being used
 
 struct tcase_t {
-  long bandwidth, offset, spacing;
+  double bandwidth, offset, spacing;
   Configuration::datasampling data_type;
   Configuration::complextype band_type;
   const char* mode;

@@ -118,8 +118,8 @@ Public Member Functions</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCPacketReader.html#a8ca37dda4d6239774146f954038f1087">setTimeFilter</a> (<a class="el" href="classCTimeFilter.html">CTimeFilter</a> const &amp;tFilter)</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a18aec7c885bc2750860d7a1e5ff53c7a"></a><!-- doxytag: member="CPacketReader::getPacketCount" ref="a18aec7c885bc2750860d7a1e5ff53c7a" args="() const " -->
 UINT64&#160;</td><td class="memItemRight" valign="bottom"><b>getPacketCount</b> () const </td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCPacketReader.html#ac2b87d9f8b5b60d40c49aed7022698aa">initialize</a> (int fileCnt, char **fileNames, size_t bufSz, size_t chunkSz)</td></tr>
-<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize packet reader.  <a href="#ac2b87d9f8b5b60d40c49aed7022698aa"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCPacketReader.html#a1e92f69ad4142e4234bac2485ead033e">initialize</a> (std::vector&lt; std::string &gt; const &amp;fileNames, size_t bufSz, size_t chunkSz)</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize packet reader.  <a href="#a1e92f69ad4142e4234bac2485ead033e"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCPacketReader.html#a01c3ed2caefda36ea35ae1ca37b1051e">start</a> ()</td></tr>
 <tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Start packet reader.  <a href="#a01c3ed2caefda36ea35ae1ca37b1051e"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCPacketReader.html#a61c949800b24ba932fa341468cd08385">stop</a> ()</td></tr>
@@ -128,6 +128,8 @@ UINT64&#160;</td><td class="memItemRight" valign="bottom"><b>getPacketCount</b> 
 <tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the packet handle.  <a href="#a36099e8f3dbb391064f6a34a2eb9bb0c"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCPacketReader.html#a0495c5acaa7c8fe2d0a7bce09520756e">freePacketHandle</a> (<a class="el" href="classCPacketReader.html#a8f71b6a63f494ef1e36bf3290b2b15a1">packet_handle_t</a> *hdl)</td></tr>
 <tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Free the packet handle.  <a href="#a0495c5acaa7c8fe2d0a7bce09520756e"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCPacketReader.html#a114576ee6f59eac8450d2249f98d4931">reset</a> ()</td></tr>
+<tr><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the packet reader state.  <a href="#a114576ee6f59eac8450d2249f98d4931"></a><br/></td></tr>
 <tr><td colspan="2"><h2><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae346e9457b294d7123753d1b66426600"></a><!-- doxytag: member="CPacketReader::MAX_DISK_READ_SIZE_MB" ref="ae346e9457b294d7123753d1b66426600" args="" -->
@@ -269,20 +271,14 @@ static const size_t&#160;</td><td class="memItemRight" valign="bottom"><a class=
 
 </div>
 </div>
-<a class="anchor" id="ac2b87d9f8b5b60d40c49aed7022698aa"></a><!-- doxytag: member="CPacketReader::initialize" ref="ac2b87d9f8b5b60d40c49aed7022698aa" args="(int fileCnt, char **fileNames, size_t bufSz, size_t chunkSz)" -->
+<a class="anchor" id="a1e92f69ad4142e4234bac2485ead033e"></a><!-- doxytag: member="CPacketReader::initialize" ref="a1e92f69ad4142e4234bac2485ead033e" args="(std::vector&lt; std::string &gt; const &amp;fileNames, size_t bufSz, size_t chunkSz)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classCPacketReader.html#ac2b87d9f8b5b60d40c49aed7022698aa">CPacketReader::initialize</a> </td>
+          <td class="memname">bool <a class="el" href="classCPacketReader.html#a1e92f69ad4142e4234bac2485ead033e">CPacketReader::initialize</a> </td>
           <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>fileCnt</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char **&#160;</td>
+          <td class="paramtype">std::vector&lt; std::string &gt; const &amp;&#160;</td>
           <td class="paramname"><em>fileNames</em>, </td>
         </tr>
         <tr>
@@ -318,6 +314,25 @@ static const size_t&#160;</td><td class="memItemRight" valign="bottom"><a class=
   </dd>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>- true if successful, if false (delete this object and start over) </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a114576ee6f59eac8450d2249f98d4931"></a><!-- doxytag: member="CPacketReader::reset" ref="a114576ee6f59eac8450d2249f98d4931" args="()" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classCPacketReader.html#a114576ee6f59eac8450d2249f98d4931">CPacketReader::reset</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Reset the packet reader state. </p>
+<p>Reset the packet reader state to its initial state </p>
 
 </div>
 </div>
@@ -441,7 +456,7 @@ static const size_t&#160;</td><td class="memItemRight" valign="bottom"><a class=
 
 
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 2 2013 17:12:28 for XCube Stream Reader SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat May 10 2014 01:37:42 for XCube Stream Reader SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.7.6.1
 </small></address>

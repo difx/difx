@@ -5,7 +5,7 @@
 # SVN properties (DO NOT CHANGE)
 #
 # $Id: difxarchive.py 9142 2019-09-09 08:39:21Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/sites/MPIfR/difxdb/difxarchive/difxarchive.py $
+# $HeadURL: https://svn.atnf.csiro.au/difx/sites/MPIfR/difxdb/difxarchive/difxarchive.py $
 # $LastChangedRevision: 9142 $
 # $Author: HelgeRottmann $
 # $LastChangedDate: 2019-09-09 16:39:21 +0800 (一, 2019-09-09) $

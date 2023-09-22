@@ -1,0 +1,23 @@
+;
+; systemd script for mk5daemonproxy
+;
+; Please put this file in /etc/systemd/system/
+; or /usr/lib/systemd/system/
+
+
+[Unit]
+Description=mk5daemonproxy service
+After=beegfs-client.service
+
+[Service]
+Environment="DIFX_MESSAGE_GROUP=224.2.2.1"
+Environment="DIFX_MESSAGE_PORT=52525"
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/cluster/difx/DiFX-trunk_64/bin/mk5daemonproxy.py -d
+ExecStop=/usr/bin/kill -9 $(/usr/bin/pgrep -f mk5daemonproxy.py)
+ExecStatus=/usr/bin/pgrep -f mk5daemonproxy.py
+Type=notify
+
+[Install]
+WantedBy=multi-user.target
+

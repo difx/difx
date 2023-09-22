@@ -31,6 +31,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <inttypes.h>
 #include <vdifio.h>
 
 const char program[] = "vmux";
@@ -661,7 +662,7 @@ int main(int argc, char **argv)
 			int64_t nJump = (int64_t)(stats.startFrameNumber - nextFrame);
 			int64_t j;
 
-			fprintf(stderr, "JUMP %zd  %zd %zd\n", nJump, nextFrame/framesPerSecond, nextFrame%framesPerSecond);
+			fprintf(stderr, "JUMP %" PRId64 "  %" PRId64 " %" PRId64 "\n", nJump, nextFrame/framesPerSecond, nextFrame%framesPerSecond);
 
 			/* borrow one output frame of src memory... */
 			memcpy(src, dest, VDIF_HEADER_BYTES);

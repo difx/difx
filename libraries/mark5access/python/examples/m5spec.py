@@ -31,7 +31,7 @@ except:
 	pass    
 
 def usage():
-	print __doc__
+	print (__doc__)
 
 
 def m5spec(fn, fmt, fout, T_int_ms, nfft, offset, sameScale=True):

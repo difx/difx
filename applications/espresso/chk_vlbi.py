@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -31,7 +31,7 @@ import subprocess
 import optparse
 #import mx.DateTime
 import datetime
-import espressolib
+from espressolib import espressolib
 
 
 def lba_file_length(filesize, headervals):

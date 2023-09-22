@@ -148,7 +148,6 @@ static void applyCorrParams_MultiPhaseCenter(VexData *V, const CorrParams &param
 
 			exit(EXIT_FAILURE);
 		}
-		
 		const SourceSetup *ss = params.getSourceSetup(S->defName);
 		if(ss)
 		{
@@ -175,6 +174,9 @@ static void applyCorrParams_MultiPhaseCenter(VexData *V, const CorrParams &param
 						{
 							newS->calCode = pc->calCode;
 						}
+
+						// It seems the call to newSource can change the pointer to the source being iterated over...
+						S = V->getSource(sourceNum);
 					}
 				}
 
@@ -187,7 +189,6 @@ static void applyCorrParams_MultiPhaseCenter(VexData *V, const CorrParams &param
 					{
 						continue;
 					}
-					
 					V->deletePhaseCenters(scanNum);
 					if(ss->doPointingCentre)
 					{
@@ -655,7 +656,7 @@ static void applyCorrParams_PulseCal(VexData *V, const CorrParams &params, unsig
 		if(as->toneSelection == ToneSelectionNone)
 		{
 			// change to having no injected tones
-			V->setPhaseCalInterval(A->name, -1);
+			V->setPhaseCalInterval(A->name, -1.0f);
 
 			continue;
 		}

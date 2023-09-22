@@ -183,7 +183,7 @@ static int mark5_stream_frame_time_codif(const struct mark5_stream *ms, int *mjd
 	  *sec = getCODIFFrameSecond(header)+fullframens/1000000000 + v->leapsecs;;
 	  if (*sec>86400) { // Could have bumped to next day. Max period ~ 18hrs)
 	    *sec -= 86400;
-	    if(mjd) *mjd++;
+	    if(mjd) (*mjd)++;
 	  }
 	}
 	if(ns)

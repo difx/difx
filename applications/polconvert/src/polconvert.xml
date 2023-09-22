@@ -8,15 +8,15 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 <task type="function" name="polconvert" category="analysis">
 
-  <shortdescription>Version 2.0.3 -- Converts VLBI visibilities polarization basis.</shortdescription>
+  <shortdescription>Version 2.0.7 -- Converts VLBI visibilities polarization basis.</shortdescription>
       
-       <description>Version 2.0.3 -- Converts VLBI visibilities from mixed-polarization (linear-circular) into a circular basis. Works with single VLBI stations as well as with calibrated phased arrays (e.g., phased ALMA).</description>
+       <description>Version 2.0.7 -- Converts VLBI visibilities from mixed-polarization (linear-circular) into a circular basis. Works with single VLBI stations as well as with calibrated phased arrays (e.g., phased ALMA).</description>
 
 
 <input>
 
     <param type="string" name="IDI" mustexist="true">
-      <description>Input FITS-IDI file with VLBI visibilities. It can also be a direcotry containing SWIN files from DiFX.</description>
+      <description>Input FITS-IDI file with VLBI visibilities. It can also be a directory containing SWIN files from DiFX.</description>
       <value></value>
     </param>
 
@@ -36,18 +36,18 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
     </param>
 
     <param type="any" name="doIF" mustexist="false">
-      <description>List of IFs to convert. Default means all.</description>
+      <description>List of IFs to convert (starts from 1). Default means all.</description>
       <value>[]</value>
     </param>
 
 
     <param type="any" name="linAntIdx" mustexist="false">
-      <description>List of indices of the linear-polarization antennas in the IDI file (lowest index starts with 1)</description>
+      <description>List of indices of the linear-polarization antennas in the IDI/SWIN file (lowest index starts with 1). It can also be a list of the antenna code names.</description>
       <value>[1]</value>
     </param>
 
     <param type="any" name="Range" mustexist="false">
-      <description>Time range to convert (integer list; AIPS format). Default means all data</description>
+      <description>Time range to convert (integer list; AIPS format). Default (empty list) means all data</description>
       <value>[]</value>
     </param>
 
@@ -112,24 +112,24 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 
     <param type="any" name="XYadd" mustexist="false">
-      <description>Add manually a phase between X and Y before conversion (in deg.). Either a list with one value per linear-pol station OR a list of lists (i.e., one value per IF for each antenna) OR a list of lists of lists (one value per channel, for each IF, for each linear-polarization antenna).</description>
+      <description>Add manually a phase between X and Y before conversion (in deg.).  This is a dictionary (antenna codes as keywords) withelements set to either a list of one value per IF OR a list of lists (one value per channel, for each IF).</description>
       <value>{}</value>
     </param>
 
     <param type="any" name="XYdel" mustexist="false">
-      <description>Add manually a multiband delay between X and Y before conversion (in deg./chanel). One value per linear-pol station.</description>
+      <description>Add manually a multiband delay between X and Y before conversion (in deg./chanel). This is a dictionary (antenna codes as keywords) with one value per linear-pol station.</description>
       <value>{}</value>
     </param>
 
 
     <param type="any" name="XYratio" mustexist="false">
-	    <description>Add manually an amplitude ratio between X and Y before conversion (R=X/Y). Follows the same format as XYadd. If a negative value is given for an antenna, the X/Y ratio will be estimated from its autocorrelations (the spectrum for antenna i will be computed using a running-median filter of width equal to -1/XYratio[i] of the IF bandwidth). If 0.0 is given for an antenna, the ratio will be estimated from the phasecal amplitudes (as long as usePcal is True).</description>
+	    <description>Add manually an amplitude ratio between X and Y before conversion (R=X/Y). Follows the same format as XYadd. If a negative value is given for an antenna, the X/Y ratio will be estimated from its autocorrelations (the spectrum for antenna i will be computed using a running-median filter of width equal to -1/XYratio[i] of the IF bandwidth). If 0.0 is given for an antenna, the ratio will be estimated from the phasecal amplitudes (as long as usePcal is True and there are pcal files available; not supported for FITS-IDI).</description>
       <value>{}</value>
     </param>
 
     <param type="any" name="usePcal" mustexist="false">
-	    <description>List of booleans (one boolean per linear-polarization station). If True, use the X-Y difference of phasecal tones as an estimate of the X-Y cross-polarization phase. Default means to NOT use the phasecals.</description>
-      <value>[]</value>
+	    <description>Dictionary (antenna codes as keywords), whose elements are booleans (i.e., one boolean per linear-polarization station). If True, use the X-Y difference of phasecal tones as an estimate of the X-Y cross-polarization phase. Default means to NOT use the phasecals.</description>
+      <value>{}</value>
     </param>
 
 
@@ -148,9 +148,13 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <value>[]</value>
     </param>
 
+    <param type="bool" name="correctParangle" mustexist="false">
+      <description>If True, the correction for parallactic angle is applied to the converted antenna(s).</description>
+      <value>False</value>
+    </param>
 
     <param type="bool" name="IDI_conjugated" mustexist="false">
-      <description>Assume a swap in the baseline defintion (i.e., conjugation) of the FITS-IDI file. This has NO effect on SWIN files. </description>
+      <description>Assume a swap in the baseline defintion (i.e., conjugation) of the FITS-IDI file. This has NO effect on SWIN files.</description>
       <value>False</value>
     </param>
 
@@ -161,7 +165,7 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
 
 
     <param type="any" name="plotRange" mustexist="false">
-      <description>Time range to plot (integer list; AIPS format). Default means to NOT plot</description>
+      <description>Time range to plot (integer list; AIPS format). Default means to NOT plot.</description>
       <value>[]</value>
     </param>
 
@@ -180,16 +184,13 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <value>[]</value>
     </param>
 
-
-
     <param type="float" name="doSolve" mustexist="false">
       <description>If negative, do not estimate the cross-polarization gains. If positive or zero, estimate the gains using a Global Cross-Pol Fringe Fitting (GCPFF). The gains are fitted with an error function (Chi Square) defined as:\n\n sum( doSolve*(RR/LL-1)^2 + (RL^2 + LR^2) ),\n\n so that doSolve=0 minimizes the cross-hand polarizations (so it assumes a small linear polarization of the source), whereas doSolve>>1 assumes a negligible Stokes V.</description>
       <value>-1</value>
     </param>
 
-
     <param type="any" name="solint" mustexist="false">
-      <description>If solint[0] null or negative, solve the cross-polarization phase plus a multi-band delay (MBD). If not, solve in bandpass mode by averaging solint[0] channels per solution.\n Divide the solution time range (per scan) in solint[1] chunks (i.e., in solint[1] subscans). I.e., if solint[1]==1, the fringes are fully averaged in time for each scan (but corrected for the scan fringe rates) before the GPLFF condition is computed. solint[2] is the minimum time jump (in seconds) to split the data into different scans (default: 100 seconds).</description>
+      <description>If solint[0] null or negative, solve the cross-polarization phase plus a multi-band delay (MBD). If not, solve in bandpass mode by averaging solint[0] channels per solution.\n Divide the solution time range (per scan) in solint[1] chunks (i.e., in solint[1] subscans). I.e., if solint[1]==1, the fringes are fully averaged in time for each scan (but corrected for the scan fringe rates) before the GPLFF condition is computed. solint[2] is the minimum time jump (in seconds) to split the data into different scans (default: 50 seconds).</description>
       <value>[1,1]</value>
     </param>
 
@@ -205,14 +206,14 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
     </param>
 
     <param type="bool" name="solveAmp" mustexist="false">
-      <description>if the cross-polarization gains are being estimated, solve also for the X/Y amplitude ratios.</description>
+      <description>If the cross-polarization gains are being estimated, solve also for the X/Y amplitude ratios.</description>
       <value>True</value>
     </param>
 
 
     <param type="string" name="solveMethod" mustexist="false">
-      <description>Method for the minimization of the Chi squared in the GCPFF. Can be \'gradient\', \'Levenberg-Marquardt\' or \'COBYLA\'.</description>
-      <value>gradient</value>
+      <description>Method for the minimization of the Chi squared in the GCPFF. Can be, for instance: \'COBYLA\'.</description>
+      <value>"COBYLA"</value>
     </param>
 
     <param type="any" name="calstokes" mustexist="false">
@@ -225,6 +226,10 @@ file:///opt/casa/code/xmlcasa/xml/casa.xsd">
       <value>-1</value>
     </param>
 
+    <param type="bool" name="saveArgs" mustexist="false">
+      <description>If True, arguments are saved in a file PolConvert_CASA.last (a pickled dictionary); note that nothing currently reads this file.</description>
+      <value>False</value>
+    </param>
 
 </input>
 
@@ -236,7 +241,41 @@ For more information about the internals of PolConvert, please read:
 
 Marti-Vidal et al. 2016, Astronomy and Astrophysics, 587, 143 
 
-PROCEDURE:
+The "Original PROCEDURE" outlined below have not been updated for several
+years and may be out-of-date in some respects.  The version built in DIFX
+was built with some CASA release, and you should be able to load it with
+the following scrap of code (likely works in most versions of CASA),
+when placed in $HOME/.casa/startup.py (or $HOME/.casa/init.py):
+
+    import sys, os
+    loadPolConvert = True
+    if loadPolConvert:
+      try:
+        sys.path.append(os.environ['DIFXROOT'] + '/share/polconvert')
+        from polconvert import polconvert
+        print('polconvert py2 loaded')
+      except:
+        try:
+            from polconvertpkg.gotasks.polconvert import polconvert
+            print('polconvert py3 loaded')
+        except:
+            print('Could not load polconvert from this path')
+            print("os.environ['DIFXROOT']" + '/share/polconvert')
+
+Once loaded in CASA, the task commmands (tget, inp, go) should work as
+expected.  The EHTC production uses a set of driver scripts that ensure
+uniform usage (without needing to be a CASA expert) for production.
+
+More generally, the (CASA-version) code is available in scripts via:
+    from polconvertpkg.private.task_polconvert import polconvert as polconvert
+
+Outside of casa, polconvert_standalone would have been installed to the
+same area and (e.g. for EVN or VGOS use) may be used directly in scripts:
+
+    from (wherever) import polconvert_standalone as PCONV
+    result = PCONV.polconvert(IDI = ... )
+
+Original PROCEDURE:
 
 If a VLBI antenna used linear-feed receivers, PolConvert must first
 estimate the X-Y cross gain for that antenna (phase, amplitude, 
@@ -456,5 +495,3 @@ LINEAR FEEDS.
 </task>
 
 </casaxml>
-
-

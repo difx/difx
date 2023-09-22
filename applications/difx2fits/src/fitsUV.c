@@ -692,13 +692,11 @@ static double evalPoly(const double *p, int n, double x)
 }
 	
 /* Auxilliary debugging routine for printing the contents of visilibity record */
-static void UVfitsDump(const DifxVis *dv)
+static void UVfitsDump(const DifxVis *dv, double utcmin, double utcmax)
 {
 	int a1, a2, i,j,k,m;
 	int startChan;
-	double utcmin, utcmax;
 	const double eps = 0.01;
-	char *str;
 	const DifxInput *D;
 
 	D = dv->D;
@@ -709,24 +707,6 @@ static void UVfitsDump(const DifxVis *dv)
 
 	m=dv->nFreq*dv->D->nPolar;
 
-	str = getenv("DIFX2FITS_UVFITS_DUMP_UTCMIN");
-	if(!str)
-	{
-		utcmin = 0.0;
-	}
-	else
-	{
-		utcmin = atof(str);
-	}
-	str = getenv("DIFX2FITS_UVFITS_DUMP_UTCMAX");
-	if(!str)
-	{
-		utcmax = 8640000;
-	}
-	else
-	{
-		utcmax = atof(str);
-	}
 	if(dv->record->utc*86400.0 < utcmax + eps  && dv->record->utc*86400.0 > utcmin - eps)
 	{
 		printf("UV head utc: %9.7f ista %1d %1d fi %3d pol %1d start: %d stop: %d nfreq: %3d npol: %1d ncha: %4d nd: %8d wei %f scale: %g\n",
@@ -750,7 +730,7 @@ static void UVfitsDump(const DifxVis *dv)
 	}
 }
 
-int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts)
+int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const DelayCal *DC, DelayCalCache *DCC, const Bandpass *B)
 {
 	int i, i1, v;
 	int antId1, antId2;	/* These reference the DifxInput Antenna */
@@ -1098,6 +1078,26 @@ int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts)
 		}
 	}
 
+	/* apply delay calibration and/or bandpass if provided */
+	if(nFloat == 2)	/* currently this is all that is supported */
+	{
+		if(DC)
+		{
+			double df;
+
+			df = dv->D->freq[freqId].bw / dv->D->nOutChan;
+			if(dv->D->freq[freqId].sideband == 'L')
+			{
+				df = -df;
+			}
+			applyDelayCal((float complex *)(dv->spectrum), dv->D->nOutChan, df, freqId, antId1, polPair[0], antId2, polPair[1], mjd+utc, DC, DCC);
+		}
+		if(B)
+		{
+			applyBandpass((float complex *)(dv->spectrum), dv->D->nOutChan, freqId, antId1, polPair[0], antId2, polPair[1], B);
+		}
+	}
+
 	/* don't read weighted data into unweighted slot */
 	if(nFloat > dv->nComplex)
 	{
@@ -1339,7 +1339,7 @@ static int storevis(DifxVis *dv)
 	return 0;
 }
 
-static int readvisrecord(DifxVis *dv, const struct CommandLineOptions *opts, int *nSkipped_recs)
+static int readvisrecord(DifxVis *dv, const struct CommandLineOptions *opts, const DelayCal *DC, DelayCalCache *DCC, const Bandpass *B, int *nSkipped_recs)
 {
 	/* blank array */
 	memset(dv->weight, 0, dv->nFreq*dv->D->nPolar*sizeof(float));
@@ -1355,7 +1355,7 @@ static int readvisrecord(DifxVis *dv, const struct CommandLineOptions *opts, int
 		{
 			storevis(dv);
 		}
-		dv->changed = DifxVisNewUVData(dv, opts);
+		dv->changed = DifxVisNewUVData(dv, opts, DC, DCC, B);
 		if(opts->verbose > 3)
 		{
 			printf("readvisrecord: changed is %d\n", dv->changed);
@@ -1371,6 +1371,66 @@ static int readvisrecord(DifxVis *dv, const struct CommandLineOptions *opts, int
 	}
 
 	return 0;
+}
+
+static int *generateExcludedSourceList(const char *includeSourceList, const DifxInput *D)
+{
+	char srcName[32];	/* DIFXIO_NAME_LENGTH = 32 */
+	int *l;
+	int i, n = 0;
+	const char *p;
+	int q;
+
+	l = (int *)calloc(D->nSource + 1, sizeof(int));
+
+	p = includeSourceList;
+	while(sscanf(p, "%31s%n", srcName, &q) == 1)
+	{
+		for(i = 0; i < D->nSource; ++i)
+		{
+			if(strcasecmp(srcName, D->source[i].name) == 0)
+			{
+				l[n++] = i;
+				break;
+			}
+		}
+		
+		if(i == D->nSource)
+		{
+			fprintf(stderr, "Warning: requested source '%s' is not in any of the contributing files\n", srcName);
+		}
+
+		p += q;
+	}
+
+	l[n] = -1;	/* terminator */
+
+	return l;
+}
+
+/* excludeSourceList should be terminated with -1, or can be a null pointer */
+static int ExcludeSource(const DifxVis *dv, const int *includeSourceIdList)
+{
+	if(includeSourceIdList == 0)
+	{
+		/* No list provided, so no filtering */
+
+		return 0;
+	}
+	else
+	{
+		int i;
+
+		for(i = 0; includeSourceIdList[i] >= 0; ++i)
+		{
+			if(dv->sourceId == includeSourceIdList[i])
+			{
+				return 0;	/* keep it -- it is on the include list */
+			}
+		}
+	}
+
+	return 1;	/* turf it -- it is not on the provided list */
 }
 
 const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts, int passNum)
@@ -1394,6 +1454,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	int nTrans = 0;
 	int nWritten = 0;
 	int nOld = 0;
+	int nSourceFiltered = 0;	/* number of records discarded due to being on source exclusion list */
 	int nSkipped = 0;
 	int nSkipped_recs;
 	double mjd, bestmjd;
@@ -1405,9 +1466,47 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	int dvId;
 	double firstMJD = 1.0e7;
 	double lastMJD = 0.0;
+	int doUVDump = 0;
+	double utcmin = 0.0, utcmax = 8640000.0;
 #ifdef HAVE_FFTW
 	Sniffer *S = 0;
 #endif
+	DelayCal *DC = 0;
+	DelayCalCache DCC;
+	Bandpass *B = 0;
+	int *includeSourceIdList = 0;
+
+	if(opts->includeSourceList)
+	{
+		includeSourceIdList = generateExcludedSourceList(opts->includeSourceList, D);
+	}
+
+	if(opts->applyDelayCalFile)
+	{
+		DC = loadDelayCal(opts->applyDelayCalFile, D);
+	}
+	resetDelayCalCache(&DCC);
+	if(opts->applyBandpassFile)
+	{
+		B = loadBandpass(opts->applyBandpassFile, D);
+	}
+
+	str = getenv("DIFX2FITS_UVFITS_DUMP");
+	if(str && strcasecmp(str, "yes") == 0)
+	{
+		doUVDump = 1;
+
+		str = getenv("DIFX2FITS_UVFITS_DUMP_UTCMIN");
+		if(str)
+		{
+			utcmin = atof(str);
+		}
+		str = getenv("DIFX2FITS_UVFITS_DUMP_UTCMAX");
+		if(str)
+		{
+			utcmax = atof(str);
+		}
+	}
 
 	/* define the columns in the UV data FITS Table */
 	struct fitsBinTableColumn columns[] =
@@ -1617,7 +1716,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			fprintf(stdout, "Priming, dv=%d/%d\n", dvId, nDifxVis);
 		}
-		readvisrecord(dvs[dvId], opts, &nSkipped_recs);
+		readvisrecord(dvs[dvId], opts, DC, &DCC, B, &nSkipped_recs);
 		if(opts->verbose > 3)
 		{
 			fprintf(stdout, "Done priming DifxVis objects\n");
@@ -1675,6 +1774,10 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			++nOld;
 		}
+		else if(ExcludeSource(dv, includeSourceIdList))
+		{
+			++nSourceFiltered;
+		}
 		else
 		{
 #ifdef HAVE_FFTW
@@ -1688,13 +1791,9 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 				feedJobMatrix(jobMatrix, dv->record, dv->jobId);
 			}
 
-			str = getenv("DIFX2FITS_UVFITS_DUMP");
-			if(str)
+			if(doUVDump)	/* diagnostic; set by environment variables (see above in this function) */
 			{
-				if(strncpy(str, "yes", 4))
-				{
-					UVfitsDump(dv);
-				}
+				UVfitsDump(dv, utcmin, utcmax);
 			}
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, dv->record);
@@ -1739,7 +1838,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 				return 0;
 			}
 
-			readvisrecord(dv, opts, &nSkipped_recs);
+			readvisrecord(dv, opts, DC, &DCC, B, &nSkipped_recs);
 			nSkipped = nSkipped + nSkipped_recs;
 		}
 	}
@@ -1754,6 +1853,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	printf("      %d negative weight records\n", nNegWeight);
 	printf("      %d scan boundary records dropped\n", nTrans);
 	printf("      %d out-of-time-range records dropped\n", nOld);
+	printf("      %d records from excluded sources dropped\n", nSourceFiltered);
 	printf("      %d records skipped\n", nSkipped);
 	printf("      %d records written\n", nWritten);
 	if(nWritten > 0)
@@ -1775,10 +1875,22 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		S = 0;
 	}
 #endif
+	if(B)
+	{
+		deleteBandpass(B);
+		B = 0;
+	}
+
 	if(jobMatrix)
 	{
 		writeJobMatrix(jobMatrix, passNum);
 		deleteJobMatrix(jobMatrix);
+	}
+
+	if(includeSourceIdList)
+	{
+		free(includeSourceIdList);
+		includeSourceIdList = 0;
 	}
 
 	if(nNegWeight > 0)

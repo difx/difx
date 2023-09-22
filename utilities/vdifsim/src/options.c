@@ -29,6 +29,8 @@ void usage(const CommandLineOptions *opts)
 	fprintf(stderr, "  -m                  Broadcast status using difxmessage\n\n");
 	fprintf(stderr, "  --config <file>\n");
 	fprintf(stderr, "  -c <file>           Read <file> as a configuration file\n\n");
+	fprintf(stderr, "  --seed <seed>\n");
+	fprintf(stderr, "  -s <seed>           Set random number seed; default is random\n\n");
 };
 
 void resetCommandLineOptions(CommandLineOptions *opts)
@@ -117,6 +119,18 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 				{
 					++a;
 					opts->configFile = argv[a];
+				}
+				else if(strcmp(argv[a], "--seed") == 0 || strcmp(argv[a], "-s") == 0)
+				{
+					++a;
+					opts->randSeed = atoi(argv[a]);
+					if(opts->randSeed <= 0)
+					{
+						fprintf(stderr, "Error: random number seed must be a positive integer.  %s was provided.\n", argv[a]);
+						deleteCommandLineOptions(opts);
+
+						return 0;
+					}
 				}
 				else
 				{

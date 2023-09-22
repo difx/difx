@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # =======================================================================
 # Copyright (C) 2022 Cormac Reynolds
 #
@@ -31,7 +31,7 @@ import os
 import sys
 import time
 import pprint
-import espressolib
+from espressolib import espressolib
 
 
 def backup_oldrun(jobname, outdir, backupdir):

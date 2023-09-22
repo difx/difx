@@ -74,6 +74,7 @@ DataStream::DataStream(const Configuration * conf, int snum, int id, int ncores,
   udp = false;
   raw = false;
   lastvalidsegment = 0;
+  verbose = false;
 
   // Early defaults that may change during ::initialise()
   portnumber = config->getDPortNumber(0, streamnum);
@@ -768,7 +769,7 @@ void DataStream::updateConfig(int segmentindex)
   do {
     nsaccumulate += bufferinfo[segmentindex].bytespersampledenom*bufferinfo[segmentindex].sampletimens;
     bufferinfo[segmentindex].bytesbetweenintegerns += bufferinfo[segmentindex].bytespersamplenum;
-  } while (!(fabs(nsaccumulate - int(nsaccumulate+0.5)) < Mode::TINY));
+  } while (!(fabs(nsaccumulate - int(nsaccumulate+0.5)) < 50*Mode::TINY)); //floating point errors can exceed Mode::TINY, so be a bit more flexible
   bufferinfo[segmentindex].nsinc = int((bufferinfo[segmentindex].sampletimens*(bufferbytes/numdatasegments)*bufferinfo[segmentindex].bytespersampledenom)/(bufferinfo[segmentindex].bytespersamplenum) + 0.5);
 
   /* in theory these parameters below can change but in practice that would lead to major complications.  In any case
@@ -872,7 +873,16 @@ void DataStream::loopfileread()
       rbytes = readonedemux(false);
     }
     diskToMemory(numread++);
-    diskToMemory(numread++);
+    //check for super short files...
+    while(!dataremaining && keepreading) {
+      openfile(bufferinfo[0].configindex, filesread[bufferinfo[0].configindex]++);
+      if(!dataremaining)
+        closefile();
+    }
+    if(keepreading)
+      diskToMemory(numread++);
+    else
+      csevere << startl << "Only found a tiny bit of data - will be shutting down gracefully!!!" << endl;
     lastvalidsegment = numread;
     //cdebug << startl << "READTHREAD: loopfileread: Try lock buffer " << numread << endl;
     perr = pthread_mutex_lock(&(bufferlock[numread]));

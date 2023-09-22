@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: vmf.c 9128 2019-09-03 18:49:27Z WalterBrisken $
+// $Id: vmf.c 11083 2023-09-14 21:18:09Z WalterBrisken $
 // $HeadURL: $
-// $LastChangedRevision: 9128 $
+// $LastChangedRevision: 11083 $
 // $Author: WalterBrisken $
-// $LastChangedDate: 2019-09-04 02:49:27 +0800 (三, 2019-09-04) $
+// $LastChangedDate: 2023-09-15 05:18:09 +0800 (五, 2023-09-15) $
 //
 //============================================================================
 
@@ -233,7 +233,7 @@ int loadVMFData(VMFData *data, int maxRows, int mjdStart, int nDay, int verbose)
 
 				return -3;
 			}
-			n = snprintf(cmd, MaxCommandLength, "wget %s -O %s\n", url, filePath);
+			n = snprintf(cmd, MaxURLLength, "wget %s -O %s\n", url, filePath);
 			if(n >= MaxURLLength)
 			{
 				fprintf(stderr, "Developer error: loadVMFData(): cmd too short: %d < %d\n", MaxCommandLength, n+1);

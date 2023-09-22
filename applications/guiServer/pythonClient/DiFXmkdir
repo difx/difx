@@ -61,28 +61,28 @@ try:
 		#  Check against legal argument types.  Anything we don't recognize is assumed
 		#  to be part of a list of message types.
 		if sys.argv[i] in [ "-h", "--help" ]:
-			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-			print "Creates a specified path on the DiFX software correlator."
-			print "Usage: %s [options] PATH" % ( sys.argv[0] )
-			print ""
-			print "Options can include:"
-			print ""
-			print "   --difx VERSION"
-			print "   -D VERSION Run using a specific DiFX version.  If not specified"
-			print "              the value of the DIFX_VERSION environment variable will"
-			print "              be used.  Failing that, \"DIFX-DEVEL\" will be used."
-			print ""
-			print "   --help"
-			print "   -h         Print this help information and quit."
-			print ""
-			print "   --hostname NAME"
-			print "   -H NAME    Use NAME as the host of the difxServer program."
-			print "              Default is to use DIFX_CONTROL_HOST environment variable."
-			print ""
-			print "   --port PORT"
-			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
-			print "              Default is to use DIFX_CONTROL_PORT environment variable."
-			print ""
+			print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
+			print("Creates a specified path on the DiFX software correlator.")
+			print("Usage: %s [options] PATH" % ( sys.argv[0] ))
+			print("")
+			print("Options can include:")
+			print("")
+			print("   --difx VERSION")
+			print("   -D VERSION Run using a specific DiFX version.  If not specified")
+			print("              the value of the DIFX_VERSION environment variable will")
+			print("              be used.  Failing that, \"DIFX-DEVEL\" will be used.")
+			print("")
+			print("   --help")
+			print("   -h         Print this help information and quit.")
+			print("")
+			print("   --hostname NAME")
+			print("   -H NAME    Use NAME as the host of the difxServer program.")
+			print("              Default is to use DIFX_CONTROL_HOST environment variable.")
+			print("")
+			print("   --port PORT")
+			print("   -P PORT    Use PORT as the TCP port to communicated with the difxServer.")
+			print("              Default is to use DIFX_CONTROL_PORT environment variable.")
+			print("")
 			exit( 0 )
 		elif sys.argv[i] in [ "-H", "--hostname" ]:
 			host = sys.argv[i+1]
@@ -109,7 +109,7 @@ if pathStr == None:
 	usageError = True
 	
 if usageError:
-	print "Usage: %s [options] <path>" % ( sys.argv[0] )
+	print("Usage: %s [options] <path>" % ( sys.argv[0] ))
 	exit( 0 )
 	
 #  Open a new connection to the difxServer...

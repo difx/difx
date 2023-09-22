@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -28,7 +28,7 @@ import re
 import optparse
 import time
 import os
-import espressolib
+from espressolib import espressolib
 
 
 def parseparam(param, line):

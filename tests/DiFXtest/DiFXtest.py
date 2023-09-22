@@ -7,6 +7,7 @@ import shutil
 from astropy.io import fits 
 import warnings
 import filecmp
+import requests
 
 def pre_checks():
   locate = None
@@ -18,6 +19,13 @@ def pre_checks():
   if (locate == None):
     print('generateVDIF not found, please make sure it is installed.')  
     quit()
+
+def get_results_and_setup_files():
+  current_directory = os.getcwd()
+  url = "https://github.com/Ramenth86/DiFXtest.py-benchmark-results/raw/main/tests.tgz"
+  r = requests.get(url, allow_redirects=True)
+  filename = current_directory + "/tests.tgz"
+  open(filename,'wb').write(r.content)
 
 
 def filter_auto_correlations(fits_filename):
@@ -100,14 +108,21 @@ def get_real_data():
    
   working_directory = current_directory + "/rdv70/"
   rdv70tar_fp = working_directory + "rdv70.tar"
+
   if (os.path.exists(rdv70tar_fp) == False):  
+    if (os.path.exists(working_directory) == False):  
+      mkdir_arg = "mkdir " + working_directory
+      subprocess.call(mkdir_arg,shell=True)
     arg2 = "wget ftp://ftp.mpifr-bonn.mpg.de/vlbiarchive/DiFX_testdata/rdv70.tar ."
     proc2 = subprocess.Popen(arg2,cwd=working_directory,shell=True)
     proc2.wait()
-   
+
   working_directory = current_directory + "/v252f/"  
   v252ftar_fp = working_directory + "v252f.tar"
   if (os.path.exists(v252ftar_fp) == False):
+    if (os.path.exists(working_directory) == False):  
+      mkdir_arg = "mkdir " + working_directory
+      subprocess.call(mkdir_arg,shell=True)
     arg1 = "wget ftp://ftp.mpifr-bonn.mpg.de/vlbiarchive/DiFX_testdata/v252f.tar ."
     proc1 = subprocess.Popen(arg1,cwd=working_directory,shell=True)
     proc1.wait()
@@ -226,8 +241,8 @@ def get_real_data():
     vd2_fp.close()
     # endif os.path.exists(rdv70v2d_fp) == False     
     # Setup rdv70 gpu test case
-  print("copying...")
-  print(working_directory)
+  #print("copying...")
+  #print(working_directory)
   arg  = "cp test-rdv70.v2d ../rdv70-gpu/test-rdv70-gpu.v2d"
   proc = subprocess.Popen(arg,cwd=working_directory,shell=True) 
   proc.wait() 
@@ -241,26 +256,20 @@ def get_real_data():
    
   v2d_contents = v2d_contents.replace("vex = test-rdv70.vex","vex = test-rdv70-gpu.vex")
   v2d_fp_gpu.close()
-  print(v2d_contents)  
+  #print(v2d_contents)  
   v2d_fp_gpu = open(rdv70v2d,"w+")
   v2d_fp_gpu.write(v2d_contents)
   v2d_fp_gpu.close()
 
-       
 
-def runtest(testname):
-  
-  print("Running test " + testname)
-  
-  current_directory = os.getcwd() 
+def run_vex2difx(testname):
+  current_directory = os.getcwd()
   working_directory = current_directory + "/" + testname + "/"
-
   vex2difxlogfile = working_directory + "/vex2difx.log"
   vex2difxerrfile = working_directory + "/vex2difx.error"
   f_vex2difxlog = open(vex2difxlogfile,"w")
   f_vex2difxerr = open(vex2difxerrfile,"w")
 
-  
   arg = "vex2difx test-" + testname + ".v2d"
 
   try:
@@ -272,6 +281,9 @@ def runtest(testname):
     print()
     raise()
 
+def run_difxcalc(testname):
+  current_directory = os.getcwd()
+  working_directory = current_directory + "/" + testname + "/"
   difxcalclogfile = working_directory + "/difxcalc.log"
   difxcalcerrfile = working_directory + "/difxcalc.error"
   f_difxcalclog = open(difxcalclogfile,"w")
@@ -296,6 +308,15 @@ def runtest(testname):
     print(difxcalclogfile)
     print(difxcalcerrfile)
     quit()
+     
+
+def runtest(testname):
+  
+  print("Running test " + testname)
+  
+  current_directory = os.getcwd() 
+  working_directory = current_directory + "/" + testname + "/"
+
 
 
   if (testname == "rdv70" or testname == "v252f") :
@@ -354,7 +375,7 @@ def compare_results(testname, abstol, reltol):
   binfiles,inputfiles = get_binary_files(working_directory)
   #print("*******")
   #print(binfiles[0])
-  if (binfiles[0] == None):
+  if (len(binfiles) == 0):
     results[0] = "FAILED"
     results[1] = False
     return(results)
@@ -438,7 +459,7 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol):
 
   #print("*******")
   #print(binfiles[0])
-  if (binfiles[0] == None):
+  if (len(binfiles) == 0):
     results[0] = "FAILED"
     results[1] = False
     return(results)
@@ -541,9 +562,8 @@ def update_test(testname):
   results_directory = working_directory + "/benchmark_results/" 
   binfiles,inputfiles = get_binary_files(working_directory)
 
-
   # skip if difx has not run succesfully
-  if (binfiles[0] == None):
+  if len(binfiles)==0:
     return
 
   binfile_stat = os.stat(binfiles[0])
@@ -664,14 +684,14 @@ def create_test_data():
   TEST2_complex_usbvdiferrfile = "testdata/TEST2-complex-usb.vdif.error"
   f_TEST2_complex_usbvdiflog = open(TEST2_complex_usbvdiflog,"w")
   f_TEST2_complex_usbvdiferrfile = open(TEST2_complex_usbvdiferrfile,"w")
-  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert testdata/TEST2-complex-usb.vdif"
+  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -complex testdata/TEST2-complex-usb.vdif"
   subprocess.run(args,shell=True,stdout=f_TEST2_complex_usbvdiflog,stderr=f_TEST2_complex_usbvdiferrfile,check=True)
   
   TEST2_complex_lsbvdiflog = "testdata/TEST2-complex-lsb.vdif.log"
   TEST2_complex_lsbvdiferrfile = "testdata/TEST2-complex-lsb.vdif.error"
   f_TEST2_complex_lsbvdiflog = open(TEST2_complex_lsbvdiflog,"w")
   f_TEST2_complex_lsbvdiferrfile = open(TEST2_complex_lsbvdiferrfile,"w")
-  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -lsb testdata/TEST2-complex-lsb.vdif"
+  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -complex -lsb testdata/TEST2-complex-lsb.vdif"
   subprocess.run(args,shell=True,stdout=f_TEST2_complex_lsbvdiflog,stderr=f_TEST2_complex_lsbvdiferrfile,check=True)
   
 
@@ -681,7 +701,7 @@ def create_test_data():
   TEST2_dsb_usbvdiferrfile = "testdata/TEST2-dsb-usb.vdif.error"
   f_TEST2_dsb_usbvdiflog = open(TEST2_dsb_usbvdiflog,"w")
   f_TEST2_dsb_usbvdiferrfile = open(TEST2_dsb_usbvdiferrfile,"w")
-  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -doublesideband testdata/TEST2-dsb-usb.vdif"
+  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -complex -doublesideband testdata/TEST2-dsb-usb.vdif"
   subprocess.run(args,shell=True,stdout=f_TEST2_dsb_usbvdiflog,stderr=f_TEST2_dsb_usbvdiferrfile,check=True)
 
 
@@ -690,7 +710,7 @@ def create_test_data():
   TEST2_dsb_lsbvdiferrfile = "testdata/TEST2-dsb-lsb.vdif.error"
   f_TEST2_dsb_lsbvdiflog = open(TEST2_dsb_lsbvdiflog,"w")
   f_TEST2_dsb_lsbvdiferrfile = open(TEST2_dsb_lsbvdiferrfile,"w")
-  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -hilbert -doublesideband -lsb testdata/TEST2-dsb-lsb.vdif"
+  args = "generateVDIF -seed="+str(SEED2)+" -w 4 -b 2 -C 1  -l "+str(DURATION)+" -noise -amp2 0.05 -tone2 1.0 -year 2020 -dayno 100 -time 07:00:00 -complex -doublesideband -lsb testdata/TEST2-dsb-lsb.vdif"
   subprocess.run(args,shell=True,stdout=f_TEST2_dsb_lsbvdiflog,stderr=f_TEST2_dsb_lsbvdiferrfile,check=True)
   
   f_TEST1vdiflog.close()
@@ -747,6 +767,7 @@ def main():
   parser.add_argument("-r","--reltol",help="Relative tolerance for FITS file comparison (default = 0.0)",default=0.00)
   parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? (yes/[no])",default="no")
   parser.add_argument("-t","--testgpu",help="run difx in gpu mode and compare results with benchmark (yes/[no])",default="no")
+  parser.add_argument("-i","--usebenchmarkimfile",help="Use the benchmark .im file from a previous run rather than running difxcalc (yes/[no])",default="no") 
 
   input_args = parser.parse_args()
   generateVDIF = input_args.generateVDIF
@@ -759,10 +780,14 @@ def main():
   download = download.upper()
   testgpu = input_args.testgpu
   testgpu = testgpu.upper()
-
+  usebenchmarkimfile = input_args.usebenchmarkimfile
+  usebenchmarkimfile = usebenchmarkimfile.upper()
 
   # Check basic installation/compatability issues
   pre_checks()
+
+  # Grab benchmark results and setup files
+  get_results_and_setup_files()
 
   # list of test names
   test_name_list = ["complex-complex","lsb","lsb-complex","lsb-dsb","usb","usb-complex","usb-dsb"]
@@ -782,7 +807,6 @@ def main():
     gpu_compatable_test_name_list.append("v252f-gpu")
     passfail["rdv70"] = ["",True]  
     passfail["v252f"] = ["",True] 
-    get_real_data() 
 
 
   # Add gpu mode tests to list of tests to be run 
@@ -796,10 +820,15 @@ def main():
       passfail[item] = ["",True]
       new_key = item + "-vs-cpu"
       passfail[new_key] = ["",True]
+
+  # Unpack tests if they haven't been already
   unpackage_tests(test_name_list)
 
+  if (download == "YES"):
+    get_real_data()
 
-  # Upack tests if they haven't been already
+
+
     
   # Generate synthetic VDIF data
   if (generateVDIF == "YES" or (os.path.isdir("testdata") == False)):
@@ -808,6 +837,16 @@ def main():
   # Run DiFX on all compatable tests 
   for testname in test_name_list:
     rm_output_files(testname)
+    run_vex2difx(testname)
+    if (usebenchmarkimfile == "YES"):
+      # copy benchmark im file to working directory
+      current_directory = os.getcwd()
+      working_directory = current_directory + "/" + testname + "/"
+      results_directory = working_directory + "/benchmark_results/" 
+      benchmark_im_file = get_im_file(results_directory) 
+      shutil.copy2(benchmark_im_file, working_directory)
+    else:
+      run_difxcalc(testname)
     runtest(testname)
   
   # compare .im files

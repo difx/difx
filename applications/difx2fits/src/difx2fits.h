@@ -44,6 +44,9 @@ struct CommandLineOptions
 {
 	char *fitsFile;
 	char *baseFile[MAX_INPUT_FILES];
+	char *applyBandpassFile;
+	char *includeSourceList;
+	char *applyDelayCalFile;
 	int nBaseFile;
 	int writemodel;
 	int pretend;

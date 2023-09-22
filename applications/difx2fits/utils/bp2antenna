@@ -1,0 +1,313 @@
+#!/bin/env python3.8
+
+from sys import argv, exit
+from math import log, exp, sin, cos, sqrt, atan2, pi
+import numpy as np
+
+program = 'bp2antenna'
+version = '0.2'
+author = 'Walter Brisken <wbrisken@nrao.edu>'
+verdate = '20230424'
+
+def usage():
+	print('%s %s  %s %s\n' % (program, version, author, verdate))
+	print('Usage: %s <bandpass file> <refant> [ <LPF> [ <pcaldata> ] ]\n' % program)
+	print('<bandpass file> is produced by difx2fits when run with the --bandpass option\n')
+	print('<refant> is the reference antenna to use; either a 1-based number or antenna code.  If negative, a prescription will be used that makes the average phase across all antenans to be zero at each frequency.\n')
+	print('<LPF> [MHz] allows the bandpass phases to be low-pass filtered as a means of smoothing them.\n')
+	print('<pcaldata> is the .pcal_bandpass file created by pcalanal .\n')
+	
+
+
+def SolvePhaseClosure(M, W, R):
+	dim = len(M)
+	Ek = np.zeros(dim)
+	for k in range(dim):
+		for j in range(dim):
+			Ek[k] += 4.0*W[j][k]*W[j][k]*M[j][k]
+
+	Ekl = np.zeros([dim, dim])
+	for k in range(dim):
+		for l in range(dim):
+			Ekl[k][l] = 4.0*W[k][l]*W[k][l]
+		for j in range(dim):
+			Ekl[k][k] -= 4.0*W[k][j]*W[k][j]
+
+	# constrain reference value to be zero
+	Ek[R] = 0.0
+	for j in range(dim):
+		Ekl[j][R] = 0.0
+		Ekl[R][j] = 0.0
+	Ekl[R][R] = 1.0
+
+	EklInv = np.linalg.inv(Ekl)
+
+	return np.matmul(EklInv, Ek)
+
+def SolveAmpClosure(M, W):
+	dim = len(M)
+	Ek = np.zeros(dim)
+	for k in range(dim):
+		for j in range(dim):
+			if M[j][k] > 0:
+				Ek[k] += 4.0*W[j][k]*W[j][k]*log(M[j][k])
+
+	Ekl = np.zeros([dim, dim])
+	for k in range(dim):
+		for l in range(dim):
+			Ekl[k][l] = 4.0*W[k][l]*W[k][l]
+		for j in range(dim):
+			Ekl[k][k] += 4.0*W[k][j]*W[k][j]
+
+	EklInv = np.linalg.inv(Ekl)
+
+	x = np.matmul(EklInv, Ek)
+	for k in range(dim):
+		x[k] = exp(x[k])
+
+	return x
+
+# return obscode, [record], nAnt, bbcs
+# record = [a1_num, a2_num, a1_name, a2_name, bbc, freq, bw, pol, freqMHz[], amp[], phaseRad[]
+def loadBP(filename):
+	data = open(filename).readlines()
+	nAnt = 0
+	bbcs = []
+	records = []
+	
+	index = -1
+	size = 0
+	lineno = 0
+
+	for d in data:
+		lineno += 1
+		line =  d.strip().split('#')[0]
+		s = line.split()
+		if len(s) == 0:
+			continue
+		elif len(s) == 2 and s[0] == 'obscode:':
+			obscode = s[1]
+		elif len(s) == 10 and s[0] == 'Bandpass':
+			a1 = int(s[1])
+			a2 = int(s[2])
+			bbc = int(s[5])
+			size = int(s[6])
+			index = 0
+			freq = np.zeros(size)
+			amp = np.zeros(size)
+			phase = np.zeros(size)
+			record = [ a1, a2, s[3], s[4], bbc, float(s[7]), float(s[8]), s[9], freq, amp, phase ]
+			records.append(record)
+			if nAnt < a1+1:
+				nAnt = a1+1
+			if nAnt < a2+1:
+				nAnt = a2+1
+			if not bbc in bbcs:
+				bbcs.append(bbc)
+		elif len(s) == 3:
+			if index < 0 or index >= size:
+				print('Weird: line %d unexpected (index = %d size = %d): %s' % (lineno, index, size, line))
+				exit(0)
+			freq[index] = float(s[0])
+			re = float(s[1])
+			im = float(s[2])
+			amp[index] = sqrt(re*re + im*im)
+			phase[index] = atan2(im, re)
+			index += 1
+		else:
+			print('Weird: line %d unexpected: %s' % (lineno, line))
+			
+	return obscode, records, nAnt, bbcs
+
+# cutoff measured in microseconds
+# bw [MHz]
+def lowPassFilterPhases(x, cutoff, bw):
+	size = len(x)
+	n = len(x[0])
+	for a in range(n):
+		y = np.zeros(size)
+		offset = x[0][a]
+		slope = (x[size-1][a]-x[0][a])/(size-1)
+		for i in range(size):
+			y[i] = x[i][a] - offset - slope*i
+
+		f = np.fft.rfft(y)
+		l = len(f)
+		c = (cutoff/bw)*(l-1.0)
+		t = c/5.0	# half of transition width
+		for i in range(l):
+			if i > c + t:
+				f[i] = 0.0
+			elif i > c-t:
+				f[i] *= ((c-i)/(2.0*t) + 0.5)
+		z = np.fft.irfft(f)
+
+		for i in range(size):
+			x[i][a] = z[i] + offset + slope*i
+
+def subtractMean(x):
+	l = len(x)
+	s = 0.0
+	for i in range(l):
+		s += x[i]
+	s /= l
+	for i in range(l):
+		x[i] -= s
+
+# output [ antName, bbc, freqMHz[], amp[], phaseRad[] ]
+def loadPcal(filename):
+	data = open(filename).readlines()
+	records = []
+	for d in data:
+		s = d.strip().split('#')[0].split()
+		if len(s) == 4 and s[0] == 'PcalBandpass':
+			freq = []
+			amp = []
+			phase = []
+			rec = [ s[1], int(s[2]), freq, amp, phase ]
+			records.append(rec)
+		elif len(s) == 3:
+			freq.append(float(s[0]))
+			amp.append(float(s[1]))
+			phase.append(float(s[2])*pi/180.0)
+
+	for rec in records:
+		rec[2] = np.array(rec[2])
+		rec[3] = np.array(rec[3])
+		rec[4] = np.array(rec[4])
+
+		rec[4] -= rec[4].mean() # remove phase bias
+
+	return records
+
+# output (freqs [MHz], phases [rad])
+def pcalAvgPhase(pcalData, bbc):
+	x = {}
+	for rec in pcalData:
+		if rec[1] == bbc:
+			for i in range(len(rec[2])):
+				if rec[2][i] in x:
+					x[rec[2][i]][0] += rec[4][i]
+					x[rec[2][i]][1] += 1.0
+				else:
+					x[rec[2][i]] = [rec[4][i], 1.0]
+	freqs = list(x.keys())
+	freqs.sort()
+	phases = np.zeros(len(freqs))
+	for i in range(len(freqs)):
+		phases[i] = x[freqs[i]][0]/x[freqs[i]][1]
+
+	return (np.array(freqs), phases)
+
+
+# freq [MHz]
+# phases[ant]
+# pcalAvg: output from loadPcals()
+def addPcalAvg(freq, phases, pcalAvg):
+	pcalFreqs, pcalPhases = pcalAvg
+
+	if freq <= pcalFreqs[0]:
+		p = pcalPhases[0]
+	elif freq >= pcalFreqs[-1]:
+		p = pcalPhases[-1]
+	else:
+		for i in range(1, len(pcalFreqs)):
+			if pcalFreqs[i] >= freq:
+				d1 = (freq - pcalFreqs[i-1]) / (pcalFreqs[i] - pcalFreqs[i-1])
+				d2 = (pcalFreqs[i] - freq)   / (pcalFreqs[i] - pcalFreqs[i-1])
+				p = d2 * pcalPhases[i-1] + d1 * pcalPhases[i]
+				break
+
+	for i in range(len(phases)):
+		phases[i] += p
+
+def process(records, nAnt, bbc, refant, lpf, zeroMean, pcalAvg):
+	size = 0
+
+	freq = 0.0
+	bw = 0.0
+	pol = ' '
+	antName = {}
+
+	for rec in records:
+		if rec[4] == bbc:
+			antName[rec[0]] = rec[2]
+			antName[rec[1]] = rec[3]
+			if size == 0:
+				size = len(rec[8])
+				freq = rec[5]
+				bw = rec[6]
+				pol = rec[7]
+				freqs = rec[8]
+			elif size != len(rec[8]):
+				print('Size mismatch: bbc=%d %d!=%d' % (bbc, size, len(rec[8])))
+				exit(0)
+
+	a = []
+	p = []
+	
+	for s in range(size):
+		W = np.zeros([nAnt, nAnt])
+		A = np.zeros([nAnt, nAnt])
+		P = np.zeros([nAnt, nAnt])
+		for rec in records:
+			if rec[4] != bbc:
+				continue
+			a1 = rec[0]
+			a2 = rec[1]
+			W[a1][a2] += 1.0
+			W[a2][a1] += 1.0
+			A[a1][a2] += rec[9][s]
+			A[a2][a1] += rec[9][s]
+			P[a1][a2] -= rec[10][s]
+			P[a2][a1] += rec[10][s]
+		a.append(SolveAmpClosure(A, W))
+		phases = SolvePhaseClosure(P, W, refant)
+		if zeroMean:
+			subtractMean(phases)
+		if pcalAvg != None:
+			addPcalAvg(freqs[s], phases, pcalAvg)
+		p.append(phases)
+
+	if lpf > 0.0:
+		lowPassFilterPhases(p, 1.0/lpf, bw)
+
+	for ant in range(nAnt):
+		print('Bandpass %d %s %d %d %f %f %s' % (ant, antName[ant], bbc, size, freq, bw, pol))
+		for s in range(size):
+			re = a[s][ant]*cos(p[s][ant])
+			im = a[s][ant]*sin(p[s][ant])
+			print('%f %f %f' % (freqs[s], re, im))
+
+if len(argv) < 3:
+	usage()
+	exit()
+
+obscode, records, nAnt, bbcs = loadBP(argv[1])
+
+refant = int(argv[2])
+
+if refant < 0:
+	refant = -refant
+	zeroMean = True
+else:
+	zeroMean = False
+
+if len(argv) > 3:
+	lpf = float(argv[3])
+else:
+	lpf = 0.0
+
+if len(argv) > 4:
+	pcalData = loadPcal(argv[4])
+	zeroMean = True
+else:
+	pcalData = None
+	pcalAvg = None
+
+print('obscode:  %s' % obscode)
+
+for bbc in bbcs:
+	if pcalData != None:
+		pcalAvg = pcalAvgPhase(pcalData, bbc)
+	process(records, nAnt, bbc, refant, lpf, zeroMean, pcalAvg)

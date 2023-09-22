@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #
-# Copyright (c) Ivan Marti-Vidal 2015-2022, University of Valencia (Spain)
-#       and Geoffrey Crew 2015-2022, Massachusetts Institute of Technology
+# Copyright (c) Ivan Marti-Vidal 2015-2023, University of Valencia (Spain)
+#       and Geoffrey Crew 2015-2023, Massachusetts Institute of Technology
 #
 # Script to run PolConvert in Solve mode for non-ALMA case.
 # Derived from POLCONVERT_EVN script.
@@ -85,6 +85,16 @@ def parseOptions():
         default=False, action='store_true',
         help='run prepolconvert.py on the same joblist--'
         'generally not a good idea unless you are certain it will work')
+    secondy.add_argument('-D', '--data', dest='data',
+        default='', metavar='DIR',
+        help='the source data directory for the -p option: '
+        '-D "dir" is equivalent to prepolconvert -s "dir" ...')
+    secondy.add_argument('-k', '--nuke', dest='nuke',
+        default=False, action='store_true',
+        help='used with the -p argument to nuke the input files '
+        'if they are present; this is only sensible if working '
+        'outside of the original correlation directory (which is '
+        'recommended')
     secondy.add_argument('-a', '--ant', dest='ant',
         default=1, metavar='INT', type=int,
         help='1-based index of linear (ALMA) antenna (normally 1)')
@@ -99,18 +109,19 @@ def parseOptions():
         'Note that the underlying code currently only supports one range.')
     secondy.add_argument('-S', '--sites', dest='sites',
         default='', metavar='LIST',
-        help='comma-sep list of 2-letter station codes (Xx,Yy,...) to try'
+        help='comma-sep list of 2-letter station codes (XX,YY,...) to try'
             ' (in this order) to use as a reference antenna')
     secondy.add_argument('-s', '--solve', dest='solve',
-        default=1000.0, metavar='FLOAT', type=float,
+        default=0.1, metavar='FLOAT', type=float,
         help='doSolve argument: for the chi^2 minimizer function which is '
             'computed as sum[ dosolve*(RR/LL-1)^2 + (RL^2 + LR^2) ].  If '
             'doSolve == 0 you minimize the cross-hands; if doSolve >> 1, '
             'you are assuming negligible Stokes V.')
     secondy.add_argument('-m', '--method', dest='method',
-        default='gradient', metavar='STRING',
+        default='COBYLA', metavar='STRING',
         help='solve method: "gradient" or "LM" (or "Levenberg-Marquardt"), or '
-            'if scipy is available, also "COBYLA" or "NM" (or "Nelder-Mead")')
+            'if scipy is available, also "COBYLA" or "NM" (or "Nelder-Mead")'
+            'COBYLA is the VGOS/EVN default')
     secondy.add_argument('-A', '--exAnts', dest='exAnts',
         default='', metavar='LIST',
         help='comma-separated list of antennas to exclude from gain solution')
@@ -225,8 +236,6 @@ def getInputTemplate(o):
         else:   # str(val) is acceptable to print
             template += ('\n    print("debug: %12s = ", %s )' % (key,val))
     template += '''
-    print('If Polconvert was loaded a short description follows:')
-    print(polconvert.__doc__[0:200],'...')
     %sprint('Real command assembly follows:')
     nargs   = '%s'
     joblist =  %s
@@ -275,6 +284,7 @@ def getInputTemplate(o):
     # timeRange = []
     timeRange = [0,0,0,0, 14,0,0,0]   # first 14 days seen for plotting
     npix = %d
+    #
     # solveMethod may be 'gradient', 'Levenberg-Marquardt' or 'COBYLA'
     # calstokes is [I,Q,U,V] for the calibrator; I is ignored.
     #
@@ -282,6 +292,9 @@ def getInputTemplate(o):
     # we are working read-only for the Solve case with doTest=True
     # sys.environ['POLCONVERTDEBUG'] = 'True'
     print('Running polconvert....')
+    print('If Polconvert was loaded a short description follows:')
+    print(polconvert.__doc__[0:200],'...')
+    #
     print('IDI=',DiFXoutput, 'OUTPUTIDI=',DiFXoutput,'\\n',
         'DiFXinput=',DiFXinput, 'DiFXcalc=',DiFXcalc,'\\n',
         'doIF=',doIF, 'linAntIdx=',linAnt,
@@ -361,7 +374,7 @@ def createCasaInput(o, joblist, caldir, workdir):
     o.remote is set in createCasaInputParallel() which calls us.
     '''
     oinput = workdir + '/' + o.input
-    if o.verb: print('Creating CASA input file\n  ' + oinput)
+    if o.verb: print('Creating CASA input file for solving\n  ' + oinput)
     if o.verb: verb = ''
     else:      verb = '#'
     template = getInputTemplate(o)
@@ -369,7 +382,8 @@ def createCasaInput(o, joblist, caldir, workdir):
     # xyadd/xydel/xyratio are one constant for all chans of the
     # one linear antenna, but type is a string to allow other options.
     print('  .' +verb+verb+ '.\n',
-        '  ',o.nargs[0], str(joblist), caldir, workdir, '\n',
+        '  ',o.nargs, str(joblist), caldir, '\n',
+        '  ',workdir, '\n',
         '  ',o.label, o.zfirst, o.zfinal, o.ant, o.lin, o.remote, '\n',
         '  ',o.xyadd, o.xydel, o.xyratio, o.npix,
         '  ',str(o.exAntList), str(o.exBaseLists), '\n',
@@ -403,6 +417,8 @@ def compatChecks(o):
 def methodChecks(o):
     '''
     Check that the method names are legal, and update with longer names.
+
+    COBYLA is the VGOS/EVN default
     '''
     if o.method == 'gradient':
         return
@@ -455,6 +471,7 @@ def checkAntBase(o):
     for ant in exSet:
         if not ant in antSet:
             raise Exception('Antenna %s not found in input' % str(ant))
+    print('completed checks of antennas and baselines')
 
 def checkOptions(o):
     '''
@@ -465,8 +482,8 @@ def checkOptions(o):
     compatChecks(o)
     methodChecks(o)
     solintChecks(o)
-    dpc.inputRelatedChecks(o)
-    dpc.runRelatedChecks(o)
+    #dpc.inputRelatedChecks(o)
+    #dpc.runRelatedChecks(o)
 
 #
 # enter here to do the work
@@ -477,18 +494,32 @@ if __name__ == '__main__':
     opts.argv = argv
     checkOptions(opts)
     if opts.prep:
-        runPrePolconvert(opts)
-    if opts.indices == 'ZOOM':
-        if opts.verb: print('deducing indices for ZOOM case')
-        dpc.deduceZoomIndices(opts)
+        dpc.runPrePolconvert(opts)
+    dpc.inputRelatedChecks(opts)
+    # this is somewhat "temporary"
+    if opts.iflist == 'original':
+        print('Original zoom logic requested -- iflist ignored')
+        opts.iflist = ''
+        opts.ozlogic = True
     else:
-        if opts.verb: print('mapping antenna names and indices')
-        parseInputIndices(opts)
-        if opts.verb: print('setting up remote antenna list')
-        populateRemotelist(opts)
-    # finally
+        print('Using user specified iflist "',opts.iflist,'" if any')
+        opts.ozlogic = False
+    # various work in preparation for job creation and execution
+    dpc.commonInputGrokkage(opts)
+    print('CommonInputGrokkage done')
+    if dpc.useTheUserIFlist(opts):
+        print('Proceeding with the User-provide list')
+    elif dpc.deduceOutputBands(opts):
+        print('Proceeding with list from output bands')
+    elif dpc.deduceZoomIndices(opts):
+        print('Proceeding with list from zoom bands')
+    else:
+        print('Proceeding with the original zoom logic')
+        dpc.oldDeduceZoomIndices(opts)     # original derived from ZOOMs
+    print('Zoom/Output Band deductions done')
     checkAntBase(opts)
     # run the jobs in parallel
+    dpc.runRelatedChecks(opts)
     if opts.verb:
         print('\nParallel execution with %d threads\n' % opts.parallel)
     dpc.createCasaInputParallel(opts)

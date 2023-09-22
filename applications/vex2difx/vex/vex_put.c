@@ -1578,7 +1578,7 @@ create_dvalue_list(char *str, char *str2)
 {
   char *s1,*s2;
 
-  if(str==NULL && strlen(str)==0)
+  if(str==NULL || strlen(str)==0)
     {
       printf("%s \'dvalue_list\' %s %s block\n",
 	     err1, err2, int2block(blk));

@@ -579,6 +579,7 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
         threads = []
 
         dsBookings = {} # keep track of the DS-node assignements (can assign multiple nodes to serve the same url)
+        dsFreeCPUs = {}
         for stream in datastreams:
             if stream.type == "FILE":
                 # check if path for this datastream matches storage area defined in the cluster definition file
@@ -597,20 +598,35 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
 
                             if url not in dsBookings:
                                 dsBookings[url] = {}
-                                dsBookings[url][node.name] = 0
+                                dsFreeCPUs[url] = {}
+                                dsBookings[url][node.name] = 0 if not node.isInSlurm else node.slurm_numProc
+                                dsFreeCPUs[url][node.name] = 999 if not node.isInSlurm else (node.slurm_maxProc - node.slurm_numProc)
                             else:
                                 if node.name not in dsBookings[url]:
-                                    dsBookings[url][node.name] = 0
+                                    dsBookings[url][node.name] = 0 if not node.isInSlurm else node.slurm_numProc
+                                    dsFreeCPUs[url][node.name] = 999 if not node.isInSlurm else (node.slurm_maxProc - node.slurm_numProc)
 
                             currentUrl = url
                             break
 
                 if len(matchNodes) > 1:
                     # find eligible ds node with the least number of bookings
-                    minBooking = min(dsBookings[currentUrl], key=dsBookings[currentUrl].get)
-                    dsBookings[currentUrl][minBooking] += 1
+                    #   chosen = min(dsBookings[currentUrl], key=dsBookings[currentUrl].get)
+                    # or, among least-booked eligible nodes, find the one with most free slots
+                    minalloc = min(dsBookings[currentUrl].values())
+                    minallocnodes = [k for k,v in dsBookings[currentUrl].items() if v==minalloc]
+                    freesubset = {key:dsFreeCPUs[currentUrl][key] for key in minallocnodes}
+                    chosen = max(freesubset, key=freesubset.get)
 
-                    dsnodes.append(minBooking)
+                    snode = difxmachines.nodes[chosen]
+                    if not snode.isInSlurm or snode.slurm_numProc < snode.slurm_maxProc:
+                        snode.slurm_numProc += 1
+                        dsBookings[currentUrl][chosen] += 1
+                        dsFreeCPUs[currentUrl][chosen] -= 1
+                    else:
+                        snode.slurm_numProc = 9999
+                        dsBookings[currentUrl][chosen] = 9999
+                    dsnodes.append(chosen)
 
                 elif len(matchNodes) == 1:
                     dsnodes.append(matchNodes[0])

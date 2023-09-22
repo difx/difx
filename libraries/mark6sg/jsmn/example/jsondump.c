@@ -67,6 +67,8 @@ int main() {
 	}
 
 	for (;;) {
+		char *jstmp;
+		jsmntok_t *toktmp;
 		/* Read another chunk */
 		r = fread(buf, 1, sizeof(buf), stdin);
 		if (r < 0) {
@@ -82,11 +84,12 @@ int main() {
 			}
 		}
 
-		js = realloc(js, jslen + r + 1);
-		if (js == NULL) {
+		jstmp = realloc(js, jslen + r + 1);
+		if (jstmp == NULL) {
 			fprintf(stderr, "realloc(): errno=%d\n", errno);
 			return 3;
 		}
+		js = jstmp
 		strncpy(js + jslen, buf, r);
 		jslen = jslen + r;
 
@@ -95,11 +98,12 @@ again:
 		if (r < 0) {
 			if (r == JSMN_ERROR_NOMEM) {
 				tokcount = tokcount * 2;
-				tok = realloc(tok, sizeof(*tok) * tokcount);
-				if (tok == NULL) {
+				toktmp = realloc(tok, sizeof(*tok) * tokcount);
+				if (toktmp == NULL) {
 					fprintf(stderr, "realloc(): errno=%d\n", errno);
 					return 3;
 				}
+				tok = toktmp;
 				goto again;
 			}
 		} else {

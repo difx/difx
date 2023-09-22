@@ -29,10 +29,10 @@ author  = 'Mark Wainright <mwainrig@lbo.us>'
 verdate = '20180131'
 
 def usage():
-        print '\n%s - ver. %s - %s - %s\n' % (program, version, author, verdate)
-        print 'A program used to initialize a module in a mark6 unit.\n'
-        print 'usage : %s <slot number> <module serial number>\n' % program
-        print 'Module serial number is in LBO%nnnn format.\n'
+        print('\n%s - ver. %s - %s - %s\n' % (program, version, author, verdate))
+        print('A program used to initialize a module in a mark6 unit.\n')
+        print('usage : %s <slot number> <module serial number>\n' % program)
+        print('Module serial number is in LBO%nnnn format.\n')
 
 def unmount(slot):
   # unmount all partitions for slot
@@ -85,7 +85,7 @@ def getdevices(slot):
   elif len(a) > 0:
       scsi_list = a
   else:
-      print "no disk modules powered up"
+      print("no disk modules powered up")
       return disks
 
   # --- scsi_list number of items
@@ -137,7 +137,7 @@ def getdevices(slot):
             disk_size = tmp_disk_info[1]
             disks[i]['disk_size'] = disk_size
       if len(serial_num) == 0:
-        print "serial number could not be determined for disk", i, "device", disk_dev
+        print("serial number could not be determined for disk", i, "device", disk_dev)
         exit(1)
 
   #print "disks", disks
@@ -146,9 +146,9 @@ def getdevices(slot):
 
 def checkforerror(partcmd, subp, output):
   if subp.returncode != 0:
-    print 'command:', partcmd
-    print 'return code:', subp.returncode
-    print 'output (stdout, stderr):', output
+    print('command:', partcmd)
+    print('return code:', subp.returncode)
+    print('output (stdout, stderr):', output)
     exit(1)
 
 #-------main execution---------
@@ -172,25 +172,25 @@ if len(msn) != 8 or msn[0:4] != 'LBO%' or not msn[4:8].isdigit():
 disks = getdevices(slot)
 
 if len(disks) == 0:
-  print program, "- No disks were found in slot.  Stopping."
+  print(program, "- No disks were found in slot.  Stopping.")
   exit(0)
 
 # display disk information and confirm initialization
 serial_list = []
 size_list = []
-print "\n", program, "will initialize module in slot", slot, "with MSN", msn, "\n"
-print "The following disks will be initialized:\n"
+print("\n", program, "will initialize module in slot", slot, "with MSN", msn, "\n")
+print("The following disks will be initialized:\n")
 for i in range(len(disks)):
   serial_list.append(str(i) + ':' + disks[i]['serial_num'] + '\n')
   size_list.append(disks[i]['disk_size'])
-  print "slot", str(slot), "disk", disks[i]['dev_num'], "device", disks[i]['disk'], "serial number", disks[i]['serial_num'], "size", disks[i]['disk_size']
-print "\n!!! Any information on these disks will be erased!\n"
+  print("slot", str(slot), "disk", disks[i]['dev_num'], "device", disks[i]['disk'], "serial number", disks[i]['serial_num'], "size", disks[i]['disk_size'])
+print("\n!!! Any information on these disks will be erased!\n")
 sys.stdout.write("Continue? (y/n) ")
-choice = raw_input().lower()
+choice = input().lower()
 if choice == "n":
   exit(0)
 
-print "\nInitialization will take a few minutes.\n"
+print("\nInitialization will take a few minutes.\n")
 
 # unmount module in slot
 unmount(slot)
@@ -203,7 +203,7 @@ for i in range(len(size_list)):
 # eMSN is of form <msn>/<total capacity of pack>/<speed (always 4)>/<number of disks>
 eMSN = msn + '/' + str(capacity) + '/4/' + str(len(size_list))
 
-print 'eMSN is', eMSN, '\n'
+print('eMSN is', eMSN, '\n')
 
 # partition and configure the disks
 meta_data_path_list = []
@@ -219,7 +219,7 @@ for i in range(len(disks)):
   time.sleep(0.1)
     
   # make new partions
-  print "Partitioning disk", disks[i]['dev_num'], "device", disks[i]['disk']
+  print("Partitioning disk", disks[i]['dev_num'], "device", disks[i]['disk'])
   partcmd = ['sudo', 'parted', '-s', disks[i]['disk'], 'mktable', 'gpt']
   subp = subprocess.Popen(partcmd, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
   out = subp.communicate();
@@ -249,7 +249,7 @@ for i in range(len(disks)):
   time.sleep(0.1)
   
   # make xfs file systems
-  print "Making xfs file systems for disk", disks[i]['dev_num']
+  print("Making xfs file systems for disk", disks[i]['dev_num'])
   partcmd = ['sudo', 'mkfs.xfs', '-f', disks[i]['disk'] + '1']
   subp = subprocess.Popen(partcmd, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
   out = subp.communicate();
@@ -262,7 +262,7 @@ for i in range(len(disks)):
   time.sleep(0.1)
 
   # mount and configure .meta partitions
-  print "Configuring metadata partition for disk", disks[i]['dev_num']
+  print("Configuring metadata partition for disk", disks[i]['dev_num'])
   meta_data_path = '/mnt/disks/.meta/' + str(slot) + '/' + str(disks[i]['dev_num'])
   meta_data_path_list.append(meta_data_path)
   partcmd = ['sudo', 'mount', '-t', 'xfs', disks[i]['disk'] + '2', meta_data_path]
@@ -313,7 +313,7 @@ for i in range(len(disks)):
   checkforerror(partcmd, subp, out)
 
   # mount and configure data partitions
-  print "Configuring data partition for disk", disks[i]['dev_num'], "\n"
+  print("Configuring data partition for disk", disks[i]['dev_num'], "\n")
   partcmd = ['sudo', 'mount', '-t', 'xfs', disks[i]['disk'] + '1', '/mnt/disks/' + str(slot) + '/' + str(disks[i]['dev_num'])]
   subp = subprocess.Popen(partcmd, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
   out = subp.communicate();
@@ -357,16 +357,16 @@ for i in range(len(disks)):
   checkforerror(partcmd, subp, out)
 
 # make single module group
-print "The next step will put this module a single module group."
-print "If you don't put this module in a single module group, you"
-print "will need to group this module with the m6modgroup.py script.\n"
+print("The next step will put this module a single module group.")
+print("If you don't put this module in a single module group, you")
+print("will need to group this module with the m6modgroup.py script.\n")
 sys.stdout.write("Put this module in a single module group? (y/n) ")
-choice = raw_input().lower()
+choice = input().lower()
 if choice == "n":
-  print "\nNot putting module in slot", slot, "in a group.  Finished.\n"
+  print("\nNot putting module in slot", slot, "in a group.  Finished.\n")
   exit(0)
 
-print "\nPutting module in slot", slot, "in a single module group.\n"
+print("\nPutting module in slot", slot, "in a single module group.\n")
 
 for i in range(len(meta_data_path_list)):
   group_file_path = meta_data_path_list[i] + '/group'
@@ -380,14 +380,14 @@ for i in range(len(meta_data_path_list)):
   out = subp.communicate();
   checkforerror(partcmd, subp, out)
 
-print "Group files written.  Unmounting.\n"
+print("Group files written.  Unmounting.\n")
 
 partcmd = ['m6modunmount.py', str(slot)]
 subp = subprocess.Popen(partcmd, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 out = subp.communicate();
 checkforerror(partcmd, subp, out)
 
-print "Initialization of", msn, "in slot", slot, "finished.\n"
+print("Initialization of", msn, "in slot", slot, "finished.\n")
 
 exit(0)
 

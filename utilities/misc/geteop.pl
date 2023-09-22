@@ -16,11 +16,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
+# $Id: geteop.pl 9692 2020-09-01 14:15:38Z GeoffreyCrew $
 # $HeadURL: $
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $LastChangedRevision: 9692 $
+# $Author: GeoffreyCrew $
+# $LastChangedDate: 2020-09-01 22:15:38 +0800 (二, 2020-09-01) $
 #
 #============================================================================
 

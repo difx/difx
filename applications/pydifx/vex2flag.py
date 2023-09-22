@@ -11,9 +11,9 @@ import sys
 import getopt
 from datetime import timedelta
 
-import observation
-from astro import hms2df
-from vex2calc.readvex import VexSched, VexSite
+from . import observation
+from .astro import hms2df
+from .vex2calc.readvex import VexSched, VexSite
 
 def flagtime(dt):
     """
@@ -35,7 +35,7 @@ def printdifxflag(antenna, start, end, flag, flagfile):
 
     flagfile is the open flag file
     """
-    print >> flagfile, antenna, flagtime(start), flagtime(end), flag
+    print(antenna, flagtime(start), flagtime(end), flag, file=flagfile)
     
 def printuvflag(antenna_list, antenna, start, end, startday, flag, flagfile):
     """
@@ -61,7 +61,7 @@ def printuvflag(antenna_list, antenna, start, end, startday, flag, flagfile):
                  (startdays, start.hour, start.minute, start.second,
                   enddays, end.hour, end.minute, end.second)
     reason = "REASON='" + flag + "'"
-    print >> flagfile, antenna, timerange, reason, '/'
+    print(antenna, timerange, reason, '/', file=flagfile)
 
 def write_flag(vex_path, flagfile = None, shrink = None, printuv = None):
     if shrink == None:
@@ -75,8 +75,8 @@ def write_flag(vex_path, flagfile = None, shrink = None, printuv = None):
     site = VexSite(vex_path)
     iddict = site.id_dict()
     namedict = site.name_dict()
-    antennas = site.keys()
-    starttime = sched.values()[0]['start'][0]
+    antennas = list(site.keys())
+    starttime = list(sched.values())[0]['start'][0]
     ids = [namedict[i] for i in antennas]
 
     shrink = timedelta(0, shrink, 0)
@@ -84,30 +84,30 @@ def write_flag(vex_path, flagfile = None, shrink = None, printuv = None):
     durations = []
     times = []
     #first copy all times into a single array
-    for s in sched.values():
+    for s in list(sched.values()):
         times.append(s['start'][0])
-        durations.append(dict(zip([s['station'][i][0] for i in range(len(s['station']))],
-                             [s['station'][i][1:3] for i in range(len(s['station']))])))
+        durations.append(dict(list(zip([s['station'][i][0] for i in range(len(s['station']))],
+                             [s['station'][i][1:3] for i in range(len(s['station']))]))))
     # so now we have all the start times in times and all the durations for all
     # the telescopes in durations as a list of dictionaries
 
     n = len(durations)
     for telid in ids:
         if not printuv:
-            print >> flagfile, "# Ant D.O.Y.start D.O.Y.end RecChan reason"
+            print("# Ant D.O.Y.start D.O.Y.end RecChan reason", file=flagfile)
         # we flag the gap between scan[i] and scan[j]
         i = 0
         j = 1
         
         #keep going until i reaches the penultimate scan
         while i < (n - 1):
-            if i == 0 and not telid in durations[i].keys():
+            if i == 0 and not telid in list(durations[i].keys()):
                 # if the telescope's not in the first scan start flagging from
                 # the start of the observation.  Correlator starts here so
                 # shouldn't be any need to flag before this point.
                 startflag = sched.start()
             else:
-                while i < (n - 2) and not telid in durations[i].keys():
+                while i < (n - 2) and not telid in list(durations[i].keys()):
                     # find a scan which has the relevant telescope in
                     i += 1
                 #start flagging from the end of this scan
@@ -115,7 +115,7 @@ def write_flag(vex_path, flagfile = None, shrink = None, printuv = None):
             #start searching for an end point from the next scan onwards
             j = i + 1
 
-            while not telid in durations[j].keys():
+            while not telid in list(durations[j].keys()):
                 j += 1
                 if j == (n - 1):
                     #Antenna not in the last scan. End here.
@@ -153,18 +153,18 @@ By default the flagging duration lasts for the entire gap between the scans.
 shrink will shrink it on either side by shrink seconds
     """
     if len(sys.argv) < 2:
-        print main.__doc__
+        print(main.__doc__)
         sys.exit(2)
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "s:udf:v:",
                                        ["shrink=", "uvflg", "difxflag", "flagfilename=", "vexfilename="])
-    except getopt.GetoptError, err:
-        print err
-        print main.__doc__
+    except getopt.GetoptError as err:
+        print(err)
+        print(main.__doc__)
         sys.exit(2)
     if not len(args) == 1:
-        print "Error: Wrong number of arguments"
-        print main.__doc__
+        print("Error: Wrong number of arguments")
+        print(main.__doc__)
         sys.exit(2)
 
     # read arguments
@@ -190,7 +190,7 @@ shrink will shrink it on either side by shrink seconds
                 printuv = False
                 flagfilename = 'flag'
             else:
-                raise RuntimeError, "flagtype must be either uvflg OR difxflag"
+                raise RuntimeError("flagtype must be either uvflg OR difxflag")
         if o in ("-f", "--flagfilename"):
             flagfilename = a
         if o in ("-v", "--vexfilename"):
@@ -213,7 +213,7 @@ shrink will shrink it on either side by shrink seconds
     try:
         flagfile = open(flagfilename, 'w')
     except:
-        print "Error opening flag file " + str(flagfilename)
+        print("Error opening flag file " + str(flagfilename))
         raise
 
     write_flag(vex_path, flagfile, shrink, printuv)

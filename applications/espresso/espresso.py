@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -34,7 +34,7 @@ import fileinput
 import pprint
 import getpass
 import psutil
-import espressolib
+from espressolib import espressolib
 import datetime
 
 

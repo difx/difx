@@ -122,28 +122,27 @@ namespace x3c {
             /** File descriptor for an open Index file */
             mutable INT32       mFd;
 
+            /** The total number of index records */
+            unsigned long long  mNumIndexRecords;
+
+            /** The oldest timestamp found */
+            UINT64 mFirstTimestamp;
+
+            /** The youngest timestamp found */
+            UINT64 mLastTimestamp;
+
             /** Allow construction and destruction only 
                 from CIndexer<CIndexWriter> */
             friend class CIndexer<CIndexWriter>;
+
+            /** The maximum number of in-memory index records 
+             *  before a the records will be flushed to disk */
+            static const unsigned int DefaultFlushCount = 100; 
         };
 
         //======================================================================
         // Inline members
         //
-
-
-        inline void CIndexWriter::addIndexRecord(IndexRecord const& record)
-        {
-            mIndexRecords.push_back(record);
-        }
-
-        inline void CIndexWriter::addIndexRecord(UINT64 timestamp,
-                                                 UINT64 offset)
-        {
-            // TODO: support the IndexRecord::packet_number field
-            IndexRecord idx = { timestamp, offset, 0 };
-            addIndexRecord(idx);
-        }
 
         inline std::string const& CIndexWriter::filename() const
         {
@@ -152,7 +151,7 @@ namespace x3c {
 
         inline UINT32 CIndexWriter::numRecords() const
         {
-            return mIndexRecords.size();
+            return mNumIndexRecords;
         }
 
     }   /* namespace indexer */

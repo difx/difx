@@ -1,7 +1,7 @@
 alias PREPEND 'setenv \!^ {\!:2}:{$\!^}'
 
 ####### DIFX VERSION ########################
-setenv DIFX_VERSION DiFX-2.8
+setenv DIFX_VERSION trunk
 
 ####### ROOT PATHS ##########################
 setenv DIFXROOT /usr/local/difx
@@ -22,8 +22,6 @@ setenv MPICXX $DIFXMPIDIR/bin/mpicxx
 ####### USE GFORTRAN IN PREFERENCE TO G77? ##
 ####### Comment out if not desired ##########
 setenv USEGFORTRAN "yes"
-# you may need this for calcserver,difxcalc11
-# setenv FFLAGS "-fallow-argument-mismatch"
 
 ####### PERL VERSION/SUBVERSION #############
 set perlver="5"

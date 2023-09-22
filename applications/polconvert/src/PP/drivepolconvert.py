@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #
-# Copyright (c) Ivan Marti-Vidal 2015-2022, University of Valencia (Spain)
-#       and Geoffrey Crew 2015-2022, Massachusetts Institute of Technology
+# Copyright (c) Ivan Marti-Vidal 2015-2023, University of Valencia (Spain)
+#       and Geoffrey Crew 2015-2023, Massachusetts Institute of Technology
 #
 # Script to drive PolConvert at the correlators intended for
 # less CASA-aware users.
@@ -1039,10 +1039,10 @@ def getInputTemplate(o):
     print(workdir)
     print(os.getcwd())
     if sys.version_info.major < 3:
-        print('Python 2 execution')
+        print('Python 2 execution requested for runpolconvert')
         execfile(rpcpath)               # Py2 form
     else:
-        print('Python 3 execution')
+        print('Python 3 execution requested for runpolconvert')
         execfile(rpcpath, globals())    # Py3 form
     quit()
     '''
@@ -1099,7 +1099,7 @@ def createCasaCommand(o, job, workdir):
     cmd[4]  = '%s --nologger --nogui -c %s > %s 2>&1 < /dev/null' % (
         o.casa, o.input, o.output)
     cmd[5]  = 'casarc=$?'
-    cmd[6]  = ('if [ "$casarc" == 0 ]; then echo "conversion"; ' +
+    cmd[6]  = ('if [ "$casarc" = 0 ]; then echo "conversion"; ' +
         'else echo "conversion failed with code $casarc"; fi > ./status')
     cmd[7]  = 'mv casa*.log ipython-*.log casa-logs 2>&-'
     # do not move self (basecmd) until self is done.
@@ -1107,7 +1107,7 @@ def createCasaCommand(o, job, workdir):
     cmd[8]  = 'mv %s %s casa-logs' % (o.input, o.output)
     # until CASA tasks are working properly, polconvert.last may not exist
     cmd[9]  = '[ -f polconvert.last ] && mv polconvert.last casa-logs'
-    cmd[10] = ('if [ "$casarc" == 0 ]; then echo "completed"; ' +
+    cmd[10] = ('if [ "$casarc" = 0 ]; then echo "completed"; ' +
         'else echo "failed with code $casarc"; fi > ./status')
     cmd[11] = 'date -u +%Y-%m-%dT%H:%M:%S >> ./timing'
     cmd[12] = ('echo " "CASA for job %s finished with return code $casarc.' %
@@ -1194,9 +1194,10 @@ def createCasaInputParallel(o):
                 continue
             o.workdirs[job] = workdir
             o.workcmds[job] = cmdfile
-            if o.verb: print(' ',fullpath)
+            if o.verb: print('Created CASA execution command\n  ',fullpath)
         else:
             print('*** unable to create workdir or input for job %s ***' % job)
+    if o.verb: print('')
 
 def removeTrash(o, misc):
     '''

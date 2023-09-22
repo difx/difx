@@ -14,12 +14,12 @@
       Integer*4 difxiowritestring1
       Integer*4 difxiowritestring2
       Integer*4 difxiowritepoly26
-      Character*9 Site_c(36)
 !     SAVE      lu_out, fd_out
 !
       INCLUDE 'cmxst11.i'
 !            Variables 'from':
 !              1. NUMSIT - The total number of sites in the current job.
+      Character*9 Site_c(Max_stat)
 
        INCLUDE 'd_input.i'
 !
@@ -112,7 +112,8 @@
       Integer*4 difxiowritestring1
       Integer*4 difxiowritestring2
       Integer*4 difxiowritepoly26
-      Character*9 Site_c(36)
+      INCLUDE 'cmxst11.i'
+      Character*9 Site_c(Max_stat)
 !
        INCLUDE 'c2poly.i'
 !

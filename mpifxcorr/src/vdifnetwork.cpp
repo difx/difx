@@ -222,9 +222,9 @@ void VDIFNetworkDataStream::networkthreadfunction()
 
 		while(!networkthreadstop)
 		{
-			unsigned int bytes;
+			unsigned int bytes = 0;
 			bool endofscan = false;
-			int status;
+			int status = 0;
 
 			// This is where the actual read from the network happens
 			if(tcp || udp)

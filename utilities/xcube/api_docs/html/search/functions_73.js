@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['seek',['seek',['../classCFileReader.html#af77671ac8afe5f628dc59d9fbc60ed28',1,'CFileReader']]],
   ['setendtime',['setEndTime',['../classCTimeFilter.html#a0e557d91b1d292e5ca84b218b761b751',1,'CTimeFilter::setEndTime(std::string const &amp;time, std::string const &amp;format)'],['../classCTimeFilter.html#ae78931fa0474c3c0c40a6ad06d90dd4e',1,'CTimeFilter::setEndTime(timespec const &amp;ts)']]],
   ['seteof',['setEOF',['../classCPacketBuffer.html#a4f83b4d5dada204b8d322765100155fa',1,'CPacketBuffer']]],
   ['setpacketfilter',['setPacketFilter',['../classCPacketReader.html#ae441252739a060ee3e9fd6803b37604c',1,'CPacketReader']]],

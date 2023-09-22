@@ -18,11 +18,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: filterDifx2Fits.py 10597 2022-08-18 07:27:44Z JanWagner $
+# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/misc/filterDifx2Fits.py $
+# $LastChangedRevision: 10597 $
+# $Author: JanWagner $
+# $LastChangedDate: 2022-08-18 15:27:44 +0800 (四, 2022-08-18) $
 #
 #============================================================================
 import os
@@ -34,9 +34,9 @@ from optparse import OptionParser
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
+__build__= "$Revision: 10597 $"
+__date__ ="$Date: 2022-08-18 15:27:44 +0800 (四, 2022-08-18) $"
+__lastAuthor__="$Author: JanWagner $"
 
 
 def getUsage():

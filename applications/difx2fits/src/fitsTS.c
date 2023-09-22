@@ -71,7 +71,7 @@ static void nanify(float X[2][array_MAX_BANDS])
 static int parseTsys(char *line, char *antName, double *time, float *timeInt, float tSys[])
 {
 	static char tsmAntName[10] = "XX";
-	int p, n, i, nRecBand;
+	int p, n, i, nRecBand = 0;
 	char firstWord[100];
 
 	/* skip comments of various types */

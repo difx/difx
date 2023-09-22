@@ -233,7 +233,6 @@ static DifxAntenna *makeDifxAntennas(const Job &J, const VexData *V, int *n)
 	for(i = 0, a = J.jobAntennas.begin(); a != J.jobAntennas.end(); ++i, ++a)
 	{
 		const VexAntenna *ant = V->getAntenna(*a);
-		
 		snprintf(A[i].name, DIFXIO_NAME_LENGTH, "%s", ant->difxName.c_str());
 		A[i].X = ant->x + ant->dx*(mjd-ant->posEpoch)*86400.0;
 		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
@@ -362,7 +361,7 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int n
 						}
 					}
 					break;
-				case DataSourceMark6: 
+				case DataSourceMark6:
 					{
 						// mark6 has both files and vsns
 						int nFile = ant->files.size();
@@ -615,7 +614,7 @@ static unsigned int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vecto
 				toneSetId = getToneSetId(toneSets, ch->tones);
 			}
 			
-			fqId = addFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand, corrSetup->FFTSpecRes, corrSetup->outputSpecRes, /*decimation*/1, /*isZoom:*/0, toneSetId, rxName);
+			fqId = addFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand, corrSetup->FFTSpecRes, corrSetup->outputSpecRes, /*decimation*/1, /*isZoom*/0, toneSetId, rxName);
 
 			// index into the difxio datastream object arrays is by "present band"
 			D->datastream[dsId].recBandFreqId[streamPresentChan] = getBand(bandMap, fqId);
@@ -943,7 +942,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 		else // Not profile mode
 		{
 			// Beware those who try to follow the logic below!
-			// Its actually not to tricky.  There are 8 cases of matching between 
+			// Its actually not to tricky.  There are 8 cases of matching between
 			// sub-bands to consider.
 			// First all antenna 1 recorded bands to be correlated are considered.  Pairing
 			// with sub-bands from antenna 2 is done with the following priority:
@@ -1037,7 +1036,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 							for(int f = 0; f < D->datastream[ds1].nRecFreq; ++f)
 							{
-								bool zoom2 = false;	// did antenna 2 zoom band make match? 
+								bool zoom2 = false;	// did antenna 2 zoom band make match?
 
 								freqId = D->datastream[ds1].recFreqId[f];
 								destFreqId = D->datastream[ds1].recFreqDestId[f];
@@ -1061,7 +1060,6 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								}
 
 								DifxBaselineAllocPolProds(bl, nFreq, 4);
-
 
 								n1 = DifxDatastreamGetRecBands(D->datastream+ds1, freqId, a1p, a1c);
 								n2 = DifxDatastreamGetRecBands(D->datastream+ds2, freqId, a2p, a2c);
@@ -1187,7 +1185,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 							for(int f = 0; f < D->datastream[ds1].nZoomFreq; ++f)
 							{
-								bool zoom2 = false;	// did antenna 2 zoom band make match? 
+								bool zoom2 = false;	// did antenna 2 zoom band make match?
 
 								n2 = 0;
 
@@ -1527,8 +1525,8 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 				int64_t testsubintNS = tintNS / divisor;
 				msgSize = (testsubintNS*1.0e-9)*dataRate/8.0;
 				readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
-				if(readSize > P->minReadSize && readSize < P->maxReadSize && 
-					testsubintNS <= 1020000000 && testsubintNS > config->subintNS && 
+				if(readSize > P->minReadSize && readSize < P->maxReadSize &&
+					testsubintNS <= 1020000000 && testsubintNS > config->subintNS &&
 					fabs(testsubintNS/floatFFTDurNS - static_cast<int>(testsubintNS/floatFFTDurNS + 0.5)) < 1e-9)
 				{
 					config->subintNS = testsubintNS;
@@ -1616,7 +1614,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		}
 		else
 		{
-			cerr << "Error: The provided tInt (" << config->tInt << ") is not an integer multiple of the subint (" << floatSubintDurNS/1.0e9 << ")" << endl; 
+			cerr << "Error: The provided tInt (" << config->tInt << ") is not an integer multiple of the subint (" << floatSubintDurNS/1.0e9 << ")" << endl;
 			cerr << "Either change your integration time to a more friendly value, or tweak number of channels or subint time, or set tweakIntTime = true" << endl;
 
 			exit(EXIT_FAILURE);
@@ -1642,7 +1640,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	else
 	{
 		config->nBaseline = nDatastream*(nDatastream-1)/2;	// this is a worst case (but typical) scenario; may shrink later.
-									// FIXME: it seems the shrinking causes seg faults.  
+									// FIXME: it seems the shrinking causes seg faults.
 		if(P->exhaustiveAutocorrs)
 		{
 			config->nBaseline += 2*nDatastream;		// worst case if every datastream has a corresponding partner
@@ -1808,19 +1806,23 @@ static int fixDatastreamTable(DifxInput *D)
 
 				delta = power2 - ds->nRecBand;
 
+				// FIXME: the below would be tidier if relocated into difxio; padDifxDatastreamFreq(DifxDatastream* srcdst, int deltaNumRecbands)
+				// NB: manually keep the below realloc()'s in sync with any changes made to difx_input.h struct DifxDatastream
 				N = ds->nRecFreq + 1;
 				ds->clockOffset = (double *)realloc(ds->clockOffset, N*sizeof(double));
 				ds->clockOffsetDelta = (double *)realloc(ds->clockOffsetDelta, N*sizeof(double));
 				ds->phaseOffset = (double *)realloc(ds->phaseOffset, N*sizeof(double));
+				ds->freqOffset = (double *)realloc(ds->freqOffset, N*sizeof(double));
 				ds->nRecPol = (int *)realloc(ds->nRecPol, N*sizeof(int));
 				ds->recFreqId = (int *)realloc(ds->recFreqId, N*sizeof(int));
+				ds->recFreqDestId = (int *)realloc(ds->recFreqDestId, N*sizeof(int));
 				ds->clockOffset[N-1] = 0.0;
 				ds->clockOffsetDelta[N-1] = 0.0;
 				ds->phaseOffset[N-1] = 0.0;
 				ds->nRecPol[N-1] = delta;
 				ds->recFreqId[N-1] = addedFreq;
+				ds->recFreqDestId[N-1] = addedFreq;
 				ds->nRecFreq = N;
-
 
 				N = ds->nRecBand + delta;
 				ds->recBandFreqId = (int *)realloc(ds->recBandFreqId, N*sizeof(int));
@@ -1929,7 +1931,7 @@ static void populateScanTable(DifxInput *D, const Job& J, const VexData *V, cons
 		}
 		difxScan->configId = getConfigIndex(configs, D, V, P, vexScan);
 		difxScan->maxNSBetweenUVShifts = corrSetup->maxNSBetweenUVShifts;
-		fftDurNS = static_cast<int>(1000000000.0/corrSetup->FFTSpecRes);  
+		fftDurNS = static_cast<int>(1000000000.0/corrSetup->FFTSpecRes);
 		if(corrSetup->maxNSBetweenACAvg > 0)
 		{
 			difxScan->maxNSBetweenACAvg = corrSetup->maxNSBetweenACAvg;
@@ -2019,10 +2021,10 @@ static void populateSpacecraftTable(DifxInput *D, const VexData *V, const std::s
 				exit(EXIT_FAILURE);
 			}
 
-			v = computeDifxSpacecraftEphemeris(ds, mjd0, deltaT/86400.0, nPoint, 
+			v = computeDifxSpacecraftEphemeris(ds, mjd0, deltaT/86400.0, nPoint,
 				vexSource->bspObject.c_str(),
 				0,
-				vexSource->bspFile.c_str(), 
+				vexSource->bspFile.c_str(),
 				vexSource->ephemStellarAber,
 				vexSource->ephemClockError);
 			if(v != 0)
@@ -2049,11 +2051,11 @@ static void populateSpacecraftTable(DifxInput *D, const VexData *V, const std::s
 				exit(EXIT_FAILURE);
 			}
 
-			v = computeDifxSpacecraftTwoLineElement(ds, mjd0, deltaT/86400.0, nPoint, 
+			v = computeDifxSpacecraftTwoLineElement(ds, mjd0, deltaT/86400.0, nPoint,
 				vexSource->defName.c_str(),
 				0,
-				vexSource->tle[1].c_str(), 
-				vexSource->tle[2].c_str(), 
+				vexSource->tle[1].c_str(),
+				vexSource->tle[2].c_str(),
 				vexSource->ephemStellarAber,
 				vexSource->ephemClockError);
 			if(v != 0)
@@ -2065,7 +2067,7 @@ static void populateSpacecraftTable(DifxInput *D, const VexData *V, const std::s
 		}
 		else if(vexSource->type == VexSource::Fixed)
 		{
-			v = computeDifxSpacecraftEphemerisFromXYZ(ds, mjd0, deltaT/86400.0, nPoint, 
+			v = computeDifxSpacecraftEphemerisFromXYZ(ds, mjd0, deltaT/86400.0, nPoint,
 				vexSource->X, vexSource->Y, vexSource->Z,
 				0,
 				vexSource->ephemClockError);
@@ -2185,7 +2187,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 	int decimation, worstcaseguardns;
 	DifxDatastream *dd;
 	double globalBandwidth;
-	vector<set <int> > blockedfreqids;	// vector index is over antennaId
+	vector<set<int> > blockedfreqids;	// vector index is over antennaId
 
 	// Initialize toneSets with the trivial case, which is used for all zoom bands
 	vector<unsigned int> noTones;
@@ -2261,7 +2263,6 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 
 	// now run through all scans, populating things as we go
 	populateScanTable(D, J, V, P, corrSetup, configs, maxScanPhaseCentres);
-
 
 	// look for pulsars
 	for(int configId = 0; configId < D->nConfig; ++configId)
@@ -2956,7 +2957,7 @@ static void usage(int argc, char **argv)
 	cout << endl;
 	cout << "NOTE: This version now supports much of the vex2 specification (as well as the" << endl;
 	cout << "vex 1.5 specification) but it is only lightly tested.  Proceed with caution." << endl;
-	cout << endl;  
+	cout << endl;
 }
 
 static void runCommand(const char *cmd, int verbose)

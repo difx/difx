@@ -1442,6 +1442,45 @@ int mark5_stream_get_sample_time(struct mark5_stream *ms,
 	return 0;
 }
 
+int mark5_stream_snprint(char *str, int maxLength, const struct mark5_stream *ms)
+{
+      if (!ms)
+      {
+        return -1;
+      }
+      
+        //snprintf(str, maxLength, "Mark5 stream: %p stream=%s format=%s = %d startMJD=%d startSecond=%05d.%09d " , ms->streamname, ms->formatname,ms->format, ms->mjd, ms->sec, ms->ns);
+        snprintf(str, maxLength, "Mark5 stream: %p stream=%s format=%s = %d ", ms, ms->streamname,ms->formatname, ms->format );
+
+        if(ms->mjd >= 0)
+        {
+            snprintf(str +strlen(str), maxLength, "start mjd/sec = %d %05d.%09d frame duration = %8.2f ns framenum = %lld", ms->mjd, ms->sec, ms->ns,ms->framens,  ms->framenum);
+        }
+        if(ms->samprate > 0)
+        {
+            snprintf(str +strlen(str), maxLength," sample rate = %lld Hz", (long long)ms->samprate );
+        }
+        snprintf(str +strlen(str), maxLength, " offset = %d framebytes = %d bytes", ms->frameoffset,ms->framebytes);
+        snprintf(str +strlen(str), maxLength, " datasize = %d bytes", ms->databytes);
+        snprintf(str +strlen(str), maxLength, " frames per period = %d", ms->framesperperiod);
+        snprintf(str +strlen(str), maxLength, " bits = %d", ms->nbit);
+        snprintf(str +strlen(str), maxLength, " alignment seconds = %d", ms->alignmentseconds);
+        
+        snprintf(str +strlen(str), maxLength, " sample granularity = %d", ms->samplegranularity);
+        snprintf(str +strlen(str), maxLength, " frame granularity = %d", ms->framegranularity);
+        snprintf(str +strlen(str), maxLength, "  gframens = %d", ms->gframens);
+        snprintf(str +strlen(str), maxLength, " payload offset = %d", ms->payloadoffset);
+        snprintf(str +strlen(str), maxLength, " read position = %d", ms->readposition);
+	if(ms->datawindow)
+	{
+            snprintf(str +strlen(str), maxLength, "  data window size = %lld bytes", ms->datawindowsize);
+	}
+      return 0;
+}
+
+/**
+ * Deprecated. Use mark5_stream_snprint and report messages outside of the mark5 access library
+ **/
 int mark5_stream_print(const struct mark5_stream *ms)
 {
 	fprintf(m5stdout, "Mark5 stream: %p\n", ms);

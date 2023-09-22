@@ -27,7 +27,7 @@ except:
 import pylab
 
 def usage():
-        print __doc__
+        print (__doc__)
 
 
 def m5selfcorr(fn, fmt):

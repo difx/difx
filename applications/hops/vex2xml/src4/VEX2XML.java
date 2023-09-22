@@ -21,6 +21,9 @@
 */
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import org.antlr.runtime.*;             //lexer and parser code generator
 import org.apache.commons.cli.*;        //parsing command line options
 
@@ -79,18 +82,21 @@ public class VEX2XML {
     /**
      * Call ANTLR lexer and parser on file input stream
      * Append original VEX file as comment to XML output
+     *
+     * The original implementation used FileInputStream(),
+     * causing ecurity and garbage collection issues.
      */
-    private static void parseAndTranslate() throws Exception{
+    private static void parseAndTranslate() throws Exception {
         System.out.println("\nInput: "+inputFile+"\nOutput: "+outputFile+"\n");
-        
         ANTLRInputStream input = new ANTLRInputStream(
-            new FileInputStream(inputFile));
+            Files.newInputStream(Paths.get(inputFile),
+                StandardOpenOption.READ));
         vexGrammarLexer lexer = new vexGrammarLexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         vexGrammarParser parser = new vexGrammarParser(tokens, outputFile);
         parser.vex();
 
-        parser.finalize(inputFile);//append original vex file when done
+        parser.finalize(inputFile); //append original vex file when done
         
         System.out.println("\nDone.");
     }

@@ -356,7 +356,10 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   // resolve any day ambiguities
   mark5_stream_fix_mjd(syncteststream, corrstartday);
 
-  mark5_stream_print(syncteststream);
+  if (verbose)
+  {
+    mark5_stream_print(syncteststream);
+  }
 
   offset = syncteststream->frameoffset;
   framegranularity = syncteststream->framegranularity;
@@ -436,6 +439,7 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
   struct mark5_stream *mark5stream;
   int offset;
   char * ptr;
+  char fileSummaryString[512];
 
   offset = 0;
   corrday = config->getStartMJD();
@@ -482,7 +486,13 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
 
       if (configindex != lastconfig) {
         cinfo << startl << "Config has changed!" << endl;
-        mark5_stream_print(mark5stream);
+        // Put the stream  information into log file
+        mark5_stream_snprint(fileSummaryString, 512, mark5stream);
+        cinfo << startl << fileSummaryString << endl;
+        if (verbose)
+          {
+            mark5_stream_print(mark5stream);
+          } 
         lastconfig = configindex;
         if(switchedpower) {
           switchedpower->flush();

@@ -174,7 +174,7 @@ class Client( DiFXControl.Client ):
 				self.jobStatusList.append( ( self.currentInputFile, ( "", "No status in .difxlog" ) ) )
 				self.statusFound = True
 			elif packetId == self.GET_JOB_STATUS_FORK_FAILED:
-				print "server fork failure"
+				print("server fork failure")
 			elif packetId == self.GET_JOB_STATUS_TIME_STRING:
 				self.jobStatusListTime = self.packetData[2]
 

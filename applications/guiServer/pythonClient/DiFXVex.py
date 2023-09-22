@@ -486,7 +486,7 @@ class Parser:
 	#<!------------------------------------------------------------------------>
 	def output( self ):
 		if self._enforcePreferedOrder:
-			print "we need to reorder everything!"
+			print("we need to reorder everything!")
 		newOutput = ""
 		for item in self._editable:
 			#  Try to access each item as string.  A failure indicates that it is
@@ -578,7 +578,7 @@ class Parser:
 		if self._stationSection == None:
 			return None
 		else:
-			return self._stationSection._stations.keys()
+			return list(self._stationSection._stations.keys())
 
 	#<!------------------------------------------------------------------------>
 	## Return the "antenna" name associated with a station code.
@@ -626,7 +626,7 @@ class Parser:
 		if self._stationSection == None:
 			return None
 		else:
-			for stationCode in self._stationSection._stations.keys():
+			for stationCode in list(self._stationSection._stations.keys()):
 				if self._stationSection._stations[stationCode][0] == name or self._stationSection._stations[stationCode][1] == name:
 					return stationCode
 			return None
@@ -781,7 +781,7 @@ class Parser:
 		if self._experimentSection == None:
 			return None
 		else:
-			return self._experimentSection._experiments.keys()
+			return list(self._experimentSection._experiments.keys())
 
 	#<!------------------------------------------------------------------------>
 	## Return a list of the experiments from the .vex file.
@@ -1103,7 +1103,7 @@ class Parser:
 				#  Find the largest offset in all stations
 				if not self._stationList == None:
 					offset = 0
-					for station in self._stationList.keys():
+					for station in list(self._stationList.keys()):
 						if offset < self._stationList[station][0] + self._stationList[station][1]:
 							offset = self._stationList[station][0] + self._stationList[station][1]
 					self._end = self._start + datetime.timedelta( 0, offset )
@@ -1171,7 +1171,7 @@ class Parser:
 		if self._schedSection == None:
 			return None
 		else:
-			return self._schedSection._scans.keys()
+			return list(self._schedSection._scans.keys())
 
 	#<!------------------------------------------------------------------------>
 	## Stores the data for a "SITE" section in a .vex file.
@@ -1371,7 +1371,7 @@ class Parser:
 		if self._siteSection == None:
 			return None
 		else:
-			return self._siteSection._sites.keys()
+			return list(self._siteSection._sites.keys())
 
 	#<!------------------------------------------------------------------------>
 	## Return a "Site" class instance associated with a site name
@@ -1772,21 +1772,21 @@ class Parser:
 			#   the list of stations associated with them.
 			#<!---------------------------------------------------------------->
 			def freqs( self ):
-				return self._FREQS.keys()
+				return list(self._FREQS.keys())
 			def bbcs( self ):
-				return self._BBCS.keys()
+				return list(self._BBCS.keys())
 			def ifs( self ):
-				return self._IFS.keys()
+				return list(self._IFS.keys())
 			def tracks( self ):
-				return self._TRACKS.keys()
+				return list(self._TRACKS.keys())
 			def headPoss( self ):
-				return self._HEAD_POSS.keys()
+				return list(self._HEAD_POSS.keys())
 			def passOrders( self ):
-				return self._PASS_ORDERS.keys()
+				return list(self._PASS_ORDERS.keys())
 			def rolls( self ):
-				return self._ROLLS.keys()
+				return list(self._ROLLS.keys())
 			def phaseCalDetects( self ):
-				return self._PHASE_CAL_DETECTS.keys()
+				return list(self._PHASE_CAL_DETECTS.keys())
 
 			#<!---------------------------------------------------------------->
 			##  Functions to return the list of stations using a named type.
@@ -1838,7 +1838,7 @@ class Parser:
 				if self._FREQS == None:
 					return None
 				theList = []
-				items = self._FREQS.keys()
+				items = list(self._FREQS.keys())
 				for it in items:
 					stationList = self._FREQS[it]
 					for thisStation in stationList:
@@ -1849,7 +1849,7 @@ class Parser:
 				if self._BBCS == None:
 					return None
 				theList = []
-				items = self._BBCS.keys()
+				items = list(self._BBCS.keys())
 				for it in items:
 					stationList = self._BBCS[it]
 					for thisStation in stationList:
@@ -1860,7 +1860,7 @@ class Parser:
 				if self._IFS == None:
 					return None
 				theList = []
-				items = self._IFS.keys()
+				items = list(self._IFS.keys())
 				for it in items:
 					stationList = self._IFS[it]
 					for thisStation in stationList:
@@ -1871,7 +1871,7 @@ class Parser:
 				if self._TRACKS == None:
 					return None
 				theList = []
-				items = self._TRACKS.keys()
+				items = list(self._TRACKS.keys())
 				for it in items:
 					stationList = self._TRACKS[it]
 					for thisStation in stationList:
@@ -1882,7 +1882,7 @@ class Parser:
 				if self._HEAD_POSS == None:
 					return None
 				theList = []
-				items = self._HEAD_POSS.keys()
+				items = list(self._HEAD_POSS.keys())
 				for it in items:
 					stationList = self._HEAD_POSS[it]
 					for thisStation in stationList:
@@ -1893,7 +1893,7 @@ class Parser:
 				if self._PASS_ORDERS == None:
 					return None
 				theList = []
-				items = self._PASS_ORDERS.keys()
+				items = list(self._PASS_ORDERS.keys())
 				for it in items:
 					stationList = self._PASS_ORDERS[it]
 					for thisStation in stationList:
@@ -1904,7 +1904,7 @@ class Parser:
 				if self._ROLLS == None:
 					return None
 				theList = []
-				items = self._ROLLS.keys()
+				items = list(self._ROLLS.keys())
 				for it in items:
 					stationList = self._ROLLS[it]
 					for thisStation in stationList:
@@ -1915,7 +1915,7 @@ class Parser:
 				if self._PHASE_CAL_DETECTS == None:
 					return None
 				theList = []
-				items = self._PHASE_CAL_DETECTS.keys()
+				items = list(self._PHASE_CAL_DETECTS.keys())
 				for it in items:
 					stationList = self._PHASE_CAL_DETECTS[it]
 					for thisStation in stationList:
@@ -1929,7 +1929,7 @@ class Parser:
 	def modes( self ):
 		if self._modeSection == None:
 			return None
-		return self._modeSection._modes.keys()
+		return list(self._modeSection._modes.keys())
 
 	#<!------------------------------------------------------------------------>
 	## Return a mode structure using the mode name.

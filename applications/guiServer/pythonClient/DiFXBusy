@@ -347,11 +347,11 @@ class Responder:
 			#  subsequent printing at the top.
 			os.system( 'cls' if os.name == 'nt' else 'clear' )
 			if showJobs:
-				if len( self.jobs.keys() ) > 0:
+				if len( list(self.jobs.keys()) ) > 0:
 					maxCol1 = 12
 					maxCol2 = len( "Initializing" )
 					#  Find some ideal column sizes
-					for job in self.jobs.keys():
+					for job in list(self.jobs.keys()):
 						if len( job ) > maxCol1:
 							maxCol1 = len( job )
 						if len( self.jobs[job][1] ) > maxCol2:
@@ -383,14 +383,14 @@ class Responder:
 							while len( shortStr ) < 50:
 								shortStr += " "
 							newStr += shortStr + "]"
-							print newStr
+							print(newStr)
 			#  Find out column widths for processors and mark5s, even if we aren't showing
 			#  both.
 			if showProcessors or showMark5s:
 				maxCol1 = 12
 				maxJob = 10
-				if len( self.processors.keys() ) > 0:
-					for key in self.processors.keys():
+				if len( list(self.processors.keys()) ) > 0:
+					for key in list(self.processors.keys()):
 						node = self.processors[key]
 						if len( key ) > maxCol1:
 							maxCol1 = len( key )
@@ -398,8 +398,8 @@ class Responder:
 							for job in node[3]:
 								if len( job ) > maxJob:
 									maxJob = len( job )
-				if len( self.mark5s.keys() ) > 0:
-					for key in self.mark5s.keys():
+				if len( list(self.mark5s.keys()) ) > 0:
+					for key in list(self.mark5s.keys()):
 						node = self.mark5s[key]
 						if len( key + "()" + node[4] ) > maxCol1:
 							maxCol1 = len( key + "()" + node[4] )
@@ -409,16 +409,16 @@ class Responder:
 									maxJob = len( job )
 			printHeader = True
 			if showProcessors:
-				if len( self.processors.keys() ) > 0:
+				if len( list(self.processors.keys()) ) > 0:
 					printExtra = True
 					for key in sorted( self.processors.keys() ):
 						node = self.processors[key]
 						if node[3] != None and len( node[3] ) > 0:
 							if printExtra:
-								print ""
+								print("")
 								printExtra = False
 								if printHeader:
-									print " " * ( maxCol1 + 3 ) + "CPU        RX         TX"
+									print(" " * ( maxCol1 + 3 ) + "CPU        RX         TX")
 									printHeader = False
 							newStr = key
 							while len( newStr ) < maxCol1 + 3:
@@ -457,18 +457,18 @@ class Responder:
 								while len( shortStr ) < maxJob + 2:
 									shortStr += " "
 								newStr += shortStr
-							print newStr
+							print(newStr)
 			if showMark5s:
-				if len( self.mark5s.keys() ) > 0:
+				if len( list(self.mark5s.keys()) ) > 0:
 					printExtra = True
 					for key in sorted( self.mark5s.keys() ):
 						node = self.mark5s[key]
 						if node[5] != None and len( node[5] ) > 0:
 							if printExtra:
-								print ""
+								print("")
 								printExtra = False
 								if printHeader:
-									print " " * ( maxCol1 + 3 ) + "CPU        RX         TX"
+									print(" " * ( maxCol1 + 3 ) + "CPU        RX         TX")
 									printHeader = False
 							newStr = ( key + "(" + node[4] + ")" )
 							while len( newStr ) < maxCol1 + 3:
@@ -507,7 +507,7 @@ class Responder:
 									if node[6][0] == "Copy" and node[6][2] != None:
 										shortStr += node[6][2]
 									newStr += shortStr
-							print newStr
+							print(newStr)
 		lock.release()
 		
 	#---------------------------------------------------------------------------
@@ -517,9 +517,9 @@ class Responder:
 	def failCallback( self, failureID ):
 		if self.keepGoing:
 			if failureID == DiFXControl.Client.BROKEN_SOCKET:
-				print "broken socket"
+				print("broken socket")
 			elif failureID == DiFXControl.Client.FAILED_CONNECTION:
-				print "connection failed"
+				print("connection failed")
 		self.keepGoing = False
 		if window != None:
 			fltk.Fl.remove_fd( difx.sock.fileno() )
@@ -564,13 +564,13 @@ class Responder:
 							else:
 								del self.responder.jobs[job]
 								self.responder.jobsNameList.remove( job )
-								for key in self.responder.processors.keys():
+								for key in list(self.responder.processors.keys()):
 									node = self.responder.processors[key]
 									try:
 										self.responder.processors[key] = ( node[0], node[1], node[2], node[3].remove( job ) )
 									except:
 										pass
-								for key in self.responder.mark5s.keys():
+								for key in list(self.responder.mark5s.keys()):
 									node = self.responder.mark5s[key]
 									try:
 										self.responder.marks[key] = ( node[0], node[1], node[2], node[3], node[4], node[5].remove( job ) )
@@ -579,7 +579,7 @@ class Responder:
 								changed = True
 				#  This stuff is done if we are not in "linger" mode - i.e we are deleting jobs after a delay.
 				else:
-					for job in self.responder.jobs.keys():
+					for job in list(self.responder.jobs.keys()):
 						self.responder.jobs[job] = ( self.responder.jobs[job][0], self.responder.jobs[job][1], self.responder.jobs[job][2 ], self.responder.jobs[job][3] + 1 )
 						deleteJob = False
 						if ( self.responder.jobs[job][1] == "Done" or self.responder.jobs[job][1] == "MpiDone" ) and self.responder.jobs[job][3] >= doneLinger:
@@ -592,13 +592,13 @@ class Responder:
 						if deleteJob:
 							del self.responder.jobs[job]
 							self.responder.jobsNameList.remove( job )
-							for key in self.responder.processors.keys():
+							for key in list(self.responder.processors.keys()):
 								node = self.responder.processors[key]
 								try:
 									self.responder.processors[key] = ( node[0], node[1], node[2], node[3].remove( job ) )
 								except:
 									pass
-							for key in self.responder.mark5s.keys():
+							for key in list(self.responder.mark5s.keys()):
 								node = self.responder.mark5s[key]
 								try:
 									self.responder.marks[key] = ( node[0], node[1], node[2], node[3], node[4], node[5].remove( job ) )
@@ -611,13 +611,13 @@ class Responder:
 					job = self.responder.jobsNameList[0]
 					del self.responder.jobs[job]
 					self.responder.jobsNameList.remove( job )
-					for key in self.responder.processors.keys():
+					for key in list(self.responder.processors.keys()):
 						node = self.responder.processors[key]
 						try:
 							self.responder.processors[key] = ( node[0], node[1], node[2], node[3].remove( job ) )
 						except:
 							pass
-					for key in self.responder.mark5s.keys():
+					for key in list(self.responder.mark5s.keys()):
 						node = self.responder.mark5s[key]
 						try:
 							self.responder.marks[key] = ( node[0], node[1], node[2], node[3], node[4], node[5].remove( job ) )
@@ -652,61 +652,61 @@ try:
 		#  Check against legal argument types.  Anything we don't recognize is assumed
 		#  to be part of a list of message types.
 		if sys.argv[i] in [ "-h", "--help" ]:
-			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-			print "A program for monitoring active jobs on a DiFX correlator."
-			print "Usage: %s [options]" % ( sys.argv[0] )
-			print ""
-			print "Options can include:"
-			print ""
-			print "   --help"
-			print "   -h         Print this help information and quit."
-			print ""
-			print "   --hostname NAME"
-			print "   -H NAME    Use NAME as the host of the difxServer program."
-			print "              Default is to use DIFX_CONTROL_HOST environment variable."
-			print ""
-			print "   --identifier NAME"
-			print "   -i         Parse only messages with the named identifier.  This is (often)"
-			print "              the DiFX job name, so this option can be used to monitor a"
-			print "              job or jobs exclusively.  The named identifier is a regular"
-			print "              expression, so multiple jobs can be matched."
-			print ""
-			print "   --jobs"
-			print "   -j         Display jobs - by turning this on other items (processors"
-			print "              and Mark5's) will be turned off unless requested"
-			print "              specifically - by default everything is displayed)."
-			print ""
-			print "   --keep"
-			print "   -k         Keep jobs on the list that are incomplete, even if they have"
-			print "              been idled or they exceed the linger limit.  This can be used"
-			print "              to see what happened when jobs fail or stall, but can clutter"
-			print "              the display.  By default we don't do this."
-			print ""
-			print "   --linger [NUM]"
-			print "   -l [NUM]   Permanently display jobs - by default they are removed"
-			print "              from the display shortly after they finish or if they don't"
-			print "              do anything for a while.  When included, a maximum of NUM"
-			print "              jobs will be displayed at any one time - oldest jobs are"
-			print "              deleted.  In GUI mode a NUM of 20 is the default."
-			print ""
-			print "   --mark5s"
-			print "   -m         Display Mark5s - by turning this on other items (jobs"
-			print "              and processors) will be turned off unless requested"
-			print "              specifically - by default everything is displayed)."
-			print ""
-			print "   --processors"
-			print "   -p         Display processors - by turning this on other items (jobs"
-			print "              and Mark5's) will be turned off unless requested"
-			print "              specifically - by default everything is displayed)."
-			print ""
-			print "   --port PORT"
-			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
-			print "              Default is to use DIFX_CONTROL_PORT environment variable."
-			print ""
-			print "   --text"
-			print "   -t         Produce only text-based output.  The default behavior is to"
-			print "              try to launch a small GUI (text will be used on failure)."
-			print ""
+			print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
+			print("A program for monitoring active jobs on a DiFX correlator.")
+			print("Usage: %s [options]" % ( sys.argv[0] ))
+			print("")
+			print("Options can include:")
+			print("")
+			print("   --help")
+			print("   -h         Print this help information and quit.")
+			print("")
+			print("   --hostname NAME")
+			print("   -H NAME    Use NAME as the host of the difxServer program.")
+			print("              Default is to use DIFX_CONTROL_HOST environment variable.")
+			print("")
+			print("   --identifier NAME")
+			print("   -i         Parse only messages with the named identifier.  This is (often)")
+			print("              the DiFX job name, so this option can be used to monitor a")
+			print("              job or jobs exclusively.  The named identifier is a regular")
+			print("              expression, so multiple jobs can be matched.")
+			print("")
+			print("   --jobs")
+			print("   -j         Display jobs - by turning this on other items (processors")
+			print("              and Mark5's) will be turned off unless requested")
+			print("              specifically - by default everything is displayed).")
+			print("")
+			print("   --keep")
+			print("   -k         Keep jobs on the list that are incomplete, even if they have")
+			print("              been idled or they exceed the linger limit.  This can be used")
+			print("              to see what happened when jobs fail or stall, but can clutter")
+			print("              the display.  By default we don't do this.")
+			print("")
+			print("   --linger [NUM]")
+			print("   -l [NUM]   Permanently display jobs - by default they are removed")
+			print("              from the display shortly after they finish or if they don't")
+			print("              do anything for a while.  When included, a maximum of NUM")
+			print("              jobs will be displayed at any one time - oldest jobs are")
+			print("              deleted.  In GUI mode a NUM of 20 is the default.")
+			print("")
+			print("   --mark5s")
+			print("   -m         Display Mark5s - by turning this on other items (jobs")
+			print("              and processors) will be turned off unless requested")
+			print("              specifically - by default everything is displayed).")
+			print("")
+			print("   --processors")
+			print("   -p         Display processors - by turning this on other items (jobs")
+			print("              and Mark5's) will be turned off unless requested")
+			print("              specifically - by default everything is displayed).")
+			print("")
+			print("   --port PORT")
+			print("   -P PORT    Use PORT as the TCP port to communicated with the difxServer.")
+			print("              Default is to use DIFX_CONTROL_PORT environment variable.")
+			print("")
+			print("   --text")
+			print("   -t         Produce only text-based output.  The default behavior is to")
+			print("              try to launch a small GUI (text will be used on failure).")
+			print("")
 			exit( 0 )
 		elif sys.argv[i] in [ "-H", "--hostname" ]:
 			host = sys.argv[i+1]
@@ -748,7 +748,7 @@ try:
 		i = i + 1
 
 except RuntimeError:
-	print "Usage: %s [options] [<list of message types>]" % ( sys.argv[0] )
+	print("Usage: %s [options] [<list of message types>]" % ( sys.argv[0] ))
 	exit( 0 )
 	
 if userShowJobs:

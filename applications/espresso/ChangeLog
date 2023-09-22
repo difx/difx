@@ -1,5 +1,10 @@
 Version 2.8
 ~~~~~~~~~~~~~
+* drop pretence of python2 support everywhere
+* standardise the install process
+
+Version 2.8
+~~~~~~~~~~~~~
 * python3
 * Support execution from a singularity/docker image (split espresso.py into two parts - espressoprep.py and espressolaunch.py)
 * fsclock.py extracts clocks from FS log files.

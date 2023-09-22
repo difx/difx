@@ -33,12 +33,14 @@ if not libdirs is None:
     if not os.path.exists(pth):
         raise Exception("Requested library dir %s  does not exist"%pth)
 
-# change if fitsio.h is found elsewhere:
-cfitsio='/usr/include/cfitsio'
+# if fitsio.h is found elsewhere, use POLCONVERTCFITSIODIR:
+try:    cfitsio = os.environ['POLCONVERTCFITSIODIR']
+except: cfitsio = '/usr/include/cfitsio'
 
 # an option to compile the global cross-polarization fringe fitting.
-DO_SOLVE = True
-
+# POLCONVERTDOSOLVE should be True or False
+try:    DO_SOLVE = bool(os.environ['POLCONVERTDOSOLVE'])
+except: DO_SOLVE = True
 
 if DO_SOLVE:
   # gsl depends on cblas on some installations/distros and libraries
@@ -49,7 +51,7 @@ if DO_SOLVE:
   #   export POLGAINSOLVELIBS='gsl,cblas,fftw3'
   #   export POLGAINSOLVELIBS='gsl,fftw3'
   try:    pgsliblist = os.environ['POLGAINSOLVELIBS'].split(',')
-  except: pgsliblist =['gsl','fftw3']
+  except: pgsliblist =['gsl','cblas','fftw3']
   print('# for PolGainSolve, libraries is',pgsliblist)
 
 sourcefiles1 = ['CalTable.cpp', 'DataIO.cpp', 'DataIOFITS.cpp',

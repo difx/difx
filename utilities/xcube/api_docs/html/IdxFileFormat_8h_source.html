@@ -96,47 +96,48 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00021"></a>00021 
 <a name="l00025"></a>00025         <span class="keyword">const</span> UINT32 INDEX_MAGIC_COOKIE     = 0xa5b4c3d2;
 <a name="l00026"></a>00026         <span class="keyword">const</span> UINT32 TRAILER_MAGIC_COOKIE   = 0xcafebabe;
-<a name="l00027"></a>00027         <span class="keyword">const</span> std::string INDEX_FILE_EXT    = <span class="stringliteral">&quot;idx&quot;</span>;
-<a name="l00028"></a>00028 
-<a name="l00029"></a><a class="code" href="structx3c_1_1indexer_1_1__IndexRecord.html">00029</a>         <span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="structx3c_1_1indexer_1_1__IndexRecord.html">_IndexRecord</a>
-<a name="l00030"></a>00030         {
-<a name="l00031"></a>00031             UINT64 timestamp;       <span class="comment">/* time stamp  (seconds &lt;&lt; 32 + nanoseconds) */</span>
-<a name="l00032"></a>00032             UINT64 offset;          <span class="comment">/* file offset to the x3c header, not the pay load */</span>
-<a name="l00033"></a>00033             UINT64 packet_number;   <span class="comment">/* */</span>
-<a name="l00034"></a>00034         } <a class="code" href="structx3c_1_1indexer_1_1__IndexRecord.html">IndexRecord</a>;
-<a name="l00035"></a>00035 
-<a name="l00036"></a><a class="code" href="structx3c_1_1indexer_1_1__IndexHeader.html">00036</a>         <span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="structx3c_1_1indexer_1_1__IndexHeader.html">_IndexHeader</a>
-<a name="l00037"></a>00037         {
-<a name="l00038"></a>00038             UINT32 magic_number;       <span class="comment">/* magic number            */</span>
-<a name="l00039"></a>00039             UINT32 header_length;      <span class="comment">/* does not include magic_number or header length */</span>
-<a name="l00040"></a>00040             UINT16 version_major;      <span class="comment">/* major version number    */</span>
-<a name="l00041"></a>00041             UINT16 version_minor;      <span class="comment">/* minor version number    */</span>
-<a name="l00042"></a>00042             UINT64 start_time;         <span class="comment">/* seconds &lt;&lt; 32 + nanoseconds */</span>
-<a name="l00043"></a>00043             UINT64 end_time;           <span class="comment">/* seconds &lt;&lt; 32 + nanoseconds */</span>
-<a name="l00044"></a>00044             INT32  time_zone;          <span class="comment">/* +/- offset from GMT in seconds */</span>
-<a name="l00045"></a>00045             UINT64 num_index_records;  <span class="comment">/* number of index records in this file   */</span>
-<a name="l00046"></a>00046             UINT64 total_index_count;  <span class="comment">/* the index count for the entire stream */</span>
-<a name="l00047"></a>00047             UINT16 num_files;          <span class="comment">/* the number of files that make up the stream */</span>
-<a name="l00048"></a>00048             UCHAR  reserved[0x1fc2];   <span class="comment">/* pad to 8KB - must adjust when adding fields */</span>
-<a name="l00049"></a>00049             UINT32 trailer_magic;      <span class="comment">/* for sanity checking the trailer */</span>
-<a name="l00050"></a>00050 
-<a name="l00051"></a>00051         } <a class="code" href="structx3c_1_1indexer_1_1__IndexHeader.html">IndexHeader</a>;
-<a name="l00052"></a>00052 
-<a name="l00053"></a><a class="code" href="structx3c_1_1indexer_1_1__IndexTrailer.html">00053</a>         <span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="structx3c_1_1indexer_1_1__IndexTrailer.html">_IndexTrailer</a>
-<a name="l00054"></a>00054         {
-<a name="l00055"></a>00055             UINT64 trailer_length;     <span class="comment">/* length of the trailer */</span>
-<a name="l00056"></a>00056             UINT64 timestamp;          <span class="comment">/* trailer timestamp (time witten) */</span>
-<a name="l00057"></a>00057             UINT64 file_record_count;  <span class="comment">/* number of index records in the file */</span> 
-<a name="l00058"></a>00058             UINT64 file_offset;        <span class="comment">/* Offset */</span> 
-<a name="l00059"></a>00059             UINT64 total_packets;      <span class="comment">/* */</span>
-<a name="l00060"></a>00060             UCHAR  reserved[0x1fd4];   <span class="comment">/* pad to 8KB - must adjust when adding fields */</span>
-<a name="l00061"></a>00061             UINT32 magic_number;       <span class="comment">/* trailer magic. Should always be the last field */</span>
-<a name="l00062"></a>00062         } <a class="code" href="structx3c_1_1indexer_1_1__IndexTrailer.html">IndexTrailer</a>;
-<a name="l00063"></a>00063 
-<a name="l00064"></a>00064     }   <span class="comment">/* namespace indexer */</span>
-<a name="l00065"></a>00065 }  <span class="comment">/* namespace x3c */</span>
-<a name="l00066"></a>00066 
-<a name="l00067"></a>00067 <span class="preprocessor">#endif   </span><span class="comment">/* __IDXFILEFORMAT__H__ */</span>
+<a name="l00027"></a>00027         <span class="keyword">const</span> std::string INDEX_FILE_EXT    = <span class="stringliteral">&quot;ix1&quot;</span>;
+<a name="l00028"></a>00028         <span class="keyword">const</span> std::string INDEX_FILE_EXT_WDOT    = <span class="stringliteral">&quot;.ix1&quot;</span>;
+<a name="l00029"></a>00029 
+<a name="l00030"></a><a class="code" href="structx3c_1_1indexer_1_1__IndexRecord.html">00030</a>         <span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="structx3c_1_1indexer_1_1__IndexRecord.html">_IndexRecord</a>
+<a name="l00031"></a>00031         {
+<a name="l00032"></a>00032             UINT64 timestamp;       <span class="comment">/* time stamp  (seconds &lt;&lt; 32 + nanoseconds) */</span>
+<a name="l00033"></a>00033             UINT64 offset;          <span class="comment">/* file offset to the x3c header, not the pay load */</span>
+<a name="l00034"></a>00034             UINT64 packet_number;   <span class="comment">/* */</span>
+<a name="l00035"></a>00035         } <a class="code" href="structx3c_1_1indexer_1_1__IndexRecord.html">IndexRecord</a>;
+<a name="l00036"></a>00036 
+<a name="l00037"></a><a class="code" href="structx3c_1_1indexer_1_1__IndexHeader.html">00037</a>         <span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="structx3c_1_1indexer_1_1__IndexHeader.html">_IndexHeader</a>
+<a name="l00038"></a>00038         {
+<a name="l00039"></a>00039             UINT32 magic_number;       <span class="comment">/* magic number            */</span>
+<a name="l00040"></a>00040             UINT32 header_length;      <span class="comment">/* does not include magic_number or header length */</span>
+<a name="l00041"></a>00041             UINT16 version_major;      <span class="comment">/* major version number    */</span>
+<a name="l00042"></a>00042             UINT16 version_minor;      <span class="comment">/* minor version number    */</span>
+<a name="l00043"></a>00043             UINT64 start_time;         <span class="comment">/* seconds &lt;&lt; 32 + nanoseconds */</span>
+<a name="l00044"></a>00044             UINT64 end_time;           <span class="comment">/* seconds &lt;&lt; 32 + nanoseconds */</span>
+<a name="l00045"></a>00045             INT32  time_zone;          <span class="comment">/* +/- offset from GMT in seconds */</span>
+<a name="l00046"></a>00046             UINT64 num_index_records;  <span class="comment">/* number of index records in this file   */</span>
+<a name="l00047"></a>00047             UINT64 total_index_count;  <span class="comment">/* the index count for the entire stream */</span>
+<a name="l00048"></a>00048             UINT16 num_files;          <span class="comment">/* the number of files that make up the stream */</span>
+<a name="l00049"></a>00049             UCHAR  reserved[0x1fc2];   <span class="comment">/* pad to 8KB - must adjust when adding fields */</span>
+<a name="l00050"></a>00050             UINT32 trailer_magic;      <span class="comment">/* for sanity checking the trailer */</span>
+<a name="l00051"></a>00051 
+<a name="l00052"></a>00052         } <a class="code" href="structx3c_1_1indexer_1_1__IndexHeader.html">IndexHeader</a>;
+<a name="l00053"></a>00053 
+<a name="l00054"></a><a class="code" href="structx3c_1_1indexer_1_1__IndexTrailer.html">00054</a>         <span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code" href="structx3c_1_1indexer_1_1__IndexTrailer.html">_IndexTrailer</a>
+<a name="l00055"></a>00055         {
+<a name="l00056"></a>00056             UINT64 trailer_length;     <span class="comment">/* length of the trailer */</span>
+<a name="l00057"></a>00057             UINT64 timestamp;          <span class="comment">/* trailer timestamp (time witten) */</span>
+<a name="l00058"></a>00058             UINT64 file_record_count;  <span class="comment">/* number of index records in the file */</span> 
+<a name="l00059"></a>00059             UINT64 file_offset;        <span class="comment">/* Offset */</span> 
+<a name="l00060"></a>00060             UINT64 total_packets;      <span class="comment">/* */</span>
+<a name="l00061"></a>00061             UCHAR  reserved[0x1fd4];   <span class="comment">/* pad to 8KB - must adjust when adding fields */</span>
+<a name="l00062"></a>00062             UINT32 magic_number;       <span class="comment">/* trailer magic. Should always be the last field */</span>
+<a name="l00063"></a>00063         } <a class="code" href="structx3c_1_1indexer_1_1__IndexTrailer.html">IndexTrailer</a>;
+<a name="l00064"></a>00064 
+<a name="l00065"></a>00065     }   <span class="comment">/* namespace indexer */</span>
+<a name="l00066"></a>00066 }  <span class="comment">/* namespace x3c */</span>
+<a name="l00067"></a>00067 
+<a name="l00068"></a>00068 <span class="preprocessor">#endif   </span><span class="comment">/* __IDXFILEFORMAT__H__ */</span>
 </pre></div></div><!-- contents -->
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
@@ -155,7 +156,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 
 
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 2 2013 17:12:28 for XCube Stream Reader SDK by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat May 10 2014 01:37:42 for XCube Stream Reader SDK by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.7.6.1
 </small></address>

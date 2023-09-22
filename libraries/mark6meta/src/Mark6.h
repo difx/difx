@@ -91,7 +91,7 @@ private:
         int verifyDevices();
 	void validateMountDevices();
         int parseControllerId(std::string devpath);
-        long parseDiskId(std::string sasAddress);
+        long parseDiskId(std::string sasAddress, std::string driver);
 public:
         Mark6();
 	~Mark6();
@@ -108,6 +108,7 @@ public:
         int getSlot(std::string eMSN);
         void sendStatusMessage();
         void sendSlotStatusMessage();
+        Mark6Controller *getControllerById(int id);
         std::vector<Mark6DiskDevice> getMountedDevices() const {
             return mountedDevices_m;
         }

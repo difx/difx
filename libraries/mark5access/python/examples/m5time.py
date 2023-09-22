@@ -28,7 +28,7 @@ EXIT_FAILURE = 1   # sys.exit() return code on errors
 Ncheck = 10        # num of consecutive frames to check for consistent MJD
 
 def usage():
-	print __doc__
+	print (__doc__)
 
 def m5time(fn, fmt, offset):
 	"""Reports first timestamp in file and verifies additional timestamps are consistent."""

@@ -1,5 +1,5 @@
 ####### DIFX VERSION ########################
-export DIFX_VERSION=DiFX-2.8.1
+export DIFX_VERSION=trunk
 
 ####### ROOT PATHS ##########################
 export DIFXROOT=/usr/local/difx
@@ -25,7 +25,7 @@ export USEGFORTRAN="yes"
 
 ####### PERL VERSION/SUBVERSION #############
 perlver="5"
-perlsver="5.30.0"
+perlsver="5.10.1"
 
 ####### PORTS FOR DIFXMESSAGE ###############
 # Uncomment these to enable DIFX_MESSAGES
@@ -121,7 +121,7 @@ then
 elif [ "$arch" = "x86_64" ] #64 bit
 then
   export DIFXBITS=64
-  PrependPath PERL5LIB         "${DIFXROOT}/share/perl/$perlsver:${DIFXROOT}/./lib/x86_64-linux-gnu/perl/$perlsver"
+  PrependPath PERL5LIB         "${DIFXROOT}/perl/lib64/perl$perlver/site_perl/$perlsver/x86_64-linux-thread-multi"
 else
   echo "Unknown architecture $arch - leaving paths unaltered"
 fi

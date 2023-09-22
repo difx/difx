@@ -18,11 +18,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: difxqueue.py 11095 2023-09-15 04:20:19Z ShaoguangGuo $
+# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/difxqueue/difxqueue.py $
+# $LastChangedRevision: 11095 $
+# $Author: ShaoguangGuo $
+# $LastChangedDate: 2023-09-15 12:20:19 +0800 (五, 2023-09-15) $
 #
 #============================================================================
 
@@ -104,7 +104,7 @@ def setQueueDirectoryOwnership(queueDir):
 	if groupId != None:
 		cmd = 'chown -R :%s %s' % (groupId, queueDir)
 		if verbose > 0:
-			print 'Executing: %s' % cmd
+			print('Executing: %s' % cmd)
 		system(cmd)
 	
 def setQueueDirectory(experiment):
@@ -129,13 +129,13 @@ def setQueueDirectory(experiment):
 		queueDir = options.queueDir
 
 	if (options.verbose > 0):
-		print "VERBOSE: Using queue directory: %s" % queueDir
+		print("VERBOSE: Using queue directory: %s" % queueDir)
 	
 	# make queue directory (if it doesn't exist yet)
 	if not isdir(queueDir):
 		cmd = 'mkdir -p %s' % queueDir
 		if options.verbose > 0:
-			print 'VERBOSE: Executing: %s' % cmd
+			print('VERBOSE: Executing: %s' % cmd)
 		system(cmd)
 
 		# check if directory was created successfully
@@ -183,7 +183,7 @@ def processSetPassTypeAction(args):
 	for Pass in passList:
 		Pass.type = passType
                 session.commit()
-		print "Changing pass type to %s on  %s / %s (Exp/Pass)" % (newType, project, Pass.passName)
+		print("Changing pass type to %s on  %s / %s (Exp/Pass)" % (newType, project, Pass.passName))
 
 	return
 
@@ -216,7 +216,7 @@ def processSetStateAction(args):
         queueList = getJobs(session, project, passName, jobNumbers)
         
 	if len(queueList) == 0:
-		print "No queued jobs matching your search criteria found"
+		print("No queued jobs matching your search criteria found")
 		return
 
 	# check that the requested status exists
@@ -229,7 +229,7 @@ def processSetStateAction(args):
 		confirmAction("change job state")
 
 	for queue in queueList:
-		print "Processing  %s / %s / %s (Exp/Pass/Number)" % (project, passName , queue.jobNumber)
+		print("Processing  %s / %s / %s (Exp/Pass/Number)" % (project, passName , queue.jobNumber))
                 
 		queue.status = jobStatus
                 session.commit()
@@ -264,7 +264,7 @@ def processDeleteAction(args):
         queueList = getActiveJobsByPasses(session, project, passes)
 
 	if len(queueList) == 0:
-		print "No queued jobs matching your search criteria found"
+		print("No queued jobs matching your search criteria found")
 		return
 
 	# get user confirmation before doing the delete from the DB
@@ -287,19 +287,19 @@ def processDeleteAction(args):
 
 			# check if output data exists for this job
 			if isdir(queue.inputFile[0:-6]+ '.difx' ):
-				print '\nWarning: correlator output for job %d of pass %s exists.' % (queue.jobNumber, queue.Pass.passName)
+				print('\nWarning: correlator output for job %d of pass %s exists.' % (queue.jobNumber, queue.Pass.passName))
 
 				
 				if (not dontAsk):
-					print 'Continue anyway, destroying this data? [y/N/a/c] (y=yes, n=no (default), a = all, c = cancel)'
+					print('Continue anyway, destroying this data? [y/N/a/c] (y=yes, n=no (default), a = all, c = cancel)')
 					reply = strip(lower(sys.stdin.readline()))
 
 					if reply == 'a':
 						dontAsk = True
 						reply = 'y'
-						print 'Assuming yes for all remaining'
+						print('Assuming yes for all remaining')
 					elif reply == 'c':
-						print 'Canceling'
+						print('Canceling')
 						return;
 			
 				else:
@@ -307,9 +307,9 @@ def processDeleteAction(args):
 
 				if reply =='y':
 					if (dontAsk):
-						print 'Continuing anyway'
+						print('Continuing anyway')
 					else:
-						print 'OK -- proceeding'
+						print('OK -- proceeding')
 				else:
 					continue
 				
@@ -369,7 +369,7 @@ def processPriorityAction(args, priorityInc):
 	queueList = getActiveJobsByPasses(session, project, passes)
 
 	if len(queueList) == 0:
-		print "No queued jobs matching your search criteria found"
+		print("No queued jobs matching your search criteria found")
 		return
 
 	# get user confirmation before changing the priority
@@ -386,7 +386,7 @@ def processPriorityAction(args, priorityInc):
 		queue.priority += priorityInc
                 session.commit()
 
-                print "Set priority to %s on %s/%s/%s (Exp/Pass/Number)" % (queue.priority, queue.Pass.experiment.code, queue.Pass.passName, queue.jobNumber)
+                print("Set priority to %s on %s/%s/%s (Exp/Pass/Number)" % (queue.priority, queue.Pass.experiment.code, queue.Pass.passName, queue.jobNumber))
 
 	
 
@@ -406,11 +406,11 @@ def processPrintQueueAction(args):
 	queueList = getActiveJobs(session , projects)
 
 	if len(queueList) == 0:
-		print "No queued jobs matching your search criteria found"
+		print("No queued jobs matching your search criteria found")
 		return
 
 	header = formatHeader % ('Exper', 'Pass', 'Num', 'Pri', 'Status', 'nAnt', 'Start', 'Dur', 'SpeedUp', "Total(hrs)")
-	print header
+	print(header)
 	
 	for queue in queueList:
 
@@ -426,15 +426,15 @@ def processPrintQueueAction(args):
 			queue.priority, queue.status.status, queue.numAntennas, queue.numForeign, mjd2vexTime(queue.jobStart),\
 			queue.jobDuration, queue.speedupFactor, totalCor/3600)
 
-		print line
+		print(line)
 
-	print 'Total observe time        = %4.2f hours' % (totalDur / 3600.0)
-	print 'Total correlation time    = %4.2f hours' % (totalCor / 3600.0)
+	print('Total observe time        = %4.2f hours' % (totalDur / 3600.0))
+	print('Total correlation time    = %4.2f hours' % (totalCor / 3600.0))
 
 def readJobList(passName):
 
-	print joblist.parameters
-	print joblist.jobs[0]
+	print(joblist.parameters)
+	print(joblist.jobs[0])
 
 def getnumbers(stringlist):
 	"""
@@ -449,7 +449,7 @@ def getnumbers(stringlist):
 			try:
 				start = int(s[:sepIndex])
 				stop = int(s[sepIndex+1:])
-			except Exception, e:
+			except Exception as e:
 				exitOnError(e)
 
 			if stop < start:
@@ -457,7 +457,7 @@ def getnumbers(stringlist):
 		else:
 			try:
 				start = stop = int(s)
-			except Exception, e:
+			except Exception as e:
 				exitOnError(e)
 				
 
@@ -493,7 +493,7 @@ def processAddAction(args):
 
 	try:
 		joblist = DiFXJoblist(".", jobListFile)
-	except IOError, ex:
+	except IOError as ex:
 		exitOnError (ex)
 		
 	OK = True
@@ -516,10 +516,10 @@ def processAddAction(args):
 				badList.append(queueDir + "/" + job.name)
 				
 	if len(badList) > 0 and not options.force :
-		print '\nThe following jobs are already in the queue:'
+		print('\nThe following jobs are already in the queue:')
 		for badJob in badList:
-			print '  %s' % badJob
-		print 'Please rerun, including only those jobs not already queued.'
+			print('  %s' % badJob)
+		print('Please rerun, including only those jobs not already queued.')
 		return
 
 	# adding jobs to the database			
@@ -543,7 +543,7 @@ def processAddAction(args):
 		# add job to the database
 		try:
                         addQueueItem(session, queueItem, joblist.parameters["pass"], joblist.parameters["exper"])
-		except Exception, e:
+		except Exception as e:
 			exitOnError(e)
 		else:
 			sys.stdout.write("... added to database" )
@@ -560,7 +560,7 @@ def processAddAction(args):
 			if(queueDir != getcwd()):
 				cmd = 'difxcopy %s %s %s' % (optStr, job.name, queueDir)
 				if options.verbose > 0:
-					print 'VERBOSE: Executing: %s' % cmd
+					print('VERBOSE: Executing: %s' % cmd)
 				system(cmd)
 				sys.stdout.write("...copied to the queue directory")
 			else:
@@ -571,7 +571,7 @@ def processAddAction(args):
 				optStr += " --override-version "
 			cmd = 'calcif2 %s -f %s/%s' % (optStr, queueDir, job.name)
 			if options.verbose > 0:
-				print 'VERBOSE: Executing: %s' % cmd
+				print('VERBOSE: Executing: %s' % cmd)
 			system(cmd)
 			sys.stdout.write("...ran calcif2")
 
@@ -595,22 +595,22 @@ def confirmAction(action):
 	if (options.yes):
 		return
 
-	print '\nThe %s action is about to be applied to all matching jobs' %\
-		action
-	print '\nAre you sure you want to proceed? [y/N]'
+	print('\nThe %s action is about to be applied to all matching jobs' %\
+		action)
+	print('\nAre you sure you want to proceed? [y/N]')
 
 	a = lower(sys.stdin.readline())
 	if strip(a) == 'y':
-		print 'OK -- proceeding\n'
+		print('OK -- proceeding\n')
 	else:
-		print 'Not continuing.\n'
+		print('Not continuing.\n')
 		exit(0)
 
 def exitOnError(exception):
 	'''
 	Exit routine to be called whenever an error/exception has occured
 	'''
-	print "ERROR: %s. Aborting" % exception
+	print("ERROR: %s. Aborting" % exception)
 	
 	exit(1)
 
@@ -685,9 +685,9 @@ parser.add_option("-c", "--conf", dest="dbConf", type="string", default= "", hel
 (options, args) = parser.parse_args()
 
 if (options.verbose > 0):
-	print "Using options:"
-	for key, value in options.__dict__.items():
-		print "%s  : %s" % ( key, value)
+	print("Using options:")
+	for key, value in list(options.__dict__.items()):
+		print("%s  : %s" % ( key, value))
 	
 if len(args) == 0:
 	parser.print_help()

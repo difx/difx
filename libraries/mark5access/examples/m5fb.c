@@ -395,6 +395,8 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	struct hd_info hinfo;
 	char *tmp = 0;
 
+	hinfo.source = 0;
+
 	count =0 ;
 	total = unpacked = 0;
 	if(nchan < 0)

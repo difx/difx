@@ -30,8 +30,8 @@ import os
 import os.path
 #from string import upper,strip
 import re
+import subprocess
 import sys
-
 
 class DifxMachines(object):
 	"""
@@ -51,6 +51,20 @@ class DifxMachines(object):
 			raise IOError("DiFX machinefile: %s does not exist. " % self.machinefile)
 
 		self._parse()
+
+		self.slurmConf = self.SlurmMachines(self.slurm_config)
+
+		if self.slurmConf.isValid():
+			for nodename in self.nodes.keys():
+				m = self.slurmConf.getNodeMaxProcesses(nodename)
+				if m > 0:
+					self.nodes[nodename].isInSlurm = True
+					self.nodes[nodename].slurm_maxProc = m
+					self.nodes[nodename].slurm_numProc = 0
+					nstate = self.slurmConf.getNodeState(nodename)
+					if 'CPUAlloc' in nstate:
+						self.nodes[nodename].slurm_numProc = int(nstate['CPUAlloc'])/int(nstate['ThreadsPerCore'])
+
 
 	def __str__(self):
 		"""
@@ -170,6 +184,85 @@ class DifxMachines(object):
 		if len(versionParts) < 2:
 			versionParts.append('0')
 		return versionParts
+
+
+	### Nested classes
+
+	class SlurmMachines:
+		"""
+		nested class in DifxMachines that parses a SLURM config file and follows 'include' statements,
+		with accessor funcs for by-name look up of details for a DifxMachines node
+		"""
+
+		def __init__(self, slurm_conf = '/etc/slurm/slurm.conf'):
+			"""
+			Constructor. Loads all node definitions from a SLURM config file, if it exists.
+			"""
+			txtNodeDefs = self._readSlurmConfNodes(slurm_conf)
+			self.nodeDefs = [self._parseNodeDef(nodedef) for nodedef in txtNodeDefs]
+
+		def _readSlurmConfNodes(self, slurm_conf):
+			"""recursively reads NodeName lines from slurm.conf and any included slurm.d/* conf files"""
+			node_lines = []
+			if os.path.isfile(slurm_conf):
+				fd = open(slurm_conf, 'r')
+				for line in fd.readlines():
+					line = line.strip()
+					if len(line) < 1 or line[0] == '#':
+						continue
+					if line.startswith("NodeName"):
+						node_lines.append(line)
+					elif line.startswith("include "):
+						inc_file = line[8:].strip()
+						inc_nodes = self._readSlurmConfNodes(inc_file)
+						node_lines += inc_nodes
+				fd.close()
+			return node_lines
+
+
+		def _parseNodeDef(self, namedef):
+			"""parse a SLURM NodeName line and split it into key-value pairs"""
+			# Name def example: 'NodeName=mark6-01,mark6-02 CPUs=12 Sockets=1 CoresPerSocket=6 ThreadsPerCore=2 Feature=mark6 State=UNKNOWN'
+			items = namedef.split()
+			keys = [item.split('=')[0] for item in items]
+			values = [item.split('=')[1] for item in items]
+			data = dict(zip(keys,values))
+
+			if 'NodeName' in data:
+				if '[' in data['NodeName']:
+					print("TODO: node name definition '%s' would apparently need expansion, currently not implemented in script." % (data['NodeName']))
+				if ',' in data['NodeName']:
+					data['NodeName'] = data['NodeName'].split(',')
+
+			return data
+
+		def getNodeState(self, difxnodename):
+			"""Return some of 'scontrol show node <difxnodename>' fields as a dictionary"""
+			values = {}
+			try:
+				out = subprocess.check_output(['scontrol', 'show', 'node', difxnodename])
+				out = out.decode('utf8')
+				for line in out.split('\n'):
+					if 'CPUAlloc' in line or 'Threads' in line or 'AllocMem' in line or 'ThreadsPerCore' in line:
+						d = dict(x.split('=') for x in line.strip().split(' '))
+						values.update(d)
+			except Exception as e:
+				pass
+			return values
+
+		def isValid(self):
+			return len(self.nodeDefs) > 0
+
+
+		def getNodeMaxProcesses(self, difxnodename):
+			"""return the maximum nr of processes the SLURM config permits to be launched on the given node"""
+			m = -1
+			for nodedef in self.nodeDefs:
+				if difxnodename in nodedef['NodeName']:
+					m = int(nodedef['CPUs']) / int(nodedef['ThreadsPerCore'])
+			return m				
+
+
 
 	def _parse(self):
 		'''

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # =======================================================================
 # Copyright (C) 2017 Cormac Reynolds
 #
@@ -27,7 +27,7 @@ import re
 import sys
 import numpy
 from matplotlib import pyplot
-import espressolib
+from espressolib import espressolib
 
 
 # a priori corrections to the gps log values derived from previous clock

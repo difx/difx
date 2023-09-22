@@ -337,7 +337,10 @@ void Mark5BDataStream::initialiseFile(int configindex, int fileindex)
 	cinfo << startl << fileSummaryString << endl;
 
 	// If verbose...
-	printmark5bfilesummary(&fileSummary);
+	if (verbose)
+        {
+	    printmark5bfilesummary(&fileSummary);
+        }
 
 
 	// Here set readseconds to time since beginning of job

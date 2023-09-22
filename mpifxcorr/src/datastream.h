@@ -87,6 +87,8 @@ public:
   */
   inline long long getEstimatedBytes() const { return estimatedbytes; }
 
+  bool verbose;
+
 #define BUFOFFSET_T int   // Should eventually be changed to uint64_t to avoid 2 GB limit
 
 protected:

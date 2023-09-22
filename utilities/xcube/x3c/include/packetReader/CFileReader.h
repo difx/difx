@@ -47,7 +47,8 @@ public:
 	 *	@param pktBuf - the packet buffer to write to
 	 *	@param chunkSz - the preferred read size in MByte
 	 */
-	CFileReader(const char * inFileName, CPacketBuffer *pktBuf, size_t chunkSz);
+	CFileReader(const char * inFileName, CPacketBuffer *pktBuf, 
+                size_t chunkSz);
 
 	//! De-constructor
 	/*! Clean a file reader, close the file if it is not closed,
@@ -71,18 +72,18 @@ public:
 	//! Stop the reader thread and close the files.
 	void stop();
 
-	//! Seek in the current file to position pos in bytes
-	/*! Not Implemented
-	 *  @param pos - position in file to seek to
-	 *	@return - the current file position
-	 */
-	int seek(UINT64 pos);
+    //! Reset the CFileReader
+    /*! Reset the CFileReader to a position in the stream corresponding
+     *  to <c>timeVal</c>
+     *
+     *  After calling this funcion the CFileReader will be reset but
+     *  will not be restarted until a call to <c>CFileReader::resume()</c>
+     *  is made.
+     */
+    void reset(UINT64 timeVal);
 
-	//	/**
-	//	 * Get the current file position
-	//	 * @return
-	//	 */
-	//		size_t getFilePosition();
+    //! Resume the CFileReader after calling CFileReader::reset()
+    void resume();
 
 private:
 	UINT64 getFPosFromTime(UINT64 timeVal);
@@ -101,7 +102,6 @@ private:
 	 */
 	void bufferWriter();
 
-private:
 	//! Packet buffer pointer
 	/*! points to this file reader's packet buffer                           */
 	CPacketBuffer *mPktBuf;
@@ -139,9 +139,17 @@ private:
 	/*! current file offset for file reader / buffer writer                  */
 	size_t mFileOffset;
 
-	//! state variables
 	/*! true if file reader is initialized, or it is set as false            */
 	bool mIsInitialized;
+
+    //! true if the Reader is in a reset state, and has not yet ben resumed */
+    bool mResetting;
+
+    //! The lock used for reset 
+    pthread_mutex_t mResetLock;
+
+    //! The condition variable used for reset
+    pthread_cond_t  mResetCond;
 };
 
 #endif /* CFILEREADER_H_ */

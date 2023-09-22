@@ -23,7 +23,7 @@ import mark5access as m5lib
 from scipy import stats
 
 def usage():
-	print __doc__
+	print (__doc__)
 
 def m5stat(fn, fmt, nframes, offset):
 	"""Reports statistics for file"""

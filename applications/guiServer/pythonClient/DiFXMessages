@@ -133,246 +133,246 @@ class Responder:
 				if self.echoAllSources or xmlDat.fromNode in self.echoSources:
 					if self.identifierRE == None or self.identifierRE.match( xmlDat.identifier ) != None:
 						if self.rawXML:
-							print data
+							print(data)
 						if self.parseXML:
-							print ""
-							print "Message Type:          ", xmlDat.typeStr
-							print "From:                  ", xmlDat.fromNode
-							print "Identifier:            ", xmlDat.identifier
-							print "MPI Process ID:        ", xmlDat.mpiProcessId
-							print "Sequence Number:       ", xmlDat.seqNumber
+							print("")
+							print("Message Type:          ", xmlDat.typeStr)
+							print("From:                  ", xmlDat.fromNode)
+							print("Identifier:            ", xmlDat.identifier)
+							print("MPI Process ID:        ", xmlDat.mpiProcessId)
+							print("Sequence Number:       ", xmlDat.seqNumber)
 							if xmlDat.typeStr == "DifxLoadMessage":
-								print ""
-								print "CPU Load:              ", xmlDat.cpuLoad
-								print "Total Memory:          ", xmlDat.totalMemory
-								print "Used Memory:           ", xmlDat.usedMemory
-								print "Net Receive Rate:      ", xmlDat.netRXRate
-								print "Net Transmit Rate:     ", xmlDat.netTXRate
-								print "Number of Cores:       ", xmlDat.nCore
+								print("")
+								print("CPU Load:              ", xmlDat.cpuLoad)
+								print("Total Memory:          ", xmlDat.totalMemory)
+								print("Used Memory:           ", xmlDat.usedMemory)
+								print("Net Receive Rate:      ", xmlDat.netRXRate)
+								print("Net Transmit Rate:     ", xmlDat.netTXRate)
+								print("Number of Cores:       ", xmlDat.nCore)
 							elif xmlDat.typeStr == "DifxAlertMessage":
-								print ""
-								print "Input File:            ", xmlDat.inputFile
-								print "Alert Message:         ", xmlDat.alertMessage
-								print "Severity:              ", xmlDat.severity
+								print("")
+								print("Input File:            ", xmlDat.inputFile)
+								print("Alert Message:         ", xmlDat.alertMessage)
+								print("Severity:              ", xmlDat.severity)
 							elif xmlDat.typeStr == "Mark5StatusMessage":
-								print ""
-								print "Input File:            ", xmlDat.inputFile
-								print "BankA VSN:             ", xmlDat.bankAVSN
-								print "BankB VSN:             ", xmlDat.bankBVSN
-								print "Status Word:           ", xmlDat.statusWord
-								print "Active Bank:           ", xmlDat.activeBank
-								print "State:                 ", xmlDat.state
-								print "Scan Number:           ", xmlDat.scanNumber
-								print "Scan Name:             ", xmlDat.scanName
-								print "Position:              ", xmlDat.position
-								print "Play Rate:             ", xmlDat.playRate
+								print("")
+								print("Input File:            ", xmlDat.inputFile)
+								print("BankA VSN:             ", xmlDat.bankAVSN)
+								print("BankB VSN:             ", xmlDat.bankBVSN)
+								print("Status Word:           ", xmlDat.statusWord)
+								print("Active Bank:           ", xmlDat.activeBank)
+								print("State:                 ", xmlDat.state)
+								print("Scan Number:           ", xmlDat.scanNumber)
+								print("Scan Name:             ", xmlDat.scanName)
+								print("Position:              ", xmlDat.position)
+								print("Play Rate:             ", xmlDat.playRate)
 							elif xmlDat.typeStr == "DifxStatusMessage":
-								print ""
-								print "Input File:            ", xmlDat.inputFile
-								print "State:                 ", xmlDat.state
-								print "Message:               ", xmlDat.message
-								print "Visibility MJD:        ", xmlDat.visibilityMJD
-								print "Job Start MJD:         ", xmlDat.jobstartMJD
-								print "Job Stop MJD:          ", xmlDat.jobstopMJD
+								print("")
+								print("Input File:            ", xmlDat.inputFile)
+								print("State:                 ", xmlDat.state)
+								print("Message:               ", xmlDat.message)
+								print("Visibility MJD:        ", xmlDat.visibilityMJD)
+								print("Job Start MJD:         ", xmlDat.jobstartMJD)
+								print("Job Stop MJD:          ", xmlDat.jobstopMJD)
 								if len( xmlDat.weights ) > 0:
-									print "Weights:               "
+									print("Weights:               ")
 									for wt in xmlDat.weights:
-										print "    Antenna:           ", wt[0]
-										print "    Weight:            ", wt[1]
+										print("    Antenna:           ", wt[0])
+										print("    Weight:            ", wt[1])
 							elif xmlDat.typeStr == "DifxInfoMessage":
-								print ""
-								print "Message:               ", xmlDat.message
+								print("")
+								print("Message:               ", xmlDat.message)
 							elif xmlDat.typeStr == "DifxCommandMessage":
-								print ""
-								print "Command:               ", xmlDat.command
+								print("")
+								print("Command:               ", xmlDat.command)
 							elif xmlDat.typeStr == "DifxParameter":
-								print ""
-								print "Target MPI ID:         ", xmlDat.targetMpiId
-								print "Name:                  ", xmlDat.name
-								print "Value:                 ", xmlDat.value
-								for k in xmlDat.index.keys():
+								print("")
+								print("Target MPI ID:         ", xmlDat.targetMpiId)
+								print("Name:                  ", xmlDat.name)
+								print("Value:                 ", xmlDat.value)
+								for k in list(xmlDat.index.keys()):
 									newStr = "Index" + xmlDat.index[k] + ":"
 									while len( newStr ) < len( "                       " ):
 										newStr += " "
-									print newStr
+									print(newStr)
 							elif xmlDat.typeStr == "DifxStart":
-								print ""
-								print "input:                 ", xmlDat.inputFile
-								print "Head Node:             ", xmlDat.manager 
+								print("")
+								print("input:                 ", xmlDat.inputFile)
+								print("Head Node:             ", xmlDat.manager) 
 								if len( xmlDat.datastream ) > 0:
-									print "Data Streams"
+									print("Data Streams")
 									for node in xmlDat.datastream:
-										print "    " + node
+										print("    " + node)
 								if len( xmlDat.process ) > 0:
-									print "Processors                         Threads"
+									print("Processors                         Threads")
 									for node in xmlDat.process:
 										newStr = "    " + node[0]
 										while len( tmpStr ) < len( "Processors                         " ):
 											newStr += " "
 										newStr += str( node[1] )
-										print newStr
-								print "Force:                 ", xmlDat.force
-								print "DiFX Version:          ", xmlDat.difxVersion
-								print "Restart Seconds:       ", xmlDat.restartSeconds
-								print "Function:              ", xmlDat.function
-								print "Address:               ", xmlDat.address
-								print "Port:                  ", xmlDat.port
+										print(newStr)
+								print("Force:                 ", xmlDat.force)
+								print("DiFX Version:          ", xmlDat.difxVersion)
+								print("Restart Seconds:       ", xmlDat.restartSeconds)
+								print("Function:              ", xmlDat.function)
+								print("Address:               ", xmlDat.address)
+								print("Port:                  ", xmlDat.port)
 							elif xmlDat.typeStr == "DifxStop":
-								print "Input File:            ", xmlDat.inputFile
-								print "MPI Wrapper:           ", xmlDat.mpiWrapper
-								print "DiFX Version:          ", xmlDat.difxVersion
-								print "DiFX Program:          ", xmlDat.difxProgram
+								print("Input File:            ", xmlDat.inputFile)
+								print("MPI Wrapper:           ", xmlDat.mpiWrapper)
+								print("DiFX Version:          ", xmlDat.difxVersion)
+								print("DiFX Program:          ", xmlDat.difxProgram)
 							elif xmlDat.typeStr == "DifxTransientMessage":
-								print ""
-								print "Job ID:                ", xmlDat.jobId
-								print "Start MJD:             ", xmlDat.startMJD
-								print "Stop MJD:              ", xmlDat.stopMJD
-								print "Priority:              ", xmlDat.priority
-								print "Destination Directory: ", xmlDat.destDir
-								print "Comment:               ", xmlDat.comment
-								print "dm:                    ", xmlDat.dm
+								print("")
+								print("Job ID:                ", xmlDat.jobId)
+								print("Start MJD:             ", xmlDat.startMJD)
+								print("Stop MJD:              ", xmlDat.stopMJD)
+								print("Priority:              ", xmlDat.priority)
+								print("Destination Directory: ", xmlDat.destDir)
+								print("Comment:               ", xmlDat.comment)
+								print("dm:                    ", xmlDat.dm)
 							elif xmlDat.typeStr == "DifxSmartMessage":
-								print ""
-								print "MJD:                   ", xmlDat.mjd
-								print "VSN:                   ", xmlDat.vsn
-								print "Slot:                  ", xmlDat.slot
+								print("")
+								print("MJD:                   ", xmlDat.mjd)
+								print("VSN:                   ", xmlDat.vsn)
+								print("Slot:                  ", xmlDat.slot)
 								if len( xmlDat.smarts ) > 0:
-									print "S.M.A.R.T Values:"
+									print("S.M.A.R.T Values:")
 									for smart in xmlDat.smarts:
-										print "S.M.A.R.T ID:      ", smart[0]
-										print "Value:             ", smart[1]
+										print("S.M.A.R.T ID:      ", smart[0])
+										print("Value:             ", smart[1])
 							elif xmlDat.typeStr == "DifxDiagnosticMessage":
-								print ""
-								print "Diagnostic Type:       ", xmlDat.diagnosticType
+								print("")
+								print("Diagnostic Type:       ", xmlDat.diagnosticType)
 								if xmlDat.diagnosticType == "MemoryUsage":
-									print "Bytes:                 ", xmlDat.bytes
+									print("Bytes:                 ", xmlDat.bytes)
 								elif xmlDat.diagnosticType == "BufferStatus":
-									print "Thread Id:             ", xmlDat.threadId
-									print "#Buffer Elements:      ", xmlDat.numBufElements
-									print "Start Buffer Element:  ", xmlDat.startBufElement
-									print "Active Buffer Elements:", xmlDat.activeBufElements
+									print("Thread Id:             ", xmlDat.threadId)
+									print("#Buffer Elements:      ", xmlDat.numBufElements)
+									print("Start Buffer Element:  ", xmlDat.startBufElement)
+									print("Active Buffer Elements:", xmlDat.activeBufElements)
 								elif xmlDat.diagnosticType == "ProcessingTime":
-									print "Thread ID:             ", xmlDat.threadId
-									print "Microsec:              ", xmlDat.microsec
+									print("Thread ID:             ", xmlDat.threadId)
+									print("Microsec:              ", xmlDat.microsec)
 								elif xmlDat.diagnosticType == "DataConsumed":
-									print "Bytes:                 ", xmlDat.bytes
+									print("Bytes:                 ", xmlDat.bytes)
 								elif xmlDat.diagnosticType == "InputDatarate":
-									print "Bytes per Second:      ", xmlDat.bytespersec
+									print("Bytes per Second:      ", xmlDat.bytespersec)
 								elif xmlDat.diagnosticType == "NumSubintsLost":
-									print "#Subints Lost:         ", xmlDat.numSubintsLost
+									print("#Subints Lost:         ", xmlDat.numSubintsLost)
 							elif xmlDat.typeStr == "Mark5VersionMessage":
-								print ""
-								print "Api Version:           ", xmlDat.ApiVer
-								print "Api Date:              ", xmlDat.ApiDate
-								print "Firmware Version:      ", xmlDat.FirmVer
-								print "Mon Version:           ", xmlDat.MonVer
-								print "Xbar Version:          ", xmlDat.XbarVer
-								print "Ata Version:           ", xmlDat.AtaVer
-								print "UAta Version:          ", xmlDat.UAtaVer
-								print "Driver Version:        ", xmlDat.DriverVer
-								print "Board Type:            ", xmlDat.BoardType
-								print "Serial Number:         ", xmlDat.SerialNum
+								print("")
+								print("Api Version:           ", xmlDat.ApiVer)
+								print("Api Date:              ", xmlDat.ApiDate)
+								print("Firmware Version:      ", xmlDat.FirmVer)
+								print("Mon Version:           ", xmlDat.MonVer)
+								print("Xbar Version:          ", xmlDat.XbarVer)
+								print("Ata Version:           ", xmlDat.AtaVer)
+								print("UAta Version:          ", xmlDat.UAtaVer)
+								print("Driver Version:        ", xmlDat.DriverVer)
+								print("Board Type:            ", xmlDat.BoardType)
+								print("Serial Number:         ", xmlDat.SerialNum)
 								if xmlDat.daughterBoards:
-									print "Daughter Boards:"
-									print "    PCB Version:       ", xmlDat.PCBVer
-									print "    PCB Type:          ", xmlDat.PCBType
-									print "    PCB SubType:       ", xmlDat.PCBSubType
-									print "    FPGA Config:       ", xmlDat.FPGAConfig
-									print "    FPGA Conf Version: ", xmlDat.FPGAConfigVer
-									print "    Serial Number:     ", xmlDat.dbSerialNum
-									print "    Num Channels:      ", xmlDat.NumChannels
+									print("Daughter Boards:")
+									print("    PCB Version:       ", xmlDat.PCBVer)
+									print("    PCB Type:          ", xmlDat.PCBType)
+									print("    PCB SubType:       ", xmlDat.PCBSubType)
+									print("    FPGA Config:       ", xmlDat.FPGAConfig)
+									print("    FPGA Conf Version: ", xmlDat.FPGAConfigVer)
+									print("    Serial Number:     ", xmlDat.dbSerialNum)
+									print("    Num Channels:      ", xmlDat.NumChannels)
 							elif xmlDat.typeStr == "Mark5DriveStatsMessage":
-								print ""
-								print "Serial Number:         ", xmlDat.serialNumber
-								print "Model Number:          ", xmlDat.modelNumber
-								print "Size:                  ", xmlDat.size
-								print "Mmodule VSN:           ", xmlDat.moduleVSN
-								print "Module Slot:           ", xmlDat.moduleSlot
-								print "Start MJD:             ", xmlDat.startMJD
-								print "Stop MJD:              ", xmlDat.stopMJD
-								print "Type:                  ", xmlDat.driveType
-								print "Start Byte:            ", xmlDat.startByte
-								for k in xmlDat.bins.keys():
+								print("")
+								print("Serial Number:         ", xmlDat.serialNumber)
+								print("Model Number:          ", xmlDat.modelNumber)
+								print("Size:                  ", xmlDat.size)
+								print("Mmodule VSN:           ", xmlDat.moduleVSN)
+								print("Module Slot:           ", xmlDat.moduleSlot)
+								print("Start MJD:             ", xmlDat.startMJD)
+								print("Stop MJD:              ", xmlDat.stopMJD)
+								print("Type:                  ", xmlDat.driveType)
+								print("Start Byte:            ", xmlDat.startByte)
+								for k in list(xmlDat.bins.keys()):
 									newStr = "Bin" + xmlDat.bins[k] + ":"
 									while len( newStr ) < len( "                       " ):
 										newStr += " "
-									print newStr
+									print(newStr)
 							elif xmlDat.typeStr == "DifxFileTransfer":
-								print ""
-								print "Origin:                ", xmlDat.origin
-								print "Destination:           ", xmlDat.destination
-								print "Data Node:             ", xmlDat.dataNode
-								print "Address:               ", xmlDat.address
-								print "Direction:             ", xmlDat.direction
-								print "Port:                  ", xmlDat.port
+								print("")
+								print("Origin:                ", xmlDat.origin)
+								print("Destination:           ", xmlDat.destination)
+								print("Data Node:             ", xmlDat.dataNode)
+								print("Address:               ", xmlDat.address)
+								print("Direction:             ", xmlDat.direction)
+								print("Port:                  ", xmlDat.port)
 							elif xmlDat.typeStr == "DifxFileOperation":
-								print ""
-								print "Path:                  ", xmlDat.path
-								print "Operation:             ", xmlDat.operation
-								print "Data Node:             ", xmlDat.dataNode
-								print "Arguments:             ", xmlDat.arg
-								print "Address:               ", xmlDat.address
-								print "Port:                  ", xmlDat.port
+								print("")
+								print("Path:                  ", xmlDat.path)
+								print("Operation:             ", xmlDat.operation)
+								print("Data Node:             ", xmlDat.dataNode)
+								print("Arguments:             ", xmlDat.arg)
+								print("Address:               ", xmlDat.address)
+								print("Port:                  ", xmlDat.port)
 							elif xmlDat.typeStr == "DifxVex2difxRun":
-								print ""
-								print "User:                  ", xmlDat.user
-								print "Head Node:             ", xmlDat.headNode
-								print "DiFX Version:          ", xmlDat.difxVersion
-								print "Pass Path:             ", xmlDat.passPath
-								print "v2d File:              ", xmlDat.v2dFile
-								print "Address:               ", xmlDat.address
-								print "Port:                  ", xmlDat.port
-								print "Calcif Only:           ", xmlDat.calcifOnly
+								print("")
+								print("User:                  ", xmlDat.user)
+								print("Head Node:             ", xmlDat.headNode)
+								print("DiFX Version:          ", xmlDat.difxVersion)
+								print("Pass Path:             ", xmlDat.passPath)
+								print("v2d File:              ", xmlDat.v2dFile)
+								print("Address:               ", xmlDat.address)
+								print("Port:                  ", xmlDat.port)
+								print("Calcif Only:           ", xmlDat.calcifOnly)
 							elif xmlDat.typeStr == "DifxMachinesDefinition":
-								print ""
-								print "input:                 ", xmlDat.inputFile
-								print "Head Node:             ", xmlDat.manager 
+								print("")
+								print("input:                 ", xmlDat.inputFile)
+								print("Head Node:             ", xmlDat.manager) 
 								if len( xmlDat.datastream ) > 0:
-									print "Data Streams"
+									print("Data Streams")
 									for node in xmlDat.datastream:
-										print "    " + node
+										print("    " + node)
 								if len( xmlDat.process ) > 0:
-									print "Processors                         Threads"
+									print("Processors                         Threads")
 									for node in xmlDat.process:
 										newStr = "    " + node[0]
 										while len( tmpStr ) < len( "Processors                         " ):
 											newStr += " "
 										newStr += str( node[1] )
-										print newStr
-								print "DiFX Version:          ", xmlDat.difxVersion
-								print "Test Processors:       ", xmlDat.testProcessors
-								print "Machines File:         ", xmlDat.machinesFile
-								print "Threads File:          ", xmlDat.threadsFile
-								print "Address:               ", xmlDat.address
-								print "Port:                  ", xmlDat.port
+										print(newStr)
+								print("DiFX Version:          ", xmlDat.difxVersion)
+								print("Test Processors:       ", xmlDat.testProcessors)
+								print("Machines File:         ", xmlDat.machinesFile)
+								print("Threads File:          ", xmlDat.threadsFile)
+								print("Address:               ", xmlDat.address)
+								print("Port:                  ", xmlDat.port)
 							elif xmlDat.typeStr == "DifxGetDirectory":
-								print ""
-								print "DiFX Version:          ", xmlDat.difxVersion
-								print "Mark5:                 ", xmlDat.mark5
-								print "VSN:                   ", xmlDat.vsn
-								print "Address:               ", xmlDat.address
-								print "Port:                  ", xmlDat.port
-								print "Generate New:          ", xmlDat.generateNew
+								print("")
+								print("DiFX Version:          ", xmlDat.difxVersion)
+								print("Mark5:                 ", xmlDat.mark5)
+								print("VSN:                   ", xmlDat.vsn)
+								print("Address:               ", xmlDat.address)
+								print("Port:                  ", xmlDat.port)
+								print("Generate New:          ", xmlDat.generateNew)
 							elif xmlDat.typeStr == "DifxMk5Control":
-								print ""
-								print "Command:               ", xmlDat.command
-								print "Target Node:           ", xmlDat.targetNode
-								print "Address:               ", xmlDat.address
-								print "Port:                  ", xmlDat.port
+								print("")
+								print("Command:               ", xmlDat.command)
+								print("Target Node:           ", xmlDat.targetNode)
+								print("Address:               ", xmlDat.address)
+								print("Port:                  ", xmlDat.port)
 							elif xmlDat.typeStr == "DifxMark5Copy":
-								print ""
-								print "DiFX Version:          ", xmlDat.difxVersion
-								print "Mark5:                 ", xmlDat.mark5
-								print "VSN:                   ", xmlDat.vsn
-								print "Scans:                 ", xmlDat.scans
-								print "Destination:           ", xmlDat.destination
-								print "Address:               ", xmlDat.address
-								print "Port:                  ", xmlDat.port
+								print("")
+								print("DiFX Version:          ", xmlDat.difxVersion)
+								print("Mark5:                 ", xmlDat.mark5)
+								print("VSN:                   ", xmlDat.vsn)
+								print("Scans:                 ", xmlDat.scans)
+								print("Destination:           ", xmlDat.destination)
+								print("Address:               ", xmlDat.address)
+								print("Port:                  ", xmlDat.port)
 							else:
 								#  Unknown message format
 								pass
 							if self.rawXML:
-								print ""
+								print("")
 		except xml.parsers.expat.ExpatError as e:
 			self.keepGoing = False
 		
@@ -382,9 +382,9 @@ class Responder:
 	#---------------------------------------------------------------------------
 	def failCallback( self, failureID ):
 		if failureID == DiFXControl.Client.BROKEN_SOCKET:
-			print "broken socket"
+			print("broken socket")
 		elif failureID == DiFXControl.Client.FAILED_CONNECTION:
-			print "connection failed"
+			print("connection failed")
 		self.keepGoing = False
 
 #===============================================================================
@@ -412,84 +412,84 @@ try:
 		#  Check against legal argument types.  Anything we don't recognize is assumed
 		#  to be part of a list of message types.
 		if sys.argv[i] in [ "-h", "--help" ]:
-			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-			print "A program for monitoring DiFX UDP message traffic."
-			print "Usage: %s [options] [<list of message types>]" % ( sys.argv[0] )
-			print ""
-			print "Options can include:"
-			print ""
-			print "   --help"
-			print "   -h         Print this help information and quit."
-			print ""
-			print "   --hostname NAME"
-			print "   -H NAME    Use NAME as the host of the difxServer program."
-			print "              Default is to use DIFX_CONTROL_HOST environment variable."
-			print ""
-			print "   --identifier NAME"
-			print "   -i         Echo only messages with the named identifier.  This is (often)"
-			print "              the DiFX job name, so this option can be used to monitor a"
-			print "              job or jobs to some degree.  The named identifier is a regular"
-			print "              expression, so multiple jobs can be matched."
-			print ""
-			print "   --parse"
-			print "   -p         Toggle whether to parse XML messages into a readable format."
-			print "              Default is to do so."
-			print ""
-			print "   --port PORT"
-			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
-			print "              Default is to use DIFX_CONTROL_PORT environment variable."
-			print ""
-			print "   --raw"
-			print "   -r         Toggle whether to echo \"raw\" XML message strings.  Default is"
-			print "              to do so."
-			print ""
-			print "   --restrict"
-			print "   -R         Tell difxServer to restrict messages it sends to those types"
-			print "              Selected.  This can cut down on socket traffic, however currently"
-			print "              not all message types are supported.  As a consequence this"
-			print "              feature is off by default."
-			print ""
-			print "   --source LIST"
-			print "   -s LIST    Echo only messages originating from one of the comma-separated LIST"
-			print "              of node names.  Default is to echo all sources."
-			print ""
-			print "   --stats"
-			print "   -S         Toggle whether to produce a list of statistics (messages received, etc.)"
-			print "              when collection is terminated.  Default is not to do so."
-			print ""
-			print "   --type LIST"
-			print "   -t LIST    Indicate the following items are a list of message types you wish to"
-			print "              echo.  This isn't an explicitly required argument, as the list can be"
-			print "              included as the final argument(s) - seem below."
-			print ""
-			print "<list of message types> is a comma-separated list of one or more message"
-			print "types, identified either by name or number.  Default behavior is to echo all messages."
-			print "Legal message numbers and types are:"
-			print ""
-			print "       1 : DifxLoadMessage"
-			print "       2 : DifxAlertMessage"
-			print "       3 : Mark5StatusMessage"
-			print "       4 : DifxStatusMessage"
-			print "       5 : DifxInfoMessage"
-			print "       6 : DifxDatastreamMessage"
-			print "       7 : DifxCommand"
-			print "       8 : DifxParameter"
-			print "       9 : DifxStart"
-			print "      10 : DifxStop"
-			print "      11 : Mark5VersionMessage"
-			print "      12 : Mark5ConditionMessage"
-			print "      13 : DifxTransientMessage"
-			print "      14 : DifxSmartMessage"
-			print "      15 : Mark5DriveStatsMessage"
-			print "      16 : DifxDiagnosticMessage"
-			print "      17 : DifxFileTransfer"
-			print "      18 : DifxFileOperation"
-			print "      19 : DifxVex2DifxRun"
-			print "      20 : DifxMachinesDefinition"
-			print "      21 : DifxGetDirectory"
-			print "      22 : DifxMk5Control"
-			print "      23 : DifxMark5Copy"
-			print ""
+			print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
+			print("A program for monitoring DiFX UDP message traffic.")
+			print("Usage: %s [options] [<list of message types>]" % ( sys.argv[0] ))
+			print("")
+			print("Options can include:")
+			print("")
+			print("   --help")
+			print("   -h         Print this help information and quit.")
+			print("")
+			print("   --hostname NAME")
+			print("   -H NAME    Use NAME as the host of the difxServer program.")
+			print("              Default is to use DIFX_CONTROL_HOST environment variable.")
+			print("")
+			print("   --identifier NAME")
+			print("   -i         Echo only messages with the named identifier.  This is (often)")
+			print("              the DiFX job name, so this option can be used to monitor a")
+			print("              job or jobs to some degree.  The named identifier is a regular")
+			print("              expression, so multiple jobs can be matched.")
+			print("")
+			print("   --parse")
+			print("   -p         Toggle whether to parse XML messages into a readable format.")
+			print("              Default is to do so.")
+			print("")
+			print("   --port PORT")
+			print("   -P PORT    Use PORT as the TCP port to communicated with the difxServer.")
+			print("              Default is to use DIFX_CONTROL_PORT environment variable.")
+			print("")
+			print("   --raw")
+			print("   -r         Toggle whether to echo \"raw\" XML message strings.  Default is")
+			print("              to do so.")
+			print("")
+			print("   --restrict")
+			print("   -R         Tell difxServer to restrict messages it sends to those types")
+			print("              Selected.  This can cut down on socket traffic, however currently")
+			print("              not all message types are supported.  As a consequence this")
+			print("              feature is off by default.")
+			print("")
+			print("   --source LIST")
+			print("   -s LIST    Echo only messages originating from one of the comma-separated LIST")
+			print("              of node names.  Default is to echo all sources.")
+			print("")
+			print("   --stats")
+			print("   -S         Toggle whether to produce a list of statistics (messages received, etc.)")
+			print("              when collection is terminated.  Default is not to do so.")
+			print("")
+			print("   --type LIST")
+			print("   -t LIST    Indicate the following items are a list of message types you wish to")
+			print("              echo.  This isn't an explicitly required argument, as the list can be")
+			print("              included as the final argument(s) - seem below.")
+			print("")
+			print("<list of message types> is a comma-separated list of one or more message")
+			print("types, identified either by name or number.  Default behavior is to echo all messages.")
+			print("Legal message numbers and types are:")
+			print("")
+			print("       1 : DifxLoadMessage")
+			print("       2 : DifxAlertMessage")
+			print("       3 : Mark5StatusMessage")
+			print("       4 : DifxStatusMessage")
+			print("       5 : DifxInfoMessage")
+			print("       6 : DifxDatastreamMessage")
+			print("       7 : DifxCommand")
+			print("       8 : DifxParameter")
+			print("       9 : DifxStart")
+			print("      10 : DifxStop")
+			print("      11 : Mark5VersionMessage")
+			print("      12 : Mark5ConditionMessage")
+			print("      13 : DifxTransientMessage")
+			print("      14 : DifxSmartMessage")
+			print("      15 : Mark5DriveStatsMessage")
+			print("      16 : DifxDiagnosticMessage")
+			print("      17 : DifxFileTransfer")
+			print("      18 : DifxFileOperation")
+			print("      19 : DifxVex2DifxRun")
+			print("      20 : DifxMachinesDefinition")
+			print("      21 : DifxGetDirectory")
+			print("      22 : DifxMk5Control")
+			print("      23 : DifxMark5Copy")
+			print("")
 			exit( 0 )
 		elif sys.argv[i] in [ "-H", "--hostname" ]:
 			host = sys.argv[i+1]
@@ -594,7 +594,7 @@ try:
 		i = i + 1
 
 except RuntimeError:
-	print "Usage: %s [options] [<list of message types>]" % ( sys.argv[0] )
+	print("Usage: %s [options] [<list of message types>]" % ( sys.argv[0] ))
 	exit( 0 )
 	
 #  Open a new connection to the difxServer...
@@ -617,12 +617,12 @@ if difx.socketOK:
 difx.close()
 
 if printStats and difx.bytesReceived > 0:
-	print ""
-	print "Total bytes received:", difx.bytesReceived
-	if len( responder.receivedInfo.keys() ):
-		print ""
-		print "Message Type                   Num Recieved (dropped)     Bytes Received"
-		for mess in responder.receivedInfo.keys():
+	print("")
+	print("Total bytes received:", difx.bytesReceived)
+	if len( list(responder.receivedInfo.keys()) ):
+		print("")
+		print("Message Type                   Num Recieved (dropped)     Bytes Received")
+		for mess in list(responder.receivedInfo.keys()):
 			outStr = mess
 			while len( outStr ) < len( "Message Type                   " ):
 				outStr += " "
@@ -634,4 +634,4 @@ if printStats and difx.bytesReceived > 0:
 			while len( outStr ) < len( "Message Type                   Num Recieved (dropped)     " ):
 				outStr += " "
 			outStr += str( responder.receivedInfo[ mess ][1] )
-			print outStr
+			print(outStr)

@@ -335,9 +335,9 @@ int main (int argc, char * const argv[]) {
 	ippsZero_32fc(rotated[i], samplesperFrame);
       }
 
-      mean = malloc(nchan*sizeof(Ipp32f*));
-      stddev = malloc(nchan*sizeof(Ipp32f*));
-      avPower = malloc(nchan*sizeof(Ipp32f*));
+      mean = (Ipp32f *)malloc(nchan*sizeof(Ipp32f));
+      stddev = (Ipp32f *)malloc(nchan*sizeof(Ipp32f));
+      avPower = (Ipp32f *)malloc(nchan*sizeof(Ipp32f));
       if (mean==NULL || stddev==NULL || avPower==NULL) {
 	fprintf(stderr, "Error: Failed to allocate memory\n");
 	exit(EXIT_FAILURE);

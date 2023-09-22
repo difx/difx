@@ -124,7 +124,7 @@ static int work(const DifxInput *D, const CommandLineOptions *opts, const Config
 /* return 0 if requirements are not met */
 int complianceCheck(const DifxInput *D)
 {
-	int d, f;
+	int d;
 	int rv = 1;
 
 	/* single job */
@@ -163,16 +163,6 @@ int complianceCheck(const DifxInput *D)
 		if(D->datastream->nFile != 1)
 		{
 			fprintf(stderr, "! datastream %d does not have exactly 1 file.  It reports %d\n", d, D->datastream->nFile);
-			rv = 0;
-		}
-	}
-
-	/* Upper sideband */
-	for(f = 0; f < D->nFreq; ++f)
-	{
-		if(D->freq[f].sideband != 'U')
-		{
-			fprintf(stderr, "! frequency %d is not upper sideband.  It reports %c\n", f, D->freq[f].sideband);
 			rv = 0;
 		}
 	}

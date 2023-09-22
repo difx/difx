@@ -109,6 +109,11 @@ def filterVisibilityfile(basename):
 				pass
 			elif fq.lsb:
 				doCopy = False
+			else:
+				for d in cfg.datastreams:
+					if d.telescopeindex == antIdx and visrec.header.freqindex in d.recfreqindex:
+						doCopy = False
+						break
 
 		if doCopy:
 			difxout.write(visrec.header.raw)

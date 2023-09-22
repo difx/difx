@@ -57,8 +57,16 @@ def usage(prog):
 	print('options can include:')
 	print('  --help')
 	print('  -h        print help information and quit\n')
+	print('  -c        use color output\n')
 
 class Parser:
+
+	class colorcodes:
+		DEFAULT = '\033[95m'
+		GREEN = '\033[92m'
+		ORANGE = '\033[93m'
+		RED = '\033[91m'
+		ENDC = '\033[0m'
 
 	def __init__(self):
 		self._parser = expat.ParserCreate()
@@ -78,6 +86,14 @@ class Parser:
 		self.mpiid = -1
 		self.id = ''
 		self.tag = ''
+
+	def _weightToColor(self, w):
+		wlimits = [0.8, 0.95, 1.01, 9999]
+		wcolors = [self.colorcodes.RED, self.colorcodes.ORANGE, self.colorcodes.ENDC, self.colorcodes.RED]
+		for (lim,c) in zip(wlimits, wcolors):
+			if w < lim:
+				return c
+		return self.colorcodes.ENDC
 
 	def feed(self, data):
 		self._parser.Parse(data, 0)
@@ -125,15 +141,22 @@ class Parser:
 		else:
 			self.tmp = data
 
-	def getinfo(self):
+	def getinfo(self, useColor=False):
 		if self.ok:
 			wtstr = ''
 			if self.state == 'Running':
 				for i in range(0, self.maxant+1):
-					if not i in self.weight or self.weight[i] <= 0.0001:
-						wtstr = wtstr + "  .000"
+					if not useColor:
+						if not i in self.weight or self.weight[i] <= 0.0001:
+							wtstr = wtstr + "  .000"
+						else:
+							wtstr = wtstr + " %5.3f" % self.weight[i]
 					else:
-						wtstr = wtstr + " %5.3f" % self.weight[i]
+						if not i in self.weight or self.weight[i] <= 0.0001:
+							wtstr = wtstr + self.colorcodes.RED + "  .000"
+						else:
+							wtstr = wtstr + self._weightToColor(self.weight[i]) + " %5.3f" % (self.weight[i])
+						wtstr += self.colorcodes.ENDC
 			if self.state == 'Running' and self.mjdStart > 50000.0 and self.mjdStop > self.mjdStart:
 				statestr = '%5.2f%%' % ( 100.0*(self.mjd - self.mjdStart)/(self.mjdStop - self.mjdStart) )
 			else:
@@ -142,7 +165,7 @@ class Parser:
 		else:
 			return ''
 
-def run():
+def run(useColor=False):
 	
 	port = getenv('DIFX_MESSAGE_PORT')
 	if port == None:
@@ -169,7 +192,7 @@ def run():
 				if len(message) > 0 and message[0] == '<':
 					p = Parser()
 					p.feed(message)
-					info = p.getinfo()
+					info = p.getinfo(useColor)
 					p.close()
 					if p.ok:
 						print('%s %s' % (asctime(), info))
@@ -186,10 +209,13 @@ def run():
 
 
 signal.signal(signal.SIGINT, signal_handler)
+useColor = False
 
 if len(argv) > 1:
 	if argv[1] in ['-h', '--help']:
 		usage(argv[0])
 		exit(0)
+	if argv[1] in ['-c', '--color']:
+		useColor = True
 
-run()
+run(useColor)

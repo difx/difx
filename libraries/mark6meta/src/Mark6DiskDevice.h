@@ -70,6 +70,8 @@ public:
     bool isValid();
     int getSlot() const;
     int getPosition() const;
+    void setSasAddress(std::string sasAddress);
+    std::string getSasAddress() const;
     
 
 private:
@@ -82,6 +84,7 @@ private:
     int controllerId_m;
     std::string serial_m;
     Mark6Meta meta_m;
+    std::string sasAddress_m;
     
 };
 

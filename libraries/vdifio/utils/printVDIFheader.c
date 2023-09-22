@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2019 by Walter Brisken, Adam Deller                *
+ *   Copyright (C) 2014-2023 by Walter Brisken, Adam Deller                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -41,8 +41,8 @@
 
 const char program[] = "printVDIFheader";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.7";
-const char verdate[] = "20191215";
+const char version[] = "0.8";
+const char verdate[] = "20230106";
 
 static void printVersion()
 {
@@ -344,10 +344,12 @@ int main(int argc, char **argv)
 				if(lastSecond >= 0)
 				{
 					printf("Second %d had %d frames\n", lastSecond, nFrame);
+					fflush(stdout);
 				}
 				else
 				{
 					printf("First second = %d\n", header->seconds);
+					fflush(stdout);
 				}
 				nFrame = 0;
 				lastSecond = header->seconds;

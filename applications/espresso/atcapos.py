@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # =======================================================================
 # Copyright (C) 2018 Cormac Reynolds
 #
@@ -25,7 +25,7 @@ from __future__ import print_function, division
 import optparse
 import re
 import requests
-import espressolib
+from espressolib import espressolib
 
 
 def vexdate2atca(date):

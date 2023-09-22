@@ -12,7 +12,8 @@ PolConvertSources = \
 	Weighter.cpp Weighter.h \
 	_PolConvert.cpp _getAntInfo.cpp _PolGainSolve.cpp \
 	_XPCal.cpp _XPCalMF.cpp \
-	polconvert.xml setup.py task_polconvert.py
+	polconvert.xml setup.py task_polconvert.py \
+	polconvert_standalone.py polconvert_CASA.py
 PostPolScripts = PP/runpolconvert.py PP/README.POLCONVERT \
 	PP/Estimate_DPFU.py PP/DPFU_scanner.py
 ScriptCopies = runpolconvert.py README.POLCONVERT \
@@ -28,7 +29,8 @@ pkgdata_DATA = _PolConvert.so _getAntInfo.so _PolGainSolve.so \
 	_XPCal.so _XPCalMF.so \
 	PP/runpolconvert.py task_polconvert.py polconvert.xml \
 	PP/README.POLCONVERT PP/Estimate_DPFU.py PP/DPFU_scanner.py \
-	drivepclib.py solvepclib.py
+	drivepclib.py solvepclib.py PP/pcvers.py \
+	polconvert_standalone.py polconvert_CASA.py
 
 # need to get the install first, then the local data install task
 install-data-am: install-pkgdataDATA install-data-local
@@ -107,6 +109,9 @@ $(BuiltSources): copy.them
 build.sos: copy.them
 	export PATH=@DIFXCASAPATH@${PATH_SEPARATOR}${PATH} ;\
 	export LD_LIBRARY_PATH=@DIFXCASALIBPATH@${PATH_SEPARATOR}${LD_LIBRARY_PATH} ;\
+	export POLGAINSOLVELIBS=@POLGAINSOLVELIBS@ ;\
+	export POLCONVERTDOSOLVE=@POLCONVERTDOSOLVE@ ;\
+	export POLCONVERTCFITSIODIR=@POLCONVERTCFITSIODIR@ ;\
 	[ -n "${DIFXCASAVENV}" ] && source ${DIFXCASAVENV} ;\
 	@CASAPYTHON@ setup.py build_ext --inplace
 	ls _*.so > build.sos

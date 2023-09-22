@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -31,7 +31,7 @@ import multiprocessing
 from multiprocessing import Process, Queue
 import queue
 import simplejson as json
-import espressolib
+from espressolib import espressolib
 
 
 def remote_command(inputq, outputq):

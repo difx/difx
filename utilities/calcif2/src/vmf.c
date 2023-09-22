@@ -233,7 +233,7 @@ int loadVMFData(VMFData *data, int maxRows, int mjdStart, int nDay, int verbose)
 
 				return -3;
 			}
-			n = snprintf(cmd, MaxCommandLength, "wget %s -O %s\n", url, filePath);
+			n = snprintf(cmd, MaxURLLength, "wget %s -O %s\n", url, filePath);
 			if(n >= MaxURLLength)
 			{
 				fprintf(stderr, "Developer error: loadVMFData(): cmd too short: %d < %d\n", MaxCommandLength, n+1);

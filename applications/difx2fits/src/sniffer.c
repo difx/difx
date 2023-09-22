@@ -53,8 +53,10 @@ typedef struct
 
 struct _Sniffer
 {
-	FILE *apd;	/* amp, phase, dalay (, rate) file */
-	FILE *apc;      /* amp, phase, chan (, rate) file */
+	char *filebase;
+	FILE *chanfile;
+	FILE *apd;	/* amp, phase, dalay (, phase rate) file */
+	FILE *apc;      /* amp, phase, chan (, phase rate) file */
 	FILE *wts;
 	FILE *acb;
 	FILE *xcb;
@@ -277,6 +279,8 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 
 	S = (Sniffer *)calloc(1, sizeof(Sniffer));
 
+	S->filebase = strdup(filebase);
+
 	m = 1;
 	for(i = 0; i < D->nSource; ++i)
 	{
@@ -344,6 +348,24 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	}
 	
 	/* Open fringe fit files */
+	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.channels", filebase);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "\nError: sniffer channels filename too long.  No sniffing today.\n");
+		deleteSniffer(S);
+
+		return 0;
+	}
+	S->chanfile = fopen(filename, "w");
+	if(!S->chanfile)
+	{
+		fprintf(stderr, "Cannot open %s for write.\n", filename);
+		deleteSniffer(S);
+
+		return 0;
+	}
+	fprintf(S->chanfile, "obscode:  %s\n", D->job->obsCode);
+
 	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.apd", filebase);
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
@@ -502,10 +524,23 @@ void deleteSniffer(Sniffer *S)
 {
 	if(S)
 	{
+		if(S->filebase)
+		{
+			free(S->filebase);
+		}
+		if(S->bp)
+		{
+			dumpBandpasses(S);
+		}
 		if(S->fitsSourceId2SourceId)
 		{
 			free(S->fitsSourceId2SourceId);
 			S->fitsSourceId2SourceId = 0;
+		}
+		if(S->chanfile)
+		{
+			fclose(S->chanfile);
+			S->chanfile = 0;
 		}
 		if(S->apd)
 		{
@@ -1148,9 +1183,53 @@ int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 
 	if(configId != S->configId)
 	{
+		int i;
+		int bbc;
+		int writeNewConfig;
+
+		if(S->configId == 0 || S->D->config[configId].freqSetId != S->D->config[S->configId].freqSetId)
+		{
+			writeNewConfig = 1;
+		}
+		else
+		{
+			writeNewConfig = 0;
+		}
+
 		S->nIF = dfs->nIF;
 		S->nPol = dc->nPol;
 		S->configId = configId;
+		++S->nConfigsUsed;
+
+		bbc = 0;
+		for(i = 0; i < S->nIF; ++i)
+		{
+			const DifxIF *IF;
+			int p;
+			
+			IF = dfs->IF + i;
+			for(p = 0; p < S->nPol; ++p)
+			{
+				S->difxIF[bbc] = IF;
+				S->pol[bbc] = IF->pol[p];
+
+				++bbc;
+			}
+		}
+
+		if(writeNewConfig)
+		{
+			int bbc;
+			int nBBC;
+
+			nBBC = S->nIF*S->nPol;
+
+			fprintf(S->chanfile, "MJD %14.8f %d %d\n", mjd, nBBC, dc->freqSetId + 1);
+			for(bbc = 0; bbc < nBBC; ++bbc)
+			{
+				fprintf(S->chanfile, "%d %5.3f %5.3f %c %c\n", bbc+1, S->difxIF[bbc]->freq, S->difxIF[bbc]->bw, S->difxIF[bbc]->sideband, S->pol[bbc]);
+			}
+		}
 	}
 
 

@@ -18,11 +18,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id: difxresource.py 10828 2022-11-16 10:20:46Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/sites/MPIfR/misc/difxresource/difxresource.py $
-# $LastChangedRevision: 10828 $
-# $Author: JanWagner $
-# $LastChangedDate: 2022-11-16 18:20:46 +0800 (三, 2022-11-16) $
+# $Id: difxresource.py 11087 2023-09-14 22:29:04Z HelgeRottmann $
+# $HeadURL: https://svn.atnf.csiro.au/difx/sites/MPIfR/misc/difxresource/difxresource.py $
+# $LastChangedRevision: 11087 $
+# $Author: HelgeRottmann $
+# $LastChangedDate: 2023-09-15 06:29:04 +0800 (五, 2023-09-15) $
 #
 #============================================================================
 
@@ -52,6 +52,7 @@ description += "Returns the number of compute processes."
 parser = argparse.ArgumentParser(description=description)
 #parser.add_argument('-s', '--speedup', required=False, type=float, help='desired speedup-factor (scan duration/processing duration)')
 parser.add_argument('-r', '--rate', required=True, type=float, help='processing rate of the cluster nodes [Mbps per thread]')
+parser.add_argument('-n', '--nodes',  type=int, help='Number of nodes to use. Overrides the estimates normally done by the script.')
 parser.add_argument('-t', '--threads',  default=19, type=int, help='Number if threads to use on each node (must match cluster definition file). Default: %(default)s')
 parser.add_argument('-v', "--verbose", default=False, action='store_true', help='print additional information (debugging only)')
 parser.add_argument('--all', default=False, action='store_true', help='return all processes head/datastream/compute.')
@@ -156,9 +157,12 @@ if numProcs < minNodes*maxThreads:
 if numProcs > maxNodes*maxThreads:
   numProcs = maxNodes*maxThreads
 
+# override the esitmation
+if (args.nodes):
+  numProcs = args.nodes * maxThreads;
+
 if args.all:
     print("{}/{}/{}".format(1,numDS,numProcs))
 else:
     print(numProcs)
-    #print(1200)
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # =======================================================================
 # Copyright (C) 2022 Cormac Reynolds
 #
@@ -33,7 +33,7 @@ import sys
 import time
 import fileinput
 import pprint
-import espressolib
+from espressolib import espressolib
 
 
 def run_vex2difx(v2dfilename, vex2difx_options):

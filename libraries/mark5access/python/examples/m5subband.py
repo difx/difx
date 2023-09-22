@@ -31,7 +31,7 @@ from datetime import datetime
 from scipy import stats
 
 def usage():
-	print __doc__
+	print (__doc__)
 
 def m5subband(fn, fmt, fout, if_nr, factor, start_MHz, stop_MHz, offset):
 	"""Extracts narrow-band signal out from file"""

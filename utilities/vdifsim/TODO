@@ -17,10 +17,10 @@ TODO
 
 * Add antenna-based defects
   - bandpass features
-  - clock errors
-  - packet loss / invalid packets
+  x clock errors
+  x packet loss / invalid packets
 
-* Support complex-valued VDIF output
+x Support complex-valued VDIF output
 
 * Respect thread-id included in the format specifier
 

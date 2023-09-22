@@ -295,6 +295,12 @@ int blanker_vdif(struct mark5_stream *ms)
 
 	nword = ms->databytes/8;
 
+	if (ms->datawindow && (data + nword - 1) >= (unsigned long long *)(ms->datawindow + ms->datawindowsize))
+	{
+		ms->blankzoneendvalid[0] = 0;
+		return 0;
+	}
+
 	/* only 1 zone for VDIF data.  a packet is either good or bad. 
 	 *
 	 * To be good, it cannot have fill pattern at beginning or end 
@@ -331,6 +337,12 @@ int blanker_codif(struct mark5_stream *ms)
 	data = (uint64_t *)ms->payload;
 
 	nword = ms->databytes/8;
+
+	if (ms->datawindow && (data + nword - 1) >= (uint64_t *)(ms->datawindow + ms->datawindowsize))
+	{
+		ms->blankzoneendvalid[0] = 0;
+		return 0;
+	}
 
 	/* only 1 zone for VDIF data.  a packet is either good or bad. 
 	 *

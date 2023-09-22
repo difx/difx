@@ -66,6 +66,7 @@ int main(int argc, char **argv)
 	if(!out)
 	{
 		printf("Error: cannot open %s\n", argv[4]);
+		fclose(in);
 
 		return 0;
 	}

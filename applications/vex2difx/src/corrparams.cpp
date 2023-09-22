@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2021 by Walter Brisken                             *
+ *   Copyright (C) 2009-2023 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -276,8 +276,6 @@ void CorrSetup::addRecordedBandwidth(double bw)
 
 int CorrSetup::setkv(const std::string &key, const std::string &value)
 {
-	std::string::size_type at, last, splitat;
-	std::string nestedkeyval;
 	std::stringstream ss;
 	int nWarn = 0;
 	char *ptr;
@@ -748,9 +746,9 @@ int SourceSetup::setkv(const std::string &key, const std::string &value, PhaseCe
 		ss >> pc->naifFile;
 		if(pc->naifFile < "naif0011.tls")
 		{
-			if(time(0) > 1435708800)	// July 1, 2012
+			if(time(0) > 1435708800)	// July 1, 2015
 			{
-				std::cout << "Error: naif0010.tls or newer is needed for correct ephemeris evaluation.  An old or unrecognized file, " << pc->naifFile << " was supplied." << std::endl;
+				std::cout << "Error: naif0011.tls or newer is needed for correct ephemeris evaluation.  An old or unrecognized file, " << pc->naifFile << " was supplied." << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -793,7 +791,6 @@ int SourceSetup::setkv(const std::string &key, const std::string &value, PhaseCe
 
 	return nWarn;
 }
-
 
 DatastreamSetup::DatastreamSetup(const std::string &name) : difxName(name)
 {
@@ -1059,7 +1056,7 @@ int DatastreamSetup::merge(const DatastreamSetup *dss)
 	{
 		std::cerr << "Error: conflicting threadsAbsent lists" << std::endl;
 
-		return -7;	
+		return -7;
 	}
 
 	if(threadsIgnore.empty())
@@ -1070,7 +1067,7 @@ int DatastreamSetup::merge(const DatastreamSetup *dss)
 	{
 		std::cerr << "Error: conflicting threadsIgnore lists" << std::endl;
 
-		return -8;	
+		return -8;
 	}
 
 	if(dataSampling != dss->dataSampling)
@@ -1226,7 +1223,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			std::cerr << "Warning: antenna " << vexName << " has multiple clockOffset definitions" << std::endl;
 			++nWarn;
 		}
-		clock.offset = parseDouble(value) / 1.0e6;	// convert from us to sec;
+		clock.offset = parseDouble(value) / 1.0e6;	// convert from us to sec
 		clock.mjdStart = 1;
 	}
 	else if(key == "clockRate" || key == "clock1")
@@ -1471,7 +1468,6 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			std::cout << "Note: the fake keyword in the ANTENNA section is deprecated and won't be an option in some future version of vex2difx.  Please instead use: source=fake" << std::endl;
 		}
 		++noteCount;
-			
 		defaultDatastreamSetup.dataSource = DataSourceFake;
 	}
 	else if(key == "phaseCalInt")
@@ -2840,7 +2836,7 @@ int CorrParams::checkSetupValidity()
 	if(!exhaustiveAutocorrs && globalOutputbands.size() >= 1)
 	{
 		GlobalOutputband* ob = &globalOutputbands.back();
-		if (ob->outputBandwidthMode != OutputBandwidthOff)
+		if(ob->outputBandwidthMode != OutputBandwidthOff)
 		{
 			exhaustiveAutocorrs = true;
 		}

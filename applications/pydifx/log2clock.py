@@ -18,7 +18,7 @@ try:
     from numpy.linalg import lstsq
     from numpy import array, zeros
 except ImportError:
-    print "Error: numpy required"
+    print("Error: numpy required")
     raise
     sys.exit(2)
 
@@ -28,8 +28,8 @@ except ImportError:
 #except ImportError:
 #    print 'python-matplotlib must be installed in order to generate plots'
 
-import observation
-from pfile import print_parameter
+from . import observation
+from .pfile import print_parameter
 
 
 searchstring = 'gps'
@@ -98,7 +98,7 @@ def log2delay(logfilename, starttime = None, index = 0, graph = False):
     try:
         logfile = open(logfilename, 'r')
     except:
-        print "Can't open " + logfilename
+        print("Can't open " + logfilename)
         raise
 
     logfile.seek(0)
@@ -109,7 +109,7 @@ def log2delay(logfilename, starttime = None, index = 0, graph = False):
             if l:
 
                 g = l.groups()
-                print g
+                print(g)
                 time = datetime(*strptime(' '.join(g[0:5]), "%Y %j %H %M %S")[0:6])
                 if g[5]:
                     time += timedelta(0, float(g[5]), 0)
@@ -123,7 +123,7 @@ def log2delay(logfilename, starttime = None, index = 0, graph = False):
     if starttime:
         t0 = starttime
     else:
-        print 'WARNING: No start time given! Using first time in log file'
+        print('WARNING: No start time given! Using first time in log file')
         t0 = times[0]
     ts = []
     for t in times:
@@ -135,17 +135,17 @@ def log2delay(logfilename, starttime = None, index = 0, graph = False):
     fity = array(ts) * fits[0] + fits[1]
     rate = fits[0]
     intercept = fits[1]
-    print logfilename
-    print "time[0]   : " + str(times[0])
-    print "start time: " + str(t0)
-    print "time[-1]  : " + str(times[-1])
-    print "Offset 0  : " + str(offsets[0] ).rjust(19) + ' us'
-    print "Intercept : " + str(intercept).rjust(19)    + ' us'
-    print "Rate      : " + str(rate).rjust(19)    + ' us/s'
-    print "Rate      : " + str(rate * 3600).rjust(19)    + ' us/hr'
-    print "Standard deviation of points from line"
-    print "          :" + str(sqrt(sum((offsets - fity) ** 2)/len(fity))) + ' us'
-    print
+    print(logfilename)
+    print("time[0]   : " + str(times[0]))
+    print("start time: " + str(t0))
+    print("time[-1]  : " + str(times[-1]))
+    print("Offset 0  : " + str(offsets[0] ).rjust(19) + ' us')
+    print("Intercept : " + str(intercept).rjust(19)    + ' us')
+    print("Rate      : " + str(rate).rjust(19)    + ' us/s')
+    print("Rate      : " + str(rate * 3600).rjust(19)    + ' us/hr')
+    print("Standard deviation of points from line")
+    print("          :" + str(sqrt(sum((offsets - fity) ** 2)/len(fity))) + ' us')
+    print()
 
     return intercept, rate
 
@@ -171,18 +171,18 @@ def main():
     20080201T200229
     """
     if len(sys.argv) < 2:
-        print main.__doc__
+        print(main.__doc__)
         sys.exit(2)
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "t:i:", ["time=", "index="])
-    except getopt.GetoptError, err:
-        print err
-        print main.__doc__
+    except getopt.GetoptError as err:
+        print(err)
+        print(main.__doc__)
         sys.exit(2)
 
     if not len(args) == 1:
-        print 'Error Wrong number of arguments'
-        print main.__doc__
+        print('Error Wrong number of arguments')
+        print(main.__doc__)
         sys.exit(2)
 
     # read arguments

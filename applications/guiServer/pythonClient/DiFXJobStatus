@@ -78,46 +78,46 @@ try:
 		#  Check against legal argument types.  The final argument must be a path to
 		#  .input file(s).
 		if sys.argv[i] in [ "-h", "--help" ]:
-			print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-			print "Obtain the status of jobs on the DiFX software correlator."
-			print "Usage: %s [options] <path>" % ( sys.argv[0] )
-			print ""
-			print "Options can include:"
-			print ""
-			print "   --difx VERSION"
-			print "   -D VERSION Run using a specific DiFX version.  If not specified"
-			print "              the value of the DIFX_VERSION environment variable will"
-			print "              be used.  Failing that, \"DIFX-DEVEL\" will be used."
-			print ""
-			print "   --help"
-			print "   -h         Print this help information and quit."
-			print ""
-			print "   --hostname NAME"
-			print "   -H NAME    Use NAME as the host of the difxServer program."
-			print "              Default is to use DIFX_CONTROL_HOST environment variable."
-			print ""
-			print "   --port PORT"
-			print "   -P PORT    Use PORT as the TCP port to communicated with the difxServer."
-			print "              Default is to use DIFX_CONTROL_PORT environment variable."
-			print ""
-			print "   --long"
-			print "   -l         Provide a \"long\" job status, which includes job run history."
-			print "              Currently not implemented."
-			print ""
-			print "   --repeat SEC"
-			print "   -r SEC     Repeat the job status command after a delay of SEC seconds."
-			print "              By default there is no repeat."
-			print ""
-			print "   --short"
-			print "   -s         Provide only the final job state as the status (much faster"
-			print "              and easier to deal with if you have lots of jobs).  This is the"
-			print "              default."
-			print ""
-			print "   --time"
-			print "   -t         Turn off the time stamp in the short output.  By default a"
-			print "              time stamp is displayed with each status."
-			print ""
-			print ""
+			print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
+			print("Obtain the status of jobs on the DiFX software correlator.")
+			print("Usage: %s [options] <path>" % ( sys.argv[0] ))
+			print("")
+			print("Options can include:")
+			print("")
+			print("   --difx VERSION")
+			print("   -D VERSION Run using a specific DiFX version.  If not specified")
+			print("              the value of the DIFX_VERSION environment variable will")
+			print("              be used.  Failing that, \"DIFX-DEVEL\" will be used.")
+			print("")
+			print("   --help")
+			print("   -h         Print this help information and quit.")
+			print("")
+			print("   --hostname NAME")
+			print("   -H NAME    Use NAME as the host of the difxServer program.")
+			print("              Default is to use DIFX_CONTROL_HOST environment variable.")
+			print("")
+			print("   --port PORT")
+			print("   -P PORT    Use PORT as the TCP port to communicated with the difxServer.")
+			print("              Default is to use DIFX_CONTROL_PORT environment variable.")
+			print("")
+			print("   --long")
+			print("   -l         Provide a \"long\" job status, which includes job run history.")
+			print("              Currently not implemented.")
+			print("")
+			print("   --repeat SEC")
+			print("   -r SEC     Repeat the job status command after a delay of SEC seconds.")
+			print("              By default there is no repeat.")
+			print("")
+			print("   --short")
+			print("   -s         Provide only the final job state as the status (much faster")
+			print("              and easier to deal with if you have lots of jobs).  This is the")
+			print("              default.")
+			print("")
+			print("   --time")
+			print("   -t         Turn off the time stamp in the short output.  By default a")
+			print("              time stamp is displayed with each status.")
+			print("")
+			print("")
 			exit( 0 )
 		elif sys.argv[i] in [ "-H", "--hostname" ]:
 			host = sys.argv[i+1]
@@ -141,7 +141,7 @@ try:
 		i = i + 1
 		
 except RuntimeError:
-	print "Usage: %s [options] <path>" % ( sys.argv[0] )
+	print("Usage: %s [options] <path>" % ( sys.argv[0] ))
 	exit( 0 )
 	
 keepGoing = True
@@ -163,12 +163,12 @@ if difx.socketOK:
 			statusTime = statusInfo[0]
 			statusList = statusInfo[1]
 			if statusList == None:
-				print "No .input files found."
+				print("No .input files found.")
 			else:
 				if repeat:
 					os.system( 'cls' if os.name == 'nt' else 'clear' )
 				if statusTime != None and displayTime:
-					print statusTime
+					print(statusTime)
 				maxLen1 = 0
 				maxLen2 = 0
 				for item in statusList:
@@ -187,7 +187,7 @@ if difx.socketOK:
 						while len( outStr ) < maxLen1 + maxLen2 + 5:
 							outStr += " "
 						outStr += item[1][0]
-					print outStr
+					print(outStr)
 		if repeat:
 			try:
 				time.sleep( repeatSeconds )

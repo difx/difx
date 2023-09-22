@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2021 by Walter Brisken                             *
+ *   Copyright (C) 2015-2023 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,8 +38,8 @@
 
 const char program[] = "filterVDIF";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.3";
-const char verdate[] = "20211109";
+const char version[] = "0.3.1";
+const char verdate[] = "20230914";
 
 static void usage(const char *pgm)
 {
@@ -135,7 +135,6 @@ int extractThreads(const char *inputFile, const char *outputFile, int nThread, c
 	in = fopen(inputFile, "r");
 	if(!in)
 	{
-		fclose(in);
 		fprintf(stderr, "Error: cannot open %s for read\n", inputFile);
 
 		return EXIT_FAILURE;

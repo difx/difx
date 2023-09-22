@@ -5,7 +5,7 @@
 # SVN properties (DO NOT CHANGE)
 #
 # $Id: difxexport.py 10885 2023-02-14 10:11:54Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/sites/MPIfR/difxdb/difxexport/difxexport.py $
+# $HeadURL: https://svn.atnf.csiro.au/difx/sites/MPIfR/difxdb/difxexport/difxexport.py $
 # $LastChangedRevision: 10885 $
 # $Author: JanWagner $
 # $LastChangedDate: 2023-02-14 18:11:54 +0800 (二, 2023-02-14) $

@@ -1,0 +1,10 @@
+ssh -l vlbamon br-mark5c-1 StartDRS
+ssh -l vlbamon fd-mark5c-1 StartDRS
+ssh -l vlbamon hn-mark5c-1 StartDRS
+ssh -l vlbamon kp-mark5c-1 StartDRS
+ssh -l vlbamon la-mark5c-1 StartDRS
+ssh -l vlbamon mk-mark5c-1 StartDRS
+ssh -l vlbamon nl-mark5c-1 StartDRS
+ssh -l vlbamon ov-mark5c-1 StartDRS
+ssh -l vlbamon pt-mark5c-1 StartDRS
+ssh -l vlbamon sc-mark5c-1 StartDRS

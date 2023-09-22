@@ -18,11 +18,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: getslot.py 10129 2021-08-27 18:53:25Z HelgeRottmann $
+# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/getslot/getslot.py $
+# $LastChangedRevision: 10129 $
+# $Author: HelgeRottmann $
+# $LastChangedDate: 2021-08-28 02:53:25 +0800 (六, 2021-08-28) $
 #
 #============================================================================
 
@@ -35,9 +35,9 @@ from difxdb.model import model
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
+__build__= "$Revision: 10129 $"
+__date__ ="$Date: 2021-08-28 02:53:25 +0800 (六, 2021-08-28) $"
+__lastAuthor__="$Author: HelgeRottmann $"
 
 def printUsage():
     print("%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__))

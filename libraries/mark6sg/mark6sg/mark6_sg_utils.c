@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014 by Jan Wagner                                      *
+ *   Copyright (C) 2014-2023 by Jan Wagner                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -841,12 +841,19 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
         // The JSMN JSON parser does not allocate memory itself. Instead it tells
         // if a parse attempt will fit into a user-provided buffer or not. Need
         // to grow the buffer and "try again" until parser output fits:
-        tok = malloc(sizeof(*tok) * tokcount);
+        tok = (jsmntok_t*)malloc(sizeof(*tok) * tokcount);
         rc  = jsmn_parse(&p, json, json_strlen, tok, tokcount);
         while (rc == JSMN_ERROR_NOMEM)
         {
+	    jsmntok_t *tmptok;
             tokcount = tokcount * 2;
-            tok = realloc(tok, sizeof(*tok) * tokcount);
+            tmptok = (jsmntok_t*)realloc(tok, sizeof(*tok) * tokcount);
+	    if(tmptok == 0) /* realloc failed */
+	    {
+                fprintf(stderr, "mark6_sg_collect_metadata() : Memory realloc error requesting %d bytes.\n", (int)(sizeof(*tok) * tokcount));
+		exit(1);
+	    }
+	    tok = tmptok;
             rc  = jsmn_parse(&p, json, json_strlen, tok, tokcount);
         }
 

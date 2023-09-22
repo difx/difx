@@ -769,6 +769,12 @@ int AutoBands::lookupDestinationFreq(const freq& inputfreq, const std::vector<fr
 {
 	int outputband_index = -1;
 
+	freq usbFreq = inputfreq;
+	if(usbFreq.sideBand == 'L') {
+		usbFreq.flip();
+		// std::cout << "lookupDestinationFreq(" << inputfreq << "): flipped to usbFreq " << usbFreq << std::endl;
+	}
+
 	// Find 'inputfreq' in constituents
 	for(unsigned n = 0; n < outputbands.size() && outputband_index < 0; n++)
 	{
@@ -776,7 +782,7 @@ int AutoBands::lookupDestinationFreq(const freq& inputfreq, const std::vector<fr
 		for(unsigned m = 0; m < ob.constituents.size(); m++)
 		{
 			// std::cout << "checking: " << inputfreq << " ?= " << ob.constituents[m] << std::endl;
-			if (ob.constituents[m] == inputfreq)
+			if (ob.constituents[m] == usbFreq)
 			{
 				outputband_index = n;
 				break;

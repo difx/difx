@@ -18,11 +18,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: getreleaselist.py 10128 2021-08-27 18:51:47Z HelgeRottmann $
+# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/getreleaselist/getreleaselist.py $
+# $LastChangedRevision: 10128 $
+# $Author: HelgeRottmann $
+# $LastChangedDate: 2021-08-28 02:51:47 +0800 (六, 2021-08-28) $
 #
 #============================================================================
 
@@ -41,9 +41,9 @@ from optparse import OptionParser
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
+__build__= "$Revision: 10128 $"
+__date__ ="$Date: 2021-08-28 02:51:47 +0800 (六, 2021-08-28) $"
+__lastAuthor__="$Author: HelgeRottmann $"
 
 def getUsage():
 

@@ -1991,7 +1991,7 @@ class Parser:
         #  This is the default value
         ret = "\n"
         num = 0
-        for string in testList.keys():
+        for string in list(testList.keys()):
             if testList[string] > num:
                 num = testList[string]
                 ret = string
@@ -2033,7 +2033,7 @@ class Parser:
         #  This is the default value
         ret = " "
         num = 0
-        for string in testList.keys():
+        for string in list(testList.keys()):
             if testList[string] > num:
                 num = testList[string]
                 ret = string
@@ -2076,7 +2076,7 @@ class Parser:
         #  This is the default value
         ret = " "
         num = 0
-        for string in testList.keys():
+        for string in list(testList.keys()):
             if testList[string] > num:
                 num = testList[string]
                 ret = string
@@ -2133,7 +2133,7 @@ class Parser:
         #  This is the default value
         ret = "\n\n"
         num = 0
-        for string in testList.keys():
+        for string in list(testList.keys()):
             if testList[string] > num:
                 num = testList[string]
                 ret = string
@@ -2191,7 +2191,7 @@ class Parser:
         #  This is the default value
         ret = " "
         num = 0
-        for string in testList.keys():
+        for string in list(testList.keys()):
             if testList[string] > num:
                 num = testList[string]
                 ret = string
@@ -2229,7 +2229,7 @@ class Parser:
         #  This is the default value
         ret = " "
         num = 0
-        for string in testList.keys():
+        for string in list(testList.keys()):
             if testList[string] > num:
                 num = testList[string]
                 ret = string
@@ -2267,7 +2267,7 @@ class Parser:
         #  This is the default value
         ret = "\n"
         num = 0
-        for string in testList.keys():
+        for string in list(testList.keys()):
             if testList[string] > num:
                 num = testList[string]
                 ret = string
@@ -2319,7 +2319,7 @@ class Parser:
         #  This is the default value
         ret = "\n    "
         num = 0
-        for string in testList.keys():
+        for string in list(testList.keys()):
             if testList[string] > num:
                 num = testList[string]
                 ret = string
@@ -2357,7 +2357,7 @@ class Parser:
         #  This is the default value
         ret = "#  "
         num = 0
-        for string in testList.keys():
+        for string in list(testList.keys()):
             if testList[string] > num:
                 num = testList[string]
                 ret = string
@@ -2386,7 +2386,7 @@ class Parser:
     def setComment( self, comment, location = None ):
         if location == None:
             location = "HEAD"
-        print ">>>>> Adding \"" + comment + "\""
+        print(">>>>> Adding \"" + comment + "\"")
         #  Not sure why this would happen exactly.
         if comment == None:
             return

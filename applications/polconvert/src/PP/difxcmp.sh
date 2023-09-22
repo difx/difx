@@ -38,10 +38,10 @@ action=${1-'help'} ; shift
 }
 
 # things that do not end up in DiFX vendor branch
-skip="INSTALL build QA2 TODO.txt setup.py TOP/contents PP/wtf.txt"
-skip="$skip __init__.py polconvert_CASA.py polconvert_standalone.py"
+skip="INSTALL build QA2 TODO.txt setup.py TOP/contents PP/notes"
+skip="$skip __init__.py TOP/trunk-makefile.am"
 
-skipdir="EU-VGOS QA2"
+skipdir="EU-VGOS EVN QA2 GMVA PP/notes"
 
 [ $# -eq 0 ] && set -- 'no-such-file'
 
@@ -68,6 +68,15 @@ do
   [ "$F" = "../setup.py" ] && F=setup.py
   [ "$F" = "../polconvert.xml" ] && F=polconvert.xml
   [ "$F" = "../task_polconvert.py" ] && F=task_polconvert.py
+  # convenient to have these along
+  [ "$F" = "../configure.ac" ] && F=../configure.ac
+  [ "$F" = "../Makefile.am" ] && F=Makefile.am
+
+  [ "$F" = Makefile.am ] && {
+    cmp Makefile.am TOP/Makefile.am ||
+    echo 'warning: Makefile.am TOP/Makefile.am should be the same'
+  }
+
   # decide what to do
   case $action in
   dir)
@@ -110,10 +119,16 @@ do
     cp -p $dfx/$F $git/$f
     ;;
   vers)
-    head -5 TOP/ChangeLog Changelog
+    v='2\.[0-9]*\.[0-9]*'
+    echo "================================="
+    echo "==> Changelog: <=="
+    grep -E "(elease|ersion|v).*$v" Changelog | head -1
+    echo "==> TOP/ChangeLog: <=="
+    grep -E "(elease|ersion|v).*$v" TOP/ChangeLog | tail -1
     echo "==> polconvert_standalone.py <=="
     grep '__version__[ ]*=' polconvert_standalone.py
-    grep 'date*=' polconvert_standalone.py
+    grep '^date.*=' polconvert_standalone.py
+    grep 'STANDALONE VERSION' polconvert_standalone.py
     echo "==> polconvert_CASA.py <=="
     grep 'VERSION' polconvert_CASA.py
     grep '__version__[ ]*=' polconvert_CASA.py
@@ -125,8 +140,10 @@ do
     grep "<description>Version" TOP/polconvert.xml | cut -c 1-60
     echo "==> TOP/task_polconvert.py <=="
     grep '__version__[ ]*=' TOP/task_polconvert.py
+    grep 'CASA INTERFACE VERSION' TOP/task_polconvert.py
     grep 'date[ ]*=' TOP/task_polconvert.py
     echo "================================="
+    exit 0
     ;;
   tidy)
     rm -rf build

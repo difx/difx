@@ -18,11 +18,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: getmodules.py 10127 2021-08-27 18:49:04Z HelgeRottmann $
+# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/getmodules/getmodules.py $
+# $LastChangedRevision: 10127 $
+# $Author: HelgeRottmann $
+# $LastChangedDate: 2021-08-28 02:49:04 +0800 (六, 2021-08-28) $
 #
 #============================================================================
 
@@ -36,9 +36,9 @@ from operator import  attrgetter
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
+__build__= "$Revision: 10127 $"
+__date__ ="$Date: 2021-08-28 02:49:04 +0800 (六, 2021-08-28) $"
+__lastAuthor__="$Author: HelgeRottmann $"
 
 def printUsage():
     print("%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__))

@@ -18,11 +18,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: difxdbParseFiles.py 10123 2021-08-27 17:45:36Z HelgeRottmann $
+# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/difxdbParseFiles/difxdbParseFiles.py $
+# $LastChangedRevision: 10123 $
+# $Author: HelgeRottmann $
+# $LastChangedDate: 2021-08-28 01:45:36 +0800 (六, 2021-08-28) $
 #
 #============================================================================
 
@@ -41,9 +41,9 @@ from difxdb.model import model
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
+__build__= "$Revision: 10123 $"
+__date__ ="$Date: 2021-08-28 01:45:36 +0800 (六, 2021-08-28) $"
+__lastAuthor__="$Author: HelgeRottmann $"
 
 logger = None
 

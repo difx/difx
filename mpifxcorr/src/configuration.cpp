@@ -531,31 +531,37 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
       //mbps /= nchan;
       //nchan = 1;
     case VDIF:
-      if (sampling==COMPLEX) 
+      framesperperiod = (int)(1e6*bw*nchan*alignmentseconds*nbits*2 / ((framebytes-VDIF_HEADER_BYTES) * 8) + 0.5);
+      if (sampling==COMPLEX) { 
+	if(decimationfactor > 1) 
+          sprintf(formatname, "VDIFC_%d-%dm%d-%d-%d/1", framebytes-VDIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits, decimationfactor);
+	else 
+          sprintf(formatname, "VDIFC_%d-%dm%d-%d-%d", framebytes-VDIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits);
+      }
+      else {
 	if(decimationfactor > 1)
-	  sprintf(formatname, "VDIFC_%d-%d-%d-%d/%d", framebytes-VDIF_HEADER_BYTES, mbps, nchan, nbits, decimationfactor);
+	  sprintf(formatname, "VDIF_%d-%dm%d-%d-%d/%d", framebytes-VDIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits, decimationfactor);
 	else
-	  sprintf(formatname, "VDIFC_%d-%d-%d-%d", framebytes-VDIF_HEADER_BYTES, mbps, nchan, nbits);
-      else
-	if(decimationfactor > 1)
-	  sprintf(formatname, "VDIF_%d-%d-%d-%d/%d", framebytes-VDIF_HEADER_BYTES, mbps, nchan, nbits, decimationfactor);
-	else
-	  sprintf(formatname, "VDIF_%d-%d-%d-%d", framebytes-VDIF_HEADER_BYTES, mbps, nchan, nbits);
+	  sprintf(formatname, "VDIF_%d-%dm%d-%d-%d", framebytes-VDIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits);
+      }
       break;
     case VDIFL:
-      if (sampling==COMPLEX) 
+      framesperperiod = (int)(1e6*bw*nchan*alignmentseconds*nbits*2 / ((framebytes-VDIF_LEGACY_HEADER_BYTES) * 8) + 0.5);
+      if (sampling==COMPLEX) {
 	if(decimationfactor > 1)
-	  sprintf(formatname, "VDIFCL_%d-%d-%d-%d/%d", framebytes-VDIF_LEGACY_HEADER_BYTES, mbps, nchan, nbits, decimationfactor);
+	  sprintf(formatname, "VDIFCL_%d-%dm%d-%d-%d/%d", framebytes-VDIF_LEGACY_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits, decimationfactor);
 	else
-	  sprintf(formatname, "VDIFCL_%d-%d-%d-%d", framebytes-VDIF_LEGACY_HEADER_BYTES, mbps, nchan, nbits);
-      else
+	  sprintf(formatname, "VDIFCL_%d-%dm%d-%d-%d", framebytes-VDIF_LEGACY_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits);
+      }
+      else {
 	if(decimationfactor > 1)
-	  sprintf(formatname, "VDIFL_%d-%d-%d-%d/%d", framebytes-VDIF_LEGACY_HEADER_BYTES, mbps, nchan, nbits, decimationfactor);
+	  sprintf(formatname, "VDIFL_%d-%dm%d-%d-%d/%d", framebytes-VDIF_LEGACY_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits, decimationfactor);
 	else
-	  sprintf(formatname, "VDIFL_%d-%d-%d-%d", framebytes-VDIF_LEGACY_HEADER_BYTES, mbps, nchan, nbits);
+	  sprintf(formatname, "VDIFL_%d-%dm%d-%d-%d", framebytes-VDIF_LEGACY_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits);
+      }
       break;
     case CODIF:
-      framesperperiod = (int)((long long)1e6*bw*nchan*alignmentseconds*nbits*2 / ((framebytes-CODIF_HEADER_BYTES) * 8) + 0.5);
+      framesperperiod = (int)(1e6*bw*nchan*alignmentseconds*nbits*2 / ((framebytes-CODIF_HEADER_BYTES) * 8) + 0.5);
       if (sampling==COMPLEX) {
         sprintf(formatname, "CODIFC_%d-%dm%d-%d-%d", framebytes-CODIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits);
       } else {
@@ -2934,7 +2940,7 @@ bool Configuration::consistencyCheck()
             cfatal << startl << "Accumulate time between integer number of nanoseconds is too long (check bandwidth values specified) - aborting!!!" << endl;
           return false;
         }
-      } while (!(fabs(nsaccumulate - int(nsaccumulate+0.5)) < Mode::TINY));
+      } while (!(fabs(nsaccumulate - int(nsaccumulate+0.5)) < 50*Mode::TINY)); //floating point errors can exceed Mode::TINY, so be a bit more flexible
       cdebug << startl << "NS accumulate is " << nsaccumulate << " and max geom slip is " << model->getMaxRate(dsdata->modelfileindex)*configs[i].subintns*0.000001 << ", maxnsslip is " << dsdata->maxnsslip << endl;
       nsaccumulate += model->getMaxRate(dsdata->modelfileindex)*configs[i].subintns*0.000001;
       if(nsaccumulate > dsdata->maxnsslip)

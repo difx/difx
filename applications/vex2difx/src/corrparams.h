@@ -214,7 +214,7 @@ public:
 	// flag
 	bool polSwap;		// If true, swap polarizations
 	bool polConvert;	// request change of basis from RL->XY or XY->RL
-	int phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
+	float phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
 	enum ToneSelection toneSelection;	// Which tones to propagate to FITS
 	double toneGuardMHz;	// to avoid getting tones too close to band edges; default = bandwidth/8
 	int tcalFrequency;	// [Hz] (= 80 for VLBA)

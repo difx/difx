@@ -16,8 +16,12 @@ from scipy.optimize import curve_fit
 
 __version__ = "1.0.0"
 __author__="Jan Wagner <jwagner@mpifr.de>"
-__build__= "$Revision: 10508 $"
-__date__ ="$Date: 2022-06-21 17:18:06 +0800 (二, 2022-06-21) $"
+__build__= "$Revision: 10964 $"
+__date__ ="$Date: 2023-05-08 15:10:02 +0800 (一, 2023-05-08) $"
+
+# EVN_GPS_ARCHIVE = "https://www.ira.inaf.it/vlbi_arch/gps/"	# superseded in 2023 by
+EVN_GPS_ARCHIVE = "vlbeer.ira.inaf.it"							# new FTP-only server
+USER_AUTH_FILE = '~/.vlbeer_ftp.conf'
 
 EVN_GPS_ARCHIVE = "https://www.ira.inaf.it/vlb_arc/gps/"
 MONTH_SUBDIRS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']

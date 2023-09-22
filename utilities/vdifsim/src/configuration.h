@@ -29,6 +29,7 @@ typedef struct
 	double droppedPacketRate;	/* between 0 and 1 */
 	double invalidPacketRate;	/* between 0 and 1 */
 	double clockOffset;		/* [us] */
+	double SEFD;			/* [Jy] */
 	/* FIXME: add filter parameters, cross polarization, ... */
 } AntennaParameters;
 

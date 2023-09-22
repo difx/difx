@@ -3131,7 +3131,7 @@ static int vdif_decode_1channel_32bit_decimation1(struct mark5_stream *ms, int n
 		}
 		else
 		{
-			data[0][o] = (le32toh(buf[i]) - (1<<31))/8.0;
+			data[0][o] = (le32toh(buf[i])/8.0 - (1<<28));
 		}
 
 		++i;
@@ -6235,7 +6235,7 @@ static int vdif_complex_decode_1channel_32bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = (le32toh(buf[i]) - (1<<31))/8.0 + (le32toh(buf[i+1]) - (1<<31))/8.0*I;
+			data[0][o] = (le32toh(buf[i])/8.0 - (1<<28)) + (le32toh(buf[i+1])/8.0 - (1<<28))*I;
 		}
 
 		i += 2;
@@ -7558,9 +7558,17 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		}
 		else if(f->databytesperpacket != dataframelength - f->frameheadersize)
 		{
-			fprintf(m5stderr, "VDIF Warning: Changing databytesperpacket from %d to %d\n",
-				f->databytesperpacket, dataframelength - f->frameheadersize);
-			f->databytesperpacket = dataframelength - f->frameheadersize;
+			if ((((char*)ms->frame) + dataframelength) <= (((char*)ms->datawindowsize) + ms->datawindowsize))
+			{
+				fprintf(m5stderr, "VDIF Warning: Changing databytesperpacket from %d to %d\n",
+					f->databytesperpacket, dataframelength - f->frameheadersize);
+				f->databytesperpacket = dataframelength - f->frameheadersize;
+			}
+			else
+			{
+				fprintf(m5stderr, "VDIF Warning: Ignoring databytesperpacket change from %d to %d as it would exceed buffer\n",
+					f->databytesperpacket, dataframelength - f->frameheadersize);
+			}
 		}
 
 		ms->payloadoffset = f->frameheadersize;

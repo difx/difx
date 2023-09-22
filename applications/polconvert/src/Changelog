@@ -1,3 +1,26 @@
+v2.0.7
+- progress on the merger between CASA and standalone cases
+- argument reconciliation between the two branches (task* and CASA*)
+- transitioning to have task_polconvert invoke polconvert_CASA.py
+
+v2.0.6
+- fixes for XYfparang issue
+- misc updates during valencia regression testing (July 29, 2023)
+- continued code cleanup
+
+v2.0.5
+- TOP/task_polconvert.py fixed for new FRINGE binary format (UVdist, &c).
+- more whitespace cleanup
+- reconciled version, on DIFX trunk, May 23, 2023.
+- added PP/checkpolconvertfringe.py
+
+v2.0.4 
+- Normalized python code (spaces).
+- Added new features to VGOS mode (UVTaper, multi-scan fitting, etc.)
+- Corrected bugs in PolGainSolve (bad rate estimates degraded solution quality).
+- added options for variable table names
+- starting another round of reconciliation
+
 v2.0.3
 - Synchronized ALMA/non-ALMA buildables; python codes still not unified
 - This version appears to reproduce the ALMA behaviors of v1.8.5

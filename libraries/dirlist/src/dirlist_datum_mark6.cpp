@@ -275,8 +275,6 @@ int loadMark6SList(DirList &D, const char *fileName, std::stringstream &error)
 	std::stringstream scanId;	// a number
 	std::stringstream scanData;	// structure of the type to pass to setFromSListString
 
-	const char *str;
-
 	// 0. some initialization
 	error.clear();
 	error.str("");
@@ -309,8 +307,7 @@ int loadMark6SList(DirList &D, const char *fileName, std::stringstream &error)
 
 	// 2. go through state machine
 
-	str = data.str().c_str();
-
+	const std::string &str = data.str();
 	for(int i = 0; str[i]; ++i)
 	{
 		switch(state)

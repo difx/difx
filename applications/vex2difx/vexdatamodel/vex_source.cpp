@@ -30,6 +30,8 @@
 #include <algorithm>
 #include "vex_source.h"
 
+using namespace std;
+
 bool VexSource::hasSourceName(const std::string &name) const
 {
 	// if result of find is .end(), then it is not in the list
@@ -43,6 +45,7 @@ std::ostream& operator << (std::ostream &os, const VexSource &x)
 	{
 		os << "  name=" << *it << std::endl;
 	}
+
 	switch(x.type)
 	{
 	case VexSource::Star:
@@ -135,3 +138,4 @@ void VexSource::setFixed(double x, double y, double z)
 	Y = y;	// (m)
 	Z = z;	// (m)
 }
+

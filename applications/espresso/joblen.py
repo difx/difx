@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # =======================================================================
 # Copyright (C) 2016 Cormac Reynolds
 #
@@ -23,7 +23,7 @@
 
 from __future__ import print_function, division
 import optparse
-import espressolib
+from espressolib import espressolib
 
 usage = """%prog <joblist>
     will return the length of the jobs in the <joblist> file.
