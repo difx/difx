@@ -18,11 +18,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: difxresource.py 10828 2022-11-16 10:20:46Z JanWagner $
+# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/sites/MPIfR/misc/difxresource/difxresource.py $
+# $LastChangedRevision: 10828 $
+# $Author: JanWagner $
+# $LastChangedDate: 2022-11-16 18:20:46 +0800 (三, 2022-11-16) $
 #
 #============================================================================
 

@@ -4,11 +4,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: difxarchive.py 9142 2019-09-09 08:39:21Z HelgeRottmann $
+# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/sites/MPIfR/difxdb/difxarchive/difxarchive.py $
+# $LastChangedRevision: 9142 $
+# $Author: HelgeRottmann $
+# $LastChangedDate: 2019-09-09 16:39:21 +0800 (一, 2019-09-09) $
 #
 #============================================================================
 
@@ -39,9 +39,9 @@ except:
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
+__build__= "$Revision: 9142 $"
+__date__ ="$Date: 2019-09-09 16:39:21 +0800 (一, 2019-09-09) $"
+__lastAuthor__="$Author: HelgeRottmann $"
 
 minSchemaMajor = 1
 minSchemaMinor = 1

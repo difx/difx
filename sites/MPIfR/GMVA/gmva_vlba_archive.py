@@ -20,11 +20,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
+# $Id: gmva_vlba_archive.py 10887 2023-02-15 08:32:23Z JanWagner $
 # $HeadURL: $
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $LastChangedRevision: 10887 $
+# $Author: JanWagner $
+# $LastChangedDate: 2023-02-15 16:32:23 +0800 (三, 2023-02-15) $
 #
 #============================================================================
 

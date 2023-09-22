@@ -4,11 +4,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: prepDifx.py 10500 2022-06-10 13:03:43Z HelgeRottmann $
+# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/sites/MPIfR/difxdb/prepDifx/prepDifx.py $
+# $LastChangedRevision: 10500 $
+# $Author: HelgeRottmann $
+# $LastChangedDate: 2022-06-10 21:03:43 +0800 (五, 2022-06-10) $
 #
 #============================================================================
 
