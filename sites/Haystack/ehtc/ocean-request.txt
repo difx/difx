@@ -1,0 +1,24 @@
+To: loading@holt.oso.chalmers.se
+From : gbc@haystack.mit.edu
+Subject: Ocean Loading Tides
+fromaddress = Ocean Loading Tides
+Header = ---- Ocean loading values follow next: ----
+Model = TPXO.7.2
+LoadingType = displacement
+GreensF = mc00egbc
+CMC = 0
+Plot = 0
+OutputFormat = BLQ
+Stations = ALMA                         2225061.285    -5440061.738    -2481681.151
+APEX                         2225039.530    -5441197.629    -2479303.360
+JCMT                        -5464584.676    -2493001.170     2150653.982
+KITTPEAK                    -1995957.256    -5037391.225     3357045.200
+PICOVEL                      5088967.745     -301681.186     3825012.206
+SMAP                        -5464555.493    -2492927.989     2150797.176
+SMTO                        -1828796.200    -5054406.800     3427865.200
+SPT                              840.902        -842.717    -6359567.876
+THULE                         541547.000    -1387978.600     6180982.000
+
+MyEmail = gbc@haystack.mit.edu
+ReplyTo = gbc@haystack.mit.edu
+-------------------------------------------------------------------

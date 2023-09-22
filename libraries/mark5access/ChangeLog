@@ -1,0 +1,191 @@
+Version 1.6
+* Post DiFX-2.6
+* All examples: Added support for new, generalised CODIF and VDIF naming scheme
+* Changed Mbps to a float, dealt with this by casting to int in legacy formats
+* m5d, mark5streamunpacker: harmonise the way CODIF and VDIF files are treated
+* format_codif, format_vdif: Fix calculation of frame granularity for CODIF (and VDIF,
+  although that would never have been wrong). Fix decoder for complex 1-channel 2-bit.
+  Cope with possible fill pattern data during format init.
+* m5spec: allow specification of bchan and echan to limit range of channels being printed
+* Remove broken/incomplete support for K5 format
+* Remove support for non-format "VDIFB"
+* m5fold: change all printf() to fprintf(stderr, ) so piping is clean
+* m5fold: allow outfile to be - to imply stdout; this makes output quiet
+* fix possible crash due to blanker operating on invalid data (thanks to Mars Buttfield-Addison)
+* don't stop "example programs" when consecutive errors exceed a threshold.
+* no longer print number of validation failures when closing a mark5_stream
+* fix help information for the examples
+* add 1, 2 and 4 channel decoders for 16 bit real VDIF
+* add 5, 6, 7, 8, 16 channel decoders for 8 bit real VDIF
+* add 16 channel decoder for 4 bit real VDIF
+* add 3, 5, 6, 7 channel decoders for 2 bit complex VDIF
+* add 3, 5, 6, 7, 16 channel decoders for 4 bit complex VDIF
+* add 3, 5, 6, 7  channel decoders for 8 bit complex VDIF
+* clean up and/or fix some of the (likely yet) unused decoders
+  - some would not increase the input index when blanking
+  - some increased the output index too much
+  - 16 and 32 bit values had errors in converting to signed values
+* add 24 channel decoder for 1 and 2 bits real VDIF
+* add state counters for all 2-bit real VDIF modes with decoders
+* Version for DiFX-2.8, Nov 4, 2022
+
+Version 1.5.4
+* Post DiFX-2.5
+* Expose function determinelastmark5bframeoffset()
+* m5d, m5spec: --version option
+* m5d: fix use of offset for short reads (assumes file starts on a frame header)
+* Version for DiFX-2.6, Mar 4, 2019
+
+Version 1.5.3
+* Integer rounding error in m5slice
+* Add ctypes-based Python bindings 
+* Add Python examples (m5spec.py, m5stat.py, m5subband.py, m5time.py, m5tone.py, m5selfcorr.py)
+* m5subband: extract a single subband by FFT-based filtering of a wideband input file
+* m5pcal: now supports tones at non-integer MHz, better supports wideband recordings, 
+  adds FFT length (--chunksize) option, and is updated to behave more DiFX-like
+* m5d: adds complex decode (--double) and custom printout format (e.g., --format=%f)
+* test5b: will now report skipped frames
+* zerocorr: write results with %e to avoid scaling causing underflow results
+* more const correctness
+* functions added that mask bad values in channel-dependent manner from decoded VDIF streams if EDV4 is used.  Per-channel accounting of zero values is provided.
+* Fix some data rate and frame rate calculations in mark5bfile.h
+* New function: void snprintmark5bfilesummary(char *str, int maxLength, const struct mark5b_file_summary *sum)
+* Change RPM name to vlbi-mark5access.*.rpm
+* New option in test5b: can supply frames per second and then the true number of skipped frames can be evaluated.
+* fixmark5b: don't seg fault if can't open files
+* Many utilities: change from use of signal() to sigaction(), which is supposed to be more reliable.
+* Version for DiFX-2.5, May 16, 2017
+
+Version 1.5.2
+* Post DiFX-2.4
+* Detect Legacy VDIF
+
+Version 1.5.1
+* Improve behavior of fixmark5b() in the case that fill pattern is seen at the 1 second transition.
+* m5bsum calculates frame rates now rather than just assuming 25600 frames per second
+* Improve blanking of mark5b in fix case (make use of the TVG bit to blank frame by frame)
+* Added support for "d2k" mode, which is Mark5B with sign and magnitude bits swapped
+* m5bstate: complex sampling is now supported
+* examples/makeheader: tool to make a SIGPROC pulsar filterbank compatible header.
+* m5bfb: Additions to polarisation support.
+* Version for DiFX-2.4, Nov 4, 2014
+
+Version 1.5.0
+* Add KVN5B format: like Mark5B but different data bit patterns (Richard Dodson)
+* Add 3, 5, 6, and 7 channel VDIF decoders
+* Add functionality to repair Mark5B data streams (regrid frames, remove stray bytes, fill missing frames with fill pattern)
+* Add Mark5B file summary program, m5bsum, akin to vsum (in vdifio)
+* Reorder format checks to look for Mark5B earlier than Mark4 or VLBA as that format is becoming much more common
+* Utility m5fb (mark5 filterbank) to generate dynamic spectrum from baseband data
+* Version for DiFX-2.3, Dec 20, 2013
+
+Version 1.4.4
+* Slightly faster and more relaxed frame finding for VLBA and Mark4 formats
+* Numerous small improvements based on improved cppcheck exposed by Martin
+Ettl
+* Add genheaders() for Mark4 and Mark5B formats
+* m5test: minor improvements
+* c++11 compliance
+* Much improved capabilities for reading from stdin
+* m5bstate: recognize filled data and don't count
+* Remove findvdif program.  new program vsum in the vdifio package is much
+better.
+* m5timeseries utility added
+* 32 channel 2 bit VDIF support (Nicolas Pradel)
+* Version for DiFX-2.2, May 31, 2013
+
+Version 1.4.3
+* Post 2.0.1 tagging
+* Adopt more unix-standard return values in utility programs
+* mk5spec: work on complex data (Chris Phillips)
+* VDIF format determination by data peeking added
+* Version for DiFX-2.1, May 4, 2012
+
+Version 1.4.2
+* Post 2.0.0 tagging
+* Start adding state counting for use in power detection.  2-bit sampling supported only at this time.
+* Add m5tsys
+* Can now make RedHat RPM
+* Fix some memory leaks identified by valgrind.
+* Introduce new_mark5_stream_absorb.  like new_mark5_stream, but it cleanly and immediately deallocates space for the temporary mark5_stream_generic and mark5_format_generic structures
+* Version for DiFX-2.0.1, June 10, 2011
+
+Version 1.4.1
+* revert to standard "c" types (long long, unsigned char, ...) over int64_t, uint8_t
+* disable all K5 code until that is at least somewhat useful
+* Some memory leak fixes from Alexander Neidhardt and Martin Ettl (from Wettzell)
+* Add m5fold utility
+* Add some 4 and 8 bit unpackers for VDIF format
+* m5d and m5spec : behave better if -h is given
+* mark5_format_mark5b_init: if no nanoseconds in headers, then assume 2048-16-2 (this is to support Mark5B mode via Mark5C)
+* Put pcal utility in this package
+* Add zerocorr -- a zero baseline cross correlator
+* Add sigint catching to several utils
+* Improve string (mostly filename) handling safety with snprintf
+* Allow read from stdin (at least in some circumstances) via filename = "-"
+* Version for DiFX-2.0.0
+
+Version 1.4.0
+* Add VDIF format -- but only for formats with 1 thread
+* Add VLBN format == VLBA without data modulation
+* Fix blank range checking for a small subset of Mark4 modes
+	(Thanks to Sergei Pogrebenko and Jan Wagner for the bug report)
+* Version for DiFX-1.5.2
+
+Version 1.3.2
+* Fix sample granularity calculation for Mark5B
+* Version for DiFX-1.5.1
+
+Version 1.3.1
+* Version for DiFX-1.5
+
+Version 1.3.0
+* Post NRAO-DiFX 1.1
+* Fix file based stream offset problem for all data alignments
+* Start of Mark5C development
+
+Version 1.2.3
+* fix minor bug in blanking code -- end of header not blanked on first frame
+  of mark4 format
+* add m5spec -- a spectrometer test program.  Needs fftw3 to compile.
+* allow offsets > 2 GiB
+* add m5test -- look for problems in data files
+* add consecutivefails.  
+* fix to file stream type -- sometimes 1 frame would be skipped
+* fix to mark4 decoding -- sample offset was wrong.  stupid data replacement!
+
+Version 1.2.2
+* rename oversampling to decimation
+
+Version 1.2.1
+* add oversampling (factors 1, 2, 4, 8+) support to mark4 vlba mark5 formats
+
+Version 1.2.0
+* fix some Mark5B issues.  This required changing ns to be a double throughout.
+
+Version 1.1.3
+* fix datestamp on mark4 data -- subtract 1 day (Jan 0, not Jan 1 is the zeroth day of year)
+
+Version 1.1.2
+* Support < 8 tracks on vlba and mark4 formats
+* new unpack function allowing offset into stream
+
+Version 1.1.1
+* Fix unpack/blanker issue
+* Fix mark5_stream_open()
+* New functions:
+    const char *mark5_stream_list_formats();
+    struct mark5_format *new_mark5_format_from_name(const char *formatname);
+
+Version 1.1.0
+* Start of K5 support -- not yet usable
+* Implement blanking: look for fill pattern and decode to all zeros.
+
+Version 1.0.1
+* Fix new_mark5_format_from_stream()
+
+Version 1.0
+* Support of VLBA, Mark4 & Mark5B formats
+* Support File and Memory streams
+* Support "pure" unpacking -- no frame validation
+* Big and Little Endian support

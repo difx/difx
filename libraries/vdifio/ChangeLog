@@ -1,0 +1,187 @@
+Version 1.5
+~~~~~~~~~~~
+* Post DiFX-2.6
+* Raise max number of threads to 256
+* vdiffold & vdifd: don't pass nbit to vmux -- it is wrong.
+* vmux: don't print errors to stdout, print to stderr instead, to keep stream clean
+* functions called by vmux: don't print messages to stdout.
+* vdifspec: allow passing of bchan and echan to m5spec
+* python2 -> python3
+* new utility: splitVDIFbygap : breaks a VDIF file into multiple based on time gaps
+* filterVDIF: discard frames that had seconds less than previous frames
+* introduce #define'd error codes for some common functions
+* new utility: checkVDIF : look at VDIF file and look for issues
+* Add support for command line option "--version" to some of the utilities
+* Slight improvement in human readable output from printvdiffilesummary, as used by vsum
+* vdif file summary (as used by vsum) would under-report length of a scan if file size < 80MB and datarate < 320 Mbps; fixed
+* vdifd: correct parsing command line: optional params nbit and offset were swapped
+* vmux: option to force 1-bit input
+* vsum: print data rate
+* vdifspec and vdifd: verified operation on 1-bit and 8-bit data
+* filterVDIF: option to run on many files (Usage 2).
+* vmux: change default to not generating per-channel validity as this could lead to problematic behavior in programs not expecting that kind of output.
+* fix bug in testCornerTurn() for nbit > 8
+* Implement all corner turners that might be needed for the VNDA project for up to 16 channels:
+  - New 1-bit corner turners: 9, 10, 11, 12, 13, 14, 15 threads
+  - New 2-bit corner turners: 9, 11, 13, 15 threads
+  - New 4-bit corner turners: 9, 10, 11, 12, 13, 14, 15 threads
+  - New 8-bit corner turners: 9, 11, 13, 15 threads
+  - New 16-bit corner turners: 3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15 threads
+* New 24 thread corner turners for 1 and 2 bits
+* Version for DiFX-2.8 branch, Nov 4, 2022
+
+Version 1.4
+~~~~~~~~~~~
+* New helper functions to read VDIF file while pre-arranging data to be more palatable for the memory based vdifmux()
+  - vdifreaderOpen(), vdifreaderRead(), vdifreaderSeek()
+* New utility: reorderVDIF based upon vdifreaderRead()
+* Version for DiFX-2.6, Mar 4, 2019
+
+Version 1.3
+~~~~~~~~~~~
+* Move all pure Mark6 functionality to mark6sg
+* Python utils: explicitly call python2
+* More conformant help and version information: printVDIFheader
+* vdifmux(): change logic to determine first frame number if not explicitly provided -> simplified and probably faster and possibly more correct code.
+* vdifmux(): make more robust in some parameter corner cases
+* vdifmux(): nSort is now entirely referring to input frames; previously there was some use regarding output frames
+* printVDIFheader: minor update for discerning two EDV Version 2 sub(sub)versions (EHT R2DBE, ALMA)
+
+Version 1.2
+~~~~~~~~~~~
+* Post DiFX-2.5
+* Some improvements in multiplexing very sparse data
+* Options in vmux to change gap/sort tuning parameters
+* Added ability to summarize a mark6 module in a specific slot
+* new corner turners:
+  - 1-bit with 32, 64 threads
+  - 2-bit with 32, 64 threads
+  - 4-bit with 32, 64 threads
+  - 8-bit with 32, 64 threads
+  - 16-bit with 32, 64 threads
+  - 32-bit with 32, 64 threads
+  - 64-bit with 32, 64 threads
+  - 128-bit with 32, 64 threads
+* Mark6Gatherer gets module serial number for mark6 activity message
+
+Version 1.1
+~~~~~~~~~~~
+* Post DiFX-2.4
+* Added incrementVDIFHeader
+* Added ctypes-based Python bindings and one example (vdifio_1.py)
+* vsum: error message -> stderr, not stdout
+* Support new EDV2 that is produced by ALMA and R2DBE.  Work here is based on spec with TBDs: http://vlbi.org/vdif/docs/alma-vdif-edv.pdf
+* New functionality in printVDIFheader:
+  - Add Mark6 awareness:  If the Mark6 signature is found at the beginning, 28 bytes will be skipped to allow proper decoding.
+  - If framesize is not provided at the command line, take from first frame
+* New functionality in vmux
+  - Support multiplexing multi-channel multi-thread data (each thread must have same general parameters)
+* testmk6: test/example program for mark6 reading capabilities.  Does simple gather operation and file summary at this point.
+* changes to multiplexing: increase max number of threads to mux to 64, warn if too many threads are being muxed, move out cornerturners to their own file.
+  - note: ABI change.  Recompile of all code using vdifio is needed after updating to this version
+* change a few key variables from "long long" to "int64_t" 
+* cornerturners now all use sized integers for variables that care
+* new corner turners:
+  - 1-bit with 16 threads		(slow and convoluted; likely possible to do better)
+  - 4-bit with 16 threads
+  - 16-bit with 2, 4, 8, 16 threads
+  - 32-bit with 2, 4, 8, 16 threads
+  - 64-bit with 2, 4, 8, 16 threads
+  - 128-bit with 2, 4, 8, 16 threads
+  - Why need for large words?  It turns out that multiplexing multiple channels per thread is mathematically identical to multiplexing one channel per thread but with a total bit width of nBit*nChan
+* VDIF multiplexer now supports multiplexing threads with more than one channel.
+  - a change in the API for configurevdifmux() is likely coming that will simplify use of this.  For now, use setvdifmuxinputchannels() after configurevdifmux()
+* New utility: filterVDIF.  It extracts certain threads and summarized what it found.  Similar to extractVDIFThreads.
+* New utility: mk6gather: reads a VDIF stream from a Mark6 unit and writes it to a file.  Time reordering is done at the packet level.
+* New utility: mk6ls: lists Mark6 "files" on system.  Respects ENV VAR MARK6_ROOT
+* New utility: mk6vmux: directly multiplexes VDIF data from a Mark6 module
+* vmux and mk6vmux (and in general any multiplexing) can be done on complex data
+* Support for partial frame validity in multiplexed VDIF data (pending VDIF committee approval of EDV version 4 requested by WFB on 2015/10/09)
+* Support for fanout in multiplexing (needed by some DBBC3 modes), both in library in vmux (very lightly tested)
+* Some minor improvements to some utilities (improved help info, some parameter checking, ...)
+* New function: void snprintvdiffilesummary(char *str, int maxLength, const struct vdif_file_summary *sum)
+* Update help info for some utilties : fix "Usage" lines.
+* vmux: all printf(...) -> fprintf(stderr, ...) so as to not interfere with stdout usage 
+* vmux: stop on SIGPIPE: useful for piped operations
+* vmux: don't segfault on incomplete command line
+* Change name of .rpm file that is made to vlbi-vdifio.*.rpm
+* vmux: some better default tuning parameters and move from signal() to sigaction()
+* Version for DiFX-2.5, May 16, 2017
+
+Version 1.0
+~~~~~~~~~~~
+* ******* NOTE CHANGES TO THE API *********
+* Changed parameter in createVDIFHeader (pass size of dataarray not full VDIF frame).
+* Changed function of getVDIFEpoch and setVDIFFrameSecond
+* Renamed:
+	getVDIFMJD
+	getVDIFFrameFullSecond -> getVDIFFrameEpochSecOffset
+	setVDIFFrameSecond -> setVDIFFrameEpochSecOffset
+	setVDIFFrameFull
+	setVDIFMJDSec -> setVDIFFrameMJDSec
+	getVDIFDMJD -> getVDIFFrameDMJD
+	setVDIFTime -> setVDIFFrameTime (and changed functionality)
+	setVDIFEpoch -> setVDIFEpochMJD
+* Added
+	getVDIFFrameMJDSec
+	setVDIFEpochTime
+* Added new utility printVDIFgaps to examine a VDIF stream for missing data
+* vdifmux now fed by a structure.  This allows for safer, faster and more flexible muxing.
+* printVDIFheader: when legacy data don't print any EDV info
+* multi2singlethreadVDIF: fixed bug where frames with invalid bit set had zero epoch and wrong seconds
+* captureUDPVDIF: properly use skipbytes at the front and back of the packet
+* Version for DiFX-2.4, Nov 4, 2014
+
+Version 0.6
+~~~~~~~~~~~
+* Post DiFX-2.3
+* Expose getVDIFEpochMJD: returns integer MJD corresponding to start of VDIF epoch
+* Add printVDIFheader which will also print contents of EDV1 and EDV3 
+
+Version 0.5
+~~~~~~~~~~~
+* Fix the 2-bit 16 thread case in the vdifmux function
+* 1-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8 threads
+* 2-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16 threads
+* 4-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8 threads
+* 8-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16 threads
+* add corner turn test program: testcornerturners
+* add function to decode data from a single frame of VDIF data
+* add utility to convert from 2-bit to 8-bit VDIF data (perhaps useful for testing)
+* Version for DiFX-2.3, Dec 20, 2013
+
+Version 0.4
+~~~~~~~~~~~
+* Add new vdifmux function which takes a multi-threaded VDIF buffer, looks
+  for frames with certain threadIds, and multiplexes them into a single-
+  threaded output buffer.
+* New programs exercising new library routines:
+  - vsum       summarize contents of 1 or more VDIF files
+  - vmux       multiplex a multi-thread VDIF file into a single-thread file
+* New utilities (mirroring functionality of mark5access utilities):
+  - vdifd      (m5d)
+  - vdifbstate (m5bstate)
+  - vdiffold   (m5fold)
+  - vdifspec   (m5spec)
+* Other new utilities
+  - extractVDIFThreads: gets only packets corresponding to given thread IDs
+* Inlinification and constification of many VDIF header access functions
+* Large file clean (I think) now...
+* Fix bugs in multi2singlethreadVDIF which caused crashes if many packets missing
+* Version for DiFX-2.2, May 31, 2013
+
+Version 0.3
+~~~~~~~~~~~
+* Version for DiFX-2.1, May 4, 2012
+
+Version 0.2
+~~~~~~~~~~~
+* Post DiFX-2.0.0
+* Ability to make RPM files
+* Version for DiFX-2.0.1, June 10, 2011
+
+Version 0.1
+~~~~~~~~~~~
+* Initial implementation of vdifio
+* Serves multiple VDIF threads from one source to multiple sinks
+* Version for DiFX-2.0.0

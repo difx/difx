@@ -1,0 +1,13 @@
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Don't forget to do the following as root after installation:
+
+#   chown root @prefix@/bin/e2ecopy
+#   chmod +s @prefix@/bin/e2ecopy
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+

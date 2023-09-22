@@ -1,0 +1,319 @@
+#!/usr/bin/env python
+
+import psycopg2 as pg
+from sys import argv, exit
+from os import environ, popen
+from string import lower, upper, split, strip
+
+program = 'db2flag'
+author = 'Walter Brisken'
+version = '0.4'
+verdate = '20150730'
+
+# Note: if more MIB-based flags are to be supported there are two places in
+# the code, identified in comments, where additions need to be made.
+
+def fetchVLBAMon2xmlFlags(start, stop):
+
+	print 'Getting Mon2xml FLAGGER records from database.  Be patient...'
+
+	dbAccess = environ['VLBAMPTS_DB']
+
+	# query to get VME alerts that were funneled into the VLBAMPTS database via mon2xml
+	query = """
+	SELECT hostname, timestamp, monpointvalue from mcdata 
+	WHERE devicename = 'FLAGGER' 
+	  AND monpointname = 'upper_flag'
+	  AND timestamp between %14.8f AND %14.8f
+	ORDER BY timestamp""" % (start, stop) 
+
+	db = pg.connect(dbAccess).cursor()
+	db.execute(query)
+	
+	return db.fetchall()
+
+
+def fetchVLBAMibFlags(start, stop):
+
+	print 'Getting MIB alert records from database.  Be patient...'
+
+	dbAccess = environ['VLBAMPTS_DB']
+
+	# look for MIB-native alerts
+	#   For now, just look for subreflector problems and L404 unlock.  Later, there may be more...
+	# NOTE: now I assume 1 L404 per site, with side A wired to replace L104-1 and B for L104-2.
+
+	# Here is the first place where additions are needed if more MIB-based flags are to be supported.
+	query = """
+	SELECT hostname, timestamp, devicename, monpointname, alert from alertdata 
+	WHERE    ( ( devicename='M402' AND monpointname='Ell_Cmd_Stat_Mismatch' )
+	        OR ( devicename='L404' AND ( monpointname='Lock_Detect_A' OR monpointname='Lock_Detect_B' ) ) )
+	  AND timestamp between %14.8f AND %14.8f
+	ORDER BY timestamp""" % (start, stop)
+
+	db = pg.connect(dbAccess).cursor()
+	db.execute(query)
+
+	return db.fetchall()
+
+def getVLBAFlags(mon2xmlFlags, mibFlags, start, stop, station, filename):
+
+	nRec = 0
+
+	# First do Legacy portion (alerts from mon2xml via database)
+
+	# The reasons below must be <= 24 chars between single quotes
+	legacyFlagTypes = \
+	[ \
+		( 0x00001, "'Synth 1 out of lock'" ), \
+		( 0x00002, "'Synth 2 out of lock'" ), \
+		( 0x00004, "'Synth 3 out of lock'" ), \
+		( 0x00080, "'Source change'" ), \
+		( 0x01000, "'Subreflector posn error'" ), \
+		( 0x04000, "'Antenna not pointing'" ), \
+		( 0x08000, "'Antenna position error'") \
+	]
+
+	flagstart = [-1] * len(legacyFlagTypes)
+
+	out = open(filename, 'w')
+	print 'Formatting %s flag data' % upper(station)
+
+	lastflag = 0
+
+	for hostname, timestamp, value in mon2xmlFlags:
+		if lower(hostname[0:2]) != lower(station):
+			continue
+			
+		flag = int(value)
+
+		for b in range(len(legacyFlagTypes)):
+			if (flag & legacyFlagTypes[b][0]) != (lastflag & legacyFlagTypes[b][0]):
+				if flag & legacyFlagTypes[b][0]:
+					if timestamp > start:
+						flagstart[b] = timestamp
+					else:
+						flagstart[b] = start
+				else:
+					if timestamp > start:
+						# only bother to write flag if part of it happened during the timerange
+						out.write('%s %12.6f %12.6f %d %s\n' % (upper(station), flagstart[b], timestamp, -1, legacyFlagTypes[b][1]))
+						nRec += 1
+					flagstart[b] = -1
+
+		lastflag = flag
+
+	for b in range(len(legacyFlagTypes)):
+		if flagstart[b] > 0:
+			out.write('%s %12.6f %12.6f %d %s\n' % (upper(station), flagstart[b], stop, -1, legacyFlagTypes[b][1]))
+			nRec += 1
+
+	# Do MIB portion
+
+	# Here is the second place where new MIB-based flags are generated.
+	# The device name and mon points in this table are case-insensitive.
+	# For modules types that have multiple instances at one site, add -1 or -2 to the device name as appropriate
+	mibFlagTypes = \
+	[ \
+		("M402.Ell_Cmd_Stat_Mismatch", "'Ellipsoid posn error'"), \
+		("L404-1.Lock_Detect_A",       "'Syn 1 out of lock (L404)'"), \
+		("L404-1.Lock_Detect_B",       "'Syn 2 out of lock (L404)'") \
+	]
+
+	flagstart = [-1] * len(mibFlagTypes)
+
+	for hostname, timestamp, devicename, monpointname, alert in mibFlags:
+
+		if lower(hostname[0:2]) != lower(station):
+			continue
+
+		if hostname[-2] == '-':
+			# device of form L404-1 or L404-2
+			flagDescriptor = lower(devicename + hostname[-2:] + '.' + monpointname)
+		else:
+			flagDescriptor = lower(devicename + '.' + monpointname)
+
+		for b in range(len(mibFlagTypes)):
+			if lower(mibFlagTypes[b][0]) == flagDescriptor:
+				if alert and flagstart[b] < 0:
+					if timestamp > start:
+						flagstart[b] = timestamp
+					else:
+						flagstart[b] = start
+				elif not alert and flagstart[b] > 0:
+					if timestamp > start:
+						# only bother to write flag if part of it happened during the timerange
+						out.write('%s %12.6f %12.6f %d %s\n' % (upper(station), flagstart[b], timestamp, -1, mibFlagTypes[b][1]))
+						nRec += 1
+					flagstart[b] = -1
+				break
+
+	for b in range(len(mibFlagTypes)):
+		if flagstart[b] > 0:
+			out.write('%s %12.6f %12.6f %d %s\n' % (upper(station), flagstart[b], stop, -1, mibFlagTypes[b][1]))
+			nRec += 1
+	
+	print '  %d records found' % nRec
+
+	out.close()
+	# if nRec is zero, delete output file
+
+	return nRec;
+
+def getGBFlags(start, stop, guardTime, filename):
+	pass
+
+def getVLAFlags(start, stop, guardTime, filename):
+	pass
+
+				
+
+# Returns obsCode, obsSeg, { ANT : [startmjd, stopmjd] }
+def vexPeek(vexFile, verbose):
+	
+	cmd = 'vexpeek %s' % vexFile
+	if verbose > 0:
+		print 'Executing command: %s' % cmd
+
+	p = popen(cmd)
+	data = p.readlines()
+
+	if len(data) == 0:
+		return 'Error', 'Error', 'Error'
+	
+	obsCode = upper(strip(data[0]))
+	obsSeg = ''
+
+	if obsCode[0:5] == 'ERROR':
+		return 'Error', 'Error', 'Error'
+
+	if len(obsCode) > 3:
+		if obsCode[0].isalpha() and obsCode[1].isalpha() and obsCode[2].isdigit():
+			for i in range(3, len(obsCode)):
+				if obsCode[i].isalpha():
+					obsSeg = obsCode[i:]
+					obsCode = obsCode[0:i]
+					break;
+		if obsCode[0].isalpha() and obsCode[1].isdigit():
+			for i in range(2, len(obsCode)):
+				if obsCode[i].isalpha():
+					obsSeg = obsCode[i:]
+					obsCode = obsCode[0:i]
+					break;
+		
+
+	antennaTimes = {}
+	for d in data[1:]:
+		s = split(strip(d))
+		antennaTimes[upper(s[0])] = [float(s[1]), float(s[2])]
+
+	if verbose > 0:
+		print 'This is experiment %s %s' % (obsCode, obsSeg)
+
+	return obsCode, obsSeg, antennaTimes
+
+def exptTimeRange(antennaTimes):
+	start = 1e9
+	stop = -1e9
+	for a in antennaTimes.keys():
+		if antennaTimes[a][0] < start:
+			start = antennaTimes[a][0]
+		if antennaTimes[a][1] > stop:
+			stop = antennaTimes[a][0]
+	return [start, stop]
+
+def usage(pgm):
+	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
+	print 'Usage: db2flag [options] <vexFile> [ant1 [ant2 ... ] ]\n'
+	print 'Options can be:\n'
+	print '  --help'
+	print '  -h       print this help information\n'
+	print '  --verbose'
+	print '  -v       be more verbose in execution\n'
+	print '  --force'
+	print '  -f       force operation on unrecognized antenna\n'
+
+
+vexFile = None
+antennas = []
+verbose = 0
+force = False
+guardTime = 0.04	# [days] : extend time before experiment to get pre-existing conditions
+
+for a in argv[1:]:
+	if a[0] == '-':
+		if a in ['-h', '--help']:
+			usage(argv[0])
+			exit(0)
+		if a in ['-v', '--verbose']:
+			verbose += 1
+		if a in ['-f', '--force']:
+			force = True
+		else:
+			print 'Unknown option: %s' % a
+			exit(0)
+	elif vexFile == None:
+		vexFile = a
+	else:
+		antennas.append(upper(a))
+
+if vexFile == None:
+	print 'Incomplete command line.  Run with --help for info.'
+	exit(0)
+
+obsCode, obsSeg, antennaTimes = vexPeek(vexFile, verbose)
+
+if not force:
+	nWrongAntenna = 0
+	for a in antennas:
+		if a not in antennaTimes.keys():
+			print 'Error: %s is not in this vex file' % a
+			nWrongAntenna += 1
+	if nWrongAntenna > 0:
+		exit(0)
+else:
+	for a in antennas:
+		if a not in antennaTimes.keys():
+			antennaTimes[a] = exptTimeRange(antennaTimes)
+
+if len(antennas) == 0:
+	antennas = antennaTimes.keys()
+
+
+# different antennas have their data stored in different DBs / mon points...
+
+ignored = ''
+
+print '\n%s is now collecting flag data...' % program
+
+start = 1.0e12
+stop = -1.0e12
+for a in antennas:
+	if not a in ['BR', 'FD', 'HN', 'KP', 'LA', 'MK', 'NL', 'OV', 'PT', 'SC']:
+		continue
+	if antennaTimes[a][0] < start:
+		start = antennaTimes[a][0]
+	if antennaTimes[a][1] > stop:
+		stop = antennaTimes[a][1]
+
+if start < stop:
+	vlbaMon2xmlFlags = fetchVLBAMon2xmlFlags(start-guardTime, stop)
+	vlbaMibFlags = fetchVLBAMibFlags(start-guardTime, stop)
+
+for a in antennas:
+	if a == 'GB':
+		flagFile = '%s%s.%s.flag' % (lower(obsCode), lower(obsSeg), lower(a))
+		getGBFlags(antennaTimes[a][0], antennaTimes[a][1], guardTime, flagFile)
+	elif a == 'Y':
+		flagFile = '%s%s.%s.flag' % (lower(obsCode), lower(obsSeg), lower(a))
+		getVLAFlags(antennaTimes[a][0], antennaTimes[a][1], guardTime, flagFile)
+	elif a in ['BR', 'FD', 'HN', 'KP', 'LA', 'MK', 'NL', 'OV', 'PT', 'SC']:
+		flagFile = '%s%s.%s.flag' % (lower(obsCode), lower(obsSeg), lower(a))
+		getVLBAFlags(vlbaMon2xmlFlags, vlbaMibFlags, antennaTimes[a][0], antennaTimes[a][1], a, flagFile)
+	else:
+		ignored += ' %s' % a
+
+if len(ignored) > 0:
+	print '\nThe following antennas are not (yet) supported by %s: %s' % (program, ignored)
+
+print ''

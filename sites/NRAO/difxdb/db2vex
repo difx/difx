@@ -1,0 +1,926 @@
+#!/usr/bin/env python
+
+import datetime
+import cx_Oracle
+from sys import argv, exit
+from os import getenv, environ, popen, umask, getcwd, system
+from os.path import isfile
+from string import find, upper, lower, strip, split
+
+newDB = True
+try:
+	import psycopg2
+except:
+	newDB = False
+	print 'psycopg2 not found.  Processing Mark5C data not possible'
+	
+
+program = 'db2vex'
+author = 'Walter Brisken'
+version = '0.18'
+verdate = '20150414'
+
+# Name of the Oracle VLBA legacy database
+databaseName = getenv("VLBA_DB")
+
+# Name of the Postgres VLBA database based on EVLA
+newDatabaseName = getenv("VLBAMPTS_DB")
+if newDatabaseName == None:
+	newDB = False
+
+if 'EVLAMPTS_DB' in environ:
+	vlaDatabaseName = getenv('EVLAMPTS_DB')
+else:
+	vlaDatabaseName = None
+
+mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
+
+def usage(pgm):
+	print '%s ver %s  %s  %s\n' % (program, version, author, verdate)
+	print 'A program to append monitor data to a vex file for software correlation.\n'
+	print 'Usage: %s [options] <vex file> [<fslog>] [<fslog>] ...\n' % pgm
+	print 'options can be:\n'
+	print '  --help'
+	print '  -h         print this message and quit\n'
+	print '  --verbose'
+	print '  -v         print more diagnostics to screen\n'
+	print '  --force'
+	print '  -f         run even if means overwriting exisiting files\n'
+	print '  --preobs'
+	print '  -p         run in preobs mode: use projected clocks and no TAPELOG_OBS\n'
+	print '  --usno'
+	print '  -u         force to run in USNO Mark5C mode'
+	print '  --vsnProjectCode  <project code>'
+	print '             use provided project code in VSN DB queries\n'
+	print '<vex file> is a vex file produced by sched (usually ending in .vex)\n'
+	print '<fslog> is a field system log file\n'
+	print 'Example:  db2vex bj061h.vex\n'
+	exit(0)
+
+# Splits a combined obs code into its proposal and segment portions
+def splitobscode(exper):
+	obsSeg = ''
+	proposal = exper[:]
+
+	if len(proposal) > 3:
+		if proposal[0].isalpha() and proposal[1].isalpha() and proposal[2].isdigit():
+			for i in range(3, len(proposal)):
+				if proposal[i].isalpha():
+					obsSeg = proposal[i:]
+					proposal = proposal[0:i]
+					break
+		if proposal[0].isalpha() and proposal[1].isdigit():
+			for i in range(2, len(proposal)):
+				if proposal[i].isalpha():
+					obsSeg = proposal[i:]
+					proposal = proposal[0:i]
+					break
+	
+	return proposal, obsSeg
+
+# Returns obsCode, obsSeg, { ANT : [startmjd, stopmjd] }
+def vexPeek(vexFile, verbose):
+	
+	cmd = 'vexpeek %s' % vexFile
+	if verbose > 0:
+		print 'Executing command: %s' % cmd
+
+	p = popen(cmd)
+	data = p.readlines()
+
+	if len(data) == 0:
+		return 'Error', 'Error', 'Error'
+	
+	obsCode = upper(strip(data[0]))
+	obsSeg = ''
+
+	if obsCode[0:5] == 'ERROR':
+		return 'Error', 'Error', 'Error'
+
+	if len(obsCode) > 3:
+		if obsCode[0].isalpha() and obsCode[1].isalpha() and obsCode[2].isdigit():
+			for i in range(3, len(obsCode)):
+				if obsCode[i].isalpha():
+					obsSeg = obsCode[i:]
+					obsCode = obsCode[0:i]
+					break;
+		if obsCode[0].isalpha() and obsCode[1].isdigit():
+			for i in range(2, len(obsCode)):
+				if obsCode[i].isalpha():
+					obsSeg = obsCode[i:]
+					obsCode = obsCode[0:i]
+					break;
+		
+
+	stationTimes = {}
+	for d in data[1:]:
+		s = split(strip(d))
+		stationTimes[upper(s[0])] = [float(s[1]), float(s[2])]
+
+	print 'This is experiment %s %s' % (obsCode, obsSeg)
+
+	return obsCode, obsSeg, stationTimes
+
+def calcExperTimes(stationTimes):
+	start = 1.0e9
+	stop = -1.0e9
+	keys = stationTimes.keys()
+	for key in keys:
+		s = stationTimes[key]
+		if s[0] < start:
+			start = s[0]
+		if s[1] > stop:
+			stop = s[1]
+	return [start, stop]
+
+def mjdCenter(stationTimes):
+	start = 1.0e10
+	stop = 0.0
+	for s in stationTimes:
+		a = stationTimes[s][0]
+		b = stationTimes[s][1]
+		if a < start:
+			start = a
+		if b > stop:
+			stop = b
+	return (start + stop)*0.5
+
+
+def mjd2vex(mjd, dateonly=False):
+	md = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+	d = int(mjd)
+	s = int((mjd - d)*86400.0 + 0.5)
+	dt = datetime.timedelta(d, s)
+	t = mjd0 + dt
+	d = t.day + md[t.month-1]
+	if t.year % 4 == 0 and t.month > 2:
+		d += 1
+	if dateonly:
+		return '%dy%03dd' % (t.year, d)
+	else:
+		return '%dy%03dd%02dh%02dm%02ds' % (t.year, d, t.hour, t.minute, t.second)
+
+def mjd2date(mjd):
+	mon = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+	dt = datetime.timedelta(int(mjd+0.5/86400.0), 0)
+	t = mjd0 + dt
+	return '%02d-%s-%04d' % (t.day, mon[t.month-1], t.year)
+
+def Ulow(s):
+	return upper(s[0]) + lower(s[1:])
+
+def calcMJD(t):
+	if type(t) == type(1.1):
+		return t	# must already be an mjd
+	
+	# otherwise assume it is a unix time
+	dt = t - mjd0
+	mjd = dt.days + dt.seconds/86400.0
+	return mjd
+
+def day2mjd(year, doy):
+	return (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(doy)-1) - mjd0).days
+
+def getFSTime(str):
+	if str[0:2] != '20':	# work for years >= 2000, < 2100
+		return -1.0
+	if str[14] != ':':
+		return -1.0
+	y = int(str[0:4])
+	d = int(str[5:8])
+	h = int(str[9:11])
+	m = int(str[12:14])
+	s = float(str[15:20])
+
+	return day2mjd(y, d) + h/24.0 + m/1440.0 + s/86400.0
+
+def oh2zero(x):
+	return x.replace('O', '0')
+
+def zero2oh(x):
+	y = ""
+	before = True
+	for i in range(len(x)):
+		if before and x[i] == '0':
+			y += 'O'
+		else:
+			y += x[i]
+		if x[i] == '+' or x[i] == '-':
+			before = False
+	return y
+
+def getShelf(shelves, vsn):
+	for s in shelves:
+		if oh2zero(s[0]) == oh2zero(vsn):
+			return s[1]
+	return 'none'
+
+def getShelvesFromDB(db, verbose):
+	cursor = db.cursor()
+	query = "select * from SHELVES"
+	if verbose > 0:
+		print 'Executing database query: %s' % query
+	cursor.execute(query)
+	shelves = cursor.fetchall()
+	return shelves
+
+def getTapesFromDBbyTime(db, startMJD, stopMJD, stn, verbose):
+
+	# select time range that encompases a bit more than the whole experiment
+	# better to be overly inclusive here!
+	start = mjd2date(startMJD - 1.0)
+	stop  = mjd2date(stopMJD  + 1.0)
+
+	cursor = db.cursor()
+	query = "select * from TAPE where EPOCH BETWEEN '%s' and '%s' and UNIT IN (4,5) and STAID = '%s' order by STAID,EPOCH" % (start, stop, stn)
+	if verbose > 0:
+		print 'Executing database query: %s' % query
+	cursor.execute(query)
+	tapes = cursor.fetchall()
+	return tapes
+
+
+def getActiveBankFromNewDB(newDb, startMJD, stopMJD, isMark5C, stations, verbose):
+	unitName = ['A', '1', '2', 'usno'][isMark5C]
+
+	start = startMJD - 0.1
+	stop  = stopMJD  + 0.1
+
+	activeBanks = []
+	nbad = 0
+
+	cursor = newDb.cursor()
+	for station in stations:
+		stn = lower(station)
+		if stn == 'y':
+			stn = 'ea'
+		if isMark5C == 3:
+			hostlist = "'%s-mark5c-usno'" % stn
+		else:
+			hostlist = "'%s-mark5c-1', '%s-mark5c-2'" % (stn, stn)
+		query = "select * from mcdata where hostname IN (%s) and devicename='MARK5C' and monpointname='ActiveBank' and timestamp > %10.4f and timestamp < %10.4f order by timestamp" % (hostlist, start, stop)
+		if verbose > 0:
+			print 'Executing database query: %s' % query
+		cursor.execute(query)
+		list = cursor.fetchall()
+		if verbose > 0:
+			print '%d rows found' % len(list)
+		for l in list:
+			if verbose > 1:
+				print l
+			s = split(l[0], '-')
+			if len(s) != 3:		# hostname should look something like nl-mark5c-1
+				nbad += 1
+				continue
+
+	# for now, just assign 0 or 1, but only look at relevant units
+			if s[2] != unitName:
+				continue
+
+			row = [upper(station), l[3], l[5]]		# station, time, bank
+			activeBanks.append(row)
+
+	if nbad > 0:
+		print 'Warning: getActiveBankFromNewDB: %d records had something wrong with them!' % nbad
+	
+	return activeBanks
+
+
+def processMark5C(monData):
+	vsn = ['', '']
+	recvsn = ''
+	recStart = -1
+	recStop = -1
+	recBank = -1
+	active = -1	# or 0 or 1
+	rate = 0
+
+	N = len(monData)
+
+	scans = []
+
+	for m in monData:
+		N -= 1
+		action = ''
+		dev = m[0]
+		mpt = m[1]
+		t   = m[2]
+		v   = m[3]
+		s   = m[4]
+		if s == None:
+			s = ''
+
+		if mpt == 'VSN':
+			if dev in ['BANK0', 'BANKA']:
+				b = 0
+			elif dev in ['BANK1', 'BANKB']:
+				b = 1
+			else:
+				b = -1
+			if b != -1:
+				if active == b and s != vsn[b] and s != '':
+					action = 'stop'
+			vsn[b] = s
+		elif mpt == 'RecordingRate':
+			if v == 0 and rate > 0:
+				action = 'stop'
+			elif v > 0 and rate == 0 and active >= 0:
+				action = 'start'
+			rate = v
+		elif mpt == 'RecordState':
+			if v > 0 and recStart < 0 and active >= 0:
+				action = 'start'
+			elif v == 0 and recStart > 0:
+				action = 'stop'
+		elif mpt == 'ActiveBank':
+			if (v == -1 or v != active) and recStart > 0:
+				action = 'stop'
+			active = int(v)
+
+		if N == 0:
+			action = 'stop'
+
+		if action == 'stop' and recStart > 0:
+			recStop = t
+			scans.append([recStart, recStop, recvsn, recBank])
+			recStart = -1
+		elif action == 'start' and recStart < 0:
+			recvsn = vsn[active]
+			recStart = t
+			recStop = -1
+			recBank = active
+	
+	blocks = []
+	lastblock = None
+	for scan in scans:
+		if lastblock == None:
+			lastblock = [scan[0], scan[1], scan[2], scan[3]]
+			blocks.append(lastblock)
+		elif lastblock[2] != scan[2]:
+			lastblock = [scan[0], scan[1], scan[2], scan[3]]
+			blocks.append(lastblock)
+		elif scan[0] - lastblock[1] > 20.0/1440.0:
+			lastblock = [scan[0], scan[1], scan[2], scan[3]]
+			blocks.append(lastblock)
+		else:
+			lastblock[1] = scan[1]
+
+	return blocks
+
+def queryMark5C(db, startMJD, stopMJD, station, verbose):
+	
+	cursor = db.cursor()
+	
+	stn = lower(station)
+	if stn == 'y':
+		stn = 'ea'
+	hostlist = "'%s-mark5c-1', '%s-mark5c-2'" % (stn, stn)
+	query = "SELECT devicename,monpointname,timestamp,monpointvalue,monpointstr FROM mcdata WHERE hostname IN (%s) AND ((devicename IN ('BANK0', 'BANK1', 'BANKA', 'BANKB') AND monpointname='VSN') OR (devicename = 'MARK5C' AND monpointname IN ('ScanLabel', 'RecordingRate', 'ActiveBank', 'RecordState'))) AND timestamp BETWEEN %10.4f AND %10.4f ORDER BY timestamp" % (hostlist, startMJD, stopMJD)
+
+	if verbose > 1:
+		print 'Executing: %s' % query
+
+	cursor.execute(query)
+	monData = cursor.fetchall()
+
+	print '%d Mark5C mon data points found for station %s' % (len(monData), stn)
+
+	if verbose > 2:
+		fn = '/tmp/%s.mon' % station
+		print 'Writing mon data for %s to %s' % (station, fn)
+		f = open(fn, 'w')
+		for m in monData:
+			f.write('%s\n' % str(m))
+		f.close()
+
+	return monData
+
+		
+def genMark5CBlocks(stn, tapes, banks):
+	blocks = []
+
+	recorder = -1
+	VSN = {-1:'', 0:'', 1:'', 2:'', 3:'', 4:'', 5:''}
+
+	nTape = len(tapes)
+	nBank = len(banks)
+
+	t = 0
+	b = 0
+
+	while(1):
+		if t == nTape and b == nBank:
+			break
+		if b == nBank or (t < nTape and tapes[t][3] < banks[b][1]):	# time to handle a tape row
+			if tapes[t][2] == stn and recorder >= 0:
+				if tapes[t][4] != VSN[recorder]:
+					if recorder == tapes[t][5] and VSN[recorder] != None and len(VSN[recorder]) == 8:	# set end time for the last entry
+						blocks[-1][1] = tapes[t][3]
+					VSN[tapes[t][5]] = tapes[t][4]
+					if recorder == tapes[t][5] and VSN[recorder] != None and len(VSN[recorder]) == 8:	# start new entry
+						blocks.append([tapes[t][3], 0, VSN[recorder], recorder])
+				elif VSN[recorder] != None and len(VSN[recorder]) == 8:
+					blocks[-1][1] = tapes[t][3]
+			t += 1
+		else:								# time to handle a bank row
+			if banks[b][0] == stn:
+				if int(banks[b][2])+4 != recorder:
+					if recorder == tapes[t][5] and VSN[recorder] != None and len(VSN[recorder]) == 8:	# set end time for the last entry
+						blocks[-1][1] = banks[b][1]
+					recorder = int(banks[b][2])+4
+					if recorder == tapes[t][5] and VSN[recorder] != None and len(VSN[recorder]) == 8:	# start new entry
+						blocks.append([banks[b][1], 0, VSN[recorder], recorder])
+				elif VSN[recorder] != None and len(VSN[recorder]) == 8:
+					blocks[-1][1] = tapes[t][3]
+			b += 1
+	
+	# if no end time was set, set it here
+	if len(blocks) > 0 and blocks[-1][2] == 0:
+		blocks.pop()
+
+	return blocks
+
+
+def getVSN(vsns, stn, unitNumber, t):
+	vsn = 'none'
+	if not stn in vsns:
+		return vsn
+	for v in vsns[stn]:
+		if t + 0.5/86400.0 >= v[0] and unitNumber == v[2]:
+			vsn = v[1]
+	return vsn
+
+def getTapeMotionFromDB(db, prop, seg, stn, verbose):
+	cursor = db.cursor()
+	collect = "STAID,TAPESPEED1,TAPESPEED2,START_TIME,STOP_TIME"
+	if len(seg) > 0:
+		query = "select %s from OBSSTA where STAID='%s' and PROPOSAL='%s' and SEGMENT='%s' order by START_TIME" % (collect, stn, prop, seg)
+	else:
+		query = "select %s from OBSSTA where STAID='%s' and PROPOSAL='%s' order by START_TIME" % (collect, stn, prop)
+	if verbose > 0:
+		print 'Executing database query: %s' % query
+	cursor.execute(query)
+	motions = cursor.fetchall()
+	return motions
+
+def getClockFromDB(db, stn, timerange, verbose):
+	gps_offsets = []
+	clocks = []
+
+	cursor = db.cursor()
+	query = "select VERSION,GPS_EPOCH,GPS_OFFSET from STATIONS where STN_ID='%s' order by VERSION,GPS_EPOCH" % stn
+	if verbose > 0:
+		print 'Executing database query: %s' % query
+	cursor.execute(query)
+	gps_offsets = cursor.fetchall()
+	if len(gps_offsets) == 0:
+		return []
+	gps_offset = gps_offsets[-1][-1]
+
+	cursor = db.cursor()
+	query = "select * from CLOCKS where STAID='%s' order by EPOCH_STOP,VERSION" % stn
+	if verbose > 0:
+		print 'Executing database query: %s' % query
+	cursor.execute(query)
+	allclocks = cursor.fetchall()
+
+
+	# there has got to be a way to put this in the SQL query...
+	ac = allclocks
+	allclocks = []
+	for a in ac:
+		if a[-1] != None:
+			allclocks.append(a)
+
+
+
+	if len(allclocks) == 0:
+		return []
+	if preobs:
+		clocks = [allclocks[-1]]
+	else:
+		clocks = []
+		for c in allclocks:
+			if c[6] == None:
+				if calcMJD(c[1]) < 51544.0:
+					continue
+				else:
+					clocks.append(c)
+					break;
+			mjd = calcMJD(c[6])
+			if mjd > timerange[0]:
+				clocks.append(c)
+				if mjd > timerange[1]:
+					break;
+
+	v = []
+	start = timerange[0]
+	for c in clocks:
+		v.append( (start, c[4]+gps_offset, calcMJD(c[1]), c[5], gps_offset*1.0e6) )
+		if c[6] != None:
+			start = calcMJD(c[6])
+
+
+	return v
+
+def getEarthFromDB(db, centerMJD, verbose, preobs):
+	cursor = db.cursor()
+	startMJD = int(centerMJD+0.5) - 2
+	stopMJD  = int(centerMJD+0.5) + 2
+	vals = {}	# indexed by mjd
+	eops = []
+	ver = '  * data versions = '
+	origin = '  * data origins = '
+	ut1_utc = '  ut1-utc  = '
+	x_pole  = '  x_wobble = '
+	y_pole  = '  y_wobble = '
+
+	eops.append("$EOP;\n")
+
+	nPredict = 0;
+
+	# extract raw eop data from legacy database
+	for m in range(startMJD, stopMJD+1):
+		d  = mjd2date(m)
+		query = "select EPOCH,VERSION,ORIGIN,TAI_UTC,UT1_UTC,X_POLE,Y_POLE " \
+			"from EARTH where EPOCH = '%s' order by EPOCH,VERSION" % d
+		if verbose > 0:
+			print 'Executing database query: %s' % query
+		cursor.execute(query)
+		E = cursor.fetchall()
+		if len(E) < 1:
+			print 'Error: no EOPs for day %s' % d
+		else:
+			vals[m] = E[-1]	# E[-1] is the most recent EOP for this day
+
+	# adjust values so that all tai-utc are based on day of observing:
+	if vals[startMJD][3] != vals[stopMJD][3]:
+		print '*** Notice: EOPs for this experiment span a leap second ***'
+		eops.append('* EOPs span a leap second.  UT1-UTC and TAI-UTC are calculated\n')
+		eops.append('* such that the number of leap seconds corresponds to the observation date\n')
+	tai_utc0 = vals[int(centerMJD)][3]
+	
+	# generate text to add to .vex
+	for m in range(startMJD, stopMJD+1):
+		e = vals[m]
+		tai_utc = e[3]
+		ut1_utc = e[4]
+		if tai_utc != tai_utc0:
+			ut1_utc -= (tai_utc - tai_utc0)
+			tai_utc = tai_utc0
+		origin = upper(strip(e[2]))
+		eops.append("def EOP%d_%s;\n" % (m, origin))
+		eops.append("  TAI-UTC= %d sec;\n" % tai_utc)
+		eops.append("  A1-TAI= 0 sec;\n")
+		eops.append("  eop_ref_epoch=%s;\n" % mjd2vex(calcMJD(e[0]), True))
+		eops.append("  num_eop_points=1;\n")
+		eops.append("  eop_interval=24 hr;\n")
+		eops.append("  ut1-utc  = %8.6f sec;\n" % ut1_utc)
+		eops.append("  x_wobble = %7.5f asec;\n" % e[5])
+		eops.append("  y_wobble = %7.5f asec;\n" % e[6])
+		eops.append("  * data version = %s;\n" % mjd2vex(calcMJD(e[1])))
+
+		if origin == 'PREDICT':
+			nPredict += 1
+		eops.append("enddef;\n")
+		
+	if not preobs and nPredict > 0:
+		print 'Warning: %d of %d EOP data are PREDICTs' % (nPredict, stopMJD-startMJD+1)
+
+	return eops
+	
+
+
+def makeVSNDict(tapes):
+	td = {}
+	for t in tapes:
+		stn = t[2]
+		mjd = calcMJD(t[3])
+		row = [mjd, t[4], t[5]-4]
+		if not stn in td:
+			td[stn] = []
+		td[stn].append(row)
+
+	return td
+
+def calcVSNList(motions, vsns, stn):
+	r = []
+	for m in motions:
+		if m[0] == stn and (m[1] != 0 or m[2] != 0):
+			if m[1] != 0:
+				u = 0
+			else:
+				u = 1
+			t1 = calcMJD(m[3])
+			t2 = calcMJD(m[4])
+			r.append([u, t1, t2, getVSN(vsns, stn, u, t1)])
+	return r;
+
+def genBlocks(scans, experTimes):
+	blocks = []
+	curBlock = [0.0, 0.0, 'none', -1]
+	for s in scans:
+		if s[1] > experTimes[1] or s[2] < experTimes[0]:
+			continue
+		if s[3] == curBlock[2]:
+			if s[2] > curBlock[1]:
+				curBlock[1] = s[2]
+			else:
+				print 'Warning: not time ordered!', s[3], curBlock[1], s[2]
+		else:
+			curBlock = [s[1], s[2], s[3], s[0]]
+			blocks.append(curBlock);
+	return blocks
+
+def writeShelfData(data, fileName):
+	pastLines = []
+	out = open(fileName, 'w')
+	for d in data:
+		line = '%s %s %s\n' % (d[0], zero2oh(d[1]), d[2])
+		if not line in pastLines:
+			out.write(line)
+			pastLines.append(line);
+	out.close()
+
+def signFlip(clock):
+	return (clock[0], -clock[1], clock[2], -clock[3], -clock[4])
+
+
+
+def parseFSLog(fn, vsnList):
+	vsns = []
+	data = open(fn).readlines()
+	currentVsn = None
+	stationName = None
+	for d in data:
+		t = getFSTime(d)
+		if t < 0.0:
+			continue
+		if d[21:32] == 'bank_check/':
+			v = d[32:40]
+			if currentVsn != None:
+				if currentVsn[0] == v:
+					continue
+			currentVsn = [v, 0.0, 0.0]
+			vsns.append(currentVsn)
+		if d[21:31] == 'scan_name=':
+			s = split(strip(d[32:]), ',')
+			if stationName == None:
+				stationName = s[2]
+			elif stationName != s[2]:
+				print 'Warning: station names disagree: %s %s' % (s[2], stationName);
+		if d[21:35] == 'disk_record=on':
+			if currentVsn != None:
+				if currentVsn[1] < 1:
+					currentVsn[1] = t
+			else:
+				print 'Warning: disk_record=on but no vsn! %s' % s[0]
+		if d[21:36] == 'disk_record=off':
+			if currentVsn != None:
+				currentVsn[2] = t
+			else:
+				print 'Warning: disk_record=off but no vsn! %s' % s[0]
+
+	if stationName == None:
+		return
+	
+	stationName = Ulow(stationName)
+
+	for v in vsns:
+		if v[1] > 1 and v[2] > 1:
+			vsnList.append([stationName, v[0], v[1], v[2]]);
+
+	print '  finished.  Station ID = %s' % stationName
+
+
+def getBlocksFromFS(fsVSNs, stn):
+	rv = []
+	for a in fsVSNs:
+		if a[0] == stn:
+			rv.append([a[2], a[3], a[1], 0])
+
+	return rv
+
+def appendFSStations(stations, fsVSNs):
+	for f in fsVSNs:
+		if f[0] not in stations:
+			stations.append(f[0])
+	stations.sort()
+
+def processVexFile(vexFile, force, verbose, preobs, vsnProjectCode, isMark5C, fsVSNs=[]):
+	if not isfile(vexFile):
+		print 'Error: cannot open file %s' % vexFile
+		exit(0)
+
+	if preobs:
+		outFile = vexFile + '.preobs'
+	else:
+		outFile = vexFile + '.obs'
+	if isfile(outFile):
+		if force:
+			print 'Warning: overwriting old output because of --force option\n'
+		else:
+			print 'Error: destination file %s exists and I won\'t overwrite it!\n' % outFile
+			exit(0)
+
+	obsCode, obsSeg, stationTimes = vexPeek(vexFile, verbose)
+	if obsCode == 'Error':
+		print 'Not processing file %s; it is not present or valid.' % vexFile
+		exit(0)
+
+	experTimes = calcExperTimes(stationTimes)
+
+	db = cx_Oracle.connect(databaseName)
+
+	if isMark5C and newDB:
+		newDb = psycopg2.connect(newDatabaseName)
+
+	vlaDb = None
+	
+	# fetch a bunch of stuff from the database
+	if vsnProjectCode != None:
+		obsCode, obsSeg = splitobscode(vsnProjectCode)
+		if verbose:
+			print 'vsn project code and segment are', c, s
+
+	eops = getEarthFromDB(db, mjdCenter(stationTimes), verbose, preobs)
+
+	vexData = open(vexFile, "r").readlines()
+
+	stations = stationTimes.keys()
+	stations.sort()
+
+	vexData.append('*------------------------------------------------------------------------------\n')
+	vexData.append('*---- log data below was appended by %s ver %s ----\n' % (program, version))
+	vexData.append('*------------------------------------------------------------------------------\n')
+
+	if not preobs:
+		vexData.append('$TAPELOG_OBS;\n')
+		shelves = getShelvesFromDB(db, verbose)
+		shelfData = []
+
+		for s in stations:
+			stn = upper(s)
+			blocks = []
+			if stn in ['EA', 'Y', 'Y1', 'Y27']:
+				if vlaDatabaseName == None:
+					print 'Error: need to access VLA database, but environment variable EVLAMPTS_DB is not set.'
+					exit(0)
+				stn = 'Y'
+				if vlaDb == None:
+					vlaDb = psycopg2.connect(vlaDatabaseName)
+				monData = queryMark5C(vlaDb, experTimes[0]-0.1, experTimes[1]+0.1, stn, verbose)
+				blocks = processMark5C(monData)
+			elif isMark5C:
+				monData = queryMark5C(newDb, experTimes[0]-0.1, experTimes[1]+0.1, stn, verbose)
+				blocks = processMark5C(monData)
+			else:
+				tapes = getTapesFromDBbyTime(db, experTimes[0], experTimes[1], stn, verbose)
+				motions = getTapeMotionFromDB(db, obsCode, obsSeg, stn, verbose)
+				vsns = makeVSNDict(tapes)
+				scans = calcVSNList(motions, vsns, stn)
+				blocks = genBlocks(scans, experTimes)
+
+			#if no recording blocks found, try looking at field system log data
+			if len(blocks) < 1:
+				blocks = getBlocksFromFS(fsVSNs, Ulow(stn))
+			if len(blocks) < 1:
+				print 'Warning: No media found for station %s' % stn
+				continue;
+			
+			vexData.append('def %s;\n' % Ulow(stn))
+			for b in blocks:
+				shelf = getShelf(shelves, b[2])
+				vexData.append('  VSN = %d : %s : %s : %s;  * shelf = %s\n' % ((b[3]+1), b[2], mjd2vex(b[0]), mjd2vex(b[1]), shelf))
+				shelfData.append([stn, b[2], shelf])
+			vexData.append('enddef;\n')
+		vexData.append('*------------------------------------------------------------------------------\n')
+
+		shelfFile = vexFile + '.shelf'
+		if verbose > 0:
+			print 'Writing to file: %s' % shelfFile
+		writeShelfData(shelfData, shelfFile)
+
+	timeRange = [1.0e9, -1.0e9]
+	for stn in stations:
+		if timeRange[0] > stationTimes[stn][0]:
+			timeRange[0] = stationTimes[stn][0]
+		if timeRange[1] < stationTimes[stn][1]:
+			timeRange[1] = stationTimes[stn][1]
+
+	vexData.append('$CLOCK;\n')
+	for stn in stations:
+		last = (0.0, '', 0.0)
+		clocks = getClockFromDB(db, stn, timeRange, verbose)
+		if len(clocks) > 0:
+			vexData.append('def %s;\n' % Ulow(stn));
+			nClock = 0
+			for c in clocks:
+				if last != c[1:4]:
+					data = signFlip(c)
+					clockStart = data[1] + data[3]*(experTimes[0]-data[2])*86400.0
+					clockEnd = data[1] + data[3]*(experTimes[1]-data[2])*86400.0
+					vexData.append('  clock_early = %s : %10.8e sec : %s : %10.8e;  * offset = %4.2f usec\n' % (mjd2vex(data[0]), data[1], mjd2vex(data[2]), data[3], data[4]) )
+					vexData.append('    * clock_start = %8.2f ns  clock_end = %8.2f ns\n' % (clockStart*1.0e9, clockEnd*1.0e9))
+					last = c[1:4]
+					nClock += 1
+			vexData.append('enddef;\n')
+			if nClock != 1:
+				print 'Warning: %d clock entries for antenna %s' % (nClock, stn)
+				print '  Please verify this is necessary and edit the .obs file as necessary'
+		else:
+			print 'Warning: No clock offset found for station %s' % stn
+	vexData.append('*------------------------------------------------------------------------------\n')
+	for e in eops:
+		vexData.append(e)
+
+	if verbose > 0:
+		print 'Writing to file: %s' % outFile
+	out = open(outFile, "w")
+	for d in vexData:
+		out.write(d)
+	out.close()
+
+	if not preobs:
+		cmd = 'db2wx %s' % vexFile
+		if verbose > 0:
+			print 'Executing: %s' % cmd
+		system(cmd)
+
+
+
+# main below here
+
+print ''
+
+verbose = 0
+force = False
+stop = False
+preobs = False
+args = []
+fsVSNs = [] # VSN list from field system logs
+vsnProjectCode = None
+isMark5C = 1
+
+for a in argv[1:]:
+	if vsnProjectCode == '':
+		vsnProjectCode = upper(a)
+	elif a[0] == '-':
+		if a in ['-h', '--help']:
+			usage(argv[0])
+		elif a in ['-v', '--verbose']:
+			verbose += 1
+		elif a in ['-f', '--force']:
+			force = True
+		elif a in ['-p', '--preobs']:
+			preobs = True
+		elif a in ['--vsnProjectCode']:
+			vsnProjectCode = ''
+		elif upper(a) in ['--MARK5C-2', '-2']:
+			isMark5C = 2
+		elif a in ['--usno', '-u']:
+			isMark5C = 3
+		else:
+			print 'Error: unknown command line option: %s' % a
+			stop = True
+	else:
+		args.append(a)
+
+if isMark5C and not newDB and not preobs:
+	print 'Error: Mark5C processing is to be done but the VLBAMPTS database is not accessable'
+	stop = True
+
+print 'Proceeding as a %s project.  Please rerun and force project type if this not what you want.' % (['Mark5A', 'Mark5C', 'Mark5C-2', 'USNO'][isMark5C])
+
+if vsnProjectCode == '':
+	print 'Error: vsnProjectCode not specified.'
+	stop = True
+
+if len(args) == 0:
+	print 'Error: no input files given.'
+	stop = True
+
+if preobs and len(args) > 1:
+	print 'Error: cannot pass FS logs when using preobs mode.'
+	stop = True
+else:
+	for a in args[1:]:
+		print 'Parsing Field System Log %s' % a
+		parseFSLog(a, fsVSNs)
+
+if stop:
+	print '\nRun with -h for help information.\n'
+	exit(0)
+
+umask(02)
+
+processVexFile(args[0], force, verbose, preobs, vsnProjectCode, isMark5C, fsVSNs)
+
+if isMark5C > 0 and not preobs:
+	print '\nGetting Tsys values'
+	cmd = 'rdbetsys -p %s' % args[0]
+	if verbose > 0:
+		print 'Executing: %s' % cmd
+	system(cmd);
+
+print ''

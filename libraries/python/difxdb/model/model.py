@@ -1,0 +1,80 @@
+# -*- coding: utf-8 -*-
+#===========================================================================
+# Copyright (C) 2016  Max-Planck-Institut für Radioastronomie, Bonn, Germany
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id: model.py 10706 2022-10-31 07:44:33Z JanWagner $
+# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/difxdb/model/model.py $
+# $LastChangedRevision: 10706 $
+# $Author: JanWagner $
+# $LastChangedDate: 2022-10-31 15:44:33 +0800 (一, 2022-10-31) $
+#
+#============================================================================
+class Module(object):
+    pass
+    
+class Slot (object):
+    pass
+     
+class Experiment(object):
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash("")
+
+    
+
+class ExperimentStatus(object):
+    pass
+
+class Job(object):
+    pass
+
+class JobStatus(object):
+    pass
+
+class Pass(object):
+    pass
+
+class PassType(object):
+    pass
+
+class Queue(object):
+    pass
+
+class VersionHistory(object):
+    pass
+
+class ExperimentType(object):
+    pass
+
+class User(object):
+    pass
+
+class FileData(object):
+	pass
+
+class ExportFile(object):
+	pass
+class ExperimentStatusHistory(object):
+	pass

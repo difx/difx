@@ -1,6 +1,0 @@
-#! /bin/bash
-. /home/swc/DiFX-2.1/setup_difx
-export DIFX_MTU=4000
-#transient_wrapper  -v -- mpifxcorr $@ &> /tmp/transient_wrapper.DEVEL.log.`date +%y%m%d_%H%M%S`
-mpifxcorrfake $@
-#valgrind mpifxcorr $@

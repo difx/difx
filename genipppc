@@ -1,0 +1,181 @@
+#!/usr/bin/env python
+
+from __future__ import absolute_import
+from __future__ import print_function
+import platform as pf
+from sys import argv, exit, platform
+#from string import split, lower
+from os import getenv, readlink
+from os.path import islink, join, dirname, isfile
+from re import search
+
+program = 'genipppc'
+version = '0.3'
+verdate = '20131105'
+author  = 'Walter Brisken <wbrisken@nrao.edu>'
+
+def usage(prog):
+    print('\n%s ver. %s  %s  %s\n' % (program, version, verdate, author))
+    print('Usage: %s [options] <ipp path> [<ipp version>]\n')
+    print('options can include:')
+    print('  -h, --help     print help info\n')
+    print('<ipp path> is the install path of Intel Performance Primitives\n')
+
+def getippversion(path):
+    if islink(path):
+        path = join(dirname(path), readlink(path))
+# First try ippversion.h
+    ippheader = path+'/include/ippversion.h'
+    if not isfile(ippheader):
+        ippheader = path+'/ipp/include/ippversion.h'
+    if not isfile(ippheader):
+        ippheader = path+'/composerxe/ipp/include/ippversion.h'
+        if isfile(ippheader):
+            path += '/composerxe'
+    if not isfile(ippheader):
+        ippheader = path+'/oneapi/ipp/latest/include/ippversion.h'
+        if isfile(ippheader):
+            path += '/oneapi/ipp/latest/'
+    if not isfile(ippheader):
+        ippheader = ''
+
+    if (ippheader==''):
+        print("Warning: ippversion.h not found, relying on IPP path ", path)
+        s = path.split('/')
+        possibilities = []
+        for part in s:
+            t = path.split('.')
+            if len(t) > 1:
+                possibilities.append(part)
+                if len(possibilities) < 1:
+                    print('Sorry, cannot determine ipp version from path')
+                    exit(0)
+                    if len(possibilities) > 1:
+                        print('Guessing version == %s' % possibilities[-1])
+
+                        return (path, possibilities[-1])
+                    
+    else:
+        print("Reading version from ", ippheader)
+        major = minor = None
+        for line in open(ippheader):
+            m = search('#define\s+IPP_VERSION_STR\s+"(\S+)"', line)
+            if (m != None):
+                print("Got version ", m.group(1))
+                return (path, m.group(1))
+            if (major == None):
+                major = search('#define\s+IPP_VERSION_MAJOR\s+(\S+)', line)
+            if (minor == None):
+                minor = search('#define\s+IPP_VERSION_MINOR\s+(\S+)', line)
+        if (major != None and minor != None):
+            print("Have version ", major.group(1) + "." + minor.group(1))
+            return (path, major.group(1) + "." + minor.group(1))
+        print("Sorry, cannot find IPP_VERSION_STR in ", ippheader)
+        exit(0)
+    
+# fixme: possibly should use uname to get this information
+def getarch():
+    bs = getenv('DIFXBITS') 
+    if bs != None and bs != "32" and bs != "64" and bs != "128":
+        print("Invalid DIFXBITS: " + bs)
+        bs = None
+    pybits = pf.architecture()[0][0:2]
+    if bs == None:
+        print("Note: DIFXBITS was not set - used platform.architecture to determine that bits is " + pybits)
+        return int(pybits)
+    if int(bs) != int(pybits):
+        print("WARNING! DIFXBITS is " + bs + " but platform.architecture says number of bits is " + pybits)
+        print("Assuming DIFXBITS was set correctly...")
+        return int(bs)
+    return int(bs)
+
+def genipppc(path, ippversion):
+    # if no path supplied, take it from $IPPROOT
+    if path == '':
+        path = getenv('IPPROOT')
+    # Still not set?
+    if path == None:
+        print('Sorry, $IPPROOT not set and no path given')
+        return
+
+    # if no version actually supplied, try to guess from path
+    if ippversion == '':
+        (path, ippversion) = getippversion(path)
+
+    ipparch = getarch()
+
+    major = int(ippversion.split('.')[0])
+    out = open('ipp.pc', 'w')
+    out.write('base = %s\n' % path)
+    out.write('\n')
+    out.write('Name: ipp\n')
+    out.write('Description: Intel Performance Primitives\n')
+    out.write('Requires:\n')
+    out.write('Version: %s\n' % ippversion)
+
+    print("Platform=", platform)
+    print("ipparch=", ipparch)
+
+    if major == 6 or major == 5:
+        if platform == "darwin":
+            libdir = 'Libraries'
+        else:
+            libdir = 'sharedlib'
+
+        if ipparch == 64 and platform != 'darwin' :
+            out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lippsem64t -lguide -lippvmem64t -lippcoreem64t\n' % (libdir,libdir))
+        else:
+            out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lipps -lguide -lippvm -lippcore\n' % (libdir,libdir))
+
+        out.write('Cflags: -I${base}/include\n')
+
+    elif major == 7 or major == 8 or major == 9 or major >= 2017:
+        
+        if platform == "darwin":
+            if major < 2021:
+                out.write('Libs: -Wl,-rpath,${base}/ipp/lib -L${base}/ipp/lib -lipps -lippvm -lippcore\n')
+            else:
+                out.write('Libs: -Wl,-rpath,${base}/lib -L${base}/lib -lipps -lippvm -lippcore\n')
+        else:
+            if ipparch == 32:
+                libdir = 'ia32'
+            else:
+                libdir = 'intel64'
+            out.write('Libs: -Wl,-rpath,${base}/lib/%s -Wl,-rpath,${base}/ipp/lib/%s -L${base}/lib/%s -L${base}/ipp/lib/%s -L${base}/compiler/lib/%s -lipps -lippvm -lippcore' % (libdir,libdir,libdir,libdir,libdir))
+            if major < 2000:
+                out.write(" -liomp5")
+            out.write("\n")
+
+        if major == 7 or major == 8:
+            out.write('Cflags: -I${base}/ipp/include\n')
+        elif major < 2021:
+            out.write('Cflags: -DIPP9 -I${base}/ipp/include\n')
+        else:
+            out.write('Cflags: -DIPP9 -I${base}/include\n') # oneapi setup
+            
+    else:
+        print('Sorry, IPP %d not yet supported by this script\n' % major)
+
+    out.close()
+
+
+ipppath = ''
+ippversion = ''
+
+for a in argv[1:]:
+    if a[0] == '-':
+        if a in ['--help', '-h']:
+            usage(argv[0])
+            exit(0)
+        else:
+            print('Unrecognised option: %s .  See help with -h .' % a)
+            exit(0)
+    else:
+        if ipppath == '':
+            ipppath = a
+        elif ippversion == '':
+            ippversion = a
+        else:
+            print('Unexpected parameter: %s .  See help with -h .' % a)
+
+genipppc(ipppath, ippversion)

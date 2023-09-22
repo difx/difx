@@ -1,0 +1,204 @@
+vex = ma008.vex.difx
+
+# antennas = EB, NL, BR, LA, FD, PT, OV, KP, MK  # without zoom, native recorded 4 x 128M
+# antennas = EB, NL, BR, LA, FD, PT, OV, KP, MK, EF, ON, MH, YS, PV  # for 128M zoom, native recorded 4 x 128M and 2 x 512M (except, YS/PV issue!)
+# antennas = AA, EB, NL, BR, LA, FD, PT, OV, KP, MK, EF, ON, MH, YS, PV  # for 58M zoom or similar, native recorded 4 x 128M and 2 x 512M
+
+# antennas = EB, NL, BR, LA, FD, PT, OV, KP, MK,  EF, ON, MH, YS, PV
+
+# antennas = EF,ON,MH,YS,PV # from RAID
+# antennas = EF,ON,MH,YS,PV, EB # from RAID plus module
+
+# antennas = AA, EB, EF, NL, MH, ON, YS, PV
+antennas = ON, YS, EB
+
+singleScan = True
+tweakIntTime = True
+
+# AA : 4 x 62.5M
+DATASTREAM AA_XX  { filelist=filelist.Aa.34 }
+DATASTREAM AA_YY  { filelist=filelist.Aa.12 }
+ANTENNA AA { datastreams=AA_XX,AA_YY phaseCalInt=0 zoom=narrow16 }
+
+# EVN : 2 x 512M
+ANTENNA EF {
+   filelist=filelist.Ef
+   phaseCalInt=0
+   zoom=narrow16
+}
+ANTENNA ON { 
+   filelist=filelist.On  
+   zoom=narrow16
+}
+ANTENNA MH { filelist=filelist.Mh  zoom=narrow16 }
+ANTENNA YS { filelist=filelist.Ys  zoom=narrow16 }  # PFB mode
+ANTENNA PV { filelist=filelist.Pv  zoom=narrow16 }  # PFB mode
+
+# EB : 4 x 128M
+# ANTENNA EB { file=/data/ma008/eb_module/ma008_eb_no0027 zoom=narrow16 }
+# ANTENNA EB { zoom=narrow16 }
+ANTENNA EB {
+   zoom=narrow16
+   phaseCalInt=0
+#  # Copied from module:  4-thread 1-ch VDIF
+#  # difx is extremely slow at 1 vis/20 sec, and weights zero 0.00, for zoom128 (but not zoom64)
+   file=/data/ma008/eb_module/ma008_eb_no0027
+#  format=INTERLACEDVDIF/0:1:2:3/5032/2
+#
+#  # Copied from module and threads merged as channels: 1-thread 4-ch VDIF
+#  # difx is normal speed, 1 vis/sec, weights 1.00
+#   file=/data/ma008/eb_module/ma008_eb_no0027_multi2singleThread.vdif
+#   format=VDIF/20032/2
+}
+
+# VLBA : 4 x 128M
+ANTENNA NL {
+  phaseCalInt=0
+  zoom=narrow16
+  file=/data/ma008/nl_module/ma008_NL_No0108.vdif
+  format=INTERLACEDVDIF/0:1:2:3/5032/2
+}
+ANTENNA BR { phaseCalInt=0 }
+ANTENNA LA { phaseCalInt=0 }
+ANTENNA FD { phaseCalInt=0 }
+ANTENNA PT { phaseCalInt=0 }
+ANTENNA OV { phaseCalInt=0 }
+ANTENNA KP { phaseCalInt=0 }
+ANTENNA MK { phaseCalInt=0 }
+
+SETUP ff
+{
+  # VEX
+  # integr_time    :  0.500 s
+  # number_channels:   1024
+
+  tInt = 1.024
+
+  ## If with ALMA then one of the following:
+  #specRes = 0.003125  # ok,   1*ALMA_df
+  #specRes = 0.0078125 # ok, 2.5*ALMA_df
+  #specRes = 0.0156250 # ok,   5*ALMA_df
+
+  ## If without ALMA then
+  #specRes = 0.0078125#  16 MHz / 2048 ch
+  specRes = 0.1250    #  16 MHz / 128 ch
+  #specRes = 0.03125  # 128 MHz / 4096 ch ; slow correlation, complaint about data outside range, or excess bytes
+  #specRes = 0.06250  # 128 MHz / 2048 ch
+  #specRes = 0.12500  # 128 MHz / 1024 ch
+
+  subintNS = 800000
+
+  guardNS = 64000
+  doPolar = True
+}
+
+# This, along with SETUP default above, should always be done
+RULE default
+{
+  setup = ff
+  mode = 3mm_ddc
+
+  #scan = No0082  #  3C279      3mm_ddc      EB  EF  MH  ON  PV  YS  
+  #scan = No0094  #  3C279      3mm_ddc      EB  EF  MH  ON  PV  YS  
+  scan = No0108  #  3C279      3mm_ddc      EB  EF  MH  ON  PV  YS  NL  AA  FD  --  --  --  
+
+}
+
+ZOOM none { 
+  # for antennas = EB, NL, BR, LA, FD, PT, OV, KP, MK 
+  # and without any 'zoom=' entries
+}
+
+ZOOM wide128 {
+
+  ## Match 512 MHz dualpol against 2x128 MHz dualpol (256 MHz mutual on some baselines,
+  ## and total 512 MHz as 4x128MHz on some other baselines)
+
+  ## def 86524.00MHz2x512MHz;
+  ## * mode =  1    stations =Ef:On:Ys:Pv:Mh
+  ##   * span 86012.00 ... 86524.00 in LSB 
+  ##   * regions 86012.00[+128.0], 86140.00[+128.0], 86268[+128.0], 86396[+128.0] 
+  ##   sample_rate = 1024.0 Ms/sec;  * (2bits/sample)
+  ##   chan_def = : 86524.00 MHz : L : 512.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+  ##   chan_def = : 86524.00 MHz : L : 512.00 MHz : &CH02 : &BBC02 : &NoCal; *Lcp
+  ## enddef;
+
+  ## def 86140.00MHz4x128MHz;
+  ## * mode =  1    stations =Eb:Nl:Fd:Pt:La:Kp:Ov:Br:Mk
+  ##      sample_rate = 256.000 Ms/sec;  * (2bits/sample)
+  ##      chan_def = : 86140.00 MHz : U : 128.00 MHz : &CH01 : &BBC01 : &U1Cal; *Rcp
+  ##      chan_def = : 86140.00 MHz : U : 128.00 MHz : &CH02 : &BBC02 : &U1Cal; *Lcp
+  ##      chan_def = : 86268.00 MHz : U : 128.00 MHz : &CH03 : &BBC03 : &U2Cal; *Rcp
+  ##      chan_def = : 86268.00 MHz : U : 128.00 MHz : &CH04 : &BBC04 : &U2Cal; *Lcp
+  ## enddef;
+
+  # VLBA 'native' 2pol x 2 x 128 MHz
+  addZoomFreq = freq@86140.00/bw@128.0/noparent@true
+  addZoomFreq = freq@86268.00/bw@128.0/noparent@true
+
+  # EVN 'native' 2pol x 2 x 512 MHz, split that into 128 MHz to keep HOPS/AIPS happy
+  addZoomFreq = freq@86012.00/bw@128.0/noparent@true
+  addZoomFreq = freq@86396.00/bw@128.0/noparent@true
+
+}
+
+ZOOM wide64 {
+  # VLBA 'native' 2pol x 2 x 128 MHz split to 64 MHz to keep DiFX interlaced-VDIF deinterlacer happy
+  addZoomFreq = freq@86140.00/bw@64.0/noparent@true
+  addZoomFreq = freq@86204.00/bw@64.0/noparent@true
+  addZoomFreq = freq@86268.00/bw@64.0/noparent@true
+  addZoomFreq = freq@86332.00/bw@64.0/noparent@true
+
+  # EVN 'native' 2pol x 2 x 512 MHz, split that into 64 MHz to keep HOPS/AIPS happy
+  addZoomFreq = freq@86012.00/bw@64.0/noparent@true
+  addZoomFreq = freq@86076.00/bw@64.0/noparent@true
+  addZoomFreq = freq@86396.00/bw@64.0/noparent@true
+  addZoomFreq = freq@86460.00/bw@64.0/noparent@true
+}
+
+ZOOM narrow16 {
+  # for antennas = EB, NL, BR, LA, FD, PT, OV, KP, MK,  EF, ON, MH, YS, PV
+  # and with zoom=wide16 for EF ON MH YS PV  where nativelz YS PV are 32 MHz PFB
+########################
+# GNU Octave
+#for n=0:31,
+#  ff=86508.00-n*16;
+#  fprintf(1,'  addZoomFreq = freq@%.2f/bw@16.0/noparent@true\n',ff);
+#end
+########################
+        addZoomFreq = freq@86508.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86492.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86476.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86460.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86444.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86428.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86412.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86396.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86380.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86364.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86348.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86332.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86316.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86300.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86284.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86268.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86252.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86236.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86220.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86204.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86188.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86172.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86156.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86140.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86124.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86108.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86092.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86076.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86060.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86044.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86028.00/bw@16.0/noparent@true
+        addZoomFreq = freq@86012.00/bw@16.0/noparent@true
+}
+
+
+ZOOM alma { }

@@ -1,0 +1,378 @@
+#!/usr/bin/env python3
+# coding: latin-1
+
+#**************************************************************************
+#   Copyright (C) 2008-2016 by Helge Rottmann, Mark Wainright and Walter Brisken *
+#                                                                         *
+#   This program is free software; you can redistribute it and/or modify  *
+#   it under the terms of the GNU General Public License as published by  *
+#   the Free Software Foundation; either version 3 of the License, or     *
+#   (at your option) any later version.                                   *
+#                                                                         *
+#   This program is distributed in the hope that it will be useful,       *
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+#   GNU General Public License for more details.                          *
+#                                                                         *
+#   You should have received a copy of the GNU General Public License     *
+#   along with this program; if not, write to the                         *
+#   Free Software Foundation, Inc.,                                       *
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+#**************************************************************************
+
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id: mk6mon 10556 2022-07-27 09:44:21Z HelgeRottmann $
+# $HeadURL: $
+# $LastChangedRevision: 10556 $
+# $Author: HelgeRottmann $
+# $LastChangedDate: 2022-07-27 17:44:21 +0800 (三, 2022-07-27) $
+#
+#============================================================================
+
+# Note: this utility can run under python2.7 or python3
+
+import socket
+import struct
+import curses
+import signal
+import argparse
+from xml.dom import minidom
+from datetime import datetime
+from sys import argv, exit
+from os import popen, getenv
+
+
+def signal_handler(signal, frame):
+        print('You pressed Ctrl+C!')
+        raise KeyboardInterrupt
+
+program = 'mk6mon'
+author  = 'Helge Rottmann, Mark Wainright and Walter Brisken'
+version = '2.7'
+verdate = '20220721'
+
+def usage(prog):
+        print('%s ver. %s  %s  %s\n\n' % (program, version, author, verdate))
+        print('A script to display the modules loaded in Mark6 playback units and to monitor Mark6 activity.\n')
+        print('Usage: %s [options]\n' % prog)
+        print('options can include:')
+        print('  --help')
+        print('  -h        print help information and quit\n')
+
+
+class Mk6MessageParser:
+
+    def __init__(self):
+      
+        self.numSlots = 2;
+        self.numStatusRows = 0
+        self.numActivityRows = 0
+        self.rowsStatus = {}
+        self.rowsActivity = {}
+        self.updateStatus = False
+        self.updateActivity = False
+
+    def parseMessage (self, message):
+
+        newStatus = False
+        updateActivity = False
+        self.updateStatus = False
+        self.updateActivity = False
+
+        dom = minidom.parseString(message)
+        messageType = dom.getElementsByTagName('type')[0].firstChild.data
+
+        nodeFrom = dom.getElementsByTagName('from')[0].firstChild.data
+        
+        if nodeFrom not in self.rowsStatus.keys():
+            row = {}
+            newStatus = True
+        else:
+            row = self.rowsStatus[nodeFrom]
+
+        if messageType == "Mark6StatusMessage":
+            self.parseStatusMessage(dom, row)
+            self.rowsStatus[nodeFrom] = row
+            self.updateStatus = True
+        elif messageType == "Mark6SlotStatusMessage":
+            self.parseSlotStatusMessage(dom, row)
+            self.rowsStatus[nodeFrom] = row
+            self.updateStatus = True
+        elif messageType == "Mark6ActivityMessage":
+            updateActivity = self.parseActivityMessage(dom)
+            self.updateActivity = True
+        else:
+            return
+
+        # check for expired activities
+        tmp = dict(self.rowsActivity)
+        for key in tmp:
+            if (datetime.now() - tmp[key]["received"] ).total_seconds() > 30:
+                del(self.rowsActivity[key])
+                updateActivity = True
+
+        # sort dict in case of new status rows
+        if newStatus:
+            tmp = dict(self.rowsStatus) 
+            self.rowsStatus = dict(sorted(tmp.items()))
+    
+        # sort dict in case of change in number of  activity rows
+        if updateActivity:
+            tmp = dict(self.rowsActivity)
+            self.rowsActivity = dict(sorted(tmp.items()))
+
+        #print (self.rowsStatus)
+        #print (self.rowsStatus.keys())
+        #print (self.rowsActivity.keys())
+            
+    def parseSlotStatusMessage(self, dom, row):
+        '''
+        Parses multicast messages of type Mark6StatusMessage
+        '''
+
+        slot = dom.getElementsByTagName('slot')[0].firstChild.data
+
+        if int(slot) > self.numSlots:
+            self.numSlots = int(slot)
+
+        row["msn_{}".format(slot)] = dom.getElementsByTagName('msn')[0].firstChild.data
+        row["numDisks_{}".format(slot)] = dom.getElementsByTagName('numDisks')[0].firstChild.data
+        row["numMissingDisks_{}".format(slot)] = dom.getElementsByTagName('numMissingDisks')[0].firstChild.data
+
+        try:
+            row["group_{}".format(slot)] = dom.getElementsByTagName('group')[0].firstChild.data
+        except:
+            row["group_{}".format(slot)] = ""
+
+        row["received"] = datetime.now()
+
+        return
+        
+
+    def parseActivityMessage(self, dom):
+
+        updateActivity = False
+
+        host = dom.getElementsByTagName("from")[0].firstChild.data
+        activeVSN = dom.getElementsByTagName("activeVSN")[0].firstChild.data
+
+        key = host + "_" + activeVSN
+
+        if key not in self.rowsActivity.keys():
+                row = {}
+                updateActivity = True
+        else:
+            row = self.rowsActivity[key]
+
+        row["host"] = host
+        row["activeVSN"] = activeVSN
+        row["state"] = dom.getElementsByTagName("state")[0].firstChild.data
+        row["scanName"] = dom.getElementsByTagName("scanName")[0].firstChild.data
+        row["position"] = dom.getElementsByTagName("position")[0].firstChild.data
+        row["playRate"] = dom.getElementsByTagName("playRate")[0].firstChild.data
+        row["dataMJD"] = dom.getElementsByTagName("dataMJD")[0].firstChild.data
+        row["received"] = datetime.now()
+
+
+        self.rowsActivity[key] = row
+        return (updateActivity)
+        
+    def parseStatusMessage(self, dom, row):
+        '''
+        deprecated 
+        Mark6StatusMessage will become obsolete and will be superseeded by  Mark6SlotStatusMessage
+
+        '''
+
+        for slot in range(1,5):
+            row["msn_{}".format(slot)] = dom.getElementsByTagName("slot{}MSN".format(slot))[0].firstChild.data
+            row["numDisks_{}".format(slot)] = dom.getElementsByTagName("slot{}Disks".format(slot))[0].firstChild.data
+            row["numMissingDisks_{}".format(slot)] = dom.getElementsByTagName("slot{}MissingDisks".format(slot))[0].firstChild.data
+            try:
+              row["group_{}".format(slot)] = dom.getElementsByTagName("slot{}Group".format(slot))[0].firstChild.data
+            except:
+              row["group_{}".format(slot)] = ""
+
+        row["received"] = datetime.now()
+    
+
+class DisplayCurses:
+
+        def __init__(self):
+
+                self.curs = curses.initscr()
+                curses.noecho()
+                curses.cbreak()
+                self.curs.keypad(True)
+                #curses.start_color()
+                #curses.init_pair(1, curses.COLOR_RED,curses.COLOR_WHITE)
+
+                self.curs.refresh()
+
+        def close(self):
+                curses.nocbreak()
+                self.curs.keypad(False)
+                curses.echo()
+                curses.endwin()
+
+        def displayrow(self, info, row):
+                #self.curs.addstr(row, 0, info, curses.color_pair(1))
+                self.curs.addstr(row + 2, 0, info)
+                self.curs.refresh()
+
+        def displayrowActivity(self, info, row, lenstatrows):
+                #self.curs.addstr(row, 0, info, curses.color_pair(1))
+                #self.curs.addstr(row + lenstatrows + 5, 0, info[0] + ' ' + str(info[1]))
+                self.curs.addstr(row + lenstatrows + 5, 0, info[0])
+                self.curs.refresh()
+
+        def displayAll(self, numSlots, status, activity):
+
+            #print ("tick")
+            self.curs.clear()
+            self.displayStatus(numSlots, status)
+            self.displayActivity(activity, len(status))
+            self.curs.refresh()
+
+
+        def displayActivity (self, activity, rowOffset):
+
+            self.curs.addstr(rowOffset + 5, 0, "Mark6 Unit Activity")
+
+
+            # determine column widths
+            stateLen = 6
+            rateLen = 10
+            posLen = 10
+            scanLen = 11
+            formatStr = "{:12s}{:10s}{:"+str(stateLen)+"s}{:" + str(rateLen) + "s}{:" + str(posLen) + "s}{:" + str(scanLen)+ "s}{}"
+
+            for key,value in activity.items():
+
+                if len(value["state"]) > stateLen:
+                    stateLen = len(value["state"]) + 1
+                if len(value["playRate"]) > rateLen:
+                    rateLen = len(value["playRate"]) + 1
+                if len(value["position"]) > posLen:
+                    posLen = len(value["position"]) + 1
+                if len(value["scanName"]) > scanLen:
+                    scanLen = len(value["scanName"]) + 1
+
+            formatStr = "{:12s}{:10s}{:"+str(stateLen)+"s}{:" + str(rateLen) + "s}{:" + str(posLen) + "s}{:" + str(scanLen)+ "s}{}"
+          
+            line = ""
+            idx = 0
+
+            for key,value in activity.items():
+                line = formatStr.format(value["host"], value["activeVSN"], value["state"], value["playRate"], value["position"], value["scanName"], value["dataMJD"])
+
+                self.curs.addstr(rowOffset + 7 + idx, 0, line)
+                idx += 1
+
+            self.curs.addstr(rowOffset + 6, 0, formatStr.format("Machine","VSN","State","Data Rate","Position","Scan Name","Data MJD"))
+
+
+
+        def displayStatus(self, numSlots, status):
+
+            self.curs.addstr(0, 0, "Mark6 Module Location")
+
+            statusHeader = "{:12s}".format("Machine")
+            statusHeader2 = "{:12s}".format("")
+
+            for i in range (1, numSlots+1):
+                statusHeader += "Slot {:9s}".format(str(i))
+                statusHeader2 += "{:14s}".format("(# disks)")
+            statusHeader += "Status Time"
+
+            self.curs.addstr(1, 0, statusHeader)
+            self.curs.addstr(2, 0, statusHeader2)
+
+            idx = 0;
+            line = ""
+            for key,value in status.items():
+                line = "{:12s}".format(key)
+                for col in range(1, numSlots+1):
+                    try:
+                        msn = value["msn_{}".format(col)]
+                        numDisks = value["numDisks_{}".format(col)]
+                        line += "{:8s} ({})  ".format(msn, numDisks)
+                    except KeyError:
+                        line += "{:14s}".format("")
+                
+                line += value["received"].strftime("%H:%M:%S")
+                idx += 1
+
+                self.curs.addstr(idx + 3, 0, line)
+            
+def listen (port, group):
+        dt = 0.0
+        t = 0
+        maxtime = 6000
+
+        # Now listen for responses, until either time runs out or we get all we need
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 768000)
+        s.bind(('', port))
+        mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
+        s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+        s.settimeout(0.2)
+        while t < maxtime:
+                try:
+                        message = s.recv(8000).decode('utf-8')
+                except socket.timeout:
+                        t += dt
+                        continue
+
+                if message[0] != '<':
+                        continue
+                parser.parseMessage(message)
+                
+                if parser.updateStatus or parser.updateActivity: 
+                    display.displayAll(parser.numSlots, parser.rowsStatus,parser.rowsActivity)
+
+
+# main execution
+signal.signal(signal.SIGINT, signal_handler)
+
+
+if len(argv) >= 2:
+        if len(argv) == 2 and argv[1] in ['-h', '--help']:
+                usage(argv[0])
+                exit(0)
+        else:
+                print('Command line error.  Run with -h for help.\n')
+                exit(1)
+
+parser = Mk6MessageParser()
+display = DisplayCurses()
+
+port = getenv('DIFX_MESSAGE_PORT')
+if port == None:
+        print('DIFX_MESSAGE_PORT needs to be defined')
+        exit(0)
+else:
+        port = int(port)
+group = getenv('DIFX_MESSAGE_GROUP')
+if group == None:
+        print('DIFX_MESSAGE_GROUP needs to be defined')
+        exit(0)
+
+while(True):
+    
+    try:
+        listen(port, group)
+    except KeyboardInterrupt:
+        display.close()
+        exit(0)
+    except Exception as ex:
+        display.close()
+        print (ex)
+        print ("Aborting.")
+        exit(1)
+
+display.close()
+

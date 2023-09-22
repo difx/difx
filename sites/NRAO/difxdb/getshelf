@@ -1,0 +1,100 @@
+#!/usr/bin/env python
+
+import cx_Oracle
+from sys import argv, exit
+from string import upper, strip, split
+from os.path import isfile
+
+dbname = 'wbrisken/d1i2f3x4@vlba10'
+
+program = 'getshelf'
+version = '0.2'
+author  = 'Walter Brisken'
+verdate = '20090427'
+
+def usage(prog):
+        print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
+	print '\nA program to retrieve the shelf location of one or more Mark5 modules\n from the VLBA archive.'
+        print '\nUsage: %s [options] <mod1> [<mod2> [...] ]' % prog
+	print '\n  or'
+        print '\nUsage: %s [options] <shelfFile>' % prog
+        print """
+Options can include:
+
+  --help
+  -v         Print this usage info and quit
+
+  --verbose
+  -v         Send more output to the screen
+
+<modX> is the VSN of a module
+
+<shelfFile> is the name of a .shelf file, as might be written by db2vex
+"""
+	exit(0)
+
+
+def oh2zero(x):
+	return x.replace('O', '0')
+
+def getShelf(data, vsn):
+	for d in data:
+		if oh2zero(d[0]) == oh2zero(vsn):
+			return d[1]
+	return 'none'
+
+def printShelfFile(data, filename):
+	if not isfile(filename):
+		print 'Error: file %s does not exist' % filename
+		return
+	d = open(filename, 'r').readlines()
+	for r in d:
+		s = split(strip(r))
+		newShelf = getShelf(data, s[1])
+		if newShelf != s[2] and newShelf != 'none' and s[2] != 'none':
+			newShelf = '%s # was at %s' % (newShelf, s[2])
+		print '%s %s %s' % (s[0], s[1], newShelf)
+
+
+# main below here
+
+
+verbose = 0
+stop = False
+modules = []
+for a in argv[1:]:
+	if a[0] == '-':
+		if a in ['-h', '--help']:
+			usage(argv[0])
+		elif a in ['-v', '--verbose']:
+			verbose += 1
+		else:
+			print 'Error: unknown command line option: %s' % a
+			stop = True
+			
+	else:
+		modules.append(a)
+
+if len(modules) == 0:
+	print 'No modules listed on command line.'
+	stop = True
+
+if stop:
+	print '\nRun with -h for help information.\n'
+	exit(0)
+
+
+conn = cx_Oracle.connect("wbrisken/d1i2f3x4@vlba10")
+curs = conn.cursor()
+query = 'select * from SHELVES'
+if verbose > 0:
+	print 'Executing database query: %s' % query
+curs.execute(query)
+data = curs.fetchall()
+
+for m in modules:
+	if m[-6:] == '.shelf':
+		printShelfFile(data, m)
+	else:
+		module = upper(m)
+		print module, getShelf(data, module)

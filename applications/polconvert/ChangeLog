@@ -1,0 +1,60 @@
+See src/Changelog for further information.
+
+Version 2.0
+~~~~~~~~~~~
+release 2.0.3 synchronized buildables with non-ALMA case; Jul 15, 2022
+Version 2.0.3 is for DiFX-2.8, Nov 4, 2022
+
+Version 1.8
+~~~~~~~~~~~
+alpha 0 developing for Py3 and CASA 6 from Oct 11, 2020
+alpha 1 some code enhancements reconciled from Feb 9, 2020
+alpha 2 was spent on EU-VGOS development (Aug 2021)
+alpha 3 is interim development to support DIFX Feb 9, 2022
+alpha 4 is interim development to support DIFX Feb 17, 2022
+alpha 5 is interim development to support DIFX Apr 18, 2022
+
+Version 1.7
+~~~~~~~~~~~
+beta release Nov 28, 2017
+Release 0  from Dec  6, 2017
+Release 1  from Mar  6, 2018
+Release 2  from Apr  3, 2018
+Release 3  from May 24, 2018
+Release 4  from Jun  4, 2018
+Release 5  from Jun 27, 2018
+Version for DiFX-2.6, Mar 4, 2019
+Release 6  from Jun 18, 2019
+Version for DiFX trunk, Jun 18, 2019
+Release 7  (internal)
+Release 8  from Nov 18, 2019
+Release 9  from Oct 8, 2020
+
+Version 1.6
+~~~~~~~~~~~
+beta release Oct 30, 2017
+
+Version 1.5
+~~~~~~~~~~~
+beta release Sep 21, 2017
+
+Version 1.4
+~~~~~~~~~~~
+Release  1 from July 9, 2017
+Release  2 from Aug 28, 2017
+
+Version 1.3
+~~~~~~~~~~~
+(not merged with DIFX)
+
+Version 1.2
+~~~~~~~~~~~
+Release  6 from June  9, 2016
+Release  7 from June 20, 2016
+Release  8 from June 20, 2016
+Release  9 from  Aug 25, 2016
+Release 10 from  Sep  2, 2016
+Release 11 from  Sep  8, 2016
+Release 12 from  Sep 16, 2016
+Release 13 from  Nov 10, 2016
+

@@ -1,0 +1,311 @@
+#!/usr/bin/env python
+
+from sys import exit, argv
+from os import getenv
+from string import split, strip, upper
+from getopt import getopt
+from os.path import isfile
+import datetime
+import cx_Oracle
+
+program = 'condition'
+version = '0.2'
+author  = 'Walter Brisken'
+verdate = '20090601'
+
+def usage(prog):
+        print '%s ver %s  %s  %s\n' % (program, version, author, verdate)
+	print 'A program to enter conditioning reports into the database or to\nretrieve conditioning records on a per module or per disk basis.\n'
+        print 'Usage:  %s [options] <action> [<args> ... ]' % prog
+        print """
+Options can include:
+
+  --help
+  -v         Print this usage info and quit
+
+  --verbose
+  -v         Send more output to the screen
+
+<action> must be one of the following:
+
+  add <report1> [ <report2> [ ... ] ]
+
+      parses a conditioning report file(s) and enters them into the database
+
+  find <moduleVSN>
+
+      extracts data for module with specified VSN from the database
+
+  find <discSerial>
+  
+      extracts data for a specific disk given its serial number
+"""
+	exit(0)
+
+
+class Report:
+
+	def __init__(self, module, dateStr):
+		self.year = int(dateStr[0:4])
+		self.month = int(dateStr[4:6])
+		self.day = int(dateStr[6:8])
+		self.hour = 0
+		self.minute = 0
+		self.second = 0
+		self.module = module
+		self.data = []
+		self.capacity = 0	# per disk, in GB
+		self.model = 'unknown'
+		s = split(upper(module), "-")
+		if len(s) != 2:
+			s = split(upper(module), "+")
+		if len(s) != 2:
+			print 'Illegal module name: %s', module
+			exit(0)
+		num = int(s[1])
+		if s[0] == 'NRAO':
+			if num >= 1 and num <= 6:
+				self.capacity = 120
+				self.model = 'WDC WD1200BB-00CAA1'
+			elif num == 0 or (num >= 7 and num <= 66):
+				self.capacity = 250
+				self.model = 'HDS722525VLAT80'
+			elif num >= 67 and num <= 166:
+				self.capacity = 250
+				self.model = 'MAXTOR 7Y250P0'
+			elif num >= 170 and num <= 199:
+				self.capacity = 300
+				self.model = 'MAXTOR 7L300R0'
+			elif num >= 200 and num <= 228:
+				self.capacity = 500
+				self.model = 'MAXTOR 7H500R0'
+			elif num >= 229 and num <= 233:
+				self.capacity = 500
+				self.model = 'unknown'
+			elif num >= 234 and num <= 275:
+				self.capacity = 750
+				self.model = 'unknown'
+		elif s[0] == 'VIPSK':
+			if num >= 1 and num <= 15:
+				self.capacity = 250
+				self.model = 'MAXTOR 7Y250P0'
+		elif s[0] == 'VIPSU':
+			if num >= 1 and num <= 5:
+				self.capacity = 250
+				self.model = 'MAXTOR 7Y250P0'
+		elif s[0] == 'PURDU':
+			if num >= 1 and num <= 6:
+				self.capacity = 750
+				self.model = 'MAXTOR 7Y250P0'
+		for i in range(8):
+			self.data.append([])
+
+	def addline(self, line):
+		s = split(line)
+		if s[0] != 'SSErase':
+			return
+		if upper(s[1]) in ['DISK:', 'DISC:']:
+			if len(s) < 4:
+				print 'Format problem:', line
+				exit(0)
+			self.id = int(s[2][:-1])
+			if self.id > 7:
+				self.id -= 8
+			if self.id < 0 or self.id > 7:
+				print 'disk id out of range:', line
+			self.data[self.id].append(s[3])
+		elif upper(s[1]) == 'STATS:':
+			if len(s) < 19:
+				print 'Format problem:', line
+				exit(0)
+			for i in range(8):
+				self.data[self.id].append(int(s[2*i + 4]))
+		elif len(s) >= 6 and s[2] == 'That' and s[3] == 'took':
+			secs = float(s[4])
+			self.hour = int(secs/3600.0)
+			secs -= self.hour*3600.0
+			self.minute = int(secs/60.0)
+			secs -= self.minute*60.0
+			self.second = int(secs)
+
+	def show(self):
+		print 'Module=%s  Date=%04d/%02d/%02d' % \
+			(self.module, self.year, self.month, self.day)
+		for i in range(8):
+			if len(self.data[i]) < 9:
+				print 'Disk %d not parsed' % i, self.data[i]
+			elif len(self.data[i]) > 9:
+				print 'Disk %d not parsed' % i, self.data[i]
+				exit(0)
+			else:
+				print self.data[i]
+
+	def file(self, database, verbose):
+		cursor = database.cursor()
+		date1 = "to_date('%04d/%02d/%02d:%02d:%02d:%02d', 'yyyy/mm/dd:hh24:mi:ss')" % \
+			(self.year, self.month, self.day, 0, 0, 0)
+		date2 = "to_date('%04d/%02d/%02d:%02d:%02d:%02d', 'yyyy/mm/dd:hh24:mi:ss')" % \
+			(self.year, self.month, self.day, self.hour, self.minute, self.second)
+		for i in range(8):
+			if len(self.data[i]) == 9:
+				cmd = "insert into CONDITION (SERIALNUM, MODEL, CAPACITY, MODULEVSN, SLOT, STARTTIME, STOPTIME, BIN0, BIN1, BIN2, BIN3, BIN4, BIN5, BIN6, BIN7) values ('%s', '%s', %d, '%s', %d, %s, %s, %d, %d, %d, %d, %d, %d, %d, %d)" % ( \
+					upper(self.data[i][0]), \
+					self.model, \
+					self.capacity, \
+					upper(self.module), \
+					i, \
+					date1, \
+					date2, \
+					self.data[i][1], \
+					self.data[i][2], \
+					self.data[i][3], \
+					self.data[i][4], \
+					self.data[i][5], \
+					self.data[i][6], \
+					self.data[i][7], \
+					self.data[i][8])
+				if verbose > 0:
+					print cmd;
+				try:
+					cursor.execute(cmd)
+				except cx_Oracle.IntegrityError:
+					if verbose > 0:
+						print 'Skipping due to database constraint issue'
+
+
+
+def parseFile(filename):
+	bogus = Report('bogus-01', '20000101')
+	reports = []
+	report = bogus
+	module = split(filename, '/')[-1][0:8]
+
+	print 'parsing file %s -> module %s' % (filename, module)
+
+	if not isfile(filename):
+		print 'File %s not found' % filename
+		return []
+	
+	data = open(filename, 'r').readlines()
+	for d in data:
+		s = split(strip(d))
+		if len(s) == 0:
+			continue
+		elif s[0][0] == '2':
+			if len(s[0]) == 8:
+				report = Report(module, s[0])
+				reports.append(report)
+			else:
+				print 'Date error in %s' % filename
+				exit(0)
+		else:
+			report.addline(strip(d))
+
+	l = len(reports)
+	if l > 1:
+		lasthash = reports[-1].year*10000 + reports[-1].month*100 + reports[-1].day
+		print 'hash -1 = %d' % lasthash
+		n = 0
+		for i in range(1, l):
+			j = l - i - 1
+			hash = reports[j].year*10000 + reports[j].month*100 + reports[j].day
+			print 'hash %d = %d  lasthash = %d' % (j, hash, lasthash)
+			if hash == lasthash:
+				n += 1
+				reports[j].second += n
+				print 'bumping'
+			else:
+				n = 0
+			lasthash = hash
+
+
+	return reports
+
+def inter(database, files, verbose):
+	allreports = []
+	for a in files:
+		reports = parseFile(a)
+		if len(reports) == 0:
+			print 'Error: no reports found in %s' % a
+			exit(0)
+		for r in reports:
+			r.show()
+			allreports.append(r)
+
+	for r in allreports:
+		r.file(database, verbose)
+	print ''
+
+	database.commit()
+
+
+def getmodule(database, module, verbose):
+	query = "select * from CONDITION where MODULEVSN='%s' or SERIALNUM='%s' order by STARTTIME, SLOT" % (module, module)
+	if verbose > 1:
+		print 'Executing query: %s' % query
+	cursor = database.cursor()
+	cursor.execute(query)
+	data = cursor.fetchall()
+	date = datetime.datetime(1999, 1, 1, 0, 0)
+	for d in data:
+		if d[5] != date:
+			date = d[5]
+			if date.year < 2004:
+				print '\n%s' % d[3]
+			else:
+				print '\n%s  %04d/%02d/%02d' % (d[3], date.year, date.month, date.day)
+		print '  %d %-20s %-7d %-7d %-7d %-7d %-6d %-5d %-3d %d' % \
+			(d[4], strip(d[0]), d[7], d[8], d[9], d[10], d[11], d[12], d[13], d[14])
+		if verbose > 0:
+			print '    %dGB  %s\n' % (d[2], d[1])
+
+
+# main below here
+
+print ''
+
+databaseName = getenv("VLBA_DB")
+
+database = cx_Oracle.connect(databaseName)
+
+args = []
+verbose = 0
+stop = False
+for a in argv[1:]:
+	if a[0] == '-':
+		if a in ['-h', '--help']:
+			usage(argv[0])
+		elif a in ['-v', '--verbose']:
+			verbose += 1
+		else:
+			print 'Error: unknown command line option: %s' % a
+			stop = True
+	else:
+		args.append(a)
+
+if len(args) == 0:
+	print 'Error: no action provided on command line.'
+	stop = True
+
+if stop:
+	print '\nRun with -h for help information.\n'
+	exit(0)
+
+
+action = args[0]
+
+if action == 'add':
+	inter(database, args[1:], verbose)
+elif action == 'find':
+	modules = args[1:]
+	for m in modules:
+		getmodule(database, upper(m), verbose)
+	print ''
+else:
+	print 'Error: unknown action %s.' % action
+	print '\nRun with -h for help information.\n'
+
+
+database.close()
+
+print ''

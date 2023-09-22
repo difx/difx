@@ -1,0 +1,323 @@
+
+Version 3.7.0
+* Post DiFX-2.6
+* python3 conversion: showcal, plotpcal, plotpcal2, gentcal, makefits
+* add --relabelCircular option that will simply change the labeled  polarizations to R/L without any change to the processing.
+* pass CommandLineOptions to more of the major subroutines to improve the code
+* (along with corresponding difxio commit) remove polxy2hv from DifxInput
+* various pulse cal and polarizations additions as described below:
+* option to perform van Vleck corections within difx2fits.
+  - Activated by one or more of the following conditions:
+    - command line argument --vanVleck
+    - different sampling on different antennas
+    - any antenna sampling with more than 2 bits per sample
+  - Currently coded for any combination of 1, 2, 4, and 8 bits per sample
+  - When in use, set the new VANVLECK keyword to "1"
+    - AIPS FITLD (and later CASA importfitsidi) will not attempt double correction
+      - AIPS from Aug 2022 or later is required.
+  - When not activated, behavior is unchanged from past versions
+* Increase observation code length to 24
+* makefits: a few minor changes requested by VLBA analysts
+* Version for DiFX-2.8, Nov 4, 2022
+
+Commit 10003 2021.04.30
+
+* Fixed a bug: presence of bad values in pcal file forced difx2calc to
+  bypass affected pcal record entirely. As a results difx2fits did not
+  dump pcal, and lost pcal at the affected station of a given job.
+
+* Added extra check to ensure difx2fits does not skip dumping accumulated
+  pcal phases and amplitudes.
+
+* Added a new feature in difx2fits: if --difx-pcal-interval 0, then
+  phase calibration phase and amplitude is averaged over an entire scan.
+
+
+Commit 9???  2021.02.28
+
+* Forced sorting job files chronologically in fitsPH for processing
+  phase calibration. Out of order jobs may result in loosing phase 
+  calibration file.
+
+* Changed the logic of handling pcal and cablecal files. The original
+  logic stopped processing loop for a given antenna given job at 
+  earliest the either pcal file or the cable cal file (if exists)
+  reached the end. If cable calibration file was truncated, phase 
+  calibration was lost beyond that epoch. The new logic continues 
+  the loop for phase calibration processing after the end of cable 
+  calibration file.
+
+* Added support of environment variable DIFX_USE_CABLE_CAL. If set 
+  to zero, cable calibration files are ignored.
+
+Commit 9???  2020.09.18
+
+* Support of a new options is added:
+  -A --all-pcal-tones. When applied, all phase calibration tones within 
+  recorded band are put in the output file overriding the tone selection
+  defined in difx input files.
+
+  Added statistics of printing skipped records.
+
+  Added additinal debugging statements with verbose > 3.
+
+Commit 9637  2020.07.30
+
+* Support of three new options is added:
+  -l --localdir *.calc, *.im, and *.difx are sought in the same directory 
+  as *.input files. By default, difx assumes *.input files define full 
+  paths of *.calc, *.im, and *.difx, and if it does not find, it issues an 
+  error message and stops. This causes a problem if difx output is imported 
+  to another system. 
+  
+  Now if *.calc, *.im, or *.difx file specified in the *.input file, are
+  not found, difxio checks whether such a file exists in the same direction 
+  as the *.input file. If it finds it and option --localdir is applied, 
+  difxio takes it. If option --localdir is not used difxio writes a message 
+  stating that the file was not found, but there exists such a file in the 
+  same directory where the *.input is located, difxio suggests a user to 
+  use option --localdir, if the latter file is that the user wants, and 
+  stops with EXIT_FAILURE.
+  
+* Support of mixed mode polarization with --antpol option. Original FITS-IDI 
+  specifications provide no room for mixed mode observations. Specifications
+  have a finite hard-coded list of polarization combinations coded in
+  STK_1 parameter that runs from -8 to 4. When FITS-IDI specifications
+  were written, no mixed mode polarization observations were envisaged.
+  
+  A workaround is to support new value STK_1 -9 that refers to the polarization
+  code of each station defined Antenna1Feed1 Antenna2Feed1 parameters that 
+  were always exported to FITS-IDI. That scheme overcomes the limitation
+  of the original fits-idi specifications. The order of polarization 
+  combinations in a 2x2 visibility matrix: A1A1 A2A2 A1A2 A2A1. If some 
+  polarizations were not recorded, for instance R or L, at one of the 
+  antennas, the visibility is padded with zero. If the array had only
+  circ or linpol antennas and all Stokes parameters were correlated,
+  this scheme is equivalent to STK_1 -1 and STK_1 -5 respectively.
+   
+  By default, difx2fits refuses to process mixed mode polarization data.
+  When --antpol option is used, difx2fits sets STK_1 to -9 and process
+  the data.
+  
+  A sanity check allows only R, L, H, V, X, and Y polarization codes, 
+  but the list of allowed codes can be easily extended in the future,
+  if needed.
+
+* There are datasets that misleadingly label HV data as XY. XY polarization
+  according to the IAU convention has axes over right ascension and
+  declination axes that are fixed on the sky, while HV polarization
+  axes over the local horizontal and vertical direction are rotating
+  on the sky. Data reduction of HV and XY of data is quite different.
+  There are antennas with HV feeds and there are antennas with XY feeds.
+
+  Option --polxy2hv re-labels polarization XY to HV. This option works
+  only if --antpol is applied.
+
+Version 3.6.0
+* SU table: make more IDI-FITS compliant
+* AG table: fill in antenna diameters, or 0 if not known.
+  - values used in difxio: difxio/antenna_db.c
+* AG table: override mount type with antenna_db.c values
+* Header: look in all .difx/ directories that are contributing to FITS file and dump contents of *.history into HISTORY section of FITS file.  This will not duplicate two .history files with the same name in the same FITS file.  .history files should be text files.  Any lines in these files longer than 70 characters will wrap.  These .history files get included after any history files included at command line.
+* Generate data for new kind of sniffer plot: examination of cross-pol response
+* Print info why FITS files were split
+* New command line option:  --max-jobs: specify maximum number of jobs to combine into a single FITS file.
+* Respect env var DIFX_MAX_SNIFFER_MEMORY
+* Update --help info to print env var that are used
+* Version for DiFX-2.6, Mar 4, 2019
+
+Version 3.5.0
+* Remove duplicate RDATE keywords from AG and ML tables
+* With changes in difxio, ensure same-day EOPs are equal before merging jobs
+* Make use of EOP merging mode concept.  See changelog in difxio.
+* Slight restructuring if difx2fits.c: load all filesets at beginning; no need to keep reloading them
+* plotpcal2 : second attempt to plot pcals in a more general way.  Still not super satisfactory.
+* Fix a case where absence of pulse cal file leads to seg fault (NRAO bug VLB-134, second part)
+* Fix a long-standing (introduced in 2009 for DiFX-2.0) problem in generating the MC table:  The last term in the clock polynomial (ususally the rate) was ignored, causing incorrect entries in both the clock (due to drift since the reference time) and clock rate columns of this table.
+* Support multiple datastreams per antenna.  Only changes really needed were in handling of DiFX-extracted pulse cal.
+* Lynn Matthews reported a problem with AN tables when performing VBGLU.  Problem was found to be populating POLCALA and POLCALB arrays witn NOPCAL=0, causing confusion in AIPS.  Fixed.
+* Fix jobmatrix output when subneting and/or given difx files not in time order
+* Adding support for taking union of frequency setups; depends on incomplete implementation in difxio
+* Don't raise a warning for a normal case where the sniffer buffer can be breached by one element.  Just ignore it and move on.
+* Support frequency setup merging using the --union option
+* Support building FITS files for profile mode correlations
+  (autocorrelations included for bins > 0)
+* Check polarizations for legality before proceeding (and segfaulting)
+* Fix for cablecal files when reported measurement duration is zero
+* In pulse cal table, set unused entries to NaNs to confirm to IDI-FITS standard
+* Version for DiFX-2.5, May 16, 2017
+
+Version 3.4.0
+* Add command line option --primary-band.  This causes a keyword to be added to the output FITS file.  Intended for VLITE.
+* makefits: check for files being multiple of 2880 bytes
+* fixes in pulse cal handling: better logic in closing files, some improvements in code clarity and some minor performance improvements.
+  - this fixes a bad bug when number of jobs is large; max number of file descriptors got exceeded.
+* print MJD range of converted output
+* add utility plotpcal
+* update pulse cal: Use new, more natural format for .difx/PCAL* files made by mpifxcorr
+* allow addition of history though external file (--history option)
+* add DELTAT keyword to ModelComps table.  Required for != 2 minute polynomial intervals
+* Tsys: replace 999 with NaN for one case of invalid Tsys
+* Version for DiFX-2.4, Nov 4, 2014
+
+Version 3.3.0
+* Improved clarity in generation of Flag, Tsys, Pcal, Gain and Weather tables: prioritized sources of data
+* Fix off-by-one timestamp error in the sniffer output files
+* All times are UTC (always have been).  Change variables and comments to reflect this and avoid some confusion.
+* Add utility to show which sources of calibration data (GN, PH, FG, WX, TS) will be used by difx2fits (called showcal)
+* Version for DiFX-2.3, Dec 20, 2013
+
+Version 3.2.0
+* Fix for correlation of mismatched sidebands.  Requires contemporaneous
+upgrade of difxio.
+* Add DIFX_LABEL env var to FITS files
+* Make sniffer plots more consistent with AIPS.  They will always show USB now and should have the same phase sense.
+* Use the SX gain table rows when SX observing is used.  Thanks to James Miller-Jones for reporting the problem.
+* pcal, weather, tsys, and flag files could be compromized by observations spanning the new year.
+  - Now handle day of year jumps
+  - Also handle possible use of mjds rather than days of year in future
+* increase number of phase cal tones allowed
+* Version for DiFX-2.2, 31 May 2013
+
+Version 3.1.0
+* Version renumber from 3.0.2 prior to DiFX-2.1 release
+* Version for DiFX-2.1, 4 May 2012
+
+Version 3.0.2
+* Post DiFX-2.0.1
+* Improved reporting when weights go crazy (negative)
+* --zero (or -0) option: don't write visibilities (well, write one per input file)
+  - not useful for AIPS as AIPS requires a UV table
+* makefits: pass along non-dashed options to difx2fits
+* Do better job verifying baseband data files have compliant names.
+* Improved checking on fopen return values
+* Maximum number of file descriptors checked.  For large merges this can be a problem.
+* Multiple DIFX files per job: don't write records from later files that overlap in time with those written by earlier ones.
+  - perhaps later the order of things should change and the _newer_ records get kept.
+  - multiple SWITCHEDPOWER and PCAL files are handled in the same way
+* Make use of new difx_tcal infrastructure
+* Support DiFX job restarts
+* Better support for mixed 1 and 2 bit data: include antenna-based numbers in FITS and scale accordingly
+* Populate the new RAOBS and DECOBS (pointing center) columns of the source table
+
+Version 3.0.1
+* Post 2.0.0
+* Make use of clock shifting function in difxio
+* Add in Difx-based pulse cal data
+* Add in Difx-based tsys
+* Fix TSys values in the zoom band cases
+* Fix Pulse cal values in the zoom band cases
+* DiFX extracted pulse cals: ensure proper antennaIds for merged job cases
+* valgrind used to track down some memory leaks
+* print fits keywords for each fits file when -v is supplied
+* don't invoke sniffer in cases where it would use too much memory
+* don't overwrite FITS when parse-all input difx are from different vex setups (thanks Jan Wagner)
+* Version for DiFX-2.0.1, 10 June 2011
+
+Version 3.0
+* Includes the following merged changes from DiFX-1.5:
+  - Copy jobmatrix file
+  - rename "makefilts.tmp" to "makefits.tmp"
+  - Apply flags properly, even in cases with crazy subarraying
+  - Write file that summarizes jobs that went into FITS
+  - Pass full command line option structure to UV writing
+  - Normalize calling to all table writing functions
+  - Properly populate GATEMODL table
+  - Write .jobmatrix file
+  - Write new WEIGHTYP keyword
+  - Sniffer: keep one more amplitude digit
+  - Sniffer: apd and apc files: keep 2 more time digits
+* Adds support for multiple phase centres, zoom bands
+* Also bugfixes for freeing memory
+* Requires difxio 3.0
+* Fixes by Olaf Wuchnitz: print format for writing strings to FITS and argument order in memcpy
+* Some cppcheck results from Martin Ettl
+* Don't fail to set proper .jobmatrix filename when not running sniffer
+* Properly index config table in fitsGM.c
+* makefits: pass --override-version on to difx2fits
+* makefits: list all phase centres and pulsar bins, and use this info
+* by default produce sniffer output only for bin=0 phasecentre=0
+* conform to new variable names in difxio, and more importantly, don't go out of the way to get frequency labelling wrong!
+* migrate to using EQUINOX in output FITS files
+* Version for DiFX-2.0.0
+
+Version 2.5
+* Require difxio 2.10
+* Post DiFX-1.5
+* Sniffer: look for spectral lines
+
+Version 2.4
+* Post NRAO-DiFX 1.1 development
+* Require difxio 2.5
+* Fix numbering of FITS Source IDs
+* Better handle transitional scans
+* don't use bcopy -- use memcpy instead.
+* fix sense of phase for LSB sniffer output data
+* add makefits wrapper program
+* Fix model tables when crossing midnight
+* Version for DiFX-1.5
+
+Version 2.3
+* Support for writing FITS files larger than 2 GiB
+* Option to force each input file into its own output file
+* Pay attention to difx versions
+* Don't write out vis records that occur over a scan change
+* int -> double mjd for gain curve selection
+* Respect DIFX_GROUP_ID and set umask
+* Write sniffer file output
+* Version for NRAO-DiFX 1.1
+
+Version 2.2
+* Use .im file to generate ML, MC table if file exists
+* Minor improvements to FR, ML, MC, AG, CT, SU, GN, TS, FL tables
+* Fix MC table -- index to model is dsId, not antId
+
+Version 2.1
+* Sorts by antenna name by default.  override with -k
+
+Version 2.0
+* New visibility writing code -- will merge multiple input files
+  into single FITS file in time order.
+* use fitsSourceId to keep the source table as small as possible, without
+  repeats
+* fix delay values in ML (IM) table
+* fix uninitialized freq offset vals in SU table
+* use difxio >= 2.0
+* start of pulsar table support
+
+Version 1.9
+* Use difxio >= 1.7
+
+Version 1.8
+* Use vlog output to generate FG, TS, PH, WX tables (WX is suspect)
+* Use gain curve files to generate GC (from env var GAIN_CURVE_PATH)
+* Use autoconf endianness detection -- remove byteorder.[ch]
+* Write spacecraft orbit table
+
+Version 1.7
+* support scaling parameter
+
+Version 1.6
+* Respect .flag file
+* Print more information
+
+Version 1.5
+* Fix up configure.ac a bit more
+
+Version 1.4
+* Summarize tables at end
+* Allow --no-model option
+
+Version 1.3
+* Amplitude scaling
+
+Version 1.2
+* Fix sign of gdelay, grate in MC table, and subtract off the atmosphere.
+* FFT_SIZE fix in MC table
+* Update automake a bit
+
+Version 1.1
+* Don't require .calc, .rates files
+
+Version 1.0
+* Initial version.  

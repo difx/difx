@@ -1,0 +1,33 @@
+difx_db installs in a way that should be familiar to most that have installed
+modern Gnu software.
+
+Requirements:
+
+Package cx_oracle (available at http://cx-oracle.sourceforge.net/) is required.
+
+To install from a .tar.gz distribution:
+
+tar zxvf difx_db-XXX.tar.gz
+cd difx_db-XXX
+./configure --prefix=<prefix>     (replace <prefix> with the base install dir)
+make
+# (maybe become root here)
+make install
+
+
+To install from a fresh svn checkout, run the following:
+
+aclocal
+autoconf
+automake -a
+
+./configure --prefix=${DIFX_PREFIX}
+make
+# (su root?)
+make install
+
+After an svn update, these steps do not need to be rerun.  usually just 
+"make" will update everything properly, but sometimes it is necessary
+to run "autoreconf" before compiling again.  If that doesn't work,
+one can always fall back on the above sequence of commands.
+

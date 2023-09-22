@@ -1,4 +1,0 @@
-#! /bin/bash
-. /home/swc/VLBADiFX-2.3/setup_difx
-
-mpispeed
