@@ -7,8 +7,8 @@ import getopt
 import re
 
 # Set this to true if compiling within a master_tags checkout
-#master_tag = True
-master_tag = False
+master_tag = True
+#master_tag = False
 
 ###############################################################################
 # this function was once called main() but really it was only for help.
@@ -215,17 +215,17 @@ components = {"perl"          :False,
               "mark5access"   :True,
               "mark6meta"     :False,
               "vdifio"        :True,
-              "calcif2"       :True,
+              "calcif2"       :False,
               "difxcalc11"    :True,
               "difx2profile"  :True,
               "misc"          :True,
               "vis2screen"    :True,
-              "calcserver"    :True,
+              "calcserver"    :False,
               "difx2fits"     :True,
               "vex2difx"      :True,
-              "difx2mark4"    :True,
+              "difx2mark4"    :False,
               "mpifxcorr"     :True,
-              "mark6sg"       :True,
+              "mark6sg"       :False,
               "difxfilterbank":False,
               "hops"          :False,
               "m6support"     :False,
