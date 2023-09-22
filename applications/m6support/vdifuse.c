@@ -2,7 +2,7 @@
  * (c) Massachusetts Institute of Technology, 2013..2023
  * (c) Geoffrey B. Crew, 2013..2023
  *
- * $Id: vdifuse.c 5782 2023-03-27 19:37:40Z gbc $
+ * $Id: vdifuse.c 5805 2023-04-04 21:59:14Z gbc $
  *
  * Fuse for vdif files for use with Mark6 or other
  * applications where vdif files are scattered around.
@@ -98,11 +98,11 @@ static int vdifuse_getattr(const char *path, struct stat *stbuf)
             /* return data about the sequences directory */
             vdifuse_topdir(VDIFUSE_TOPDIR_SEQUENCE, stbuf);
         } else {
-            vdiftrace(-1,
+            vdiftrace(0,
                 VDT("vdifuse_getattr: sequence lookup on %s\n"), path);
             if (vdifuse_sequence(path, stbuf)) {
                 res = -ENOENT;
-                vdiftrace(0,
+                vdiftrace(1,
                     VDT("vdifuse_getattr: not found %s, rv=%d\n"), path, res);
             } /* else stbuf is valid */
         }
@@ -112,11 +112,11 @@ static int vdifuse_getattr(const char *path, struct stat *stbuf)
             /* return data about the vdifproc directory */
             vdifuse_topdir(VDIFUSE_TOPDIR_VPROCDIR, stbuf);
         } else {
-            vdiftrace(-1,
+            vdiftrace(0,
                 VDT("vdifuse_getattr: vdifproc lookup on %s\n"), path);
             if (vdifuse_vprocdir(path, stbuf)) {
                 res = -ENOENT;
-                vdiftrace(0,
+                vdiftrace(1,
                     VDT("vdifuse_getattr: not found %s, rv=%d\n"), path, res);
             } /* else stbuf is valid */
         }
@@ -126,11 +126,11 @@ static int vdifuse_getattr(const char *path, struct stat *stbuf)
             /* return data about the vthreads directory */
             vdifuse_topdir(VDIFUSE_TOPDIR_VTHREADS, stbuf);
         } else {
-            vdiftrace(-1,
+            vdiftrace(0,
                 VDT("vdifuse_getattr: vthreads lookup on %s\n"), path);
             if (vdifuse_vthreads(path, stbuf)) {
                 res = -ENOENT;
-                vdiftrace(0,
+                vdiftrace(1,
                     VDT("vdifuse_getattr: not found %s, rv=%d\n"), path, res);
             } /* else stbuf is valid */
         }
