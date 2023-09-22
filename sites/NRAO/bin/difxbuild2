@@ -1,0 +1,3804 @@
+#!/usr/bin/env python2
+
+# vim: tabstop=8 softtabstop=8 shiftwidth=8 noexpandtab
+
+from os import environ, system, getcwd, chdir, popen, readlink
+from os.path import isdir, isfile, islink, join, dirname
+from sys import argv, exit, platform, version_info
+import re
+import getopt
+import platform
+from time import asctime
+from glob import glob
+from copy import deepcopy
+
+program = 'difxbuild'
+version = '0.78'
+verdate = '20200904'
+author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>'
+
+difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
+
+pythonProgram = 'python2'
+openmpiVersion = 'https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.4.tar.bz2'       
+pgplotVersion = '5.2'
+schedVersion = '11.6'
+schedUpdate = ''
+skedVersion = '2013jan23'
+m4Version = '1.4.16'
+autoconfVersion = '2.69'
+automakeVersion = '1.11.6'
+libtoolVersion = '2.4'
+pkgconfigVersion = '0.28'
+pyxVersion = '0.12.1'	#http://sourceforge.net/projects/pyx/files/pyx/0.12.1/PyX-0.12.1.tar.gz
+gpstkVersion = '2.10.6'
+libeventVersion = '2.0.21'
+expatVersion = '2.1.0'
+libmicrohttpdVersion = '0.9.35'
+difxippUrl = 'https://svn.aoc.nrao.edu/repos/VLBA/difxipp'
+
+defaultDifxMessageGroup = '224.2.2.1'
+defaultDifxMessagePort = 50200
+
+if pythonProgram == 'python3':
+	psycopgVersion = '2.8.3'
+elif version_info[0] < 3 and version_info[1] < 5:
+	psycopgVersion = '2.4.6'
+else:
+	psycopgVersion = '2.5.1'
+numMakeCpus = 4
+
+todo_list = """
+TODO:
+
+* X install from .tar.gz 
+* generic arch install (e.g., fftw)
+* wget option to clobber
+* add gui, difx_monitor, ...
+* add package dependencies and make use of them
+* option to test all possible dependencies
+* plplot
+* python path
+* integrate streamstor build
+* svnstatus
+* integrate sked: ftp://gemini.gsfc.nasa.gov/pub/sked/
+* integrate AIPS?
+* Set FLIB for hops?
+
+MAYBE:
+* http://naif.jpl.nasa.gov/naif/toolkit_FORTRAN_PC_Linux_g77_32bit.html
+* http://naif.jpl.nasa.gov/pub/naif/toolkit//FORTRAN/PC_Linux_g77_32bit/packages/toolkit.tar.Z
+
+"""
+
+documentation = """
+
+             In-line documentation for difxbuild
+
+                Dec 19, 2012  Walter Brisken
+
+Some assumptions:
+
+* All user directories and the difxbase paths are cross mounted and
+  appear the same on all machines that will be installed with DiFX.
+  Note that a DiFX installation is on a cluster, not on individual
+  machines.
+
+* The machine used for downloading has external access via the svn,
+  http, and ftp protocols.
+
+Some definitions:
+
+* architecture: A CPU architecture.  Multiple architectures can be
+  used in the same DiFX cluster.  Multiple platforms can be specified
+  per architecture.  Some files are common across all versions or 
+  platforms of a given architecture.  difxbuild will ensure that 
+  no redundant copies are installed, simplifying cross-version and
+  cross-platform maintenance.
+
+* platform: The could be different variants of DiFX machines across
+  a single cpu architecture.  For example, in the i686 architecture
+  one could have multiple different Mark5 types running different 
+  Conduant SDK versions, each of which needs to link to a different
+  set of libraries.  difxbuild uses out-of-source-tree building so
+  that all platforms for a given DiFX installation can use the same
+  source tree.  Very handy for developers.
+
+* version: The formal DiFX version (e.g., DIFX-2.1), or the development
+  version (called DIFX-DEVEL).
+
+* label: A user-defined name for the DiFX installation (to be applied
+  across all platforms).  By default this is the same as the version.
+  Different bootstrap files using different labels can manage multiple
+  instances of a single DiFX version.  This is potentially useful if
+  different DIFX-DEVEL snapshots are to be used in production.
+
+Some useful tips for users of difxbuild:
+
+* You can rerun bootstrap as many times as needed, changing parameters
+  each time.  It may be necessary to rebuild code after a bootstrap.
+
+* You can run "difxbuild rebuild" without any parameters if you are in
+  the source component of a particular component.  Same for "build"
+
+* After each successful (re)build/install of a component, a line of
+  text is added to a file called buildlog in each platform's base
+  directory.  This can be used to trace back the subversion history
+  of any binary at any time.
+
+* It is not recommended to move a difxbuild-based installation either 
+  to a different machine or across machines.  Rather the new system should
+  be rebootstrapped and the entire build process repeated.  If this must 
+  be done, it is highly recommended to wipe out all bin/ lib/ etc/ include/
+  and share/ directories under $DIFXROOT and run 'difxbuild build all'.
+
+Bootstrap parameter options include:
+
+* version: which version of difx to install.  Currently supported values
+  are DIFX-DEVEL and DIFX-2.1.  The DIFX_VERSION environment varialbe will
+  reflect this value.  This parameter is required.
+
+* headnode: the computer that will be singled out as the head node.  The
+  DIFX_HEAD_NODE environment variable will reflect this value.  This
+  parameter is required.
+
+* difxbase: the top level directory for DiFX software.  DiFX version
+  independent files will be placed beneath this directory.  By default
+  DiFX version specific files will be installed in a subdirectory of this
+  (see information about the root parameter below).  It is
+  okay (and encouraged) to use the same difxbase for all installed 
+  versions.  This parameter is required.
+
+* root: the base directory for DiFX version/label specific files for the
+  primary platform.  Secondary platforms will use the same but with a
+  provided extension (see altplatformX below).  If not provided, this
+  parameter will default to <difxbase>/<label> .
+
+* ipproot: path to the base of the Intel Performance Primitives library.
+  This is IPP version dependent and may require a bit of trial and error
+  to get right.  If this is set to  none  then an IPP-free DiFX will be
+  installed.  This requires FFTW to be installed.  Each architecture
+  can have its own ipproot value.  ipproot specifies the the default;
+  architecture-dependent overrides are specified with a parameter such as
+  ipprooti686 or ipprootx86_64.
+
+* label: a label used to identify an installation of DiFX.  By default it
+  is set equal to the specified version.  Setting it to an alternate value
+  allows multiple installations of the same DiFX version to be later 
+  identifyable.  The DIFX_LABEL environment variable will reflect this
+  value.
+
+* calcserver: the computer to send RPC model requests to.  If not
+  specified, this will default to the value of the headnode parameter.
+
+* cflags: default c and c++ compiler flags to use.  If not specified,
+  the default of "-O2 -Wall -march=core2" will be used.
+
+* pathextra: extra binary search paths to add the the PATH environment
+  variable that is set in the setup_difx script.  These are added to the end
+  of the path list.
+
+* prepathextra: like pathextra, but added before the existing PATH
+
+* ldextra: extra paths to be added to the LD_LIBRARY_PATH environment
+  variable that is set in the setup_difx script.  These are added to the
+  end of the list.
+
+* preldextra: like ldextra but to be prepended
+
+* symlinkdir: a path where sym links to startup scripts will be created.
+  This is useful if the default bin path is not in the execute path of
+  the DiFX user and the scripts want to be put in an execute path.
+
+* wrapper: an optional wrapper program that can be used to spawn
+  mpifxcorr.  This value gets coded into the runmpifxcorr.$DIFX-LABEL 
+  launcher script.  For example, valgrind could be used as the 
+  wrapper program if memory leek checking is desired.  Use this parameter
+  with caution.
+
+* mca: parameters to add to the /etc/openmpi-mca-params.conf file.  If not
+  provided, no such file will be created.  This can be useful to include
+  or exclude certain network interfaces.  You can set this on a per 
+  platform basis.  To do this, for example, set mcai686 and mcax86_64.
+
+* primaryarch: Normally bootstrapping needs to be done on a machine running
+  on the primary architecture.  If primaryarch is set, the bootstrapping
+  step can be run on any machine.  This should be set to i686, x86_64, or
+  whatever "uname -m" returns on the primary architecture.
+
+* altplatformX: Here X is a number from 1 to 9.  This parameter gives a
+  sub-label to each non-primary platform.  Examples might be SDK8 and SDK9
+  for Mark5 units using two different Conduant library versions.  For each
+  specified alternate platform the following three additional parameters
+  are needed...
+
+* altplatformXarch: The CPU architecture, as determined by "uname -m", 
+  that this platform is based upon.
+
+* altplatformXhost: A representative computer making use of this platform.
+  This is used when spawning a parallel build process.
+
+* altplatformXtest: A bash conditional expression used to determine if the
+  computer running the setup_bash script belongs to this platform.  An 
+  example is  FIXME
+
+* difxmessageport: a number between 1024 and 65535 specifying the multicast
+  port to be used for difx messaging
+
+* difxmessagegroup: an IP address in range 224.0.0.0 to 239.255.255.255
+  specifying the multicast group to be used for difx messaging
+
+* env: Append extra environment variables to the setup file.  Syntax is:
+
+env ENVVAR=VALUE
+
+  as many env statements can be included as you want.
+
+"""
+
+def getippversion(path):
+	if islink(path):
+		path = join(dirname(path), readlink(path))
+# First try ippversion.h
+	ippheader = path+'/include/ippversion.h'
+	if not isfile(ippheader):
+		ippheader = path+'/ipp/include/ippversion.h'
+		if not isfile(ippheader):
+			ippheader = ''
+
+	if (ippheader==''):
+		print "Warning: ippversion.h not found, relying on IPP path ", path
+		s = path.split('/')
+		possibilities = []
+		for part in s:
+			t = part.split('.')
+			if len(t) > 1:
+				possibilities.append(part)
+				if len(possibilities) < 1:
+					print 'Sorry, cannot determine ipp version from path'
+					exit(0)
+					if len(possibilities) > 1:
+						print 'Guessing version == %s' % possibilities[-1]
+
+						return possibilities[-1]
+					
+	else:
+		print "Reading version from ", ippheader
+		major = minor = None
+		for line in open(ippheader):
+			m = re.search('#define\s+IPP_VERSION_STR\s+"(\S+)"', line)
+			if m != None:
+				print "Got version ", m.group(1)
+				return m.group(1)
+			if major == None:
+				major = re.search('#define\s+IPP_VERSION_MAJOR\s+(\S)', line)
+			if minor == None:
+				minor = re.search('#define\s+IPP_VERSION_MINOR\s+(\S)', line)
+		if (major != None and minor != None):
+			print "Have version ", major.group(1) + "." + minor.group(1)
+			return major.group(1) + "." + minor.group(1)
+		print "Sorry, cannot find IPP_VERSION_STR in ", ippheader
+		exit(0)
+	
+# fixme: possibly should use uname to get this information
+def getarch():
+	bs = environ['DIFXBITS']
+	if bs != None:
+		return int(bs)
+	else:
+		print 'Warning: defaulting to 64 bit assumption'
+		return 64
+
+# one must have cwd set to the $IPPROOT directory before entering here
+def genipppc(path):
+
+	ippRoot = environ['IPPROOT']
+
+	G = glob('%s/lib*/pkgconfig/*ipp*.pc' % ippRoot)
+	if len(G) == 1:
+		print 'An IPP pc file was found: %s' % G[0]
+		system('cp %s ./ipp.pc' % G[0])
+		return
+
+	ippversion = getippversion(path)
+	if ippversion == None:
+		print '\nSorry: no IPP found in %s.\n\nMust quit.\n' % path
+		exit(0)
+
+	ipparch = getarch()
+
+	major = int(ippversion.split('.')[0])
+	out = open('ipp.pc', 'w')
+	out.write('base = %s\n' % path)
+	out.write('\n')
+	out.write('Name: ipp\n')
+	out.write('Description: Intel Performance Primitives\n')
+	out.write('Requires:\n')
+	out.write('Version: %s\n' % ippversion)
+	
+	mac = False
+	if platform == "darwin":
+		mac = True
+
+	if major in [5, 6]:
+		if mac:
+			libdir = 'Libraries'
+		else:
+			libdir = 'sharedlib'
+		if ipparch == 32:
+			out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lipps -lguide -lippvm -lippcore\n' % (libdir, libdir))
+			out.write('Cflags: -I${base}/include\n')
+		else:
+			out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lippsem64t -lguide -lippvmem64t -lippcoreem64t\n' % (libdir, libdir))
+			out.write('Cflags: -I${base}/include\n')
+	elif major in [7, 8, 9, 2017, 2018]:
+		if ipparch == 32:
+			libdir = 'ia32'
+		else:
+			libdir = 'intel64'
+		out.write('Libs: -L${base}/lib/%s -L${base}/ipp/lib/%s -lipps -lippvm -lippcore -liomp5\n' % (libdir, libdir))
+		out.write('Cflags: -I${base}/ipp/include\n')
+
+	else:
+		print 'Sorry, IPP %d not yet supported by this script\n' % major
+		exit(0)
+	out.close()
+
+nExecute = 0
+def execute(cmd, verbose, pretend):
+	global nExecute
+	nExecute += 1
+	if pretend:
+		print '[%d] In: %s\n[%d] Pretending: %s\n' % (nExecute, getcwd(), nExecute, cmd)
+		v = 0
+	else:
+		print '[%d] In: %s\n[%d] Executing: %s\n' % (nExecute, getcwd(), nExecute, cmd)
+		v = system(cmd)
+	
+	return v
+
+def checkDirs(comps, dir, args):
+	okComps = []
+	for comp in comps:
+		path = dir + comp[0] + '/'
+		if not isdir(path):
+			if 'ok' in args:
+				print 'Warning: %s does not exist.  Skipping.' % path
+			else:
+				print 'Error: %s does not exist.  Stopping.' % path
+		else:
+			okComps.append(comp)
+
+	if not 'ok' in args and len(comps) != len(okComps):
+		okComps = []
+
+	return okComps
+
+def checkFiles(comps, dir, fileName, args):
+	okComps = []
+	for comp in comps:
+		if 'nofilecheck' in comp[2]:
+			okComps.append(comp)
+			continue
+		file = dir + comp[0] + '/' + fileName
+		if not isfile(file):
+			if 'ok' in args:
+				print 'Warning: %s does not exist.  Skipping.' % file
+			else:
+				print 'Error: %s does not exist.  Stopping.' % file
+		else:
+			okComps.append(comp)
+
+	if not 'ok' in args and len(comps) != len(okComps):
+		okComps = []
+
+	return okComps
+
+def componentList(comps):
+	i = 0
+	str = ''
+	for c in comps:
+		if i > 0:
+			str += ', '
+		str += c[0]
+		i += 0
+	return str
+
+def filterComponentsOrig(origComps, args):
+	if 'cwd' in args:
+		local = getcwd().split('/')[-2:]
+	else:
+		local = []
+	
+	comps = []
+	for c in origComps:
+		if (c[0] in local or c[0] in args) and not ('noipp' in args and 'ipp' in c[2]):
+			comps.append(c)
+	if len(comps) == 0:
+		if 'cwd' in args:
+			print "Error: cannot build in local directory: don't know where I am!"
+		else:
+			comps = origComps
+
+	return comps
+
+def filterComponents(origComps, args):
+
+	legalArgs = ['all', 'core', 'slave']
+	for p in origComps:
+		legalArgs.append(p[0])
+
+	nBad = 0
+	for a in args:
+		if not a in legalArgs:
+			print "Unrecognized argument: %s" % a
+			nBad += 1
+	if nBad > 0:
+		exit(0)
+
+	if 'all' in args:
+		comps = []
+		for c in origComps:
+			if not 'nodef' in c[2]:
+				comps.append(c)
+	elif 'core' in args:
+		comps = []
+		for c in origComps:
+			if 'core' in c[2]:
+				comps.append(c)
+	elif 'slave' in args:
+		comps = []
+		for c in origComps:
+			if 'slave' in c[2]:
+				comps.append(c)
+	else:
+		comps = []
+		local = getcwd().split('/')[-2:]
+		for c in origComps:
+			if 'noipp' in args and 'ipp' in c[2]:
+				continue
+			if 'nopgplot' in args and 'pgplot' in c[2]:
+				continue
+			if c[0] in args :
+				comps.append(c)
+			elif c[0] in local and 'cwd' in args:
+				comps.append(c)
+		if len(comps) == 0:
+			for c in origComps:
+				if 'noipp' in args and 'ipp' in c[2]:
+					continue
+				if 'nopgplot' in args and 'pgplot' in c[2]:
+					continue
+				if c[0] in local:
+					comps.append(c)
+
+
+	return comps				
+				
+def versionReplace(comps, oldver, newver):
+	newcomps = deepcopy(comps)
+	for c in newcomps:
+		c[1] = c[1].replace(oldver, newver)
+	return newcomps
+	
+
+components = {}	# indexed by ${DIFX_VERSION}
+
+# components each have the following elements:
+# [
+#	0 name
+#	1 svn path
+#	2 [build flags]
+#	FIXME: add dependencies
+# ]
+
+component_difxio_trunk = \
+[ \
+	'difxio', \
+	'https://svn.atnf.csiro.au/difx/libraries/difxio/trunk', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
+]
+
+component_difxmessage_trunk = \
+[ \
+	'difxmessage', \
+	'https://svn.atnf.csiro.au/difx/libraries/difxmessage/trunk', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark5access_trunk = \
+[ \
+	'mark5access', \
+	'https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_codifio_trunk = \
+[ \
+	'codifio', \
+	'https://svn.atnf.csiro.au/difx/libraries/codifio/trunk', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_vdifio_trunk = \
+[ \
+	'vdifio', \
+	'https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_dirlist_trunk = \
+[ \
+	'dirlist', \
+	'https://svn.atnf.csiro.au/difx/libraries/dirlist/trunk', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark6meta_trunk = \
+[ \
+	'mark6meta', \
+	'https://svn.atnf.csiro.au/difx/libraries/mark6meta/trunk', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark6sg_trunk = \
+[ \
+	'mark6sg', \
+	'https://svn.atnf.csiro.au/difx/libraries/mark6sg/trunk', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mpifxcorr_trunk = \
+[ \
+	'mpifxcorr', \
+	'https://svn.atnf.csiro.au/difx/mpifxcorr/trunk', \
+	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
+]
+
+component_difx2fits_trunk = \
+[ \
+	'difx2fits', \
+	'https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk', \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_trunk = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/applications/difx2mark4/trunk', \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_vex2difx_trunk = \
+[ \
+	'vex2difx', \
+	'https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_mk5daemon_trunk = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave', 'core'] \
+]
+
+component_difxcalc11_trunk = \
+[ \
+	'difxcalc11', \
+	'https://svn.atnf.csiro.au/difx/applications/difxcalc11/trunk', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_autozoom_trunk = \
+[ \
+	'autozoom', \
+	'https://svn.atnf.csiro.au/difx/utilities/trunk/autozoom', \
+	['nodef'] \
+]
+
+component_datasim_trunk = \
+[ \
+	'datasim', \
+	'https://svn.atnf.csiro.au/difx/applications/datasim/trunk', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_calcif2_trunk = \
+[ \
+	'calcif2', \
+	'https://svn.atnf.csiro.au/difx/utilities/trunk/calcif2', \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_calcserver_trunk = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/applications/calcserver/trunk', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_polconvert_trunk = \
+[ \
+	'polconvert', \
+	'https://svn.atnf.csiro.au/difx/applications/polconvert/trunk', \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_guiserver_trunk = \
+[ \
+	'guiServer', \
+	'https://svn.atnf.csiro.au/difx/applications/guiServer/trunk', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_gui_trunk = \
+[ \
+	'gui', \
+	'https://svn.atnf.csiro.au/difx/applications/gui/trunk', \
+	['nofilecheck'] \
+]
+
+component_rcwlib_trunk = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/sites/NRAO/trunk/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_trunk = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/sites/NRAO/trunk/SniffPlots', \
+	['aclocal', 'autoconf', 'automake', 'pgplot'] \
+]
+
+component_hops_trunk = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/applications/hops/trunk', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'pgplot', 'nodist'] \
+]
+
+component_python_trunk = \
+[ \
+	'python', \
+	'https://svn.atnf.csiro.au/difx/libraries/python/trunk', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_misc_utils_trunk = \
+[ \
+	'misc_utils', \
+	'https://svn.atnf.csiro.au/difx/utilities/trunk/misc', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_vis2screen_trunk = \
+[ \
+	'vis2screen', \
+	'https://svn.atnf.csiro.au/difx/utilities/trunk/vis2screen', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difx2profile_trunk = \
+[ \
+	'difx2profile', \
+	'https://svn.atnf.csiro.au/difx/utilities/trunk/pulsar/difx2profile', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx'] \
+]
+
+component_vdifserver_trunk = \
+[ \
+	'vdif_server', \
+	'https://svn.atnf.csiro.au/difx/applications/vdif_server/trunk',
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx'] \
+]
+
+component_difxdb_trunk = \
+[ \
+	'difxdb', \
+	'https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb', \
+	['aclocal', 'autoconf', 'automake', 'nodef'] \
+]
+
+component_nraodifxdb_trunk = \
+[ \
+	'nraodifxdb', \
+	'https://svn.aoc.nrao.edu/repos/VLBA/nraodifxdb', \
+	['aclocal', 'autoconf', 'automake', 'nodef'] \
+]
+
+component_difxmonitor_trunk = \
+[ \
+	'difx_monitor', \
+	'https://svn.atnf.csiro.au/difx/applications/difx_monitor/trunk', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx', 'nodef'] \
+]
+
+component_difxfilterbank_trunk = \
+[ \
+	'difxfilterbank', \
+	'https://svn.atnf.csiro.au/difx/applications/difxfilterbank/trunk', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_vlite_trunk = \
+[ \
+	'vliteExecutor', \
+	'https://svn.aoc.nrao.edu/repos/VLITE/vliteExecutor', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'nodef'] \
+]
+
+components['DIFX-DEVEL'] = \
+[ \
+	component_difxio_trunk, \
+	component_difxmessage_trunk, \
+	component_mark6sg_trunk, \
+	component_codifio_trunk, \
+	component_mark5access_trunk, \
+	component_vdifio_trunk, \
+	component_dirlist_trunk, \
+	component_mark6meta_trunk, \
+	component_mpifxcorr_trunk, \
+	component_difx2fits_trunk, \
+	component_difx2mark4_trunk, \
+	component_vex2difx_trunk, \
+	component_mk5daemon_trunk, \
+	component_difxcalc11_trunk, \
+	component_datasim_trunk, \
+	component_autozoom_trunk, \
+	component_calcif2_trunk, \
+	component_calcserver_trunk, \
+	component_polconvert_trunk, \
+	component_guiserver_trunk, \
+	#component_gui_trunk, \
+	component_rcwlib_trunk, \
+	component_sniff_trunk, \
+	component_hops_trunk, \
+	component_python_trunk, \
+	component_misc_utils_trunk, \
+	component_vis2screen_trunk, \
+	component_difx2profile_trunk, \
+	component_vdifserver_trunk, \
+	component_nraodifxdb_trunk, \
+	component_difxfilterbank_trunk, \
+	component_difxmonitor_trunk, \
+	component_vlite_trunk, \
+]
+
+component_difxio_2_1 = \
+[ \
+	'difxio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/difxio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
+]
+
+component_difxmessage_2_1 = \
+[ \
+	'difxmessage', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/difxmessage', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark5access_2_1 = \
+[ \
+	'mark5access', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/mark5access', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_vdifio_2_1 = \
+[ \
+	'vdifio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/vdifio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mpifxcorr_2_1 = \
+[ \
+	'mpifxcorr', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/mpifxcorr', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
+]
+
+component_difx2fits_2_1 = \
+[ \
+	'difx2fits', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/difx2fits' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_2_1 = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/difx2mark4' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_vex2difx_2_1 = \
+[ \
+	'vex2difx', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/vex2difx' ,\
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+component_mk5daemon_2_1 = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/mk5daemon' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave', 'core'] \
+]
+
+component_calcif2_2_1 = \
+[ \
+	'calcif2', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/calcif2' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_calcserver_2_1 = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/calcserver', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_rcwlib_2_1 = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/sites/NRAO/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_2_1 = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/sites/NRAO/SniffPlots', \
+	['aclocal', 'autoconf', 'automake', 'pgplot'] \
+]
+
+component_hops_2_1 = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/hops', \
+	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+]
+
+components['DIFX-2.1'] = \
+[ \
+	component_difxio_2_1, \
+	component_difxmessage_2_1, \
+	component_mark5access_2_1, \
+	component_vdifio_2_1, \
+	component_mpifxcorr_2_1, \
+	component_difx2fits_2_1, \
+	component_difx2mark4_2_1, \
+	component_vex2difx_2_1, \
+	component_mk5daemon_2_1, \
+	component_calcif2_2_1, \
+	component_calcserver_2_1, \
+	component_rcwlib_2_1, \
+	component_sniff_2_1, \
+	component_hops_2_1, \
+]
+
+component_difxio_2_2 = \
+[ \
+	'difxio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/libraries/difxio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
+]
+
+component_difxmessage_2_2 = \
+[ \
+	'difxmessage', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/libraries/difxmessage', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark5access_2_2 = \
+[ \
+	'mark5access', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/libraries/mark5access', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_vdifio_2_2 = \
+[ \
+	'vdifio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/libraries/vdifio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mpifxcorr_2_2 = \
+[ \
+	'mpifxcorr', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/mpifxcorr', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
+]
+
+component_difx2fits_2_2 = \
+[ \
+	'difx2fits', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/applications/difx2fits' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_2_2 = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/applications/difx2mark4' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_vex2difx_2_2 = \
+[ \
+	'vex2difx', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/applications/vex2difx' ,\
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+component_mk5daemon_2_2 = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/applications/mk5daemon' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave', 'core'] \
+]
+
+component_calcif2_2_2 = \
+[ \
+	'calcif2', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/applications/calcif2' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_calcserver_2_2 = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/applications/calcserver', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_rcwlib_2_2 = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/sites/NRAO/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_2_2 = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/sites/NRAO/SniffPlots', \
+	['aclocal', 'autoconf', 'automake', 'pgplot'] \
+]
+
+component_nraodifxdb_2_2 = \
+[ \
+	'nraodifxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/sites/NRAO/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_hops_2_2 = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/applications/hops', \
+	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+]
+
+component_guiserver_2_2 = \
+[ \
+	'guiServer', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/applications/guiServer', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
+]
+
+components['DIFX-2.2'] = \
+[ \
+	component_difxio_2_2, \
+	component_difxmessage_2_2, \
+	component_mark5access_2_2, \
+	component_vdifio_2_2, \
+	component_mpifxcorr_2_2, \
+	component_difx2fits_2_2, \
+	component_difx2mark4_2_2, \
+	component_vex2difx_2_2, \
+	component_mk5daemon_2_2, \
+	component_calcif2_2_2, \
+	component_calcserver_2_2, \
+	component_rcwlib_2_2, \
+	component_sniff_2_2, \
+	component_nraodifxdb_2_2, \
+	component_hops_2_2, \
+	component_guiserver_2_2, \
+]
+
+component_difxio_2_3 = \
+[ \
+	'difxio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/libraries/difxio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
+]
+
+component_difxmessage_2_3 = \
+[ \
+	'difxmessage', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/libraries/difxmessage', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark5access_2_3 = \
+[ \
+	'mark5access', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/libraries/mark5access', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_vdifio_2_3 = \
+[ \
+	'vdifio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/libraries/vdifio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_python_2_3 = \
+[ \
+	'python', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/libraries/python', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_mpifxcorr_2_3 = \
+[ \
+	'mpifxcorr', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/mpifxcorr', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
+]
+
+component_difx2fits_2_3 = \
+[ \
+	'difx2fits', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/difx2fits' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_2_3 = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/difx2mark4' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_vex2difx_2_3 = \
+[ \
+	'vex2difx', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/vex2difx' ,\
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+component_mk5daemon_2_3 = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/mk5daemon' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave', 'core'] \
+]
+
+component_calcif2_2_3 = \
+[ \
+	'calcif2', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/calcif2' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_calcserver_2_3 = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/calcserver', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_rcwlib_2_3 = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/sites/NRAO/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_2_3 = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/sites/NRAO/SniffPlots', \
+	['aclocal', 'autoconf', 'automake', 'pgplot'] \
+]
+
+component_nraodifxdb_2_3 = \
+[ \
+	'nraodifxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/sites/NRAO/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_hops_2_3 = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/hops', \
+	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+]
+
+component_guiserver_2_3 = \
+[ \
+	'guiServer', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/guiServer', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
+]
+
+component_misc_utils_2_3 = \
+[ \
+	'misc_utils', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/utilities/misc', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_vis2screen_2_3 = \
+[ \
+	'vis2screen', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/utilities/vis2screen', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difx2profile_2_3 = \
+[ \
+	'difx2profile', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/utilities/pulsar/difx2profile', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx'] \
+]
+
+component_difxdb_2_3 = \
+[ \
+	'difxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/utilities/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_difxmonitor_2_3 = \
+[ \
+	'difx_monitor', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/difx_monitor', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difxfilterbank_2_3 = \
+[ \
+	'difxfilterbank', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/difxfilterbank', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+components['DIFX-2.3'] = \
+[ \
+	component_difxio_2_3, \
+	component_difxmessage_2_3, \
+	component_mark5access_2_3, \
+	component_vdifio_2_3, \
+	component_python_2_3, \
+	component_mpifxcorr_2_3, \
+	component_difx2fits_2_3, \
+	component_difx2mark4_2_3, \
+	component_vex2difx_2_3, \
+	component_mk5daemon_2_3, \
+	component_calcif2_2_3, \
+	component_calcserver_2_3, \
+	component_rcwlib_2_3, \
+	component_sniff_2_3, \
+	component_nraodifxdb_2_3, \
+	component_hops_2_3, \
+	component_guiserver_2_3, \
+	component_misc_utils_2_3, \
+	component_vis2screen_2_3, \
+	component_difx2profile_2_3, \
+	component_difxdb_2_3, \
+	component_difxfilterbank_2_3, \
+	component_difxmonitor_2_3, \
+	component_vlite_trunk, \
+]
+
+component_difxio_2_4 = \
+[ \
+	'difxio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/libraries/difxio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
+]
+
+component_difxmessage_2_4 = \
+[ \
+	'difxmessage', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/libraries/difxmessage', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark5access_2_4 = \
+[ \
+	'mark5access', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/libraries/mark5access', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_vdifio_2_4 = \
+[ \
+	'vdifio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/libraries/vdifio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_python_2_4 = \
+[ \
+	'python', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/libraries/python', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_mpifxcorr_2_4 = \
+[ \
+	'mpifxcorr', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/mpifxcorr', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
+]
+
+component_difx2fits_2_4 = \
+[ \
+	'difx2fits', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/applications/difx2fits' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_2_4 = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/applications/difx2mark4' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_vex2difx_2_4 = \
+[ \
+	'vex2difx', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/applications/vex2difx' ,\
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+component_mk5daemon_2_4 = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/applications/mk5daemon' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave', 'core'] \
+]
+
+component_calcif2_2_4 = \
+[ \
+	'calcif2', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/applications/calcif2' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_calcserver_2_4 = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/applications/calcserver', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_rcwlib_2_4 = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/sites/NRAO/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_2_4 = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/sites/NRAO/SniffPlots', \
+	['aclocal', 'autoconf', 'automake', 'pgplot'] \
+]
+
+component_nraodifxdb_2_4 = \
+[ \
+	'nraodifxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/sites/NRAO/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_hops_2_4 = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/applications/hops', \
+	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+]
+
+component_guiserver_2_4 = \
+[ \
+	'guiServer', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/applications/guiServer', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
+]
+
+component_misc_utils_2_4 = \
+[ \
+	'misc_utils', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/utilities/misc', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_vis2screen_2_4 = \
+[ \
+	'vis2screen', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/utilities/vis2screen', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difx2profile_2_4 = \
+[ \
+	'difx2profile', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/utilities/pulsar/difx2profile', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx'] \
+]
+
+component_difxdb_2_4 = \
+[ \
+	'difxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/utilities/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_difxmonitor_2_4 = \
+[ \
+	'difx_monitor', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/applications/difx_monitor', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difxfilterbank_2_4 = \
+[ \
+	'difxfilterbank', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/applications/difxfilterbank', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+components['DIFX-2.4'] = \
+[ \
+	component_difxio_2_4, \
+	component_difxmessage_2_4, \
+	component_mark5access_2_4, \
+	component_vdifio_2_4, \
+	component_python_2_4, \
+	component_mpifxcorr_2_4, \
+	component_difx2fits_2_4, \
+	component_difx2mark4_2_4, \
+	component_vex2difx_2_4, \
+	component_mk5daemon_2_4, \
+	component_calcif2_2_4, \
+	component_calcserver_2_4, \
+	component_rcwlib_2_4, \
+	component_sniff_2_4, \
+	component_nraodifxdb_2_4, \
+	component_hops_2_4, \
+	component_guiserver_2_4, \
+	component_misc_utils_2_4, \
+	component_vis2screen_2_4, \
+	component_difx2profile_2_4, \
+	component_difxdb_2_4, \
+	component_difxfilterbank_2_4, \
+	component_difxmonitor_2_4, \
+	component_vlite_trunk, \
+]
+
+component_difxio_2_5 = \
+[ \
+	'difxio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/difxio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
+]
+
+component_difxmessage_2_5 = \
+[ \
+	'difxmessage', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/difxmessage', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_dirlist_2_5 = \
+[ \
+	'dirlist', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/dirlist', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core' ] \
+]
+
+component_mark5access_2_5 = \
+[ \
+	'mark5access', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/mark5access', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_vdifio_2_5 = \
+[ \
+	'vdifio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/vdifio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark6meta_2_5 = \
+[ \
+	'mark6meta', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/mark6meta', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark6sg_2_5 = \
+[ \
+	'mark6sg', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/mark6sg', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_python_2_5 = \
+[ \
+	'python', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/libraries/python', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_mpifxcorr_2_5 = \
+[ \
+	'mpifxcorr', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/mpifxcorr', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
+]
+
+component_difx2fits_2_5 = \
+[ \
+	'difx2fits', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/difx2fits' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_2_5 = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/difx2mark4' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_vex2difx_2_5 = \
+[ \
+	'vex2difx', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/vex2difx' ,\
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+component_mk5daemon_2_5 = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/mk5daemon' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave', 'core'] \
+]
+
+component_calcif2_2_5 = \
+[ \
+	'calcif2', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/calcif2' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_calcserver_2_5 = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/calcserver', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_difxcalc11_2_5 = \
+[ \
+	'difxcalc11', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/difxcalc11', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake', 'core'] \
+]
+
+component_datasim_2_5 = \
+[ \
+	'datasim', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/datasim', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_rcwlib_2_5 = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/sites/NRAO/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_2_5 = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/sites/NRAO/SniffPlots', \
+	['aclocal', 'autoconf', 'automake', 'pgplot'] \
+]
+
+component_nraodifxdb_2_5 = \
+[ \
+	'nraodifxdb', \
+	'https://svn.aoc.nrao.edu/repos/VLBA/nraodifxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_hops_2_5 = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/hops', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+]
+
+component_guiserver_2_5 = \
+[ \
+	'guiServer', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/guiServer', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
+]
+
+component_misc_utils_2_5 = \
+[ \
+	'misc_utils', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/utilities/misc', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_vis2screen_2_5 = \
+[ \
+	'vis2screen', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/utilities/vis2screen', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difx2profile_2_5 = \
+[ \
+	'difx2profile', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/utilities/pulsar/difx2profile', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx'] \
+]
+
+component_difxdb_2_5 = \
+[ \
+	'difxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/utilities/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_difxmonitor_2_5 = \
+[ \
+	'difx_monitor', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/difx_monitor', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difxfilterbank_2_5 = \
+[ \
+	'difxfilterbank', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/difxfilterbank', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+components['DIFX-2.5'] = \
+[ \
+	component_difxio_2_5, \
+	component_difxmessage_2_5, \
+	component_dirlist_2_5, \
+	component_mark5access_2_5, \
+	component_vdifio_2_5, \
+	component_mark6meta_2_5, \
+	component_mark6sg_2_5, \
+	component_python_2_5, \
+	component_mpifxcorr_2_5, \
+	component_difx2fits_2_5, \
+	component_difx2mark4_2_5, \
+	component_vex2difx_2_5, \
+	component_mk5daemon_2_5, \
+	component_calcif2_2_5, \
+	component_calcserver_2_5, \
+	component_difxcalc11_2_5, \
+	component_datasim_2_5, \
+	component_rcwlib_2_5, \
+	component_sniff_2_5, \
+	component_nraodifxdb_2_5, \
+	component_hops_2_5, \
+	component_guiserver_2_5, \
+	component_misc_utils_2_5, \
+	component_vis2screen_2_5, \
+	component_difx2profile_2_5, \
+	component_difxdb_2_5, \
+	component_difxfilterbank_2_5, \
+	component_difxmonitor_2_5, \
+	component_vlite_trunk, \
+]
+
+
+component_difxio_2_6 = \
+[ \
+	'difxio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/difxio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
+]
+
+component_difxmessage_2_6 = \
+[ \
+	'difxmessage', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/difxmessage', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_dirlist_2_6 = \
+[ \
+	'dirlist', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/dirlist', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core' ] \
+]
+
+component_mark5access_2_6 = \
+[ \
+	'mark5access', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/mark5access', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_vdifio_2_6 = \
+[ \
+	'vdifio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/vdifio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark6meta_2_6 = \
+[ \
+	'mark6meta', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/mark6meta', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark6sg_2_6 = \
+[ \
+	'mark6sg', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/mark6sg', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_python_2_6 = \
+[ \
+	'python', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/libraries/python', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_mpifxcorr_2_6 = \
+[ \
+	'mpifxcorr', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/mpifxcorr', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
+]
+
+component_difx2fits_2_6 = \
+[ \
+	'difx2fits', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/difx2fits' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_2_6 = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/difx2mark4' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_vex2difx_2_6 = \
+[ \
+	'vex2difx', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/vex2difx' ,\
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+component_mk5daemon_2_6 = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/mk5daemon' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave', 'core'] \
+]
+
+component_calcif2_2_6 = \
+[ \
+	'calcif2', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/calcif2' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_calcserver_2_6 = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/calcserver', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_polconvert_2_6 = \
+[ \
+	'polconvert', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/polconvert', \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difxcalc11_2_6 = \
+[ \
+	'difxcalc11', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/difxcalc11', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake', 'core'] \
+]
+
+component_datasim_2_6 = \
+[ \
+	'datasim', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/datasim', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_rcwlib_2_6 = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/sites/NRAO/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_2_6 = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/sites/NRAO/SniffPlots', \
+	['aclocal', 'autoconf', 'automake', 'pgplot'] \
+]
+
+component_nraodifxdb_2_6 = \
+[ \
+	'nraodifxdb', \
+	'https://svn.aoc.nrao.edu/repos/VLBA/nraodifxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_hops_2_6 = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/hops', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+]
+
+component_guiserver_2_6 = \
+[ \
+	'guiServer', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/guiServer', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
+]
+
+component_misc_utils_2_6 = \
+[ \
+	'misc_utils', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/utilities/misc', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_vis2screen_2_6 = \
+[ \
+	'vis2screen', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/utilities/vis2screen', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difx2profile_2_6 = \
+[ \
+	'difx2profile', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/utilities/pulsar/difx2profile', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx'] \
+]
+
+component_difxdb_2_6 = \
+[ \
+	'difxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/utilities/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_difxmonitor_2_6 = \
+[ \
+	'difx_monitor', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/difx_monitor', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difxfilterbank_2_6 = \
+[ \
+	'difxfilterbank', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/difxfilterbank', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+components['DIFX-2.6'] = \
+[ \
+	component_difxio_2_6, \
+	component_difxmessage_2_6, \
+	component_dirlist_2_6, \
+	component_mark6sg_2_6, \
+	component_mark5access_2_6, \
+	component_vdifio_2_6, \
+	component_mark6meta_2_6, \
+	component_python_2_6, \
+	component_mpifxcorr_2_6, \
+	component_difx2fits_2_6, \
+	component_difx2mark4_2_6, \
+	component_vex2difx_2_6, \
+	component_mk5daemon_2_6, \
+	component_calcif2_2_6, \
+	component_calcserver_2_6, \
+	component_polconvert_2_6, \
+	component_difxcalc11_2_6, \
+	component_datasim_2_6, \
+	component_rcwlib_2_6, \
+	component_sniff_2_6, \
+	component_hops_2_6, \
+	component_guiserver_2_6, \
+	component_misc_utils_2_6, \
+	component_vis2screen_2_6, \
+	component_difx2profile_2_6, \
+	component_difxdb_2_6, \
+	component_nraodifxdb_2_6, \
+	component_difxfilterbank_2_6, \
+	#component_difxmonitor_2_6, \
+	component_vlite_trunk, \
+]
+
+# handle patch versions cleanly
+components['DIFX-2.4.1'] = components['DIFX-2.4']
+components['DIFX-2.4.2'] = components['DIFX-2.4']
+
+# new with 2.5 releases: simply modify template from branch
+components['DIFX-2.5.1'] = versionReplace(components['DIFX-2.5'], "DiFX-2.5", "DiFX-2.5.1")
+components['DIFX-2.5.2'] = versionReplace(components['DIFX-2.5'], "DiFX-2.5", "DiFX-2.5.2")
+components['DIFX-2.5.3'] = versionReplace(components['DIFX-2.5'], "DiFX-2.5", "DiFX-2.5.3")
+
+components['DIFX-2.6.1'] = versionReplace(components['DIFX-2.6'], "DiFX-2.6", "DiFX-2.6.1")
+components['DIFX-2.6.2'] = versionReplace(components['DIFX-2.6'], "DiFX-2.6", "DiFX-2.6.2")
+
+
+# commands each have the following elements:
+# [
+#	0 Name
+#	1 Description
+#	2 Needed env variables
+#	3 Command line values
+#	4 Function to call
+# ]
+
+def list(comps, params, args, verbose, pretend):
+	print 'Components being managed for %s are:' % environ['DIFX_VERSION']
+	for c in comps:
+		print '  %s' % c[0]
+	print ''
+
+def default(comps, params, args, verbose, pretend):
+	execute('rm %s/bin/setup_difx' % environ['DIFX_BASE'], verbose, pretend)
+	if isfile('%s/bin/setup_difx' % environ['DIFX_BASE']):
+		print 'Error: could not unlink existing DiFX version'
+		exit(2)
+	execute('ln -f -s %s/setup_difx %s/bin' % (environ['DIFXROOT'], environ['DIFX_BASE']), verbose, pretend)
+	if not isfile('%s/bin/setup_difx' % environ['DIFX_BASE']):
+		print 'Error: could not link new DiFX version.  NO version is default now!'
+		exit(2)
+	writeinitfile(verbose, pretend)
+	print 'New default version of DiFX selected.'
+	print 'Make sure ". %s/bin/setup_difx" is in your .bashrc file' % environ['DIFX_BASE']
+
+def splitequals(strg):
+	p = strg.find('=')
+	if p < 0:
+		return [strg]
+	else:
+		return [strg[:p].strip(), strg[p+1:].strip()]
+
+def writeinitfile(verbose, pretend):
+	initdir = environ['DIFX_BASE'] + '/init.d'
+	initfile = initdir + '/nrao-difx'
+	execute('mkdir -p %s' % initfile, verbose, pretend)
+	print 'Writing init file: %s' % initfile
+	out = open(initfile, 'w')
+	out.write('#!/bin/sh\n')
+	out.write('#\n')
+	out.write('# Author: %s version %s\n' % (program, version))
+	out.write('#\n')
+	out.write('# chkconfig: 345 99 1\n')
+	out.write('# description: start / stop difx daemons (mk5daemon, calserver?)\n')
+	out.write('\n')
+	out.write('LOCKFILE=/var/lock/subsys/`basename $0`\n')
+	out.write('\n')
+	out.write('# source function library\n')
+	out.write('. /etc/init.d/functions\n')
+	out.write('\n')
+	out.write('\n')
+	out.write('start() {\n')
+	out.write('    if [[ `hostname -s` == %s ]]; then\n' % environ['CALC_SERVER'])
+	out.write('        # set up some env vars for calcserver\n')
+	out.write('        export CALC_USER=C\n')
+	out.write('        export WET_ATM=Y\n')
+	out.write('        export JPLEPH=%s/share/CalcServer/JPLEPH\n' % environ['DIFXROOT'])
+	out.write('        export SERVERLOG=OFF\n')
+	out.write('        export HORIZONS_FILENAME=%s/share/CalcServer/Horizons.lis\n' % environ['DIFXROOT'])
+	out.write('        export HORIZONS_SRCNAME=TSTCURVE\n')
+	out.write('        echo -n $"Starting calcserver: "\n')
+	out.write('        daemon \'%s/bin/CalcServer > /dev/null &\'\n' % environ['DIFXROOT'])
+	out.write('        echo\n')
+	out.write('    fi\n')
+	out.write('    if [[ `hostname -s` == %s ]]; then\n' % environ['DIFX_HEAD_NODE'])
+	out.write('        echo -n $"Starting mk5daemon with head node capabilities: "\n')
+	out.write('        daemon \'%s/bin/mk5daemon -H -e > /dev/null &\'\n' % environ['DIFXROOT'])
+	out.write('    else\n')
+	out.write('        echo -n $"Starting mk5daemon: "\n')
+	out.write('        daemon \'%s/bin/mk5daemon -e > /dev/null &\'\n' % environ['DIFXROOT'])
+	out.write('    fi\n')
+	out.write('    RETVAL=$?\n')
+	out.write('    echo\n')
+	out.write('    [ $RETVAL = 0 ] && touch $LOCKFILE\n')
+	out.write('    return $RETVAL\n')
+	out.write('}\n')
+	out.write('\n')
+	out.write('\n')
+	out.write('stop() {\n')
+	out.write('    if [[ `hostname` == %s ]]; then\n' % environ['CALC_SERVER'])
+	out.write('        echo -n $"Stopping calcserver: "\n')
+	out.write('        killproc CalcServer\n')
+	out.write('        echo\n')
+	out.write('    fi\n')
+	out.write('    echo -n $"Stopping mk5daemon: "\n')
+	out.write('    killproc mk5daemon\n')
+	out.write('    RETVAL=$?\n')
+	out.write('    echo\n')
+	out.write('    [ $RETVAL = 0 ] && rm -f $LOCKFILE\n')
+	out.write('    return $RETVAL\n')
+	out.write('}\n')
+	out.write('\n')
+	out.write('\n')
+	out.write('case "$1" in\n')
+	out.write('    start)\n')
+	out.write('        start\n')
+	out.write('        ;;\n')
+	out.write('    stop)\n')
+	out.write('        stop\n')
+	out.write('        ;;\n')
+	out.write('    restart)\n')
+	out.write('        stop && start\n')
+	out.write('        ;;\n')
+	out.write('    *)\n')
+	out.write('        echo $"Usage: $0 {start|stop|restart}"\n')
+	out.write('        exit 1\n')
+	out.write('esac\n')
+	out.close()
+
+	execute('chmod +x %s' % initfile, verbose, pretend)
+
+
+def bootstrap(comps, params, args, verbose, pretend):
+	setupFileName = 'setup_difx'
+	requiredConfigParams = ['difxbase', 'version', 'headnode']
+	if not isfile(params['ConfigFile']):
+		print 'Error: bootstrapping needs the specified configuration file, %s, to exist.' % params['ConfigFile']
+		return
+
+	difxMessageGroup = defaultDifxMessageGroup
+	difxMessagePort = defaultDifxMessagePort
+		
+	configData = open(params['ConfigFile'], 'r').readlines()
+	config = {}
+	pyPath = {}
+	env = []
+	for c in configData:
+		c = c.split('#')[0]	# strip comments
+		s = splitequals(c.strip())
+		if len(s) == 2:
+			t = s[0].split()
+			if len(t) == 1:
+				config[s[0].strip()] = s[1].strip()
+			elif len(t) == 2:
+				if t[0] == 'env':
+					env.append([t[1].strip(), s[1].strip()])
+				else:
+					print 'Error: line %s is not understood' % c
+					return
+			else:
+				print 'Error: line %s is not understood' % c
+				return
+
+	# check for required parameters:
+	ok = True
+	for r in requiredConfigParams:
+		if not r in config.keys():
+			print 'Error: config file lacks parameter %s\n' % r
+			ok = False
+	if not ok:
+		return
+
+	if config['version'] not in components.keys():
+		print 'Error: version must be one of ', components.keys()
+		return
+
+	independentArchs = False
+	if config.has_key('independentarchs'):
+		if config['independentarchs'][0].upper() in ['1', 'T', 'Y']:
+			independentArchs = True
+
+	if config.has_key('symlinkdir'):
+		symlinkdir = config['symlinkdir']
+	else:
+		symlinkdir = None
+
+	if config.has_key('difxmessagegroup'):
+		difxMessageGroup = config['difxmessagegroup']
+	
+	if config.has_key('difxmessageport'):
+		difxMessagePort = int(config['difxmessageport'])
+		if difxMessagePort < 1024 or difxMessagePort > 65535:
+			print 'Error: difxmessageport must be in range [1024..65535]'
+			return
+
+	if config.has_key('label'):
+		label = config['label']
+	else:
+		label = config['version']
+
+	# default root
+	if not 'root' in config.keys():
+		config['root'] = config['difxbase'] + '/' + label
+	
+	if verbose > 0:
+		print 'Config:'
+		for c in config.keys():
+			print '  %s = %s' % (c, config[c])
+		print 'Environment:'
+		for e in env:
+			print '  %s = %s' % (e[0], e[1])
+
+	if 1:
+		setupFile = config['root'] + '/' + setupFileName
+		if verbose > 0:
+			print 'Writing setup file %s' % setupFile
+
+		dirPath = '%s/directories' % config['difxbase']
+		initPath = '%s/init.d' % config['difxbase']
+		dirs = [config['root'], dirPath, '%s/bootstrap' % config['difxbase'], '%s/bin/' % config['difxbase'], initPath]
+		for d in dirs:
+			if not isdir(d):
+				execute('mkdir -p %s' % d, verbose, pretend)
+
+		# make sure dir path is world writable
+		execute('chmod a+w %s' % dirPath, verbose, pretend)
+
+		platforms = {}	# indexed by arch
+		platformhostsStr = ''
+
+		# make entry for primary architecture, which is assumed to be the one where bootstrapping is done
+		# unless overridden by primaryarch parameter
+		if config.has_key('primaryarch'):
+			primaryarch = config['primaryarch']
+		else:
+			primaryarch = platform.machine()
+		platforms[primaryarch] = []
+
+		for i in range(1, 10):
+			if not config.has_key('altplatform%d' % i):
+				break
+			for suffix in ['host', 'arch', 'test']:
+				if not config.has_key('altplatform%d%s' % (i, suffix)):
+					print 'Error: altplatform%d%s is not set.' % (i, suffix)
+					exit(0)
+			aarch = config['altplatform%darch' % i]
+			if not aarch in platforms:
+				platforms[aarch] = []
+			platforms[aarch].append([config['altplatform%d' % i], config['altplatform%dtest' % i]])
+			if config.has_key('altplatform%dhost' % i):
+				if i > 1:
+					platformhostsStr += ','
+				platformhostsStr += config['altplatform%dhost' % i]
+
+		# populate openmpi mca information, if provided
+		for p in platforms.keys():
+			mcaPath = '%s/%s/etc/' % (config['difxbase'], p)
+			mcaFile = '%s/openmpi-mca-params.conf' % mcaPath
+			mca = ''
+			if config.has_key('mca%s' % p):
+				mca = config['mca%s' % p].split(';')
+			elif config.has_key('mca'):
+				mca = config['mca'].split(';')
+			if mca != '':
+				print 'Making %s' % mcaFile
+				execute('mkdir -p %s' % mcaPath, verbose, pretend)
+				out = open(mcaFile, 'w')
+				for m in mca:
+					out.write('%s\n' % m)
+				out.close()
+			elif isfile(mcaFile):
+				print '*** Removing obsolete file %s (actually moving to /tmp/%s.mca) ***' % (mcaFile, p)
+				execute('mv %s /tmp/%s.mca' % (mcaFile, p), verbose, pretend)
+
+		ipproot = {}	# indexed by arch
+		for a in platforms.keys():
+			if config.has_key('ipproot'+a):
+				ipproot[a] = config['ipproot'+a]
+			elif config.has_key('ipproot'):
+				ipproot[a] = config['ipproot']
+			else:
+				print 'Error: no ipproot set for architecture %s' % a
+				ipproot = {}
+				break
+		if len(ipproot) == 0:
+			return
+
+		for arch in platforms.keys():
+			if arch == platform.machine():
+				pyVer = '%d.%d' % (version_info[0], version_info[1])
+				if '64' in arch:
+					pyPath[arch] = '$DIFX_ARCH_ROOT/lib64/python%s/site-packages' % pyVer
+				else:
+					pyPath[arch] = '$DIFX_ARCH_ROOT/lib/python%s/site-packages' % pyVer
+			if config.has_key('pythonpath%s' % arch):
+				pyPath[arch] = config['pythonpath%s' % arch]
+
+		if ipproot[arch] != 'none':
+			globStr = "%s/lib*/pkgconfig/*ipp*.pc" % ipproot[arch]
+			G = glob(globStr)
+		else:
+			G = []
+		if len(G) == 1:
+			ippLdPath = ''
+			pkgPath = G[0][0:G[0].rfind('/')]
+			pcFile = G[0][(G[0].rfind('/')+1):G[0].rfind('.')]
+			line = popen('PKG_CONFIG_PATH=%s pkg-config --libs %s' % (pkgPath, pcFile), 'r').readline().split()
+			for s in line:
+				if s[0:2] == '-L':
+					ippLdPath += ':%s' % s[2:]
+		else:
+			ippLdPath = ':${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}'
+
+		if config.has_key('pathextra'):
+			pathExtra = ':%s' % config['pathextra']
+		else:
+			pathExtra = ''
+		if config.has_key('prepathextra'):
+			prepathExtra = '%s:' % config['prepathextra']
+		else:
+			prepathExtra = ''
+		execPath = '${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:${DIFX_BASE}/bin'
+		if config.has_key('ldextra'):
+			ldExtra = ':%s' % config['ldextra']
+		else:
+			ldExtra = ''
+		if config.has_key('preldextra'):
+			preldExtra = '%s:' % config['preldextra']
+		else:
+			preldExtra = ''
+		ldPath = '${DIFX_ARCH_ROOT}/lib:${DIFX_ARCH_ROOT}/lib64:/lib:/usr/lib:${DIFXROOT}/lib%s:${PGPLOT_DIR}' % ippLdPath
+
+		runscript = '%s/bin/runmpifxcorr.%s' % (config['difxbase'], label) 
+		out = open(runscript, 'w')
+		out.write('#!/bin/bash\n\n')
+		out.write('. %s\n' % setupFile)
+		if config.has_key('wrapper'):
+			out.write('%s ' % config['wrapper'])
+		out.write('mpifxcorr $@\n')
+		out.close()
+		execute('chmod a+x %s' % runscript, verbose, pretend)
+
+		if symlinkdir != None:
+			execute('ln -f -s %s %s' % (runscript, symlinkdir), verbose, pretend)
+
+		genericscript = '%s/bin/rungeneric.%s' % (config['difxbase'], label)
+		
+		out = open(genericscript, 'w')
+
+		out.write('#!/bin/bash\n\n')
+		out.write('. %s\n' % setupFile)
+		out.write('$@\n')
+		out.close()
+		execute('chmod a+x %s' % genericscript, verbose, pretend)
+
+		if symlinkdir != None:
+			execute('ln -f -s %s %s' % (genericscript, symlinkdir), verbose, pretend)
+
+		out = open(setupFile, 'w')
+		
+		out.write('#!/bin/bash\n\n')
+		out.write('export DIFX_VERSION=%s\n\n' % config['version'])
+		out.write('export DIFX_LABEL=%s\n\n' % label)
+		out.write('# DiFX setup file automatically generated by difxbuild\n\n')
+		out.write('DIFX_PROMPT_EXTRA=""\n')
+		out.write('HWPLATFORM=`uname -m`\n')
+		out.write('\n')
+		if not independentArchs:
+			out.write('export DIFX_ARCH_ROOT=%s/${HWPLATFORM}\n' % config['difxbase'])
+		m = 0
+		for arch in platforms.keys():
+			if ipproot[arch] == 'none':
+				ipproot[arch] = ''
+
+			if m > 0:
+				out.write('el')
+			out.write('if [[ ${HWPLATFORM} = "%s" ]]; then\n' % arch)
+			out.write('  export IPPROOT=%s\n' % ipproot[arch])
+			if arch in ['x86_64']:
+				out.write('  export DIFXBITS=64\n')
+				out.write('  export IPPARCH=intel64\n')
+			elif arch in ['i386', 'i686']:
+				out.write('  export DIFXBITS=32\n')
+				out.write('  export IPPARCH=ia32\n')
+			n = 0
+			for plat in platforms[arch]:
+				if n == 0:
+					out.write('  if')
+				else:
+					out.write('  elif')
+				n += 1
+				out.write(' %s; then\n' % plat[1])
+				if independentArchs:
+					out.write('    export DIFX_ARCH_ROOT=%s/${HWPLATFORM}-%s\n' % (config['difxbase'], plat[0]))
+				out.write('    export DIFXROOT=%s-%s\n' % (config['root'], plat[0]))
+				out.write('    DIFX_PROMPT_EXTRA="${DIFX_PROMPT_EXTRA} %s"\n' % plat[0])
+			if arch == primaryarch:
+				if n > 0:
+					out.write('  else\n')
+					if independentArchs:
+						out.write('    export DIFX_ARCH_ROOT=%s/${HWPLATFORM}-0\n' % config['difxbase'])
+					out.write('    export DIFXROOT=%s\n' % config['root'])
+					out.write('  fi\n')
+				else:
+					if independentArchs:
+						out.write('  export DIFX_ARCH_ROOT=%s/${HWPLATFORM}-0\n' % config['difxbase'])
+					out.write('  export DIFXROOT=%s\n' % config['root'])
+			else:
+				out.write('  fi\n')
+			if pyPath.has_key(arch):
+				out.write('  export PYTHONPATH=%s:%s/lib/python\n' % (pyPath[arch], config['root']))
+			m += 1
+					
+		out.write('fi\n')
+		out.write('export DIFX_SRC=%s/src\n' % config['root'])
+		out.write('export X11LIBS=-lX11\n')
+		if config.has_key('calcserver'):
+			calcserver = config['calcserver']
+		else:
+			calcserver = config['headnode']
+		out.write('export CALC_SERVER=%s\n' % calcserver)
+		out.write('export DIFX_HEAD_NODE=%s\n' % config['headnode'])
+		out.write('export DIFX_BASE=%s\n' % config['difxbase'])
+		if config.has_key('cflags'):
+			cflags = config['cflags']
+		else:
+			cflags = '-O2 -Wall -march=core2'
+		out.write('export CFLAGS="%s"\n' % cflags)
+		out.write('export CXXFLAGS="%s"\n' % cflags)
+		if independentArchs:
+			out.write('export MPICXX=mpicxx\n')
+		else:
+			out.write('export MPICXX=${DIFX_ARCH_ROOT}/bin/mpicxx\n')
+		out.write('export PKG_CONFIG_PATH=${DIFXROOT}/lib/pkgconfig:${DIFX_ARCH_ROOT}/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/lib/pkgconfig\n')
+		out.write('export MARK5_DIR_PATH=${DIFX_BASE}/directories\n')
+		out.write('export PGPLOT_DIR=${DIFX_ARCH_ROOT}/pgplot\n')
+		out.write('export DIFX_MESSAGE_GROUP=%s\n' % difxMessageGroup)
+		out.write('export DIFX_MESSAGE_PORT=%d\n' % difxMessagePort)
+		if len(platformhostsStr) > 0:
+			out.write('export PLATFORM_HOSTS=%s\n' % platformhostsStr)
+
+		if config.has_key('svn'):
+			out.write('export DIFX_SVN_VERSION=%s' % config['svn'])
+		else:
+			out.write('unset DIFX_SVN_VERSION')
+
+		out.write('\n')
+		out.write('export PATH=%s./:%s:~/bin:/bin:/usr/bin%s\n' % (prepathExtra, execPath, pathExtra))
+		out.write('export LD_LIBRARY_PATH=%s%s%s\n' % (preldExtra, ldPath, ldExtra))
+
+		for e in env:
+			out.write('export %s=%s\n' % (e[0], e[1]))
+
+		out.write("alias src='cd ${DIFX_SRC}'\n")
+		out.write("alias bld='cd ${DIFXROOT}/build'\n")
+
+		if config.has_key('sched'):
+			if config['sched'][0].upper() in ['1', 'Y', 'T']:
+				out.write('export SCHED=${DIFX_ARCH_ROOT}/sched\n')
+
+		out.write('export PS1="\\u@\\h %s$DIFX_PROMPT_EXTRA \\W> "\n' % label)
+
+		out.write("\nif [[ ${1: -9} == difxbuild ]]; then $@; fi  # this must be the last statement in the file\n")
+		out.close()
+
+
+		for e in ['']:
+			execute('rm -f %s/bin/%s.%s%s' % (config['difxbase'], setupFileName, label, e), verbose, pretend)
+			execute('ln -f -s %s%s %s/bin/%s.%s%s' % (setupFile, e, config['difxbase'], setupFileName, label, e), verbose, pretend)
+
+
+		# copy bootstrap file for future reference
+		execute('cp %s %s/bootstrap/"%s.%s.%s"' % (params['ConfigFile'], config['difxbase'], params['ConfigFile'].split('/')[-1], asctime(), version), verbose, pretend)
+		# copy setup file for future reference
+		execute('cp %s %s/bootstrap/"%s.%s.%s"' % (setupFile, config['difxbase'], setupFile.split('/')[-1], asctime(), version), verbose, pretend)
+
+		if isfile('%s/.openmpi/mca-params.conf' % environ['HOME']):
+			print '*** Warning: you have a .openmpi/mca-params.conf file in your home directory.'
+			print '*** This may interfere with platform-wide mca file(s) installed with difxbuild.'
+
+		print '\nBootstrap complete.  Now source %s and continue with svn.\n' % setupFile
+
+
+def svnupdate(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
+		return
+	srcDir = environ['DIFX_SRC'] + '/'
+	if not isdir(srcDir):
+		execute('mkdir -p %s' % srcDir, verbose, pretend);
+
+	updatePaths = ''
+
+	badRepositories = []
+
+	if environ.has_key('DIFX_SVN_VERSION'):
+		svnRev = '-r %s' % environ['DIFX_SVN_VERSION']
+	else:
+		svnRev = ''
+
+	if environ.has_key('SVN_USER'):
+		user = '--username %s' % environ['SVN_USER']
+	else:
+		user = ''
+	
+	for comp in comps:
+		path = srcDir + comp[0] + '/'
+		if verbose > 0:
+			print 'Looking in: %s' % path
+		if isdir(path):
+			url = popen('svn info %s | grep URL' % path, 'r').readlines()[0].strip().split()[-1]
+
+			if url == 'https://svn.atnf.csiro.au/difx/applications/gui/trunk/guiServer':
+				chdir(srcDir + '/' + comp[0])
+				cmd = 'svn switch %s %s' % (user, comp[1])
+				execute(cmd, verbose, pretend)
+
+			else:
+				updatePaths = updatePaths + ' ' + comp[0]
+				if url != comp[1]:
+					badRepositories.append('%s %s' % (comp[0], path))
+		else:
+			chdir(srcDir)
+			cmd = 'svn co %s %s %s %s' % (svnRev, user, comp[1], comp[0])
+			execute(cmd, verbose, pretend)
+	
+	if len(badRepositories) > 0:
+		print 'Error: the following components\' svn URLS don\'t match:'
+		for b in badRepositories:
+			print '  %s' % b
+		print 'Please remove these directories and try again taking care to preserve any local changes you may have made'
+	elif updatePaths != '':
+		chdir(srcDir)
+		cmd = 'svn update %s %s %s' % (svnRev, user, updatePaths)
+		execute(cmd, verbose, pretend)
+
+def fromtar(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
+		return
+	srcDir = environ['DIFX_SRC'] + '/'
+	if not isdir(srcDir):
+		execute('mkdir -p %s' % srcDir, verbose, pretend);
+	chdir(srcDir)
+
+	distDir = environ['DIFXROOT'] + '/dist/'
+	if not isdir(distDir):
+		print 'Error: %s does not exist so no dist files can be found.' % distDir
+		exit(0)
+
+	for comp in comps:
+		tars = glob('%s/%s*.tar.gz' % (distDir, comp[0]))
+		if len(tars) > 0:
+			tars.sort()
+			tarFile = tars[-1]
+			print 'Found %d matches for %s.  Installing %s' % (len(tars), comp[0], tarFile)
+			cmd = 'tar zxf %s' % tarFile
+			execute('rm -rf %s' % comp[0], verbose, pretend)
+			execute(cmd, verbose, pretend)
+			newDir = tarFile[:-7].split('/')[-1]
+			execute('ln -f -s %s %s' % (newDir, comp[0]), verbose, pretend)
+		else:
+			print 'No matching .tar.gz files found in %s for %s' % (distDir, comp[0])
+
+
+def debian(origComps, params, args, verbose, pretend):
+	debComponents = 'libexpat1-dev autoconf automake pkg-config libtool-bin subversion g++ gfortran libx11-dev libgsl2 libgsl-dev libfftw3-bin libfftw-dev libudev-dev bison flex openssh-server'
+	print 'Using apt to install some things.  Your sudo password may be needed.'
+	cmd = 'sudo apt-get install %s' % debComponents
+	execute(cmd, verbose, pretend)
+
+def svnstatus(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
+		return
+	srcDir = environ['DIFX_SRC'] + '/'
+	if not isdir(srcDir):
+		print 'Top level source directory %s does not exist.\n' % srcDir
+		
+	for comp in comps:
+		path = srcDir + comp[0] + '/'
+		if isdir(path):
+			chdir(path)
+			cmd = 'svn status -q'
+			execute(cmd, verbose, pretend)
+
+def autotool(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
+		return
+	srcDir = environ['DIFX_SRC'] + '/'
+	okComps = checkDirs(comps, srcDir, args)
+	if verbose > 1:
+		print 'Autotooling: %s' % componentList(okComps)
+	for comp in okComps:
+		path = srcDir + comp[0] + '/'
+		chdir(path)
+		buildFlags = comp[2]
+		if 'aclocal' in buildFlags:
+			execute('aclocal', verbose, pretend)
+		if 'aclocalm4' in buildFlags:
+			execute('aclocal -I m4', verbose, pretend)
+		if 'libtoolize' in buildFlags:
+			execute('libtoolize --copy --force', verbose, pretend)
+		if 'autoconf' in buildFlags:
+			execute('autoconf', verbose, pretend)
+		if 'autoheader' in buildFlags:
+			execute('autoheader', verbose, pretend)
+		if 'automake' in buildFlags:
+			execute('automake --add-missing --copy', verbose, pretend)
+
+def build(origComps, params, args, verbose, pretend):
+	if 'none' in args:
+		comps = []
+	else:
+		comps = filterComponents(origComps, args)
+		if len(comps) == 0:
+			print 'No components selected.  Did you mean to append "all" to the command line?\n'
+			return
+	buildDir = environ['DIFXROOT'] + '/build/'
+	pkgDir = environ['DIFXROOT'] + '/lib/pkgconfig/'
+	bldLog = environ['DIFXROOT'] + '/buildlog'
+	srcDir = environ['DIFX_SRC'] + '/'
+	okComps = checkFiles(comps, srcDir, 'configure', args)
+	archRoot = environ['DIFX_ARCH_ROOT'] + '/'
+	haspgplot = isfile(archRoot + 'pgplot/libpgplot.a')	# not the most robust test...
+	if len(okComps) > 0 or 'none' in args:
+		if not isdir(pkgDir):
+			execute('mkdir -p %s' % pkgDir, verbose, pretend)
+		if not isfile(pkgDir+'/ipp.pc') and len(environ['IPPROOT']) > 0:
+			if not 'noipp' in args:
+				if verbose > 1:
+					print 'Generating ipp.pc'
+				chdir(pkgDir)
+				genipppc(environ['IPPROOT'])
+		if verbose > 1:
+			print 'Building: %s' % componentList(okComps)
+		if not isdir(buildDir):
+			execute('mkdir -p %s' % buildDir, verbose, pretend)
+		for comp in okComps:
+			srcPath = srcDir + comp[0] + '/'
+			if comp[0] == 'gui':	# an oddball special case
+				jarDir = '%s/jar' % environ['DIFXROOT']
+				if not isdir(jarDir):
+					cmd = 'mkdir -p %s' % jarDir
+					execute(cmd, verbose, pretend)
+				cmd = 'cp -f %s/gui/dist/*.jar %s' % (srcPath, jarDir)
+				execute(cmd, verbose, pretend)
+				cmd = 'cp -rf %s/gui/dist/lib %s' % (srcPath, jarDir)
+				execute(cmd, verbose, pretend)
+				jarFile = 'gui.jar' # the jar file to run
+				startscript = '%s/bin/difxgui' % environ['DIFXROOT']
+				f = open(startscript, 'w')
+				f.write('#!/bin/env sh\njava -jar %s/jar/%s\n' % (environ['DIFXROOT'], jarFile))
+				f.close()
+				cmd = 'chmod +x %s' % startscript
+				execute(cmd, verbose, pretend)
+				continue
+			buildPath = buildDir + comp[0] + '/'
+			buildFlags = comp[2]
+			if 'pgplot' in buildFlags and not haspgplot:
+				print 'Not building %s because pgplot was not successfully built' % comp[0]
+				continue
+			if not isdir(buildPath):
+				execute('mkdir -p %s' % buildPath, verbose, pretend)
+			chdir(buildPath)
+			if not 'noconf' in args:
+				configureExtras = ''
+				if 'mpicxx' in buildFlags:
+					configureExtras += ' CXX=${MPICXX}'
+				if 'spice' in buildFlags:
+					spiceRoot = archRoot + 'cspice/'
+					if isfile(spiceRoot+'lib/cspice.a'):
+						print 'Spice library found!'
+						configureExtras += ' --with-spice-root=' + spiceRoot
+					else:
+						print 'Spice library %slib/cspice.a not found' % spiceRoot
+						if 'strict' in args:
+							print 'Bailing'
+							exit(2)
+						else:
+							print 'Continuing anyway'
+				if 'CFLAGS' in environ:
+					envCFLAGS = environ['CFLAGS']
+				else:
+					envCFLAGS = ''
+				if 'CXXFLAGS' in environ:
+					envCXXFLAGS = environ['CXXFLAGS']
+				else:
+					envCXXFLAGS = ''
+				configureExtras += " CFLAGS='-I%s/include %s' CXXFLAGS='-I%s/include %s' LIBS='-L%s/lib'" % (environ['DIFX_ARCH_ROOT'], envCFLAGS, environ['DIFX_ARCH_ROOT'], envCXXFLAGS, environ['DIFX_ARCH_ROOT'])
+				cmd = '%s/configure --prefix=%s%s' % (srcPath, environ['DIFXROOT'], configureExtras)
+				execute(cmd, verbose, pretend)
+			
+			# building mpifxcorr sometimes fails if done in parallel
+			if comp[0] == 'mpifxcorr':
+				cpus = 1
+			else:
+				cpus = numMakeCpus
+			
+			v = execute('make -j %d' % cpus, verbose, pretend)
+			if v == 0:
+				v = execute('make install', verbose, pretend)
+			if v != 0:
+				print '\n*** Error building %s ***\n' % comp[0]
+				return 
+			chdir(srcDir+comp[0])
+			if(getcwd() == srcDir+comp[0]):
+				# likely an svn dir
+				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  `svn info | grep "Revision:"` >> %s' % (comp[0], bldLog), verbose, pretend)
+			else:
+				# maybe a versioned component
+				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  %s >> %s' % (comp[0], getcwd(), bldLog), verbose, pretend)
+
+def makedist(origComps, params, args, verbose, pretend):
+	if 'none' in args:
+		comps = []
+	else:
+		comps = filterComponents(origComps, args)
+		if len(comps) == 0:
+			print 'No components selected.  Did you mean to append "all" to the command line?\n'
+			return
+	buildDir = environ['DIFXROOT'] + '/build/'
+	pkgDir = environ['DIFXROOT'] + '/lib/pkgconfig/'
+	bldLog = environ['DIFXROOT'] + '/buildlog'
+	srcDir = environ['DIFX_SRC'] + '/'
+	distDir = environ['DIFXROOT'] + '/dist/'
+	okComps = checkFiles(comps, srcDir, 'configure', args)
+	archRoot = environ['DIFX_ARCH_ROOT'] + '/'
+	haspgplot = isfile(archRoot + 'pgplot/libpgplot.a')	# not the most robust test...
+	if len(okComps) > 0 or 'none' in args:
+		if not isdir(distDir):
+			execute('mkdir -p %s' % distDir, verbose, pretend)
+		if not isdir(pkgDir):
+			execute('mkdir -p %s' % pkgDir, verbose, pretend)
+		if not isfile(pkgDir+'/ipp.pc') and len(environ['IPPROOT']) > 0:
+			if not 'noipp' in args:
+				if verbose > 1:
+					print 'Generating ipp.pc'
+				chdir(pkgDir)
+				genipppc(environ['IPPROOT'])
+		if verbose > 1:
+			print 'Packaging: %s' % componentList(okComps)
+		if not isdir(buildDir):
+			execute('mkdir -p %s' % buildDir, verbose, pretend)
+		for comp in okComps:
+			srcPath = srcDir + comp[0] + '/'
+			buildPath = buildDir + comp[0] + '/'
+			buildFlags = comp[2]
+			if 'nodist' in buildFlags:
+				print 'Not packaging %s because of the nodist flag'
+				continue
+			if 'pgplot' in buildFlags and not haspgplot:
+				print 'Not packaging %s because pgplot was not successfully built' % comp[0]
+				continue
+			if not isdir(buildPath):
+				execute('mkdir -p %s' % buildPath, verbose, pretend)
+			chdir(buildPath)
+			cmd = 'rm -f %s*.tar.gz' % comp[0]
+			execute(cmd, verbose, pretend)
+			if not 'noconf' in args:
+				configureExtras = ''
+				if 'mpicxx' in buildFlags:
+					configureExtras += ' CXX=${MPICXX}'
+				if 'spice' in buildFlags:
+					spiceRoot = archRoot + 'cspice/'
+					if isfile(spiceRoot+'lib/cspice.a'):
+						print 'Spice library found!'
+						configureExtras += ' --with-spice-root=' + spiceRoot
+					else:
+						print 'Spice library %slib/cspice.a not found' % spiceRoot
+						if 'strict' in args:
+							print 'Bailing'
+							exit(2)
+						else:
+							print 'Continuing anyway'	
+				cmd = '%s/configure --prefix=${DIFXROOT}%s' % (srcPath, configureExtras)
+				execute(cmd, verbose, pretend)
+			
+			cmd = 'make dist'
+			if environ['DIFX_VERSION'] == 'DIFX-DEVEL':
+				svnrev = popen('svn info %s/%s | grep "Revision:"' % (srcDir, comp[0])).readline().strip().split()[-1]
+				cmd += ' distdir=%s-r%s' % (comp[0], svnrev)
+			v = execute(cmd, verbose, pretend)
+			if v != 0:
+				print '\n*** Error packaging %s ***\n' % comp[0]
+				return 
+			execute('mv -f *.tar.gz %s' % distDir, verbose, pretend)
+			chdir(srcDir+comp[0])
+			
+def rebuild(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
+		return
+	buildDir = environ['DIFXROOT'] + '/build/'
+	srcDir = environ['DIFX_SRC'] + '/'
+	bldLog = environ['DIFXROOT'] + '/buildlog'
+	okComps = checkFiles(comps, buildDir, 'Makefile', args)
+	if verbose > 1:
+		print 'Rebuilding: %s' % componentList(okComps)
+	for comp in okComps:
+		if comp[0] == 'gui':	# an oddball special case
+			jarDir = '%s/jar' % environ['DIFXROOT']
+			if not isdir(jarDir):
+				cmd = 'mkdir -p %s' % jarDir
+				execute(cmd, verbose, pretend)
+			cmd = 'cp -f %s/%s/gui/dist/*.jar %s' % (srcDir, comp[0], jarDir)
+			execute(cmd, verbose, pretend)
+			cmd = 'cp -rf %s/gui/dist/lib %s' % (srcPath, jarDir)
+			execute(cmd, verbose, pretend)
+			continue;
+		buildPath = buildDir + comp[0] + '/'
+		if isdir(buildPath):
+			chdir(buildPath)
+
+			# building mpifxcorr sometimes fails if done in parallel
+			if comp[0] == 'mpifxcorr':
+				cpus = 1
+			else:
+				cpus = numMakeCpus
+			
+			v = execute('make -j %d' % cpus, verbose, pretend)
+			if v == 0:
+				v = execute('make install', verbose, pretend)
+			if v != 0:
+				print '\n*** Error rebuilding %s ***\n' % comp[0]
+				return
+			chdir(srcDir+comp[0])
+			if(getcwd() == srcDir+comp[0]):
+				# likely an svn dir
+				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  `svn info | grep "Changed Rev"` >> %s' % (comp[0], bldLog), verbose, pretend)
+			else:
+				# maybe a versioned component
+				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  %s >> %s' % (comp[0], getcwd(), bldLog), verbose, pretend)
+			
+def dist(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
+		return
+	buildDir = environ['DIFXROOT'] + '/build/'
+	okComps = checkFiles(comps, buildDir, 'Makefile', args)
+	if verbose > 1:
+		print 'Rebuilding: %s' % componentList(okComps)
+	distDir = environ['DIFXROOT'] + '/dist/'
+	if not isdir(distDir):
+		execute('mkdir -p %s' % distDir, verbose, pretend)
+	for comp in okComps:
+		buildPath = buildDir + comp[0] + '/'
+		if isdir(buildPath):
+			chdir(buildPath)
+			execute('rm -f *.tar.gz', verbose, pretend)
+			cmd = 'make dist'
+			v = execute(cmd, verbose, pretend)
+			if v != 0:
+				print '\n*** make dist error for %s ***\n' % comp[0]
+				return
+			execute('mv -f *.tar.gz %s' % distDir, verbose, pretend)
+
+def pbuild(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected for parallel rebuild'
+		return
+	verb = ''
+	for i in range(1, verbose):
+		verb += ' -v'
+	compStr = ''
+	for c in comps:
+		compStr += (' %s' % c[0])
+	cmd = 'mpirun -host localhost,%s %s/setup_difx %s %s rebuild %s' % (environ['PLATFORM_HOSTS'], environ['DIFXROOT'], argv[0], verb, compStr)
+	execute(cmd, verbose, pretend)
+			
+def clean(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	buildDir = environ['DIFXROOT'] + '/build/'
+	okComps = checkFiles(comps, buildDir, 'Makefile', args)
+	okComps.reverse()	# best done in reverse for reasons of dependency
+	if verbose > 1:
+		print 'make clean in: %s' % componentList(okComps)
+	for comp in okComps:
+		buildPath = buildDir + comp[0] + '/'
+		if isdir(buildPath):
+			chdir(buildPath)
+			if 'distclean' in args:
+				execute('make distclean', verbose, pretend)
+			else:
+				execute('make clean', verbose, pretend)
+
+def pclean(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected for parallel clean'
+		return
+	verb = ''
+	for i in range(1, verbose):
+		verb += ' -v'
+	compStr = ''
+	for c in comps:
+		compStr += (' %s' % c[0])
+	cmd = 'mpirun -host localhost,%s %s/setup_difx %s %s clean %s' % (environ['PLATFORM_HOSTS'], environ['DIFXROOT'], argv[0], verb, compStr)
+	execute(cmd, verbose, pretend)
+			
+def uninstall(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	buildDir = environ['DIFXROOT'] + '/build/'
+	okComps = checkFiles(comps, buildDir, 'Makefile', args)
+	okComps.reverse()	# best done in reverse for reasons of dependency
+	if verbose > 1:
+		print 'Uninstalling: %s' % componentList(okComps)
+	for comp in okComps:
+		buildPath = buildDir + comp[0] + '/'
+		if isdir(buildPath):
+			chdir(buildPath)
+			execute('make uninstall', verbose, pretend)
+
+def remove(origComps, params, args, verbose, pretend):
+	print 'Feature not yet implemented'
+
+def ftpFile(url, tarDir, srcFile, args, verbose, pretend):
+	if isfile(tarDir + srcFile):
+		print '%s file already downloaded.  Will not download again' % srcFile
+		return 0
+	wgetOptions = ''
+	if 'nopassive' in args:
+		wgetOptions = wgetOptions + ' --no-passive-ftp'
+	else:
+		print '* NOTE: if FTP hangs, try again with the nopassive argument added to the difxbuild command line'
+	if not isdir(tarDir):
+		execute('mkdir -p %s' % tarDir, verbose, pretend)
+	chdir(tarDir)
+	execute('wget %s %s' % (wgetOptions, url), verbose, pretend)
+	fn = url.split('/')[-1]
+	if not isfile(fn):
+		return -1
+	else:
+		return 0
+
+def autotools(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	difxBase = environ['DIFX_BASE'] + '/'
+	tarDir = difxBase + 'tar/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	# m4
+	srcFile = 'm4-%s.tar.xz' % m4Version
+	url = 'http://ftp.gnu.org/gnu/m4/%s' % srcFile
+	ftpFile(url, tarDir, srcFile, args, verbose, pretend)
+	chdir(archSrcDir)
+	execute('xz -d -c %s/%s | tar x' % (tarDir, srcFile), verbose, pretend)
+	chdir('%s/m4-%s' % (archSrcDir, m4Version))
+	execute('configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j%d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+	# autoconf
+	srcFile = 'autoconf-%s.tar.xz' % autoconfVersion
+	url = 'http://ftp.gnu.org/gnu/autoconf/%s' % srcFile
+	ftpFile(url, tarDir, srcFile, args, verbose, pretend)
+	chdir(archSrcDir)
+	execute('xz -d -c %s/%s | tar x' % (tarDir, srcFile), verbose, pretend)
+	chdir('%s/autoconf-%s' % (archSrcDir, autoconfVersion))
+	execute('configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j%d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+	# automake
+	srcFile = 'automake-%s.tar.xz' % automakeVersion
+	url = 'http://ftp.gnu.org/gnu/automake/%s' % srcFile
+	ftpFile(url, tarDir, srcFile, args, verbose, pretend)
+	chdir(archSrcDir)
+	execute('xz -d -c %s/%s | tar x' % (tarDir, srcFile), verbose, pretend)
+	chdir('%s/automake-%s' % (archSrcDir, automakeVersion))
+	execute('configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j%d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+	# libtool
+	srcFile = 'libtool-%s.tar.xz' % libtoolVersion
+	url = 'http://ftp.gnu.org/gnu/libtool/%s' % srcFile
+	ftpFile(url, tarDir, srcFile, args, verbose, pretend)
+	chdir(archSrcDir)
+	execute('xz -d -c %s/%s | tar x' % (tarDir, srcFile), verbose, pretend)
+	chdir('%s/libtool-%s' % (archSrcDir, libtoolVersion))
+	execute('configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j%d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+	
+	# pkg-config
+	srcFile = 'pkg-config-%s.tar.gz' % pkgconfigVersion
+	url = 'http://pkgconfig.freedesktop.org/releases/%s' % srcFile
+	ftpFile(url, tarDir, srcFile, args, verbose, pretend)
+	chdir(archSrcDir)
+	execute('tar zxf %s/%s' % (tarDir, srcFile), verbose, pretend)
+	chdir('%s/pkg-config-%s' % (archSrcDir, pkgconfigVersion))
+	execute('configure --prefix=%s --with-internal-glib' % archDir, verbose, pretend)
+	execute('make -j%d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+
+def spice(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	srcFile = 'cspice.tar.Z'
+	if arch in ['x86_64']:
+		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_64bit/packages/%s' % srcFile
+	elif arch in ['i386', 'i686']:
+		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_32bit/packages/%s' % srcFile
+	difxBase = environ['DIFX_BASE'] + '/'
+	tarDir = difxBase + 'tar/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+
+	# get file
+	ftpFile(spiceUrl, tarDir, srcFile, args, verbose, pretend)
+	# untar file
+	if not isdir(archDir):
+		execute('mkdir -p %s' % archDir, verbose, pretend)
+	chdir(archDir)
+	execute('tar zxvf %s/%s' % (tarDir, srcFile), verbose, pretend)
+
+def gpstk(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	gpstkSrcFile = 'v%s.tar.gz' % gpstkVersion
+	gpstkUrl = 'https://github.com/SGL-UT/GPSTk/archive/%s' % gpstkSrcFile
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(gpstkUrl, tarDir, gpstkSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	gpstkSrcDir = '%s/GPSTk-%s' % (archSrcDir, gpstkVersion)
+	if isdir(gpstkSrcDir):
+		print 'Stopping because %s exists' % gpstkSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, gpstkSrcFile), verbose, pretend)
+
+	chdir(gpstkSrcDir)
+	print '\nNow building gpstk.  THIS CAN TAKE A LONG TIME!\n'
+	execute('/bin/sh build.sh -e -i %s' % archDir, verbose, pretend)
+
+
+	if False:
+		chdir(gpstkSrcDir)
+		execute('jam -q -j%d -sPREFIX=%s' % (numMakeCpus, archDir), verbose, pretend)
+		execute('jam -sPREFIX=%s install' % archDir, verbose, pretend)
+
+		# gpstk seems to not install GNSSconstants.hpp automatically.  Do that forcefully here
+		# execute('cp src/GNSSconstants.hpp %s/include/gpstk' % archDir, verbose, pretend)
+
+	# make a .pc file for later convenience
+	if not isdir('%s/lib/pkgconfig' % archDir):
+		execute('mkdir -p %s/lib/pkgconfig' % archDir, verbose, pretend)
+	out = open('%s/lib/pkgconfig/gpstk.pc' % archDir, 'w')
+	out.write('prefix=%s\n' % archDir)
+	out.write('exec_prefix=${prefix}\n')
+	out.write('libdir=${exec_prefix}/lib\n')
+	out.write('includedir=${prefix}/include\n\n')
+	out.write('Name: gpstk\n')
+	out.write('Description: GPS Toolkit\n')
+	out.write('Requires:\n')
+	out.write('Version: %s\n' % gpstkVersion)
+	out.write('Libs: -L${libdir} -lgpstk\n')
+	out.write('Cflags: -I${includedir}\n')
+	out.close()
+
+def sked(origComps, params, args, verbose, pretend):
+
+	if not len(popen('which gfortran').readlines()) > 0:
+		print 'sked compilation currently (and maybe ultimately) only works on gfortran systems'
+		exit(0)
+
+	arch = platform.machine()
+	skedSrcFile = 'sked-%s.tar.gz' % skedVersion
+	skedUrl = 'http://www.aoc.nrao.edu/~wbrisken/%s' % skedSrcFile
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(skedUrl, tarDir, skedSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	skedSrcDir = '%s/sked-%s' % (archSrcDir, skedVersion)
+	if isdir(skedSrcDir):
+		print 'Stopping because %s exists' % skedSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, skedSrcFile), verbose, pretend)
+	chdir(skedSrcDir)
+	execute('./configure --prefix=%s F77=gfortran' % archDir, verbose, pretend)
+	execute('make -j %d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+
+def sched(origComps, params, args, verbose, pretend):
+
+	if not len(popen('which gfortran').readlines()) > 0:
+		print 'sched compilation currently (and maybe ultimately) only works on gfortran systems'
+		exit(0)
+		
+	arch = platform.machine()
+	schedSrcFile = 'sched-%s%s.tar.gz' % (schedVersion, schedUpdate)
+	schedUrl = 'ftp://ftp.aoc.nrao.edu/pub/sched/sched_%s/%s' % (schedVersion, schedSrcFile)
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	tarDir = difxBase + 'tar/'
+	if environ['SCHED'] != '%s/sched' % archDir:
+		print 'Error: make sure env var SCHED is set to %s/sched first!' % archDir
+
+	spiceDownloadFile = 'toolkit.tar.Z'
+	if arch == 'x86_64':
+		bits = '64'
+	else:
+		bits = '32'
+	spiceUrl = 'http://naif.jpl.nasa.gov/pub/naif/toolkit//FORTRAN/PC_Linux_gfortran_%sbit/packages/%s' % (bits, spiceDownloadFile)
+	spiceSrcFile = 'toolkit%s.tar.Z' % bits
+		
+	# get files
+	tarOptions = ''
+	rv = ftpFile(schedUrl, tarDir, schedSrcFile, args, verbose, pretend)
+	if rv < 0:
+		tarOptions = '--strip-components 1'
+		schedSrcFile = 'sched-%s%s.tgz' % (schedVersion, schedUpdate)
+		schedUrl = 'ftp://ftp.aoc.nrao.edu/pub/sched/sched-%s/%s' % (schedVersion, schedSrcFile)
+		rv = ftpFile(schedUrl, tarDir, schedSrcFile, args, verbose, pretend)
+		if rv < 0:
+			print 'Cannot download sched'
+			exit(0)
+	ftpFile(spiceUrl, tarDir, spiceSrcFile, args, verbose, pretend)
+	if not isfile(tarDir + spiceSrcFile):
+		execute('mv %s/%s %s/%s' % (tarDir, spiceDownloadFile, tarDir, spiceSrcFile), verbose, pretend)
+	for lib in ['spicelib', 'support']:
+		execute('tar zxfO %s/%s toolkit/lib/%s.a > %s/lib/%s_gfortran.a' % (tarDir, spiceSrcFile, lib, archDir, lib), verbose, pretend)
+
+	schedDir = '%s/sched-%s' % (archDir, schedVersion)
+	if isdir(schedDir):
+		print 'Stopping because %s exists' % schedDir
+		return
+	execute('mkdir -p %s' % schedDir, verbose, pretend)
+
+	if islink('%s/sched' % archDir) and isdir('%s/sched' % archDir):
+		execute('rm %s/sched' % archDir, verbose, pretend)
+	if not isfile('%s/sched' % archDir):
+		execute('ln -f -s %s %s/sched' % (schedDir, archDir), verbose, pretend)
+	
+	chdir(schedDir)
+	execute('tar zxf %s/%s %s' % (tarDir, schedSrcFile, tarOptions), verbose, pretend)
+	chdir(schedDir + '/src')
+
+	# make sed expression that converts Makefile.master into Makefile
+	sedCommands = \
+		"-e 's/#ARCHSED/ARCH = LINUX/' " + \
+		"-e 's/#FCSED/FC = gfortran -Wall -fimplicit-none -fno-backslash/' " + \
+		"-e 's/#XLDSED/XLD = -L\\${DIFX_ARCH_ROOT}\\/lib -L\\/usr\\/lib -lX11/' " + \
+		"-e 's/#LDPGPLOTSED/LDPGPLOT = -L\\${DIFX_ARCH_ROOT}\\/lib -L\\/usr\\/lib -lpgplot/' " + \
+		"-e 's/#JPL_SRCS_SED/JPL_SRCS = \\$(wildcard Jpl\\/*.f)/' " + \
+		"-e 's/#SAT_SRCS_SED/SAT_SRCS = \\$(wildcard Sat\\/*.f)/' " + \
+		"-e 's/#SATLDSED/SATLD = \\${DIFX_ARCH_ROOT}\\/lib\\/spicelib_gfortran.a \\${DIFX_ARCH_ROOT}\\/lib\\/support_gfortran.a -lm/'"
+	execute('sed %s <Makefile.master >Makefile' % sedCommands, verbose, pretend)
+	execute('make', verbose, pretend)
+	execute('cp %s/bin/sched %s/bin' % (schedDir, archDir), verbose, pretend)
+	
+def pyx(origComps, params, args, verbose, pretend):
+	if not environ.has_key('PYTHONPATH'):
+		print 'Need PYTHONPATH env var set.'
+		return
+	pythonPath = environ['PYTHONPATH'].split(':')[0]
+	if not isdir(pythonPath):
+		execute('mkdir -p %s' % pythonPath, verbose, pretend)
+	arch = platform.machine()
+	pyxSrcFile = 'PyX-%s.tar.gz' % pyxVersion
+	pyxUrl = 'http://sourceforge.net/projects/pyx/files/pyx/%s/%s' % (pyxVersion, pyxSrcFile)
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
+	tarDir = difxBase + 'tar/'
+	ftpFile(pyxUrl, tarDir, pyxSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	pyxSrcDir = '%s/PyX-%s' % (archSrcDir, pyxVersion)
+	if isdir(pyxSrcDir):
+		print 'Stopping because %s exists' % pyxSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, pyxSrcFile), verbose, pretend)
+	chdir(pyxSrcDir)
+	execute('python setup.py build', verbose, pretend)
+	if '64' in platform.machine():
+		execute('python setup.py install --prefix=%s/../../.. --install-lib=%s/../../../lib64' % (pythonPath, pythonPath), verbose, pretend)
+	else:
+		execute('python setup.py install --prefix=%s/../../..' % pythonPath, verbose, pretend)
+
+def psycopg(origComps, params, args, verbose, pretend):
+	if not environ.has_key('PYTHONPATH'):
+		print 'Need PYTHONPATH env var set.'
+		return
+	pythonPath = environ['PYTHONPATH'].split(':')[0]
+	if not isdir(pythonPath):
+		execute('mkdir -p %s' % pythonPath, verbose, pretend)
+	arch = platform.machine()
+	verParts = psycopgVersion.split('.')
+	psycopgSrcFile = 'psycopg2-%s.tar.gz' % psycopgVersion
+	psycopgUrl = 'http://initd.org/psycopg/tarballs/PSYCOPG-%s-%s/%s' % (verParts[0], verParts[1], psycopgSrcFile)
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(psycopgUrl, tarDir, psycopgSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	psycopgSrcDir = '%s/psycopg2-%s' % (archSrcDir, psycopgVersion)
+	if isdir(psycopgSrcDir):
+		print 'Stopping because %s exists' % psycopgSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, psycopgSrcFile), verbose, pretend)
+	chdir(psycopgSrcDir)
+	execute('%s setup.py build' % pythonProgram, verbose, pretend)
+	execute('%s setup.py install --prefix=%s/../../..' % (pythonProgram, pythonPath), verbose, pretend)
+
+def difxipp(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	if arch != 'x86_64':
+		print 'difxipp is only available for x86_64.'
+		return
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
+	difxBase = environ['DIFX_BASE'] + '/'
+
+	execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	chdir(archSrcDir)
+	if isdir('difxipp'):
+		chdir('difxipp')
+		execute('svn up', verbose, pretend)
+	else:
+		execute('svn co %s' % difxippUrl, verbose, pretend)
+		chdir('difxipp')
+
+	# get ipp version -- this is a bit fragile...
+	ippVersion = open('configure.ac').readline().split(',')[1].strip()[1:-1]
+	print '\nIPP version will be %s' % ippVersion
+	ippPrefix = '%sx86_64/ipp-%s' % (difxBase, ippVersion)
+	print '\nYou will want to put "ipproot = %s" in your .bootstrap files.\n' % ippPrefix
+
+	for cmd in ['aclocal', 'autoconf', 'automake -a -c', './configure --prefix=%s' % ippPrefix, 'make', 'make install']:
+		execute(cmd, verbose, pretend)
+
+def libevent(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	libeventSrcFile = 'libevent-%s-stable.tar.gz' % libeventVersion
+	libeventUrl = 'https://github.com/downloads/libevent/libevent/%s' % libeventSrcFile
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(libeventUrl, tarDir, libeventSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	libeventSrcDir = '%s/libevent-%s-stable' % (archSrcDir, libeventVersion)
+	if isdir(libeventSrcDir):
+		print 'Stopping because %s exists' % libeventSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, libeventSrcFile), verbose, pretend)
+	chdir(libeventSrcDir)
+	execute('./configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j %d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+def expat(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	expatSrcFile = 'expat-%s.tar.gz' % expatVersion
+	expatUrl = 'http://sourceforge.net/projects/expat/files/expat/%s/%s/download' % (expatVersion, expatSrcFile)
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(expatUrl, tarDir, expatSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	expatSrcDir = '%s/expat-%s' % (archSrcDir, expatVersion)
+	if isdir(expatSrcDir):
+		print 'Stopping because %s exists' % expatSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, expatSrcFile), verbose, pretend)
+	chdir(expatSrcDir)
+	execute('./configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j %d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+def libmicrohttpd(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	mhdSrcFile = 'libmicrohttpd-%s.tar.gz' % libmicrohttpdVersion
+	mhdUrl = 'http://ftp.gnu.org/gnu/libmicrohttpd/%s' % mhdSrcFile
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(mhdUrl, tarDir, mhdSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	mhdSrcDir = '%s/libmicrohttpd-%s' % (archSrcDir, libmicrohttpdVersion)
+	if isdir(mhdSrcDir):
+		print 'Stopping because %s exists' % mhdSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, mhdSrcFile), verbose, pretend)
+	chdir(mhdSrcDir)
+	execute('./configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j %d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+def pgplot(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
+	
+	opsys = platform.system().lower()
+	srcFile = 'pgplot%s.tar.gz' % pgplotVersion
+	pgplotUrl = 'ftp://ftp.astro.caltech.edu/pub/pgplot/%s' % srcFile
+	tarDir = difxBase + 'tar/'
+
+	# get file
+	ftpFile(pgplotUrl, tarDir, srcFile, args, verbose, pretend)
+	# untar source
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, srcFile), verbose, pretend)
+	# make dest dir
+	pgplotDir = archDir + '/pgplot'
+	if isdir(pgplotDir):
+		execute('rm -rf %s' % pgplotDir, verbose, pretend)
+	execute('mkdir -p %s' % pgplotDir, verbose, pretend)
+	chdir(pgplotDir)
+	# make drivers file
+	o = open('drivers.list', 'w')
+	o.write('  NUDRIV 0 /NULL      Null device (no output)                           Std F77\n')
+	#o.write('  PNDRIV 1 /PNG       Portable Network Graphics file                    C\n')
+	#o.write('  PNDRIV 2 /TPNG      Portable Network Graphics file - transparent background C\n')
+	o.write('  PSDRIV 1 /PS        PostScript printers, monochrome, landscape        Std F77\n')
+	o.write('  PSDRIV 2 /VPS       Postscript printers, monochrome, portrait         Std F77\n')
+	o.write('  PSDRIV 3 /CPS       PostScript printers, color, landscape             Std F77\n')
+	o.write('  PSDRIV 4 /VCPS      PostScript printers, color, portrait              Std F77\n')
+	o.write('  XWDRIV 1 /XWINDOW   Workstations running X Window System              C\n')
+	o.write('  XWDRIV 2 /XSERVE    Persistent window on X Window System              C\n')
+	o.close()
+	# generate makefile
+	execute('%s/pgplot/makemake %s/pgplot %s g77_gcc' % (archSrcDir, archSrcDir, opsys), verbose, pretend)
+	# modify makefile : remove bogus png.h req, optionally change g77 to gfortran, ...
+	execute('mv makefile makefile.orig', verbose, pretend)
+	# fixpng = "-e 's/pndriv.o : .\\/png.h .\\/pngconf.h .\\/zlib.h .\\/zconf.h/pndriv.o :/' -e 's/^XINCL=/XINCL=-I..\\/include /' -e 's/^LIBS=/LIBS=-L..\\/lib /'"
+	fixpng = ''
+	if len(popen('which gfortran').readlines()) > 0:
+		fixg77 = "-e 's/=g77/=gfortran/' -e 's/-u -Wall -fPIC -O/-ffixed-form -ffixed-line-length-none -u -Wall -fPIC -O/'"
+	else:
+		fixg77 = ""
+	execute('sed %s %s <makefile.orig >makefile' % (fixpng, fixg77), verbose, pretend)
+	# make fortran and c package
+	v = execute('make', verbose, pretend)
+	if v == 0:
+		execute('make cpg', verbose, pretend)
+	if v != 0:
+		print '\n*** Error building pgplot ***\n'
+		return 
+	linkDir = archDir + '/lib'
+	if not isdir(linkDir):
+		execute('mkdir -p %s' % linkDir, verbose, pretend)
+	for f in ['libpgplot.a', 'libcpgplot.a', 'libpgplot.so']:
+		execute('rm -f %s/%s' % (linkDir, f), verbose, pretend)
+		execute('cp %s/%s %s/%s' % (pgplotDir, f, linkDir, f), verbose, pretend)
+
+def fuseMk5(origComps, params, args, verbose, pretend):
+	v = execute('pkg-config --libs streamstor', verbose, pretend)
+	if v != 0:
+		print '\nStopping because streamstor package is not installed.\n'
+		return
+
+	arch = platform.machine()
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = environ['DIFX_ARCH_ROOT'] + '/'
+	archSrcDir = archDir + 'src/'
+	
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	chdir(archSrcDir)
+	# get the code
+	execute('cvs -d:pserver:anonymous:@fusemk5a.cvs.sourceforge.net:/cvsroot/fusemk5a login', verbose, pretend)
+	execute('cvs -z3 -d:pserver:anonymous@fusemk5a.cvs.sourceforge.net:/cvsroot/fusemk5a co -P fuseMk5A', verbose, pretend)
+
+	fm5Dir = archSrcDir + 'fuseMk5A'
+	if not isdir(fm5Dir):
+		print 'Stopping because fuseMk5 code must not have downloaded correctly.'
+		return
+	chdir(fm5Dir)
+	# modify makefile
+	execute('mv Makefile Makefile.orig', verbose, pretend)
+	fixSdkDir = "-e 's/^SDK_DIR.*/SDK_DIR = \\/usr/'"
+	fixLdSdk = "-e 's/^LD_SDK.*/LD_SDK = -lssapi `locate libwdapi`/'"
+	fixLdpaths = "-e 's/^LDPATHS.*/LDPATHS = -L. -L\\/usr\\/lib64\\/ -pthread/'"
+	execute('sed %s %s %s <Makefile.orig >Makefile' % (fixSdkDir, fixLdSdk, fixLdpaths), verbose, pretend)
+	# make and install
+	execute('make', verbose, pretend)
+	execute('cp %s/fuseMk5 %s/bin' % (fm5Dir, archDir), verbose, pretend)
+
+def extra(origComps, params, args, verbose, pretend):
+	packages = ['psycopg', 'pgplot', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat', 'libmicrohttpd', 'fuseMk5', 'difxipp']
+	if len(args) < 1:
+		print 'The "extra" option allows installation of optional software.\n'
+		print 'Usage 1: difxbuild [options] extra [package(s)]\n'
+		print 'Usage 2: difxbuild extra list\n'
+		return
+
+	if args == ['list']:
+		print 'Extra packages to be installed can include the following:'
+		for pkg in packages:
+			print '  %s' % pkg
+		print ''
+		return
+
+	bad = False
+	for pkg in args:
+		if not pkg in packages:
+			print 'Error: %s is not a known package' % pkg
+			bad = True
+	if bad:
+		print '\nExiting\n'
+		return
+
+	if 'autotools' in args:
+		autotools(origComps, params, [], verbose, pretend)
+	if 'spice' in args:
+		spice(origComps, params, [], verbose, pretend)
+	if 'pgplot' in args:
+		pgplot(origComps, params, [], verbose, pretend)
+	if 'gpstk' in args:
+		gpstk(origComps, params, [], verbose, pretend)
+	if 'expat' in args:
+		expat(origComps, params, [], verbose, pretend)
+	if 'libmicrohttpd' in args:
+		libmicrohttpd(origComps, params, [], verbose, pretend)
+	if 'libevent' in args:
+		libevent(origComps, params, [], verbose, pretend)
+	if 'sched' in args:
+		sched(origComps, params, [], verbose, pretend)
+	if 'sked' in args:
+		sked(origComps, params, [], verbose, pretend)
+	if 'psycopg' in args:
+		psycopg(origComps, params, [], verbose, pretend)
+	if 'pyx' in args:
+		pyx(origComps, params, [], verbose, pretend)
+	if 'fuseMk5' in args:
+		fuseMk5(origComps, params, [], verbose, pretend)
+	if 'difxipp' in args:
+		difxipp(origComps, params, [], verbose, pretend)
+
+
+def newestOMPI(data, version):
+	filename = 'openmpi-%s.tar.bz2' % version
+	md5 = ''
+	release = 0
+	m = re.compile('openmpi-%s.([0-9]+).tar.bz2' % version)
+	for q in data:
+		d = q.split()[-1].strip()
+		if d == filename:
+			md5 = q.split()[0]
+		else:
+			v = m.search(d)
+			if v != None:
+				r = int(v.group(1))
+				if r > release:
+					release = r
+					filename = 'openmpi-%s.%d.tar.bz2' % (version, release)
+					md5 = q.split()[0]
+
+	return filename, md5
+
+def openmpi(origComps, params, args, verbose, pretend):
+	difxBase = environ['DIFX_BASE'] + '/'
+	bldLog = environ['DIFXROOT'] + '/buildlog'
+	tarDir = difxBase + 'tar/'
+	cpuDir = environ['DIFX_ARCH_ROOT'] + '/'
+	cpuSrcDir = cpuDir + 'src/'
+	if not isdir(tarDir):
+		execute('mkdir -p %s' % tarDir, verbose, pretend)
+	if not isdir(cpuSrcDir):
+		execute('mkdir -p %s' % cpuSrcDir, verbose, pretend)
+
+	if len(args) > 0:
+		if not isfile(args[0]):
+			print 'Error: %s is not a file!' % args[0]
+			exit(2)
+		execute('cp -n %s %s' % (args[0], tarDir), verbose, pretend)
+		openmpiTarFile = args[0].split('/')[-1]
+	else:
+		if openmpiVersion[0:4] == 'http':
+			openmpiTarFile = openmpiVersion.split('/')[-1]
+			openmpiWeb = openmpiVersion[0:(-len(openmpiTarFile)-1)]
+			print 'Getting %s from %s' % (openmpiTarFile, openmpiWeb)
+			download = True
+			if isfile(tarDir+openmpiTarFile):
+				print 'There is an existing openmpi tar file at %s' % (tarDir+openmpiTarFile)
+				download = False
+			if download:
+				chdir(tarDir)
+				execute('wget %s/%s' % (openmpiWeb, openmpiTarFile), verbose, pretend)
+		else:
+			openmpiWeb = 'http://www.open-mpi.org/software/ompi/v%s/downloads' % openmpiVersion
+			openmpiFiles = popen('wget %s/md5sums.txt -O -' % openmpiWeb, 'r').readlines()
+			if len(openmpiFiles) < 1:
+				print "I'm confused: cannot find openmpi source files from %s" % openmpiWeb
+				return
+			goodsum = openmpiFiles[0].strip().split()[0]
+			openmpiTarFile = openmpiFiles[0].strip().split()[1]
+			openmpiTarFile, goodsum = newestOMPI(openmpiFiles, openmpiVersion)
+			download = True
+			if isfile(tarDir+openmpiTarFile):
+				sum = popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline().split()[0]
+				if sum != goodsum:
+					print 'Old or corrupt file %s.  File is being moved to /tmp' % (tarDir+openmpiTarFile)
+					execute('mv %s%s /tmp' % (tarDir, openmpiTarFile), verbose, pretend)
+				else:
+					print 'Existing file %s%s looks OK' % (tarDir, openmpiTarFile)
+					download = False
+			if download:
+				chdir(tarDir)
+				execute('wget %s/%s' % (openmpiWeb, openmpiTarFile), verbose, pretend)
+				sum = popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline().split()[0]
+				if sum != goodsum:
+					print 'Newly downloaded file %s%s does not match expected md5sum %s' % (openmpiWeb, openmpiTarFile, goodsum)
+					return
+	
+	srcFileExt = openmpiTarFile.split('.')[-1]
+	if srcFileExt == 'bz2':
+		td = 'j'
+	elif srcFileExt == 'gz':
+		td = 'z'
+	else:
+		td = ''
+
+	openmpiSrcDir = cpuSrcDir + popen('tar t%sf %s%s' % (td, tarDir, openmpiTarFile), 'r').readline().strip()
+	if isdir(openmpiSrcDir):
+		print '%s already untarred in %s; assuming this is a good copy' % (openmpiTarFile, cpuSrcDir)
+	else:
+		chdir(cpuSrcDir)
+		execute('tar %sxvf %s%s' % (td, tarDir, openmpiTarFile), verbose, pretend)
+	chdir(openmpiSrcDir)
+	execute('./configure --prefix=%s --enable-mpi-f77=no --enable-mpi-f90=no --enable-heterogeneous --enable-orterun-prefix-by-default' % cpuDir, verbose, pretend)
+	v = execute('make -j %d' % numMakeCpus, verbose, pretend)
+	if v == 0:
+		v = execute('make install', verbose, pretend)
+		execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  OpenMPI %s >> %s' % (openmpiTarFile, bldLog), verbose, pretend)
+	if v != 0:
+		print '\n*** Error building openmpi***\n'
+		return 
+
+def update_difxbuild(origComps, params, args, verbose, pretend):
+	dir = getcwd()
+	chdir('/tmp')
+	execute('rm -f difxbuild', verbose, pretend)
+	execute('wget %s' % difxbuildUrl, verbose, pretend)
+	print 'Current version = %s' % version
+	newVersion = popen('%s /tmp/difxbuild --version' % pythonProgram, 'r').readlines()[0].strip()
+	print 'New version = %s' % newVersion
+	print 
+	if newVersion <= version and not '--force' in args:
+		print 'difxbuild up to date; no need to update'
+	else:
+		execute('chmod +x /tmp/difxbuild', verbose, pretend)
+		chdir(dir)
+		if argv[0].find('/') >= 0:
+			execute('cp /tmp/difxbuild %s' % argv[0], verbose, pretend)
+		else:
+			execute('cp /tmp/difxbuild `which difxbuild`', verbose, pretend)
+
+		print 'difxbuild updated.  Please confirm with --version'
+
+
+command_list = \
+[ \
+	'list', \
+	'List the components managed by this script for this DiFX version', \
+	[], \
+	[], \
+	list \
+]
+
+command_default = \
+[ \
+	'default', \
+	'Set the default version of DiFX to that identified in the current environment and update the difx boot script', \
+	['DIFXROOT', 'DIFX_BASE', 'CALC_SERVER', 'DIFX_HEAD_NODE'], \
+	[], \
+	default \
+]
+
+command_bootstrap = \
+[ \
+	'bootstrap', \
+	'Begin installation process for one DiFX Version', \
+	['HOME'], \
+	['ConfigFile'], \
+	bootstrap \
+]
+
+command_svn = \
+[ \
+	'svn', \
+	'Checkout or update from svn repository', \
+	['DIFX_SRC'], \
+	[], \
+	svnupdate \
+]
+
+command_svnstatus = \
+[ \
+	'svnstatus', \
+	'View local svn changes', \
+	['DIFX_SRC'], \
+	[], \
+	svnstatus \
+]
+
+command_autotool = \
+[ \
+	'autotool', \
+	'Prepare source directories for configuring', \
+	['DIFX_SRC'], \
+	[], \
+	autotool \
+]
+
+command_build = \
+[ \
+	'build', \
+	'Run configure for each component then build/install', \
+	['DIFX_SRC', 'DIFXROOT', 'MPICXX', 'PKG_CONFIG_PATH', 'DIFXBITS', 'IPPROOT', 'PGPLOT_DIR'], \
+	[], \
+	build \
+]
+
+command_dist = \
+[ \
+	'package', \
+	'Build .tar.gz package files for each component', \
+	['DIFX_SRC', 'DIFXROOT', 'MPICXX', 'PKG_CONFIG_PATH', 'DIFXBITS', 'IPPROOT', 'PGPLOT_DIR'], \
+	[], \
+	makedist \
+]
+
+command_rebuild = \
+[ \
+	'rebuild', \
+	'Build/install each component', \
+	['DIFX_SRC', 'DIFXROOT'], \
+	[], \
+	rebuild \
+]
+
+command_pbuild = \
+[ \
+	'pbuild', \
+	'Parallel build/install each component on each platform', \
+	['DIFX_SRC', 'DIFXROOT', 'PLATFORM_HOSTS'], \
+	[], \
+	pbuild \
+]
+
+command_clean = \
+[ \
+	'clean', \
+	'Run "make clean" in each component\'s build durectory', \
+	['DIFXROOT'], \
+	[], \
+	clean, \
+]
+
+# This is deprecated by makedist above
+command_dist_old = \
+[ \
+	'dist', \
+	'Generate tar.gz for each component', \
+	['DIFXROOT'], \
+	[], \
+	dist, \
+]
+
+command_pclean = \
+[ \
+	'pclean', \
+	'Run "make clean" in each component\'s build durectory for all platforms', \
+	['DIFXROOT'], \
+	[], \
+	pclean, \
+]
+
+command_uninstall = \
+[ \
+	'uninstall', \
+	'Uninstall each component but leave source and build directories in tact', \
+	['DIFXROOT'], \
+	[], \
+	uninstall \
+]
+
+command_remove = \
+[ \
+	'remove', \
+	'Uninstall each component and remove source and build directories', \
+	['DIFX_SRC', 'DIFXROOT'], \
+	[], \
+	remove \
+]
+
+command_extra = \
+[ \
+	'extra', \
+	'Download (if needed), configure, compile and install selected non-difx programs (experimental)', \
+	['DIFX_BASE'], \
+	[], \
+	extra \
+]
+
+command_openmpi = \
+[ \
+	'openmpi', \
+	'Download (if needed), configure, compile, and install openmpi version %s' % openmpiVersion, \
+	['DIFX_BASE'], \
+	[], \
+	openmpi \
+]
+
+command_update = \
+[ \
+	'update', \
+	'Update difxbuild by downloading a new version', \
+	[], \
+	[], \
+	update_difxbuild \
+]
+
+command_fromtar = \
+[ \
+	'fromtar', \
+	'Install DiFX from tar files living in $DIFXROOT/dist', \
+	[], \
+	[], \
+	fromtar \
+]
+
+command_debian = \
+[ \
+	'debian', \
+	'Install Debian/Ubuntu/Kubuntu/XUbuntu/... prereqs', \
+	[], \
+	[], \
+	debian \
+]
+
+commands = \
+[ \
+	command_list, \
+	command_bootstrap, \
+	command_default, \
+	command_svn, \
+	command_svnstatus, \
+	command_autotool, \
+	command_openmpi, \
+	command_extra, \
+	command_build, \
+	command_rebuild, \
+	command_pbuild, \
+	command_clean, \
+	command_pclean, \
+	command_uninstall, \
+	command_update, \
+	command_dist, \
+	command_fromtar, \
+	command_debian, \
+#	command_remove, \
+]
+
+
+def run_command(commandName, args, verbose, pretend):
+	command = None
+	for c in commands:
+		if c[0] == commandName:
+			command = c
+	if not command == None:
+		hasEnviron = True
+		hasParams = True
+		for e in command[2]:
+			if not environ.has_key(e):
+				print 'Env. Var. %s needs to be set' % e
+				hasEnviron = False
+		nParam = len(command[3])
+		params = {}
+		if len(args) < nParam:
+			print 'Two few arguments provided'
+			hasParams = False
+		else:
+			for i in range(nParam):
+				params[command[3][i]] = args[i]
+		if hasEnviron and hasParams:
+			if verbose > 1:
+				print '  params=', params
+				print '  extras=', args[nParam:]
+				print '  pretend=', pretend
+				print '  verbose=', verbose
+				print ''
+			print '=== Running command: %s ===\n' % command[0]
+			if command[0] == 'bootstrap':
+				comps = []
+			else:
+				comps = components[environ['DIFX_VERSION']]
+			command[4](comps, params, args[nParam:], verbose, pretend)
+			if pretend:
+				print '\n*** PRETEND MODE WAS USED ***\n'
+		else:
+			print 'Not going to run.'
+			
+	else:
+		print 'Command "%s" not recognized.  Seek help.' % commandName
+
+
+def usage(prog):
+	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
+	print 'usage:  %s [options] <command> [<command arguments>]\n' % prog
+	print 'Options include:\n'
+	print '  -h or --help'
+	print '       print this help and exit\n'
+	print '  -d or --documentation'
+	print '       print the in-line documentation\n'
+	print '  -t or --todo'
+	print '       print developer\'s to-do list\n'
+	print '  -v or --verbose'
+	print '       be more verbose\n'
+	print '  -V or --version'
+	print '       print version and exit\n'
+	print '  -q or --quiet'
+	print '       be less verbose\n'
+	print '  -p or --pretend'
+	print '       go through all the steps but don\'t actually do anything\n'
+	print 'The possible commands are:\n'
+	for command in commands:
+		extras = ''
+		for c in command[3]:
+			extras = extras + ' <' + c + '>'
+		print '%s%s' % (command[0], extras)
+		print '  %s\n' % command[1]
+	
+	print '\nCurrently the following key variables are set:'
+	vars = ['DIFXROOT', 'DIFX_BASE', 'DIFX_ARCH_ROOT']
+	for v in vars:
+		if environ.has_key(v):
+			print '%s = %s' % (v, environ[v])
+		else:
+			print '%s is unset' % v
+
+	print "\nRemember, if you haven't signed up to the difx-users mailing list, please"
+	print "do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users."
+
+def checkPythonVersion():
+	if not environ.has_key('PYTHONPATH'):
+		return
+	pythonPath = environ['PYTHONPATH'].split(':')[0]
+
+	# If the python path does not match this python version raise a warning...
+	
+
+def main():
+	try:
+		opts, args = getopt.getopt(argv[1:], "hdqvpVt", ["help", "documentation", "quiet", "verbose", "pretend", "version", "todo"])
+	except getopt.GetoptError, err:
+		print '%s\n' % str(err)
+		usage(argv[0])
+		exit(2)
+	verbose = 1
+	pretend = False
+	for o, a in opts:
+		if o in ['-v', '--verbose']:
+			verbose += 1
+		elif o in ['-V', '--version']:
+			print version
+			exit(0)
+		elif o in ['-q', '--quiet']:
+			verbose -= 1
+		elif o in ['-h', '--help']:
+			usage(argv[0])
+			exit(0)
+		elif o in ['-d', '--documentation']:
+			print documentation
+			exit(0)
+		elif o in ['-t', '--todo']:
+			print todo_list
+			exit(0)
+		elif o in ['-p', '--pretend']:
+			pretend = True
+
+	if len(args) <= 0:
+		usage(argv[0])
+		exit(0)
+		
+	if args[0] != 'bootstrap':
+	
+		checkPythonVersion()
+
+		if not environ.has_key('DIFX_VERSION'):
+			print 'Env. Var. DIFX_VERSION needs to be set'
+			exit(2)
+		if not components.has_key(environ['DIFX_VERSION']):
+			print 'This script is not set up to handle version %s' % environ['DIFX_VERSION']
+			exit(2)
+
+	run_command(args[0], args[1:], verbose, pretend)
+	print "\nRemember, if you haven't signed up to the difx-users mailing list, please"
+	print "do so at https://listmgr.nrao.edu/mailman/listinfo/difx-users."
+
+#----
+
+if __name__ == "__main__":
+	main()

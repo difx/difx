@@ -1,0 +1,25 @@
+
+# 0. rcwlib must be installed first.
+
+# 1. After a fresh svn checkout, run the following to setup the
+#    build environment and produce the configure script:
+
+aclocal
+automake -a
+autoconf
+
+# 2. Make sure $PGPLOT_DIR is set
+
+# 3. To configure and build for installation in ${DIFXROOT}/bin:
+
+./configure --prefix=${DIFXROOT}
+make
+
+# 4. To install:
+
+make install
+
+# 5. To make a source tarball:
+
+make dist
+

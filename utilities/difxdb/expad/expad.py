@@ -18,11 +18,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: expad.py 10644 2022-09-20 12:04:23Z HelgeRottmann $
+# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/expad/expad.py $
+# $LastChangedRevision: 10644 $
+# $Author: HelgeRottmann $
+# $LastChangedDate: 2022-09-20 20:04:23 +0800 (二, 2022-09-20) $
 #
 #============================================================================
 
@@ -51,9 +51,9 @@ from difxutil.dbutil import *
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
+__build__= "$Revision: 10644 $"
+__date__ ="$Date: 2022-09-20 20:04:23 +0800 (二, 2022-09-20) $"
+__lastAuthor__="$Author: HelgeRottmann $"
 
 # minimum database schema version required by this program
 minSchemaMajor = 1

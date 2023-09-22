@@ -16,11 +16,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
+# $Id: pcList.pl 9669 2020-08-18 17:23:48Z GeoffreyCrew $
 # $HeadURL: $
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $LastChangedRevision: 9669 $
+# $Author: GeoffreyCrew $
+# $LastChangedDate: 2020-08-19 01:23:48 +0800 (三, 2020-08-19) $
 #
 #============================================================================
 

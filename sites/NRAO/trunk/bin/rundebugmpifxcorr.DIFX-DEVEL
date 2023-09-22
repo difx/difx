@@ -1,3 +1,0 @@
-#! /bin/bash
-. /home/swc/DiFX-trunk/setup_difx
-valgrind mpifxcorr $@

@@ -275,7 +275,7 @@ if __name__ == "__main__":
         p.add_argument('-g', '--goodTh', dest='goodTh', default=0.3, type=float,metavar='FLOAT', help='ratio threshold of max-cross-hands/min-parallel-hands for good rating (0.3)')
         p.add_argument('-b', '--badTh', dest='badTh', default=0.6, type=float, metavar='FLOAT', help='ratio threshold of max-cross-hands/min-parallel-hands for poor rating (0.6)')
 	p.add_argument('-v', '--vex', dest='vexfile', default=None, help='vex file to parse for EHTC project codes', metavar='file')
-	p.add_argument('-V', '--version', action='version', version='%(prog)s '+__version__+' svn:$Revision$') #dest='showVersion', default=False, action='store_true', help='show version')
+	p.add_argument('-V', '--version', action='version', version='%(prog)s '+__version__+' svn:$Revision: 8391 $') #dest='showVersion', default=False, action='store_true', help='show version')
 
 	opts = p.parse_args()
 	opts.__dict__['alma_projs'] = reverseMapProjs(doFindProj(opts)) if opts.vexfile else None

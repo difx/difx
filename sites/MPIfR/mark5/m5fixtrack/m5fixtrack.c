@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
+// $Id: m5fixtrack.c 5105 2013-01-08 09:27:22Z HelgeRottmann $
+// $HeadURL: https://svn.atnf.csiro.au/difx/sites/MPIfR/mark5/m5fixtrack/m5fixtrack.c $
+// $LastChangedRevision: 5105 $
+// $Author: HelgeRottmann $
+// $LastChangedDate: 2013-01-08 17:27:22 +0800 (二, 2013-01-08) $
 //
 //============================================================================
 //

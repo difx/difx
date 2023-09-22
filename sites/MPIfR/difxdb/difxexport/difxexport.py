@@ -4,11 +4,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: difxexport.py 10885 2023-02-14 10:11:54Z JanWagner $
+# $HeadURL: https://svn.atnf.csiro.au/difx/sites/MPIfR/difxdb/difxexport/difxexport.py $
+# $LastChangedRevision: 10885 $
+# $Author: JanWagner $
+# $LastChangedDate: 2023-02-14 18:11:54 +0800 (二, 2023-02-14) $
 #
 #============================================================================
 
@@ -30,9 +30,9 @@ from difxdb.difxdbconfig import DifxDbConfig
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
+__build__= "$Revision: 10885 $"
+__date__ ="$Date: 2023-02-14 18:11:54 +0800 (二, 2023-02-14) $"
+__lastAuthor__="$Author: JanWagner $"
 
 ftpPath = "/ftp/vlbiarchive/correlator"
 exportName = "EXPORT"

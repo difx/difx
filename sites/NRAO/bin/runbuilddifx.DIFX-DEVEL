@@ -1,0 +1,4 @@
+#! /bin/bash
+. /home/swc/DiFX-trunk/setup_difx
+cd ${DIFX_PREFIX}/build
+builddifx

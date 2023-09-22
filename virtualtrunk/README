@@ -1,8 +1,0 @@
-This is a virtual copy of DiFX trunk.
-
-
-The directories to be included in this virtual check-out are tabulated in svn_ext_val
-
-To update the list:
-
-  svn propset svn:externals . -F svn_ext_val

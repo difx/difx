@@ -1,0 +1,28 @@
+Version 1.0
+~~~~~~~~~~~
+* Version for DiFX-2.8, Nov 4, 2022
+
+Version 0.995
+-------------
+* Post DiFX 2.6
+* difxsniff -> python 3
+
+Version 0.994
+-------------
+* force python2
+* Version for DiFX-2.6, Mar 9, 2019
+
+Version 0.993
+-------------
+* Allow plotwt, plotbp and plotapd to send params though command line
+* Move difxsniff from calcif2 into this module
+* Change to not allow/require png support; pgplot is broken w/r/t modern versions of libpng
+
+Version 0.992
+-------------
+* Post DiFX-2.2 / DiFX-2.3
+
+Version 0.991
+-------------
+* 20120912: Craig updated plotbp to make a second zoomed-in plot if the dynamic range caused by RFI or other strong lines was too high.
+* Version for DiFX-2.2

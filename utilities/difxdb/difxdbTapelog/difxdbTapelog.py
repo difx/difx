@@ -18,11 +18,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: difxdbTapelog.py 10271 2021-10-21 09:43:12Z HelgeRottmann $
+# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/difxdbTapelog/difxdbTapelog.py $
+# $LastChangedRevision: 10271 $
+# $Author: HelgeRottmann $
+# $LastChangedDate: 2021-10-21 17:43:12 +0800 (四, 2021-10-21) $
 #
 #============================================================================
 
@@ -40,9 +40,9 @@ from operator import  attrgetter
 
 __author__ = "Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__ = "$Revision$"
-__date__ = "$Date$"
-__lastAuthor__ = "$Author$"
+__build__ = "$Revision: 10271 $"
+__date__ = "$Date: 2021-10-21 17:43:12 +0800 (四, 2021-10-21) $"
+__lastAuthor__ = "$Author: HelgeRottmann $"
 
 def printUsage():
     print("%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__))

@@ -1,0 +1,21 @@
+0.6:
+* Version for DiFX-2.8 on Nov 4, 2022
+
+0.5:
+* Tagged for DiFX-2.4 on Nov 4, 2014
+
+0.4: post DiFX-2.1
+* Eliminated IPP from configure.ac as it was unnecessary
+* Added some extra options to profile2binconfig.py
+* Tagged for DiFX-2.2 on May 31, 2013
+
+0.3: post DiFX-2.0.1
+* Version for DiFX 2.1
+
+0.2: Version for DiFX-2.0.1, June 10, 2011
+* Updated to read from files correctly (take into account spectral averaging)
+
+Utilities are generally unversioned - first entry 06 Sep 2010, ATD
+* Rearranged structure to eliminate out of date code
+* Made use of IPPLINKLIBS
+* Version for DiFX 2.0.0

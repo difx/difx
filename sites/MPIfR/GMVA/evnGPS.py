@@ -21,8 +21,8 @@ from scipy.optimize import curve_fit
 
 __version__ = "1.0.1"
 __author__="Jan Wagner <jwagner@mpifr.de>"
-__build__= "$Revision$"
-__date__ ="$Date$"
+__build__= "$Revision: 10964 $"
+__date__ ="$Date: 2023-05-08 15:10:02 +0800 (一, 2023-05-08) $"
 
 # EVN_GPS_ARCHIVE = "https://www.ira.inaf.it/vlbi_arch/gps/"	# superseded in 2023 by
 EVN_GPS_ARCHIVE = "vlbeer.ira.inaf.it"							# new FTP-only server

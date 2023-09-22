@@ -1,0 +1,4 @@
+#! /bin/bash
+. /home/swc/DiFX-2.0.0/setup_difx
+#/home/swc/DiFX-2.0.0/bin/transient_wrapper  -v -- mpifxcorr $@
+mpifxcorr $@

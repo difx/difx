@@ -18,11 +18,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $Id: difxqueue.py 11095 2023-09-15 04:20:19Z ShaoguangGuo $
+# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/difxqueue/difxqueue.py $
+# $LastChangedRevision: 11095 $
+# $Author: ShaoguangGuo $
+# $LastChangedDate: 2023-09-15 12:20:19 +0800 (五, 2023-09-15) $
 #
 #============================================================================
 
