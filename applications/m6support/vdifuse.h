@@ -2,7 +2,7 @@
  * (c) Massachusetts Institute of Technology, 2013..2023
  * (c) Geoffrey B. Crew, 2013..2023
  *
- * $Id: vdifuse.h 5762 2023-03-26 18:00:29Z gbc $
+ * $Id: vdifuse.h 5791 2023-04-02 15:30:39Z gbc $
  *
  * This file provides support for the fuse interface
  * ## items are not fully implemented
@@ -23,8 +23,11 @@
 #error "VDIFUSE_VERSION needs to be supplied by Makefile"
 #endif /* VDIFUSE_VERSION */
 
+/* acceptable are [VDIFUSE_VERSION-VDIFUSE_VERANGE .. VDIFUSE_VERSION] */
+#define VDIFUSE_VERANGE 0.01
+
 #define VDIFUSE_MAX_PATH 256
-#define VDIFUSE_SEARCH_MAX 9999
+#define VDIFUSE_SEARCH_MAX 9999     /* max packet size */
 #define VDIFUSE_ONE_SEC_NS (int64_t)1000000000
 #define VDIFUSE_MAX_HIER 5
 #define VDIFUSE_MIN_FILE_SIZE 60000

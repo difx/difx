@@ -2,7 +2,7 @@
  * (c) Massachusetts Institute of Technology, 2013..2023
  * (c) Geoffrey B. Crew, 2013..2023
  *
- * $Id: vdifsup.c 5755 2023-03-26 16:47:18Z gbc $
+ * $Id: vdifsup.c 5790 2023-04-02 15:27:35Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -201,7 +201,7 @@ int vdifuse_create_metadata(char *cache, int ndirs, char **dirs)
 int describe_fragment(VDIFUSEntry *vp)
 {   
     vdiflog(1,
-        "[%04d]Frg %s\n", vp->index, vp->path);
+        "[%05d]Frg %s\n", vp->index, vp->path);
     vdiflog(2,
         "  (index=%u vsig=%016lX)\n"
         "  (size=%lu pktsize=%ld pkts=%ld prefix=%lu offset=%lu rate=%lu)\n"
@@ -256,7 +256,7 @@ int report_sequence(VDIFUSEntry *vp)
 int describe_seq_or_vthr(VDIFUSEntry *vp, char *sot)
 {
     vdiflog(1,
-        "[%04d]%s %s anc count [%d] %lu links %luB\n",
+        "[%05d]%s %s anc count [%d] %lu links %luB\n",
         vp->index, sot, vp->fuse, vp->cindex,
         vp->u.vfuse.st_nlink, vp->u.vfuse.st_size);
     vdiflog(2,
@@ -278,9 +278,9 @@ int describe_vthreads(VDIFUSEntry *vp)
 }
 int describe_directory(VDIFUSEntry *vp)
 {
-    vdiflog(1, "[%04d]Dir %s anc count [%d]\n", vp->index,
+    vdiflog(1, "[%05d]Dir %s anc count [%d]\n", vp->index,
             *(vp->fuse) ? vp->fuse : " (root)", vp->cindex);
-    vdiflog(0, "[%04d]Dir %s\n", vp->index,
+    vdiflog(0, "[%05d]Dir %s\n", vp->index,
             *(vp->path) ? vp->path : " (empty)");
     return(0);
 }
@@ -330,7 +330,7 @@ static inline int describe_ancillary_detail(VDIFUSEntry *vp)
         prefix = (ee%8 == 0) ? "  (" : "";
         suffix = (ee%8 == 7) ? ")\n" :
             (ee == vp->ccount-1) ? ")\n" : " ";
-        vdiflog(-1, "%s[%04d]%s", prefix, vp->u.vseqi[ee], suffix);
+        vdiflog(-1, "%s[%05d]%s", prefix, vp->u.vseqi[ee], suffix);
     }
     return(0);
 }
@@ -341,7 +341,7 @@ int describe_ancillary(VDIFUSEntry *vp)
     int rv = 0;
     anctype = describe_stype(vp->stype);
     vdiflog(1,
-        "[%04d]Anc %s (%s) with %d\n",
+        "[%05d]Anc %s (%s) with %d\n",
             vp->index, vp->fuse, anctype, vp->ccount);
     if (vdifuse_debug>2) rv = describe_ancillary_detail(vp);
     return(rv);
@@ -492,9 +492,17 @@ static int check_topdirs(void)
  */
 static int check_cache_version(void)
 {
+    float minver = VDIFUSE_VERSION - VDIFUSE_VERANGE;
+    float maxver = VDIFUSE_VERSION;
     VDIFUSEntry * vd_cache = current_cache_start();
     if (check_topdirs()) return(2);
     if (vd_cache[0].u.vpars.vdifuse_vers == (float)VDIFUSE_VERSION) return(0);
+    if (vd_cache[0].u.vpars.vdifuse_vers >= minver &&
+        vd_cache[0].u.vpars.vdifuse_vers <= maxver) {
+            fprintf(stderr, "File version %f != code version %f (ok)\n",
+                vd_cache[0].u.vpars.vdifuse_vers, (float)VDIFUSE_VERSION);
+            return(0);
+        }
     fprintf(stderr, "File version %f != code version %f (%e)\n",
         vd_cache[0].u.vpars.vdifuse_vers, (float)VDIFUSE_VERSION,
         vd_cache[0].u.vpars.vdifuse_vers - (float)VDIFUSE_VERSION);
