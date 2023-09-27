@@ -7,6 +7,7 @@ import getopt
 import re
 
 # Set this to true if compiling within a master_tags checkout
+# make trunk go away...
 master_tag = True
 #master_tag = False
 
