@@ -5,15 +5,24 @@
 # The defaults for the paths are consistent with GBC supports at Haystack,
 # but you can put git, DFX or dfx into the environment to do this elsewhere.
 #
+# Now that difx has switched to git (from svn) it gets more confusing.
+# We shall use GIT to refer to a checkout of difx-git/difx (which looks
+# like a master tag, but isn't).
+#
+[ -z "$GIT" ] && GIT=/swc/difx/difx-git
 [ -z "$git" ] && git=/home/gbc/PolConvert/PolConvert
-[ -z "$tag" ] && tag=''
-[ -z "$dxb" ] && {
-    [ -z "$tag" ] && dxb=trunk  # branches/py3temp
-    [ -n "$tag" ] && dxb='' &&  # trunk missing on masters
-        tag=master_tags/$tag    # but master_tags in path
+
+# default $tag is '' for git, use trunk for SVN difx
+[ -z "$tag" ] && {
+    DFX=$GIT
+    dfx=$GIT/applications/polconvert/src
+} || {
+    [ trunk = "$tag" ] && tag='' && dxb=trunk  ||   # branches/py3temp
+    { dxb='' && tag=master_tags/$tag ; }            # but master_tags in path
+    [ -z "$DFX" ] && DFX=/swc/difx/difx-svn
+    [ -z "$dfx" ] && dfx=$DFX/$tag/applications/polconvert/$dxb/src
 }
-[ -z "$DFX" ] && DFX=/swc/difx/difx-svn
-[ -z "$dfx" ] && dfx=$DFX/$tag/applications/polconvert/$dxb/src
+
 [ -n "$git" -a -d "$git" ] || {
     echo define git source trunk with \$git=...
     echo git was $git ; exit 1; }
@@ -47,12 +56,16 @@ skipdir="EU-VGOS EVN QA2 GMVA PP/notes"
 
 for f
 do
+
   # more help
   [ "$f" = 'no-such-file' ] && {
-    echo you need to supply file arguments
-    echo "you can use '* */*' for everything"
-    exit 2
+    [ $action = 'help' -o "$action" = '--help' -o "$action" = vers ] || {
+        echo you need to supply file arguments
+        echo "you can use '* */*' for everything"
+        exit 2
+    }
   }
+
   # ignore directories
   [ -d $f ] && continue
   # ignore things that don't go to DiFX but are in git
@@ -62,7 +75,7 @@ do
   for dd in $skipdir
   do [ `dirname $f` = "$dd" ] && punt=true ; done
   $punt && echo skipping $f && continue
-  F=$f
+  F=$f  # $f is local path, $F is dfx path
   [ `expr $F : 'TOP.*'` -ge 3 ] && F=../`basename $f`
   # pretty dodgy way to put TOP things into src
   [ "$F" = "../setup.py" ] && F=setup.py
@@ -96,13 +109,22 @@ do
   sdif)
     echo sdiff -lw164 $git/$f $dfx/$F
     sdiff -lw164 $git/$f $dfx/$F
+    echo '========================================================='
     ;;
   vdif)
     echo vimdiff $git/$f $dfx/$F
+    cmp $git/$f $dfx/$F 2>&- ||
     vimdiff $git/$f $dfx/$F
+    echo sleep 1 for control-C escape
+    sleep 1
     ;;
   cmp)
-    cmp $git/$f $dfx/$F || { echo cmp $git/$f $dfx/$F ; echo ; }
+    cmp $git/$f $dfx/$F || {
+        difflines=`diff $git/$f $dfx/$F | wc -l`
+        dlc=`echo $difflines'        ' | cut -c1-8`
+        echo "$dlc lines differ: cmp" $git/$f $dfx/$F
+        echo
+    }
     ;;
   dcp)
     [ -f $dfx/$F ] || { echo \#\#\# skipping $f ; continue ; }
@@ -142,6 +164,10 @@ do
     grep '__version__[ ]*=' TOP/task_polconvert.py
     grep 'CASA INTERFACE VERSION' TOP/task_polconvert.py
     grep 'date[ ]*=' TOP/task_polconvert.py
+    echo "==> TOP/configure.ac <=="
+    grep 'AC_INIT' TOP/configure.ac
+    echo "==> PP/pcvers.py <=="
+    grep 'pcvers' PP/pcvers.py
     echo "================================="
     exit 0
     ;;
@@ -160,7 +186,7 @@ do
       cmpls -- list the files with cmp issues
       cmp   -- run cmp (and echo cmp cmd if it fails)
       diff  -- run diff ( and echo diff cmd if it fails)
-      sdif  -- run sdiff (you will need window width 164)
+      sdif  -- run sdiff (you will need window width 164 and |less)
       vdif  -- run vimdiff (you will need window width 164)
       cp    -- git to difx (i.e. push from git to DiFX)
       push  -- git to difx (i.e. push from git to DiFX)
@@ -176,22 +202,29 @@ do
     The wildcards * PP/* TOP/* (or combinations) are useful 
     to consider collections of files.  The hierarchy locations may be
     adjusted with environment variables that default to these:
-      (git repo dir) git=$git
-      (DiFX svn dir) DFX=$DFX
-      (master tag)   tag=$tag
-      (DiFX branch)  dxb=$dxb
+      (DIFX GIT repo)   GIT=$GIT
+      (PC git repo dir) git=$git
+      (DiFX svn dir)    DFX=$DFX
+      (master tag)      tag=$tag
+      (DiFX branch)     dxb=$dxb
+    Set tag to 'trunk' for the DiFX SVN and empty for DiFX GIT.
+
+    For DiFX SVN comparison
       dfx=\$DFX/\$tag/applications/polconvert/\$dxb/src
+    else for DiFX GIT comparison
+      dfx=\$GIT/applications/polconvert/src
 
-    The EU-VGOS is currently not imported to DiFX.
-    The build directory contains specific linux builds.
-
-    The previous bzr, brz repositories are considered obsolete;
-      $ git remote -v
-      origin  https://github.com/marti-vidal-i/PolConvert.git (fetch)
-      origin  https://github.com/marti-vidal-i/PolConvert.git (push)
-    is now the master.
-
+    Note that you'll be comparing with whatever branch is checked-out in GIT.
+    The $skipdir directories are currently not imported to DiFX.
 ....EOF
+#
+#   The build directory contains specific linux builds.
+#
+#   The previous bzr, brz repositories are considered obsolete;
+#      $ git remote -v
+#      origin  https://github.com/marti-vidal-i/PolConvert.git (fetch)
+#      origin  https://github.com/marti-vidal-i/PolConvert.git (push)
+#   is now the master.
     exit 1
     ;;
   esac
