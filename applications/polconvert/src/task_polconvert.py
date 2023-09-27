@@ -1260,7 +1260,7 @@ calibrated phased arrays (i.e., phased ALMA).
     plotAnt = int(plotAnt)
   except:
     if plotAnt not in antcodes:
-      printError("Reference antenna %s is not found in metadata!"%str(plotAnt))
+      printError("Reference antenna %s is not found in metadata among %s! " % (str(plotAnt),antcodes))
     else:
       plotAnt = antcodes.index(plotAnt)+1
   for i in range(len(linAntIdx)):
@@ -2336,14 +2336,13 @@ calibrated phased arrays (i.e., phased ALMA).
       file2 = "POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i"%pli
       printMsg("  file1 is %s" % file1)
       printMsg("  file2 is %s" % file2)
-      success = PS.ReadData(pli, file1, file2)
+      success = PS.ReadData(pli, file1, file2, 25.0)
       printMsg("  calling GetNScan(0) (success = %d)"% success)
       NScan = PS.GetNScan(0)
       if success != 0:
         printError('Failed PolGainSolve: ERROR %i'%success)
-      ifsofIF = PS.GetIFs(pli)
-      AllFreqs.append(ifsofIF)
-      #AllFreqs.append(PS.GetIFs(pli))
+      AllFreqs.append(np.zeros(PS.GetNchan(pli), order="C", dtype=np.float))
+      rc = PS.GetIFs(pli, AllFreqs[-1])
     MaxChan = max([np.shape(pp)[0] for pp in AllFreqs])
     printMsg("  length of AllFreqs is %d MaxChan %d"%(len(AllFreqs),MaxChan))
     printMsg("\nWill now estimate the residual cross-polarization gains.\n")
@@ -2586,13 +2585,32 @@ calibrated phased arrays (i.e., phased ALMA).
     frfile = open("POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i"%pli,"rb")
 
 ### header format changed with addition of "FILE" for difxdfile iteration
+#
+#    alldats = frfile.read(4)
+#    nchPlot = stk.unpack("i",alldats[:4])[0]
+#    dtype = np.dtype([("FILE",np.int32),
+#                      ("JDT",np.float64),("ANT1",np.int32),("ANT2",np.int32),
+#                      ("PANG1",np.float64),("PANG2",np.float64),
+#                      ("MATRICES",np.complex64,12*nchPlot)])
+### and again with UVDIST getting added in 2.0.4-ivan
 
-    alldats = frfile.read(4)
-    nchPlot = stk.unpack("i",alldats[:4])[0]
-    dtype = np.dtype([("FILE",np.int32),
-                      ("JDT",np.float64),("ANT1",np.int32),("ANT2",np.int32),
-                      ("PANG1",np.float64),("PANG2",np.float64),
-                      ("MATRICES",np.complex64,12*nchPlot)])
+#   frfile = open("POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i"%pli,"rb")
+
+    alldats = frfile.read(5)
+    #   isParang is a 1-byte bool
+    nchPlot, isParang = stk.unpack("i?", alldats)
+    dtype = np.dtype(
+        [
+            ("FILE", np.int32),
+            ("JDT", np.float64),
+            ("ANT1", np.int32),
+            ("ANT2", np.int32),
+            ("PANG1", np.float64),
+            ("PANG2", np.float64),
+            ("UVDIST", np.float64),
+            ("MATRICES", np.complex64, 12 * nchPlot),
+        ]
+    )
 
 # There is a silly bug in Python 2.7, which generates
 # an "integer is required" error in the first try to read:

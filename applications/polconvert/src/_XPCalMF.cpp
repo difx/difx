@@ -145,8 +145,12 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
   double PI = 3.1415926535; 
   double R2D = 180./PI; 
 
+  const char *FREQLAB = "FREQ (MHZ)";
+  const char *SIGNLAB = "SIGN";
+  const char *BWLAB = "BW (MHZ)";
+
   int overWrite;
-  int iMode;
+  int iMode, IFoffset;
 //  double PI = 3.1415926535; 
 //  double R2D = 180./PI; 
 //  double GrDel;
@@ -157,10 +161,42 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
   
   // Function arguments:
 //  int Ref, NIFs;
-  PyObject *pFName, *pZero;
-  if (!PyArg_ParseTuple(args, "OOii", &pFName, &pZero, &overWrite, &iMode)){printf("FAILED XPCalMF! Wrong arguments!\n"); fflush(stdout);  return ret;};
+  PyObject *pFName, *pZero, *pFreqInfo;
+  if (!PyArg_ParseTuple(args, "OOiiOi", &pFName, &pZero, &overWrite, &iMode, &pFreqInfo, &IFoffset)){printf("FAILED XPCalMF! Wrong arguments!\n"); fflush(stdout);  return ret;};
 
  // if (Ref<0 || Ref>2){printf("ERROR! Ref should be >=0 and <= 2\n"); fflush(stdout); return ret;}
+
+
+  int NIF = 0;
+  double *FRINI;
+  double *FREND;
+  double AuxF0, AuxF1, AuxF2;
+  int i;
+  
+ // READ IF FREQUENCY LIMITS: 
+   if ( PyList_Size(PyDict_Items(pFreqInfo)) > 0){
+
+    PyObject *PyFreqs = PyDict_GetItemString(pFreqInfo,FREQLAB);
+    PyObject *PyBW = PyDict_GetItemString(pFreqInfo,BWLAB);
+    PyObject *PySign = PyDict_GetItemString(pFreqInfo,SIGNLAB);
+    
+    NIF = PyList_Size(PyFreqs);
+    if (NIF>IFoffset){NIF = IFoffset;};
+    FRINI = new double[NIF];
+    FREND = new double[NIF];
+    
+    for (i=0;i<NIF;i++){
+      AuxF0 = PyFloat_AsDouble( PyList_GetItem(PyFreqs,i) );
+      AuxF1 = PyFloat_AsDouble( PyList_GetItem(PyBW,i) );
+      AuxF2 = PyFloat_AsDouble( PyList_GetItem(PySign,i) );
+      if (AuxF2<0.0){
+        FRINI[i] = AuxF0 - AuxF1; FREND[i] = AuxF0;
+      } else {
+        FRINI[i] = AuxF0; FREND[i] = AuxF0 + AuxF1;
+      };
+     // printf("IF %i: FROM %.4e TO %.4e\n",i,FRINI[i],FREND[i]);
+    };
+  };
 
   
   // GrDel *= 1.e-3*(2.*PI);
@@ -172,7 +208,7 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
   std::string PcalFile = PyString_AsString(pFName);
   std::ifstream PcalF;
   PcalF.open(PcalFile.c_str(), std::ios::in);
-
+  
 
 
   
@@ -182,7 +218,7 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
   int BUFF = 1024;
 
 
-  int NTone=0, i,j,l, Aux, Aux2, Aux3;
+  int NTone=0,j,k,l, Aux, Aux2, Aux3;
   long currP, lastP, Nbytes;
 
 
@@ -234,7 +270,7 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
          tempStr >> Aux2;
          tempStr >> Aux3;
 
-         i=0; j=0; l=0;
+         i=0; j=0; l=0; Pol = 'R';
        
          while(std::getline(tempStr,auxStr,' ')){
            if (auxStr.length() > 0){
@@ -348,6 +384,11 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
   double *Amps = new double[NTone];
   double AmpsX, AmpsY;
 
+  double *Delays = new double[NTone];
+  double *RefPhases = new double[NTone];
+  double *RefFreqs = new double[NTone];
+  int *IF = new int[NTone];   
+
 // Auxiliary variables:
 //int FirstGood = -1;
 
@@ -357,6 +398,10 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
   cplx64d PCalTemp;
   int NPCals;
   for(j=0;j<NTone;j++){
+    Delays[j] = 0.0;
+    RefPhases[j] = 0.0;
+    RefFreqs[j] = 0.0;
+    IF[j] = 0;
     PCalTemp = 0.0;
     NPCals = 0;
     AmpsX = 0.0; AmpsY = 0.0;
@@ -451,6 +496,7 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
 
 
        i=0; j=0; currP = 0; //isX = true;
+       l=-1; Pol='R';
        while(std::getline(tempStr,auxStr,' ')){
          if (auxStr.length() > 0){
            switch(i){
@@ -560,60 +606,125 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
 
 
 
-// Connect phases among tones:
+// Connect phases among tones for each IF:
 
 
   double DNu = PCalNus[1] - PCalNus[0];
-  int iJump = 0;
-  double FracP, IntP;
+//  double FracP, IntP;
   double IFDel00, IFDel01, IFDel0, IFDel1, NtoneIF;
   double *NWrap = new double[NTone];
+  cplx64d AvPhasor;
+  double fitDelay, IFPhase;
+
+
+ // If freq. info was not provided, guess the IFs:
+ 
+   if (NIF==0){
+     int AuxIF = 0;
+     FRINI = new double[NTone]; FREND = new double[NTone];
+     for (i=0; i<NTone-1; i++){
+        if(PCalNus[i+1]-PCalNus[i] > 1.01*DNu){
+          FRINI[NIF] = PCalNus[AuxIF]; FREND[NIF] = PCalNus[i]; NIF += 1; AuxIF = i+1;
+        };
+     };
+     FRINI[NIF] = PCalNus[AuxIF]; FREND[NIF] = PCalNus[NTone-1]; NIF += 1;
+   }; 
 
 
 
-  for (i=0; i<NTone-1; i++){
+
+
+  if(connectPhase){
+
+  for (i=0; i<NTone; i++){
     /////////////////////////	  
-    // First, a simple connection between neighoring tones:	
-    if (Phases[i+1]-Phases[i] > PI){
-      for(j=i+1;j<NTone;j++){Phases[j] -= 2.*PI;};
-    };
+    // First, a simple connection between neighoring tones:
+   
+   if(i<NTone-1){ 
+    
+     if(PCalNus[i+1]-PCalNus[i] < 1.01*DNu){
+       if (Phases[i+1]-Phases[i] > PI){
+         for(j=i+1;j<NTone;j++){Phases[j] -= 2.*PI;};
+       };
 
-    if (Phases[i+1]-Phases[i] < -PI){
-      for(j=i+1;j<NTone;j++){Phases[j] += 2.*PI;};
+      if (Phases[i+1]-Phases[i] < -PI){
+        for(j=i+1;j<NTone;j++){Phases[j] += 2.*PI;};
+      };
     };
+    
+    };
+    
+  };
+  
+  };
+  
+  
+//// LOOP OVER IFS:  
+
+ int nUsableTones;
+ int *usableTones = new int[NTone];
+    
+ for (k=0; k<NIF; k++){
+ 
+   //printf("%i %i\n",NIF,k);
+ 
+   // Figure out list of pcal tones inside this IF:
+   nUsableTones = 0;
+   for (j=0;j<NTone;j++){
+     if (PCalNus[j]>= FRINI[k] && PCalNus[j]<= FREND[k]){
+       usableTones[nUsableTones] = j;
+       nUsableTones += 1;
+     };
+   }; 
+    
     /////////////////////////
 
   if(connectPhase){
 
-    ///////////////////////////////////////////////////////////////
-    // Between IFs, we extrapolate the phase from the edge tone using the
-    // group delay of the whole IF, as estimated from the tones within that IF:
-    // The group delay of the IF is estimated from a simple linear regression:
-
-    if(i>1 && PCalNus[i+1]-PCalNus[i] > 1.1*DNu){ // Condition to assume that we have jumped to another IF.
       IFDel00 = 0.0; IFDel01 = 0.0; IFDel0 = 0.0; IFDel1 = 0.0; 
 
-      // iJump is the index of the first tone in the IF to be fitted.
-      NtoneIF = (double) (i-iJump+1); // Number of phasecal tones within the IF.
+      NtoneIF = (double) (nUsableTones); // Number of phasecal tones within the IF.
 
-      for(j=iJump; j<=i; j++){
-        IFDel00 += PCalNus[j]*PCalNus[j]; IFDel0 += PCalNus[j];
-	IFDel01 += PCalNus[j]*Phases[j]; IFDel1 += Phases[j];
+      
+      for(j=0; j<nUsableTones; j++){
+        l = usableTones[j];
+        IFDel00 += PCalNus[l]*PCalNus[l]; IFDel0 += PCalNus[l];
+	IFDel01 += PCalNus[l]*Phases[l]; IFDel1 += Phases[l];
       };	
-      iJump = i+1; // Now, iJump will be the index of the first tone in the NEW IF.
+
       IFDel0 /= NtoneIF ; IFDel1 /= NtoneIF;
 
+      // Estimate the cross-polarization tone delay for this IF:
+      fitDelay = (IFDel01 - NtoneIF*IFDel0*IFDel1)/(IFDel00 - NtoneIF*IFDel0*IFDel0);
+
+      // Estimate the cross-polarization tone phase:
+      AvPhasor = 0.0;
+      for(j=0; j<nUsableTones; j++){
+        l = usableTones[j];
+        AvPhasor += std::polar(1.0,(Phases[l] - fitDelay*(PCalNus[l] - IFDel0)));
+      };
+      IFPhase = std::arg(AvPhasor);
+
+      // Store the results:
+      for(j=0; j<nUsableTones; j++){
+        l = usableTones[j];
+        Delays[l] = fitDelay/(2.*PI); RefPhases[l] = IFPhase; 
+        RefFreqs[l] = IFDel0; 
+        IF[l] = k+1;
+     //   printf("%.8e   %.8e   %.8e  %i\n",Delays[j],RefPhases[j],RefFreqs[j],j);
+      };
+      
       // Estimated phase of the iJump-th tone (group-delay extrapolation from the previous IF):
-      NWrap[i] = (IFDel01 - NtoneIF*IFDel0*IFDel1)/(IFDel00 - NtoneIF*IFDel0*IFDel0)*(PCalNus[i+1]-PCalNus[i]) + Phases[i]-Phases[i+1];
+      NWrap[i] = fitDelay*(PCalNus[i+1]-PCalNus[i]) + Phases[i]-Phases[i+1];
 
       // Convert this difference into an integer number of wraps:
-      NWrap[i] /= 2.*PI; FracP = modf(NWrap[i], &IntP);
-      if (FracP>0.5){IntP += 1.;} else if(FracP<-0.5){IntP -= 1.;}; // Difference will always be <180 degrees.
+  //    NWrap[i] /= 2.*PI; FracP = modf(NWrap[i], &IntP);
+  //    if (FracP>0.5){IntP += 1.;} else if(FracP<-0.5){IntP -= 1.;}; // Difference will always be <180 degrees.
 
 
-      for(j=i+1;j<NTone;j++){Phases[j] += 2.*PI*IntP;};
+  //    for(j=i+1;j<NTone;j++){Phases[j] += 2.*PI*IntP;};
 
-    };
+    
 
   };
 
@@ -626,10 +737,12 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
 
  // printf("NTone = %i\n",NTone); fflush(stdout);
   
+  fprintf(outFile,"# Freq (MHz) | X-Y Phase (deg.) | Amps (Norm.) | X-Y Delay (mus) | Av Phase (deg.) | Ref. Freq. (MHz) | IF \n");
+  
   for (i=0;i<NTone;i++){
    //   printf(" WRITING %i\n",i);fflush(stdout);
    //    printf("%i %.8e  %.8e  %.8e\n",i,PCalNus[i],Phases[i],Amps[i]); fflush(stdout);
-      fprintf(outFile,"%.8e  %.8e  %.8e\n",PCalNus[i],Phases[i]*R2D,Amps[i]);
+      fprintf(outFile,"%.8e  %.8e  %.8e  %.8e  %.8e  %.8e  %i\n", PCalNus[i], Phases[i]*R2D, Amps[i], Delays[i], RefPhases[i]*R2D, RefFreqs[i], IF[i]);
   };
 
   fflush(outFile);
@@ -649,6 +762,11 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
     delete[] goodX;
     delete[] goodY;
     delete[] PCalNus;
+    delete[] Phases;
+    delete[] Amps;
+    delete[] Delays;
+    delete[] RefPhases;
+    delete[] RefFreqs;
     delete[] NTimes;
     delete[] ZeroIt;
 

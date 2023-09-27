@@ -42,6 +42,7 @@ DataIOFITS::~DataIOFITS() {
   delete[] linAnts;
   delete[] currentVis;
   delete[] bufferVis;
+  delete[] TwoLinearVis;
   delete[] currentData;
   delete[] bufferData;
 
@@ -70,8 +71,9 @@ corrections are going to be performed.
 If Overwrite == true, the output file is overwritten. If not, it expects the output file
 to exist already (it will not make a new one).
 */
-DataIOFITS::DataIOFITS(std::string outputfile, int NlinAnt, int *LinAnt, 
-         double *Range, bool Overwrite, bool doConj, bool doSave, int saveSource, 
+DataIOFITS::DataIOFITS(std::string outputfile, int NlinAnt, int *LinAnt,
+         double *Range, int nIF2Conv, int *IF2Conv, bool Overwrite,
+         bool doConj, bool doSave, int saveSource,
          ArrayGeometry *Geom, bool doPar, FILE *logF) {
 
 
@@ -81,6 +83,10 @@ DataIOFITS::DataIOFITS(std::string outputfile, int NlinAnt, int *LinAnt,
   int i, j, k;
   Geometry = Geom;
 
+  nDoIF = nIF2Conv;
+  DoIF = IF2Conv;
+
+  isTwoLinear = false;
 
 // Controls whether there is any error in any function:
   success = true;
@@ -111,6 +117,8 @@ DataIOFITS::DataIOFITS(std::string outputfile, int NlinAnt, int *LinAnt,
 
   currentVis = new std::complex<float>[8];
   bufferVis = new std::complex<float>[8];
+  TwoLinearVis = new std::complex<float>[8];
+
   currentData = new float[12];
   bufferData = new float[12];
 
@@ -198,7 +206,7 @@ void DataIOFITS::saveCirculars(std::string inputfile) {
 
 
 // AUXILIARY BINARY FILES TO STORE CIRCULAR VISIBILITIES:
-  FILE **circFile = new FILE*[Nfreqs];
+  FILE **circFile = new FILE*[nDoIF];
 
 
 // AUXILIARY MEMORY SPACE TO WRITE CIRCULAR VISIBS:
@@ -209,16 +217,16 @@ void DataIOFITS::saveCirculars(std::string inputfile) {
 
 // OPEN AUXILIARY BINARY FILES:
   if (doWriteCirc){
-    for (ii=0; ii<Nfreqs; ii++){
-      sprintf(message,"POLCONVERT.FRINGE/OTHERS.FRINGE_IF%li",ii+1);
+
+
+
+    for (ii=0; ii<nDoIF; ii++){
+      sprintf(message,"POLCONVERT.FRINGE/OTHERS.FRINGE_IF%i",DoIF[ii]+1);
       circFile[ii] = fopen(message,"wb");
-   //   printf("Writing %i chans to %i\n",Freqs[ii].Nchan,ii+1);fflush(stdout);
-      fwrite(&Freqs[ii].Nchan,sizeof(int),1,circFile[ii]);
-      fwrite(Freqvals[ii],Freqs[ii].Nchan*sizeof(double),1,circFile[ii]);
+      fwrite(&Freqs[DoIF[ii]].Nchan,sizeof(int),1,circFile[ii]);
+      fwrite(Freqvals[DoIF[ii]],Freqs[DoIF[ii]].Nchan*sizeof(double),1,circFile[ii]);
     };
   };
-
-
 
    for (ii=0; ii<NVis2Save;ii++){
       il = Vis2Save[ii];
@@ -233,12 +241,13 @@ void DataIOFITS::saveCirculars(std::string inputfile) {
       UVW[0] = (double) FUVW[0]; UVW[1] = (double) FUVW[1]; UVW[2] = (double) FUVW[2]; 
 
       getParAng(souidx-1,a1-1,a2-1,UVW,Times[il],AuxPA1,AuxPA2);
-
-      for(i=0;i<Nfreqs;i++) {
-        currIF = i/Nband;
-        currBand = i-currIF*Nband;
-        jump = 4*((long) Freqs[i].Nchan)*((long) currBand);
-        Nentry = 4*((long) Freqs[i].Nchan);
+      for(i=0;i<nDoIF;i++) {
+        currIF = i;
+        jump = 0;
+        for (j=0;j<currIF;j++){
+          jump += 4*((long) Freqs[j].Nchan);
+        };
+        Nentry = 4*((long) Freqs[currIF].Nchan);
         fits_read_col(ofile, TFLOAT, Flux, il+1, dsize*jump+1, dsize*Nentry, NULL, bufferData, NULL, &status);
 
         for (j=0; j<Nentry; j++){
@@ -271,7 +280,7 @@ void DataIOFITS::saveCirculars(std::string inputfile) {
 
 // CLOSE AUXILIARY BINARY FILES:
   if (doWriteCirc){
-    for (ii=0; ii<Nfreqs; ii++){
+    for (ii=0; ii<nDoIF; ii++){
       fclose(circFile[ii]); 
     };
   };
@@ -467,6 +476,7 @@ void DataIOFITS::readInput(std::string inputfile, int saveSource) {
   field = new int[2*Nvis];
   ParAng[0] = new double[2*Nvis];
   ParAng[1] = new double[2*Nvis];
+  UVDist = new double[2*Nvis];
   indexes = new long[2*Nvis];
   conjugate = new bool[2*Nvis];
   is1 = new bool[2*Nvis];
@@ -510,6 +520,12 @@ void DataIOFITS::readInput(std::string inputfile, int saveSource) {
   fits_get_colnum(fptr, CASEINSEN, VV0, &uu, &status);
   fits_get_colnum(fptr, CASEINSEN, WW0, &uu, &status);
   };
+
+
+
+
+
+
 
   if (status){
     sprintf(message,"\n\nPROBLEM READING NUMBERS OF COLUMNS!  ERR: %i\n\n",status);
@@ -579,8 +595,11 @@ void DataIOFITS::readInput(std::string inputfile, int saveSource) {
 
 // Baseline involving linear-pol antenna(s)??
       for (i=0;i<NLinAnt;i++){
-        if(a1==linAnts[i] || a2==linAnts[i]){isLinVis=true; break;};
+         if(a1==linAnts[i]){is1orig[NLinVis]=true;};
+         if(a2==linAnts[i]){is2orig[NLinVis]=true;};
       };
+
+      isLinVis = is1orig[NLinVis] || is2orig[NLinVis];
 
       fits_read_col(fptr, TINT, ss, il+1, 1, 1, NULL, &souidx, &auxI, &status);
 
@@ -606,13 +625,7 @@ void DataIOFITS::readInput(std::string inputfile, int saveSource) {
         JDTimes[NLinVis] = Times[il];
         ParAng[0][NLinVis] = AuxPA1;
         ParAng[1][NLinVis] = AuxPA2;
-
-        if (a1==linAnts[i]){
-          is1orig[NLinVis] = true;
-        };
-        if (a2==linAnts[i]){
-          is2orig[NLinVis] = true;
-        };
+        UVDist[NLinVis] = UVW[0]*UVW[0] + UVW[1]*UVW[1];
 
         NLinVis += 1;
       };
@@ -649,6 +662,7 @@ return;
 // SET IF TO CHANGE:
 bool DataIOFITS::setCurrentIF(int i){
 
+  int j;
 
   if ( i>=Nfreqs || i<0 ){
     sprintf(message,"\nERROR! IF %i CANNOT BE FOUND!\n",i+1); 
@@ -657,18 +671,23 @@ bool DataIOFITS::setCurrentIF(int i){
     success=false; return success;
   };
 
+
   currFreq = i;
-  currIF = i/Nband;
-  currBand = i-currIF*Nband;
   currVis = 0;
-  jump = 4*((long) Freqs[currFreq].Nchan)*((long) currBand);
+  jump = 0;
+  for (j=0;j<currFreq;j++){
+     jump += 4*((long) Freqs[j].Nchan);
+  };
+//  jump = 4*((long) Freqs[currFreq].Nchan)*((long) currBand);
   Nentry = 4*((long) Freqs[currFreq].Nchan);
   delete currentVis ;
   delete bufferVis ;
+  delete TwoLinearVis ;
   delete bufferData ;
   delete currentData ;
   currentVis = new std::complex<float>[4*(Freqs[currFreq].Nchan+1)] ;
   bufferVis = new std::complex<float>[4*(Freqs[currFreq].Nchan+1)] ;
+  TwoLinearVis = new std::complex<float>[4*(Freqs[currFreq].Nchan+1)] ;
 
   currentData = new float[12*(Freqs[currFreq].Nchan+1)] ;
   bufferData = new float[12*(Freqs[currFreq].Nchan+1)] ;
@@ -750,7 +769,18 @@ bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
 
   if (NLinVis==0){return false;};
 
-  while (true) {
+
+  canPlot = false;
+
+
+  while (!found) {
+
+    if (!(is1[currVis] && is2[currVis])){
+      canPlot=true;
+    } else {
+      canPlot=false;
+      isTwoLinear=true;
+    };
     
     curridx = indexes[currVis];
     if (is1[currVis]){
@@ -768,8 +798,6 @@ bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
         currentVis[i].imag(currentData[i3+1]); 
       };
 
-      break;
-
     } else if (is2[currVis]){
 
       fits_read_col(ofile, TFLOAT, Flux, curridx+1, dsize*jump+1, dsize*Nentry, NULL, currentData, NULL, &status);
@@ -786,15 +814,18 @@ bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
         currentVis[i].imag(currentData[i3+1]); 
       };
 
-      break;
-
     } else {
       currVis += 1;
     };
-
     if (currVis == NLinVis){break;};
-
   };
+
+
+    if(canPlot && isTwoLinear){
+      for (i=0; i<Nentry; i++){
+         currentVis[i] = TwoLinearVis[i];
+      };
+    };
 
 
 
@@ -804,12 +835,6 @@ bool DataIOFITS::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
     for (i=0; i<Nentry; i++){currentVis[i].imag(-currentVis[i].imag());};
   };
 ////////////////////
-
-  if (found && (is1[currVis] || is2[currVis])){
-    canPlot=false;
-  } else {
-    canPlot=true;
-  };
 
 
   if (status){
@@ -844,6 +869,7 @@ bool DataIOFITS::setCurrentMixedVis() {
 ////////////////////
 
    fits_write_col(ofile, TFLOAT, Flux, curridx+1, dsize*jump+1, dsize*Nentry, currentData, &status); 
+   fits_flush_file(ofile,&status);
 
    if (status){
      sprintf(message,"\n\nPROBLEM WRITING VISIBILITY DATA!  ERR: %i\n\n",status);
@@ -888,7 +914,7 @@ void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap,
       bufferVis[ca12] = M[0][0][k]*currentVis[a12]+M[0][1][k]*currentVis[a22];
       bufferVis[ca21] = M[1][0][k]*currentVis[a11]+M[1][1][k]*currentVis[a21];
       bufferVis[ca22] = M[1][0][k]*currentVis[a12]+M[1][1][k]*currentVis[a22];
-      if (doParang){
+      if (doParang && ParAng[0][currVis]>-1.e8){
         auxVis = std::polar((float)1.,(float)ParAng[0][currVis]);
         bufferVis[ca11] *= auxVis;
         bufferVis[ca12] *= auxVis;
@@ -900,7 +926,7 @@ void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap,
       bufferVis[ca12] = std::conj(M[1][0][k])*currentVis[a11]+std::conj(M[1][1][k])*currentVis[a12];
       bufferVis[ca21] = std::conj(M[0][0][k])*currentVis[a21]+std::conj(M[0][1][k])*currentVis[a22];
       bufferVis[ca22] = std::conj(M[1][0][k])*currentVis[a21]+std::conj(M[1][1][k])*currentVis[a22];
-      if (doParang){
+      if (doParang && ParAng[0][currVis]>-1.e8){
         auxVis = std::polar((float)1.,(float)ParAng[1][currVis]);
         bufferVis[ca11] /= auxVis;
         bufferVis[ca12] *= auxVis;
@@ -913,7 +939,6 @@ void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap,
    int zero = 0;
 
    if (print && canPlot) {
-
      if (currConj){
      if (k==0){
        fwrite(&zero,sizeof(int),1,plotFile);
@@ -922,6 +947,7 @@ void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap,
        fwrite(&an2[currVis],sizeof(int),1,plotFile);
        fwrite(&ParAng[0][currVis],sizeof(double),1,plotFile);
        fwrite(&ParAng[1][currVis],sizeof(double),1,plotFile);
+       fwrite(&UVDist[currVis],sizeof(double),1,plotFile);
      };
      fwrite(&currentVis[a11],sizeof(std::complex<float>),1,plotFile);
      fwrite(&currentVis[a12],sizeof(std::complex<float>),1,plotFile);
@@ -943,6 +969,7 @@ void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap,
        fwrite(&an1[currVis],sizeof(int),1,plotFile);
        fwrite(&ParAng[1][currVis],sizeof(double),1,plotFile);
        fwrite(&ParAng[0][currVis],sizeof(double),1,plotFile);
+       fwrite(&UVDist[currVis],sizeof(double),1,plotFile);
      };
      auxVis = std::conj(currentVis[a11]);
      fwrite(&auxVis,sizeof(std::complex<float>),1,plotFile);
@@ -972,6 +999,19 @@ void DataIOFITS::applyMatrix(std::complex<float> *M[2][2], bool swap,
 
    };
  };
+
+
+  if(isTwoLinear){
+     if(canPlot){
+         isTwoLinear=false;
+     } else {
+       for (k=0; k<Nentry;k++){
+         TwoLinearVis[k] = bufferVis[k];
+       };
+     };
+  };
+
+
 
 };
 

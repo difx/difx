@@ -144,6 +144,7 @@ class DataIO {
    double *Freqvals[MAXIF], *doRange, *JDTimes;
    int *Basels, *Freqids, *an1, *an2, *linAnts, *field; //, *sour;
    double *ParAng[2];
+   double *UVDist;
    int NLinAnt, NIFs, Nband, status, Nants, Nfreqs, currFreq;
    long NLinVis, Nvis, currVis, *indexes;
    bool success, currConj;
