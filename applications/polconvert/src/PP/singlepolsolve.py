@@ -59,13 +59,13 @@ def parseOptions():
     at present is to try them and see what works best.
     '''
     des = parseOptions.__doc__
-    epi = ''
+    epi = 'WARNING: this is a work in progress, not completed.'
     use = '%(prog)s [options] [input_file [...]]\n  Version'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)
     primary = parser.add_argument_group('Primary Options')
     secondy = parser.add_argument_group('Secondary Options')
-    ### develop = parser.add_argument_group(
-    ###    'Development Options (that may disappear some day)')
+    develop = parser.add_argument_group(
+        'Development Options (that may disappear some day)')
     # essential options
     primary.add_argument('-v', '--verbose', dest='verb',
         default=False, action='store_true',
@@ -97,10 +97,10 @@ def parseOptions():
         'recommended')
     secondy.add_argument('-a', '--ant', dest='ant',
         default=1, metavar='INT', type=int,
-        help='1-based index of linear (ALMA) antenna (normally 1)')
+        help='mandatory 1-based index of linear antenna (normally 1)')
     secondy.add_argument('-L', '--lin', dest='lin',
         default='AA', metavar='SC', # 'alma'
-        help='2-letter station code (all caps) for linear pol station (AA)')
+        help='mandatory 2-letter station code (all caps) for linear pol station (AA)')
     secondy.add_argument('-I', '--indices', dest='indices',
         default='ZOOM', metavar='INDICES',
         help='comma-sep list of indices or index ranges (this-that, '
@@ -149,6 +149,20 @@ def parseOptions():
         default='1,1', metavar='LIST',
         help='comma-sep list of "solint" values; 0,...for MBD mode, '
             'C,... for BP mode (with average of C channels')
+    # developmental or convenience arguments
+    develop.add_argument('--IFlist', dest='iflist',
+        default='', metavar='LIST',
+        help='comma-sep list of frequency-table entries as found in the'
+            ' DiFX input file, which will be converted to an IF list for'
+            ' PolConvert to process.  Using this bypasses the normal logic'
+            ' that deduces this from ZOOM or TARGET bands.'
+            ' For regression testing, this may be set to "original" to'
+            ' recover the pre-Cycle7 zoom-based index deduction logic.')
+    develop.add_argument('-z', '--zmchk', dest='zmchk',
+        default=False, action='store_true',
+        help='the default (False) assumes that a PolConvert fix (to not'
+            ' crash if the IFs mentioned cannot be converted); set this'
+            ' to recover the original behavior which protects PolConvert.')
     # the remaining arguments provide the list of input files
     parser.add_argument('nargs', nargs='*',
         help='List of DiFX input job files to process')
@@ -390,7 +404,7 @@ def createCasaInput(o, joblist, caldir, workdir):
         '  ',o.solve, str(o.solint), o.method, '\n',
         '  ','True', o.label, o.label)
     script = template % (verb, verb,
-        o.nargs[0], str(joblist), caldir, workdir,
+        o.nargs, str(joblist), caldir, workdir,
         o.label, o.zfirst, o.zfinal, o.ant, o.lin, o.remote,
         o.xyadd, o.xydel, o.xyratio, o.npix,
         str(o.exAntList), str(o.exBaseLists),
@@ -525,7 +539,7 @@ if __name__ == '__main__':
     dpc.createCasaInputParallel(opts)
     dpc.executeCasaParallel(opts)
     if opts.verb:
-        print('\nDrivePolconvert execution is complete\n')
+        print('\nsinglepolsolve execution is complete\n')
     # explicit 0 exit
     sys.exit(0)
 
