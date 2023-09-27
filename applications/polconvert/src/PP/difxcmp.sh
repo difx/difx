@@ -35,6 +35,13 @@
 
 action=${1-'help'} ; shift
 
+[ $action = vars ] && {
+    echo \$git is $git
+    echo \$dfx is $dfx
+    echo
+    action=${1-'help'} ; shift
+}
+
 [ -d .git ] || {
     echo
     echo '' This script is intended to be run from a clone
