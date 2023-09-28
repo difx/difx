@@ -2,6 +2,12 @@
 ------
 * Post DiFX-2.8
 * Add Y3 (and Y4 for future option) to ocean tables
+* Increase max sources to be 1000 consistently (was 300 or 1000)
+* Increase the maximum number of stations to 254 (was ~40 to ~80)
+* Ensure that parameters are used for max stations everywhere
+* Include a check to ensure that the max stations is consistent 
+* across three include files
+* Fix a couple of bugs with overflowing arrays
 
 11.0.3
 ------
