@@ -1,18 +1,7 @@
+*._.DS_Store
+.deps
+Makefile.in
 
-# /applications/doi/trunk/DiFXSim/
-/applications/doi/trunk/DiFXSim/*._.DS_Store
-
-# /applications/doi/trunk/DiFXUIs/src/
-/applications/doi/trunk/DiFXUIs/src/*._.DS_Store
-
-# /applications/doi/trunk/DiFXUIs/src/edu/
-/applications/doi/trunk/DiFXUIs/src/edu/*._.DS_Store
-
-# /applications/doi/trunk/DiFXUIs/src/edu/nrao/
-/applications/doi/trunk/DiFXUIs/src/edu/nrao/*._.DS_Store
-
-# /applications/doi/trunk/DiFXUIs/src/edu/nrao/difx/
-/applications/doi/trunk/DiFXUIs/src/edu/nrao/difx/*._.DS_Store
 
 # /applications/gui/trunk/gui/
 /applications/gui/trunk/gui/build
@@ -20,17 +9,6 @@
 # /applications/gui/trunk/gui/conf/
 /applications/gui/trunk/gui/conf/.DOISystemConfig.xml.swp
 
-# /applications/gui/trunk/gui/src/
-/applications/gui/trunk/gui/src/*._.DS_Store
-
-# /applications/gui/trunk/gui/src/edu/
-/applications/gui/trunk/gui/src/edu/*._.DS_Store
-
-# /applications/gui/trunk/gui/src/edu/nrao/
-/applications/gui/trunk/gui/src/edu/nrao/*._.DS_Store
-
-# /applications/gui/trunk/gui/src/edu/nrao/difx/
-/applications/gui/trunk/gui/src/edu/nrao/difx/*._.DS_Store
 
 # /applications/gui/trunk/gui/src/edu/nrao/difx/difxview/
 /applications/gui/trunk/gui/src/edu/nrao/difx/difxview/.DiFXManagerUI.java.swp
@@ -44,14 +22,9 @@
 # /applications/gui/trunk/xmllib/
 /applications/gui/trunk/xmllib/build
 
-# /applications/guiServer/trunk/network/
-/applications/guiServer/trunk/network/.deps
-
-# /applications/guiServer/trunk/src/
-/applications/guiServer/trunk/src/.deps
 
 # /applications/mk5daemon/branches/mk6/src/
-/applications/mk5daemon/branches/mk6/src/Makefile.in
+
 /applications/mk5daemon/branches/mk6/src/mk5daemon
 /applications/mk5daemon/branches/mk6/src/Makefile
 
@@ -62,394 +35,403 @@
 # /libraries/python/trunk/difxplot/
 /libraries/python/trunk/difxplot/__pycache__
 /libraries/python/trunk/difxplot/*.*~
-/libraries/python/trunk/difxplot/Makefile.in
 
-# /master_tags/DiFX-2.2/applications/guiServer/network/
-/master_tags/DiFX-2.2/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.2/applications/guiServer/src/
-/master_tags/DiFX-2.2/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.2/libraries/python/
-/master_tags/DiFX-2.2/libraries/python/*.pyc
-/master_tags/DiFX-2.2/libraries/python/*.bak
-
-# /master_tags/DiFX-2.3/applications/guiServer/network/
-/master_tags/DiFX-2.3/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.3/applications/guiServer/src/
-/master_tags/DiFX-2.3/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.3.1/applications/guiServer/network/
-/master_tags/DiFX-2.3.1/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.3.1/applications/guiServer/src/
-/master_tags/DiFX-2.3.1/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.4/applications/guiServer/network/
-/master_tags/DiFX-2.4/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.4/applications/guiServer/src/
-/master_tags/DiFX-2.4/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.5/applications/guiServer/network/
-/master_tags/DiFX-2.5/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.5/applications/guiServer/src/
-/master_tags/DiFX-2.5/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.5.1/applications/guiServer/network/
-/master_tags/DiFX-2.5.1/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.5.1/applications/guiServer/src/
-/master_tags/DiFX-2.5.1/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.5.2/applications/guiServer/network/
-/master_tags/DiFX-2.5.2/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.5.2/applications/guiServer/src/
-/master_tags/DiFX-2.5.2/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.5.3/applications/guiServer/network/
-/master_tags/DiFX-2.5.3/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.5.3/applications/guiServer/src/
-/master_tags/DiFX-2.5.3/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.5.4/applications/guiServer/network/
-/master_tags/DiFX-2.5.4/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.5.4/applications/guiServer/src/
-/master_tags/DiFX-2.5.4/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.6/applications/guiServer/network/
-/master_tags/DiFX-2.6/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.6/applications/guiServer/src/
-/master_tags/DiFX-2.6/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.6/utilities/difxdb/
-/master_tags/DiFX-2.6/utilities/difxdb/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/comedia/
-/master_tags/DiFX-2.6/utilities/difxdb/comedia/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/comedia/resources/
-/master_tags/DiFX-2.6/utilities/difxdb/comedia/resources/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/conf/
-/master_tags/DiFX-2.6/utilities/difxdb/conf/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/database/
-/master_tags/DiFX-2.6/utilities/difxdb/database/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/difxdbExperiment/
-/master_tags/DiFX-2.6/utilities/difxdb/difxdbExperiment/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/difxdbInventory/
-/master_tags/DiFX-2.6/utilities/difxdb/difxdbInventory/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/difxdbModule/
-/master_tags/DiFX-2.6/utilities/difxdb/difxdbModule/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/difxdbParseFiles/
-/master_tags/DiFX-2.6/utilities/difxdb/difxdbParseFiles/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/difxdbTapelog/
-/master_tags/DiFX-2.6/utilities/difxdb/difxdbTapelog/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/difxqueue/
-/master_tags/DiFX-2.6/utilities/difxdb/difxqueue/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/expad/
-/master_tags/DiFX-2.6/utilities/difxdb/expad/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/getexplist/
-/master_tags/DiFX-2.6/utilities/difxdb/getexplist/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/getmodules/
-/master_tags/DiFX-2.6/utilities/difxdb/getmodules/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/getreleaselist/
-/master_tags/DiFX-2.6/utilities/difxdb/getreleaselist/Makefile.in
-
-# /master_tags/DiFX-2.6/utilities/difxdb/getslot/
-/master_tags/DiFX-2.6/utilities/difxdb/getslot/Makefile.in
-
-# /master_tags/DiFX-2.6.1/applications/guiServer/network/
-/master_tags/DiFX-2.6.1/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.6.1/applications/guiServer/src/
-/master_tags/DiFX-2.6.1/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/
-/master_tags/DiFX-2.6.1/utilities/difxdb/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/comedia/
-/master_tags/DiFX-2.6.1/utilities/difxdb/comedia/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/comedia/resources/
-/master_tags/DiFX-2.6.1/utilities/difxdb/comedia/resources/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/conf/
-/master_tags/DiFX-2.6.1/utilities/difxdb/conf/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/database/
-/master_tags/DiFX-2.6.1/utilities/difxdb/database/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/difxdbExperiment/
-/master_tags/DiFX-2.6.1/utilities/difxdb/difxdbExperiment/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/difxdbInventory/
-/master_tags/DiFX-2.6.1/utilities/difxdb/difxdbInventory/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/difxdbModule/
-/master_tags/DiFX-2.6.1/utilities/difxdb/difxdbModule/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/difxdbParseFiles/
-/master_tags/DiFX-2.6.1/utilities/difxdb/difxdbParseFiles/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/difxdbTapelog/
-/master_tags/DiFX-2.6.1/utilities/difxdb/difxdbTapelog/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/difxqueue/
-/master_tags/DiFX-2.6.1/utilities/difxdb/difxqueue/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/expad/
-/master_tags/DiFX-2.6.1/utilities/difxdb/expad/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/getexplist/
-/master_tags/DiFX-2.6.1/utilities/difxdb/getexplist/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/getmodules/
-/master_tags/DiFX-2.6.1/utilities/difxdb/getmodules/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/getreleaselist/
-/master_tags/DiFX-2.6.1/utilities/difxdb/getreleaselist/Makefile.in
-
-# /master_tags/DiFX-2.6.1/utilities/difxdb/getslot/
-/master_tags/DiFX-2.6.1/utilities/difxdb/getslot/Makefile.in
-
-# /master_tags/DiFX-2.6.2/applications/guiServer/network/
-/master_tags/DiFX-2.6.2/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.6.2/applications/guiServer/src/
-/master_tags/DiFX-2.6.2/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/
-/master_tags/DiFX-2.6.2/utilities/difxdb/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/comedia/
-/master_tags/DiFX-2.6.2/utilities/difxdb/comedia/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/comedia/resources/
-/master_tags/DiFX-2.6.2/utilities/difxdb/comedia/resources/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/conf/
-/master_tags/DiFX-2.6.2/utilities/difxdb/conf/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/database/
-/master_tags/DiFX-2.6.2/utilities/difxdb/database/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/difxdbExperiment/
-/master_tags/DiFX-2.6.2/utilities/difxdb/difxdbExperiment/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/difxdbInventory/
-/master_tags/DiFX-2.6.2/utilities/difxdb/difxdbInventory/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/difxdbModule/
-/master_tags/DiFX-2.6.2/utilities/difxdb/difxdbModule/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/difxdbParseFiles/
-/master_tags/DiFX-2.6.2/utilities/difxdb/difxdbParseFiles/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/difxdbTapelog/
-/master_tags/DiFX-2.6.2/utilities/difxdb/difxdbTapelog/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/difxqueue/
-/master_tags/DiFX-2.6.2/utilities/difxdb/difxqueue/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/expad/
-/master_tags/DiFX-2.6.2/utilities/difxdb/expad/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/getexplist/
-/master_tags/DiFX-2.6.2/utilities/difxdb/getexplist/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/getmodules/
-/master_tags/DiFX-2.6.2/utilities/difxdb/getmodules/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/getreleaselist/
-/master_tags/DiFX-2.6.2/utilities/difxdb/getreleaselist/Makefile.in
-
-# /master_tags/DiFX-2.6.2/utilities/difxdb/getslot/
-/master_tags/DiFX-2.6.2/utilities/difxdb/getslot/Makefile.in
-
-# /master_tags/DiFX-2.6.3/applications/guiServer/network/
-/master_tags/DiFX-2.6.3/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.6.3/applications/guiServer/src/
-/master_tags/DiFX-2.6.3/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/
-/master_tags/DiFX-2.6.3/utilities/difxdb/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/comedia/
-/master_tags/DiFX-2.6.3/utilities/difxdb/comedia/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/comedia/resources/
-/master_tags/DiFX-2.6.3/utilities/difxdb/comedia/resources/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/conf/
-/master_tags/DiFX-2.6.3/utilities/difxdb/conf/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/database/
-/master_tags/DiFX-2.6.3/utilities/difxdb/database/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/difxdbExperiment/
-/master_tags/DiFX-2.6.3/utilities/difxdb/difxdbExperiment/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/difxdbInventory/
-/master_tags/DiFX-2.6.3/utilities/difxdb/difxdbInventory/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/difxdbModule/
-/master_tags/DiFX-2.6.3/utilities/difxdb/difxdbModule/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/difxdbParseFiles/
-/master_tags/DiFX-2.6.3/utilities/difxdb/difxdbParseFiles/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/difxdbTapelog/
-/master_tags/DiFX-2.6.3/utilities/difxdb/difxdbTapelog/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/difxqueue/
-/master_tags/DiFX-2.6.3/utilities/difxdb/difxqueue/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/expad/
-/master_tags/DiFX-2.6.3/utilities/difxdb/expad/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/getexplist/
-/master_tags/DiFX-2.6.3/utilities/difxdb/getexplist/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/getmodules/
-/master_tags/DiFX-2.6.3/utilities/difxdb/getmodules/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/getreleaselist/
-/master_tags/DiFX-2.6.3/utilities/difxdb/getreleaselist/Makefile.in
-
-# /master_tags/DiFX-2.6.3/utilities/difxdb/getslot/
-/master_tags/DiFX-2.6.3/utilities/difxdb/getslot/Makefile.in
-
-# /master_tags/DiFX-2.7/applications/guiServer/network/
-/master_tags/DiFX-2.7/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-2.7/applications/guiServer/src/
-/master_tags/DiFX-2.7/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-2.7/utilities/difxdb/
-/master_tags/DiFX-2.7/utilities/difxdb/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/comedia/
-/master_tags/DiFX-2.7/utilities/difxdb/comedia/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/comedia/resources/
-/master_tags/DiFX-2.7/utilities/difxdb/comedia/resources/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/conf/
-/master_tags/DiFX-2.7/utilities/difxdb/conf/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/database/
-/master_tags/DiFX-2.7/utilities/difxdb/database/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/difxdbExperiment/
-/master_tags/DiFX-2.7/utilities/difxdb/difxdbExperiment/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/difxdbInventory/
-/master_tags/DiFX-2.7/utilities/difxdb/difxdbInventory/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/difxdbModule/
-/master_tags/DiFX-2.7/utilities/difxdb/difxdbModule/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/difxdbParseFiles/
-/master_tags/DiFX-2.7/utilities/difxdb/difxdbParseFiles/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/difxdbTapelog/
-/master_tags/DiFX-2.7/utilities/difxdb/difxdbTapelog/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/difxqueue/
-/master_tags/DiFX-2.7/utilities/difxdb/difxqueue/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/expad/
-/master_tags/DiFX-2.7/utilities/difxdb/expad/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/getexplist/
-/master_tags/DiFX-2.7/utilities/difxdb/getexplist/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/getmodules/
-/master_tags/DiFX-2.7/utilities/difxdb/getmodules/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/getreleaselist/
-/master_tags/DiFX-2.7/utilities/difxdb/getreleaselist/Makefile.in
-
-# /master_tags/DiFX-2.7/utilities/difxdb/getslot/
-/master_tags/DiFX-2.7/utilities/difxdb/getslot/Makefile.in
-
-# /master_tags/DiFX-RA-1.0.0/applications/guiServer/network/
-/master_tags/DiFX-RA-1.0.0/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-RA-1.0.0/applications/guiServer/src/
-/master_tags/DiFX-RA-1.0.0/applications/guiServer/src/.deps
-
-# /master_tags/DiFX-RA-1.0.1/applications/guiServer/network/
-/master_tags/DiFX-RA-1.0.1/applications/guiServer/network/.deps
-
-# /master_tags/DiFX-RA-1.0.1/applications/guiServer/src/
-/master_tags/DiFX-RA-1.0.1/applications/guiServer/src/.deps
-
-# /utilities/trunk/difxdb/
-/utilities/trunk/difxdb/Makefile.in
-
-# /utilities/trunk/difxdb/comedia/
-/utilities/trunk/difxdb/comedia/Makefile.in
-
-# /utilities/trunk/difxdb/comedia/resources/
-/utilities/trunk/difxdb/comedia/resources/Makefile.in
-
-# /utilities/trunk/difxdb/conf/
-/utilities/trunk/difxdb/conf/Makefile.in
-
-# /utilities/trunk/difxdb/database/
-/utilities/trunk/difxdb/database/Makefile.in
-
-# /utilities/trunk/difxdb/difxdbExperiment/
-/utilities/trunk/difxdb/difxdbExperiment/Makefile.in
-
-# /utilities/trunk/difxdb/difxdbInventory/
-/utilities/trunk/difxdb/difxdbInventory/Makefile.in
-
-# /utilities/trunk/difxdb/difxdbModule/
-/utilities/trunk/difxdb/difxdbModule/Makefile.in
-
-# /utilities/trunk/difxdb/difxdbParseFiles/
-/utilities/trunk/difxdb/difxdbParseFiles/Makefile.in
-
-# /utilities/trunk/difxdb/difxdbTapelog/
-/utilities/trunk/difxdb/difxdbTapelog/Makefile.in
-
-# /utilities/trunk/difxdb/difxqueue/
-/utilities/trunk/difxdb/difxqueue/Makefile.in
-
-# /utilities/trunk/difxdb/expad/
-/utilities/trunk/difxdb/expad/Makefile.in
-
-# /utilities/trunk/difxdb/getexplist/
-/utilities/trunk/difxdb/getexplist/Makefile.in
-
-# /utilities/trunk/difxdb/getmodules/
-/utilities/trunk/difxdb/getmodules/Makefile.in
-
-# /utilities/trunk/difxdb/getreleaselist/
-/utilities/trunk/difxdb/getreleaselist/Makefile.in
-
-# /utilities/trunk/difxdb/getslot/
-/utilities/trunk/difxdb/getslot/Makefile.in
-
-# /virtualtrunk/
+#########################################
+##############autotools##################
+#########################################
+
+# http://www.gnu.org/software/automake
+
+Makefile.in
+/ar-lib
+/mdate-sh
+/py-compile
+/test-driver
+/ylwrap
+.deps/
+.dirstamp
+
+# http://www.gnu.org/software/autoconf
+
+autom4te.cache
+/autoscan.log
+/autoscan-*.log
+/aclocal.m4
+/compile
+/config.cache
+/config.guess
+/config.h.in
+/config.log
+/config.status
+/config.sub
+/configure
+/configure.scan
+/depcomp
+/install-sh
+/missing
+/stamp-h1
+
+# https://www.gnu.org/software/libtool/
+
+/ltmain.sh
+
+# http://www.gnu.org/software/texinfo
+
+/texinfo.tex
+
+# http://www.gnu.org/software/m4/
+
+m4/libtool.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4
+
+# Generated Makefile
+# (meta build system like autotools,
+# can automatically generate from config.status script
+# (which is called by configure script))
+Makefile
+
+
+#########################################
+##############Python.  ##################
+#########################################
+
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+#   For a library or package, you might want to ignore these files since the code is
+#   intended to run in multiple environments; otherwise, check them in:
+# .python-version
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+#   However, in case of collaboration, if having platform-specific dependencies or dependencies
+#   having no cross-platform support, pipenv may install dependencies that don't work, or not
+#   install all needed dependencies.
+#Pipfile.lock
+
+# poetry
+#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
+#   This is especially recommended for binary packages to ensure reproducibility, and is more
+#   commonly ignored for libraries.
+#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
+#poetry.lock
+
+# pdm
+#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
+#pdm.lock
+#   pdm stores project-wide configurations in .pdm.toml, but it is recommended to not include it
+#   in version control.
+#   https://pdm.fming.dev/#use-with-ide
+.pdm.toml
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
+#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
+#  and can be added to the global gitignore or merged into this file.  For a more nuclear
+#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
+#.idea/
+
+#########################################
+##############. c.  .  ##################
+#########################################
+
+# Prerequisites
+*.d
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+
+#########################################
+##############.  C++.  ##################
+#########################################
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+
+
+
+
+
+#########################################
+############## Perl    ##################
+#########################################
+
+!Build/
+.last_cover_stats
+/META.yml
+/META.json
+/MYMETA.*
+*.o
+*.pm.tdy
+*.bs
+
+# Devel::Cover
+cover_db/
+
+# Devel::NYTProf
+nytprof.out
+
+# Dist::Zilla
+/.build/
+
+# Module::Build
+_build/
+Build
+Build.bat
+
+# Module::Install
+inc/
+
+# ExtUtils::MakeMaker
+/blib/
+/_eumm/
+/*.gz
+/Makefile
+/Makefile.old
+/MANIFEST.bak
+/pm_to_blib
+/*.zip
+
+#########################################
+##############Fortran77##################
+#########################################
+
+# same with C++
+
+
+#########################################
+##############  Java   ##################
+#########################################
+
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+replay_pid*
