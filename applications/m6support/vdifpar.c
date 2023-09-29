@@ -2,7 +2,7 @@
  * (c) Massachusetts Institute of Technology, 2013..2023
  * (c) Geoffrey B. Crew, 2013..2023
  *
- * $Id: vdifpar.c 5790 2023-04-02 15:27:35Z gbc $
+ * $Id: vdifpar.c 5824 2023-09-28 22:25:41Z gbc $
  *
  * This file provides support for the fuse interface.
  * This version is rather primitive in many respects.
@@ -354,7 +354,7 @@ static int create_params_entry(void)
         strcpy(clvpo.proc_top_dir, VDIFUSE_VPROCDIR);
     strcpy(vd_cache[ee].u.vpars.proc_top_dir, clvpo.proc_top_dir);
     strcpy(vthreads_topdir, clvpo.proc_top_dir);
-    vthreads_topdir_len = strlen(vdifproc_topdir);
+    vdifproc_topdir_len = strlen(vdifproc_topdir);
 
     /* defaults for discovered items which will be updated*/
     vd_cache[ee].u.vpars.est_pkt_rate = 1;

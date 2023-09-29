@@ -2,7 +2,7 @@
  * (c) Massachusetts Institute of Technology, 2013..2023
  * (c) Geoffrey B. Crew, 2013..2023
  *
- * $Id: vdifuse.h 5791 2023-04-02 15:30:39Z gbc $
+ * $Id: vdifuse.h 5810 2023-04-04 22:24:59Z gbc $
  *
  * This file provides support for the fuse interface
  * ## items are not fully implemented
@@ -24,7 +24,7 @@
 #endif /* VDIFUSE_VERSION */
 
 /* acceptable are [VDIFUSE_VERSION-VDIFUSE_VERANGE .. VDIFUSE_VERSION] */
-#define VDIFUSE_VERANGE 0.01
+#define VDIFUSE_VERANGE 0.02
 
 #define VDIFUSE_MAX_PATH 256
 #define VDIFUSE_SEARCH_MAX 9999     /* max packet size */
