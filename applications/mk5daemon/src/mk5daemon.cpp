@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id: mk5daemon.cpp 10522 2022-06-28 13:32:41Z HelgeRottmann $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/src/mk5daemon.cpp $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/mk5daemon.cpp $
  * $LastChangedRevision: 10522 $
  * $Author: HelgeRottmann $
  * $LastChangedDate: 2022-06-28 21:32:41 +0800 (二, 2022-06-28) $

@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: recover.cpp 4841 2012-09-23 20:46:36Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/mk5dir/recover.cpp $
+// $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/recover.cpp $
 // $LastChangedRevision: 4841 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2012-09-24 04:46:36 +0800 (一, 2012-09-24) $

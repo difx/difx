@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id: condition.cpp 5460 2013-07-08 19:40:45Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/src/condition.cpp $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/condition.cpp $
  * $LastChangedRevision: 5460 $
  * $Author: WalterBrisken $
  * $LastChangedDate: 2013-07-09 03:40:45 +0800 (二, 2013-07-09) $

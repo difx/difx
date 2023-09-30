@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id: swap.h 7428 2016-08-16 22:13:25Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/src/swap.h $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/swap.h $
  * $LastChangedRevision: 7428 $
  * $Author: WalterBrisken $
  * $LastChangedDate: 2016-08-17 06:13:25 +0800 (三, 2016-08-17) $
