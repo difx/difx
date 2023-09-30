@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: vex2difx.cpp 10918 2023-03-15 23:11:14Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/src/vex2difx.cpp $
- * $LastChangedRevision: 10918 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2023-03-16 07:11:14 +0800 (四, 2023-03-16) $
+ * $Id: vex2difx.cpp 10990 2023-06-19 10:14:03Z JanWagner $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/vex2difx.cpp $
+ * $LastChangedRevision: 10990 $
+ * $Author: JanWagner $
+ * $LastChangedDate: 2023-06-19 18:14:03 +0800 (一, 2023-06-19) $
  *
  *==========================================================================*/
 
@@ -233,6 +233,7 @@ static DifxAntenna *makeDifxAntennas(const Job &J, const VexData *V, int *n)
 	for(i = 0, a = J.jobAntennas.begin(); a != J.jobAntennas.end(); ++i, ++a)
 	{
 		const VexAntenna *ant = V->getAntenna(*a);
+
 		snprintf(A[i].name, DIFXIO_NAME_LENGTH, "%s", ant->difxName.c_str());
 		A[i].X = ant->x + ant->dx*(mjd-ant->posEpoch)*86400.0;
 		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
@@ -1045,6 +1046,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								{
 									continue;
 								}
+
 								if(!corrSetup->correlateFreqId(freqId))
 								{
 									continue;

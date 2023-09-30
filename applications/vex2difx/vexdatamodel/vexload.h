@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: vexload.h 10846 2022-12-02 21:44:33Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/vexdatamodel/vexload.h $
- * $LastChangedRevision: 10846 $
+ * $Id: vexload.h 10845 2022-12-02 21:37:56Z WalterBrisken $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/vexdatamodel/vexload.h $
+ * $LastChangedRevision: 10845 $
  * $Author: WalterBrisken $
- * $LastChangedDate: 2022-12-03 05:44:33 +0800 (六, 2022-12-03) $
+ * $LastChangedDate: 2022-12-03 05:37:56 +0800 (六, 2022-12-03) $
  *
  *==========================================================================*/
 

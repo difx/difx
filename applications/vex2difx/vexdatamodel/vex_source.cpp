@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: vex_source.cpp 10363 2022-01-27 22:57:59Z WalterBrisken $
+ * $Id: vex_source.cpp 11032 2023-08-07 21:14:39Z WalterBrisken $
  * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10363 $
+ * $LastChangedRevision: 11032 $
  * $Author: WalterBrisken $
- * $LastChangedDate: 2022-01-28 06:57:59 +0800 (五, 2022-01-28) $
+ * $LastChangedDate: 2023-08-08 05:14:39 +0800 (二, 2023-08-08) $
  *
  *==========================================================================*/
 
