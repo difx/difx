@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: fitsGD.c 1531 2009-09-24 17:36:25Z AdamDeller $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsGD.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsGD.c $
 // $LastChangedRevision: 1531 $
 // $Author: AdamDeller $
 // $LastChangedDate: 2009-09-25 01:36:25 +0800 (五, 2009-09-25) $
