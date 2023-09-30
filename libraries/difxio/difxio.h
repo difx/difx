@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id: difxio.h 9598 2020-07-08 08:37:08Z JanWagner $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio.h $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio.h $
  * $LastChangedRevision: 9598 $
  * $Author: JanWagner $
  * $LastChangedDate: 2020-07-08 16:37:08 +0800 (三, 2020-07-08) $

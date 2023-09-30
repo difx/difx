@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: difx_freq.c 10816 2022-11-11 22:20:23Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_freq.c $
-// $LastChangedRevision: 10816 $
+// $Id: difx_freq.c 10817 2022-11-11 22:25:27Z JanWagner $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_freq.c $
+// $LastChangedRevision: 10817 $
 // $Author: JanWagner $
-// $LastChangedDate: 2022-11-12 06:20:23 +0800 (六, 2022-11-12) $
+// $LastChangedDate: 2022-11-12 06:25:27 +0800 (六, 2022-11-12) $
 //
 //============================================================================
 

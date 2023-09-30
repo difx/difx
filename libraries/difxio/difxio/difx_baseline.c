@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: difx_baseline.c 10579 2022-08-02 10:58:00Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_baseline.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_baseline.c $
 // $LastChangedRevision: 10579 $
 // $Author: JanWagner $
 // $LastChangedDate: 2022-08-02 18:58:00 +0800 (二, 2022-08-02) $

@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: difx_eop.c 10803 2022-11-09 02:06:45Z ChrisPhillips $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_eop.c $
-// $LastChangedRevision: 10803 $
+// $Id: difx_eop.c 10842 2022-12-01 00:38:49Z ChrisPhillips $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_eop.c $
+// $LastChangedRevision: 10842 $
 // $Author: ChrisPhillips $
-// $LastChangedDate: 2022-11-09 10:06:45 +0800 (三, 2022-11-09) $
+// $LastChangedDate: 2022-12-01 08:38:49 +0800 (四, 2022-12-01) $
 //
 //============================================================================
 

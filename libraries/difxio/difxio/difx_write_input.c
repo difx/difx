@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: difx_write_input.c 9370 2019-12-15 18:51:24Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_write_input.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_write_input.c $
 // $LastChangedRevision: 9370 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2019-12-16 02:51:24 +0800 (一, 2019-12-16) $

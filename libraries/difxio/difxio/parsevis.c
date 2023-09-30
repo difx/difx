@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: parsevis.c 7850 2017-06-01 08:46:47Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/parsevis.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/parsevis.c $
 // $LastChangedRevision: 7850 $
 // $Author: JanWagner $
 // $LastChangedDate: 2017-06-01 16:46:47 +0800 (四, 2017-06-01) $

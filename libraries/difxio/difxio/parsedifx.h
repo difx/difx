@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: parsedifx.h 4309 2012-03-09 16:10:09Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/parsedifx.h $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/parsedifx.h $
 // $LastChangedRevision: 4309 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2012-03-10 00:10:09 +0800 (六, 2012-03-10) $

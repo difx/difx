@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: difx_scan.c 7647 2017-02-16 20:32:32Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_scan.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_scan.c $
 // $LastChangedRevision: 7647 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2017-02-17 04:32:32 +0800 (五, 2017-02-17) $

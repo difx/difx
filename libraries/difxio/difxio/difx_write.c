@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: difx_write.c 8840 2019-04-05 18:26:25Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_write.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_write.c $
 // $LastChangedRevision: 8840 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2019-04-06 02:26:25 +0800 (六, 2019-04-06) $

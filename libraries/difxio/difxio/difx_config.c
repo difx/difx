@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: difx_config.c 9650 2020-08-05 14:06:57Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_config.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_config.c $
 // $LastChangedRevision: 9650 $
 // $Author: JanWagner $
 // $LastChangedDate: 2020-08-05 22:06:57 +0800 (三, 2020-08-05) $

@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: difx_poly_model.c 7851 2017-06-01 17:16:41Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_poly_model.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_poly_model.c $
 // $LastChangedRevision: 7851 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2017-06-02 01:16:41 +0800 (五, 2017-06-02) $

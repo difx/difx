@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: difx_calculator.c 4129 2011-12-12 05:34:16Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_calculator.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_calculator.c $
 // $LastChangedRevision: 4129 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2011-12-12 13:34:16 +0800 (一, 2011-12-12) $

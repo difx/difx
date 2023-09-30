@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: difx_flag.c 7020 2015-09-25 14:38:50Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_flag.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_flag.c $
 // $LastChangedRevision: 7020 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2015-09-25 22:38:50 +0800 (五, 2015-09-25) $

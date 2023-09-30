@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: difx_spacecraft.c 10303 2021-10-27 17:15:44Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_spacecraft.c $
-// $LastChangedRevision: 10303 $
+// $Id: difx_spacecraft.c 11033 2023-08-08 15:57:56Z WalterBrisken $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_spacecraft.c $
+// $LastChangedRevision: 11033 $
 // $Author: WalterBrisken $
-// $LastChangedDate: 2021-10-28 01:15:44 +0800 (四, 2021-10-28) $
+// $LastChangedDate: 2023-08-08 23:57:56 +0800 (二, 2023-08-08) $
 //
 //============================================================================
 

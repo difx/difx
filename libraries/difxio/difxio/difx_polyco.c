@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: difx_polyco.c 7037 2015-10-15 01:49:46Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_polyco.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_polyco.c $
 // $LastChangedRevision: 7037 $
 // $Author: JanWagner $
 // $LastChangedDate: 2015-10-15 09:49:46 +0800 (四, 2015-10-15) $

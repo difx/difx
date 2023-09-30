@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: difx_antenna.c 10412 2022-03-10 16:25:08Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_antenna.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_antenna.c $
 // $LastChangedRevision: 10412 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2022-03-11 00:25:08 +0800 (五, 2022-03-11) $

@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: difx_threads.c 7655 2017-02-20 02:57:56Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_threads.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_threads.c $
 // $LastChangedRevision: 7655 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2017-02-20 10:57:56 +0800 (一, 2017-02-20) $
