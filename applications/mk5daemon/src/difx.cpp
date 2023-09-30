@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id: difx.cpp 8271 2018-05-03 22:03:42Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/src/difx.cpp $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/difx.cpp $
  * $LastChangedRevision: 8271 $
  * $Author: WalterBrisken $
  * $LastChangedDate: 2018-05-04 06:03:42 +0800 (五, 2018-05-04) $
