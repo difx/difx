@@ -1,6 +1,7 @@
 Version 2.8.0
 ~~~~~~~~~~~~~
 * Version bump prior to DIFX-2.8 branching, Nov 4, 2022
+* mk6mon update slot count for Mark6StatusMessage parsing
 
 Version 2.7.0
 ~~~~~~~~~~~~~

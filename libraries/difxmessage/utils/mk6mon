@@ -50,8 +50,8 @@ def signal_handler(signal, frame):
 
 program = 'mk6mon'
 author  = 'Helge Rottmann, Mark Wainright and Walter Brisken'
-version = '2.7'
-verdate = '20220721'
+version = '2.8'
+verdate = '20230502'
 
 def usage(prog):
         print('%s ver. %s  %s  %s\n\n' % (program, version, author, verdate))
@@ -85,7 +85,9 @@ class Mk6MessageParser:
         messageType = dom.getElementsByTagName('type')[0].firstChild.data
 
         nodeFrom = dom.getElementsByTagName('from')[0].firstChild.data
-        
+        if '.' in nodeFrom:
+            nodeFrom = nodeFrom[:nodeFrom.find('.')]
+
         if nodeFrom not in self.rowsStatus.keys():
             row = {}
             newStatus = True
@@ -158,11 +160,14 @@ class Mk6MessageParser:
         host = dom.getElementsByTagName("from")[0].firstChild.data
         activeVSN = dom.getElementsByTagName("activeVSN")[0].firstChild.data
 
+        if '.' in host:
+            host = host[:host.find('.')]
+
         key = host + "_" + activeVSN
 
         if key not in self.rowsActivity.keys():
-                row = {}
-                updateActivity = True
+            row = {}
+            updateActivity = True
         else:
             row = self.rowsActivity[key]
 
@@ -187,6 +192,8 @@ class Mk6MessageParser:
         '''
 
         for slot in range(1,5):
+            if int(slot) > self.numSlots:
+                self.numSlots = int(slot)
             row["msn_{}".format(slot)] = dom.getElementsByTagName("slot{}MSN".format(slot))[0].firstChild.data
             row["numDisks_{}".format(slot)] = dom.getElementsByTagName("slot{}Disks".format(slot))[0].firstChild.data
             row["numMissingDisks_{}".format(slot)] = dom.getElementsByTagName("slot{}MissingDisks".format(slot))[0].firstChild.data
