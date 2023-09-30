@@ -31,7 +31,7 @@
 
 PROGRAM = 'startdifx'
 VERSION = '3.0.7'
-VERDATE = '20221219'
+VERDATE = '20230316'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
