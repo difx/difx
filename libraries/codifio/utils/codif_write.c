@@ -195,6 +195,8 @@ int main (int argc, char * const argv[]) {
   };
 
   for (i=0;i<MAXTHREAD;i++) ofile[i] = -1;
+  framesperperiod = 0;
+  period = 0;
   
   updatetime = DEFAULT_UPDATETIME;
 
@@ -303,7 +305,7 @@ int main (int argc, char * const argv[]) {
       printf("  -f/-filesize <N>       Write files N seconds long\n");
       printf("  -s/-scale <S>          Reduce data to 8 bits, dividing by S\n");
       printf("  -S/-split              Write threads to separate files\n");
-      printf("  -w/-wait               Wait for first packet before starting recording timer/n");
+      printf("  -w/-wait               Wait for first packet before starting recording timer\n");
       printf("  -V/-verbose            Verbose output/n");
       printf("  -h/-help               This list\n");
       return(1);
@@ -600,7 +602,6 @@ void alarm_signal (int sig) {
   long avgpkt;
   float delta, rate, percent;
   datastats sumstats;
-  char dropStr[5];
   t2 = tim();
   delta = t2-t1;
 
@@ -633,14 +634,6 @@ void alarm_signal (int sig) {
   else 
     percent = (double)sumstats.pkt_drop/(unsigned long long)(sumstats.npacket+sumstats.pkt_drop)*100;
 
-  /*  
-  if (1 || sumstats.pkt_drop<10000) {
-    snprintf(dropStr, 5, "%" PRIu64, sumstats.pkt_drop);
-  } else {
-    strcpy(dropStr, "XXXX");
-  }
-  */
-  
   printf("%6llu  %4d %4d %4ld %3.1f %8.3f %4" PRIu64 " %6.2f %3" PRIu64 "\n", 
 	 (unsigned long long)sumstats.npacket, sumstats.minpkt_size, sumstats.maxpkt_size, avgpkt,
 	 delta, rate,  sumstats.pkt_drop, percent, sumstats.pkt_oo);	
