@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id: vex_data.h 10363 2022-01-27 22:57:59Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/vexdatamodel/vex_data.h $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/vexdatamodel/vex_data.h $
  * $LastChangedRevision: 10363 $
  * $Author: WalterBrisken $
  * $LastChangedDate: 2022-01-28 06:57:59 +0800 (五, 2022-01-28) $

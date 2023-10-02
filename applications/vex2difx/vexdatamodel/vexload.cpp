@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: vexload.cpp 10846 2022-12-02 21:44:33Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/vexdatamodel/vexload.cpp $
- * $LastChangedRevision: 10846 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-12-03 05:44:33 +0800 (六, 2022-12-03) $
+ * $Id: vexload.cpp 10966 2023-05-09 06:52:03Z JanWagner $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/vexdatamodel/vexload.cpp $
+ * $LastChangedRevision: 10966 $
+ * $Author: JanWagner $
+ * $LastChangedDate: 2023-05-09 14:52:03 +0800 (二, 2023-05-09) $
  *
  *==========================================================================*/
 
@@ -1290,6 +1290,10 @@ static int collectIFInfo(VexSetup &setup, VexData *V, Vex *v, const char *antDef
 		{
 			vif.phaseCalIntervalMHz = 200.0f;
 		}
+		else if(fabs(phaseCal-77777000) < 1.0)
+		{
+			vif.phaseCalIntervalMHz = 77.777f;
+		}
 		else
 		{
 			std::cerr << "Warning: Unsupported pulse cal interval of " << (phaseCal/1000000.0) << " MHz requested for antenna " << antDefName << "." << std::endl;
@@ -2499,7 +2503,7 @@ static int getModes(VexData *V, Vex *v)
 			if(type == VexSetup::SetupIncomplete)
 			{
 				++nIncomplete;
-					
+
 				if(reportIncompleteModes)
 				{
 					if(antModeIncompleteFile == 0)

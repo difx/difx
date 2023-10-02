@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: vex_mode.h 10363 2022-01-27 22:57:59Z WalterBrisken $
+ * $Id: vex_mode.h 10966 2023-05-09 06:52:03Z JanWagner $
  * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10363 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-01-28 06:57:59 +0800 (五, 2022-01-28) $
+ * $LastChangedRevision: 10966 $
+ * $Author: JanWagner $
+ * $LastChangedDate: 2023-05-09 14:52:03 +0800 (二, 2023-05-09) $
  *
  *==========================================================================*/
 
@@ -61,7 +61,7 @@ public:
 	double getAverageSampleRate() const;	/* samples per second */
 	void swapPolarization(const std::string &antName);
 	void setSampling(const std::string &antName, unsigned int streamId, enum SamplingType dataSampling);
-	void setPhaseCalInterval(const std::string &antName, int phaseCalIntervalMHz);
+	void setPhaseCalInterval(const std::string &antName, float phaseCalIntervalMHz);
 	void selectTones(const std::string &antName, enum ToneSelection selection, double guardBandMHz);
 	void generateRecordChans();
 	bool hasDuplicateBands() const;
