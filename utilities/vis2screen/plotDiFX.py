@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import sys, os, struct, time, pylab, math, numpy
 import parseDiFX
 from optparse import OptionParser
@@ -113,7 +113,7 @@ polpair     = []
 nchan       = []
 med         = []
 for filename in args:
-    difxinputs.append(open(filename))
+    difxinputs.append(open(filename, 'rb'))
     freqindex.append(0)
     nchan.append(0)
     baseline.append(0)
@@ -151,8 +151,8 @@ while not len(nextheader[0]) == 0 and keeplooping:
             break
         freqindex[i] = nextheader[i][5]
         polpair[i] = nextheader[i][6]
-        nchan[i] = freqs[freqindex[i]].numchan/freqs[freqindex[i]].specavg
-        vis[i] = numpy.fromstring(difxinputs[i].read(8*nchan[i]), dtype='complex64')
+        nchan[i] = freqs[freqindex[i]].numchan//freqs[freqindex[i]].specavg
+        vis[i] = numpy.frombuffer(difxinputs[i].read(8*nchan[i]), dtype='complex64')
         if nchan[i] > maxchannels:
             print ("How embarrassing - you have tried to read files with more than " + \
                 str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!")
@@ -187,10 +187,10 @@ while not len(nextheader[0]) == 0 and keeplooping:
             (targetfreq < 0 or targetfreq == freqindex[i]) and (polpair[i] in pollist) and \
             not (noauto and (baseline[i] % 257) == 0):
             lag[i] = fft.ifft(vis[i], nchan[i])
-            for j in range(nchan[i]/2):
-                lagamp[i][j+nchan[i]/2] = abs(lag[i][j])
-            for j in range(nchan[i]/2):
-                lagamp[i][j] = abs(lag[i][j+nchan[i]/2])
+            for j in range(nchan[i]//2):
+                lagamp[i][j+nchan[i]//2] = abs(lag[i][j])
+            for j in range(nchan[i]//2):
+                lagamp[i][j] = abs(lag[i][j+nchan[i]//2])
             med[i] = numpy.median(amp[i][:nchan[i]])
             if i > 0:
                 for j in range(len(nextheader[0])):
@@ -238,7 +238,7 @@ while not len(nextheader[0]) == 0 and keeplooping:
        (targetfreq < 0 or freqindex[0] == targetfreq) and (polpair[0] in pollist) and \
         not (noauto and (baseline[i] % 257) == 0):
         pylab.subplot(311)
-        ant1index = baseline[0] / 256 - 1
+        ant1index = baseline[0] // 256 - 1
         ant2index = baseline[0] % 256 - 1
         ant1name  = telescopes[ant1index].name
         ant2name  = telescopes[ant2index].name

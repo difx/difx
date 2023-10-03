@@ -100,7 +100,11 @@ def getDataSeries(path, Nmax=0):
 		t = getStartingTime(difxlog)
 		wt = getWallclockTime(difxlog)
 		nc = getNodeCount(difxlog)
-		# print('From ',difxlog, ' got ', t, wt, nc)
+		# print('From ' + difxlog + ' got ', t, wt, nc)
+
+		if t <= 0 or wt <= 0 or nc <= 0:
+			# print('From ' + difxlog + ' got skippable data ', t, wt, nc)
+			continue
 
 		starttimes.append(t)
 		wallclocktimes.append(wt)
@@ -150,6 +154,7 @@ if __name__ == "__main__":
 	# Data and plots
 
 	fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(2, 2, constrained_layout=True)
+	Ndrawn = 0
 
 	for path in userargs.directories:
 
@@ -159,6 +164,9 @@ if __name__ == "__main__":
 			expt = getExperimentName(path)
 
 		data_tstartUnix, data_twall, data_nodecount = getDataSeries(path, Nmax=userargs.maxfiles)
+		if len(data_tstartUnix) <= 0:
+			print('No DiFX log files in directory ' + path)
+			continue
 
 		iasc = np.argsort(data_tstartUnix) # indices that provide data_tstartUnix sorted by increasing time
 		tstartUnixSorted = [data_tstartUnix[ii] for ii in iasc]
@@ -171,6 +179,15 @@ if __name__ == "__main__":
 		ax4.hist(t_gaps, bins_idletime, alpha=0.5, label=expt)
 
 		plt.draw()
+		Ndrawn += 1
+
+		if max(data_twall) > userargs.maxruntime:
+			print("Warning: '%s' logs had max wallclock duration of %d sec, exceeds %d sec binning. Try --maxruntime %d" % (path, max(data_twall), userargs.maxruntime, 60*int(1 + max(data_twall)/60)))
+
+	# Early exit if no data
+
+	if Ndrawn <= 0:
+		sys.exit(0)
 
 	# Captions
 
