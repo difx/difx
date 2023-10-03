@@ -2,13 +2,42 @@
 
 The official repo for DiFX.
 
-## Install
+## Installation
 
 DiFX requires MPI, PGPLOT and IPP.
 
 Details see https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/installation.
 
-To install the latest trunk version of DiFX, follow these simple instructions:
+### For DiFX Users
+
+At the time of writing, the current stable version of DiFX is DiFX-2.8.1. You can look the DiFX tags for more version.
+
+Then we recommend the user to check out stable version right now. If you want to check out v2.8.1, just type :
+
+```bash
+$ git clone https://github.com/difx/difx -b v2.8.1
+```
+
+### For DiFX Developers
+
+To install the latest dev branch of DiFX, follow these simple instructions:
+
+```bash
+$ git clone https://github.com/difx/difx
+$ cd difx
+# now there are just one main branch
+$ git checkout -b dev origin/dev
+# Now you are in dev branch, 
+# we will do the development based on dev branch
+# until we want do a release tag version
+# do coding now
+```
+
+
+
+### Compiling DiFX
+
+
 
 ```bash
 # make sure the setting in setup.bash is correct
@@ -42,6 +71,10 @@ See the userguide of DiFX.
 ## Contributing
 
 Feel free to join us!  [Open an issue](https://github.com/difx/difx/issues/new) or submit PRs is always welcome.
+
+Find more details on [CONTRIBUTION](https://github.com/difx/difx/CONTIBUTION.md) .
+
+
 
 Please follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
 
