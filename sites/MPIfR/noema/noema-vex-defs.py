@@ -7,16 +7,17 @@ Sky frequencies of filterbank channels are derived from 1st LO
 and 2nd LO information. Channels are always 64 MHz wide.
 
 The Mark6 recorder to PolyFix units and channels assignment
-of EHT&GMVA 2022 are assumed, as in R. Garcias spreadsheets
+of EHT & GMVA are assumed, as in R. Garcias spreadsheets
 2022_pNOEMA_EHT_backend_freq_setup_230G.xlsx and
 2022_pNOEMA_VLBI_backend_freq_setup_GMVA.xlsx
+2023-05_NOEMA_freq_setup_GMVA.pdf
 '''
 
 import argparse
 import sys
 
 __author__ = "Jan Wagner (MPIfR)"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 NOEMA_PFB_BANDWIDTH_MHZ = 64.0
 
@@ -30,7 +31,7 @@ def parse_args(args: []):
 	parser.add_argument('--all-basebands', dest='do_full_polyfix_overview', action='store_true', help='Do not output VLBI recorder specific channels but rather the entire 2 x 128 ch x 64 MHz set of PolyFix channels')
 	parser.add_argument('-f', '--lo1', dest='lo1', metavar='GHz', default='221.100', help='frequency of 1st LO (GMVA 92.101, EHT 221.100; default: %(default)s)')
 	parser.add_argument('-F', '--lo2', dest='lo2', metavar='GHz', default='7.744', help='frequency of 2nd LO (default: %(default)s)')
-	parser.add_argument('-r', dest='recorders', default='1,2,3,4', help='list of recorder ID numbers (default: %(default)s), for GMVA2021 use 5')
+	parser.add_argument('-r', dest='recorders', default='1,2,3,4', help='list of recorder ID numbers (default: %(default)s), for GMVA 8 Gbps use 5, for GMVA 16 Gbps use 6,7')
 	parser.add_argument('-c', dest='cabling', default='5-9', help='link cabling config (default "%(default)s"; use "4-8" or "5-9")')
 	parser.add_argument('--if', '-i', dest='do_vex_if', action='store_true', help='also output VEX $IF section')
 	parser.add_argument('--bbc', '-b', dest='do_vex_bbc', action='store_true', help='also output VEX $BBC section')
@@ -213,6 +214,20 @@ class NoemaVexFreqGenerator:
 			subblock(LSB, INNER, range(16,32), 'L')
 			print('%s* Recorder 5, slot 2, LSB-Inner, RCP, subbands 16-31' % (self.indent))
 			subblock(LSB, INNER, range(16,32), 'R')
+
+		if 6 in recorders:
+
+			print('%s* Recorder 6, slot 1, LSB-Inner, LCP, subbands 16-31' % (self.indent))
+			subblock(LSB, INNER, range(32,48), 'L')
+			print('%s* Recorder 6, slot 2, LSB-Inner, RCP, subbands 16-31' % (self.indent))
+			subblock(LSB, INNER, range(16,32), 'L')
+
+		if 7 in recorders:
+
+			print('%s* Recorder 7, slot 1, LSB-Inner, LCP, subbands 16-31' % (self.indent))
+			subblock(LSB, INNER, range(16,32), 'R')
+			print('%s* Recorder 7, slot 2, LSB-Inner, RCP, subbands 16-31' % (self.indent))
+			subblock(LSB, INNER, range(32,48), 'R')
 
 		print('enddef;')
 
