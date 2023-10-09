@@ -110,16 +110,16 @@ def run_interactive(corrjoblist, outdir):
     errors = []
     difxwatch = None
     for jobname in sorted(corrjoblist.keys()):
-        if options.difxwatch:
-            print ("starting difxwatch in the background")
-            difxwatch = subprocess.Popen(["difxwatch", "-i 600"])
-        else:
-            try:
-                command = ["pkill", "-2", "-f", "difxwatch"]
-                code = subprocess.call(
-                        command, stdout=sys.stdout, stderr=sys.stderr)
-            except:
-                pass
+        #if options.difxwatch:
+        #    print ("starting difxwatch in the background")
+        #    difxwatch = subprocess.Popen(["difxwatch", "-i 600"])
+        #else:
+        #    try:
+        #        command = ["pkill", "-2", "-f", "difxwatch"]
+        #        code = subprocess.call(
+        #                command, stdout=sys.stdout, stderr=sys.stderr)
+        #    except:
+        #        pass
 
         # start the correlator log
         print ("starting errormon2 in the background")
@@ -300,13 +300,14 @@ def write_difxlog(log_in, outdir, jobname):
     Also check for errors and incomplete jobs
     """
 
-    logfilename = get_difxlogname(outdir, jobname)
+    logfilename = espressolib.get_difxlogname(outdir, jobname)
     #logfiles.append(logfilename)
-    logfile = open(outdir+"/"+logfilename, "w")
+    logfile = open(logfilename, "w")
     print ("filtering the log file and copying to", logfile.name)
     #shutil.copy2('log', logfile)
     log_lines = filter_log(log_in, jobname)
-    logfile.write(log_lines)
+    for log_line in log_lines:
+        logfile.write(log_line)
     logfile.close()
     job_errors = []
     job_ok, job_errors = chk_difxlog(log_lines)
@@ -324,12 +325,15 @@ def chk_difxlog(logfile):
             job_finish = True
         elif "ERROR" in line:
             job_errors.append(line)
+        elif "FATAL" in line:
+            job_errors.append(line)
 
-    job_ok = False
-    if job_finish and not job_errors:
-        job_ok = True
+    job_ok = True
     if not job_finish:
-        job_errors.append(jobname + " did not finish\n")
+        job_ok = False
+        job_errors.append("did not finish\n")
+    if job_errors:
+        pass # may want to add specific non-fatal errors here
 
     return job_ok, job_errors
 
@@ -530,7 +534,7 @@ difx_message_port = os.environ.get("DIFX_MESSAGE_PORT", 50201)
 good_jobs = []
 bad_jobs = []
 job_errors = []
-speedups = []
+speedups = {}
 try:
     if options.interactive:
         good_jobs, bad_jobs, job_errors = run_interactive(corrjoblist, outdir)
