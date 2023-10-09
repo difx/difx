@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: fitsGM.c 8269 2018-05-03 20:23:16Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsGM.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsGM.c $
 // $LastChangedRevision: 8269 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2018-05-04 04:23:16 +0800 (五, 2018-05-04) $

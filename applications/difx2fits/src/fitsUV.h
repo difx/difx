@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: fitsUV.h 10537 2022-07-15 20:18:57Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsUV.h $
-// $LastChangedRevision: 10537 $
+// $Id: fitsUV.h 11039 2023-08-14 21:28:47Z WalterBrisken $
+// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsUV.h $
+// $LastChangedRevision: 11039 $
 // $Author: WalterBrisken $
-// $LastChangedDate: 2022-07-16 04:18:57 +0800 (六, 2022-07-16) $
+// $LastChangedDate: 2023-08-15 05:28:47 +0800 (二, 2023-08-15) $
 //
 //============================================================================
 #ifndef __FITS_UV_H__

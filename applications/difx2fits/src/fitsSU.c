@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: fitsSU.c 8014 2017-10-03 15:28:29Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsSU.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsSU.c $
 // $LastChangedRevision: 8014 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2017-10-03 23:28:29 +0800 (二, 2017-10-03) $

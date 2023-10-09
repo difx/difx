@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: fitsML.c 10492 2022-06-06 23:26:40Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsML.c $
-// $LastChangedRevision: 10492 $
+// $Id: fitsML.c 10864 2022-12-30 16:24:23Z WalterBrisken $
+// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsML.c $
+// $LastChangedRevision: 10864 $
 // $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-07 07:26:40 +0800 (二, 2022-06-07) $
+// $LastChangedDate: 2022-12-31 00:24:23 +0800 (六, 2022-12-31) $
 //
 //============================================================================
 #include <stdlib.h>
@@ -80,7 +80,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 	int nRowBytes;
 	char str[80];
 	int32_t arrayId1;
-	int a, i, k, p, s;
+	int i, k, p, s;
 	double shiftedClock[array_N_POLY];
 	float freqVar[array_MAX_BANDS];
 	float faraday;
@@ -201,29 +201,17 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 
 		for(p = 0; p < np; ++p)
 		{
-			for(a = 0; a < config->nAntenna; ++a)
+			int antId;
+
+			for(antId = 0; antId < scan->nAntenna; ++antId)
 			{
 				const DifxAntenna *da;
 				const DifxPolyModel *P;
-				int dsId, antId;
 				int32_t antId1;
 				double ppoly[array_MAX_BANDS][array_N_POLY];
 				double gpoly[array_N_POLY];
 				double prate[array_MAX_BANDS][array_N_POLY];
 				double grate[array_N_POLY];
-
-				dsId = config->ant2dsId[a];
-				if(dsId < 0 || dsId >= D->nDatastream)
-				{
-					continue;
-				}
-				/* convert to D->antenna[] index ... */
-				antId = D->datastream[dsId].antennaId;
-
-				if(antId < 0 || antId >= scan->nAntenna)
-				{
-					continue;
-				}
 
 				da = D->antenna + antId;
 
