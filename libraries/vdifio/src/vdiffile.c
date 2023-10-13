@@ -322,8 +322,7 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 			
 			if(getVDIFFrameBytes(vh) == frameSize &&
 			   getVDIFEpoch(vh) == sum->epoch &&
-			   getVDIFBitsPerSample(vh) == sum->nBit &&
-			   abs(s - getVDIFFrameEpochSecOffset(vh0)) < 2)
+			   getVDIFBitsPerSample(vh) == sum->nBit)
 			{
 				hasThread[getVDIFThreadID(vh)] = 1;
 				f = getVDIFFrameNumber(vh);
