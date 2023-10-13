@@ -2446,6 +2446,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 		for(std::map<std::string,VexSetup>::const_iterator it = mode->setups.begin(); it != mode->setups.end(); ++it)
 		{
 			const std::string &antName = it->first;
+			const VexAntenna *antenna = V->getAntenna(antName);
 			const VexSetup &setup = it->second;
 			unsigned int startBand, startFreq;
 			int currDatastream;
@@ -2462,20 +2463,19 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 			{
 				int ai = D->datastream[currDatastream].antennaId;
 
-				if(antName == D->antenna[ai].name)
+				if(antenna->difxName == D->antenna[ai].name)
 				{
 					break;
 				}
 			}
 
-			if(currDatastream == -1)
+			if(currDatastream == config->nDatastream)
 			{
-				std::cerr << "Developer error: currDatastream=-1  antenna=" << antName << std::endl;
+				std::cerr << "Developer error: Couldn't find datastream for antenna=" << antName << " (difxName=" << antenna->difxName << ")" << std::endl;
 
 				exit(0);
 			}
 
-			const VexAntenna *antenna = V->getAntenna(antName);
 			antennaSetup = P->getAntennaSetup(antName);
 
 			for(unsigned int ds = 0; ds < setup.nStream(); ++ds)
