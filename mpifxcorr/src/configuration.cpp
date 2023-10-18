@@ -434,12 +434,12 @@ Configuration::~Configuration()
       delete [] datastreamtable[i].zoombandpols;
       delete [] datastreamtable[i].zoombandlocalfreqindices;
       delete [] datastreamtable[i].datafilenames;
-      if(datastreamtable[i].phasecalintervalmhz > 0) {
-	for (int j=0;j<datastreamtable[i].numrecordedfreqs;j++)
-	  delete [] datastreamtable[i].recordedfreqpcaltonefreqshz[j];
-	delete [] datastreamtable[i].numrecordedfreqpcaltones;
-	delete [] datastreamtable[i].recordedfreqpcaltonefreqshz;
-	delete [] datastreamtable[i].recordedfreqpcaloffsetshz;
+      if(datastreamtable[i].phasecalintervalhz > 0) {
+        for (int j=0;j<datastreamtable[i].numrecordedfreqs;j++)
+          delete [] datastreamtable[i].recordedfreqpcaltonefreqshz[j];
+        delete [] datastreamtable[i].numrecordedfreqpcaltones;
+        delete [] datastreamtable[i].recordedfreqpcaltonefreqshz;
+        delete [] datastreamtable[i].recordedfreqpcaloffsetshz;
       }
     }
     delete [] datastreamtable;
@@ -1575,15 +1575,16 @@ bool Configuration::processDatastreamTable(istream * input)
         return false;
       }
     }
-    datastreamtable[i].phasecalintervalmhz = atof(line.c_str());
+    datastreamtable[i].phasecalintervalhz = long(1e6*atof(line.c_str()));
+    datastreamtable[i].phasecaldenominator = 1L; // TODO: get actual value from new optional .input key, default 1
 
     getinputkeyval(input, &key, &line);
     if (key.find("PHASE CAL BASE(MHZ)") != string::npos) {
-      datastreamtable[i].phasecalbasemhz = atof(line.c_str());
+      datastreamtable[i].phasecalbasehz = long(1e6 * atof(line.c_str()));
       getinputline(input, &line, "NUM RECORDED FREQS");
     }
     else {
-      datastreamtable[i].phasecalbasemhz = 0;
+      datastreamtable[i].phasecalbasehz = 0;
       if(key.find("NUM RECORDED FREQS") == string::npos) {
         if(mpiid == 0) //only write one copy of this error message
           cfatal << startl << "Went looking for NUM RECORDED FREQS (or maybe PHASE CAL BASE(MHZ)), but got " << key << endl;
@@ -1731,11 +1732,11 @@ bool Configuration::processDatastreamTable(istream * input)
         return false;
       }
     }
-    if(dsdata->phasecalintervalmhz > 0)
+    if(dsdata->phasecalintervalhz > 0)
     {
       dsdata->numrecordedfreqpcaltones = new int[dsdata->numrecordedfreqs]();
       dsdata->recordedfreqpcaltonefreqshz = new double*[dsdata->numrecordedfreqs]();
-      dsdata->recordedfreqpcaloffsetshz = new int[dsdata->numrecordedfreqs]();
+      dsdata->recordedfreqpcaloffsetshz = new long[dsdata->numrecordedfreqs]();
       dsdata->maxrecordedpcaltones = 0;
       estimatedbytes += sizeof(int)*(dsdata->numrecordedfreqs);
       for(int j=0;j<dsdata->numrecordedfreqs;j++)
@@ -1746,12 +1747,13 @@ bool Configuration::processDatastreamTable(istream * input)
 
         if(freqtable[freqindex].lowersideband)
         {     // LSB
-          tonefreq = double(int(lofreq/dsdata->phasecalintervalmhz))*dsdata->phasecalintervalmhz; // FIXME: dsdata->phasecalbasemhz should likely be part of this calc
+          // TODO: handle case of phasecaldenominator!=1, for example, numerator 700e6 / denominator 9 = 77.777... MHz spacing
+          tonefreq = double(int(lofreq/(dsdata->phasecalintervalhz*1e-6)))*(dsdata->phasecalintervalhz*1e-6); // FIXME: dsdata->phasecalbasehz should likely be part of this calc
           if(tonefreq == lofreq)
-            tonefreq -= dsdata->phasecalintervalmhz;
+            tonefreq -= dsdata->phasecalintervalhz*1e-6;
           if(tonefreq >= lofreq - freqtable[freqindex].bandwidth)
           {
-            while(tonefreq - dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz >= lofreq - freqtable[freqindex].bandwidth)
+            while(tonefreq - dsdata->numrecordedfreqpcaltones[j]*(dsdata->phasecalintervalhz*1e-6) >= lofreq - freqtable[freqindex].bandwidth)
               dsdata->numrecordedfreqpcaltones[j]++;
           }
           if(dsdata->numrecordedfreqpcaltones[j] > dsdata->maxrecordedpcaltones)
@@ -1761,7 +1763,7 @@ bool Configuration::processDatastreamTable(istream * input)
             datastreamtable[i].recordedfreqpcaltonefreqshz[j] = new double[datastreamtable[i].numrecordedfreqpcaltones[j]]();
             estimatedbytes += sizeof(int)*datastreamtable[i].numrecordedfreqpcaltones[j];
             for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++) {
-              datastreamtable[i].recordedfreqpcaltonefreqshz[j][k] = 1e6*tonefreq - double(k)*1e6*dsdata->phasecalintervalmhz - 1e6*dsdata->phasecalbasemhz;
+              datastreamtable[i].recordedfreqpcaltonefreqshz[j][k] = 1e6*tonefreq - double(k)*dsdata->phasecalintervalhz - dsdata->phasecalbasehz;
             }
             dsdata->recordedfreqpcaloffsetshz[j] = long(1e6*lofreq - datastreamtable[i].recordedfreqpcaltonefreqshz[j][0] + 0.5);
           }
@@ -1776,12 +1778,13 @@ bool Configuration::processDatastreamTable(istream * input)
         }
         else
         {     // USB
-          tonefreq = double(int(lofreq/dsdata->phasecalintervalmhz))*dsdata->phasecalintervalmhz; // FIXME: dsdata->phasecalbasemhz should likely be part of this calc
+          // TODO: handle case of phasecaldenominator!=1, for example, numerator 700e6 / denominator 9 = 77.777... MHz spacing
+          tonefreq = double(int(lofreq/(dsdata->phasecalintervalhz*1e-6)))*(dsdata->phasecalintervalhz*1e-6); // FIXME: dsdata->phasecalbasehz should likely be part of this calc
           if(tonefreq <= lofreq)
-            tonefreq += dsdata->phasecalintervalmhz;
+            tonefreq += dsdata->phasecalintervalhz*1e-6;
           if(tonefreq <= lofreq + freqtable[freqindex].bandwidth)
           {
-            while(tonefreq + dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz <= lofreq + freqtable[freqindex].bandwidth)
+            while(tonefreq + dsdata->numrecordedfreqpcaltones[j]*(dsdata->phasecalintervalhz*1e-6) <= lofreq + freqtable[freqindex].bandwidth)
               dsdata->numrecordedfreqpcaltones[j]++;
           }
           if(dsdata->numrecordedfreqpcaltones[j] > dsdata->maxrecordedpcaltones)
@@ -1791,7 +1794,7 @@ bool Configuration::processDatastreamTable(istream * input)
             datastreamtable[i].recordedfreqpcaltonefreqshz[j] = new double[datastreamtable[i].numrecordedfreqpcaltones[j]]();
             estimatedbytes += sizeof(int)*datastreamtable[i].numrecordedfreqpcaltones[j];
             for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++) {
-              datastreamtable[i].recordedfreqpcaltonefreqshz[j][k] = 1e6*tonefreq + k*1e6*dsdata->phasecalintervalmhz + 1e6*dsdata->phasecalbasemhz;
+              datastreamtable[i].recordedfreqpcaltonefreqshz[j][k] = 1e6*tonefreq + k*dsdata->phasecalintervalhz + dsdata->phasecalbasehz;
             }
             dsdata->recordedfreqpcaloffsetshz[j] = long(datastreamtable[i].recordedfreqpcaltonefreqshz[j][0] - 1e6*lofreq + 0.5);
           }
@@ -2600,7 +2603,7 @@ bool Configuration::populateResultLengths()
       {
         configs[c].coreresultpcaloffset[i] = coreresultindex;
         dsdata = datastreamtable[configs[c].datastreamindices[i]];
-        if(dsdata.phasecalintervalmhz > 0)
+        if(dsdata.phasecalintervalhz > 0)
         {
           for(int j=0;j<getDNumRecordedFreqs(c, i);j++)
             coreresultindex += dsdata.recordedfreqpols[j]*getDRecordedFreqNumPCalTones(c, i, j);

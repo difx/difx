@@ -114,7 +114,7 @@ void Visibility::initialisePcalFiles()
     {
       if(completedstations.find(config->getDStationName(c, i)) != completedstations.end())
         continue;	
-      if(config->getDPhaseCalIntervalMHz(c, i) > 0)
+      if(config->getDPhaseCalIntervalHz(c, i) > 0)
       {
         sprintf(pcalfilename, "%s/PCAL_%05d_%06d_%s", config->getOutputFilename().c_str(), config->getStartMJD(), config->getStartSeconds(), config->getDStationName(c, i).c_str());
         pcaloutput.open(pcalfilename, ios::app);
@@ -651,7 +651,7 @@ void Visibility::writedata()
   //calibrate the pulse cal
   for(int i=0;i<numdatastreams;i++)
   {
-    if(config->getDPhaseCalIntervalMHz(currentconfigindex, i) > 0)
+    if(config->getDPhaseCalIntervalHz(currentconfigindex, i) > 0)
     {
       resultindex = config->getCoreResultPCalOffset(currentconfigindex, i)*2;
       for(int j=0;j<config->getDNumRecordedBands(currentconfigindex, i); j++)
@@ -1023,7 +1023,7 @@ The four columns are:
 
   for(int i=0;i<numdatastreams;i++)
   {
-    if(config->getDPhaseCalIntervalMHz(currentconfigindex, i) > 0)
+    if(config->getDPhaseCalIntervalHz(currentconfigindex, i) > 0)
     {
       nonzero = false;
       // write the header string

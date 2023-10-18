@@ -180,9 +180,13 @@ public:
   inline double getDTsys(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].tsys; }
   inline float getDPhaseCalIntervalMHz(int configindex, int configdatastreamindex) const
-    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalmhz; }
-  inline float getDPhaseCalBaseMHz(int configindex, int configdatastreamindex) const
-    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalbasemhz; }
+    { return float(datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalhz)*1e-6; }
+  inline long getDPhaseCalIntervalHz(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalhz; }
+  inline long getDPhaseCalDenominator(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecaldenominator; }
+  inline long getDPhaseCalBaseHz(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalbasehz; }
   inline int getDSwitchedPowerFrequency(int datastreamindex) const
     { return datastreamtable[datastreamindex].switchedpowerfrequency; }
   inline int getDMaxRecordedPCalTones(int configindex, int configdatastreamindex) const
@@ -244,7 +248,7 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedfreqpcaltones[recordedfreqindex]; }
   inline double getDRecordedFreqPCalToneFreqHz(int configindex, int configdatastreamindex, int recordedfreqindex, int tone) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaltonefreqshz[recordedfreqindex][tone]; }
-  inline int getDRecordedFreqPCalOffsetsHz(int configindex, int configdatastreamindex, int recordedfreqindex) const
+  inline long getDRecordedFreqPCalOffsetsHz(int configindex, int configdatastreamindex, int recordedfreqindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaloffsetshz[recordedfreqindex]; }
   inline double getDRecordedFreq(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex) const
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[datastreamrecordedfreqindex]].bandedgefreq; }
@@ -877,8 +881,9 @@ private:
     datasampling sampling;
     complextype tcomplex;
     bool ismuxed;
-    float phasecalintervalmhz;
-    float phasecalbasemhz;
+    long phasecalintervalhz;
+    long phasecaldenominator;
+    long phasecalbasehz;
     int switchedpowerfrequency; // e.g., 80 Hz for VLBA
     int numbits;
     int bytespersamplenum;
@@ -898,7 +903,7 @@ private:
     int *  recordedfreqtableindices;
     int *  numrecordedfreqpcaltones;
     double ** recordedfreqpcaltonefreqshz;
-    int * recordedfreqpcaloffsetshz;
+    long * recordedfreqpcaloffsetshz;
     double * recordedfreqclockoffsets;
     double * recordedfreqclockoffsetsdelta;
     double * recordedfreqphaseoffset;
