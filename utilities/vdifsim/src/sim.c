@@ -154,9 +154,9 @@ int complianceCheck(const DifxInput *D)
 		}
 
 		bits = D->datastream[d].quantBits;
-		if(bits != 1 && bits != 2 && bits != 4 && bits != 8)
+		if(bits != 1 && bits != 2 && bits != 4 && bits != 8 && bits != 16)
 		{
-			fprintf(stderr, "! datastream %d does not have one of: 1,2,4,8 bits per sample.  It reports %d\n", d, bits);
+			fprintf(stderr, "! datastream %d does not have one of: 1,2,4,8,16 bits per sample.  It reports %d\n", d, bits);
 			rv = 0;
 		}
 

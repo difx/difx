@@ -6,6 +6,7 @@
 #include <math.h>
 #include <glib.h>
 #include <vdifio.h>
+#include <stdint.h>
 #include "datastream.h"
 #include "model.h"
 
@@ -464,6 +465,35 @@ void encode8bit(unsigned char *dest, double *src, int N)
 	}
 }
 
+/* For optimal results, src[] should be zero mean with RMS=1.0 */
+void encode16bit(unsigned char *dest, double *src, int N)
+{
+	const double v0 = 0.01;		/* value not necessarily optimal, but with this many bits the sweet spot is large */
+	int i;
+	uint16_t *d;
+
+	d = (uint16_t *)dest;
+
+	for(i = 0; i < N; ++i)
+	{
+		int q;
+
+		q = src[i] / v0 + 32768;
+		if(q < 1)
+		{
+			d[i] = 0;
+		}
+		else if(q >= 65535)
+		{
+			d[i] = 65535;
+		}
+		else
+		{
+			d[i] = q;
+		}
+	}
+}
+
 void writeVDIF(const Datastream *d, const CommonSignal *C)
 {
 	vdif_header *vh;
@@ -515,6 +545,9 @@ void writeVDIF(const Datastream *d, const CommonSignal *C)
 				break;
 			case 8:
 				encode8bit(data, ds->samples1sec + start, d->samplesPerFrame);
+				break;
+			case 16:
+				encode16bit(data, ds->samples1sec + start, d->samplesPerFrame);
 				break;
 			default:
 				fprintf(stderr, "Error: no encoder for other than 2 bits yet!\n");
