@@ -7,6 +7,11 @@
 long long gcd(long, long);
 
 /**
+ * Return greatest common divisor.
+ */
+int gcd(int a, int b);
+
+/**
  * Return greatest common divisor, with rounding of floating point input args.
  */
 long long gcd(double, double);
