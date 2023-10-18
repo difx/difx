@@ -637,10 +637,10 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			if(d->parameters && d->parameters->switchedPowerFrac > 0.0)
 			{
 /* 2a. if switched power is requested, add that at the same time */
-				int index, index2;
+				long long int index, index2;
+				long long int q;
+				long long int stop;
 				int spState;
-				int q;
-				int stop;
 				
 				index = c * ds->nSamp;
 				stop = index + ds->nSamp;
@@ -660,10 +660,8 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 						index2 = stop;
 					}
 
-					/* FIXME: at this time the power ratio (from vdiffold) is off by about 2/3.  Was off by about 1/3 when sqrt enclosed the whole expression... */
-					s = sqrt(d->SEFD) * (1.0 + spState*d->parameters->switchedPowerFrac);
+					s = sqrt(d->SEFD * (1.0 + spState*d->parameters->switchedPowerFrac));
 					add_rand_gauss_values(d->random, ds->samps + (index % ds->nSamp), s, index2-index);
-
 					++q;
 					index = index2;
 					spState = 1-spState;
