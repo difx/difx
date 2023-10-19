@@ -29,6 +29,9 @@ Makefile.in
 /applications/mk5daemon/branches/mk6/src/mk5daemon
 /applications/mk5daemon/branches/mk6/src/Makefile
 
+# applications/hops
+/applications/hops/hops_config.h.in
+
 # /libraries/python/
 /libraries/python/*.pyc
 /libraries/python/*.bak
