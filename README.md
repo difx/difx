@@ -26,7 +26,7 @@ To install the latest dev branch of DiFX, follow these simple instructions:
 $ git clone https://github.com/difx/difx
 $ cd difx
 # now there are just one main branch
-$ git checkout -b dev origin/dev
+$ git checkout dev
 # Now you are in dev branch, 
 # we will do the development based on dev branch
 # until we want do a release tag version
