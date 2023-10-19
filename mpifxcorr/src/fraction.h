@@ -5,6 +5,8 @@
  * @brief Defines class 'fraction' that holds a fraction, consisting of integer numerator and denominator.
  ********************************************************************************************************/
 
+#include "mathutil.h"
+
 class fraction {
 
    public:
@@ -48,6 +50,14 @@ class fraction {
    public:
 
       const double approx() const { return double(num)/denom; }
+
+      void simplify() {
+          long g;
+          while((g = gcd(this->num, this->denom)) > 1) {
+              this->num /= g;
+              this->denom /= g;
+          }
+      }
 
    public:
 

@@ -1,5 +1,5 @@
-#ifndef __MATH_UTUL_H__
-#define __MATH_UTUL_H__
+#ifndef __MATH_UTIL_H__
+#define __MATH_UTIL_H__
 
 /**
  * Return greatest common divisor.
