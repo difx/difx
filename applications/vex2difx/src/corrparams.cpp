@@ -1177,6 +1177,7 @@ AntennaSetup::AntennaSetup(const std::string &name) : vexName(name), defaultData
 	clock.mjdStart = -1e9;
 	clockorder = 1;
 	phaseCalIntervalMHz = -1;
+	phaseCalIntervalDivisor = 1;
 	toneGuardMHz = -1.0;
 	toneSelection = ToneSelectionSmart;
 	tcalFrequency = -1;
@@ -1475,6 +1476,10 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	else if(key == "phaseCalInt")
 	{
 		ss >> phaseCalIntervalMHz;
+	}
+	else if(key == "phaseCalIntDivisor")
+	{
+		ss >> phaseCalIntervalDivisor;
 	}
 	else if(key == "toneGuard")
 	{
@@ -3656,6 +3661,7 @@ std::ostream& operator << (std::ostream &os, const AntennaSetup &x)
 	}
 	os << "  polSwap=" << x.polSwap << std::endl;
 	os << "  phaseCalInt=" << x.phaseCalIntervalMHz << std::endl;
+	os << "  phaseCalIntDivisor=" << x.phaseCalIntervalDivisor << std::endl;
 	os << "  tcalFreq=" << x.tcalFrequency << std::endl;
 
 	os << "}" << std::endl;

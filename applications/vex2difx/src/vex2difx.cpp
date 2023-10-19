@@ -2486,6 +2486,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 				{
 					dd = D->datastream + currDatastream;
 					dd->phaseCalIntervalMHz = setup.phaseCalIntervalMHz();
+					dd->phaseCalIntervalDivisor = 1;
 					dd->phaseCalBaseMHz = setup.phaseCalBaseMHz();
 					dd->tcalFrequency = antenna->tcalFrequency;
 
