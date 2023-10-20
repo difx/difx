@@ -732,8 +732,9 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			}
 
 /* 7. apply pulse cal if desired */
-			if(d->parameters && d->parameters->pulseCalFrac > 0.0)
+			if(d->parameters && d->parameters->pulseCalInterval > 0)
 			{
+#if 0
 				int c;
 				int deltac;
 				int c0;
@@ -767,6 +768,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 
 					ds->spec[i] += amp*d->filter[c]*(cos(phi) + I*sin(phi));
 				}
+#endif
 			}
 
 /* 8. iFFT, C->R for real data or C->C for complex data */
