@@ -592,6 +592,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		double freq_MHz;		/* [MHz] frequency in MHz */
 		int int_freq_MHz;
 		double frac_freq_MHz;
+		double *pulseCalSamples;
 
 		ds = d->subband + s;
 		cs = ds->cs;
@@ -599,7 +600,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		freq_MHz = ds->df->freq;
 		if(d->dd->dataSampling == SamplingComplexDSB)
 		{
-			/* In Duoble-Sideband mode, the sampled band is centered on the specified frequency */
+			/* In Double-Sideband mode, the sampled band is centered on the specified frequency */
 			/* The total bandwidth (sum of both sidebands) is given by specifed bandwidth */
 			if(ds->df->sideband == 'L')
 			{
@@ -616,6 +617,45 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		}
 		int_freq_MHz = (int)freq_MHz;
 		frac_freq_MHz = freq_MHz - int_freq_MHz;
+
+		if(d->parameters->pulseCalInterval > 0)
+		{
+			pulseCalSamples = (double *)calloc(ds->nSamp, sizeof(double));
+
+			if(d->dd->dataSampling == SamplingReal)
+			{
+/* FIXME: verify both real sidebands work properly */
+				const epsilon = 0.001;	/* [MHz] don't use tones closer to band edge than this */
+				double toneFreq;	/* [MHz] apparent tone frequency within band */
+				int i;
+				int t, t1, t2;
+				double delayFactor, sampleFactor, ampFactor;
+
+				ampFactor = 2.0*sqrt(d->SEFD*d->parameters->pulseCalFrac);
+
+				t1 = (freq_MHz+epsilon)/d->parameters->pulseCalInterval + 1;
+				t2 = (freq_MHz+ds->df->bw-epsilon)/d->parameters->pulseCalInterval - 1;
+
+				if(t2 >= t1) for(t = t1; t <= t2; ++t)
+				{
+					toneFreq = t * d->parameters->pulseCalInterval - freq_MHz;
+					delayFactor = 2.0*M_PI*toneFreq*d->parameters->pulseCalDelay;
+					sampleFactor = 2.0*M_PI*toneFreq/(2.0*ds->df->bw);
+
+					for(i = 0; i < ds->nSamp; ++i)
+					{
+						pulseCalSamples[i] += ampFactor*cos(delayFactor + i*sampleFactor);
+					}
+				}
+			}
+			else
+			{
+/* FIXME: implement complex options */
+				fprintf(stderr, "Error: pulse cal for complex data is not yet implemented\n");
+				
+				exit(0);
+			}
+		}
 
 /* Loop over sub-second time (chunk) */
 		for(c = 0; c < ds->nChunk; ++c)
@@ -731,51 +771,26 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 				ds->spec[i] *= d->filter[i] * (cos(phi) + I*sin(phi));
 			}
 
-/* 7. apply pulse cal if desired */
-			if(d->parameters && d->parameters->pulseCalInterval > 0)
-			{
-#if 0
-				int c;
-				int deltac;
-				int c0;
-				double amp;
-				int n;
-				double f;
-				double MHzPerPixel;
-
-				MHzPerPixel = round(ds->df->bw*2/ds->nSamp);
-				amp = sqrt(d->SEFD*d->parameters->pulseCalFrac*d->parameters->pulseCalInterval/MHzPerPixel);
-
-				/* FIXME: verify that this works for LSB as well! */
-				n = (int)(freq_MHz / d->parameters->pulseCalInterval);
-				if(ds->df->sideband == 'L')
-				{
-					f = freq_MHz - n*d->parameters->pulseCalInterval;
-				}
-				else
-				{
-					f = (n+1)*d->parameters->pulseCalInterval - freq_MHz;
-				}
-				c0 = ds->nSamp*f/(2*ds->df->bw);
-				deltac = d->parameters->pulseCalInterval/MHzPerPixel;
-				
-				for(c = c0; c < ds->nSamp/2; c += deltac)
-				{
-					double phi;
-
-					phi = 2.0*M_PI*d->parameters->pulseCalDelay*MHzPerPixel;
-/* FIXME: Am I off by sqrt(FFTSize)? */
-
-					ds->spec[i] += amp*d->filter[c]*(cos(phi) + I*sin(phi));
-				}
-#endif
-			}
-
-/* 8. iFFT, C->R for real data or C->C for complex data */
+/* 7. iFFT, C->R for real data or C->C for complex data */
 			fftw_execute(ds->ifftPlan);
 
-/* 9. place real-valued results in 1-second duration array */
+/* 8. apply pulse cal if desired */
+			if(d->parameters && d->parameters->pulseCalInterval > 0)
+			{
+				for(i = 0; i < ds->nSamp; ++i)
+				{
+					/* note that this is being done with real-valued arrays, but for complex data, both arrays are complex-valued */
+					ds->samps[i] += pulseCalSamples[i];
+				}
+			}
+
+/* 9. place results in 1-second duration array */
 			memcpy(ds->samples1sec + startSample, ds->samps, ds->nSamp*sizeof(double));
+		}
+
+		if(d->parameters->pulseCalInterval > 0)
+		{
+			free(pulseCalSamples);
 		}
 
 /* 10. "AGC" -- normalize array prior to quantization */
