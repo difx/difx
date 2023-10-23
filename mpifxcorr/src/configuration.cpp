@@ -72,6 +72,7 @@ Configuration::Configuration(const char * configfile, int id, MPI_Comm& comm, do
   maxnumchannels = 0;
   estimatedbytes = 0;
   model = NULL;
+  infilekeyunconsumed = false;
 
   if (MPI_Comm_dup(comm, &mpicomm) != MPI_SUCCESS)
     cfatal << startl << "Failed MPI setup on MPI_Comm_dup() duplication! Correlation may produce strange results!" << endl;
@@ -116,6 +117,7 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
   maxnumchannels = 0;
   estimatedbytes = 0;
   model = NULL;
+  infilekeyunconsumed = false;
 
   setJobNameFromConfigfilename(string(configfile));
   char * difxmtu = getenv("DIFX_MTU");
@@ -1545,16 +1547,16 @@ bool Configuration::processDatastreamTable(istream * input)
     datastreamtable[i].linear2circular=false;
     getinputkeyval(input, &key, &line);
     if (key=="FILTERBANK USED") {
-      if ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t")) 
-	datastreamtable[i].filterbank = true;
+      if ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))
+        datastreamtable[i].filterbank = true;
     } else if (key=="PROCESSING METHOD") {
       if (line == "FILTERBANK") 
       	datastreamtable[i].filterbank=true;
       else if (line=="L2C" || line=="LINEAR2CIRCULAR") {
-	cinfo << startl << "Linear to Circular enabled" << endl;
+        cinfo << startl << "Linear to Circular enabled" << endl;
       	datastreamtable[i].linear2circular=true;
       } else if (line != "NONE") 
-	cerror << startl << "Unknown PROCESSING METHOD '" << line << "'. Ignoring." << endl;
+        cerror << startl << "Unknown PROCESSING METHOD '" << line << "'. Ignoring." << endl;
     } else {
       cfatal << startl << "We thought we were reading something starting with 'FILTERBANK USED', when we actually got '" << key << "'" << endl;
       return false;
@@ -1562,6 +1564,7 @@ bool Configuration::processDatastreamTable(istream * input)
     if (mpiid==0 && datastreamtable[i].filterbank)
       cwarn << startl << "Filterbank channelization requested but not yet supported!!!" << endl;
 
+#if 0
     getinputkeyval(input, &key, &line);
     if(key.find("TCAL FREQUENCY") != string::npos) {
       datastreamtable[i].switchedpowerfrequency = atoi(line.c_str());
@@ -1577,20 +1580,28 @@ bool Configuration::processDatastreamTable(istream * input)
     }
     datastreamtable[i].phasecalintervalhz = long(1e6*atof(line.c_str()));
     datastreamtable[i].phasecaldenominator = 1L; // TODO: get actual value from new optional .input key, default 1
+#else
+    if (getinputline_opt(input, &line, "TCAL FREQUENCY")) {
+      datastreamtable[i].switchedpowerfrequency = atoi(line.c_str());
+    }
 
-    getinputkeyval(input, &key, &line);
-    if (key.find("PHASE CAL BASE(MHZ)") != string::npos) {
+    getinputline(input, &line, "PHASE CAL INT (MHZ)");
+    datastreamtable[i].phasecalintervalhz = long(1e6*atof(line.c_str()));
+
+    if (getinputline_opt(input, &line, "PHASE CAL DIVISOR")) {
+      datastreamtable[i].phasecaldenominator = atol(line.c_str());;
+    } else {
+      datastreamtable[i].phasecaldenominator = 1L;
+    }
+
+    if (getinputline_opt(input, &line, "PHASE CAL BASE(MHZ)")) {
       datastreamtable[i].phasecalbasehz = long(1e6 * atof(line.c_str()));
-      getinputline(input, &line, "NUM RECORDED FREQS");
-    }
-    else {
+    } else {
       datastreamtable[i].phasecalbasehz = 0;
-      if(key.find("NUM RECORDED FREQS") == string::npos) {
-        if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Went looking for NUM RECORDED FREQS (or maybe PHASE CAL BASE(MHZ)), but got " << key << endl;
-        return false;
-      }
     }
+#endif
+
+    getinputline(input, &line, "NUM RECORDED FREQS");
     datastreamtable[i].numrecordedfreqs = atoi(line.c_str());
 
     datastreamtable[i].recordedfreqpols = new int[datastreamtable[i].numrecordedfreqs]();
@@ -3647,27 +3658,20 @@ void Configuration::getinputkeyval(istream * input, std::string * key, std::stri
 
 void Configuration::getinputline(istream * input, std::string * line, std::string startofheader, bool verbose) const
 {
-  if(input->eof())
-    cerror << startl << "Trying to read past the end of file!" << endl;
-  getline(*input,*line);
-  while(line->length() > 0 && line->at(0) == COMMENT_CHAR) { // a comment
-    //if(mpiid == 0) //only write one copy of this error message
-    //  cverbose << startl << "Skipping comment " << line << endl;
-    getline(*input, *line);
+  if (!infilekeyunconsumed) {
+    // when no unconsumed earlier key,val pair exists, read the next
+    getinputkeyval(input, &infilekey, &infileval);
   }
-  int keylength = line->find_first_of(':') + 1;
-  if(keylength < DEFAULT_KEY_LENGTH)
-    keylength = DEFAULT_KEY_LENGTH;
-  if(startofheader.compare((*line).substr(0, startofheader.length())) != 0) //not what we expected
+  infilekeyunconsumed = false;
+
+  if(startofheader.compare(infilekey.substr(0, startofheader.length())) != 0) //not what we expected
   {
-    if (verbose) 
-      cerror << startl << "We thought we were reading something starting with '" << startofheader << "', when we actually got '" << (*line).substr(0, keylength) << "'" << endl;
-    else {
-      *line = "";
-      return;
-    }
+    if (verbose)
+      cerror << startl << "We thought we were reading something starting with '" << startofheader << "', when we actually got '" << infilekey << "'" << endl;
+    *line = "";
+  } else {
+    *line = infileval;
   }
-  *line = line->substr(keylength);
 }
 
 void Configuration::getinputline(istream * input, std::string * line, std::string startofheader) const
@@ -3675,12 +3679,43 @@ void Configuration::getinputline(istream * input, std::string * line, std::strin
   getinputline(input, line, startofheader, true);
 }
 
-
 void Configuration::getinputline(istream * input, std::string * line, std::string startofheader, int intval) const
 {
   char buffer[MAX_KEY_LENGTH+1];
   sprintf(buffer, "%s%i", startofheader.c_str(), intval);
   getinputline(input, line, string(buffer), true);
+}
+
+bool Configuration::getinputline_opt(istream * input, std::string * line, std::string startofheader, bool verbose) const
+{
+  if (!infilekeyunconsumed) {
+    // when no unconsumed earlier key,val pair exists, read the next
+    getinputkeyval(input, &infilekey, &infileval);
+  }
+  if(startofheader.compare(infilekey.substr(0, startofheader.length())) != 0)
+  {
+    if (verbose)
+      cdebug << startl << "Optional line '" << startofheader << "' not present, we got '" << infilekey << "'" << endl;
+    infilekeyunconsumed = true;
+    *line = "";
+    return false;
+  } else {
+    infilekeyunconsumed = false;
+    *line = infileval;
+    return true;
+  }
+}
+
+bool Configuration::getinputline_opt(istream * input, std::string * line, std::string startofheader) const
+{
+  return getinputline_opt(input, line, startofheader, true);
+}
+
+bool Configuration::getinputline_opt(istream * input, std::string * line, std::string startofheader, int intval) const
+{
+  char buffer[MAX_KEY_LENGTH+1];
+  sprintf(buffer, "%s%i", startofheader.c_str(), intval);
+  return getinputline_opt(input, line, string(buffer), true);
 }
 
 void Configuration::getMJD(int & d, int & s, int year, int month, int day, int hour, int minute, int second) const
