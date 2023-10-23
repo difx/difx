@@ -624,7 +624,6 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 
 			if(d->dd->dataSampling == SamplingReal)
 			{
-/* FIXME: verify both real sidebands work properly */
 				const epsilon = 0.001;	/* [MHz] don't use tones closer to band edge than this */
 				double toneFreq;	/* [MHz] apparent tone frequency within band */
 				int i;
@@ -640,6 +639,10 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 				{
 					toneFreq = t * d->parameters->pulseCalInterval - freq_MHz;
 					delayFactor = 2.0*M_PI*toneFreq*d->parameters->pulseCalDelay;
+					if(ds->df->sideband == 'U')
+					{
+						delayFactor = -delayFactor;
+					}
 					sampleFactor = 2.0*M_PI*toneFreq/(2.0*ds->df->bw);
 
 					for(i = 0; i < ds->nSamp; ++i)
