@@ -416,10 +416,10 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     extractor = new PCal*[numrecordedbands];
     for(int i=0;i<numrecordedbands;i++)
     {
+      localfreqindex = conf->getDLocalRecordedFreqIndex(confindex, dsindex, i);
       const long denom = config->getDPhaseCalDenominator(configindex, datastreamindex);
       const fraction tonespacing(config->getDPhaseCalIntervalHz(configindex, datastreamindex), denom);
       const fraction toneoffset(config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex), denom);
-      localfreqindex = conf->getDLocalRecordedFreqIndex(confindex, dsindex, i);
       pcalresults[i] = new cf32[conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex)];
       extractor[i] = PCal::getNew(1e6*recordedbandwidth, tonespacing, toneoffset, 0, sampling, tcomplex);
       if (extractor[i]->getLength() != conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex))
