@@ -2485,11 +2485,14 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 				if(v)
 				{
 					dd = D->datastream + currDatastream;
+
+					// Get data from VEX/VexData, possibly revised by user v2d settings in applycorrparams.cpp
 					dd->phaseCalIntervalMHz = setup.phaseCalIntervalMHz();
-					dd->phaseCalIntervalDivisor = 1;
 					dd->phaseCalBaseMHz = setup.phaseCalBaseMHz();
 					dd->tcalFrequency = antenna->tcalFrequency;
 
+					// Get data fields from v2d that are not part of VEX definition
+					dd->phaseCalIntervalDivisor = antennaSetup->phaseCalIntervalDivisor;
 					// FIXME: eventually zoom bands will migrate to the VexMode/VexSetup infrastructure.  until then, use antennaSetup directly
 					if(antennaSetup)
 					{

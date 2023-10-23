@@ -983,7 +983,7 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	writeDifxLineDouble(out, "PHASE CAL INT (MHZ)", "%.5g", dd->phaseCalIntervalMHz);
 	if(dd->phaseCalIntervalDivisor != 1)
 	{
-		writeDifxLineDouble(out, "PHASE CAL DIVISOR", "%ld", dd->phaseCalIntervalDivisor);
+		writeDifxLineInt(out, "PHASE CAL DIVISOR", dd->phaseCalIntervalDivisor);
 	}
 	if(dd->phaseCalBaseMHz != 0)
 	{
