@@ -1565,6 +1565,8 @@ bool Configuration::processDatastreamTable(istream * input)
       cwarn << startl << "Filterbank channelization requested but not yet supported!!!" << endl;
     if (getinputline_opt(input, &line, "TCAL FREQUENCY")) {
       datastreamtable[i].switchedpowerfrequency = atoi(line.c_str());
+    } else {
+      datastreamtable[i].switchedpowerfrequency = 0;
     }
     getinputline(input, &line, "PHASE CAL INT (MHZ)");
     datastreamtable[i].phasecalintervalhz = long(1e6*atof(line.c_str()));
