@@ -1313,7 +1313,7 @@ bool Configuration::processConfig(istream * input)
 
   getinputline(input, &line, "NUM CONFIGURATIONS");
   numconfigs = atoi(line.c_str());
-  configs = new configdata[numconfigs];
+  configs = new configdata[numconfigs]();
   estimatedbytes += numconfigs*sizeof(configdata);
   for(int i=0;i<numconfigs;i++)
   {
@@ -1397,7 +1397,7 @@ bool Configuration::processDatastreamTable(istream * input)
 
   getinputline(input, &line, "DATASTREAM ENTRIES");
   datastreamtablelength = atoi(line.c_str());
-  datastreamtable = new datastreamdata[datastreamtablelength];
+  datastreamtable = new datastreamdata[datastreamtablelength]();
   estimatedbytes += datastreamtablelength*sizeof(datastreamdata);
   if(datastreamtablelength < numdatastreams)
   {
@@ -1864,7 +1864,7 @@ bool Configuration::processRuleTable(istream * input)
   string key, val;
   getinputline(input, &key, "NUM RULES");
   numrules = atoi(key.c_str());
-  rules = new ruledata[numrules];
+  rules = new ruledata[numrules]();
   estimatedbytes += numrules*sizeof(ruledata);
   for(int i=0;i<numrules;i++) {
     rules[i].configindex = -1;
@@ -1943,7 +1943,7 @@ bool Configuration::processFreqTable(istream * input)
 
   getinputline(input, &line, "FREQ ENTRIES");
   freqtablelength = atoi(line.c_str());
-  freqtable = new freqdata[freqtablelength];
+  freqtable = new freqdata[freqtablelength]();
   estimatedbytes += freqtablelength*sizeof(freqdata);
   for(int i=0;i<freqtablelength;i++)
   {
@@ -2021,7 +2021,7 @@ void Configuration::processTelescopeTable(istream * input)
 
   getinputline(input, &line, "TELESCOPE ENTRIES");
   telescopetablelength = atoi(line.c_str());
-  telescopetable = new telescopedata[telescopetablelength];
+  telescopetable = new telescopedata[telescopetablelength]();
   estimatedbytes += telescopetablelength*sizeof(telescopedata);
   for(int i=0;i<telescopetablelength;i++)
   {
