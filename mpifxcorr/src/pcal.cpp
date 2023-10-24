@@ -66,7 +66,7 @@
  ********************************************************************************************************/
 
 #include "architecture.h"
-#ifndef UNIT_TEST
+#if !defined(UNIT_TEST) && !defined(NO_ALERT_H)
 #include "alert.h"
 #endif
 #include "mathutil.h"
@@ -80,7 +80,7 @@ using std::endl;
 
 using namespace std;
 
-#ifdef UNIT_TEST
+#if defined(UNIT_TEST) || defined(NO_ALERT_H)
     // remove dependency on Alert.cpp
     #define csevere std::cout
     #define cerror  std::cout

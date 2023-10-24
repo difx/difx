@@ -139,7 +139,7 @@ neuteredmpifxcorr_LDADD = libfxcorr.a
 # https://bugs.freedesktop.org/show_bug.cgi?id=69874
 # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=752993
 
-check_PROGRAMS = sysutil_test pcaltest
+check_PROGRAMS = sysutil_test pcaltest m5pcal_test
 
 sysutil_test_SOURCES = \
 	test/sysutil_test.cpp \
@@ -151,3 +151,7 @@ sysutil_test_CXXFLAGS = -g -I$(top_srcdir)/src/ -I $(AM_CXXFLAGS)
 pcaltest_SOURCES = pcal.cpp mathutil.cpp fraction.h
 
 pcaltest_CXXFLAGS = -DUNIT_TEST -DPCAL_DEBUG -Wall -O0 -g
+
+m5pcal_test_SOURCES = pcal.cpp mathutil.cpp fraction.h test/m5pcal_test.cpp
+
+m5pcal_test_CXXFLAGS = -DNO_ALERT_H -Wall -O0 -g
