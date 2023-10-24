@@ -14,15 +14,15 @@ void usage()
 {
 	printf(
 		"\n"
-		"Usage: m5pcal_test [--conj] <infile> <format> <if_nr> <spacing MHz> <offset from 0Hz in MHz> <0,S:ssb | 1,D:dsb> <0,U:usb | 1,L:lsb>\n\n"
+		"Usage: m5pcal_test [--conj] <infile> <format> <if_nr> <spacing Hz[/denom]> <offset from 0 Hz in Hz[/denom]> <0,S:ssb | 1,D:dsb> <0,U:usb | 1,L:lsb>\n\n"
 		"Optional arguments:\n"
 		"   --conj   Conjugate the raw signal (invert the sideband) before phase-cal extraction. For complex data only.\n\n"
 		"Arguments:\n"
 		"   infile   Input file\n"
 		"   format   Data format for mark5access decoder library, <FORMAT>-<Mbps>-<nchan>-<nbit>\n"
 		"   if_nr    Zero based index of the IF from which to extract phase-cal\n"
-		"   spacing  Phase cal tone spacing in MHz\n"
-		"   offset   Phase cal tone offset from band edge in MHz; is translated into FFT bin number interally\n"
+		"   spacing  Phase cal tone spacing in Hz, with optional denominator greater than 1\n"
+		"   offset   Phase cal tone offset from band edge in Hz; is translated into FFT bin number interally\n"
 		"   bandtype Either single sideband (0 or S), or double sideband (1 or D)\n"
 		"   sideband Either upper sideband (0 or U), or lower sideband (1 or L)\n\n"
 	);
@@ -30,20 +30,23 @@ void usage()
 
 int main(int argc, char** argv)
 {
-	const int chunksize = 1*1024*1024;
+	size_t chunksize;
 	const double min_binResolution_Hz = 10e3;
 
+	char* denom_arg;
 	const char* format;
 	const char* infile;
 	int if_nr = 0;
 	double bw_hz;
-	double pcal_interval_hz = 1e6;
-	int pcal_offset_hz = 0;
+    long pcal_denom = 0;
+	long pcal_interval_hz = 1e6;
+	long pcal_offset_hz = 0;
 	int lsb = 0, ssb = 1;
 	bool done = false;
 	bool conjugate = false;
 	int i, n;
     size_t sample_offset = 0;
+	double T;
 
 	struct mark5_stream *ms;
 	mark5_float_complex **data_complex;
@@ -65,8 +68,23 @@ int main(int argc, char** argv)
 	infile = argv[1];
 	format = argv[2];
 	if_nr = atoi(argv[3]);
-	pcal_interval_hz = atof(argv[4])*1e6;
-	pcal_offset_hz = (int)(atof(argv[5])*1e6);
+	denom_arg = strchr(argv[4], '/');
+	if (denom_arg) {
+		denom_arg[0] = '\0';
+		pcal_denom = atoi(denom_arg+1);
+	}
+	pcal_interval_hz = atol(argv[4]);
+	denom_arg = strchr(argv[5], '/');
+	if (denom_arg) {
+		denom_arg[0] = '\0';
+		if (pcal_denom > 0 && pcal_denom != atoi(denom_arg+1)) {
+			printf("Error: Denominator for tone spacing (/%ld) and tone offset (/%d) must be identical!\n", pcal_denom, atoi(denom_arg+1));
+			return 1;
+		} else {
+			pcal_denom = atoi(denom_arg+1);
+		}
+	}
+	pcal_offset_hz = atol(argv[5]);
 	ssb = (argv[6][0] == '0') || (argv[6][0] == 'S');
 	lsb = (argv[7][0] == '1') || (argv[7][0] == 'L');
 
@@ -76,6 +94,7 @@ int main(int argc, char** argv)
             new_mark5_format_generic_from_string(format) );
 
 	// Allocate decoded-data arrays according to nr of recorded channels
+	chunksize = ms->samprate / 100;
 	data_complex = (mark5_float_complex **)malloc(ms->nchan*sizeof(mark5_float_complex *));
 	data_real = (float**)malloc(ms->nchan*sizeof(float *));
 	for(i = 0; i < ms->nchan; ++i) {
@@ -93,18 +112,19 @@ int main(int argc, char** argv)
 
 	Configuration::datasampling data_type = ms->iscomplex ? Configuration::COMPLEX : Configuration::REAL;
 	Configuration::complextype band_type = ssb ? Configuration::SINGLE : Configuration::DOUBLE;
-
-	pc = PCal::getNew(bw_hz, pcal_interval_hz, pcal_offset_hz, sample_offset, data_type, band_type);
+    const fraction tonespacing(pcal_interval_hz, pcal_denom);
+    const fraction toneoffset(pcal_offset_hz, pcal_denom);
+	pc = PCal::getNew(bw_hz, tonespacing, toneoffset, sample_offset, data_type, band_type);
 
 	tonedata = vectorAlloc_cf32(pc->getLength());
 
-	printf("Args: interval %lf Hz, offset %d Hz, %s %s %s data %s\n", pcal_interval_hz, pcal_offset_hz,
+	printf("Args: interval %ld Hz, offset %ld Hz, %s %s %s data %s\n", pcal_interval_hz, pcal_offset_hz,
 		ssb ? "SSB" : "DSB",
 		lsb ? "LSB" : " USB",
 		ms->iscomplex ? "complex" : "real",
 		ms->iscomplex && conjugate ? " conjugated to flip USB/LSB sense" : ""
 	);
-	printf("PCal extractor : length=%d nbins=%d\n", pc->getLength(), pc->getNBins());
+	printf("PCal extractor : length=%d\n", pc->getLength());
 
 	// Read file
 	ssize_t nsamples_total = 0;
@@ -132,15 +152,20 @@ int main(int argc, char** argv)
 
 		// Extract pcal data
 		n = pc->getFinalPCal(tonedata);
-		printf("Extracted pcal from n = %d samples, final pcal data are:\n", n);
+		if (ms->iscomplex) {
+			T = double(nsamples_total) / bw_hz;
+		} else {
+			T = double(nsamples_total) / (2*bw_hz);
+		}
+		printf("Pcal at %.3lf sec, block of %d samples:\n", T, n);
 
 		for (i = 0; i < pc->getLength(); i++) {
 			float phi = (180/M_PI)*std::atan2(tonedata[i].im, tonedata[i].re);
 			float amp = sqrt(tonedata[i].im*tonedata[i].im + tonedata[i].re*tonedata[i].re);
-			float bbfreq = pcal_offset_hz + pcal_interval_hz * i;
-			double skyfreq = 1000.0 * pcal_interval_hz*1e6; // any
+			double bbfreq = double(pcal_offset_hz + pcal_interval_hz * long(i)) / pcal_denom;
+			double skyfreq = 18174.0e6 + bbfreq; // arbitraty, depends on 1st LO...
 			skyfreq = lsb ? (skyfreq - bbfreq) : (skyfreq + bbfreq);
-			printf("   tone %d : baseband %8.3f MHz  'sky' e.g. %8.3f MHz : phase %+7.2f amp %6.2f\n", i, bbfreq*1e-6, skyfreq*1e-6, phi, amp);
+			printf("   tone %d : baseband %8.5f MHz  'sky' e.g. %8.5f MHz : phase %+7.2f amp %6.2f\n", i, bbfreq*1e-6, skyfreq*1e-6, phi, amp);
 		}
 		printf("\n");
 
