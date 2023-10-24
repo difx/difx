@@ -157,15 +157,17 @@ int main(int argc, char** argv)
 		} else {
 			T = double(nsamples_total) / (2*bw_hz);
 		}
-		printf("Pcal at %.3lf sec, block of %d samples:\n", T, n);
 
+		printf("%8.3lf sec ", T);
 		for (i = 0; i < pc->getLength(); i++) {
 			float phi = (180/M_PI)*std::atan2(tonedata[i].im, tonedata[i].re);
 			float amp = sqrt(tonedata[i].im*tonedata[i].im + tonedata[i].re*tonedata[i].re);
 			double bbfreq = double(pcal_offset_hz + pcal_interval_hz * long(i)) / pcal_denom;
-			double skyfreq = 18174.0e6 + bbfreq; // arbitraty, depends on 1st LO...
-			skyfreq = lsb ? (skyfreq - bbfreq) : (skyfreq + bbfreq);
-			printf("   tone %d : baseband %8.5f MHz  'sky' e.g. %8.5f MHz : phase %+7.2f amp %6.2f\n", i, bbfreq*1e-6, skyfreq*1e-6, phi, amp);
+			//double skyfreq = 18174.0e6 + bbfreq; // arbitraty, depends on 1st LO...
+			//skyfreq = lsb ? (skyfreq - bbfreq) : (skyfreq + bbfreq);
+			//printf("   tone %d : baseband %8.5f MHz  'sky' e.g. %8.5f MHz : phase %+7.2f amp %6.2f\n", i, bbfreq*1e-6, skyfreq*1e-6, phi, amp);
+			//printf("   %.3lf sec tone %d %9.5f MHz : %+7.2f deg, amp %6.2f\n", T, i, bbfreq*1e-6, phi, amp);
+			printf("%9.5f MHz: %+7.2f deg %6.2f  ", bbfreq*1e-6, phi, amp);
 		}
 		printf("\n");
 
