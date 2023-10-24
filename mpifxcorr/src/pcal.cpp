@@ -84,6 +84,7 @@ using namespace std;
     // remove dependency on Alert.cpp
     #define csevere std::cout
     #define cerror  std::cout
+    #define cinfo   std::cout
     #define cwarn   std::cout
     #define cdebug  std::cout
     const char startl[] = "";
@@ -1980,6 +1981,11 @@ void test_pcal_auto()
       { 1024e6,225e6+3e6, 700e6,    9,   Configuration::REAL,    Configuration::SINGLE, "auto",  "Sejong 77.77.. MHz (700/9 MHz), 1 GHz bw, USB 25.33..." },
       { 1024e6,225e6+6e6, 700e6,    9,   Configuration::REAL,    Configuration::SINGLE, "auto",  "Sejong 77.77.. MHz (700/9 MHz), 1 GHz bw, USB 25.66..." },
       { 1024e6,225e6+9e6, 700e6,    9,   Configuration::REAL,    Configuration::SINGLE, "auto",  "Sejong 77.77.. MHz (700/9 MHz), 1 GHz bw, USB 26.00" },
+      // s23tj01c
+      { 128e6,228000000, 700000000, 9,   Configuration::REAL,    Configuration::SINGLE, "auto",  "s23tj01c Yonsei 77.77.. MHz (700/9 MHz) recband 1" },
+      { 128e6,231000000, 700000000, 9,   Configuration::REAL,    Configuration::SINGLE, "auto",  "s23tj01c Yonsei 77.77.. MHz (700/9 MHz) recband 2" },
+      { 128e6,234000000, 700000000, 9,   Configuration::REAL,    Configuration::SINGLE, "auto",  "s23tj01c Yonsei 77.77.. MHz (700/9 MHz) recband 3" },
+      { 128e6,237000000, 700000000, 9,   Configuration::REAL,    Configuration::SINGLE, "auto",  "s23tj01c Yonsei 77.77.. MHz (700/9 MHz) recband 4" },
       // Fractional values - other
       { 512e6, 25e6,      350e6,    3,   Configuration::REAL,    Configuration::SINGLE, "auto",  "Fractional 116.66.. MHz (350/3 MHz), 512 MHz bw, USB 8.33.." },
       { 512e6, 125e6+3e6, 350e6,   11,   Configuration::REAL,    Configuration::SINGLE, "auto",  "Fractional spacing 31.818181..., xxx.636363... USB" },
