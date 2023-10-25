@@ -200,7 +200,7 @@ Configuration *loadConfigration(const char *filename)
 			{
 				if(n < 3 || n > 4)
 				{
-					fprintf(stderr, "%s line %d: PulseCal needs <Interval[MHz]> and <power[%%]>, and optionally <delay[ns]>\n", filename, lineNumber);
+					fprintf(stderr, "%s line %d: PulseCal needs <Interval[MHz]> and <power[%%]>, and optionally <delay[us]>\n", filename, lineNumber);
 
 					break;
 				}

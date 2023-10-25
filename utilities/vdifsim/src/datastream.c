@@ -620,40 +620,71 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 
 		if(d->parameters->pulseCalInterval > 0)
 		{
+			const epsilon = 0.001;	/* [MHz] don't use tones closer to band edge than this */
+			double cosFactor, sinFactor;
+			int tone1, tone2;	/* index of first and last tone to use */
+
+			/* These two values scale the cos and sin components of the tone */
+			/* In case of lower sideband complex, sinFactor has opposite sign */
+			cosFactor = 2.0*sqrt(d->SEFD*d->parameters->pulseCalFrac);
+			sinFactor = (ds->df->sideband == 'U') ? cosFactor : -cosFactor;
+
+			tone1 = (freq_MHz+epsilon)/d->parameters->pulseCalInterval + 1;
+			tone2 = (freq_MHz+ds->df->bw-epsilon)/d->parameters->pulseCalInterval - 1;
+
 			pulseCalSamples = (double *)calloc(ds->nSamp, sizeof(double));
 
-			if(d->dd->dataSampling == SamplingReal)
+			if(tone2 >= tone1)
 			{
-/* FIXME: verify both real sidebands work properly */
-				const epsilon = 0.001;	/* [MHz] don't use tones closer to band edge than this */
-				double toneFreq;	/* [MHz] apparent tone frequency within band */
-				int i;
-				int t, t1, t2;
-				double delayFactor, sampleFactor, ampFactor;
-
-				ampFactor = 2.0*sqrt(d->SEFD*d->parameters->pulseCalFrac);
-
-				t1 = (freq_MHz+epsilon)/d->parameters->pulseCalInterval + 1;
-				t2 = (freq_MHz+ds->df->bw-epsilon)/d->parameters->pulseCalInterval - 1;
-
-				if(t2 >= t1) for(t = t1; t <= t2; ++t)
+				if(d->dd->dataSampling == SamplingReal)
 				{
-					toneFreq = t * d->parameters->pulseCalInterval - freq_MHz;
-					delayFactor = 2.0*M_PI*toneFreq*d->parameters->pulseCalDelay;
-					sampleFactor = 2.0*M_PI*toneFreq/(2.0*ds->df->bw);
+					int t;
 
-					for(i = 0; i < ds->nSamp; ++i)
+					for(t = tone1; t <= tone2; ++t)
 					{
-						pulseCalSamples[i] += ampFactor*cos(delayFactor + i*sampleFactor);
+						double toneFreq;	/* [MHz] apparent tone frequency within band */
+						double sampleFactor, delayFactor;
+						int i;
+						
+						toneFreq = t * d->parameters->pulseCalInterval - freq_MHz;
+						sampleFactor = 2.0*M_PI*toneFreq/(2.0*ds->df->bw);
+						delayFactor = 2.0*M_PI*toneFreq*d->parameters->pulseCalDelay;
+						if(ds->df->sideband == 'U')
+						{
+							delayFactor = -delayFactor;	/* this choice of sign is consistent with m5pcal */
+						}
+
+						for(i = 0; i < ds->nSamp; ++i)
+						{
+							pulseCalSamples[i] += cosFactor*cos(delayFactor + i*sampleFactor);
+						}
 					}
 				}
-			}
-			else
-			{
-/* FIXME: implement complex options */
-				fprintf(stderr, "Error: pulse cal for complex data is not yet implemented\n");
-				
-				exit(0);
+				else
+				{
+					int t;
+
+					for(t = tone1; t <= tone2; ++t)
+					{
+						double toneFreq;	/* [MHz] apparent tone frequency within band */
+						double sampleFactor, delayFactor;
+						int i;
+
+						toneFreq = t * d->parameters->pulseCalInterval - freq_MHz;
+						sampleFactor = 2.0*M_PI*toneFreq/(2.0*ds->df->bw);
+						delayFactor = 2.0*M_PI*toneFreq*d->parameters->pulseCalDelay;
+						if(ds->df->sideband == 'U')
+						{
+							delayFactor = -delayFactor;	/* this choice of sign is consistent with m5pcal */
+						}
+
+						for(i = 0; i < ds->nSamp; i += 2)
+						{
+							pulseCalSamples[i]   += cosFactor*cos(delayFactor + i*sampleFactor);
+							pulseCalSamples[i+1] += sinFactor*sin(delayFactor + i*sampleFactor);
+						}
+					}
+				}
 			}
 		}
 
