@@ -286,7 +286,6 @@ protected:
   cf32 * fftd;
 
   // variables for pcal
-  int * pcalnbins;
   cf32 ** pcalresults;
   PCal ** extractor;
   
