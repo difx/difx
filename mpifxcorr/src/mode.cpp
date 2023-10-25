@@ -412,15 +412,15 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
   PCal::setMinFrequencyResolution(1e6);
   if(config->getDPhaseCalIntervalHz(configindex, datastreamindex) > 0)
   {
-    pcalresults = new cf32*[numrecordedbands];
-    extractor = new PCal*[numrecordedbands];
+    pcalresults = new cf32*[numrecordedbands]();
+    extractor = new PCal*[numrecordedbands]();
     for(int i=0;i<numrecordedbands;i++)
     {
       localfreqindex = conf->getDLocalRecordedFreqIndex(confindex, dsindex, i);
       const long denom = config->getDPhaseCalDenominator(configindex, datastreamindex);
       const fraction tonespacing(config->getDPhaseCalIntervalHz(configindex, datastreamindex), denom);
       const fraction toneoffset(config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex), denom);
-      pcalresults[i] = new cf32[conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex)];
+      pcalresults[i] = new cf32[conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex)]();
       extractor[i] = PCal::getNew(1e6*recordedbandwidth, tonespacing, toneoffset, 0, sampling, tcomplex);
       if (extractor[i]->getLength() != conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex))
         csevere << startl << "Developer Error: configuration.cpp and pcal.cpp do not agree on the number of tones: " << extractor[i]->getLength() << " != " << conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex) << " ." << endl;
@@ -768,9 +768,12 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
 
   if(!(config->getDPhaseCalIntervalHz(configindex, datastreamindex) == 0))
   {
+      long samplenrsincestart = long(datasec)*long(recordedbandwidth) + datasamples+nearestsample;
+      if (!usecomplex)
+        samplenrsincestart += long(datasec)*long(recordedbandwidth);
       for(int i=0;i<numrecordedbands;i++)
       {
-        extractor[i]->adjustSampleOffset(datasamples+nearestsample);
+        extractor[i]->adjustSampleOffset(samplenrsincestart);
         if (!usecomplex)
 	        status = extractor[i]->extractAndIntegrate (&(unpackedarrays[i][nearestsample
 	                 - unpackstartsamples]), fftchannels);
