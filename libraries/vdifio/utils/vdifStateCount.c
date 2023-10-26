@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <inttypes.h>
+#include <math.h>
 #include <vdifio.h>
 
 const char program[] = "vdifStateCount";
@@ -100,8 +101,10 @@ void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum Sta
 	int a=-1, b=-1;	/* first and last index with non-zero counts */
 	int i;
 	int N;
+	double offset;
 
 	N = 1 << reg->nBit;
+	offset = N/2 - 0.5;
 
 	for(i = 0; i < N; ++i)
 	{
@@ -127,26 +130,34 @@ void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum Sta
 	else
 	{
 		double sum = 0.0;
+		double x = 0.0;
+		double xx = 0.0;
+		double mean, rms;
 		
-		/* FIXME: compute and report mean, rms */
 		for(i = a; i <= b; ++i)
 		{
 			sum += reg->counts[i];
+			x += (i-offset)*reg->counts[i];
+			xx += (i-offset)*(i-offset)*reg->counts[i];
 		}
+		mean = x/sum;
+		rms = sqrt(xx/sum - mean*mean);
 
 		fprintf(out, "# Thread %d  nBit %d  dataBytes %d\n", reg->threadId, reg->nBit, reg->dataBytes);
+		fprintf(out, "# Mean %f\n", mean);
+		fprintf(out, "# RMS %f\n", rms);
 		switch(pl)
 		{
 		case StateCountPrintAll:
 			for(i = 0; i < N; ++i)
 			{
-				fprintf(out, "%d  %3.1f %" PRId64 " %f\n", reg->threadId, i-N/2+0.5, reg->counts[i], reg->counts[i]/sum);
+				fprintf(out, "%d  %3.1f %" PRId64 " %f\n", reg->threadId, i-offset, reg->counts[i], reg->counts[i]/sum);
 			}
 			break;
 		case StateCountPrintCompact:
 			for(i = a; i <= b; ++i)
 			{
-				fprintf(out, "%d  %3.1f %" PRId64 " %f\n", reg->threadId, i-N/2+0.5, reg->counts[i], reg->counts[i]/sum);
+				fprintf(out, "%d  %3.1f %" PRId64 " %f\n", reg->threadId, i-offset, reg->counts[i], reg->counts[i]/sum);
 			}
 			break;
 		case StateCountPrintNonzero:
@@ -154,7 +165,7 @@ void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum Sta
 			{
 				if(reg->counts[i] > 0)
 				{
-					fprintf(out, "%d  %3.1f %" PRId64 " %f\n", reg->threadId, i-N/2+0.5, reg->counts[i], reg->counts[i]/sum);
+					fprintf(out, "%d  %3.1f %" PRId64 " %f\n", reg->threadId, i-offset, reg->counts[i], reg->counts[i]/sum);
 				}
 			}
 			break;
@@ -253,14 +264,16 @@ void countStates(StateCountRegister *reg, const unsigned char *data)
 
 void sigtermHandler(int i)
 {
-	fprintf(stderr, "%s: terminating due to TERM signal\n", program);
+	fprintf(stderr, "%s: terminating due to TERM signal.\n", program);
+	fprintf(stderr, "Partial results will be produced.\n");
 
 	die = 1;
 }
 
 void sigintHandler(int i)
 {
-	fprintf(stderr, "%s: terminating due to INT signal\n", program);
+	fprintf(stderr, "%s: terminating due to INT signal.\n", program);
+	fprintf(stderr, "Partial results will be produced.\n");
 
 	die = 1;
 }
@@ -281,6 +294,13 @@ void setSignals()
 	sigaction(SIGINT, &sigInt, 0);
 }
 
+void usage()
+{
+	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
+	fprintf(stderr, "Usage: %s <VDIF file> [ <output file> ]\n\n", program);
+	fprintf(stderr, "This program generates a histogram of state counts for VDIF files.\n\n");
+}
+
 int main(int argc, char **argv)
 {
 	const char *inFileName;
@@ -293,6 +313,13 @@ int main(int argc, char **argv)
 	FILE *in, *out;
 	uint64_t frameCount = 0;
 	int t;
+
+	if(argc < 2)
+	{
+		usage();
+
+		exit(0);
+	}
 
 	inFileName = argv[1];
 	in = fopen(inFileName, "r");
