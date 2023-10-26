@@ -441,6 +441,7 @@ typedef struct
 	enum DataSource dataSource;	/* MODULE, FILE, NET, other? */
 
 	float phaseCalIntervalMHz;/* 0 if no phase cal extraction, otherwise extract every tone and retain tones selected elsewhere */
+	long phaseCalIntervalDivisor; /* 1 default, v2d can override, allows to represent a fractional spacing like 700 MHz/9 = 77.777... MHz */
 	float phaseCalBaseMHz;	/* propagated from VEX1.5/2.0 */
 	int tcalFrequency;	/* 0 if no switched power extraction to be done.  =80 for VLBA */
 	int nRecTone;		/* number of pcal tones in the *recorded* baseband*/

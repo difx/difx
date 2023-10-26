@@ -344,6 +344,12 @@ def get_datastreamtable_info(inputfile):
             lines = lines[1:]
         val, lines = nextinputline(lines[1:])
         datastreams[-1].phasecalint = float(val)
+        if "DIVISOR" in lines[1]:
+            val, lines = nextinputline(lines[1:])
+            datastreams[-1].phasecaldiv = int(val)
+        if "BASE" in lines[1]:
+            val, lines = nextinputline(lines[1:])
+            datastreams[-1].phasecalbase = float(val)
         val, lines = nextinputline(lines[1:])
         datastreams[-1].nrecfreq = int(val)
         datastreams[-1].recfreqpols = []
@@ -413,6 +419,10 @@ def put_datastreamtable_info(fo,ds):
         fo.write("%-20s%s\n" % ("DATA SOURCE:",d.datasource))
         fo.write("%-20s%s\n" % ("FILTERBANK USED:","FALSE")) # TODO
         fo.write("%-20s%.5g\n" % ("PHASE CAL INT (MHZ):",d.phasecalint))
+        if d.phasecaldiv > 1:
+            fo.write("%-20s%d\n" % ("PHASE CAL DIVISOR:",d.phasecaldiv))
+        if d.phasecalbase > 0:
+            fo.write("%-20s%.5g\n" % ("PHASE CAL BASE(MHZ)",d.phasecalbase))
         fo.write("%-20s%d\n" % ("NUM RECORDED FREQS:",d.nrecfreq))
         for n in range(d.nrecfreq):
             fo.write("%-20s%d\n" % ("REC FREQ INDEX %d:"%(n),d.recfreqindex[n]))

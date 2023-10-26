@@ -36,6 +36,8 @@ class Datastream:
         self.datasource = ""
         self.filterbankused = False
         self.phasecalint = 0
+        self.phasecaldiv = 0
+        self.phasecalbase = 0
         self.nrecfreq = 0
         self.recfreqpols = []
         self.recfreqindex = []
