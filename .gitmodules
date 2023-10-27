@@ -1,0 +1,3 @@
+[submodule "difx-data"]
+	path = difx-data
+	url = https://github.com/difx/difx-data
