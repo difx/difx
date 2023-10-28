@@ -4,8 +4,8 @@
 
 program = 'vdiffold'
 author  = 'Walter Brisken'
-version = '0.7'
-verdate = '20211004'
+version = '0.7.1'
+verdate = '20231028'
 
 from os import system
 from sys import exit, argv
@@ -23,6 +23,7 @@ def usage():
 	print('  <infile> is the name of the VDIF file\n')
 	print('  <frame size> is the size of each input VDIF frame, inc. header (e.g., 5032)\n')
 	print('  <data rate> is the stream data rate (Mbps)\n')
+	print('  <threadlist> is a comma-separated list of threads to process\n')
 	print('  <nbin> is the number of bins per if across 1 period')
 	print('       if negative, the conversion to true power is not performed\n')
 	print('  <nint> is the number of 10000 sample chunks to work on\n')
