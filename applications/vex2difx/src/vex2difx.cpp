@@ -2391,6 +2391,13 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 			}
 		}
 
+		if(config->nDatastream == 0)
+		{
+			cerr << "Error: According to the vex file, none of the " << J.jobAntennas.size() << " antennas in the job had any recorded bands." << endl;
+
+			exit(EXIT_FAILURE);
+		}
+
 		// if outputbands are present, register all associated zooms and output freqs
 		if(!P->globalOutputbands.empty() && P->globalOutputbands.back().outputBandwidthMode != OutputBandwidthOff)
 		{
@@ -2473,7 +2480,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 			{
 				std::cerr << "Developer error: Couldn't find datastream for antenna=" << antName << " (difxName=" << antenna->difxName << ")" << std::endl;
 
-				exit(0);
+				exit(EXIT_FAILURE);
 			}
 
 			antennaSetup = P->getAntennaSetup(antName);
