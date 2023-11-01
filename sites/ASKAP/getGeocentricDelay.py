@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
-from __future__ import print_function
+
+
 import math, sys, glob, os
 import astropy.units as u
 from astropy.time import Time

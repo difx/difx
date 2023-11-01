@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # A script to take in a high time resolution binconfig file and re-weight the bins according to the 
 # frequency-scrunched amplitude for each bin for use in correlating data with pulsar tools in DiFX
@@ -46,20 +46,20 @@ args.outbinconfig = os.path.abspath(args.outbinconfig)
 
 # Check if the output binconfig exists already and exit if so
 if os.path.exists(args.outbinconfig):
-    print args.outbinconfig, "exists"
+    print(args.outbinconfig, "exists")
     sys.exit()
 
 ################################################################################
  # READING IN THE BINCONFIG FILE AND GATHERING INFORMATION
 ################################################################################
 
-print "Reading file: {0}".format(args.binconfig)
+print("Reading file: {0}".format(args.binconfig))
 binconfig_input = np.array(open(args.binconfig, "r").readlines())
 
 # Get number of bins in binconfig; -5 allows for the number of bins being in
 # the hundreds, while -1 prevents the newline character's inclusion
 numbins = int(binconfig_input[2][-5:-1])
-print "The number of bins in this config file is {0}".format(numbins)
+print("The number of bins in this config file is {0}".format(numbins))
 
 # Define the SCRUNCH OUTPUT element index
 scrunch_output_linenum=3
@@ -73,17 +73,17 @@ scrunch_output_linenum=3
 weights = np.loadtxt(args.weights)
 
 # Check spectrum has correct number of bins
-print "Checking that the number of weights matches the number of bins"
+print("Checking that the number of weights matches the number of bins")
 if len(weights) != numbins:
-    print "The number of weights provided does not match the number required for this binconfig!"
+    print("The number of weights provided does not match the number required for this binconfig!")
     sys.exit()
-else: print "The number of weights equals the number of bins. \nProceeding!"
+else: print("The number of weights equals the number of bins. \nProceeding!")
 
 ################################################################################
  # UPDATING WEIGHTS BASED ON CUTOFF THRESHOLD
 ################################################################################
 
-print "Updating weights based on cutoff threshold: {0}".format(args.threshold)
+print("Updating weights based on cutoff threshold: {0}".format(args.threshold))
 cutoff_index_nums = np.where(weights < args.threshold)
 thresholded_weights = weights.copy()
 thresholded_weights[cutoff_index_nums] = 0
@@ -92,7 +92,7 @@ thresholded_weights[cutoff_index_nums] = 0
  # WRITING OUT THE NEW BINCONFIG FILE
 ################################################################################
 
-print "Writing the new binconfig file: {0}".format(args.outbinconfig)
+print("Writing the new binconfig file: {0}".format(args.outbinconfig))
 linenum = 0
 weightnum = 0
 output = open(args.outbinconfig, "w")

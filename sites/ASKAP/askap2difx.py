@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-from __future__ import absolute_import
-from __future__ import print_function
+
+
 import os, sys, argparse, math, getpass
 from astropy.time import Time
-from six import unichr
+from six import chr
 from six.moves import range
 from six.moves import zip
 
@@ -86,7 +86,7 @@ def writestatentry(statout, antenna, count, itrfpos):
     if count < 10:
         countcode = str(count)
     else:
-        countcode = unichr(ord('A') + count - 10)
+        countcode = chr(ord('A') + count - 10)
     twoletteranname = "A%s" % countcode
     statout.write("  STATION=ASKAP%s   STCODE=A%s  CONTROL=VLBA\n" % (antenna[-2:], countcode))
     statout.write("    DBNAME = %s-ASKAP\n" % antenna[-2:])

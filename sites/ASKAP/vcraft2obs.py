@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 import os, sys, glob, math, argparse, getpass
 
 # Convenience function
@@ -57,10 +57,10 @@ vcraftfiles = []
 for g in vcraftglobpattern:
     vcraftfiles.append(glob.glob(g))
     if len(vcraftfiles[-1]) == 0:
-        print "Didn't find any vcraft files!"
+        print("Didn't find any vcraft files!")
         sys.exit()
 if not len(vcraftfiles[0]) == len(vcraftfiles[-1]):
-    print "Number of vcraft files for X and Y doesn't match"
+    print("Number of vcraft files for X and Y doesn't match")
 
 nant = len(vcraftfiles[0])
 freqs = []
@@ -107,14 +107,14 @@ if npol > 1:
         for line in open(file).readlines(4000):
             if line.split()[0] == "FREQS":
                 if line.split()[1].split(',') != freqs:
-                    print "file", file, " has different FREQS! Aborting"
+                    print("file", file, " has different FREQS! Aborting")
                     sys.exit()
                 else:
                     break
 
 # Check we found everything
 if beamra==None or beamdec==None or startmjd==None or mode == None or len(freqs) == 0:
-    print "Didn't find all info in", vcraftheader
+    print("Didn't find all info in", vcraftheader)
     sys.exit()
 
 ## All the commented out code is no longer needed because correction is done at time of reading TRIGGER_MJD above
@@ -175,7 +175,7 @@ if npol > 1:
 output.close()
 
 if args.ts > 0:
-    print "Waiting on CRAFTConverter to finish"
+    print("Waiting on CRAFTConverter to finish")
     ret = os.system("tsp -S {}".format(args.ts))
     if (ret!=0): sys.exit(ret)
 
@@ -194,7 +194,7 @@ for i in range(npol):
         
         antname = f.split('/')[-1].split('_')[0]
         if antname == "":
-            print "Didn't find the antenna name in the header!"
+            print("Didn't find the antenna name in the header!")
             sys.exit()
         if i == 0:
             antlist += antname + ","
@@ -207,7 +207,7 @@ for i in range(npol):
             else:
                 if args.ts > 0:
                     runline = "tsp " + runline
-                print runline
+                print(runline)
                 ret = os.system(runline)
                 if (ret!=0): sys.exit(ret)
         codifFiles[i].append(codifName)
@@ -266,7 +266,7 @@ output.write("mv log craft.difxlog\n")
 output.close()
 
 if args.ts > 0:
-    print "Waiting on CRAFTConverter to finish"
+    print("Waiting on CRAFTConverter to finish")
     ret = os.system("tsp -w")
     if (ret!=0): sys.exit(ret)
         
@@ -284,8 +284,8 @@ if args.numskylakenodes > 1:
     runline += " --numskylakenodes=" + str(args.numskylakenodes)
 if args.profile: runline += " --profile"
 runline += "\n"
-print "\nNow run:"
-print runline
+print("\nNow run:")
+print(runline)
 with open('runaskap2difx', 'w') as runaskap:
     runaskap.write(runline)
 os.chmod('runaskap2difx',0o775)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 import os, sys, argparse
 
 parser = argparse.ArgumentParser()
@@ -236,7 +236,7 @@ for i in range(nbins):
             imagesize = 128
             pixelsize = 1
             targetmsfilename= "bin{0:02g}/FRB_HTR_SUB{1}_calibrated_uv.ms".format(i, bins)
-            maskstr = "'circle [[%dpix,%dpix] ,5pix ]'" % (imagesize/2,imagesize/2)
+            maskstr = "'circle [[%dpix,%dpix] ,5pix ]'" % (imagesize//2,imagesize//2)
 #            casaout.write('clean(vis="%s",imagename="%s",outlierfile="",field="",spw="",selectdata=True,timerange="",uvrange="",mode="channel",gridmode="widefield",wprojplanes=-1,niter=100,gain=0.1,threshold="0.0mJy",psfmode="clark",imagermode="csclean",multiscale=[],interactive=False,mask=%s,nchan=-1,start=1,width=%d,outframe="",veltype="radio",imsize=%s,cell=["%.2farcsec", "%.2farcsec"],phasecenter="%s",restfreq="",stokes="%s",weighting="natural",robust=0.0,uvtaper=False,pbcor=False,minpb=0.2,usescratch=False,noise="1.0Jy",npixels=0,npercycle=100,cyclefactor=1.5,cyclespeedup=-1,nterms=1,reffreq="",chaniter=False,flatnoise=True,allowchunk=False)\n' % (targetmsfilename, imagebase, maskstr, avgchan, imagesize, pixelsize, pixelsize, args.phasecenter, pol))
 
             # If desired, produce the noise image as well
@@ -305,7 +305,7 @@ if args.ast:
             casaout = open("{0}_tar{1}cal{2}/targetimage.py".format(src[6:],atarname[b],acalname), "w")
             imagename = "{0}_tar{1}cal{2}/{0}T{1}_C{2}_mfs_I".format(src[6:],atarname[b],acalname)
             vis = "{0}_tar{1}cal{2}/{0}_tar{1}_cal{2}.ms".format(src[6:],atarname[b],acalname)
-            maskstr = "'circle [[%dpix,%dpix] ,5pix ]'" % (imagesize/2,imagesize/2)
+            maskstr = "'circle [[%dpix,%dpix] ,5pix ]'" % (imagesize//2,imagesize//2)
 
             casaout.write("tclean(vis='{0}', imagename='{1}', imsize=[{2}], cell=['1arcsec', '1arcsec'], stokes='I', specmode='mfs', gridder='widefield', wprojplanes=-1, pblimit=-1, deconvolver='multiscale', weighting='natural', niter=100, cycleniter=100, mask={3}, savemodel='modelcolumn')".format(vis, imagename, imagesize, maskstr))
             casaout.close()
@@ -338,7 +338,7 @@ if args.ast:
                 os.system("chmod 775 {0}_tar{1}cal{2}/convert2fits.sh".format(src[6:],atarname[b],acalname))
                 os.system("{0}_tar{1}cal{2}/convert2fits.sh".format(src[6:],atarname[b],acalname))
 
-                locstring = "{0},{1},{2},{3}".format(imagesize/2-12, imagesize/2-12, imagesize/2+12, imagesize/2+12,)
+                locstring = "{0},{1},{2},{3}".format(imagesize//2-12, imagesize//2-12, imagesize//2+12, imagesize//2+12,)
                 os.system("jmfitfromfile.py {0}_tar{1}cal{2}/{3}.fits {0}_tar{1}cal{2}/{3}.jmfit.stats {4}".format(src[6:],atarname[b],acalname,imagename,locstring))
 
 if not args.cal and not args.ast:
@@ -353,7 +353,7 @@ if not args.cal and not args.ast:
                 imagename = "{0}bin{1:02g}/TARGET.cube.{2}".format(prefix,i,pol)
                 offsourcename = "{0}bin{1:02g}/OFFSOURCE.cube.{2}".format(prefix,i,pol)
                 vis = "{0}bin{1:02g}/{2}{3}_calibrated_uv.ms".format(prefix,i,msprefix,bins)
-                maskstr = "'circle[[{0}pix,{0}pix] ,5pix ]'".format(imagesize/2)
+                maskstr = "'circle[[{0}pix,{0}pix] ,5pix ]'".format(imagesize//2)
                 phasecenter = "''"
                 imsize = "[{0},{0}]".format(imagesize)
                 if args.noisecentre:

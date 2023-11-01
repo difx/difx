@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 import os 
 
 imagesize = 128
@@ -12,7 +12,7 @@ for pol in pols:
     imagename = imagebase + ".image"
 
     casaout = open("imagescript.py","w")
-    for i in range(numchannels/averagechannels):
+    for i in range(numchannels//averagechannels):
         casaimage = "%s.slice%03d.image" % (imagebase, i)
         fitsimage = "%s.slice%03d.fits" % (imagebase, i)
         os.system("rm -f %s" % fitsimage)
@@ -21,6 +21,6 @@ for pol in pols:
         casaout.write('exportfits(imagename="%s",fitsimage="%s")\n' % (casaimage, fitsimage))
     casaout.close()
     os.system("casa -c imagescript.py")
-    for i in range(numchannels/averagechannels):
-        locstring = "%d,%d,%d,%d" % (imagesize/2-12, imagesize/2-12, imagesize/2+12, imagesize/2+12)
+    for i in range(numchannels//averagechannels):
+        locstring = "%d,%d,%d,%d" % (imagesize//2-12, imagesize//2-12, imagesize//2+12, imagesize//2+12)
         os.system("jmfitfromfile.py %s.slice%03d.fits %s.slice%03d.jmfit.stats %s" % (imagebase, i, imagebase, i, locstring))

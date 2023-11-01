@@ -1,7 +1,4 @@
-#!/usr/bin/env python2
-
-from __future__ import absolute_import
-from __future__ import print_function
+#!/usr/bin/env python
 import numpy as np
 from numpy.polynomial import polynomial as P
 import matplotlib
