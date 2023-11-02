@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import sys, os, struct, time, pylab, math, numpy
 import parseDiFX
 from optparse import OptionParser
