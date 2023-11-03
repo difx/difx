@@ -38,14 +38,14 @@ int main(int argc, char** argv)
 	const char* infile;
 	int if_nr = 0;
 	double bw_hz;
-    long pcal_denom = 0;
+	long pcal_denom = 0;
 	long pcal_interval_hz = 1e6;
 	long pcal_offset_hz = 0;
 	int lsb = 0, ssb = 1;
 	bool done = false;
 	bool conjugate = false;
 	int i, n;
-    size_t sample_offset = 0;
+	size_t sample_offset = 0;
 	double T;
 
 	struct mark5_stream *ms;
@@ -89,9 +89,13 @@ int main(int argc, char** argv)
 	lsb = (argv[7][0] == '1') || (argv[7][0] == 'L');
 
 	// Open file
-    ms = new_mark5_stream_absorb(
-            new_mark5_stream_file(infile, 0),
-            new_mark5_format_generic_from_string(format) );
+	ms = new_mark5_stream_absorb(
+		new_mark5_stream_file(infile, 0),
+		new_mark5_format_generic_from_string(format) );
+	if (if_nr >= ms->nchan) {
+		printf("Error: Specified 0-based IF nr %d, but input file has only %d IFs (0..%d).\n", if_nr, ms->nchan, ms->nchan-1);
+		return 1;
+	}
 
 	// Allocate decoded-data arrays according to nr of recorded channels
 	chunksize = ms->samprate / 100;
@@ -112,9 +116,13 @@ int main(int argc, char** argv)
 
 	Configuration::datasampling data_type = ms->iscomplex ? Configuration::COMPLEX : Configuration::REAL;
 	Configuration::complextype band_type = ssb ? Configuration::SINGLE : Configuration::DOUBLE;
-    const fraction tonespacing(pcal_interval_hz, pcal_denom);
-    const fraction toneoffset(pcal_offset_hz, pcal_denom);
+	const fraction tonespacing(pcal_interval_hz, pcal_denom);
+	const fraction toneoffset(pcal_offset_hz, pcal_denom);
 	pc = PCal::getNew(bw_hz, tonespacing, toneoffset, sample_offset, data_type, band_type);
+	if (!pc) {
+		printf("Error: failed to find suitable PCal extractor for the given tone parameters.\n");
+		return 1;
+	}
 
 	tonedata = vectorAlloc_cf32(pc->getLength());
 
