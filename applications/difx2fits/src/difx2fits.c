@@ -171,6 +171,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "                      Read <file> and apply it as delay corrections to the output\n");
 	fprintf(stderr, "  --sourcelist <list>\n");
 	fprintf(stderr, "                      Only propagate source(s) listed (comma separated)\n");
+	fprintf(stderr, "  --freqlist <list>\n");
+	fprintf(stderr, "                      Only propagate IFs with listed low edge freqs (comma separated, MHz)\n");
 	fprintf(stderr, "%s responds to the following environment variables:\n", program);
 	fprintf(stderr, "    DIFX_GROUP_ID             If set, run with umask(2).\n");
 	fprintf(stderr, "    DIFX_VERSION              The DiFX version to report.\n");
@@ -242,6 +244,11 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 		{
 			free(opts->includeSourceList);
 			opts->includeSourceList = 0;
+		}
+		if(opts->includeLowEdgeFreqsList)
+		{
+			free(opts->includeLowEdgeFreqsList);
+			opts->includeLowEdgeFreqsList = 0;
 		}
 		free(opts);
 	}
@@ -517,6 +524,31 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 						{
 							opts->includeSourceList[j] = ' ';
 						}
+					}
+				}
+				else if(strcmp(argv[i], "--freqlist") == 0)
+				{
+					int j, n;
+					char* token;
+
+					++i;
+					for (n = 1, j = 0; argv[i][j]; ++j)
+					{
+						if (argv[i][j] == ',')
+						{
+							++n;
+						}
+					}
+
+					opts->includeLowEdgeFreqsList = (double*)calloc(n+1, sizeof(double));
+
+					j = 0;
+					token = strtok(argv[i], ",");
+					while (token && j<n)
+					{
+						opts->includeLowEdgeFreqsList[j] = atof(token);
+						token = strtok(NULL, ",");
+						++j;
 					}
 				}
 				else if(strcmp(argv[i], "--applybandpass") == 0)

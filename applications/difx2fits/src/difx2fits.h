@@ -46,6 +46,7 @@ struct CommandLineOptions
 	char *baseFile[MAX_INPUT_FILES];
 	char *applyBandpassFile;
 	char *includeSourceList;
+	double *includeLowEdgeFreqsList;
 	char *applyDelayCalFile;
 	int nBaseFile;
 	int writemodel;
