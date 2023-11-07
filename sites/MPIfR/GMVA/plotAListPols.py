@@ -10,6 +10,8 @@ import argparse
 import datetime
 import numpy
 from collections import defaultdict
+from operator import itemgetter
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.pyplot import cm
@@ -21,8 +23,7 @@ def getAlistData(alistname, refStation, remStation=None, verbose=True, relabelLi
     af = afiob.alist(alistname)
     N = af.nfringe
 
-    times = {}  # snrs[<remAntenna 1-letter ID>] = [unixT0 unixT1 ...]
-    snrs = {}   # snrs[<remAntenna 1-letter ID>][<polzn pair>] = [snr@T0 snr@t1 ...]
+    timeseries = {}  # timeseries[key:<unix timestamp>] = [key:<baseline>][key<polpair>:snr]
 
     # for frec in af.fringedata: # -> segfault, loops past end of array
     for n in range(N):
@@ -51,25 +52,51 @@ def getAlistData(alistname, refStation, remStation=None, verbose=True, relabelLi
         # Antennas of baseline, ref.ant. always first
         ant1 = refStation
         ant2 = baseline[0] if baseline[0]!=refStation else baseline[1]
-        bline_sign = +1 if baseline[0]!=refStation else -1
+        baseline_std = ant1 + ant2
 
-        # Store time and SNR data point
-        if ant2 not in times: times[ant2] = []
-        if T not in times[ant2]: times[ant2].append(T)
-
-        if ant2 not in snrs: snrs[ant2] = {}
-        if polpair not in snrs[ant2]: snrs[ant2][polpair] = []
-        snrs[ant2][polpair].append(frec.snr)
+        # Store time etc in a multi-level dict
+        if T not in timeseries:
+            timeseries[T] = {'antennas': [refStation]}
+        if baseline_std not in timeseries[T]:
+            timeseries[T][baseline_std] = {}
+        if ant2 not in timeseries[T]['antennas']:
+            timeseries[T]['antennas'].append(ant2)
+        if polpair in timeseries[T][baseline_std]:
+            print("Warning: time %d or scan %s already has an entry for baseline %s polnz %s" % (T, scanname, baseline_std, polpair))
+        else:
+            timeseries[T][baseline_std][polpair] = float(frec.snr)
 
         if verbose:
             print(T.strftime('%j-%H%M%S'), scanname, ant1, ant2, baseline, polpair, frec.snr)
 
+    return timeseries
+
+
+def extractPolTimeseries(baseline, polpairs, timeseries):
+
+    snrs = {}
+    times = [t for t in timeseries.keys() if baseline in timeseries[t].keys() and all(p in timeseries[t][baseline] for p in polpairs)]
+    times = sorted(times)
+    for p in polpairs:
+        snrs[p] = [timeseries[t][baseline][p] for t in times]
+
     return (times, snrs)
 
 
-def plotAlistData(times, snrs, refAnt, verbose=True):
+def plot_onpick(event):
+    '''When a datapoint gets selected in a figure print out its details.'''
+    print('Station %s, data index %s' % (event.artist.get_gid(), str(event.ind)))
 
-    Nant = len(snrs)
+
+def plotAlistData(timeseries, refAnt, min_snr=None, verbose=False):
+
+    Nant = 0
+    remAnts = set()
+    scantimes = timeseries.keys()
+    for t in scantimes:
+        remAnts.update(timeseries[t]['antennas'])
+    remAnts = sorted(list(remAnts - {refAnt}))
+    Nant = len(remAnts)
 
     if Nant <= 8:
         # colormap Dark2 has 8 colors only
@@ -79,46 +106,60 @@ def plotAlistData(times, snrs, refAnt, verbose=True):
         color=iter(cm.rainbow(numpy.linspace(0,1,Nant)))
 
     fig = plt.figure(figsize=(12,8))
+    fig.canvas.mpl_connect('pick_event', plot_onpick)
 
     ax1 = fig.add_subplot(211)
     ax1.set_ylabel('SNR')
     ax1.set_title("Fringe SNRs on baselines to '%s'" % (refAnt))
 
     ax2 = fig.add_subplot(212)
-    ax2.set_ylabel('SNR Ratio (LL+RR)/(LR+LR)')
-    plt.gca().xaxis.set_major_formatter( mdates.DateFormatter('%d-%m-%Y %H:%M:%S'))
+    ax2.set_ylabel('SNR Ratio (LL+RR)/(LR+RL)')
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%d-%m-%Y %H:%M:%S'))
 
-    for remAnt in snrs:
+    if len(timeseries)>0:
+        ax2.plot([min(timeseries.keys()), max(timeseries.keys())], [1.0, 1.0], label='', color='red', picker=5, gid='ref_level', alpha=0.4)
 
-        polSNRs = snrs[remAnt]
-        pols = [key for key in snrs[remAnt]]
-        Ndata = len(polSNRs[pols[0]])
+    all_polpairs = ['LL','RR','LR','RL']
+    plot_alpha = 0.7
 
-        ratios = []
-        if len(pols) == 4:
-            for n in range(Ndata):
-                r = polSNRs['LL'][n] + polSNRs['RR'][n]
-                r = r / (polSNRs['LR'][n] + polSNRs['RL'][n])
-                ratios.append(r)
-        else:
-            print('  too few polarization data products on baseline to %s' % (remAnt))
-            ratios = [0.0 for n in range(Ndata)]
+    for remAnt in remAnts:
 
-
-        print(remAnt, pols, len(times[remAnt]), Ndata, 'ratios', ratios)
-
+        baseline = '%s-%s' % (refAnt,remAnt)
+        b = refAnt + remAnt
         c = next(color)
-        ax1.plot(times[remAnt], polSNRs['LL'], marker="o", label=remAnt, color='red', picker=5, gid=remAnt)
-        ax1.plot(times[remAnt], polSNRs['RR'], marker="o", label=remAnt, color='green', picker=5, gid=remAnt)
-        ax1.plot(times[remAnt], polSNRs['LR'], marker="x", label=remAnt, color='black', picker=5, gid=remAnt)
-        ax1.plot(times[remAnt], polSNRs['RL'], marker="x", label=remAnt, color='grey', picker=5, gid=remAnt)
-        ax2.plot(times[remAnt], ratios, marker="o", label=remAnt, color=c, picker=5, gid=remAnt)
-        ax2.legend(loc='upper right', ncol=min(6,Nant))
+
+        (times,snr) = extractPolTimeseries(b, all_polpairs, timeseries)
+        ratios = [(snr['LL'][n] + snr['RR'][n]) / (snr['LR'][n] + snr['RL'][n]) for n in range(len(times))]
+
+        if min_snr:
+            indices = [i for i in range(len(times)) if any(snr[pp][i] >= min_snr for pp in all_polpairs)]
+            if len(indices) > 1:
+                ratios = list(itemgetter(*indices)(ratios))
+                times = list(itemgetter(*indices)(times))
+                for pp in all_polpairs:
+                    snr[pp] = list(itemgetter(*indices)(snr[pp]))
+            elif len(indices) == 1:
+                # ratios = list(itemgetter(*indices)(ratios))
+                # --> "TypeError: 'float' object is not iterable", how to fix?
+                continue
+            else:
+                continue
+
+        ax1.plot(times, snr['LL'], marker="o", linestyle='dotted', label=baseline+':LL', color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+        ax1.plot(times, snr['RR'], marker="o", linestyle='dotted', label=baseline+':RR', color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+        ax1.plot(times, snr['LR'], marker="x", linestyle='dotted', label=baseline+':LR', color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+        ax1.plot(times, snr['RL'], marker="x", linestyle='dotted', label=baseline+':RL', color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+        ax1.legend(loc='upper right', ncol=Nant)
+
+        ax2.plot(times, ratios, marker="o", linestyle='dotted', label=baseline, color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+        ax2.legend(loc='upper right', ncol=Nant)
+
+        ax2.set_xlabel('Scan Time (UT)')
+        plt.draw()
 
         plt.gcf().autofmt_xdate()
 
     plt.tight_layout()
-    plt.show()
 
 
 def scatter_onpick(event):
@@ -126,9 +167,15 @@ def scatter_onpick(event):
     print('Station %s, data index %s' % (event.artist.get_gid(), str(event.ind)))
 
 
-def scatterplotAlistData(times, snrs, refAnt, verbose=True):
+def scatterplotAlistData(timeseries, refAnt, verbose=False):
 
-    Nant = len(snrs)
+    Nant = 0
+    remAnts = set()
+    scantimes = timeseries.keys()
+    for t in scantimes:
+        remAnts.update(timeseries[t]['antennas'])
+    remAnts = sorted(list(remAnts - {refAnt}))
+    Nant = len(remAnts)
 
     if Nant <= 8:
         # colormap Dark2 has 8 colors only
@@ -147,21 +194,23 @@ def scatterplotAlistData(times, snrs, refAnt, verbose=True):
     ax[3] = fig.add_subplot(224)
     plot_alpha = 0.7
 
-    for remAnt in snrs:
+    for remAnt in remAnts:
 
-        polSNRs = snrs[remAnt]
-        pols = [key for key in snrs[remAnt]]
-        if len(pols) != 4:
-            print('  too few polarization data products on baseline %s-%s' % (refAnt,remAnt))
-            continue
-
-        c = next(color)
         baseline = '%s-%s' % (refAnt,remAnt)
+        b = refAnt + remAnt
+        c = next(color)
+ 
+        (t,snr) = extractPolTimeseries(b, ['LL','RL'], timeseries)
+        ax[0].scatter(snr['LL'], snr['RL'], marker="x", label=remAnt, color=c, picker=5, gid=remAnt, alpha=plot_alpha)
 
-        ax[0].scatter(polSNRs['LL'], polSNRs['LR'], marker="x", label=remAnt, color=c, picker=5, gid=remAnt, alpha=plot_alpha)
-        ax[1].scatter(polSNRs['LL'], polSNRs['RR'], marker="o", label=remAnt, color=c, picker=5, gid=remAnt, alpha=plot_alpha)
-        ax[2].scatter(polSNRs['RR'], polSNRs['RL'], marker="x", label=remAnt, color=c, picker=5, gid=remAnt, alpha=plot_alpha)
-        ax[3].scatter(polSNRs['LR'], polSNRs['RL'], marker="x", label=remAnt, color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+        (t,snr) = extractPolTimeseries(b, ['LL','RR'], timeseries)
+        ax[1].scatter(snr['LL'], snr['RR'], marker="o", label=remAnt, color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+
+        (t,snr) = extractPolTimeseries(b, ['RR','RL'], timeseries)
+        ax[2].scatter(snr['RR'], snr['RL'], marker="x", label=remAnt, color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+
+        (t,snr) = extractPolTimeseries(b, ['LR','RL'], timeseries)
+        ax[3].scatter(snr['LR'], snr['RL'], marker="x", label=remAnt, color=c, picker=5, gid=remAnt, alpha=plot_alpha)
 
     ax[0].set_xlabel('LL SNR'); ax[0].set_ylabel('LR SNR'); ax[0].set_title('Parallel against Cross - reference %s' % (refAnt))
     ax[1].set_xlabel('LL SNR'); ax[1].set_ylabel('RR SNR'); ax[1].set_title('Parallel against Parallel')
@@ -175,23 +224,26 @@ def scatterplotAlistData(times, snrs, refAnt, verbose=True):
         ax[k].legend(loc='upper right', ncol=min(6,Nant))
 
     plt.tight_layout()
-    plt.show()
-
 
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("-s", "--min-snr", dest="minSnr", type=int, default=7, help="min. SNR to consider (default: 7)")
-parser.add_argument("-S", "--src", dest="src", action='append',  help="source to evaluate (when none specified: all)")
+parser.add_argument("-s", "--min-snr", dest="minSnr", type=int, default=12, help="min. SNR needed in at least one pol-pair (default: 12)")
+parser.add_argument("-v", dest="verbose", action='store_true',   help="verbose output")
 parser.add_argument("refRemSt", metavar="reference-station-code", help="Reference station 1-letter ID, or two letters for a specific baseline.")
 parser.add_argument("alistFile", nargs='+', metavar="Alist-file", help="The input alist file(s). Note: Each file should be produced with alist -v 6.")
 args = parser.parse_args()
 
 for alistname in args.alistFile:
+
     print ("File: %s" % (str(alistname)))
 
     refSt, remSt = args.refRemSt[0], None
     if len(args.refRemSt) >= 2: remSt = args.refRemSt[1]
 
-    (times, stationPolSNRs) = getAlistData(alistname, refSt, remSt, verbose=False)
-    # plotAlistData(times, stationPolSNRs, refSt)
-    scatterplotAlistData(times, stationPolSNRs, refSt)
+    timeseries = getAlistData(alistname, refSt, remSt, verbose=args.verbose)
+
+    plotAlistData(timeseries, refSt, min_snr=args.minSnr, verbose=args.verbose)
+
+    scatterplotAlistData(timeseries, refSt, verbose=args.verbose)
+
+    plt.show()
