@@ -1904,7 +1904,7 @@ static DifxInput *parseDifxInputNetworkTable(DifxInput *D,
 
 static DifxInput *deriveDifxInputValues(DifxInput *D)
 {
-	int c;
+	int c, v;
 	
 	if(!D)
 	{
@@ -1956,17 +1956,12 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		D->config[c].quantBits = qb;
 	}
 
-	for(c = 0; c < D->nConfig; ++c)
+	v = generateFreqSets(D);
+	if(v < 0)
 	{
-		int v;
+		fprintf(stderr, "Fatal error generating freq sets for configId(s)\n");
 
-		v = generateFreqSets(D);
-		if(v < 0)
-		{
-			fprintf(stderr, "Fatal error processing configId %d\n", c);
-
-			return 0;
-		}
+		return 0;
 	}
 
 	return D;
