@@ -27,6 +27,7 @@
 //
 //============================================================================
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -631,6 +632,39 @@ static int generateFreqSets(DifxInput *D, const DifxDatafilterOptions *filterOpt
 		/* This could be an overestimate if multiple frequencies map to one IF, as could happen if two otherwise identical FreqIds have different pulse cal extractions */
 		for(fqId = 0; fqId < D->nFreq; ++fqId)
 		{
+
+			/* Drop freqs if requested */
+			if(filterOptions && filterOptions->includeLowEdgeFreqsList)
+			{
+				const double small_error_MHz = 0.1;
+				int i, freqIsExcluded = 1;
+				double low_edge;
+
+				low_edge = D->freq[fqId].freq - ((D->freq[fqId].sideband == 'L') ? D->freq[fqId].bw : 0.0);
+				for(i = 0; filterOptions->includeLowEdgeFreqsList[i] > 0; ++i)
+				{
+					if(fabs(low_edge - filterOptions->includeLowEdgeFreqsList[i]) < small_error_MHz)
+					{
+						freqIsExcluded = 0;
+						break;
+					}
+				}
+
+				if(freqIsExcluded)
+				{
+					freqIsUsed[fqId] = 0;
+					if(verbose > 2)
+					{
+						printf("Dropping freqId %d starting at %.3lf MHz, it is not in the list of freqs to be included\n", fqId, low_edge);
+					}
+				}
+				else if(verbose > 2)
+				{
+						printf("Retaining freqId %d starting at %.3lf MHz\n", fqId, low_edge);
+				}
+			}
+
+			/* Include among new DifxIF freqs */
 			if(freqIsUsed[fqId] > 0)
 			{
 				++dfs->nIF;
