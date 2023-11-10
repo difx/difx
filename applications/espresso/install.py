@@ -63,4 +63,5 @@ if difxroot is None:
 run("aclocal")
 run("autoconf")
 run("automake -a")
+run("./configure --prefix=" + difxroot)
 run("make install")
