@@ -440,7 +440,7 @@ int isMixedPolMask(const int polmask)
  * @param D DifxInput object
  * @return -1 in case of error, 0 otherwise
  */
-static int generateFreqSets(DifxInput *D)
+static int generateFreqSets(DifxInput *D, const DifxDatafilterOptions *filterOptions)
 {
 	int configId;
 	int verbose;
@@ -1902,7 +1902,7 @@ static DifxInput *parseDifxInputNetworkTable(DifxInput *D,
         return D;
 }
 
-static DifxInput *deriveDifxInputValues(DifxInput *D)
+static DifxInput *deriveDifxInputValues(DifxInput *D, const DifxDatafilterOptions *filterOptions)
 {
 	int c, v;
 	
@@ -1956,7 +1956,7 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		D->config[c].quantBits = qb;
 	}
 
-	v = generateFreqSets(D);
+	v = generateFreqSets(D, filterOptions);
 	if(v < 0)
 	{
 		fprintf(stderr, "Fatal error generating freq sets for configId(s)\n");
@@ -3618,7 +3618,7 @@ static int mergeDifxInputFreqSets(DifxInput *D, const DifxMergeOptions *mergeOpt
 	return nError;
 }
 
-DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions)
+DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions, const DifxDatafilterOptions *filterOptions)
 {
 	static const DifxMergeOptions defaultMergeOptions;      /* initialized to zeros */
 	int nError;
@@ -3629,7 +3629,7 @@ DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions)
 		mergeOptions = &defaultMergeOptions;
 	}
 
-	D = deriveDifxInputValues(D);
+	D = deriveDifxInputValues(D, filterOptions);
 	if(D == NULL)
 	{
 		fprintf(stderr, "Merging Frequency Setups failed.  Could not derive input values.\n");
@@ -4828,6 +4828,43 @@ int DifxInputGetSourceId(const DifxInput *D, const char *sourceName)
 
 void resetDifxMergeOptions(DifxMergeOptions *mergeOptions)
 {
-	memset(mergeOptions, 0, sizeof(DifxMergeOptions));
+	if(mergeOptions)
+	{
+		memset(mergeOptions, 0, sizeof(DifxMergeOptions));
+	}
 }
 
+void resetDifxDatafilterOptions(DifxDatafilterOptions *filterOptions)
+{
+	if(filterOptions)
+	{
+		memset(filterOptions, 0, sizeof(DifxDatafilterOptions));
+	}
+}
+
+void deleteDifxDatafilterOptions(DifxDatafilterOptions *filterOptions)
+{
+	if(filterOptions)
+	{
+		if(filterOptions->includeAntennasList)
+		{
+			int i;
+			for (i = 0; filterOptions->includeAntennasList[i] != NULL; ++i)
+			{
+				free(filterOptions->includeAntennasList[i]);
+			}
+			free(filterOptions->includeAntennasList);
+			filterOptions->includeAntennasList = 0;
+		}
+		if(filterOptions->includeLowEdgeFreqsList)
+		{
+			free(filterOptions->includeLowEdgeFreqsList);
+			filterOptions->includeLowEdgeFreqsList = 0;
+		}
+		if(filterOptions->includeBandwidthsList)
+		{
+			free(filterOptions->includeBandwidthsList);
+			filterOptions->includeBandwidthsList = 0;
+		}
+	}
+}

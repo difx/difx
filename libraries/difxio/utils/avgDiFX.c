@@ -298,7 +298,7 @@ AverageInput *openAverageInput(const char *filename)
 
 		return 0;
 	}
-	A->D = updateDifxInput(A->D, 0);
+	A->D = updateDifxInput(A->D, 0, 0);
 	if(!A->D)
 	{
 		fprintf(stderr, "Update failed for DiFX fileset %s.  Quitting\n", filename);

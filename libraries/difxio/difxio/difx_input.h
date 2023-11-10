@@ -300,6 +300,15 @@ typedef struct
 	enum ClockMergeMode clockMergeMode;
 } DifxMergeOptions;
 
+/* structure containing options that affect data filtering */
+typedef struct
+{
+	int verbose;
+	char **includeAntennasList; /* TODO; if not NULL, ignore all antennas not found in this NULL-terminated list (2-letter codes, case insensitive) */
+	double *includeLowEdgeFreqsList; /* if not NULL, produce DifxIF entries only for DifxFreq's whose low edge freq (in MHz) is found in this 0-terminated list */
+	double *includeBandwidthsList; /* TODO; if not NULL, produce DifxIF entries only for DifxFreq's whose bandwidth (in MHz) is found in this 0-terminated list */
+} DifxDatafilterOptions;
+
 /* Straight from DiFX frequency table */
 typedef struct
 {
@@ -677,7 +686,7 @@ typedef struct
 
 	/* Remappings.  These are null arrays unless some renumbering from original values occurred */
 	int *jobIdRemap;	/* confusingly, not the same jobId as that in this structure, but rather index to DifxJob */
-	int *freqIdRemap;
+	int *jobfreqIdRemap;
 	int *antennaIdRemap;
 	int *datastreamIdRemap;
 	int *baselineIdRemap;
@@ -1022,6 +1031,8 @@ DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1, int ndf1
 
 /* DifxInput functions */
 void resetDifxMergeOptions(DifxMergeOptions *mergeOptions);
+void resetDifxDatafilterOptions(DifxDatafilterOptions *filterOptions);
+void deleteDifxDatafilterOptions(DifxDatafilterOptions *filterOptions);
 enum ToneSelection stringToToneSelection(const char *str);
 DifxInput *newDifxInput();
 void deleteDifxInput(DifxInput *D);
@@ -1033,7 +1044,7 @@ void DifxConfigMapAntennas(DifxConfig *dc, const DifxDatastream *ds);
 DifxInput *loadDifxInput(const char *filePrefix);
 DifxInput *loadDifxCalc(const char *filePrefix);
 DifxInput *allocateSourceTable(DifxInput *D, int length);
-DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions);
+DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions, const DifxDatafilterOptions *filterOptions);
 int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const DifxMergeOptions *mergeOptions);
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxMergeOptions *mergeOptions);
 int isAntennaFlagged(const DifxJob *J, double mjd, int antennaId);

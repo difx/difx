@@ -390,7 +390,7 @@ int main(int argc, char **argv)
 			DifxInput *D;
 			
 			D = loadDifxInput(argv[a]);
-			D = updateDifxInput(D, 0);
+			D = updateDifxInput(D, 0, 0);
 			if(!D)
 			{
 				fprintf(stderr, "Update failed: D == 0.  Quitting\n");
