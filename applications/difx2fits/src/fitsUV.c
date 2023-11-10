@@ -827,9 +827,9 @@ int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const D
 	}
 
 	/* adjust freqId through remapping if needed */
-	if(dv->D->job[dv->jobId].freqIdRemap)
+	if(dv->D->job[dv->jobId].jobfreqIdRemap)
 	{
-		freqId = dv->D->job[dv->jobId].freqIdRemap[freqId];
+		freqId = dv->D->job[dv->jobId].jobfreqIdRemap[freqId];
 	}
 
 	/* if chan weights are written the data volume is 3/2 as large */
@@ -1449,31 +1449,6 @@ static int ExcludeSource(const DifxVis *dv, const int *includeSourceIdList)
 	return 1;	/* turf it -- it is not on the provided list */
 }
 
-/* includeLowEdgeFreqsList should be terminated with 0.0, or can be a null pointer */
-static int ExcludeIF(const DifxVis *dv, const double *includeLowEdgeFreqsList)
-{
-	if(includeLowEdgeFreqsList == 0)
-	{
-		/* No list provided, so no filtering */
-
-		return 0;
-	}
-	else
-	{
-//		printf("ExcludeIF() check DifxVis->freqId=%d\n", dv->freqId);
-//		int i;
-//
-//		for(i = 0; includeLowEdgeFreqsList[i] > 0; ++i)
-//		{
-//			// TODO: dv->freqId which is "DiFX FreqSetId or FITS freqId",
-//			//       how to look up the actual frequency of this DifxVis record?
-//		}
-		return 0;
-	}
-
-	return 1;	/* turf it -- it is not on the provided list */
-}
-
 const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts, int passNum)
 {
 	int i, l, v;
@@ -1496,7 +1471,6 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	int nWritten = 0;
 	int nOld = 0;
 	int nSourceFiltered = 0;	/* number of records discarded due to being on source exclusion list */
-	int nFreqsFiltered = 0;
 	int nSkipped = 0;
 	int nSkipped_recs;
 	double mjd, bestmjd;
@@ -1820,10 +1794,6 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			++nSourceFiltered;
 		}
-		else if(ExcludeIF(dv, opts->includeLowEdgeFreqsList))
-		{
-			++nFreqsFiltered;
-		}
 		else
 		{
 #ifdef HAVE_FFTW
@@ -1900,7 +1870,6 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	printf("      %d scan boundary records dropped\n", nTrans);
 	printf("      %d out-of-time-range records dropped\n", nOld);
 	printf("      %d records from excluded sources dropped\n", nSourceFiltered);
-	printf("      %d records from excluded IFs dropped\n", nFreqsFiltered);
 	printf("      %d records skipped\n", nSkipped);
 	printf("      %d records written\n", nWritten);
 	if(nWritten > 0)

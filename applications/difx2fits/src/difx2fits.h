@@ -46,7 +46,6 @@ struct CommandLineOptions
 	char *baseFile[MAX_INPUT_FILES];
 	char *applyBandpassFile;
 	char *includeSourceList;
-	double *includeLowEdgeFreqsList;
 	char *applyDelayCalFile;
 	int nBaseFile;
 	int writemodel;
@@ -84,6 +83,7 @@ struct CommandLineOptions
 	int relabelCircular;	/* if != 0, then relabel all polarizations as R/L regardless of their actual values */
 	int doVanVleck;		/* if != 0, then correct for Van Vleck (quantization correction) */
 	DifxMergeOptions mergeOptions;
+	DifxDatafilterOptions filterOptions;
 };
 
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D,

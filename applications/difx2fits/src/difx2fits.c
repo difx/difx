@@ -205,6 +205,9 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
 	opts->allpcaltones       = DefaultAllPcalTones;
 
+	resetDifxMergeOptions(&opts->mergeOptions);
+	resetDifxDatafilterOptions(&opts->filterOptions);
+
 	return opts;
 }
 
@@ -245,11 +248,9 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 			free(opts->includeSourceList);
 			opts->includeSourceList = 0;
 		}
-		if(opts->includeLowEdgeFreqsList)
-		{
-			free(opts->includeLowEdgeFreqsList);
-			opts->includeLowEdgeFreqsList = 0;
-		}
+
+		deleteDifxDatafilterOptions(&opts->filterOptions);
+
 		free(opts);
 	}
 }
@@ -540,13 +541,13 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 						}
 					}
 
-					opts->includeLowEdgeFreqsList = (double*)calloc(n+1, sizeof(double));
+					opts->filterOptions.includeLowEdgeFreqsList = (double*)calloc(n+1, sizeof(double));
 
 					j = 0;
 					token = strtok(argv[i], ",");
 					while (token && j<n)
 					{
-						opts->includeLowEdgeFreqsList[j] = atof(token);
+						opts->filterOptions.includeLowEdgeFreqsList[j] = atof(token);
 						token = strtok(NULL, ",");
 						++j;
 					}
@@ -1118,7 +1119,7 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 			relabelCircular(Dset[i]);
 		}
 
-		Dset[i] = updateDifxInput(Dset[i], &opts->mergeOptions);
+		Dset[i] = updateDifxInput(Dset[i], &opts->mergeOptions, &opts->filterOptions);
 
 		if(opts->specAvg)
 		{
@@ -1320,7 +1321,7 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 		printDifxInput(D);
 	}
 
-	D = updateDifxInput(D, &opts->mergeOptions);
+	D = updateDifxInput(D, &opts->mergeOptions, &opts->filterOptions);
 
 	if(!D)
 	{
