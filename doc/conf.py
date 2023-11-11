@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'DiFX User Guide'
-copyright = '2023, DiFX TEAM'
+copyright = '2023, National Radio Astronomy Observatory'
 author = 'Walter Brisken'
 
 # The short X.Y version
