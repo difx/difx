@@ -50,6 +50,7 @@ dist_bin_SCRIPTS = \
 	vdifbstate \
 	vdiffold \
 	vdifd \
+	vdifpcal \
 	vdifspec
 
 testcornerturners_SOURCES = \

@@ -4,6 +4,7 @@ Version 1.6
 * vdifbstate: add option to look at only even or odd samples
 * filterVDIF: fix fclose on null pointer
 * add vdifStateCount
+* add vdifpcal (equivalent to vmux + m5pcal)
 
 Version 1.5
 ~~~~~~~~~~~
