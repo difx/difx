@@ -4,8 +4,8 @@
 
 program = 'vdiffold'
 author  = 'Walter Brisken'
-version = '0.7.1'
-verdate = '20231028'
+version = '0.7.2'
+verdate = '20231112'
 
 from os import system
 from sys import exit, argv
@@ -17,8 +17,8 @@ def usage():
 	print('')
 	printVersion()
 	print('')
-	print('A VDIF decoder for multi-thread VDIF data.  Uses vmux')
-	print('and m5d to do the heavy lifting.\n')
+	print('A program to look for switched powre in VDIF files.  Uses vmux')
+	print('and m5fold to do the heavy lifting.\n')
 	print('Usage : %s <infile> <frame size> <data rate> <threadlist> <nbin> <nint> <freq> <outfile> [<offset> [<nbit>] ]\n' % program)
 	print('  <infile> is the name of the VDIF file\n')
 	print('  <frame size> is the size of each input VDIF frame, inc. header (e.g., 5032)\n')
@@ -31,9 +31,7 @@ def usage():
 	print('  <outfile> is the name of the output file\n')
 	print('  <offset> optionally jump into input file by this many bytes\n')
 	print('  <nbit> is number of bits per sample (default is 2)\n')
-	print('Note: Only known to work on 2-bit real data for now;\n')
-	print('by the nature of the functionality, this cannot work on\n')
-	print('1-bit data\n')
+	print('by the nature of the functionality, this cannot work on 1-bit data.\n')
 
 if '--version' in argv:
 	printVersion()
