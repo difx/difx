@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: vexpeek.cpp 10851 2022-12-09 17:35:10Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/vexpeek.cpp $
- * $LastChangedRevision: 10851 $
+ * $Id: vexpeek.cpp 10831 2022-11-17 02:03:58Z WalterBrisken $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/src/vexpeek.cpp $
+ * $LastChangedRevision: 10831 $
  * $Author: WalterBrisken $
- * $LastChangedDate: 2022-12-10 01:35:10 +0800 (六, 2022-12-10) $
+ * $LastChangedDate: 2022-11-17 10:03:58 +0800 (四, 2022-11-17) $
  *
  *==========================================================================*/
 

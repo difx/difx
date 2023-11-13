@@ -22,18 +22,9 @@ long long gcd(long a, long b)
 }
 
 /**
- * Greatest common divisor.
- */
-int gcd(int a, int b)
-{
-    return (int)gcd(long(a), long(b));
-}
-
-/**
  * Greatest common divisor, with rounding of floating point input args.
  */
 long long gcd(double a, double b)
 {
     return gcd((long)floor(a + 0.5), (long)floor(b + 0.5));
 }
-

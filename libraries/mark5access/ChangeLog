@@ -1,7 +1,3 @@
-Version 1.7
-* Post DiFX-2.8
-* Add option to m5bstate to look only at even or odd samples
-
 Version 1.6
 * Post DiFX-2.6
 * All examples: Added support for new, generalised CODIF and VDIF naming scheme

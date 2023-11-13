@@ -76,8 +76,6 @@
 
 #include "architecture.h"
 #include "configuration.h" // for enums datasampling, complextype
-#include "fraction.h"
-
 #include <cstddef>
 #include <cassert>
 #include <stdint.h>
@@ -86,10 +84,9 @@ using std::size_t;
 
 class PCalExtractorTrivial;
 class PCalExtractorShifting;
-class PCalExtractorShiftingComplex;
 class PCalExtractorImplicitShift;
-class PCalExtractorImplicitShiftFractional;
-class PCalExtractorImplicitShiftComplex;
+class PCalExtractorComplex;
+class PCalExtractorComplexImplicitShift;
 class PCalExtractorDummy; //NOTE added for testing
 class pcal_config_pimpl;
 
@@ -108,40 +105,24 @@ class PCal {
       PCal& operator= (const PCal& o); /* no assign */
 
    public:
-     /**
+      /**
        * Factory that returns a new PCal extractor object. The optimal implementation
-       * is selected based on the input parameters. The phase cal spacing in hertz is
-       * provided as a fraction (numerator, denominator). This permits the tones from
-       * certain photonic pcal systems to be extracted that have e.g. a 77.777... MHz
-       * spacing (900/7) MHz).
-       *
-       * @param bandwidth_hz    Bandwidth of the input signal in Hertz
-       * @param pcal_spacing_hz Spacing of the PCal signal i.e. the comb spacing
-       * @param pcal_offset_hz  Offset of the first PCal tone from 0Hz/DC
-       * @param sampleoffset    Offset of the first sample as referenced to start of subintegration interval
-       * @param data_type       COMPLEX or REAL
-       * @param band_type       SINGLE (single sideband) or DOUBLE (dual sideband)
+       * is selected based on the input parameters.
+       * @param bandwidth_hz     Bandwidth of the input signal in Hertz
+       * @param pcal_spacing_hz  Spacing of the PCal signal, comb spacing, typically 1e6 Hertz
+       * @param pcal_offset_hz   Offset of the first PCal signal from 0Hz/DC, typically 10e3 Hertz
+       * @param sampleoffset     Offset of the first sample as referenced to start of subintegration interval
+       * @param data_type        COMPLEX or REAL
+       * @param band_type        SINGLE (single sideband) or DOUBLE (dual sideband)
        * @return new PCal extractor class instance
-      */
-      static PCal* getNew(long bandwidth_hz, const fraction& pcal_spacing_hz, const fraction& pcal_offset_hz, const size_t sampleoffset, Configuration::datasampling data_type, Configuration::complextype band_type);
+       */
+      static PCal* getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, const size_t sampleoffset, Configuration::datasampling data_type, Configuration::complextype band_type);
 
      /**
       * Return number of tones that fit the band, including any
       * tones that fall onto DC or the upper band edge.
       */
       static int calcNumTones(double bw, double offset, double step);
-
-     /**
-      * Return number of tones that fit the band, including any
-      * tones that fall onto DC or the upper band edge.
-      */
-      static int calcNumTones(long bw, long offset, long step);
-
-     /**
-      * Return number of tones that fit the band, including any
-      * tones that fall onto DC or the upper band edge.
-      */
-      static int calcNumTones(long bw, const fraction& offset, const fraction& step);
 
    public:
       /**
@@ -184,13 +165,19 @@ class PCal {
        * Get data-seconds contributing to the current PCal results.
        * @return amount of integrated data in seconds
        */
-      double getSeconds() const { return ((_fs_hz==0) ? 0 : (double(_samplecount)/double(_fs_hz))); }
+      double getSeconds() const { return ((_fs_hz==0.0f) ? 0.0f : (double(_samplecount)/_fs_hz)); }
 
       /**
        * Get length of vector the user should reserve for getFinalPCal() output copy.
        * @return vector length in complex tones
        */
       int getLength() const { return _N_tones; }
+
+      /**
+       * Get length of folding buffer the user should use for ensuring consistency of results.
+       * @return length in complex samples of folding buffer (N bins)
+       */
+      int getNBins() const { return _N_bins; }
 
       /**
        * Get estimated size of this object in bytes;
@@ -213,7 +200,7 @@ class PCal {
        * for the PCalExtractorImplicitShift extractor type only.
        * @param spectral resolution in hertz
        */
-      static void setMinFrequencyResolution(long hz) { PCal::_min_freq_resolution_hz = hz; }
+      static void setMinFrequencyResolution(double hz) { PCal::_min_freq_resolution_hz = hz; }
 
       /**
        * Processes samples and accumulates the detected phase calibration tone vector.
@@ -226,35 +213,39 @@ class PCal {
        */
       bool extractAndIntegrate_reference(f32 const* data, const size_t len, cf32* pcalout, const uint64_t sampleoffset);
 
-   protected:
+   private:
       /* Testing */
-      virtual void invariant() {
-          assert(_min_freq_resolution_hz > 0);
-          assert(_samplecount >= 0);
-          assert(_fs_hz > 0);
-          assert(_N_tones >= 0);
+      void invariant() { 
+          assert(_samplecount>=0);
+          assert(_fs_hz>0.0f);
+          assert(_pcaloffset_hz>=0.0f);
+          assert(_pcalspacing_hz>=0.0f);
+          assert((_pcalspacing_hz==0.0f) || (_pcalspacing_hz!=0.0f && _pcaloffset_hz<=_pcalspacing_hz));
+          assert(_N_bins>=0);
+          assert(_N_tones>=0);
           assert(_cfg != NULL);
       }
 
    private:
-      static long _min_freq_resolution_hz;
-
-   private:
       uint64_t _samplecount;
-      long _fs_hz;
-
+      double _fs_hz;
+      int _pcaloffset_hz;
+      double _pcalspacing_hz;
+      int _ssb;
+      int _N_bins;
       int _N_tones;
       bool _finalized;
       long long _estimatedbytes;
 
       pcal_config_pimpl* _cfg;
 
+      static double _min_freq_resolution_hz;
+
    friend class PCalExtractorTrivial;
    friend class PCalExtractorShifting;
-   friend class PCalExtractorShiftingComplex;
    friend class PCalExtractorImplicitShift;
-   friend class PCalExtractorImplicitShiftFractional;
-   friend class PCalExtractorImplicitShiftComplex;
+   friend class PCalExtractorComplex;
+   friend class PCalExtractorComplexImplicitShift;
 
    //NOTE added for testing
    friend class PCalExtractorDummy;

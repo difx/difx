@@ -449,8 +449,7 @@ class batchenv:
         """
 
         if self._style == "slurm":
-            #self.launch = "sbatch --parsable --export=ALL"
-            self.launch = "sbatch --parsable --export=NONE"
+            self.launch = "sbatch --parsable --export=ALL"
             #self.cancel = "scancel -n"
             self.cancel = "scancel"
             self.stats = (

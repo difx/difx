@@ -19,9 +19,9 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: fitsAN.c 11082 2023-09-14 20:22:36Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsAN.c $
-// $LastChangedRevision: 11082 $
+// $Id: fitsAN.c 10492 2022-06-06 23:26:40Z WalterBrisken $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsAN.c $
+// $LastChangedRevision: 10492 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2022-06-07 07:26:40 +0800 (二, 2022-06-07) $
 //
@@ -73,16 +73,11 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 	/* 1-based indices for FITS file */
 	int32_t arrayId1;
 	int noPCal;
-	int maxDatastreams;
-	int *dsIds;
 
 	if(D == 0)
 	{
 		return 0;
 	}
-
-	maxDatastreams = DifxInputGetMaxDatastreamsPerAntenna(D);
-	dsIds = (int *)malloc(maxDatastreams*sizeof(int));
 
 	nColumn = NELEMENTS(columns);
 	nBand = D->nIF;
@@ -149,8 +144,10 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 		freqId1 = freqSetId + 1; /* FITS fqId starts at 1 */
 		for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 		{
+			const int maxDatastreams = 8;
 			char antName[DIFXIO_NAME_LENGTH];
 			int n;
+			int dsIds[maxDatastreams];
 			int32_t nLevel;
 			int32_t antId1;
 
@@ -231,7 +228,5 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 
 	/* clean up and return */
 	free(fitsbuf);
-	free(dsIds);
-
 	return D;
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2023 by Walter Brisken & John Morgan & Leonid Petrov *
+ *   Copyright (C) 2008-2021 by Walter Brisken & John Morgan & Leonid Petrov *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: fitsPH.c 10952 2023-04-07 18:12:10Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsPH.c $
-// $LastChangedRevision: 10952 $
+// $Id: fitsPH.c 10492 2022-06-06 23:26:40Z WalterBrisken $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsPH.c $
+// $LastChangedRevision: 10492 $
 // $Author: WalterBrisken $
-// $LastChangedDate: 2023-04-08 02:12:10 +0800 (六, 2023-04-08) $
+// $LastChangedDate: 2022-06-07 07:26:40 +0800 (二, 2022-06-07) $
 //
 //============================================================================
 
@@ -959,6 +959,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
 	const struct CommandLineOptions *opts)
 {
+	const int maxDatastreams = 8;	// per antenna
+
 	char stateFormFloat[8];
 	char toneFormDouble[8];
 	char toneFormFloat[8];
@@ -1035,8 +1037,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int use_cable_cal;
 	const char* use_cable_cal_str;
 	char antName[DIFXIO_NAME_LENGTH];
-	int maxDatastreams;	/* per antenna */
-	int *originalDsIds;	/* datastream IDs in the jobs that were run */
 
 	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
 	 * wants, namely 0xFFFFFFFF, or 0xFFFFFFFFFFFFFFFF for double */
@@ -1052,9 +1052,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	{
 		return D;
 	}
-
-	maxDatastreams = DifxInputGetMaxDatastreamsPerAntenna(D);
-	originalDsIds = (int *)malloc(maxDatastreams * sizeof(int));
 
 	printf("\n");
 	nBand = D->nIF;
@@ -1190,8 +1187,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	if(nTone == 0)
 	{
 		free(pcalSourceFile);
-		free(jobxref);
-		free(originalDsIds);
 
 		return D;
 	}
@@ -1239,6 +1234,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 		for(jobId = 0; jobId < D->nJob; ++jobId)
 		{
+			int originalDsIds[maxDatastreams];	/* datastream IDs in the jobs that was run */
 			int nds, nt;
 			int d;
 
@@ -1335,6 +1331,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			double mjdLast = 0.0;
 			int nDifxAntennaTones;
 			int freqSetId;
+			int originalDsIds[maxDatastreams];
 			int originalDsId = -1;
 			int nds;	// number of datastreams for this antenna for this job
 			int d;
@@ -1932,6 +1929,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	}	/* end antenna loop */
 
+	free(fitsbuf);
+	free(jobxref);
+
 	for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 	{
 		if(pcalSourceFile[antennaId])
@@ -1940,9 +1940,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		}
 	}
 	free(pcalSourceFile);
-	free(fitsbuf);
-	free(jobxref);
-	free(originalDsIds);
 
 	printf("\n");
 

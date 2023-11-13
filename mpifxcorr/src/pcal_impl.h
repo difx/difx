@@ -55,16 +55,13 @@
  *
  * Changelog:
  *   05Oct2009 - added support for arbitrary input segment lengths
- *   08Oct2009 - added Briskens rotationless method
+ *   08oct2009 - added Briskens rotationless method
  *   19Mar2014 - added support for extraction from complex samples
- *   26Sep2023 - added support for fractional spacings like 700/9 MHz = 77.777... MHz
  *
  ********************************************************************************************************/
 
 #include "architecture.h"
 #include "pcal.h"
-#include "fraction.h"
-
 #include <cstddef>
 #include <stdint.h>
 using std::size_t;
@@ -77,12 +74,14 @@ class pcal_config_pimpl;
 
 class PCalExtractorTrivial : public PCal {
    public:
-      PCalExtractorTrivial(long bandwidth_hz, long pcal_spacing_hz, const size_t sampleoffset);
+      PCalExtractorTrivial(double bandwidth_hz, double pcal_spacing_hz, const size_t sampleoffset);
       ~PCalExtractorTrivial();
    private:
-      PCalExtractorTrivial& operator= (const PCalExtractorTrivial& o); /* no copy */
-      PCalExtractorTrivial(const PCalExtractorTrivial& o); /* no copy */
-      void invariant();
+     PCalExtractorTrivial& operator= (const PCalExtractorTrivial& o); /* no copy */
+     PCalExtractorTrivial(const PCalExtractorTrivial& o); /* no copy */
+
+   private:
+     int _tone_step;
 
    public:
       /**
@@ -94,7 +93,7 @@ class PCalExtractorTrivial : public PCal {
        * Adjust the sample offset.
        *
        * The extractor needs a time-continuous input sample stream. Samples
-       * are numbered 0...N according to their offset from the start of the
+       * are numbered 0...N according to their offset from the start of the 
        * stream. The stream can be split into smaller chunks that
        * are added individually through several extractAndIntegrate() calls.
        *
@@ -138,13 +137,12 @@ class PCalExtractorTrivial : public PCal {
 
 class PCalExtractorShifting : public PCal {
    public:
-      PCalExtractorShifting(long bandwidth_hz, long pcal_spacing_hz, long pcal_offset_hz,
+      PCalExtractorShifting(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, 
                             const size_t sampleoffset);
       ~PCalExtractorShifting();
    private:
       PCalExtractorShifting& operator= (const PCalExtractorShifting& o); /* no copy */
       PCalExtractorShifting(const PCalExtractorShifting& o); /* no copy */
-      void invariant();
 
    public:
       /**
@@ -156,7 +154,7 @@ class PCalExtractorShifting : public PCal {
        * Adjust the sample offset.
        *
        * The extractor needs a time-continuous input sample stream. Samples
-       * are numbered 0...N according to their offset from the start of the
+       * are numbered 0...N according to their offset from the start of the 
        * stream. The stream can be split into smaller chunks that
        * are added individually through several extractAndIntegrate() calls.
        *
@@ -192,69 +190,6 @@ class PCalExtractorShifting : public PCal {
        */
       uint64_t getFinalPCal(cf32* out);
 };
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-// DERIVED CLASS: extraction of PCal signals -
-//                complex samples with non-zero offset via spectral shift
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class PCalExtractorShiftingComplex : public PCal {
-   public:
-      PCalExtractorShiftingComplex(long bandwidth_hz, long pcal_spacing_hz, long pcal_offset_hz,
-                                   Configuration::complextype band_type);
-      ~PCalExtractorShiftingComplex();
-   private:
-      PCalExtractorShiftingComplex& operator= (const PCalExtractorShiftingComplex& o); /* no copy */
-      PCalExtractorShiftingComplex(const PCalExtractorShiftingComplex& o); /* no copy */
-      void invariant();
-
-   public:
-      /**
-       * Clear the extracted and accumulated PCal data by setting it to zero.
-       */
-      void clear();
-
-      /**
-       * Adjust the sample offset.
-       *
-       * The extractor needs a time-continuous input sample stream. Samples
-       * are numbered 0...N according to their offset from the start of the
-       * stream. The stream can be split into smaller chunks that
-       * are added individually through several extractAndIntegrate() calls.
-       *
-       * If for some reason two chunks are not continuous in time,
-       * some internal indices need to be corrected by calling this
-       * function and specifying at what sample number the next
-       * chunk passed to extractAndIntegrate() starts.
-       *
-       * @param sampleoffset sample offset of chunk passed to next extractAndIntegrate() call
-       */
-      void adjustSampleOffset(const size_t sampleoffset);
-
-      /**
-       * Process a new chunk of time-continuous single channel data.
-       * Time-integrates the data into the internal result buffer.
-       *
-       * If this function is called several times to integrate additional data
-       * and these multiple pieces of data are not continuous in time,
-       * please see adjustSampleOffset().
-       *
-       * @param samples Chunk of the input signal consisting of 'float' samples
-       * @param len     Length of the input signal chunk
-       * @return true on success, false if results were frozen by calling getFinalPCal()
-       */
-      bool extractAndIntegrate(f32 const* samples, const size_t len);
-
-      /**
-       * Computes the final extraction result. No more sample data can be added.
-       * The PCal extraction results are copied into the specified output array.
-       *
-       * @param out Pointer to user PCal array with getLength() values
-       * @return number of samples that were integrated for the result
-       */
-      uint64_t getFinalPCal(cf32* out);
-};
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DERIVED CLASS: extraction of PCal signals with non-zero offset and FFT-implicit rotation possible
@@ -262,13 +197,12 @@ class PCalExtractorShiftingComplex : public PCal {
 
 class PCalExtractorImplicitShift : public PCal {
    public:
-      PCalExtractorImplicitShift(long bandwidth_hz, long pcal_spacing_hz, long pcal_offset_hz,
-                                 const size_t sampleoffset);
+      PCalExtractorImplicitShift(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, 
+                                const size_t sampleoffset);
       ~PCalExtractorImplicitShift();
    private:
-      PCalExtractorImplicitShift& operator= (const PCalExtractorImplicitShift& o); /* no copy */
-      PCalExtractorImplicitShift(const PCalExtractorImplicitShift& o); /* no copy */
-      void invariant();
+     PCalExtractorImplicitShift& operator= (const PCalExtractorImplicitShift& o); /* no copy */
+     PCalExtractorImplicitShift(const PCalExtractorImplicitShift& o); /* no copy */     
 
    public:
       /**
@@ -280,71 +214,7 @@ class PCalExtractorImplicitShift : public PCal {
        * Adjust the sample offset.
        *
        * The extractor needs a time-continuous input sample stream. Samples
-       * are numbered 0...N according to their offset from the start of the
-       * stream. The stream can be split into smaller chunks that
-       * are added individually through several extractAndIntegrate() calls.
-       *
-       * If for some reason two chunks are not continuous in time,
-       * some internal indices need to be corrected by calling this
-       * function and specifying at what sample number the next
-       * chunk passed to extractAndIntegrate() starts.
-       *
-       * @param sampleoffset sample offset of chunk passed to next extractAndIntegrate() call
-       */
-      void adjustSampleOffset(const size_t sampleoffset);
-
-      /**
-       * Process a new chunk of time-continuous single channel data.
-       * Time-integrates the data into the internal result buffer.
-       *
-       * If this function is called several times to integrate additional data
-       * and these multiple pieces of data are not continuous in time,
-       * please see adjustSampleOffset().
-       *
-       * @param samples Chunk of the input signal consisting of 'float' samples
-       * @param len     Length of the input signal chunk
-       * @return true on success, false if results were frozen by calling getFinalPCal()
-       */
-      bool extractAndIntegrate(f32 const* samples, const size_t len);
-
-      /**
-       * Computes the final extraction result. No more sample data can be added.
-       * The PCal extraction results are copied into the specified output array.
-       *
-       * @param out Pointer to user PCal array with getLength() values
-       * @return number of samples that were integrated for the result
-       */
-      uint64_t getFinalPCal(cf32* out);
-};
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-// DERIVED CLASS: extraction of PCal signals with non-zero offset and FFT-implicit rotation possible,
-// for PCal spacings that cannot be expressed by a floating point number, but can be expressed
-// as a fraction - e.g., Sejong photonic pcal spaced 700/9 MHz = 77.777... MHz
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class PCalExtractorImplicitShiftFractional : public PCal {
-   public:
-      PCalExtractorImplicitShiftFractional(long bandwidth_hz, const fraction& pcal_spacing_hz,
-                                const fraction& pcal_offset_hz, const size_t sampleoffset);
-      ~PCalExtractorImplicitShiftFractional();
-   private:
-      PCalExtractorImplicitShiftFractional& operator= (const PCalExtractorImplicitShiftFractional& o); /* no copy */
-      PCalExtractorImplicitShiftFractional(const PCalExtractorImplicitShiftFractional& o); /* no copy */
-      void invariant();
-
-   public:
-      /**
-       * Clear the extracted and accumulated PCal data by setting it to zero.
-       */
-      void clear();
-
-      /**
-       * Adjust the sample offset.
-       *
-       * The extractor needs a time-continuous input sample stream. Samples
-       * are numbered 0...N according to their offset from the start of the
+       * are numbered 0...N according to their offset from the start of the 
        * stream. The stream can be split into smaller chunks that
        * are added individually through several extractAndIntegrate() calls.
        *
@@ -385,15 +255,13 @@ class PCalExtractorImplicitShiftFractional : public PCal {
 // DERIVED CLASS: extraction of PCal with non-zero offset and FFT-implicit rotation possible, complex data
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class PCalExtractorImplicitShiftComplex : public PCal {
+class PCalExtractorComplexImplicitShift : public PCal {
    public:
-      PCalExtractorImplicitShiftComplex(long bandwidth_hz, long pcal_spacing_hz, long pcal_offset_hz,
-                                        Configuration::complextype band_type);
-      ~PCalExtractorImplicitShiftComplex();
+      PCalExtractorComplexImplicitShift(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, Configuration::complextype band_type);
+      ~PCalExtractorComplexImplicitShift();
    private:
-      PCalExtractorImplicitShiftComplex& operator= (const PCalExtractorImplicitShiftComplex& o); /* no copy */
-      PCalExtractorImplicitShiftComplex(const PCalExtractorImplicitShiftComplex& o); /* no copy */
-      void invariant();
+     PCalExtractorComplexImplicitShift& operator= (const PCalExtractorComplexImplicitShift& o); /* no copy */
+     PCalExtractorComplexImplicitShift(const PCalExtractorComplexImplicitShift& o); /* no copy */     
 
    public:
       /**
@@ -405,7 +273,7 @@ class PCalExtractorImplicitShiftComplex : public PCal {
        * Adjust the sample offset.
        *
        * The extractor needs a time-continuous input sample stream. Samples
-       * are numbered 0...N according to their offset from the start of the
+       * are numbered 0...N according to their offset from the start of the 
        * stream. The stream can be split into smaller chunks that
        * are added individually through several extractAndIntegrate() calls.
        *
@@ -442,21 +310,75 @@ class PCalExtractorImplicitShiftComplex : public PCal {
       uint64_t getFinalPCal(cf32* out);
 };
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-// DERIVED CLASS: No-Op "extractor" for debug purposes
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// DERIVED CLASS: extraction of PCal signals with complex samples and non-zero offset
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class PCalExtractorComplex : public PCal {
+   public:
+      PCalExtractorComplex(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, Configuration::complextype band_type);
+      ~PCalExtractorComplex();
+   private:
+      PCalExtractorComplex& operator= (const PCalExtractorComplex& o); /* no copy */
+      PCalExtractorComplex(const PCalExtractorComplex& o); /* no copy */
+
+   public:
+      /**
+       * Clear the extracted and accumulated PCal data by setting it to zero.
+       */
+      void clear();
+
+      /**
+       * Adjust the sample offset.
+       *
+       * The extractor needs a time-continuous input sample stream. Samples
+       * are numbered 0...N according to their offset from the start of the 
+       * stream. The stream can be split into smaller chunks that
+       * are added individually through several extractAndIntegrate() calls.
+       *
+       * If for some reason two chunks are not continuous in time,
+       * some internal indices need to be corrected by calling this
+       * function and specifying at what sample number the next
+       * chunk passed to extractAndIntegrate() starts.
+       *
+       * @param sampleoffset sample offset of chunk passed to next extractAndIntegrate() call
+       */
+      void adjustSampleOffset(const size_t sampleoffset);
+
+      /**
+       * Process a new chunk of time-continuous single channel data.
+       * Time-integrates the data into the internal result buffer.
+       *
+       * If this function is called several times to integrate additional data
+       * and these multiple pieces of data are not continuous in time,
+       * please see adjustSampleOffset().
+       *
+       * @param samples Chunk of the input signal consisting of 'float' samples
+       * @param len     Length of the input signal chunk
+       * @return true on success, false if results were frozen by calling getFinalPCal()
+       */
+      bool extractAndIntegrate (f32 const* samples, const size_t len);
+
+      /**
+       * Computes the final extraction result. No more sample data can be added.
+       * The PCal extraction results are copied into the specified output array.
+       *
+       * @param out Pointer to user PCal array with getLength() values
+       * @return number of samples that were integrated for the result
+       */
+      uint64_t getFinalPCal(cf32* out);
+};
 
 class PCalExtractorDummy : public PCal {
-   public:
-      PCalExtractorDummy(long bandwidth_hz, long pcal_spacing_hz, long pcal_offset_hz,
-                         const size_t sampleoffset);
-      ~PCalExtractorDummy();
-   private:
-      PCalExtractorDummy& operator= (const PCalExtractorDummy& o); /* no copy */
-      PCalExtractorDummy(const PCalExtractorDummy& o); /* no copy */
-      void invariant();
+  public:
+    PCalExtractorDummy(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, 
+                       const size_t sampleoffset);
+    ~PCalExtractorDummy();
+  private:
+    PCalExtractorDummy& operator= (const PCalExtractorDummy& o); /* no copy */
+    PCalExtractorDummy(const PCalExtractorDummy& o); /* no copy */
 
-   public:
+  public:
     /**
      * Clear the extracted and accumulated PCal data by setting it to zero.
      */
@@ -486,4 +408,4 @@ class PCalExtractorDummy : public PCal {
 
 
 #endif // _PCAL_IMPL_H
-// vim: shiftwidth=3:softtabstop=3:expandtab
+// vim: shiftwidth=2:softtabstop=2:expandtab

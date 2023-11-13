@@ -714,7 +714,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
       modes[j]->zeroKurtosis();
     
     //reset pcal
-    if(config->getDPhaseCalIntervalHz(procslots[index].configindex, j) > 0)
+    if(config->getDPhaseCalIntervalMHz(procslots[index].configindex, j) > 0)
     {
       // Calculate the sample time. Every band has the same bandwidth.
       sampletimens = 1.0/(2.0*config->getDRecordedBandwidth(procslots[index].configindex, j, 0))*1e+3;
@@ -1143,7 +1143,7 @@ void Core::copyPCalTones(int index, int threadid, Mode ** modes)
   //copy the pulse cal
   for(int i=0;i<numdatastreams;i++)
   {
-    if(config->getDPhaseCalIntervalHz(procslots[index].configindex, i) > 0)
+    if(config->getDPhaseCalIntervalMHz(procslots[index].configindex, i) > 0)
     {
       modes[i]->finalisepcal();
       resultindex = config->getCoreResultPCalOffset(procslots[index].configindex, i);
@@ -1154,7 +1154,7 @@ void Core::copyPCalTones(int index, int threadid, Mode ** modes)
         {
           procslots[index].results[resultindex].re += modes[i]->getPcal(j,k).re;
           procslots[index].results[resultindex].im += modes[i]->getPcal(j,k).im;
-          resultindex++;
+	  resultindex++;
         }
       }
     }

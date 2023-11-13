@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: difx_datastream.c 10966 2023-05-09 06:52:03Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_datastream.c $
-// $LastChangedRevision: 10966 $
-// $Author: JanWagner $
-// $LastChangedDate: 2023-05-09 00:52:03 -0600 (Tue, 09 May 2023) $
+// $Id: difx_datastream.c 10823 2022-11-16 07:03:07Z WalterBrisken $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_datastream.c $
+// $LastChangedRevision: 10823 $
+// $Author: WalterBrisken $
+// $LastChangedDate: 2022-11-16 15:03:07 +0800 (三, 2022-11-16) $
 //
 //============================================================================
 
@@ -278,7 +278,6 @@ int DifxDatastreamGetPhasecalRange(const DifxDatastream *dd, const DifxFreq *df,
 {
 	double lowEdge;
 	double tonefreq;
-	double toneinterval;
 	int permitEdgeTone = 0;
 
 	if(lowest)
@@ -305,21 +304,20 @@ int DifxDatastreamGetPhasecalRange(const DifxDatastream *dd, const DifxFreq *df,
 	}
 
 	/* lowest frequency pcal */
-	toneinterval = dd->phaseCalIntervalMHz / dd->phaseCalIntervalDivisor; // NB: rounding errors are uncritical here
-	tonefreq = ((unsigned long)(lowEdge / toneinterval)) * toneinterval + dd->phaseCalBaseMHz;
+	tonefreq = ((unsigned long)(lowEdge / dd->phaseCalIntervalMHz)) * dd->phaseCalIntervalMHz + dd->phaseCalBaseMHz;
 	if(tonefreq < lowEdge)
 	{
-		tonefreq += toneinterval;
+		tonefreq += dd->phaseCalIntervalMHz;
 	}
 	if(!permitEdgeTone && fabs(tonefreq-lowEdge) < 1e-6)
 	{
 		//skip tone in DC bin
-		tonefreq += toneinterval;
+		tonefreq += dd->phaseCalIntervalMHz;
 	}
 
 	/* calculate number of tones that fit the band */
 	int ntones = 0;
-	while (tonefreq + ntones * toneinterval < lowEdge + df->bw)
+	while (tonefreq + ntones * dd->phaseCalIntervalMHz < lowEdge + df->bw)
 	{
 		++ntones;
 	}
@@ -331,14 +329,14 @@ int DifxDatastreamGetPhasecalRange(const DifxDatastream *dd, const DifxFreq *df,
 	}
 	if(highest && ntones)
 	{
-		*highest = tonefreq + (ntones - 1) * toneinterval;
+		*highest = tonefreq + (ntones - 1) * dd->phaseCalIntervalMHz;
 	}
 
 	if(0)
 	{
-		printf("full: band %.5g .. %.5g %cSB, pcal comb N*%.5g + %.5g\n", lowEdge, lowEdge + df->bw, df->sideband, toneinterval, dd->phaseCalBaseMHz);
-		printf("      first tone in band is %.5g\n", tonefreq);
-		printf("      final tone of band is %.5g\n", tonefreq + (ntones - 1) * toneinterval);
+		printf("full: band %.3f .. %.3f %cSB, pcal comb N*%.3f + %.3f\n", lowEdge, lowEdge + df->bw, df->sideband, dd->phaseCalIntervalMHz, dd->phaseCalBaseMHz);
+		printf("      first tone in band is %.3f\n", tonefreq);
+		printf("      final tone of band is %.3f\n", tonefreq + (ntones - 1) * dd->phaseCalIntervalMHz);
 		printf("      ntones is %d\n", ntones);
 	}
 
@@ -348,7 +346,7 @@ int DifxDatastreamGetPhasecalRange(const DifxDatastream *dd, const DifxFreq *df,
 /* Must have rec band/freq and freq table filled in before calling this function */
 void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, const DifxFreq *df)
 {
-	double lowest, highest, toneinterval;
+	double lowest, highest;
 	int i;
 
 	if(dd->nRecFreq == 0 || dd->phaseCalIntervalMHz == 0)
@@ -364,12 +362,11 @@ void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, const DifxFreq *df
 	DifxDatastreamAllocPhasecalTones(dd, dd->nRecTone);
 
 	/* Fill in the tone frequencies and on/off values */
-	toneinterval = dd->phaseCalIntervalMHz / dd->phaseCalIntervalDivisor; // NB: rounding errors are uncritical here
 	for(i = 0; i < dd->nRecTone; ++i)
 	{
 		int t;
 
-		dd->recToneFreq[i] = lowest + i * toneinterval;
+		dd->recToneFreq[i] = lowest + i * dd->phaseCalIntervalMHz;
 		for(t = 0; t < df->nTone; ++t)
 		{
 			if(df->tone[t] == i)
@@ -391,7 +388,7 @@ void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, const DifxFreq *df
  */
 int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, const DifxFreq *df, int maxCount, int AllPcalTones)
 {
-	double lowest, highest, toneinterval;
+	double lowest, highest;
 	int nRecTone=0;
 	int i, j, t;
 
@@ -408,9 +405,7 @@ int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, c
 
 	/* Get number of tones, and lowest/highest in-band non-DC tone frequencies */
 	nRecTone = DifxDatastreamGetPhasecalRange(dd, df, &lowest, &highest);
-
 	/* Fill in the tone frequencies and on/off values */
-	toneinterval = dd->phaseCalIntervalMHz / dd->phaseCalIntervalDivisor; // NB: rounding errors are uncritical here
 	if ( AllPcalTones == 0 ){
 	     /* Use the phase cal tones specified in the difx input files */
 	     for(t = 0; t < df->nTone; ++t)
@@ -426,7 +421,7 @@ int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, c
 		     }
 		     if(j >= 0 && j < maxCount)
 		     {
-			     toneFreq[j] = lowest + i*toneinterval;
+			     toneFreq[j] = lowest + i*dd->phaseCalIntervalMHz;
 		     }
 	     }
         } 
@@ -437,11 +432,11 @@ int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, c
 	     {
 		if ( df->sideband == 'U')
 		{
-		    toneFreq[t] = lowest  + t*toneinterval;
+		    toneFreq[t] = lowest  + t*dd->phaseCalIntervalMHz;
 		}
 		else
 		{
-		    toneFreq[t] = highest - t*toneinterval;
+		    toneFreq[t] = highest - t*dd->phaseCalIntervalMHz;
 		}
 	     }
         } 
@@ -549,10 +544,6 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 	{
 		fprintf(fp, "    phaseCalIntMHZ = %7.5f\n", dd->phaseCalIntervalMHz);
 	}
-	if(dd->phaseCalIntervalDivisor != 1)
-	{
-		fprintf(fp, "    phaseCalIntDivisor = %ld\n", dd->phaseCalIntervalDivisor);
-	}
 	if(dd->phaseCalBaseMHz > 0)
 	{
 		fprintf(fp, "    phaseCalBaseMHZ = %7.5f\n", dd->phaseCalBaseMHz);
@@ -591,8 +582,7 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2, c
 	   dd1->nZoomBand != dd2->nZoomBand ||
 	   dd1->dataSource != dd2->dataSource ||
 	   dd1->tcalFrequency != dd2->tcalFrequency ||
-	   dd1->phaseCalIntervalMHz != dd2->phaseCalIntervalMHz ||
-	   dd1->phaseCalIntervalDivisor != dd2->phaseCalIntervalDivisor)
+	   dd1->phaseCalIntervalMHz != dd2->phaseCalIntervalMHz)
 	{
 		return 0;
 	}
@@ -980,14 +970,10 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	{
 		writeDifxLineInt(out, "TCAL FREQUENCY", dd->tcalFrequency);
 	}
-	writeDifxLineDouble(out, "PHASE CAL INT (MHZ)", "%.5g", dd->phaseCalIntervalMHz);
-	if(dd->phaseCalIntervalDivisor != 1)
-	{
-		writeDifxLineInt(out, "PHASE CAL DIVISOR", dd->phaseCalIntervalDivisor);
-	}
+	writeDifxLineDouble(out, "PHASE CAL INT (MHZ)", "%.4g", dd->phaseCalIntervalMHz);
 	if(dd->phaseCalBaseMHz != 0)
 	{
-		writeDifxLineDouble(out, "PHASE CAL BASE(MHZ)", "%.5g", dd->phaseCalBaseMHz);
+		writeDifxLineDouble(out, "PHASE CAL BASE(MHZ)", "%.4g", dd->phaseCalBaseMHz);
 	}
 	writeDifxLineInt(out, "NUM RECORDED FREQS", dd->nRecFreq);
 	for(i = 0; i < dd->nRecFreq; ++i)
@@ -1062,7 +1048,7 @@ int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *r
 		localFqId = dd->recBandFreqId[r];
 		if(localFqId < 0 || localFqId >= dd->nRecFreq)
 		{
-			fprintf(stderr, "Error: DifxDatastreamGetRecBands: localFqId=%d out of range (%d) r=%d\n", localFqId, dd->nRecFreq, r);
+			fprintf(stderr, "Error: DifxDatastreamGetRecBands: localFqId=%d out of range (%d)\n", localFqId, dd->nRecFreq);
 		}
 		else if(dd->recFreqId[localFqId] == freqId)
 		{

@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: vex_mode.cpp 10966 2023-05-09 06:52:03Z JanWagner $
+ * $Id: vex_mode.cpp 10363 2022-01-27 22:57:59Z WalterBrisken $
  * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10966 $
- * $Author: JanWagner $
- * $LastChangedDate: 2023-05-09 14:52:03 +0800 (二, 2023-05-09) $
+ * $LastChangedRevision: 10363 $
+ * $Author: WalterBrisken $
+ * $LastChangedDate: 2022-01-28 06:57:59 +0800 (五, 2022-01-28) $
  *
  *==========================================================================*/
 
@@ -447,7 +447,7 @@ void VexMode::setSampling(const std::string &antName, unsigned int streamId, enu
 	}
 }
 
-void VexMode::setPhaseCalInterval(const std::string &antName, float phaseCalIntervalMHz)
+void VexMode::setPhaseCalInterval(const std::string &antName, int phaseCalIntervalMHz)
 {
 	std::map<std::string,VexSetup>::iterator it = setups.find(antName);
 	if(it != setups.end())
