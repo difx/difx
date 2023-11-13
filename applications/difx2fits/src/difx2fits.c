@@ -206,7 +206,7 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts->allpcaltones       = DefaultAllPcalTones;
 
 	resetDifxMergeOptions(&opts->mergeOptions);
-	resetDifxDatafilterOptions(&opts->filterOptions);
+	resetDifxDataFilterOptions(&opts->filterOptions);
 
 	return opts;
 }
@@ -249,7 +249,7 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 			opts->includeSourceList = 0;
 		}
 
-		deleteDifxDatafilterOptions(&opts->filterOptions);
+		deleteDifxDataFilterOptions(&opts->filterOptions);
 
 		free(opts);
 	}

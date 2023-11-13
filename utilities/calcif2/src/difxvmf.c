@@ -114,7 +114,7 @@ int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, con
 		printf("Warning: calcif2: working on unversioned job\n");
 	}
 
-	D = updateDifxInput(D, mergeOptions);
+	D = updateDifxInput(D, mergeOptions, 0);
 	if(!D)
 	{
 		fprintf(stderr, "Error: %s updateDifxInput(): update of %s failed.\n", program, inputFile);

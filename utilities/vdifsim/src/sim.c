@@ -306,7 +306,7 @@ int simulate(const CommandLineOptions *opts)
 
 			break;
 		}
-		D = updateDifxInput(D, 0);
+		D = updateDifxInput(D, 0, 0);
 		if(!D)
 		{
 			fprintf(stderr, "Rank %d : update failed: D == 0.\n", mpiRank);

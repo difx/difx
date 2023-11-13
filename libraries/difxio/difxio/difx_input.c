@@ -441,7 +441,7 @@ int isMixedPolMask(const int polmask)
  * @param D DifxInput object
  * @return -1 in case of error, 0 otherwise
  */
-static int generateFreqSets(DifxInput *D, const DifxDatafilterOptions *filterOptions)
+static int generateFreqSets(DifxInput *D, const DifxDataFilterOptions *filterOptions)
 {
 	int configId;
 	int verbose;
@@ -1936,7 +1936,7 @@ static DifxInput *parseDifxInputNetworkTable(DifxInput *D,
         return D;
 }
 
-static DifxInput *deriveDifxInputValues(DifxInput *D, const DifxDatafilterOptions *filterOptions)
+static DifxInput *deriveDifxInputValues(DifxInput *D, const DifxDataFilterOptions *filterOptions)
 {
 	int c, v;
 	
@@ -3652,7 +3652,7 @@ static int mergeDifxInputFreqSets(DifxInput *D, const DifxMergeOptions *mergeOpt
 	return nError;
 }
 
-DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions, const DifxDatafilterOptions *filterOptions)
+DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions, const DifxDataFilterOptions *filterOptions)
 {
 	static const DifxMergeOptions defaultMergeOptions;      /* initialized to zeros */
 	int nError;
@@ -4868,15 +4868,15 @@ void resetDifxMergeOptions(DifxMergeOptions *mergeOptions)
 	}
 }
 
-void resetDifxDatafilterOptions(DifxDatafilterOptions *filterOptions)
+void resetDifxDataFilterOptions(DifxDataFilterOptions *filterOptions)
 {
 	if(filterOptions)
 	{
-		memset(filterOptions, 0, sizeof(DifxDatafilterOptions));
+		memset(filterOptions, 0, sizeof(DifxDataFilterOptions));
 	}
 }
 
-void deleteDifxDatafilterOptions(DifxDatafilterOptions *filterOptions)
+void deleteDifxDataFilterOptions(DifxDataFilterOptions *filterOptions)
 {
 	if(filterOptions)
 	{
