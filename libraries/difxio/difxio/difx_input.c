@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2021 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2007-2022 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: difx_input.c 10634 2022-09-14 08:10:19Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_input.c $
-// $LastChangedRevision: 10634 $
-// $Author: JanWagner $
-// $LastChangedDate: 2022-09-14 16:10:19 +0800 (三, 2022-09-14) $
+// $Id: difx_input.c 11076 2023-09-14 17:43:15Z WalterBrisken $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_input.c $
+// $LastChangedRevision: 11076 $
+// $Author: WalterBrisken $
+// $LastChangedDate: 2023-09-14 11:43:15 -0600 (Thu, 14 Sep 2023) $
 //
 //============================================================================
 
@@ -255,6 +255,7 @@ void fprintDifxInputSummary(FILE *fp, const DifxInput *D)
 	//fprintf(fp, "  Input Channels = %d\n", D->nInChan);
 	fprintf(fp, "  Start Channel = %d\n", D->startChan);
 	fprintf(fp, "  Spectral Avg = %d\n", D->specAvg);
+	fprintf(fp, "  Corr Spectral Avg = %d\n", D->corrSpecAvg);
 	//fprintf(fp, "  Output Channels = %d\n", D->nOutChan);
 
 	fprintf(fp, "  nJob = %d\n", D->nJob);
@@ -1344,6 +1345,7 @@ static DifxInput *parseDifxInputFreqTable(DifxInput *D, const DifxParameters *ip
 		//D->nOutChan = D->freq[b].nChan/D->freq[b].specAvg;
 		//DiFX outputbands: nInChan, nOutChan update is postponed till parseDifxInputBaselineTable() because
 		// only the baseline table tells which visibility data/frequencies are outputted vs which are internal-temporary
+		D->corrSpecAvg = D->freq[b].specAvg;
 	}
 	
 	return D;
@@ -4642,6 +4644,37 @@ int DifxInputGetDatastreamIdsByAntennaId(int *dsIds, const DifxInput *D, int ant
 	}
 
 	return n;
+}
+
+int DifxInputGetMaxDatastreamsPerAntenna(const DifxInput *D)
+{
+	int a;
+	int m = 0;
+
+	if(!D)
+	{
+		return 0;
+	}
+
+	for(a = 0; a < D->nAntenna; ++a)
+	{
+		int am, d;
+
+		am = 0;
+		for(d = 0; d < D->nDatastream; ++d)
+		{
+			if(D->datastream[d].antennaId == a)
+			{
+				++am;
+			}
+		}
+		if(am > m)
+		{
+			m = am;
+		}
+	}
+
+	return m;
 }
 
 /* Here "Original" means indexes within the job rather than remapped indices */

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2021 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2007-2022 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: difx_input.h 10634 2022-09-14 08:10:19Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_input.h $
-// $LastChangedRevision: 10634 $
-// $Author: JanWagner $
-// $LastChangedDate: 2022-09-14 16:10:19 +0800 (三, 2022-09-14) $
+// $Id: difx_input.h 10862 2022-12-29 19:23:21Z WalterBrisken $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_input.h $
+// $LastChangedRevision: 10862 $
+// $Author: WalterBrisken $
+// $LastChangedDate: 2022-12-29 12:23:21 -0700 (Thu, 29 Dec 2022) $
 //
 //============================================================================
 
@@ -441,6 +441,7 @@ typedef struct
 	enum DataSource dataSource;	/* MODULE, FILE, NET, other? */
 
 	float phaseCalIntervalMHz;/* 0 if no phase cal extraction, otherwise extract every tone and retain tones selected elsewhere */
+	long phaseCalIntervalDivisor; /* 1 default, v2d can override, allows to represent a fractional spacing like 700 MHz/9 = 77.777... MHz */
 	float phaseCalBaseMHz;	/* propagated from VEX1.5/2.0 */
 	int tcalFrequency;	/* 0 if no switched power extraction to be done.  =80 for VLBA */
 	int nRecTone;		/* number of pcal tones in the *recorded* baseband*/
@@ -694,6 +695,7 @@ typedef struct
 	double refFreq;		/* some sort of reference frequency, (MHz) */
 	int startChan;		/* first (unaveraged) channel to write, only set for difx2fits */
 	int specAvg;		/* number of channels to average post corr. */
+	int corrSpecAvg;	/* number of channels to average by the correlator. */
 	int nInChan;		/* number of correlated channels, only set for difx2fits */
 	int nOutChan;		/* number of channels to write to FITS, only set for difx2fits */
 				/* Statchan, nInChan and nOutChan are all set haphazardly, and
@@ -1043,6 +1045,7 @@ int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId);
 int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, int antennaId);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
 int DifxInputGetDatastreamIdsByAntennaId(int *dsIds, const DifxInput *D, int antennaId, int maxCount);
+int DifxInputGetMaxDatastreamsPerAntenna(const DifxInput *D);
 int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInput *D, int antennaId, int jobId, int maxCount);
 int DifxInputGetMaxTones(const DifxInput *D);
 int DifxInputGetMaxPhaseCentres(const DifxInput *D);

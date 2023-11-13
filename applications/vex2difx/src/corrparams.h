@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: corrparams.h 10674 2022-10-10 11:44:49Z JanWagner $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/src/corrparams.h $
- * $LastChangedRevision: 10674 $
+ * $Id: corrparams.h 10966 2023-05-09 06:52:03Z JanWagner $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/corrparams.h $
+ * $LastChangedRevision: 10966 $
  * $Author: JanWagner $
- * $LastChangedDate: 2022-10-10 19:44:49 +0800 (一, 2022-10-10) $
+ * $LastChangedDate: 2023-05-09 14:52:03 +0800 (二, 2023-05-09) $
  *
  *==========================================================================*/
 
@@ -215,6 +215,7 @@ public:
 	bool polSwap;		// If true, swap polarizations
 	bool polConvert;	// request change of basis from RL->XY or XY->RL
 	float phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
+	long phaseCalIntervalDivisor;// 1 default, >1 for infinite fractions e.g. interval 700 MHz / divisior 9 = spacing 77.777... MHz
 	enum ToneSelection toneSelection;	// Which tones to propagate to FITS
 	double toneGuardMHz;	// to avoid getting tones too close to band edges; default = bandwidth/8
 	int tcalFrequency;	// [Hz] (= 80 for VLBA)

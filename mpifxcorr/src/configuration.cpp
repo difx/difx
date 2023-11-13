@@ -72,6 +72,7 @@ Configuration::Configuration(const char * configfile, int id, MPI_Comm& comm, do
   maxnumchannels = 0;
   estimatedbytes = 0;
   model = NULL;
+  infilekeyunconsumed = false;
 
   if (MPI_Comm_dup(comm, &mpicomm) != MPI_SUCCESS)
     cfatal << startl << "Failed MPI setup on MPI_Comm_dup() duplication! Correlation may produce strange results!" << endl;
@@ -116,6 +117,7 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
   maxnumchannels = 0;
   estimatedbytes = 0;
   model = NULL;
+  infilekeyunconsumed = false;
 
   setJobNameFromConfigfilename(string(configfile));
   char * difxmtu = getenv("DIFX_MTU");
@@ -434,12 +436,12 @@ Configuration::~Configuration()
       delete [] datastreamtable[i].zoombandpols;
       delete [] datastreamtable[i].zoombandlocalfreqindices;
       delete [] datastreamtable[i].datafilenames;
-      if(datastreamtable[i].phasecalintervalmhz > 0) {
-	for (int j=0;j<datastreamtable[i].numrecordedfreqs;j++)
-	  delete [] datastreamtable[i].recordedfreqpcaltonefreqshz[j];
-	delete [] datastreamtable[i].numrecordedfreqpcaltones;
-	delete [] datastreamtable[i].recordedfreqpcaltonefreqshz;
-	delete [] datastreamtable[i].recordedfreqpcaloffsetshz;
+      if(datastreamtable[i].phasecalintervalhz > 0) {
+        for (int j=0;j<datastreamtable[i].numrecordedfreqs;j++)
+          delete [] datastreamtable[i].recordedfreqpcaltonefreqshz[j];
+        delete [] datastreamtable[i].numrecordedfreqpcaltones;
+        delete [] datastreamtable[i].recordedfreqpcaltonefreqshz;
+        delete [] datastreamtable[i].recordedfreqpcaloffsetshz;
       }
     }
     delete [] datastreamtable;
@@ -564,7 +566,8 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
       framesperperiod = (int)(1e6*bw*nchan*alignmentseconds*nbits*2 / ((framebytes-CODIF_HEADER_BYTES) * 8) + 0.5);
       if (sampling==COMPLEX) {
         sprintf(formatname, "CODIFC_%d-%dm%d-%d-%d", framebytes-CODIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits);
-      } else {
+      }
+      else {
         sprintf(formatname, "CODIF_%d-%dm%d-%d-%d", framebytes-CODIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits);
       }
       break;
@@ -1310,7 +1313,7 @@ bool Configuration::processConfig(istream * input)
 
   getinputline(input, &line, "NUM CONFIGURATIONS");
   numconfigs = atoi(line.c_str());
-  configs = new configdata[numconfigs];
+  configs = new configdata[numconfigs]();
   estimatedbytes += numconfigs*sizeof(configdata);
   for(int i=0;i<numconfigs;i++)
   {
@@ -1394,7 +1397,7 @@ bool Configuration::processDatastreamTable(istream * input)
 
   getinputline(input, &line, "DATASTREAM ENTRIES");
   datastreamtablelength = atoi(line.c_str());
-  datastreamtable = new datastreamdata[datastreamtablelength];
+  datastreamtable = new datastreamdata[datastreamtablelength]();
   estimatedbytes += datastreamtablelength*sizeof(datastreamdata);
   if(datastreamtablelength < numdatastreams)
   {
@@ -1544,53 +1547,41 @@ bool Configuration::processDatastreamTable(istream * input)
     datastreamtable[i].linear2circular=false;
     getinputkeyval(input, &key, &line);
     if (key=="FILTERBANK USED") {
-      if ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t")) 
-	datastreamtable[i].filterbank = true;
+      if ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))
+        datastreamtable[i].filterbank = true;
     } else if (key=="PROCESSING METHOD") {
       if (line == "FILTERBANK") 
       	datastreamtable[i].filterbank=true;
       else if (line=="L2C" || line=="LINEAR2CIRCULAR") {
-	cinfo << startl << "Linear to Circular enabled" << endl;
+        cinfo << startl << "Linear to Circular enabled" << endl;
       	datastreamtable[i].linear2circular=true;
       } else if (line != "NONE") 
-	cerror << startl << "Unknown PROCESSING METHOD '" << line << "'. Ignoring." << endl;
+        cerror << startl << "Unknown PROCESSING METHOD '" << line << "'. Ignoring." << endl;
     } else {
       cfatal << startl << "We thought we were reading something starting with 'FILTERBANK USED', when we actually got '" << key << "'" << endl;
       return false;
     }
     if (mpiid==0 && datastreamtable[i].filterbank)
       cwarn << startl << "Filterbank channelization requested but not yet supported!!!" << endl;
-
-    getinputkeyval(input, &key, &line);
-    if(key.find("TCAL FREQUENCY") != string::npos) {
+    if (getinputline_opt(input, &line, "TCAL FREQUENCY")) {
       datastreamtable[i].switchedpowerfrequency = atoi(line.c_str());
-      getinputline(input, &line, "PHASE CAL INT (MHZ)");
-    }
-    else {
+    } else {
       datastreamtable[i].switchedpowerfrequency = 0;
-      if(key.find("PHASE CAL INT (MHZ)") == string::npos) {
-        if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Went looking for PHASE CAL INT (MHZ) (or maybe TCAL FREQUENCY), but got " << key << endl;
-        return false;
-      }
     }
-    datastreamtable[i].phasecalintervalmhz = atof(line.c_str());
-
-    getinputkeyval(input, &key, &line);
-    if (key.find("PHASE CAL BASE(MHZ)") != string::npos) {
-      datastreamtable[i].phasecalbasemhz = atof(line.c_str());
-      getinputline(input, &line, "NUM RECORDED FREQS");
+    getinputline(input, &line, "PHASE CAL INT (MHZ)");
+    datastreamtable[i].phasecalintervalhz = long(1e6*atof(line.c_str()));
+    if (getinputline_opt(input, &line, "PHASE CAL DIVISOR")) {
+      datastreamtable[i].phasecaldenominator = atol(line.c_str());;
+    } else {
+      datastreamtable[i].phasecaldenominator = 1L;
     }
-    else {
-      datastreamtable[i].phasecalbasemhz = 0;
-      if(key.find("NUM RECORDED FREQS") == string::npos) {
-        if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Went looking for NUM RECORDED FREQS (or maybe PHASE CAL BASE(MHZ)), but got " << key << endl;
-        return false;
-      }
+    if (getinputline_opt(input, &line, "PHASE CAL BASE(MHZ)")) {
+      datastreamtable[i].phasecalbasehz = long(1e6 * atof(line.c_str()));
+    } else {
+      datastreamtable[i].phasecalbasehz = 0;
     }
+    getinputline(input, &line, "NUM RECORDED FREQS");
     datastreamtable[i].numrecordedfreqs = atoi(line.c_str());
-
     datastreamtable[i].recordedfreqpols = new int[datastreamtable[i].numrecordedfreqs]();
     datastreamtable[i].recordedfreqtableindices = new int[datastreamtable[i].numrecordedfreqs]();
     datastreamtable[i].recordedfreqclockoffsets = new double[datastreamtable[i].numrecordedfreqs]();
@@ -1730,11 +1721,11 @@ bool Configuration::processDatastreamTable(istream * input)
         return false;
       }
     }
-    if(dsdata->phasecalintervalmhz > 0)
+    if(dsdata->phasecalintervalhz > 0)
     {
       dsdata->numrecordedfreqpcaltones = new int[dsdata->numrecordedfreqs]();
       dsdata->recordedfreqpcaltonefreqshz = new double*[dsdata->numrecordedfreqs]();
-      dsdata->recordedfreqpcaloffsetshz = new int[dsdata->numrecordedfreqs]();
+      dsdata->recordedfreqpcaloffsetshz = new long[dsdata->numrecordedfreqs]();
       dsdata->maxrecordedpcaltones = 0;
       estimatedbytes += sizeof(int)*(dsdata->numrecordedfreqs);
       for(int j=0;j<dsdata->numrecordedfreqs;j++)
@@ -1745,12 +1736,16 @@ bool Configuration::processDatastreamTable(istream * input)
 
         if(freqtable[freqindex].lowersideband)
         {     // LSB
-          tonefreq = double(int(lofreq/dsdata->phasecalintervalmhz))*dsdata->phasecalintervalmhz; // FIXME: dsdata->phasecalbasemhz should likely be part of this calc
-          if(tonefreq == lofreq)
-            tonefreq -= dsdata->phasecalintervalmhz;
+          const double stepMHz = dsdata->phasecalintervalhz*1e-6 / dsdata->phasecaldenominator;
+          long harmonic = (lofreq - dsdata->phasecalbasehz*1e-6) / stepMHz;
+          tonefreq = harmonic*stepMHz + dsdata->phasecalbasehz*1e-6;
+          if(tonefreq >= lofreq) {
+            tonefreq -= stepMHz;
+            harmonic -= 1;
+          }
           if(tonefreq >= lofreq - freqtable[freqindex].bandwidth)
           {
-            while(tonefreq - dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz >= lofreq - freqtable[freqindex].bandwidth)
+            while(tonefreq - dsdata->numrecordedfreqpcaltones[j]*stepMHz >= lofreq - freqtable[freqindex].bandwidth)
               dsdata->numrecordedfreqpcaltones[j]++;
           }
           if(dsdata->numrecordedfreqpcaltones[j] > dsdata->maxrecordedpcaltones)
@@ -1760,9 +1755,9 @@ bool Configuration::processDatastreamTable(istream * input)
             datastreamtable[i].recordedfreqpcaltonefreqshz[j] = new double[datastreamtable[i].numrecordedfreqpcaltones[j]]();
             estimatedbytes += sizeof(int)*datastreamtable[i].numrecordedfreqpcaltones[j];
             for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++) {
-              datastreamtable[i].recordedfreqpcaltonefreqshz[j][k] = 1e6*tonefreq - double(k)*1e6*dsdata->phasecalintervalmhz - 1e6*dsdata->phasecalbasemhz;
+              datastreamtable[i].recordedfreqpcaltonefreqshz[j][k] = double((harmonic - k) * dsdata->phasecalintervalhz)/dsdata->phasecaldenominator + dsdata->phasecalbasehz;
             }
-            dsdata->recordedfreqpcaloffsetshz[j] = long(1e6*lofreq - datastreamtable[i].recordedfreqpcaltonefreqshz[j][0] + 0.5);
+            dsdata->recordedfreqpcaloffsetshz[j] = long(dsdata->phasecaldenominator*1e6*lofreq) - harmonic * dsdata->phasecalintervalhz; // NB: do not scale by dsdata->phasecaldenominator!
           }
           else
           {
@@ -1775,12 +1770,16 @@ bool Configuration::processDatastreamTable(istream * input)
         }
         else
         {     // USB
-          tonefreq = double(int(lofreq/dsdata->phasecalintervalmhz))*dsdata->phasecalintervalmhz; // FIXME: dsdata->phasecalbasemhz should likely be part of this calc
-          if(tonefreq <= lofreq)
-            tonefreq += dsdata->phasecalintervalmhz;
+          const double stepMHz = dsdata->phasecalintervalhz*1e-6 / dsdata->phasecaldenominator;
+          long harmonic = (lofreq - dsdata->phasecalbasehz*1e-6) / stepMHz;
+          tonefreq = harmonic*stepMHz + dsdata->phasecalbasehz*1e-6;
+          if(tonefreq <= lofreq) {
+            tonefreq += stepMHz;
+            harmonic += 1;
+          }
           if(tonefreq <= lofreq + freqtable[freqindex].bandwidth)
           {
-            while(tonefreq + dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz <= lofreq + freqtable[freqindex].bandwidth)
+            while(tonefreq + dsdata->numrecordedfreqpcaltones[j]*stepMHz <= lofreq + freqtable[freqindex].bandwidth)
               dsdata->numrecordedfreqpcaltones[j]++;
           }
           if(dsdata->numrecordedfreqpcaltones[j] > dsdata->maxrecordedpcaltones)
@@ -1790,9 +1789,9 @@ bool Configuration::processDatastreamTable(istream * input)
             datastreamtable[i].recordedfreqpcaltonefreqshz[j] = new double[datastreamtable[i].numrecordedfreqpcaltones[j]]();
             estimatedbytes += sizeof(int)*datastreamtable[i].numrecordedfreqpcaltones[j];
             for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++) {
-              datastreamtable[i].recordedfreqpcaltonefreqshz[j][k] = 1e6*tonefreq + k*1e6*dsdata->phasecalintervalmhz + 1e6*dsdata->phasecalbasemhz;
+              datastreamtable[i].recordedfreqpcaltonefreqshz[j][k] = double((harmonic + k) * dsdata->phasecalintervalhz)/dsdata->phasecaldenominator + dsdata->phasecalbasehz;
             }
-            dsdata->recordedfreqpcaloffsetshz[j] = long(datastreamtable[i].recordedfreqpcaltonefreqshz[j][0] - 1e6*lofreq + 0.5);
+            dsdata->recordedfreqpcaloffsetshz[j] = harmonic * dsdata->phasecalintervalhz - long(dsdata->phasecaldenominator*1e6*lofreq); // NB: do not scale by dsdata->phasecaldenominator!
           }
           else
           {
@@ -1865,7 +1864,7 @@ bool Configuration::processRuleTable(istream * input)
   string key, val;
   getinputline(input, &key, "NUM RULES");
   numrules = atoi(key.c_str());
-  rules = new ruledata[numrules];
+  rules = new ruledata[numrules]();
   estimatedbytes += numrules*sizeof(ruledata);
   for(int i=0;i<numrules;i++) {
     rules[i].configindex = -1;
@@ -1944,7 +1943,7 @@ bool Configuration::processFreqTable(istream * input)
 
   getinputline(input, &line, "FREQ ENTRIES");
   freqtablelength = atoi(line.c_str());
-  freqtable = new freqdata[freqtablelength];
+  freqtable = new freqdata[freqtablelength]();
   estimatedbytes += freqtablelength*sizeof(freqdata);
   for(int i=0;i<freqtablelength;i++)
   {
@@ -2022,7 +2021,7 @@ void Configuration::processTelescopeTable(istream * input)
 
   getinputline(input, &line, "TELESCOPE ENTRIES");
   telescopetablelength = atoi(line.c_str());
-  telescopetable = new telescopedata[telescopetablelength];
+  telescopetable = new telescopedata[telescopetablelength]();
   estimatedbytes += telescopetablelength*sizeof(telescopedata);
   for(int i=0;i<telescopetablelength;i++)
   {
@@ -2599,7 +2598,7 @@ bool Configuration::populateResultLengths()
       {
         configs[c].coreresultpcaloffset[i] = coreresultindex;
         dsdata = datastreamtable[configs[c].datastreamindices[i]];
-        if(dsdata.phasecalintervalmhz > 0)
+        if(dsdata.phasecalintervalhz > 0)
         {
           for(int j=0;j<getDNumRecordedFreqs(c, i);j++)
             coreresultindex += dsdata.recordedfreqpols[j]*getDRecordedFreqNumPCalTones(c, i, j);
@@ -3100,12 +3099,15 @@ bool Configuration::consistencyCheck()
           f1 -= freqtable[freq1index].bandwidth;
         if(freqtable[freq2index].lowersideband)
           f2 -= freqtable[freq2index].bandwidth;
-        if(freqtable[freq1index].bandedgefreq == freqtable[freq2index].bandedgefreq && freqtable[freq1index].bandwidth == freqtable[freq2index].bandwidth && freqtable[freq1index].npcalsout == freqtable[freq2index].npcalsout)
+        if(freqtable[freq1index].bandedgefreq == freqtable[freq2index].bandedgefreq && freqtable[freq1index].bandwidth == freqtable[freq2index].bandwidth)
         {
           //note: Check for different npcalsout is likely to be a good indicator that the freqs are indeed different, but this is not a strictly correct test.  Better would be to store all the pulse cals to extract and do a detailed comparison.  Very low priority.
           //different freqs, same value??
-          if(mpiid == 0) //only write one copy of this error message
-            cwarn << startl << "Baseline " << i << " frequency " << j << " points at two different frequencies that are apparently identical - this is not wrong, but strange (unless PCal intervals differ).  Check the input file" << endl;
+          if(freqtable[freq1index].npcalsout == freqtable[freq2index].npcalsout)
+          {
+            if(mpiid == 0) //only write one copy of this error message
+              cwarn << startl << "Baseline " << i << " frequency " << j << " points at two different frequencies that are apparently identical - this is not wrong, but strange (unless PCal intervals differ).  Check the input file" << endl;
+          }
         }
         else if(f1 == f2 && freqtable[freq1index].bandwidth == freqtable[freq2index].bandwidth)
         {
@@ -3128,7 +3130,7 @@ bool Configuration::consistencyCheck()
         }
       }
       //catch the case of LSB against LSB where there is a USB somewhere
-      else if(freqtable[freq1index].lowersideband && freqtable[freq2index].correlatedagainstupper)
+      else if(freqtable[freq1index].lowersideband && freqtable[freq2index].correlatedagainstupper) /* FIXME: Check the if-else nesting level, here we have freq1index==freq2index, this test might be at the wrong spot? */
       {
         baselinetable[i].oddlsbfreqs[j] = 3; //both are lower, but still need to be shifted
       }
@@ -3640,27 +3642,20 @@ void Configuration::getinputkeyval(istream * input, std::string * key, std::stri
 
 void Configuration::getinputline(istream * input, std::string * line, std::string startofheader, bool verbose) const
 {
-  if(input->eof())
-    cerror << startl << "Trying to read past the end of file!" << endl;
-  getline(*input,*line);
-  while(line->length() > 0 && line->at(0) == COMMENT_CHAR) { // a comment
-    //if(mpiid == 0) //only write one copy of this error message
-    //  cverbose << startl << "Skipping comment " << line << endl;
-    getline(*input, *line);
+  if (!infilekeyunconsumed) {
+    // when no unconsumed earlier key,val pair exists, read the next
+    getinputkeyval(input, &infilekey, &infileval);
   }
-  int keylength = line->find_first_of(':') + 1;
-  if(keylength < DEFAULT_KEY_LENGTH)
-    keylength = DEFAULT_KEY_LENGTH;
-  if(startofheader.compare((*line).substr(0, startofheader.length())) != 0) //not what we expected
+  infilekeyunconsumed = false;
+
+  if(startofheader.compare(infilekey.substr(0, startofheader.length())) != 0) //not what we expected
   {
-    if (verbose) 
-      cerror << startl << "We thought we were reading something starting with '" << startofheader << "', when we actually got '" << (*line).substr(0, keylength) << "'" << endl;
-    else {
-      *line = "";
-      return;
-    }
+    if (verbose)
+      cerror << startl << "We thought we were reading something starting with '" << startofheader << "', when we actually got '" << infilekey << "'" << endl;
+    *line = "";
+  } else {
+    *line = infileval;
   }
-  *line = line->substr(keylength);
 }
 
 void Configuration::getinputline(istream * input, std::string * line, std::string startofheader) const
@@ -3668,12 +3663,45 @@ void Configuration::getinputline(istream * input, std::string * line, std::strin
   getinputline(input, line, startofheader, true);
 }
 
-
 void Configuration::getinputline(istream * input, std::string * line, std::string startofheader, int intval) const
 {
   char buffer[MAX_KEY_LENGTH+1];
   sprintf(buffer, "%s%i", startofheader.c_str(), intval);
   getinputline(input, line, string(buffer), true);
+}
+
+bool Configuration::getinputline_opt(istream * input, std::string * line, std::string startofheader, bool verbose) const
+{
+  if (!infilekeyunconsumed) {
+    // when no unconsumed earlier key,val pair exists, read the next
+    getinputkeyval(input, &infilekey, &infileval);
+  }
+  if(startofheader.compare(infilekey.substr(0, startofheader.length())) != 0)
+  {
+    if (verbose)
+      cdebug << startl << "Optional line '" << startofheader << "' not present, we got '" << infilekey << "'" << endl;
+    infilekeyunconsumed = true;
+    *line = "";
+    return false;
+  } else {
+    if (verbose)
+      cdebug << startl << "Optional line '" << startofheader << "' found, value '" << infileval << "'" << endl;
+    infilekeyunconsumed = false;
+    *line = infileval;
+    return true;
+  }
+}
+
+bool Configuration::getinputline_opt(istream * input, std::string * line, std::string startofheader) const
+{
+  return getinputline_opt(input, line, startofheader, true);
+}
+
+bool Configuration::getinputline_opt(istream * input, std::string * line, std::string startofheader, int intval) const
+{
+  char buffer[MAX_KEY_LENGTH+1];
+  sprintf(buffer, "%s%i", startofheader.c_str(), intval);
+  return getinputline_opt(input, line, string(buffer), true);
 }
 
 void Configuration::getMJD(int & d, int & s, int year, int month, int day, int hour, int minute, int second) const

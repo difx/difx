@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: applycorrparams.cpp 10530 2022-07-06 22:18:31Z WalterBrisken $
+ * $Id: applycorrparams.cpp 11032 2023-08-07 21:14:39Z WalterBrisken $
  * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10530 $
+ * $LastChangedRevision: 11032 $
  * $Author: WalterBrisken $
- * $LastChangedDate: 2022-07-07 06:18:31 +0800 (四, 2022-07-07) $
+ * $LastChangedDate: 2023-08-08 05:14:39 +0800 (二, 2023-08-08) $
  *
  *==========================================================================*/
 
@@ -148,6 +148,7 @@ static void applyCorrParams_MultiPhaseCenter(VexData *V, const CorrParams &param
 
 			exit(EXIT_FAILURE);
 		}
+
 		const SourceSetup *ss = params.getSourceSetup(S->defName);
 		if(ss)
 		{
@@ -189,6 +190,7 @@ static void applyCorrParams_MultiPhaseCenter(VexData *V, const CorrParams &param
 					{
 						continue;
 					}
+
 					V->deletePhaseCenters(scanNum);
 					if(ss->doPointingCentre)
 					{

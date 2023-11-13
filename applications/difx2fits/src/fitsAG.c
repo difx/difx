@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: fitsAG.c 10024 2021-05-25 14:53:00Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsAG.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsAG.c $
 // $LastChangedRevision: 10024 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2021-05-25 22:53:00 +0800 (二, 2021-05-25) $

@@ -180,9 +180,13 @@ public:
   inline double getDTsys(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].tsys; }
   inline float getDPhaseCalIntervalMHz(int configindex, int configdatastreamindex) const
-    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalmhz; }
-  inline float getDPhaseCalBaseMHz(int configindex, int configdatastreamindex) const
-    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalbasemhz; }
+    { return float(datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalhz)*1e-6; }
+  inline long getDPhaseCalIntervalHz(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalhz; }
+  inline long getDPhaseCalDenominator(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecaldenominator; }
+  inline long getDPhaseCalBaseHz(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalbasehz; }
   inline int getDSwitchedPowerFrequency(int datastreamindex) const
     { return datastreamtable[datastreamindex].switchedpowerfrequency; }
   inline int getDMaxRecordedPCalTones(int configindex, int configdatastreamindex) const
@@ -244,7 +248,7 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedfreqpcaltones[recordedfreqindex]; }
   inline double getDRecordedFreqPCalToneFreqHz(int configindex, int configdatastreamindex, int recordedfreqindex, int tone) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaltonefreqshz[recordedfreqindex][tone]; }
-  inline int getDRecordedFreqPCalOffsetsHz(int configindex, int configdatastreamindex, int recordedfreqindex) const
+  inline long getDRecordedFreqPCalOffsetsHz(int configindex, int configdatastreamindex, int recordedfreqindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaloffsetshz[recordedfreqindex]; }
   inline double getDRecordedFreq(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex) const
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[datastreamrecordedfreqindex]].bandedgefreq; }
@@ -679,7 +683,7 @@ public:
   bool updateClock(std::string clockstring);
 
  /**
-  * Utility method which reads a line from a file, extracts a value and checks the keyword matches that expected
+  * Utility method which reads an obligatory line from a file, extracts a value and checks the keyword matches that expected
   * @param input Open input stream to read from
   * @param line Existing string to store value in
   * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
@@ -687,7 +691,7 @@ public:
   void getinputline(istream * input, std::string * line, std::string startofheader) const;
 
  /**
-  * Utility method which reads a line from a file, extracts a value and checks the keyword matches that expected
+  * Utility method which reads an obligatory line from a file, extracts a value and checks the keyword matches that expected
   * @param input Open input stream to read from
   * @param line Existing string to store value in
   * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
@@ -699,22 +703,34 @@ public:
   void getinputline(istream * input, std::string * line, std::string startofheader, bool verbose) const;
 
  /**
+  * Utility method which reads an optional line from a file, extracts a value and checks if keyword matches that expected
+  * @return true if the optional line was found
+  * @param input Open input stream to read from
+  * @param line Existing string to store value in
+  * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
+  */
+  bool getinputline_opt(istream * input, std::string * line, std::string startofheader) const;
+
+  /** Actual function **/
+  bool getinputline_opt(istream * input, std::string * line, std::string startofheader, bool verbose) const;
+
+ /**
+  * Utility method which reads an optional line from a file, extracts a value and checks if keyword matches that expected
+  * @return true if the optional line was found
+  * @param input Open input stream to read from
+  * @param line Existing string to store value in
+  * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
+  * @param intval An integer value which should follow startofheader
+  */
+  bool getinputline_opt(istream * input, std::string * line, std::string startofheader, int intval) const;
+
+ /**
   * Utility method which reads a line from a file, splitting it into a key and a value and storing both
   * @param input Open input stream to read from
   * @param key String to store key in
   * @param val String to store value in
   */
   void getinputkeyval(istream * input, std::string * key, std::string * val) const;
-
- /**
-  * Utility method which reads the next line from a file, splitting it into a key and a value and storing both.
-  * If the read key and expected key do not match, the line is "unread" i.e. placed back.
-  * @param input Open input stream to read from
-  * @param expectedkey Expected value of the key to be read
-  * @param key String to store key in
-  * @param val String to store value in
-  */
-  bool peekinputkeyval(istream * input, const std::string& expectedkey, std::string * key, std::string * val) const;
 
  /**
   * Utility method which converts a year,month,day into mjd and hour,minute,second into seconds from start of day
@@ -877,8 +893,9 @@ private:
     datasampling sampling;
     complextype tcomplex;
     bool ismuxed;
-    float phasecalintervalmhz;
-    float phasecalbasemhz;
+    long phasecalintervalhz;
+    long phasecaldenominator; // default 1, >1 to interpret phasecalintervalhz as nominator of a fraction
+    long phasecalbasehz;
     int switchedpowerfrequency; // e.g., 80 Hz for VLBA
     int numbits;
     int bytespersamplenum;
@@ -898,7 +915,7 @@ private:
     int *  recordedfreqtableindices;
     int *  numrecordedfreqpcaltones;
     double ** recordedfreqpcaltonefreqshz;
-    int * recordedfreqpcaloffsetshz;
+    long * recordedfreqpcaloffsetshz;
     double * recordedfreqclockoffsets;
     double * recordedfreqclockoffsetsdelta;
     double * recordedfreqphaseoffset;
@@ -1114,6 +1131,8 @@ private:
   int numconfigs, numrules, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength;
   long long estimatedbytes;
   string calcfilename, modelfilename, coreconffilename, outputfilename, jobname, obscode;
+  mutable string infilekey, infileval;
+  mutable bool infilekeyunconsumed;
   int * numprocessthreads;
   int * scanconfigindices;
   configdata * configs;

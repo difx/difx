@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: fitsHeader.c 10537 2022-07-15 20:18:57Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsHeader.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsHeader.c $
 // $LastChangedRevision: 10537 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2022-07-16 04:18:57 +0800 (六, 2022-07-16) $

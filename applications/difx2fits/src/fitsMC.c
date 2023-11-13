@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: fitsMC.c 10492 2022-06-06 23:26:40Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsMC.c $
-// $LastChangedRevision: 10492 $
+// $Id: fitsMC.c 10864 2022-12-30 16:24:23Z WalterBrisken $
+// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsMC.c $
+// $LastChangedRevision: 10864 $
 // $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-07 07:26:40 +0800 (二, 2022-06-07) $
+// $LastChangedDate: 2022-12-31 00:24:23 +0800 (六, 2022-12-31) $
 //
 //============================================================================
 #include <stdlib.h>
@@ -65,7 +65,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D, struct fits_keywords *p_fi
  	int nRowBytes;
 	char *p_fitsbuf, *fitsbuf;
 	int nBand, nPol;
-	int b, j, s, p, np, a;
+	int b, j, s, p, np;
 	float LOOffset[array_MAX_BANDS];
 	float LORate[array_MAX_BANDS];
 	float dispDelay;
@@ -77,7 +77,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D, struct fits_keywords *p_fi
 	double delay, delayRate;
 	double atmosDelay, atmosRate;
 	double clock, clockRate, c1, c2;
-	int configId, dsId, antId;
+	int configId, antId;
 	int *skip;
 	int skipped=0;
 	int printed=0;
@@ -111,11 +111,12 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D, struct fits_keywords *p_fi
 		return 0;
 	}
   
-	for(a = 0; a < D->nAntenna; ++a)
+	/* look for first possible valid duration and use that */
+	for(antId = 0; antId < D->nAntenna; ++antId)
 	{
-		if(D->scan->im[a])
+		if(D->scan->im[antId])
 		{
-			polyDuration = D->scan->im[a][0][0].validDuration;
+			polyDuration = D->scan->im[antId][0][0].validDuration;
 			break;
 		}
 	}
@@ -175,23 +176,10 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D, struct fits_keywords *p_fi
 
 		for(p = 0; p < np; ++p)
 		{
-			/* loop over original .input file antenna list */
-			for(a = 0; a < config->nAntenna; ++a)
+			/* loop over antennas that might be used by this scan */
+			for(antId = 0; antId < scan->nAntenna; ++antId)
 			{
 				DifxAntenna *da;
-
-				dsId = config->ant2dsId[a];
-				if(dsId < 0 || dsId >= D->nDatastream)
-				{
-					continue;
-				}
-				/* convert to D->antenna[] index ... */
-				antId = D->datastream[dsId].antennaId;
-
-				if(antId < 0 || antId >= scan->nAntenna)
-				{
-					continue;
-				}
 
 				da = D->antenna + antId;	/* pointer to DifxAntenna structure */
 
@@ -202,8 +190,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D, struct fits_keywords *p_fi
 				{
 					if(skip[antId] == 0)
 					{
-						printf("\n    Polynomial model error : skipping antId %d = %s", 
-						antId, da->name);
+						printf("\n    Polynomial model error : skipping antId %d = %s", antId, da->name);
 						++skip[antId];
 						++printed;
 						++skipped;

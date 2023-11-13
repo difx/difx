@@ -38,9 +38,7 @@ class AverageVis:
 
     def handle(self, vis):
         """Deal with a new vis"""
-        if not vis.baseline_name in [
-            b[0].name + "-" + b[1].name for b in self.plot.baselines
-        ]:
+        if not vis.baseline_name in [b[0].name + "-" + b[1].name for b in self.plot.baselines]:
             return
         update_plot = self.add(vis)
         if self.aver_amount != 1:

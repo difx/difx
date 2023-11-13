@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: vex2difx.cpp 10918 2023-03-15 23:11:14Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/src/vex2difx.cpp $
- * $LastChangedRevision: 10918 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2023-03-16 07:11:14 +0800 (四, 2023-03-16) $
+ * $Id: vex2difx.cpp 10990 2023-06-19 10:14:03Z JanWagner $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/vex2difx.cpp $
+ * $LastChangedRevision: 10990 $
+ * $Author: JanWagner $
+ * $LastChangedDate: 2023-06-19 18:14:03 +0800 (一, 2023-06-19) $
  *
  *==========================================================================*/
 
@@ -233,6 +233,7 @@ static DifxAntenna *makeDifxAntennas(const Job &J, const VexData *V, int *n)
 	for(i = 0, a = J.jobAntennas.begin(); a != J.jobAntennas.end(); ++i, ++a)
 	{
 		const VexAntenna *ant = V->getAntenna(*a);
+
 		snprintf(A[i].name, DIFXIO_NAME_LENGTH, "%s", ant->difxName.c_str());
 		A[i].X = ant->x + ant->dx*(mjd-ant->posEpoch)*86400.0;
 		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
@@ -1045,6 +1046,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								{
 									continue;
 								}
+
 								if(!corrSetup->correlateFreqId(freqId))
 								{
 									continue;
@@ -2444,6 +2446,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 		for(std::map<std::string,VexSetup>::const_iterator it = mode->setups.begin(); it != mode->setups.end(); ++it)
 		{
 			const std::string &antName = it->first;
+			const VexAntenna *antenna = V->getAntenna(antName);
 			const VexSetup &setup = it->second;
 			unsigned int startBand, startFreq;
 			int currDatastream;
@@ -2460,20 +2463,19 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 			{
 				int ai = D->datastream[currDatastream].antennaId;
 
-				if(antName == D->antenna[ai].name)
+				if(antenna->difxName == D->antenna[ai].name)
 				{
 					break;
 				}
 			}
 
-			if(currDatastream == -1)
+			if(currDatastream == config->nDatastream)
 			{
-				std::cerr << "Developer error: currDatastream=-1  antenna=" << antName << std::endl;
+				std::cerr << "Developer error: Couldn't find datastream for antenna=" << antName << " (difxName=" << antenna->difxName << ")" << std::endl;
 
 				exit(0);
 			}
 
-			const VexAntenna *antenna = V->getAntenna(antName);
 			antennaSetup = P->getAntennaSetup(antName);
 
 			for(unsigned int ds = 0; ds < setup.nStream(); ++ds)
@@ -2483,10 +2485,14 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 				if(v)
 				{
 					dd = D->datastream + currDatastream;
+
+					// Get data from VEX/VexData, possibly revised by user v2d settings in applycorrparams.cpp
 					dd->phaseCalIntervalMHz = setup.phaseCalIntervalMHz();
 					dd->phaseCalBaseMHz = setup.phaseCalBaseMHz();
 					dd->tcalFrequency = antenna->tcalFrequency;
 
+					// Get data fields from v2d that are not part of VEX definition
+					dd->phaseCalIntervalDivisor = antennaSetup->phaseCalIntervalDivisor;
 					// FIXME: eventually zoom bands will migrate to the VexMode/VexSetup infrastructure.  until then, use antennaSetup directly
 					if(antennaSetup)
 					{

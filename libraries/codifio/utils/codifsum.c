@@ -226,8 +226,9 @@ int main (int argc, char **argv) {
 	}
       }
     }
+    close(file);
   }
-  close(file);
+  return(0);
 }
 
 void mjd2cal(double mjd, int *day, int *month, int *year, double *ut) {

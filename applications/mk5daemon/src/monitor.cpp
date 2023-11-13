@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id: monitor.cpp 9720 2020-09-11 08:17:06Z HelgeRottmann $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/src/monitor.cpp $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/monitor.cpp $
  * $LastChangedRevision: 9720 $
  * $Author: HelgeRottmann $
  * $LastChangedDate: 2020-09-11 16:17:06 +0800 (五, 2020-09-11) $

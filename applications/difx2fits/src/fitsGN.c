@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: fitsGN.c 8042 2017-10-19 08:49:45Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsGN.c $
-// $LastChangedRevision: 8042 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-10-19 16:49:45 +0800 (四, 2017-10-19) $
+// $Id: fitsGN.c 11074 2023-09-14 17:39:04Z JayBlanchard $
+// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsGN.c $
+// $LastChangedRevision: 11074 $
+// $Author: JayBlanchard $
+// $LastChangedDate: 2023-09-15 01:39:04 +0800 (五, 2023-09-15) $
 //
 //============================================================================
 
