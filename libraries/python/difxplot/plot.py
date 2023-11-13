@@ -300,7 +300,7 @@ class PlotDifx:
             
     def choose_plot(self):
         """Chooses the plot type depending on if a refant is set and if S/X mode or similar is used"""
-        split_plot = self.max_diff([f.freq for f in self.exp_info.freqs if f.freq !=0.999]) > 300 #MHz so split if subbands have a split of more than 300 MHz, also ignore dummy zoom band freqs
+        split_plot = self.max_diff([f.freq for f in self.exp_info.freqs]) > 300 #MHz so split if subbands have a split of more than 300 MHz
         if self.refant:
             if split_plot:
                 plot = PlotRefSplit(self.exp_info, self.refant, self.app)

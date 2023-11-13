@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: fitsSO.c 5746 2013-11-15 21:34:11Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsSO.c $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsSO.c $
 // $LastChangedRevision: 5746 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2013-11-16 05:34:11 +0800 (六, 2013-11-16) $

@@ -40,16 +40,12 @@ $ git checkout -b dev origin/dev
 
 
 ```bash
-# make sure the setting in setup.bash is correct (you will probably need to modify e.g. IPPROOT, MPICXX, etc)
-$ source setup.bash # (or .csh). 
+# make sure the setting in setup.bash is correct
+$ source setup/setup.bash # (or .csh). 
 #You will probably want to add this to your .bashrc or .cshrc files
 
 # Help on options for that last bit are available with ./install-difx --help.
-$ ./install-difx --help
-
-# It is highly recommended to build difx in an area other that the source tree (to avoid adding many untracked files)
-$ cd /some/directory/in/which/to/build
-$ /path/to/difx/repo/install-difx
+$ ./install-difx
 ```
 
 

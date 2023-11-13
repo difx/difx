@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2023 by Walter Brisken & Helge Rottmann            *
+ *   Copyright (C) 2008-2022 by Walter Brisken & Helge Rottmann            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: difx2fits.c 11058 2023-09-13 22:41:34Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/difx2fits.c $
-// $LastChangedRevision: 11058 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2023-09-14 06:41:34 +0800 (四, 2023-09-14) $
+// $Id: difx2fits.c 10998 2023-06-21 18:29:27Z JanWagner $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/difx2fits.c $
+// $LastChangedRevision: 10998 $
+// $Author: JanWagner $
+// $LastChangedDate: 2023-06-22 02:29:27 +0800 (四, 2023-06-22) $
 //
 //============================================================================
 #include <stdio.h>
@@ -389,10 +389,6 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--vanVleck") == 0)
 			{
 				opts->doVanVleck = 1;
-			}
-			else if(strcmp(argv[i], "--bandpass") == 0)
-			{
-				opts->writeBandpass = 1;
 			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
@@ -1027,7 +1023,7 @@ static void relabelCircular(DifxInput *D)
 			}
 			if(D->datastream[i].recBandPolName[j] == 'Y' || D->datastream[i].recBandPolName[j] == 'V')
 			{
-				D->datastream[i].recBandPolName[j] = 'L';
+				D->datastream[i].recBandPolName[j] = 'Y';
 			}
 		}
 
@@ -1039,7 +1035,7 @@ static void relabelCircular(DifxInput *D)
 			}
 			if(D->datastream[i].zoomBandPolName[j] == 'Y' || D->datastream[i].zoomBandPolName[j] == 'V')
 			{
-				D->datastream[i].zoomBandPolName[j] = 'L';
+				D->datastream[i].zoomBandPolName[j] = 'Y';
 			}
 		}
 	}
@@ -1122,17 +1118,13 @@ static int needToVanVleck(DifxInput **Dset, int n)
 
 	for(i = 0; i < n; ++i)
 	{
-		int maxDatastreams;
-		int *dsIds;
-
 		D = Dset[i];
 		q = 0;
 
-		maxDatastreams = DifxInputGetMaxDatastreamsPerAntenna(D);
-		dsIds = (int *)malloc(maxDatastreams*sizeof(int));
-
 		for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 		{
+			const int maxDatastreams = 8;
+			int dsIds[maxDatastreams];
 			int n;
 			int quantBits;
 
@@ -1153,21 +1145,12 @@ static int needToVanVleck(DifxInput **Dset, int n)
 			}
 			else if(q != quantBits)	/* if different antennas have different quantization, then we must do van vleck */
 			{
-				q = -1;
-				break;
+				return 1;
 			}
 			if(q > 2)	/* any quantization more than two bits should be handled here */
 			{
-				q = -1;
-				break;
+				return 1;
 			}
-		}
-		
-		free(dsIds);
-
-		if(q == -1)
-		{
-			return 1;
 		}
 	}
 

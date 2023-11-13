@@ -556,7 +556,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		DatastreamSubband *ds;
 		const CommonSubband *cs;
 		int c;
-		double freq_MHz;		/* [MHz] frequency in MHz */
+		double freq_MHz;		/* [MHz] frequenncy in MHz */
 		int int_freq_MHz;
 		double frac_freq_MHz;
 
@@ -634,45 +634,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			copySamples(cs, ds->samps, actualSample, ds->nSamp);
 
 /* 2. additive noise */
-			if(d->parameters && d->parameters->switchedPowerFrac > 0.0)
-			{
-/* 2a. if switched power is requested, add that at the same time */
-				int index, index2;
-				int spState;
-				int q;
-				int stop;
-				
-				index = c * ds->nSamp;
-				stop = index + ds->nSamp;
-				index2 = 0;
-
-				q = d->parameters->switchedPowerFreq*2*index / ds->nSample1sec;
-				spState = 1 - (q % 2);
-
-				while(index2 < stop)
-				{
-					double s;
-
-					// get next transition
-					index2 = ceil(ds->nSample1sec*(q+1)/(2.0*d->parameters->switchedPowerFreq));
-					if(index2 > stop)
-					{
-						index2 = stop;
-					}
-
-					/* FIXME: at this time the power ratio (from vdiffold) is off by about 2/3.  Was off by about 1/3 when sqrt enclosed the whole expression... */
-					s = sqrt(d->SEFD) * (1.0 + spState*d->parameters->switchedPowerFrac);
-					add_rand_gauss_values(d->random, ds->samps + (index % ds->nSamp), s, index2-index);
-
-					++q;
-					index = index2;
-					spState = 1-spState;
-				}
-			}
-			else
-			{
-				add_rand_gauss_values(d->random, ds->samps, sqrt(d->SEFD), ds->nSamp);
-			}
+			add_rand_gauss_values(d->random, ds->samps, sqrt(d->SEFD), ds->nSamp);
 
 /* 3. fringe rotation -- opposite sense as for correlator */
 			for(i = 0; i < ds->nSamp; ++i)
@@ -700,55 +662,17 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 				ds->spec[i] *= d->filter[i] * (cos(phi) + I*sin(phi));
 			}
 
-/* 7. apply pulse cal if desired */
-			if(d->parameters && d->parameters->pulseCalFrac > 0.0)
-			{
-				int c;
-				int deltac;
-				int c0;
-				double amp;
-				int n;
-				double f;
-				double MHzPerPixel;
-
-				MHzPerPixel = round(ds->df->bw*2/ds->nSamp);
-				amp = sqrt(d->SEFD*d->parameters->pulseCalFrac*d->parameters->pulseCalInterval/MHzPerPixel);
-
-				/* FIXME: verify that this works for LSB as well! */
-				n = (int)(freq_MHz / d->parameters->pulseCalInterval);
-				if(ds->df->sideband == 'L')
-				{
-					f = freq_MHz - n*d->parameters->pulseCalInterval;
-				}
-				else
-				{
-					f = (n+1)*d->parameters->pulseCalInterval - freq_MHz;
-				}
-				c0 = ds->nSamp*f/(2*ds->df->bw);
-				deltac = d->parameters->pulseCalInterval/MHzPerPixel;
-				
-				for(c = c0; c < ds->nSamp/2; c += deltac)
-				{
-					double phi;
-
-					phi = 2.0*M_PI*d->parameters->pulseCalDelay*MHzPerPixel;
-/* FIXME: Am I off by sqrt(FFTSize)? */
-
-					ds->spec[i] += amp*d->filter[c]*(cos(phi) + I*sin(phi));
-				}
-			}
-
-/* 8. iFFT, C->R for real data or C->C for complex data */
+/* 7. iFFT, C->R for real data or C->C for complex data */
 			fftw_execute(ds->ifftPlan);
 
-/* 9. place real-valued results in 1-second duration array */
+/* 8. place real-valued results in 1-second duration array */
 			memcpy(ds->samples1sec + startSample, ds->samps, ds->nSamp*sizeof(double));
 		}
 
-/* 10. "AGC" -- normalize array prior to quantization */
+/* 9. "AGC" -- normalize array prior to quantization */
 		normalize(ds->samples1sec, ds->nSample1sec);
 
-/* 11. if LSB, flip sign of alternate samples */
+		/* if LSB, flip sign of alternate samples */
 		if(ds->df->sideband == 'L')
 		{
 			int i;
@@ -759,6 +683,6 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			}
 		}
 	}
-/* 12. quantize and create VDIF */
+/* 10. Quantize and create VDIF */
 	writeVDIF(d, C);
 }

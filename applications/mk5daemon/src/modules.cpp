@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id: modules.cpp 5168 2013-02-26 17:58:59Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/modules.cpp $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/src/modules.cpp $
  * $LastChangedRevision: 5168 $
  * $Author: WalterBrisken $
  * $LastChangedDate: 2013-02-27 01:58:59 +0800 (三, 2013-02-27) $

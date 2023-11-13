@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: autobands.cpp 11013 2023-07-17 11:54:52Z JanWagner $
+ * $Id: autobands.cpp 10661 2022-10-04 12:42:35Z JanWagner $
  * $HeadURL: $
- * $LastChangedRevision: 11013 $
+ * $LastChangedRevision: 10661 $
  * $Author: JanWagner $
- * $LastChangedDate: 2023-07-17 19:54:52 +0800 (一, 2023-07-17) $
+ * $LastChangedDate: 2022-10-04 20:42:35 +0800 (二, 2022-10-04) $
  *
  *==========================================================================*/
 

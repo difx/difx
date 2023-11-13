@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id: jobmatrix.h 8605 2018-12-05 14:28:45Z HelgeRottmann $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/jobmatrix.h $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/jobmatrix.h $
  * $LastChangedRevision: 8605 $
  * $Author: HelgeRottmann $
  * $LastChangedDate: 2018-12-05 22:28:45 +0800 (三, 2018-12-05) $
