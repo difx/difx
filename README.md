@@ -41,7 +41,7 @@ $ git checkout -b dev origin/dev
 
 ```bash
 # make sure the setting in setup.bash is correct
-$ source setup/setup.bash # (or .csh). 
+$ source setup.bash # (or .csh). 
 #You will probably want to add this to your .bashrc or .cshrc files
 
 # Help on options for that last bit are available with ./install-difx --help.
