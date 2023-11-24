@@ -44,6 +44,10 @@ for job in $jobs; do
 
 	echo
 	echo "At `date` switched to handling $job"
+	if compgen -G "$job.difx/DIFX_*" > /dev/null; then
+		echo "   $job.difx/DIFX_* file(s) already exists, skipping this job"
+		continue
+	fi
 
 	## Generate .machines file (FxManager node + datastream nodes only)
 	echo "Generating initial datastream-only .machines file..."
