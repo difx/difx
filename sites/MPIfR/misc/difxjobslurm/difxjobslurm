@@ -24,6 +24,8 @@
 #
 #============================================================================
 #
+# Correlate an entire .joblist under a single SLUMR reservation.
+#
 # Intended to be invoked via DiFX
 #
 # $ startdifx -A difxjobslurm <vlbitrack.joblist>
@@ -63,6 +65,11 @@ threadspercompute=19
 
 
 ## Check args
+if [[ "$1" == "" || "$1" == "-h" || "$1" == "--help" ]]; then
+	echo "Correlate an entire .joblist under a single SLUMR reservation."
+	echo "Usage: $0 <file.joblist>"
+	exit 0
+fi
 jobfile=`realpath $1`
 jobpath=`dirname $jobfile`
 joblist=`basename $jobfile`
@@ -70,18 +77,18 @@ joblist=`basename $jobfile`
 argextension=${1##*\.}
 if [[ "$argextension" != "joblist" ]]; then
 	echo "error: unrecognized joblist file extension '$joblist', expected e.g. 'file.joblist'"
-	return 1
+	exit 1
 fi
 
 jobs=`tail -n +2 $jobpath/$joblist | cut -d " " -f 1`
 if [[ "$jobs" == "" ]]; then
 	echo "error: could not find any scans in $jobfile"
-	return 1
+	exit 2
 fi
 
 if [[ "$DIFXROOT" == "" ]]; then
 	echo "error: DIFXROOT env var is empty '', could not determine DiFX environment"
-	return 1
+	exit 3
 fi
 
 
