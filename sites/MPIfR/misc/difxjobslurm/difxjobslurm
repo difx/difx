@@ -32,7 +32,7 @@
 #
 # The script inspects the .input files associated with the provided .joblist,
 # determines the full set of all Datastreams (Mark6, files, ...) and their
-# location on the cluster (via gen_io_nodes.py).
+# location on the cluster via genmachines.py
 #
 # Uses SLURM to reserve those datastream nodes, as well as a fixed
 # number of compute nodes. Reservation is done with SLURM salloc.
@@ -48,7 +48,7 @@
 #
 # The flow is:
 #  startdifx -A difxjobslurm
-#  -> difxjobslurm  : gen_io_nodes.py + salloc
+#  -> difxjobslurm  : genmachines.py --all-datastreams + salloc
 #    -> difxjobslurm_stage2  :  srun /usr/bin/hostname + genmachines
 #      -> startdifx --nomachines :  mpirun
 #
@@ -98,8 +98,8 @@ DS_HOSTFILE=`mktemp /tmp/$joblist.all_datastreams.XXXXXX`
 echo
 echo "Gathering list of all datastreams involved in $jobfile"
 cd $jobpath
-$DIFXROOT/bin/gen_io_nodes.py -v $jobs
-mv io_nodes.dsmachines $DS_HOSTFILE
+$DIFXROOT/bin/genmachines --nocompute --all-datastreams -v $jobs
+mv io_nodes.machines $DS_HOSTFILE
 
 # Convert machine file into comma-separated list suitable for 'salloc'
 ionodelist=`cat $DS_HOSTFILE | grep --no-filename -e "mark6-[0-9]*" -e "mark5fx[0-9]*" -e "io[0-9]*" | sort | uniq | paste -sd","`
