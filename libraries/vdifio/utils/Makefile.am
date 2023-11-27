@@ -43,6 +43,12 @@ endif
   bin_PROGRAMS += vdifSwapSideband
 endif
 
+if WITH_FFTW
+  bin_PROGRAMS += vdifPhase
+  vdifPhase_CFLAGS = $(FFTW_CFLAGS) $(INCLUDES)
+  vdifPhase_LDADD = $(FFTW3_LIBS) $(LDADD)
+endif
+
 noinst_PROGRAMS = \
 	testcornerturners
 
@@ -127,6 +133,9 @@ vdifSplitThreads_SOURCES = \
 
 vdifStateCount_SOURCES = \
 	vdifStateCount.c
+
+vdifPhase_SOURCES = \
+	vdifPhase.c
 
 generateVDIF_SOURCES = \
 	generateVDIF.c
