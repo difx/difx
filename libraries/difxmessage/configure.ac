@@ -60,4 +60,5 @@ AC_CONFIG_FILES([
 	mark5ipc/Makefile \
 	utils/Makefile
 ])
-AC_OUTPUT
+
+AC_OUTPUT()
