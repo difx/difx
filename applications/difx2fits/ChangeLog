@@ -18,6 +18,7 @@ Version 3.8.0
     - Derived total delays are _not_ invariant to this
 * Create a .channels file that lists the frequency set as a function of time.
 * Add option to only propagate a finite list of sources
+* Add option to only propagate sky frequencies provided in a list of low band edge frequencies
 
 Version 3.7.0
 * Post DiFX-2.6

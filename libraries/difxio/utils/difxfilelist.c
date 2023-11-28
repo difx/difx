@@ -80,7 +80,7 @@ int processInputFile(const char *filebase)
 		return -1;
 	}
 
-	D = updateDifxInput(D, 0);
+	D = updateDifxInput(D, 0, 0);
 	if(!D)
 	{
 		fprintf(stderr, "Error: updateDifxInput failed for DiFX fileset %s\n", filebase);

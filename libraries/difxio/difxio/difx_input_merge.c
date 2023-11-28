@@ -238,7 +238,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxM
 	DifxInput *D;
 	DifxJob *job;
 	int *jobIdRemap;
-	int *freqIdRemap;
+	int *jobfreqIdRemap;
 	int *antennaIdRemap;
 	int *datastreamIdRemap;
 	int *baselineIdRemap;
@@ -260,7 +260,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxM
 
 	/* allocate some scratch space */
 	jobIdRemap        = newRemap(D2->nJob);
-	freqIdRemap       = newRemap(D2->nFreq);
+	jobfreqIdRemap    = newRemap(D2->nFreq);
 	antennaIdRemap    = newRemap(D2->nAntenna);
 	datastreamIdRemap = newRemap(D2->nDatastream);
 	baselineIdRemap   = newRemap(D2->nBaseline);
@@ -328,18 +328,18 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxM
 
 	/* merge DifxFreq table */
 	D->freq = mergeDifxFreqArrays(D1->freq, D1->nFreq,
-		D2->freq, D2->nFreq, freqIdRemap, &(D->nFreq), D->AllPcalTones);
+		D2->freq, D2->nFreq, jobfreqIdRemap, &(D->nFreq), D->AllPcalTones);
 
 	/* merge DifxDatastream table */
 	D->datastream = mergeDifxDatastreamArrays(D1->datastream, 
 		D1->nDatastream, D2->datastream, D2->nDatastream,
-		datastreamIdRemap, freqIdRemap, antennaIdRemap,
+		datastreamIdRemap, jobfreqIdRemap, antennaIdRemap,
 		&(D->nDatastream));
 
 	/* merge DifxBaseline table */
 	D->baseline = mergeDifxBaselineArrays(D1->baseline, D1->nBaseline,
 		D2->baseline, D2->nBaseline, baselineIdRemap,
-		datastreamIdRemap, freqIdRemap, &(D->nBaseline));
+		datastreamIdRemap, jobfreqIdRemap, &(D->nBaseline));
 
 	/* merge DifxPulsar table */
 	D->pulsar = mergeDifxPulsarArrays(D1->pulsar, D1->nPulsar,
@@ -381,7 +381,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, const DifxM
 	/* store the remappings of the added job in case it is useful later */
 	job = D->job + D1->nJob;	/* points to first (probably only) job from D2 */
 	job->jobIdRemap = jobIdRemap;
-	job->freqIdRemap = freqIdRemap;
+	job->jobfreqIdRemap = jobfreqIdRemap;
 	job->antennaIdRemap = antennaIdRemap;
 	job->datastreamIdRemap = datastreamIdRemap;
 	job->baselineIdRemap = baselineIdRemap;

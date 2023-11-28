@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	D = updateDifxInput(D, &mergeOptions);
+	D = updateDifxInput(D, &mergeOptions, 0);
 	if(!D)
 	{
 		fprintf(stderr, "Update failed: D == 0.  Quitting\n");

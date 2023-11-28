@@ -171,6 +171,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "                      Read <file> and apply it as delay corrections to the output\n");
 	fprintf(stderr, "  --sourcelist <list>\n");
 	fprintf(stderr, "                      Only propagate source(s) listed (comma separated)\n");
+	fprintf(stderr, "  --freqlist <list>\n");
+	fprintf(stderr, "                      Only propagate IFs with listed low edge freqs (comma separated, MHz)\n");
 	fprintf(stderr, "%s responds to the following environment variables:\n", program);
 	fprintf(stderr, "    DIFX_GROUP_ID             If set, run with umask(2).\n");
 	fprintf(stderr, "    DIFX_VERSION              The DiFX version to report.\n");
@@ -202,6 +204,9 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
 	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
 	opts->allpcaltones       = DefaultAllPcalTones;
+
+	resetDifxMergeOptions(&opts->mergeOptions);
+	resetDifxDataFilterOptions(&opts->filterOptions);
 
 	return opts;
 }
@@ -243,6 +248,9 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 			free(opts->includeSourceList);
 			opts->includeSourceList = 0;
 		}
+
+		deleteDifxDataFilterOptions(&opts->filterOptions);
+
 		free(opts);
 	}
 }
@@ -517,6 +525,31 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 						{
 							opts->includeSourceList[j] = ' ';
 						}
+					}
+				}
+				else if(strcmp(argv[i], "--freqlist") == 0)
+				{
+					int j, n;
+					char* token;
+
+					++i;
+					for (n = 1, j = 0; argv[i][j]; ++j)
+					{
+						if (argv[i][j] == ',')
+						{
+							++n;
+						}
+					}
+
+					opts->filterOptions.includeLowEdgeFreqsList = (double*)calloc(n+1, sizeof(double));
+
+					j = 0;
+					token = strtok(argv[i], ",");
+					while (token && j<n)
+					{
+						opts->filterOptions.includeLowEdgeFreqsList[j] = atof(token);
+						token = strtok(NULL, ",");
+						++j;
 					}
 				}
 				else if(strcmp(argv[i], "--applybandpass") == 0)
@@ -1086,7 +1119,7 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 			relabelCircular(Dset[i]);
 		}
 
-		Dset[i] = updateDifxInput(Dset[i], &opts->mergeOptions);
+		Dset[i] = updateDifxInput(Dset[i], &opts->mergeOptions, &opts->filterOptions);
 
 		if(opts->specAvg)
 		{
@@ -1288,7 +1321,7 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 		printDifxInput(D);
 	}
 
-	D = updateDifxInput(D, &opts->mergeOptions);
+	D = updateDifxInput(D, &opts->mergeOptions, &opts->filterOptions);
 
 	if(!D)
 	{

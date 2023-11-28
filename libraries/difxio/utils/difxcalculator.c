@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	D = updateDifxInput(D, 0);
+	D = updateDifxInput(D, 0, 0);
 	if(!D)
 	{
 		fprintf(stderr, "update failed: D == 0.  quitting\n");

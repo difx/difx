@@ -27,6 +27,7 @@
 //
 //============================================================================
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -440,7 +441,7 @@ int isMixedPolMask(const int polmask)
  * @param D DifxInput object
  * @return -1 in case of error, 0 otherwise
  */
-static int generateFreqSets(DifxInput *D)
+static int generateFreqSets(DifxInput *D, const DifxDataFilterOptions *filterOptions)
 {
 	int configId;
 	int verbose;
@@ -631,6 +632,39 @@ static int generateFreqSets(DifxInput *D)
 		/* This could be an overestimate if multiple frequencies map to one IF, as could happen if two otherwise identical FreqIds have different pulse cal extractions */
 		for(fqId = 0; fqId < D->nFreq; ++fqId)
 		{
+
+			/* Drop freqs if requested */
+			if(filterOptions && filterOptions->includeLowEdgeFreqsList)
+			{
+				const double small_error_MHz = 0.1;
+				int i, freqIsExcluded = 1;
+				double low_edge;
+
+				low_edge = D->freq[fqId].freq - ((D->freq[fqId].sideband == 'L') ? D->freq[fqId].bw : 0.0);
+				for(i = 0; filterOptions->includeLowEdgeFreqsList[i] > 0; ++i)
+				{
+					if(fabs(low_edge - filterOptions->includeLowEdgeFreqsList[i]) < small_error_MHz)
+					{
+						freqIsExcluded = 0;
+						break;
+					}
+				}
+
+				if(freqIsExcluded)
+				{
+					freqIsUsed[fqId] = 0;
+					if(verbose > 2)
+					{
+						printf("Dropping freqId %d starting at %.3lf MHz, it is not in the list of freqs to be included\n", fqId, low_edge);
+					}
+				}
+				else if(verbose > 2)
+				{
+						printf("Retaining freqId %d starting at %.3lf MHz\n", fqId, low_edge);
+				}
+			}
+
+			/* Include among new DifxIF freqs */
 			if(freqIsUsed[fqId] > 0)
 			{
 				++dfs->nIF;
@@ -1902,9 +1936,9 @@ static DifxInput *parseDifxInputNetworkTable(DifxInput *D,
         return D;
 }
 
-static DifxInput *deriveDifxInputValues(DifxInput *D)
+static DifxInput *deriveDifxInputValues(DifxInput *D, const DifxDataFilterOptions *filterOptions)
 {
-	int c;
+	int c, v;
 	
 	if(!D)
 	{
@@ -1956,17 +1990,12 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		D->config[c].quantBits = qb;
 	}
 
-	for(c = 0; c < D->nConfig; ++c)
+	v = generateFreqSets(D, filterOptions);
+	if(v < 0)
 	{
-		int v;
+		fprintf(stderr, "Fatal error generating freq sets for configId(s)\n");
 
-		v = generateFreqSets(D);
-		if(v < 0)
-		{
-			fprintf(stderr, "Fatal error processing configId %d\n", c);
-
-			return 0;
-		}
+		return 0;
 	}
 
 	return D;
@@ -3623,7 +3652,7 @@ static int mergeDifxInputFreqSets(DifxInput *D, const DifxMergeOptions *mergeOpt
 	return nError;
 }
 
-DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions)
+DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions, const DifxDataFilterOptions *filterOptions)
 {
 	static const DifxMergeOptions defaultMergeOptions;      /* initialized to zeros */
 	int nError;
@@ -3634,7 +3663,7 @@ DifxInput *updateDifxInput(DifxInput *D, const DifxMergeOptions *mergeOptions)
 		mergeOptions = &defaultMergeOptions;
 	}
 
-	D = deriveDifxInputValues(D);
+	D = deriveDifxInputValues(D, filterOptions);
 	if(D == NULL)
 	{
 		fprintf(stderr, "Merging Frequency Setups failed.  Could not derive input values.\n");
@@ -4833,6 +4862,43 @@ int DifxInputGetSourceId(const DifxInput *D, const char *sourceName)
 
 void resetDifxMergeOptions(DifxMergeOptions *mergeOptions)
 {
-	memset(mergeOptions, 0, sizeof(DifxMergeOptions));
+	if(mergeOptions)
+	{
+		memset(mergeOptions, 0, sizeof(DifxMergeOptions));
+	}
 }
 
+void resetDifxDataFilterOptions(DifxDataFilterOptions *filterOptions)
+{
+	if(filterOptions)
+	{
+		memset(filterOptions, 0, sizeof(DifxDataFilterOptions));
+	}
+}
+
+void deleteDifxDataFilterOptions(DifxDataFilterOptions *filterOptions)
+{
+	if(filterOptions)
+	{
+		if(filterOptions->includeAntennasList)
+		{
+			int i;
+			for (i = 0; filterOptions->includeAntennasList[i] != NULL; ++i)
+			{
+				free(filterOptions->includeAntennasList[i]);
+			}
+			free(filterOptions->includeAntennasList);
+			filterOptions->includeAntennasList = 0;
+		}
+		if(filterOptions->includeLowEdgeFreqsList)
+		{
+			free(filterOptions->includeLowEdgeFreqsList);
+			filterOptions->includeLowEdgeFreqsList = 0;
+		}
+		if(filterOptions->includeBandwidthsList)
+		{
+			free(filterOptions->includeBandwidthsList);
+			filterOptions->includeBandwidthsList = 0;
+		}
+	}
+}
