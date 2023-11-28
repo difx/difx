@@ -23,7 +23,7 @@
  * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/mark5dir.cpp $
  * $LastChangedRevision: 7835 $
  * $Author: WalterBrisken $
- * $LastChangedDate: 2017-05-24 00:54:44 +0800 (三, 2017-05-24) $
+ * $LastChangedDate: 2017-05-23 10:54:44 -0600 (Tue, 23 May 2017) $
  *
  *==========================================================================*/
 
@@ -2179,17 +2179,16 @@ int resetModuleDirectory(SSHANDLE xlrDevice, const char *vsn, int newStatus, int
 		strcpy(dirHeader->vsnNext, "NA");
 	}
 
-	if(dirData == 0)
+	if(dirLength > 0 && dirData == 0)
 	{
 		dirData = (char *)calloc(dirLength, 1);
 	}
 
-	printf("> Dir Size = %d  Dir Version = %d  Status = %d\n", 
-		dirLength, dirVersion, newStatus);
+	printf("> Dir Size = %d  Dir Version = %d  Status = %d\n", dirLength, dirVersion, newStatus);
 
-	WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, dirLength) );
 	if(dirData)
 	{
+		WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, dirLength) );
 		free(dirData);
 	}
 
