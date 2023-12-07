@@ -713,7 +713,7 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 	D->nFreq = freqs.size();
 	D->freq = newDifxFreqArray(D->nFreq);
 	D->nFreqUnsimplified = D->nFreq;
-	D->freqIdRemap = (int *)calloc(D->nFreqUnsimplified+1, sizeof(int));
+	D->freqIdRemap = newRemap(D->nFreqUnsimplified);
 
 	for(int f = 0; f < D->nFreq; ++f)
 	{

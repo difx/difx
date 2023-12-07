@@ -3,6 +3,7 @@
 Makefile.in
 *~
 
+.*.swp
 
 # /applications/gui/trunk/gui/
 /applications/gui/trunk/gui/build

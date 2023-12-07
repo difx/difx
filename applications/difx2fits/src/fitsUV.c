@@ -827,9 +827,9 @@ int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const D
 	}
 
 	/* adjust freqId through remapping if needed */
-	if(dv->D->job[dv->jobId].freqIdRemap)
+	if(dv->D->job[dv->jobId].jobfreqIdRemap)
 	{
-		freqId = dv->D->job[dv->jobId].freqIdRemap[freqId];
+		freqId = dv->D->job[dv->jobId].jobfreqIdRemap[freqId];
 	}
 
 	/* if chan weights are written the data volume is 3/2 as large */

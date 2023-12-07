@@ -573,7 +573,7 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 		return -1;
 	}
 
-	D = updateDifxInput(D, 0);
+	D = updateDifxInput(D, 0, 0);
 	if(D == 0)
 	{
 		fprintf(stderr, "Error: updateDifxInput(\"%s\") returned 0\n", prefix);

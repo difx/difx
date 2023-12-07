@@ -1,5 +1,7 @@
 [Unit]
 Description=RPC server for CALC 9
+After=multi-user.target
+Requires=multi-user.target
 
 [Service]
 Type=simple
