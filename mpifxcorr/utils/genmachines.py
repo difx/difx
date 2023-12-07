@@ -21,11 +21,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id$
+# $Id: genmachines.py 11018 2023-07-18 09:07:14Z JanWagner $
 # $HeadURL: $
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
+# $LastChangedRevision: 11018 $
+# $Author: JanWagner $
+# $LastChangedDate: 2023-07-18 11:07:14 +0200 (Tue, 18 Jul 2023) $
 #
 #============================================================================
 
@@ -91,6 +91,12 @@ def convertDateString2Mjd(dateStr):
     else:
         print('invalid date string', dateStr)
         return datetime(1900, 1, 1, 0, 0)
+
+def isListEmpty(inList):
+    '''Returns True if the potentially nested List is essentially empty.'''
+    if isinstance(inList, list):
+        return all( map(isListEmpty, inList) )
+    return False
 
 class MessageParser:
     """
@@ -393,6 +399,8 @@ def getvexantennamodlists(vexobsfile, startTime):
                     # add only modules to modlist that contain start time for this job, next module might not be in playback unit yet
                     if startTimeInPackTimeRange(startTime, vsn.group(3), vsn.group(4)):
                         modList.append(mod)
+                    elif verbose>0:
+                        print("Info: ignoring %s module %s as VEX marks it as outside the time range of the current scan." % (ant,str(mod)))
             if enddef:
                 antennaModuleList.append([ant,modList])
 
@@ -467,6 +475,7 @@ def adjustMark6datastreams(datastreams, inputfile, verbose, startTime):
                                     stream.msn.pop(i)
                                     msnlen -= 1
                         if antmodfound is False:
+                            print('Warning: could not determine Mark6 module for %s. Perhaps the station missing is from VEX $TAPELOG_OBS?' % (str(stream.msn[i])))
                             i += 1
 
 class StartTime:
@@ -704,8 +713,10 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                                     matchNode = r[4]
                 if matchNode in difxmachines.getMk6NodeNames():
                     dsnodes.append(matchNode)
+                elif isListEmpty(stream.msn):
+                    print('Warning: A stream type MARK6 has a blank MSN list - check your VEX $TAPELOG_OBS time ranges')
                 else:
-                    print('stream type MARK6 with MSN %s, matching node %s not listed as an active mark6 host in machines file' % (str(stream.msn),matchNode))
+                    print('Warning: stream type MARK6 with MSN %s, matching node %s not listed as an active mark6 host in machines file' % (str(stream.msn),matchNode))
                     return []
                 
         # write machine file
