@@ -70,7 +70,7 @@ The use of any pulsar mode requires a pulse ephemeris to be provided by
 the astronomer. This is a table of one or more polynomial entries, each
 of which evaluates the pulsar’s rotation phase over an interval of
 typically a few hours. The classic pulsar program ``Tempo`` can be used
-to produce the polynomials required :raw-latex:`\cite{tempo}`. The pulse
+to produce the polynomials required [tempo]_ :raw-latex:`\cite{tempo}`. The pulse
 phase must be evaluated at the Earth center which is usually specified
 in ``tempo`` by station code 0 (zero). Many pulsars exhibit a great
 degree of timing noise and hence the prediction of absolute pulse phase

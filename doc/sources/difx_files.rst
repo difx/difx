@@ -2419,7 +2419,7 @@ A polyco file contains a single polynomial for pulse phase that is valid
 for a fraction (up to 100%) of a job file. An additional numeric suffix
 is appended to the filename specifying the polynomial index for a
 particular ``.pulsar`` file that shares the same base name. The format
-of the file is the same as a Tempo pulsar file
+of the file is the same as a Tempo pulsar file [tempo]_ 
 :raw-latex:`\cite{tempo}`.
 
 .. _sec:shelf:
@@ -3645,7 +3645,7 @@ automatically with ``difxsniff``.
 .vex, .skd, .vex.obs, & .skd.obs
 --------------------------------
 
-The vex (Vlbi EXperiment) file :raw-latex:`\cite{vex}` format is a
+The vex (Vlbi EXperiment) file [vex]_ :raw-latex:`\cite{vex}` format is a
 standard observation description format used globally for scheduling
 observations and for driving the correlation thereof. The original vex
 file for an experiment is typically created by ``sched`` or ``sked``. In

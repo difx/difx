@@ -306,6 +306,16 @@ installs very few development tools by default. Relatively few external
 libraries are used. It also assumes you have an account that allows
 access to the subversion repository at https://svn.atnf.csiro.au.
 
+\begin{figure}[h]
+\begin{center}
+\resizebox{\textwidth}{!}{\includegraphics{difxdependency}}
+\caption[dependencies]{
+{\em A diagram illustrating the required and optional packages and their installation dependencies.  Rectangles inidicate applications in the DiFX suite.  Rounded rectangles are DiFX related libraries.  Ovals are third-party libraries.}
+\label{fig:dependencies}
+}
+\end{center}
+\end{figure}
+
 The ``make install`` steps may require root permission, depending on the
 *prefixdir* you have chosen. If so, become root before each
 ``make install``. It is advisable not to compile code as root. Be wary

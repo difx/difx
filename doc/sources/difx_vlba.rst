@@ -28,7 +28,7 @@ With VLBA DiFX version 1.5 comes correlation based on the ``.vex`` files
 rather than the hardware correlator jobs scripts. This new path frees
 operations from a host of difficult to maintain software, including
 ``cjobgen`` and its associated software. The vex-based correlation was
-first documented a memo titled “VLBA-DIFX Operations Plan”
+first documented a memo titled “VLBA-DIFX Operations Plan” [opsplan]_
 :raw-latex:`\cite{opsplan}`. Step-by-step instructions describing the
 process is repeated here. The particular case being exemplified here is
 based on the complicated pulsar astrometry project. Most real-life
@@ -513,7 +513,7 @@ been set up. Populating the archive amounts to first copying the files
 to be archived to this directory making sure that the first character of
 the file name is “.”. Once the entire file is transferred this file is
 renamed without the leading period. This system is the standard way to
-populate the Next Generation Archive System (NGAS)
+populate the Next Generation Archive System (NGAS) [ngas]_ 
 :raw-latex:`\cite{ngas}` without potential for an incompletely copied
 file to be archived. The file names will be composed only of
 alpha-numeric characters and “.” and “\_”. These characters have no

@@ -5,12 +5,24 @@
 The DiFX correlator
 ===================
 
-This document is centered around the NRAO installation of the DiFX
+This document is centered around the NRAO installation of the [difx]_  
 :raw-latex:`\cite{difx}` software correlator and its supporting
 software. Much of the contents here applies to other installations of
 DiFX as well, but keep in mind that not a lot of effort is made to
-generalize these instructions. Fig. `[fig:block] <#fig:block>`__ shows
+generalize these instructions. Fig. `[fig-block] <#fig:block>`__  
+:numref:`fig-block` shows
 the general data flow-path within the DiFX software correlator system.
+
+.. _fig-block:
+
+.. figure:: ../_static/swcorr_vex_diagram_ver3-crop.png
+   :alt: The DiFX software correlator block diagram as implemented for the VLBA. 
+   :align: center
+   :width: 480px
+
+   The DiFX software correlator block diagram as implemented for the VLBA. 
+
+:numref:`fig-block` shows
 
 Past, present, and future versions of DiFX as packaged and used by VLBA
 operations are described in the following subsections.
@@ -165,7 +177,7 @@ be represented by ``.fx`` files and will be based on vex files. Version
 #. Mark5B formatted data, including its 2048 Mbps extension, is
    supported.
 
-#. The VLBA DiFX Operations Plan :raw-latex:`\cite{opsplan}` is
+#. The VLBA DiFX Operations Plan [opsplan]_ :raw-latex:`\cite{opsplan}` is
    implemented, including interface to the VLBA archive.
 
 Non-NRAO users of DiFX 1.5.0 will still be able to use the tools
@@ -574,7 +586,7 @@ Bugs fixed
    post-FFT fringe rotation was done. Fixed.
 
 Known bugs
-----------
+~~~~~~~~~~
 
 #. Tweak Integration Time feature of ``vex2difx`` often does the wrong
    thing.
@@ -607,7 +619,7 @@ New features
 .. _known-bugs-1:
 
 Known bugs
-----------
+~~~~~~~~~~
 
 #. Zoom band support has multiple problems.
 
@@ -1638,8 +1650,8 @@ DiFX and AIPS
 Only one task in AIPS, ``FITLD``, has to deal with the
 telescope/correlator specific aspect of the FITS-IDI files that the VLBA
 correlator and DiFX generate. The FITS-IDI variant of FITS was first
-documented in AIPS Memo 102 :raw-latex:`\cite{aips102}`, and more
-recently in AIPS Memo 114 :raw-latex:`\cite{aips114}`, which will be
+documented in AIPS Memo 102 [aips102]_ :raw-latex:`\cite{aips102}`, and more
+recently in AIPS Memo 114 [aips114]_ :raw-latex:`\cite{aips114}`, which will be
 generally available shortly. It has been modified for better support
 support of DiFX FITS output. In general, these changes make ``FITLD``
 less telescope specific so the resulting FITS-IDI files from any DiFX
@@ -1647,7 +1659,7 @@ installation should be highly compatible with AIPS. Several changes have
 been made to the 31DEC08 AIPS as a result of DiFX testing:
 
 #. Correction for digital *saturation* in auto-correlations is disabled
-   for DiFX FITS files. See :raw-latex:`\cite{sci12}` for some details
+   for DiFX FITS files. See [sci12]_ :raw-latex:`\cite{sci12}` for some details
    on this correction which is not needed for DiFX data.
 
 #. Support for FITS-IDI files greater than 2 GiB in size.

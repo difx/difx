@@ -7,25 +7,25 @@ A Guide to the DiFX Software Correlator
 ===============================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
    sources/UserGuide.rst
-   sources/difx_appendix_devel.rst
-   sources/difx_conventions.rst
-   sources/difx_database.rst
-   sources/difx_endmatter.rst
-   sources/difx_files.rst
-   sources/difx_formats.rst
-   sources/difx_installation.rst
-   sources/difx_messages.rst
-   sources/difx_programs.rst
-   sources/difx_pulsars.rst
-   sources/difx_setup.rst
-   sources/difx_sources.rst
    sources/difx_versions.rst
+   sources/difx_setup.rst
    sources/difx_vlba.rst
+   sources/difx_sources.rst
+   sources/difx_formats.rst
+   sources/difx_pulsars.rst
+   sources/difx_conventions.rst
+   sources/difx_programs.rst
+   sources/difx_files.rst
    sources/difx_xml.rst
+   sources/difx_database.rst
+   sources/difx_messages.rst
+   sources/difx_installation.rst
+   sources/difx_endmatter.rst
+   sources/difx_appendix_devel.rst
   
 
 Indices and tables

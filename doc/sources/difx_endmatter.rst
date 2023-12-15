@@ -45,30 +45,22 @@ left anyone of this list that should be there, and there are probably
 several of you in that category, I apologize — let me know and I’ll make
 sure to add you for the next version’s document.
 
-*VLBA-DIFX Operations Plan*, Brisken, W., 2009, VLBA Sensitivity Upgrade
-Memo 25, http://library.nrao.edu/public/memos/vlba/up/VLBASU_25.pdf
-*DiFX: A software correlator for very long baseline interferometry using
-multi-processor computing environments*, Deller, A. T., Tingay, S. J.,
-Bailes, M. & West, C., 2007, PASP 119, 318,
-http://xxx.lanl.gov/abs/astro-ph/0702141 *DiFX2: A more flexible,
-efficient, robust and powerful software correlator*, A. T. Deller,
-W. F. Brisken, C. J. Phillips, J. Morgan, W. Alef, R. Cappallo,
-E. Middelberg, J. Romney, H. Rottmann, S. J. Tingay, R. Wayth, 2011,
-PASP, 123, 275, http://arxiv.org/abs/1101.0885 *The FITS Interferometry
-Data Interchange Format*, Flatters, C., AIPS Memo 102,
-ftp://ftp.aoc.nrao.edu/pub/software/aips/TEXT/PUBL/AIPSMEMO102.PS *The
-FITS Interferometry Data Interchange Convention*, Greisen, E., AIPS Memo
-114r, ftp://ftp.aoc.nrao.edu/pub/software/aips/TEXT/PUBL/AIPSMEM114.PDF
-*Specification for enhanced Mark 5 module directory*, Whitney, A., et
-al., http://www.haystack.mit.edu/tech/vlbi/mark5/mark5_memos/081.pdf
-*Mark5 User Directory Formats*, Ruszczyk, C.A., Eldering, B. &
-Verkouter, H.,
-http://www.haystack.mit.edu/tech/vlbi/mark5/mark5_memos/100.pdf *Summary
-of the b-factor for the VLBA FX correlator*, Kogan, L., VLBA Scientific
-Memo 12, http://library.nrao.edu/public/memos/vlba/sci/VLBAS_12.pdf
-*Tempo*, http://www.atnf.csiro.au/research/pulsar/tempo/ *JIRA*,
-http://bugs.aoc.nrao.edu *NGAS*,
-http://www.eso.org/projects/dfs/dfs-shared/web/ngas/ *VEX parameter
-definitions*, http://www.haystack.mit.edu/tech/vlbi/mark5/vex.html *DiFX
-Developer Pages*,
-http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/start
+References
+================
+
+.. [opsplan] *VLBA-DIFX Operations Plan*, Brisken, W., 2009, VLBA Sensitivity Upgrade Memo 25, http://library.nrao.edu/public/memos/vlba/up/VLBASU_25.pdf
+.. [difx] *DiFX: A software correlator for very long baseline interferometry using multi-processor computing environments*, Deller, A. T., Tingay, S. J., Bailes, M. & West, C., 2007, PASP 119, 318, http://xxx.lanl.gov/abs/astro-ph/0702141 
+
+.. [aips102] 
+	DiFX2: A more flexible, efficient, robust and powerful software correlator}, A.\ T.\ Deller, W.\ F.\ Brisken, C.\ J.\ Phillips, J.\ Morgan, W.\ Alef, R.\ Cappallo, E.\ Middelberg, J.\ Romney, H.\ Rottmann, S.\ J.\ Tingay, R.\ Wayth, 2011, PASP, 123, 275, \url{http://arxiv.org/abs/1101.0885}
+	The FITS Interferometry Data Interchange Format}, Flatters, C., AIPS Memo 102, \url{ftp://ftp.aoc.nrao.edu/pub/software/aips/TEXT/PUBL/AIPSMEMO102.PS}
+.. [aips114] The FITS Interferometry Data Interchange Convention}, Greisen, E., AIPS Memo 114r, \url{ftp://ftp.aoc.nrao.edu/pub/software/aips/TEXT/PUBL/AIPSMEM114.PDF}
+.. [mark5-81] Specification for enhanced Mark 5 module directory, Whitney, A., et al., \url{http://www.haystack.mit.edu/tech/vlbi/mark5/mark5_memos/081.pdf}
+.. [mark5-100] Mark5 User Directory Formats}, Ruszczyk, C.A., Eldering, B.\ \& Verkouter, H., \url{http://www.haystack.mit.edu/tech/vlbi/mark5/mark5_memos/100.pdf}
+.. [sci12] Summary of the b-factor for the VLBA FX correlator}, Kogan, L., VLBA Scientific Memo 12, \url{http://library.nrao.edu/public/memos/vlba/sci/VLBAS_12.pdf}
+.. [tempo] *Tempo*, \url{http://www.atnf.csiro.au/research/pulsar/tempo/}
+.. [jira] *JIRA*, \url{http://bugs.aoc.nrao.edu}
+.. [ngas] *NGAS*, \url{http://www.eso.org/projects/dfs/dfs-shared/web/ngas/}
+.. [doi] *Difx Operator Interface Users Guide*, Guerra, M., {\bf Coming soon!}
+.. [vex] *VEX parameter definitions*, \url{http://www.haystack.mit.edu/tech/vlbi/mark5/vex.html}
+.. [wiki] *DiFX Developer Pages*, \url{http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/start}

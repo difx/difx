@@ -1286,7 +1286,7 @@ DiFX Operator Interface
 The DiFX Operator Interface (DOI) is a java-based application to monitor
 and control the correlation of DiFX jobs. Jobs to be correlated can be
 selected with a file browser or retrieved with a database request. A
-separate manual :raw-latex:`\cite{doi}` will be made available with
+separate manual [doi]_ :raw-latex:`\cite{doi}` will be made available with
 instructions for its use. The only specific detail that will be
 mentioned here is the contorted path the starting of a job takes:
 
@@ -3687,7 +3687,7 @@ Note that not all of these ideals have been completely reached as of
 now. It is not the intention of the developer to guess all possible
 future needs of this program. Most new features will be easy to
 implement so send a message to the difx-users mailing list or file a
-JIRA :raw-latex:`\cite{jira}` bug tracking ticket for requests.
+JIRA [jira]_ :raw-latex:`\cite{jira}` bug tracking ticket for requests.
 
 -  Usage: ``vex2difx`` :math:`[` *options* :math:`]` *v2dFile*
 

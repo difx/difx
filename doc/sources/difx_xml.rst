@@ -145,7 +145,7 @@ The italicized fields are as follows:
 
 A “C” language library for generating, multicasting, receiving, and
 parsing XML documents of this type is used within some of the programs,
-including ``mpifxcorr`` (the core of the DiFX :raw-latex:`\cite{difx}`
+including ``mpifxcorr`` (the core of the DiFX [difx]_ :raw-latex:`\cite{difx}`
 software correlator) and ``mk5daemon`` (a program that runs on each
 Mark5 unit that is responsible for multicast communication when
 ``mpifxcorr`` is not running), that transact these XML documents. The
