@@ -297,7 +297,7 @@ void setSignals()
 void usage()
 {
 	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
-	fprintf(stderr, "Usage: %s [options] <VDIF file> [ <output file> ]\n\n", program);
+	fprintf(stderr, "Usage: %s [options] <VDIF file> [ <output file> [ <threadId> ] ]\n\n", program);
 	fprintf(stderr, "This program generates a histogram of state counts for VDIF files.\n\n");
 	fprintf(stderr, "Options can include:\n");
 	fprintf(stderr, "  -h  or  --help      print this help and quit\n");
@@ -308,6 +308,9 @@ void usage()
 	fprintf(stderr, "  -2                  only consider every 2nd bin\n");
 	fprintf(stderr, "  -4                  only consider every 4th bin\n");
 	fprintf(stderr, "  -8                  only consider every 8th bin\n");
+	fprintf(stderr, "Note: a hyphen (-) can be used to indicate stdin for <VDIF file>\n");
+	fprintf(stderr, "and/or to indicate stdout for <output file>.\n");
+	fprintf(stderr, "If no thread Id is provided, all threads will be processed.\n");
 }
 
 int main(int argc, char **argv)
@@ -324,6 +327,7 @@ int main(int argc, char **argv)
 	int t;
 	int a;
 	int inc = 1;
+	int printThread = -1;
 
 	if(argc < 2)
 	{
@@ -419,6 +423,16 @@ int main(int argc, char **argv)
 				return EXIT_FAILURE;
 			}
 		}
+		else if(printThread < 0)
+		{
+			printThread = atoi(argv[a]);
+		}
+		else
+		{
+			fprintf(stderr, "Extraneous command line parameter: %s\n", argv[a]);
+
+			return EXIT_FAILURE;
+		}
 	}
 
 	if(!in)
@@ -510,6 +524,10 @@ int main(int argc, char **argv)
 	fprintf(out, "# Input file %s\n", inFileName);
 	for(t = 0; t <= VDIF_MAX_THREAD_ID; ++t)
 	{
+		if(printThread >= 0 && t != printThread)
+		{
+			continue;
+		}
 		if(regs[t])
 		{
 			fprintStateCountRegister(out, regs[t], pl, inc);
