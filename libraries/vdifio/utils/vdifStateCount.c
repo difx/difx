@@ -27,16 +27,16 @@
 
 const char program[] = "vdifStateCount";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20231025";
+const char version[] = "0.2";
+const char verdate[] = "20231221";
 
 volatile int die = 0;
 
 typedef struct
 {
-	int threadId;
-	int nBit;
-	int dataBytes;		/* data bytes per VDIF frame */
+	unsigned int threadId;
+	unsigned int nBit;
+	unsigned int dataBytes;	/* data bytes per VDIF frame */
 	int64_t *counts;	/* Indexed by VDIF native representation */
 } StateCountRegister;
 
@@ -83,7 +83,7 @@ void deleteStateCountRegisters(StateCountRegister **regs)
 {
 	if(regs)
 	{
-		int t;
+		unsigned int t;
 
 		for(t = 0; t <= VDIF_MAX_THREAD_ID; ++t)
 		{
@@ -96,17 +96,17 @@ void deleteStateCountRegisters(StateCountRegister **regs)
 	}
 }
 
-void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum StateCountPrintLevel pl)
+void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum StateCountPrintLevel pl, int inc)
 {
 	int a=-1, b=-1;	/* first and last index with non-zero counts */
-	int i;
-	int N;
+	unsigned int i;
+	unsigned int N;
 	double offset;
 
 	N = 1 << reg->nBit;
-	offset = N/2 - 0.5;
+	offset = N/2 - inc/2.0;
 
-	for(i = 0; i < N; ++i)
+	for(i = 0; i < N; i += inc)
 	{
 		if(reg->counts[i] > 0)
 		{
@@ -114,7 +114,7 @@ void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum Sta
 			break;
 		}
 	}
-	for(i = N-1; i >= 0; --i)
+	for(i = N-inc; i >= 0; i -= inc)
 	{
 		if(reg->counts[i] > 0)
 		{
@@ -134,7 +134,7 @@ void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum Sta
 		double xx = 0.0;
 		double mean, rms;
 		
-		for(i = a; i <= b; ++i)
+		for(i = a; i <= b; i += inc)
 		{
 			sum += reg->counts[i];
 			x += (i-offset)*reg->counts[i];
@@ -143,29 +143,29 @@ void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum Sta
 		mean = x/sum;
 		rms = sqrt(xx/sum - mean*mean);
 
-		fprintf(out, "# Thread %d  nBit %d  dataBytes %d\n", reg->threadId, reg->nBit, reg->dataBytes);
-		fprintf(out, "# Mean %f\n", mean);
-		fprintf(out, "# RMS %f\n", rms);
+		fprintf(out, "# Thread %u  nBit %u  dataBytes %u\n", reg->threadId, reg->nBit, reg->dataBytes);
+		fprintf(out, "# Mean %f\n", mean/inc);
+		fprintf(out, "# RMS %f\n", rms/inc);
 		switch(pl)
 		{
 		case StateCountPrintAll:
-			for(i = 0; i < N; ++i)
+			for(i = 0; i < N; i += inc)
 			{
-				fprintf(out, "%d  %3.1f %" PRId64 " %f\n", reg->threadId, i-offset, reg->counts[i], reg->counts[i]/sum);
+				fprintf(out, "%u  %3.1f %" PRId64 " %f\n", reg->threadId, (i-offset)/inc, reg->counts[i], reg->counts[i]/sum);
 			}
 			break;
 		case StateCountPrintCompact:
-			for(i = a; i <= b; ++i)
+			for(i = a; i <= b; i += inc)
 			{
-				fprintf(out, "%d  %3.1f %" PRId64 " %f\n", reg->threadId, i-offset, reg->counts[i], reg->counts[i]/sum);
+				fprintf(out, "%u  %3.1f %" PRId64 " %f\n", reg->threadId, (i-offset)/inc, reg->counts[i], reg->counts[i]/sum);
 			}
 			break;
 		case StateCountPrintNonzero:
-			for(i = a; i <= b; ++i)
+			for(i = a; i <= b; i += inc)
 			{
 				if(reg->counts[i] > 0)
 				{
-					fprintf(out, "%d  %3.1f %" PRId64 " %f\n", reg->threadId, i-offset, reg->counts[i], reg->counts[i]/sum);
+					fprintf(out, "%u  %3.1f %" PRId64 " %f\n", reg->threadId, (i-offset)/inc, reg->counts[i], reg->counts[i]/sum);
 				}
 			}
 			break;
@@ -178,7 +178,7 @@ void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum Sta
 
 void countStates(StateCountRegister *reg, const unsigned char *data)
 {
-	int i;
+	unsigned int i;
 
 	switch(reg->nBit)
 	{
@@ -297,58 +297,143 @@ void setSignals()
 void usage()
 {
 	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
-	fprintf(stderr, "Usage: %s <VDIF file> [ <output file> ]\n\n", program);
+	fprintf(stderr, "Usage: %s [options] <VDIF file> [ <output file> ]\n\n", program);
 	fprintf(stderr, "This program generates a histogram of state counts for VDIF files.\n\n");
+	fprintf(stderr, "Options can include:\n");
+	fprintf(stderr, "  -h  or  --help      print this help and quit\n");
+	fprintf(stderr, "  -c  or  --compact   print compact version of histogram [default]\n");
+	fprintf(stderr, "  -n  or  --nonzero   print only non-zero elements of historgram\n");
+	fprintf(stderr, "  -a  or  --all       print entire historgram\n");
+	fprintf(stderr, "  -1                  consider all bins [default]\n");
+	fprintf(stderr, "  -2                  only consider every 2nd bin\n");
+	fprintf(stderr, "  -4                  only consider every 4th bin\n");
+	fprintf(stderr, "  -8                  only consider every 8th bin\n");
 }
 
 int main(int argc, char **argv)
 {
-	const char *inFileName;
+	const char *inFileName = 0;
 	const char *outFileName = 0;
 	StateCountRegister **regs;
 	vdif_header vh;
-	unsigned char *data;
-	int dataSize;
+	unsigned char *data = 0;
+	int dataSize = 0;
 	enum StateCountPrintLevel pl = StateCountPrintCompact;
-	FILE *in, *out;
+	FILE *in = 0, *out = 0;
 	uint64_t frameCount = 0;
 	int t;
+	int a;
+	int inc = 1;
 
 	if(argc < 2)
 	{
 		usage();
 
-		exit(0);
+		return EXIT_SUCCESS;
 	}
 
-	inFileName = argv[1];
-	in = fopen(inFileName, "r");
+	for(a = 1; a < argc; ++a)
+	{
+		if(argv[a][0] == '-')
+		{
+			if(strcmp(argv[a], "-h") == 0 || strcmp(argv[a], "--help") == 0)
+			{
+				usage();
+
+				return EXIT_SUCCESS;
+			}
+			else if(strcmp(argv[a], "-c") == 0 || strcmp(argv[a], "--compact") == 0)
+			{
+				pl = StateCountPrintCompact;
+			}
+			else if(strcmp(argv[a], "-n") == 0 || strcmp(argv[a], "--nonzero") == 0)
+			{
+				pl = StateCountPrintNonzero;
+			}
+			else if(strcmp(argv[a], "-a") == 0 || strcmp(argv[a], "--all") == 0)
+			{
+				pl = StateCountPrintAll;
+			}
+			else if(strcmp(argv[a], "-1") == 0)
+			{
+				inc = 1;
+			}
+			else if(strcmp(argv[a], "-2") == 0)
+			{
+				inc = 2;
+			}
+			else if(strcmp(argv[a], "-4") == 0)
+			{
+				inc = 4;
+			}
+			else if(strcmp(argv[a], "-8") == 0)
+			{
+				inc = 8;
+			}
+			else if(strcmp(argv[a], "-") == 0)
+			{
+				if(!inFileName)
+				{
+					inFileName = "<stdin>";
+					in = stdin;
+				}
+				else if(!outFileName)
+				{
+					outFileName = "<stdout>";
+					out = stdout;
+				}
+				else
+				{
+					fprintf(stderr, "Extraneous '-' parameter -- input and output already configured.\n");
+
+					return EXIT_FAILURE;
+				}
+
+			}
+			else
+			{
+				fprintf(stderr, "Error: unknown option: %s\n", argv[a]);
+
+				return EXIT_FAILURE;
+			}
+		}
+		else if(inFileName == 0)
+		{
+			inFileName = argv[a];
+			in = fopen(inFileName, "r");
+			if(!in)
+			{
+				fprintf(stderr, "Error: cannot open %s for read\n", inFileName);
+
+				return EXIT_FAILURE;
+			}
+		}
+		else if(outFileName == 0)
+		{
+			outFileName = argv[a];
+			out = fopen(outFileName, "w");
+			if(!out)
+			{
+				fprintf(stderr, "Error: cannot open %s for write\n", outFileName);
+
+				return EXIT_FAILURE;
+			}
+		}
+	}
+
 	if(!in)
 	{
-		fprintf(stderr, "Error: cannot open %s for read\n", inFileName);
+		fprintf(stderr, "Error: incomplete command line.\n");
 
 		return EXIT_FAILURE;
 	}
 
-	if(argc > 2)
-	{
-		outFileName = argv[2];
-		out = fopen(outFileName, "w");
-		if(!out)
-		{
-			fprintf(stderr, "Error: cannot open %s for write\n", outFileName);
-
-			return EXIT_FAILURE;
-		}
-	}
-	else
+	if(!out)
 	{
 		out = stdout;
 	}
 
 	regs = newStateCountRegisters();
-	dataSize = 8000;
-	data = (unsigned char *)malloc(dataSize);
 
 	setSignals();
 
@@ -369,11 +454,23 @@ int main(int argc, char **argv)
 			break;
 		}
 		payloadSize = getVDIFFrameBytes(&vh) - VDIF_HEADER_BYTES;
-		if(payloadSize > dataSize)
+		if(payloadSize < 8 || payloadSize > 1<<20)
+		{
+			fprintf(stderr, "Error: unreasonable payload size: %d.  Corrupt file?\n", payloadSize);
+
+			return EXIT_FAILURE;
+		}
+		if(dataSize == 0)
 		{
 			free(data);
 			data = (unsigned char*)malloc(payloadSize);
 			dataSize = payloadSize;
+		}
+		else if(payloadSize != dataSize)
+		{
+			fprintf(stderr, "Changing payload size!  %d != %d.  Corrupt file?\n", payloadSize, dataSize);
+
+			return EXIT_FAILURE;
 		}
 
 		if(regs[vh.threadid] == 0)
@@ -407,21 +504,28 @@ int main(int argc, char **argv)
 		++frameCount;
 	}
 
-	printf("File: %s\n", inFileName);
-	printf("Frames read: %" PRId64 "\n", frameCount);
+	fprintf(stderr, "Frames read: %" PRId64 "\n", frameCount);
 
+	fprintf(out, "# %s ver %s\n", program, version);
+	fprintf(out, "# Input file %s\n", inFileName);
 	for(t = 0; t <= VDIF_MAX_THREAD_ID; ++t)
 	{
 		if(regs[t])
 		{
-			fprintStateCountRegister(out, regs[t], pl);
+			fprintStateCountRegister(out, regs[t], pl, inc);
 		}
 	}
 
-	free(data);
+	if(data)
+	{
+		free(data);
+	}
 	deleteStateCountRegisters(regs);
-	fclose(in);
-	if(outFileName)
+	if(in != stdin)
+	{
+		fclose(in);
+	}
+	if(out != stdout)
 	{
 		fclose(out);
 	}
