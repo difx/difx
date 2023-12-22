@@ -908,10 +908,11 @@ struct udev_enumerate *enumerate;
         //udev_device_get_property_value
         phy_count = udev_device_get_property_value(port, "id_sas_path");
 
-if (phy_count != NULL)
-        cout << "phy count: " << phy_count << endl;
-else
-        cout << "not found" << endl;
+        /*if (phy_count != NULL)
+                cout << "phy count: " << phy_count << endl;
+        else
+                cout << "not found" << endl;
+        */
 
         clog << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << " " << phy_count<< endl;
         //cout << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << endl;
@@ -955,7 +956,7 @@ int Mark6::enumerateDevices()
         }
 
         string devtype(udev_device_get_devtype(dev));
-	cout << devtype << path <<endl;
+	//cout << devtype << path <<endl;
         
 	udev_device  *parent = udev_device_get_parent(dev);
 
@@ -977,8 +978,8 @@ int Mark6::enumerateDevices()
 
 				if (devpath != NULL)
                                 {
-                                        cout << "sysname : " <<  sysname << endl;
-                                        cout << "Dev path: " <<  devpath << endl;
+                                        //cout << "sysname : " <<  sysname << endl;
+                                        //cout << "Dev path: " <<  devpath << endl;
                                         int controllerId = parseControllerId(string(devpath));
                                         if (controllerId == -1)
                                             break;
@@ -1051,7 +1052,7 @@ long Mark6::parsePhyId(std::string sasPath)
        diskId = atol(phyId.c_str());
     }
 
-    cout << "Disk Id: " << diskId << endl;
+    //cout << "Disk Id: " << diskId << endl;
     return (diskId);
 }
 
@@ -1111,7 +1112,7 @@ long Mark6::parseDiskId(std::string sasAddress, std::string driver)
 
     //if(sasAddress[strlen-2] == '0' && sasAddress[strlen-1] == '0')
   
-    cout << "parseDiskId " << sasAddress << " -> disk id " << diskId << " driver: " << driver << endl;
+    //cout << "parseDiskId " << sasAddress << " -> disk id " << diskId << " driver: " << driver << endl;
     if (driver == "mpt2sas")
     {
         diskId = strtol(sasAddress.substr(11,1).c_str(), NULL, 16);
