@@ -191,7 +191,7 @@ int Mark6::getSlot(string eMSN)
 
 
 /**
- * Sends out a Mark6StatusMessage
+ * Sends out a Mark6SlotStatusMessage
  */
 void Mark6::sendSlotStatusMessage()
 {
