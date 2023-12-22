@@ -1,4 +1,4 @@
-prefix=/cluster/difx/DiFX-trunk_64
+prefix=/cluster/difx/DiFX-git/hrottmann
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include
