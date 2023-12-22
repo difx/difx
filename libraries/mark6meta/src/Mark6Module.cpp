@@ -208,13 +208,13 @@ bool Mark6Module::isComplete(){
     map<int, string>::iterator it;
     for ( it = serials.begin(); it != serials.end(); it++ )
     {
-        cout << "matching " << it->second << endl;
+        //cout << "matching " << it->second << endl;
         for (int i=0; i < MAXDISKS; i++)
         {
-            cout << "trying " << diskDevices_m[i].getSerial() << endl;
+            //cout << "trying " << diskDevices_m[i].getSerial() << endl;
             if (it->second == diskDevices_m[i].getSerial())
             {
-                cout << "match" << endl;
+                //cout << "match" << endl;
                 match++;
             }
         }

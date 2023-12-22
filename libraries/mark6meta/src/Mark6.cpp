@@ -16,11 +16,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: Mark6.cpp 10913 2023-03-15 14:33:08Z HelgeRottmann $
+// $Id: Mark6.cpp 11045 2023-08-24 12:15:28Z HelgeRottmann $
 // $HeadURL: $
-// $LastChangedRevision: 10913 $
+// $LastChangedRevision: 11045 $
 // $Author: HelgeRottmann $
-// $LastChangedDate: 2023-03-15 22:33:08 +0800 (三, 2023-03-15) $
+// $LastChangedDate: 2023-08-24 14:15:28 +0200 (Thu, 24 Aug 2023) $
 //
 //============================================================================
 #include <poll.h>
@@ -40,6 +40,7 @@
 #include <difxmessage.h>
 #include <set>
 #include <unistd.h>
+#include <ctype.h>
 
 #include "Mark6.h"
 #include "Mark6DiskDevice.h"
@@ -190,7 +191,7 @@ int Mark6::getSlot(string eMSN)
 
 
 /**
- * Sends out a Mark6StatusMessage
+ * Sends out a Mark6SlotStatusMessage
  */
 void Mark6::sendSlotStatusMessage()
 {
@@ -790,7 +791,6 @@ void Mark6::writeControllerConfig()
     conf << "# each line contains the name of a SAS controller present in the system" << endl;
     conf << "# the order determines the mount location (first line will mount slots 1&2, second line slots 3&4 etc.)" << endl;
     conf << "# adapt the order to match the local cabling" << endl;
-    
 
     for( std::set<std::string>::iterator it = sorted.begin(); it != sorted.end(); ++it )
     {
@@ -798,7 +798,7 @@ void Mark6::writeControllerConfig()
         {
           conf << "host0" << endl;
           host0 = false;
-        } 
+        }
         conf << *it << endl;
     }
     if (host0)
@@ -832,10 +832,10 @@ int Mark6::readControllerConfig()
         clog << "opened /etc/default/mark6_slots" << endl;
         while ( getline (conf,line) )
         {
-            if (line.rfind("#", 0) == 0) 
+            if (line.rfind("#", 0) == 0 || line.size() < 1) // todo: " lrtrim(line).size() "
                 continue;
             for(std::size_t i = 0; i < controllers_m.size(); ++i) {
-                if (line.compare (controllers_m[i].getName()) == 0) 
+                if (line.compare (controllers_m[i].getName()) == 0)
                 {
                     controllers_m[i].setOrder(count);
                     break;
@@ -899,11 +899,22 @@ struct udev_enumerate *enumerate;
         // get driver in order to distinguish between sas2 and sas3 controllers
         udev_device  *parent = udev_device_get_parent(dev);
         udev_device  *grand = udev_device_get_parent(parent);
+        udev_device  *port = udev_device_get_parent(grand);
         
         controller.setDriver(udev_device_get_driver(grand));
         //cout << udev_device_get_driver(grand) << endl;
 
-        clog << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << endl;
+        const char *phy_count;
+        //udev_device_get_property_value
+        phy_count = udev_device_get_property_value(port, "id_sas_path");
+
+        /*if (phy_count != NULL)
+                cout << "phy count: " << phy_count << endl;
+        else
+                cout << "not found" << endl;
+        */
+
+        clog << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << " " << phy_count<< endl;
         //cout << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << endl;
 
         controllers_m.push_back(controller);
@@ -957,8 +968,9 @@ int Mark6::enumerateDevices()
                         const char *devpath = udev_device_get_devpath(dev);
                         const char *sasaddress = udev_device_get_sysattr_value(parent,"sas_address");
 			const char *serial = udev_device_get_property_value(dev,"ID_SERIAL_SHORT");
+                        const char *idSasPath = udev_device_get_property_value(dev, "ID_SAS_PATH");
                         string driver = "";
-	
+
 			if (sysname != NULL)
 			{ 
 				string devName = string(sysname);                               
@@ -966,7 +978,8 @@ int Mark6::enumerateDevices()
 
 				if (devpath != NULL)
                                 {
-                                        //cout <<  devpath << endl;
+                                        //cout << "sysname : " <<  sysname << endl;
+                                        //cout << "Dev path: " <<  devpath << endl;
                                         int controllerId = parseControllerId(string(devpath));
                                         if (controllerId == -1)
                                             break;
@@ -977,10 +990,14 @@ int Mark6::enumerateDevices()
 					disk.setControllerId( controllerId );
                                 }
 
+                                if (idSasPath != NULL)
+                                {
+				    disk.setDiskId(parsePhyId(string(idSasPath)));
+                                }
 				if (sasaddress != NULL)
                                 {
                                         disk.setSasAddress(sasaddress);
-					disk.setDiskId(parseDiskId(string(sasaddress), driver));
+				//	disk.setDiskId(parseDiskId(string(sasaddress), driver));
                                 }
 				if (serial != NULL)
 					disk.setSerial(string(serial));
@@ -1014,7 +1031,35 @@ int Mark6::enumerateDevices()
     
 }
 
+long Mark6::parsePhyId(std::string sasPath)
+{
+    long diskId = -1;
+    string phyId = "";
+
+    //cout << "ID_SAS_PATH: " << sasPath << endl;
+
+    std::size_t found = sasPath.find("phy");
+    if (found!=std::string::npos)
+    {
+
+       if (isdigit(sasPath.at(found+4)) ){
+          phyId = sasPath.substr(found+3, 2);
+       }
+       else {
+
+          phyId = sasPath.substr(found+3, 1);
+       }
+       diskId = atol(phyId.c_str());
+    }
+
+    //cout << "Disk Id: " << diskId << endl;
+    return (diskId);
+}
+
 /**
+ * Deprecated. The sasaddress turned out to encode the phy id differently for different sas controller manufacturers. Use
+ * parsePhyId instead.
+ *
  * Obtains the sequence number of the disk device on the SAS controller by parsing the contents of the sas_device attribute provided by UDEV.
  * If cabeling of the Mark6 SAS controller 
  * is done correctly this sequence number should correspond to the module LEDs on the frontpack of the diskpack.
