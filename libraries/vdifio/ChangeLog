@@ -5,6 +5,10 @@ Version 1.6
 * filterVDIF: fix fclose on null pointer
 * add vdifStateCount
 * add vdifpcal (equivalent to vmux + m5pcal)
+* add three new VDIF analysis utilities: 
+  - vdifPhase: look at time series of a tone's phase
+  - vdifStateCount: generate histogram of state counts
+  - vdifMeanRMS: calculate mean and RMS values on a 1 second cadence
 
 Version 1.5
 ~~~~~~~~~~~

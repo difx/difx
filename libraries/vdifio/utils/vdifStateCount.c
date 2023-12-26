@@ -96,7 +96,7 @@ void deleteStateCountRegisters(StateCountRegister **regs)
 	}
 }
 
-void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum StateCountPrintLevel pl, int inc)
+void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum StateCountPrintLevel pl, unsigned int inc, unsigned int eomask)
 {
 	int a=-1, b=-1;	/* first and last index with non-zero counts */
 	unsigned int i;
@@ -151,19 +151,25 @@ void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum Sta
 		case StateCountPrintAll:
 			for(i = 0; i < N; i += inc)
 			{
-				fprintf(out, "%u  %3.1f %" PRId64 " %f\n", reg->threadId, (i-offset)/inc, reg->counts[i], reg->counts[i]/sum);
+				if(eomask & (1 << ((i/inc) % 2)))
+				{
+					fprintf(out, "%u  %3.1f %" PRId64 " %f\n", reg->threadId, (i-offset)/inc, reg->counts[i], reg->counts[i]/sum);
+				}
 			}
 			break;
 		case StateCountPrintCompact:
 			for(i = a; i <= b; i += inc)
 			{
-				fprintf(out, "%u  %3.1f %" PRId64 " %f\n", reg->threadId, (i-offset)/inc, reg->counts[i], reg->counts[i]/sum);
+				if(eomask & (1 << ((i/inc) % 2)))
+				{
+					fprintf(out, "%u  %3.1f %" PRId64 " %f\n", reg->threadId, (i-offset)/inc, reg->counts[i], reg->counts[i]/sum);
+				}
 			}
 			break;
 		case StateCountPrintNonzero:
 			for(i = a; i <= b; i += inc)
 			{
-				if(reg->counts[i] > 0)
+				if((eomask & (1 << ((i/inc) % 2))) && reg->counts[i] > 0)
 				{
 					fprintf(out, "%u  %3.1f %" PRId64 " %f\n", reg->threadId, (i-offset)/inc, reg->counts[i], reg->counts[i]/sum);
 				}
@@ -304,6 +310,8 @@ void usage()
 	fprintf(stderr, "  -c  or  --compact   print compact version of histogram [default]\n");
 	fprintf(stderr, "  -n  or  --nonzero   print only non-zero elements of historgram\n");
 	fprintf(stderr, "  -a  or  --all       print entire historgram\n");
+	fprintf(stderr, "  -e  or  --even      print only even bins\n");
+	fprintf(stderr, "  -o  or  --odd       print only odd bins\n");
 	fprintf(stderr, "  -1                  consider all bins [default]\n");
 	fprintf(stderr, "  -2                  only consider every 2nd bin\n");
 	fprintf(stderr, "  -4                  only consider every 4th bin\n");
@@ -325,9 +333,10 @@ int main(int argc, char **argv)
 	FILE *in = 0, *out = 0;
 	uint64_t frameCount = 0;
 	int t;
-	int a;
-	int inc = 1;
+	unsigned int a;
+	unsigned int inc = 1;
 	int printThread = -1;
+	unsigned int eomask = 0x03;
 
 	if(argc < 2)
 	{
@@ -357,6 +366,14 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-a") == 0 || strcmp(argv[a], "--all") == 0)
 			{
 				pl = StateCountPrintAll;
+			}
+			else if(strcmp(argv[a], "-e") == 0 || strcmp(argv[a], "--even") == 0)
+			{
+				eomask = 0x01;
+			}
+			else if(strcmp(argv[a], "-o") == 0 || strcmp(argv[a], "--odd") == 0)
+			{
+				eomask = 0x02;
 			}
 			else if(strcmp(argv[a], "-1") == 0)
 			{
@@ -530,7 +547,7 @@ int main(int argc, char **argv)
 		}
 		if(regs[t])
 		{
-			fprintStateCountRegister(out, regs[t], pl, inc);
+			fprintStateCountRegister(out, regs[t], pl, inc, eomask);
 		}
 	}
 
