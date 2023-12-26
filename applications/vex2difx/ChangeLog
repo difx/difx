@@ -3,6 +3,7 @@ Version 3.1.0
 * Fix for datastream to antenna mapping when not sorting antennas
 * oms2v2d: add mode to generate .v2d file that is useful for use with vdifsim
 * oms2v2d: do not require DIFX_BASE to be set
+* oms2v2d: automatically add filelist files if found in current directory
 * Fix stale pointer to source after manipulating multi-phase-center bits
 * New ANTENNA parameter phaseCalIntDivisor for fractional spacings (phaseCalInt[MHz]/phaseCalIntDivisor)
 
