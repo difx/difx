@@ -130,6 +130,7 @@ void AutoBands::clear()
 	this->Nant = 0;
 	spans.clear();
 	outputbands.clear();
+	userOutputbands.clear();
 }
 
 /**
@@ -744,7 +745,7 @@ void AutoBands::addUserOutputband(const ZoomFreq& band)
 	userband.extend(band.frequency, band.bandwidth);
 
 	// Add if not pre-existing
-	if (std::find(outputbands.begin(), outputbands.end(), userband) == outputbands.end())
+	if (std::find(userOutputbands.begin(), userOutputbands.end(), userband) == userOutputbands.end())
 	{
 		if (verbosity > 1)
 		{
