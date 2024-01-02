@@ -86,6 +86,7 @@
 #include <errno.h>
 #include <math.h>
 #include <fcntl.h>
+#include <stdbool.h>
 
 #include <codifio.h>
 
@@ -109,6 +110,7 @@ volatile int sig_received = 0;
 
 typedef struct datastats {
   int threadid;
+  int groupid;
   uint32_t lastsecond;
   uint32_t lastframe;
   uint32_t maxframe;
@@ -119,10 +121,17 @@ typedef struct datastats {
   int maxpkt_size;
   int minpkt_size;
 } datastats;
-  
+
+typedef struct files {
+  int threadid;
+  int groupid;
+  int file;
+} files;
+
 int setup_net(unsigned short port, const char *ip, int *sock);
-int matchthread(datastats *allstats, int nthread, int threadID);
-int openfile(char *fileprefix, char *timestr, int threadid);
+int matchthread(datastats *allstats, int nthread, int threadID, int groupID);
+int matchfile(files *ofiles, int nfles, int threadID, int groupID);
+int openfile(char *fileprefix, char *timestr, int threadid, int groupid);
 
 void initstats (datastats *stats) { 
   stats->npacket = 0;	   
@@ -141,14 +150,15 @@ uint64_t sum_pkts, pkt_head, npacket, skipped;
 double t0, t1, t2;
 
 int nthread = 0;
+int nfiles = 0;
 datastats allstats[MAXTHREAD];
 
 int lines = 0;
 
 int main (int argc, char * const argv[]) {
   char *buf, timestr[MAXSTR];
-  int threadIndex, tmp, opt, status, sock, ofile[MAXTHREAD], skip, i;
-  int groupID, valid, period, thisthread = -1;
+  int threadIndex, fileIndex, tmp, opt, status, sock, skip, i, nfile;
+  int valid, period, thisthread = -1, thisgroup = -1;
   ssize_t nread, nwrote, nwrite;
   char msg[MAXSTR];
   float updatetime, ftmp;
@@ -159,7 +169,7 @@ int main (int argc, char * const argv[]) {
   int16_t *s16, *cdata;
   int8_t *s8;
   uint32_t lastseconds, lastframe, thisframe, thisseconds, framesperperiod;
-  //uint64_t *h64;
+  files ofile[MAXTHREAD];
 
   unsigned int port = DEFAULT_PORT;
   char *ip = NULL;
@@ -168,17 +178,20 @@ int main (int argc, char * const argv[]) {
   int filesize = DEFAULT_FILESIZE;
   int padding = 0;
   int threadid = -1;
+  int groupid = -1;
   int scale = 0;
   int forcebits = 0;
   //int invert = 0;
-  int splitthread = 0;
+  int splitthread = false;
+  int splitgroup = false;
   int verbose = 0;
-  int wait = 0; // Don't start timing till first packet arrives
+  int wait = false; // Don't start timing till first packet arrives
   
   struct option options[] = {
     {"port", 1, 0, 'p'},
     {"padding", 1, 0, 'P'},
     {"threadid", 1, 0, 'T'},
+    {"groupid", 1, 0, 'g'},
     {"ip", 1, 0, 'i'},
     {"outfile", 1, 0, 'o'},
     {"time", 1, 0, 't'},
@@ -188,20 +201,25 @@ int main (int argc, char * const argv[]) {
     {"bits", 1, 0, 'b'},
     //{"invert", 0, 0, 'I'},
     {"split", 0, 0, 'S'},
+    {"splitgroup", 0, 0, 'G'},
     {"verbose", 0, 0, 'V'},
     {"wait", 0, 0, 'w'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
 
-  for (i=0;i<MAXTHREAD;i++) ofile[i] = -1;
+  for (i=0;i<MAXTHREAD;i++) {
+    ofile[i].groupid = -1;
+    ofile[i].threadid = -1;
+    ofile[i].file = -1;
+  }
   framesperperiod = 0;
   period = 0;
   
   updatetime = DEFAULT_UPDATETIME;
 
   while (1) {
-    opt = getopt_long_only(argc, argv, "i:T:P:p:t:hw", options, NULL);
+    opt = getopt_long_only(argc, argv, "i:T:P:p:t:hwg:G", options, NULL);
     if (opt==EOF) break;
 
     switch (opt) {
@@ -228,6 +246,14 @@ int main (int argc, char * const argv[]) {
 	fprintf(stderr, "Bad threadid option %s\n", optarg);
       else 
 	threadid = tmp;
+     break;
+
+    case 'g':
+      status = sscanf(optarg, "%d", &tmp);
+      if (status!=1 || tmp<0)
+	fprintf(stderr, "Bad groupid option %s\n", optarg);
+      else 
+	groupid = tmp;
      break;
 
     case 's':
@@ -281,13 +307,17 @@ int main (int argc, char * const argv[]) {
       //    case 'I':
       //invert = 1;
       //break;
-
+ 
     case 'S':
-      splitthread = 1;
+      splitthread = true;
       break;
 
-    case 'w':
-      wait = 1;
+    case 'G':
+      splitgroup = true;
+      break;
+
+   case 'w':
+      wait = true;
       break;
       
     case 'V':
@@ -299,12 +329,14 @@ int main (int argc, char * const argv[]) {
       printf("  -p/-port <PORT>        Port to use\n");
       printf("  -P/-padding <N>        Discard N bytes at end of packet\n");
       printf("  -T/-threadid <N>       Only record threadid N\n");
+      printf("  -g/-groupid <N>        Only record groupid N\n");
       printf("  -i/-ip <IP>            Receive data from host IP\n");
       printf("  -o/-outfile <NAME>     output prefix NAME\n");
       printf("  -t/-time <N>           Record for N seconds\n");
       printf("  -f/-filesize <N>       Write files N seconds long\n");
       printf("  -s/-scale <S>          Reduce data to 8 bits, dividing by S\n");
       printf("  -S/-split              Write threads to separate files\n");
+      printf("  -G/-splitgroup         Write groups to separate files\n");
       printf("  -w/-wait               Wait for first packet before starting recording timer\n");
       printf("  -V/-verbose            Verbose output/n");
       printf("  -h/-help               This list\n");
@@ -319,6 +351,11 @@ int main (int argc, char * const argv[]) {
 
   if (threadid>0 && splitthread) {
     fprintf(stderr, "Cannot split by thread and filter single thread. Quitting\n");
+    exit(1);
+  }
+  
+  if (groupid>0 && splitgroup) {
+    fprintf(stderr, "Cannot split by group and filter single group. Quitting\n");
     exit(1);
   }
   
@@ -355,7 +392,7 @@ int main (int argc, char * const argv[]) {
   t0 = t1 = t2 = tim();
   setitimer(ITIMER_REAL, &timeval, NULL);
 
-  int first = 1;
+  int first = true;
   while (t2-t0<time) {
     nread = recvfrom(sock, buf, MAXPACKETSIZE, MSG_WAITALL, 0, 0);
     if (nread==-1) {
@@ -371,7 +408,7 @@ int main (int argc, char * const argv[]) {
       fprintf(stderr, "Error: Needs to read multiple of 4 bytes\n");
       exit(1);
     }
-
+    
     if (wait && first) {
       t0 = tim();
     }
@@ -388,7 +425,10 @@ int main (int argc, char * const argv[]) {
     thisframe = getCODIFFrameNumber(cheader);
     thisseconds = getCODIFFrameSecond(cheader);
     thisthread = getCODIFThreadID(cheader);
+    thisgroup =  getCODIFGroupID(cheader);
 
+    //printf("DEBUG: Got F: %d S: %d  T: %d G: %d\n", thisframe, thisseconds, thisthread, thisgroup);
+    
     skip = 0;
     if (threadid>=0) {
       if (thisthread!=threadid) {
@@ -396,14 +436,27 @@ int main (int argc, char * const argv[]) {
 	skipped++;
       }
     }
-
+    if (groupid>=0) {
+      if (thisgroup!=groupid) {
+	skip=1;
+	skipped++;
+      }
+    }
+    
     if (!skip) {
       valid = 1;
       if (first) {
-	first = 0;
+	//printf("DEBUG: First\n");
+	//first = false;
 	threadIndex = 0;
+	fileIndex = 0;
 	allstats[0].threadid = thisthread;
+	allstats[0].groupid = thisgroup;
 	nthread = 1;
+	nfile = 1;
+	ofile[0].threadid = splitthread ? thisthread : -1;
+	ofile[0].groupid = splitgroup ? thisgroup : -1;
+	ofile[0].file = -1;
 	
 	period = getCODIFPeriod(cheader);
 	int completesamplebits = getCODIFNumChannels(cheader)*getCODIFBitsPerSample(cheader);
@@ -417,15 +470,17 @@ int main (int argc, char * const argv[]) {
 	framesperperiod = totalbits/(framebytes*8);
 	
       } else {
-	threadIndex = matchthread(allstats, nthread, thisthread);
+	threadIndex = matchthread(allstats, nthread, thisthread, thisgroup);
+	//printf("DEBUG: TI: %d\n", threadIndex);
 	if (threadIndex==-1) {
 	  if (nthread==MAXTHREAD) {
-	    fprintf(stderr, "Error: Too many Threads. Increase MAXTHREAD (%d)\n", MAXTHREAD);
+	    fprintf(stderr, "Error: Too many Threads and Groups. Increase MAXTHREAD (%d)\n", MAXTHREAD);
 	    exit(1);
 	  }
 	  nthread++;
 	  threadIndex = nthread -1;
 	  allstats[threadIndex].threadid = thisthread;
+	  allstats[threadIndex].groupid = thisgroup;
 	  initstats(&allstats[threadIndex]);
 	} else {
 	  lastseconds = allstats[threadIndex].lastsecond;
@@ -439,10 +494,8 @@ int main (int argc, char * const argv[]) {
 	      allstats[threadIndex].pkt_oo++;
 	      allstats[threadIndex].pkt_drop--;
 	    } else {
-	      groupID = getCODIFGroupID(cheader);
 
-
-	      if (verbose) printf("Thread %d (%d) dropped packet (%d/%d - %d/%d) %d\n", thisthread, groupID, thisframe, thisseconds, lastframe, lastseconds, (thisseconds-lastseconds)*framesperperiod + (thisframe-lastframe)-1);
+	      if (verbose) printf("Thread %d (%d) dropped packet (%d/%d - %d/%d) %d\n", thisthread, thisgroup, thisframe, thisseconds, lastframe, lastseconds, (thisseconds-lastseconds)*framesperperiod + (thisframe-lastframe)-1);
 	      allstats[threadIndex].pkt_drop += (thisseconds-lastseconds)*framesperperiod + (thisframe-lastframe-1);
 	    }
 	  }
@@ -457,6 +510,24 @@ int main (int argc, char * const argv[]) {
 	allstats[threadIndex].sum_pkts += nread;
       }
 
+      // What file is this
+      if (splitthread || splitgroup) 
+	fileIndex = matchfile(ofile, nfile, splitthread ? thisthread : -1, splitgroup? thisgroup: -1);
+      //printf("DEBUG: FI: %d\n", fileIndex);
+
+      if (fileIndex==-1) {
+	if (nfile>=MAXTHREAD) {
+	  fprintf(stderr, "Error: Too many Threads and/or Groups. Increase MAXTHREAD (%d)\n", MAXTHREAD);
+	  exit(1);
+	}
+	nfile++;
+	fileIndex = nfile -1;
+	ofile[fileIndex].threadid = splitthread? thisthread : -1;
+	ofile[fileIndex].groupid = splitgroup? thisgroup : -1;
+	ofile[fileIndex].file = -1;
+	//printf("DEBUG: ofile %d added %d/%d\n", fileIndex, ofile[fileIndex].threadid, ofile[fileIndex].groupid);
+      } 
+      
       npacket++;
       sum_pkts += nread;
     }
@@ -492,19 +563,19 @@ int main (int argc, char * const argv[]) {
     if (first || t2-filetime>filesize) {
       if (first) {
 	filetime = t0;
-	first = 0;
+	first = false;
       } else {
 	while (t2-filetime>filesize) {
 	  filetime += filesize;
 	}
-	if (splitthread) {
-	  for (i=0;i<nthread;i++) {
-	    close(ofile[i]);
-	    ofile[i] = -1;
+	if (splitthread || splitgroup) {
+	  for (i=0;i<nfile;i++) {
+	    close(ofile[i].file);
+	    ofile[i].file = -1;
           }
 	} else {
-	  close(ofile[0]);
-	  ofile[0] = -1;
+	  close(ofile[0].file);
+	  ofile[0].file = -1;
 	}
       }
       time_t itime = (time_t)floor(filetime);
@@ -512,24 +583,25 @@ int main (int argc, char * const argv[]) {
 
       strftime(timestr, MAXSTR-1, "%j_%H%M%S", date);
 
-      if (splitthread) {
-	ofile[threadIndex] = openfile(fileprefix, timestr, thisthread);
+      if (splitthread || splitgroup) {
+	// Pass -1 for thread or groupID if not splitting
+	ofile[fileIndex].file = openfile(fileprefix, timestr, splitthread ? thisthread : -1, splitgroup? thisgroup: -1);
       } else {
-	ofile[0] = openfile(fileprefix, timestr, -1);
+	ofile[0].file = openfile(fileprefix, timestr, -1, -1);
       }
-      if (ofile[threadIndex]==-1) exit(1);
+      if (ofile[fileIndex].file==-1) exit(1);
 
-    } else if (splitthread) {
-      if (ofile[threadIndex]==-1) {
-	ofile[threadIndex] = openfile(fileprefix, timestr, thisthread);
-	if (ofile[threadIndex]==-1) exit(1);
+    } else if (splitthread || splitgroup) {
+      if (ofile[fileIndex].file==-1) {
+	ofile[threadIndex].file = openfile(fileprefix, timestr, splitthread ? thisthread : -1, splitgroup? thisgroup: -1);
+	if (ofile[fileIndex].file==-1) exit(1);
       }
     }
-    
-    nwrote = write(ofile[threadIndex], buf, nwrite);
+
+    nwrote = write(ofile[fileIndex].file, buf, nwrite);
     if (nwrote==-1) {
       perror("Error writing outfile");
-      for (i=0;i<nthread;i++) close(ofile[i]);
+      for (i=0;i<nfile;i++) close(ofile[i].file);
       exit(1);
     } else if (nwrote!=nwrite) {
       fprintf(stderr, "Warning: Did not write all bytes! (%zd/%zd)\n", nwrote, nwrite);
@@ -538,7 +610,7 @@ int main (int argc, char * const argv[]) {
 
   free(buf);
 
-  for (i=0;i<nthread;i++) close(ofile[i]);
+  for (i=0;i<nfile;i++) close(ofile[i].file);
 
   return(0);
 }
@@ -645,11 +717,15 @@ void alarm_signal (int sig) {
   return;
 }  
 
-int openfile(char *fileprefix, char *timestr, int threadid) {
+int openfile(char *fileprefix, char *timestr, int threadid, int groupid) {
   char filename[MAXSTR], msg[MAXSTR];
 
-  if (threadid>=0) 
+  if (threadid>=0 && groupid>0) 
+    snprintf(filename, MAXSTR-1, "%s_%s-%d-%d.cdf", fileprefix, timestr, threadid, groupid);
+  else if (threadid>=0) 
     snprintf(filename, MAXSTR-1, "%s_%s-%d.cdf", fileprefix, timestr, threadid);
+  else if (groupid>=0) 
+    snprintf(filename, MAXSTR-1, "%s_%s-%d.cdf", fileprefix, timestr, groupid);
   else
     snprintf(filename, MAXSTR-1, "%s_%s.cdf", fileprefix, timestr);
 
@@ -662,11 +738,26 @@ int openfile(char *fileprefix, char *timestr, int threadid) {
   return ofile;
 }
 
-int matchthread(datastats *allstats, int nthread, int threadID) {
+int matchthread(datastats *allstats, int nthread, int threadID, int groupID) {
   int i;
   for (i=0; i<nthread; i++) {
-    if (allstats[i].threadid==threadID)
+    if (allstats[i].threadid==threadID && allstats[i].groupid==groupID) {
+      //printf("DEBUG: ThreadID %d==%d, GroupID %d==%d:  MATCHES\n", allstats[i].threadid, threadID, allstats[i].groupid, groupID);
       return(i);
+    }
+  }
+  return(-1);
+}
+
+int matchfile(files *ofiles, int nfiles, int threadID, int groupID) {
+  int i;
+  //printf("DEBUG: Matchfile  %d %d\n", threadID, groupID);
+  for (i=0; i<nfiles; i++) {
+    //printf("       Try %d  %d/%d\n", i, ofiles[i].threadid, ofiles[i].groupid);
+    if (ofiles[i].threadid==threadID && ofiles[i].groupid==groupID) {
+      //printf("    GOT\n");
+      return(i);
+    }
   }
   return(-1);
 }
