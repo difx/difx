@@ -19,6 +19,9 @@ Version 3.8.0
 * Create a .channels file that lists the frequency set as a function of time.
 * Add option to only propagate a finite list of sources
 * Add option to only propagate sky frequencies provided in a list of low band edge frequencies
+* Make new structure to pass options to sniffer (see snifferoptions.[ch]
+* Sniffer: option to set interval between bandpass (XCB and ACB) solutions;
+  - previously was hard coded to be 15 minutes
 
 Version 3.7.0
 * Post DiFX-2.6
