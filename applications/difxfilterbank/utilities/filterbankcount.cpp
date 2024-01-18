@@ -109,7 +109,7 @@ bool getData(ifstream * input, bool verbose)
     extrachan = nchan-MAX_CHANNELS;
     nchan = MAX_CHANNELS;
   }
-  input->read((char*)data, sizeof(int)*nchan);
+  input->read((char*)::data, sizeof(int)*nchan);
   if(extrachan > 0)
     input->ignore(extrachan);
   return true;
