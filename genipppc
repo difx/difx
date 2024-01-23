@@ -29,6 +29,8 @@ def getippversion(path):
     if not isfile(ippheader):
         ippheader = path+'/ipp/include/ippversion.h'
     if not isfile(ippheader):
+        ippheader = path+'/include/ipp/ippversion.h'
+    if not isfile(ippheader):
         ippheader = path+'/composerxe/ipp/include/ippversion.h'
         if isfile(ippheader):
             path += '/composerxe'
