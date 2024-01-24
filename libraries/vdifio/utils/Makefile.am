@@ -26,6 +26,7 @@ bin_PROGRAMS = \
 	splitVDIFbygap \
 	vdif2to8 \
 	vdifChanSelect \
+	vdifMeanRMS \
 	vdifSplitThreads \
 	vdifStateCount \
 	vmux \
@@ -133,6 +134,9 @@ vdifSplitThreads_SOURCES = \
 
 vdifStateCount_SOURCES = \
 	vdifStateCount.c
+
+vdifMeanRMS_SOURCES = \
+	vdifMeanRMS.c
 
 vdifPhase_SOURCES = \
 	vdifPhase.c

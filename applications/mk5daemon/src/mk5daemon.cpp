@@ -23,7 +23,7 @@
  * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/mk5daemon.cpp $
  * $LastChangedRevision: 10522 $
  * $Author: HelgeRottmann $
- * $LastChangedDate: 2022-06-28 21:32:41 +0800 (二, 2022-06-28) $
+ * $LastChangedDate: 2022-06-28 15:32:41 +0200 (Tue, 28 Jun 2022) $
  *
  *==========================================================================*/
 
@@ -1325,6 +1325,7 @@ int main(int argc, char **argv)
 
                                         D->mark6->pollDevices();
                                         D->mark6->sendStatusMessage();
+                                        D->mark6->sendSlotStatusMessage();
                                         Logger_logData(D->log, mk6out.str().c_str());
                                         mk6out.str("");
                                     }
@@ -1333,10 +1334,10 @@ int main(int argc, char **argv)
                                     {
                                         cerr << "No valid Mark6 metadata found, retrying again later. The error was: " << ex.what() << endl;   
                                     }
-				    catch(...)
+				    /*catch(...)
 				    {
 					cout << "error" << endl;
-				    }
+				    }*/
                                 }
                                     //D->mark6.pollDevices();
 			}
@@ -1561,11 +1562,11 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
    }
 #endif
-   catch(...)
+/*   catch(...)
    {
 	cerr << "An unexpected error has occured. Aborting" << endl;
 	exit(EXIT_FAILURE);
    }
-
+*/
    return 0;
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsUV.c 11059 2023-09-13 22:53:17Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsUV.c $
-// $LastChangedRevision: 11059 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2023-09-14 06:53:17 +0800 (四, 2023-09-14) $
-//
-//============================================================================
 #include "fits.h"
 
 #include <stdlib.h>
@@ -1642,9 +1632,9 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 #ifdef HAVE_FFTW
 	if( (opts->pulsarBin == 0 || opts->sniffAllBins) &&
 	    (opts->phaseCentre == 0 || opts->sniffAllPhaseCentres) &&
-	    opts->sniffTime > 0.0 )
+	    opts->snifferOptions.solutionInterval > 0.0 )
 	{
-		S = newSniffer(D, dv->nComplex, fileBase, opts->sniffTime, opts->writeBandpass);
+		S = newSniffer(D, dv->nComplex, fileBase, &opts->snifferOptions);
 		if(S && opts->verbose > 1)
 		{
 			printf("    Sniffer memory usage ~= %lldMB\n", getSnifferMemoryUsage(S)/1000000);

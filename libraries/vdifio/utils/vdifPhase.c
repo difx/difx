@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <stdint.h>
 #include <complex.h>
 #include <math.h>
 #include <fftw3.h>
@@ -30,13 +31,14 @@ void siginthand(int j)
 void usage()
 {
 	printf("\n%s ver. %s  %s  %s\n\n", program, version, verdate, author);
-	printf("Usage: %s <fileName> <frameSize> <bandwidth> <thread> <frames> [<nBit>]\n\n", program);
+	printf("Usage: %s <fileName> <frameSize> <bandwidth> <thread> <frames> [<nBit> [<nominalFreq>] ]\n\n", program);
 	printf("<fileName> is name of file to read\n\n");
 	printf("<frameSize> is the full VDIF frame size in bytes\n\n");
 	printf("<bandwidth> is the channel bandwidth in MHz\n\n");
 	printf("<thread> is the VDIF thread ID to process\n\n");
 	printf("<frames> is the number of consecutive frames to bundle prior to FFT\n\n");
 	printf("<nBit> is the number of bits per sample (default is %d)\n\n", defaultBits);
+	printf("<nominalFreq> [Hz] is the nominal signal frequency, if known.\n\n");
 	printf("This program goes through a VDIF file and looks for <frames> consecutive\n");
 	printf("Frames (without gaps or invalid) of specified <thread> and looks for the\n");
 	printf("strongest spectral feature.  It interpolates to get a frequency, amplitude\n");
@@ -63,8 +65,8 @@ double interpolateSpectrumPeak(const double complex *s)
 	double dota, dotc;
 	double b, r;
 
-	dota = creal(s[0]) * creal(s[-1]) + cimag(s[0]) * cimag(s[-1]);
-	dotc = creal(s[0]) * creal(s[1]) + cimag(s[0]) * cimag(s[1]);
+	dota = - creal(s[0]) * creal(s[-1]) - cimag(s[0]) * cimag(s[-1]);
+	dotc = - creal(s[0]) * creal(s[1]) - cimag(s[0]) * cimag(s[1]);
 	b = cabs(s[0]);
 	if(dotc > dota)
 	{
@@ -86,14 +88,13 @@ double cnorm(double complex v)
 }
 
 /* t is some time [sec], to pass through to a print statement */
-void processSpectrum(const double complex *spectrum, int nChan, int bw, double t, double *psd)
+void processSpectrum(const double complex *spectrum, int nChan, int bw, double t, double *psd, double deltaPhi, int f)
 {
 	const int edge = 4;
 	static double *power = 0;
 	int c;
 	double max_power = 0;
 	int max_chan = 0;
-	double total_power = -1.0, mean_power;
 	double dc;
 	double freq;	/* [MHz] interpolated frequency of peak */
 	double phase;	/* [rad] */
@@ -105,16 +106,7 @@ void processSpectrum(const double complex *spectrum, int nChan, int bw, double t
 
 	for(c = 0; c < nChan; ++c)
 	{
-		power[c] = creal(spectrum[c] * ~spectrum[c]);
-		total_power += power[c];
-	}
-
-	mean_power = total_power / nChan;
-
-	for(c = 0; c < nChan; ++c)
-	{
-		power[c] /= mean_power;
-
+		power[c] = creal(spectrum[c] * ~spectrum[c])/(2*nChan);
 		psd[c] += power[c];
 	}
 
@@ -162,7 +154,17 @@ void processSpectrum(const double complex *spectrum, int nChan, int bw, double t
 
 	freq = bw*(max_chan+dc)/nChan;
 
-	printf("%6.4f %f %f %f %f\n", t, max_chan+dc, freq, max_power, phase);
+	phase = (phase - deltaPhi)/(2.0*M_PI) + 12;
+	phase -= (int)phase;
+	phase *= (2.0*M_PI);
+
+
+	printf("%8.6f %f %f %f %f %d  %d %f %f %f %f  %f %f  %f %f  %f %f\n", t, max_chan+dc, freq, max_power, phase, f % 8, 
+		max_chan, dc, 
+		cabs(spectrum[max_chan-1]), cabs(spectrum[max_chan]), cabs(spectrum[max_chan+1]),
+		creal(spectrum[max_chan-1]), cimag(spectrum[max_chan-1]),
+		creal(spectrum[max_chan]), cimag(spectrum[max_chan]),
+		creal(spectrum[max_chan+1]), cimag(spectrum[max_chan+1]));
 }
 
 /******* Some VDIF routines that should be made available in the library... *******/
@@ -306,9 +308,23 @@ static void vdif_decode_16bit_double(const unsigned char *src, int n, double *de
 	}
 }
 
+static void vdif_decode_16bit_double_backwards(const unsigned char *src, int n, double *dest)
+{
+	const uint16_t *src16;
+	int o;
+
+	src16 = (const uint16_t *)src;
+
+	for(o = 0; o < n; o+=2)
+	{
+		dest[o] = (src16[o+1] - 32768)/8.0;
+		dest[o+1] = (src16[o] - 32768)/8.0;
+	}
+}
+
 /***************************************************************/
 
-int run(const char *fileName, int frameSize, int bw, int thread, int frames, int nBit)
+int run(const char *fileName, int frameSize, int bw, int thread, int frames, int nBit, int64_t nomFreq)
 {
 	FILE *in;
 	FILE *out;
@@ -335,6 +351,7 @@ int run(const char *fileName, int frameSize, int bw, int thread, int frames, int
 	int startSeconds = -1;
 	void (*decode)(const unsigned char *src, int n, double *dest);
 	int c;
+	double dp;
 
 	switch(nBit)
 	{
@@ -370,6 +387,8 @@ int run(const char *fileName, int frameSize, int bw, int thread, int frames, int
 	spectrum = (double complex *)fftw_malloc((nSamp/2 + 1) * sizeof(double complex));
 	psd = (double *)calloc(nSamp/2 + 1, sizeof(double));
 	plan = fftw_plan_dft_r2c_1d(nSamp, samples, spectrum, FFTW_ESTIMATE);
+
+	dp = (nomFreq % frameRate)/(double)frameRate;
 
 	if(strcmp(fileName, "-") == 0)
 	{
@@ -451,26 +470,34 @@ int run(const char *fileName, int frameSize, int bw, int thread, int frames, int
 		if(f == frames)
 		{
 			double t;
+			double deltaPhi;
 
 			fftw_execute(plan);
 
 			t = vh->seconds - startSeconds + (vh->frame + 1 - 0.5*frames)/frameRate;
 
-			processSpectrum(spectrum, nSamp/2, bw, t, psd);
+			deltaPhi = 2.0*M_PI*((nomFreq * vh->frame) % frameRate)/(double)frameRate;
+
+			processSpectrum(spectrum, nSamp/2, bw, t, psd, deltaPhi, vh->frame);
 
 			f = 0;
+
+			++nRec;
 		}
 	}
 
-	out = fopen("/tmp/spec.vdifPhase", "w");
+	out = fopen("spec.vdifPhase", "w");
 	for(c = 0; c < nSamp/2; ++c)
 	{
-		fprintf(out, "%d %f\n", c, psd[c]);
+		fprintf(out, "%d %f %f\n", c, 2.0*c*bw/nSamp, psd[c]/nRec);
 	}
 	fclose(out);
 
 
 	/* print some summary information */
+	fprintf(stderr, "Frame rate: %d\n", frameRate);
+	fprintf(stderr, "Samples per frame: %d\n", samplesPerFrame);
+	fprintf(stderr, "Phase granularity: %f turns = %f radians\n", dp, dp*2.0*M_PI);
 	fprintf(stderr, "Frames read: %d\n", nRead);
 	fprintf(stderr, "Good records created: %d\n", nRec);
 	fprintf(stderr, "Frames marked invalid: %d\n", nInvalid);
@@ -505,6 +532,7 @@ int main(int argc, char **argv)
 	int nBit = -1;
 	struct sigaction new_sigint_action;
 	int a;
+	int64_t nomFreq = -1;
 
 	initluts();
 
@@ -550,6 +578,10 @@ int main(int argc, char **argv)
 		{
 			nBit = atoi(argv[a]);
 		}
+		else if(nomFreq < 0)
+		{
+			nomFreq = atoll(argv[a]);
+		}
 		else
 		{
 			fprintf(stderr, "Unexpected command line parameter: %s\n", argv[a]);
@@ -561,6 +593,11 @@ int main(int argc, char **argv)
 	if(nBit <= 0)
 	{
 		nBit = defaultBits;
+	}
+
+	if(nomFreq < 0)
+	{
+		nomFreq = 0;
 	}
 
 	if(frames <= 0)
@@ -575,7 +612,7 @@ int main(int argc, char **argv)
 	new_sigint_action.sa_flags = 0;
 	sigaction(SIGINT, &new_sigint_action, &old_sigint_action);
 
-	run(fileName, frameSize, bw, thread, frames, nBit);
+	run(fileName, frameSize, bw, thread, frames, nBit, nomFreq);
 
 	return 0;
 }

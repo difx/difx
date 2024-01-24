@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2023 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,21 +16,12 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx2fits.h 1520 2009-09-23 23:34:38Z AdamDeller $
-// $HeadURL: $
-// $LastChangedRevision: 1520 $
-// $Author: AdamDeller $
-// $LastChangedDate: 2009-09-23 17:34:38 -0600 (Wed, 23 Sep 2009) $
-//
-//============================================================================
 #ifndef __DIFX2FITS_H__
 #define __DIFX2FITS_H__
 
 #include <difxio.h>
 #include "fits.h"
+#include "snifferoptions.h"
 
 #define array_MAX_BANDS		32
 #define array_MAX_TONES		1024
@@ -54,7 +45,6 @@ struct CommandLineOptions
 	int verbose;
 	int sniffAllPhaseCentres;
 	int sniffAllBins;
-	int writeBandpass;
 	int alwaysWriteAutocorr;
 	int profileMode;
 	int skipExtraAutocorrs;
@@ -68,7 +58,6 @@ struct CommandLineOptions
 	int dontCombine;
 	int overrideVersion;
 	int dontIncludeVisibilities;
-	double sniffTime;
 	int pulsarBin;
 	int phaseCentre;
 	double DifxTsysAvgSeconds;
@@ -84,6 +73,7 @@ struct CommandLineOptions
 	int doVanVleck;		/* if != 0, then correct for Van Vleck (quantization correction) */
 	DifxMergeOptions mergeOptions;
 	DifxDataFilterOptions filterOptions;
+	SnifferOptions snifferOptions;
 };
 
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D,

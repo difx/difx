@@ -29,9 +29,15 @@ def getippversion(path):
     if not isfile(ippheader):
         ippheader = path+'/ipp/include/ippversion.h'
     if not isfile(ippheader):
+        ippheader = path+'/include/ipp/ippversion.h'
+    if not isfile(ippheader):
         ippheader = path+'/composerxe/ipp/include/ippversion.h'
         if isfile(ippheader):
             path += '/composerxe'
+    if not isfile(ippheader):
+        ippheader = path+'/ipp/latest/include/ipp/ippversion.h'
+        if isfile(ippheader):
+            path += '/ipp/latest/'
     if not isfile(ippheader):
         ippheader = path+'/oneapi/ipp/latest/include/ippversion.h'
         if isfile(ippheader):
@@ -150,6 +156,8 @@ def genipppc(path, ippversion):
             out.write('Cflags: -I${base}/ipp/include\n')
         elif major < 2021:
             out.write('Cflags: -DIPP9 -I${base}/ipp/include\n')
+        elif major == 2021:
+            out.write('Cflags: -DIPP9 -I${base}/include/ipp\n')
         else:
             out.write('Cflags: -DIPP9 -I${base}/include\n') # oneapi setup
             
