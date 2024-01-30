@@ -30,7 +30,7 @@ def pre_checks():
 
 def generate_vdifsim_config(cores):
   filepath = os.path.expanduser('~') 
-  print(filepath)
+  #print(filepath)
   filename = filepath + "/.vdifsim" 
   fh = open(filename,"w")
 
@@ -66,7 +66,7 @@ def generate_v2d(testname):
   testdata_dir = current_directory + "/testdata"
 
   args = "oms2v2d --sim " + testname + ".oms "
-  subprocess.call(args,cwd=working_directory,shell=True)
+  subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
   return
 
 
@@ -80,7 +80,7 @@ def generate_filelist(testname):
   testdata_dir = current_directory + "/testdata"
 
   args = "makesimfilelist " + testname + ".vex " + testdata_dir
-  subprocess.call(args,cwd=working_directory,shell=True)
+  subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
   return 
 
 def get_results_and_setup_files():
@@ -92,11 +92,11 @@ def get_results_and_setup_files():
     testdata_dir = current_directory + "/testdata"
     os.mkdir(testdata_dir)
 
-  print(tarball)
+  #print(tarball)
   if (os.path.isfile(tarball)):
     return
   else:
-    url = ""
+    url = "https://github.com/difx/difx-data/raw/main/tests.tgz"
     r = requests.get(url, allow_redirects=True)
     filename = current_directory + "/tests.tgz"
     open(filename,'wb').write(r.content)
@@ -104,6 +104,9 @@ def get_results_and_setup_files():
 
 def filter_auto_correlations(fits_filename):
 
+
+  warnings.resetwarnings() 
+  warnings.filterwarnings('ignore',category=UserWarning,append=True)  
   hdulist = fits.open(fits_filename)
   tbdata = hdulist[8].data
   hdulist.close()  
@@ -116,6 +119,9 @@ def filter_auto_correlations(fits_filename):
   hdulist = fits.open(fits_filename)
   tbdata = hdulist[8].data
   hdulist.close()
+  warnings.resetwarnings()
+  warnings.filterwarnings('always',category=UserWarning,append=True)
+
 
 def get_binary_files(directory):
   input_files = []
@@ -176,7 +182,7 @@ def get_output_dirs(directory):
    for item in contents:
      if (item[-5:] == '.difx'):
        output_dirs.append(item)
-   print(output_dirs)
+   #print(output_dirs)
    return(output_dirs)
 
 def rm_output_files(testname):
@@ -192,172 +198,6 @@ def rm_output_files(testname):
         else:
           os.remove(fp_item)
   #quit()
-
-
-def get_real_data():
-
-  current_directory = os.getcwd()
- 
-  
-  # Using fixed machines file with local host, could cause issues if there are not enough cores 
-  # on localhost 8 cores needed for rdv70 and v252
-
-  # Download data
-   
-  working_directory = current_directory + "/rdv70/"
-  rdv70tar_fp = working_directory + "rdv70.tar"
-
-  if (os.path.exists(rdv70tar_fp) == False):  
-    if (os.path.exists(working_directory) == False):  
-      mkdir_arg = "mkdir " + working_directory
-      subprocess.call(mkdir_arg,shell=True)
-    arg2 = "wget ftp://ftp.mpifr-bonn.mpg.de/vlbiarchive/DiFX_testdata/rdv70.tar ."
-    proc2 = subprocess.Popen(arg2,cwd=working_directory,shell=True)
-    proc2.wait()
-
-  working_directory = current_directory + "/v252f/"  
-  v252ftar_fp = working_directory + "v252f.tar"
-  if (os.path.exists(v252ftar_fp) == False):
-    if (os.path.exists(working_directory) == False):  
-      mkdir_arg = "mkdir " + working_directory
-      subprocess.call(mkdir_arg,shell=True)
-    arg1 = "wget ftp://ftp.mpifr-bonn.mpg.de/vlbiarchive/DiFX_testdata/v252f.tar ."
-    proc1 = subprocess.Popen(arg1,cwd=working_directory,shell=True)
-    proc1.wait()
- 
-  # Set up v252f input files for DiFX
-  working_directory = current_directory + "/v252f/"
-  v252fv2d_fp = working_directory + "test-v252f.v2d" 
-  if (os.path.exists(v252fv2d_fp) == False):
-    arg = "tar -xf v252f.tar"
-    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
-    proc.wait()
-    arg = "rm  -r reference*" 
-    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
-    proc.wait()
-    filelists = ["at.filelist","cd.filelist","hh.filelist","ho.filelist","mp.filelist","pa.filelist"]  
-    for filelist in filelists:
-      filelist = working_directory + filelist
-      fl = open(filelist,'r') 
-      lines = fl.readlines()
-      fl.close()
-      ii = 0 
-      for datafile in lines: 
-        if (datafile.isspace() == False):
-          lines[ii] = (working_directory + datafile).strip()   
-        ii = ii+1
-      fl = open(filelist,'w+')
-      for datafile in lines:
-         fl.write("%s\n" % datafile)     
-      fl.close()
-
-    # Remove unpacked vex file the online version is in dos format and not every 
-    # system had a converter so a preconveted format one is bundeled with DiFXtest
-    arg = "rm v252f.vex" 
-    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
-    proc.wait()
-
-    arg = "mv example.v2d test-v252f.v2d"
-    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
-    proc.wait()
-    vd2_fp = open(v252fv2d_fp,'r')
-    v2d_contents = vd2_fp.read() 
-    v2d_contents = v2d_contents.replace("vex = v252f.vex","vex = test-v252f.vex")
-    vd2_fp.close()
-    #print(v2d_contents)
-    v2d_fp = open(v252fv2d_fp,"w+")
-    v2d_fp.write(v2d_contents)
-    vd2_fp.close()  
-    #endif os.path.exists(v252fv2d_fp) == False
-
-  # Setup v252f gpu test case
-  arg  = "cp test-v252f.v2d ../v252f-gpu/test-v252f-gpu.v2d"
-  proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
-  proc.wait()
-  arg  = "cp *.filelist ../v252f-gpu"
-  proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
-  proc.wait()
-  working_directory = current_directory + "/v252f-gpu/"
-  v2d_gpu = working_directory + "test-v252f-gpu.v2d"
-  v2d_fp = open(v2d_gpu,'r')
-  v2d_fp.seek(0)
-  v2d_contents = v2d_fp.read()  
-  v2d_fp.close()
-
-  v2d_contents = v2d_contents.replace("vex = test-v252f.vex","vex = test-v252f-gpu.vex")
-  print(v2d_contents)
-  v2d_fp = open(v2d_gpu,"w+")
-  v2d_fp.write(v2d_contents)
-  v2d_fp.close()
-
-  # Set up rdv70 input files for DiFX
-  working_directory = current_directory + "/rdv70/" 
-  rdv70v2d_fp = working_directory + "test-rdv70.v2d"
-  #print(os.path.exists(rdv70v2d_fp))
-  #quit()
-  if (os.path.exists(rdv70v2d_fp) == False):
-     
-    arg = "tar -xf rdv70.tar"
-    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
-    proc.wait()
-    arg = "rm  -r reference*" 
-    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
-    proc.wait()
-    
-    # insert full path in .v2d file`  
-    v2dfile = working_directory + "example.v2d"
-    v2d_fp = open(v2dfile,"r")
-    v2d_contents = v2d_fp.read()
-    v2d_fp.close()
-    #print(v2d_contents)
-    data_filenames = ["RDV70-KK-00205015.mark4","RDV70-KP-00205015.vlba","RDV70-LA-00205015.vlba","RDV70-NL-00205015.vlba","RDV70-NY-00205015.mark4","RDV70-ON-00205015.mark4"]
-    for data_filename in data_filenames:
-      data_filename_fp = working_directory + data_filename
-      v2d_contents = v2d_contents.replace(data_filename,data_filename_fp)
-    #print(v2d_contents)
-    v2d_fp = open(v2dfile,"w+")
-    v2d_fp.write(v2d_contents)
-    v2d_fp.close()
-    
-    # Remove unpacked vex file the online version is in dos format and not every 
-    # system had a converter so a preconveted format one is bundeled with DiFXtest
-    arg = "rm rdv70.vex"  
-    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
-    proc.wait()
-
-   
-    arg = "mv example.v2d test-rdv70.v2d"
-    proc = subprocess.Popen(arg,cwd=working_directory,shell=True)
-    proc.wait()
-    rdv70v2d = working_directory + "test-rdv70.v2d"
-    vd2_fp = open(rdv70v2d,'r')
-    v2d_contents = vd2_fp.read()
-    v2d_contents = v2d_contents.replace("vex = rdv70.vex","vex = test-rdv70.vex")
-    vd2_fp.close()
-    v2d_fp = open(rdv70v2d,"w+")
-    v2d_fp.write(v2d_contents)
-    vd2_fp.close()
-    # endif os.path.exists(rdv70v2d_fp) == False     
-    # Setup rdv70 gpu test case
-  #print("copying...")
-  #print(working_directory)
-  arg  = "cp test-rdv70.v2d ../rdv70-gpu/test-rdv70-gpu.v2d"
-  proc = subprocess.Popen(arg,cwd=working_directory,shell=True) 
-  proc.wait() 
-  working_directory = current_directory + "/rdv70-gpu/" 
-  rdv70v2d = working_directory + "test-rdv70-gpu.v2d"
-  print(rdv70v2d)
-  v2d_fp_gpu = open(rdv70v2d,'r')
-  v2d_fp_gpu.seek(0)
-  v2d_contents = v2d_fp_gpu.read()
- 
-   
-  v2d_contents = v2d_contents.replace("vex = test-rdv70.vex","vex = test-rdv70-gpu.vex")
-  v2d_fp_gpu.close()
-  #print(v2d_contents)  
-  v2d_fp_gpu = open(rdv70v2d,"w+")
-  v2d_fp_gpu.write(v2d_contents)
-  v2d_fp_gpu.close()
 
 
 def run_vex2difx(testname):
@@ -431,7 +271,7 @@ def run_vdifsim(testname):
 
   #arg = "runvdifsim --seed " + seed + " " + testname + "_*.input" 
   arg = "vdifsim -s " + seed + " -c " + config_file + " "  + testname + "_*.input"
-  print(arg)
+  #print(arg)
   try:
     proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_vdifsimlog,stderr=f_vdifsimerr,check=True)
   except subprocess.CalledProcessError as e:
@@ -466,6 +306,33 @@ def run_mpifxcorr(testname, numcores):
       print()
       return
 
+def run_mpifxcorr_gpumode(testname, numcores):
+  
+  print("Running test " + testname)
+
+  current_directory = os.getcwd()
+  working_directory = current_directory + "/" + testname + "/"
+
+  input_files = get_input_files(testname)
+  machine_files = get_machine_files(testname)
+
+  for (machine_file, input_file) in zip(machine_files, input_files):
+    arg = "mpirun -machinefile " + machine_file + " -np " + str(numcores) + " mpifxcorr --usegpu " + input_file
+    difxlogfile = working_directory + "/mpifxcorr.log"
+    difxerrfile = working_directory + "/mpifxcorr.error"
+    f_difxlog = open(difxlogfile,"w")
+    f_difxerr = open(difxerrfile,"w")
+    try:
+      proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_difxlog,stderr=f_difxerr,check=True)
+    except subprocess.CalledProcessError as e:
+      print("mpifxcorr failed check log files:")
+      print(difxlogfile)
+      print(difxerrfile)
+      print()
+      return
+
+
+
  
 def run_difx2fits(testname):
 
@@ -482,7 +349,7 @@ def run_difx2fits(testname):
 
   for item in output_dirs:
     arg = "difx2fits " + item[:-5]    
-    print(arg)
+    #print(arg)
     try:
       proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_difx2fitslog,stderr=f_difx2fitserr,check=True)
     except subprocess.CalledProcessError as e:
@@ -502,8 +369,6 @@ def is_testdata_empty(testname):
     return True
   else:
     return False
-
-
 
 
 
@@ -664,8 +529,8 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol):
   results[1] = fd.identical
   hdu1.close()
   hdu2.close()
-  #warnings.resetwarnings()
-  #warnings.filterwarnings('always', category=UserWarning, append=True)
+  warnings.resetwarnings()
+  warnings.filterwarnings('always', category=UserWarning, append=True)
   #print("comparing fits_file = " + fits_file + " VS. benchmark fits file = " + fits_file_benchmark)
   #print(fd.identical)
   #print(output)
@@ -826,7 +691,7 @@ def main():
   parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? (yes/[no])",default="no")
   parser.add_argument("-t","--testgpu",help="run difx in gpu mode and compare results with benchmark (yes/[no])",default="no")
   parser.add_argument("-i","--usebenchmarkimfile",help="Use the benchmark .im file from a previous run rather than running difxcalc (yes/[no])",default="no") 
-  parser.add_argument("-c","--cores",help="Comma deliminated list of the processing cores used for data simulation and correlation (default = localhost,localhost)",default="localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost")
+  parser.add_argument("-c","--cores",help="Comma deliminated list of the processing cores used for data simulation and correlation (default = localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost)",default="localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost")
 
 
   input_args = parser.parse_args()
@@ -860,22 +725,11 @@ def main():
 
   # list of test names
   test_name_list = ["usb-2-station","usb-4-band-2-station","usb-10-station"]
-  gpu_compatable_test_name_list = ["usb-2-station"]
+  gpu_compatable_test_name_list = ["usb-2-station-gpu","usb-4-band-2-station-gpu","usb-10-station-gpu"]
 
   # Dictionary with pass/fail status of each test {"test name" : [binary file same (results), FITS file same (true/false)]} 
   passfail = {"usb-2-station":["",True],"usb-4-band-2-station":["",True],"usb-10-station":["",True]}
 
-
-
-  # Download real data tests from the ftp site
-
-  if (download == "YES"):
-    test_name_list.append("rdv70") 
-    test_name_list.append("v252f")
-    gpu_compatable_test_name_list.append("rdv70-gpu")
-    gpu_compatable_test_name_list.append("v252f-gpu")
-    passfail["rdv70"] = ["",True]  
-    passfail["v252f"] = ["",True] 
 
 
   # Add gpu mode tests to list of tests to be run 
@@ -916,7 +770,10 @@ def main():
       run_difxcalc(testname)
     if (is_testdata_empty(testname) or generateVDIF == "YES"):
       run_vdifsim(testname)
-    run_mpifxcorr(testname, numcores)
+    if (testname[-3:] == "gpu"):  
+      run_mpifxcorr_gpumode(testname, numcores)
+    else:
+      run_mpifxcorr(testname, numcores)
     run_difx2fits(testname)
 
   # compare .im files
