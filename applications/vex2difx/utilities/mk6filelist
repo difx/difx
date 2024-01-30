@@ -29,8 +29,8 @@ from datetime import *
 import re
 
 program = 'mk6filelist'
-version = '0.1'
-verdate = '20240103'
+version = '0.2'
+verdate = '20240130'
 author = 'Mark Wainright'
 
 MARK6_VSN_IDS = ['%']
@@ -286,7 +286,7 @@ if verbose > 1:
 	print ("List of modules recorded at antennas:")
 	for antMod in antennaModuleList:
 		print ("%s recorded on %s" % (antMod[0], antMod[1]))
-	print ("")
+	print('')
 
 # make an antenna.filelist for each antenna in the antenna module list
 antList = []
@@ -338,10 +338,4 @@ if len(antNoModuleFileList) > 0:
 				antfile.write(line)
 			antfile.close()
 			print ("Wrote %s based on VEX, please check that invented scan names match recorded names" % (antFileName))
-
-# add mark6filelist tags to .v2d file
-if verbose > 1:
-	print("\nadding mark6filelist tags to %s\n" % inFile)
-regeneratev2d(inFile, antList)
-print("Updated %s" % inFile)
 
