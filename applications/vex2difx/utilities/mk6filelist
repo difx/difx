@@ -29,17 +29,15 @@ from datetime import *
 import re
 
 program = 'mk6filelist'
-version = '0.2'
-verdate = '20240130'
-author = 'Mark Wainright'
+version = '0.3'
+verdate = '20240212'
+author = 'Mark Wainright and Walter Brisken'
 
 MARK6_VSN_IDS = ['%']
 
 def usage(pgm):
 	print('%s ver. %s  %s  %s\n' % (program, version, author, verdate))
 	print('Program to generate filelists based on a vex file.\n')
-	print('Program will also create appropriate antenna filelist files.\n')
-	print('Program is called from vex2difx for mark6 related pre-work.\n')
 	print('Usage: %s [options] <vex file>\n' % pgm)
 	print('options can include\n')
 	print('  --help')
@@ -293,7 +291,7 @@ antList = []
 antNoModuleFileList = []
 for (ant,modlist) in antennaModuleList:
 	antList.append(ant.upper())
-	antennaFileName = ant.lower() + '.filelist'
+	antennaFileName = experName.lower() + '.' + ant.lower() + '.filelist'
 	antFileWritten = False
 	antfile = open(antennaFileName, 'w')
 	missingAntModules = []
@@ -327,7 +325,7 @@ for (ant,modlist) in antennaModuleList:
 
 if len(antNoModuleFileList) > 0:
 	for ant in antNoModuleFileList:
-		antFileName = ant.lower() + ".filelist"
+		antFileName = experName.lower() + '.' + ant.lower() + '.filelist'
 		if verbose > 1:
 			print ("Warning: using VEX %s for antenna %s to generate tentative %s. Please verify it manually!" % (ant, vexObsFile, antFileName))
 		scandata = getvexscandata(ant, vexObsFile)
