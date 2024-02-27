@@ -16,15 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: difxdbParseFiles.py 10123 2021-08-27 17:45:36Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/difxdbParseFiles/difxdbParseFiles.py $
-# $LastChangedRevision: 10123 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2021-08-28 01:45:36 +0800 (六, 2021-08-28) $
-#
-#============================================================================
 
 import os
 import sys
@@ -41,9 +32,6 @@ from difxdb.model import model
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision: 10123 $"
-__date__ ="$Date: 2021-08-28 01:45:36 +0800 (六, 2021-08-28) $"
-__lastAuthor__="$Author: HelgeRottmann $"
 
 logger = None
 
@@ -54,7 +42,7 @@ epilog += "NOTE: %(prog)s requires the DIFXROOT environment to be defined.\n"
 epilog += "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf.\n"
 epilog += "If the configuration is not found a template will be created for you.\n\n"
 epilog += "The output is logged to file (see also --log-path option)"
-version = "revision = {} author = {}  last changed by = {}".format(__build__, __author__, __lastAuthor__)
+version = ""
 
     
 def setupLoggers(logPath):
@@ -197,7 +185,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--dry-run", dest="dryRun", action="store_true", default=False, help="report action only; do not update the database.")
     parser.add_argument("--verbose", action="store_true", default=False, help="verbose output.")
     parser.add_argument("--log-path", dest="logPath",  default="/tmp", help="path where the log files will be written to (default: /tmp).")
-    parser.add_argument('--version', action='version', version=version)
+#    parser.add_argument('--version', action='version', version=version)
 
     if len(sys.argv) == 1:
         parser.print_help()
