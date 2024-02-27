@@ -16,15 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: getreleaselist.py 4932 2012-10-09 12:47:22Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/getreleaselist/getreleaselist.py $
-# $LastChangedRevision: 4932 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2012-10-09 14:47:22 +0200 (Tue, 09 Oct 2012) $
-#
-#============================================================================
 
 import os
 import sys
@@ -41,9 +32,6 @@ from datetime import datetime
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision: 4932 $"
-__date__ ="$Date: 2012-10-09 14:47:22 +0200 (Tue, 09 Oct 2012) $"
-__lastAuthor__="$Author: HelgeRottmann $"
 
 def getUsage():
 
@@ -67,10 +55,10 @@ exp.status.experimentstatus))
 if __name__ == "__main__":
     
     usage = getUsage()
-    version = "%s\nSVN  %s\nOriginal author: %s\nLast changes by: %s\nLast changes on: %s" % (__prog__, __build__, __author__, __lastAuthor__, __date__)
+    version = ""
     #usage = "usage: %prog [options] arg1 arg2"
 
-    parser = OptionParser(version=version, usage=usage)
+    parser = OptionParser( usage=usage)
     #parser.add_option("-s", "--slot", dest="slot", default="", 
     #              help="show only modules that are located in slots matching the given expression")
     #parser.add_option("-e", "--extended", action="store_true", help="print extended information")
