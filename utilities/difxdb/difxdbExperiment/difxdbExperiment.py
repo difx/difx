@@ -66,6 +66,7 @@ if __name__ == "__main__":
     parser.add_argument('expcode', type=str, help="the code of the experiment")
     parser.add_argument('--version', action='version', version="%(prog)s" + version)
     parser.add_argument('--show-export', dest="showExport", action='store_true', default=False, help="show the exported files of this experiment.")
+    parser.add_argument('--module-details', dest="moduleDetails", action='store_true', default=False, help="Show extended information for the modules used in this experiment.")
 
     args = parser.parse_args()
 
@@ -118,6 +119,9 @@ if __name__ == "__main__":
 
         sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
         for module in sortedModules:
+            if (args.moduleDetails):    
+                print(module.stationCode,  module.vsn, module.slot.location, module.capacity, module.datarate, module.numScans)
+            else:
                 print(module.stationCode,  module.vsn, module.slot.location)
 
         if (args.showExport):
