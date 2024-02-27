@@ -16,15 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
-#
-#============================================================================
 
 import os
 import sys
@@ -37,21 +28,6 @@ from difxfile.difxdir import DifxDir
 from operator import  attrgetter
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
-
-def printUsage():
-    print(("%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__)))
-    print("A program to print summary information for an experiment.\n")
-    print("Usage: %s <experiment_code>\n\n"  % __prog__)
-    print("NOTE: %s requires the DIFXROOT environment variable to be defined." % __prog__)
-    print("The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf.")
-    print("If the configuration is not found a sample one will be created for you.")
-
-    
-    sys.exit(1)
-    
 
 if __name__ == "__main__":
     
@@ -59,7 +35,7 @@ if __name__ == "__main__":
     epilog += "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf."
     epilog += "If the configuration is not found a sample one will be created for you."
 
-    version =" %s %s ((last changes by %s)" % (__build__, __author__, __lastAuthor__)
+    version =" %s " % ( __author__)
 
     parser =argparse.ArgumentParser(description="Obtain VLBI experiment information stored in difxdb", epilog = epilog)
 
@@ -93,11 +69,9 @@ if __name__ == "__main__":
         dbConn = Schema(connection)
         session = dbConn.session()
         
-        try:
-                experiment = getExperimentByCode(session, expCode)
-        except:
-                raise Exception("Unknown experiment")
-                sys.exit
+        experiment = getExperimentByCode(session, expCode)
+        if not experiment:
+            sys.exit("Unknown experiment")
 
         types = ""
         for expType in experiment.types:
