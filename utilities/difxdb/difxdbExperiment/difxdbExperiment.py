@@ -102,16 +102,19 @@ if __name__ == "__main__":
         for expType in experiment.types:
                 types += expType.type + " "
 
+        analyst = "none"
+
+        if (experiment.user):
+            analyst = experiment.user.name
         print("---------------------------------------")
         print("Summary information for %s" % (expCode))
         print("---------------------------------------")
         print("Number:\t\t%d" % (experiment.number))
         print("Type:\t\t%s" % (types))
-        print("Analyst:\t%s" % (experiment.user.name))
+        print("Analyst:\t%s" % (analyst))
         print("Status:\t\t%s" % (experiment.status.experimentstatus))
         print("Comment:\t\t%s" % (experiment.comment))
         print("---------------------------------------")
-        print("Modules (see file TAPELOG_OBS for details)")
 
         sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
         for module in sortedModules:
@@ -126,6 +129,8 @@ if __name__ == "__main__":
             print(("%s %s %s" %(export.filename, export.exportPath, export.checksum )))
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
        
         sys.exit(e)
     
