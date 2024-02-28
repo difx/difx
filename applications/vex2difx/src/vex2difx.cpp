@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex2difx.cpp 10990 2023-06-19 10:14:03Z JanWagner $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/vex2difx.cpp $
- * $LastChangedRevision: 10990 $
- * $Author: JanWagner $
- * $LastChangedDate: 2023-06-19 18:14:03 +0800 (一, 2023-06-19) $
- *
- *==========================================================================*/
 
 #include <algorithm>
 #include <cassert>
@@ -2966,7 +2956,7 @@ static void usage(int argc, char **argv)
 	cout << "            you intend." << endl;
 	cout << "  * Error   " << program << " could not complete due to this problem." << endl;
 	cout << endl;
-	cout << "See http://cira.ivec.org/dokuwiki/doku.php/difx/vex2difx for more information" << endl;
+	cout << "See https://atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx for more information" << endl;
 	cout << endl;
 	cout << "NOTE: This version now supports much of the vex2 specification (as well as the" << endl;
 	cout << "vex 1.5 specification) but it is only lightly tested.  Proceed with caution." << endl;

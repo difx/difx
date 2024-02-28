@@ -9,6 +9,7 @@ Version 3.1.0
 * Fix stale pointer to source after manipulating multi-phase-center bits
 * New ANTENNA parameter phaseCalIntDivisor for fractional spacings (phaseCalInt[MHz]/phaseCalIntDivisor)
 * New utility: mk6filelist, a simplified form of mk62v2d which does not require or modify the .v2d file.
+* Update wiki to ATNF -- note that even this will be old soon and the new github link will replace it.
 
 Version 3.0.0
 -------------
