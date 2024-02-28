@@ -16,15 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
-#
-#============================================================================
 
 import os
 import sys
@@ -37,21 +28,6 @@ from difxfile.difxdir import DifxDir
 from operator import  attrgetter
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
-
-def printUsage():
-    print(("%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__)))
-    print("A program to print summary information for an experiment.\n")
-    print("Usage: %s <experiment_code>\n\n"  % __prog__)
-    print("NOTE: %s requires the DIFXROOT environment variable to be defined." % __prog__)
-    print("The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf.")
-    print("If the configuration is not found a sample one will be created for you.")
-
-    
-    sys.exit(1)
-    
 
 if __name__ == "__main__":
     
@@ -59,13 +35,14 @@ if __name__ == "__main__":
     epilog += "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf."
     epilog += "If the configuration is not found a sample one will be created for you."
 
-    version =" %s %s ((last changes by %s)" % (__build__, __author__, __lastAuthor__)
+    version =" %s " % ( __author__)
 
     parser =argparse.ArgumentParser(description="Obtain VLBI experiment information stored in difxdb", epilog = epilog)
 
     parser.add_argument('expcode', type=str, help="the code of the experiment")
     parser.add_argument('--version', action='version', version="%(prog)s" + version)
     parser.add_argument('--show-export', dest="showExport", action='store_true', default=False, help="show the exported files of this experiment.")
+    parser.add_argument('--module-details', dest="moduleDetails", action='store_true', default=False, help="Show extended information for the modules used in this experiment.")
 
     args = parser.parse_args()
 
@@ -92,29 +69,33 @@ if __name__ == "__main__":
         dbConn = Schema(connection)
         session = dbConn.session()
         
-        try:
-                experiment = getExperimentByCode(session, expCode)
-        except:
-                raise Exception("Unknown experiment")
-                sys.exit
+        experiment = getExperimentByCode(session, expCode)
+        if not experiment:
+            sys.exit("Unknown experiment")
 
         types = ""
         for expType in experiment.types:
                 types += expType.type + " "
 
+        analyst = "none"
+
+        if (experiment.user):
+            analyst = experiment.user.name
         print("---------------------------------------")
         print("Summary information for %s" % (expCode))
         print("---------------------------------------")
         print("Number:\t\t%d" % (experiment.number))
         print("Type:\t\t%s" % (types))
-        print("Analyst:\t%s" % (experiment.user.name))
+        print("Analyst:\t%s" % (analyst))
         print("Status:\t\t%s" % (experiment.status.experimentstatus))
         print("Comment:\t\t%s" % (experiment.comment))
         print("---------------------------------------")
-        print("Modules (see file TAPELOG_OBS for details)")
 
         sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
         for module in sortedModules:
+            if (args.moduleDetails):    
+                print(module.stationCode,  module.vsn, module.slot.location, module.capacity, module.datarate, module.numScans)
+            else:
                 print(module.stationCode,  module.vsn, module.slot.location)
 
         if (args.showExport):
@@ -126,6 +107,8 @@ if __name__ == "__main__":
             print(("%s %s %s" %(export.filename, export.exportPath, export.checksum )))
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
        
         sys.exit(e)
     
