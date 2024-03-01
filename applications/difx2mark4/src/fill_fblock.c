@@ -40,7 +40,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
          buff[6];
 
     double temp,
-           freqs[MAX_DFRQ];
+           freqs[MAX_DFRQ],
+           filteredbw = 0.0;
 
     DifxBaseline *pbl;
     DifxDatastream *pdsA,
@@ -48,6 +49,11 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
     DifxFreq *pfr,
              *pdfr;
 
+                                    // bandwidth-based filtering option?
+    if (strlen (opts->bandwidth) != 0)
+        filteredbw = atof (opts->bandwidth);
+    else
+        filteredbw = 0.0;
 
                                     // first fill in the frequency block structure
     for (n=0; n<D->nBaseline; n++)
@@ -233,7 +239,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                                     // everywhere that ant & freq match
             for (n=0; n<nprod; n++)
                 for (k=0; k<2; k++)     // k = 0|1 for ref|rem antenna
-                    if (pfb[n].stn[k].ant == i && pfb[n].stn[k].freq == freqs[j])
+                    if (pfb[n].stn[k].ant == i && pfb[n].stn[k].freq == freqs[j]
+                        && (filteredbw <= 0.0 || pfb[n].stn[k].bw == filteredbw))
                         {
                         buff[3] = pfb[n].stn[k].sideband;
                         buff[4] = pfb[n].stn[k].pol;
