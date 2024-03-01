@@ -311,11 +311,11 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         }
                                     // if desired bandwidth specified, 
                                     // remove any non-matching lines
-    if (strlen (opts->bandwidth) != 0)
+    if (filteredbw > 0)
         {
         nbw = 0;
         for (n=0; n<nprod; n++)
-            if (atof (opts->bandwidth) != pfb[n].stn[0].bw)
+            if (filteredbw != pfb[n].stn[0].bw)
                 {
                 for (i=n; i<nprod-1; i++) // slide remaining entries down one location
                     pfb[i] = pfb[i+1];
@@ -324,8 +324,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                 n--;                      //need to reexamine this slot now
                 nbw++;
                 }
-        fprintf (stderr, "%d correlation product channels deleted due to bw not %s\n",
-                 nbw, opts->bandwidth);
+        fprintf (stderr, "%d correlation product channels deleted due to bw not %s (parsed as ~%.6f)\n",
+                 nbw, opts->bandwidth, filteredbw);
         }
 
     if (opts->verbose > 1)
