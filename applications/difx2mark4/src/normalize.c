@@ -13,7 +13,9 @@
 #include <math.h>
 #include "difx2mark4.h"
 
-void normalize (struct CommandLineOptions *opts,  // array of command line options
+
+void normalize (const DifxInput * D,              // ptr to a filled-out difx input structure
+                struct CommandLineOptions *opts,  // array of command line options
                 vis_record *vrec,                 // pointer to start of vis. buffer
                 int nvrtot,                       // total # of vis. records in buffer
                 int *nvis,                        // number of visibility points in record
@@ -39,6 +41,8 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
     double t,                       // time of current records
            factor,
            sum,
+           pant_ref,
+           pant_rem,
            pant[256][MAX_DFRQ][4];  // sqrt of power per antenna avg over channels
                                     // indexed by [ant][freq][pol]
                                     // pol index mapping:
@@ -137,6 +141,8 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                 for (i=0; i<nvis[n]; i++)
                     sum += vrloop->comp[i].real;
                 pant[aref][fr][pol] = sqrt (sum / nvis[n]);
+                // printf("normalize() AUTO ant=%d vis#=%d %c  visfq=%d pmap[%d]=%d sum=%.3f pant[%d][%d][%d]=%.3f\n",
+                //         aref, n, polchar[pol], vrloop->freq_index, vrloop->freq_index, fr, sum, aref, fr, pol, pant[aref][fr][pol]);
                 // printf("n %d aref %d fr %d pol %d pant %f\n",
                 //         n,aref,fr,pol,pant[aref][fr][pol]);
                 }
@@ -173,10 +179,26 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                         vr->pols[REM]);
                 continue;
                 }
+
             fr_remap = pmap[vr->freq_index];
+            pant_ref = pant[aref][fr_remap][polref];
+            pant_rem = pant[arem][fr_remap][polrem];
+
+            // TODO? : if pant_ref or pant_rem are 0, try harder to locate a valid autocorrelation (or rather, pant[]) entry.
+            // Should probably utilize D->freqs[], vr->freq_index, and pfb[<n>].stn[ref|rem][<4 pols>].{freq,pol,bw,sideband}.
+            // Candidates for valid power data are the redundant DiFX freq table entries that differ only in pcal tone spacing.
+            // E.g.
+            //   visibility vr->freq_index '16' sky 8818.0 MHz USB 32 MHz bw XX without pcal info
+            //      might need scaling by pant[] counterparts not of freq '16' (if those autos are absent), but rather by, say,
+            //   refant auto vr->freq_index '0' sky 8818.0 MHz USB 32 MHz bw X-pol and having 10 MHz pcal
+            //   remant auto vr->freq_index '8' sky 8818.0 MHz USB 32 MHz bw X-pol and having  5 MHz pcal
+            // Redundant freq table entries stem from vex2difx+difxio handling of PCal info, are by design, and a 'don't fix'.
+
+            // printf("normalize() VIZ %d-%d vis#=%d %c%c  visfq=%d->%d   autopwr ref=%.3f rem=%.3f\n",
+            //        aref, arem, n, polchar[polref], polchar[polrem], vr->freq_index, fr_remap, pant_ref, pant_rem);
 
                                     // ensure that there is no 0-divide
-            if (pant[aref][fr_remap][polref] == 0.0 || pant[arem][fr_remap][polrem] == 0.0)
+            if (pant_ref == 0.0 || pant_rem == 0.0)
                 {
                 factor = 1.0;
                 n_aczero++;
@@ -186,7 +208,7 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                             n,aref,arem,fr_remap, vr->pols[REF],vr->pols[REM]);
                 }
             else
-                factor = 1.0 / (pant[aref][fr_remap][polref] * pant[arem][fr_remap][polrem]);
+                factor = 1.0 / (pant_ref * pant_rem);
 
             for (i=0; i<nvis[n]; i++)
                 {
