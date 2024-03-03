@@ -91,6 +91,8 @@ static void usage(const char *pgm)
 	printf("    -N         Do not normalise\n\n");
 	printf("    -autocorr\n");
 	printf("    -a         Compute autocorrelation instead of spectrum\n\n");
+	printf("    -time\n");
+	printf("    -t         Treat nint as time in seconds, not number of FFTs\n\n");
 	printf("    -bchan=<x>\n");
 	printf("    -b <x>     Start output at channel number <x> (0-based)\n\n");
 	printf("    -echan=<x>\n");
@@ -302,7 +304,7 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 }
 
 
-int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode, int doublesideband, int nonorm, int bchan, int echan, int doAutocorr)
+int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode, int doublesideband, int nonorm, int bchan, int echan, int doAutocorr, int doTime)
 {
 	struct mark5_stream *ms;
 	double **spec;
@@ -333,7 +335,6 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 
 	if(ms->iscomplex) 
 	{
-		printf("Complex decode\n");
 		docomplex = 1;
 		chunk = nchan;
 	}
@@ -349,6 +350,16 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	}
 
 	deltat = 1.0/ms->samprate;
+	
+	if (doTime) {
+		nint = (double)nint/(nchan*deltat*(2-docomplex)); // Allow for different Nyquist
+		printf("Setting nint to %d\n", nint);
+	}
+	
+	double tint = deltat*nchan*nint;
+	if (!docomplex) tint *=2; // Nyquist
+
+	printf("  IntegrationTime = %.3f sec\n", tint);
 
 	out = fopen(outfile, "w");
 	if(!out)
@@ -569,17 +580,19 @@ int main(int argc, char **argv)
 	int doublesideband = 0;
 	int nonorm = 0;
 	int doAutocorr = 0;
+	int doTime = 0;
 	struct sigaction new_sigint_action;
 #if USEGETOPT
 	int opt;
 	struct option options[] = {
 		{"version", 0, 0, 'V'}, // Version
-		{"double", 0, 0, 'd'}, // Double sideband complex
-		{"nonorm", 0, 0, 'N'}, // Don't normalise
-		{"dbbc", 0, 0, 'B'},  // DBBC channel ordering
-		{"nopol", 0, 0, 'P'}, // Don't compute the crosspol terms
+		{"double", 0, 0, 'd'},  // Double sideband complex
+		{"nonorm", 0, 0, 'N'},  // Don't normalise
+		{"dbbc", 0, 0, 'B'},    // DBBC channel ordering
+		{"nopol", 0, 0, 'P'},   // Don't compute the crosspol terms
 		{"help", 0, 0, 'h'},
-		{"autocorr", 0, 0, 'a'}, // compute autocorrelation function instead
+		{"autocorr", 0, 0, 'a'},// compute autocorrelation function instead
+		{"time", 0, 0, 't'},    // Treat nint as time in seconds, not number of FFTs
 		{"bchan", 1, 0, 'b'},
 		{"echan", 1, 0, 'e'},
 		{0, 0, 0, 0}
@@ -623,6 +636,10 @@ int main(int argc, char **argv)
 
 		case 'a': // autocorr  (do FFT of spectrum before writing out)
 			doAutocorr = 1;
+			break;
+
+		case 't': // time  (Treat nint as time in seconds)
+			doTime = 1;
 			break;
 
 		case 'h': // help
@@ -729,7 +746,7 @@ int main(int argc, char **argv)
 		echan = nchan;
 	}
 
-	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, nonorm, bchan, echan, doAutocorr);
+	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, nonorm, bchan, echan, doAutocorr, doTime);
 
 	return retval;
 }
