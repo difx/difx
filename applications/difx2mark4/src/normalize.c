@@ -66,7 +66,7 @@ void normalize (const DifxInput * D,              // ptr to a filled-out difx in
             continue;
         for (n=i+1; n < D->nFreq && n < MAX_DFRQ; n++)
             if (isSameDifxFreq(&D->freq[i], &D->freq[n], /*ignore pcal:*/1))
-               pmap[i] = n;
+               pmap[n] = i;
         }
 
                                     // initialize for looping 
