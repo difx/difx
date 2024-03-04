@@ -56,37 +56,17 @@ void normalize (const DifxInput * D,              // ptr to a filled-out difx in
     for (fr=0; fr<MAX_DFRQ; fr++)   // first initialize pmap array to an identity map
         pmap[fr] = fr;
 
-                                    // now make a pass through the fblock, finding the lowest
-                                    // freq index for pairs of antennas, and overwriting those
-                                    // in the pmap
-    nf = -1;
-    while (pfb[++nf].stn[REF].ant >= 0) // check for end-of-table marker
+                                    // now make a pass through the DiFX freq table, finding
+                                    // all identical frequencies (whose IDs can be encountered
+                                    // in SWIN visibilities, vrec[]::freq_index), and update
+                                    // pmap[] to point all duplicate freqs to the lowest freq_index.
+    for (i=0; i < D->nFreq-1 && i < MAX_DFRQ-1; i++)
         {
-        if (nf >= MAX_FPPAIRS)
-            {
-                printf ("too many frequencies, exceeding MAX_FPPAIRS; redimension\n");
-                return;
-            }
-        if (pfb[nf].stn[REF].find != pfb[nf].stn[REM].find)
-            {
-                                    // found matching channels with different freq id's
-            if (pfb[nf].stn[REF].find < pfb[nf].stn[REM].find)
-                {
-                                    // ref index lower, use it for remote antenna
-                if (pfb[nf].stn[REM].find >= MAX_DFRQ)
-                    printf ("out of bounds, pfb %d refers to REM freq idx %d which exceeds pmap array size MAX_DFRQ %d; redimension\n", nf, pfb[nf].stn[REM].find, MAX_DFRQ);
-                pmap[pfb[nf].stn[REM].find] = pfb[nf].stn[REF].find;
-                }
-                 
-            else
-                {
-                                    // rem index lower, use it for reference antenna
-                if (pfb[nf].stn[REF].find >= MAX_DFRQ)
-                    printf ("out of bounds, pfb %d refers to REF freq idx %d which exceeds pmap array size MAX_DFRQ %d; redimension\n", nf, pfb[nf].stn[REM].find, MAX_DFRQ);
-                pmap[pfb[nf].stn[REF].find] = pfb[nf].stn[REM].find;
-                }
-                 
-            }
+        if (pmap[i] != i)
+            continue;
+        for (n=i+1; n < D->nFreq && n < MAX_DFRQ; n++)
+            if (isSameDifxFreq(&D->freq[i], &D->freq[n], /*ignore pcal:*/1))
+               pmap[i] = n;
         }
 
                                     // initialize for looping 
@@ -140,6 +120,11 @@ void normalize (const DifxInput * D,              // ptr to a filled-out difx in
                 sum = 0.0;
                 for (i=0; i<nvis[n]; i++)
                     sum += vrloop->comp[i].real;
+                if (sum < 0.0)
+                    {
+                    sum = 0.0; // avoid pant[]=sqrt(<0)=NaN
+                    //printf ("        bad auto data for ref/rem %d in record %d, DiFX frequency id %d\n", aref, n, vrloop->freq_index);
+                    }
                 pant[aref][fr][pol] = sqrt (sum / nvis[n]);
                 // printf("normalize() AUTO ant=%d vis#=%d %c  visfq=%d pmap[%d]=%d sum=%.3f pant[%d][%d][%d]=%.3f\n",
                 //         aref, n, polchar[pol], vrloop->freq_index, vrloop->freq_index, fr, sum, aref, fr, pol, pant[aref][fr][pol]);
@@ -184,17 +169,7 @@ void normalize (const DifxInput * D,              // ptr to a filled-out difx in
             pant_ref = pant[aref][fr_remap][polref];
             pant_rem = pant[arem][fr_remap][polrem];
 
-            // TODO? : if pant_ref or pant_rem are 0, try harder to locate a valid autocorrelation (or rather, pant[]) entry.
-            // Should probably utilize D->freqs[], vr->freq_index, and pfb[<n>].stn[ref|rem][<4 pols>].{freq,pol,bw,sideband}.
-            // Candidates for valid power data are the redundant DiFX freq table entries that differ only in pcal tone spacing.
-            // E.g.
-            //   visibility vr->freq_index '16' sky 8818.0 MHz USB 32 MHz bw XX without pcal info
-            //      might need scaling by pant[] counterparts not of freq '16' (if those autos are absent), but rather by, say,
-            //   refant auto vr->freq_index '0' sky 8818.0 MHz USB 32 MHz bw X-pol and having 10 MHz pcal
-            //   remant auto vr->freq_index '8' sky 8818.0 MHz USB 32 MHz bw X-pol and having  5 MHz pcal
-            // Redundant freq table entries stem from vex2difx+difxio handling of PCal info, are by design, and a 'don't fix'.
-
-            // printf("normalize() VIZ %d-%d vis#=%d %c%c  visfq=%d->%d   autopwr ref=%.3f rem=%.3f\n",
+            // printf("normalize() VIZ %d-%d vis#=%d %c%c  pmap[visfq=%d]=%d   autopwr ref=%.3f rem=%.3f\n",
             //        aref, arem, n, polchar[polref], polchar[polrem], vr->freq_index, fr_remap, pant_ref, pant_rem);
 
                                     // ensure that there is no 0-divide
