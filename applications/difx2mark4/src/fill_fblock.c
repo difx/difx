@@ -357,27 +357,27 @@ static int fblock_already_exists(const struct fblock_tag *entries, int nentries,
 
     for (n=0; n<nentries; n++)
         {
-            int match[2] = {0,0};
-            for (k=0; k<2; k++)     // k = 0|1 for ref|rem antenna
-                {
-                if (entries[n].stn[k].pol      == candidate->stn[k].pol  &&
-                    entries[n].stn[k].ant      == candidate->stn[k].ant  &&
-                    entries[n].stn[k].find     == candidate->stn[k].find &&
-                    entries[n].stn[k].fdest    == candidate->stn[k].fdest    &&
-                    entries[n].stn[k].freq     == candidate->stn[k].freq     &&
-                    entries[n].stn[k].sideband == candidate->stn[k].sideband &&
-                    entries[n].stn[k].bw       == candidate->stn[k].bw       &&
-                    entries[n].stn[k].bs       == candidate->stn[k].bs       &&
-                    entries[n].stn[k].zoom     == candidate->stn[k].zoom     &&
-                    entries[n].stn[k].pcal_int == candidate->stn[k].pcal_int)
-                        {
-                        match[k] = 1;
-                        }
-                }
-            if (match[0] && match[1])
-                {
-                return 1;
-                }
+        int match[2] = {0,0};
+        for (k=0; k<2; k++)     // k = 0|1 for ref|rem antenna
+            {
+            if (entries[n].stn[k].pol      == candidate->stn[k].pol  &&
+                entries[n].stn[k].ant      == candidate->stn[k].ant  &&
+                entries[n].stn[k].find     == candidate->stn[k].find &&
+                entries[n].stn[k].fdest    == candidate->stn[k].fdest    &&
+                entries[n].stn[k].freq     == candidate->stn[k].freq     &&
+                entries[n].stn[k].sideband == candidate->stn[k].sideband &&
+                entries[n].stn[k].bw       == candidate->stn[k].bw       &&
+                entries[n].stn[k].bs       == candidate->stn[k].bs       &&
+                entries[n].stn[k].zoom     == candidate->stn[k].zoom     &&
+                entries[n].stn[k].pcal_int == candidate->stn[k].pcal_int)
+                    {
+                    match[k] = 1;
+                    }
+            }
+        if (match[0] && match[1])
+            {
+            return 1;
+            }
         }
 
     return 0;
