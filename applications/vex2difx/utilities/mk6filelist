@@ -29,8 +29,8 @@ from datetime import *
 import re
 
 program = 'mk6filelist'
-version = '0.3'
-verdate = '20240212'
+version = '0.4'
+verdate = '20240304'
 author = 'Mark Wainright and Walter Brisken'
 
 MARK6_VSN_IDS = ['%']
@@ -286,12 +286,12 @@ if verbose > 1:
 		print ("%s recorded on %s" % (antMod[0], antMod[1]))
 	print('')
 
-# make an antenna.filelist for each antenna in the antenna module list
+# make an <project>.<antenna>.mark6filelist for each antenna in the antenna module list
 antList = []
 antNoModuleFileList = []
 for (ant,modlist) in antennaModuleList:
 	antList.append(ant.upper())
-	antennaFileName = experName.lower() + '.' + ant.lower() + '.filelist'
+	antennaFileName = experName.lower() + '.' + ant.lower() + '.mark6filelist'
 	antFileWritten = False
 	antfile = open(antennaFileName, 'w')
 	missingAntModules = []
@@ -325,7 +325,7 @@ for (ant,modlist) in antennaModuleList:
 
 if len(antNoModuleFileList) > 0:
 	for ant in antNoModuleFileList:
-		antFileName = experName.lower() + '.' + ant.lower() + '.filelist'
+		antFileName = experName.lower() + '.' + ant.lower() + '.mark6filelist'
 		if verbose > 1:
 			print ("Warning: using VEX %s for antenna %s to generate tentative %s. Please verify it manually!" % (ant, vexObsFile, antFileName))
 		scandata = getvexscandata(ant, vexObsFile)
