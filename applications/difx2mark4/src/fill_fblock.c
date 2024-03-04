@@ -143,47 +143,46 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                             pfb[nprod].stn[k].sideband = 'U';
                             }
 
-                                    // store info of the product if indeed unique
-                if (!fblock_already_exists(pfb, nprod, &pfb[nprod]))
-                    {
-                    ++nprod;
-                    }
-
-                                    // if the baseline product is a slice within a wider output band,
-                                    // register also the output band, if it is new
-                if (irfAfid != idfABfid || irfBfid != idfABfid)
-                    {
-                    pfb[nprod].stn[0].pol      = polA;
-                    pfb[nprod].stn[0].ant      = pdsA->antennaId;
-                    pfb[nprod].stn[0].find     = idfABfid;
-                    pfb[nprod].stn[0].fdest    = idfABfid;
-                    pfb[nprod].stn[0].freq     = pdfr->freq;
-                    pfb[nprod].stn[0].sideband = pdfr->sideband;
-                    pfb[nprod].stn[0].bw       = pdfr->bw;
-                    pfb[nprod].stn[0].bs       = pdsA->quantBits;
-                    pfb[nprod].stn[0].zoom     = TRUE;
-                    pfb[nprod].stn[0].pcal_int = 0; // or pdsA->phaseCalIntervalMHz?
-                    pfb[nprod].stn[0].n_spec_chan = pdfr->nChan / pdfr->specAvg;
-                    pfb[nprod].stn[1].pol      = polB;
-                    pfb[nprod].stn[1].ant      = pdsB->antennaId;
-                    pfb[nprod].stn[1].find     = idfABfid;
-                    pfb[nprod].stn[1].fdest    = idfABfid;
-                    pfb[nprod].stn[1].freq     = pdfr->freq;
-                    pfb[nprod].stn[1].sideband = pdfr->sideband;
-                    pfb[nprod].stn[1].bw       = pdfr->bw;
-                    pfb[nprod].stn[1].bs       = pdsB->quantBits;
-                    pfb[nprod].stn[1].zoom     = TRUE;
-                    pfb[nprod].stn[1].pcal_int = 0; // or pdsB->phaseCalIntervalMHz?
-                    pfb[nprod].stn[1].n_spec_chan = pdfr->nChan / pdfr->specAvg;
+                                    // store info of the product itself, if new
+                                    // and if bw's of origin and destination are consistent
+                                    // NB: a narrower origin indicates its a slice within a wider destination,
+                                    // and the origin is an mpifxcorr-internal product absent from SWIN data
+                if (D->freq[irfAfid].bw == D->freq[idfABfid].bw && D->freq[irfBfid].bw == D->freq[idfABfid].bw)
                     if (!fblock_already_exists(pfb, nprod, &pfb[nprod]))
-                        {
                         ++nprod;
-                        }
-                    }
 
+                                    // info of output band
+                pfb[nprod].stn[0].pol      = polA;
+                pfb[nprod].stn[0].ant      = pdsA->antennaId;
+                pfb[nprod].stn[0].find     = idfABfid;
+                pfb[nprod].stn[0].fdest    = idfABfid;
+                pfb[nprod].stn[0].freq     = pdfr->freq;
+                pfb[nprod].stn[0].sideband = pdfr->sideband;
+                pfb[nprod].stn[0].bw       = pdfr->bw;
+                pfb[nprod].stn[0].bs       = pdsA->quantBits;
+                pfb[nprod].stn[0].zoom     = TRUE;
+                pfb[nprod].stn[0].pcal_int = pdsA->phaseCalIntervalMHz;
+                pfb[nprod].stn[0].n_spec_chan = pdfr->nChan / pdfr->specAvg;
+                pfb[nprod].stn[1].pol      = polB;
+                pfb[nprod].stn[1].ant      = pdsB->antennaId;
+                pfb[nprod].stn[1].find     = idfABfid;
+                pfb[nprod].stn[1].fdest    = idfABfid;
+                pfb[nprod].stn[1].freq     = pdfr->freq;
+                pfb[nprod].stn[1].sideband = pdfr->sideband;
+                pfb[nprod].stn[1].bw       = pdfr->bw;
+                pfb[nprod].stn[1].bs       = pdsB->quantBits;
+                pfb[nprod].stn[1].zoom     = TRUE;
+                pfb[nprod].stn[1].pcal_int = pdsB->phaseCalIntervalMHz;
+                pfb[nprod].stn[1].n_spec_chan = pdfr->nChan / pdfr->specAvg;
+
+                                // store info of the destination product i.e. output band, if new,
+                                // and if not itself already covered by the source product stored higher above
+                if (D->freq[irfAfid].bw != D->freq[idfABfid].bw || D->freq[irfBfid].bw != D->freq[idfABfid].bw)
+                    if (!fblock_already_exists(pfb, nprod, &pfb[nprod]))
+                        ++nprod;
 
                                     // check product index
-                if (nprod > MAX_FPPAIRS)
+                if (nprod > MAX_FPPAIRS-1)
                     {
                     printf ("too many freq-polpair combos; redimension\n");
                     return -1;
