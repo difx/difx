@@ -22,6 +22,8 @@ Version 3.8.0
 * Make new structure to pass options to sniffer (see snifferoptions.[ch]
 * Sniffer: option to set interval between bandpass (XCB and ACB) solutions;
   - previously was hard coded to be 15 minutes
+* Sniffer: don't interpolate across scans, even on same source
+* Sniffer: flush last records before program exit
 
 Version 3.7.0
 * Post DiFX-2.6

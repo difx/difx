@@ -33,6 +33,8 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, cons
 
 void deleteSniffer(Sniffer *S);
 
+void flushSniffer(Sniffer *S);
+
 int feedSnifferFITS(Sniffer *S, const DifxVis *dv);
 
 long long getSnifferMemoryUsage(const Sniffer *S);

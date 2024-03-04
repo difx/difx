@@ -1836,6 +1836,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 #ifdef HAVE_FFTW
 				if(S)
 				{
+					flushSniffer(S);
 					deleteSniffer(S);
 					fftw_cleanup();
 					S = 0;
@@ -1876,6 +1877,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 #ifdef HAVE_FFTW
 	if(S)
 	{
+		flushSniffer(S);
 		deleteSniffer(S);
 		fftw_cleanup();
 		S = 0;
