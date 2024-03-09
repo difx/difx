@@ -81,7 +81,7 @@ static void usage(const char *pgm)
 	printf("    -version\n");
 	printf("    -V         Print version info and quit\n\n");
 	printf("    -dbbc\n");
-	printf("    -B         Assume DBBC polarisation order (all Rcp then all Lcp)\n");
+	printf("    -D         Assume DBBC polarisation order (all Rcp then all Lcp)\n");
 	printf("               Default is to assume Rcp/Lcp channel pairs\n\n");
 	printf("    -nopol\n");
 	printf("    -P         Do not compute cross pol terms\n\n");
@@ -93,8 +93,10 @@ static void usage(const char *pgm)
 	printf("    -a         Compute autocorrelation instead of spectrum\n\n");
 	printf("    -time\n");
 	printf("    -t         Treat nint as time in seconds, not number of FFTs\n\n");
-	printf("    -alln");
+	printf("    -all\n");
 	printf("    -A         Calculate multiple integrations using whole file\n\n");
+	printf("    -bin\n");
+	printf("    -B         Dump in binary format, not ASCII\n\n");
 	printf("    -bchan=<x>\n");
 	printf("    -b <x>     Start output at channel number <x> (0-based)\n\n");
 	printf("    -echan=<x>\n");
@@ -294,10 +296,11 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 
 
 int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode,
-	 int doublesideband, int nonorm, int bchan, int echan, int doAutocorr, int doTime, int doAll)
+	 int doublesideband, int nonorm, int bchan, int echan, int doAutocorr, int doTime, int doAll, int doBin)
 {
 	struct mark5_stream *ms;
 	double **spec;
+	float *outspec;
 	fftw_complex **zdata, **zx;
 	fftw_plan *plan;
 	double complex **cdata;
@@ -305,7 +308,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	int chunk;
 	long long total, unpacked;
 	FILE *out;
-	double f, sum, chanbw;
+	double f, sum, bandwidth, chanbw;
 	double x, y;
 	int docomplex;
 	double deltat;
@@ -344,12 +347,16 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	
 	if (doTime) {
 		nint = (double)nint/(nchan*deltat*(2-docomplex)); // Allow for different Nyquist
-		printf("Setting nint to %d\n", nint);
+		printf("\nSetting nint to %d\n", nint);
 	}
 	
 	double tint = deltat*nchan*nint;
 	if (!docomplex) tint *=2; // Nyquist
 
+	bandwidth = ms->samprate/(2.0e6);
+	if (docomplex) bandwidth *= 2;
+	chanbw = bandwidth/nchan;
+	
 	printf("  IntegrationTime = %.3f sec\n", tint);
 
 	spec = (double **)malloc(ms->nchan*sizeof(double *));
@@ -360,6 +367,8 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	  spec[i] = (double *)malloc(nchan*sizeof(double));
 	  zdata[i] = (fftw_complex *)malloc((nchan+2)*sizeof(fftw_complex));
 	}
+	if (doBin) outspec = (float*)malloc(nchan*sizeof(float));
+	
 	for(i = 0; i < ms->nchan/2; ++i)
 	{
 	  zx[i] = (fftw_complex *)calloc(nchan, sizeof(fftw_complex));
@@ -373,13 +382,56 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 		plan[j] = fftw_plan_dft_1d(nchan, cdata[j], zdata[j], FFTW_FORWARD, FFTW_MEASURE);
 	}
 
+	if (doBin) {
+	  out = fopen(outfile, "wb");
+	  if(!out)
+	  {
+		fprintf(stderr, "Error: cannot open %s for write\n", outfile);
+		delete_mark5_stream(ms);
+
+		return EXIT_FAILURE;
+	  }
+
+
+	  uint32_t headu32;
+#define WRITEUINT32(var)			\
+	  headu32 = var;				\
+	  fwrite(&headu32, sizeof(uint32_t), 1, out);	\
+	  // Error checking needed                   
+
+	  float headf32;
+#define WRITEFLOAT(var)			\
+	  headf32 = var;			\
+	  fwrite(&headf32, sizeof(float), 1, out);	\
+	  // Error checking needed                   
+
+	  double headf64;
+#define WRITEDOUBLE(var)			\
+	  headf64 = var;				\
+	  fwrite(&headf64, sizeof(double), 1, out);	\
+	  // Error checking needed                   
+
+      
+	  WRITEUINT32(0);              // Version Number
+	  WRITEUINT32(echan-bchan);  // Number of spectral points saved
+	  WRITEUINT32(nchan);          // Total number of ectral points
+	  WRITEUINT32(bchan);          // First point saved
+	  WRITEUINT32(ms->nchan);      // Number of IF (VLBI channels)
+	  WRITEUINT32(bandwidth);      // Bandwidth (Hz)
+	  WRITEUINT32(0);              // MJD of first integration
+	  WRITEUINT32(0);              // Seconds within day of first integration
+	  WRITEFLOAT(tint);             // Integration time in seconds
+	  WRITEDOUBLE(0.0);            // Sky frequency of middle of band
+	}
+	
 	int loop=0;
 	while (1) { // Loop over integrations, will only loop once if doAll is false
 	  total = unpacked = 0;
 
 	  if(docomplex)
 	  {
-	    status = harvestComplexData(ms, spec, zdata, zx, cdata, nchan, nint, chunk, &total, &unpacked, doublesideband, plan);
+	      status = harvestComplexData(ms, spec, zdata, zx, cdata, nchan, nint, chunk, &total, &unpacked, doublesideband, plan);
+
 	  } 
 	  else
 	  {
@@ -392,25 +444,23 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	    
 	  fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
 
-	  chanbw = ms->samprate/(2.0e6*nchan);
-	  if(docomplex)chanbw *= 2;
-
-	  if (doAll) {
-	    int l = strlen(outfile)+20;
-	    outfilename = malloc(l); // Is there a safer approach to avoid string overrun
-	    snprintf(outfilename, l, "%s.%03d", outfile, loop);
-	  } else {
-	    outfilename = strdup(outfile);
-	  }
-	  out = fopen(outfilename, "w");
-	  if(!out)
-	  {
+	  if (!doBin) {
+	    if (doAll) {
+	      int l = strlen(outfile)+20;
+	      outfilename = malloc(l); // Is there are too many files, the names will overwrite - snprintf will not corrupt memory
+	      snprintf(outfilename, l, "%s.%03d", outfile, loop);
+	    } else {
+	      outfilename = strdup(outfile);
+	    }
+	    out = fopen(outfilename, "w");
+	    if(!out)
+	    {
 		fprintf(stderr, "Error: cannot open %s for write\n", outfilename);
 		delete_mark5_stream(ms);
 
 		return EXIT_FAILURE;
+	    }
 	  }
-	  
 	  if(doAutocorr)
 	  {
 		fftw_plan acplan;
@@ -523,24 +573,40 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	  } // if doAutocorr
 	  else
 	  {
-		/* normalize across all ifs/channels */
-		sum = 0.0;
-		for(c = 0; c < nchan; ++c)
+		if(nonorm)
 		{
+		  f = 1.0/unpacked/256.0;
+		}
+		else
+		{  
+		  /* normalize across all ifs/channels */
+		  sum = 0.0;
+		  for(c = 0; c < nchan; ++c)
+		  {
 			for(i = 0; i < ms->nchan; ++i)
 			{
 				sum += spec[i][c];
 			}
+		  }
+
+		  f = ms->nchan*nchan/sum;
 		}
 
-		f = ms->nchan*nchan/sum;
-		if(nonorm)
-		{
-			f = 1.0/unpacked/256.0;
+		if (doBin) {
+		  for(i = 0; i < ms->nchan; ++i)
+		    {
+		      for(c = bchan; c < echan; ++c)
+		      {
+			outspec[c] = f*spec[i][c]; // Convert to float
+		      }
+		      fwrite(&outspec[bchan], sizeof(float), (echan-bchan), out);
+		    }
 		}
-	
-		for(c = bchan; c < echan; ++c)
+		else
 		{
+		
+		  for(c = bchan; c < echan; ++c)
+		  {
 			fprintf(out, "%f ", (double)c*chanbw);
 			for(i = 0; i < ms->nchan; ++i)
 			{
@@ -556,16 +622,20 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 				}
 			}
 			fprintf(out, "\n");
+		  }
 		}
 	  }
-
-	  fclose(out);
-	  free(outfilename);
+	  if (!doBin) {
+	    fclose(out);
+	    free(outfilename);
+	  }
 	  
 	  if (!doAll) break;
 	  loop++;
 	}
 
+	if (doBin) fclose(out);
+	
 	for(i = 0; i < ms->nchan; ++i)
 	{
 		fftw_destroy_plan(plan[i]);
@@ -582,6 +652,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	free(zx);
 	free(zdata);
 	free(spec);
+	if (doBin) free(outspec);
 	delete_mark5_stream(ms);
 
 	fftw_cleanup();
@@ -601,6 +672,7 @@ int main(int argc, char **argv)
 	int doAutocorr = 0;
 	int doTime = 0;
 	int doAll = 0;
+	int doBin = 0;
 	struct sigaction new_sigint_action;
 #if USEGETOPT
 	int opt;
@@ -608,22 +680,23 @@ int main(int argc, char **argv)
 		{"version", 0, 0, 'V'}, // Version
 		{"double", 0, 0, 'd'},  // Double sideband complex
 		{"nonorm", 0, 0, 'N'},  // Don't normalise
-		{"dbbc", 0, 0, 'B'},    // DBBC channel ordering
+		{"dbbc", 0, 0, 'D'},    // DBBC channel ordering
 		{"nopol", 0, 0, 'P'},   // Don't compute the crosspol terms
 		{"help", 0, 0, 'h'},
 		{"autocorr", 0, 0, 'a'},// compute autocorrelation function instead
 		{"time", 0, 0, 't'},    // Treat nint as time in seconds, not number of FFTs
-		{"all", 0, 0, 'A'},     // Produce multiple interations using all of file
+		{"all", 0, 0, 'A'},     // Produce multiple integrations using all of file
+		{"bin", 0, 0, 'B'},     // Dump spectra in binary format
 		{"bchan", 1, 0, 'b'},
 		{"echan", 1, 0, 'e'},
 		{0, 0, 0, 0}
 	};
 
-	while((opt = getopt_long_only(argc, argv, "NVdBPhb:e:", options, NULL)) != EOF)
+	while((opt = getopt_long_only(argc, argv, "NVdBPhBAtb:e:", options, NULL)) != EOF)
 	{
 		switch (opt) 
 		{
-		case 'B': // DBBC Pol mode (all Rcp then all LCP)
+		case 'D': // DBBC Pol mode (all Rcp then all LCP)
 			polmode = DBBC;
 			printf("Assuming DBBC polarisation order\n");
 			break;
@@ -659,8 +732,12 @@ int main(int argc, char **argv)
 			doAutocorr = 1;
 			break;
 
-		case 'A': // alk  (Generate multiple integrations using whole file)
+		case 'A': // all  (Generate multiple integrations using whole file)
 		        doAll = 1;
+			break;
+
+		case 'B': // bin  (Write spectra in binary format)
+		        doBin = 1;
 			break;
 
 		case 't': // time  (Treat nint as time in seconds)
@@ -771,7 +848,7 @@ int main(int argc, char **argv)
 		echan = nchan;
 	}
 
-	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, nonorm, bchan, echan, doAutocorr, doTime, doAll);
+	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, nonorm, bchan, echan, doAutocorr, doTime, doAll, doBin);
 
 	return retval;
 }
