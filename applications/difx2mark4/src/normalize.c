@@ -13,7 +13,9 @@
 #include <math.h>
 #include "difx2mark4.h"
 
-void normalize (struct CommandLineOptions *opts,  // array of command line options
+
+void normalize (const DifxInput * D,              // ptr to a filled-out difx input structure
+                struct CommandLineOptions *opts,  // array of command line options
                 vis_record *vrec,                 // pointer to start of vis. buffer
                 int nvrtot,                       // total # of vis. records in buffer
                 int *nvis,                        // number of visibility points in record
@@ -39,6 +41,8 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
     double t,                       // time of current records
            factor,
            sum,
+           pant_ref,
+           pant_rem,
            pant[256][MAX_DFRQ][4];  // sqrt of power per antenna avg over channels
                                     // indexed by [ant][freq][pol]
                                     // pol index mapping:
@@ -52,37 +56,17 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
     for (fr=0; fr<MAX_DFRQ; fr++)   // first initialize pmap array to an identity map
         pmap[fr] = fr;
 
-                                    // now make a pass through the fblock, finding the lowest
-                                    // freq index for pairs of antennas, and overwriting those
-                                    // in the pmap
-    nf = -1;
-    while (pfb[++nf].stn[REF].ant >= 0) // check for end-of-table marker
+                                    // now make a pass through the DiFX freq table, finding
+                                    // all identical frequencies (whose IDs can be encountered
+                                    // in SWIN visibilities, vrec[]::freq_index), and update
+                                    // pmap[] to point all duplicate freqs to the lowest freq_index.
+    for (i=0; i < D->nFreq-1 && i < MAX_DFRQ-1; i++)
         {
-        if (nf >= MAX_FPPAIRS)
-            {
-                printf ("too many frequencies, exceeding MAX_FPPAIRS; redimension\n");
-                return;
-            }
-        if (pfb[nf].stn[REF].find != pfb[nf].stn[REM].find)
-            {
-                                    // found matching channels with different freq id's
-            if (pfb[nf].stn[REF].find < pfb[nf].stn[REM].find)
-                {
-                                    // ref index lower, use it for remote antenna
-                if (pfb[nf].stn[REM].find >= MAX_DFRQ)
-                    printf ("out of bounds, pfb %d refers to REM freq idx %d which exceeds pmap array size MAX_DFRQ %d; redimension\n", nf, pfb[nf].stn[REM].find, MAX_DFRQ);
-                pmap[pfb[nf].stn[REM].find] = pfb[nf].stn[REF].find;
-                }
-                 
-            else
-                {
-                                    // rem index lower, use it for reference antenna
-                if (pfb[nf].stn[REF].find >= MAX_DFRQ)
-                    printf ("out of bounds, pfb %d refers to REF freq idx %d which exceeds pmap array size MAX_DFRQ %d; redimension\n", nf, pfb[nf].stn[REM].find, MAX_DFRQ);
-                pmap[pfb[nf].stn[REF].find] = pfb[nf].stn[REM].find;
-                }
-                 
-            }
+        if (pmap[i] != i)
+            continue;
+        for (n=i+1; n < D->nFreq && n < MAX_DFRQ; n++)
+            if (isSameDifxFreq(&D->freq[i], &D->freq[n], /*ignore pcal:*/1))
+               pmap[n] = i;
         }
 
                                     // initialize for looping 
@@ -136,7 +120,14 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                 sum = 0.0;
                 for (i=0; i<nvis[n]; i++)
                     sum += vrloop->comp[i].real;
+                if (sum < 0.0)
+                    {
+                    sum = 0.0; // avoid pant[]=sqrt(<0)=NaN
+                    //printf ("        bad auto data for ref/rem %d in record %d, DiFX frequency id %d\n", aref, n, vrloop->freq_index);
+                    }
                 pant[aref][fr][pol] = sqrt (sum / nvis[n]);
+                // printf("normalize() AUTO ant=%d vis#=%d %c  visfq=%d pmap[%d]=%d sum=%.3f pant[%d][%d][%d]=%.3f\n",
+                //         aref, n, polchar[pol], vrloop->freq_index, vrloop->freq_index, fr, sum, aref, fr, pol, pant[aref][fr][pol]);
                 // printf("n %d aref %d fr %d pol %d pant %f\n",
                 //         n,aref,fr,pol,pant[aref][fr][pol]);
                 }
@@ -173,10 +164,16 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                         vr->pols[REM]);
                 continue;
                 }
+
             fr_remap = pmap[vr->freq_index];
+            pant_ref = pant[aref][fr_remap][polref];
+            pant_rem = pant[arem][fr_remap][polrem];
+
+            // printf("normalize() VIZ %d-%d vis#=%d %c%c  pmap[visfq=%d]=%d   autopwr ref=%.3f rem=%.3f\n",
+            //        aref, arem, n, polchar[polref], polchar[polrem], vr->freq_index, fr_remap, pant_ref, pant_rem);
 
                                     // ensure that there is no 0-divide
-            if (pant[aref][fr_remap][polref] == 0.0 || pant[arem][fr_remap][polrem] == 0.0)
+            if (pant_ref == 0.0 || pant_rem == 0.0)
                 {
                 factor = 1.0;
                 n_aczero++;
@@ -186,7 +183,7 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                             n,aref,arem,fr_remap, vr->pols[REF],vr->pols[REM]);
                 }
             else
-                factor = 1.0 / (pant[aref][fr_remap][polref] * pant[arem][fr_remap][polrem]);
+                factor = 1.0 / (pant_ref * pant_rem);
 
             for (i=0; i<nvis[n]; i++)
                 {

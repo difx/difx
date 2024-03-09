@@ -190,7 +190,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             nvr = -1;               // set index just prior to first record in buffer
                                     // unless raw mode requested, normalize visibilities
             if (opts->raw == 0)
-                normalize (opts, vrec, nvrtot, nvis, vrsize, pfb);
+                normalize (D, opts, vrec, nvrtot, nvis, vrsize, pfb);
             rec = vrec;
             }
 

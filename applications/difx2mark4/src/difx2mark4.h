@@ -112,7 +112,8 @@ struct fblock_tag
         char sideband;              // U or L
         char pol;                   // R or L
         int ant;                    // antenna table index
-        int find;                   // frequency table index
+        int find;                   // frequency table index of recorded/zoom band
+        int fdest;                  // frequency table index of destination freq that -"- contributes to
         int bs;                     // quantization bits/sample
         int first_time;             // true iff first entry in table of chan_id for ant 
         int zoom;                   // true iff this channel is zoom mode
@@ -157,7 +158,7 @@ int new_type1 (DifxInput *, struct fblock_tag *, int, int, int, int, int *, doub
                                     // write_t120.c
 void write_t120 (struct type_120 *, FILE *);
                                     // normalize.c
-void normalize (struct CommandLineOptions *, vis_record *, int, int *, int *, 
+void normalize (const DifxInput *, struct CommandLineOptions *, vis_record *, int, int *, int *, 
                 struct fblock_tag *);
                                     // root_id.c
 char *root_id(int, int, int, int, int);
