@@ -413,15 +413,15 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 
       
 	  WRITEUINT32(0);              // Version Number
-	  WRITEUINT32(echan-bchan);  // Number of spectral points saved
+	  WRITEUINT32(echan-bchan);    // Number of spectral points saved
 	  WRITEUINT32(nchan);          // Total number of ectral points
 	  WRITEUINT32(bchan);          // First point saved
 	  WRITEUINT32(ms->nchan);      // Number of IF (VLBI channels)
 	  WRITEUINT32(bandwidth);      // Bandwidth (Hz)
-	  WRITEUINT32(0);              // MJD of first integration
-	  WRITEUINT32(0);              // Seconds within day of first integration
-	  WRITEFLOAT(tint);             // Integration time in seconds
-	  WRITEDOUBLE(0.0);            // Sky frequency of middle of band
+	  WRITEUINT32(ms->mjd);        // MJD of first integration
+	  WRITEUINT32(ms->sec + ms->ns/1e9 );   // Seconds within day of first integration
+	  WRITEFLOAT(tint);            // Integration time in seconds
+	  WRITEDOUBLE(bandwidth/2);    // Sky frequency of middle of band
 	}
 	
 	int loop=0;
