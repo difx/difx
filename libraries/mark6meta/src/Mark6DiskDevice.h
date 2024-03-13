@@ -50,10 +50,16 @@ public:
     Mark6DiskDevice(const Mark6DiskDevice &device);
     virtual ~Mark6DiskDevice();
     void reset();
+    void clearPartitions();
+    void createPartitions();
     void addPartition(std::string partitionName);
+    void writeMeta( Mark6Meta &meta, std::string rootMetaPath);
+    void makeDataDir(std::string rootPath);
+
+    void parseMeta();
     std::vector<Mark6Partition> getPartitions() const;
     std::string getName() const;
-    int mountDisk(std::string dataPath, std::string metaPath);
+    int mountDisk(std::string dataPath, std::string metaPath, bool readwrite);
     int mountPartition(int partitionNumber, std::string mountPath);
     void unmountDisk();
     
@@ -72,6 +78,7 @@ public:
     int getPosition() const;
     void setSasAddress(std::string sasAddress);
     std::string getSasAddress() const;
+    long capacityMB_m;
     
 
 private:
