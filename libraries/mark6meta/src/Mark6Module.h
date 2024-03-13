@@ -42,21 +42,30 @@ public:
     void removeDiskDevice(Mark6DiskDevice &device);
     Mark6DiskDevice *getDiskDevice(int index);
     std::string getEMSN();
-    void setEMSN(std::string eMSN);
+    std::string getVSN();
+    unsigned long getCapacity();
+    unsigned long getDatarate();
+    void setVSN(std::string vsn);
+    void setCapacity(unsigned long capacity);
+    void setDatarate(unsigned long datarate);
     int getNumDiskDevices();
     int getNumTargetDisks();
     bool isComplete();
     void setGroupMembers(std::vector<std::string> groupMembers_m);
     std::vector<std::string> getGroupMembers() const;
+    void updateMetaFromEMSN(std::string eMSN);
     
 private:
     
+    std::string vsn_m;
+    unsigned long capacityMB_m;
+    unsigned long datarate_m;
     std::string eMSN_m;
     //Mark6DiskDevice *diskDevices_m;   
     std::vector<std::string> groupMembers_m;
     std::map<int,Mark6DiskDevice> diskDevices_m;
-    
-    
+    void resetEMSN();
+    void clearMeta();
 };
 
 #endif	/* MARK6MODULE_H */

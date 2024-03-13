@@ -29,11 +29,14 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <vector>
+#include <sstream>
+#include <string>
 
 using namespace std;
 
 Mark6Module::Mark6Module() {
-    eMSN_m = "";   
+    clearMeta();
 }
 
 Mark6Module::Mark6Module(const Mark6Module& orig) {
@@ -44,6 +47,10 @@ Mark6Module::~Mark6Module() {
 
 /**
  * Adds th given disk device to the list of devices associated with this module. 
+ *
+ * In addition the module meta information (VSN, capacity, datarate. eMSN) is updated based on the 
+ * meta information found on the individual disk device
+ *
  * @param[in] device the disk device to add
  */
 void Mark6Module::addDiskDevice(Mark6DiskDevice &device)
@@ -65,8 +72,12 @@ void Mark6Module::addDiskDevice(Mark6DiskDevice &device)
     Mark6DiskDevice newDevice = Mark6DiskDevice(device);
 
     diskDevices_m.insert (std::pair<int, Mark6DiskDevice>(pos , newDevice));
+
+    string eMSN = newDevice.getMeta().getEMSN();
+
+    updateMetaFromEMSN(eMSN);
     
-    //cout << " added device " << device.getName() << " at position " << pos << endl;;
+    cout << " added device " << device.getName() << " at position " << pos << " with eMSN " << eMSN << endl;;
 }
 
 /**
@@ -92,13 +103,13 @@ void Mark6Module::removeDiskDevice(Mark6DiskDevice &device)
         }
     }
    
-    // if this was the last disk of the module clear the eMSN
+    // if this was the last disk of the module clear the meta information
     if (getNumDiskDevices() == 0)
-        eMSN_m = "";
+        clearMeta();
 }
 
 /**
- * Gets the disk device with at given index position
+ * Gets the disk device at the given index position
  * @param[in] index
  * @return the disk device at the given index position; NULL if no device exists at the index position
  */
@@ -130,12 +141,81 @@ string Mark6Module::getEMSN()
 }
 
 /**
- * Sets the module eMSN
- * @param eMSN of the module
+ * Returns the VSN of the module
+ * @return the VSN of the module
  */
-void Mark6Module::setEMSN(std::string eMSN) {
-    eMSN_m = eMSN;
+string Mark6Module::getVSN()
+{
+    return(vsn_m);
 }
+
+
+/**
+ * Returns the capacity of the module (in units of MB)
+ * @return the capacity of the module
+ */
+unsigned long  Mark6Module::getCapacity()
+{
+    return(capacityMB_m);
+}
+
+/**
+ * Returns the datarate of the module 
+ * @return the datarate of the module
+ */
+unsigned long  Mark6Module::getDatarate()
+{
+    return(datarate_m);
+}
+
+/**
+ * Sets the module VSN
+ *
+ * The VSN is the 8-character module identifier 
+ *
+ * @param VSN of the module
+ */
+void Mark6Module::setVSN(std::string vsn) {
+    vsn_m = vsn;
+    resetEMSN();
+}
+
+/**
+ * Sets the module capacity (in MB)
+ *
+ * @param the capacity of the module (in units of MB)
+ */
+void Mark6Module::setCapacity(unsigned long capacity) {
+    capacityMB_m = capacity;
+    resetEMSN();
+}
+
+/**
+ * Sets the module datarate 
+ *
+ * @param the datarate of the module 
+ */
+void Mark6Module::setDatarate(unsigned long datarate) {
+    datarate_m = datarate;
+    resetEMSN();
+}
+
+/**
+ * Resets the module EMSN based on the VSN, capacity, datarate and number of installed disks
+ *
+ * Note that this does not update/rewrite the meta information stored on the individual disk devices
+ */
+void Mark6Module::resetEMSN() {
+
+    stringstream ss;
+
+    ss << vsn_m << "/" << capacityMB_m << "/" << datarate_m << "/" << getNumDiskDevices();
+
+    ss >> eMSN_m;
+
+    cout << "Update EMSN to: " << eMSN_m;
+}
+
 
 /**
  * 
@@ -230,6 +310,44 @@ bool Mark6Module::isComplete(){
         return(true);
     }
 
+}
+
+/**
+ * Parse the given eMSN and determines the relevant meta fields (vsn, capacity, datarate)
+ **/
+void Mark6Module::updateMetaFromEMSN(string eMSN) {
+
+    std::vector<std::string> field;
+    std::string item;
+    std::stringstream ss (eMSN);
+
+    // split eMSN
+    while (getline (ss, item, '/')) {
+        field.push_back (item);
+    }
+    
+    if (field.size() != 4)
+        return;
+
+    vsn_m = field[0];
+    istringstream (field[1]) >> capacityMB_m;
+    istringstream (field[2]) >> datarate_m;
+
+    //capacityMB_m *= getNumDiskDevices();
+    
+
+    cout << "updated vsn: " << vsn_m << " capacity: " <<  capacityMB_m << " datarate: " << datarate_m << endl;
+    /*for(vector<string>::size_type i = 0; i != field.size(); i++) {
+        cout << field[i] << endl;
+    }*/
+}
+
+
+void Mark6Module::clearMeta() {
+    eMSN_m = "";   
+    vsn_m = "";
+    capacityMB_m = 0;
+    datarate_m = 0;
 }
 
 void Mark6Module::setGroupMembers(std::vector<std::string> groupMembers_m) {
