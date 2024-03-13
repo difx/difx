@@ -70,9 +70,26 @@ std::vector<std::string> Mark6Meta::getGroup() const {
     return group_m;
 }
    
+void Mark6Meta::setSerials( map<int, string > serials) {
+    serials_m = serials;
+}
+
 string Mark6Meta::getEMSN() const {
     return eMSN_m;
 }
+
+void Mark6Meta::setEMSN(string eMSN) {
+    eMSN_m = eMSN;
+}
+
+void Mark6Meta::setEMSN(std::string vsn, unsigned int capacity, unsigned int datarate, unsigned int numDisks)
+{
+    std::stringstream ss;
+
+    ss << vsn << "/" << capacity << "/" << datarate << "/" << numDisks;
+    ss >> eMSN_m;
+}
+
 /**
  * Parses the meta data of a Mark6 disk device. 
  * Since the meta data is located on a partition the disk device needs 

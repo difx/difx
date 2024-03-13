@@ -51,6 +51,9 @@ public:
     Mark6Meta(const Mark6Meta& orig);
     virtual ~Mark6Meta();
     std::string getEMSN() const;
+    void setEMSN(std::string eMSN);
+    void setEMSN(std::string vsn, unsigned int capacity, unsigned int datarate, unsigned int numDisks);
+    void setSerials( std::map<int, std::string > serials);
     void parse(std::string);
     void reset();
     const std::map<int, std::string> &getSerials();
