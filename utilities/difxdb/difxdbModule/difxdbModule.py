@@ -16,15 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
-#
-#============================================================================
 
 import os
 import sys
@@ -36,9 +27,6 @@ from optparse import OptionParser
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
 
 def printUsage():
     usage = ""
@@ -59,7 +47,7 @@ def printSummary():
 if __name__ == "__main__":
     
     usage = printUsage()
-    version = "%s\nSVN  %s\nOriginal author: %s\nLast changes by: %s\nLast changes on: %s" % (__prog__, __build__, __author__, __lastAuthor__, __date__)
+    version = ""
     parser = OptionParser(version=version, usage=usage)
     parser.add_option("-s", "--slot", action="store_true", dest="slot", default=False, help="show the library slot")
     parser.add_option("-S", "--station", action="store_true", dest="station", default=False, help="show the 2-letter station code")

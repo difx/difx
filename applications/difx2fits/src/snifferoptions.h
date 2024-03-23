@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2024 by Walter Brisken                             *
+ *   Copyright (C) 2024 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,27 +16,27 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-#ifndef __SNIFFER_H__
-#define __SNIFFER_H__
+#ifndef __SNIFFEROPTIONS_H__
+#define __SNIFFEROPTIONS_H__
 
-#include <stdio.h>
-#include <complex.h>
-#include <fftw3.h>
-#include "fitsUV.h"
-#include "snifferoptions.h"
+extern const long long int DefaultSnifferMaxMemory;
+extern const double DefaultSnifferSolutionInterval;
+extern const double DefaultSnifferBandpassInterval;
 
-struct _Sniffer;
+typedef struct
+{
+	double solutionInterval;	/* [sec]; solution interval for APD, XCB and ACB records; -1 means no sniffing */
+	double bandpassInterval;	/* [min]; minimum time between writing XCB and ACB records */
+	long long int maxMemory;
+	int writeBandpass;
+} SnifferOptions;
 
-typedef struct _Sniffer Sniffer;
+SnifferOptions *newSnifferOptions();
 
-Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, const SnifferOptions *sOpts);
+void resetSnifferOptions(SnifferOptions *sOpts);
 
-void deleteSniffer(Sniffer *S);
+void deleteSnifferOptions(SnifferOptions *sOpts);
 
-void flushSniffer(Sniffer *S);
-
-int feedSnifferFITS(Sniffer *S, const DifxVis *dv);
-
-long long getSnifferMemoryUsage(const Sniffer *S);
+void printSnifferOptions(const SnifferOptions *sOpts);
 
 #endif

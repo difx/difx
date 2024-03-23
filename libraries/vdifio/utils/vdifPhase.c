@@ -10,8 +10,8 @@
 
 const char program[] = "vdifPhase";
 const char author[] = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20231125";
+const char version[] = "0.2";
+const char verdate[] = "20240209";
 
 const int defaultBits = 2;
 
@@ -308,20 +308,6 @@ static void vdif_decode_16bit_double(const unsigned char *src, int n, double *de
 	}
 }
 
-static void vdif_decode_16bit_double_backwards(const unsigned char *src, int n, double *dest)
-{
-	const uint16_t *src16;
-	int o;
-
-	src16 = (const uint16_t *)src;
-
-	for(o = 0; o < n; o+=2)
-	{
-		dest[o] = (src16[o+1] - 32768)/8.0;
-		dest[o+1] = (src16[o] - 32768)/8.0;
-	}
-}
-
 /***************************************************************/
 
 int run(const char *fileName, int frameSize, int bw, int thread, int frames, int nBit, int64_t nomFreq)
@@ -340,7 +326,7 @@ int run(const char *fileName, int frameSize, int bw, int thread, int frames, int
 	double *samples;		/* length = nSamp */
 	double complex *spectrum;	/* length = nSamp/2 + 1 */
 	double *psd;			/* power spectral density */
-	fftw_plan plan;
+	fftw_plan plan = 0;
 	char *readBuffer;
 	const vdif_header *vh;
 	const unsigned char *data;
@@ -386,7 +372,6 @@ int run(const char *fileName, int frameSize, int bw, int thread, int frames, int
 	samples = (double *)fftw_malloc(nSamp * sizeof(double));
 	spectrum = (double complex *)fftw_malloc((nSamp/2 + 1) * sizeof(double complex));
 	psd = (double *)calloc(nSamp/2 + 1, sizeof(double));
-	plan = fftw_plan_dft_r2c_1d(nSamp, samples, spectrum, FFTW_ESTIMATE);
 
 	dp = (nomFreq % frameRate)/(double)frameRate;
 
@@ -472,6 +457,18 @@ int run(const char *fileName, int frameSize, int bw, int thread, int frames, int
 			double t;
 			double deltaPhi;
 
+			if(plan == 0)
+			{
+				if(vh->iscomplex)
+				{
+					plan = fftw_plan_dft_1d(nSamp/2, (fftw_complex *)samples, spectrum, FFTW_FORWARD, FFTW_ESTIMATE);
+				}
+				else
+				{
+					plan = fftw_plan_dft_r2c_1d(nSamp, samples, spectrum, FFTW_ESTIMATE);
+				}
+			}
+
 			fftw_execute(plan);
 
 			t = vh->seconds - startSeconds + (vh->frame + 1 - 0.5*frames)/frameRate;
@@ -506,7 +503,10 @@ int run(const char *fileName, int frameSize, int bw, int thread, int frames, int
 	fprintf(stderr, "Frames of wrong size: %d\n", nWrongSize);
 	fprintf(stderr, "Frames discarded (from incomplete bundling): %d\n", nDiscard);
 
-	fftw_destroy_plan(plan);
+	if(plan)
+	{
+		fftw_destroy_plan(plan);
+	}
 	fftw_free(spectrum);
 	fftw_free(samples);
 	free(psd);

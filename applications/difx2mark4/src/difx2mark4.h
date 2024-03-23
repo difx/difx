@@ -149,7 +149,7 @@ int createType3s (DifxInput *, struct fblock_tag *, int, int, int, char *, char 
                   struct stations *, struct CommandLineOptions *);
                                     // get_vis.c
 int get_vis (DifxInput *, char *, struct CommandLineOptions *, int *, int *, int *, 
-                 vis_record **, char *, struct fblock_tag *);
+                 vis_record **, char *, struct fblock_tag *, int *);
                                     // new_type1.c
 int new_type1 (DifxInput *, struct fblock_tag *, int, int, int, int, int *, double *,
                struct stations *, char *, struct CommandLineOptions *, FILE **, 

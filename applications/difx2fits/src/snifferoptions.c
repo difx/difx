@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2024 by Walter Brisken                             *
+ *   Copyright (C) 2024 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,27 +16,57 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-#ifndef __SNIFFER_H__
-#define __SNIFFER_H__
 
 #include <stdio.h>
-#include <complex.h>
-#include <fftw3.h>
-#include "fitsUV.h"
+#include <stdlib.h>
 #include "snifferoptions.h"
 
-struct _Sniffer;
+const long long int DefaultSnifferMaxMemory = 2000000000LL;	/* [bytes] */
+const double DefaultSnifferSolutionInterval = 30.0;		/* sec */
+const double DefaultSnifferBandpassInterval = 15.0;		/* min */
 
-typedef struct _Sniffer Sniffer;
 
-Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, const SnifferOptions *sOpts);
+SnifferOptions *newSnifferOptions()
+{
+	SnifferOptions *sOpts;
 
-void deleteSniffer(Sniffer *S);
+	sOpts = (SnifferOptions *)calloc(1, sizeof(SnifferOptions));
+	resetSnifferOptions(sOpts);
 
-void flushSniffer(Sniffer *S);
+	return sOpts;
+}
 
-int feedSnifferFITS(Sniffer *S, const DifxVis *dv);
+void resetSnifferOptions(SnifferOptions *sOpts)
+{
+	const char *e;
+	
+	e = getenv("DIFX_MAX_SNIFFER_MEMORY");
+	if(e)
+	{
+		sOpts->maxMemory = atoll(e);
+	}
+	else
+	{
+		sOpts->maxMemory = DefaultSnifferMaxMemory;
+	}
+	sOpts->solutionInterval = DefaultSnifferSolutionInterval;
+	sOpts->bandpassInterval = DefaultSnifferBandpassInterval;
+}
 
-long long getSnifferMemoryUsage(const Sniffer *S);
+void deleteSnifferOptions(SnifferOptions *sOpts)
+{
+	if(sOpts)
+	{
+		free(sOpts);
+	}
+}
 
-#endif
+void printSnifferOptions(const SnifferOptions *sOpts)
+{
+	printf("SnifferOptions\n");
+	printf("  solutionInterval = %f sec\n", sOpts->solutionInterval);
+	printf("  bandpassInterval = %f min\n", sOpts->bandpassInterval);
+	printf("  maxMemory = %lld bytes\n", sOpts->maxMemory);
+	printf("  writeBandpass = %d\n", sOpts->writeBandpass);
+}
+

@@ -16,15 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
-#
-#============================================================================
 
 import os
 import sys
@@ -41,9 +32,6 @@ from difxdb.model import model
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
 
 logger = None
 
@@ -53,7 +41,7 @@ epilog = "NOTE: %(prog)s requires the DIFXROOT environment to be defined.\n"
 epilog += "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf.\n"
 epilog += "If the configuration is not found a template will be created for you.\n\n"
 epilog += "The output is logged to file (see also --log-path option)"
-version = "revision = {} author = {}  last changed by = {}".format(__build__, __author__, __lastAuthor__)
+version = ""
 
     
 def setupLoggers(logPath):
@@ -180,7 +168,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=description, epilog=epilog ,formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--verbose", action="store_true", default=False, help="verbose output.")
     parser.add_argument("--log-path", dest="logPath",  default="/tmp", help="path where the log files will be written to (default: /tmp).")
-    parser.add_argument('--version', action='version', version=version)
+#    parser.add_argument('--version', action='version', version=version)
 
     if len(sys.argv) == 0:
         parser.print_help()

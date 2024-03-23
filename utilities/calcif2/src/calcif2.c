@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2021 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL: $
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,7 +37,7 @@
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = VERSION;
-const char verdate[] = "20210922";
+const char verdate[] = "20240220";
 
 typedef struct
 {
@@ -67,6 +57,7 @@ typedef struct
 	char *files[MAX_FILES];
 	int overrideVersion;
 	enum AberCorr aberCorr;
+	int zeroDelays;		/* if true, set the delays to zero; useful for zero baseline tests */
 	char extra[1024];
 } CommandLineOptions;
 
@@ -114,6 +105,8 @@ static void usage()
 	fprintf(stderr, "  -F                      Fit oversampled polynomials\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --override-version      Ignore difx versions\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --zero                  Zero delays in the .im file (e.g., for zero-baseline tests)\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --server <servername>\n");
 	fprintf(stderr, "  -s       <servername>   Use <servername> as calcserver\n\n");
@@ -219,6 +212,10 @@ static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 			else if(strcmp(argv[i], "--override-version") == 0)
 			{
 				opts->overrideVersion = 1;
+			}
+			else if(strcmp(argv[i], "--zero") == 0)
+			{
+				opts->zeroDelays = 1;
 			}
 			else if(i+1 < argc)
 			{
@@ -391,6 +388,43 @@ static int skipFile(const char *f1, const char *f2)
 	}
 
 	return 0;
+}
+
+static void zeroDelays(DifxInput *D)
+{
+	int s, a, i, j, t;
+	DifxPolyModel ***im, *model;
+
+	for(s = 0; s < D->nScan; ++s)
+	{
+		im = D->scan[s].im;
+		if(!im)
+		{
+			continue;
+		}
+		for(a = 0; a < D->nAntenna; ++a)
+		{
+			if(!im[a])
+			{
+				continue;
+			}
+			for(i = 0; i <= D->scan[s].nPhaseCentres; ++i)
+			{
+				if(!im[a][i])
+				{
+					continue;
+				}
+				for(j = 0; j < D->scan[s].nPoly; ++j)
+				{
+					model = im[a][i] + j;
+					for(t = 0; t <= model->order ; ++t)
+					{
+						model->delay[t] = 0.0;
+					}
+				}
+			}
+		}
+	}
 }
 
 static void tweakDelays(DifxInput *D, const char *tweakFile, int verbose)
@@ -740,6 +774,23 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 			}
 		}
 		system(cmd);
+	}
+	
+
+	if(opts->zeroDelays)
+	{
+		D = loadDifxInput(prefix);
+		if(!D)
+		{
+			fprintf(stderr, "Error: Something went wrong trying to re-open %s .  Not able to zero delays!\n", prefix);
+		}
+		else
+		{
+			printf("WARNING: setting all delays to zero.  I hope this is what you want!\n");
+			zeroDelays(D);
+			writeDifxIM(D);
+			deleteDifxInput(D);
+		}
 	}
 
 	return 0;

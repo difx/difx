@@ -2496,6 +2496,8 @@ bool Configuration::populateResultLengths()
             }
             for(int j=0;j<numbaselines;j++)
             {
+              if(!isFrequencyOutput(c,j,i))
+                continue;
               const baselinedata& bldata = baselinetable[configs[c].baselineindices[j]];
               if(bldata.localfreqindices[*ifi] >= 0)
               {
@@ -2503,8 +2505,8 @@ bool Configuration::populateResultLengths()
                 // int blinechoffset = maxconfigphasecentres*binloop*numblpolproducts*choffset/freqtable[i].channelstoaverage; // assumed data layout, apparently wrong when phasecenters!=1 and-or bins!=1
                 int blinechoffset = choffset/freqtable[i].channelstoaverage; // more likely the actual output data layout
                 configs[c].coreresultbaselineoffset[*ifi][j] = configs[c].coreresultbaselineoffset[i][j] + blinechoffset;
-                //if (mpiid == 10)
-                //  cout << "coreresultbaselineoffset[OUT fq:" << i << " memberFq:" << *ifi << "][bl:" << j << "] = " << configs[c].coreresultbaselineoffset[i][j] << " + " << blinechoffset << endl;
+                //if (mpiid == 0)
+                //  cout << "coreresultbaselineoffset[memberFq:" << *ifi << " of fq:" << i << "][bl:" << j << "] = " << configs[c].coreresultbaselineoffset[i][j] << " + " << blinechoffset << " = " << configs[c].coreresultbaselineoffset[*ifi][j] << ", numbaselines=" << numbaselines << endl;
               }
             }
           }

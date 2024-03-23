@@ -173,7 +173,19 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 					version = b.version
 					destfreq = b.destfreq[n]
 				else:
-					destfreq,tmp = getFreqPolOfBand(ds1,min(bl_bands_1))
+					dsfreq1,tmp = getFreqPolOfBand(ds1,min(bl_bands_1))
+					dsfreq2,tmp = getFreqPolOfBand(ds2,min(bl_bands_2))
+					if not cfg.freqs[dsfreq1].lsb:
+						destfreq = dsfreq1
+					elif not cfg.freqs[dsfreq2].lsb:
+						destfreq = dsfreq2
+					else:
+						# look up first USB-equivalent freq if any
+						destfreq = dsfreq1
+						for altfq in cfg.freqs:
+							if (not altfq.lsb) and altfq.low_edge() == cfg.freqs[dsfreq1].low_edge() and altfq.bandwidth == cfg.freqs[dsfreq1].bandwidth:
+								destfreq = cfg.freqs.index(altfq)
+								break
 				if destfreq not in baseline_outputfreq_members:
 					baseline_outputfreq_members[destfreq] = []
 				all_dest_fqs.append(destfreq)

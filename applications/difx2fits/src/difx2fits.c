@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2023 by Walter Brisken & Helge Rottmann            *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Helge Rottmann            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx2fits.c 11058 2023-09-13 22:41:34Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/difx2fits.c $
-// $LastChangedRevision: 11058 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2023-09-14 06:41:34 +0800 (四, 2023-09-14) $
-//
-//============================================================================
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -41,7 +31,6 @@ const char program[] = PACKAGE_NAME;
 const char author[]  = PACKAGE_BUGREPORT;
 const char version[] = VERSION;
 
-const double DefaultSniffInterval = 30.0;	/* sec */
 const double DefaultJobMatrixInterval = 20.0;	/* sec */
 const double DefaultDifxTsysInterval = 30.0;	/* sec */
 const double DefaultDifxPCalInterval = 30.0;	/* sec */
@@ -125,7 +114,10 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  -x                  Don't produce sniffer output\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --sniff-time <t>\n");
-	fprintf(stderr, "  -T           <t>    Sniff output on a <t> second timescale (default %3.1f)\n", DefaultSniffInterval);
+	fprintf(stderr, "  -T           <t>    Sniff output on a <t> second timescale (default %3.1f)\n", DefaultSnifferSolutionInterval);
+	fprintf(stderr, "                      Set to zero to disable sniffing\n");
+	fprintf(stderr, "  --bpInterval <t>\n");
+	fprintf(stderr, "  -b           <t>    Sniffer XCB and ACB reported no more than every <t> minutes (default %3.1f)\n", DefaultSnifferBandpassInterval);
 	fprintf(stderr, "                      Set to zero to disable sniffing\n");
 	fprintf(stderr, "\n");
 #endif
@@ -199,7 +191,6 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts = (struct CommandLineOptions *)calloc(1, sizeof(struct CommandLineOptions));
 	
 	opts->writemodel = 1;
-	opts->sniffTime = DefaultSniffInterval;
 	opts->jobMatrixDeltaT = DefaultJobMatrixInterval;
 	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
 	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
@@ -207,6 +198,7 @@ struct CommandLineOptions *newCommandLineOptions()
 
 	resetDifxMergeOptions(&opts->mergeOptions);
 	resetDifxDataFilterOptions(&opts->filterOptions);
+	resetSnifferOptions(&opts->snifferOptions);
 
 	return opts;
 }
@@ -324,7 +316,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--dont-sniff") == 0 ||
 			        strcmp(argv[i], "-x") == 0)
 			{
-				opts->sniffTime = -1.0;
+				opts->snifferOptions.solutionInterval = -1.0;
 			}
 			else if(strcmp(argv[i], "--sniff-all") == 0 ||
 			        strcmp(argv[i], "-S") == 0)
@@ -400,7 +392,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			}
 			else if(strcmp(argv[i], "--bandpass") == 0)
 			{
-				opts->writeBandpass = 1;
+				opts->snifferOptions.writeBandpass = 1;
 			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
@@ -485,7 +477,13 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				        strcmp(argv[i], "-T") == 0)
 				{
 					++i;
-					opts->sniffTime = atof(argv[i]);
+					opts->snifferOptions.solutionInterval = atof(argv[i]);
+				}
+				else if(strcmp(argv[i], "--bpInterval") == 0 ||
+				        strcmp(argv[i], "-b") == 0)
+				{
+					++i;
+					opts->snifferOptions.bandpassInterval = atof(argv[i]);
 				}
 				else if(strcmp(argv[i], "--bin") == 0 ||
 				        strcmp(argv[i], "-B") == 0)

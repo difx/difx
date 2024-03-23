@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2023 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: sniffer.c 11039 2023-08-14 21:28:47Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/sniffer.c $
-// $LastChangedRevision: 11039 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2023-08-15 05:28:47 +0800 (二, 2023-08-15) $
-//
-//============================================================================
 
 #include <stdlib.h>
 #include <string.h>
@@ -37,6 +27,7 @@ typedef struct
 	fftw_complex **bandpass;	/* [BBC][Chan] ; zero if no writing of bandpass requested */
 	fftw_complex ****ifSpectrum;	/* [IF][Stokes][Time][Chan]; note that Stokes=0,1 just point to data in spectrum, or zero if single pol */
 	int a1, a2, sourceId;
+	int scanId;
 	double mjdStart, mjdMax;
 	double mjdSum;
 	int mjdCount;
@@ -84,6 +75,7 @@ struct _Sniffer
 	int fft_nx, fft_ny;
 	Accumulator **accum;
 	int *fitsSourceId2SourceId;
+	double bandpassInterval;	/* [min] */
 };
 
 static void resetAccumulator(Accumulator *A)
@@ -171,6 +163,7 @@ static Accumulator *newAccumulatorArray(Sniffer *S, int n, int writeBandpass)
 		A[a].weightMax = (double *)calloc(nBBC, sizeof(double));
 		A[a].lastDump = (double *)calloc(S->D->nSource, sizeof(double));
 		A[a].sourceId = -1;
+		A[a].scanId = -1;
 
 		A[a].ifWeightSum = (double **)malloc(A[a].nIF*sizeof(double *));
 		A[a].if2bbc = (int **)malloc(A[a].nIF*sizeof(int *));
@@ -264,23 +257,14 @@ static void deleteAccumulatorArray(Accumulator *A, int n)
 	free(A);
 }
 
-Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, double solInt, int writeBandpass)
+Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, const SnifferOptions *sOpts)
 {
 	Sniffer *S;
 	char filename[DIFXIO_FILENAME_LENGTH];
 	int a1, c;
-	double tMax = 0.0;
+	double tMax = 0.0;	/* [sec] */
 	FILE *log;
 	int i, m, v;
-	long long int maxSnifferMemory;
-	const char *e;
-
-	maxSnifferMemory = DEFAULT_MAX_SNIFFER_MEMORY;
-	e = getenv("DIFX_MAX_SNIFFER_MEMORY");
-	if(e)
-	{
-		maxSnifferMemory = atoll(e);
-	}
 
 	/* write summary to log file */
 	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.log", filebase);
@@ -305,6 +289,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	S = (Sniffer *)calloc(1, sizeof(Sniffer));
 
 	S->filebase = strdup(filebase);
+	S->bandpassInterval = sOpts->bandpassInterval;
 
 	m = 1;
 	for(i = 0; i < D->nSource; ++i)
@@ -350,7 +335,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	S->nComplex = nComplex;
 	S->configId = -1;
 	S->nChan = D->nOutChan;
-	S->nTime = solInt/tMax;
+	S->nTime = sOpts->solutionInterval/tMax;
 	if(S->nTime <= 1)
 	{
 		S->nTime = 1;
@@ -361,11 +346,11 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 	S->solInt = tMax * S->nTime;
 
 	S->memoryNeed = (long long int)(S->nTime)*S->nChan*S->nIF*S->nPol*S->nAntenna*S->nAntenna*sizeof(fftw_complex);
-	if(S->memoryNeed > maxSnifferMemory)
+	if(S->memoryNeed > sOpts->maxMemory)
 	{
-		if(maxSnifferMemory > 0)
+		if(sOpts->maxMemory > 0)
 		{
-			fprintf(stderr, "    ** DISABLING SNIFFER AS THE MEMORY REQUIREMENTS ARE EXCESSIVE (%lldMB > %lldMB) **\n", S->memoryNeed/1000000, maxSnifferMemory/1000000);
+			fprintf(stderr, "    ** DISABLING SNIFFER AS THE MEMORY REQUIREMENTS ARE EXCESSIVE (%lldMB > %lldMB) **\n", S->memoryNeed/1000000, sOpts->maxMemory/1000000);
 		}
 		deleteSniffer(S);
 
@@ -507,7 +492,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 		return 0;
 	}
 
-	if(writeBandpass)
+	if(sOpts->writeBandpass)
 	{
 		/* Open bandpass file */
 		v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.bandpass", filebase);
@@ -535,7 +520,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 		int a2;
 
 		/* FIXME: this allocates a square array, where a triangle array would do... */
-		S->accum[a1] = newAccumulatorArray(S, S->nAntenna, writeBandpass);
+		S->accum[a1] = newAccumulatorArray(S, S->nAntenna, sOpts->writeBandpass);
 		for(a2 = 0; a2 < S->nAntenna; ++a2)
 		{
 			S->accum[a1][a2].a1 = a1;
@@ -628,6 +613,7 @@ static void dumpBandpasses(const Sniffer *S)
 		}
 	}
 }
+
 
 void deleteSniffer(Sniffer *S)
 {
@@ -1108,7 +1094,7 @@ static int dump(Sniffer *S, Accumulator *A)
 	int maxNRec = 0;
 	double mjd;
 
-	if(A->sourceId < 0 || S->configId < 0 || A->mjdCount < 0)
+	if(A->sourceId < 0 || A->scanId < 0 || S->configId < 0 || A->mjdCount < 0)
 	{
 		return 0;
 	}
@@ -1131,9 +1117,9 @@ static int dump(Sniffer *S, Accumulator *A)
 		}
 	}
 
-	/* dump XC/AC bandpass at most every 15 minutes each source,
+	/* dump XC/AC bandpass at most every bandpassInterval (15 minutes by default) for each source,
 	   and only if at least 1 IF has >= 75% valid records */
-	if(A->mjdStart > A->lastDump[A->sourceId] + 15.0/1440.0 && maxNRec >= A->nTime*3/4)
+	if(A->mjdStart >= A->lastDump[A->sourceId] + S->bandpassInterval/1440.0 && maxNRec >= A->nTime*3/4)
 	{
 		int i;
 
@@ -1279,8 +1265,7 @@ static int dump(Sniffer *S, Accumulator *A)
 		}
 		fprintf(S->wts, "\n");
 	}
-
-	else
+	else if(maxNRec >= A->nTime*3/4)
 	{
 		int bbc;
 		int ifNum;
@@ -1441,6 +1426,19 @@ static int dump(Sniffer *S, Accumulator *A)
 	return 0;
 }
 
+void flushSniffer(Sniffer *S)
+{
+	int a1, a2;
+
+	for(a1 = 0; a1 < S->nAntenna; ++a1)
+	{
+		for(a2 = 0; a2 < S->nAntenna; ++a2)
+		{
+			dump(S, &S->accum[a1][a2]);
+		}
+	}
+}
+
 static void add(Accumulator *A, int bbc, int index, float weight, const float *data, int stride, int isLSB, double mjd)
 {
 	fftw_complex *array;
@@ -1591,14 +1589,14 @@ int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 		}
 	}
 
-
 	A = &(S->accum[a1][a2]);
 
-	if(mjd > A->mjdMax || A->sourceId != sourceId)
+	if(mjd > A->mjdMax || A->sourceId != sourceId || A->scanId != scanId)
 	{
 		dump(S, A);
 		resetAccumulator(A);
 		A->sourceId = sourceId;
+		A->scanId = scanId;
 	}
 	if(A->mjdStart < 50000.0)
 	{
