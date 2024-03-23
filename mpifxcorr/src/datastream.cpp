@@ -1367,7 +1367,7 @@ void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
       cfatal << startl << "Datastream " << mpiid << ": openstream() called but Datastream not configured for TCP or UDP!" << endl;
   }
 
-  status = bind(serversock, (struct sockaddr *)&server, sizeof(server));
+  status = ::bind(serversock, (struct sockaddr *)&server, sizeof(server));
   if (status!=0) {
     cerror << startl << "Datastream " << mpiid << ": Cannot bind eVLBI socket" << endl;
     close(serversock);
