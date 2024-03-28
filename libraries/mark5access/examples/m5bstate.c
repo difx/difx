@@ -463,6 +463,90 @@ void process_8bit_realdata(struct mark5_stream *ms, int nframes) {
   free(sumsqr);
 }
 
+void process_8bit_complexdata(struct mark5_stream *ms, int nframes) {
+  int i, j, k, status;
+  long long total, unpacked;
+
+  int chunk = ms->framesamples;
+  int nif = ms->nchan;
+
+  double complex **cdata = (double complex**)malloc(nif*sizeof(double *));
+  double *sum = malloc(nif*2*sizeof(double));
+  double *sumsqr = malloc(nif*2*sizeof(double));
+
+  total = unpacked = 0;
+
+  for(i = 0; i < nif; i++)
+  {
+    cdata[i] = (double complex*)malloc((chunk+2)*sizeof(double complex)); 
+  }
+
+  /* initialize stats variable to zeroes*/
+  for(i = 0; i < nif*2; i++)
+  {
+      sum[i] = 0;
+      sumsqr[i] = 0;
+  }
+
+
+  for(j = 0; j < nframes; j++)
+  {
+    if(die)
+    {
+      break;
+    }
+
+    status = mark5_stream_decode_double_complex(ms, chunk, cdata);
+
+    if(status < 0)
+    {
+      break;
+    }
+    else
+    {
+      total += chunk;
+      unpacked += status;
+    }
+
+
+    for(i = 0; i < nif; i++) 
+    {
+      double thissum_real=0, thissumsqr_real=0, thissum_imag=0, thissumsqr_imag=0;
+      for(k = 0; k < chunk; k++)
+      {
+	thissum_real += creal(cdata[i][k]);
+	thissum_imag += cimag(cdata[i][k]);
+	thissumsqr_real += creal(cdata[i][k])*creal(cdata[i][k]);
+	thissumsqr_imag += cimag(cdata[i][k])*cimag(cdata[i][k]);
+      }
+      sum[i*2] += thissum_real;
+      sumsqr[i*2] += thissumsqr_real;
+      sum[i*2+1] += thissum_imag;
+      sumsqr[i*2+1] += thissumsqr_imag;
+    }
+  }
+
+  fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
+
+  printf("\nCh    RMS   Mean\n");
+	  
+  for(i = 0; i < nif; i++)
+  {
+    double mean = sum[i*2]/total;
+    double stddev = sqrt(sumsqr[i*2]/total - mean*mean);
+    printf("%2d  %.3f  %.4f\n", i, stddev, mean);
+  }
+
+  for(i = 0; i < nif; i++)
+  {
+    free(cdata[i]);
+  }
+  free(cdata);
+  free(sum);
+  free(sumsqr);
+}
+
+
 
 double std_dev2(double a[], int n)
 {
@@ -522,13 +606,13 @@ int bstate(const char *filename, const char *formatname, int nframes, long long 
 
 
         /* bstate 2nd dim. is either 2 for the 1bit: ++ -- or 4 for the 2 bits ++ + - -- */
-	if(ms->nbit == 8)
+	if(ms->nbit == 8 || ms->nbit == 16)
 	{
 	  if (docomplex) {
-	    printf("Error: Do not support 8bit complex yet!\n");
-	    return 0;
+	    process_8bit_complexdata(ms, nframes);
+	  } else {
+	    process_8bit_realdata(ms, nframes);
 	  }
-	  process_8bit_realdata(ms, nframes);
 	}
 	else
 	{
