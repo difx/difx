@@ -1174,6 +1174,7 @@ AntennaSetup::AntennaSetup(const std::string &name) : vexName(name), defaultData
 	axisOffset = AXIS_OFFSET_NOT_SET;
 	deltaClock = 0.0;
 	deltaClockRate = 0.0;
+	deltaClockAccel = 0.0;
 	clock.mjdStart = -1e9;
 	clockorder = 1;
 	phaseCalIntervalMHz = -1;
@@ -1299,6 +1300,15 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		deltaClockRate = parseDouble(value) / 1.0e6;	// convert from us/sec to sec/sec
+	}
+	else if(key == "deltaClockAccel")
+	{
+		if(deltaClockAccel != 0.0)
+		{
+			std::cerr << "Warning: antenna " << vexName << " has multiple deltaClockAccel definitions" << std::endl;
+			++nWarn;
+		}
+		deltaClockAccel = parseDouble(value) / 1.0e6;	// convert from us/sec to sec/sec
 	}
 	else if(key == "X" || key == "x")
 	{
@@ -2920,7 +2930,7 @@ int CorrParams::sanityCheck()
 			std::cerr << "Warning: the default antenna's coordinates are set!" << std::endl;
 			++nWarn;
 		}
-		if(a->clock.offset != 0 || a->clock.rate != 0 || a->clock.accel != 0 || a->clock.jerk != 0 || a->clock.offset_epoch != 0 || a->deltaClock != 0 || a->deltaClockRate != 0)
+		if(a->clock.offset != 0 || a->clock.rate != 0 || a->clock.accel != 0 || a->clock.jerk != 0 || a->clock.offset_epoch != 0 || a->deltaClock != 0 || a->deltaClockRate != 0 || a->deltaClockAccel != 0)
 		{
 			std::cerr << "Warning: the default antenna's clock parameters are set!" << std::endl;
 			++nWarn;
