@@ -956,11 +956,11 @@ int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const D
 	{
 		for(i = 0; i < 2; ++i)
 		{
-			if (polPair[i] == 'X')
+			if (polPair[i] == 'X' || polPair[i] == 'H')
 			{
 				polPair[i] = 'R';
 			}
-			else if (polPair[i] == 'Y')
+			else if (polPair[i] == 'Y' || polPair[i] == 'V')
 			{
 				polPair[i] = 'L';
 			}
