@@ -75,6 +75,8 @@ depcomp
 install-sh
 missing
 stamp-h1
+COPYING
+INSTALL
 
 # https://www.gnu.org/software/libtool/
 

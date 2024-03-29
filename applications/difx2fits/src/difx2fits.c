@@ -173,10 +173,11 @@ static void usage(const char *pgm)
 	fprintf(stderr, "    TCAL_PATH                 Path where switched power T_cal values are found.\n");
 	fprintf(stderr, "    TCAL_FILE                 Path to single specific T_cal file.\n");
 	fprintf(stderr, "    DIFX_MAX_SNIFFER_MEMORY   Max number of bytes to allow for sniffing.\n");
-	fprintf(stderr, "    DIFX2FITS_UVFITS_DUMP         Prints in stdout the ascii dump of records from the binary visilibity file. Warning: the output may be huge.\n");
+	fprintf(stderr, "    DIFX2FITS_UVFITS_DUMP     Prints in stdout the ascii dump of records from the binary visilibity file. Warning: the output may be huge.\n");
 	fprintf(stderr, "    DIFX2FITS_UVFITS_DUMP_UTCMIN  Sets the minimum UTC time tag for the visibility dump. Units are seconds. Default is zero.\n");
 	fprintf(stderr, "    DIFX2FITS_UVFITS_DUMP_UTCMAX  Sets the maximum UTC time tag for the visibility dump. Units are seconds. Default is 86400.\n");
-	fprintf(stderr, "    DIFX_USE_CABLE_CAL            If 0, then cable calibration files are ignored. Default is 1.\n");
+	fprintf(stderr, "    DIFX_USE_CABLE_CAL        If 0, then cable calibration files are ignored. Default is 1.\n");
+	fprintf(stderr, "    WRITEFIRSTDELAY           If set, save first delay spectrum as diagnostic to /tmp/firstDelay.txt\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "PLEASE file all bug reports at http://svn.atnf.csiro.au/trac/difx .\n");
 	fprintf(stderr, "Include at a minimum the output of difx2fits with extra verbosity\n");
