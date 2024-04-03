@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: corrparams.h 10966 2023-05-09 06:52:03Z JanWagner $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/corrparams.h $
- * $LastChangedRevision: 10966 $
- * $Author: JanWagner $
- * $LastChangedDate: 2023-05-09 14:52:03 +0800 (二, 2023-05-09) $
- *
- *==========================================================================*/
 
 #ifndef __CORRPARAM_H__
 #define __CORRPARAM_H__

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: jobgroup.cpp 9321 2019-11-18 00:34:59Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 9321 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2019-11-18 08:34:59 +0800 (一, 2019-11-18) $
- *
- *==========================================================================*/
 
 #include <cstdlib>
 #include <algorithm>

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_data.cpp 10425 2022-04-12 19:56:47Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/vexdatamodel/vex_data.cpp $
- * $LastChangedRevision: 10425 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-04-13 03:56:47 +0800 (三, 2022-04-13) $
- *
- *==========================================================================*/
 
 #include <fstream>
 #include <sstream>

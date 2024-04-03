@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: applycorrparams.cpp 11032 2023-08-07 21:14:39Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 11032 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2023-08-08 05:14:39 +0800 (二, 2023-08-08) $
- *
- *==========================================================================*/
 
 #include <cstdlib>
 #include "applycorrparams.h"
