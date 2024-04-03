@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsUV.h 11039 2023-08-14 21:28:47Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsUV.h $
-// $LastChangedRevision: 11039 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2023-08-15 05:28:47 +0800 (二, 2023-08-15) $
-//
-//============================================================================
 #ifndef __FITS_UV_H__
 #define __FITS_UV_H__
 

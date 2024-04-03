@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsGM.c 8269 2018-05-03 20:23:16Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsGM.c $
-// $LastChangedRevision: 8269 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2018-05-04 04:23:16 +0800 (五, 2018-05-04) $
-//
-//============================================================================
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>

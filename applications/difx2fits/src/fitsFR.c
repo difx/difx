@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsFR.c 7652 2017-02-19 21:27:27Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsFR.c $
-// $LastChangedRevision: 7652 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-02-20 05:27:27 +0800 (一, 2017-02-20) $
-//
-//============================================================================
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
