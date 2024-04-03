@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: datacopy.cpp 5460 2013-07-08 19:40:45Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/datacopy.cpp $
- * $LastChangedRevision: 5460 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2013-07-09 03:40:45 +0800 (二, 2013-07-09) $
- *
- *==========================================================================*/
 
 #include <cstdio>
 #include <cstring>
