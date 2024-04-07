@@ -446,8 +446,6 @@ int main (int argc, char * const argv[]) {
     if (!skip) {
       valid = 1;
       if (first) {
-	//printf("DEBUG: First\n");
-	//first = false;
 	threadIndex = 0;
 	fileIndex = 0;
 	allstats[0].threadid = thisthread;
@@ -525,7 +523,6 @@ int main (int argc, char * const argv[]) {
 	ofile[fileIndex].threadid = splitthread? thisthread : -1;
 	ofile[fileIndex].groupid = splitgroup? thisgroup : -1;
 	ofile[fileIndex].file = -1;
-	//printf("DEBUG: ofile %d added %d/%d\n", fileIndex, ofile[fileIndex].threadid, ofile[fileIndex].groupid);
       } 
       
       npacket++;
@@ -541,6 +538,14 @@ int main (int argc, char * const argv[]) {
     if (skip) continue;
 
     if (scale>0) { // Should check nbits==16
+      if (getCODIFBitsPerSample(cheader)!=16) {
+	fprintf(stderr, "Error: Trying to scale data which is not 16 bits\n");
+	exit(1);
+      }
+
+      setCODIFBitsPerSample(cheader, 8);
+      setCODIFFrameBytes(cheader, (getCODIFFrameBytes(cheader)-CODIF_HEADER_BYTES)/2+CODIF_HEADER_BYTES);
+      
       s16 = cdata;
       s8 = (int8_t*)cdata;
       int i;
