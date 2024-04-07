@@ -17,16 +17,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: zerocorr_makeconfig.py 10512 2022-06-22 22:08:07Z WalterBrisken $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/examples/zerocorr_makeconfig.py $
-# $LastChangedRevision$
-# $Author: WalterBrisken $
-# $LastChangedDate: 2022-06-23 06:08:07 +0800 (四, 2022-06-23) $
-#
-#============================================================================
 import argparse
 
 description = "A script for creating a configuration file for the zerocorr program. For details see the help of zerocorr. If options for the second input file are ommited the seetings of the first file are duplicated."

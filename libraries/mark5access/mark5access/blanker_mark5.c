@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: blanker_mark5.c 9289 2019-11-14 00:56:26Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/mark5access/blanker_mark5.c $
-// $LastChangedRevision: 9289 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2019-11-14 08:56:26 +0800 (四, 2019-11-14) $
-//
-//============================================================================
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE

@@ -1,13 +1,3 @@
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5bstate.c 10490 2022-06-03 14:18:03Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/examples/m5bstate.c $
-// $LastChangedRevision: 10490 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-03 22:18:03 +0800 (五, 2022-06-03) $
-//
-//============================================================================
 
 
 #include "config.h"

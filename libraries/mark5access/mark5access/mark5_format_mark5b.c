@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5_format_mark5b.c 9617 2020-07-14 14:34:31Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/mark5access/mark5_format_mark5b.c $
-// $LastChangedRevision: 9617 $
-// $Author: JanWagner $
-// $LastChangedDate: 2020-07-14 22:34:31 +0800 (二, 2020-07-14) $
-//
-//============================================================================
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE

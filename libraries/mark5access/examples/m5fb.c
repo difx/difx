@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5fb.c 0001 2012-05-25 01:15:33Z RichardDOdson $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 0001 $
-// $Author: RichardDodson $
-// $LastChangedDate: 2012-05-25 09:15:33 +0800 (Fri, 25 May 2012) $
-//
-//============================================================================
 
 // Change this to configure detection, if possible
 #define USEGETOPT 1

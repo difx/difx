@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: phxsel.c 5571 2013-08-27 23:37:31Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 5571 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2013-08-28 07:37:31 +0800 (三, 2013-08-28) $
-//
-//============================================================================
 
 #include "config.h"
 #include <stdio.h>

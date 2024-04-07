@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5spec.c 6687 2015-06-03 02:14:10Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 6687 $
-// $Author: JanWagner $
-// $LastChangedDate: 2015-06-03 11:14:10 +0900 (Wed, 03 Jun 2015) $
-//
-//============================================================================
 
 // Useful thoughs at http://www.katjaas.nl/FFTwindow/FFTwindow&filtering.html
 

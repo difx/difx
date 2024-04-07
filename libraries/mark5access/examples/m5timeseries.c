@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5fold.c 3935 2011-11-20 00:29:43Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/examples/m5fold.c $
-// $LastChangedRevision: 3935 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2011-11-20 11:29:43 +1100 (Sun, 20 Nov 2011) $
-//
-//============================================================================
 
 #include "complex.h"
 #include <complex.h>

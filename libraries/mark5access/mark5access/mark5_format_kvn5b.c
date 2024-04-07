@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5_format_kvn5b.c 9282 2019-11-13 22:43:47Z ChrisPhillips $
-// $HeadURL: $
-// $LastChangedRevision: 9282 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2019-11-14 06:43:47 +0800 (四, 2019-11-14) $
-//
-//============================================================================
 
 /* KVN has a non-standard bit pattern in many of their nominally Mark5b recording streams. 
  * It seemed simpler to split of a copy of mark5_format_kvn5b to host these differences. 

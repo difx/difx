@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5_stream.h 5533 2013-08-07 05:43:41Z RichardDodson $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.h $
-// $LastChangedRevision: 5533 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2019-11-14 08:56:26 +0800 (四, 2019-11-14) $
-//
-//============================================================================
 
 #ifndef __MARK5_STREAM_H__
 #define __MARK5_STREAM_H__

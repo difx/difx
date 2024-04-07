@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5_stream_file.c 6931 2015-08-17 00:46:20Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/mark5access/mark5_stream_file.c $
-// $LastChangedRevision: 6931 $
-// $Author: JanWagner $
-// $LastChangedDate: 2015-08-17 08:46:20 +0800 (一, 2015-08-17) $
-//
-//============================================================================
 
 #include "config.h"
 

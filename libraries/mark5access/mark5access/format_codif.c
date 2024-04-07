@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: format_codif.c 10820 2022-11-14 03:18:27Z ChrisPhillips $
-// $HeadURL: $
-// $LastChangedRevision: 10820 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2022-11-14 11:18:27 +0800 (一, 2022-11-14) $
-//
-//============================================================================
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE

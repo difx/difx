@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5bfix.h 5567 2013-08-27 02:55:43Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 5567 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2013-08-27 10:55:43 +0800 (二, 2013-08-27) $
-//
-//============================================================================
 
 #ifndef __MARK5B_FIX__
 #define __MARK5B_FIX__

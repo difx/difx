@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5bfix.c 6491 2015-02-11 01:56:30Z ChrisPhillips $
-// $HeadURL: $
-// $LastChangedRevision: 6491 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2015-02-11 09:56:30 +0800 (三, 2015-02-11) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

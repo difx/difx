@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5d.c 10373 2022-02-06 12:17:59Z ShaoguangGuo $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 10373 $
-// $Author: ShaoguangGuo $
-// $LastChangedDate: 2022-02-06 20:17:59 +0800 (日, 2022-02-06) $
-//
-//============================================================================
 
 #define _FILE_OFFSET_BITS 64
 

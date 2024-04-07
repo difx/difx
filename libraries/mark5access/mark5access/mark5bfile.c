@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5bfile.c 9925 2021-02-23 15:43:09Z JanWagner $
-// $HeadURL: $
-// $LastChangedRevision: 9925 $
-// $Author: JanWagner $
-// $LastChangedDate: 2021-02-23 23:43:09 +0800 (二, 2021-02-23) $
-//
-//============================================================================
 
 #include "config.h"
 #include <stdio.h>

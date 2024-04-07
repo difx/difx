@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fixmark5b.c 7676 2017-03-09 04:28:46Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 7676 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-03-09 12:28:46 +0800 (四, 2017-03-09) $
-//
-//============================================================================
 
 #include "config.h"
 #include <stdio.h>

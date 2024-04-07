@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: directory2filelist.c 7717 2017-04-26 16:01:21Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 7717 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-04-27 00:01:21 +0800 (四, 2017-04-27) $
-//
-//============================================================================
 
 #define _LARGEFILE64_SOURCE 1
 #define _FILE_OFFSET_BITS 64
