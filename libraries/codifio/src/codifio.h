@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdifio.h 7356 2016-06-24 14:34:03Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk/src/vdifio.h $
-// $LastChangedRevision: 7356 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2016-06-25 00:34:03 +1000 (Sat, 25 Jun 2016) $
-//
-//============================================================================
 	
 #ifndef __CODIFIO_H__
 #define __CODIFIO_H__
