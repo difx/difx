@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_polyco.c 7037 2015-10-15 01:49:46Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_polyco.c $
-// $LastChangedRevision: 7037 $
-// $Author: JanWagner $
-// $LastChangedDate: 2015-10-15 03:49:46 +0200 (Thu, 15 Oct 2015) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

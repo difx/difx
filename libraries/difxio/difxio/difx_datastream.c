@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_datastream.c 10966 2023-05-09 06:52:03Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_datastream.c $
-// $LastChangedRevision: 10966 $
-// $Author: JanWagner $
-// $LastChangedDate: 2023-05-09 00:52:03 -0600 (Tue, 09 May 2023) $
-//
-//============================================================================
 
 #define _POSIX_C_SOURCE 200809L
 #include <stdio.h>

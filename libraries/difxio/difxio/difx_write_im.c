@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_write_im.c 9568 2020-06-23 22:22:04Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_write_im.c $
-// $LastChangedRevision: 9568 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2020-06-24 06:22:04 +0800 (三, 2020-06-24) $
-//
-//============================================================================
 
 #include <stdlib.h>
 #include <string.h>

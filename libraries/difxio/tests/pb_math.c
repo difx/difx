@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: pb_math.c 4891 2012-09-27 08:14:07Z JohnMorgan $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
- * $LastChangedRevision: 4891 $
- * $Author: JohnMorgan $
- * $LastChangedDate: 2012-09-27 16:14:07 +0800 (四, 2012-09-27) $
- *
- *==========================================================================*/
 
 #include <math.h>
 
