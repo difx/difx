@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vsum.c 8919 2019-05-07 13:06:34Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 8919 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2019-05-07 21:06:34 +0800 (二, 2019-05-07) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <string.h>

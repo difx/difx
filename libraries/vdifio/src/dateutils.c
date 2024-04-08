@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: dateutils.c 6957 2015-08-31 15:34:32Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk/src/vdifio.h $
-// $LastChangedRevision: 6957 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2015-08-31 23:34:32 +0800 (一, 2015-08-31) $
-//
-//============================================================================
 
 #include "dateutils.h"
 

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdifmark6.h 8356 2018-06-21 20:23:00Z MarkWainright $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk/src/vdifio.c $
-// $LastChangedRevision: 8356 $
-// $Author: MarkWainright $
-// $LastChangedDate: 2018-06-21 15:23:00 -0500 (Thu, 21 Jun 2018) $
-//
-//============================================================================
 
 #ifndef __MARK6_GATHER_VDIF_H__
 #define __MARK6_GATHER_VDIF_H__

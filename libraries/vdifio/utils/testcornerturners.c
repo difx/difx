@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: testcornerturners.c 6766 2015-06-21 22:00:51Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 6766 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2015-06-22 06:00:51 +0800 (一, 2015-06-22) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <string.h>

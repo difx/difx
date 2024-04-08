@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: cornerturners.c 10514 2022-06-23 16:48:18Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk/src/vdifio.h $
-// $LastChangedRevision: 10514 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-24 00:48:18 +0800 (五, 2022-06-24) $
-//
-//============================================================================
 
 #include <string.h>
 #include <stdlib.h>

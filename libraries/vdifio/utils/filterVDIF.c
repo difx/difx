@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: filterVDIF.c 10306 2021-11-09 16:49:57Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 10306 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2021-11-10 00:49:57 +0800 (三, 2021-11-10) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <string.h>

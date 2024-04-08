@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: captureUDPVDIF.c 8268 2018-05-03 20:17:08Z WalterBrisken $
- * $HeadURL:  $
- * $LastChangedRevision: 8268 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2018-05-04 04:17:08 +0800 (五, 2018-05-04) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>

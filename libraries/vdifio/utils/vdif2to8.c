@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdif2to8.c 6167 2014-06-25 01:52:03Z ChrisPhillips $
-// $HeadURL: $
-// $LastChangedRevision: 6167 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2014-06-25 09:52:03 +0800 (三, 2014-06-25) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <string.h>

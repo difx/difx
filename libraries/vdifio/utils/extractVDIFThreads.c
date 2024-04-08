@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: extractVDIFThreads.c 9672 2020-08-19 05:27:55Z ChrisPhillips $
- * $HeadURL:  $
- * $LastChangedRevision: 9672 $
- * $Author: ChrisPhillips $
- * $LastChangedDate: 2020-08-19 13:27:55 +0800 (三, 2020-08-19) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <string.h>

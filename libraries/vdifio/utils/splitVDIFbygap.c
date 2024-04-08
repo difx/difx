@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: printVDIFheader.c 8498 2018-09-21 18:47:05Z WalterBrisken $
- * $HeadURL:  $
- * $LastChangedRevision: 8498 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2018-09-21 12:47:05 -0600 (Fri, 21 Sep 2018) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdiffile.c 10237 2021-10-06 15:56:21Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 10237 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2021-10-06 23:56:21 +0800 (三, 2021-10-06) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <string.h>

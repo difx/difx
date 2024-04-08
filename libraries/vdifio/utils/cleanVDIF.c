@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: cleanVDIF.c 10345 2021-12-14 07:33:24Z JanWagner $
- * $HeadURL:  $
- * $LastChangedRevision: 10345 $
- * $Author: JanWagner $
- * $LastChangedDate: 2021-12-14 15:33:24 +0800 (二, 2021-12-14) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>

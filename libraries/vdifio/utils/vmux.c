@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vmux.c 10448 2022-04-29 16:13:22Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 10448 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-04-30 00:13:22 +0800 (六, 2022-04-30) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <string.h>

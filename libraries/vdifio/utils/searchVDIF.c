@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: searchVDIF.c 7329 2016-06-09 16:07:09Z WalterBrisken $
- * $HeadURL:  $
- * $LastChangedRevision: 7329 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2016-06-10 00:07:09 +0800 (五, 2016-06-10) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>

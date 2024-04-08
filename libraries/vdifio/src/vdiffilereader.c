@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdiffile.c 8223 2018-03-28 13:00:49Z JanWagner $
-// $HeadURL: $
-// $LastChangedRevision: 8223 $
-// $Author: JanWagner $
-// $LastChangedDate: 2018-03-28 15:00:49 +0200 (Wed, 28 Mar 2018) $
-//
-//============================================================================
 //
 // Assistive VDIF reader. Allows opening a (multi-threaded) VDIF file and
 // reading it back with the frames of threads tightly "interleaved".
