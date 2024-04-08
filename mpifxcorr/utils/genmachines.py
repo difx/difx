@@ -18,16 +18,6 @@
 #   Free Software Foundation, Inc.,                                       *
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: genmachines.py 11018 2023-07-18 09:07:14Z JanWagner $
-# $HeadURL: $
-# $LastChangedRevision: 11018 $
-# $Author: JanWagner $
-# $LastChangedDate: 2023-07-18 11:07:14 +0200 (Tue, 18 Jul 2023) $
-#
-#============================================================================
 
 #from string import   
 from sys import exit
