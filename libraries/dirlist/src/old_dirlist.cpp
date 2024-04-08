@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: old_dirlist.cpp 10629 2022-09-13 13:36:01Z JanWagner $
-// $HeadURL: $
-// $LastChangedRevision: 10629 $
-// $Author: JanWagner $
-// $LastChangedDate: 2022-09-13 21:36:01 +0800 (二, 2022-09-13) $
-//
-//============================================================================
 
 #include <cstdio>
 #include <cstring>
