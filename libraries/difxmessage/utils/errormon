@@ -19,16 +19,6 @@
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: errormon 9385 2019-12-26 16:43:32Z WalterBrisken $
-# $HeadURL: $
-# $LastChangedRevision: 9385 $
-# $Author: WalterBrisken $
-# $LastChangedDate: 2019-12-27 00:43:32 +0800 (五, 2019-12-27) $
-#
-#============================================================================
 
 # Note: this utility can run under python2.7 or python3
 

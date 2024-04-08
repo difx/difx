@@ -1,15 +1,5 @@
 #!/bin/env python3
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: restartdifx 9155 2019-09-16 11:21:21Z WalterBrisken $
-# $HeadURL: $
-# $LastChangedRevision: 9155 $
-# $Author: WalterBrisken $
-# $LastChangedDate: 2019-09-16 19:21:21 +0800 (一, 2019-09-16) $
-#
-#============================================================================
 
 # Note: this utility can run under python2.7 or python3
 

@@ -20,16 +20,6 @@
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: mk6mon 10556 2022-07-27 09:44:21Z HelgeRottmann $
-# $HeadURL: $
-# $LastChangedRevision: 10556 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2022-07-27 17:44:21 +0800 (三, 2022-07-27) $
-#
-#============================================================================
 
 # Note: this utility can run under python2.7 or python3
 

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difxreceive.c 5981 2014-03-12 14:33:56Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxmessage/difxmessage/difxreceive.c $
-// $LastChangedRevision: 5981 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2014-03-12 22:33:56 +0800 (三, 2014-03-12) $
-//
-//============================================================================
 #include <stdio.h>
 #include <sys/socket.h>
 #include "../difxmessage.h"

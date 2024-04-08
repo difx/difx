@@ -19,16 +19,6 @@
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: statemon 9310 2019-11-15 04:00:51Z WalterBrisken $
-# $HeadURL: $
-# $LastChangedRevision: 9310 $
-# $Author: WalterBrisken $
-# $LastChangedDate: 2019-11-15 12:00:51 +0800 (五, 2019-11-15) $
-#
-#============================================================================
 
 # Note: this utility can run under python2.7 or python3
 

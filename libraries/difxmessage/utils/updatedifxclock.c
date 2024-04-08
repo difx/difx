@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: sendtransient.c 2788 2010-11-12 23:04:31Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxmessage/trunk/utils/sendtransient.c $
- * $LastChangedRevision: 2788 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2010-11-12 16:04:31 -0700 (Fri, 12 Nov 2010) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>
