@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: difxmachines.py 10988 2023-06-19 06:30:36Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/difxfile/difxmachines.py $
-# $LastChangedRevision: 10988 $
-# $Author: JanWagner $
-# $LastChangedDate: 2023-06-19 14:30:36 +0800 (一, 2023-06-19) $
-#
-#============================================================================
 
 __author__="Helge Rottmann and Cormac Reynolds"
 
