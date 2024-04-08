@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark6_sg_vfs.c 10551 2022-07-26 12:41:48Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark6sg/mark6sg/mark6_sg_vfs.c $
-// $LastChangedRevision: 10551 $
-// $Author: JanWagner $
-// $LastChangedDate: 2022-07-26 20:41:48 +0800 (二, 2022-07-26) $
-//
-//============================================================================
 #include "mark6sg.h"
 #include "mark6_sg_vfs_impl.h"
 #include "mark6_sg_format.h"

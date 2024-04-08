@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark6_sg_utils.h 9558 2020-06-18 11:56:24Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark6sg/mark6sg/mark6_sg_utils.h $
-// $LastChangedRevision: 9558 $
-// $Author: JanWagner $
-// $LastChangedDate: 2020-06-18 19:56:24 +0800 (四, 2020-06-18) $
-//
-//============================================================================
 #ifndef MARK6_SG_UTILS__H
 #define MARK6_SG_UTILS__H
 
