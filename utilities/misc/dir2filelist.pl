@@ -1,14 +1,4 @@
 #!/usr/bin/perl -w
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: dir2filelist.pl 2692 2010-10-01 14:35:36Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/misc/dir2filelist.pl $
-# $LastChangedRevision: 2692 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2010-10-01 22:35:36 +0800 (五, 2010-10-01) $
-#
-#===========================================================================
 
 $numArgs = @ARGV;
 $prefix = "";
