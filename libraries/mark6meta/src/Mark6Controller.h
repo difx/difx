@@ -13,16 +13,6 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: Mark6Module.h 7764 2017-05-16 18:23:07Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 7764 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-05-16 20:23:07 +0200 (Tue, 16 May 2017) $
-//
-//============================================================================
 #ifndef MARK6CONTROLLER_H
 #define	MARK6CONTROLLER_H
 
