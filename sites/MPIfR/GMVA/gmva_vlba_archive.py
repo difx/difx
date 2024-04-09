@@ -17,16 +17,6 @@
 #   Free Software Foundation, Inc.,                                       *
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: gmva_vlba_archive.py 10887 2023-02-15 08:32:23Z JanWagner $
-# $HeadURL: $
-# $LastChangedRevision: 10887 $
-# $Author: JanWagner $
-# $LastChangedDate: 2023-02-15 16:32:23 +0800 (三, 2023-02-15) $
-#
-#============================================================================
 
 import datetime
 import os
