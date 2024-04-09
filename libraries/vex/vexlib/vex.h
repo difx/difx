@@ -16,16 +16,6 @@ int yylex();
 void yyerror(const char*);
 
 /* structure declarations */
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vex.h 10815 2022-11-11 06:25:29Z ChrisPhillips $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/vex/vexlib/vex.h $
-// $LastChangedRevision: 10815 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2022-11-11 14:25:29 +0800 (五, 2022-11-11) $
-//
-//============================================================================
 
 struct llist {
   struct llist *next;

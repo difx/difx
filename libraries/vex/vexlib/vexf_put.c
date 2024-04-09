@@ -1,15 +1,5 @@
 /* vexf.c FORTRAN VEX library */
 /* ----------------------------------------------------------------------- */
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vexf_put.c 9134 2019-09-04 01:34:52Z ChrisPhillips $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/vex/vexlib/vexf_put.c $
-// $LastChangedRevision: 9134 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2019-09-04 09:34:52 +0800 (三, 2019-09-04) $
-//
-//============================================================================
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
