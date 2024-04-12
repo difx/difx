@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2017 by Walter Brisken                             *
+ *   Copyright (C) 2007-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: difxmessage.h 10566 2022-07-29 16:26:50Z HelgeRottmann $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxmessage/difxmessage.h $
- * $LastChangedRevision: 10566 $
- * $Author: HelgeRottmann $
- * $LastChangedDate: 2022-07-30 00:26:50 +0800 (六, 2022-07-30) $
- *
- *==========================================================================*/
 
 #ifndef __DIFX_MESSAGE_H__
 #define __DIFX_MESSAGE_H__
@@ -74,7 +64,10 @@ int MulticastSend(const char *group, int port, const char *message, int length);
 /* functions for receive */
 
 int openMultiCastSocket(const char *group, int port);
+
 int closeMultiCastSocket(int sock);
+
+/* from must be either null or point to an existing string of at least 16 characters */
 int MultiCastReceive(int sock, char *message, int maxlen, char *from);
 
 
@@ -715,10 +708,14 @@ int difxMessageSendVsis(const char *state, const char *to);
 
 int difxMessageReceiveOpen();
 int difxMessageReceiveClose(int sock);
+
+/* from must be either null or point to an existing string of at least 16 characters */
 int difxMessageReceive(int sock, char *message, int maxlen, char *from);
 
 int difxMessageBinaryOpen(int destination);
 int difxMessageBinaryClose(int sock);
+
+/* from must be either null or point to an existing string of at least 16 characters */
 int difxMessageBinaryRecv(int sock, char *message, int maxlen, char *from);
 
 void fprintDifxMessageSTARecord(FILE *out, const DifxMessageSTARecord *record, int printData);
