@@ -392,7 +392,7 @@ C    Verify that the UT1 module flow control flag is valid
       If (KUT1C.lt.0 .or. KUT1C.gt.3) Then
         Write(6,'( "In UT1I, UT1 module control flag is invalid. ",/,
      .  "  KUT1C =",I5,/)') KUT1C
-        CALL CKILL(6HUT1I   ,0,0)
+        CALL CKILL('UT1I' ,int2(0), int2(0))
       Endif
 C
 C----------------------------------------------------------------------------
@@ -410,14 +410,14 @@ C
       IF (KERR(1).NE.0) Then
         IF (KERR(1).EQ.1) WRITE(6,'("No UT1 type Lcode (TIDALUT1)!",
      .   " Update with true UT1 and try again. ")')
-        CALL CKILL(6HUT1I  ,1,KERR(1))
+        CALL CKILL('UT1I', int2(1), int2(KERR(1)))
       Endif
 C
       If(ISHRTFL.ne.1 .and. ISHRTFL.ne.-2) Then
         Write(6,'(
      .  "In subroutine UT1I: The flag ISHRTFL from the database",/,
      .  "must have a value of 1 or -2. Its value is",I5)') ISHRTFL
-        CALL CKILL(6HUT1I   ,0,0)
+        CALL CKILL('UT1I', int2(0), int2(0))
       Endif
 C
 C     Call 'Get4' to obtain the final UT1 information from the database. If
@@ -467,7 +467,7 @@ C         C_LUT1M(31:40) = ' Extrapolated Values'
 C
       If(KERR(1).eq.2) then
        Write(6,'("In UT1I: UT1 information array has wrong size!")')
-       Call CKill(6hUT1I  ,KERR(1),1)
+       CALL CKILL('UT1I', int2(KERR(1)), int2(1))
       Endif
 C
       IF (.not.table_found)
@@ -475,14 +475,14 @@ C
         Write(6,'(
      .  "In UT1I. This database contains NO UT1 information.",/,
      .  " Quitting!")')
-        CALL CKILL(6HUT1I  ,0,0)
+        CALL CKILL('UT1I', int2(0), int2(0))
       Endif
 C
       If(abs(UT1IF(4)-1.D0) .gt.  .00001) then
         Write(6,'(
      .  "In UT1I: The scaling law for UT1 table must be 1.0! ",/,
      .  "It is not.  Quitting!")')
-        Call CKill(6hUT1I  ,0,0)
+        CALL CKILL('UT1I', int2(0), int2(0))
       Endif
 C
       Increment = UT1IF(2) + .01
@@ -493,7 +493,7 @@ C
      .  "The maximum allowable UT1 table is ",i5," points.",/,
      .  "The table in the database contains ",i5," points.",
      .  "Quitting.")') max_ut1_pts, Tab_len
-        Call CKill(6hUT1I  ,0,0)
+        CALL CKILL('UT1I', int2(0), int2(0))
       Endif
 C
       ELSE                           !Data base or External Input? 
@@ -571,7 +571,7 @@ C
      .   CALL GET4('PUT1 PTS      ',UT1PT,Tab_len,1,1,NDO,KERR(7))
        If(type_found.eq.'X')
      .   CALL GET4('EUT1 PTS      ',UT1PT,Tab_len,1,1,NDO,KERR(7))
-       IF (KERR(7) .ne. 0) Call CKILL(6hWOBI  ,7,KERR(7))
+       IF (KERR(7) .ne. 0) CALL CKILL('WOBI', int2(7), int2(KERR(7)))
 C
       ELSE                           !Data Base or External Input? 
 C
@@ -600,7 +600,7 @@ C
         Else
           ct  = 0.0d0     ! fraction of day
           xjd = UT1IF(1) + (Itab-1)*UT1IF(2)
-	  CALL NUTFA  (xjd, ct, tc2000, fa, fad)
+          CALL NUTFA  (xjd, ct, tc2000, fa, fad)
           CALL UT1SZT (fa, fad, DUT, DLOD, DOMEGA)
 C
           if(ISHRTFL.eq.1) then       !starting with true UT1
@@ -664,7 +664,7 @@ C    ?????
         MEPOCH = IEPOCH
         IF (MEPOCH .GT. MXEPCH) MEPOCH = MXEPCH
         CALL GET4('ROTEPOCH      ',ROTEPH,2,MEPOCH,1,NDO,KERR(8))
-        IF (KERR(8) .NE. 0) CALL CKILL(6HUT1I  ,8,KERR(8))
+        IF (KERR(8) .NE. 0) CALL CKILL('UT1I', int2(8), int2(KERR(8)))
       ENDIF                       ! Already have ROTEPH?
 C
 C     Compute TAI - UT1 and the short period tidal correction for the
@@ -1302,7 +1302,7 @@ C
           Write(6,'(
      .    "Error in UT1MU! Attemped to interpolate outside UT1 table.",/
      .    ,"INT =",I5," Table length =",i5)') INT, UT1IF(3)
-          Call ckill(6hUT1MU ,0,0)
+          CALL CKILL('UT1MU', int2(0), int2(0))
         Endif
 C
         ATMUT1 =
@@ -1352,7 +1352,7 @@ C     Abnormal termination.
       WRITE(6,'(" CALC has terminated in subroutine UT1MU.",
      .       /" The interpolation is outside the range of the UT1",
      .       " table.  NN = ",I2," ILAST = ",I2," .")') NN, ILAST
-      CALL CKILL (6HUT1MU ,0,0)
+      CALL CKILL('UT1MU', int2(0), int2(0))
       END
 C
 C******************************************************************************
