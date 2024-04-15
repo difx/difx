@@ -135,8 +135,9 @@
       MXUTPM = 20
 !
 !   Initialize all flow control and debug output flags to zero.
-      DO 400 N = 1, NFLAG
- 400    IFLAG(N) = 0
+      DO  N = 1, NFLAG
+        IFLAG(N) = 0
+      ENDDO
 !
 !
 !   Get the apriori's from the .calc file.
