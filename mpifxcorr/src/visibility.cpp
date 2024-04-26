@@ -930,7 +930,7 @@ void Visibility::writeSWIN(int dumpmjd, double dumpseconds)
               freqindex = config->getDTotalFreqIndex(currentconfigindex, i, k);
             }
           }
-          if(config->isFrequencyOutput(currentconfigindex, freqindex)) {
+          if(config->isFrequencyOutput(currentconfigindex, freqindex) || config->isEquivalentFrequencyOutput(currentconfigindex, freqindex)) {
             freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
             if(autocorrweights[i][j][k] > 0.0)
             {
