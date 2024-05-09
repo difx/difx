@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2022 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2007-2024 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_input.c 11076 2023-09-14 17:43:15Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_input.c $
-// $LastChangedRevision: 11076 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2023-09-14 11:43:15 -0600 (Thu, 14 Sep 2023) $
-//
-//============================================================================
 
 #include <math.h>
 #include <stdio.h>
@@ -684,10 +674,8 @@ static int generateFreqSets(DifxInput *D, const DifxDataFilterOptions *filterOpt
 
 			if(freqIsUsed[fqId] <= 0)
 			{
-				if(verbose > 3)
-				{
-					printf("difx_input(generateFreqSets):  frId= %4d  not used        \n", fqId);
-				}
+				/* ignore for now; later see if we can match with a used frequency */
+
 				continue;
 			}
 
@@ -730,6 +718,42 @@ static int generateFreqSets(DifxInput *D, const DifxDataFilterOptions *filterOpt
 			if(verbose > 3)
 			{
 				printf ( "difx_input(generateFreqSets):  frId= %4d  i= %4d  configId= %2d dfs->freqId2IF[fqId]= %4d  dfs->nIF= %4d\n", fqId, i, configId, dfs->freqId2IF[fqId], dfs->nIF );
+			}
+		}
+		for(fqId = 0; fqId < D->nFreq; ++fqId)
+		{
+			if(freqIsUsed[fqId] <= 0)
+			{
+				int i;
+
+				/* try to find equivalent frequency and remap this to that */
+				
+				for(i = 0; i < dfs->nIF; ++i)
+				{
+					if(D->freq[fqId].bw == dfs->IF[i].bw && (
+						(D->freq[fqId].sideband == 'U' && D->freq[fqId].freq == dfs->IF[i].freq) ||
+						(D->freq[fqId].sideband == 'L' && D->freq[fqId].freq == dfs->IF[i].freq + dfs->IF[i].bw) ))
+					{
+						break;
+					}
+				}
+				if(i < dfs->nIF)
+				{
+					dfs->freqId2IF[fqId] = i;
+					if(verbose > 3)
+					{
+						printf("difx_input(generateFreqSets):  frId= %4d  mapped by equivalence to i = %d\n", fqId, i);
+					}
+				}
+				else
+				{
+					if(verbose > 3)
+					{
+						printf("difx_input(generateFreqSets):  frId= %4d  not used\n", fqId);
+					}
+				}
+
+				continue;
 			}
 		}
 
