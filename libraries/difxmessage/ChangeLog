@@ -1,3 +1,8 @@
+Version 2.8.1
+~~~~~~~~~~~~~
+* Version post DiFX 2.8.1
+* Fix usage of recvfrom() and add some associated comments
+
 Version 2.8.0
 ~~~~~~~~~~~~~
 * Version bump prior to DIFX-2.8 branching, Nov 4, 2022

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,28 +16,19 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: testdifxmessagereceive.c 4838 2012-09-22 23:34:40Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
- * $LastChangedRevision: 4838 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2012-09-23 07:34:40 +0800 (日, 2012-09-23) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
 #include "difxmessage.h"
+#include "../difxmessage/difxmessageinternal.h"
 
 #define BINARY_OUTPUT_FILE	"binary.out"
 
 const char program[] = "testdifxmessagereceive";
-const char version[] = "1.1";
-const char verdate[] = "20110409";
+const char version[] = "1.2";
+const char verdate[] = "20240405";
 const char author[]  = "Walter Brisken";
 
 const int MAX_MTU = 9000;
@@ -217,7 +208,15 @@ int main(int argc, char **argv)
 
 		difxMessageInit(-1, argv[0]);
 
+		printf("\nReceiving from group=%s, port=%d", difxMessageGroup, difxMessagePort);
+
 		sock = difxMessageReceiveOpen();
+		if(sock < 0)
+		{
+			fprintf(stderr, "\n\nError opening multicast socket\n");
+			exit(0);
+		}
+		printf("-> socket=%d\n", sock);
 
 		printf("\n");
 

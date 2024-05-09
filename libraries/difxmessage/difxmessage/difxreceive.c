@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2014 by Walter Brisken                             *
+ *   Copyright (C) 2007-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difxreceive.c 5981 2014-03-12 14:33:56Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxmessage/difxmessage/difxreceive.c $
-// $LastChangedRevision: 5981 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2014-03-12 22:33:56 +0800 (三, 2014-03-12) $
-//
-//============================================================================
 #include <stdio.h>
 #include <sys/socket.h>
 #include "../difxmessage.h"
@@ -58,6 +48,7 @@ int difxMessageReceiveClose(int sock)
 	return closeMultiCastSocket(sock);
 }
 
+/* from must be either null or point to an existing string of at least 16 characters */
 int difxMessageReceive(int sock, char *message, int maxlen, char *from)
 {
 	return MultiCastReceive(sock, message, maxlen, from);
