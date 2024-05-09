@@ -406,6 +406,7 @@ Configuration::~Configuration()
       delete [] configs[i].frequsedbysomebaseline;
       delete [] configs[i].equivfrequsedbysomebaseline;
       delete [] configs[i].freqoutputbysomebaseline;
+      delete [] configs[i].equivfreqoutputbysomebaseline;
       for(int j=0;j<freqtablelength;j++) {
         delete [] configs[i].frequsedbybaseline[j];
         delete [] configs[i].equivfrequsedbybaseline[j];
@@ -2265,10 +2266,12 @@ bool Configuration::populateFrequencyDetails()
     configs[i].frequsedbysomebaseline = new bool[freqtablelength]();
     configs[i].equivfrequsedbysomebaseline = new bool[freqtablelength]();
     configs[i].freqoutputbysomebaseline = new bool[freqtablelength]();
+    configs[i].equivfreqoutputbysomebaseline = new bool[freqtablelength]();
     for(int j=0;j<freqtablelength;j++) {
       configs[i].frequsedbysomebaseline[j] = false;
       configs[i].equivfrequsedbysomebaseline[j] = false;
       configs[i].freqoutputbysomebaseline[j] = false;
+      configs[i].equivfreqoutputbysomebaseline[j] = false;
     }
     configs[i].frequsedbybaseline = new bool*[freqtablelength]();
     configs[i].equivfrequsedbybaseline = new bool*[freqtablelength]();
@@ -2294,11 +2297,11 @@ bool Configuration::populateFrequencyDetails()
     }
   }
 
-  //for each freq, check if an equivalent frequency is used, to ensure autocorrelations also get sent where required
+  //for each freq, check if an equivalent frequency is used or is output, to ensure autocorrelations also get sent where required
   double bwdiff, freqdiff;
   for(int i=0;i<numconfigs;i++) {
     for(int j=0;j<freqtablelength;j++) {
-      if(!configs[i].frequsedbysomebaseline[j]) {
+      if(!configs[i].frequsedbysomebaseline[j] || !configs[i].freqoutputbysomebaseline[j]) {
         for(int k=0;k<freqtablelength;k++) {
           bwdiff = freqtable[j].bandwidth - freqtable[k].bandwidth;
           freqdiff = freqtable[j].bandedgefreq - freqtable[k].bandedgefreq;
@@ -2314,6 +2317,8 @@ bool Configuration::populateFrequencyDetails()
           {
             if(configs[i].frequsedbysomebaseline[k])
               configs[i].equivfrequsedbysomebaseline[j] = true;
+            if(configs[i].freqoutputbysomebaseline[k])
+              configs[i].equivfreqoutputbysomebaseline[j] = true;
           }
         }
       }
