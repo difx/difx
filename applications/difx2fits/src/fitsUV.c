@@ -240,6 +240,7 @@ static double vanVleck(int b1, int b2)
 		{4, 4, 0.988},
 		{4, 8, 0.989},
 		{8, 8, 0.991},
+		{16, 16, 1.0},
 
 		{0, 0, 0}		/* list terminator */
 	};
