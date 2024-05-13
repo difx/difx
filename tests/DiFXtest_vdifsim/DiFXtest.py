@@ -27,6 +27,12 @@ def pre_checks():
   if (locate == None):
     print('generateVDIF not found, please make sure it is installed.')  
     quit()
+  locate = shutil.which('vdifsim')
+  if (locate == None):
+    print('vdifsim not found, please make sure it is installed.')
+    quit()
+
+
 
 def generate_vdifsim_config(cores):
   filepath = os.path.expanduser('~') 
@@ -107,6 +113,7 @@ def filter_auto_correlations(fits_filename):
 
   warnings.resetwarnings() 
   warnings.filterwarnings('ignore',category=UserWarning,append=True)  
+  warnings.filterwarnings('ignore', category=RuntimeWarning, append=True)
   hdulist = fits.open(fits_filename)
   tbdata = hdulist[8].data
   hdulist.close()  
@@ -121,7 +128,7 @@ def filter_auto_correlations(fits_filename):
   hdulist.close()
   warnings.resetwarnings()
   warnings.filterwarnings('always',category=UserWarning,append=True)
-
+  warnings.filterwarnings('ignore', category=RuntimeWarning, append=True)
 
 def get_binary_files(directory):
   input_files = []
@@ -522,7 +529,7 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol):
 
   warnings.resetwarnings()
   warnings.filterwarnings('ignore', category=UserWarning, append=True) 
-
+  warnings.filterwarnings('ignore', category=RuntimeWarning, append=True)
   fd = fits.FITSDiff(hdu1, hdu2, ignore_keywords=['DATE-MAP','CDATE','HISTORY'], atol=abstol , rtol=reltol)  
   diff_fitslog = working_directory + "/fits_diff_vs_cpu.log"  
   output = fd.report(fileobj=diff_fitslog, indent=0, overwrite=True) 
@@ -531,6 +538,7 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol):
   hdu2.close()
   warnings.resetwarnings()
   warnings.filterwarnings('always', category=UserWarning, append=True)
+  warnings.filterwarnings('always', category=RuntimeWarning, append=True)
   #print("comparing fits_file = " + fits_file + " VS. benchmark fits file = " + fits_file_benchmark)
   #print(fd.identical)
   #print(output)
@@ -625,7 +633,7 @@ def repackage_tests(testnames):
     contents = os.listdir(working_directory) 
     for item in contents:
       if (item[-4:] == '.vex' or item[-4:] == '.oms' or item[-7:] == ".config" or item == 'benchmark_results'):
-        print(item)
+        #print(item)
         if (item == 'benchmark_results'):
           tar_command = tar_command + " " + working_directory + "/benchmark_results/*" 
         else:
@@ -769,7 +777,8 @@ def main():
     else:
       run_difxcalc(testname)
     if (is_testdata_empty(testname) or generateVDIF == "YES"):
-      run_vdifsim(testname)
+        print("running vdifsim")
+        run_vdifsim(testname)
     if (testname[-3:] == "gpu"):  
       run_mpifxcorr_gpumode(testname, numcores)
     else:
