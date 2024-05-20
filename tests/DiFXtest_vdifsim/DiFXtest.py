@@ -84,9 +84,21 @@ def generate_filelist(testname):
   current_directory = get_testdir()
   working_directory = current_directory + "/" + testname + "/"
   testdata_dir = current_directory + "/testdata"
-
-  args = "makesimfilelist " + testname + ".vex " + testdata_dir
-  subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+  if (testname[-3:] == "gpu"):
+    basename = testname[:-4]  
+    args = "makesimfilelist " + testname + ".vex " + testdata_dir + " --name=" + basename
+    subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+    contents = os.listdir(working_directory)
+    for item in contents:
+      if (item[-9:] == ".filelist"):
+        filelist_name = working_directory + item  
+        str1 = testname[:-4] + "."
+        str2 = testname + "." 
+        new_filelist_name = filelist_name.replace(str1,str2)
+        os.rename(filelist_name,new_filelist_name)
+  else:
+    args = "makesimfilelist " + testname + ".vex " + testdata_dir
+    subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
   return 
 
 def get_results_and_setup_files():
@@ -671,7 +683,7 @@ def display_test_results(passfail):
   for testname in passfail:
     fits_result = "FAIL"
     if (passfail[testname][1]): fits_result = "PASS"
-    string = "{0:30}{1}".format(testname, fits_result)
+    string = "{0:33}{1}".format(testname, fits_result)
     print(string)
 
   print()
@@ -680,7 +692,7 @@ def display_test_results(passfail):
   print()
   for testname in passfail:
     binary_result = passfail[testname][0]
-    string = "{0:30}{1}".format(testname,binary_result)
+    string = "{0:33}{1}".format(testname,binary_result)
     print(string)
   print()
   print()
@@ -776,9 +788,10 @@ def main():
       shutil.copy2(benchmark_im_file, working_directory)
     else:
       run_difxcalc(testname)
-    if (is_testdata_empty(testname) or generateVDIF == "YES"):
-        print("running vdifsim")
-        run_vdifsim(testname)
+    if (testname[-3:] != "gpu"):
+      if (is_testdata_empty(testname) or generateVDIF == "YES"):
+          print("running vdifsim")
+          run_vdifsim(testname) 
     if (testname[-3:] == "gpu"):  
       run_mpifxcorr_gpumode(testname, numcores)
     else:
