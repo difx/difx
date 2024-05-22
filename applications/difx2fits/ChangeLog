@@ -24,6 +24,7 @@ Version 3.8.0
   - previously was hard coded to be 15 minutes
 * Sniffer: don't interpolate across scans, even on same source
 * Sniffer: flush last records before program exit
+* --two-pcal-tables option added: Will create one table as prescribed in the .input files and the other containing all of the pulse cal tones. ***experimental***
 
 Version 3.7.0
 * Post DiFX-2.6

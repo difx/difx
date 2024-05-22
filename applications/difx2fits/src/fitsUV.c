@@ -240,7 +240,6 @@ static double vanVleck(int b1, int b2)
 		{4, 4, 0.988},
 		{4, 8, 0.989},
 		{8, 8, 0.991},
-		{16, 16, 1.0},
 
 		{0, 0, 0}		/* list terminator */
 	};
@@ -1442,6 +1441,8 @@ static int ExcludeSource(const DifxVis *dv, const int *includeSourceIdList)
 
 const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts, int passNum)
 {
+	static int extver = 1;  /* sequence number of this table type in FITS file */
+
 	int i, l, v;
 	float visScale = 1.0;
 	char fileBase[200];
@@ -1657,7 +1658,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "UV_DATA");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "UV_DATA", extver++);
 	fitsWriteInteger(out, "NMATRIX", 1, "");
 
 	/* get the job ref_date from the fits_keyword struct, convert it into

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsML.c 10864 2022-12-30 16:24:23Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsML.c $
-// $LastChangedRevision: 10864 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-12-31 00:24:23 +0800 (六, 2022-12-31) $
-//
-//============================================================================
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -47,6 +38,8 @@ static double current_mjd()
 		
 const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
+	static int extver = 1;  /* sequence number of this table type in FITS file */
+
 	char bandFormDouble[8];
 	char bandFormFloat[8];
 
@@ -121,7 +114,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
 	/* write "binary file extension description" to output file */
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "INTERFEROMETER_MODEL");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "INTERFEROMETER_MODEL", extver++);
   
 	/* calloc space for storing table in FITS order */
 	fitsbuf = (char *)calloc(nRowBytes, 1);

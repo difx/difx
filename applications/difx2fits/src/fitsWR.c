@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsWR.c 5746 2013-11-15 21:34:11Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsWR.c $
-// $LastChangedRevision: 5746 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2013-11-16 05:34:11 +0800 (六, 2013-11-16) $
-//
-//============================================================================
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -58,6 +49,8 @@ static int parseWeather(const char *line, WRrow *wr, char *antName)
 
 static int processWeatherFile(const DifxInput *D, struct fits_keywords *p_fits_keys, const char *antennaName, const char *weatherFile, struct fitsPrivate *out, char **fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, const int *alreadyHasWeather, int refDay, int year, double *mjdLast, int nRec)
 {
+	static int extver = 1;  /* sequence number of this table type in FITS file */
+
 	const int MaxLineLength=1000;
 	char line[MaxLineLength+1];
 	char antName[DIFXIO_NAME_LENGTH];
@@ -155,7 +148,7 @@ static int processWeatherFile(const DifxInput *D, struct fits_keywords *p_fits_k
 			{
 				/* write the table header just when needed */
 
-				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER");
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER", extver++);
 				arrayWriteKeys(p_fits_keys, out);
 				fitsWriteInteger(out, "TABREV", 1, "");
 				fitsWriteString(out, "MAPFUNC", " ", "");
@@ -194,7 +187,7 @@ static int processWeatherFile(const DifxInput *D, struct fits_keywords *p_fits_k
 			{
 				/* write the table header just when needed */
 
-				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER");
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER", extver++);
 				arrayWriteKeys(p_fits_keys, out);
 				fitsWriteInteger(out, "TABREV", 1, "");
 				fitsWriteString(out, "MAPFUNC", " ", "");
