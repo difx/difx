@@ -16,6 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -34,7 +35,7 @@ const char version[] = VERSION;
 const double DefaultJobMatrixInterval = 20.0;	/* sec */
 const double DefaultDifxTsysInterval = 30.0;	/* sec */
 const double DefaultDifxPCalInterval = 30.0;	/* sec */
-const int    DefaultAllPcalTones     = 0;	
+const enum AllPcalTonesMode DefaultAllPcalTones = AllPcalTonesOff;
 
 /* FIXME: someday add option to specify EOP merge mode from command line */
 
@@ -149,6 +150,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --all-pcal-tones\n");
 	fprintf(stderr, "  -A                  Extract all phase calibration tones\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --two-pcal-tables   Make two pulse cal tables: one with 2 tones, one with all tones\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --primary-band <pb> Add PRIBAND keyword with value <pb> to FITS file\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --relabelCircular   Change naming of all polarizations to R/L\n");
@@ -165,7 +168,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "                      Only propagate source(s) listed (comma separated)\n");
 	fprintf(stderr, "  --freqlist <list>\n");
 	fprintf(stderr, "                      Only propagate IFs with listed low edge freqs (comma separated, MHz)\n");
-	fprintf(stderr, "%s responds to the following environment variables:\n", program);
+	fprintf(stderr, "\n%s responds to the following environment variables:\n", program);
 	fprintf(stderr, "    DIFX_GROUP_ID             If set, run with umask(2).\n");
 	fprintf(stderr, "    DIFX_VERSION              The DiFX version to report.\n");
 	fprintf(stderr, "    DIFX_LABEL                Your local DiFX version label.\n");
@@ -179,7 +182,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "    DIFX_USE_CABLE_CAL        If 0, then cable calibration files are ignored. Default is 1.\n");
 	fprintf(stderr, "    WRITEFIRSTDELAY           If set, save first delay spectrum as diagnostic to /tmp/firstDelay.txt\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "PLEASE file all bug reports at http://svn.atnf.csiro.au/trac/difx .\n");
+	fprintf(stderr, "PLEASE file all bug reports at https://github.com/difx/difx/issues .\n");
 	fprintf(stderr, "Include at a minimum the output of difx2fits with extra verbosity\n");
 	fprintf(stderr, "(that is with -v -v).  The .input, .im & .calc files may help too.\n");
 	fprintf(stderr, "\n");
@@ -381,7 +384,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--all-pcal-tones") == 0 ||
 			        strcmp(argv[i], "-A") == 0)
 			{
-				opts->allpcaltones = 1;
+				opts->allpcaltones = AllPcalTonesOn;
+			}
+			else if(strcmp(argv[i], "--two-pcal-tables") == 0)
+			{
+				opts->allpcaltones = AllPcalTonesBoth;
 			}
 			else if(strcmp(argv[i], "--relabelCircular") == 0)
 			{
@@ -818,7 +825,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	return 0;
 }
 
-static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPrivate *out, const struct CommandLineOptions *opts, int passNum)
+static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPrivate *out, struct CommandLineOptions *opts, int passNum)
 {
 	struct fits_keywords keys;
 	long long last_bytes = 0;
@@ -952,18 +959,52 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPriv
 		last_bytes = out->bytes_written;
 	}
 
-	printf("  PH -- phase cal           ");
-	fflush(stdout);
-	D = DifxInput2FitsPH(D, &keys, out, opts);
-	printf("                            ");
-	if(out->bytes_written == last_bytes)
+	if(opts->allpcaltones != AllPcalTonesBoth)
 	{
-		printf("No table written\n");
+		printf("  PH -- phase cal           ");
+		fflush(stdout);
+		D = DifxInput2FitsPH(D, &keys, out, opts, opts->allpcaltones);
+		printf("                            ");
+		if(out->bytes_written == last_bytes)
+		{
+			printf("No table written\n");
+		}
+		else
+		{
+			printf("%lld bytes\n", out->bytes_written - last_bytes);
+			last_bytes = out->bytes_written;
+		}
 	}
 	else
 	{
-		printf("%lld bytes\n", out->bytes_written - last_bytes);
-		last_bytes = out->bytes_written;
+		printf("  PH1 -- all phase cal      ");
+		fflush(stdout);
+		opts->allpcaltones = AllPcalTonesOn;
+		D = DifxInput2FitsPH(D, &keys, out, opts, AllPcalTonesOn);
+		printf("                            ");
+		if(out->bytes_written == last_bytes)
+		{
+			printf("No table written\n");
+		}
+		else
+		{
+			printf("%lld bytes\n", out->bytes_written - last_bytes);
+			last_bytes = out->bytes_written;
+		}
+		printf("  PH2 -- phase cal          ");
+		fflush(stdout);
+		opts->allpcaltones = AllPcalTonesOff;
+		D = DifxInput2FitsPH(D, &keys, out, opts, AllPcalTonesOff);
+		printf("                            ");
+		if(out->bytes_written == last_bytes)
+		{
+			printf("No table written\n");
+		}
+		else
+		{
+			printf("%lld bytes\n", out->bytes_written - last_bytes);
+			last_bytes = out->bytes_written;
+		}
 	}
 
 	printf("  WR -- weather             ");
@@ -1207,7 +1248,7 @@ static int needToVanVleck(DifxInput **Dset, int n)
 }
 
 /* FIXME: use opts->eopMergeMode to drive merging of files */
-static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, int passNum, int *nWithoutPhaseCentre)
+static int convertFits(struct CommandLineOptions *opts, DifxInput **Dset, int passNum, int *nWithoutPhaseCentre)
 {
 	DifxInput *D;
 	struct fitsPrivate outfile;

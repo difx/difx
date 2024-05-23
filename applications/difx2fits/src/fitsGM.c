@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsGM.c 8269 2018-05-03 20:23:16Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsGM.c $
-// $LastChangedRevision: 8269 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2018-05-04 04:23:16 +0800 (五, 2018-05-04) $
-//
-//============================================================================
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -33,8 +24,7 @@
 #include "difx2fits.h"
 
 /* return -1 on out-of-range */
-int getGateWindow(const DifxPulsar *dp, int bin,
-        double *phaseOpen, double *phaseClose)
+int getGateWindow(const DifxPulsar *dp, int bin, double *phaseOpen, double *phaseClose)
 {
         if(!dp->scrunch)
         {
@@ -93,10 +83,10 @@ int getGateWindow(const DifxPulsar *dp, int bin,
         return 0;
 }
 
-const DifxInput *DifxInput2FitsGM(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	const struct CommandLineOptions *opts)
+const DifxInput *DifxInput2FitsGM(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
+	static int extver = 1;  /* sequence number of this table type in FITS file */
+
 	char bandFormFloat[8], polyFormDouble[8];
 
 	struct fitsBinTableColumn columns[] =
@@ -177,7 +167,7 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GATEMODL");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GATEMODL", extver++);
 
 	/* write standard FITS header keywords and values to output file */
 	arrayWriteKeys(p_fits_keys, out);

@@ -185,7 +185,8 @@ int fitsWriteBinTable
     const struct fitsBinTableColumn columns[],
     int row_bytes,		/* byte count for 
 				   future fitsWriteBinRow() calls */
-    const char extname[]
+    const char extname[],
+    int extver
     )
 /*
  * RETURNS OK = 0 | ERROR = -1
@@ -240,7 +241,7 @@ int fitsWriteBinTable
     if (fitsWriteString (pFile, "EXTNAME", extname, "") == -1)
 	return -1;
 
-    if (fitsWriteInteger (pFile, "EXTVER", 1, "") == -1)
+    if (fitsWriteInteger (pFile, "EXTVER", extver, "") == -1)
 	return -1;
 
     /* write contents of given columns[] */

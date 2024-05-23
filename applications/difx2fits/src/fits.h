@@ -98,7 +98,7 @@ struct fits_keywords
 
 int fitsReadOpen (struct fitsPrivate *, const char *);
 int fitsWriteBinRow (struct fitsPrivate *, const char *);
-int fitsWriteBinTable (struct fitsPrivate *, int, const struct fitsBinTableColumn *, int, const char *);
+int fitsWriteBinTable (struct fitsPrivate *, int, const struct fitsBinTableColumn *, int, const char *, int);
 int fitsWriteClose (struct fitsPrivate *);
 int fitsWriteComment (struct fitsPrivate *, const char *, const char *); 
 int fitsWriteData (struct fitsPrivate *, unsigned int, const char *); 
