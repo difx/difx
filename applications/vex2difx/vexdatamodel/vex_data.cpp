@@ -815,7 +815,7 @@ void VexData::setClock(const std::string &antName, const VexClock &clock)
 }
 
 // deltaClock in sec and deltaClockRate in sec/sec
-void VexData::adjustClock(const std::string &antName, double deltaClock, double deltaClockRate)
+void VexData::adjustClock(const std::string &antName, double deltaClock, double deltaClockRate, double deltaClockAccel)
 {
 	for(std::vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
 	{
@@ -825,6 +825,7 @@ void VexData::adjustClock(const std::string &antName, double deltaClock, double 
 			{
 				c->offset += deltaClock;	// [sec]
 				c->rate += deltaClockRate;	// [sec/sec]
+				c->accel += deltaClockAccel;	// [sec/sec^2]
 			}
 		}
 	}
