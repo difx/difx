@@ -1001,7 +1001,7 @@ The four columns are:
     {
       nonzero = false;
       // write the header string
-      sprintf(pcalstr, "%s %13.7f %9.7f %d %d %d",
+      sprintf(pcalstr, "%s %17.11f %13.11f %d %d %d",
               config->getDStationName(currentconfigindex, i).c_str(), pcalmjd,
               config->getIntTime(currentconfigindex)/86400.0, i,
               config->getDNumRecordedBands(currentconfigindex, i),
