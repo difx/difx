@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsAN.c 11082 2023-09-14 20:22:36Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsAN.c $
-// $LastChangedRevision: 11082 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-07 07:26:40 +0800 (二, 2022-06-07) $
-//
-//============================================================================
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -34,6 +24,8 @@
 
 const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
+	static int extver = 1;  /* sequence number of this table type in FITS file */
+
 	/*  define the antenna characteristic FITS table columns */
 	char bandFormFloat1[8];
 	char bandFormFloat2[8];
@@ -101,7 +93,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 		return 0;
 	}
 	
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "ANTENNA");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "ANTENNA", extver++);
 
 	arrayWriteKeys (p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");

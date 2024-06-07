@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsGN.c 11074 2023-09-14 17:39:04Z JayBlanchard $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsGN.c $
-// $LastChangedRevision: 11074 $
-// $Author: JayBlanchard $
-// $LastChangedDate: 2023-09-15 01:39:04 +0800 (五, 2023-09-15) $
-//
-//============================================================================
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -608,6 +598,8 @@ int loadGainCurves(const DifxInput *D, GainRow *G)
 
 const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
+	static int extver = 1;  /* sequence number of this table type in FITS file */
+
 	GainRow *G;
 	int nRow;
 	char bandFormInt[8];
@@ -716,7 +708,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 	}
 
 	/* spew out the table header */
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GAIN_CURVE");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GAIN_CURVE", extver++);
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
 	fitsWriteInteger(out, "NO_TABS", MAXTAB, "");
