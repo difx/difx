@@ -61,13 +61,15 @@ coeff = np.polyfit(datasecs, rates, 1)
 fitted_fn = np.poly1d(coeff)
 
 accel = coeff[0]*1e-12
+dcaccel_str = 'deltaClockAccel = %+.6e' % (-accel*1e6/2.0)
+
 print('For DiFX v2d:')
-print('   deltaClockAccel = %+.6e  # usec/sec' % (-accel*1e6/2.0))
+print('   %s  # us/s^2' % (dcaccel_str))
 
 plt.plot(datasecs, rates, 'yo',  datasecs, fitted_fn(datasecs), '--k')
-plt.title('Acceleration fit into fringe rates to %s' % (stn))
+plt.title('Acceleration fit into fringe rates to %s\n=> v2d %s' % (stn, dcaccel_str))
 plt.xlabel('Time (s)')
 plt.ylabel('Residual Rate (ps/s)')
-plt.legend(['A-list rates', 'Accel. %+.6e s/s' % (accel)])
+plt.legend(['A-list rates', 'Accel. %+.6e s/s^2' % (accel)])
 plt.grid()
 plt.show()
