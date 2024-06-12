@@ -2,6 +2,8 @@
 .deps
 Makefile.in
 *~
+COPYING
+INSTALL
 
 .*.swp
 
@@ -32,6 +34,10 @@ Makefile.in
 
 # applications/hops
 /applications/hops/hops_config.h.in
+/applications/hops/libltdl/
+/applications/hops/m4/argz.m4
+/applications/hops/m4/ltdl.m4
+
 
 # /libraries/python/
 /libraries/python/*.pyc

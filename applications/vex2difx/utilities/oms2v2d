@@ -170,40 +170,15 @@ def readOMS(filename, verbose):
 
 	return current
 
-# read the dbs.start file and return a dictionary of DBS start date-times
-def readDBSStart():
-	dbsStart = {}
+# check if DBS is used at site
+def dbsFormatChange(site, oms):
 
-	difxBase = getenv('DIFX_BASE')
-	if difxBase == None:
-		return dbsStart
-	dbsStartPath = difxBase + '/dbs.start'
+	dbsSites = ['SC', 'HN', 'NL', 'FD', 'LA', 'PT', 'KP', 'BR', 'OV', 'MK', 'GB']
 	
-	try:
-		dbsStartLines = open(dbsStartPath).readlines()
-		if len(dbsStartLines) > 0:
-			for line in dbsStartLines:
-				if line[0] != '#':
-					pair = line.split()
-					dbsStart[pair[0]] = pair[1]
-	except FileNotFoundError:
-		# continue if file not found
-		pass
-
-	return dbsStart
-
-# check if DBS start is earlier than project info start and if format is Mark5B
-def dbsFormatChange(site, dbsStart, oms):
-	
-	siteStart = dbsStart[site]
-
-	# get PROJECT_INFO START date-time
-	projectInfoStart = oms['PROJECT_INFO'][0]['START'][0]
-
 	# get STATION_SETUP FORMAT
 	stationSetupFormat = oms['STATION_SETUP'][0]['FORMAT'][0]
 
-	if stationSetupFormat == 'MARK5B' and siteStart < projectInfoStart:
+	if stationSetupFormat == 'MARK5B' and site in dbsSites:
 		return True
 	else:
 		return False
@@ -279,7 +254,7 @@ def dropzeros(s):
 		ss = '0' + ss
 	return ss
 
-def writev2d(oms, v2dFile, prefix, nrt, filebased, sim, datacopyFormat, evlbiType, nStream, profile, dbsStart, needClockEOP, exclude, verbose):
+def writev2d(oms, v2dFile, prefix, nrt, filebased, sim, datacopyFormat, evlbiType, nStream, profile, needClockEOP, exclude, verbose):
 
 	# generate filelist filenames based on files that may be in the local directory:
 	# Priority of filelist names:
@@ -363,7 +338,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, sim, datacopyFormat, evlbiTyp
 	if len(excludeAntennas) > 0:
 		out.write('# Antennas excluded due to lack of filelist files: %s\n' % (', '.join(excludeAntennas)))
 	out.write('antennas = %s\n\n' % stnString)
-	out.write('maxLength = 3200\n\n')
+	out.write('maxLength = 500\n\n')
 
 	if filebased:
 		out.write('delayModel = difxcalc+met\n\n')
@@ -495,7 +470,7 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, sim, datacopyFormat, evlbiTyp
 			extra += ' '
 
 		# check if DBS changed Mark5B to VDIF
-		if len(dbsStart) > 0 and dbsFormatChange(s, dbsStart, oms) == True:
+		if dbsFormatChange(s, oms) == True:
 			# DBS changed record format to VDIF5032
 			extra += 'format=VDIF5032 '
 
@@ -648,9 +623,7 @@ if isfile(v2dFile):
 
 oms = readOMS(omsFile, verbose)
 
-dbsStart = readDBSStart()
-
-writev2d(oms, v2dFile, prefix, nrt, filebased, sim, datacopyFormat, evlbiType, nStream, profile, dbsStart, needClockEOP, exclude, verbose)
+writev2d(oms, v2dFile, prefix, nrt, filebased, sim, datacopyFormat, evlbiType, nStream, profile, needClockEOP, exclude, verbose)
 
 if evlbiType != None:
 	print('\nNOTE: if running in eVLBI mode for VLBA, consider using fiberLock.py to ensure routine network monitornig is turned off\n\n')
