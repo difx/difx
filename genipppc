@@ -110,7 +110,7 @@ def genipppc(path, ippversion):
 
     ipparch = getarch()
 
-    major = int(ippversion.split('.')[0])
+    major, minor = [int(i) for i in (ippversion.split('.')[0:2])]
     out = open('ipp.pc', 'w')
     out.write('base = %s\n' % path)
     out.write('\n')
@@ -154,8 +154,8 @@ def genipppc(path, ippversion):
 
         if major == 7 or major == 8:
             out.write('Cflags: -I${base}/ipp/include\n')
-        elif major < 2021:
-            out.write('Cflags: -DIPP9 -I${base}/ipp/include\n')
+        elif major <= 2021 and minor < 10:
+            out.write('Cflags: -DIPP9 -I${base}/include\n')
         elif major == 2021:
             out.write('Cflags: -DIPP9 -I${base}/include/ipp\n')
         else:

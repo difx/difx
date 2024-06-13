@@ -105,7 +105,7 @@ The install-difx options are:
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
                     "mpifxcorr", "difxfilterbank", "hops", "m6support",
                     "polconvert", "guiServer", "mk5daemon", "difx_monitor",
-                    "datasim", "difxcalc11", "mark6sg", "mark6meta"]
+                    "datasim", "difxcalc11", "mark6sg", "mark6meta", "espresso"]
    --skip='...'    Does a normal build, but skips components in a comma
                    separated list (drawn from the --doonly list).
    --also='...'    Does a normal build, but adds components in a comma
@@ -232,6 +232,7 @@ components = {"perl"          :False,
               "difx_monitor"  :False,
               "datasim"       :False,
               "python"        :True,
+              "espresso"      :True,
 }
 def setNormalComponentsFalse():
 	global components
@@ -256,6 +257,7 @@ def setNormalComponentsFalse():
 	components["mpifxcorr"]= False
 	components["mark6sg"]= False
 	components["python"]= False
+	components["espresso"]= False
 def setOnlyComponents(only):
 	global components
 	setNormalComponentsFalse()
@@ -509,6 +511,8 @@ if components["difx_monitor"]:
     apptargets.append(["difx_monitor", difx_version, True,False,False,True])
 if components["datasim"]:
     apptargets.append(["datasim", difx_version, True,True,True,False])
+if components["espresso"]:
+    apptargets.append(["espresso", difx_version, True,True,False,False])
 
 for key in adjustments:
     todo = True
