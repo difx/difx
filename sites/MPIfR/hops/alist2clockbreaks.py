@@ -7,7 +7,7 @@ These correct for the residual clock offset and rate at the beginning of every V
 Scans without fringes in the A-list file get an interpolated clock_early entry.
 
 Useful for stations with an unstable frequency standard whose time behaviour cannot be adequately
-expressed by the usual linear (offset, rate) or cubic (offset, rate, acceleration) clock models.
+expressed by the usual linear (offset, rate) or quadratic (offset, rate, acceleration) clock models.
 
 Example:
 $ alist2clockbreaks.py K Kt e23c18-0-b1-1234-v1-nopc.alist_v6 e23c18-0-b1.vex.obs
