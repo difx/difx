@@ -4076,7 +4076,7 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, int antennaId)
 		}
 		config = D->config + configId;
 
-		/* here "d" is "datastream # within conf.", not "antenanId" */
+		/* here "d" is "datastream # within conf.", not "antennaId" */
 		for(d = 0; d < config->nDatastream; ++d)
 		{
 			int dsId;
