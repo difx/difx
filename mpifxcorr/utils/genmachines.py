@@ -684,10 +684,10 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
 
                 if matchNode in difxmachines.getMk5NodeNames():
                     dsnodes.append(matchNode)
-                elif isListEmpty(stream.msn):
-                    print('Warning: A stream type MARK6 has a blank MSN list - check your VEX $TAPELOG_OBS time ranges')
+                elif len(stream.vsn) < 1:
+                    print('Warning: A stream type MODULE has a blank VSN - check your VEX $TAPELOG_OBS time ranges')
                 else:
-                    print('Warning: stream type MARK6 with MSN %s, matching node %s not listed as an active mark6 host in machines file' % (str(stream.msn),matchNode))
+                    print('Warning: stream type MODULE with VSN %s, matching node %s not listed as an active mark5 host in machines file' % (str(stream.vsn),matchNode))
                     return []
 
             elif stream.type == "MARK6":
@@ -720,7 +720,7 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                 if matchNode in difxmachines.getMk6NodeNames():
                     dsnodes.append(matchNode)
                 else:
-                    print('stream type MARK6 with MSN %s, matching node %s not listed as an active mark6 host in machines file' % (str(stream.msn),matchNode))
+                    print('Warning: stream type MARK6 with MSN %s, matching node %s not listed as an active mark6 host in machines file' % (str(stream.msn),matchNode))
                     return []
                 
         # write machine file
