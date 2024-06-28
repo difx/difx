@@ -61,10 +61,10 @@
 
 //set up the function mapping for the intel architecture
 #if(ARCH == INTEL)
-#include <ipps.h>
-#include <ippvm.h>
-#include <ippcore.h>
-#include <ippversion.h>
+#include <ipp/ipps.h>
+#include <ipp/ippvm.h>
+#include <ipp/ippcore.h>
+#include <ipp/ippversion.h>
 
 #ifdef IPP9
 #define IPP_9_API

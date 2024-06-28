@@ -6,8 +6,8 @@
 #include <cstdlib>
 #include <string>
 #include <cmath>
-#include <ipps.h>
-#include <ippcore.h>
+#include <ipp/ipps.h>
+#include <ipp/ippcore.h>
 
 static const float SIGMA_LIMIT = 4.0;
 

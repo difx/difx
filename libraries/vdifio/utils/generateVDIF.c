@@ -41,8 +41,8 @@
 
 
 #ifdef USEIPP
-#include <ippcore.h>
-#include <ipps.h>
+#include <ipp/ippcore.h>
+#include <ipp/ipps.h>
 
 #define DEFAULTTAP 128
 

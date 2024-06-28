@@ -5,7 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <math.h>
-#include <ipps.h>
+#include <ipp/ipps.h>
 #include <cmath>
 #include "configuration.h"
 

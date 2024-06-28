@@ -38,8 +38,8 @@
 #include "config.h"
 
 #if HAVE_IPP
-#include <ippcore.h>
-#include <ipps.h>
+#include <ipp/ippcore.h>
+#include <ipp/ipps.h>
 
 
 #define IPPMALLOC(var,type,n)                                  \

@@ -33,7 +33,7 @@
 #define USEIPP
 
 #ifdef USEIPP
-#include <ippi.h>
+#include <ipp/ippi.h>
 #define FCMALLOC(x) ippsMalloc_32fc(x)
 #define FMALLOC(x) ippsMalloc_32f(x)
 #define FREE(x) ippsFree(x)

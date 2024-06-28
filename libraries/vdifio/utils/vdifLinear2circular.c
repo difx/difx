@@ -39,8 +39,8 @@
 #include "vdifio.h"
 #include "config.h"
 
-#include <ippcore.h>
-#include <ipps.h>
+#include <ipp/ippcore.h>
+#include <ipp/ipps.h>
 
 
 #define IPPMALLOC(var,type,n)                                  \

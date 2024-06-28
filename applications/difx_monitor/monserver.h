@@ -21,7 +21,7 @@
 #include <stdint.h>
 
 #include <configuration.h>
-#include <ipps.h>
+#include <ipp/ipps.h>
 
 using std::string;
 

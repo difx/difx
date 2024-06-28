@@ -62,9 +62,9 @@
 
 //set up the function mapping for the intel architecture
 #if(ARCH == INTEL)
-#include <ipps.h>
-#include <ippvm.h>
-#include <ippcore.h>
+#include <ipp/ipps.h>
+#include <ipp/ippvm.h>
+#include <ipp/ippcore.h>
 
 //start with the data types
 #define u8                       Ipp8u
