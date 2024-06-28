@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,6 +27,7 @@
 #include "other.h"
 #include "util.h"
 
+static int extverTS = 1;  /* sequence number of this table type in FITS file */
 
 typedef struct
 {
@@ -531,7 +532,7 @@ static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, in
 
 				if(nRec == 0)
 				{
-					fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE");
+					fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE", extverTS++);
 					arrayWriteKeys(p_fits_keys, out);
 					fitsWriteInteger(out, "NO_POL", D->nPol, "");
 					fitsWriteInteger(out, "TABREV", 1, "");
@@ -763,7 +764,7 @@ static int processTsysFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 		
 			if(nRec == 0)
 			{
-				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE");
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE", extverTS++);
 				arrayWriteKeys(p_fits_keys, out);
 				fitsWriteInteger(out, "NO_POL", D->nPol, "");
 				fitsWriteInteger(out, "TABREV", 1, "");

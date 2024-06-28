@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,6 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -24,6 +25,8 @@
 
 const DifxInput *DifxInput2FitsMC(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
+	static int extver = 1;  /* sequence number of this table type in FITS file */
+
 	char bandFormFloat[8];
 
 	struct fitsBinTableColumn columns[] =
@@ -111,7 +114,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D, struct fits_keywords *p_fi
 		}
 	}
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "MODEL_COMPS");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "MODEL_COMPS", extver++);
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
 	fitsWriteInteger(out, "FFT_SIZE", D->nInChan*2, "");

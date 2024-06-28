@@ -31,6 +31,13 @@
 /* This sets leap secons if for some reason they were not otherwise conveyed */
 #define DEFAULT_IAT_UTC 33
 
+enum AllPcalTonesMode
+{
+	AllPcalTonesOff = 0,	/* put in PH table that which corresponds to job files */
+	AllPcalTonesOn,		/* put all pulse cal tones in PH table */
+	AllPcalTonesBoth 	/* create two PH tables, one according to job file and the other with all tones */
+};
+
 struct CommandLineOptions
 {
 	char *fitsFile;
@@ -68,7 +75,7 @@ struct CommandLineOptions
 	int antpol;		/* if 1, then polarization is determined by antenna */        
 	int polxy2hv;		/* if 1, then polarization X/Y is transformed to H/V */
 	int localdir;		/* if 1, then *.calc, *.im, and *.difx are sought in the same directory as *.input files */
-	int allpcaltones;	/* if 1, then all phase calibration tones are extactred */
+	enum AllPcalTonesMode allpcaltones;
 	int relabelCircular;	/* if != 0, then relabel all polarizations as R/L regardless of their actual values */
 	int doVanVleck;		/* if != 0, then correct for Van Vleck (quantization correction) */
 	DifxMergeOptions mergeOptions;
@@ -110,7 +117,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts);
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts, enum AllPcalTonesMode allpcaltones);
 
 const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);

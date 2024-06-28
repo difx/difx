@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2014 by Walter Brisken and Adam Deller             *
+ *   Copyright (C) 2010-2024 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -91,6 +91,7 @@ int difxMessageBinaryClose(int sock)
 	return closeMultiCastSocket(sock);
 }
 
+/* from must be either null or point to an existing string of at least 16 characters */
 int difxMessageBinaryRecv(int sock, char *message, int maxlen, char *from)
 {
         return MultiCastReceive(sock, message, maxlen, from);

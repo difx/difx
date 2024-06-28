@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -68,6 +68,8 @@ struct __attribute__((packed)) AGrow
 
 const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
+	static int extver = 1;  /* sequence number of this table type in FITS file */
+
 	/* define the antenna geometry FITS table columns */
 	static struct fitsBinTableColumn columns[] =
 	{
@@ -100,7 +102,7 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fi
 		exit(EXIT_FAILURE);
 	}
 
-	fitsWriteBinTable(out, NELEMENTS(columns), columns, nRowBytes, "ARRAY_GEOMETRY");
+	fitsWriteBinTable(out, NELEMENTS(columns), columns, nRowBytes, "ARRAY_GEOMETRY", extver++);
 
 	mjd = (int)(D->mjdStart);
 	mjd2fits(mjd, ref_date);
@@ -143,8 +145,8 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fi
 	}
 	else
 	{
-		printf("\n\nWarning: IATUTC is not provided.  Assuming %3.1f seconds.\n\n", (double)(DEFAULT_IAT_UTC) );
-		fitsWriteFloat(out, "IATUTC", (double)(DEFAULT_IAT_UTC), "");
+		printf("\n\nWarning: IATUTC is not provided.  Assuming %3.1f seconds.\n\n", (double)DEFAULT_IAT_UTC);
+		fitsWriteFloat(out, "IATUTC", (double)DEFAULT_IAT_UTC, "");
 	}
 	
   	arrayWriteKeys(p_fits_keys, out);

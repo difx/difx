@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2020 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,6 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
@@ -25,6 +26,7 @@
 #include "other.h"
 #include "util.h"
 
+static int extverFL = 1;  /* sequence number of this table type in FITS file */
 
 typedef struct
 {
@@ -280,7 +282,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 
 			if(nRec == 0)
 			{
-				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG");
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG", extverFL++);
 				arrayWriteKeys (p_fits_keys, out);
 				fitsWriteInteger(out, "TABREV", 2, "");
 				fitsWriteEnd(out);
@@ -465,7 +467,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 			{
 				if(nRec == 0)
 				{
-					fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG");
+					fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG", extverFL++);
 					arrayWriteKeys (p_fits_keys, out);
 					fitsWriteInteger(out, "TABREV", 2, "");
 					fitsWriteEnd(out);

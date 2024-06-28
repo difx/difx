@@ -86,7 +86,7 @@ void deleteDifxTcal(DifxTcal *dt)
 				{
 					if(dt->group[g]._freqRangeExceeded)
 					{
-						printf("Warning: Tcals for antena %s receiver %s did not span entire freq range.\n", dt->group[g].antenna, dt->group[g].receiver);
+						printf("Warning: Tcals for antenna %s receiver %s did not span entire freq range.\n", dt->group[g].antenna, dt->group[g].receiver);
 					}
 					free(dt->group[g].value);
 					dt->group[g].value = 0;
@@ -485,7 +485,7 @@ void fsummarizeDifxTcal(FILE *out, const DifxTcal *dt)
 
 /* below here are site-specific functions */
 
-/* 1. For a constant Tcal value over all frquencies */
+/* 1. For a constant Tcal value over all frequencies */
 
 int setDifxTcalConstant(DifxTcal *dt, float tcal1, char pol1, float tcal2, char pol2)
 {

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2017 by Walter Brisken                             *
+ *   Copyright (C) 2007-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -64,7 +64,10 @@ int MulticastSend(const char *group, int port, const char *message, int length);
 /* functions for receive */
 
 int openMultiCastSocket(const char *group, int port);
+
 int closeMultiCastSocket(int sock);
+
+/* from must be either null or point to an existing string of at least 16 characters */
 int MultiCastReceive(int sock, char *message, int maxlen, char *from);
 
 
@@ -705,10 +708,14 @@ int difxMessageSendVsis(const char *state, const char *to);
 
 int difxMessageReceiveOpen();
 int difxMessageReceiveClose(int sock);
+
+/* from must be either null or point to an existing string of at least 16 characters */
 int difxMessageReceive(int sock, char *message, int maxlen, char *from);
 
 int difxMessageBinaryOpen(int destination);
 int difxMessageBinaryClose(int sock);
+
+/* from must be either null or point to an existing string of at least 16 characters */
 int difxMessageBinaryRecv(int sock, char *message, int maxlen, char *from);
 
 void fprintDifxMessageSTARecord(FILE *out, const DifxMessageSTARecord *record, int printData);

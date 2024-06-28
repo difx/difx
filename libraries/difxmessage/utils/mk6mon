@@ -2,7 +2,8 @@
 # coding: latin-1
 
 #**************************************************************************
-#   Copyright (C) 2008-2016 by Helge Rottmann, Mark Wainright and Walter Brisken *
+#   Copyright (C) 2008-2024 by Helge Rottmann, Mark Wainright             *
+#                           and Walter Brisken                            *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -19,7 +20,6 @@
 #   Free Software Foundation, Inc.,                                       *
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
-
 
 # Note: this utility can run under python2.7 or python3
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,6 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -24,6 +25,8 @@
 
 const DifxInput *DifxInput2FitsSO(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
+	static int extver = 1;  /* sequence number of this table type in FITS file */
+
 	struct fitsBinTableColumn columns[] =
 	{
 		{"SPACECR", "16A", "spacecraft name", 0},
@@ -85,7 +88,7 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D, struct fits_keywords *p_fi
 
 			if(nRec == 0)
 			{
-				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SPACECRAFT_ORBIT");
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SPACECRAFT_ORBIT", extver++);
 				arrayWriteKeys(p_fits_keys, out);
 				fitsWriteInteger(out, "TABREV", 1, "");
 				fitsWriteEnd(out);

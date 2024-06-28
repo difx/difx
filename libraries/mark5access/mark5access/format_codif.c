@@ -4185,8 +4185,8 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 		
 		if(f->frameheadersize != 0 && f->frameheadersize != CODIF_HEADER_BYTES)
 		{
-			fprintf(m5stderr, "CODIF Warning: Changing frameheadersize from %d to 64\n",
-				f->frameheadersize);
+			fprintf(m5stderr, "CODIF Warning: Changing frameheadersize from %d to 64 for %s\n",
+				f->frameheadersize, ms->streamname);
 		}
 		f->frameheadersize = CODIF_HEADER_BYTES;
 
@@ -4194,22 +4194,22 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 
 		if(f->databytesperpacket != 0 && f->databytesperpacket != dataarraylength)
 		{
-			fprintf(m5stderr, "CODIF Warning: Changing databytesperpacket from %d to %d\n",
-				f->databytesperpacket, dataarraylength);
+			fprintf(m5stderr, "CODIF Warning: Changing databytesperpacket from %d to %d for %s\n",
+				f->databytesperpacket, dataarraylength, ms->streamname);
 		}
 		f->databytesperpacket = dataarraylength;
 
 		if (ms->nchan != 0 && ms->nchan != getCODIFNumChannels(header))
 		{
-			fprintf(m5stderr, "CODIF Warning: Changing nchan from %d to %d\n",
-				ms->nchan, getCODIFNumChannels(header));
+			fprintf(m5stderr, "CODIF Warning: Changing nchan from %d to %d for %s\n",
+				ms->nchan, getCODIFNumChannels(header), ms->streamname);
 		}
 		ms->nchan =  getCODIFNumChannels(header);
 
 		if (ms->nbit != 0 && ms->nbit != getCODIFBitsPerSample(header))
 		{
-			fprintf(m5stderr, "CODIF Warning: Changing nbit from %d to %d\n",
-				ms->nbit, header->nbits);
+			fprintf(m5stderr, "CODIF Warning: Changing nbit from %d to %d for %s\n",
+				ms->nbit, header->nbits, ms->streamname);
 		}
 		ms->nbit = getCODIFBitsPerSample(header);
 		bitspersample = ms->nbit;
@@ -4234,7 +4234,8 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 		status = set_decoder(ms->nbit, ms->nchan, header->iscomplex, &ms->decode, &ms->complex_decode, &ms->count);
 	
 		if (!status) {
-		  fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d\n", ms->nchan, ms->nbit);
+		  fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d for \n", ms->nchan, ms->nbit,
+			  ms->streamname);
 		  return 0;
 		}
 		

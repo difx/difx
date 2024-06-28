@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,6 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -26,6 +27,8 @@
 
 const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
+	static int extver = 1;  /* sequence number of this table type in FITS file */
+
 	char bandFormDouble[8];
 	char bandFormFloat[8];
 
@@ -95,7 +98,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SOURCE");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SOURCE", extver++);
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);

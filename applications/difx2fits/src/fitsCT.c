@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2009 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -88,9 +88,10 @@ struct __attribute__((packed)) CTrow
 	double dPsi, ddPsi, dEps, ddEps;
 };
 
-const DifxInput *DifxInput2FitsCT(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+const DifxInput *DifxInput2FitsCT(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
+	static int extver = 1;  /* sequence number of this table type in FITS file */
+
 	struct CTrow row;
 
 	static struct fitsBinTableColumn columns[] =
@@ -121,7 +122,7 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "CALC");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "CALC", extver++);
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 2, "");
 	fitsWriteString (out, "C_SRVR", D->job->calcServer, "");

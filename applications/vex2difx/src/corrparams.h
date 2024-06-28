@@ -201,6 +201,7 @@ public:
 	VexClock clock;
 	double deltaClock;	// [sec]
 	double deltaClockRate;	// [sec/sec]
+	double deltaClockAccel;	// [sec/sec^2]
 	// flag
 	bool polSwap;		// If true, swap polarizations
 	bool polConvert;	// request change of basis from RL->XY or XY->RL

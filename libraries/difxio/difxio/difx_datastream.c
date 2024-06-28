@@ -96,6 +96,7 @@ DifxDatastream *newDifxDatastreamArray(int nDatastream)
 		dd[s].dataSource = DataSourceUnspecified;
 		dd[s].pol[0] = ' ';
 		dd[s].pol[1] = ' ';
+		dd[s].phaseCalIntervalDivisor = 1;
 	}
 
 	return dd;

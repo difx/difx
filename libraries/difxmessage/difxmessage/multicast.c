@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2017 by Walter Brisken                             *
+ *   Copyright (C) 2007-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -130,20 +130,24 @@ int closeMultiCastSocket(int sock)
 	return 1;
 }
 
+/* from must be either null or point to an existing string of at least 16 characters */
 int MultiCastReceive(int sock, char *message, int maxlen, char *from)
 {
-	struct sockaddr_in addr;
 	int nbytes;
 	socklen_t addrlen;
+	union
+	{
+		struct sockaddr sa;
+		struct sockaddr_in si;
+		struct sockaddr_storage ss;	/* Including this here ensures enough space is available */
+	} addr;
 
-	addrlen = sizeof(struct sockaddr_in);
-
-	nbytes = recvfrom(sock, message, maxlen, 0,
-		(struct sockaddr *) &addr, &addrlen);
+	addrlen = sizeof(addr);
+	nbytes = recvfrom(sock, message, maxlen, 0, &addr.sa, &addrlen);
 
 	if(nbytes > 0 && addrlen > 0 && from != 0)
 	{
-		strncpy(from, inet_ntoa(addr.sin_addr), 16);
+		strncpy(from, inet_ntoa(addr.si.sin_addr), 16);
 	}
 
 	return nbytes;

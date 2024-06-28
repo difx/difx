@@ -344,6 +344,8 @@ public:
     { return configs[configindex].equivfrequsedbysomebaseline[freqindex]; }
   inline bool isFrequencyOutput(int configindex, int freqindex) const
     { return configs[configindex].freqoutputbysomebaseline[freqindex]; }
+  inline bool isEquivalentFrequencyOutput(int configindex, int freqindex) const
+    { return configs[configindex].equivfreqoutputbysomebaseline[freqindex]; }
   inline bool isFrequencyOutput(int configindex, int baselineindex, int freqindex) const
     { return configs[configindex].freqoutputbybaseline[freqindex][baselineindex]; }
   inline bool isBFrequencyUsed(int configindex, int configbaselineindex, int freqindex) const
@@ -836,6 +838,7 @@ private:
     bool * frequsedbysomebaseline;
     bool * equivfrequsedbysomebaseline;
     bool * freqoutputbysomebaseline;
+    bool * equivfreqoutputbysomebaseline;
     //finer bookkeeping of freqs
     bool ** frequsedbybaseline;         //[freq][baseline]
     bool ** equivfrequsedbybaseline;    //[freq][baseline]

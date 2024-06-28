@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-
-
 PROGRAM = 'drivemon'
 VERSION = '0.1'
 VERDATE = '20110723'

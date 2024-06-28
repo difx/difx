@@ -75,7 +75,7 @@ static void applyCorrParams_Clock(VexData *V, const CorrParams &params, unsigned
 			{
 				V->setClock(A->name, antSetup->clock);
 			}
-			V->adjustClock(A->name, antSetup->deltaClock, antSetup->deltaClockRate);
+			V->adjustClock(A->name, antSetup->deltaClock, antSetup->deltaClockRate, antSetup->deltaClockAccel);
 
 			if(!antSetup->difxName.empty())
 			{

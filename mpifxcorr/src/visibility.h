@@ -164,20 +164,37 @@ private:
 /**
   * Writes the visibilities to disk in ascii format - only used for debugging
   */
-  void writeascii(int dumpmjd, double dumpseconds);
+  void writeASCII(int dumpmjd, double dumpseconds);
 
 /**
-  * Writes the visibilities to disk in DiFX format (binary with inserted ascii headers)
+  * Writes the visibilities to disk in DiFX SWIN format
   */
-  void writedifx(int dumpmjd, double dumpseconds);
+  void writeSWIN(int dumpmjd, double dumpseconds);
 
 /**
-  * Writes the ascii header for a visibility point in a DiFX format output file
+  * Appends the ascii header for a visibility point to the internal disk output buffer
   */
-  void writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, float weight, double buvw[3], int filecount);
+  void appendASCIIHeaderBuffered(int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, float weight, double buvw[3], int filecount);
 
+/**
+  * Appends the binary header for a visibility point to the internal disk output buffer
+  */
+  void appendSWINHeaderBuffered(int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, float weight, double buvw[3], int filecount);
+
+/**
+  * Appends binary data of a visibility or autocorrelation point to the internal disk output buffer
+  */
+  void appendSWINDataBuffered(void * srcdata, size_t numbytes, int filecount);
+
+/**
+ * Flush internal disk output buffer(s) to actual files, append mode
+ * @param multifile Destination of buffered data, true: split over phase centers and bins, false: write all to DIFX_mjd_sec.s0000.b0000
+ */
+ void flushBuffersToDisk(bool multifile);
+
+public:
   Configuration * config;
-  int visID, expermjd, experseconds, currentscan, currentstartseconds, currentstartns, offsetns, offsetnsperintegration, subintsthisintegration, subintns, numvisibilities, numdatastreams, numbaselines, currentsubints, resultlength, currentconfigindex, maxproducts, executeseconds, autocorrwidth, todiskbufferlength, maxfiles;
+  int visID, expermjd, experseconds, currentscan, currentstartseconds, currentstartns, offsetns, offsetnsperintegration, subintsthisintegration, subintns, numvisibilities, numdatastreams, numbaselines, currentsubints, resultlength, currentconfigindex, maxproducts, executeseconds, autocorrwidth, todiskbufferlength, maxfiles, maxbinloop;
   long long estimatedbytes;
   double fftsperintegration, meansubintsperintegration;
   const string * polnames;
