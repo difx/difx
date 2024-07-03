@@ -782,8 +782,10 @@ private:
     friend bool operator>(const struct freqdata_t&, const struct freqdata_t&);
     double bandlowedgefreq() const { return (!lowersideband) ? bandedgefreq : bandedgefreq-bandwidth; }
     int npcalsout; // not used by mpifxcorr, but used to quash a warning
+    ostream& printfreq(ostream& os) const;
   } freqdata;
   friend bool operator>(const struct Configuration::freqdata_t&, const struct Configuration::freqdata_t&);
+  friend ostream& operator<<(ostream&, Configuration::freqdata_t&);
 
   ///Storage struct for data from the baseline table of the input file
   typedef struct baselinedata_t {
