@@ -503,6 +503,8 @@ void Visibility::writedata()
       freqindex = config->getBFreqIndex(currentconfigindex, i, j);
       targetfreqindex = config->getBTargetFreqIndex(currentconfigindex, i, j);
       coreindex = config->getCoreResultBaselineOffset(currentconfigindex, freqindex, i);
+      if(coreindex < 0)
+        csevere << startl << "Baseline " << i << " input freqId " << freqindex << " with destination freqId " << targetfreqindex << " is not mapped to any location in the output data array!" << endl;
       freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
       targetfreqchannels = config->getFNumChannels(targetfreqindex)/config->getFChannelsToAverage(targetfreqindex);
       paddingchannels = config->getFChannelsToAverage(freqindex) - config->getFNumChannels(freqindex) % config->getFChannelsToAverage(freqindex);
@@ -844,11 +846,12 @@ void Visibility::writeSWIN(int dumpmjd, double dumpseconds)
 
       // source data location and size
       coreindex = config->getCoreResultBaselineOffset(currentconfigindex, freqindex, i);
+      if(coreindex < 0)
+        csevere << startl << "Error finding SWIN data to store for baseline " << i << ", output freqId " << freqindex << " was not associated with any section of result data array!" << endl;
       resultindex = config->getCoreResultBaselineOffset(currentconfigindex, freqindex, i); // to print out comparison 'coreindex+coreoffset' vs 'resultindex, resultindex+=freqchannels'
       freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
-      if(config->getFNumChannels(freqindex) % config->getFChannelsToAverage(freqindex) != 0) {
-       cout << "visbility.cpp " << __LINE__ << " ERROR: outputband nch " << config->getFNumChannels(freqindex) << " not divisible by " << config->getFChannelsToAverage(freqindex) << endl;
-      }
+      if(config->getFNumChannels(freqindex) % config->getFChannelsToAverage(freqindex) != 0)
+        csevere << startl << "visbility.cpp " << __LINE__ << " ERROR: outputband nch " << config->getFNumChannels(freqindex) << " not divisible by " << config->getFChannelsToAverage(freqindex) << endl;
       numpolproducts = config->getBNumPolProducts(currentconfigindex, i, baselinefreqindex);
 
       filecount = 0;
