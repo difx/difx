@@ -954,6 +954,11 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 			// Here we disable "normal" autocorrelations and instead construct autocorrs as baselines
 			// This allows us to grab cross-hand autocorrs when the polarisations are in different baselines
 
+			// The sideband convention for the cross product of the two bands selected above is:
+			// - LSB/LSB produces an LSB visibility
+			// - USB/USB produces an USB visibility
+			// - mixed-sideband (LSB/USB, USB/LSB) produce an USB visibility
+
 			int enda1 = D->nAntenna-1;
 			if(P->exhaustiveAutocorrs)
 			{
@@ -2565,7 +2570,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 									blockedfreqids[dd->antennaId].insert(dd->recFreqId[parentFreqIndices[nZoom]]);
 								}
 //Corner case BUG: if an LSB-flipping-only zoom *actually* is output, i.e. zoom equal to output,
-//_but_ output fqId differs due to bookkeeping from zoom fqId index, we incorrectly block the LSB-flip...
+//_but_ output fqId differs due to PCal-related bookkeeping from zoom fqId index, we incorrectly block the LSB-flip...
 //Commenting out for now:
 //								if(dd->zoomFreqId[nZoom] != dd->zoomFreqDestId[nZoom])
 //								{
