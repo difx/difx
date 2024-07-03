@@ -136,7 +136,12 @@ public:
   inline int getCompleteStrideLength(int configindex, int freqindex) const { return configs[configindex].completestridelength[freqindex]; }
   inline int getThreadResultFreqOffset(int configindex, int freqindex) const { return configs[configindex].threadresultfreqoffset[freqindex]; }
   inline int getThreadResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].threadresultbaselineoffset[freqindex][configbaselineindex]; }
-  inline int getCoreResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].coreresultbaselineoffset[freqindex][configbaselineindex]; }
+  inline int getCoreResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) const {
+    if (configs[configindex].coreresultbaselineoffset[freqindex] != NULL)
+      return configs[configindex].coreresultbaselineoffset[freqindex][configbaselineindex];
+    else
+      return -1;
+  }
   inline int getCoreResultBWeightOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].coreresultbweightoffset[freqindex][configbaselineindex]; }
   inline int getCoreResultBShiftDecorrOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].coreresultbshiftdecorroffset[freqindex][configbaselineindex]; }
   inline int getCoreResultAutocorrOffset(int configindex, int configdatastreamindex) const { return configs[configindex].coreresultautocorroffset[configdatastreamindex]; }
