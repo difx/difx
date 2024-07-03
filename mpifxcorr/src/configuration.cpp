@@ -1988,29 +1988,6 @@ bool Configuration::processFreqTable(istream * input)
     {
       getinputline(input, &line, "PHASE CAL ");
     }
-    freqtable[i].matchingwiderbandindex = -1;
-    freqtable[i].matchingwiderbandoffset = -1;
-  }
-  //now look for matching wider bands
-  for(int i=freqtablelength-1;i>0;i--)
-  {
-    double f1chanwidth = freqtable[i].bandwidth/freqtable[i].numchannels;
-    double f1loweredge = freqtable[i].bandedgefreq;
-    if (freqtable[i].lowersideband)
-      f1loweredge -= freqtable[i].bandwidth;
-    for(int j=i-1;j>=0;j--)
-    {
-      double f2chanwidth = freqtable[j].bandwidth/freqtable[j].numchannels;
-      double f2loweredge = freqtable[j].bandedgefreq;
-      if (freqtable[j].lowersideband)
-        f2loweredge -= freqtable[j].bandwidth;
-      if((i != j) && (f1chanwidth == f2chanwidth) && (f1loweredge < f2loweredge) &&
-          (f1loweredge + freqtable[i].bandwidth > f2loweredge + freqtable[j].bandwidth))
-      {
-        freqtable[j].matchingwiderbandindex = i;
-        freqtable[j].matchingwiderbandoffset = int(((f2loweredge-f1loweredge)/freqtable[i].bandwidth)*freqtable[i].numchannels + 0.5);
-      }
-    }
   }
   freqread = true;
   return true;
@@ -2462,6 +2439,7 @@ bool Configuration::populateResultLengths()
           vector<int> inputfreqs = getSortedInputfreqsOfTargetfreq(c, i);
           // concatenate a complete output data region to the flat results array
           configs[c].coreresultbaselineoffset[i] = new int[numbaselines]();
+          std::fill_n(configs[c].coreresultbaselineoffset[i], numbaselines, -1);
           for(int j=0;j<numbaselines;j++)
           {
             if(!isFrequencyOutput(c,j,i))
