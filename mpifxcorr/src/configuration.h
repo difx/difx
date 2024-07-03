@@ -346,8 +346,6 @@ public:
   inline bool getFreqTableCorrelatedAgainstUpper(int index) const {return freqtable[index].correlatedagainstupper; }
   inline int getFNumChannels(int index) const { return freqtable[index].numchannels; }
   inline int getFChannelsToAverage(int index) const { return freqtable[index].channelstoaverage; }
-  inline int getFMatchingWiderBandIndex(int index) const { return freqtable[index].matchingwiderbandindex; }
-  inline int getFMatchingWiderBandOffset(int index) const { return freqtable[index].matchingwiderbandoffset; }
   inline bool isFrequencyUsed(int configindex, int freqindex) const
     { return configs[configindex].frequsedbysomebaseline[freqindex]; }
   inline bool isEquivalentFrequencyUsed(int configindex, int freqindex) const
@@ -780,8 +778,6 @@ private:
     int channelstoaverage;
     int oversamplefactor;
     int decimationfactor;
-    int matchingwiderbandindex;
-    int matchingwiderbandoffset;
     string rxName;  // an optional name for the receiver producing this channel
     friend bool operator>(const struct freqdata_t&, const struct freqdata_t&);
     double bandlowedgefreq() const { return (!lowersideband) ? bandedgefreq : bandedgefreq-bandwidth; }
