@@ -1161,7 +1161,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								}
 								bl->nPolProd[nFreq] = nPol;
 
-								if(D->freq[destFreqId].sideband == 'L' && D->freq[destFreqId2].sideband == 'U' && destFreqId2 >= 0)
+								if(destFreqId2 >= 0 && D->freq[destFreqId].sideband == 'L' && D->freq[destFreqId2].sideband == 'U')
 								{
 									destFreqId = destFreqId2;
 								}
@@ -1308,7 +1308,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								}
 								bl->nPolProd[nFreq] = nPol;
 
-								if(D->freq[destFreqId].sideband == 'L' && D->freq[destFreqId2].sideband == 'U' && destFreqId2 >= 0)
+								if(destFreqId2 >= 0 && D->freq[destFreqId].sideband == 'L' && D->freq[destFreqId2].sideband == 'U')
 								{
 									destFreqId = destFreqId2;
 								}
