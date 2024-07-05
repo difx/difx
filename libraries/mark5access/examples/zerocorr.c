@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2017 by Walter Brisken                             *
+ *   Copyright (C) 2010-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: zerocorr.c 9176 2019-09-19 14:14:48Z ChrisPhillips $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/examples/zerocorr.c $
-// $LastChangedRevision: 9176 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2019-09-19 22:14:48 +0800 (四, 2019-09-19) $
-//
-//============================================================================
 
 #include "config.h"
 #include <stdio.h>
@@ -269,10 +259,15 @@ int feedDataStream(DataStream *ds)
 	int i, status;
 	double scale;
 
-	if (ds->ms->iscomplex) {
-	  status = mark5_stream_decode_double_complex(ds->ms, ds->fftSize, ds->cdata);
-	} else {
-	  status = mark5_stream_decode_double(ds->ms, ds->fftSize, ds->data);
+	if (ds->ms->iscomplex)
+	{
+		status = mark5_stream_decode_double_complex(ds->ms, ds->fftSize, ds->cdata);
+		scale = 0.5/(ds->fftSize);
+	}
+	else
+	{
+		status = mark5_stream_decode_double(ds->ms, ds->fftSize, ds->data);
+		scale = 1.0/(ds->fftSize);
 	}
 
 	if(status < 0)
@@ -282,7 +277,6 @@ int feedDataStream(DataStream *ds)
 
 	fftw_execute(ds->plan);
 
-	scale = 1.0/(ds->fftSize);
 
 	if(ds->nChan > 0)
 	{
@@ -332,7 +326,7 @@ Baseline *newBaseline(const char *confFile)
 	in = fopen(confFile, "r");
 	if(!in)
 	{
-		fprintf(stderr, "Cannot open conf file %s\n", confFile);
+		fprintf(stderr, "Cannot open configuration file %s\n", confFile);
 	}
 
 	B = (Baseline *)calloc(1, sizeof(Baseline));
@@ -505,13 +499,13 @@ static void usage(const char *pgm)
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("A zero baseline cross correlator\n\n");
-	printf("Usage: %s [ <options> ] <conf file>\n\n", pgm);
+	printf("Usage: %s [ <options> ] <configuration file>\n\n", pgm);
 	printf("options can include:\n\n");
 	printf("  --help\n");
 	printf("  -h         Print this help information and quit\n\n");
 	printf("  --verbose\n");
 	printf("  -v         Increase the output verbosity\n\n");
-	printf("The conf file should have 17 lines as follows:\n\n"
+	printf("The configuration file should have 17 lines as follows:\n\n"
 "For the first datastream:\n"
 "   1  Input baseband data file name\n"
 "   2  Input format (e.g., Mark5B-2048-16-2)\n"
@@ -722,7 +716,7 @@ int main(int argc, char **argv)
 
 	if(confFile == 0)
 	{
-		fprintf(stderr, "\nError: no conf file provided on the command line.  Quitting.\n\n");
+		fprintf(stderr, "\nError: no configuration file provided on the command line.  Quitting.\n\n");
 
 		retval = EXIT_FAILURE;
 	}

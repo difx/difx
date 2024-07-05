@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2017 by Walter Brisken, Adam Deller, Chris Phillips*
+ *   Copyright (C) 2009-2024 by Walter Brisken, Adam Deller, Chris Phillips*
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: format_codif_stubs.c 9433 2020-02-20 01:45:17Z ChrisPhillips $
-// $HeadURL: $
-// $LastChangedRevision: 9433 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2020-02-20 09:45:17 +0800 (四, 2020-02-20) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

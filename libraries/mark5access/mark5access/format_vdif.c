@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (C) 2009-2022 by Walter Brisken, Adam Deller, Chris Phillips*
+ *   Copyright (C) 2009-2024 by Walter Brisken, Adam Deller,               *
+ *                              Chris Phillips, Geoffrey Crew              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +17,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: format_vdif.c 10572 2022-08-01 12:51:06Z GeoffreyCrew $
-// $HeadURL: $
-// $LastChangedRevision: 10572 $
-// $Author: GeoffreyCrew $
-// $LastChangedDate: 2022-08-01 20:51:06 +0800 (一, 2022-08-01) $
-//
-//============================================================================
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
