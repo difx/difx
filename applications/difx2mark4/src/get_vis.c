@@ -231,11 +231,15 @@ int get_pfb_index (int baseline,    // difx-encoded baseline (100 * a1 + a2)
     while (pfb[++nf].stn[0].ant >= 0) // check for end-of-table marker
         {
         if (256 * (pfb[nf].stn[0].ant + 1) + pfb[nf].stn[1].ant + 1 == baseline
-          && (freq_index == pfb[nf].stn[0].find || freq_index == pfb[nf].stn[1].find))
+          && (freq_index == pfb[nf].stn[0].fdest || freq_index == pfb[nf].stn[1].fdest
+           || freq_index == pfb[nf].stn[0].find  || freq_index == pfb[nf].stn[1].find))
             return nf;
+
                                     // baseline didn't match, if it's an auto-correlation
         if (a1 == a2                // need to match one antenna and freq index
-         && (pfb[nf].stn[0].ant == a1 && freq_index == pfb[nf].stn[0].find 
+         && (pfb[nf].stn[0].ant == a1 && freq_index == pfb[nf].stn[0].fdest
+          || pfb[nf].stn[1].ant == a1 && freq_index == pfb[nf].stn[1].fdest
+          || pfb[nf].stn[0].ant == a1 && freq_index == pfb[nf].stn[0].find
           || pfb[nf].stn[1].ant == a1 && freq_index == pfb[nf].stn[1].find))
             return nf;
         }
