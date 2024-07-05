@@ -65,8 +65,22 @@ void normalize (const DifxInput * D,              // ptr to a filled-out difx in
         if (pmap[i] != i)
             continue;
         for (n=i+1; n < D->nFreq && n < MAX_DFRQ; n++)
+            {
+                                    // at first keep distinction between sidebands, alas, this does
+                                    // not work out well for mixed-sideband baselines
             if (isSameDifxFreq(&D->freq[i], &D->freq[n], /*ignore pcal:*/1))
-               pmap[n] = i;
+                pmap[n] = i;
+            else if(D->freq[i].sideband != D->freq[n].sideband)
+                                    // try harder: "ignore" sideband, sufficient to have identical freq coverage
+                {
+                DifxFreq flipped;
+                copyDifxFreq(&flipped, &D->freq[n]);
+                flipped.freq = (flipped.sideband == 'U') ? (flipped.freq + flipped.bw) : (flipped.freq - flipped.bw);
+                flipped.sideband = (flipped.sideband == 'U') ? 'L' : 'U';
+                if (isSameDifxFreq(&D->freq[i], &flipped, /*ignore pcal:*/1))
+                    pmap[n] = i;
+               }
+            }
         }
 
                                     // initialize for looping 
@@ -126,8 +140,8 @@ void normalize (const DifxInput * D,              // ptr to a filled-out difx in
                     //printf ("        bad auto data for ref/rem %d in record %d, DiFX frequency id %d\n", aref, n, vrloop->freq_index);
                     }
                 pant[aref][fr][pol] = sqrt (sum / nvis[n]);
-                // printf("normalize() AUTO ant=%d vis#=%d %c  visfq=%d pmap[%d]=%d sum=%.3f pant[%d][%d][%d]=%.3f\n",
-                //         aref, n, polchar[pol], vrloop->freq_index, vrloop->freq_index, fr, sum, aref, fr, pol, pant[aref][fr][pol]);
+                // printf("normalize() AUTO ant=%d vis#=%d %c %cSB visfq=%d pmap[%d]=%d sum=%.3f pant[%d][%d][%d]=%.3f\n",
+                //         aref, n, polchar[pol], D->freq[vrloop->freq_index].sideband, vrloop->freq_index, vrloop->freq_index, fr, sum, aref, fr, pol, pant[aref][fr][pol]);
                 // printf("n %d aref %d fr %d pol %d pant %f\n",
                 //         n,aref,fr,pol,pant[aref][fr][pol]);
                 }
@@ -169,8 +183,8 @@ void normalize (const DifxInput * D,              // ptr to a filled-out difx in
             pant_ref = pant[aref][fr_remap][polref];
             pant_rem = pant[arem][fr_remap][polrem];
 
-            // printf("normalize() VIZ %d-%d vis#=%d %c%c  pmap[visfq=%d]=%d   autopwr ref=%.3f rem=%.3f\n",
-            //        aref, arem, n, polchar[polref], polchar[polrem], vr->freq_index, fr_remap, pant_ref, pant_rem);
+            // printf("normalize() VIZ %d-%d vis#=%d %c%c %cSB  pmap[visfq=%d]=%d   autopwr ref=%.3f rem=%.3f\n",
+            //        aref, arem, n, polchar[polref], polchar[polrem], D->freq[vr->freq_index].sideband, vr->freq_index, fr_remap, pant_ref, pant_rem);
 
                                     // ensure that there is no 0-divide
             if (pant_ref == 0.0 || pant_rem == 0.0)
