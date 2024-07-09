@@ -146,20 +146,20 @@ int get_vis (DifxInput *D,                    // ptr to difx input file data
                 if (ipfb < 0)
                     {
                     if (opts->verbose > 2)
-                        fprintf (stderr, "Skipping data for index %d of baseline %d\n",
-                                  pv->freq_index, pv->baseline);
+                        fprintf (stderr, "Skipping data for DiFX baseline %d frequency index %d %cSB %c%c lacking mk4 fblock entry\n",
+                                 pv->baseline, pv->freq_index, D->freq[pv->freq_index].sideband, pv->pols[0], pv->pols[1]);
                     nskip++;
                     continue;
-                    }   
+                    }
                 if (opts->verbose > 2)
-                    fprintf (stderr, "valid read bl %x time %d %13.6f %p config %d source %d "
-                                     "freq %d, pol %c%c pb %d\n",
-                    pv->baseline, pv->mjd, pv->iat, &(pv->iat),pv->config_index,
-                    pv->source_index, pv->freq_index, pv->pols[0], pv->pols[1], pv->pulsar_bin);
+                    fprintf (stderr, "valid read bl 0x%x time %d %13.6f %p config %d source %d "
+                                     "freq %d %cSB pol %c%c bin %d fblock[%04d]\n",
+                    pv->baseline, pv->mjd, pv->iat, &(pv->iat), pv->config_index,
+                    pv->source_index, pv->freq_index, D->freq[pv->freq_index].sideband, pv->pols[0], pv->pols[1], pv->pulsar_bin, ipfb);
                 }
             else
                 {
-                fprintf(stderr, "Error parsing Swinburne header: got a sync of %x and version"
+                fprintf(stderr, "Error parsing Swinburne header: got a sync of 0x%x and version"
                         " of %d in record %d\n", pv->sync, pv->version, nvr);
                 return -4;
                 }
@@ -167,7 +167,7 @@ int get_vis (DifxInput *D,                    // ptr to difx input file data
         else
             {
             fprintf (stderr, "Error parsing Swinburne header: got an unrecognized sync"
-                    " of %x in record %d\n", pv->sync, nvr);
+                    " of 0x%x in record %d\n", pv->sync, nvr);
             return -5;
             }
      
@@ -231,16 +231,13 @@ int get_pfb_index (int baseline,    // difx-encoded baseline (100 * a1 + a2)
     while (pfb[++nf].stn[0].ant >= 0) // check for end-of-table marker
         {
         if (256 * (pfb[nf].stn[0].ant + 1) + pfb[nf].stn[1].ant + 1 == baseline
-          && (freq_index == pfb[nf].stn[0].fdest || freq_index == pfb[nf].stn[1].fdest
-           || freq_index == pfb[nf].stn[0].find  || freq_index == pfb[nf].stn[1].find))
+          && (freq_index == pfb[nf].stn[0].fdest || freq_index == pfb[nf].stn[1].fdest))
             return nf;
 
                                     // baseline didn't match, if it's an auto-correlation
         if (a1 == a2                // need to match one antenna and freq index
          && (pfb[nf].stn[0].ant == a1 && freq_index == pfb[nf].stn[0].fdest
-          || pfb[nf].stn[1].ant == a1 && freq_index == pfb[nf].stn[1].fdest
-          || pfb[nf].stn[0].ant == a1 && freq_index == pfb[nf].stn[0].find
-          || pfb[nf].stn[1].ant == a1 && freq_index == pfb[nf].stn[1].find))
+          || pfb[nf].stn[1].ant == a1 && freq_index == pfb[nf].stn[1].fdest))
             return nf;
         }
 
