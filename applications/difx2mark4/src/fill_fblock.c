@@ -120,7 +120,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                 pfb[nprod].stn[0].bw       = pfrAB->bw;
                 pfb[nprod].stn[0].bs       = pdsA->quantBits;
                 pfb[nprod].stn[0].zoom     = zoomA;
-                pfb[nprod].stn[0].pcal_int = pdsA->phaseCalIntervalMHz;
+                pfb[nprod].stn[0].pcal_int = pdsA->phaseCalIntervalMHz / pdsA->phaseCalIntervalDivisor;
                 pfb[nprod].stn[0].n_spec_chan = pfrAB->nChan / pfrAB->specAvg;
                 pfb[nprod].stn[1].pol      = polB;
                 pfb[nprod].stn[1].ant      = pdsB->antennaId;
@@ -131,7 +131,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                 pfb[nprod].stn[1].bw       = pfrAB->bw;
                 pfb[nprod].stn[1].bs       = pdsB->quantBits;
                 pfb[nprod].stn[1].zoom     = zoomB;
-                pfb[nprod].stn[1].pcal_int = pdsB->phaseCalIntervalMHz;
+                pfb[nprod].stn[1].pcal_int = pdsB->phaseCalIntervalMHz / pdsB->phaseCalIntervalDivisor;
                 pfb[nprod].stn[1].n_spec_chan = pfrAB->nChan / pfrAB->specAvg;
 
                                 // store info of the destination product i.e. output band, if new,
