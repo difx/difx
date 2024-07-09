@@ -25,7 +25,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         ibandB,
         irfAfid,
         irfBfid,
-        idfABfid,
+        irfABfid,
         ants[64],
         swapped,
         present,
@@ -34,7 +34,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         polind,
         nant,
         nfreq,
-        zoom,
+        zoomA,
+        zoomB,
         nbw,
         nfg;
 
@@ -48,8 +49,9 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
     DifxBaseline *pbl;
     DifxDatastream *pdsA,
                    *pdsB;
-    DifxFreq *pfr,
-             *pdfr;
+    DifxFreq *pfrA,
+             *pfrB,
+             *pfrAB;
 
                                     // bandwidth-based filtering option?
     if (strlen (opts->bandwidth) != 0)
@@ -65,121 +67,77 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         pdsB = D->datastream + pbl->dsB;
         for (i=0; i<pbl->nFreq; i++)
             {
-            idfABfid = pbl->destFq[i];
-            pdfr = D->freq + idfABfid;
+            irfABfid = pbl->destFq[i];
+            pfrAB = D->freq + irfABfid;
             for (j=0; j<*pbl->nPolProd; j++)
                 {
                 ibandA = pbl->bandA[i][j];
                 ibandB = pbl->bandB[i][j];
+
                                     // bandA  (reference station)
                 if (ibandA < pdsA->nRecBand)
                     {               // not zoom mode
-                    zoom = FALSE;
+                    zoomA = FALSE;
                     irbAfid = pdsA->recBandFreqId[ibandA];
                     polA = pdsA->recBandPolName[ibandA];
                     irfAfid = pdsA->recFreqId[irbAfid];
-                    pfr = D->freq + irfAfid;
+                    pfrA = D->freq + irfAfid;
                     }
                 else                // zoom mode
                     {
-                    zoom = TRUE;
+                    zoomA = TRUE;
                     irbAfid = pdsA->zoomBandFreqId[ibandA-pdsA->nRecBand];
                     polA = pdsA->zoomBandPolName[ibandA-pdsA->nRecBand];
                     irfAfid = pdsA->zoomFreqId[irbAfid];
-                    pfr = D->freq + irfAfid;
+                    pfrA = D->freq + irfAfid;
                     }
-
-                                    // stuff ref station fblock structure
-                pfb[nprod].stn[0].pol      = polA;
-                pfb[nprod].stn[0].ant      = pdsA->antennaId;
-                pfb[nprod].stn[0].find     = irfAfid;
-                pfb[nprod].stn[0].fdest    = idfABfid;
-                pfb[nprod].stn[0].freq     = pfr->freq;
-                pfb[nprod].stn[0].sideband = pfr->sideband;
-                pfb[nprod].stn[0].bw       = pfr->bw;
-                pfb[nprod].stn[0].bs       = pdsA->quantBits;
-                pfb[nprod].stn[0].zoom     = zoom;
-                pfb[nprod].stn[0].pcal_int = pdsA->phaseCalIntervalMHz;
-                pfb[nprod].stn[0].n_spec_chan = pfr->nChan / pfr->specAvg;
 
                                     // bandB  (remote station)
                 if (ibandB < pdsB->nRecBand)
                     {               // not zoom mode
-                    zoom = FALSE;
+                    zoomB = FALSE;
                     irbBfid = pdsB->recBandFreqId[ibandB];
                     polB = pdsB->recBandPolName[ibandB];
                     irfBfid = pdsB->recFreqId[irbBfid];
-                    pfr = D->freq + irfBfid;
+                    pfrB = D->freq + irfBfid;
                     }
                 else                // zoom mode
                     {
-                    zoom = TRUE;
+                    zoomB = TRUE;
                     irbBfid = pdsB->zoomBandFreqId[ibandB-pdsB->nRecBand];
                     polB = pdsB->zoomBandPolName[ibandB-pdsB->nRecBand];
                     irfBfid = pdsB->zoomFreqId[irbBfid];
-                    pfr = D->freq + irfBfid;
+                    pfrB = D->freq + irfBfid;
                     }
-
-                                    // stuff rem station fblock structure
-                pfb[nprod].stn[1].pol      = polB;
-                pfb[nprod].stn[1].ant      = pdsB->antennaId;
-                pfb[nprod].stn[1].find     = irfBfid;
-                pfb[nprod].stn[1].fdest    = idfABfid;
-                pfb[nprod].stn[1].freq     = pfr->freq;
-                pfb[nprod].stn[1].sideband = pfr->sideband;
-                pfb[nprod].stn[1].bw       = pfr->bw;
-                pfb[nprod].stn[1].bs       = pdsB->quantBits;
-                pfb[nprod].stn[1].zoom     = zoom;
-                pfb[nprod].stn[1].pcal_int = pdsB->phaseCalIntervalMHz;
-                pfb[nprod].stn[1].n_spec_chan = pfr->nChan / pfr->specAvg;
-
-                                    // if sidebands mixed, make both USB
-                if (pfb[nprod].stn[0].sideband != pfb[nprod].stn[1].sideband)
-                    for (k=0; k<2; k++)
-                        if (pfb[nprod].stn[k].sideband == 'L')
-                            {
-                            pfb[nprod].stn[k].freq -= pfb[nprod].stn[k].bw;
-                            pfb[nprod].stn[k].find = pfb[nprod].stn[1-k].find;
-                            pfb[nprod].stn[k].sideband = 'U';
-                            }
-
-                                    // store info of the product itself, if new
-                                    // and if bw's of origin and destination are consistent
-                                    // NB: a narrower origin indicates its a slice within a wider destination,
-                                    // and the origin is an mpifxcorr-internal product absent from SWIN data
-                if (D->freq[irfAfid].bw == D->freq[idfABfid].bw && D->freq[irfBfid].bw == D->freq[idfABfid].bw)
-                    if (!fblock_already_exists(pfb, nprod, &pfb[nprod]))
-                        ++nprod;
 
                                     // info of output band
                 pfb[nprod].stn[0].pol      = polA;
                 pfb[nprod].stn[0].ant      = pdsA->antennaId;
-                pfb[nprod].stn[0].find     = idfABfid;
-                pfb[nprod].stn[0].fdest    = idfABfid;
-                pfb[nprod].stn[0].freq     = pdfr->freq;
-                pfb[nprod].stn[0].sideband = pdfr->sideband;
-                pfb[nprod].stn[0].bw       = pdfr->bw;
+                pfb[nprod].stn[0].find     = irfAfid;
+                pfb[nprod].stn[0].fdest    = irfABfid;
+                pfb[nprod].stn[0].freq     = pfrAB->freq;
+                pfb[nprod].stn[0].sideband = pfrAB->sideband;
+                pfb[nprod].stn[0].bw       = pfrAB->bw;
                 pfb[nprod].stn[0].bs       = pdsA->quantBits;
-                pfb[nprod].stn[0].zoom     = TRUE;
+                pfb[nprod].stn[0].zoom     = zoomA;
                 pfb[nprod].stn[0].pcal_int = pdsA->phaseCalIntervalMHz;
-                pfb[nprod].stn[0].n_spec_chan = pdfr->nChan / pdfr->specAvg;
+                pfb[nprod].stn[0].n_spec_chan = pfrAB->nChan / pfrAB->specAvg;
                 pfb[nprod].stn[1].pol      = polB;
                 pfb[nprod].stn[1].ant      = pdsB->antennaId;
-                pfb[nprod].stn[1].find     = idfABfid;
-                pfb[nprod].stn[1].fdest    = idfABfid;
-                pfb[nprod].stn[1].freq     = pdfr->freq;
-                pfb[nprod].stn[1].sideband = pdfr->sideband;
-                pfb[nprod].stn[1].bw       = pdfr->bw;
+                pfb[nprod].stn[1].find     = irfBfid;
+                pfb[nprod].stn[1].fdest    = irfABfid;
+                pfb[nprod].stn[1].freq     = pfrAB->freq;
+                pfb[nprod].stn[1].sideband = pfrAB->sideband;
+                pfb[nprod].stn[1].bw       = pfrAB->bw;
                 pfb[nprod].stn[1].bs       = pdsB->quantBits;
-                pfb[nprod].stn[1].zoom     = TRUE;
+                pfb[nprod].stn[1].zoom     = zoomB;
                 pfb[nprod].stn[1].pcal_int = pdsB->phaseCalIntervalMHz;
-                pfb[nprod].stn[1].n_spec_chan = pdfr->nChan / pdfr->specAvg;
+                pfb[nprod].stn[1].n_spec_chan = pfrAB->nChan / pfrAB->specAvg;
 
                                 // store info of the destination product i.e. output band, if new,
                                 // and if not itself already covered by the source product stored higher above
-                if (D->freq[irfAfid].bw != D->freq[idfABfid].bw || D->freq[irfBfid].bw != D->freq[idfABfid].bw)
-                    if (!fblock_already_exists(pfb, nprod, &pfb[nprod]))
-                        ++nprod;
+                if (!fblock_already_exists(pfb, nprod, &pfb[nprod]))
+                    ++nprod;
 
                                     // check product index
                 if (nprod > MAX_FPPAIRS-1)
@@ -213,6 +171,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
     for (i=0; i<nant; i++)
         {                           // for each antenna make a list of all frequencies
         nfreq = 0;
+        memset(freqs, 0, sizeof(freqs));
         for (n=0; n<nprod; n++)
             for (k=0; k<2; k++)     // k = 0|1 for ref|rem antenna
                 {
@@ -220,10 +179,10 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                     {               // antenna matches; look for unique freq
                     present = FALSE;// is frequency new?
                     for (j=0; j<nfreq; j++)
-                        if (pfb[n].stn[k].freq == freqs[j])
+                        if (D->freq[pfb[n].stn[k].fdest].freq == freqs[j])
                             present = TRUE;
                     if (!present)
-                        freqs[nfreq++] = pfb[n].stn[k].freq;
+                        freqs[nfreq++] = D->freq[pfb[n].stn[k].fdest].freq;
                                     // sanity check
                     if (nfreq > MAX_DFRQ)
                         {
@@ -254,11 +213,14 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                     freqs[k] = freqs[k+1];
                 nfreq--;
                 }
+
                                     // generate channel id's for each freq
         for (j=0; j<nfreq; j++)
             {
-            sprintf (buff, "%c%02d", getband (freqs[j]), j);
-            buff[3] = 'U';          // change upon insertion if LSB
+            sprintf (buff, "%c%02d", getband (freqs[j]), j % 100);
+            if (j >= 100)
+                fprintf (stderr, "Warning: frequency record %d exceeds 2-digit limit of generated VEX channel IDs! Result might be unusable.\n", j);
+            buff[3] = 'n';
             buff[4] = 0;
             buff[5] = 0;
             first[0][0] = TRUE;     // first time for [sb][pol]
@@ -269,13 +231,13 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                                     // everywhere that ant & freq match
             for (n=0; n<nprod; n++)
                 for (k=0; k<2; k++)     // k = 0|1 for ref|rem antenna
-                    if (pfb[n].stn[k].ant == i && pfb[n].stn[k].freq == freqs[j]
+                    if (pfb[n].stn[k].ant == i && D->freq[pfb[n].stn[k].fdest].freq == freqs[j]
                         && (filteredbw <= 0.0 || pfb[n].stn[k].bw == filteredbw))
                         {
-                        buff[3] = pfb[n].stn[k].sideband;
+                        buff[3] = D->freq[pfb[n].stn[k].fdest].sideband;
                         buff[4] = pfb[n].stn[k].pol;
                         strcpy (pfb[n].stn[k].chan_id, buff);
-                        sbind  = (pfb[n].stn[k].sideband == 'U') ? 0 : 1;
+                        sbind  = (buff[3] == 'U') ? 0 : 1;
                         polind = (pfb[n].stn[k].pol == 'R' 
                                || pfb[n].stn[k].pol == 'X') ? 0 : 1;
                                     // see if first mention for ant, freq, sb, & pol
@@ -329,18 +291,18 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
 
     if (opts->verbose > 1)
         {
-        fprintf (stderr, "               ch_id s p 1st a id  z pc bs  freq    bw   #vis\n");
+        fprintf (stderr, "                ch_id s p 1st a fqi fqo  z pc bs freq        bw        #vis\n");
         for (n=0; n<nprod; n++)     // debug - print out fblock table
             fprintf (stderr,
-                    "   fblock[%03d] %s %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %4d\n"
-                     "               %s %c %c %2d %2d %2d %2d %1d  %1d %.3f %.3f %4d\n",
+                    "   fblock[%04d] %s %c %c  %c %2d %3d %3d %2d %3d %1d %-11.3f %-8.3f %4d\n"
+                    "                %s %c %c  %c %2d %3d %3d %2d %3d %1d %-11.3f %-8.3f %4d\n",
                   n, pfb[n].stn[0].chan_id, pfb[n].stn[0].sideband, pfb[n].stn[0].pol,
-                  pfb[n].stn[0].first_time, pfb[n].stn[0].ant, pfb[n].stn[0].find,
+                  pfb[n].stn[0].first_time ? 'y' : 'n', pfb[n].stn[0].ant, pfb[n].stn[0].find, pfb[n].stn[0].fdest,
                   pfb[n].stn[0].zoom, (int)(pfb[n].stn[0].pcal_int+0.5), pfb[n].stn[0].bs,
                   pfb[n].stn[0].freq, pfb[n].stn[0].bw, pfb[n].stn[0].n_spec_chan,
 
                   pfb[n].stn[1].chan_id, pfb[n].stn[1].sideband, pfb[n].stn[1].pol,
-                  pfb[n].stn[1].first_time, pfb[n].stn[1].ant, pfb[n].stn[1].find, 
+                  pfb[n].stn[1].first_time ? 'y' : 'n', pfb[n].stn[1].ant, pfb[n].stn[1].find, pfb[n].stn[1].fdest,
                   pfb[n].stn[1].zoom, (int)(pfb[n].stn[1].pcal_int+0.5), pfb[n].stn[1].bs,
                   pfb[n].stn[1].freq, pfb[n].stn[1].bw, pfb[n].stn[1].n_spec_chan);
         }
