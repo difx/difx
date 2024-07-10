@@ -25,7 +25,7 @@
 
 #define MAX_INPUT_FILES 4096
 #define MAX_VIS 8192
-#define MAX_STN 50
+#define MAX_STN 64
 #define MAX_FBANDS 20 
 #define EXP_CODE_LEN 4
 #define NUMFILS 500                 // max number of type 1 output files
@@ -88,6 +88,13 @@ typedef struct
         } comp[MAX_VIS];
     } vis_record;
 
+typedef struct 
+    {
+    int nvis;                      // number of visibility spectral channels; vis_record::comp[0..nvis-1]
+    int vrsize;                    // size of the entire visibility record in bytes
+    int pfbindex;                  // index of matching PFB fblock_tag[] entry
+    } vis_record_meta;
+
 struct stations
     {
     int inscan;                     // in scan according to vex SCHED block
@@ -149,7 +156,7 @@ int createType1s (DifxInput *, struct fblock_tag *, int *, int, char *, char *,
 int createType3s (DifxInput *, struct fblock_tag *, int, int, int, char *, char *, 
                   struct stations *, struct CommandLineOptions *);
                                     // get_vis.c
-int get_vis (DifxInput *, char *, struct CommandLineOptions *, int *, int *, int *, 
+int get_vis (DifxInput *, char *, struct CommandLineOptions *, int *, vis_record_meta *, 
                  vis_record **, char *, struct fblock_tag *, int *);
                                     // new_type1.c
 int new_type1 (DifxInput *, struct fblock_tag *, int, int, int, int, int *, double *,
@@ -158,8 +165,8 @@ int new_type1 (DifxInput *, struct fblock_tag *, int, int, int, int, int *, doub
                                     // write_t120.c
 void write_t120 (struct type_120 *, FILE *);
                                     // normalize.c
-void normalize (const DifxInput *, struct CommandLineOptions *, vis_record *, int, int *, int *, 
-                struct fblock_tag *);
+void normalize (const DifxInput *, struct CommandLineOptions *, vis_record_meta *,
+                vis_record *, int, struct fblock_tag *);
                                     // root_id.c
 char *root_id(int, int, int, int, int);
 char *root_id_break(time_t, int, int, int, int, int);

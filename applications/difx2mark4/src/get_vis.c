@@ -22,8 +22,7 @@ int get_vis (DifxInput *D,                    // ptr to difx input file data
              char *vf_name,                   // name of input file
              struct CommandLineOptions *opts, // ptr to input options
              int *nvrtot,                     // total number of vis. records read
-             int *nvis,                       // array of #vis per record
-             int *vrsize,                     // array of size of vis records in bytes
+             vis_record_meta *vrmeta,         // array of vis. record meta data (num channels, size in byte, pfb index)
              vis_record **vrec,               // ptr to malloced array of vis. recs as read
              char *corrdate,                  // modification date of input file
              struct fblock_tag *pfb,          // ptr to filled-in fblock table
@@ -33,8 +32,7 @@ int get_vis (DifxInput *D,                    // ptr to difx input file data
     int err,
         vfile_status,
         nskip=0,
-        nvr,
-        ipfb;
+        nvr;
     size_t vrsize_tot,
         allocated_tot;
 
@@ -66,7 +64,7 @@ int get_vis (DifxInput *D,                    // ptr to difx input file data
     else
         {
         mod_time = gmtime (&(attrib.st_mtime));
-        snprintf (corrdate, 16, "%4d%03d-%02d%02d%02d", 
+        snprintf (corrdate, 16, "%4d%03d-%02d%02d%02d",
                  mod_time->tm_year+1900,
                  mod_time->tm_yday+1, mod_time->tm_hour,
                  mod_time->tm_min,  mod_time->tm_sec);
@@ -128,22 +126,22 @@ int get_vis (DifxInput *D,                    // ptr to difx input file data
 
                                     // determine #vis from input tables
                 pfr = D->freq + pv->freq_index;
-                nvis[nvr] = pfr->nChan / pfr->specAvg;
+                vrmeta[nvr].nvis = pfr->nChan / pfr->specAvg;
                                     // protect from array overrun
-                if (nvis[nvr] > MAX_VIS) 
+                if (vrmeta[nvr].nvis > MAX_VIS) 
                     {
                     fprintf (stderr, 
                     "fatal error: # visibilities (%d) exceeds array dimension (%d)\n",
-                    nvis, MAX_VIS);
+                    vrmeta[nvr].nvis, MAX_VIS);
                     return (-7);
                     }
-                vrsize[nvr] = sizeof (vis_record) - sizeof (pv->comp)
-                                 + nvis[nvr] * 2 * sizeof (float);
-                fread (pv->comp,          sizeof (float),  2*nvis[nvr], vfile);
+                vrmeta[nvr].vrsize = sizeof (vis_record) - sizeof (pv->comp)
+                                 + vrmeta[nvr].nvis * 2 * sizeof (float);
+                fread (pv->comp,          sizeof (float),  2*vrmeta[nvr].nvis, vfile);
 
                                     // if baseline not in fblock - skip over data record
-                ipfb = get_pfb_index (pv->baseline, pv->freq_index, pfb, antennaMap);
-                if (ipfb < 0)
+                vrmeta[nvr].pfbindex = get_pfb_index (pv->baseline, pv->freq_index, pfb, antennaMap);
+                if (vrmeta[nvr].pfbindex < 0)
                     {
                     if (opts->verbose > 2)
                         fprintf (stderr, "Skipping data for DiFX baseline %d frequency index %d %cSB %c%c lacking mk4 fblock entry\n",
@@ -155,7 +153,7 @@ int get_vis (DifxInput *D,                    // ptr to difx input file data
                     fprintf (stderr, "valid read bl 0x%x time %d %13.6f %p config %d source %d "
                                      "freq %d %cSB pol %c%c bin %d fblock[%04d]\n",
                     pv->baseline, pv->mjd, pv->iat, &(pv->iat), pv->config_index,
-                    pv->source_index, pv->freq_index, D->freq[pv->freq_index].sideband, pv->pols[0], pv->pols[1], pv->pulsar_bin, ipfb);
+                    pv->source_index, pv->freq_index, D->freq[pv->freq_index].sideband, pv->pols[0], pv->pols[1], pv->pulsar_bin, vrmeta[nvr].pfbindex);
                 }
             else
                 {
@@ -171,7 +169,7 @@ int get_vis (DifxInput *D,                    // ptr to difx input file data
             return -5;
             }
      
-        vrsize_tot += vrsize[nvr];
+        vrsize_tot += vrmeta[nvr].vrsize;
         nvr += 1;                   // bump the record counter
                                     // protect from visibility array overruns
         if (nvr > NVRMAX) 
@@ -210,7 +208,7 @@ int get_vis (DifxInput *D,                    // ptr to difx input file data
             fprintf (stderr, "total Swinburne records skipped %d\n", nskip);
     }                               // return path is always through EOF
 
-// determine index into pfb table for baselne bl
+// determine index into pfb table for baseline
 int get_pfb_index (int baseline,    // difx-encoded baseline (100 * a1 + a2)
                    int freq_index,  // difx-generated freq index
                    struct fblock_tag *pfb,

@@ -5,7 +5,9 @@
 //
 // created                                      rjc 2011.5.24
 // modified to allow simultaneous R/L/X/Y pols  rjc 2015.11.2
-// handle baseline-dependent nvis & vrsize      rjc  2018.10.18
+// handle baseline-dependent nvis & vrsize      rjc 2018.10.18
+// support redundant freq ids in ac lookup      jw  2024.07
+// move nvis & vrsize into vrmeta               jw  2024.07
 
 #include <stdio.h>
 #include <string.h>
@@ -16,10 +18,9 @@
 
 void normalize (const DifxInput * D,              // ptr to a filled-out difx input structure
                 struct CommandLineOptions *opts,  // array of command line options
+                vis_record_meta *vrmeta,          // array of vis. record meta data (num channels, size in byte, pfb index)
                 vis_record *vrec,                 // pointer to start of vis. buffer
                 int nvrtot,                       // total # of vis. records in buffer
-                int *nvis,                        // number of visibility points in record
-                int *vrsize,                      // size of each vis record (bytes)
                 struct fblock_tag *pfb)           // ptr to filled-in fblock table
     {
     int i,
@@ -100,7 +101,7 @@ void normalize (const DifxInput * D,              // ptr to a filled-out difx in
         pch = (char *) vr;          // leave vr pointing to start of range
         for (n=nbeg; n<nvrtot; n++)
             {
-            pch += vrsize[n];
+            pch += vrmeta[n].vrsize;
             vrloop = (vis_record *) pch;
             if (vrloop->iat != t)
                 break;
@@ -132,20 +133,20 @@ void normalize (const DifxInput * D,              // ptr to a filled-out difx in
                 fr = pmap[vrloop->freq_index];
                                     // find average power across the band and save its sqrt
                 sum = 0.0;
-                for (i=0; i<nvis[n]; i++)
+                for (i=0; i<vrmeta[n].nvis; i++)
                     sum += vrloop->comp[i].real;
                 if (sum < 0.0)
                     {
                     sum = 0.0; // avoid pant[]=sqrt(<0)=NaN
                     //printf ("        bad auto data for ref/rem %d in record %d, DiFX frequency id %d\n", aref, n, vrloop->freq_index);
                     }
-                pant[aref][fr][pol] = sqrt (sum / nvis[n]);
+                pant[aref][fr][pol] = sqrt (sum / vrmeta[n].nvis);
                 // printf("normalize() AUTO ant=%d vis#=%d %c %cSB visfq=%d pmap[%d]=%d sum=%.3f pant[%d][%d][%d]=%.3f\n",
                 //         aref, n, polchar[pol], D->freq[vrloop->freq_index].sideband, vrloop->freq_index, vrloop->freq_index, fr, sum, aref, fr, pol, pant[aref][fr][pol]);
                 // printf("n %d aref %d fr %d pol %d pant %f\n",
                 //         n,aref,fr,pol,pant[aref][fr][pol]);
                 }
-            pch += vrsize[n];
+            pch += vrmeta[n].vrsize;
             vrloop = (vis_record *) pch;
             }
                                     // one last pass through all records for current time 
@@ -199,12 +200,12 @@ void normalize (const DifxInput * D,              // ptr to a filled-out difx in
             else
                 factor = 1.0 / (pant_ref * pant_rem);
 
-            for (i=0; i<nvis[n]; i++)
+            for (i=0; i<vrmeta[n].nvis; i++)
                 {
                 vr->comp[i].real *= factor;
                 vr->comp[i].imag *= factor;
                 }
-            pch = (char *) vr + vrsize[n];
+            pch = (char *) vr + vrmeta[n].vrsize;
             vr = (vis_record *) pch;
             }
         if (nend == nvrtot)         // exit if all records have been processed
