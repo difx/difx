@@ -121,6 +121,7 @@ struct fblock_tag
         int ant;                    // antenna table index
         int find;                   // frequency table index of recorded/zoom band
         int fdest;                  // frequency table index of destination freq that -"- contributes to
+        int fmk4;                   // index into mk4-only simplified freq list agnostic of USB/LSB and PCal spacing differences
         int bs;                     // quantization bits/sample
         int first_time;             // true iff first entry in table of chan_id for ant 
         int zoom;                   // true iff this channel is zoom mode

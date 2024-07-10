@@ -9,6 +9,7 @@
 #include "difx2mark4.h"
 
 static int fblock_already_exists(const struct fblock_tag *, int, const struct fblock_tag *);
+static double lowerEdgeFreq(const DifxFreq *);
 
 int fill_fblock (DifxInput *D,                    // difx input structure pointer
                  struct CommandLineOptions *opts, // ptr to input options
@@ -18,6 +19,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         j,
         k,
         n,
+        m,
         nprod = 0,                  // index for a frequency & polarization pair
         irbAfid,
         irbBfid,
@@ -26,7 +28,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         irfAfid,
         irfBfid,
         irfABfid,
-        ants[64],
+        ants[MAX_STN],
         swapped,
         present,
         first[2][2],                   // indexed by 0|1 for [USB/LSB][RCP/LCP]
@@ -34,6 +36,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         polind,
         nant,
         nfreq,
+        nallfreq,
         zoomA,
         zoomB,
         nbw,
@@ -45,6 +48,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
     double temp,
            freqs[MAX_DFRQ],
            filteredbw = 0.0;
+    double *allfreqs;
 
     DifxBaseline *pbl;
     DifxDatastream *pdsA,
@@ -160,16 +164,62 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                     present = TRUE;
             if (!present)
                 ants[nant++] = pfb[n].stn[k].ant;
-            if (nant > 64)          // sanity check
+            if (nant > MAX_STN)     // sanity check
                 {
                 printf ("too many antennas; redimension\n");
                 return -1;
                 }
             }
 
-                                    // loop over those antennas
+                                    // global output frequency table from DiFX but simplified with PCal-related duplicated entries removed,
+                                    // used in mapping the multiple DiFX indices per sky freq to single freqs for the mk4 t101 t120 indices
+    nallfreq = 0;
+    allfreqs = calloc(MAX_DFRQ*nant, sizeof(double));
+    for (n=0; n<nprod; n++)
+        for (k=0; k<2; k++)     // k = 0|1 for ref|rem antenna
+            {
+            //const double f = D->freq[pfb[n].stn[0].fdest].freq;
+            const double f = lowerEdgeFreq(&D->freq[pfb[n].stn[0].fdest]);
+            present = FALSE;// is frequency new?
+            for (j=0; j<nallfreq && !present; j++)
+                if (allfreqs[j] == f)
+                    present = TRUE;
+            if (!present)
+                allfreqs[nallfreq++] = f;
+            if (nallfreq > MAX_DFRQ*nant)
+                {
+                printf ("too many frequencies, exceeding MAX_DFRQ x %d antennas; redimension MAX_DFRQ\n", nant);
+                return -1;
+                }
+            }
+
+                                    // bubble sort the global frequency list
+    do
+        {
+        swapped = FALSE;
+        for (j=0; j<nallfreq-1; j++)
+            if (allfreqs[j] > allfreqs[j+1])
+                {
+                temp = allfreqs[j];
+                allfreqs[j] = allfreqs[j+1];
+                allfreqs[j+1] = temp;
+                swapped = TRUE;
+                }
+        }
+    while (swapped);
+                                    // remove (collapse out) redundant frequencies
+    for (j=0; j<nallfreq-1; j++)
+        if (allfreqs[j] == allfreqs[j+1])
+            {
+            for (k=j;k<nallfreq-1;k++)
+                allfreqs[k] = allfreqs[k+1];
+            nallfreq--;
+            }
+
+
+                                    // loop over antennas for antenna- and baseline-specific frequencies
     for (i=0; i<nant; i++)
-        {                           // for each antenna make a list of all frequencies
+        {                           // for each antenna make a list of all of its frequencies
         nfreq = 0;
         memset(freqs, 0, sizeof(freqs));
         for (n=0; n<nprod; n++)
@@ -237,6 +287,12 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                         buff[3] = D->freq[pfb[n].stn[k].fdest].sideband;
                         buff[4] = pfb[n].stn[k].pol;
                         strcpy (pfb[n].stn[k].chan_id, buff);
+                        for (m=0; m<nallfreq; m++)
+                            if (lowerEdgeFreq(&D->freq[pfb[n].stn[k].fdest]) == allfreqs[m])
+                                {
+                                pfb[n].stn[k].fmk4 = m;
+                                break;
+                                }
                         sbind  = (buff[3] == 'U') ? 0 : 1;
                         polind = (pfb[n].stn[k].pol == 'R' 
                                || pfb[n].stn[k].pol == 'X') ? 0 : 1;
@@ -250,9 +306,10 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                             pfb[n].stn[k].first_time = FALSE;
                         }
             }
+
         }
 
-
+        
                                     // if freq groups specified, remove any non-matching lines
     if (strlen (opts->fgroups) != 0)
         {
@@ -291,18 +348,27 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
 
     if (opts->verbose > 1)
         {
-        fprintf (stderr, "                ch_id s p 1st a fqi fqo  z pc bs freq        bw        #vis\n");
+        fprintf (stderr, " mk4 fqId   low edge\n");
+        for (m=0; m<nallfreq; m++)
+            fprintf (stderr, "      %3d   %.3f\n", m, allfreqs[m]);
+        }
+
+    if (opts->verbose > 1)
+        {
+        fprintf (stderr, "                ch_id s p 1st a fqi fqo fm4  z pc bs freq        bw        #vis\n");
         for (n=0; n<nprod; n++)     // debug - print out fblock table
             fprintf (stderr,
-                    "   fblock[%04d] %s %c %c  %c %2d %3d %3d %2d %3d %1d %-11.3f %-8.3f %4d\n"
-                    "                %s %c %c  %c %2d %3d %3d %2d %3d %1d %-11.3f %-8.3f %4d\n",
+                    "   fblock[%04d] %s %c %c  %c %2d %3d %3d %3d %2d %3d %1d %-11.3f %-8.3f %4d\n"
+                    "                %s %c %c  %c %2d %3d %3d %3d %2d %3d %1d %-11.3f %-8.3f %4d\n",
                   n, pfb[n].stn[0].chan_id, pfb[n].stn[0].sideband, pfb[n].stn[0].pol,
-                  pfb[n].stn[0].first_time ? 'y' : 'n', pfb[n].stn[0].ant, pfb[n].stn[0].find, pfb[n].stn[0].fdest,
+                  pfb[n].stn[0].first_time ? 'y' : 'n', pfb[n].stn[0].ant,
+                  pfb[n].stn[0].find, pfb[n].stn[0].fdest, pfb[n].stn[0].fmk4,
                   pfb[n].stn[0].zoom, (int)(pfb[n].stn[0].pcal_int+0.5), pfb[n].stn[0].bs,
                   pfb[n].stn[0].freq, pfb[n].stn[0].bw, pfb[n].stn[0].n_spec_chan,
 
                   pfb[n].stn[1].chan_id, pfb[n].stn[1].sideband, pfb[n].stn[1].pol,
-                  pfb[n].stn[1].first_time ? 'y' : 'n', pfb[n].stn[1].ant, pfb[n].stn[1].find, pfb[n].stn[1].fdest,
+                  pfb[n].stn[1].first_time ? 'y' : 'n', pfb[n].stn[1].ant,
+                  pfb[n].stn[1].find, pfb[n].stn[1].fdest, pfb[n].stn[1].fmk4,
                   pfb[n].stn[1].zoom, (int)(pfb[n].stn[1].pcal_int+0.5), pfb[n].stn[1].bs,
                   pfb[n].stn[1].freq, pfb[n].stn[1].bw, pfb[n].stn[1].n_spec_chan);
         }
@@ -325,6 +391,7 @@ static int fblock_already_exists(const struct fblock_tag *entries, int nentries,
                 entries[n].stn[k].ant      == candidate->stn[k].ant  &&
                 entries[n].stn[k].find     == candidate->stn[k].find &&
                 entries[n].stn[k].fdest    == candidate->stn[k].fdest    &&
+                entries[n].stn[k].fmk4     == candidate->stn[k].fmk4     &&
                 entries[n].stn[k].freq     == candidate->stn[k].freq     &&
                 entries[n].stn[k].sideband == candidate->stn[k].sideband &&
                 entries[n].stn[k].bw       == candidate->stn[k].bw       &&
@@ -342,4 +409,12 @@ static int fblock_already_exists(const struct fblock_tag *entries, int nentries,
         }
 
     return 0;
+    }
+
+static double lowerEdgeFreq(const DifxFreq *df)
+    {
+    if (df->sideband == 'U')
+        return df->freq;
+    else
+        return df->freq - df->bw;
     }
