@@ -9,7 +9,7 @@
 #include "difx2mark4.h"
 
 static int fblock_already_exists(const struct fblock_tag *, int, const struct fblock_tag *);
-static double lowerEdgeFreq(const DifxFreq *);
+static int condense_internal_freqlist(fblock_tag_lite *, int *);
 
 int fill_fblock (DifxInput *D,                    // difx input structure pointer
                  struct CommandLineOptions *opts, // ptr to input options
@@ -35,7 +35,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         sbind,
         polind,
         nant,
-        nfreq,
+        nantfreq,
         nallfreq,
         zoomA,
         zoomB,
@@ -45,10 +45,9 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
     char polA, polB,
          buff[6];
 
-    double temp,
-           freqs[MAX_DFRQ],
-           filteredbw = 0.0;
-    double *allfreqs;
+    double filteredbw = 0.0;
+    fblock_tag_lite antfreqs[MAX_DFRQ];
+    fblock_tag_lite *allfreqs;
 
     DifxBaseline *pbl;
     DifxDatastream *pdsA,
@@ -174,100 +173,66 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                                     // global output frequency table from DiFX but simplified with PCal-related duplicated entries removed,
                                     // used in mapping the multiple DiFX indices per sky freq to single freqs for the mk4 t101 t120 indices
     nallfreq = 0;
-    allfreqs = calloc(MAX_DFRQ*nant, sizeof(double));
+    allfreqs = calloc(MAX_DFRQ*nant, sizeof(fblock_tag_lite));
     for (n=0; n<nprod; n++)
         for (k=0; k<2; k++)     // k = 0|1 for ref|rem antenna
             {
-            //const double f = D->freq[pfb[n].stn[0].fdest].freq;
-            const double f = lowerEdgeFreq(&D->freq[pfb[n].stn[0].fdest]);
+            const double f = D->freq[pfb[n].stn[k].fdest].freq;
+            const char sb = D->freq[pfb[n].stn[k].fdest].sideband;
             present = FALSE;// is frequency new?
             for (j=0; j<nallfreq && !present; j++)
-                if (allfreqs[j] == f)
+                if (allfreqs[j].freq == f && allfreqs[j].sideband == sb)
                     present = TRUE;
             if (!present)
-                allfreqs[nallfreq++] = f;
+                {
+                allfreqs[nallfreq].sideband = sb;
+                allfreqs[nallfreq].freq = f;
+                nallfreq++;
+                }
             if (nallfreq > MAX_DFRQ*nant)
                 {
                 printf ("too many frequencies, exceeding MAX_DFRQ x %d antennas; redimension MAX_DFRQ\n", nant);
                 return -1;
                 }
             }
-
-                                    // bubble sort the global frequency list
-    do
-        {
-        swapped = FALSE;
-        for (j=0; j<nallfreq-1; j++)
-            if (allfreqs[j] > allfreqs[j+1])
-                {
-                temp = allfreqs[j];
-                allfreqs[j] = allfreqs[j+1];
-                allfreqs[j+1] = temp;
-                swapped = TRUE;
-                }
-        }
-    while (swapped);
-                                    // remove (collapse out) redundant frequencies
-    for (j=0; j<nallfreq-1; j++)
-        if (allfreqs[j] == allfreqs[j+1])
-            {
-            for (k=j;k<nallfreq-1;k++)
-                allfreqs[k] = allfreqs[k+1];
-            nallfreq--;
-            }
-
+    nallfreq = condense_internal_freqlist(allfreqs, &nallfreq);
 
                                     // loop over antennas for antenna- and baseline-specific frequencies
     for (i=0; i<nant; i++)
         {                           // for each antenna make a list of all of its frequencies
-        nfreq = 0;
-        memset(freqs, 0, sizeof(freqs));
+        nantfreq = 0;
+        memset(antfreqs, 0, sizeof(antfreqs));
         for (n=0; n<nprod; n++)
             for (k=0; k<2; k++)     // k = 0|1 for ref|rem antenna
                 {
                 if (pfb[n].stn[k].ant == i)
                     {               // antenna matches; look for unique freq
+                    const double f = D->freq[pfb[n].stn[k].fdest].freq;
+                    const char sb = D->freq[pfb[n].stn[k].fdest].sideband;
                     present = FALSE;// is frequency new?
-                    for (j=0; j<nfreq; j++)
-                        if (D->freq[pfb[n].stn[k].fdest].freq == freqs[j])
+                    for (j=0; j<nantfreq; j++)
+                        if (antfreqs[j].freq == f) // DiFX-2.5/2.6 -style: ignore sb for antenna freq list (but not for global freq list)
                             present = TRUE;
                     if (!present)
-                        freqs[nfreq++] = D->freq[pfb[n].stn[k].fdest].freq;
+                        {
+                        antfreqs[nantfreq].sideband = sb;
+                        antfreqs[nantfreq].freq = f;
+                        nantfreq++;
+                        }
                                     // sanity check
-                    if (nfreq > MAX_DFRQ)
+                    if (nantfreq > MAX_DFRQ)
                         {
                         printf ("too many frequencies, exceeding MAX_DFRQ; redimension\n");
                         return -1;
                         }
                     }
                 }
-                                    // bubble sort the frequency list
-        do
-            {
-            swapped = FALSE;
-            for (j=0; j<nfreq-1; j++)
-                if (freqs[j] > freqs[j+1])
-                    {
-                    temp = freqs[j];
-                    freqs[j] = freqs[j+1];
-                    freqs[j+1] = temp;
-                    swapped = TRUE;
-                    }
-            }
-        while (swapped);
-                                    // remove (collapse out) redundant frequencies
-        for (j=0; j<nfreq-1; j++)
-            if (freqs[j] == freqs[j+1])
-                {
-                for (k=j;k<nfreq-1;k++)
-                    freqs[k] = freqs[k+1];
-                nfreq--;
-                }
+        nantfreq = condense_internal_freqlist(antfreqs, &nantfreq);
 
                                     // generate channel id's for each freq
-        for (j=0; j<nfreq; j++)
+        for (j=0; j<nantfreq; j++)
             {
-            sprintf (buff, "%c%02d", getband (freqs[j]), j % 100);
+            sprintf (buff, "%c%02d", getband (antfreqs[j].freq), j % 100);
             if (j >= 100)
                 fprintf (stderr, "Warning: frequency record %d exceeds 2-digit limit of generated VEX channel IDs! Result might be unusable.\n", j);
             buff[3] = 'n';
@@ -281,14 +246,18 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                                     // everywhere that ant & freq match
             for (n=0; n<nprod; n++)
                 for (k=0; k<2; k++)     // k = 0|1 for ref|rem antenna
-                    if (pfb[n].stn[k].ant == i && D->freq[pfb[n].stn[k].fdest].freq == freqs[j]
-                        && (filteredbw <= 0.0 || pfb[n].stn[k].bw == filteredbw))
+                    {
+                    const int fdest = pfb[n].stn[k].fdest;
+                    if (pfb[n].stn[k].ant == i
+                        && D->freq[fdest].freq == antfreqs[j].freq  // DiFX-2.5/2.6 -style: ignore sb for antenna freq list (but not for global 'allfreqs' freq list)
+                        && (filteredbw <= 0.0 || D->freq[fdest].bw == filteredbw))
                         {
-                        buff[3] = D->freq[pfb[n].stn[k].fdest].sideband;
+                        buff[3] = D->freq[fdest].sideband;
                         buff[4] = pfb[n].stn[k].pol;
                         strcpy (pfb[n].stn[k].chan_id, buff);
                         for (m=0; m<nallfreq; m++)
-                            if (lowerEdgeFreq(&D->freq[pfb[n].stn[k].fdest]) == allfreqs[m])
+                            if (D->freq[fdest].freq == allfreqs[m].freq
+                                && D->freq[fdest].sideband == allfreqs[m].sideband)
                                 {
                                 pfb[n].stn[k].fmk4 = m;
                                 break;
@@ -305,6 +274,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                         else
                             pfb[n].stn[k].first_time = FALSE;
                         }
+                    }
             }
 
         }
@@ -411,10 +381,36 @@ static int fblock_already_exists(const struct fblock_tag *entries, int nentries,
     return 0;
     }
 
-static double lowerEdgeFreq(const DifxFreq *df)
+static int condense_internal_freqlist(fblock_tag_lite *freqs, int *nfreq)
     {
-    if (df->sideband == 'U')
-        return df->freq;
-    else
-        return df->freq - df->bw;
+    int j,
+        k,
+        swapped;
+
+                                    // bubble sort the frequency list
+    do
+        {
+        swapped = FALSE;
+        for (j=0; j<*nfreq-1; j++)
+            if (freqs[j].freq > freqs[j+1].freq)
+                {
+                fblock_tag_lite temp = freqs[j];
+                freqs[j] = freqs[j+1];
+                freqs[j+1] = temp;
+                swapped = TRUE;
+                }
+        }
+    while (swapped);
+
+                                    // remove (collapse out) redundant frequencies
+    for (j=0; j<*nfreq-1; j++)
+        if (freqs[j].freq == freqs[j+1].freq && freqs[j].sideband == freqs[j+1].sideband)
+            {
+            for (k=j;k<*nfreq-1;k++)
+                freqs[k] = freqs[k+1];
+            *nfreq--;
+            }
+
+    return *nfreq;
     }
+

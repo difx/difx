@@ -132,6 +132,12 @@ struct fblock_tag
         } stn[2];                   // reference | remote
     };
 
+typedef struct
+    {
+        double freq;                // LO frequency (MHz); negative for LSB
+        char sideband;              // U or L
+    } fblock_tag_lite;
+
 #include "type_000.h"
 #include "type_100.h"
 #include "type_101.h"
