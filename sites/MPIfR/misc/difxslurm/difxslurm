@@ -126,7 +126,7 @@ export SLURM_JOB_ID=$JOB_ID
 ## Add compute node details into HOSTFILE
 echo "Granted job allocation $JOB_ID:"
 # srun <binary on jobstep 1> : <binary on jobstep 2> : ...
-squeue -j $JOB_ID
+squeue -j $JOB_ID --format "%.18i %.12P %.24j %.8u %.2t %.10M %.6D %.3C %R"
 
 echo "Getting full list of hostnames..."
 cat $job.dsmachines > $HOSTFILE
