@@ -42,8 +42,8 @@ struct type_309
     {
     char      chan_name[8];
     double    freq;                   // tone frequency in Hz
-    U32       acc[64][2];             // accumulators for 64 freqs x 2 quads (C..S)
-    } chan[64];
+    U32       acc[NPC_TONES][2];      // accumulators for 64 freqs x 2 quads (C..S)
+    } chan[NPC_FREQS];
   };
 void write_t309 (struct type_309 *, FILE *);
 
