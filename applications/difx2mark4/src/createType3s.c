@@ -18,8 +18,6 @@
 #include "d2m4_pcal_record.h"
 #endif
 
-#define NPC_TONES 64                // max number of pcal tones in t309 record
-#define NPC_FREQS 64                // max number of channels in t309 record
 #define LBUFF_SIZE 40 * NPC_TONES * NPC_FREQS + 256
 
 char lbuff[LBUFF_SIZE];             // buffer for a single line of an input pcal file
@@ -109,7 +107,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
          buff[5],
          *line,
          *pc,
-         ds_pols[64],
+         ds_pols[MAX_DS_RECBANDS],
          sideband_i,
          polar;
 
@@ -226,11 +224,12 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             {
                                     // find matching freq channel
                                     // loop through whole fblock table
+            found = FALSE;
             nf = -1;
-            while (pfb[++nf].stn[0].ant >= 0) // check for end-of-table marker
+            while (pfb[++nf].stn[0].ant >= 0 && !found) // check for end-of-table marker
                 {
 
-                for (k=0; k<2; k++)
+                for (k=0; k<2 && !found; k++)
                     {
                     freq_i =  D->freq[i].freq;
                     bw_i =  D->freq[i].bw;
@@ -250,14 +249,13 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                         strcpy (t301.chan_id, pfb[nf].stn[k].chan_id);
                         strcpy (t302.chan_id, pfb[nf].stn[k].chan_id);
                         strcpy (t303.chan_id, pfb[nf].stn[k].chan_id);
-                        break;      // found freq, do double break
+                        found = TRUE;
+                        break;
                         }
                     }
-                if (k < 2)
-                    break;          // 2nd part of double break
                 }
                                     // this freq not in table - skip it
-            if (k == 2)
+            if (!found)
                 continue;
                                     // loop over polynomial intervals
             for (j=0; j<D->scan[scanId].nPoly; j++)
@@ -604,12 +602,12 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                                     if (m == nochan)
                                                         {
                                                                 // trap potential array overwrites
-                                                    if (m >= NPC_FREQS)
-                                                        {
-                                                        printf ("skipping write for tone in channel %s - too many channels!\n",
+                                                        if (m >= NPC_FREQS)
+                                                            {
+                                                            printf ("skipping write for tone in channel %s - too many channels!\n",
                                                                  pfb[nf].stn[k].chan_id);
-                                                        break;
-                                                        }
+                                                            break;
+                                                            }
 
                                                         ochan = m;
                                                         strcpy (t309.chan[ochan].chan_name, pfb[nf].stn[k].chan_id);
@@ -1047,7 +1045,7 @@ void fill_ds_pols (DifxInput *D, int ant, char *ds_pols)
         j;
     DifxDatastream *pds;
                                     // initialize vector to all RCP
-    for (j=0; j<64; j++)
+    for (j=0; j<MAX_DS_RECBANDS; j++)
         ds_pols[j] = 'R';
 
     for (i=0; i<D->nDatastream; i++)
@@ -1055,7 +1053,10 @@ void fill_ds_pols (DifxInput *D, int ant, char *ds_pols)
         pds = D->datastream + i;
         if (pds->antennaId == ant)
             {
-            for (j=0; j<pds->nRecBand; j++)
+            if (pds->nRecBand > MAX_DS_RECBANDS)
+                printf ("WARNING!! Job antenna %d (%s) datastream %d has %d recorded bands, exceeds difx2mark4 limit of %d!\n",
+                        ant, D->antenna[ant].name, i, pds->nRecBand, MAX_DS_RECBANDS);
+            for (j=0; j<pds->nRecBand && j<MAX_DS_RECBANDS; j++)
                 ds_pols[j] = pds->recBandPolName[j];
             break;
             }

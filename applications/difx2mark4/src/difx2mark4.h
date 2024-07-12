@@ -34,6 +34,11 @@
 #define MAX_DFRQ 800                // allowed max number of *DiFX* frequencies
 #define NVRMAX 8000000              // max # of vis records
 
+// Type 309 records - limits for createType3s.c and write_t3??.c
+#define NPC_TONES 64                // max number of pcal tones in t309 record
+#define NPC_FREQS 64                // max number of channels (subset of DiFX freq IDs) in t309 record
+#define MAX_DS_RECBANDS 64          // max number of recorded bands in a datastream; FIXME: use dynamic allocation like in difxio/vex2difx and mpifxcorr
+
 enum booleans {FALSE, TRUE};
 
 struct CommandLineOptions
