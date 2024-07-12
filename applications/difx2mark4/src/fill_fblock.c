@@ -2,6 +2,7 @@
 // and how they were correlated. It then puts the information into an easy-to-use
 // frequency structure
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -113,11 +114,16 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                     pfrB = D->freq + irfBfid;
                     }
 
+                                    // sanity check
+                assert(!pfb[nprod].stn[0].zoom || (pfb[nprod].stn[0].zoom && pfb[nprod].stn[0].sideband == 'U'));
+                assert(!pfb[nprod].stn[1].zoom || (pfb[nprod].stn[1].zoom && pfb[nprod].stn[1].sideband == 'U'));
+
                                     // info of output band
                 pfb[nprod].stn[0].pol      = polA;
                 pfb[nprod].stn[0].ant      = pdsA->antennaId;
                 pfb[nprod].stn[0].find     = irfAfid;
                 pfb[nprod].stn[0].fdest    = irfABfid;
+                pfb[nprod].stn[0].fmk4     = -1;
                 pfb[nprod].stn[0].freq     = pfrAB->freq;
                 pfb[nprod].stn[0].sideband = pfrAB->sideband;
                 pfb[nprod].stn[0].bw       = pfrAB->bw;
@@ -129,6 +135,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                 pfb[nprod].stn[1].ant      = pdsB->antennaId;
                 pfb[nprod].stn[1].find     = irfBfid;
                 pfb[nprod].stn[1].fdest    = irfABfid;
+                pfb[nprod].stn[1].fmk4     = -1;
                 pfb[nprod].stn[1].freq     = pfrAB->freq;
                 pfb[nprod].stn[1].sideband = pfrAB->sideband;
                 pfb[nprod].stn[1].bw       = pfrAB->bw;
