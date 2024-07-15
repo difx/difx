@@ -41,6 +41,7 @@ extern "C" {
 #define CODIFV2
 
 #define CODIF_HEADER_BYTES		64
+#define CODIF_SYNC                      0xFEEDCAFE
 #define CODIF_MAX_THREAD_ID		65535
 
 #define CODIF_SUMMARY_MAX_THREADS	64
