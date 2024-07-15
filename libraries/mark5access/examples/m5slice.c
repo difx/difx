@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012-2020 by Chris Phillips                             *
+ *   Copyright (C) 2012-2024 by Chris Phillips                             *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
  *   the Free Software Foundation; either version 3 of the License, or     *
@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
     sook = lseek(infile, offsetbytes, SEEK_SET);
     if (sook==-1 || sook!=offsetbytes) {
       if (sook==-1)
-	perror("Skiping to offset\n");
+	perror("Skipping to offset\n");
       else
 	fprintf(stderr, "Could not offset to right place in file\n");
       close(infile);

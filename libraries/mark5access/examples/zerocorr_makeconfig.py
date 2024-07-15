@@ -17,9 +17,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import argparse
 
-description = "A script for creating a configuration file for the zerocorr program. For details see the help of zerocorr. If options for the second input file are ommited the seetings of the first file are duplicated."
+description = "A script for creating a configuration file for the zerocorr program. For details see the help of zerocorr. If options for the second input file are omited the settings of the first file are duplicated."
 
 parser = argparse.ArgumentParser(description=description)
 parser.add_argument('-i2','--infile2', default="", help='The second data file to process. [default: the first data file]')

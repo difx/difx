@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2015 by Walter Brisken and Richard Dodson          *
+ *   Copyright (C) 2007-2024 by Walter Brisken and Richard Dodson          *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -43,7 +43,7 @@ static const float HiMag = OPTIMAL_2BIT_HIGH;
 struct mark5_format_kvn5b
 {
 	int nbitstream;
-	int kday;	/* kilo-mjd: ie 51000, 52000, ... */
+	int kday;	/* kilo-mjd: i.e., 51000, 52000, ... */
 };
 
 static float lut1bit[256][8];
@@ -1416,7 +1416,7 @@ static int kvn5b_decode_2bitstream_2bit_decimation4(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
-{ // KVN Mode 2: [128MHz-2b]*2stream (1024 MBps 32MHz clock)
+{ // KVN Mode 2: [128MHz-2b]*2stream (1024 Mbps 32MHz clock)
 	const unsigned char *buf;
 	const float *fp0,*fp1,*fp2,*fp3;
 	int o, i;
@@ -1441,7 +1441,7 @@ static int kvn5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms, int
 			fp3 = lut2bit[buf[i]];++i;
 		}
 		// Done explicitly .. 8 samples in 2 IFs. Two block read in
-		/* // K alternates 0/1;h=[0:7 0:7 8:15 8:15 16:23 16:23 etc]
+		/* // K alternates 0/1;h=[0:7 0:7 8:15 8:15 16:23 16:23 etc.]
 		k=(o%16)/8;h=4*(o/4)-(((o%16)/8)*8+(o/16)*8);
 		data[k][h+0] = fp[0];
 		data[k][h+1] = fp[1];
@@ -1481,7 +1481,7 @@ static int kvn5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
-{ // KVN Mode 2: [128MHz-2b]*2stream (1024 MBps 32MHz clock) every other sample
+{ // KVN Mode 2: [128MHz-2b]*2stream (1024 Mbps 32MHz clock) every other sample
 	const unsigned char *buf;
 	const float *fp0,*fp1,*fp2,*fp3;
 	int o, i;
@@ -1532,7 +1532,7 @@ static int kvn5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
-{ // KVN Mode 2: [128MHz-2b]*2stream (1024 MBps 32MHz clock) every 4th sample
+{ // KVN Mode 2: [128MHz-2b]*2stream (1024 Mbps 32MHz clock) every 4th sample
 	const unsigned char *buf;
 	const float *fp0,*fp1,*fp2,*fp3;
 	int o, i;
@@ -1579,7 +1579,7 @@ static int kvn5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
-{ // KVN mode 3: [64MHz-2b]*4stream (1024 MBps, 32MHz clock) 
+{ // KVN mode 3: [64MHz-2b]*4stream (1024 Mbps, 32MHz clock) 
 	const unsigned char *buf;
 	const float *fp1, *fp2, *fp3, *fp0;
 	int o, i;
@@ -1639,7 +1639,7 @@ static int kvn5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
-{ // KVN mode 3: [64MHz-2b]*4stream (1024 MBps, 32MHz clock) every other sample
+{ // KVN mode 3: [64MHz-2b]*4stream (1024 Mbps, 32MHz clock) every other sample
 	const unsigned char *buf;
 	const float *fp1, *fp2, *fp3, *fp0;
 	int o, i;
@@ -1690,7 +1690,7 @@ static int kvn5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_8bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
-{ // KVN mode 3: [64MHz-2b]*4stream (1024 MBps, 32MHz clock) every 4th sample
+{ // KVN mode 3: [64MHz-2b]*4stream (1024 Mbps, 32MHz clock) every 4th sample
 	const unsigned char *buf;
 	const float *fp1, *fp2, *fp3, *fp0;
 	int o, i;
@@ -3042,7 +3042,7 @@ struct mark5_format_generic *new_mark5_format_kvn5b(int Mbps, int nchan, int nbi
 	{
 		decoderindex += 12;
 	}
-	else if(decimation == 4)  /* all mults of 4 */
+	else if(decimation == 4)  /* all multiples of 4 */
 	{
 		decoderindex += 24;
 	}
@@ -3147,23 +3147,23 @@ struct mark5_format_generic *new_mark5_format_kvn5b(int Mbps, int nchan, int nbi
 		case 5:
 			f->decode = kvn5b_decode_32bitstream_1bit_decimation1;
 			break;
-                case 7: // Mode 1 [256Mhz-2b]*1
+                case 7: // Mode 1 [256MHz-2b]*1
 			f->decode = kvn5b_decode_2bitstream_2bit_decimation1;
 			f->count = kvn5b_count_2bitstream_2bit_decimation1;
 			break;
-		case 8: // Mode 2 [128Mhz-2b]*2 
+		case 8: // Mode 2 [128MHz-2b]*2 
 			f->decode = kvn5b_decode_4bitstream_2bit_decimation1;
 			f->count = kvn5b_count_4bitstream_2bit_decimation1;
 			break;
-		case 9: // Mode 3 [64Mhz-2b]*4
+		case 9: // Mode 3 [64MHz-2b]*4
 			f->decode = kvn5b_decode_8bitstream_2bit_decimation1;
 			f->count = kvn5b_count_8bitstream_2bit_decimation1;
 			break;
-		case 10: // Mode 4 [32Mhz-2b]*8
+		case 10: // Mode 4 [32MHz-2b]*8
 			f->decode = kvn5b_decode_16bitstream_2bit_decimation1;
 			f->count = kvn5b_count_16bitstream_2bit_decimation1;
 			break;
-		case 11: // Mode 5&6 [16/8Mhz-2b]*16
+		case 11: // Mode 5&6 [16/8MHz-2b]*16
 			f->decode = kvn5b_decode_32bitstream_2bit_decimation1;
 			f->count = kvn5b_count_32bitstream_2bit_decimation1;
 			break;

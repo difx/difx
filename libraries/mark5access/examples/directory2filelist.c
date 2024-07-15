@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011-2017 by Helge Rottmann                             *
+ *   Copyright (C) 2011-2024 by Helge Rottmann, Walter Brisken             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -39,7 +39,7 @@ const char author[]  = "Helge Rottmann";
 const char version[] = "1.4";
 const char verdate[] = "2015 May 21";
 
-const int MJD_UNIX0 = 40587;	// MJD at beginning of unix time
+const int MJD_UNIX0 = 40587;	// MJD at beginning of Unix time
 
 static int64_t eofReadLength = (80000+40000);
 

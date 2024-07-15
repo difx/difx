@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2021 Walter Brisken                                *
+ *   Copyright (C) 2013-2024 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -108,7 +108,7 @@ int vdiffilesummarygetstartmjd(const struct vdif_file_summary *sum)
 
 int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int frameSize)
 {
-	int bufferSize = 1215*8224*8;	/* 2 MB should've encountered all threads of a usual VDIF file; however VGOS DBBC3 uses single-thread 8224-byte x 1215-frame sequences before switching to another thread */
+	int bufferSize = 1215*8224*8;	/* 2 MB should have encountered all threads of a usual VDIF file; however VGOS DBBC3 uses single-thread 8224-byte x 1215-frame sequences before switching to another thread */
 	unsigned char *buffer;
 	struct stat st;
 	int rv, i, N;

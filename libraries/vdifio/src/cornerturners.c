@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2015 Walter Brisken                                *
+ *   Copyright (C) 2013-2024 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -2271,7 +2271,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
 }
 
 
-/* For 2-bit 2-thread corner turning there are two implementions here.  One optimized for 64-bit and the other for 32-bit.
+/* For 2-bit 2-thread corner turning there are two implementations here.  One optimized for 64-bit and the other for 32-bit.
    At compile time one is named cornerturn_2thread_2bit and the other cornerturn_2thread_2bitSlow.  Which is which depends
    on sizeof(size_t)
  */
@@ -2423,7 +2423,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
 
 static void cornerturn_4thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
-  // Efficiently handle the special case of 4 threads of 2-bit data.  because nthread = samples/byte
+  // Efficiently handle the special case of 4 threads of 2-bit data.  Because nthread = samples/byte
   // this is effectively a matrix transpose.  With this comes some symmetries that make this case
   // unexpectedly simple.
   //
@@ -2492,8 +2492,8 @@ static void cornerturn_5thread_2bit(unsigned char *outputBuffer, const unsigned 
   // Output:             e3   d3  c3  b3  a3               e2   d2  c2  b2  a2               e1   d1  c1  b1  a1               e0   d0  c0  b0  a0
   // Byte:   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform two separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform two separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -2547,8 +2547,8 @@ static void cornerturn_6thread_2bit(unsigned char *outputBuffer, const unsigned 
   // Output:         f3  e3   d3  c3  b3  a3           f2  e2   d2  c2  b2  a2           f1  e1   d1  c1  b1  a1           f0  e0   d0  c0  b0  a0
   // Byte:   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform two separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform two separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -2603,8 +2603,8 @@ static void cornerturn_7thread_2bit(unsigned char *outputBuffer, const unsigned 
   // Output:     g3  f3  e3   d3  c3  b3  a3       g2  f2  e2   d2  c2  b2  a2       g1  f1  e1   d1  c1  b1  a1       g0  f0  e0   d0  c0  b0  a0
   // Byte:   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform two separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform two separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -2660,8 +2660,8 @@ static void cornerturn_8thread_2bit(unsigned char *outputBuffer, const unsigned 
   // Output: h3  g3  f3  e3   d3  c3  b3  a3   h2  g2  f2  e2   d2  c2  b2  a2   h1  g1  f1  e1   d1  c1  b1  a1   h0  g0  f0  e0   d0  c0  b0  a0
   // Byte:   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform two separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform two separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -2718,8 +2718,8 @@ static void cornerturn_9thread_2bit(unsigned char *outputBuffer, const unsigned 
   // Output:                              i3   h3  g3  f3  e3   d3  c3  b3  a3                                i2   h2  g2  f2  e2   d2  c2  b2  a2                                i1   h1  g1  f1  e1   d1  c1  b1  a1                                i0   h0  g0  f0  e0   d0  c0  b0  a0
   // Byte:   ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform three separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform three separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -2781,8 +2781,8 @@ static void cornerturn_10thread_2bit(unsigned char *outputBuffer, const unsigned
   // Output:                          j3  i3   h3  g3  f3  e3   d3  c3  b3  a3                            j2  i2   h2  g2  f2  e2   d2  c2  b2  a2                            j1  i1   h1  g1  f1  e1   d1  c1  b1  a1                            j0  i0   h0  g0  f0  e0   d0  c0  b0  a0
   // Byte:   ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform three separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform three separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -2845,8 +2845,8 @@ static void cornerturn_11thread_2bit(unsigned char *outputBuffer, const unsigned
   // Output:                      k3  j3  i3   h3  g3  f3  e3   d3  c3  b3  a3                        k2  j2  i2   h2  g2  f2  e2   d2  c2  b2  a2                        k1  j1  i1   h1  g1  f1  e1   d1  c1  b1  a1                        k0  j0  i0   h0  g0  f0  e0   d0  c0  b0  a0
   // Byte:   ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform three separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform three separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -2910,8 +2910,8 @@ static void cornerturn_12thread_2bit(unsigned char *outputBuffer, const unsigned
   // Output:                  l3  k3  j3  i3   h3  g3  f3  e3   d3  c3  b3  a3                    l2  k2  j2  i2   h2  g2  f2  e2   d2  c2  b2  a2                    l1  k1  j1  i1   h1  g1  f1  e1   d1  c1  b1  a1                    l0  k0  j0  i0   h0  g0  f0  e0   d0  c0  b0  a0
   // Byte:   ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform three separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform three separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -2976,8 +2976,8 @@ static void cornerturn_13thread_2bit(unsigned char *outputBuffer, const unsigned
   // Output:             m3   l3  k3  j3  i3   h3  g3  f3  e3   d3  c3  b3  a3               m2   l2  k2  j2  i2   h2  g2  f2  e2   d2  c2  b2  a2               m1   l1  k1  j1  i1   h1  g1  f1  e1   d1  c1  b1  a1               m0   l0  k0  j0  i0   h0  g0  f0  e0   d0  c0  b0  a0
   // Byte:   ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -3045,8 +3045,8 @@ static void cornerturn_14thread_2bit(unsigned char *outputBuffer, const unsigned
   // Output:         n3  m3   l3  k3  j3  i3   h3  g3  f3  e3   d3  c3  b3  a3           n2  m2   l2  k2  j2  i2   h2  g2  f2  e2   d2  c2  b2  a2           n1  m1   l1  k1  j1  i1   h1  g1  f1  e1   d1  c1  b1  a1           n0  m0   l0  k0  j0  i0   h0  g0  f0  e0   d0  c0  b0  a0
   // Byte:   ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -3115,8 +3115,8 @@ static void cornerturn_15thread_2bit(unsigned char *outputBuffer, const unsigned
   // Output:     o3  n3  m3   l3  k3  j3  i3   h3  g3  f3  e3   d3  c3  b3  a3       o2  n2  m2   l2  k2  j2  i2   h2  g2  f2  e2   d2  c2  b2  a2       o1  n1  m1   l1  k1  j1  i1   h1  g1  f1  e1   d1  c1  b1  a1       o0  n0  m0   l0  k0  j0  i0   h0  g0  f0  e0   d0  c0  b0  a0
   // Byte:   ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -3186,8 +3186,8 @@ static void cornerturn_16thread_2bit(unsigned char *outputBuffer, const unsigned
   // Output: p3  o3  n3  m3   l3  k3  j3  i3   h3  g3  f3  e3   d3  c3  b3  a3   p2  o2  n2  m2   l2  k2  j2  i2   h2  g2  f2  e2   d2  c2  b2  a2   p1  o1  n1  m1   l1  k1  j1  i1   h1  g1  f1  e1   d1  c1  b1  a1   p0  o0  n0  m0   l0  k0  j0  i0   h0  g0  f0  e0   d0  c0  b0  a0
   // Byte:   ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -3267,8 +3267,8 @@ static void cornerturn_24thread_2bit(unsigned char *outputBuffer, const unsigned
   // Output:                                   H3  G3  F3  E3   D3  C3  B3  A3   p3  o3  n3  m3   l3  k3  j3  i3   h3  g3  f3  e3   d3  c3  b3  a3                                     H2  G2  F2  E2   D2  C2  B2  A2   p2  o2  n2  m2   l2  k2  j2  i2   h2  g2  f2  e2   d2  c2  b2  a2
   // Byte:   ------31------   ------30------   ------29------   ------28------   ------27------   ------26------   ------25------   ------24------   ------23------   ------22------   ------21------   ------20------   ------19------   ------18------   ------17------   ------16------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -3364,8 +3364,8 @@ static void cornerturn_32thread_2bit(unsigned char *outputBuffer, const unsigned
   // Output: P3  O3  N3  M3   L3  K3  J3  I3   H3  G3  F3  E3   D3  C3  B3  A3   p3  o3  n3  m3   l3  k3  j3  i3   h3  g3  f3  e3   d3  c3  b3  a3   P2  O2  N2  M2   L2  K2  J2  I2   H2  G2  F2  E2   D2  C2  B2  A2   p2  o2  n2  m2   l2  k2  j2  i2   h2  g2  f2  e2   d2  c2  b2  a2
   // Byte:   ------31------   ------30------   ------29------   ------28------   ------27------   ------26------   ------25------   ------24------   ------23------   ------22------   ------21------   ------20------   ------19------   ------18------   ------17------   ------16------
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;
@@ -3457,8 +3457,8 @@ static void cornerturn_64thread_2bit(unsigned char *outputBuffer, const unsigned
   //
   // Logical extension of 16 and 32 thread cases
   //
-  // This one is a bit complicated.  A resonable way to proceed seems to be to perform eight separate 4-thread corner turns and then 
-  // do a final suffle of byte sized chunks.  There may be a better way...
+  // This one is a bit complicated.  A reasonable way to proceed seems to be to perform eight separate 4-thread corner turns and then 
+  // do a final shuffle of byte sized chunks.  There may be a better way...
 
   const uint32_t M0 = 0xC0300C03;
   const uint32_t M1 = 0x300C0300;

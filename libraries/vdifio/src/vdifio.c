@@ -1,5 +1,6 @@
 /***************************************************************************
- *  Copyright (C) 2009-2015 by Adam Deller/Walter Brisken/Chris Phillips   *
+ *  Copyright (C) 2009-2024 by Adam Deller/Walter Brisken/Chris Phillips/  *
+ *                             Jan Wagner                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -211,7 +212,7 @@ int setVDIFEpochMJD(vdif_header *header, int mjd) {
 }
 
 int nextVDIFHeader(vdif_header *header, int framepersec) {
-  // This would fail if there were 16777216 frames/sec (ie 2^24) due to overflow so at least fail in this case
+  // This would fail if there were 16777216 frames/sec (i.e., 2^24) due to overflow so at least fail in this case
   assert(framepersec!=16777216);
   header->frame++; 
   if (header->frame>framepersec) {

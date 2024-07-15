@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2019 by Walter Brisken                             *
+ *   Copyright (C) 2006-2024 by Walter Brisken, Shaoguang Guo              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -172,6 +172,13 @@ static int decode_short(const char *filename, const char *formatname, const char
 	validsum = (int *)calloc(ms->nchan, sizeof(int));
 
 	r = fread(raw, 1, rawsize, in);
+	if(r == 0)
+	{
+		fprintf(stderr, "Error: cannot read %d bytes for initialization.\n", rawsize);
+		fclose(in);
+
+		return EXIT_FAILURE;
+	}
 	if(strcmp(filename, "-") != 0)
 	{
 		fclose(in);

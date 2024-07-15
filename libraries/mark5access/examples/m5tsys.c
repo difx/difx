@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2011 by Walter Brisken                             *
+ *   Copyright (C) 2006-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -92,7 +92,7 @@ int calcpower(const char *filename, const char *formatname, long long offset, lo
 
 	if(n < 0)
 	{
-		n = 1LL << 60;	/* in otherwords, the entire file */
+		n = 1LL << 60;	/* in other words, the entire file */
 	}
 
 	nOn = 0;

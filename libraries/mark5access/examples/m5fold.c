@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2022 by Walter Brisken and Chris Phillips          *
+ *   Copyright (C) 2010-2024 by Walter Brisken and Chris Phillips          *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -178,7 +178,7 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 		if(ms->ns < 0 || ms->ns > 1000000000)
 		{
 			fflush(stdout);
-			fprintf(stderr, "\n***Warning*** The nano-seconds portion of the timestamp is nonsensable: %d; continuing anyway, but don't expect the time alignment to be meaningful.\n\n", ms->ns);
+			fprintf(stderr, "\n***Warning*** The nano-seconds portion of the timestamp is nonsensical: %d; continuing anyway, but don't expect the time alignment to be meaningful.\n\n", ms->ns);
 
 			sampnum = 0;
 		}
@@ -236,7 +236,7 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 		if(ms->ns < 0 || ms->ns > 1000000000)
 		{
 			fflush(stdout);
-			fprintf(stderr, "\n***Warning*** The nano-seconds portion of the timestamp is nonsensable: %d; continuing anyway, but don't expect the time alignment to be meaningful.\n\n", ms->ns);
+			fprintf(stderr, "\n***Warning*** The nano-seconds portion of the timestamp is nonsensical: %d; continuing anyway, but don't expect the time alignment to be meaningful.\n\n", ms->ns);
 
 			sampnum = 0;
 		}
@@ -359,7 +359,7 @@ int main(int argc, char **argv)
 	nint = atol(argv[4]);
 	freq = atof(argv[5]);
 
-	/* if supplied nint is non-sensical, assume whole file */
+	/* if supplied nint is nonsensical, assume whole file */
 	if(nint <= 0)
 	{
 		nint = 2000000000L;

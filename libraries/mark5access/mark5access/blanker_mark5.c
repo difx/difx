@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007, 2008, 2009 by Walter Brisken                      *
+ *   Copyright (C) 2007-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -36,7 +36,7 @@
 #define MARK5_FILL_WORD64 0x1122334411223344ULL
 #endif
 
-/* This module is used to find and mark bad data (ie, data replaced with
+/* This module is used to find and mark bad data (i.e., data replaced with
  * mark5 fill pattern.  This populates the "zones" data fields for
  * identification within the unpacking steps
  */

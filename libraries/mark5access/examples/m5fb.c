@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Chris Phillips & Richard Dodson *
+ *   Copyright (C) 2008-2024 by Walter Brisken, Chris Phillips,            *
+ *                              Richard Dodson                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -350,7 +351,7 @@ int print_header(struct mark5_stream *ms, struct hd_info hi,FILE *fo)
 	printf("Frequency Ch.1  : %f\n",hi.freq);
 	printf("Sampling Time   : %d\n",hi.nint);
 	printf("Num bits/sample : 8\n");
-	printf("Data Format     : integer binary, little endian\n");
+	printf("Data Format     : integer binary, little-endian\n");
 	printf("Polarizations   : %s\n",hi.polid);
 	printf("MJD             : %d\n",ms->mjd+56000);
 	printf("UTC             : %02d:%02d:%02d\n",h,m,s);
@@ -642,7 +643,7 @@ int main(int argc, char **argv)
 
 			case 'a': // Ascii output
 				output_bin=0;
-				printf("Outputing ASCII file\n");
+				printf("Outputting ASCII file\n");
 				break;
 
 			case 'p': // polstring

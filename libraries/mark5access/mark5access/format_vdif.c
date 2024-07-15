@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (C) 2009-2022 by Walter Brisken, Adam Deller, Chris Phillips*
+ *   Copyright (C) 2009-2024 by Walter Brisken, Adam Deller,               *
+ *                              Chris Phillips, Geoffrey Crew              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *

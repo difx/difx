@@ -73,7 +73,7 @@ while recordvalid[0]:
         # Check if the baseline is not already there, or this frequency was not written for this baseline
         if not str(records[1].header.baseline) in present.keys() or not records[1].header.freqindex in present[str(records[1].header.baseline)]:
             # Catch the case where low frequencies are missing from the first time integration of the reference correlation!
-            if 86400*records[0].header.mjd + records[0].header.seconds == 86400*records[1].header.mjd + records[1].header.seconds and records[1].header.freqindex > records[0].header.freqindex:
+            if 86400*records[0].header.mjd + records[0].header.seconds == 86400*records[1].header.mjd + records[1].header.seconds and (records[1].header.baseline > records[0].header.baseline or (records[1].header.baseline == records[0].header.baseline and records[1].header.freqindex > records[0].header.freqindex)):
                 if verbose:
                     print("*Not* inserting a record from frequency index {0}".format(records[1].header.freqindex))
                     break
@@ -88,7 +88,7 @@ while recordvalid[0]:
             difxoutput.write(records[1].vis)
             recordcount[1] += 1
         # Catch the case where low frequencies are missing from the first time integration of the reference correlation!
-        if 86400*records[0].header.mjd + records[0].header.seconds == 86400*records[1].header.mjd + records[1].header.seconds and records[1].header.freqindex > records[0].header.freqindex:
+        if 86400*records[0].header.mjd + records[0].header.seconds == 86400*records[1].header.mjd + records[1].header.seconds and (records[1].header.baseline > records[0].header.baseline or (records[1].header.baseline == records[0].header.baseline and records[1].header.freqindex > records[0].header.freqindex)):
             break
         recordvalid[1] = records[1].fromfile(difxinputs[i], freqs)
         didskip = True

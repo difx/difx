@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2017 by Walter Brisken, Adam Deller, Chris Phillips*
+ *   Copyright (C) 2009-2024 by Walter Brisken, Adam Deller, Chris Phillips*
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2023 by Walter Brisken                             *
+ *   Copyright (C) 2015-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,7 +40,7 @@ static void usage(const char *pgm)
 	printf("<VDIF input file> is the name of the VDIF file to read\n\n");
 	printf("<VDIF output file> is the name of the VDIF file to write\n\n");
 	printf("<threadids> is a comma separated list of thread ids to copy\n\n");
-	printf("In usage 2, output filenames are the input filenames concatennated\n");
+	printf("In usage 2, output filenames are the input filenames concatenated\n");
 	printf("with the provided list of threadids.\n\n");
 	printf("Note: this currently assumes no interloper bytes and that all frames are the same size\n\n");
 }

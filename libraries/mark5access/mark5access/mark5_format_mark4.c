@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2012 by Walter Brisken                             *
+ *   Copyright (C) 2006-2024 by Walter Brisken, Chris Phillips             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -6920,7 +6920,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	}
 	else
 	{
-		fprintf(m5stderr, "decimation must be 1, 2 or mult of 4\n");
+		fprintf(m5stderr, "decimation must be 1, 2 or multiple of 4\n");
 	}
 
 	if(nbit == 1)

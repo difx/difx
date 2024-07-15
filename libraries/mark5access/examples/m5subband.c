@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken, Jan Wagner & Chris Phillips *
+ *   Copyright (C) 2008-2024 by Walter Brisken, Jan Wagner                 *
+ *                              Chris Phillips                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -17,10 +18,10 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-// Useful thoughs at http://www.katjaas.nl/FFTwindow/FFTwindow&filtering.html
+// Useful thoughts at http://www.katjaas.nl/FFTwindow/FFTwindow&filtering.html
 
 #define OUTPUT_BITS 2             // desired quantization in output VDIF file, options are 2, 8, or 32 (2-bit VDIF encoding, 8-bit linear encoding, or 32-bit float)
-#define DEFAULT_IDFT_LEN 128      // default number of points to place accross extractable narrowband signal
+#define DEFAULT_IDFT_LEN 128      // default number of points to place across extractable narrowband signal
 #define STDDEV_MIN_SAMPLES 8192   // minimum number of output time domain samples to use in determining 'sigma' for 2-bit re-quantization
 #define USE_C2C_IDFT     0        // 1 to use complex-to-complex inverse DFT, 0 to use complex-to-real inverse DFT (faster, less tested)
 #define FFTW_FLAGS  FFTW_ESTIMATE // FFTW_ESTIMATE or FFTW_MEASURE or FFTW_PATIENT
@@ -102,7 +103,7 @@ typedef struct FilterConfig_tt {
 	int discard_incomplete_on_close;
 	float start_MHz;
 	float stop_MHz;
-	int npoints; // points to place accross the start_MHz--stop_MHz range
+	int npoints; // points to place across the start_MHz--stop_MHz range
 	enum WindowFunction winfunc;
 } FilterConfig_t;
 
@@ -1009,7 +1010,7 @@ int main(int argc, char **argv)
 	}
 	if ((fcfg.npoints < 16) || (fcfg.npoints & 1))
 	{
-		printf("Error: number of points accross narrowband signal must be even and >=16\n");
+		printf("Error: number of points across narrowband signal must be even and >=16\n");
 		return EXIT_FAILURE;
 	}
 

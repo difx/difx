@@ -1,6 +1,7 @@
 /***************************************************************************
- *   Copyright (C) 2006-2019 by Walter Brisken, Chris Phillips,            *
- *                              Jan Wagner, Adam Deller...                 * 
+ *   Copyright (C) 2006-2024 by Walter Brisken, Chris Phillips,            *
+ *                              Jan Wagner, Adam Deller,                   *
+ *                              Richard Dodson, ...                        * 
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *

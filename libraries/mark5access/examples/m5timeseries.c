@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2022 by Walter Brisken, Chris Phillips             *
+ *   Copyright (C) 2010-2024 by Walter Brisken, Chris Phillips             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -169,7 +169,7 @@ static int timeaverage(const char *filename, const char *formatname, double tint
 
   nif = ms->nchan;
   totalsamples = (ms->samprate * time);  // Total number of samples to process
-  nint  = (ms->samprate * tint/1000.0);  // Samples per itergration
+  nint  = (ms->samprate * tint/1000.0);  // Samples per integration
 
   if (docomplex)  {
     cdata = (complex double **)malloc(nif*sizeof(double complex*));
@@ -186,7 +186,7 @@ static int timeaverage(const char *filename, const char *formatname, double tint
 	    
   if (ms->ns < 0 || ms->ns > 1000000000) {
     fflush(stdout);
-    fprintf(stderr, "\n***Warning*** The nano-seconds portion of the timestamp is nonsensable: %d; continuing anyway, but don't expect the time alignment to be meaningful.\n\n", ms->ns);
+    fprintf(stderr, "\n***Warning*** The nano-seconds portion of the timestamp is nonsensical: %d; continuing anyway, but don't expect the time alignment to be meaningful.\n\n", ms->ns);
   }
 	    
   int iInt = 0;
@@ -253,7 +253,7 @@ int main(int argc, char **argv) {
   tint = atof(argv[3]);
   time = atof(argv[4]);
 
-  /* if supplied time is non-sensical, assume whole file */
+  /* if supplied time is nonsensical, assume whole file */
   if (time <= 0) {
     time = 1e99;
   }
