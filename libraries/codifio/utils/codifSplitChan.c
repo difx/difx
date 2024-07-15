@@ -373,7 +373,6 @@ int main (int argc, char * const argv[]) {
 
       pin = buf+CODIF_HEADER_BYTES;
       for (i=0; i<nframe; i++) {
-	printf("DEBUG: %d\n", i);
 	if (getCODIFSync(header)!=0xFEEDCAFE) {
 	  fprintf(stderr, "Error: CODIF sync lost - aborting\n");
 	  time_to_quit = 1;

@@ -64,6 +64,19 @@ def generate_vdifsim_config(cores):
   fh.close()
   
 
+# For now just set threads to 1 per machine to get repeatable results 
+def set_num_threads(testname):
+
+  current_directory = get_testdir()
+  working_directory = current_directory + "/" + testname + "/"
+  v2d_filename = working_directory + testname + ".v2d"
+  print(v2d_filename)
+  with open(v2d_filename,'r') as file:
+    content = file.read()
+    content = content.replace("nThread = 12","nThread = 1");
+  with open(v2d_filename,'w') as file:
+    file.write(content)
+
 def generate_v2d(testname):
 
 
@@ -73,6 +86,7 @@ def generate_v2d(testname):
 
   args = "oms2v2d --sim " + testname + ".oms "
   subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+  set_num_threads(testname)
   return
 
 
@@ -115,9 +129,12 @@ def get_results_and_setup_files():
     return
   else:
     url = "https://github.com/difx/difx-data/raw/main/tests.tgz"
-    r = requests.get(url, allow_redirects=True)
-    filename = current_directory + "/tests.tgz"
-    open(filename,'wb').write(r.content)
+    try:
+      r = requests.get(url, allow_redirects=True)
+      filename = current_directory + "/tests.tgz"
+      open(filename,'wb').write(r.content)
+    except:
+      print("Error downloading setup files and initial benchmark results")
 
 
 def filter_auto_correlations(fits_filename):
@@ -209,7 +226,7 @@ def rm_output_files(testname):
   working_directory = current_directory + "/" + testname + "/"
   contents = os.listdir(working_directory)
   for item in contents:
-      if (item[-4:] != '.vex' and item[-4:] != '.oms' and item[-7:] != ".config" and item != 'benchmark_results'):
+      if (item[-4:] != '.vex' and item[-4:] != '.oms' and item[-7:] != ".config" and item != 'benchmark_results' and item[-8:] != ".threads"):
         fp_item = working_directory + item 
         if (item[-5:] == '.difx'):
           #print(fp_item)
@@ -777,8 +794,11 @@ def main():
   for testname in test_name_list:
     rm_output_files(testname)
     generate_v2d(testname)
+    #quit()
     generate_filelist(testname)    
+    #quit()
     run_vex2difx(testname)
+    #quit()
     if (usebenchmarkimfile == "YES"):
       # copy benchmark im file to working directory
       current_directory = os.getcwd()

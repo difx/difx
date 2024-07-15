@@ -20,7 +20,7 @@
 #define BUFSIZE 10   //  MB
 #define MAXSTR 256
 
-#define TIMECONST 1   // TIME for amplitude changes to recorver - should set on command line
+#define TIMECONST 1   // TIME for amplitude changes to recover - should set on command line
 #define BANDWIDTH 128 // Need to know frames/sec
 
 #include <string.h>
@@ -75,7 +75,7 @@ const char verdate[] = "20200817";
 static void usage()
 {
   fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
-  fprintf(stderr, "A program to rotate dual linear polsarisations to circular in a VDIF file\n");
+  fprintf(stderr, "A program to rotate dual linear polarisations to circular in a VDIF file\n");
   fprintf(stderr, "  EXPERIMENTAL AND INCOMPLETE!!!!!!!!\n");
   fprintf(stderr, "  ONLY SUPPORTS 16BIT COMPLEX and 2 CHANNELS!!!!!!!!\n");
   fprintf(stderr, "\nUsage: %s [Options] <VDIF input file> [<VDIF input file> ...]\n", program);
@@ -84,7 +84,7 @@ static void usage()
   fprintf(stderr, "  -o <Output directory>   Name of a directory to write all the files to (required if multiple input files)\n");
   fprintf(stderr, "  -f <Output filename>    Name of output file (only valid if single input file\n");
   fprintf(stderr, "  -p <Phase>              Phase to rotate data by\n");
-  fprintf(stderr, "  -skip <bytes>           Skip <bytes> bytes a the start of each file\n");
+  fprintf(stderr, "  -skip <bytes>           Skip <bytes> bytes at the start of each file\n");
 }
 
 int main (int argc, char * const argv[]) {
@@ -194,7 +194,7 @@ int main (int argc, char * const argv[]) {
       exit(EXIT_FAILURE);
     }
     if (strlen(outname)>0) {
-      fprintf(stderr, "Warning: Cannot set outname for numtiple files. Ignoring\n");
+      fprintf(stderr, "Warning: Cannot set outname for multiple files. Ignoring\n");
       strcpy(outname,"");
     }
   } else {  // 1 file

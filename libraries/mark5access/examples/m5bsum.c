@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2014 by Walter Brisken                             *
+ *   Copyright (C) 2013-2024 by Walter Brisken, Jan Wagner                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5bsum.c 9925 2021-02-23 15:43:09Z JanWagner $
-// $HeadURL: $
-// $LastChangedRevision: 9925 $
-// $Author: JanWagner $
-// $LastChangedDate: 2021-02-23 23:43:09 +0800 (二, 2021-02-23) $
-//
-//============================================================================
 
 #include "config.h"
 #include <stdio.h>

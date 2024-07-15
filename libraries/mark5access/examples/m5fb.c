@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Chris Phillips & Richard Dodson *
+ *   Copyright (C) 2008-2024 by Walter Brisken, Chris Phillips,            *
+ *                              Richard Dodson                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +17,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5fb.c 0001 2012-05-25 01:15:33Z RichardDOdson $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 0001 $
-// $Author: RichardDodson $
-// $LastChangedDate: 2012-05-25 09:15:33 +0800 (Fri, 25 May 2012) $
-//
-//============================================================================
 
 // Change this to configure detection, if possible
 #define USEGETOPT 1
@@ -360,7 +351,7 @@ int print_header(struct mark5_stream *ms, struct hd_info hi,FILE *fo)
 	printf("Frequency Ch.1  : %f\n",hi.freq);
 	printf("Sampling Time   : %d\n",hi.nint);
 	printf("Num bits/sample : 8\n");
-	printf("Data Format     : integer binary, little endian\n");
+	printf("Data Format     : integer binary, little-endian\n");
 	printf("Polarizations   : %s\n",hi.polid);
 	printf("MJD             : %d\n",ms->mjd+56000);
 	printf("UTC             : %02d:%02d:%02d\n",h,m,s);
@@ -652,7 +643,7 @@ int main(int argc, char **argv)
 
 			case 'a': // Ascii output
 				output_bin=0;
-				printf("Outputing ASCII file\n");
+				printf("Outputting ASCII file\n");
 				break;
 
 			case 'p': // polstring

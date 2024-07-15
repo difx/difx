@@ -1,3 +1,22 @@
+/***************************************************************************
+ *   Copyright (C) 2024 by Walter Brisken                                  *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,8 +29,8 @@
 
 const char program[] = "vdifPhase";
 const char author[] = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.2";
-const char verdate[] = "20240209";
+const char version[] = "0.2.1";
+const char verdate[] = "20240430";
 
 const int defaultBits = 2;
 
@@ -54,10 +73,10 @@ void usage()
 
 /*
  * The following function interpolates a spectrum with a mathematically correct
- * formulation assuming the underlying signal is a pure tone.  The argumemt
+ * formulation assuming the underlying signal is a pure tone.  The argument
  * should be a pointer to an element of an array that is a local peak.
  * Both neighboring elements must be accessible.  The return value
- * will be in the range [-0.5, 0.5], represting the array index, relative
+ * will be in the range [-0.5, 0.5], representing the array index, relative
  * to the provided pointer corresponding to the actual frequency.
  */
 double interpolateSpectrumPeak(const double complex *s)
@@ -98,6 +117,7 @@ void processSpectrum(const double complex *spectrum, int nChan, int bw, double t
 	double dc;
 	double freq;	/* [MHz] interpolated frequency of peak */
 	double phase;	/* [rad] */
+	double totalPower = 0.0;
 
 	if(power == 0)
 	{
@@ -108,7 +128,10 @@ void processSpectrum(const double complex *spectrum, int nChan, int bw, double t
 	{
 		power[c] = creal(spectrum[c] * ~spectrum[c])/(2*nChan);
 		psd[c] += power[c];
+		totalPower += power[c];
 	}
+	/* exclude DC from total power */
+	totalPower -= power[0];
 
 	for(c = edge; c < nChan-edge ; ++c)
 	{
@@ -159,12 +182,13 @@ void processSpectrum(const double complex *spectrum, int nChan, int bw, double t
 	phase *= (2.0*M_PI);
 
 
-	printf("%8.6f %f %f %f %f %d  %d %f %f %f %f  %f %f  %f %f  %f %f\n", t, max_chan+dc, freq, max_power, phase, f % 8, 
+	printf("%8.6f %f %f %f %f %d  %d %f %f %f %f  %f %f  %f %f  %f %f  %f\n", t, max_chan+dc, freq, max_power, phase, f % 8, 
 		max_chan, dc, 
 		cabs(spectrum[max_chan-1]), cabs(spectrum[max_chan]), cabs(spectrum[max_chan+1]),
 		creal(spectrum[max_chan-1]), cimag(spectrum[max_chan-1]),
 		creal(spectrum[max_chan]), cimag(spectrum[max_chan]),
-		creal(spectrum[max_chan+1]), cimag(spectrum[max_chan+1]));
+		creal(spectrum[max_chan+1]), cimag(spectrum[max_chan+1]),
+		totalPower);
 }
 
 /******* Some VDIF routines that should be made available in the library... *******/

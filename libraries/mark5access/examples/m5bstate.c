@@ -1,14 +1,22 @@
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5bstate.c 10490 2022-06-03 14:18:03Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/examples/m5bstate.c $
-// $LastChangedRevision: 10490 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-03 22:18:03 +0800 (五, 2022-06-03) $
-//
-//============================================================================
-
+/***************************************************************************
+ *   Copyright (C) 2010-2024 by Walter Brisken, Allesandra Bertarini,      *
+ *                              Chris Phillips, ...                        *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
 
 #include "config.h"
 #include <stdio.h>

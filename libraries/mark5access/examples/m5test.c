@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2019 by Walter Brisken                             *
+ *   Copyright (C) 2007-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5test.c 10490 2022-06-03 14:18:03Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 10490 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-03 22:18:03 +0800 (五, 2022-06-03) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>
