@@ -755,7 +755,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 	int nFreq;
 	DifxBaseline *bl;
 	DifxConfig *config;
-	int freqId, destFreqId, altFreqId, blId, configId;
+	int freqId, destFreqId, destFreqId2, blId, configId;
 	double lowedgefreq, altlowedgefreq;
 	double globalBandwidth = 0;
 
@@ -954,6 +954,11 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 			// Here we disable "normal" autocorrelations and instead construct autocorrs as baselines
 			// This allows us to grab cross-hand autocorrs when the polarisations are in different baselines
 
+			// The sideband convention for the cross product of the two bands selected above is:
+			// - LSB/LSB produces an LSB visibility
+			// - USB/USB produces an USB visibility
+			// - mixed-sideband (LSB/USB, USB/LSB) produce an USB visibility
+
 			int enda1 = D->nAntenna-1;
 			if(P->exhaustiveAutocorrs)
 			{
@@ -1025,12 +1030,14 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 							nFreq = 0; // this counts the actual number of freqs
 
+							// Antenna 1 recorded bands vs. all bands of antenna 2
 							for(int f = 0; f < D->datastream[ds1].nRecFreq; ++f)
 							{
 								bool zoom2 = false;	// did antenna 2 zoom band make match?
 
 								freqId = D->datastream[ds1].recFreqId[f];
 								destFreqId = D->datastream[ds1].recFreqDestId[f];
+								destFreqId2 = -1;
 
 								if(strcmp(D->freq[freqId].rxName, "null") == 0)
 								{
@@ -1067,7 +1074,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									//look for another freqId which matches band but is opposite sideband
 									for(int f2 = 0; f2 < D->datastream[ds2].nRecFreq; ++f2)
 									{
-										altFreqId = D->datastream[ds2].recFreqId[f2];
+										int altFreqId = D->datastream[ds2].recFreqId[f2];
 										altlowedgefreq = D->freq[altFreqId].freq;
 										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
 										{
@@ -1086,6 +1093,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										   D->freq[freqId].bw == D->freq[altFreqId].bw)
 										{
 											n2 = DifxDatastreamGetRecBands(D->datastream+ds2, altFreqId, a2p, a2c);
+											destFreqId2 = D->datastream[ds2].recFreqDestId[f2];
 										}
 									}
 								}
@@ -1094,7 +1102,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									//still no dice? Try the zoom bands of datastream 2 with the same sideband
 									for(int f2 = 0; f2 < D->datastream[ds2].nZoomFreq; ++f2)
 									{
-										altFreqId = D->datastream[ds2].zoomFreqId[f2];
+										int altFreqId = D->datastream[ds2].zoomFreqId[f2];
 										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
 										{
 											continue;
@@ -1104,6 +1112,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										   D->freq[freqId].sideband == D->freq[altFreqId].sideband)
 										{
 											n2 = DifxDatastreamGetZoomBands(D->datastream+ds2, altFreqId, a2p, a2c);
+											destFreqId2 = D->datastream[ds2].zoomFreqDestId[f2];
 											zoom2 = true;
 										}
 									}
@@ -1113,7 +1122,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									//still no dice? Try the opposite sidebands of zoom bands of datastream 2
 									for(int f2 = 0; f2 < D->datastream[ds2].nZoomFreq; ++f2)
 									{
-										altFreqId = D->datastream[ds2].zoomFreqId[f2];
+										int altFreqId = D->datastream[ds2].zoomFreqId[f2];
 										altlowedgefreq = D->freq[altFreqId].freq;
 										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
 										{
@@ -1127,6 +1136,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										   D->freq[freqId].bw == D->freq[altFreqId].bw)
 										{
 											n2 = DifxDatastreamGetZoomBands(D->datastream+ds2, altFreqId, a2p, a2c);
+											destFreqId2 = D->datastream[ds2].zoomFreqDestId[f2];
 											zoom2 = true;
 										}
 									}
@@ -1149,8 +1159,13 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										}
 									}
 								}
-								bl->destFq[nFreq] = destFreqId;
 								bl->nPolProd[nFreq] = nPol;
+
+								if(destFreqId2 >= 0 && D->freq[destFreqId].sideband == 'L' && D->freq[destFreqId2].sideband == 'U')
+								{
+									destFreqId = destFreqId2;
+								}
+								bl->destFq[nFreq] = destFreqId;
 
 								if(nPol == 0)
 								{
@@ -1175,6 +1190,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								++nFreq;
 							}
 
+							// Antenna 1 zoom bands vs. all bands of antenna 2
 							for(int f = 0; f < D->datastream[ds1].nZoomFreq; ++f)
 							{
 								bool zoom2 = false;	// did antenna 2 zoom band make match?
@@ -1183,6 +1199,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 								freqId = D->datastream[ds1].zoomFreqId[f];
 								destFreqId = D->datastream[ds1].zoomFreqDestId[f];
+								destFreqId2 = -1;
 
 								// Unlike for recbands, don't query corrSetup->correlateFreqId as all defined zoom bands should be correlated
 
@@ -1198,7 +1215,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 								for(int f2 = 0; f2 < D->datastream[ds2].nRecFreq; ++f2)
 								{
-									altFreqId = D->datastream[ds2].recFreqId[f2];
+									int altFreqId = D->datastream[ds2].recFreqId[f2];
 									if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
 									{
 										continue;
@@ -1208,6 +1225,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									   D->freq[altFreqId].sideband == 'U')
 									{
 										n2 = DifxDatastreamGetRecBands(D->datastream+ds2, altFreqId, a2p, a2c);
+										destFreqId2 = D->datastream[ds2].recFreqDestId[f2];
 									}
 								}
 
@@ -1216,7 +1234,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									//look for another freqId which matches band but is opposite sideband
 									for(int f2 = 0; f2 < D->datastream[ds2].nRecFreq; ++f2)
 									{
-										altFreqId = D->datastream[ds2].recFreqId[f2];
+										int altFreqId = D->datastream[ds2].recFreqId[f2];
 										altlowedgefreq = D->freq[altFreqId].freq;
 										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
 										{
@@ -1230,23 +1248,28 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										   D->freq[freqId].bw == D->freq[altFreqId].bw)
 										{
 											n2 = DifxDatastreamGetRecBands(D->datastream+ds2, altFreqId, a2p, a2c);
+											destFreqId2 = D->datastream[ds2].recFreqDestId[f2];
 										}
 									}
 								}
+
 								if(n2 == 0)
 								{
+									//still no dice? Try same sideband zoom bands of datastream 2
 									n2 = DifxDatastreamGetZoomBands(D->datastream+ds2, freqId, a2p, a2c);
 									if(n2 > 0)
 									{
+										destFreqId2 = D->datastream[ds2].zoomFreqDestId[a2c[0]];
 										zoom2 = true;
 									}
 								}
+
 								if(n2 == 0)
 								{
 									//still no dice? Try the opposite sidebands of zoom bands of datastream 2
 									for(int f2 = 0; f2 < D->datastream[ds2].nZoomFreq; ++f2)
 									{
-										altFreqId = D->datastream[ds2].zoomFreqId[f2];
+										int altFreqId = D->datastream[ds2].zoomFreqId[f2];
 										altlowedgefreq = D->freq[altFreqId].freq;
 										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
 										{
@@ -1260,6 +1283,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										   D->freq[freqId].bw == D->freq[altFreqId].bw)
 										{
 											n2 = DifxDatastreamGetZoomBands(D->datastream+ds2, altFreqId, a2p, a2c);
+											destFreqId2 = D->datastream[ds2].zoomFreqDestId[f2];
 											zoom2 = true;
 										}
 									}
@@ -1282,8 +1306,13 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										}
 									}
 								}
-								bl->destFq[nFreq] = destFreqId;
 								bl->nPolProd[nFreq] = nPol;
+
+								if(destFreqId2 >= 0 && D->freq[destFreqId].sideband == 'L' && D->freq[destFreqId2].sideband == 'U')
+								{
+									destFreqId = destFreqId2;
+								}
+								bl->destFq[nFreq] = destFreqId;
 
 								if(nPol == 0)
 								{
@@ -2565,7 +2594,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 									blockedfreqids[dd->antennaId].insert(dd->recFreqId[parentFreqIndices[nZoom]]);
 								}
 //Corner case BUG: if an LSB-flipping-only zoom *actually* is output, i.e. zoom equal to output,
-//_but_ output fqId differs due to bookkeeping from zoom fqId index, we incorrectly block the LSB-flip...
+//_but_ output fqId differs due to PCal-related bookkeeping from zoom fqId index, we incorrectly block the LSB-flip...
 //Commenting out for now:
 //								if(dd->zoomFreqId[nZoom] != dd->zoomFreqDestId[nZoom])
 //								{

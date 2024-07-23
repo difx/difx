@@ -761,7 +761,7 @@ void AutoBands::addUserOutputband(const ZoomFreq& band)
  *
  * Once the output band of 'inputfreq' has been determined, looks through
  * the list of frequencies 'allfreqs' and locates a match for that output
- * band. Returns the index of that match is returned.
+ * band. Returns the index of that match.
  *
  * If any of the two search stages fails to locate a frequency, the search
  * is repeated with a sideband flipped band having the same sky coverage.
