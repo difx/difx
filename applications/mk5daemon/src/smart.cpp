@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: mk5daemon.h 3555 2011-07-24 00:36:06Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/mk5daemon.h $
- * $LastChangedRevision: 3555 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2011-07-23 18:36:06 -0600 (Sat, 23 Jul 2011) $
- *
- *==========================================================================*/
 
 #include <cstdio>
 #include <cstdlib>

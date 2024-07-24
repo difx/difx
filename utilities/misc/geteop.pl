@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: geteop.pl 9692 2020-09-01 14:15:38Z GeoffreyCrew $
-# $HeadURL: $
-# $LastChangedRevision: 9692 $
-# $Author: GeoffreyCrew $
-# $LastChangedDate: 2020-09-01 22:15:38 +0800 (二, 2020-09-01) $
-#
-#============================================================================
 
 
 #$FINALS_SITE = "https://cddis.nasa.gov/archive";

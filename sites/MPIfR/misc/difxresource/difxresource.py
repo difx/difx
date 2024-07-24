@@ -15,16 +15,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: difxresource.py 11087 2023-09-14 22:29:04Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/sites/MPIfR/misc/difxresource/difxresource.py $
-# $LastChangedRevision: 11087 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2023-09-15 06:29:04 +0800 (五, 2023-09-15) $
-#
-#============================================================================
 
 import parseDiFX
 import argparse

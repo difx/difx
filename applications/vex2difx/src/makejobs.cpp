@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: makejobs.cpp 8543 2018-10-16 17:26:50Z JimJacobs $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/util.h $
- * $LastChangedRevision: 8543 $
- * $Author: JimJacobs $
- * $LastChangedDate: 2018-10-17 01:26:50 +0800 (三, 2018-10-17) $
- *
- *==========================================================================*/
 
 #include <cstdlib>
 #include <sstream>

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_pulsar.c 7020 2015-09-25 14:38:50Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_pulsar.c $
-// $LastChangedRevision: 7020 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2015-09-25 22:38:50 +0800 (五, 2015-09-25) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

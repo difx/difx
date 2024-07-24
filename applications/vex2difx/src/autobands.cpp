@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: autobands.cpp 11013 2023-07-17 11:54:52Z JanWagner $
- * $HeadURL: $
- * $LastChangedRevision: 11013 $
- * $Author: JanWagner $
- * $LastChangedDate: 2023-07-17 19:54:52 +0800 (一, 2023-07-17) $
- *
- *==========================================================================*/
 
 #include <cassert>
 #include <cmath>

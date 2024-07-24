@@ -15,16 +15,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: comedia.py 10635 2022-09-14 09:06:54Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/comedia/comedia.py $
-# $LastChangedRevision: 10635 $
-# $Author: JanWagner $
-# $LastChangedDate: 2022-09-14 17:06:54 +0800 (三, 2022-09-14) $
-#
-#============================================================================
 __author__="Helge Rottmann"
 
 import re

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: codifio.c 7056 2015-10-30 16:08:10Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/codifio/trunk/src/codifio.c $
-// $LastChangedRevision: 7056 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2015-10-31 03:08:10 +1100 (Sat, 31 Oct 2015) $
-//
-//============================================================================
 
 #include <stdlib.h>
 #include <stdio.h>
