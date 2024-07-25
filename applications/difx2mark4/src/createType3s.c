@@ -5,6 +5,7 @@
 //  added type 309 pcal record creation    rjc  2010.8.9
 //  added type 303 az, el, pa, record      rjc  2012.2.21
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -43,6 +44,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         m,
         n,
         jf,
+        jfrec,
+        jfdst,
         npol,
         nchan,
         ntones,
@@ -133,6 +136,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
 
                                     // function prototypes
     void fill_ds_pols (DifxInput *, int, char *);
+    int find_parent_recband(const DifxInput *, int, int);
 
                                     // initialize memory
     memset (&t000, 0, sizeof (t000));
@@ -220,6 +224,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
 
                                     // construct type 301, 302, and 303's and write them
                                     // loop over channels
+                                    // FIXME: What about polarizations?
+                                    //        t30x get written for channels X01LX X02LX ..., ignoring X01LY X02LY ...
+                                    //        Document why this DiFX-2.5/2.6 difx2mark4 behaviour works out ok(?) for HOPS!
         for (i=0; i<D->nFreq; i++)
             {
                                     // find matching freq channel
@@ -231,20 +238,11 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
 
                 for (k=0; k<2 && !found; k++)
                     {
-                    freq_i =  D->freq[i].freq;
-                    bw_i =  D->freq[i].bw;
-                    sideband_i =  D->freq[i].sideband;
-                                    // zoom bands are identified by their lower edge, as if USB
-                    if (pfb[nf].stn[k].zoom && sideband_i == 'L')
-                        {
-                        sideband_i = 'U';
-                        freq_i -= bw_i;
-                        }
-                                    // check for match to this frequency
-                    if (pfb[nf].stn[k].freq     == freq_i
-                     && pfb[nf].stn[k].bw       == bw_i
-                     && pfb[nf].stn[k].sideband == sideband_i
-                     && pfb[nf].stn[k].ant      == n)
+                                    // check for mpifxcorr-used or mpifxcorr-outputted match to this frequency
+                    if (pfb[nf].stn[k].ant      == n
+                     && pfb[nf].stn[k].fmk4     >= 0
+                     && ( pfb[nf].stn[k].find     == i
+                          || pfb[nf].stn[k].fdest == i) )
                         {
                         strcpy (t301.chan_id, pfb[nf].stn[k].chan_id);
                         strcpy (t302.chan_id, pfb[nf].stn[k].chan_id);
@@ -354,6 +352,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                 //HAVE PCAL DATA, SO READ AND MERGE THE DATASTREAMS FIRST...
                 //THEN WE WILL LOOP OVER IT TO CREATE THE TYPE309s
                 pcal_list = d2m4_pcal_create_list(fin);
+                version = 1;  // FIXME: have d2m4_pcal_create_list() return the version info found in the PCAL file 'fin'
                 merged_pcal_list = d2m4_pcal_merge_datastreams_in_list(pcal_list);
                 pcal_tail = merged_pcal_list;
 
@@ -371,23 +370,19 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     #endif
 
                     if(counter != 0)
-                    {
+                        {
                         #ifdef D2M4_PCAL_DEBUG
                         printf("bumping ptr to %p\n", pcal_tail->next);
                         #endif
                         pcal_tail = pcal_tail->next;
-                    }
+                        }
                     counter++;
 
                     if(pcal_tail == NULL)
-                    {
                         break;
-                    }
 
                     if(pcal_tail->pcal_record == NULL)
-                    {
                         break;
-                    }
 
                     #ifdef D2M4_PCAL_DEBUG
                     printf("pcal ptr next = %p\n", pcal_tail->next);
@@ -467,222 +462,197 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     //printf("memsetting ptr, size, itemsize = %p, %d, %d \n", &(t309.chan[0].acc[0][0]), NPC_FREQS * sizeof (t309.chan[0]),  sizeof (t309.chan[0]) );
                     memset( &(t309.chan[0]), 0, NPC_FREQS * sizeof (t309.chan[0]));
 
-                                        // loop over tones within record
-                    for (np=0; np<npol; np++)
-                        for (nc=0; nc<nchan; nc++)
-                            {
-                                        // skip over any channels in excess of the t309 size
-                            if (nc >= NPC_FREQS)
-                                {
-                                if (!oncef)
-                                    {
-                                    fprintf (stderr, "more than %d baseband channels"
-                                                     " - ignoring the rest\n", NPC_FREQS);
-                                    oncef = TRUE;
-                                    }
-                                continue;
-                                }
-                            for (nt=0; nt<ntones; nt++)
-                                {
+                    if (nchan > NPC_FREQS)
+                        {   
+                        static int warned = FALSE;
+                        if (!warned)
+                            {       
+                            fprintf (stderr, "number of baseband channels %d exceeds limit of %d"
+                                            " - ignoring the rest\n", nchan, NPC_FREQS);
+                            warned = TRUE;
+                            }
+                        }
 
-                                ri = nt + nc*ntones + np*nchan*ntones;
-                                dstr = pcal_tail->pcal_record->phasors[ri].dstr;
-                                ifreq = pcal_tail->pcal_record->phasors[ri].frequency;
-                                polar = pcal_tail->pcal_record->phasors[ri].polarization;
-                                cquad = pcal_tail->pcal_record->phasors[ri].real;
-                                squad = pcal_tail->pcal_record->phasors[ri].imag;
+                                        // loop over tones within merged-datastream pcal record, add them into joint t309
+                    for (ri=0; ri<(pcal_tail->pcal_record->nchannels * pcal_tail->pcal_record->ntones); ri++)
+                        {
+                        ifreq = pcal_tail->pcal_record->phasors[ri].frequency;
+                        polar = pcal_tail->pcal_record->phasors[ri].polarization;
+                        cquad = pcal_tail->pcal_record->phasors[ri].real;
+                        squad = pcal_tail->pcal_record->phasors[ri].imag;
 
-                                #ifdef D2M4_PCAL_DEBUG
-                                printf("adding pcal record = %d, %c, %lf, %lf\n", ifreq, polar, cquad, squad);
-                                #endif
+                        #ifdef D2M4_PCAL_DEBUG
+                        printf("adding pcal record = %d, %c, %lf, %lf\n", ifreq, polar, cquad, squad);
+                        #endif
 
-                                if ((D->job[j]).datastreamIdRemap)
-                                {
-                                    redstr = *((D->job[j]).datastreamIdRemap + dstr);
-                                }
-                                else
-                                {
-                                    redstr = dstr;
-                                }
-                                pdds = D->datastream + redstr;
-
-#ifdef INTEGER_PC_FREQ
-                                    freq = ifreq;
                                         // skip over tones that weren't extracted
-                                    if (ifreq == -1)
-                                        continue;
-#else /* INTEGER_PC_FREQ */
-                                    freq = ifreq;
-                                    if (freq < 0)
-                                        continue;
-#endif /* INTEGER_PC_FREQ */
+                        freq = ifreq;
+                        if (freq < 0)
+                            continue;
                                         // swap sign of imaginary part
-                                squad *= -1;
-                                        // b is channel index into the t309 record array
-                                if (version == 0)
-                                    {
-                                    lowerb = 0;
-                                    upperb = D->nFreq*npol;
-                                    }
-                                else    // version 1 doesn't require actual search
-                                    {
-                                    lowerb = nc;
-                                    upperb = lowerb + 1;
-                                    }
-                                for (b=lowerb; b<upperb; b++)
-                                    {
-                                    if (version == 0)
-                                        {
-                                        jf = b / npol;
-                                        // skip over non-matching polarizations
-                                        if (np != b % npol)
-                                            continue;
-                                        }
-                                    else // handle version 1
-                                        {
-                                        record_chan = nc;
-                                        jf = *(pdds->recFreqId + *(pdds->recBandFreqId + nc));
+                        squad *= -1;
 
-                                        // if zoom band exists and parent band isn't the
-                                        // desired bandwidth, overwrite with tone from zoom band
-                                        if (pdds->nZoomBand > 0 && D->freq[jf].bw != opt_bw)
-                                            for (i=0; i<pdds->nZoomBand; i++)
-                                                {
-                                                // skip over zoom bands with wrong polarization
-                                                if ((*(pdds->zoomBandPolName + i)) != polar)
-                                                    continue;
-                                                findex = *(pdds->zoomFreqId + *(pdds->zoomBandFreqId + i));
-                                                // zoom bands are always usb, is it in this one?
-                                                if (freq - D->freq[findex].freq < D->freq[findex].bw
-                                                 && freq - D->freq[findex].freq > 0.0)
-                                                    {  // yes
-                                                    jf = findex;
-                                                    break;
-                                                    }
-                                                }
-                                        }
+                                        // find the pfb mk4 channel(s) into which the tone freq falls,
+                                        // add channel name and phasor into the t309 fields
+                        nf = -1;
+                        found = FALSE;
+                        while (pfb[++nf].stn[0].ant >= 0) // check for end-of-table marker
+                            {
+                            for (k=0; k<2; k++)
+                                {
+                                double flo, fhi;
+                                int match = FALSE;
 
-                                    isb = (D->freq[jf].sideband == 'U') ? 1 : -1;
-                                    f_rel = freq - D->freq[jf].freq;
-                                        // is it within the jfth frequency band?
-                                    if (isb > 0 && f_rel > 0.0 && f_rel < D->freq[jf].bw
-                                     || isb < 0 && f_rel < 0.0 && f_rel >-D->freq[jf].bw) //REMOVED SEMICOLON HERE!
-                                        // yes, insert phasor info into correct slot
-                                        {
-                                        // find matching freq channel
-                                        // loop through whole fblock table
-                                        nf = -1;
-                                        found = FALSE;
-                                        while (pfb[++nf].stn[0].ant >= 0) // check for end-of-table marker
+                                jfdst = pfb[nf].stn[k].fdest;
+                                flo = D->freq[jfdst].freq - ((D->freq[jfdst].sideband == 'U') ? 0.0 : D->freq[jfdst].bw);
+                                fhi = D->freq[jfdst].freq + ((D->freq[jfdst].sideband == 'U') ? D->freq[jfdst].bw : 0.0);
+                                isb = (D->freq[jfdst].sideband == 'U') ? 1 : -1;
+                                f_rel = freq - D->freq[jfdst].freq;
+
+                                        // skip band if tone resides outside of it
+                                if (freq < flo || freq > fhi)
+                                    continue;
+
+                                        // check if this channel matches, if so, look up t309 channel name
+                                ochan = -1;
+                                if (pfb[nf].stn[k].pol      == polar
+                                 && pfb[nf].stn[k].ant      == n
+                                 && pfb[nf].stn[k].fmk4     >= 0)
+                                    {
+                                    for (m=0; m<nochan; m++)
+                                        if (strcmp (t309.chan[m].chan_name, pfb[nf].stn[k].chan_id) == 0)
                                             {
-                                            for (k=0; k<2; k++)
-                                                {
-                                                if (((pfb[nf].stn[k].freq     == D->freq[jf].freq
-                                                   && pfb[nf].stn[k].sideband == D->freq[jf].sideband)
-                                                 || ((pfb[nf].stn[k].freq + pfb[nf].stn[k].bw == D->freq[jf].freq)
-                                                 && pfb[nf].stn[k].sideband == 'U' && D->freq[jf].sideband == 'L'))
-                                                 && pfb[nf].stn[k].bw       == D->freq[jf].bw
-                                                 && pfb[nf].stn[k].pol      == polar //ds_pols[record_chan]
-                                                 && pfb[nf].stn[k].ant      == n)
-                                                    {
-                                                                // this channel matches, is name
-                                                                // already in the table?
-                                                    for (m=0; m<nochan; m++)
-                                                        if (strcmp (t309.chan[m].chan_name, pfb[nf].stn[k].chan_id) == 0)
-                                                            {   // found it - use this output channel#
-                                                            ochan = m;
-                                                            found = TRUE;
-                                                            break;
-                                                            }
-                                                    if (found)
-                                                        break;  // 2nd part of double break
-
-                                                                // on falling through, allocate
-                                                                // new output channel #
-                                                    if (m == nochan)
-                                                        {
-                                                                // trap potential array overwrites
-                                                        if (m >= NPC_FREQS)
-                                                            {
-                                                            printf ("skipping write for tone in channel %s - too many channels!\n",
-                                                                 pfb[nf].stn[k].chan_id);
-                                                            break;
-                                                            }
-
-                                                        ochan = m;
-                                                        strcpy (t309.chan[ochan].chan_name, pfb[nf].stn[k].chan_id);
-                                                        nochan++;// bump output channel #
-                                                        found = TRUE;
-                                                        break;  // found freq, do double break
-                                                        }
-                                                    }
-                                                }
-                                            if (found)
-                                                break;          // 2nd part of double break
+                                                        // found name - use this output channel#
+                                            ochan = m;
+                                            match = TRUE;
+                                            break;
                                             }
-                                        // this freq not in table - skip it
-                                        if (!found)
-                                            continue;
-
-                                        // avoiding array overwrites for too many channels
+                                                        // when name not in t309 yet, allocate
+                                                        // new output channel #
+                                    if (m == nochan)
+                                        {
+                                                        // trap potential array overwrites
                                         if (m >= NPC_FREQS)
-                                            continue;
-
-                                        // change tones to usb if this corr is a mixed usb x lsb case
-                                        if (pfb[nf].stn[k].sideband != D->freq[jf].sideband)
                                             {
-                                            f_rel = D->freq[jf].bw + f_rel;
-                                            isb = 1;
+                                            printf ("skipping write for tone in channel %s - too many channels!\n",
+                                                    pfb[nf].stn[k].chan_id);
+                                            break;
                                             }
-                                        // find out which tone slot this goes in
-                                        for (i=0; i<NPC_TONES; i++)
+
+                                        ochan = m;
+                                        strcpy (t309.chan[ochan].chan_name, pfb[nf].stn[k].chan_id);
+                                        nochan++;// bump output channel #
+                                        match = TRUE;
+                                        }
+                                    }
+
+                                        // skip pfb entry if no match w tone freq and polzn
+                                if (!match || ochan < 0)
+                                    continue;
+
+                                        // matching pfb entry, fill in corresponding t309 field
+                                        // avoiding array overwrites for too many channels
+                                if (ochan >= NPC_FREQS)
+                                    continue;
+
+                                jfrec = pfb[nf].stn[k].find;
+                                if (pfb[nf].stn[k].zoom == TRUE)
+                                    {
+                                        jf = find_parent_recband(D, n, jfrec);
+                                        if (jf<0)
                                             {
-                                        // allow for round-off in comparing tone f's
-                                            if (fabs (f_rel - xtones[i]) < 1e-9)
-                                                break;
-                                            else if (xtones[i] == 0.0)
-                                                {               // not found - allocate a new slot
-                                                xtones[i] = f_rel;
-                                                t309.ntones++;
-                                                break;
-                                                }
+                                                fprintf(stderr, "Warning!! Zoom freq entry pfb[%d][%d] chan_id %s (DiFX freq id %d) at antenna %d has no parent band! Skipping.\n", nf, k, pfb[nf].stn[k].chan_id, jfrec, n);
+                                                continue;
                                             }
-                                        // did we run out of slots before finding tone?
-                                        if (i == NPC_TONES)
-                                            {
-                                            if (!once)
-                                                {
-                                                fprintf (stderr, "more than %d baseband pcal tones"
-                                                                 " - ignoring the rest\n", NPC_TONES);
-                                                once = TRUE;
-                                                }
-                                            continue;
-                                            }
-                                        // FIXME ad hoc temporary fix for non-normalize pcal in zoom mode
-                                        if (fabs(cquad) > 10.0)
-                                            cquad /= 6e7;
-                                        if (fabs(squad) > 10.0)
-                                            squad /= 6e7;
+                                        jfrec = jf;
+                                    }
+                                
+                                    // change tones to usb if this corr is a mixed usb x lsb case
+                                    // note: difx-2.5/2.6 d2m4 behaviour, baseline-dependent alteration of what is a station-based correction:
+                                    //  if (pfb[nf].stn[k].sideband != D->freq[jf].sideband)
+                                    //      {
+                                    //      f_rel = D->freq[jf].bw + f_rel;
+                                    //      isb = 1;
+                                    //      }
+                                    // note2: changed the above to a pure station-based check; if USB output originates from LSB recband, flip the LSB PCal to USB
+                                if (D->freq[jfrec].sideband != D->freq[jfdst].sideband)
+                                    {
+                                    if (D->freq[jfrec].sideband == 'L')
+                                        {
+                                        f_rel = D->freq[jfdst].bw + f_rel;
+                                        isb = 1;
+                                        }
+                                    }
 
-                                        // calculate sample rate (samples/s)
-                                        srate = 2e6 * D->freq[jf].bw * D->freq[jf].overSamp;
-                                        // renormalize correlations to those created in the DOM
-                                        norm_corr = - isb * floor (cquad * srate * t309.acc_period * 128.0 + 0.5);
-                                        memcpy (&t309.chan[ochan].acc[i][0], &norm_corr, 4);
-
-                                        norm_corr = floor (squad * srate * t309.acc_period * 128.0 + 0.5);
-                                        memcpy (&t309.chan[ochan].acc[i][1], &norm_corr, 4);
-
-                                        // tone freqs (in Hz) are spread through channel recs
-                                        t309.chan[i].freq = 1e6 * f_rel;
+                                // find out which tone slot this goes in
+                                for (i=0; i<NPC_TONES; i++)
+                                    {
+                                                    // allow for round-off in comparing tone f's
+                                    if (fabs (f_rel - xtones[i]) < 1e-9)
+                                        break;
+                                    else if (xtones[i] == 0.0)
+                                        {           // not found - allocate a new slot
+                                        xtones[i] = f_rel;
+                                        t309.ntones++;
                                         break;
                                         }
                                     }
+
+                                // did we run out of slots before finding tone?
+                                if (i >= NPC_TONES)
+                                    {
+                                    if (!once)
+                                        {
+                                        fprintf (stderr, "more than %d baseband pcal tones"
+                                                         " - ignoring the rest\n", NPC_TONES);
+                                        once = TRUE;
+                                        }
+                                    continue;
+                                    }
+
+                                // FIXME ad hoc temporary fix for non-normalize pcal in zoom mode
+                                if (fabs(cquad) > 10.0)
+                                    cquad /= 6e7;
+                                if (fabs(squad) > 10.0)
+                                    squad /= 6e7;
+
+                                // calculate sample rate (samples/s)
+                                srate = 2e6 * D->freq[jfdst].bw * D->freq[jfdst].overSamp;
+                                // renormalize correlations to those created in the DOM
+                                norm_corr = - isb * floor (cquad * srate * t309.acc_period * 128.0 + 0.5);
+                                memcpy (&t309.chan[ochan].acc[i][0], &norm_corr, 4);
+
+                                norm_corr = floor (squad * srate * t309.acc_period * 128.0 + 0.5);
+                                memcpy (&t309.chan[ochan].acc[i][1], &norm_corr, 4);
+
+                                // tone freqs (in Hz) are spread through channel recs
+                                t309.chan[i].freq = 1e6 * f_rel; // NB: chan[i] instead of chan[ochan] is on purpose,
+                                                                 // cf. https://github.com/difx/difx/issues/43
+                                found = TRUE;
+
+#if 0
+                                printf ("DBG: pcal %.3f t309 %c %s ochan %-2d tone %-2d - %+.6f %+.6f f_rel=%+6.2f - linked to jfrec=%d jfdst=%d pfb[%d].stn[%d] {.freq:%.3f %cSB .pol:%c-pol "
+                                        ".bw:%.3f .chan_id:%s, .fmk4:%d, .pcal_int=%.3f} - stored %d tones overall\n",
+                                    freq, t300.id, t309.chan[ochan].chan_name, ochan, i,
+                                    (float)cquad, (float)squad, (float)f_rel,
+                                    jfrec, jfdst, nf, k,
+                                    (float)pfb[nf].stn[k].freq, pfb[nf].stn[k].sideband, pfb[nf].stn[k].pol, pfb[nf].stn[k].bw, pfb[nf].stn[k].chan_id, pfb[nf].stn[k].fmk4, pfb[nf].stn[k].pcal_int,
+                                    i, t309.ntones);
+#endif
+
                                 }
+
+                                        // DiFX-2.5/2.6 behaviour: quit after first matching mk4 pfb channel, ignore other channels
+                                if (found)
+                                    break;
+                                
                             }
+                        }
+
                                         // write output record
                     write_t309 (&t309, fout);
-                    }
+                    } // while (pcal file entries remain)
+
                 fclose(fin);
 
                 //free space allocated for the pcal data
@@ -887,7 +857,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
 
                                         // if zoom band exists and parent band isn't the
                                         // desired bandwidth, overwrite with tone from zoom band
-                                        if (pdds->nZoomBand > 0 && D->freq[jf].bw != opt_bw)
+                                        if (pdds->nZoomBand > 0 && opt_bw > 0 && D->freq[jf].bw != opt_bw)
                                             for (i=0; i<pdds->nZoomBand; i++)
                                                 {
                                                 // skip over zoom bands with wrong polarization
@@ -1065,3 +1035,39 @@ void fill_ds_pols (DifxInput *D, int ant, char *ds_pols)
     if (i == D->nDatastream)
         printf ("WARNING!! antenna not found in datastreams, all pols set to R\n");
     }
+
+    
+// find a recband of an antenna that can host a given (zoom)freq Id
+
+int find_parent_recband(const DifxInput *D, int ant, int freqId)
+    {
+    int i,
+        j,
+        recfq;
+    double zflo,
+        zfhi,
+        rflo,
+        rfhi;
+
+    zflo = D->freq[freqId].freq - ((D->freq[freqId].sideband == 'U') ? 0.0 : D->freq[freqId].bw);
+    zfhi = D->freq[freqId].freq + ((D->freq[freqId].sideband == 'U') ? D->freq[freqId].bw : 0.0);
+
+    for (i=0; i<D->nDatastream; i++)
+        {
+        const DifxDatastream *pds = D->datastream + i;
+        if (pds->antennaId == ant)
+            {
+            for (j=0; j<pds->nRecBand; j++)
+                {
+                recfq = *(pds->recFreqId + *(pds->recBandFreqId + j));
+                rflo = D->freq[recfq].freq - ((D->freq[recfq].sideband == 'U') ? 0.0 : D->freq[recfq].bw);
+                rfhi = D->freq[recfq].freq + ((D->freq[recfq].sideband == 'U') ? D->freq[recfq].bw : 0.0);
+                if (zflo >= rflo && zfhi <= rfhi)
+                    return recfq;
+                }
+            }
+        }
+        
+    return -1;
+    }
+
