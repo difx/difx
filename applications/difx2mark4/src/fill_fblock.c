@@ -114,10 +114,6 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                     pfrB = D->freq + irfBfid;
                     }
 
-                                    // sanity check
-                assert(!pfb[nprod].stn[0].zoom || (pfb[nprod].stn[0].zoom && pfb[nprod].stn[0].sideband == 'U'));
-                assert(!pfb[nprod].stn[1].zoom || (pfb[nprod].stn[1].zoom && pfb[nprod].stn[1].sideband == 'U'));
-
                                     // info of output band
                 pfb[nprod].stn[0].pol      = polA;
                 pfb[nprod].stn[0].ant      = pdsA->antennaId;
@@ -143,6 +139,10 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                 pfb[nprod].stn[1].zoom     = zoomB;
                 pfb[nprod].stn[1].pcal_int = pdsB->phaseCalIntervalMHz / pdsB->phaseCalIntervalDivisor;
                 pfb[nprod].stn[1].n_spec_chan = pfrAB->nChan / pfrAB->specAvg;
+
+                                    // sanity check
+                assert(!pfb[nprod].stn[0].zoom || (pfb[nprod].stn[0].zoom && pfb[nprod].stn[0].sideband == 'U'));
+                assert(!pfb[nprod].stn[1].zoom || (pfb[nprod].stn[1].zoom && pfb[nprod].stn[1].sideband == 'U'));
 
                                 // store info of the destination product i.e. output band, if new,
                                 // and if not itself already covered by the source product stored higher above
