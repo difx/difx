@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: autobands.h 10661 2022-10-04 12:42:35Z JanWagner $
- * $HeadURL: $
- * $LastChangedRevision: 10661 $
- * $Author: JanWagner $
- * $LastChangedDate: 2022-10-04 20:42:35 +0800 (二, 2022-10-04) $
- *
- *==========================================================================*/
 
 #ifndef __AUTOBANDS_H__
 #define __AUTOBANDS_H__

@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdiffile.h 6214 2014-08-20 22:15:54Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/mpifxcorr/trunk/src/mk5.h $
-// $LastChangedRevision: 6214 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2014-08-20 17:15:54 -0500 (Wed, 20 Aug 2014) $
-//
-//============================================================================
 #ifndef __VDIFMARK6FILE_DATASTREAM_H__
 #define __VDIFMARK6FILE_DATASTREAM_H__
 

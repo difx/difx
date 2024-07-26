@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difxmessageinternal.h 7219 2016-02-11 02:22:01Z ChrisPhillips $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxmessage/difxmessage/difxmessageinternal.h $
-// $LastChangedRevision: 7219 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2016-02-11 10:22:01 +0800 (四, 2016-02-11) $
-//
-//============================================================================
 #ifndef __DIFX_MESSAGE_INTERNAL_H__
 #define __DIFX_MESSAGE_INTERNAL_H__
 

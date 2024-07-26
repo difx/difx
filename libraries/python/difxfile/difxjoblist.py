@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: difxjoblist.py 10226 2021-10-04 07:48:03Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/difxfile/difxjoblist.py $
-# $LastChangedRevision: 10226 $
-# $Author: JanWagner $
-# $LastChangedDate: 2021-10-04 15:48:03 +0800 (一, 2021-10-04) $
-#
-#============================================================================
 import sys
 #from difxutil import splitObservationCode, parseKeyValue
 import os

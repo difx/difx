@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 #include <mpi.h>
 #include "core.h"
 #include "fxmanager.h"
@@ -1726,6 +1716,8 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
 
   //get index into procslot::results[<out>] to concatenate spectra of phase centers, bins, and polzns there
   coreindex = config->getCoreResultBaselineOffset(procslots[index].configindex, freqindex, baseline);
+  if(coreindex < 0)
+    csevere << startl << "Baseline " << baseline << " input freqId " << freqindex << " with destination freqId " << targetfreqindex << " is not mapped to any Core results[] array index!";
 
   //collect spectra data from threadcrosscorrs etc, do the multi-phasecenter rotation (if necessary), spectral averaging (if necessary) and concatenation to Core procslot::results[]
   for(int s=0;s<model->getNumPhaseCentres(procslots[index].offsets[0]);s++)

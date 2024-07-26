@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: logger.h 3962 2011-11-23 16:08:27Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/logger.h $
- * $LastChangedRevision: 3962 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2011-11-24 00:08:27 +0800 (四, 2011-11-24) $
- *
- *==========================================================================*/
 
 #ifndef __LOGGER_H__
 #define __LOGGER_H__

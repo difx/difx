@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: autobands.cpp 11013 2023-07-17 11:54:52Z JanWagner $
- * $HeadURL: $
- * $LastChangedRevision: 11013 $
- * $Author: JanWagner $
- * $LastChangedDate: 2023-07-17 19:54:52 +0800 (一, 2023-07-17) $
- *
- *==========================================================================*/
 
 #include <cassert>
 #include <cmath>
@@ -761,7 +751,7 @@ void AutoBands::addUserOutputband(const ZoomFreq& band)
  *
  * Once the output band of 'inputfreq' has been determined, looks through
  * the list of frequencies 'allfreqs' and locates a match for that output
- * band. Returns the index of that match is returned.
+ * band. Returns the index of that match.
  *
  * If any of the two search stages fails to locate a frequency, the search
  * is repeated with a sideband flipped band having the same sky coverage.

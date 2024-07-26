@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: watchdog.h 2471 2010-08-31 16:46:35Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/watchdog.h $
-// $LastChangedRevision: 2471 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2010-08-31 10:46:35 -0600 (Tue, 31 Aug 2010) $
-//
-//============================================================================
 
 #ifndef __WATCHDOG_H__
 #define __WATCHDOG_H__

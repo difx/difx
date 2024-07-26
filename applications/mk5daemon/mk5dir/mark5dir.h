@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: mark5dir.h 7418 2016-08-05 16:34:41Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/mark5dir.h $
- * $LastChangedRevision: 7418 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2016-08-06 00:34:41 +0800 (六, 2016-08-06) $
- *
- *==========================================================================*/
 
 #ifndef __MARK5DIR_H__
 #define __MARK5DIR_H__

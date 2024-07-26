@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: difxlog.c 8316 2018-05-18 14:16:06Z GeoffreyCrew $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxmessage/utils/difxlog.c $
- * $LastChangedRevision: 8316 $
- * $Author: GeoffreyCrew $
- * $LastChangedDate: 2018-05-18 22:16:06 +0800 (五, 2018-05-18) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <string.h>

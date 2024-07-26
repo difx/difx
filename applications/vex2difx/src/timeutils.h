@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: timeutils.h 6686 2015-06-02 17:12:30Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/util.h $
- * $LastChangedRevision: 6686 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2015-06-03 01:12:30 +0800 (三, 2015-06-03) $
- *
- *==========================================================================*/
 
 #ifndef __TIMEUTILS_H__
 #define __TIMEUTILS_H__

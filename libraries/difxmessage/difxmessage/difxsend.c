@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difxsend.c 10566 2022-07-29 16:26:50Z HelgeRottmann $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxmessage/difxmessage/difxsend.c $
-// $LastChangedRevision: 10566 $
-// $Author: HelgeRottmann $
-// $LastChangedDate: 2022-07-30 00:26:50 +0800 (六, 2022-07-30) $
-//
-//============================================================================
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
