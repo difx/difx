@@ -167,6 +167,7 @@ int main (int argc, char * const argv[]) {
   time_t filetime=0;
   codif_header *cheader=NULL;
   int16_t *s16, *cdata;
+  int64_t *i64, *o64;
   int8_t *s8;
   uint32_t lastseconds, lastframe, thisframe, thisseconds, framesperperiod;
   files ofile[MAXTHREAD];
@@ -180,6 +181,7 @@ int main (int argc, char * const argv[]) {
   int threadid = -1;
   int groupid = -1;
   int scale = 0;
+  int drop  = 0;
   int forcebits = 0;
   //int invert = 0;
   int splitthread = false;
@@ -198,6 +200,7 @@ int main (int argc, char * const argv[]) {
     {"updatetime", 1, 0, 'u'},
     {"filesize", 1, 0, 'f'},
     {"scale", 1, 0, 's'},
+    {"drop", 1, 0, 'd'},
     {"bits", 1, 0, 'b'},
     //{"invert", 0, 0, 'I'},
     {"split", 0, 0, 'S'},
@@ -262,6 +265,14 @@ int main (int argc, char * const argv[]) {
 	fprintf(stderr, "Bad scale option %s\n", optarg);
       else 
 	scale = tmp;
+      break;
+
+    case 'd':
+      status = sscanf(optarg, "%d", &tmp);
+      if (status!=1 || tmp<=0 || tmp>15)
+	fprintf(stderr, "Bad drop option %s\n", optarg);
+      else 
+	drop = tmp;
       break;
 
     case 'b':
@@ -335,6 +346,7 @@ int main (int argc, char * const argv[]) {
       printf("  -t/-time <N>           Record for N seconds\n");
       printf("  -f/-filesize <N>       Write files N seconds long\n");
       printf("  -s/-scale <S>          Reduce data to 8 bits, dividing by S\n");
+      printf("  -d/-drop <D>           Drop some channels. 4= Keep 16bytes, drop 16bytes. 2== Keep 8 bytes, drop 24\n");
       printf("  -S/-split              Write threads to separate files\n");
       printf("  -G/-splitgroup         Write groups to separate files\n");
       printf("  -w/-wait               Wait for first packet before starting recording timer\n");
@@ -358,6 +370,12 @@ int main (int argc, char * const argv[]) {
     fprintf(stderr, "Cannot split by group and filter single group. Quitting\n");
     exit(1);
   }
+
+  if (!(drop==0 || drop==4)) {
+    fprintf(stderr, "Error: Do not support drop mode %d\n", drop);
+    exit(1);
+  }
+  
   
   if (padding>0) printf("Warning: Discarding %d bytes per packet\n", padding);
   
@@ -507,11 +525,11 @@ int main (int argc, char * const argv[]) {
 	if (nread<allstats[threadIndex].minpkt_size) allstats[threadIndex].minpkt_size = nread;
 	allstats[threadIndex].sum_pkts += nread;
       }
-
+      nread -= padding;
+      
       // What file is this
       if (splitthread || splitgroup) 
 	fileIndex = matchfile(ofile, nfile, splitthread ? thisthread : -1, splitgroup? thisgroup: -1);
-      //printf("DEBUG: FI: %d\n", fileIndex);
 
       if (fileIndex==-1) {
 	if (nfile>=MAXTHREAD) {
@@ -536,20 +554,49 @@ int main (int argc, char * const argv[]) {
     }
 
     if (skip) continue;
+    // These checks really could be moved to when thread or group first encountered
+    if (drop==4) {
+      int framesize = getCODIFFrameBytes(cheader);
+      
+      if (getCODIFNumChannels(cheader)<8 || getCODIFNumChannels(cheader)%8) { // Should look at size of complete sample
+	fprintf(stderr, "Wrong number of channels to support drop mode 4\n");
+	exit(1);
+      }
+      if (framesize%32) {
+	fprintf(stderr, "Wrong framesize to support drop mode 4\n");
+	exit(1);
+      }
+
+      // Skip over first 32 bytes as they are unchanged
+      i64 = (int64_t*) &buf[CODIF_HEADER_BYTES+32];
+      o64 = (int64_t*) &buf[CODIF_HEADER_BYTES+16];
+      for (int i = 1; i < framesize/32; i++) {
+	*o64 = *i64;
+	o64++; i64++;
+	*o64 = *i64;
+	o64++; i64++;
+	i64 += 2; // Skip the next 16 bytes
+      }
+
+      setCODIFNumChannels(cheader,getCODIFNumChannels(cheader)/2);
+      setCODIFFrameBytes(cheader, framesize/2);
+      setCODIFSampleblockLength(cheader, getCODIFSampleblockLength(cheader)/2);
+      nread = (nread-CODIF_HEADER_BYTES)/2 + CODIF_HEADER_BYTES;
+    }
 
     if (scale>0) { // Should check nbits==16
-      if (getCODIFBitsPerSample(cheader)!=16) {
+      if (getCODIFBitsPerSample(cheader)!=16) { 
 	fprintf(stderr, "Error: Trying to scale data which is not 16 bits\n");
 	exit(1);
       }
 
       setCODIFBitsPerSample(cheader, 8);
-      setCODIFFrameBytes(cheader, (getCODIFFrameBytes(cheader)-CODIF_HEADER_BYTES)/2+CODIF_HEADER_BYTES);
+      setCODIFFrameBytes(cheader, getCODIFFrameBytes(cheader)/2);
       
       s16 = cdata;
       s8 = (int8_t*)cdata;
       int i;
-      for (i=0; i< (nread-padding-CODIF_HEADER_BYTES)/sizeof(int16_t); i++) {
+      for (i=0; i< (nread-CODIF_HEADER_BYTES)/sizeof(int16_t); i++) {
 	*s16 /= scale;
 	if (*s16>127)
 	  *s16 = 127;
@@ -559,9 +606,9 @@ int main (int argc, char * const argv[]) {
 	s16++;
 	s8++;
       }
-      nwrite = (nread-padding-CODIF_HEADER_BYTES)/sizeof(int16_t) + CODIF_HEADER_BYTES;
+      nwrite = (nread-CODIF_HEADER_BYTES)/sizeof(int16_t) + CODIF_HEADER_BYTES;
     } else {
-      nwrite = nread - padding;
+      nwrite = nread;
     }
     
     t2 = tim();
