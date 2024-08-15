@@ -14,16 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: multilistbox.py 10517 2022-06-24 13:05:18Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/tkinter/multilistbox.py $
-# $LastChangedRevision: 10517 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2022-06-24 21:05:18 +0800 (五, 2022-06-24) $
-#
-#============================================================================
 import sys
 
 if sys.version_info < (3, 0):

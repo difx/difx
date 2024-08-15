@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mk5cp.cpp 7420 2016-08-05 16:58:20Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/mk5cp.cpp $
-// $LastChangedRevision: 7420 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2016-08-05 10:58:20 -0600 (Fri, 05 Aug 2016) $
-//
-//============================================================================
 
 #include <cstdio>
 #include <cstdlib>

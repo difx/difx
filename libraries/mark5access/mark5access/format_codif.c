@@ -4329,7 +4329,7 @@ static int mark5_format_codif_validate(const struct mark5_stream *ms)
 	/* Check for overly unusual header  */
 	header = (codif_header *)ms->frame;
 
-	if(getCODIFSync(header) != 0xFEEDCAFE  && getCODIFSync(header) != 0xADEADBEE)
+	if(getCODIFSync(header) != CODIF_SYNC)
 	{
 	        fprintf(m5stderr, "mark5_format_codif_validate: Skipping frame with wrong sync (0x%08X)\n", getCODIFSync(header));
 	        return 0;
@@ -4794,7 +4794,7 @@ int find_codif_frame(const unsigned char *data, int length, size_t *offset, int 
     for (*offset=0; *offset<length; (*offset)++) {
       header = (codif_header*)(data + *offset);
       
-      if (header->sync != 0xABADDEED) continue; // Sync
+      if (header->sync != CODIF_SYNC) continue; // Sync
 
       fsA = getCODIFFrameBytes(header);
       if (!is_legal_codif_framesize(fsA)) {
@@ -4809,7 +4809,7 @@ int find_codif_frame(const unsigned char *data, int length, size_t *offset, int 
 
       header = (codif_header*)(data + *offset + fsA + CODIF_HEADER_BYTES);
       
-      if (header->sync != 0xABADDEED) continue; // Sync
+      if (header->sync != CODIF_SYNC) continue; // Sync
 
       fsB = getCODIFFrameBytes(header);
       secB = header->seconds;

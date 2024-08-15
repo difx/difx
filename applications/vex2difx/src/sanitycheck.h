@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: sanitycheck.h 6894 2015-07-28 16:19:06Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/util.h $
- * $LastChangedRevision: 6894 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2015-07-29 00:19:06 +0800 (三, 2015-07-29) $
- *
- *==========================================================================*/
 
 #ifndef __SANITYCHECK_H__
 #define __SANITYCHECK_H__

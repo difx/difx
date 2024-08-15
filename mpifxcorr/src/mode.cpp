@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 
 #include <mpi.h>
 #include <iomanip>
@@ -768,9 +758,7 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
 
   if(!(config->getDPhaseCalIntervalHz(configindex, datastreamindex) == 0))
   {
-      long samplenrsincestart = long(datasec)*long(recordedbandwidth) + datasamples+nearestsample;
-      if (!usecomplex)
-        samplenrsincestart += long(datasec)*long(recordedbandwidth);
+      size_t samplenrsincestart = nearestsample + static_cast<size_t>(double(datasec*1e9+datans)/(sampletime*1e3) + 0.5);
       for(int i=0;i<numrecordedbands;i++)
       {
         extractor[i]->adjustSampleOffset(samplenrsincestart);

@@ -11,6 +11,7 @@ bin_PROGRAMS = \
 	captureUDPVDIF \
 	multi2singlethreadVDIF \
 	padVDIF \
+    invalidateVDIFPackets \
 	cleanVDIF \
 	reorderVDIF \
 	fakemultiVDIF \
@@ -89,6 +90,9 @@ countVDIFPackets_SOURCES = \
 
 padVDIF_SOURCES = \
 	padVDIF.c
+
+invalidateVDIFPackets_SOURCES = \
+    invalidateVDIFPackets.c
 
 extractSingleVDIFThread_SOURCES = \
 	extractSingleVDIFThread.c

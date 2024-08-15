@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsHeader.c 10537 2022-07-15 20:18:57Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsHeader.c $
-// $LastChangedRevision: 10537 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-07-16 04:18:57 +0800 (六, 2022-07-16) $
-//
-//============================================================================
 #include <sys/time.h>
 #include <unistd.h>
 #include <string.h>

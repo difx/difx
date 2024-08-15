@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_freq.c 10816 2022-11-11 22:20:23Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_freq.c $
-// $LastChangedRevision: 10816 $
-// $Author: JanWagner $
-// $LastChangedDate: 2022-11-12 06:20:23 +0800 (六, 2022-11-12) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

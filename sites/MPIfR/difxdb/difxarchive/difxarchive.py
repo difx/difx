@@ -1,16 +1,6 @@
 #! /usr/bin/python
 # coding: latin-1
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: difxarchive.py 9142 2019-09-09 08:39:21Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/sites/MPIfR/difxdb/difxarchive/difxarchive.py $
-# $LastChangedRevision: 9142 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2019-09-09 16:39:21 +0800 (一, 2019-09-09) $
-#
-#============================================================================
 
 import tarfile
 import pexpect

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_tcal.c 7655 2017-02-20 02:57:56Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/parsevis.h $
-// $LastChangedRevision: 7655 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-02-20 10:57:56 +0800 (一, 2017-02-20) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

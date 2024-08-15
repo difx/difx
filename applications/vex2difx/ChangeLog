@@ -11,6 +11,8 @@ Version 3.1.0
 * New ANTENNA parameter phaseCalIntDivisor for fractional spacings (phaseCalInt[MHz]/phaseCalIntDivisor)
 * New utility: mk6filelist, a simplified form of mk62v2d which does not require or modify the .v2d file.
 * Update wiki to ATNF -- note that even this will be old soon and the new github link will replace it.
+* Allow "NONE" data format.  This was allowed in previous vex parser version, but got lost when vex2 was added.
+* Fix "datastreams with no data" bug.  This was triggered when there was a job break in the middle of a scan and an antenna only had data during one part of the broken scan
 
 Version 3.0.0
 -------------

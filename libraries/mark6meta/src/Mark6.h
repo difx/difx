@@ -13,16 +13,6 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: Mark6.h 11045 2023-08-24 12:15:28Z HelgeRottmann $
-// $HeadURL: $
-// $LastChangedRevision: 11045 $
-// $Author: HelgeRottmann $
-// $LastChangedDate: 2023-08-24 14:15:28 +0200 (Thu, 24 Aug 2023) $
-//
-//============================================================================
 #ifndef MARK6_H
 #define	MARK6_H
 

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: testdifxmessagesend.c 4843 2012-09-23 20:51:09Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
- * $LastChangedRevision: 4843 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2012-09-24 04:51:09 +0800 (一, 2012-09-24) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>

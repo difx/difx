@@ -14,16 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: experimentaction.py 10110 2021-08-26 12:29:48Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/difxdb/business/experimentaction.py $
-# $LastChangedRevision: 10110 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2021-08-26 20:29:48 +0800 (四, 2021-08-26) $
-#
-#============================================================================
 from difxdb.model import model
 from sqlalchemy import desc
 #from string import upper

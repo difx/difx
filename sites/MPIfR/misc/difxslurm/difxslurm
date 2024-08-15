@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: difxslurm 10832 2022-11-17 14:11:11Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/sites/MPIfR/misc/difxslurm/difxslurm $
-# $LastChangedRevision: 10832 $
-# $Author: JanWagner $
-# $LastChangedDate: 2022-11-17 22:11:11 +0800 (四, 2022-11-17) $
-#
-#============================================================================
 #
 # Shell script to allow starting of heterogeneous DiFX jobs through the SLURM batch scheduler.
 # DiFX jobs will be heterogeneous when containing e.g. mark5 and/or mark5 playback units or
@@ -126,7 +116,7 @@ export SLURM_JOB_ID=$JOB_ID
 ## Add compute node details into HOSTFILE
 echo "Granted job allocation $JOB_ID:"
 # srun <binary on jobstep 1> : <binary on jobstep 2> : ...
-squeue -j $JOB_ID
+squeue -j $JOB_ID --format "%.18i %.12P %.24j %.8u %.2t %.10M %.6D %.3C %R"
 
 echo "Getting full list of hostnames..."
 cat $job.dsmachines > $HOSTFILE
