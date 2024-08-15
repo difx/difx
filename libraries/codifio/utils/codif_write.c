@@ -128,7 +128,7 @@ typedef struct files {
   int file;
 } files;
 
-int setup_net(unsigned short port, const char *ip, int *sock);
+int setup_net(unsigned short port, const char *ip, const char *group, int *sock, float bufsize);
 int matchthread(datastats *allstats, int nthread, int threadID, int groupID);
 int matchfile(files *ofiles, int nfles, int threadID, int groupID);
 int openfile(char *fileprefix, char *timestr, int threadid, int groupid);
@@ -173,6 +173,7 @@ int main (int argc, char * const argv[]) {
 
   unsigned int port = DEFAULT_PORT;
   char *ip = NULL;
+  char *multicastGroup = NULL;
   char *fileprefix = NULL;
   int time = DEFAULT_TIME;
   int filesize = DEFAULT_FILESIZE;
@@ -193,6 +194,7 @@ int main (int argc, char * const argv[]) {
     {"threadid", 1, 0, 'T'},
     {"groupid", 1, 0, 'g'},
     {"ip", 1, 0, 'i'},
+    {"multicast", 1, 0, 'm'},
     {"outfile", 1, 0, 'o'},
     {"time", 1, 0, 't'},
     {"updatetime", 1, 0, 'u'},
@@ -300,14 +302,14 @@ int main (int argc, char * const argv[]) {
       ip = strdup(optarg);
       break;
 
+    case 'm':
+      multicastGroup = strdup(optarg);
+      break;
+      
     case 'o':
       fileprefix = strdup(optarg);
       break;
 
-      //    case 'I':
-      //invert = 1;
-      //break;
- 
     case 'S':
       splitthread = true;
       break;
@@ -331,6 +333,7 @@ int main (int argc, char * const argv[]) {
       printf("  -T/-threadid <N>       Only record threadid N\n");
       printf("  -g/-groupid <N>        Only record groupid N\n");
       printf("  -i/-ip <IP>            Receive data from host IP\n");
+      printf("  -m/-multicast <G.G.G.G>  Receive data oin muticast group G.G.G.G\n");
       printf("  -o/-outfile <NAME>     output prefix NAME\n");
       printf("  -t/-time <N>           Record for N seconds\n");
       printf("  -f/-filesize <N>       Write files N seconds long\n");
@@ -373,7 +376,7 @@ int main (int argc, char * const argv[]) {
   cheader = (codif_header*)buf;
   cdata = (int16_t*) &buf[CODIF_HEADER_BYTES];
 
-  status = setup_net(port, ip, &sock);
+  status = setup_net(port, ip, multicastGroup, &sock, -1);
     
   if (status)  exit(1);
 
@@ -615,7 +618,7 @@ int main (int argc, char * const argv[]) {
   return(0);
 }
   
-int setup_net(unsigned short port, const char *ip, int *sock) {
+int setup_net(unsigned short port, const char *ip, const char *group, int *sock, float bufsize) {
   int status;
   struct sockaddr_in server; 
 
@@ -624,7 +627,7 @@ int setup_net(unsigned short port, const char *ip, int *sock) {
   server.sin_family = AF_INET;
   server.sin_port = htons(port);
 
-  if (ip==NULL) 
+  if (ip==NULL || group!=NULL) 
     server.sin_addr.s_addr = htonl(INADDR_ANY); /* Anyone can connect */
   else {
     server.sin_addr.s_addr = inet_addr(ip);
@@ -641,10 +644,9 @@ int setup_net(unsigned short port, const char *ip, int *sock) {
     return(1);
   }
 
-  int udpbufbytes = 10*1024*1024;
-  status = setsockopt(*sock, SOL_SOCKET, SO_RCVBUF,
-		      (char *) &udpbufbytes, sizeof(udpbufbytes));
-    
+  if (bufsize<=0) bufsize = 10;
+  int udpbufbytes = bufsize*1024*1024;
+  status = setsockopt(*sock, SOL_SOCKET, SO_RCVBUF, (char *) &udpbufbytes, sizeof(udpbufbytes));
   if (status!=0) {
     fprintf(stderr, "Warning: Could not set socket RCVBUF\n");
   } 
@@ -656,6 +658,25 @@ int setup_net(unsigned short port, const char *ip, int *sock) {
     return(1);
   }
 
+  if (group!=NULL) {
+    struct ip_mreqn mreq;
+    mreq.imr_multiaddr.s_addr = inet_addr(group);
+
+    if (ip==NULL) {
+      mreq.imr_address.s_addr = htonl(INADDR_ANY);
+    } else {
+      printf("Using %s\n", ip);
+      mreq.imr_address.s_addr = inet_addr(ip);
+    }
+    mreq.imr_ifindex = 0;
+    status = setsockopt(*sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+    if (status <0) {
+      printf("%d\n", errno);
+      perror("setsockopt mreq");
+      return(1);
+    }  
+  }
+  
   return(0);
 }
   
