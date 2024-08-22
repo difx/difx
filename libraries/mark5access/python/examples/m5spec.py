@@ -86,8 +86,9 @@ def m5spec(fn, fmt, fout, T_int_ms, nfft, offset, sameScale=True):
 				   (3,5), (3,5), (3,5), (4,4), # 13 to 16 channels
 				   (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), # 17 to 25 channels
 				   (6,6), (6,6), (6,6), (6,6), (6,6), (6,6), (6,6)] # 26 to 32 channels
+			layouts[33:64] = [(8,8)] * 32
 
-			M = int(numpy.min([32,dms.nchan]))
+			M = int(numpy.min([64,dms.nchan]))
 			rows,cols = layouts[M]
 
 			specs /= float(nint)
