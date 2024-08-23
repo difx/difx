@@ -34,6 +34,54 @@ def usage():
 	print (__doc__)
 
 
+def writeOut(fout, f, s):
+	"""
+	Store spectra into a text file
+	file column 1: FFT bin center frequency in Hz
+	file column 2: power in FFT channel 0
+	file column 3: power in FFT channel 1  etc
+	"""	
+	print ('Writing %u values into %s ...' % (s.size,fout.name))
+	for ch in range(len(f)):
+		chvals = numpy.array_str(s[:,ch], max_line_width=1e9)
+		fout.write('%f %s\n' % (f[ch],chvals[1:-1]))
+	print ('Done.')
+
+
+def plot_spectra(freqs, specs, dms, sameScale=True):
+	"""Show computed spectra in a subplot grid layout"""
+	layouts = [(None,None),  (1,1), (1,2), (1,3), (2,2), (1,5), # 1 to 5 channels
+		   (2,3), (2,4), (2,4), (3,3), (2,5), (3,4), (2,6), # 6 to 12 channels
+			   (3,5), (3,5), (3,5), (4,4), # 13 to 16 channels
+			   (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), # 17 to 25 channels
+			   (6,6), (6,6), (6,6), (6,6), (6,6), (6,6), (6,6)] # 26 to 32 channels
+	layouts[33:64] = [(8,8)] * 32
+
+	M = int(numpy.min([64,dms.nchan]))
+	rows,cols = layouts[M]
+
+	a_min = numpy.amin(specs)
+	a_max = numpy.amax(specs)
+
+	pylab.gcf().set_facecolor('white')
+	for ch in range(M):
+		pylab.subplot(rows,cols,ch+1)
+		pylab.plot(freqs,abs(specs[ch]),'k-')
+		pylab.title('Channel %d' % (ch+1))
+		pylab.axis('tight')
+		if sameScale:
+			pylab.ylim([a_min,a_max])
+		if ch >= (M-cols):
+			pylab.xlabel('Frequency (MHz)')
+		elif sameScale:
+			pylab.gca().set_xticklabels([])
+		if (ch % rows) == 0:
+			pylab.ylabel('Amplitude (Sum|FFT(x)|)')
+		elif sameScale:
+			pylab.gca().set_yticklabels([])
+	pylab.show()
+
+
 def m5spec(fn, fmt, fout, T_int_ms, nfft, offset, sameScale=True):
 	"""Form time-averaged autocorrelation spectra"""
 
@@ -43,6 +91,7 @@ def m5spec(fn, fmt, fout, T_int_ms, nfft, offset, sameScale=True):
 		m5fmt  = m5lib.new_mark5_format_generic_from_string(fmt)
 		ms     = m5lib.new_mark5_stream_absorb(m5file, m5fmt)
 		dms    = ms.contents
+		isCplx = (dms.iscomplex > 0)
 	except:
 		print ('Error: problem opening or decoding %s\n' % (fn))
 		return 1
@@ -51,7 +100,10 @@ def m5spec(fn, fmt, fout, T_int_ms, nfft, offset, sameScale=True):
 	nint  = numpy.round(float(dms.samprate)*T_int_ms*1e-3/float(nfft))
 	Tint  = float(nint*nfft)/float(dms.samprate)
 	df    = float(dms.samprate)/float(nfft)
-	nchan = len(numpy.fft.rfft([0.0]*nfft))
+	if isCplx:
+		nchan = len(numpy.fft.fft([0.0]*nfft))
+	else:
+		nchan = len(numpy.fft.rfft([0.0]*nfft))
 	iter  = 0
 	print ('Averaging a total of %u DFTs, each with %u points, for a %f millisecond time average.' % (nint,nfft,Tint*1e3))
 
@@ -59,78 +111,54 @@ def m5spec(fn, fmt, fout, T_int_ms, nfft, offset, sameScale=True):
 	pdata = m5lib.helpers.make_decoder_array(ms, nfft, dtype=ctypes.c_float)
 
 	# Result arrays
-	ch_data = [ctypes.cast(pdata[ii],ctypes.POINTER(ctypes.c_float*nfft)) for ii in range(dms.nchan)]
-	freqs = numpy.linspace(0.0, dms.samprate*0.5e-6, num=nchan)
-	specs = numpy.zeros(shape=(dms.nchan,nchan), dtype='float64')
+	if isCplx:
+		ch_data = [ctypes.cast(pdata[ii],ctypes.POINTER(ctypes.c_float*2*nfft)) for ii in range(dms.nchan)]
+		freqs = numpy.linspace(0.0, dms.samprate*1.0e-6, num=nchan)
+		specs = numpy.zeros(shape=(dms.nchan,nchan), dtype='float64')
+	else:
+		ch_data = [ctypes.cast(pdata[ii],ctypes.POINTER(ctypes.c_float*nfft)) for ii in range(dms.nchan)]
+		freqs = numpy.linspace(0.0, dms.samprate*0.5e-6, num=nchan)
+		specs = numpy.zeros(shape=(dms.nchan,nchan), dtype='float64')
 
 	# Process the recorded data
 	while True:
 
 		# Read data
-		rc = m5lib.mark5_stream_decode(ms, nfft, pdata)
+		if isCplx:
+			rc = m5lib.mark5_stream_decode_complex(ms, nfft, pdata)
+		else:
+			rc = m5lib.mark5_stream_decode(ms, nfft, pdata)
 		if (rc < 0):
 			print ('\n<EOF> status=%d' % (rc))
 			return 0
 
 		# Averaging of 'Abs(FFT(x))'
 		for ii in range(dms.nchan):
-			x = numpy.frombuffer(ch_data[ii].contents, dtype='float32')
-			specs[ii] += numpy.abs(numpy.fft.rfft(x))
-
+			if isCplx:
+				x = numpy.frombuffer(ch_data[ii].contents, dtype='complex64')
+				specs[ii] += numpy.abs(numpy.fft.fft(x))
+			else:
+				x = numpy.frombuffer(ch_data[ii].contents, dtype='float32')
+				specs[ii] += numpy.abs(numpy.fft.rfft(x))
+	
 		# Save data and plot at the end of an averaging period
 		iter = iter + 1
 		if (iter % nint)==0:
-
-			layouts = [(None,None),  (1,1), (1,2), (1,3), (2,2), (1,5), # 1 to 5 channels
-				   (2,3), (2,4), (2,4), (3,3), (2,5), (3,4), (2,6), # 6 to 12 channels
-				   (3,5), (3,5), (3,5), (4,4), # 13 to 16 channels
-				   (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), (5,5), # 17 to 25 channels
-				   (6,6), (6,6), (6,6), (6,6), (6,6), (6,6), (6,6)] # 26 to 32 channels
-			layouts[33:64] = [(8,8)] * 32
-
-			M = int(numpy.min([64,dms.nchan]))
-			rows,cols = layouts[M]
 
 			specs /= float(nint)
 			specs[:,0]  = specs[:,1]
 			specs[:,-1] = specs[:,-2]
 
+			plot_spectra(freqs, specs, dms, sameScale)
+
 			if fout != None:
 				writeOut(fout,freqs,specs)
-
-			a_min = numpy.amin(specs)
-			a_max = numpy.amax(specs)
-
-			pylab.gcf().set_facecolor('white')
-			for ch in range(M):
-				pylab.subplot(rows,cols,ch+1)
-				pylab.plot(freqs,abs(specs[ch]),'k-')
-				pylab.title('Channel %d' % (ch+1))
-				pylab.axis('tight')
-				if sameScale:
-					pylab.ylim([a_min,a_max])
-				if ch >= (M-cols):
-					pylab.xlabel('Frequency (MHz)')
-				elif sameScale:
-					pylab.gca().set_xticklabels([])
-				if (ch % rows) == 0:
-					pylab.ylabel('Amplitude (Sum|FFT(x)|)')
-				elif sameScale:
-					pylab.gca().set_yticklabels([])
-			pylab.show()
 
 			# Current version: stop after 1 integration period
 			break
 
 	return 0
 
-
-def writeOut(fout,f,s):
-	print ('Writing %u values into %s ...' % (s.size,fout.name))
-	for ch in range(len(f)):
-		chvals = numpy.array_str(s[:,ch], max_line_width=1e9)
-		fout.write('%f %s\n' % (f[ch],chvals[1:-1]))
-	print ('Done.')
 
 
 def main(argv=sys.argv[1:]):
