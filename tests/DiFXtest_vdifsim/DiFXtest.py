@@ -10,6 +10,8 @@ import filecmp
 import requests
 import itertools
 import glob
+import resource
+import time
 
 
 def get_testdir():
@@ -22,10 +24,6 @@ def pre_checks():
   locate = shutil.which('mpifxcorr')
   if (locate == None):
     print('mpifxcorr not found please make sure DiFX is installed')
-    quit()
-  locate = shutil.which('generateVDIF')
-  if (locate == None):
-    print('generateVDIF not found, please make sure it is installed.')  
     quit()
   locate = shutil.which('vdifsim')
   if (locate == None):
@@ -46,18 +44,19 @@ def generate_vdifsim_config(cores):
   for item in core_list:
     filecontents = filecontents + item + "\n"
 
+  current_directory = get_testdir()
 
   filecontents = filecontents + "\n# data destinations\n"
-  filecontents = filecontents + "BR /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "FD /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "HN /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "KP /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "LA /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "MK /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "NL /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "OV /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "PT /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "SC /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
+  filecontents = filecontents + "BR " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "FD " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "HN " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "KP " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "LA " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "MK " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "NL " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "OV " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "PT " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "SC " + current_directory + "testdata/ localhost\n"
   
 
   fh.write(filecontents)
@@ -65,15 +64,16 @@ def generate_vdifsim_config(cores):
   
 
 # For now just set threads to 1 per machine to get repeatable results 
-def set_num_threads(testname):
+def set_numthreads(testname,numthreads):
 
   current_directory = get_testdir()
   working_directory = current_directory + "/" + testname + "/"
   v2d_filename = working_directory + testname + ".v2d"
-  print(v2d_filename)
+  #print(v2d_filename)
   with open(v2d_filename,'r') as file:
     content = file.read()
-    content = content.replace("nThread = 12","nThread = 1");
+    nthreads_string = "nThread = " + numthreads
+    content = content.replace("nThread = 12",nthreads_string);
   with open(v2d_filename,'w') as file:
     file.write(content)
 
@@ -86,7 +86,6 @@ def generate_v2d(testname):
 
   args = "oms2v2d --sim " + testname + ".oms "
   subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
-  set_num_threads(testname)
   return
 
 
@@ -130,9 +129,11 @@ def get_results_and_setup_files():
   else:
     url = "https://github.com/difx/difx-data/raw/main/tests.tgz"
     try:
-      r = requests.get(url, allow_redirects=True)
-      filename = current_directory + "/tests.tgz"
-      open(filename,'wb').write(r.content)
+      arg = "wget " + url
+      subprocess.call(arg,cwd=current_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+    #r = requests.get(url, allow_redirects=True)
+    #filename = current_directory + "/tests.tgz"
+    #open(filename,'wb').write(r.content)
     except:
       print("Error downloading setup files and initial benchmark results")
 
@@ -244,7 +245,7 @@ def run_vex2difx(testname):
   f_vex2difxlog = open(vex2difxlogfile,"w")
   f_vex2difxerr = open(vex2difxerrfile,"w")
 
-  arg = "vex2difx " + testname + ".v2d"
+  arg = "vex2difx -f " + testname + ".v2d"
 
   try:
     proc =subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_vex2difxlog,stderr=f_vex2difxerr,check=True)
@@ -320,7 +321,9 @@ def run_vdifsim(testname):
 def run_mpifxcorr(testname, numcores):
   
   print("Running test " + testname)
-  
+  cpu_time = 0
+  real_time = 0
+
   current_directory = os.getcwd() 
   working_directory = current_directory + "/" + testname + "/"
 
@@ -334,17 +337,31 @@ def run_mpifxcorr(testname, numcores):
     f_difxlog = open(difxlogfile,"w")
     f_difxerr = open(difxerrfile,"w")
     try:
+      usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
+      t1 = time.perf_counter()
       proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_difxlog,stderr=f_difxerr,check=True)
+      t2 = time.perf_counter()
+      usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)
+      cpu_time = usage_end.ru_utime - usage_start.ru_utime
+      real_time = t2-t1 
+      print('Correlation complete')
+      print(f'CPU processing time:   {cpu_time}')
+      print(f'Real run time:         {real_time}')
+      print()
     except subprocess.CalledProcessError as e:
       print("mpifxcorr failed check log files:")
       print(difxlogfile)
       print(difxerrfile) 
       print()
-      return
+      return  
 
 def run_mpifxcorr_gpumode(testname, numcores):
   
   print("Running test " + testname)
+
+  cpu_time = 0
+  real_time = 0
+
 
   current_directory = os.getcwd()
   working_directory = current_directory + "/" + testname + "/"
@@ -359,7 +376,17 @@ def run_mpifxcorr_gpumode(testname, numcores):
     f_difxlog = open(difxlogfile,"w")
     f_difxerr = open(difxerrfile,"w")
     try:
+      usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
+      t1 = time.perf_counter()
       proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_difxlog,stderr=f_difxerr,check=True)
+      t2 = time.perf_counter()
+      usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)
+      cpu_time = usage_end.ru_utime - usage_start.ru_utime
+      real_time = t2-t1
+      print('Correlation complete')
+      print(f'CPU processing time:   {cpu_time}')
+      print(f'Real run time:         {real_time}')
+      print()
     except subprocess.CalledProcessError as e:
       print("mpifxcorr failed check log files:")
       print(difxlogfile)
@@ -725,11 +752,11 @@ def main():
   parser.add_argument("-u","--updatetest", help="Update the default test results (yes/[no])",default="no") 
   parser.add_argument("-a","--abstol",help="Absolute tolerance for FITS file comparison (default = 1e-6)",default=1e-6)
   parser.add_argument("-r","--reltol",help="Relative tolerance for FITS file comparison (default = 0.0)",default=0.00)
-  parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? (yes/[no])",default="no")
-  parser.add_argument("-t","--testgpu",help="run difx in gpu mode and compare results with benchmark (yes/[no])",default="no")
+#  parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? (yes/[no])",default="no")
+  parser.add_argument("-t","--testgpu",help="run DiFX in gpu mode and compare results with benchmark (yes/[no])",default="no")
   parser.add_argument("-i","--usebenchmarkimfile",help="Use the benchmark .im file from a previous run rather than running difxcalc (yes/[no])",default="no") 
-  parser.add_argument("-c","--cores",help="Comma deliminated list of the processing cores used for data simulation and correlation (default = localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost)",default="localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost")
-
+  parser.add_argument("-c","--cores",help="Comma delimited list of the processing cores used for data simulation and correlation (default = localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost)",default="localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost")
+  parser.add_argument("-n","--numthreads",help="Integer number of threads per processing core.  More than one thread will speed runtime but reduce accuracy. (default=1)",default="1")
 
   input_args = parser.parse_args()
   generateVDIF = input_args.generateVDIF
@@ -738,13 +765,15 @@ def main():
   updatetest = updatetest.upper()
   reltol = float(input_args.reltol)
   abstol = float(input_args.abstol)
-  download = input_args.download
-  download = download.upper()
+#  download = input_args.download
+#  download = download.upper()
   testgpu = input_args.testgpu
   testgpu = testgpu.upper()
   usebenchmarkimfile = input_args.usebenchmarkimfile
   usebenchmarkimfile = usebenchmarkimfile.upper()
   cores = input_args.cores
+
+  numthreads = input_args.numthreads
 
   # Number of stations + 2 is the number of coress needed, need head node
   cores_list = cores.split(",")
@@ -759,6 +788,8 @@ def main():
 
   # Grab benchmark results and setup files 
   get_results_and_setup_files()
+  #quit()
+
 
   # list of test names
   test_name_list = ["usb-2-station","usb-4-band-2-station","usb-10-station"]
@@ -766,7 +797,6 @@ def main():
 
   # Dictionary with pass/fail status of each test {"test name" : [binary file same (results), FITS file same (true/false)]} 
   passfail = {"usb-2-station":["",True],"usb-4-band-2-station":["",True],"usb-10-station":["",True]}
-
 
 
   # Add gpu mode tests to list of tests to be run 
@@ -784,8 +814,8 @@ def main():
   # Unpack tests if they haven't been already
   unpackage_tests(test_name_list)
 
-  if (download == "YES"):
-    get_real_data()
+#  if (download == "YES"):
+#    get_real_data()
    
   if (generateVDIF == "YES"):
    rm_test_data()
@@ -795,6 +825,7 @@ def main():
     rm_output_files(testname)
     generate_v2d(testname)
     #quit()
+    set_numthreads(testname,numthreads)
     generate_filelist(testname)    
     #quit()
     run_vex2difx(testname)
