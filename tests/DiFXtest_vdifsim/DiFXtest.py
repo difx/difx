@@ -836,9 +836,8 @@ def main():
       working_directory = current_directory + "/" + testname + "/"
       results_directory = working_directory + "/benchmark_results/" 
       benchmark_im_file = get_im_file(results_directory) 
-      shutil.copy2(benchmark_im_file, working_directory)
-    else:
-      run_difxcalc(testname)
+      shutil.copy2(benchmark_im_file, working_directory) 
+    run_difxcalc(testname)
     if (testname[-3:] != "gpu"):
       if (is_testdata_empty(testname) or generateVDIF == "YES"):
           print("running vdifsim")
