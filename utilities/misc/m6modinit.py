@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 #**************************************************************************
 #   Copyright (C) 2018 by Mark Wainright                                  *
@@ -22,11 +22,13 @@ import time
 import subprocess
 import string
 import os
+import argparse
+import re
 
 program = 'm6modinit.py'
-version = '0.1'
+version = '1.0'
 author  = 'Mark Wainright <mwainrig@lbo.us>'
-verdate = '20180131'
+verdate = '20240228'
 
 def usage():
         print('\n%s - ver. %s - %s - %s\n' % (program, version, author, verdate))
@@ -54,15 +56,17 @@ def getdevices(slot):
 
   # find attached scsi devices
   res = subprocess.Popen(["lsscsi", "-H"],  stdout=subprocess.PIPE)
-  out = res.communicate()[0]
-  all_scsi_dev = string.split(out)
+  out = res.communicate()[0].decode("utf-8")
+  all_scsi_dev = out.split()
   sl = len(all_scsi_dev)
 
   # build list of mpt3sas device numbers (should be 2 for 2 host bus adapters)
   for i in range (1,sl,2):
     # --- if the devices uses the mpt3sas driver
     if all_scsi_dev[i] == "mpt3sas":
+      print( all_scsi_dev[i] )
       val = all_scsi_dev[i-1]
+      print (val)
       # --- extract the number from '[1]' string
       num_val = val[val.find('[')+1:val.find(']')]
       sas_dev_num.append(num_val)
@@ -73,11 +77,11 @@ def getdevices(slot):
   for i in range(num_dev):
     res = subprocess.Popen(["lsscsi", "-t", sas_dev_num[i]],  stdout=subprocess.PIPE)
     # --- since we should have only 2 sas devices attached to driver at most:
-    out = res.communicate()[0]
+    out = res.communicate()[0].decode('utf-8')
     if i == 0:
-      a = string.split(out)
+      a = out.split()
     else:
-      b = string.split(out)
+      b = out.split()
 
   # --- IF THE LENGHT OF B IS > 0 THEN IT WAS ASSIGNED, CONCATENATE OUTPUT
   if len(b) > 0:
@@ -88,8 +92,12 @@ def getdevices(slot):
       print("no disk modules powered up")
       return disks
 
+  print (a, b)
+  print(scsi_list)
+
   # --- scsi_list number of items
   sll = len(scsi_list)
+  print (sll)
   # --- since the format is as above, every 4 is the devices
   num_available_disks = sll / 4
 
@@ -97,7 +105,7 @@ def getdevices(slot):
     disk = scsi_list[i+3]
     if "/dev/sd" in disk:
       # get the sas address
-      (ty, sas_address) = string.split(scsi_list[i+2],":")
+      (ty, sas_address) = scsi_list[i+2].split(":")
       # --- the device number on the SAS controller, since it can be hex, convert from base 16 string format
       dev_num = int(sas_address[11],16)
       # get the host id
@@ -116,6 +124,7 @@ def getdevices(slot):
         elif dev_num >= 8 and slot == 4:
           disks.append({'dev_num': dev_num - 8, 'slot': slot, 'disk': disk})
 
+  print (disks)
   # get serial number for disk
   if len(disks) > 0:
     for i in range(len(disks)):
@@ -140,7 +149,7 @@ def getdevices(slot):
         print("serial number could not be determined for disk", i, "device", disk_dev)
         exit(1)
 
-  #print "disks", disks
+  print ("disks", disks)
     
   return disks
 
@@ -151,24 +160,35 @@ def checkforerror(partcmd, subp, output):
     print('output (stdout, stderr):', output)
     exit(1)
 
+
+def msn(string):
+    '''
+    Type function used for validating the command line MSN option
+    
+    Raises:
+        ValueError: in case the given MSN is malfomed
+    '''
+    if len(string) != 8:
+        raise ValueError()
+
+    if not re.match("\D+%\d+", string):
+        raise ValueError()
+    
+    return(string)
+
+
+
 #-------main execution---------
-if len(sys.argv) < 3:
-  usage()
-  exit(1)
+parser = argparse.ArgumentParser( prog='m6modinit', description='A program to initialiaze a mark6 disk module')
+parser.add_argument('slot', metavar="slot", type=int, choices=range(1,7), help="the slot number that contains the module to be initialized.") 
+parser.add_argument('MSN',  type=msn, help="the MSN (Module Serial Number) to assign to the module.") 
 
-slot = int(sys.argv[1])
+args = parser.parse_args()
 
-if slot not in [1, 2, 3, 4]:
-  usage()
-  exit(1)
+slot = args.slot
 
-msn = sys.argv[2]
+msn = args.MSN
 
-if len(msn) != 8 or msn[0:4] != 'LBO%' or not msn[4:8].isdigit():
-  usage()
-  exit(1)
-
-# get a list of disks for slot
 disks = getdevices(slot)
 
 if len(disks) == 0:
