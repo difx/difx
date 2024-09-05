@@ -4,6 +4,10 @@ Version 1.7
 * m5pcal: can read from stdin
 * Remove SVN headers in files
 * Fix some spelling
+* Add Python ctypes-based bindings for decoding complex data
+  - ctypes has no complex data type, hence output is 2*N samples of ctypes.c_float
+  - use numpy.frombuffer(<ctypes output>, dtype='complex64') to interpret output as complex data
+
 
 Version 1.6
 * Post DiFX-2.6
