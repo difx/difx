@@ -46,7 +46,7 @@ except:
 __title__ = "plotVexChannels - A graphical overview of channels in a VEX file"
 __author__ = "Jan Wagner"
 __license__ = "GNU GPL v3"
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 __copyright__ = "(C) 2020 by Jan Wagner, MPIfR"
 
 
@@ -293,8 +293,9 @@ class Charting:
 
 	def __init__(self, verbosity=0):
 		self.verbosity = verbosity
-		self.wedgecount = 0 
-		self.barcount = 0
+		self.wedgecount = 0
+		self.zoombarcount = 0
+		self.obbarcount = 0
 
 	def plotFreqchannelWedge(self, ax, yy, height, channelID, channel, color=[109.0/255,155.0/255,194.0/255]):
 		"""Plots a channel:VexFreq in graphical style of a frequency band, as a slanted (USB/LSB) wedge"""
@@ -315,12 +316,13 @@ class Charting:
 		else:
 			y = [yy-hh, yy-hh, yy+hh, yy+(1-slant)*hh]
 
-		self.wedgecount += 1
 		a = 0.9 + 0.1*(self.wedgecount % 2)
+		self.wedgecount += 1
 
 		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color, alpha=a))
 
-		ax.text(channel.flow + bw/4, yy-height/4, str(channelID), fontsize=10)
+		if channelID:
+			ax.text(channel.flow + bw/4, yy-height/4, str(channelID), fontsize=10)
 
 
 	def plotZoomChannelBar(self, ax, ymin, ymax, channel, color=[255.0/255,152.0/255,143.0/255]):
@@ -329,8 +331,8 @@ class Charting:
 		x = [channel.flow, channel.fhigh, channel.fhigh, channel.flow]
 		y = [ymin, ymin, ymax, ymax]
 
-		self.barcount += 1
-		a = 0.3 + 0.1*(self.barcount % 2)
+		a = 0.3 + 0.1*(self.zoombarcount % 2)
+		self.zoombarcount += 1
 
 		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='white', facecolor=color, alpha=a))
 
@@ -341,8 +343,8 @@ class Charting:
 		x = [channel.flow, channel.fhigh, channel.fhigh, channel.flow]
 		y = [ymin, ymin, ymax, ymax]
 
-		self.barcount += 1
-		a = 0.1 + 0.1*(self.barcount % 2)
+		a = 0.1 + 0.1*(self.obbarcount % 2)
+		self.obbarcount += 1
 
 		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color, alpha=a))
 
@@ -424,7 +426,59 @@ class Charting:
 		plt.xlabel('Frequency (MHz)')
 		plt.title('Frequency Definitions in VEX file %s' % (vexChannels.vexFileName))
 
-		plt.show()
+
+
+	def visualizeBandComposition(self, zoomChannelBlocks, outputBands):
+
+		wedgeheight = 0.5	# height of USB/LSB direction wedge in plot
+
+		minfreq = 1e99
+		maxfreq = -1e99
+		ylevel = 1
+
+		numFreqs = len(zoomChannelBlocks.zoomBlocks) + 1
+
+		# Colors
+		fig, ax = plt.subplots()
+		fig.set_facecolor('white')
+		cmap = colormaps.get_cmap(name='winter', lut=(numFreqs+1))
+
+		# Outputbands
+		if outputBands:
+			lowest_out_freq = 1e99
+			for of in outputBands.outputFreqs:
+				self.plotFreqchannelWedge(ax, ylevel, wedgeheight, None, of, color=cmap(2))
+				self.plotOutputbandBar(ax, 0, ylevel+10, of)
+				lowest_out_freq = min(lowest_out_freq, of.flow)
+			ax.text(lowest_out_freq, ylevel+1.10*wedgeheight/2, 'Outputbands', fontsize=10, fontweight='bold', alpha=1.0)
+			ylevel += 1
+
+		# Zoom bands
+		if zoomChannelBlocks:
+			for zoomblockname in zoomChannelBlocks.zoomBlockNames:
+				for z in zoomChannelBlocks.zoomBlocks[zoomblockname]:
+					self.plotFreqchannelWedge(ax, ylevel, wedgeheight, None, z, color=cmap(1))
+				ax.text(zoomChannelBlocks.zoomBlockLowestFreq[zoomblockname], ylevel+0.25, 'ZOOM "' + str(zoomblockname) + '"', fontsize=10, fontweight='bold', alpha=1.0)
+
+				minfreq = min(minfreq, zoomChannelBlocks.zoomBlockLowestFreq[zoomblockname])
+				maxfreq = max(maxfreq, zoomChannelBlocks.zoomBlockHighestFreq[zoomblockname])
+				ylevel += 1
+
+		#ax.spines['right'].set_color('none')
+		#ax.spines['top'].set_color('none')
+		ax.set_xlim(minfreq, maxfreq)
+		ax.set_ylim(0, numFreqs+1)
+		ax.set_axisbelow(True)
+		ax.xaxis.grid(True, which='major')
+		ax.xaxis.set_minor_locator(MultipleLocator(100))
+		ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+		ax.tick_params(axis='x', which='minor', colors=[0.95,0.95,0.95])
+		plt.tick_params(top=False, bottom=True, left=False, right=False, labelleft=False, labelbottom=True)
+		plt.grid(True, which='both', axis='x')
+
+		plt.xlabel('Frequency (MHz)')
+		plt.title('DiFX Output Zooms and Outputbands')
+
 
 
 if __name__ == "__main__":
@@ -479,3 +533,6 @@ if __name__ == "__main__":
 
 	# Plot
 	chart.visualize(vx, zoomChannels=zf, outputBands=ob, fqNameSubset=subset)
+	if len(ob.outputFreqs)>0 and len(zf.zoomBlockNames)>0:
+		chart.visualizeBandComposition(zf, ob)
+	plt.show()
