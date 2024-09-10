@@ -1,22 +1,3 @@
-/***************************************************************************
- *   Copyright (C) 2024 by Walter Brisken                                  *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 3 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -73,10 +54,10 @@ void usage()
 
 /*
  * The following function interpolates a spectrum with a mathematically correct
- * formulation assuming the underlying signal is a pure tone.  The argument
+ * formulation assuming the underlying signal is a pure tone.  The argumemt
  * should be a pointer to an element of an array that is a local peak.
  * Both neighboring elements must be accessible.  The return value
- * will be in the range [-0.5, 0.5], representing the array index, relative
+ * will be in the range [-0.5, 0.5], represting the array index, relative
  * to the provided pointer corresponding to the actual frequency.
  */
 double interpolateSpectrumPeak(const double complex *s)
