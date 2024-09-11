@@ -18,6 +18,8 @@ else
 mark6_files =
 endif
 
+mpifxcorr_LDADD = ${mathlibs}
+
 bin_PROGRAMS = mpifxcorr neuteredmpifxcorr
 
 mpifxcorr_SOURCES = \
@@ -133,7 +135,7 @@ neuteredmpifxcorr_SOURCES = \
 
 neuteredmpifxcorr_CXXFLAGS = -DNEUTERED_DIFX $(AM_CXXFLAGS)
 
-neuteredmpifxcorr_LDADD = libfxcorr.a
+neuteredmpifxcorr_LDADD = libfxcorr.a ${mathlibs}
 
 # Test programs relocated from ./test/ to ./src/test/ due to automake
 # https://bugs.freedesktop.org/show_bug.cgi?id=69874

@@ -253,6 +253,12 @@ static double vanVleck(int b1, int b2)
 		}
 	}
 
+	/* If both datastreams use 8 or more bits and the above table does not have an entry, it is reasonabl to assume that 1.0 is close enough */
+	if(b1 >= 8 && b2 >= 8)
+	{
+		return 1.0;
+	}
+
 	return 0.0;	/* effectively an error code */
 }
 
