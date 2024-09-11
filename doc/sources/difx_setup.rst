@@ -46,8 +46,10 @@ Environment variables
 ---------------------
 
 In addition to environment variables needed at build-time
-(§\ `[sec:install] <#sec:install>`__), some others are needed at run
+(§ `[sec:install] <#sec:install>`__), some others are needed at run
 time. These are:
+
+:ref:`sec:install`
 
 #. ``CALC_SERVER`` contains the name of the computer running calcServer
    (§\ `[sec:calcserver] <#sec:calcserver>`__). This is accessed only by

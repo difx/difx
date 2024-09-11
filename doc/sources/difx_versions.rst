@@ -9,8 +9,7 @@ This document is centered around the NRAO installation of the [difx]_
 :raw-latex:`\cite{difx}` software correlator and its supporting
 software. Much of the contents here applies to other installations of
 DiFX as well, but keep in mind that not a lot of effort is made to
-generalize these instructions. Fig. `[fig-block] <#fig:block>`__  
-:numref:`fig-block` shows
+generalize these instructions. :numref:`fig-block` shows
 the general data flow-path within the DiFX software correlator system.
 
 .. _fig-block:
@@ -21,8 +20,6 @@ the general data flow-path within the DiFX software correlator system.
    :width: 480px
 
    The DiFX software correlator block diagram as implemented for the VLBA. 
-
-:numref:`fig-block` shows
 
 Past, present, and future versions of DiFX as packaged and used by VLBA
 operations are described in the following subsections.
