@@ -122,6 +122,10 @@ elif [ "$arch" = "x86_64" ] #64 bit
 then
   export DIFXBITS=64
   PrependPath PERL5LIB         "${DIFXROOT}/perl/lib64/perl$perlver/site_perl/$perlsver/x86_64-linux-thread-multi"
+elif [ "$arch" = "arm64" ] #64 bit
+then
+  export DIFXBITS=64
+  PrependPath PERL5LIB     "${DIFXROOT}/lib/perl$perlver/site_perl/$perlsver/darwin-thread-multi-2level:${DIFXROOT}/lib/perl$perlver/site_perl"
 else
   echo "Unknown architecture $arch - leaving paths unaltered"
 fi
