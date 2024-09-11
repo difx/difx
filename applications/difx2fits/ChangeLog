@@ -25,6 +25,7 @@ Version 3.8.0
 * Sniffer: don't interpolate across scans, even on same source
 * Sniffer: flush last records before program exit
 * --two-pcal-tables option added: Will create one table as prescribed in the .input files and the other containing all of the pulse cal tones. ***experimental***
+* Use vanVleck correction of 1.0 in case of >= 8 bits per sample for both datastreams if an explicit value is not available.
 
 Version 3.7.0
 * Post DiFX-2.6
