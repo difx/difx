@@ -178,6 +178,7 @@ int main (int argc, char * const argv[]) {
   int splitthread = false;
   int splitgroup = false;
   int verbose = 0;
+  int bufsize = 100;
   int wait = false; // Don't start timing till first packet arrives
   
   struct option options[] = {
@@ -384,7 +385,7 @@ int main (int argc, char * const argv[]) {
   cheader = (codif_header*)buf;
   cdata = (int16_t*) &buf[CODIF_HEADER_BYTES];
 
-  status = setup_net(port, ip, multicastGroup, &sock, -1);
+  status = setup_net(port, ip, multicastGroup, &sock, bufsize);
     
   if (status)  exit(1);
 
