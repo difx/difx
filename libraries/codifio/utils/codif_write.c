@@ -564,7 +564,8 @@ int main (int argc, char * const argv[]) {
       // Skip over first 32 bytes as they are unchanged
       i64 = (int64_t*) &buf[CODIF_HEADER_BYTES+32];
       o64 = (int64_t*) &buf[CODIF_HEADER_BYTES+16];
-      for (int i = 1; i < framesize/32; i++) {
+      int i;
+      for (i = 1; i < framesize/32; i++) {
 	*o64 = *i64;
 	o64++; i64++;
 	*o64 = *i64;
