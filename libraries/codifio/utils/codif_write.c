@@ -178,7 +178,7 @@ int main (int argc, char * const argv[]) {
   int splitthread = false;
   int splitgroup = false;
   int verbose = 0;
-  int bufsize = 100;
+  float bufsize = 30;
   int wait = false; // Don't start timing till first packet arrives
   
   struct option options[] = {
@@ -195,6 +195,7 @@ int main (int argc, char * const argv[]) {
     {"scale", 1, 0, 's'},
     {"drop", 1, 0, 'd'},
     {"bits", 1, 0, 'b'},
+    {"bufsize", 1, 0, 'B'},
     //{"invert", 0, 0, 'I'},
     {"split", 0, 0, 'S'},
     {"splitgroup", 0, 0, 'G'},
@@ -320,10 +321,18 @@ int main (int argc, char * const argv[]) {
       splitgroup = true;
       break;
 
-   case 'w':
+    case 'w':
       wait = true;
       break;
       
+    case 'B':
+      status = sscanf(optarg, "%f", &ftmp);
+      if (status!=1 || ftmp<=0)
+	fprintf(stderr, "Bad bufsize option %s\n", optarg);
+      else 
+	bufsize = ftmp;
+     break;
+
     case 'V':
       verbose = 1;
       break;
@@ -662,7 +671,8 @@ int main (int argc, char * const argv[]) {
 }
   
 int setup_net(unsigned short port, const char *ip, const char *group, int *sock, float bufsize) {
-  int status;
+  int status, setsize;
+  socklen_t winlen;
   struct sockaddr_in server; 
 
   /* Initialise server's address */
@@ -692,7 +702,18 @@ int setup_net(unsigned short port, const char *ip, const char *group, int *sock,
   status = setsockopt(*sock, SOL_SOCKET, SO_RCVBUF, (char *) &udpbufbytes, sizeof(udpbufbytes));
   if (status!=0) {
     fprintf(stderr, "Warning: Could not set socket RCVBUF\n");
-  } 
+  } else {
+    /* Check what the window size actually was set to */
+    winlen = sizeof(setsize);
+    status = getsockopt(*sock, SOL_SOCKET, SO_RCVBUF, (char *) &setsize, &winlen);
+    if (status!=0) {
+      perror("Getting socket options");
+    } else {
+      if (setsize < udpbufbytes*0.95) {
+	fprintf(stderr, "Warning:  Buffersize set to %.1f Mbytes, requested %.1f\n", setsize/1024/1024.0, udpbufbytes/1024/1024.0);
+      }
+    }
+  }
 
   status = bind(*sock, (struct sockaddr *)&server, sizeof(server));
   if (status!=0) {
@@ -721,7 +742,7 @@ int setup_net(unsigned short port, const char *ip, const char *group, int *sock,
   }
   
   return(0);
-}
+  }
   
 double tim(void) {
   struct timeval tv;
