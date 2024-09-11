@@ -418,10 +418,11 @@ and ``difxarch`` will be used in the archiving of data. The queuing tool
 ``difxqueue`` will be used to display the state of the VLBA-DiFX job
 queue as well as populate it. The new tools will access three new
 database tables: DIFXQUEUE and DIFXLOG; the contents of these tables is
-shown in Tables `1 <#tab:difxqueue>`__ & `2 <#tab:difxlog>`__.
+shown in Tables tab-difxqueue_  & tab-difxlog_.
 
 .. container::
    :name: tab:difxqueue
+.. _tab-difxqueue:
 
    .. table::  The DIFXQUEUE database table. This table is based on the
    FXQUEUE table currently used by ``OMS``. Entries to this table will
@@ -463,6 +464,7 @@ shown in Tables `1 <#tab:difxqueue>`__ & `2 <#tab:difxlog>`__.
       | NUM_ANT    | INT           | Number of antennas in the job         |
       +------------+---------------+---------------------------------------+
 
+.. _tab-difxlog:
 .. container::
    :name: tab:difxlog
 
