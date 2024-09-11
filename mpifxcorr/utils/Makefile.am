@@ -22,9 +22,9 @@ dedisperse_difx_SOURCES = \
 mpispeed_SOURCES = \
 	mpispeed.cpp
 
-checkmpifxcorr_LDADD = ../src/libmpifxcorr.a
+checkmpifxcorr_LDADD = ../src/libmpifxcorr.a ${mathlibs}
 
-dedisperse_difx_LDADD = ../src/libmpifxcorr.a
+dedisperse_difx_LDADD = ../src/libmpifxcorr.a ${mathlibs}
 
 install-exec-hook:
 	mv $(DESTDIR)$(bindir)/genmachines.py $(DESTDIR)$(bindir)/genmachines
