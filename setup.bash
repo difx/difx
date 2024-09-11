@@ -129,10 +129,10 @@ fi
 ####### LIBRARY/EXECUTABLE PATHS ############
 PrependPath PATH             "${DIFXMPIDIR}"/bin
 PrependPath PATH             "${DIFXROOT}"/bin
-if [ -z "${IPP_LIBRARY_PATH}" ]; then
+if [ -n "${IPP_LIBRARY_PATH}" ]; then
     PrependPath LD_LIBRARY_PATH "${IPP_LIBRARY_PATH}"
 fi
-if [ -z "${MPI_LIBRARY_PATH}" ]; then
+if [ -n "${MPI_LIBRARY_PATH}" ]; then
     PrependPath LD_LIBRARY_PATH "${MPI_LIBRARY_PATH}"
 fi
 if [ "$OS" = "darwin" ] 
