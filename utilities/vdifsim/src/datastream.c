@@ -618,7 +618,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		int_freq_MHz = (int)freq_MHz;
 		frac_freq_MHz = freq_MHz - int_freq_MHz;
 
-		if(d->parameters->pulseCalInterval > 0)
+		if(d->parameters && d->parameters->pulseCalInterval > 0)
 		{
 			const epsilon = 0.001;	/* [MHz] don't use tones closer to band edge than this */
 			double cosFactor, sinFactor;
@@ -819,7 +819,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			memcpy(ds->samples1sec + startSample, ds->samps, ds->nSamp*sizeof(double));
 		}
 
-		if(d->parameters->pulseCalInterval > 0)
+		if(d->parameters && d->parameters->pulseCalInterval > 0)
 		{
 			free(pulseCalSamples);
 		}
