@@ -2,6 +2,14 @@
    :format: latex
 ..
 
+A Guide to the DiFX Software Correlator
+
+Version 2.8
+
+*Walter Brisken*
+
+National Radio Astronomy Observatory
+
 Introduction
 ============
 

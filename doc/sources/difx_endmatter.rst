@@ -50,10 +50,8 @@ References
 
 .. [opsplan] *VLBA-DIFX Operations Plan*, Brisken, W., 2009, VLBA Sensitivity Upgrade Memo 25, http://library.nrao.edu/public/memos/vlba/up/VLBASU_25.pdf
 .. [difx] *DiFX: A software correlator for very long baseline interferometry using multi-processor computing environments*, Deller, A. T., Tingay, S. J., Bailes, M. & West, C., 2007, PASP 119, 318, http://xxx.lanl.gov/abs/astro-ph/0702141 
-
-.. [aips102] 
-	DiFX2: A more flexible, efficient, robust and powerful software correlator}, A.\ T.\ Deller, W.\ F.\ Brisken, C.\ J.\ Phillips, J.\ Morgan, W.\ Alef, R.\ Cappallo, E.\ Middelberg, J.\ Romney, H.\ Rottmann, S.\ J.\ Tingay, R.\ Wayth, 2011, PASP, 123, 275, \url{http://arxiv.org/abs/1101.0885}
-	The FITS Interferometry Data Interchange Format}, Flatters, C., AIPS Memo 102, \url{ftp://ftp.aoc.nrao.edu/pub/software/aips/TEXT/PUBL/AIPSMEMO102.PS}
+.. [difx2] DiFX2: A more flexible, efficient, robust and powerful software correlator}, A.\ T.\ Deller, W.\ F.\ Brisken, C.\ J.\ Phillips, J.\ Morgan, W.\ Alef, R.\ Cappallo, E.\ Middelberg, J.\ Romney, H.\ Rottmann, S.\ J.\ Tingay, R.\ Wayth, 2011, PASP, 123, 275, \url{http://arxiv.org/abs/1101.0885}
+.. [aips102] The FITS Interferometry Data Interchange Format}, Flatters, C., AIPS Memo 102, \url{ftp://ftp.aoc.nrao.edu/pub/software/aips/TEXT/PUBL/AIPSMEMO102.PS}
 .. [aips114] The FITS Interferometry Data Interchange Convention}, Greisen, E., AIPS Memo 114r, \url{ftp://ftp.aoc.nrao.edu/pub/software/aips/TEXT/PUBL/AIPSMEM114.PDF}
 .. [mark5-81] Specification for enhanced Mark 5 module directory, Whitney, A., et al., \url{http://www.haystack.mit.edu/tech/vlbi/mark5/mark5_memos/081.pdf}
 .. [mark5-100] Mark5 User Directory Formats}, Ruszczyk, C.A., Eldering, B.\ \& Verkouter, H., \url{http://www.haystack.mit.edu/tech/vlbi/mark5/mark5_memos/100.pdf}
