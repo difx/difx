@@ -76,7 +76,7 @@ See the userguide of DiFX.
 
 Feel free to join us!  [Open an issue](https://github.com/difx/difx/issues/new) or submit PRs is always welcome.
 
-Find more details on [CONTRIBUTION](https://github.com/difx/difx/CONTIBUTION.md) .
+Find more details on [CONTRIBUTION](CONTRIBUTION.md) .
 
 
 
