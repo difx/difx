@@ -1,21 +1,21 @@
 # Contribution Guide
 
-Github makes it easy to contribute to the DiFX codebase. 
+GitHub makes it easy to contribute to the DiFX codebase. 
 For frequent contributors, it is probably desirable to join the DiFX project - you can do this by subscribing to the difx-developers mailing list hosted at https://listmgr.nrao.edu/mailman/listinfo/difx-developers and asking to be added to the project (please contact @adamdeller @shaoguangleo @walterfb). 
 This will enable you to create branches directly on the main DiFX github project,
 otherwise you can fork the project and create branches in your own project.
 
-While we strongly encourage people to join the project directly, it is also possible to fork [DiFX](https://github.com/difx/difx) on Github and then create branches in your own project.  You can do this by cloning a copy of the DiFX repository to your own computer, or alternatively using [Codespaces](https://docs.github.com/codespaces), a cloud-based in-brower development environment that comes with the appropriated setup to contribute to DiFX.
+While we strongly encourage people to join the project directly, it is also possible to fork [DiFX](https://github.com/difx/difx) on Github  then create branches in your own project.  You can do this by cloning a copy of the DiFX repository to your own computer or using [Codespaces](https://docs.github.com/codespaces), a cloud-based in-browser development environment that comes with the appropriate setup to contribute to DiFX.
 
 In either case, once you have implemented and tested a new feature, it can be merged back into the main DiFX codebase by submitting a "Pull Request" to the maintainers for review.  
-You probably then want to delete your feauture branch once the pull request is approved (which can be done on the command line or on github)
+You probably then want to delete your feature branch once the pull request is approved (which can be done on the command line or GitHub)
 
-A brief overview of the workflow is as following:
+A brief overview of the workflow is as follows:
 
 ## Initial steps to get a working DiFX installation:
 
-1. *For occasional contributors not part of the main DiFX project only:* Create an account on Github if you do not have one yet.
-2. *For occasional contributors not part of the main DiFX project only:*  Fork the [DiFX](https://github.com/difx/difx) on Github by clicking on the **Fork** button near the top of the page. This creates a copy of the code under your account on the GitHub server.
+1. *For occasional contributors not part of the main DiFX project only:* Create an account on GitHub if you do not have one yet.
+2. *For occasional contributors not part of the main DiFX project only:*  Fork the [DiFX](https://github.com/difx/difx) on GitHub by clicking on the **Fork** button near the top of the page. This creates a copy of the code under your account on the GitHub server.
 3. Set up a development environment:
    1. If you forked DiFX: `git clone https://github.com/<your github usename>/difx.git` 
    2. Otherwise: `git clone https://github.com/difx/difx.git`
@@ -25,19 +25,19 @@ A brief overview of the workflow is as following:
 
 DiFX using the gitflow workflow. Gitflow is a legacy Git workflow that was originally a disruptive and novel strategy for managing Git branches, and DiFX repo will hold two main branches with an infinite lifetime name main and dev.
 
-In the git flow workflow, there are five different branch types:
+In the gitflow workflow, there are five different branch types:
 
-- main : contain production-ready code, can be tagged at various commits in order to signify different versions or releases of the code, and other branches will be merged into the main branch after they have been sufficiently vetted and tested
-- dev : contain pre-production code with newly developed features which are in process of being tested
-- feature : most command type, we should start a feature branch off the dev branch, and then merge changes back into dev branch when the features is completed and properly reviewed
-- release : preparing new production releases. Typically, the work being performed on release branches concerns finishing touches and minor bugs specific to releasing new code, with code that should be addressed separately from the main develop branch. And remember large new features is strictly prohibited.
-- hotfix : used to quickly address necessary changes in your main branch. The base of the hotfix branch should be your main branch and should be merged back into both the main and dev branches. Merging the changes from your hotfix branch back into the develop branch is critical to ensure the fix persists the next time the main branch is released.
+- main : contains production-ready code, can be tagged at various commits to signify different versions or releases of the code, and other branches will be merged into the main branch after they have been sufficiently vetted and tested
+- dev : contains pre-production code with newly developed features that are in the process of being tested
+- feature: most common type, we should start a feature branch off the dev branch, and then merge changes back into dev branch when the features are completed and properly reviewed
+- release: preparing new production releases. Typically, the work being performed on release branches concerns finishing touches and minor bugs specific to releasing new code, with code that should be addressed separately from the main development branch. And remember large new features are strictly prohibited.
+- hotfix: used to quickly address necessary changes in the main branch. The base of the hotfix branch should be the main branch and should then be merged back into both the main and dev branches. Merging the changes from your hotfix branch back into the develop branch is critical to ensure the fix persists the next time the main branch is released.
 
-Then each time you want to make a contribution, follow these steps:
+Each time you want to contribute, please follow these steps:
 
 ### Feature branch:
 
-> Never working in the 'main' branch!!, PR will not accept from main branch for feature branch.
+> Never working in the 'main' branch!!, PR will not be accepted to main branch from a feature branch.
 
 ```bash
 $ git checkout -b feature-xxx dev
@@ -47,7 +47,7 @@ $ git add file_changed
 $ git commit -m 'feature added'
 $ git push -u origin feature-xxx
 
-# Then you can create a PR to main branch
+# Then you can create a PR to the main branch
 ```
 
 ### Hotfix branch:
@@ -66,7 +66,7 @@ $ git commit -am 'bumped version to x.x.x.y'
 # fix bug
 $ git commit -m 'fixed what problem'
 
-# Then you can create a PR to main branch
+# Then you can create a PR to the main branch
 
 # For the maintainers only
 # Finishing a hotfix branch
@@ -91,13 +91,11 @@ $ git push origin dev
 $ git branch --delete hotfix-x.x.x.y
 ```
 
-
-
 ### Release branch
 
 > This is for the maintainers only.
 
-The release branch off from `dv` branch, and merge back to `main` and `dev` branch.
+The release branch off from `dev` branch, and merge back to `main` and `dev` branch.
 
 
 ```bash
@@ -125,11 +123,11 @@ $ git push origin main
 $ git tag -a x.x.x
 $ git push origin main --tags
 
-# Merge backto dev branch
+# Merge back to dev branch
 $ git checkout dev
-  Swtich to branch 'dev'
+  Switch to branch 'dev'
 $ git merge --no-ff release-x.x.x
-  Merge made by recurive
+  Merge made by recursive
   ......
 # fix merge conflict
 $ git push origin dev
