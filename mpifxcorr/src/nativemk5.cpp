@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2016 by Walter Brisken and Adam Deller             *
+ *   Copyright (C) 2007-2024 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -295,7 +295,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	/* mark5stream is only ever used for checking after the data comes into memory (scanPointer is used here in initialiseFile
            accordingly, adjust framebytes for multiplexed data, if multiplexing is being performed (nBands does not change). */
         if(config->isDMuxed(configindex, streamnum)) {
-          framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(configindex, streamnum) + VDIF_HEADER_BYTES;
+          framebytes = config->getMultiplexedFrameBytes(configindex, streamnum);
         }
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, config->getDSampling(configindex, streamnum), framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDAlignmentSeconds(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
         if(fanout < 0)
