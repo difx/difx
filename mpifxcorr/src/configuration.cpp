@@ -519,10 +519,7 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
     case KVN5B:
         sprintf(formatname, "KVN5B-%d-%d-%d", mbps, nchan, nbits);
       break;
-    case INTERLACEDVDIF:
-      //framebytes = (framebytes-VDIF_HEADER_BYTES)*numthreads + VDIF_HEADER_BYTES;
-      //mbps /= nchan;
-      //nchan = 1;
+    case INTERLACEDVDIF: // the correct frame bytes must be supplied to this function (before or after multiplexing, as appropriate)
     case VDIF:
       framesperperiod = (int)(1e6*bw*nchan*alignmentseconds*nbits*2 / ((framebytes-VDIF_HEADER_BYTES) * 8) + 0.5);
       if (sampling==COMPLEX) { 
@@ -595,6 +592,39 @@ int Configuration::getFramePayloadBytes(int configindex, int configdatastreamind
       break;
     case CODIF:
       payloadsize = framebytes - CODIF_HEADER_BYTES; 
+      break;
+    default:
+      payloadsize = framebytes;
+  }
+
+  return payloadsize;
+}
+
+int Configuration::getMultiplexedFramePayloadBytes(int configindex, int configdatastreamindex) const
+{
+  int payloadsize;
+  int framebytes = getMultiplexedFrameBytes(configindex, configdatastreamindex);
+  dataformat format = getDataFormat(configindex, configdatastreamindex);
+
+  switch(format)
+  {
+    case VLBA:
+    case VLBN:
+      payloadsize = (framebytes/2520)*2500;
+      break;
+    case MARK5B:
+    case KVN5B:
+      payloadsize = framebytes - 16;
+      break;
+    case INTERLACEDVDIF:
+    case VDIF:
+      payloadsize = framebytes - VDIF_HEADER_BYTES;
+      break;
+    case VDIFL:
+      payloadsize = framebytes - VDIF_LEGACY_HEADER_BYTES;
+      break;
+    case CODIF:
+      payloadsize = framebytes - CODIF_HEADER_BYTES;
       break;
     default:
       payloadsize = framebytes;
@@ -775,16 +805,8 @@ int Configuration::getDataBytes(int configindex, int datastreamindex) const
     framebytes = currentds.framebytes;
     if(currentds.format == INTERLACEDVDIF) //account for change to larger packets after muxing
     {
-      int nbands = 1;
-      
-      // round up to next power of 2 bands
-      while(nbands < currentds.numrecordedbands)
-      {
-        nbands *= 2;
-      }
-
-      payloadbytes *= getDNumMuxThreads(configindex, datastreamindex);
-      framebytes = payloadbytes + VDIF_HEADER_BYTES; // Assume INTERLACEDVDIF always non-legacy
+      payloadbytes = getFramePayloadBytes(configindex, datastreamindex);
+      framebytes = currentds.multiplexedframebytes;
     }
     numframes = (validlength/payloadbytes + 2);
     if(currentds.format == MARK5B || currentds.format == KVN5B) //be cautious in case the frame granularity is 2 (easier than checking)
@@ -959,8 +981,8 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
       framebytes = getFrameBytes(configindex, datastreamindex);
       if (stream.sampling==COMPLEX) framesamples /=2;
       if(stream.format == INTERLACEDVDIF) { //separate frames for each subband - change numsamples, framebytes to the muxed version
-        framesamples *= getDNumMuxThreads(configindex, datastreamindex);
-        framebytes = (framebytes - VDIF_HEADER_BYTES)*getDNumMuxThreads(configindex, datastreamindex) + VDIF_HEADER_BYTES; // Assumed INTERLACED is never legacy
+        framesamples = getMultiplexedFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*getDNumRecordedBands(configindex, datastreamindex)*streamdecimationfactor);
+        framebytes = getMultiplexedFrameBytes(configindex, datastreamindex);
       }
       return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, framebytes, framesamples, stream.format);
 
@@ -1652,6 +1674,27 @@ bool Configuration::processDatastreamTable(istream * input)
         return false;
       }
     }
+
+    //Calculate multiplexedframebytes, now that we have all the information
+    if(datastreamtable[i].ismuxed) //account for change to larger packets after muxing
+    {
+      int nbands = 1;
+
+      // round up to next power of 2 bands
+      while(nbands < datastreamtable[i].numrecordedbands)
+      {
+        nbands *= 2;
+      }
+
+      int payloadbytes = datastreamtable[i].framebytes -  VDIF_HEADER_BYTES;
+      payloadbytes *= datastreamtable[i].nummuxthreads;
+      datastreamtable[i].multiplexedframebytes = payloadbytes + VDIF_HEADER_BYTES; // Assume INTERLACEDVDIF always non-legacy
+    }
+    else {
+      datastreamtable[i].multiplexedframebytes = datastreamtable[i].framebytes; // so this can always be used for the frame bytes as seen by Core
+    }
+
+    //continue on to read the zoom freq/band information
     getinputline(input, &line, "NUM ZOOM FREQS");
     datastreamtable[i].numzoomfreqs = atoi(line.c_str());
     datastreamtable[i].zoomfreqtableindices = new int[datastreamtable[i].numzoomfreqs]();
