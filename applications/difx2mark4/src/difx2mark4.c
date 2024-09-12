@@ -470,6 +470,7 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
         free(fblock);
         return -1;
         }
+    fprintf (stdout, "    Completed root file %s\n", rootname);
     return(nextScanId);
     
     free(fblock);
