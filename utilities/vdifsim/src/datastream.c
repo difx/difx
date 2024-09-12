@@ -606,11 +606,11 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			/* FIXME: are the += and -= correct here? */
 			if(ds->df->sideband == 'L')
 			{
-				freq_MHz += ds->df->bw / 2.0;
+				freq_MHz -= ds->df->bw / 2.0;
 			}
 			else
 			{
-				freq_MHz -= ds->df->bw / 2.0;
+				freq_MHz += ds->df->bw / 2.0;
 			}
 		}
 		else if(ds->df->sideband == 'L')
@@ -799,15 +799,16 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			if(d->dd->dataSampling == SamplingComplexDSB)
 			{
 				/* FIXME: not sure this is correct... */
-				int i0;
+				int ns2, ns4;
 				
-				i0 = ds->nSamp/2;
+				ns2 = ds->nSamp/2;
+				ns4 = ds->nSamp/4;
 
-				for(i = 0; i <= ds->nSamp/2; ++i)
+				for(i = 0; i <= ns2; ++i)
 				{
 					double phi;
 
-					phi = 2.0*M_PI*fracSample*(i-i0)/ds->nSamp;
+					phi = 2.0*M_PI*fracSample*(i-ns4)/ds->nSamp;
 					ds->spec[i] *= d->filter[i] * (cos(phi) + I*sin(phi));
 				}
 			}
@@ -823,6 +824,24 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			}
 
 /* 7. iFFT, C->R for real data or C->C for complex data */
+			if(d->dd->dataSampling == SamplingComplexDSB)
+			{
+				/* FIXME: not sure this is correct... */
+				int ns2, ns4;
+
+				ns2 = ds->nSamp/2;
+				ns4 = ds->nSamp/4;
+
+				/* roll the frequency domain representation by BW/2 */
+				for(i = 0; i <= ns2; ++i)
+				{
+					double complex t;
+
+					t = ds->spec[i];
+					ds->spec[i] = ds->spec[i+ns4];
+					ds->spec[i+ns4] = t;
+				}
+			}
 			fftw_execute(ds->ifftPlan);
 
 /* 8. apply pulse cal if desired */
