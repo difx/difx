@@ -89,7 +89,4 @@ This project exists thanks to all the people who contribute.
 
 ## License
 
-
-
-
-
+[GPL3](LICENSE.md) .
