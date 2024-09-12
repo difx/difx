@@ -602,6 +602,8 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		{
 			/* In Double-Sideband mode, the sampled band is centered on the specified frequency */
 			/* The total bandwidth (sum of both sidebands) is given by specifed bandwidth */
+
+			/* FIXME: are the += and -= correct here? */
 			if(ds->df->sideband == 'L')
 			{
 				freq_MHz += ds->df->bw / 2.0;
@@ -785,7 +787,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 				ft = delay_center_samples + (i - 0.5*ds->nSamp)/cs->sampRate * rate_us_s * freq_MHz;
 				ft -= round(ft);
 
-				phi = 2*M_PI*ft;	// FIXME: Check sign correctness for LSB
+				phi = 2*M_PI*ft;
 				ds->frSamps[i] = ds->samps[i] * (cos(phi) + I*sin(phi));
 			}
 
@@ -794,12 +796,30 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 
 /* 5. fine delay -- fractional sample correction */
 /* 6. apply channel filter (which has FFT scaling compensation built in) */
-			for(i = 0; i <= ds->nSamp/2; ++i)
+			if(d->dd->dataSampling == SamplingComplexDSB)
 			{
-				double phi;
+				/* FIXME: not sure this is correct... */
+				int i0;
+				
+				i0 = ds->nSamp/2;
 
-				phi = 2.0*M_PI*fracSample*i/ds->nSamp;	// FIXME: check sign correctness for LSB
-				ds->spec[i] *= d->filter[i] * (cos(phi) + I*sin(phi));
+				for(i = 0; i <= ds->nSamp/2; ++i)
+				{
+					double phi;
+
+					phi = 2.0*M_PI*fracSample*(i-i0)/ds->nSamp;
+					ds->spec[i] *= d->filter[i] * (cos(phi) + I*sin(phi));
+				}
+			}
+			else
+			{
+				for(i = 0; i <= ds->nSamp/2; ++i)
+				{
+					double phi;
+
+					phi = 2.0*M_PI*fracSample*i/ds->nSamp;
+					ds->spec[i] *= d->filter[i] * (cos(phi) + I*sin(phi));
+				}
 			}
 
 /* 7. iFFT, C->R for real data or C->C for complex data */
