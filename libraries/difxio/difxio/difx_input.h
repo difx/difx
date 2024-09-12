@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (C) 2007-2022 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2007-2024 by Walter Brisken, Adam Deller,               *
+ *                              Helge Rottmann and Jan Wagner              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
