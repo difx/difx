@@ -250,7 +250,7 @@ int complianceCheck(const DifxInput *D)
 
 		if(strncmp(D->datastream[d].dataFormat, "INTERLACEDVDIF", 14) != 0)
 		{
-			fprintf(stderr, "! datastream %d is not VDIF format.  It reports %s\n", d, D->datastream[d].dataFormat);
+			fprintf(stderr, "! datastream %d is not N-thread 1-channel INTERLACEDVDIF format.  It reports %s\n", d, D->datastream[d].dataFormat);
 			rv = 0;
 		}
 
