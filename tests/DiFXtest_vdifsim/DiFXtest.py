@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import re
 import subprocess
@@ -15,8 +15,8 @@ import time
 
 
 def get_testdir():
-  filepath = __file__
-  filepath = filepath[:-11]
+  # NB: assumes that test data are (/are to be) in the same dir as DiFXtest.py
+  filepath = os.path.realpath(os.path.dirname(__file__))
   return filepath
 
 def pre_checks():
