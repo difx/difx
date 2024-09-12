@@ -534,7 +534,7 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
       framesperperiod = (int)(1e6*bw*nchan*alignmentseconds*nbits*2 / ((framebytes-VDIF_HEADER_BYTES) * 8) + 0.5);
       if (sampling==COMPLEX) { 
 	if(decimationfactor > 1) 
-          sprintf(formatname, "VDIFC_%d-%dm%d-%d-%d/1", framebytes-VDIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits, decimationfactor);
+          sprintf(formatname, "VDIFC_%d-%dm%d-%d-%d/%d", framebytes-VDIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits, decimationfactor);
 	else 
           sprintf(formatname, "VDIFC_%d-%dm%d-%d-%d", framebytes-VDIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits);
       }
@@ -989,11 +989,15 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
     case INTERLACEDVDIF:
       framesamples = getFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*getDNumRecordedBands(configindex, datastreamindex)*streamdecimationfactor);
       framebytes = getFrameBytes(configindex, datastreamindex);
-      if (stream.sampling==COMPLEX) framesamples /=2;
       if(stream.format == INTERLACEDVDIF) { //separate frames for each subband - change numsamples, framebytes to the muxed version
         framesamples = getMultiplexedFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*getDNumRecordedBands(configindex, datastreamindex)*streamdecimationfactor);
         framebytes = getMultiplexedFrameBytes(configindex, datastreamindex);
       }
+      if(stream.sampling == COMPLEX)
+      {
+        framesamples /= 2;
+      }
+
       return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, framebytes, framesamples, stream.format);
 
       break;
