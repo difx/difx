@@ -446,7 +446,7 @@ def adjustMark6datastreams(datastreams, inputfile, verbose, startTime):
                         i += 1
                         continue
                     # look for antenna in filename
-                    if verbose > 0:
+                    if verbose > 1:
                         print('trying to replace', stream.msn[i], 'with a valid mark6 msn')
                     msnsplit = (stream.msn[i]).split('_')
                     if len(msnsplit) >= 2 and (len(msnsplit[1]) == 2 or len(msnsplit[1]) == 1):

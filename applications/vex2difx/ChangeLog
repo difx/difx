@@ -9,6 +9,7 @@ Version 3.1.0
 * oms2v2d: look for .mark6filelist files and write mark6filelist= into .v2d as appropriate
 * Fix stale pointer to source after manipulating multi-phase-center bits
 * New ANTENNA parameter phaseCalIntDivisor for fractional spacings (phaseCalInt[MHz]/phaseCalIntDivisor)
+* New ANTENNA parameter deltaClockAccel to adjust clock acceleration without resetting other terms to zero like clockAccel does
 * New utility: mk6filelist, a simplified form of mk62v2d which does not require or modify the .v2d file.
 * Update wiki to ATNF -- note that even this will be old soon and the new github link will replace it.
 * Allow "NONE" data format.  This was allowed in previous vex parser version, but got lost when vex2 was added.

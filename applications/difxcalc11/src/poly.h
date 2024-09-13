@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: poly.h 5101 2013-01-07 22:30:19Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 5101 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2013-01-07 15:30:19 -0700 (Mon, 07 Jan 2013) $
-//
-//============================================================================
 
 /*     #ifndef __POLY_H__                   */
 #define __POLY_H__

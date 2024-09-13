@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2016 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -672,7 +672,7 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2, c
 
 void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src, const int *freqIdRemap, const int *antennaIdRemap)
 {
-	int f, c;
+	int f, c, v;
 	
 	if(antennaIdRemap != 0)
 	{
@@ -682,7 +682,13 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src, const i
 	{
 		dest->antennaId = src->antennaId;
 	}
-	snprintf(dest->dataFormat, DIFXIO_FORMAT_LENGTH, "%s", src->dataFormat);
+	v = snprintf(dest->dataFormat, DIFXIO_FORMAT_LENGTH, "%s", src->dataFormat);
+	if(v >= DIFXIO_FORMAT_LENGTH)
+	{
+		fprintf(stderr, "Developer error: copyDifxDatastream: DIFXIO_FORMAT_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_FORMAT_LENGTH, v);
+
+		exit(0);
+	}
 	dest->dataSampling = src->dataSampling;
 	dest->dataSource = src->dataSource;
 	dest->quantBits = src->quantBits;
@@ -750,18 +756,38 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src, const i
 			dest->file[f] = strndup(src->file[f], DIFXIO_FILENAME_LENGTH);
 		}
 	}
-	snprintf(dest->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", src->networkPort);
+	v = snprintf(dest->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", src->networkPort);
+	if(v >= DIFXIO_ETH_DEV_SIZE)
+	{
+		fprintf(stderr, "Developer error: copyDifxDatastream: DIFXIO_ETH_DEV_SIZE was set too small (%d).  This use case needed it to be %d\n", DIFXIO_ETH_DEV_SIZE, v);
+
+		exit(0);
+	}
 	dest->windowSize  = src->windowSize;
 }
 
 /* don't re-allocate internal structures */
 void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 {
+	int v;
+
 	dest->antennaId = src->antennaId;
 	dest->tSys = src->tSys;
-	snprintf(dest->dataFormat, DIFXIO_FORMAT_LENGTH, "%s", src->dataFormat);
+	v = snprintf(dest->dataFormat, DIFXIO_FORMAT_LENGTH, "%s", src->dataFormat);
+	if(v >= DIFXIO_FORMAT_LENGTH)
+	{
+		fprintf(stderr, "Developer error: moveDifxDatastream: DIFXIO_FORMAT_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_FORMAT_LENGTH, v);
+
+		exit(0);
+	}
 	dest->dataSampling = src->dataSampling;
-	snprintf(dest->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", src->networkPort);
+	v = snprintf(dest->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", src->networkPort);
+	if(v >= DIFXIO_ETH_DEV_SIZE)
+	{
+		fprintf(stderr, "Developer error: moveDifxDatastream: DIFXIO_ETH_DEV_SIZE was set too small (%d).  This use case needed it to be %d\n", DIFXIO_ETH_DEV_SIZE, v);
+
+		exit(0);
+	}
 	dest->windowSize = src->windowSize;
 	dest->quantBits = src->quantBits;
 	dest->dataFrameSize = src->dataFrameSize;

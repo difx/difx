@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difxcalc.h 5171 2013-03-02 18:57:02Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 5171 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2013-03-02 11:57:02 -0700 (Sat, 02 Mar 2013) $
-//
-//============================================================================
 
 #ifndef __DIFX_CALC_H__
 #define __DIFX_CALC_H__

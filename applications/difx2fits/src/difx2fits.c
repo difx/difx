@@ -309,7 +309,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			        strcmp(argv[i], "-u") == 0)
 			{
 				opts->mergeOptions.freqMergeMode = FreqMergeModeUnion;
-				fprintf(stderr, "\nWarning: using mode that merges all frequency setups that are encountered into one master frequency setup.  In most cases is not what you want!  GMVA and RadioAstron correlation are known cases where this should be a useful capability.\n\n");
+				fprintf(stderr, "\nWarning: using mode that merges all frequency setups that are encountered into one comprehensive frequency setup.  In most cases is not what you want!  GMVA and RadioAstron correlation are known cases where this should be a useful capability.\n\n");
 			}
 			else if(strcmp(argv[i], "--zero") == 0 ||
 			        strcmp(argv[i], "-0") == 0)

@@ -1336,10 +1336,12 @@ struct mark5_stream *new_mark5_stream_absorb(struct mark5_stream_generic *s, str
 
 	if(!s)
 	{
-		failed = 1;
+	  fprintf(m5stderr, "new_mark5_stream_absorb: mark5_stream uninitialised\n");
+	        failed = 1;
 	}
 	if(!f)
 	{
+	  fprintf(m5stderr, "new_mark5_stream_absorb: mark5_format uninitialised\n");
 		failed = 1;
 	}
 	if(failed)
