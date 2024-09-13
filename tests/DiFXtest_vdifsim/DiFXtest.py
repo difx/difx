@@ -140,7 +140,7 @@ def get_results_and_setup_files():
 
 def filter_auto_correlations(fits_filename):
 
-
+  print("filtering auto correlations.")
   warnings.resetwarnings() 
   warnings.filterwarnings('ignore',category=UserWarning,append=True)  
   warnings.filterwarnings('ignore', category=RuntimeWarning, append=True)
@@ -159,6 +159,31 @@ def filter_auto_correlations(fits_filename):
   warnings.resetwarnings()
   warnings.filterwarnings('always',category=UserWarning,append=True)
   warnings.filterwarnings('ignore', category=RuntimeWarning, append=True)
+
+#def do_only_auto_correlations(fits_filename):
+#
+#  print("doing only autocorrs")
+#  warnings.resetwarnings()
+#  warnings.filterwarnings('ignore',category=UserWarning,append=True)
+#  warnings.filterwarnings('ignore', category=RuntimeWarning, append=True)
+#  hdulist = fits.open(fits_filename)
+#  tbdata = hdulist[8].data
+#  hdulist.close()
+#
+#
+#  mask = (tbdata['BASELINE'] % 257) == 0
+#  new_tbdata = tbdata[mask]
+#
+#  fits.update(fits_filename,new_tbdata,8)
+#  hdulist = fits.open(fits_filename)
+#  tbdata = hdulist[8].data
+#  hdulist.close()
+#  warnings.resetwarnings()
+#  warnings.filterwarnings('always',category=UserWarning,append=True)
+#  warnings.filterwarnings('ignore', category=RuntimeWarning, append=True)
+
+
+
 
 def get_binary_files(directory):
   input_files = []
@@ -184,10 +209,16 @@ def get_binary_files(directory):
 
 def get_fits_file(directory):
   contents = os.listdir(directory)
+  files_and_paths = list()
   for item in contents:
     if (item[-5:] == '.FITS'):
       file_and_path = directory + item
-      return file_and_path
+      files_and_paths.append(file_and_path)
+  if (len(files_and_paths) == 1):
+    return(files_and_paths[0])
+  else:
+    return(files_and_paths)
+
 
 def get_im_file(directory):
   contents = os.listdir(directory)
@@ -397,7 +428,7 @@ def run_mpifxcorr_gpumode(testname, numcores):
 
 
  
-def run_difx2fits(testname):
+def run_difx2fits(testname,filterautocorrs):
 
   testdir = get_testdir()
   working_directory = testdir + "/" + testname
@@ -409,9 +440,14 @@ def run_difx2fits(testname):
 
   output_dirs = get_output_dirs(working_directory)
   
+  outputfile_name = testname + ".FITS"
+  if (filterautocorrs == "YES"):
+    outputfile_name = testname + "-filtered.FITS"
+  else:
+    outputfile_name = testname + ".FITS"
 
   for item in output_dirs:
-    arg = "difx2fits " + item[:-5]    
+    arg = "difx2fits " + item[:-5] + " " + outputfile_name   
     #print(arg)
     try:
       proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_difx2fitslog,stderr=f_difx2fitserr,check=True)
@@ -421,6 +457,7 @@ def run_difx2fits(testname):
       print(difx2fitserrfile)
       print()
       raise()
+    
 
 def is_testdata_empty(testname):
   testdir = get_testdir()
@@ -435,7 +472,7 @@ def is_testdata_empty(testname):
 
 
 
-def compare_results(testname, abstol, reltol):
+def compare_results(testname, abstol, reltol, filterautocorrs):
 
   print("Comparing results for test " + testname)
 
@@ -469,18 +506,28 @@ def compare_results(testname, abstol, reltol):
   arg = "diffDiFX.py " + binfile + " " + benchmark_binfile + " " + "-i " + inputfile + " > binary_diff.log"   
   proc = subprocess.run(arg,cwd=working_directory,shell=True,check=True) 
   fits_file = get_fits_file(working_directory)
-  fits_file_benchmark = get_fits_file(results_directory)
- # print(fits_file)
- # print(fits_file_benchmark)
- # quit()
+  fits_file_benchmarks = get_fits_file(results_directory)
+  #print(fits_file_benchmarks)
+  if (filterautocorrs == "YES"):
+    for item in fits_file_benchmarks: 
+      if (item[-13:] == "filtered.FITS"):
+        fits_file_benchmark = item
+  else:
+    for item in fits_file_benchmarks:
+      if (item[-13:] != "filtered.FITS"):
+        fits_file_benchmark = item
+
+  #print(fits_file)
+  #print(fits_file_benchmark)
+  #quit()
 
 
 
   # filter autocorrelations out of fits file
   #print(fits_file)
-  filter_auto_correlations(fits_file) 
-
-
+  if (filterautocorrs == "YES"):
+    filter_auto_correlations(fits_file)
+    
   hdu1 = fits.open(fits_file)
   hdu2 = fits.open(fits_file_benchmark) 
 
@@ -510,7 +557,7 @@ def compare_results(testname, abstol, reltol):
 
   return(results)
 
-def compare_results_gpu_v_cpu(testname, abstol, reltol):
+def compare_results_gpu_v_cpu(testname, abstol, reltol, filterautocorrs):
 
   print("Comparing results for test " + testname)
 
@@ -570,11 +617,23 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol):
   proc = subprocess.Popen(arg,cwd=working_directory,shell=True) 
   proc.wait() 
   fits_file = get_fits_file(working_directory)
-  fits_file_benchmark = get_fits_file(results_directory)
-  
+
+
+  fits_file_benchmarks = get_fits_file(results_directory)
+  if (filterautocorrs == "YES"):
+    for item in fits_file_benchmarks:
+      if (item[-13:] == "filtered.FITS"):
+        fits_file_benchmark = item
+  else:
+    for item in fits_file_benchmarks:
+      if (item[-13:] != "filtered.FITS"):
+        fits_file_benchmark = item
+
+
   # filter autocorrelations out of fits file
-  filter_auto_correlations(fits_file) 
-  
+  if (filterautocorrs == "YES"):
+   filter_auto_correlations(fits_file)
+ 
  # print()
  # print(fits_file)
  # print(fits_file_benchmark)
@@ -631,7 +690,7 @@ def compare_im_files(testname):
     print(output) 
 
 
-def update_test(testname):
+def update_test(testname, filterautocorrs):
   print("Updating test " + testname)
 
   
@@ -659,7 +718,16 @@ def update_test(testname):
   #print(current_binfile)  
 
   fits_file = get_fits_file(working_directory)
-  fits_file_benchmark = get_fits_file(results_directory) 
+  fits_file_benchmarks = get_fits_file(results_directory)
+  if (filterautocorrs == "YES"):
+    for item in fits_file_benchmarks:
+      if (item[-13:] == "filtered.FITS"):
+        fits_file_benchmark = item
+  else:
+    for item in fits_file_benchmarks:
+      if (item[-13:] != "filtered.FITS"):
+        fits_file_benchmark = item
+
   #print()
   #print(fits_file)
 
@@ -757,6 +825,8 @@ def main():
   parser.add_argument("-i","--usebenchmarkimfile",help="Use the benchmark .im file from a previous run rather than running difxcalc (yes/[no])",default="no") 
   parser.add_argument("-c","--cores",help="Comma delimited list of the processing cores used for data simulation and correlation (default = localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost)",default="localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost")
   parser.add_argument("-n","--numthreads",help="Integer number of threads per processing core.  More than one thread will speed runtime but reduce accuracy. (default=1)",default="1")
+  parser.add_argument("-f","--filterautocorrs",help="Filter autocorrelations prior to FITS file comparison (yes/[no])",default="no")
+
 
   input_args = parser.parse_args()
   generateVDIF = input_args.generateVDIF
@@ -774,6 +844,9 @@ def main():
   cores = input_args.cores
 
   numthreads = input_args.numthreads
+
+  filterautocorrs = input_args.filterautocorrs
+  filterautocorrs = filterautocorrs.upper()
 
   # Number of stations + 2 is the number of coress needed, need head node
   cores_list = cores.split(",")
@@ -836,9 +909,8 @@ def main():
       working_directory = current_directory + "/" + testname + "/"
       results_directory = working_directory + "/benchmark_results/" 
       benchmark_im_file = get_im_file(results_directory) 
-      shutil.copy2(benchmark_im_file, working_directory)
-    else:
-      run_difxcalc(testname)
+      shutil.copy2(benchmark_im_file, working_directory) 
+    run_difxcalc(testname)
     if (testname[-3:] != "gpu"):
       if (is_testdata_empty(testname) or generateVDIF == "YES"):
           print("running vdifsim")
@@ -847,7 +919,7 @@ def main():
       run_mpifxcorr_gpumode(testname, numcores)
     else:
       run_mpifxcorr(testname, numcores)
-    run_difx2fits(testname)
+    run_difx2fits(testname,filterautocorrs)
 
   # compare .im files
   for testname in test_name_list:
@@ -857,9 +929,9 @@ def main():
   # Run comparison with the results, gpu comparisons also compare gpu vs. cpu results
   for key in passfail: 
     if (key[-7:] == "-vs-cpu"):
-      passfail[key] = compare_results_gpu_v_cpu(key,abstol,reltol)
+      passfail[key] = compare_results_gpu_v_cpu(key,abstol,reltol,filterautocorrs)
     else:
-      passfail[key] = compare_results(key,abstol,reltol)
+      passfail[key] = compare_results(key,abstol,reltol,filterautocorrs)
     
   # Always want to make sure the gpu test gets added to the tar ball even if it wasn't run
   # this way the setup files and directory will be there if it is run in the future
@@ -868,7 +940,7 @@ def main():
 
   if (updatetest == "YES"):
     for testname in test_name_list:
-      update_test(testname)
+      update_test(testname,filterautocorrs)
     repackage_tests(test_name_list)
 
   display_test_results(passfail)
