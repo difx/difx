@@ -101,7 +101,7 @@ protected:
   char formatname[64];
 
   unsigned char *readbuffer;
-  int readbuffersize;
+  long long readbuffersize;
   int readbufferslots;
   unsigned int readbufferslotsize;
   int readbufferleftover;

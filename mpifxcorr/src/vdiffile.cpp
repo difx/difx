@@ -87,7 +87,7 @@ VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int
 
 	readbufferslotsize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*21LL/10LL;
 	readbufferslotsize -= (readbufferslotsize % conf->getFrameBytes(0, streamnum));	// always read in chunks of frame size
-	readbuffersize = readbufferslots * readbufferslotsize;
+	readbuffersize = (long long)readbufferslots * (long long)readbufferslotsize;
 	readbufferleftover = 0;
 	readbuffer = new unsigned char[readbuffersize];
 
