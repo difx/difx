@@ -553,7 +553,7 @@ topdir = os.getcwd()
 
 # think a bit about pkgconfig path
 pkg_config_path = blddir + "/pkgconfig"
-pkg_config_path += ":" + os.environ.get('PKG_CONFIG_PATH')
+pkg_config_path += ":" + os.environ.get('PKG_CONFIG_PATH', '')
 os.environ['PKG_CONFIG_PATH'] = pkg_config_path
 
 # source dir build starts in topdir
@@ -666,12 +666,7 @@ def check_configureAC_has(cfpath, key):
 
 ###### Subroutine to set up documentation area ##########
 def make_doc_area(basedocdir):
-    print("\n**** publishing doco-index ****\n")
-    if not os.path.exists(basedocdir):
-        os.mkdir(basedocdir)
-    print("cp -f %s/doco-index.html %s/index.html" % (startdir, basedocdir))
-    os.system(
-        "cp -f %s/doco-index.html %s/index.html" % (startdir, basedocdir))
+    print("DiFX documentation area is at: https://difx.readthedocs.io ")
 
 ###### Work ##########################################
 
