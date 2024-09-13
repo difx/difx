@@ -36,7 +36,6 @@ class Mark6Module {
 public:
     static const int MAXDISKS = 8;   // number of disks per mark6 module
     Mark6Module();
-    Mark6Module(const Mark6Module& orig);
     virtual ~Mark6Module();
     void addDiskDevice(Mark6DiskDevice &device);
     void removeDiskDevice(Mark6DiskDevice &device);

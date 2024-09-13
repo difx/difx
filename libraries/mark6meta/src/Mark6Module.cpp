@@ -39,9 +39,6 @@ Mark6Module::Mark6Module() {
     clearMeta();
 }
 
-Mark6Module::Mark6Module(const Mark6Module& orig) {
-}
-
 Mark6Module::~Mark6Module() {
 }
 
