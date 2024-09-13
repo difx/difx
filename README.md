@@ -6,7 +6,7 @@ The official repo for DiFX.
 
 DiFX requires MPI, PGPLOT and IPP.
 
-Details see https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/installation.
+Details see https://github.com/difx/difx/wiki/Installation
 
 ### For DiFX Users
 
@@ -54,11 +54,11 @@ $ /path/to/difx/repo/install-difx
 
 
 
-The troubleshooting area on http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/start
+The troubleshooting area on https://github.com/difx/difx/wiki/Documentation
 
 #### TESTING ####################
 
-See http://www.atnf.csiro.au/dokuwiki/doku.php/difx/benchmarks
+See https://github.com/difx/difx/wiki/Benchmarks
 
 ## Usage
 
