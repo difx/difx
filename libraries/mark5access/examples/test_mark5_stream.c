@@ -300,7 +300,7 @@ int test5(const char *filename, const char *formatname, int offset,  int n)
 {
 	struct mark5_stream *ms;
 	float **data;
-	int i, j, k;
+	int i, j, k, v;
 	FILE *out;
 	char fn[MARK5_STREAM_ID_LENGTH];
 
@@ -323,7 +323,11 @@ int test5(const char *filename, const char *formatname, int offset,  int n)
 
 	mark5_stream_print(ms);
 
-	snprintf(fn, MARK5_STREAM_ID_LENGTH,"ms.%s", ms->formatname);
+	v = snprintf(fn, MARK5_STREAM_ID_LENGTH, "ms.%s", ms->formatname);
+	if(v >= MARK5_STREAM_ID_LENGTH)
+	{
+		fprintf(stderr, "Warning: test5: MARK5_STREAM_ID_LENGTH is too short (%d <= %d) for format %s\n", MARK5_STREAM_ID_LENGTH, v, ms->formatname);
+	}
 
 	out = fopen(fn, "w");
 

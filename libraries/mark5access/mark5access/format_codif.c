@@ -3521,7 +3521,7 @@ static int codif_complex_decode_14channel_16bit(struct mark5_stream *ms, int nsa
 	int o, i, j;
 	int nblank = 0;
 
-	buf = (const uint16_t *)ms->payload;
+	buf = (const int16_t *)ms->payload;
 	i = ms->readposition/2;
 
 	for(o = 0; o < nsamp; o++)
@@ -4231,7 +4231,7 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 		status = set_decoder(ms->nbit, ms->nchan, header->iscomplex, &ms->decode, &ms->complex_decode, &ms->count);
 	
 		if (!status) {
-		  fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d for \n", ms->nchan, ms->nbit,
+		  fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d for %s\n", ms->nchan, ms->nbit,
 			  ms->streamname);
 		  return 0;
 		}

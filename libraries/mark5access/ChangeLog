@@ -7,6 +7,7 @@ Version 1.7
 * Add Python ctypes-based bindings for decoding complex data
   - ctypes has no complex data type, hence output is 2*N samples of ctypes.c_float
   - use numpy.frombuffer(<ctypes output>, dtype='complex64') to interpret output as complex data
+* m5kb, m5subband and zerocorr: use fftw's memory allocation functions
 
 
 Version 1.6
