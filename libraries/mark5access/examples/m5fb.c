@@ -307,7 +307,7 @@ int print_header(struct mark5_stream *ms, struct hd_info hi,FILE *fo)
 	m = i/60;
 	s = i-m*60;
 
-	strncpy(tmp,"KVNTN",5);
+	strcpy(tmp, "KVNTN");
 	//i=(int) strlen(ms->streamname);
 	//strncpy(tmp,(char *)strchr((char *)(ms->streamname+i+3),'_')+1,32);
 	//(strchr(tmp,'_'))[0]='\0';

@@ -140,11 +140,15 @@ static int mark5_stream_file_fill(struct mark5_stream *ms, int offset, int lengt
 static int mark5_stream_file_init(struct mark5_stream *ms)
 {
 	struct mark5_stream_file *F;
-	int r;
+	int r, v;
 
 	F = (struct mark5_stream_file *)(ms->inputdata);
 
-	snprintf(ms->streamname, MARK5_STREAM_ID_LENGTH, "File-1/1=%s", F->files[0]);
+	v = snprintf(ms->streamname, MARK5_STREAM_ID_LENGTH, "File-1/1=%s", F->files[0]);
+	if(v >= MARK5_STREAM_ID_LENGTH)
+	{
+		fprintf(stderr, "Warning: mark5_stream_file_init: MARK5_STREAM_ID_LENGTH is too short (%d <= %d) for file %s\n", MARK5_STREAM_ID_LENGTH, v, F->files[0]);
+	}
 
 	F->curfile = 0;
 	F->buffer = 0;
