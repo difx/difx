@@ -29,8 +29,8 @@
 
 const char program[] = "zerocorr";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.4";
-const char verdate[] = "20170426";
+const char version[] = "0.5";
+const char verdate[] = "20240917";
 
 const int MaxLineLen = 256;
 
@@ -181,9 +181,9 @@ DataStream *newDataStream(FILE *in)
 	  ds->cdata = (fftw_complex **)calloc(ds->ms->nchan, sizeof(fftw_complex *));
 	  for(i = 0; i < ds->ms->nchan; ++i)
 	    {
-	      ds->cdata[i] = (fftw_complex *)calloc(ds->fftSize, sizeof(fftw_complex));
+	      ds->cdata[i] = (fftw_complex *)fftw_malloc(ds->fftSize*sizeof(fftw_complex));
 	    }
-	  ds->zdata = (fftw_complex *)calloc(ds->fftSize, sizeof(fftw_complex));
+	  ds->zdata = (fftw_complex *)fftw_malloc(ds->fftSize*sizeof(fftw_complex));
 	  ds->spec = (fftw_complex *)calloc(abs(ds->nChan), sizeof(fftw_complex));
 	  ds->plan = fftw_plan_dft_1d(ds->fftSize, ds->cdata[ds->subBand], ds->zdata, FFTW_FORWARD, FFTW_MEASURE);
 	  
@@ -191,9 +191,9 @@ DataStream *newDataStream(FILE *in)
 	  ds->data = (double **)calloc(ds->ms->nchan, sizeof(double *));
 	  for(i = 0; i < ds->ms->nchan; ++i)
 	    {
-	      ds->data[i] = (double *)calloc(ds->fftSize+2, sizeof(double));
+	      ds->data[i] = (double *)fftw_malloc((ds->fftSize+2)*sizeof(double));
 	    }
-	  ds->zdata = (fftw_complex *)calloc(ds->fftSize/2+2, sizeof(fftw_complex));
+	  ds->zdata = (fftw_complex *)fftw_malloc((ds->fftSize/2+2)*sizeof(fftw_complex));
 	  ds->spec = (fftw_complex *)calloc(abs(ds->nChan), sizeof(fftw_complex));
 	  ds->plan = fftw_plan_dft_r2c_1d(ds->fftSize, ds->data[ds->subBand], ds->zdata, FFTW_ESTIMATE);
 	}
@@ -216,7 +216,20 @@ void deleteDataStream(DataStream *ds)
 				{
 					if(ds->data[i])
 					{
-						free(ds->data[i]);
+						fftw_free(ds->data[i]);
+						ds->data[i] = 0;
+					}
+				}
+				free(ds->data);
+				ds->data = 0;
+			}
+			if(ds->cdata)
+			{
+				for(i = 0; i < ds->ms->nchan; ++i)
+				{
+					if(ds->cdata[i])
+					{
+						fftw_free(ds->cdata[i]);
 						ds->data[i] = 0;
 					}
 				}
@@ -228,7 +241,7 @@ void deleteDataStream(DataStream *ds)
 		}
 		if(ds->zdata)
 		{
-			free(ds->zdata);
+			fftw_free(ds->zdata);
 			ds->zdata = 0;
 		}
 		if(ds->spec)
@@ -382,8 +395,8 @@ Baseline *newBaseline(const char *confFile)
 	{
 		B->nFFT = 0x7FFFFFFF;	/* effectively no limit */
 	}
-	B->visibility = (fftw_complex *)calloc(B->nChan, sizeof(fftw_complex));
-	B->lags = (fftw_complex *)calloc(B->nChan, sizeof(fftw_complex));
+	B->visibility = (fftw_complex *)fftw_malloc(B->nChan*sizeof(fftw_complex));
+	B->lags = (fftw_complex *)fftw_malloc(B->nChan*sizeof(fftw_complex));
 	B->ac1 = (double *)calloc(B->nChan, sizeof(double));
 	B->ac2 = (double *)calloc(B->nChan, sizeof(double));
 
@@ -413,6 +426,11 @@ Baseline *newBaseline(const char *confFile)
 	B->deltaF = B->ds1->deltaF;
 	B->deltaT = 1.0/(B->nChan*B->ds1->deltaF);
 
+	for(i = 0; i < B->nChan; ++i)
+	{
+		B->visibility[i] = 0.0;
+	}
+
 	return B;
 }
 
@@ -437,12 +455,12 @@ void deleteBaseline(Baseline *B)
 		}
 		if(B->visibility)
 		{
-			free(B->visibility);
+			fftw_free(B->visibility);
 			B->visibility = 0;
 		}
 		if(B->lags)
 		{
-			free(B->lags);
+			fftw_free(B->lags);
 			B->lags = 0;
 		}
 		if(B->ac1)
