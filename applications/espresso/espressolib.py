@@ -455,7 +455,7 @@ class batchenv:
             self.cancel = "scancel"
             self.stats = (
                     "sacct -j {:s} -X --format "
-                    "JobName%-15,JobId,elapsed,NNodes,NCPUS,Time,Reserved")
+                    "JobName%-15,JobId,elapsed,NNodes,NCPUS,Time,Planned")
             self.q = self._batchq_slurm(self._jobnames)
             self.speedup = self._slurm_speedup
         elif self._style == "pbs":
@@ -485,7 +485,7 @@ class batchenv:
                     command, stdout=subprocess.PIPE,
                     shell=True, encoding="utf-8").communicate()[0]
             elapsed = int(elapsed)
-            command = "sacct -j {:s} -X --format Reserved -P -n".format(jobid)
+            command = "sacct -j {:s} -X --format Planned -P -n".format(jobid)
             #print(command)
             reserved = subprocess.Popen(
                     command, stdout=subprocess.PIPE,
