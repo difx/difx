@@ -13,16 +13,6 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: Mark6Module.cpp 10539 2022-07-18 11:08:37Z HelgeRottmann $
-// $HeadURL: $
-// $LastChangedRevision: 10539 $
-// $Author: HelgeRottmann $
-// $LastChangedDate: 2022-07-18 19:08:37 +0800 (一, 2022-07-18) $
-//
-//============================================================================
 #include "Mark6.h"
 #include "Mark6Module.h"
 #include "Mark6DiskDevice.h"

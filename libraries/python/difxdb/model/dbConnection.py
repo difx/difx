@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: dbConnection.py 10112 2021-08-26 12:31:31Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/difxdb/model/dbConnection.py $
-# $LastChangedRevision: 10112 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2021-08-26 20:31:31 +0800 (四, 2021-08-26) $
-#
-#============================================================================
 __author__="Helge Rottmann"
 
 from sqlalchemy import *

@@ -93,7 +93,7 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
 		  int hilbert, float *mean, float *stdDev);
 
 #define MAXSTR        255
-#define BUFSIZE       256  // MB
+#define BUFSIZE        25  // MB
 #define MAXPOS          3
 #define SMALLPOS        2
 #define SMALLNEG        1
@@ -362,7 +362,6 @@ int main (int argc, char * const argv[]) {
 
   if (duration==0) { // Just create BUFSIZE bytes
     nframe = frameperbuf;
-    printf("DEBUG:   Using %" PRIu64 " frames\n", nframe);
   } else {
     nframe = duration*framesperperiod/period;
   }

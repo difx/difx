@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdiffile.cpp 6684 2015-06-02 11:40:23Z HelgeRottmann $
-// $HeadURL: https://svn.atnf.csiro.au/difx/mpifxcorr/trunk/src/mk5.cpp $
-// $LastChangedRevision: 6684 $
-// $Author: HelgeRottmann $
-// $LastChangedDate: 2015-06-02 06:40:23 -0500 (Tue, 02 Jun 2015) $
-//
-//============================================================================
 #include <cmath>
 #include <cstring>
 #include <mpi.h>

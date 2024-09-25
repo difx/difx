@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: difx.cpp 8271 2018-05-03 22:03:42Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/difx.cpp $
- * $LastChangedRevision: 8271 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2018-05-04 06:03:42 +0800 (五, 2018-05-04) $
- *
- *==========================================================================*/
 
 #include <cstdio>
 #include <cstdlib>

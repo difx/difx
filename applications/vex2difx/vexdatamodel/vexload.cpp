@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2022 by Walter Brisken                             *
+ *   Copyright (C) 2009-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vexload.cpp 10966 2023-05-09 06:52:03Z JanWagner $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/vexdatamodel/vexload.cpp $
- * $LastChangedRevision: 10966 $
- * $Author: JanWagner $
- * $LastChangedDate: 2023-05-09 14:52:03 +0800 (二, 2023-05-09) $
- *
- *==========================================================================*/
 
 #include <fstream>
 #include <cstring>
@@ -2231,6 +2221,10 @@ static int getDatastreamsSetup(VexSetup &setup, Vex *v, const char *antDefName, 
 		else if(strcasecmp(value, "CODIF") == 0)
 		{
 			stream.parseFormatString("CODIF");
+		}
+		else if(strcasecmp(value, "NONE") == 0)
+		{
+			stream.parseFormatString("NONE");
 		}
 		else
 		{

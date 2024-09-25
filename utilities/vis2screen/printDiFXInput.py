@@ -175,17 +175,11 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 				else:
 					dsfreq1,tmp = getFreqPolOfBand(ds1,min(bl_bands_1))
 					dsfreq2,tmp = getFreqPolOfBand(ds2,min(bl_bands_2))
-					if not cfg.freqs[dsfreq1].lsb:
-						destfreq = dsfreq1
-					elif not cfg.freqs[dsfreq2].lsb:
+					destfreq = dsfreq1
+					if not cfg.freqs[dsfreq2].lsb:
+						# DiFX-2.5/2.6: when DS1 x DS2 is mixed-sideband (LSB/USB) use the USB freq ID,
+						# while LSB/LSB retains the first LSB freq ID, and USB/USB the first USB freq ID.
 						destfreq = dsfreq2
-					else:
-						# look up first USB-equivalent freq if any
-						destfreq = dsfreq1
-						for altfq in cfg.freqs:
-							if (not altfq.lsb) and altfq.low_edge() == cfg.freqs[dsfreq1].low_edge() and altfq.bandwidth == cfg.freqs[dsfreq1].bandwidth:
-								destfreq = cfg.freqs.index(altfq)
-								break
 				if destfreq not in baseline_outputfreq_members:
 					baseline_outputfreq_members[destfreq] = []
 				all_dest_fqs.append(destfreq)
@@ -201,10 +195,11 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 					fq2,pol2 = getFreqPolOfBand(ds2,bl_band_2)
 					sfq1 = cfg.freqs[fq1].str().strip()
 					sfq2 = cfg.freqs[fq2].str().strip()
+					sfqdst = cfg.freqs[destfreq].str().strip()
 					fqtype1, fqtype2 = 'rec ', 'rec '
 					if bl_band_1 >= ds1.nrecband: fqtype1 = 'zoom'
 					if bl_band_2 >= ds2.nrecband: fqtype2 = 'zoom'
-					print((" "*3*indent) + "pols %s%s freqs %s x %s" % (pol1,pol2,sfq1,sfq2))
+					print((" "*3*indent) + "pols %s%s freqs %s x %s -> %s" % (pol1,pol2,sfq1,sfq2,sfqdst))
 					if opts.verbosity >= 1:
 						print((" "*3*indent) + "%s %2d x %s %2d -> fq %2d x %2d -> outFq %d" % (fqtype1,bl_band_1,fqtype2,bl_band_2, fq1,fq2,destfreq))
 
@@ -212,13 +207,13 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 					if b.version >= 2.7:
 						dest_lo, dest_hi = cfg.freqs[destfreq].low_edge(), cfg.freqs[destfreq].high_edge()
 						if cfg.freqs[fq1].low_edge() < dest_lo:
-							print((" "*3*indent) + "WARNING: fq %d begins %.6f MHz below outFq %d!" % (fq1, dest_lo-cfg.freqs[fq1].low_edge(), destfreq))
+							print((" "*3*indent) + "WARNING: 1st antenna fq %d begins %.6f MHz below outFq %d!" % (fq1, dest_lo-cfg.freqs[fq1].low_edge(), destfreq))
 						if cfg.freqs[fq2].low_edge() < dest_lo:
-							print((" "*3*indent) + "WARNING: fq %d begins %.6f MHz below outFq %d!" % (fq2, dest_lo-cfg.freqs[fq2].low_edge(), destfreq))						
+							print((" "*3*indent) + "WARNING: 2nd antenna fq %d begins %.6f MHz below outFq %d!" % (fq2, dest_lo-cfg.freqs[fq2].low_edge(), destfreq))						
 						if cfg.freqs[fq1].high_edge() > dest_hi:
-							print((" "*3*indent) + "WARNING: fq %d extends %.6f MHz past outFq %d!" % (fq1, cfg.freqs[fq1].high_edge()-dest_hi, destfreq))
+							print((" "*3*indent) + "WARNING: 1st antenna fq %d extends %.6f MHz past outFq %d!" % (fq1, cfg.freqs[fq1].high_edge()-dest_hi, destfreq))
 						if cfg.freqs[fq2].high_edge() > dest_hi:
-							print((" "*3*indent) + "WARNING: fq %d extends %.6f MHz past outFq %d!" % (fq2, cfg.freqs[fq2].high_edge()-dest_hi, destfreq))
+							print((" "*3*indent) + "WARNING: 2nd antenna fq %d extends %.6f MHz past outFq %d!" % (fq2, cfg.freqs[fq2].high_edge()-dest_hi, destfreq))
 						
 		print("")
 

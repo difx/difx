@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: corrparams.cpp 10867 2023-01-03 17:22:51Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/corrparams.cpp $
- * $LastChangedRevision: 10867 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2023-01-04 01:22:51 +0800 (三, 2023-01-04) $
- *
- *==========================================================================*/
 
 #define _XOPEN_SOURCE
 #include <iostream>

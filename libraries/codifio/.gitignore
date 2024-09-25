@@ -1,0 +1,7 @@
+codifio.pc
+config.h
+libtool
+utils/.libs/
+utils/codif_write
+utils/codifsum
+

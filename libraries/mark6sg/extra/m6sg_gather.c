@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m6sg_gather.c 9806 2020-11-07 11:38:52Z JanWagner $
-// $HeadURL$
-// $LastChangedRevision: 9806 $
-// $Author: JanWagner $
-// $LastChangedDate: 2020-11-07 19:38:52 +0800 (六, 2020-11-07) $
-//
-//============================================================================
 //
 // m6sg_gather [ --list | <scanname> <destination | - > ]
 //

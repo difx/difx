@@ -13,16 +13,6 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: Mark6DiskDevice.h 7764 2017-05-16 18:23:07Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 7764 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-05-17 02:23:07 +0800 (三, 2017-05-17) $
-//
-//============================================================================
 #ifndef MARK6DISKDEVICE_H
 #define	MARK6DISKDEVICE_H
 

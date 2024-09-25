@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 #include <cmath>
 #include <cstring>
 #include <mpi.h>
@@ -133,7 +123,7 @@ void Mk5DataStream::initialise()
 
   if(config->isDMuxed(0, streamnum)) {
     if(config->getDataFormat(0, streamnum) == Configuration::INTERLACEDVDIF) {
-      nframes = config->getDNumMuxThreads(0, streamnum) * readbytes / ((framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(0, streamnum) + VDIF_HEADER_BYTES);
+      nframes = config->getDNumMuxThreads(0, streamnum) * readbytes / config->getMultiplexedFrameBytes(0, streamnum);
       datamuxer = new VDIFMuxer(config, streamnum, mpiid, config->getDNumMuxThreads(0, streamnum), framebytes, nframes, config->getFramesPerSecond(0, streamnum)/config->getDNumMuxThreads(0, streamnum), config->getDNumBits(0, streamnum), config->getDMuxThreadMap(0, streamnum));
       estimatedbytes += datamuxer->getEstimatedBytes();
     }
@@ -191,8 +181,8 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   framebytes = config->getFrameBytes(bufferinfo[looksegment].configindex, streamnum);
   framespersecond = config->getFramesPerSecond(bufferinfo[looksegment].configindex, streamnum);
   if(config->isDMuxed(bufferinfo[looksegment].configindex, streamnum)) {
-    payloadbytes *= config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum);
-    framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum) + VDIF_HEADER_BYTES;
+    payloadbytes = config->getMultiplexedFramePayloadBytes(bufferinfo[looksegment].configindex, streamnum);
+    framebytes = config->getMultiplexedFrameBytes(bufferinfo[looksegment].configindex, streamnum);
     framespersecond /= config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum);
   }
 
@@ -276,7 +266,7 @@ void Mk5DataStream::updateConfig(int segmentindex)
   int framebytes = config->getFrameBytes(bufferinfo[segmentindex].configindex, streamnum);
   double framespersecond = config->getFramesPerSecond(bufferinfo[segmentindex].configindex, streamnum);
   if(config->isDMuxed(bufferinfo[segmentindex].configindex, streamnum)) {
-    framebytes = (framebytes - VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[segmentindex].configindex, streamnum) + VDIF_HEADER_BYTES;
+    framebytes = config->getMultiplexedFrameBytes(bufferinfo[segmentindex].configindex, streamnum);
     framespersecond /= config->getDNumMuxThreads(bufferinfo[segmentindex].configindex, streamnum);
   }
 
@@ -302,7 +292,7 @@ void Mk5DataStream::deriveFormatName(int configindex)
   bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
   framebytes = config->getFrameBytes(configindex, streamnum);
   if(config->isDMuxed(configindex, streamnum)) {
-    framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(configindex, streamnum) + VDIF_HEADER_BYTES;
+    framebytes = config->getMultiplexedFrameBytes(configindex, streamnum);
   }
   fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDAlignmentSeconds(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
   if (fanout < 0) {
@@ -407,7 +397,7 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   delete_mark5_stream(syncteststream);
   syncteststream = 0;
   if(config->isDMuxed(configindex, streamnum)) {
-    framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(configindex, streamnum) + VDIF_HEADER_BYTES;
+    framebytes = config->getMultiplexedFrameBytes(configindex, streamnum);
     nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
   }
   fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDAlignmentSeconds(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);

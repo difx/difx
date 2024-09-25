@@ -9,6 +9,7 @@ Version 1.6
   - vdifPhase: look at time series of a tone's phase
   - vdifStateCount: generate histogram of state counts
   - vdifMeanRMS: calculate mean and RMS values on a 1 second cadence
+* Remove SVN headers, fix some spelling
 
 Version 1.5
 ~~~~~~~~~~~

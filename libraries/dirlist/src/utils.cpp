@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: utils.cpp 10035 2021-06-24 10:10:29Z JanWagner $
-// $HeadURL: $
-// $LastChangedRevision: 10035 $
-// $Author: JanWagner $
-// $LastChangedDate: 2021-06-24 18:10:29 +0800 (四, 2021-06-24) $
-//
-//============================================================================
 
 #include <cstdio>
 #include <string.h>

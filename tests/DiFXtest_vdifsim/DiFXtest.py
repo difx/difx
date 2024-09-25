@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import re
 import subprocess
@@ -10,11 +10,13 @@ import filecmp
 import requests
 import itertools
 import glob
+import resource
+import time
 
 
 def get_testdir():
-  filepath = __file__
-  filepath = filepath[:-11]
+  # NB: assumes that test data are (/are to be) in the same dir as DiFXtest.py
+  filepath = os.path.realpath(os.path.dirname(__file__))
   return filepath
 
 def pre_checks():
@@ -22,10 +24,6 @@ def pre_checks():
   locate = shutil.which('mpifxcorr')
   if (locate == None):
     print('mpifxcorr not found please make sure DiFX is installed')
-    quit()
-  locate = shutil.which('generateVDIF')
-  if (locate == None):
-    print('generateVDIF not found, please make sure it is installed.')  
     quit()
   locate = shutil.which('vdifsim')
   if (locate == None):
@@ -46,23 +44,38 @@ def generate_vdifsim_config(cores):
   for item in core_list:
     filecontents = filecontents + item + "\n"
 
+  current_directory = get_testdir()
 
   filecontents = filecontents + "\n# data destinations\n"
-  filecontents = filecontents + "BR /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "FD /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "HN /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "KP /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "LA /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "MK /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "NL /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "OV /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "PT /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
-  filecontents = filecontents + "SC /fred/oz168/mdutka/DiFX_TRUNK_09-19-2023/tests/DiFXtest_vdifsim/testdata/ localhost\n"
+  filecontents = filecontents + "BR " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "FD " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "HN " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "KP " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "LA " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "MK " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "NL " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "OV " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "PT " + current_directory + "testdata/ localhost\n"
+  filecontents = filecontents + "SC " + current_directory + "testdata/ localhost\n"
   
 
   fh.write(filecontents)
   fh.close()
   
+
+# For now just set threads to 1 per machine to get repeatable results 
+def set_numthreads(testname,numthreads):
+
+  current_directory = get_testdir()
+  working_directory = current_directory + "/" + testname + "/"
+  v2d_filename = working_directory + testname + ".v2d"
+  #print(v2d_filename)
+  with open(v2d_filename,'r') as file:
+    content = file.read()
+    nthreads_string = "nThread = " + numthreads
+    content = content.replace("nThread = 12",nthreads_string);
+  with open(v2d_filename,'w') as file:
+    file.write(content)
 
 def generate_v2d(testname):
 
@@ -115,14 +128,19 @@ def get_results_and_setup_files():
     return
   else:
     url = "https://github.com/difx/difx-data/raw/main/tests.tgz"
-    r = requests.get(url, allow_redirects=True)
-    filename = current_directory + "/tests.tgz"
-    open(filename,'wb').write(r.content)
+    try:
+      arg = "wget " + url
+      subprocess.call(arg,cwd=current_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+    #r = requests.get(url, allow_redirects=True)
+    #filename = current_directory + "/tests.tgz"
+    #open(filename,'wb').write(r.content)
+    except:
+      print("Error downloading setup files and initial benchmark results")
 
 
 def filter_auto_correlations(fits_filename):
 
-
+  print("filtering auto correlations.")
   warnings.resetwarnings() 
   warnings.filterwarnings('ignore',category=UserWarning,append=True)  
   warnings.filterwarnings('ignore', category=RuntimeWarning, append=True)
@@ -141,6 +159,31 @@ def filter_auto_correlations(fits_filename):
   warnings.resetwarnings()
   warnings.filterwarnings('always',category=UserWarning,append=True)
   warnings.filterwarnings('ignore', category=RuntimeWarning, append=True)
+
+#def do_only_auto_correlations(fits_filename):
+#
+#  print("doing only autocorrs")
+#  warnings.resetwarnings()
+#  warnings.filterwarnings('ignore',category=UserWarning,append=True)
+#  warnings.filterwarnings('ignore', category=RuntimeWarning, append=True)
+#  hdulist = fits.open(fits_filename)
+#  tbdata = hdulist[8].data
+#  hdulist.close()
+#
+#
+#  mask = (tbdata['BASELINE'] % 257) == 0
+#  new_tbdata = tbdata[mask]
+#
+#  fits.update(fits_filename,new_tbdata,8)
+#  hdulist = fits.open(fits_filename)
+#  tbdata = hdulist[8].data
+#  hdulist.close()
+#  warnings.resetwarnings()
+#  warnings.filterwarnings('always',category=UserWarning,append=True)
+#  warnings.filterwarnings('ignore', category=RuntimeWarning, append=True)
+
+
+
 
 def get_binary_files(directory):
   input_files = []
@@ -166,10 +209,16 @@ def get_binary_files(directory):
 
 def get_fits_file(directory):
   contents = os.listdir(directory)
+  files_and_paths = list()
   for item in contents:
     if (item[-5:] == '.FITS'):
       file_and_path = directory + item
-      return file_and_path
+      files_and_paths.append(file_and_path)
+  if (len(files_and_paths) == 1):
+    return(files_and_paths[0])
+  else:
+    return(files_and_paths)
+
 
 def get_im_file(directory):
   contents = os.listdir(directory)
@@ -209,7 +258,7 @@ def rm_output_files(testname):
   working_directory = current_directory + "/" + testname + "/"
   contents = os.listdir(working_directory)
   for item in contents:
-      if (item[-4:] != '.vex' and item[-4:] != '.oms' and item[-7:] != ".config" and item != 'benchmark_results'):
+      if (item[-4:] != '.vex' and item[-4:] != '.oms' and item[-7:] != ".config" and item != 'benchmark_results' and item[-8:] != ".threads"):
         fp_item = working_directory + item 
         if (item[-5:] == '.difx'):
           #print(fp_item)
@@ -227,7 +276,7 @@ def run_vex2difx(testname):
   f_vex2difxlog = open(vex2difxlogfile,"w")
   f_vex2difxerr = open(vex2difxerrfile,"w")
 
-  arg = "vex2difx " + testname + ".v2d"
+  arg = "vex2difx -f " + testname + ".v2d"
 
   try:
     proc =subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_vex2difxlog,stderr=f_vex2difxerr,check=True)
@@ -303,7 +352,9 @@ def run_vdifsim(testname):
 def run_mpifxcorr(testname, numcores):
   
   print("Running test " + testname)
-  
+  cpu_time = 0
+  real_time = 0
+
   current_directory = os.getcwd() 
   working_directory = current_directory + "/" + testname + "/"
 
@@ -317,17 +368,31 @@ def run_mpifxcorr(testname, numcores):
     f_difxlog = open(difxlogfile,"w")
     f_difxerr = open(difxerrfile,"w")
     try:
+      usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
+      t1 = time.perf_counter()
       proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_difxlog,stderr=f_difxerr,check=True)
+      t2 = time.perf_counter()
+      usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)
+      cpu_time = usage_end.ru_utime - usage_start.ru_utime
+      real_time = t2-t1 
+      print('Correlation complete')
+      print(f'CPU processing time:   {cpu_time}')
+      print(f'Real run time:         {real_time}')
+      print()
     except subprocess.CalledProcessError as e:
       print("mpifxcorr failed check log files:")
       print(difxlogfile)
       print(difxerrfile) 
       print()
-      return
+      return  
 
 def run_mpifxcorr_gpumode(testname, numcores):
   
   print("Running test " + testname)
+
+  cpu_time = 0
+  real_time = 0
+
 
   current_directory = os.getcwd()
   working_directory = current_directory + "/" + testname + "/"
@@ -342,7 +407,17 @@ def run_mpifxcorr_gpumode(testname, numcores):
     f_difxlog = open(difxlogfile,"w")
     f_difxerr = open(difxerrfile,"w")
     try:
+      usage_start = resource.getrusage(resource.RUSAGE_CHILDREN)
+      t1 = time.perf_counter()
       proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_difxlog,stderr=f_difxerr,check=True)
+      t2 = time.perf_counter()
+      usage_end = resource.getrusage(resource.RUSAGE_CHILDREN)
+      cpu_time = usage_end.ru_utime - usage_start.ru_utime
+      real_time = t2-t1
+      print('Correlation complete')
+      print(f'CPU processing time:   {cpu_time}')
+      print(f'Real run time:         {real_time}')
+      print()
     except subprocess.CalledProcessError as e:
       print("mpifxcorr failed check log files:")
       print(difxlogfile)
@@ -353,7 +428,7 @@ def run_mpifxcorr_gpumode(testname, numcores):
 
 
  
-def run_difx2fits(testname):
+def run_difx2fits(testname,filterautocorrs):
 
   testdir = get_testdir()
   working_directory = testdir + "/" + testname
@@ -365,9 +440,14 @@ def run_difx2fits(testname):
 
   output_dirs = get_output_dirs(working_directory)
   
+  outputfile_name = testname + ".FITS"
+  if (filterautocorrs == "YES"):
+    outputfile_name = testname + "-filtered.FITS"
+  else:
+    outputfile_name = testname + ".FITS"
 
   for item in output_dirs:
-    arg = "difx2fits " + item[:-5]    
+    arg = "difx2fits " + item[:-5] + " " + outputfile_name   
     #print(arg)
     try:
       proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_difx2fitslog,stderr=f_difx2fitserr,check=True)
@@ -377,6 +457,7 @@ def run_difx2fits(testname):
       print(difx2fitserrfile)
       print()
       raise()
+    
 
 def is_testdata_empty(testname):
   testdir = get_testdir()
@@ -391,7 +472,7 @@ def is_testdata_empty(testname):
 
 
 
-def compare_results(testname, abstol, reltol):
+def compare_results(testname, abstol, reltol, filterautocorrs):
 
   print("Comparing results for test " + testname)
 
@@ -425,18 +506,28 @@ def compare_results(testname, abstol, reltol):
   arg = "diffDiFX.py " + binfile + " " + benchmark_binfile + " " + "-i " + inputfile + " > binary_diff.log"   
   proc = subprocess.run(arg,cwd=working_directory,shell=True,check=True) 
   fits_file = get_fits_file(working_directory)
-  fits_file_benchmark = get_fits_file(results_directory)
- # print(fits_file)
- # print(fits_file_benchmark)
- # quit()
+  fits_file_benchmarks = get_fits_file(results_directory)
+  #print(fits_file_benchmarks)
+  if (filterautocorrs == "YES"):
+    for item in fits_file_benchmarks: 
+      if (item[-13:] == "filtered.FITS"):
+        fits_file_benchmark = item
+  else:
+    for item in fits_file_benchmarks:
+      if (item[-13:] != "filtered.FITS"):
+        fits_file_benchmark = item
+
+  #print(fits_file)
+  #print(fits_file_benchmark)
+  #quit()
 
 
 
   # filter autocorrelations out of fits file
   #print(fits_file)
-  filter_auto_correlations(fits_file) 
-
-
+  if (filterautocorrs == "YES"):
+    filter_auto_correlations(fits_file)
+    
   hdu1 = fits.open(fits_file)
   hdu2 = fits.open(fits_file_benchmark) 
 
@@ -466,7 +557,7 @@ def compare_results(testname, abstol, reltol):
 
   return(results)
 
-def compare_results_gpu_v_cpu(testname, abstol, reltol):
+def compare_results_gpu_v_cpu(testname, abstol, reltol, filterautocorrs):
 
   print("Comparing results for test " + testname)
 
@@ -526,11 +617,23 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol):
   proc = subprocess.Popen(arg,cwd=working_directory,shell=True) 
   proc.wait() 
   fits_file = get_fits_file(working_directory)
-  fits_file_benchmark = get_fits_file(results_directory)
-  
+
+
+  fits_file_benchmarks = get_fits_file(results_directory)
+  if (filterautocorrs == "YES"):
+    for item in fits_file_benchmarks:
+      if (item[-13:] == "filtered.FITS"):
+        fits_file_benchmark = item
+  else:
+    for item in fits_file_benchmarks:
+      if (item[-13:] != "filtered.FITS"):
+        fits_file_benchmark = item
+
+
   # filter autocorrelations out of fits file
-  filter_auto_correlations(fits_file) 
-  
+  if (filterautocorrs == "YES"):
+   filter_auto_correlations(fits_file)
+ 
  # print()
  # print(fits_file)
  # print(fits_file_benchmark)
@@ -587,7 +690,7 @@ def compare_im_files(testname):
     print(output) 
 
 
-def update_test(testname):
+def update_test(testname, filterautocorrs):
   print("Updating test " + testname)
 
   
@@ -615,7 +718,16 @@ def update_test(testname):
   #print(current_binfile)  
 
   fits_file = get_fits_file(working_directory)
-  fits_file_benchmark = get_fits_file(results_directory) 
+  fits_file_benchmarks = get_fits_file(results_directory)
+  if (filterautocorrs == "YES"):
+    for item in fits_file_benchmarks:
+      if (item[-13:] == "filtered.FITS"):
+        fits_file_benchmark = item
+  else:
+    for item in fits_file_benchmarks:
+      if (item[-13:] != "filtered.FITS"):
+        fits_file_benchmark = item
+
   #print()
   #print(fits_file)
 
@@ -708,10 +820,12 @@ def main():
   parser.add_argument("-u","--updatetest", help="Update the default test results (yes/[no])",default="no") 
   parser.add_argument("-a","--abstol",help="Absolute tolerance for FITS file comparison (default = 1e-6)",default=1e-6)
   parser.add_argument("-r","--reltol",help="Relative tolerance for FITS file comparison (default = 0.0)",default=0.00)
-  parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? (yes/[no])",default="no")
-  parser.add_argument("-t","--testgpu",help="run difx in gpu mode and compare results with benchmark (yes/[no])",default="no")
+#  parser.add_argument("-d","--download",help="Download and run DiFX on real VLBI data? (yes/[no])",default="no")
+  parser.add_argument("-t","--testgpu",help="run DiFX in gpu mode and compare results with benchmark (yes/[no])",default="no")
   parser.add_argument("-i","--usebenchmarkimfile",help="Use the benchmark .im file from a previous run rather than running difxcalc (yes/[no])",default="no") 
-  parser.add_argument("-c","--cores",help="Comma deliminated list of the processing cores used for data simulation and correlation (default = localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost)",default="localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost")
+  parser.add_argument("-c","--cores",help="Comma delimited list of the processing cores used for data simulation and correlation (default = localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost)",default="localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost")
+  parser.add_argument("-n","--numthreads",help="Integer number of threads per processing core.  More than one thread will speed runtime but reduce accuracy. (default=1)",default="1")
+  parser.add_argument("-f","--filterautocorrs",help="Filter autocorrelations prior to FITS file comparison (yes/[no])",default="no")
 
 
   input_args = parser.parse_args()
@@ -721,13 +835,18 @@ def main():
   updatetest = updatetest.upper()
   reltol = float(input_args.reltol)
   abstol = float(input_args.abstol)
-  download = input_args.download
-  download = download.upper()
+#  download = input_args.download
+#  download = download.upper()
   testgpu = input_args.testgpu
   testgpu = testgpu.upper()
   usebenchmarkimfile = input_args.usebenchmarkimfile
   usebenchmarkimfile = usebenchmarkimfile.upper()
   cores = input_args.cores
+
+  numthreads = input_args.numthreads
+
+  filterautocorrs = input_args.filterautocorrs
+  filterautocorrs = filterautocorrs.upper()
 
   # Number of stations + 2 is the number of coress needed, need head node
   cores_list = cores.split(",")
@@ -742,6 +861,8 @@ def main():
 
   # Grab benchmark results and setup files 
   get_results_and_setup_files()
+  #quit()
+
 
   # list of test names
   test_name_list = ["usb-2-station","usb-4-band-2-station","usb-10-station"]
@@ -749,7 +870,6 @@ def main():
 
   # Dictionary with pass/fail status of each test {"test name" : [binary file same (results), FITS file same (true/false)]} 
   passfail = {"usb-2-station":["",True],"usb-4-band-2-station":["",True],"usb-10-station":["",True]}
-
 
 
   # Add gpu mode tests to list of tests to be run 
@@ -767,8 +887,8 @@ def main():
   # Unpack tests if they haven't been already
   unpackage_tests(test_name_list)
 
-  if (download == "YES"):
-    get_real_data()
+#  if (download == "YES"):
+#    get_real_data()
    
   if (generateVDIF == "YES"):
    rm_test_data()
@@ -777,17 +897,20 @@ def main():
   for testname in test_name_list:
     rm_output_files(testname)
     generate_v2d(testname)
+    #quit()
+    set_numthreads(testname,numthreads)
     generate_filelist(testname)    
+    #quit()
     run_vex2difx(testname)
+    #quit()
     if (usebenchmarkimfile == "YES"):
       # copy benchmark im file to working directory
       current_directory = os.getcwd()
       working_directory = current_directory + "/" + testname + "/"
       results_directory = working_directory + "/benchmark_results/" 
       benchmark_im_file = get_im_file(results_directory) 
-      shutil.copy2(benchmark_im_file, working_directory)
-    else:
-      run_difxcalc(testname)
+      shutil.copy2(benchmark_im_file, working_directory) 
+    run_difxcalc(testname)
     if (testname[-3:] != "gpu"):
       if (is_testdata_empty(testname) or generateVDIF == "YES"):
           print("running vdifsim")
@@ -796,7 +919,7 @@ def main():
       run_mpifxcorr_gpumode(testname, numcores)
     else:
       run_mpifxcorr(testname, numcores)
-    run_difx2fits(testname)
+    run_difx2fits(testname,filterautocorrs)
 
   # compare .im files
   for testname in test_name_list:
@@ -806,9 +929,9 @@ def main():
   # Run comparison with the results, gpu comparisons also compare gpu vs. cpu results
   for key in passfail: 
     if (key[-7:] == "-vs-cpu"):
-      passfail[key] = compare_results_gpu_v_cpu(key,abstol,reltol)
+      passfail[key] = compare_results_gpu_v_cpu(key,abstol,reltol,filterautocorrs)
     else:
-      passfail[key] = compare_results(key,abstol,reltol)
+      passfail[key] = compare_results(key,abstol,reltol,filterautocorrs)
     
   # Always want to make sure the gpu test gets added to the tar ball even if it wasn't run
   # this way the setup files and directory will be there if it is run in the future
@@ -817,7 +940,7 @@ def main():
 
   if (updatetest == "YES"):
     for testname in test_name_list:
-      update_test(testname)
+      update_test(testname,filterautocorrs)
     repackage_tests(test_name_list)
 
   display_test_results(passfail)

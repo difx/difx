@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_write_input.c 2905 2010-12-18 20:15:28Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_write_input.c $
-// $LastChangedRevision: 2905 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2010-12-18 13:15:28 -0700 (Sat, 18 Dec 2010) $
-//
-//============================================================================
 
 /* need _POSIX_SOURCE set for gmtime_r */
 #define _POSIX_SOURCE

@@ -12,6 +12,7 @@ AC_OUTPUT([ \
 	difxdb/difxarchive/Makefile \
 	difxdb/difxexport/Makefile 
 	difxdb/prepDifx/Makefile \
+	geo/Makefile \
 	GMVA/Makefile \
 	misc/getObsFiles/Makefile \
 	misc/datacheckers/Makefile \

@@ -118,7 +118,7 @@ static void usage()
   fprintf(stderr, "\nOptions:\n");
   fprintf(stderr, "\n  -o <Output directory>   Name of a directory to write all the files to (required if multiple input files)\n");
   fprintf(stderr,   "  -f <Output filename>    Name of output file (only valid if single input file\n");
-  fprintf(stderr,   "  -skip <bytes>           Skip <bytes> bytes a the start of each file\n");
+  fprintf(stderr,   "  -skip <bytes>           Skip <bytes> bytes at the start of each file\n");
 }
 
 int main (int argc, char * const argv[]) {
@@ -212,7 +212,7 @@ int main (int argc, char * const argv[]) {
   memsize *= 1024*1024;
 
   if (strlen(outdir)==0) {
-    fprintf(stderr, "Must supply output dirtectory - aborting\n");
+    fprintf(stderr, "Must supply output directory - aborting\n");
     return 1;
   }
 

@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
@@ -136,7 +126,12 @@ public:
   inline int getCompleteStrideLength(int configindex, int freqindex) const { return configs[configindex].completestridelength[freqindex]; }
   inline int getThreadResultFreqOffset(int configindex, int freqindex) const { return configs[configindex].threadresultfreqoffset[freqindex]; }
   inline int getThreadResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].threadresultbaselineoffset[freqindex][configbaselineindex]; }
-  inline int getCoreResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].coreresultbaselineoffset[freqindex][configbaselineindex]; }
+  inline int getCoreResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) const {
+    if (configs[configindex].coreresultbaselineoffset[freqindex] != NULL)
+      return configs[configindex].coreresultbaselineoffset[freqindex][configbaselineindex];
+    else
+      return -1;
+  }
   inline int getCoreResultBWeightOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].coreresultbweightoffset[freqindex][configbaselineindex]; }
   inline int getCoreResultBShiftDecorrOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].coreresultbshiftdecorroffset[freqindex][configbaselineindex]; }
   inline int getCoreResultAutocorrOffset(int configindex, int configdatastreamindex) const { return configs[configindex].coreresultautocorroffset[configdatastreamindex]; }
@@ -346,8 +341,6 @@ public:
   inline bool getFreqTableCorrelatedAgainstUpper(int index) const {return freqtable[index].correlatedagainstupper; }
   inline int getFNumChannels(int index) const { return freqtable[index].numchannels; }
   inline int getFChannelsToAverage(int index) const { return freqtable[index].channelstoaverage; }
-  inline int getFMatchingWiderBandIndex(int index) const { return freqtable[index].matchingwiderbandindex; }
-  inline int getFMatchingWiderBandOffset(int index) const { return freqtable[index].matchingwiderbandoffset; }
   inline bool isFrequencyUsed(int configindex, int freqindex) const
     { return configs[configindex].frequsedbysomebaseline[freqindex]; }
   inline bool isEquivalentFrequencyUsed(int configindex, int freqindex) const
@@ -479,8 +472,15 @@ public:
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
     return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == KVN5B || f == VDIF || f == VDIFL || f == INTERLACEDVDIF || f == CODIF) && s == MK5MODULE); 
   }
+
+  // Return the number of framebytes as seen by Datastream (as in the data source)
   inline int getFrameBytes(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].framebytes; }
+
+  // Return the number of framebytes as seen by Core (i.e., after any multiplexing of thread data at DataStream)
+  inline int getMultiplexedFrameBytes(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].multiplexedframebytes; }
+
   inline dataformat getDataFormat(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].format; }
   inline datasource getDataSource(int configindex, int configdatastreamindex) const
@@ -546,11 +546,18 @@ public:
   double getFramesPerSecond(int configindex, int configdatastreamindex) const;
 
  /**
-  * @return The number of payload bytes in a data frame
+  * @return The number of payload bytes in a data frame as seen by DataStream as the data is loaded from source
   * @param configindex The index of the configuration being used (from the table in the input file)
   * @param configdatastreamindex The index of the datastream (from the table in the input file)
   */
   int getFramePayloadBytes(int configindex, int configdatastreamindex) const;
+
+ /**
+  * @return The number of payload bytes in a data frame as seen by Core (after any thread multiplexing)
+  * @param configindex The index of the configuration being used (from the table in the input file)
+  * @param configdatastreamindex The index of the datastream (from the table in the input file)
+  */
+  int getMultiplexedFramePayloadBytes(int configindex, int configdatastreamindex) const;
 
  /**
   * @return The fanout, or -1 if an error occurred
@@ -780,14 +787,14 @@ private:
     int channelstoaverage;
     int oversamplefactor;
     int decimationfactor;
-    int matchingwiderbandindex;
-    int matchingwiderbandoffset;
     string rxName;  // an optional name for the receiver producing this channel
     friend bool operator>(const struct freqdata_t&, const struct freqdata_t&);
     double bandlowedgefreq() const { return (!lowersideband) ? bandedgefreq : bandedgefreq-bandwidth; }
     int npcalsout; // not used by mpifxcorr, but used to quash a warning
+    ostream& printfreq(ostream& os) const;
   } freqdata;
   friend bool operator>(const struct Configuration::freqdata_t&, const struct Configuration::freqdata_t&);
+  friend ostream& operator<<(ostream&, Configuration::freqdata_t&);
 
   ///Storage struct for data from the baseline table of the input file
   typedef struct baselinedata_t {
@@ -904,7 +911,8 @@ private:
     int bytespersamplenum;
     int bytespersampledenom;
     int framesamples;
-    int framebytes;
+    int framebytes; // The number of bytes in a frame as seen on the input to DataStream, i.e. as in the data source (possibly in separate threads)
+    int multiplexedframebytes; // The number of bytes in a frame as seen by Core, i.e., after any thread multiplexing
     double framespersecond;
     int alignmentseconds; // defaulted to 1, but can be >1 for CODIF.
     int nummuxthreads;

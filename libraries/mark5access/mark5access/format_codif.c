@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2017 by Walter Brisken, Adam Deller, Chris Phillips*
+ *   Copyright (C) 2009-2024 by Walter Brisken, Adam Deller, Chris Phillips*
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: format_codif.c 10820 2022-11-14 03:18:27Z ChrisPhillips $
-// $HeadURL: $
-// $LastChangedRevision: 10820 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2022-11-14 11:18:27 +0800 (一, 2022-11-14) $
-//
-//============================================================================
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -3531,7 +3521,7 @@ static int codif_complex_decode_14channel_16bit(struct mark5_stream *ms, int nsa
 	int o, i, j;
 	int nblank = 0;
 
-	buf = (const uint16_t *)ms->payload;
+	buf = (const int16_t *)ms->payload;
 	i = ms->readposition/2;
 
 	for(o = 0; o < nsamp; o++)
@@ -4153,12 +4143,9 @@ static int mark5_format_codif_make_formatname(struct mark5_stream *ms)
 
 static int mark5_format_codif_init(struct mark5_stream *ms)
 {
-
-    
 	struct mark5_format_codif *f;
-	unsigned int word2;
 	uint8_t bitspersample=0;
-	int framensNum, framensDen, dataarraylength, status;
+	int dataarraylength, status;
 	double dns;
 	codif_header *header;
 
@@ -4244,7 +4231,7 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 		status = set_decoder(ms->nbit, ms->nchan, header->iscomplex, &ms->decode, &ms->complex_decode, &ms->count);
 	
 		if (!status) {
-		  fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d for \n", ms->nchan, ms->nbit,
+		  fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d for %s\n", ms->nchan, ms->nbit,
 			  ms->streamname);
 		  return 0;
 		}
@@ -4342,7 +4329,7 @@ static int mark5_format_codif_validate(const struct mark5_stream *ms)
 	/* Check for overly unusual header  */
 	header = (codif_header *)ms->frame;
 
-	if(getCODIFSync(header) != 0xFEEDCAFE & getCODIFSync(header) != 0xADEADBEE)
+	if(getCODIFSync(header) != CODIF_SYNC)
 	{
 	        fprintf(m5stderr, "mark5_format_codif_validate: Skipping frame with wrong sync (0x%08X)\n", getCODIFSync(header));
 	        return 0;
@@ -4807,7 +4794,7 @@ int find_codif_frame(const unsigned char *data, int length, size_t *offset, int 
     for (*offset=0; *offset<length; (*offset)++) {
       header = (codif_header*)(data + *offset);
       
-      if (header->sync != 0xABADDEED) continue; // Sync
+      if (header->sync != CODIF_SYNC) continue; // Sync
 
       fsA = getCODIFFrameBytes(header);
       if (!is_legal_codif_framesize(fsA)) {
@@ -4822,7 +4809,7 @@ int find_codif_frame(const unsigned char *data, int length, size_t *offset, int 
 
       header = (codif_header*)(data + *offset + fsA + CODIF_HEADER_BYTES);
       
-      if (header->sync != 0xABADDEED) continue; // Sync
+      if (header->sync != CODIF_SYNC) continue; // Sync
 
       fsB = getCODIFFrameBytes(header);
       secB = header->seconds;

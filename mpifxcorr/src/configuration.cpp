@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 #include <mpi.h>
 #include <string.h>
 #include <climits>
@@ -529,15 +519,12 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
     case KVN5B:
         sprintf(formatname, "KVN5B-%d-%d-%d", mbps, nchan, nbits);
       break;
-    case INTERLACEDVDIF:
-      //framebytes = (framebytes-VDIF_HEADER_BYTES)*numthreads + VDIF_HEADER_BYTES;
-      //mbps /= nchan;
-      //nchan = 1;
+    case INTERLACEDVDIF: // the correct frame bytes must be supplied to this function (before or after multiplexing, as appropriate)
     case VDIF:
       framesperperiod = (int)(1e6*bw*nchan*alignmentseconds*nbits*2 / ((framebytes-VDIF_HEADER_BYTES) * 8) + 0.5);
       if (sampling==COMPLEX) { 
 	if(decimationfactor > 1) 
-          sprintf(formatname, "VDIFC_%d-%dm%d-%d-%d/1", framebytes-VDIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits, decimationfactor);
+          sprintf(formatname, "VDIFC_%d-%dm%d-%d-%d/%d", framebytes-VDIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits, decimationfactor);
 	else 
           sprintf(formatname, "VDIFC_%d-%dm%d-%d-%d", framebytes-VDIF_HEADER_BYTES, framesperperiod, alignmentseconds, nchan, nbits);
       }
@@ -605,6 +592,39 @@ int Configuration::getFramePayloadBytes(int configindex, int configdatastreamind
       break;
     case CODIF:
       payloadsize = framebytes - CODIF_HEADER_BYTES; 
+      break;
+    default:
+      payloadsize = framebytes;
+  }
+
+  return payloadsize;
+}
+
+int Configuration::getMultiplexedFramePayloadBytes(int configindex, int configdatastreamindex) const
+{
+  int payloadsize;
+  int framebytes = getMultiplexedFrameBytes(configindex, configdatastreamindex);
+  dataformat format = getDataFormat(configindex, configdatastreamindex);
+
+  switch(format)
+  {
+    case VLBA:
+    case VLBN:
+      payloadsize = (framebytes/2520)*2500;
+      break;
+    case MARK5B:
+    case KVN5B:
+      payloadsize = framebytes - 16;
+      break;
+    case INTERLACEDVDIF:
+    case VDIF:
+      payloadsize = framebytes - VDIF_HEADER_BYTES;
+      break;
+    case VDIFL:
+      payloadsize = framebytes - VDIF_LEGACY_HEADER_BYTES;
+      break;
+    case CODIF:
+      payloadsize = framebytes - CODIF_HEADER_BYTES;
       break;
     default:
       payloadsize = framebytes;
@@ -785,16 +805,8 @@ int Configuration::getDataBytes(int configindex, int datastreamindex) const
     framebytes = currentds.framebytes;
     if(currentds.format == INTERLACEDVDIF) //account for change to larger packets after muxing
     {
-      int nbands = 1;
-      
-      // round up to next power of 2 bands
-      while(nbands < currentds.numrecordedbands)
-      {
-        nbands *= 2;
-      }
-
-      payloadbytes *= getDNumMuxThreads(configindex, datastreamindex);
-      framebytes = payloadbytes + VDIF_HEADER_BYTES; // Assume INTERLACEDVDIF always non-legacy
+      payloadbytes = getMultiplexedFramePayloadBytes(configindex, datastreamindex);
+      framebytes = currentds.multiplexedframebytes;
     }
     numframes = (validlength/payloadbytes + 2);
     if(currentds.format == MARK5B || currentds.format == KVN5B) //be cautious in case the frame granularity is 2 (easier than checking)
@@ -967,11 +979,15 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
     case INTERLACEDVDIF:
       framesamples = getFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*getDNumRecordedBands(configindex, datastreamindex)*streamdecimationfactor);
       framebytes = getFrameBytes(configindex, datastreamindex);
-      if (stream.sampling==COMPLEX) framesamples /=2;
       if(stream.format == INTERLACEDVDIF) { //separate frames for each subband - change numsamples, framebytes to the muxed version
-        framesamples *= getDNumMuxThreads(configindex, datastreamindex);
-        framebytes = (framebytes - VDIF_HEADER_BYTES)*getDNumMuxThreads(configindex, datastreamindex) + VDIF_HEADER_BYTES; // Assumed INTERLACED is never legacy
+        framesamples = getMultiplexedFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*getDNumRecordedBands(configindex, datastreamindex)*streamdecimationfactor);
+        framebytes = getMultiplexedFrameBytes(configindex, datastreamindex);
       }
+      if(stream.sampling == COMPLEX)
+      {
+        framesamples /= 2;
+      }
+
       return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, framebytes, framesamples, stream.format);
 
       break;
@@ -1016,7 +1032,7 @@ Configuration::sectionheader Configuration::getSectionHeader(istream * input)
 
 bool Configuration::processBaselineTable(istream * input)
 {
-  int tempint, dsband, findex, matchfindex;
+  int tempint, dsband;
   int ** tempintptr;
   string line;
   datastreamdata dsdata;
@@ -1113,41 +1129,33 @@ bool Configuration::processBaselineTable(istream * input)
     for(int i=0;i<baselinetablelength;i++)
     {
       const baselinedata& bldata = baselinetable[i];
-      for(int j=0;j<baselinetable[i].numfreqs;j++)
+      for(int j=0;j<bldata.numfreqs;j++)
       {
-        if(bldata.freqtableindices[j] == f) //its a match - check the other datastream for USB
+        int f1index, f2index, foutindex;
+        foutindex = baselinetable[i].targetfreqtableindices[j];
+        dsdata = datastreamtable[bldata.datastream1index];
+        dsband = bldata.datastream1bandindex[j][0];
+        if(dsband >= dsdata.numrecordedbands) //it is a zoom band
+          f1index = dsdata.zoomfreqtableindices[dsdata.zoombandlocalfreqindices[dsband-dsdata.numrecordedbands]];
+        else
+          f1index = dsdata.recordedfreqtableindices[dsdata.recordedbandlocalfreqindices[dsband]];
+        dsdata = datastreamtable[bldata.datastream2index];
+        dsband = bldata.datastream2bandindex[j][0];
+        if(dsband >= dsdata.numrecordedbands) //it is a zoom band
+          f2index = dsdata.zoomfreqtableindices[dsdata.zoombandlocalfreqindices[dsband-dsdata.numrecordedbands]];
+        else
+          f2index = dsdata.recordedfreqtableindices[dsdata.recordedbandlocalfreqindices[dsband]];
+        if(f1index == f || f2index == f) //its a match - check whether one of datastreams is USB
         {
-          dsdata = datastreamtable[bldata.datastream2index];
-          dsband = bldata.datastream2bandindex[j][0];
-          if(dsband >= dsdata.numrecordedbands) //it is a zoom band
-            findex = dsdata.zoomfreqtableindices[dsdata.zoombandlocalfreqindices[dsband-dsdata.numrecordedbands]];
-          else
-            findex = dsdata.recordedfreqtableindices[dsdata.recordedbandlocalfreqindices[dsband]];
-          if(!freqtable[findex].lowersideband)
+          if(freqtable[f1index].lowersideband != freqtable[f2index].lowersideband)
           {
-            //ahah! A cross LSB/USB.  Will need to change so the freqindex used is the USB
-            freqtable[f].correlatedagainstupper = true;
-          }
-        }
-      }
-    }
-    if(freqtable[f].correlatedagainstupper) //need to alter all freqindices to be the equivalent USB
-    {
-      matchfindex = 0;
-      //first find the matching USB freq
-      for(int i=0;i<freqtablelength;i++)
-      {
-        if(!freqtable[i].lowersideband && fabs(freqtable[f].bandwidth - freqtable[i].bandwidth) < Mode::TINY && fabs(freqtable[f].bandedgefreq - freqtable[f].bandwidth - freqtable[i].bandedgefreq) < Mode::TINY) //match
-          matchfindex = i;
-      }
-      for(int i=0;i<baselinetablelength;i++)
-      {
-        const baselinedata& bldata = baselinetable[i];
-        for(int j=0;j<baselinetable[i].numfreqs;j++)
-        {
-          if(bldata.freqtableindices[j] == f) //this baseline had referred to the LSB - replace with the USB freqindex
-          {
-            bldata.freqtableindices[j] = matchfindex;
+            //ahah! A cross LSB/USB. For consistency with DiFX-2.5/2.6 verify destination of LSB/USB is USB; LSB/LSB stays LSB
+            if(freqtable[f1index].lowersideband)
+              freqtable[f1index].correlatedagainstupper = true;
+            else
+              freqtable[f2index].correlatedagainstupper = true;
+            if(freqtable[foutindex].lowersideband)
+              cerror << startl << "Baseline " << i << " product " << j << " of DS " << bldata.datastream1index << " x " << bldata.datastream2index << " is mixed USB/LSB but .input assigns LSB freqId " << foutindex << " instead of an USB freqId" << endl;
           }
         }
       }
@@ -1670,6 +1678,27 @@ bool Configuration::processDatastreamTable(istream * input)
         return false;
       }
     }
+
+    //Calculate multiplexedframebytes, now that we have all the information
+    if(datastreamtable[i].ismuxed) //account for change to larger packets after muxing
+    {
+      int nbands = 1;
+
+      // round up to next power of 2 bands
+      while(nbands < datastreamtable[i].numrecordedbands)
+      {
+        nbands *= 2;
+      }
+
+      int payloadbytes = datastreamtable[i].framebytes -  VDIF_HEADER_BYTES;
+      payloadbytes *= datastreamtable[i].nummuxthreads;
+      datastreamtable[i].multiplexedframebytes = payloadbytes + VDIF_HEADER_BYTES; // Assume INTERLACEDVDIF always non-legacy
+    }
+    else {
+      datastreamtable[i].multiplexedframebytes = datastreamtable[i].framebytes; // so this can always be used for the frame bytes as seen by Core
+    }
+
+    //continue on to read the zoom freq/band information
     getinputline(input, &line, "NUM ZOOM FREQS");
     datastreamtable[i].numzoomfreqs = atoi(line.c_str());
     datastreamtable[i].zoomfreqtableindices = new int[datastreamtable[i].numzoomfreqs]();
@@ -1987,29 +2016,6 @@ bool Configuration::processFreqTable(istream * input)
     for(int j=0;j<freqtable[i].npcalsout;j++)
     {
       getinputline(input, &line, "PHASE CAL ");
-    }
-    freqtable[i].matchingwiderbandindex = -1;
-    freqtable[i].matchingwiderbandoffset = -1;
-  }
-  //now look for matching wider bands
-  for(int i=freqtablelength-1;i>0;i--)
-  {
-    double f1chanwidth = freqtable[i].bandwidth/freqtable[i].numchannels;
-    double f1loweredge = freqtable[i].bandedgefreq;
-    if (freqtable[i].lowersideband)
-      f1loweredge -= freqtable[i].bandwidth;
-    for(int j=i-1;j>=0;j--)
-    {
-      double f2chanwidth = freqtable[j].bandwidth/freqtable[j].numchannels;
-      double f2loweredge = freqtable[j].bandedgefreq;
-      if (freqtable[j].lowersideband)
-        f2loweredge -= freqtable[j].bandwidth;
-      if((i != j) && (f1chanwidth == f2chanwidth) && (f1loweredge < f2loweredge) &&
-          (f1loweredge + freqtable[i].bandwidth > f2loweredge + freqtable[j].bandwidth))
-      {
-        freqtable[j].matchingwiderbandindex = i;
-        freqtable[j].matchingwiderbandoffset = int(((f2loweredge-f1loweredge)/freqtable[i].bandwidth)*freqtable[i].numchannels + 0.5);
-      }
     }
   }
   freqread = true;
@@ -2462,6 +2468,7 @@ bool Configuration::populateResultLengths()
           vector<int> inputfreqs = getSortedInputfreqsOfTargetfreq(c, i);
           // concatenate a complete output data region to the flat results array
           configs[c].coreresultbaselineoffset[i] = new int[numbaselines]();
+          std::fill_n(configs[c].coreresultbaselineoffset[i], numbaselines, -1);
           for(int j=0;j<numbaselines;j++)
           {
             if(!isFrequencyOutput(c,j,i))

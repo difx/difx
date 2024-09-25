@@ -24,14 +24,14 @@
 #include "difxmessage.h"
 #include "../difxmessage/difxmessageinternal.h"
 
-#define BINARY_OUTPUT_FILE	"binary.out"
-
 const char program[] = "testdifxmessagereceive";
-const char version[] = "1.2";
-const char verdate[] = "20240405";
+const char version[] = "1.3";
+const char verdate[] = "20240724";
 const char author[]  = "Walter Brisken";
 
 const int MAX_MTU = 9000;
+
+const char binaryOutputFile[] = "testdifxmessagereceive.out";
 
 int usage(const char *cmd)
 {
@@ -41,14 +41,21 @@ int usage(const char *cmd)
 	printf("Usage:  %s [options]  [type]\n\n", cmd);
 	printf("Options can be:\n\n");
 	printf("  -h or --help   : Print this help info\n\n");
-	printf("  -b or --binary : Write binary records to file %s\n\n", BINARY_OUTPUT_FILE);
+	printf("  -b or --binary : Write binary records to file %s\n", binaryOutputFile);
+	printf("                   If included twice, just print statistics\n\n");
 	printf("  -l or --length : Print lengths, not dots\n\n");
+	printf("  -H or --headers: Print in hex the first 48 bytes\n\n");
 	printf("Type is a number from 1 to %d and refers to the following message types\n\n", NUM_DIFX_MESSAGE_TYPES-1);
 	for(i = 1; i < NUM_DIFX_MESSAGE_TYPES; ++i)
 	{
 		printf("  %2d : %s\n", i, DifxMessageTypeStrings[i]);
 	}
 	printf("\nIf no type is listed, all message types will be printed\n\n");
+	printf("The following environment variables are used:\n");
+	printf("  DIFX_MESSAGE_GROUP : the multicast group to listen to\n");
+	printf("  DIFX_MESSAGE_PORT  : the multicast port to listen to\n");
+	printf("  DIFX_BINARY_GROUP  : the multicast group for binary listen\n");
+	printf("  DIFX_BINARY_PORT   : the multicast port for binary listen\n\n");
 
 	return 0;
 }
@@ -87,7 +94,7 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[a], "-B") == 0 ||
 		   strcmp(argv[a], "--Binary") == 0)
 		{
-			binary+=2;
+			binary += 2;
 		}
 		else if(strcmp(argv[a], "-l") == 0 ||
 		   strcmp(argv[a], "--length") == 0)
@@ -95,7 +102,8 @@ int main(int argc, char **argv)
 			onlyDots = 0;
 			printf("Printing lengths, not dots\n");
 		}
-		else if(strcmp(argv[a], "-H") == 0)
+		else if(strcmp(argv[a], "-H") == 0 ||
+		   strcmp(argv[a], "--headers") == 0)
 		{
 			headers = 1;
 		}
@@ -127,7 +135,7 @@ int main(int argc, char **argv)
 	{
 		if(binary >= 2)
 		{
-			printf("Warning: not writing a file, just printing dots\n");
+			fprintf(stderr, "Warning: not writing a file, just printing dots\n");
 		}
 
 		char message[MAX_MTU];
@@ -139,7 +147,18 @@ int main(int argc, char **argv)
 
 		if(binary == 1)
 		{
-			out = fopen(BINARY_OUTPUT_FILE, "w");
+			out = fopen(binaryOutputFile, "w");
+			if(!out)
+			{
+				fprintf(stderr, "Cannot open %s for write\n", binaryOutputFile);
+				exit(0);
+			}
+			fprintf(stderr, "Writing data to %s\n", binaryOutputFile);
+		}
+		else if(binary == 3)
+		{
+			fprintf(stderr, "Writing binary data to stdout -- hopefully you are piping it somewhere useful!\n");
+			out = stdout;
 		}
 
 		for(;;)
@@ -149,9 +168,8 @@ int main(int argc, char **argv)
 			if(t != lastt)
 			{
 				lastt = t;
-				printf("[%d]", np);
+				fprintf(stderr, "[%d]", np);
 				np = 0;
-				fflush(stdout);
 			}
 			if(l <= 0)
 			{
@@ -171,31 +189,46 @@ int main(int argc, char **argv)
 					v = fwrite(message, 1, l, out);
 					if(v != l)
 					{
-						fprintf(stderr, "Error: write to %s failed; disk full?\n", BINARY_OUTPUT_FILE);
+						fprintf(stderr, "Error: write to %s failed; disk full?\n", binaryOutputFile);
 
 						break;
+					}
+					else
+					{
+						fflush(out);
 					}
 				}
 				if(headers)
 				{
-					const int *data = (int *)message;
-					printf("[%d %d %d %d %d %d %d %d %d %d l = %d]\n",
-						data[0], data[1], data[2], data[3], data[4], 
-						data[5], data[6], data[7], data[8], data[9], l);
+					int k, n;
+					n = l;
+					if(n > 48)
+					{
+						n = 48;
+					}
+					printf("[");
+					for(k = 0; k < n; ++k)
+					{
+						printf("%02X", ((unsigned char *)(message))[k]);
+						if(k % 4 == 3)
+						{
+							printf(" ");
+						}
+					}
+					printf(" %d/%d]\n", n, l);
 				}
 				else if(onlyDots)
 				{
-					printf(".");
+					fprintf(stderr, ".");
 				}
 				else
 				{
-					printf("{%d}", l);
+					fprintf(stderr, "{%d}", l);
 				}
-				fflush(stdout);
 			}
 		}
 
-		if(out)
+		if(binary == 1)
 		{
 			fclose(out);
 		}
@@ -208,7 +241,7 @@ int main(int argc, char **argv)
 
 		difxMessageInit(-1, argv[0]);
 
-		printf("\nReceiving from group=%s, port=%d", difxMessageGroup, difxMessagePort);
+		fprintf(stderr, "\nReceiving from group=%s, port=%d", difxMessageGroup, difxMessagePort);
 
 		sock = difxMessageReceiveOpen();
 		if(sock < 0)
@@ -218,7 +251,7 @@ int main(int argc, char **argv)
 		}
 		printf("-> socket=%d\n", sock);
 
-		printf("\n");
+		fprintf(stderr, "\n");
 
 		for(;;)
 		{
@@ -252,47 +285,68 @@ int main(int argc, char **argv)
 				}
 			}
 
-			difxMessageParse(&G, message);
-			if(type == DIFX_MESSAGE_UNKNOWN || type == G.type)
+			if(headers)
 			{
-				if(specialMode)
+				int k, n;
+				n = l;
+				if(n > 48)
 				{
-					switch(type)
+					n = 48;
+				}
+				printf("[");
+				for(k = 0; k < n; ++k)
+				{
+					printf("%02X", ((unsigned char *)(message))[k]);
+					if(k % 4 == 3)
 					{
-					case DIFX_MESSAGE_DRIVE_STATS:
-						printf("%s %d : %d : %8d %8d %8d %7d %6d %5d %5d %5d\n",
-							G.body.driveStats.moduleVSN, G.body.driveStats.moduleSlot, G.body.driveStats.type,
-							G.body.driveStats.bin[0],
-							G.body.driveStats.bin[1],
-							G.body.driveStats.bin[2],
-							G.body.driveStats.bin[3],
-							G.body.driveStats.bin[4],
-							G.body.driveStats.bin[5],
-							G.body.driveStats.bin[6],
-							G.body.driveStats.bin[7]);
-						break;
-					default:
-						printf("Message received\n");
-						break;
+						printf(" ");
 					}
 				}
-				else
+				printf(" %d/%d]\n", n, l);
+			}
+			else
+			{
+				difxMessageParse(&G, message);
+				if(type == DIFX_MESSAGE_UNKNOWN || type == G.type)
 				{
-					printf("[%s %s] <%d> ", timestr, from, l);
-					difxMessageGenericPrint(&G);
-					printf("\n");
-					if(verbose)
+					if(specialMode)
 					{
-						printf("[%s %s] %s\n", timestr, from, message);
-						printf("\n");
+						switch(type)
+						{
+						case DIFX_MESSAGE_DRIVE_STATS:
+							printf("%s %d : %d : %8d %8d %8d %7d %6d %5d %5d %5d\n",
+								G.body.driveStats.moduleVSN, G.body.driveStats.moduleSlot, G.body.driveStats.type,
+								G.body.driveStats.bin[0],
+								G.body.driveStats.bin[1],
+								G.body.driveStats.bin[2],
+								G.body.driveStats.bin[3],
+								G.body.driveStats.bin[4],
+								G.body.driveStats.bin[5],
+								G.body.driveStats.bin[6],
+								G.body.driveStats.bin[7]);
+							break;
+						default:
+							printf("Message received\n");
+							break;
+						}
 					}
-					fflush(stdout);
+					else
+					{
+						printf("[%s %s] <%d> ", timestr, from, l);
+						difxMessageGenericPrint(&G);
+						printf("\n");
+						if(verbose)
+						{
+							printf("[%s %s] %s\n", timestr, from, message);
+							printf("\n");
+						}
+						fflush(stdout);
+					}
 				}
 			}
 		}
 
 		difxMessageReceiveClose(sock);
-
 	}
 
 	return EXIT_SUCCESS;

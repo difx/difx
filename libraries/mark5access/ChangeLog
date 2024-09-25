@@ -2,6 +2,13 @@ Version 1.7
 * Post DiFX-2.8
 * Add option to m5bstate to look only at even or odd samples
 * m5pcal: can read from stdin
+* Remove SVN headers in files
+* Fix some spelling
+* Add Python ctypes-based bindings for decoding complex data
+  - ctypes has no complex data type, hence output is 2*N samples of ctypes.c_float
+  - use numpy.frombuffer(<ctypes output>, dtype='complex64') to interpret output as complex data
+* m5kb, m5subband and zerocorr: use fftw's memory allocation functions
+
 
 Version 1.6
 * Post DiFX-2.6

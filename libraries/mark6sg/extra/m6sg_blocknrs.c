@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m6sg_blocknrs.c 9788 2020-10-29 09:27:58Z JanWagner $
-// $HeadURL$
-// $LastChangedRevision: 9788 $
-// $Author: JanWagner $
-// $LastChangedDate: 2020-10-29 17:27:58 +0800 (四, 2020-10-29) $
-//
-//============================================================================
 //
 // m6sg_blocknrs /mnt/disks/1/[0-7]/testrecording.vdif
 //

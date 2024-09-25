@@ -1,6 +1,7 @@
 /***************************************************************************
- *   Copyright (C) 2006-2019 by Walter Brisken, Chris Phillips,            *
- *                              Jan Wagner, Adam Deller...                 * 
+ *   Copyright (C) 2006-2024 by Walter Brisken, Chris Phillips,            *
+ *                              Jan Wagner, Adam Deller,                   *
+ *                              Richard Dodson, ...                        * 
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -17,16 +18,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5_stream.c 5533 2013-08-07 05:43:41Z RichardDodson $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 5782 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-04-30 00:24:53 +0800 (六, 2022-04-30) $
-//
-//============================================================================
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -1345,10 +1336,12 @@ struct mark5_stream *new_mark5_stream_absorb(struct mark5_stream_generic *s, str
 
 	if(!s)
 	{
-		failed = 1;
+	  fprintf(m5stderr, "new_mark5_stream_absorb: mark5_stream uninitialised\n");
+	        failed = 1;
 	}
 	if(!f)
 	{
+	  fprintf(m5stderr, "new_mark5_stream_absorb: mark5_format uninitialised\n");
 		failed = 1;
 	}
 	if(failed)

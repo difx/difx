@@ -13,16 +13,6 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: Mark6Meta.cpp 10521 2022-06-28 12:46:07Z HelgeRottmann $
-// $HeadURL: $
-// $LastChangedRevision: 10521 $
-// $Author: HelgeRottmann $
-// $LastChangedDate: 2022-06-28 20:46:07 +0800 (二, 2022-06-28) $
-//
-//============================================================================
 #include "Mark6Meta.h"
 #include "Mark6.h"
 #include "Mark6Module.h"

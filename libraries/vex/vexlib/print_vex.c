@@ -1,13 +1,3 @@
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: print_vex.c 9133 2019-09-04 01:30:19Z ChrisPhillips $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/vex/vexlib/print_vex.c $
-// $LastChangedRevision: 9133 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2019-09-04 09:30:19 +0800 (三, 2019-09-04) $
-//
-//============================================================================
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

@@ -10,8 +10,8 @@
 
 const char program[] = "vdifPhase";
 const char author[] = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.2";
-const char verdate[] = "20240209";
+const char version[] = "0.2.1";
+const char verdate[] = "20240430";
 
 const int defaultBits = 2;
 
@@ -98,6 +98,7 @@ void processSpectrum(const double complex *spectrum, int nChan, int bw, double t
 	double dc;
 	double freq;	/* [MHz] interpolated frequency of peak */
 	double phase;	/* [rad] */
+	double totalPower = 0.0;
 
 	if(power == 0)
 	{
@@ -108,7 +109,10 @@ void processSpectrum(const double complex *spectrum, int nChan, int bw, double t
 	{
 		power[c] = creal(spectrum[c] * ~spectrum[c])/(2*nChan);
 		psd[c] += power[c];
+		totalPower += power[c];
 	}
+	/* exclude DC from total power */
+	totalPower -= power[0];
 
 	for(c = edge; c < nChan-edge ; ++c)
 	{
@@ -159,12 +163,13 @@ void processSpectrum(const double complex *spectrum, int nChan, int bw, double t
 	phase *= (2.0*M_PI);
 
 
-	printf("%8.6f %f %f %f %f %d  %d %f %f %f %f  %f %f  %f %f  %f %f\n", t, max_chan+dc, freq, max_power, phase, f % 8, 
+	printf("%8.6f %f %f %f %f %d  %d %f %f %f %f  %f %f  %f %f  %f %f  %f\n", t, max_chan+dc, freq, max_power, phase, f % 8, 
 		max_chan, dc, 
 		cabs(spectrum[max_chan-1]), cabs(spectrum[max_chan]), cabs(spectrum[max_chan+1]),
 		creal(spectrum[max_chan-1]), cimag(spectrum[max_chan-1]),
 		creal(spectrum[max_chan]), cimag(spectrum[max_chan]),
-		creal(spectrum[max_chan+1]), cimag(spectrum[max_chan+1]));
+		creal(spectrum[max_chan+1]), cimag(spectrum[max_chan+1]),
+		totalPower);
 }
 
 /******* Some VDIF routines that should be made available in the library... *******/
