@@ -598,8 +598,6 @@ int loadGainCurves(const DifxInput *D, GainRow *G)
 
 const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
-	static int extver = 1;  /* sequence number of this table type in FITS file */
-
 	GainRow *G;
 	int nRow;
 	char bandFormInt[8];
@@ -708,7 +706,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 	}
 
 	/* spew out the table header */
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GAIN_CURVE", extver++);
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GAIN_CURVE");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
 	fitsWriteInteger(out, "NO_TABS", MAXTAB, "");

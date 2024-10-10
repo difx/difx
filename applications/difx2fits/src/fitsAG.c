@@ -68,8 +68,6 @@ struct __attribute__((packed)) AGrow
 
 const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
-	static int extver = 1;  /* sequence number of this table type in FITS file */
-
 	/* define the antenna geometry FITS table columns */
 	static struct fitsBinTableColumn columns[] =
 	{
@@ -102,7 +100,7 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fi
 		exit(EXIT_FAILURE);
 	}
 
-	fitsWriteBinTable(out, NELEMENTS(columns), columns, nRowBytes, "ARRAY_GEOMETRY", extver++);
+	fitsWriteBinTable(out, NELEMENTS(columns), columns, nRowBytes, "ARRAY_GEOMETRY");
 
 	mjd = (int)(D->mjdStart);
 	mjd2fits(mjd, ref_date);
