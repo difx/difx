@@ -665,7 +665,12 @@ void Mark6::pollDevices()
 			if(0 != udev_device_get_sysattr_value(parent,"sas_address"))
 			{
                             disk.setSasAddress (udev_device_get_sysattr_value(parent,"sas_address"));
-                            disk.setDiskId(parseDiskId(udev_device_get_sysattr_value(parent,"sas_address"), driver));
+                            //disk.setDiskId(parseDiskId(udev_device_get_sysattr_value(parent,"sas_address"), driver));
+                            const char *idSasPath = udev_device_get_property_value(dev, "ID_SAS_PATH");
+                            if (idSasPath != NULL)
+                            {
+			        disk.setDiskId(parsePhyId(string(idSasPath)));
+                            }
                             disk.setSerial(udev_device_get_property_value(dev,"ID_SERIAL_SHORT") );
 
                             newDevices_m.push_back(disk);
@@ -904,9 +909,9 @@ struct udev_enumerate *enumerate;
         controller.setDriver(udev_device_get_driver(grand));
         //cout << udev_device_get_driver(grand) << endl;
 
-        const char *phy_count;
+        //const char *phy_count;
         //udev_device_get_property_value
-        phy_count = udev_device_get_property_value(port, "id_sas_path");
+        //phy_count = udev_device_get_property_value(port, "id_sas_path");
 
         /*if (phy_count != NULL)
                 cout << "phy count: " << phy_count << endl;
@@ -914,7 +919,7 @@ struct udev_enumerate *enumerate;
                 cout << "not found" << endl;
         */
 
-        clog << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << " " << phy_count<< endl;
+        //clog << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << " " << phy_count<< endl;
         //cout << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << endl;
 
         controllers_m.push_back(controller);
