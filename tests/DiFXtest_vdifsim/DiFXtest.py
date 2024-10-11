@@ -316,6 +316,7 @@ def run_difxcalc(testname):
     quit()
 
 def rm_test_data():
+  print("removing test data")
   testdir = get_testdir()
   testdata_dir = testdir + "/testdata"
   contents = os.listdir(testdata_dir)
@@ -890,6 +891,7 @@ def main():
 #  if (download == "YES"):
 #    get_real_data()
    
+  #print("generateVDIF == %s",generateVDIF);
   if (generateVDIF == "YES"):
    rm_test_data()
   

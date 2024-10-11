@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2011 by Walter Brisken                             *
+ *   Copyright (C) 2010-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -322,7 +322,7 @@ void printDifxCalculatorConfig(const DifxCalculatorConfig *c)
 	printDouble("Subint time (ms)",        c->tSubint*1000.0,   0, 0);
 	printDouble("Subints per int",         c->subintsPerInt,    "If not an integer, expect variable weights", 0);
 	printDouble("DS buffer obs. dur. (s)", c->datastreamBufferDur, 0, 0);
-	printDouble("DS read obs. dur. (s)",   c->datastreamReadDur, "Must not exceed 2^31 ms (~2 sec)", 0);
+	printDouble("DS read obs. dur. (s)",   c->datastreamReadDur, "Must not exceed 2^31 ns (~2 sec)", 0);
 	printDouble("Manager slack (sec)",     c->managerSlack, 0, 0);
 	printDouble("Core buffer obs. dur. (s)", c->coreBufferDur, 0, 0);
 }
