@@ -288,6 +288,10 @@ void VexStream::setVDIFSubformat(const std::string &str)
 	{
 		dataSampling = SamplingComplexDSB;
 	}
+	else
+	{
+		dataSampling = SamplingReal;
+	}
 }
 
 bool VexStream::parseFormatString(const std::string &formatName)
