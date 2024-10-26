@@ -26,8 +26,6 @@
 #include "other.h"
 #include "util.h"
 
-static int extverFL = 1;  /* sequence number of this table type in FITS file */
-
 typedef struct
 {
 	int bandMask[array_MAX_BANDS];
@@ -282,7 +280,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 
 			if(nRec == 0)
 			{
-				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG", extverFL++);
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG");
 				arrayWriteKeys (p_fits_keys, out);
 				fitsWriteInteger(out, "TABREV", 2, "");
 				fitsWriteEnd(out);
@@ -467,7 +465,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 			{
 				if(nRec == 0)
 				{
-					fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG", extverFL++);
+					fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG");
 					arrayWriteKeys (p_fits_keys, out);
 					fitsWriteInteger(out, "TABREV", 2, "");
 					fitsWriteEnd(out);

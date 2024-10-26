@@ -118,7 +118,7 @@ typedef struct files {
   int file;
 } files;
 
-int setup_net(unsigned short port, const char *ip, const char *group, int *sock, float bufsize);
+int setup_net(unsigned short port, const char *ip, const char *group, int reuse, int *sock, float bufsize);
 int matchthread(datastats *allstats, int nthread, int threadID, int groupID);
 int matchfile(files *ofiles, int nfles, int threadID, int groupID);
 int openfile(char *fileprefix, char *timestr, int threadid, int groupid);
@@ -180,6 +180,7 @@ int main (int argc, char * const argv[]) {
   int verbose = 0;
   int bufsize = 100;
   int wait = false; // Don't start timing till first packet arrives
+  int reuse = false; // Allow processes to use same port
   
   struct option options[] = {
     {"port", 1, 0, 'p'},
@@ -200,6 +201,7 @@ int main (int argc, char * const argv[]) {
     {"splitgroup", 0, 0, 'G'},
     {"verbose", 0, 0, 'V'},
     {"wait", 0, 0, 'w'},
+    {"resuse", 0, 0, 'r'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
@@ -324,6 +326,10 @@ int main (int argc, char * const argv[]) {
       wait = true;
       break;
       
+   case 'r':
+      reuse = true;
+      break;
+      
     case 'V':
       verbose = 1;
       break;
@@ -344,6 +350,7 @@ int main (int argc, char * const argv[]) {
       printf("  -S/-split              Write threads to separate files\n");
       printf("  -G/-splitgroup         Write groups to separate files\n");
       printf("  -w/-wait               Wait for first packet before starting recording timer\n");
+      printf("  -r/-reuse              Allow multiple processes to use same port in multicast mode\n");
       printf("  -V/-verbose            Verbose output/n");
       printf("  -h/-help               This list\n");
       return(1);
@@ -369,7 +376,11 @@ int main (int argc, char * const argv[]) {
     fprintf(stderr, "Error: Do not support drop mode %d\n", drop);
     exit(1);
   }
-  
+
+  if (reuse && multicastGroup==NULL) {
+    printf("Warning: Canonly reuse port for multicast mode\n");
+    reuse = 0;
+  }
   
   if (padding>0) printf("Warning: Discarding %d bytes per packet\n", padding);
   
@@ -385,7 +396,7 @@ int main (int argc, char * const argv[]) {
   cheader = (codif_header*)buf;
   cdata = (int16_t*) &buf[CODIF_HEADER_BYTES];
 
-  status = setup_net(port, ip, multicastGroup, &sock, bufsize);
+  status = setup_net(port, ip, multicastGroup, reuse, &sock, bufsize);
     
   if (status)  exit(1);
 
@@ -423,6 +434,24 @@ int main (int argc, char * const argv[]) {
     
     if (wait && first) {
       t0 = tim();
+
+      char buffer[26];
+      int millisec;
+      struct tm* tm_info;
+      struct timeval tv;
+
+      gettimeofday(&tv, NULL);
+      
+      millisec = lrint(tv.tv_usec/1000.0); // Round to nearest millisec
+      if (millisec>=1000) { // Allow for rounding up to nearest second
+	millisec -=1000;
+	tv.tv_sec++;
+      }
+
+      tm_info = localtime(&tv.tv_sec);
+
+      strftime(buffer, 26, "%Y:%m:%d %H:%M:%S", tm_info);
+      printf("%s.%03d\n", buffer, millisec);
     }
     
     // Block alarm signal while we are updating these values
@@ -662,7 +691,8 @@ int main (int argc, char * const argv[]) {
   return(0);
 }
   
-int setup_net(unsigned short port, const char *ip, const char *group, int *sock, float bufsize) {
+int setup_net(unsigned short port, const char *ip, const char *group, int reuse,
+	      int *sock, float bufsize) {
   int status;
   struct sockaddr_in server; 
 
@@ -693,8 +723,17 @@ int setup_net(unsigned short port, const char *ip, const char *group, int *sock,
   status = setsockopt(*sock, SOL_SOCKET, SO_RCVBUF, (char *) &udpbufbytes, sizeof(udpbufbytes));
   if (status!=0) {
     fprintf(stderr, "Warning: Could not set socket RCVBUF\n");
-  } 
+  }
 
+  if (reuse) {
+    u_int yes = 1;
+    status = setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, (char*) &yes, sizeof(yes));
+    if (status<0) {
+      perror("Reusing ADDR failed");
+      return(1);
+    }
+  }
+  
   status = bind(*sock, (struct sockaddr *)&server, sizeof(server));
   if (status!=0) {
     perror("Error binding socket");
@@ -718,7 +757,7 @@ int setup_net(unsigned short port, const char *ip, const char *group, int *sock,
       printf("%d\n", errno);
       perror("setsockopt mreq");
       return(1);
-    }  
+    }
   }
   
   return(0);

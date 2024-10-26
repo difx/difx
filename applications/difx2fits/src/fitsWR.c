@@ -49,8 +49,6 @@ static int parseWeather(const char *line, WRrow *wr, char *antName)
 
 static int processWeatherFile(const DifxInput *D, struct fits_keywords *p_fits_keys, const char *antennaName, const char *weatherFile, struct fitsPrivate *out, char **fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, const int *alreadyHasWeather, int refDay, int year, double *mjdLast, int nRec)
 {
-	static int extver = 1;  /* sequence number of this table type in FITS file */
-
 	const int MaxLineLength=1000;
 	char line[MaxLineLength+1];
 	char antName[DIFXIO_NAME_LENGTH];
@@ -148,7 +146,7 @@ static int processWeatherFile(const DifxInput *D, struct fits_keywords *p_fits_k
 			{
 				/* write the table header just when needed */
 
-				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER", extver++);
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER");
 				arrayWriteKeys(p_fits_keys, out);
 				fitsWriteInteger(out, "TABREV", 1, "");
 				fitsWriteString(out, "MAPFUNC", " ", "");
@@ -187,7 +185,7 @@ static int processWeatherFile(const DifxInput *D, struct fits_keywords *p_fits_k
 			{
 				/* write the table header just when needed */
 
-				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER", extver++);
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER");
 				arrayWriteKeys(p_fits_keys, out);
 				fitsWriteInteger(out, "TABREV", 1, "");
 				fitsWriteString(out, "MAPFUNC", " ", "");

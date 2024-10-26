@@ -25,8 +25,6 @@
 
 const DifxInput *DifxInput2FitsFR(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
-	static int extver = 1;  /* sequence number of this table type in FITS file */
-
 	char bandFormDouble[8];
 	char bandFormFloat[8];
 	char bandFormInt[8];
@@ -80,7 +78,7 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D, struct fits_keywords *p_fi
 	}
 	
 	/* spew out the table header */
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FREQUENCY", extver++);
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FREQUENCY");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 2, "");
 	fitsWriteEnd(out);

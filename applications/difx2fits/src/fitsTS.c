@@ -27,8 +27,6 @@
 #include "other.h"
 #include "util.h"
 
-static int extverTS = 1;  /* sequence number of this table type in FITS file */
-
 typedef struct
 {
 	double pOn;	/* power in the on state */
@@ -532,7 +530,7 @@ static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, in
 
 				if(nRec == 0)
 				{
-					fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE", extverTS++);
+					fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE");
 					arrayWriteKeys(p_fits_keys, out);
 					fitsWriteInteger(out, "NO_POL", D->nPol, "");
 					fitsWriteInteger(out, "TABREV", 1, "");
@@ -764,7 +762,7 @@ static int processTsysFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 		
 			if(nRec == 0)
 			{
-				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE", extverTS++);
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE");
 				arrayWriteKeys(p_fits_keys, out);
 				fitsWriteInteger(out, "NO_POL", D->nPol, "");
 				fitsWriteInteger(out, "TABREV", 1, "");
