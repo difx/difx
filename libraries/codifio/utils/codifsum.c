@@ -191,7 +191,7 @@ int main (int argc, char **argv) {
 	printf("\n");
 	printf("NCHAN:       %d\n", nchan);
 	printf("SAMPLEBLOCK: %d\n", getCODIFSampleblockLength(header));
-	printf("FRAMELENGTH: %d\n", getCODIFFrameBytes(header));
+	printf("FRAMELENGTH: %llu\n", getCODIFFrameBytes(header));
 
 	printf("\n");
 	printf("#SAMPLES:    %"PRIu64"\n", getCODIFTotalSamples(header));

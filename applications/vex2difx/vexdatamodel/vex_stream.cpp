@@ -288,6 +288,10 @@ void VexStream::setVDIFSubformat(const std::string &str)
 	{
 		dataSampling = SamplingComplexDSB;
 	}
+	else
+	{
+		dataSampling = SamplingReal;
+	}
 }
 
 bool VexStream::parseFormatString(const std::string &formatName)
@@ -405,6 +409,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		nRecordChan = matchInt(formatName, match[3]);
 		nBit = matchInt(formatName, match[4]);
 		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
+                setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
 
 		return true;
 	}
@@ -476,6 +481,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 			return false;
 		}
 		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
+		setVDIFSubformat(formatName);
 
 		return true;
 	}

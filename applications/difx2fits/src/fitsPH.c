@@ -999,7 +999,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
 	const struct CommandLineOptions *opts, enum AllPcalTonesMode allpcaltones)
 {
-	static int extver = 1;	/* sequence number of this table type in FITS file */
 	char stateFormFloat[8];
 	char toneFormDouble[8];
 	char toneFormFloat[8];
@@ -1261,7 +1260,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		exit(EXIT_FAILURE);
 	}
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "PHASE-CAL", extver++);	/* There can be more than one of these tables */
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "PHASE-CAL");	/* There can be more than one of these tables */
 	arrayWriteKeys (p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
 	fitsWriteInteger(out, "NO_TONES", nTone, "");

@@ -231,7 +231,7 @@ def run_batch(corrjoblist, outdir):
         #time.sleep(1)
         job_logfilename = espressolib.get_difxlogname(outdir, jobname)
         if os.path.exists(job_logfilename):
-            job_ok, job_errors = chk_difxlog(open(job_logfilename).readlines())
+            job_ok, job_errors, job_finish = chk_difxlog(open(job_logfilename).readlines(), jobname)
             job_errors = [
                     "{:s}: {:s}".format(jobname, err) for err in job_errors]
         else:
@@ -246,7 +246,7 @@ def run_batch(corrjoblist, outdir):
         if batch.stats is not None:
             # print the user stats
             job_status = "Incomplete"
-            if job_ok:
+            if job_finish:
                 job_status = "Complete"
             jobinfo = "{:s} {:.2f}m {:s}\n{:s} ({:d})\n".format(
                     jobname, corrjoblist[jobname]["joblen"], job_status,
@@ -310,12 +310,12 @@ def write_difxlog(log_in, outdir, jobname):
         logfile.write(log_line)
     logfile.close()
     job_errors = []
-    job_ok, job_errors = chk_difxlog(log_lines)
+    job_ok, job_errors, job_finish = chk_difxlog(log_lines, jobname)
 
     return job_ok, job_errors
 
 
-def chk_difxlog(logfile):
+def chk_difxlog(logfile, jobname):
     """Check for errors and shutdown messages in a difx log file."""
 
     job_finish = False
@@ -335,7 +335,7 @@ def chk_difxlog(logfile):
     if job_errors:
         pass # may want to add specific non-fatal errors here
 
-    return job_ok, job_errors
+    return job_ok, job_errors, job_finish
 
 
 def print_queue(queue_command, jobnames):
