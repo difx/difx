@@ -4,6 +4,8 @@ Makefile.in
 *~
 
 .*.swp
+*.pc
+*libtool
 
 # /applications/gui/trunk/gui/
 /applications/gui/trunk/gui/build
