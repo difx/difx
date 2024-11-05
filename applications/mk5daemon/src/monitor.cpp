@@ -16,17 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: monitor.cpp 9720 2020-09-11 08:17:06Z HelgeRottmann $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/monitor.cpp $
- * $LastChangedRevision: 9720 $
- * $Author: HelgeRottmann $
- * $LastChangedDate: 2020-09-11 16:17:06 +0800 (五, 2020-09-11) $
- *
- *==========================================================================*/
-
 
 #include <cstdio>
 #include <cstring>
