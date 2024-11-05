@@ -20,8 +20,9 @@
 #include <vector>
 #include <poll.h>
 #include <libudev.h>
-
-
+#include <iostream>
+#include <sstream>
+#include <difxmessage.h>
 #include "Mark6DiskDevice.h"
 #include "Mark6Module.h"
 #include "Mark6Controller.h"
@@ -87,6 +88,7 @@ private:
         int parseControllerId(std::string devpath);
         long parseDiskId(std::string sasAddress, std::string driver);
         long parsePhyId(std::string sasPath);
+        bool moduleChange_m;
 public:
         Mark6();
 	~Mark6();
@@ -109,7 +111,12 @@ public:
         std::vector<Mark6DiskDevice> getMountedDevices() const {
             return mountedDevices_m;
         }
-        
+        std::vector<Mark6Module> getMountedModules() const {
+            return modules_m;
+        }
+        bool isModuleChange() const {
+            return moduleChange_m;
+        }
 };
 
 #endif	/* MARK6_H */

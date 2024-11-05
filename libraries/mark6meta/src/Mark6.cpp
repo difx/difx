@@ -50,6 +50,7 @@ Mark6::Mark6(void)
     mountRootData_m = "/mnt/disks/";               
     mountRootMeta_m =  mountRootData_m + ".meta/";
     verifyDevices_m = false;
+    moduleChange_m = true;
 
     // treat uninitialized disks (needed for modInit mode)
     initRawDevice_m = false;
@@ -241,7 +242,6 @@ void Mark6::modInit (int slot, string vsn)
             snprintf (message, 64, "modinit disk %d of %d", diskIdx+1, Mark6Module::MAXDISKS);
             sendActivityMessage(vsn, slot+1, string(message));
             
-            //cout << "HR disk: " << diskIdx << " name: " << device->getName() << " serial: " << device->getSerial() << endl;
             //
             if (device->isMounted())
                 //unmount device
@@ -317,13 +317,12 @@ void Mark6::sendSlotStatusMessage()
 {
     //clog << "Mark6::sendStatusMessage" << endl;
     DifxMessageMark6SlotStatus dm;
-    
-    memset(&dm, 0, sizeof(DifxMessageMark6SlotStatus));
 
-    
     // set module group for each bank
     for (int slot=0; slot < numSlots_m; slot++)
     {
+        memset(&dm, 0, sizeof(DifxMessageMark6SlotStatus));
+
         // slot
         dm.slot = slot+1;
 
@@ -348,6 +347,12 @@ void Mark6::sendSlotStatusMessage()
         // number of missing disks
         dm.numMissingDisks = modules_m[slot].getNumTargetDisks() - modules_m[slot].getNumDiskDevices();
 
+        //state
+        dm.state = MARK6_STATE_IDLE;
+
+        //message
+        strncpy(dm.message, " ", DIFX_MESSAGE_LENGTH);
+
         difxMessageSendMark6SlotStatus(&dm);
     }
 
@@ -360,7 +365,6 @@ void Mark6::sendSlotStatusMessage()
 void Mark6::sendStatusMessage()
 {
     DifxMessageMark6Status dm;
-    
     memset(&dm, 0, sizeof(DifxMessageMark6Status));
     
     // set bank MSNs  
@@ -435,7 +439,8 @@ void Mark6::manageDeviceChange()
     vector<Mark6DiskDevice> tempRemoveDevices;
     Mark6DiskDevice *disk;
     
-    cout << "HR new devices: " << newDevices_m.size() << endl;
+    moduleChange_m = false;
+
     // new devices have been found
     if (newDevices_m.size() > 0)
     {
@@ -455,7 +460,6 @@ void Mark6::manageDeviceChange()
             // verify that both partitions have been detected for this device
 	    if ((tempDevices[i].getPartitions().size() < 2)  && (!initRawDevice_m)){
 		newDevices_m.push_back(tempDevices[i]);
-                cout << "HR partition error" << endl;
 		continue;
 	    }
             else {
@@ -536,6 +540,7 @@ void Mark6::manageDeviceChange()
                 {
                      int slot = tempDevices[i].getSlot();
                      modules_m[slot].addDiskDevice(tempDevices[i]);
+                     moduleChange_m = true;
                 }
             }
         }  
@@ -569,6 +574,7 @@ void Mark6::manageDeviceChange()
                     if (slot != -1)
                     {
                         modules_m[slot].removeDiskDevice(tempRemoveDevices[i]);
+                        moduleChange_m = true;
                         //cout << "Removed device: " << tempRemoveDevices[i].getName() << endl;
                     }
                     else
