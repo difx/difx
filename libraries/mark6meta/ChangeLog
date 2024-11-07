@@ -1,3 +1,12 @@
+Version 2.9.0
+-------------
+* version bump prior to 2.9.0 release
+* support  Mark6 units with more than 4 slots
+* properly determine position of disks on the SAS controller bus independently
+from controller manufacturer logic
+* controller identification by PCI bus ID to preserve mounting logic through
+machine reboots
+
 Version 0.3
 -----------
 * Post DiFX-2.6
