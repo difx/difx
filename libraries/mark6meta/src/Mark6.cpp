@@ -193,8 +193,8 @@ void Mark6::modInit (int slot, string vsn)
     stringstream ss;
     char message[64]; 
 
-    cout << "Starting modinit" << endl;
-    cout << "Number of slots: " << numSlots_m << endl;
+    //cout << "Starting modinit" << endl;
+    //cout << "Number of slots: " << numSlots_m << endl;
 
     if ((slot < 0) || (slot > numSlots_m))
         throw  Mark6Exception("Invalid slot number");
@@ -202,7 +202,7 @@ void Mark6::modInit (int slot, string vsn)
     initRawDevice_m = true;
     manageDeviceChange();
 
-    cout << "Number of disks in slot " << slot << ": " << modules_m[slot].getNumDiskDevices() << endl;
+    //cout << "Number of disks in slot " << slot << ": " << modules_m[slot].getNumDiskDevices() << endl;
 
     if  (modules_m[slot].getNumDiskDevices() < 1)
         return;
@@ -213,8 +213,8 @@ void Mark6::modInit (int slot, string vsn)
     Mark6Meta meta = Mark6Meta();
     meta.setEMSN(vsn, modules_m[slot].getDiskDevice(0)->capacityMB_m *  modules_m[slot].getNumDiskDevices(), 4096, modules_m[slot].getNumDiskDevices());
 
-    cout << " Disk capacity: " << modules_m[slot].getDiskDevice(0)->capacityMB_m << endl;
-    cout << " Module meta: " << modules_m[slot].getCapacity() << " " << modules_m[slot].getVSN() << " " << modules_m[slot].getDatarate() << endl;
+    //cout << " Disk capacity: " << modules_m[slot].getDiskDevice(0)->capacityMB_m << endl;
+    //cout << " Module meta: " << modules_m[slot].getCapacity() << " " << modules_m[slot].getVSN() << " " << modules_m[slot].getDatarate() << endl;
 
     
     // determine disk serials
@@ -228,7 +228,7 @@ void Mark6::modInit (int slot, string vsn)
     }
     meta.setSerials(serials);
 
-    std::cout << "serials contains:\n";
+    //std::cout << "serials contains:\n";
     map<int, string>::iterator it = serials.begin();
     for (it=serials.begin(); it!=serials.end(); ++it)
         std::cout << it->first << " => " << it->second << '\n';
@@ -306,7 +306,7 @@ void Mark6::sendActivityMessage(string vsn, int slot, string message)
     dm.rate = 0.0;
     dm.dataMJD = 0.0;
 
-    cout << "activity: " << vsn << " " << dm.activeVsn << " " << vsn.c_str() <<  " " << strlen(dm.activeVsn) << endl;
+    //cout << "activity: " << vsn << " " << dm.activeVsn << " " << vsn.c_str() <<  " " << strlen(dm.activeVsn) << endl;
     difxMessageSendMark6Activity(&dm);
 
 }
@@ -468,7 +468,7 @@ void Mark6::manageDeviceChange()
             }
             
             // mount both partitions
-            cout << "Mounting device" << endl;
+            //cout << "Mounting device" << endl;
             tempDevices[i].mountDisk(mountRootData_m, mountRootMeta_m, false);
 
             // read the meta information
@@ -512,7 +512,7 @@ void Mark6::manageDeviceChange()
                 if (modules_m[slot].getEMSN() == "")
                 {
                     modules_m[slot].updateMetaFromEMSN(tempDevices[i].getMeta().getEMSN());
-                    cout << tempDevices[i].getMeta().getEMSN() << " " << modules_m[slot].getVSN() << endl;
+                   // cout << tempDevices[i].getMeta().getEMSN() << " " << modules_m[slot].getVSN() << endl;
 
                     if (tempDevices[i].getMeta().getGroup().size() != 0)
                     {
@@ -951,7 +951,7 @@ Mark6DiskDevice Mark6::newDeviceFromUdev(udev_device *dev)
         string devName = string(sysname);
         Mark6DiskDevice disk(devName);
 
-        cout << "HR: " << devpath << endl;
+        //cout << "HR: " << devpath << endl;
         if (devpath != NULL)
         {
             int controllerId = parseControllerId(string(devpath));
@@ -1019,7 +1019,7 @@ void Mark6::writeControllerConfig()
 
     for( std::set<std::string>::iterator it = sorted.begin(); it != sorted.end(); ++it )
     {
-        cout << "Sorted: " << *it << endl;
+        //cout << "Sorted: " << *it << endl;
         /*if ((distance(sorted.begin(), it) == 1) && host0)
         {
           conf << "host0" << endl;
@@ -1172,15 +1172,15 @@ struct udev_enumerate *enumerate;
             devPath = pathStr.substr(0,found);
         }
   
-        cout << udev_device_get_sysname(dev) <<  " " << path << " " << udev_device_get_devpath(dev) << endl;
-        cout << udev_device_get_subsystem(dev) << endl;
-        cout << udev_device_get_devpath(dev) << endl;
+        //cout << udev_device_get_sysname(dev) <<  " " << path << " " << udev_device_get_devpath(dev) << endl;
+        //cout << udev_device_get_subsystem(dev) << endl;
+       // cout << udev_device_get_devpath(dev) << endl;
 //        cout << udev_device_get_devtype(dev) << endl;
-        cout << udev_device_get_syspath(dev) << endl;
+       // cout << udev_device_get_syspath(dev) << endl;
 //        cout << udev_device_get_devnode(dev) << endl;
-        cout << udev_device_get_sysnum(dev) << endl;
-        cout << udev_device_get_devnum(dev) << endl;
-        cout << udev_device_get_seqnum(dev) << endl; 
+       // cout << udev_device_get_sysnum(dev) << endl;
+       // cout << udev_device_get_devnum(dev) << endl;
+       // cout << udev_device_get_seqnum(dev) << endl; 
 
         struct udev_list_entry *devs, *devs_list_entry;
 
@@ -1496,7 +1496,7 @@ int Mark6::parseControllerId(string devpath)
     for(std::size_t i = 0; i < controllers_m.size(); ++i) {
 	if (controllers_m[i].getPath() == sysPath)
         {
-            cout << controllers_m[i].getPath()<< " " << sysPath << " " << controllers_m[i].getOrder() << endl;
+           // cout << controllers_m[i].getPath()<< " " << sysPath << " " << controllers_m[i].getOrder() << endl;
 	    return(controllers_m[i].getOrder());
         }
     }

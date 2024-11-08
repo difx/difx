@@ -64,7 +64,7 @@ void Mark6Module::addDiskDevice(Mark6DiskDevice &device)
 
     updateMetaFromEMSN(eMSN);
     
-    cout << " added device " << device.getName() << " at position " << pos << " with eMSN " << eMSN << endl;;
+    //cout << " added device " << device.getName() << " at position " << pos << " with eMSN " << eMSN << endl;;
 }
 
 /**
@@ -209,7 +209,7 @@ void Mark6Module::resetEMSN() {
 
     ss >> eMSN_m;
 
-    cout << "Update EMSN to: " << eMSN_m;
+    //cout << "Update EMSN to: " << eMSN_m;
 }
 
 
@@ -337,7 +337,7 @@ void Mark6Module::updateMetaFromEMSN(string eMSN) {
     //capacityMB_m *= getNumDiskDevices();
     
 
-    cout << "updated vsn: " << vsn_m << " capacity: " <<  capacityMB_m << " datarate: " << datarate_m << endl;
+   // cout << "updated vsn: " << vsn_m << " capacity: " <<  capacityMB_m << " datarate: " << datarate_m << endl;
     /*for(vector<string>::size_type i = 0; i != field.size(); i++) {
         cout << field[i] << endl;
     }*/

@@ -316,7 +316,7 @@ void Mark6DiskDevice::makeDataDir(string rootPath) {
     
     ss << rootPath << "/" <<  getSlot()+1 << "/" << getPosition() << "/data";
     ss >> path;
-    cout << "Creating: " << path << endl;
+    //cout << "Creating: " << path << endl;
     mkdir (path.c_str(), S_IRUSR| S_IWUSR | S_IRGRP | S_IWGRP |S_IROTH | S_IWOTH);
     chmod(path.c_str(), S_IRWXU| S_IRWXG | S_IRWXO);
 }
@@ -333,7 +333,7 @@ void Mark6DiskDevice::writeMeta(Mark6Meta &meta, string rootMetaPath)
 
 
     file.open ((partitions_m[1].mountPath + "/eMSN").c_str());
-    cout << "HR write Meta :" << meta.getEMSN() << endl;
+    //cout << "HR write Meta :" << meta.getEMSN() << endl;
     file << meta.getEMSN();
     file.close();
     chmod((partitions_m[1].mountPath + "/eMSN").c_str(), S_IRUSR| S_IWUSR | S_IRGRP | S_IWGRP |S_IROTH | S_IWOTH);
