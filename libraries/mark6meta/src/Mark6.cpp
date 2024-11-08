@@ -112,6 +112,7 @@ Mark6::Mark6(void)
     // remove any remaining mounts
     cleanUp();
 
+
     
     // check if required mount points exists; create them if not        
     validateMountPoints();
@@ -449,10 +450,10 @@ void Mark6::manageDeviceChange()
         // validate all new devices
         for(std::vector<Mark6DiskDevice>::size_type i = 0; i != tempDevices.size(); i++) {
        
-            cout << "Processing device: " << i << endl;
+            //cout << "Processing device: " << i << endl;
             if (tempDevices[i].isValid() == false)
             {
-                cout << "disk " << tempDevices[i].getName() << " is not a valid Mark6 disk device. Discarding." << endl;
+                //cout << "disk " << tempDevices[i].getName() << " is not a valid Mark6 disk device. Discarding." << endl;
                 clog << "disk " << tempDevices[i].getName() << " is not a valid Mark6 disk device. Discarding." << endl;
                 continue;
             }
@@ -598,9 +599,6 @@ void Mark6::manageDeviceChange()
 */
 void  Mark6::validateMountPoints()
 {
-	//clog << "validateMountPoints" << endl;
-       
-        
         createMountPoint(mountRootData_m);
         createMountPoint(mountRootMeta_m);
       
@@ -748,8 +746,8 @@ void Mark6::pollDevices()
 {
     vector<std::string> tempPartitions;
 
-    cout << "Polling for new devices" << endl;
-    clog << "Polling for new devices" << endl;
+    //cout << "Polling for new devices" << endl;
+    //clog << "Polling for new devices" << endl;
 
     
     /*for(std::vector<Mark6DiskDevice>::size_type i = 0; i != newDevices_m.size(); i++) {
@@ -917,7 +915,7 @@ void Mark6::pollDevices()
                     //modules_m[iSlot].isComplete();
                     //cout << "Slot " << iSlot << " = " << modules_m[iSlot].getEMSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << modules_m[iSlot].isComplete() << endl;
  //                   cout << "Slot " << iSlot+1 << " = " << modules_m[iSlot].getEMSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << endl;
-                    clog << "Slot " << iSlot+1 << " = " << modules_m[iSlot].getEMSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << endl;
+                    clog << "Slot " << iSlot+1 << " = " << modules_m[iSlot].getVSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << endl;
 		    /*if (modules_m[iSlot].getNumDiskDevices() > 0)
 		    {
 			//if (modules_m[iSlot].diskDevices_m.empty()) { continue; }
@@ -1105,7 +1103,7 @@ void Mark6::writeControllerConfig()
       ifstream conf ("/etc/default/mark6_slots");
       if (conf.is_open())
       {
-          clog << "opened /etc/default/mark6_slots" << endl;
+          clog << "Read controller config from /etc/default/mark6_slots" << endl;
           while ( getline (conf,line) )
           {
               if (line.rfind("#", 0) == 0 || line.size() < 1) // todo: " lrtrim(line).size() "
@@ -1223,8 +1221,9 @@ struct udev_enumerate *enumerate;
                 cout << "not found" << endl;
         */
 
-        clog << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << " " << phy_count<< endl;
-        cout << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << endl;
+        //clog << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << " " << phy_count << endl;
+        //cout << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << endl;
+
 
         controllers_m.push_back(controller);
     }
