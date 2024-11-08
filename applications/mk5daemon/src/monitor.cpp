@@ -30,7 +30,17 @@
 #include <netinet/in.h>
 #include "config.h"
 #include "mk5daemon.h"
+#include <iostream>
 
+
+using namespace std;
+
+
+/**
+ * Determines whether the received DifxMessage is intended for the local host.
+ * This is done by comparing the <to> message field.
+ * 
+ **/
 int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
 {
 	struct addrinfo hints;
@@ -464,6 +474,9 @@ static void listFilesystems(Mk5Daemon *D)
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 }
 
+/**
+ *  Parses and handles difxmessages of the message type "DifxCommand"
+ **/
 void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 {
 	const char *cmd;
@@ -480,6 +493,7 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 		"Command: from=%s identifier=%s command=%s\n", 
 		G->from, G->identifier, cmd);
 	Logger_logData(D->log, message);
+
 
 	if(strcasecmp(cmd, "Reboot") == 0)
 	{
@@ -723,6 +737,23 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 			Mk5Daemon_getMk6FileList(D, slot);
 		}
 	}
+        else if(strncasecmp(cmd, "modinit_", 8) == 0 && strlen(cmd) == 18 && isdigit(cmd[8]))
+        {
+                int slot;
+                char vsn[8];
+                sscanf( cmd, "modinit_%d_%s", &slot, vsn);
+                string vsnStr(vsn) ;
+                //int slot = cmd[8] - '0';
+
+                if(D->isMk6 && slot >= 1 && slot <= 6)
+                {
+                        snprintf(message, DIFX_MESSAGE_LENGTH, "will execute Command=%s on slot %d\n", cmd, slot);
+                        Logger_logData(D->log, message);
+                        // mark6meta starts slot indexing at 0
+                        D->mark6->modInit(slot-1, string(vsnStr));
+                        //Mk5Daemon_getMk6FileList(D, slot);
+                }
+        }
 #endif
 	else
 	{
