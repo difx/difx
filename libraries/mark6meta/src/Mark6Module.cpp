@@ -33,7 +33,7 @@ Mark6Module::~Mark6Module() {
 }
 
 /**
- * Adds th given disk device to the list of devices associated with this module. 
+ * Adds the given disk device to the list of devices associated with this module. 
  *
  * In addition the module meta information (VSN, capacity, datarate. eMSN) is updated based on the 
  * meta information found on the individual disk device
@@ -68,9 +68,12 @@ void Mark6Module::addDiskDevice(Mark6DiskDevice &device)
 }
 
 /**
+ * Remove a disk device from the module
+ *
  * Removes the given device from the list of devices associated with the module.
  * In case the removed device was the last one on the module the module is reset
  * to the initial state.
+ * 
  * @param device the disk device to remove from the module
  */
 void Mark6Module::removeDiskDevice(Mark6DiskDevice &device)
@@ -97,7 +100,9 @@ void Mark6Module::removeDiskDevice(Mark6DiskDevice &device)
 
 /**
  * Gets the disk device at the given index position
+ *
  * @param[in] index
+ *
  * @return the disk device at the given index position; NULL if no device exists at the index position
  */
 Mark6DiskDevice *Mark6Module::getDiskDevice(int index)
@@ -120,6 +125,7 @@ Mark6DiskDevice *Mark6Module::getDiskDevice(int index)
 
 /**
  * Returns the eMSN of the module
+ *
  * @return the eMSN of the module
  */
 string Mark6Module::getEMSN()
@@ -129,6 +135,7 @@ string Mark6Module::getEMSN()
 
 /**
  * Returns the VSN of the module
+ *
  * @return the VSN of the module
  */
 string Mark6Module::getVSN()
@@ -139,6 +146,7 @@ string Mark6Module::getVSN()
 
 /**
  * Returns the capacity of the module (in units of MB)
+ *
  * @return the capacity of the module
  */
 unsigned long  Mark6Module::getCapacity()
@@ -148,6 +156,7 @@ unsigned long  Mark6Module::getCapacity()
 
 /**
  * Returns the datarate of the module 
+ *
  * @return the datarate of the module
  */
 unsigned long  Mark6Module::getDatarate()
@@ -205,8 +214,9 @@ void Mark6Module::resetEMSN() {
 
 
 /**
- * 
- * @return the number of disk devices associated with this module
+ * Obtains the number of disks mounted in the module
+
+ * @return the number of disk devices 
  */
 int Mark6Module::getNumDiskDevices()
 {
@@ -222,6 +232,7 @@ int Mark6Module::getNumDiskDevices()
 }
 /**
  * Returns the number of expected disks within this disk module, as obtained from the meta data. 
+ *
  * @return the number of expected disks; 0 if no information could be obtained from the meta data (e.g. the module is not switched on)
  */
 int Mark6Module::getNumTargetDisks()
@@ -245,10 +256,13 @@ int Mark6Module::getNumTargetDisks()
 }
 
 /**
+ * Checks that all expected disk devices of the module are found
+ *
  * Compares the expected serial numbers found in the meta data against the
  * disk serial numbers obtained via udev during the mounting process.
  * Only if all expected disks are presently mounted completeness of the module
  * is indicated.
+ *
  * @return true if the module is complete; false otherwise
  */
 bool Mark6Module::isComplete(){
@@ -330,6 +344,9 @@ void Mark6Module::updateMetaFromEMSN(string eMSN) {
 }
 
 
+/**
+* Clears the meta data information for the module
+**/
 void Mark6Module::clearMeta() {
     eMSN_m = "";   
     vsn_m = "";
