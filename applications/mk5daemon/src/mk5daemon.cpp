@@ -1253,10 +1253,11 @@ int main(int argc, char **argv)
                 backup = clog.rdbuf();
                 clog.rdbuf(mk6out.rdbuf());
 
-		D->mark6 = new Mark6();
 
                 Logger_logData(D->log, mk6out.str().c_str());
                 mk6out.str("");
+                
+                D->mark6 = new Mark6();
 #else
 		fprintf(stderr, "Error: mark6 option provided but Mark6 support is not compiled in.\n");
 
