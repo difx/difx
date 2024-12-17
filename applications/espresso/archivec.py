@@ -31,6 +31,7 @@ import re
 import subprocess
 import sys
 import shutil
+import traceback
 
 
 def taritup(tardir, tarfile, infile, gzip=False):
@@ -85,6 +86,10 @@ parser.add_option(
         "--onejob", "-j",
         dest="onejob", action="store_true", default=False,
         help="Each job gets its own tar file (instead of each pass)")
+parser.add_option(
+        "--skip_copy", "-s",
+        dest="skip_copy", action="store_true", default=False,
+        help="Skip the initial copy/tar step and assume $ARCHTMP has all data to be transferred")
 
 (options, args) = parser.parse_args()
 
@@ -148,15 +153,16 @@ for filename in os.listdir(os.curdir):
         print ("skipping", filename)
         continue
 
-    # certain file names never get tarred
+    # certain file extensions never get tarred
     notar_ext = [
-            ".fits", ".rpf", ".uvfits", ".mark4", ".tar", passname+".v2d",
+            r".fits\Z", ".rpf", ".uvfits", ".mark4", ".tar", passname+".v2d",
             expname+".vex", expname+".skd", "notes.txt"]
     fileWithPath = os.path.join(os.path.abspath(os.curdir), filename)
     notar = False
     for extension in notar_ext:
         if re.search(extension, filename, re.IGNORECASE):
             notar = True
+            publish.append(filename)
             break
 
     # only tar small files
@@ -166,7 +172,6 @@ for filename in os.listdir(os.curdir):
     if (os.path.exists(fileWithPath) and notar):
         # transfer this large (or special) file without tarring
         transfer.append(re.escape(fileWithPath))
-        publish.append(filename)
     else:
         # add to list of files to be tarred
         tarlists[targroup] += " " + re.escape(filename)
@@ -175,29 +180,31 @@ for filename in os.listdir(os.curdir):
 command = " ".join(["mkdir -p", archdir])
 subprocess.check_call(command, shell=True, stdout=sys.stdout)
 
-# tar up small files in this directory to Archive area, one correlator pass at
-# a time
-for targroup in tarlists.keys():
-    if tarlists[targroup]:
-        tarfile = targroup + ".tar"
-        taritup(archdir, tarfile, tarlists[targroup])
-
-# transfer each of the large files in turn
-print ("copying files")
-for srcfile in transfer:
-    command = " ".join(["cp", "-l", srcfile, archdir])
-    if options.verbose:
-        print ("\n" + command)
-    subprocess.check_call(command, shell=True, stdout=sys.stdout)
-
-# now tar up the clocks subdirectory
-if os.path.exists("clocks"):
-    taritup(archdir, "clocks.tar", "clocks")
+if not options.skip_copy:
+    # tar up small files in this directory to Archive area, one correlator pass at
+    # a time
+    for targroup in tarlists.keys():
+        if tarlists[targroup]:
+            tarfile = targroup + ".tar"
+            taritup(archdir, tarfile, tarlists[targroup])
+    
+    # transfer each of the large files in turn
+    print ("copying files")
+    for srcfile in transfer:
+        command = " ".join(["cp", "-l", srcfile, archdir])
+        if options.verbose:
+            print ("\n" + command)
+        subprocess.check_call(command, shell=True, stdout=sys.stdout)
+    
+    # now tar up the clocks subdirectory
+    if os.path.exists("clocks"):
+        taritup(archdir, "clocks.tar", "clocks")
 
 # and the mark4 output dir
 if mark4file:
     mark4tarfile = expname.upper()+".MARK4.tar.gz"
-    taritup(archdir, mark4tarfile, mark4file, gzip=True)
+    if not options.skip_copy:
+        taritup(archdir, mark4tarfile, mark4file, gzip=True)
     publish.append(mark4tarfile)
 
 # now transfer the lot to data.pawsey.org.au
@@ -226,6 +233,7 @@ except KeyboardInterrupt:
 except:
     print ("pshell transfer failed - check if your delegation expired")
     print ("Contents of {} have not been deleted".format(archdir))
+    traceback.print_exc()
 else:
     # publish the public files
     try:
@@ -244,6 +252,7 @@ else:
                     command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
     except:
         print ("Files not made public - please use web portal")
+        traceback.print_exc()
     if not options.keeparch:
         shutil.rmtree(archdir)
     print ("All done!")
