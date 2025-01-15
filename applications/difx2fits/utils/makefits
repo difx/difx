@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2009-2022 by Walter Brisken                             *
+#   Copyright (C) 2009-2025 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -30,11 +30,13 @@ from os.path import isfile, isdir, getsize
 from time import gmtime, time
 
 program = 'makefits'
-version = '1.1'
+version = '1.2'
 author  = 'Walter Brisken'
-verdate = '20221203'
+verdate = '20250109'
 
 calfiles = 'tsys flag pcal weather *.*.flag *.*.weather *.*.pcal *.*.tsys *.*.cablecal *.*.gain'
+
+otherfiles = '*.channels *.jobmatrix'
 
 def usage(prog):
 	print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
@@ -424,7 +426,7 @@ class JobList:
 					print('Executing: %s' % cmd)
 				system(cmd)
 
-		cmd = 'rm %s' % calfiles
+		cmd = 'rm -f %s %s' % (calfiles, otherfiles)
 		if verbose:
 			print('Executing: %s' % cmd)
 		system(cmd)
