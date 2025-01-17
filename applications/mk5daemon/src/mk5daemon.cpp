@@ -1093,6 +1093,7 @@ int main(int argc, char **argv)
     Mk5Daemon *D;
     time_t t, lastTime;
     char message[DIFX_MESSAGE_LENGTH];
+    std::stringstream msgStream;
     char str[16];
     const char *p, *u;
     double mjd;
@@ -1530,26 +1531,18 @@ int main(int argc, char **argv)
 
    }
 #ifdef HAS_MARK6META
-   catch(Mark6Exception& ex)
+   catch(const std::exception& ex) 
    {
     
-        cerr << "The following error has occured: " << ex.what() << endl;
-        cerr << "This might be caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root!" << endl;
-        cerr << "Aborting" << endl;
-        exit(EXIT_FAILURE);
-   }
-   catch(Mark6MountException& ex)
-   {
-        cerr << "The following error has occured: " << ex.what() << endl;
-        cerr << "This might be caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root!" << endl;
-        cerr << "Aborting" << endl;
-        exit(EXIT_FAILURE);
-       
-   }    
-   catch(Mark6InvalidMetadata& ex)
-   {
-        cerr << "The following error has occured: " << ex.what() << endl;
-        cerr << "Aborting" << endl;
+        // restore clog redirection
+
+        msgStream << "ERROR: " << ex.what() << "\n"; 
+        msgStream << "Note: Some problems are caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root! \n";
+        msgStream << "Aborting" << endl;
+    
+        string tmp = msgStream.str();
+
+        Logger_logData(D->log, tmp.c_str());
         exit(EXIT_FAILURE);
    }
 #endif
