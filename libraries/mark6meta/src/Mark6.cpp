@@ -51,6 +51,7 @@ Mark6::Mark6(void)
     mountRootMeta_m =  mountRootData_m + ".meta/";
     verifyDevices_m = false;
     moduleChange_m = true;
+    configFile_m = "/etc/default/mark6.cfg";
 
     // treat uninitialized disks (needed for modInit mode)
     initRawDevice_m = false;
@@ -71,6 +72,7 @@ Mark6::Mark6(void)
 
     // identify SAS controllers
     int numControllerDetect = enumerateControllers();
+    clog << "Detected " << numControllerDetect << " SAS controllers installed in this machine." << endl;
 
     // look for controller config in /etc/default
     int numControllerConf = readControllerConfig();
@@ -80,11 +82,16 @@ Mark6::Mark6(void)
         writeControllerConfig();
         numControllerConf = readControllerConfig();
     }
+    clog << "Found " << numControllerConf << " controller defintions in config file." << endl;
+    if (numControllerConf == 0)
+        throw Mark6Exception (string("Config file contains no valid controller definitions. Check ") + configFile_m + "\nDeleting the file will create a new config upon the next restart.");
 
     if (numControllerDetect == 0)
         throw Mark6Exception (string("Did not find any SAS controllers. Is this a mark6?") );
     else if (numControllerDetect < numControllerConf) 
         throw Mark6Exception (string("Detected fewer SAS controllers than defined in the configuration.") );
+    else if (numControllerDetect > numControllerConf) 
+        clog << "WARNING: Detected more SAS controllers than defined in the configuration. Check " << configFile_m;
 
     numSlots_m = numControllerDetect * 2;
     
@@ -467,13 +474,14 @@ void Mark6::manageDeviceChange()
                 // work around due to partitions not getting detected reliably by udev in case of many simulataneous events
             }
             
-            // mount both partitions
-            //cout << "Mounting device" << endl;
-            tempDevices[i].mountDisk(mountRootData_m, mountRootMeta_m, false);
-
-            // read the meta information
             try {
+                // mount both partitions
+                tempDevices[i].mountDisk(mountRootData_m, mountRootMeta_m, false);
+                //cout << "Mounting device" << endl;
+
+                // read the meta information
                 tempDevices[i].parseMeta();
+
             } catch (exception& e) {
                 // log the exception and go on (needed when dealing with unitialized modules)
                 clog << e.what() << endl;
@@ -1010,7 +1018,7 @@ void Mark6::writeControllerConfig()
         sorted.insert(controllers_m[i].getPath());
     }
 
-    ofstream conf ("/etc/default/mark6_slots");
+    ofstream conf (configFile_m.c_str());
 
     conf << "# mark6 SAS controller configuration." << endl;
     conf << "# each line contains the name of a SAS controller present in the system" << endl;
@@ -1033,60 +1041,12 @@ void Mark6::writeControllerConfig()
 
     conf.close();
 
-    clog << "Wrote new sas controller configuration: /etc/default/mark6_slots. Check if automatic slot assignments matches local cabling" << endl;
+    clog << "Wrote new sas controller configuration: " << configFile_m << ". Check if automatic slot assignments matches local cabling" << endl;
 
 }
 
-/*void Mark6::writeControllerConfig_deprecated()
-{
-    struct stat st;
-    bool host0 = false;
-    
-    // If /etc/default does not exist create it
-    if (stat("/etc/default", &st) == -1) {
-        mkdir("/etc/default", 0700);
-    }
-
-    // sort controller name alphabetically
-    std::set<std::string> sorted;
-    for(std::size_t i = 0; i < controllers_m.size(); ++i) {
-        // for compatibility always place host0 on index 1 so that it will mount under slots 3 and 4
-        if (controllers_m[i].getName() == "host0")
-        {
-            host0 = true; 
-            continue;
-        }
-        sorted.insert(controllers_m[i].getName());
-    }
-
-    ofstream conf ("/etc/default/mark6_slots");
-
-    conf << "# mark6 SAS controller configuration." << endl;
-    conf << "# each line contains the name of a SAS controller present in the system" << endl;
-    conf << "# the order determines the mount location (first line will mount slots 1&2, second line slots 3&4 etc.)" << endl;
-    conf << "# adapt the order to match the local cabling" << endl;
-
-    for( std::set<std::string>::iterator it = sorted.begin(); it != sorted.end(); ++it )
-    {
-        if ((distance(sorted.begin(), it) == 1) && host0)
-        {
-          conf << "host0" << endl;
-          host0 = false;
-        }
-        conf << *it << endl;
-    }
-    if (host0)
-      conf << "host0" << endl;
-
-    conf.close();
-
-    clog << "Wrote new sas controller configuration: /etc/default/mark6_slots. Check if automatic slot assignments matches local cabling" << endl;
-    
-  }*/
-
-
   /**
-   * Reads the controller configuration file /etc/default/marks_slots
+   * Reads the controller configuration file 
    * in order to determine the mapping between controller and slots.
    * The first controller in the file will mount its disks in slots 1&2
    * The seconds one in slots 3&$ and so forth
@@ -1100,10 +1060,10 @@ void Mark6::writeControllerConfig()
       int count = 0;
 
       // check for controller config
-      ifstream conf ("/etc/default/mark6_slots");
+      ifstream conf (configFile_m.c_str());
       if (conf.is_open())
       {
-          clog << "Read controller config from /etc/default/mark6_slots" << endl;
+          clog << "Read controller config from " << configFile_m << endl;
           while ( getline (conf,line) )
           {
               if (line.rfind("#", 0) == 0 || line.size() < 1) // todo: " lrtrim(line).size() "
@@ -1323,10 +1283,11 @@ int Mark6::enumerateDevices()
                       Mark6DiskDevice disk = newDeviceFromUdev(dev);
                       newDevices_m.push_back(disk);                   
                       devCount++;
-                  } catch (...) {
+                  } catch (exception& e) {
+                      clog << e.what() << endl;
+                      //clog << "Error" << endl;
                       break;
                   }
-
 	    }
 	    else if (devtype == "partition")
 	    {   

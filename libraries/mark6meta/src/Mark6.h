@@ -89,6 +89,7 @@ private:
         long parseDiskId(std::string sasAddress, std::string driver);
         long parsePhyId(std::string sasPath);
         bool moduleChange_m;
+        std::string configFile_m;
 public:
         Mark6();
 	~Mark6();
