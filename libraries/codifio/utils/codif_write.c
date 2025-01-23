@@ -178,6 +178,7 @@ int main (int argc, char * const argv[]) {
   int splitthread = false;
   int splitgroup = false;
   int verbose = 0;
+  int header_only = 0;
   int bufsize = 100;
   int wait = false; // Don't start timing till first packet arrives
   int reuse = false; // Allow processes to use same port
@@ -200,6 +201,7 @@ int main (int argc, char * const argv[]) {
     {"split", 0, 0, 'S'},
     {"splitgroup", 0, 0, 'G'},
     {"verbose", 0, 0, 'V'},
+    {"header", 0, 0, 'H'},
     {"wait", 0, 0, 'w'},
     {"resuse", 0, 0, 'r'},
     {"help", 0, 0, 'h'},
@@ -217,7 +219,7 @@ int main (int argc, char * const argv[]) {
   updatetime = DEFAULT_UPDATETIME;
 
   while (1) {
-    opt = getopt_long_only(argc, argv, "i:T:P:p:t:hwg:G", options, NULL);
+    opt = getopt_long_only(argc, argv, "i:T:P:p:t:hwg:GH", options, NULL);
     if (opt==EOF) break;
 
     switch (opt) {
@@ -334,6 +336,10 @@ int main (int argc, char * const argv[]) {
       verbose = 1;
       break;
       
+    case 'H':
+      header_only = 1;
+      break;
+      
     case 'h':
       printf("Usage: udp_write [options]\n");
       printf("  -p/-port <PORT>        Port to use\n");
@@ -350,7 +356,8 @@ int main (int argc, char * const argv[]) {
       printf("  -S/-split              Write threads to separate files\n");
       printf("  -G/-splitgroup         Write groups to separate files\n");
       printf("  -w/-wait               Wait for first packet before starting recording timer\n");
-      printf("  -r/-reuse              Allow multiple processes to use same port in multicast mode\n");
+      printf("  -H/header              Write headers only\n");
+	     //      printf("  -r/-reuse              Allow multiple processes to use same port in multicast mode\n");
       printf("  -V/-verbose            Verbose output/n");
       printf("  -h/-help               This list\n");
       return(1);
@@ -673,6 +680,8 @@ int main (int argc, char * const argv[]) {
 	if (ofile[fileIndex].file==-1) exit(1);
       }
     }
+
+    if(header_only) nwrite = CODIF_HEADER_BYTES;
 
     nwrote = write(ofile[fileIndex].file, buf, nwrite);
     if (nwrote==-1) {

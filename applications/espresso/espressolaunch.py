@@ -31,6 +31,8 @@ import os
 import sys
 import time
 import pprint
+import select
+import traceback
 from espressolib import espressolib
 
 
@@ -199,9 +201,18 @@ def run_batch(corrjoblist, outdir):
             print (time.asctime())
             running_jobs = print_queue(batch.q, jobnames)
             if running_jobs:
-                input(
+                #input(
+                #        "Jobs submitted - hit ^C to cancel jobs."
+                #        " Hit return to see status of jobs.\n")
+
+                print( 
                         "Jobs submitted - hit ^C to cancel jobs."
                         " Hit return to see status of jobs.\n")
+                # wait 60 secs or until user hits enter, then refresh
+                refresh_time = 60
+                i, o, e = select.select([sys.stdin], [], [], refresh_time)
+                if(i):
+                    print(sys.stdin.readline().strip())
             else:
                 print ()
                 print ("-" * 78)
