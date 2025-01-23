@@ -65,6 +65,9 @@ The install-difx options are:
 
    --withdatasim   Build the datasim application (requires gsl)
 
+   --withspice='installed SPICE directory' Build difxcalc including near-field
+                   making using of SPICE installed at this location
+
    --noinstall     Don't install, only build.
 
    --reconf        Reconfigure step by step rather than with autoreconf
@@ -172,7 +175,7 @@ try:
          "help-options", "help-environment", "help-examples",
          "mk5daemon", "withmonitor", "withdatasim", "perl", "withfb",
          "withhops", "withm6support", "withguiserver", "withpython",
-         "withpolconvert", "noinstall", "reconf", "noconf", "clean",
+         "withpolconvert", "withspice=", "noinstall", "reconf", "noconf", "clean",
          "g77", "extraflags=", "makeflags=", "withmark6meta",
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine",
          "doonly=", "skip=", "also=", "newver=", ])
@@ -202,6 +205,8 @@ noconf = False
 pristine = False
 dodoc = True
 dopybindings = False
+withspice = False
+spicedir = ""
 doipp = 0
 orgcwd = os.getcwd()
 components = {"perl"          :False,
@@ -359,6 +364,9 @@ if len(opts) > 0:
             components["guiServer"] = True
         if o == "--withpython":
             dopybindings = True
+        if o == "--withspice":
+            withspice = True
+            spicedir = a
         if o == "--noinstall":
             noinstall = True
         if o == "--reconf":
@@ -605,7 +613,7 @@ def run(cmd):
             raise RuntimeError("Error running " + cmd + " in " + os.getcwd())
 
 ###### Subroutine to do the compiling of an auto-tool ###
-def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
+def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx, compname):
     thisdir = os.getcwd()   # somewhere below topdir
     if (doreconf and (reconf or os.system("autoreconf -if"))):
         if noconf and os.path.exists('configure'):
@@ -652,6 +660,8 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
         if dopybindings and check_configureAC_has(
             cfp+"/configure.ac", "with-python"):
                 configstring += " --with-python "
+        if compname == "difxio" and withspice:
+            configstring += " --with-spice-root={0}".format(spicedir)
         run(configstring)
 
     run(MAKEcommand + target)
@@ -870,7 +880,7 @@ for libtarget in libtargets:
         print()
         os_chdir(targetdir)
         auto_compile(libtarget[2], libtarget[3], libtarget[4],
-            difxroot, libtarget[5])
+            difxroot, libtarget[5], libtarget[0])
     else:
         print()
         print("******* Skipping "+targetdir)
@@ -947,7 +957,7 @@ for apptarget in apptargets:
         print()
         os_chdir(targetdir)
         auto_compile(apptarget[2], apptarget[3], apptarget[4],
-            difxroot, apptarget[5])
+            difxroot, apptarget[5], apptarget[0])
     else:
         print()
         print("******* Skipping "+targetdir)
@@ -973,7 +983,7 @@ for utiltarget in utiltargets:
         print("Building ", utiltarget[0])
         os_chdir(targetdir)
         auto_compile(utiltarget[2], utiltarget[3], utiltarget[4],
-            difxroot, utiltarget[5])
+            difxroot, utiltarget[5], utiltarget[0])
     else:
         print()
         print("******* Skipping "+targetdir)
