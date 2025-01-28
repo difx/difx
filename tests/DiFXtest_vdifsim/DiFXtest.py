@@ -31,6 +31,23 @@ def pre_checks():
     quit()
 
 
+def print_version_info():
+  test_directory = get_testdir()
+  full_filepath = test_directory + "/difx_version_info.txt"
+  print()
+  with open(full_filepath,"r") as file:
+    contents = file.read()
+    print(contents)
+  print()
+
+def record_difx_version_info():
+  test_directory = get_testdir()
+  full_filepath = test_directory + "/difx_version_info.txt"
+  difx_version = os.environ['DIFX_VERSION']
+  fh = open(full_filepath,"w")
+  filecontents = "BENCHMARK CREATED WITH DIFX_VERISON: " + difx_version + "\n"  
+  fh.write(filecontents)
+  fh.close()
 
 def generate_vdifsim_config(cores):
   filepath = os.path.expanduser('~') 
@@ -84,10 +101,50 @@ def generate_v2d(testname):
   working_directory = current_directory + "/" + testname + "/"
   testdata_dir = current_directory + "/testdata"
 
-  args = "oms2v2d --sim " + testname + ".oms "
-  subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+  args = "oms2v2d -v -v --sim " + testname + ".oms "
+  #subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.STDOUT,stderr=subprocess.STDOUT)
+  logfile = working_directory + "/oms2v2d.log"
+  errfile = working_directory + "/oms2vd2.err"
+  log = open(logfile,"w")
+  err = open(errfile,"w")
+
+
+  try:
+    proc =subprocess.run(args,cwd=working_directory,shell=True,stdout=log,stderr=err,check=True)
+  except subprocess.CalledProcessError as e:
+    print("oms2v2d failed check log files:")
+    print()
+    raise()
+
   return
 
+
+# Adds sampling key to v2d file to generate complex data (FD set to complex, HN set to real) 
+def add_complex_sampling_to_v2d(testname):
+  current_directory = get_testdir()
+  working_directory = current_directory + "/" + testname + "/"
+  v2d_filename = working_directory + testname + ".v2d"
+  #print(v2d_filename)
+  with open(v2d_filename,'r') as file:
+    content = file.read()
+    station_sampling_string_FD = "ANTENNA FD { format=VDIFC/5032/2 " 
+    content = content.replace("ANTENNA FD { ",station_sampling_string_FD);
+  with open(v2d_filename,'w') as file:
+    file.write(content)
+
+def add_complex_sampling_to_v2d_all_complex(testname):
+  current_directory = get_testdir()
+  working_directory = current_directory + "/" + testname + "/"
+  v2d_filename = working_directory + testname + ".v2d"
+  #print(v2d_filename)
+  with open(v2d_filename,'r') as file:
+    content = file.read()
+    station_sampling_string_FD = "ANTENNA FD { format=VDIFC/5032/2 "
+    content = content.replace("ANTENNA FD { ",station_sampling_string_FD);
+    station_sampling_string_FD = "ANTENNA HN { format=VDIFC/5032/2 "
+    content = content.replace("ANTENNA HN { ",station_sampling_string_FD);
+  with open(v2d_filename,'w') as file:
+    file.write(content)
 
 
 def generate_filelist(testname):
@@ -110,6 +167,7 @@ def generate_filelist(testname):
         new_filelist_name = filelist_name.replace(str1,str2)
         os.rename(filelist_name,new_filelist_name)
   else:
+    
     args = "makesimfilelist " + testname + ".vex " + testdata_dir
     subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
   return 
@@ -118,6 +176,8 @@ def get_results_and_setup_files():
   current_directory = get_testdir()
   tarball = current_directory + "/tests.tgz"
   testdata_dir = current_directory + "/testdata"
+  
+  
 
   if (os.path.isdir(testdata_dir) == False):
     testdata_dir = current_directory + "/testdata"
@@ -136,11 +196,12 @@ def get_results_and_setup_files():
     #open(filename,'wb').write(r.content)
     except:
       print("Error downloading setup files and initial benchmark results")
+    quit()
 
 
 def filter_auto_correlations(fits_filename):
 
-  print("filtering auto correlations.")
+  print("Filtering auto correlations.")
   warnings.resetwarnings() 
   warnings.filterwarnings('ignore',category=UserWarning,append=True)  
   warnings.filterwarnings('ignore', category=RuntimeWarning, append=True)
@@ -254,7 +315,7 @@ def get_output_dirs(directory):
    return(output_dirs)
 
 def rm_output_files(testname):
-  current_directory = os.getcwd()
+  current_directory = get_testdir()
   working_directory = current_directory + "/" + testname + "/"
   contents = os.listdir(working_directory)
   for item in contents:
@@ -269,7 +330,7 @@ def rm_output_files(testname):
 
 
 def run_vex2difx(testname):
-  current_directory = os.getcwd()
+  current_directory = get_testdir()
   working_directory = current_directory + "/" + testname + "/"
   vex2difxlogfile = working_directory + "/vex2difx.log"
   vex2difxerrfile = working_directory + "/vex2difx.error"
@@ -288,7 +349,7 @@ def run_vex2difx(testname):
     raise()
 
 def run_difxcalc(testname):
-  current_directory = os.getcwd()
+  current_directory = get_testdir()
   working_directory = current_directory + "/" + testname + "/"
   difxcalclogfile = working_directory + "/difxcalc.log"
   difxcalcerrfile = working_directory + "/difxcalc.error"
@@ -356,11 +417,11 @@ def run_mpifxcorr(testname, numcores):
   cpu_time = 0
   real_time = 0
 
-  current_directory = os.getcwd() 
+  current_directory = get_testdir() 
   working_directory = current_directory + "/" + testname + "/"
-
-  input_files = get_input_files(testname)
-  machine_files = get_machine_files(testname)
+  
+  input_files = get_input_files(working_directory)
+  machine_files = get_machine_files(working_directory)
 
   for (machine_file, input_file) in zip(machine_files, input_files):
     arg = "mpirun -machinefile " + machine_file + " -np " + str(numcores) + " mpifxcorr " + input_file
@@ -395,11 +456,11 @@ def run_mpifxcorr_gpumode(testname, numcores):
   real_time = 0
 
 
-  current_directory = os.getcwd()
+  current_directory = get_testdir()
   working_directory = current_directory + "/" + testname + "/"
 
-  input_files = get_input_files(testname)
-  machine_files = get_machine_files(testname)
+  input_files = get_input_files(working_directory)
+  machine_files = get_machine_files(working_directory)
 
   for (machine_file, input_file) in zip(machine_files, input_files):
     arg = "mpirun -machinefile " + machine_file + " -np " + str(numcores) + " mpifxcorr --usegpu " + input_file
@@ -480,7 +541,7 @@ def compare_results(testname, abstol, reltol, filterautocorrs):
   # results list [Binary file same as benchmark?,FITS file same as benchmark?]
   results = ["",True]
 
-  current_directory = os.getcwd()
+  current_directory = get_testdir()
   working_directory = current_directory + "/" + testname + "/"   
   #print(working_directory)
   binfiles,inputfiles = get_binary_files(working_directory)
@@ -565,8 +626,7 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol, filterautocorrs):
   # results list [Binary file same as benchmark?,FITS file same as benchmark?]
   results = ["",True]
 
-  current_directory = os.getcwd()
-
+  current_directory = get_testdir()
   
 
   #usb-gpu-vs-cpu
@@ -673,7 +733,7 @@ def compare_results_gpu_v_cpu(testname, abstol, reltol, filterautocorrs):
 
 
 def compare_im_files(testname):
-  current_directory = os.getcwd()
+  current_directory = get_testdir()
   working_directory = current_directory + "/" + testname + "/"
   results_directory = working_directory + "/benchmark_results/"
 
@@ -696,7 +756,7 @@ def update_test(testname, filterautocorrs):
 
   
 
-  current_directory = os.getcwd()
+  current_directory = get_testdir()
   working_directory = current_directory + "/" + testname + "/"
   results_directory = working_directory + "/benchmark_results/" 
   binfiles,inputfiles = get_binary_files(working_directory)
@@ -749,22 +809,25 @@ def update_test(testname, filterautocorrs):
 
 def repackage_tests(testnames):
   print("repacking tarball")
-  current_directory = os.getcwd()
-  tar_command = "tar -zcvf tests.tgz"
+  current_directory = get_testdir()
+  tar_command = "tar -zcvf " + current_directory + "/tests.tgz difx_version_info.txt"
   #print("repacked") 
   for testname in testnames:
-    
-    working_directory = testname + "/"
+     
+    working_directory = current_directory + "/" + testname + "/"
     contents = os.listdir(working_directory) 
     for item in contents:
       if (item[-4:] == '.vex' or item[-4:] == '.oms' or item[-7:] == ".config" or item == 'benchmark_results'):
         #print(item)
         if (item == 'benchmark_results'):
-          tar_command = tar_command + " " + working_directory + "/benchmark_results/*" 
+          tar_command = tar_command + " " + testname + "/" + "benchmark_results/*" 
         else:
-          tar_command = tar_command + " " + working_directory + item
+          tar_command = tar_command + " " + testname + "/" + item
     #end for loop
-  subprocess.call(tar_command,shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+  tar_command = tar_command
+  print(tar_command)
+  #quit()
+  subprocess.call(tar_command,cwd=current_directory,shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 
 
@@ -773,8 +836,9 @@ def unpackage_tests(testnames):
   print("Unpacking test tarball.")
   
   unpack = False
-  
+  current_directory = get_testdir()
   for testname in testnames:
+    testname = current_directory + testname
     if (os.path.isdir(testname) == False):
       unpack = True
   if (unpack):
@@ -856,6 +920,9 @@ def main():
   # Check basic installation/compatability issues
   pre_checks()
 
+  # print benchmark version info 
+  print_version_info()
+  
   # generate vdifsim config file
   generate_vdifsim_config(cores)
  
@@ -866,11 +933,11 @@ def main():
 
 
   # list of test names
-  test_name_list = ["usb-2-station","usb-4-band-2-station","usb-10-station"]
-  gpu_compatable_test_name_list = ["usb-2-station-gpu","usb-4-band-2-station-gpu","usb-10-station-gpu"]
+  test_name_list = ["usb-2-station","usb-4-band-2-station","usb-10-station","usb-lsb-10-station","usb-2-station-complex","lsb-2-station","usb-complex-vs-complex","complex-usb-vs-lsb"]
+  gpu_compatable_test_name_list = ["usb-2-station-gpu","usb-4-band-2-station-gpu","usb-10-station-gpu","usb-lsb-10-station-gpu","usb-2-station-complex-gpu","lsb-2-station-gpu","usb-complex-vs-complex-gpu","complex-usb-vs-lsb-gpu"]
 
   # Dictionary with pass/fail status of each test {"test name" : [binary file same (results), FITS file same (true/false)]} 
-  passfail = {"usb-2-station":["",True],"usb-4-band-2-station":["",True],"usb-10-station":["",True]}
+  passfail = {"usb-2-station":["",True],"usb-4-band-2-station":["",True],"usb-10-station":["",True],"usb-lsb-10-station":["",True],"usb-2-station-complex":["",True],"lsb-2-station":["",True],"usb-complex-vs-complex":["",True],"complex-usb-vs-lsb":["",True]}
 
 
   # Add gpu mode tests to list of tests to be run 
@@ -885,6 +952,14 @@ def main():
       new_key = item + "-vs-cpu"
       passfail[new_key] = ["",True]
 
+  # ADD test name list needs to be exteded with the full path for each test name
+  # need to update all functions to take full path rather than test name 
+#  print()
+#  for ii in range(len(test_name_list)):
+#    testpath = get_testdir()
+#    test_name_list[ii] = testpath + "/" + test_name_list[ii]
+#    print(test_name_list[ii])
+  #quit()
   # Unpack tests if they haven't been already
   unpackage_tests(test_name_list)
 
@@ -899,15 +974,21 @@ def main():
   for testname in test_name_list:
     rm_output_files(testname)
     generate_v2d(testname)
-    #quit()
     set_numthreads(testname,numthreads)
     generate_filelist(testname)    
-    #quit()
+
+    # generated v2d file needs to be edited in order to generated complex sampled data
+    if (testname == "usb-2-station-complex" or testname == "usb-2-station-complex-gpu"):
+      add_complex_sampling_to_v2d(testname)
+    if (testname == "usb-complex-vs-complex" or testname == "usb-complex-vs-complex-gpu" or "complex-usb-vs-lsb-gpu" or "complex-usb-vs-lsb"):
+      add_complex_sampling_to_v2d_all_complex(testname)
+
+
     run_vex2difx(testname)
     #quit()
     if (usebenchmarkimfile == "YES"):
       # copy benchmark im file to working directory
-      current_directory = os.getcwd()
+      current_directory = get_testdir()
       working_directory = current_directory + "/" + testname + "/"
       results_directory = working_directory + "/benchmark_results/" 
       benchmark_im_file = get_im_file(results_directory) 
@@ -941,6 +1022,7 @@ def main():
     test_name_list.extend(gpu_compatable_test_name_list)  
 
   if (updatetest == "YES"):
+    record_difx_version_info()  
     for testname in test_name_list:
       update_test(testname,filterautocorrs)
     repackage_tests(test_name_list)
