@@ -196,7 +196,6 @@ def get_results_and_setup_files():
     #open(filename,'wb').write(r.content)
     except:
       print("Error downloading setup files and initial benchmark results")
-    quit()
 
 
 def filter_auto_correlations(fits_filename):
@@ -825,7 +824,7 @@ def repackage_tests(testnames):
           tar_command = tar_command + " " + testname + "/" + item
     #end for loop
   tar_command = tar_command
-  print(tar_command)
+  #print(tar_command)
   #quit()
   subprocess.call(tar_command,cwd=current_directory,shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
@@ -920,9 +919,7 @@ def main():
   # Check basic installation/compatability issues
   pre_checks()
 
-  # print benchmark version info 
-  print_version_info()
-  
+ 
   # generate vdifsim config file
   generate_vdifsim_config(cores)
  
@@ -930,6 +927,7 @@ def main():
   # Grab benchmark results and setup files 
   get_results_and_setup_files()
   #quit()
+
 
 
   # list of test names
@@ -962,6 +960,12 @@ def main():
   #quit()
   # Unpack tests if they haven't been already
   unpackage_tests(test_name_list)
+
+
+  # print benchmark version info 
+  print_version_info()
+ 
+
 
 #  if (download == "YES"):
 #    get_real_data()
