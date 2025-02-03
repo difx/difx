@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2021 by Walter Brisken                                  *
+ *   Copyright (C) 2025 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,8 +27,8 @@
 #include "testvex.h"
 
 const char program[] = "vex2v2d";
-const char version[] = "0.2";
-const char verdate[] = "20210405";
+const char version[] = "0.3";
+const char verdate[] = "20250203";
 const char author[] = "Walter Brisken";
 
 const double defaultTInt = 2.0;		// [sec]
@@ -66,6 +66,8 @@ void usage(const char *pgm)
 	fprintf(stderr, "           specify that comma-separated <list> of threads is absent from datastreams\n\n");
 	fprintf(stderr, "  --dropAntennas=<list>\n");
 	fprintf(stderr, "           specify that comma-separated <list> of antennas should be excluded\n\n");
+	fprintf(stderr, "  --complex=<list>\n");
+	fprintf(stderr, "           specify that comma-separated <list> of antennas is complex sampled\n\n");
 	fprintf(stderr, "  --1bit=<list>\n");
 	fprintf(stderr, "           specify that comma-separated <list> of antennas has 1 bit per sample\n\n");
 	fprintf(stderr, "  -2       set up for two datastreams per antenna\n\n");
@@ -125,7 +127,7 @@ const char *getDatastreamMachine(const std::string &ant)
 	}
 }
 
-int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, bool doMachines, int vdifFrameSize, bool doFilelist, bool doVlitebuf, const char *threadsAbsent, const char *dropAntennas, const char *oneBitAntennas)
+int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, bool doMachines, int vdifFrameSize, bool doFilelist, bool doVlitebuf, const char *threadsAbsent, const char *dropAntennas, const char *oneBitAntennas, const char *complexAntennas)
 {
 	FILE *out;
 	unsigned int nAntenna = V->nAntenna();
@@ -135,7 +137,7 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 	Lower(lexper);
 	bool first = true;
 
-	if(vdifFrameSize > 0 || nDatastream > 1 || oneBitAntennas != 0)
+	if(vdifFrameSize > 0 || nDatastream > 1 || oneBitAntennas != 0 || complexAntennas != 0)
 	{
 		doDatastreams = true;
 	}
@@ -203,6 +205,7 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 		Lower(lname);
 		machine = getDatastreamMachine(A->name);
 		int bits;
+		int isComplex;
 
 		if(doMachines && machine == 0)
 		{
@@ -217,6 +220,15 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 			if(strcasestr(oneBitAntennas, A->name.c_str()) != 0)
 			{
 				bits = 1;
+			}
+		}
+
+		isComplex = 0;
+		if(complexAntennas)
+		{
+			if(strcasestr(complexAntennas, A->name.c_str()) != 0)
+			{
+				isComplex = 1;
 			}
 		}
 
@@ -235,7 +247,14 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 					
 					f = vdifFrameSize > 0 ? vdifFrameSize : 5032;
 					b = bits > 0 ? bits : 2;
-					fprintf(out, " format=VDIF/%d/%d", f, b);
+					if(isComplex)
+					{
+						fprintf(out, " format=VDIFC/%d/%d", f, b);
+					}
+					else
+					{
+						fprintf(out, " format=VDIF/%d/%d", f, b);
+					}
 				}
 				if(doFilelist)
 				{
@@ -338,6 +357,7 @@ int main(int argc, char **argv)
 	const char *threadsAbsent = 0;
 	const char *dropAntennas = 0;
 	const char *oneBitAntennas = 0;
+	const char *complexAntennas = 0;
 
 	for(a = 1; a < argc; ++a)
 	{
@@ -403,6 +423,10 @@ int main(int argc, char **argv)
 		else if(strncmp(argv[a], "--1bit=", 7) == 0)
 		{
 			oneBitAntennas = argv[a]+7;
+		}
+		else if(strncmp(argv[a], "--complex=", 10) == 0)
+		{
+			complexAntennas = argv[a]+10;
 		}
 		else if(strcmp(argv[a], "-2") == 0)
 		{
@@ -503,7 +527,7 @@ int main(int argc, char **argv)
 		std::cout << std::endl;
 	}
 
-	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, doMachines, vdifFrameSize, doFilelist, doVlitebuf, threadsAbsent, dropAntennas, oneBitAntennas);
+	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, doMachines, vdifFrameSize, doFilelist, doVlitebuf, threadsAbsent, dropAntennas, oneBitAntennas, complexAntennas);
 
 	if(outFile[0])
 	{
