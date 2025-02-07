@@ -79,6 +79,10 @@ static void genJobGroups(std::vector<JobGroup> &JGs, const VexData *V, const Cor
 		JobGroup &JG = JGs.back();
 		JG.scans.push_back(scans.front());
 		JG.setTimeRange(*scan);
+		for(std::map<std::string,Interval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+		{
+			JG.antennas.insert(it->first);
+		}
 		scans.pop_front();
 
 		const VexScan *scan1 = V->getScanByDefName(JG.scans.back());

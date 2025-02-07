@@ -16,6 +16,7 @@ Version 3.1.0
 * Allow "NONE" data format.  This was allowed in previous vex parser version, but got lost when vex2 was added.
 * Fix "datastreams with no data" bug.  This was triggered when there was a job break in the middle of a scan and an antenna only had data during one part of the broken scan
 * Fix format override where VDIF/CODIF wouldn't change sampling type in some cases
+* vex2v2d: add option to make antenna complex-valued
 
 Version 3.0.0
 -------------
