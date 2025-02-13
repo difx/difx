@@ -10,6 +10,7 @@ Version 1.6
   - vdifStateCount: generate histogram of state counts
   - vdifMeanRMS: calculate mean and RMS values on a 1 second cadence
 * Remove SVN headers, fix some spelling
+* vsum : add --exhaustive option that generates some statistics based on the full file
 
 Version 1.5
 ~~~~~~~~~~~
