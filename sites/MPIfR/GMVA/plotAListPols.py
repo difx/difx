@@ -62,7 +62,7 @@ def getAlistData(alistname, refStation, remStation=None, verbose=True, relabelLi
         if ant2 not in timeseries[T]['antennas']:
             timeseries[T]['antennas'].append(ant2)
         if polpair in timeseries[T][baseline_std]:
-            print("Warning: time %d or scan %s already has an entry for baseline %s polnz %s" % (T, scanname, baseline_std, polpair))
+            print("Warning: time %s or scan %s already has an entry for baseline %s polnz %s" % (T.strftime('%j-%H%M%S'), scanname, baseline_std, polpair))
         else:
             timeseries[T][baseline_std][polpair] = float(frec.snr)
 
