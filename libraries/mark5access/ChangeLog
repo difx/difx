@@ -8,6 +8,7 @@ Version 1.7
   - ctypes has no complex data type, hence output is 2*N samples of ctypes.c_float
   - use numpy.frombuffer(<ctypes output>, dtype='complex64') to interpret output as complex data
 * m5kb, m5subband and zerocorr: use fftw's memory allocation functions
+* for 4 and 8 bit VDIF, make reconstructed sample values symmetric.  That is, the value corresponding to 2^(nbit-1) is no longer zero.
 
 
 Version 1.6
