@@ -111,7 +111,7 @@ static void initluts()
 		}
 
 		/* lut8bit */
-		lut8bit[b] = (b-127.5)/3.3;	/* This scaling mimics 2-bit data if 8 bit RMS==~10 */
+		lut8bit[b] = (b-128)/3.3;	/* This scaling mimics 2-bit data if 8 bit RMS==~10 */
 
 		/* Complex lookups */
 
