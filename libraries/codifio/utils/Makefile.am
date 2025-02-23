@@ -5,7 +5,7 @@ LDADD = \
 	$(top_builddir)/src/libcodifio.la
 
 bin_PROGRAMS = \
-	codifsum codif_write codifSplitChan fixcodif
+	codifsum codif_write codifSplitChan fixcodif codif_dumpheaders
 
 codifsum_SOURCES = \
 	codifsum.c
@@ -18,4 +18,7 @@ codifSplitChan_SOURCES = \
 
 fix_codif_SOURCES = \
 	fixcodif.c
+
+codif_dumpheaders_SOURCES = \
+	codif_dumpheaders.c
 
