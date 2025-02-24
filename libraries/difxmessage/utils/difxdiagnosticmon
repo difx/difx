@@ -84,11 +84,11 @@ class Parser:
 		elif tag == 'microsec':
 			self.microsec = float(self.tmp)
 		elif tag == 'bytes':
-			self.bytes = long(self.tmp)
+			self.bytes = int(self.tmp)
 		elif tag == 'bytespersec':
 			self.rateMbps = 8.0*float(self.tmp)/1.0e6
 		elif tag == "numSubintsLost":
-			self.counter == long(self.tmp)
+			self.counter == int(self.tmp)
 		elif tag == "activeBufElements":
 			self.bufferstatus[2] = int(self.tmp)
 		elif tag == "startBufElement":
@@ -119,7 +119,7 @@ class Parser:
 			elif self.diagnosticType == 'ProcessingTime':
 				diagstr = '%.1f microsec spent processing last subint' % (self.microsec)
 			elif self.diagnosticType == 'DataConsumed':
-				diagstr = '%.2f MB of data consumedI' % (self.bytes/1e6)
+				diagstr = '%.2f MB of data consumed' % (self.bytes/1e6)
 			elif self.diagnosticType == 'InputDatarate':
 				diagstr = 'Data rate in last second: %.2f Mbps' % (self.rateMbps)
 			elif self.diagnosticType == 'NumSubintsLost':

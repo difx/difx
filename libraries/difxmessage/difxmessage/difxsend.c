@@ -16,6 +16,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id: difxsend.c 10566 2022-07-29 16:26:50Z HelgeRottmann $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxmessage/difxmessage/difxsend.c $
+// $LastChangedRevision: 10566 $
+// $Author: HelgeRottmann $
+// $LastChangedDate: 2022-07-30 00:26:50 +0800 (六, 2022-07-30) $
+//
+//============================================================================
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -459,9 +469,8 @@ int difxMessageSendMark6SlotStatus(const DifxMessageMark6SlotStatus *mark6slotst
 	int size = 0;
 	char body[DIFX_MESSAGE_LENGTH];
 	char message[DIFX_MESSAGE_LENGTH];
-
 	char msn[DIFX_MESSAGE_MARK6_MSN_LENGTH+2]; 
-	
+
 	// validate msn and covert to upper case
 	if(strlen(mark6slotstatus->msn) != 8)
         {
@@ -474,15 +483,18 @@ int difxMessageSendMark6SlotStatus(const DifxMessageMark6SlotStatus *mark6slotst
                         msn[i] = toupper(mark6slotstatus->msn[i]);
                 }
         }
+
         size = snprintf(body, DIFX_MESSAGE_LENGTH,
 
                 "<mark6SlotStatus>"
                   "%s"
                   "<slot>%d</slot>"
-                  "<msn>%s</msn>"
+                  "<msn>%8s</msn>"
                   "<group>%s</group>"
                   "<numDisks>%d</numDisks>"
                   "<numMissingDisks>%d</numMissingDisks>"
+                  "<state>%d</state>"
+                  "<message>%s</message>"
                 "</mark6SlotStatus>",
 
                 difxMessageInputFilenameTag,
@@ -490,7 +502,9 @@ int difxMessageSendMark6SlotStatus(const DifxMessageMark6SlotStatus *mark6slotst
                 msn,
 		mark6slotstatus->group,	
 		mark6slotstatus->numDisks,	
-		mark6slotstatus->numMissingDisks);
+		mark6slotstatus->numMissingDisks,
+                mark6slotstatus->state,
+                mark6slotstatus->message);
 
 	if(size >= DIFX_MESSAGE_LENGTH)
 	{
@@ -770,10 +784,12 @@ int difxMessageSendMark6Activity(const DifxMessageMark6Activity *mark6activity)
 	char message[DIFX_MESSAGE_LENGTH];
 	char body[DIFX_MESSAGE_LENGTH];
 	char scanName[DIFX_MESSAGE_MAX_SCANNAME_LEN];
-	char activeVsn[10];
+	char activeVsn[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
 	int size;
 
-	if(strlen(mark6activity->activeVsn) != 8)
+        memset(activeVsn, 0 , DIFX_MESSAGE_MARK6_MSN_LENGTH+2);
+
+	if(strlen(mark6activity->activeVsn) != DIFX_MESSAGE_MARK6_MSN_LENGTH)
 	{
 		strcpy(activeVsn, "none");
 	}
@@ -781,7 +797,7 @@ int difxMessageSendMark6Activity(const DifxMessageMark6Activity *mark6activity)
 	{
 		int i;
 
-		for(i = 0; i < 9; ++i)
+		for(i = 0; i <= DIFX_MESSAGE_MARK6_MSN_LENGTH; ++i)
 		{
 			activeVsn[i] = toupper(mark6activity->activeVsn[i]);
 		}
@@ -800,7 +816,7 @@ int difxMessageSendMark6Activity(const DifxMessageMark6Activity *mark6activity)
 	
 		"<mark6Activity>"
 		  "%s"
-		  "<activeVSN>%s</activeVSN>"
+		  "<activeVSN>%8s</activeVSN>"
 		  "<statusWord>0x%08x</statusWord>"
 		  "<state>%s</state>"
 		  "<scanNumber>%d</scanNumber>"

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2024 by Walter Brisken, Adam Deller,               *
+ *   Copyright (C) 2009-2025 by Walter Brisken, Adam Deller,               *
  *                              Chris Phillips, Geoffrey Crew              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -68,9 +68,9 @@ static void initluts()
 	/* Warning: these are different than for VLBA/Mark4/Mark5B! */
 	const float lut2level[2] = {-1.0, 1.0};
 	const float lut4level[4] = {-HiMag, -1.0, 1.0, HiMag};
-	const float lut16level[16] = {-8/FourBit1sigma,-7/FourBit1sigma,-6/FourBit1sigma,-5/FourBit1sigma,-4/FourBit1sigma,
-				      -3/FourBit1sigma,-2/FourBit1sigma,-1/FourBit1sigma,0,1/FourBit1sigma,2/FourBit1sigma,
-				      3/FourBit1sigma,4/FourBit1sigma,5/FourBit1sigma,6/FourBit1sigma,7/FourBit1sigma};
+	const float lut16level[16] = {-7.5/FourBit1sigma,-6.5/FourBit1sigma,-5.5/FourBit1sigma,-4.5/FourBit1sigma,-3.5/FourBit1sigma,
+				      -2.5/FourBit1sigma,-1.5/FourBit1sigma,-0.5/FourBit1sigma,0.5/FourBit1sigma,1.5/FourBit1sigma,2.5/FourBit1sigma,
+				      3.5/FourBit1sigma,4.5/FourBit1sigma,5.5/FourBit1sigma,6.5/FourBit1sigma,7.5/FourBit1sigma};
 	int b, i, l, li;
 	
 	for(i = 0; i < 8; i++)

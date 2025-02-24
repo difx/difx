@@ -62,7 +62,7 @@ def getAlistData(alistname, refStation, remStation=None, verbose=True, relabelLi
         if ant2 not in timeseries[T]['antennas']:
             timeseries[T]['antennas'].append(ant2)
         if polpair in timeseries[T][baseline_std]:
-            print("Warning: time %d or scan %s already has an entry for baseline %s polnz %s" % (T, scanname, baseline_std, polpair))
+            print("Warning: time %s or scan %s already has an entry for baseline %s polnz %s" % (T.strftime('%j-%H%M%S'), scanname, baseline_std, polpair))
         else:
             timeseries[T][baseline_std][polpair] = float(frec.snr)
 
@@ -145,13 +145,13 @@ def plotAlistData(timeseries, refAnt, min_snr=None, verbose=False):
             else:
                 continue
 
-        ax1.plot(times, snr['LL'], marker="o", linestyle='dotted', label=baseline+':LL', color=c, picker=5, gid=remAnt, alpha=plot_alpha)
-        ax1.plot(times, snr['RR'], marker="o", linestyle='dotted', label=baseline+':RR', color=c, picker=5, gid=remAnt, alpha=plot_alpha)
-        ax1.plot(times, snr['LR'], marker="x", linestyle='dotted', label=baseline+':LR', color=c, picker=5, gid=remAnt, alpha=plot_alpha)
-        ax1.plot(times, snr['RL'], marker="x", linestyle='dotted', label=baseline+':RL', color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+        ax1.plot(times, snr['LL'], marker="o", label=baseline+':LL', color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+        ax1.plot(times, snr['RR'], marker="o", label=baseline+':RR', color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+        ax1.plot(times, snr['LR'], marker="x", label=baseline+':LR', color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+        ax1.plot(times, snr['RL'], marker="x", label=baseline+':RL', color=c, picker=5, gid=remAnt, alpha=plot_alpha)
         ax1.legend(loc='upper right', ncol=Nant)
 
-        ax2.plot(times, ratios, marker="o", linestyle='dotted', label=baseline, color=c, picker=5, gid=remAnt, alpha=plot_alpha)
+        ax2.plot(times, ratios, marker="o", label=baseline, color=c, picker=5, gid=remAnt, alpha=plot_alpha)
         ax2.legend(loc='upper right', ncol=Nant)
 
         ax2.set_xlabel('Scan Time (UT)')
@@ -220,6 +220,10 @@ def scatterplotAlistData(timeseries, refAnt, verbose=False):
     for k in ax:
         # ax[k].set_xlim(0, 30)
         # ax[k].set_ylim(0, 30)
+        xmin, xmax = ax[k].get_xlim()
+        ymin, ymax = ax[k].get_ylim()
+        ax[k].set_xlim(min(xmin,ymin), max(xmax,ymax))
+        ax[k].set_ylim(min(xmin,ymin), max(xmax,ymax))
         ax[k].grid(True)
         ax[k].legend(loc='upper right', ncol=min(6,Nant))
 

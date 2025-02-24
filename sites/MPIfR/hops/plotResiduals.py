@@ -100,44 +100,48 @@ for alist in args.alistFile:
 		hour = time[0:2]
 		minute = time[2:4]
 		second = time[4:6]
-		delay = field[24]
-		rate = field[27]
-		freq = field[36]
+		delay = float(field[24])
+		rate = float(field[27])
+		freq = float(field[36])
+
+		if st1 == refRemSt[0]:
+			rate = -rate
+			delay = -delay
 
 		date = datetime.datetime.strptime(field[10]+"-"+field[11], "%Y-%j-%H%M%S")
 
 		scans[date] = scan
 		scansources[date] = srcname
 
-		fringerate = float(rate)*float(freq)*1e-3
+		fringerate = rate*freq*1e-3
 		#print (date, st1, st2, scan, rate, fringerate)
 		if abs(fringerate) > abs(args.maxFr):
 			print ("Warning: abs. fringe rate > %e found: FR=%e bline=%s%s at %s " % (args.maxFr, fringerate, st1, st2, date))
 
 		if st1 in rates.keys():
-			rates[st1] = numpy.append(rates[st1], float(rate))
+			rates[st1] = numpy.append(rates[st1], rate)
 			fringerates[st1] = numpy.append(fringerates[st1], fringerate)
 
-			delays[st1] = numpy.append(delays[st1], float(delay))
+			delays[st1] = numpy.append(delays[st1], delay)
 			dates[st1].append(date)
 			times[st1].append(time)
 		else:
-			rates[st1]= numpy.array([float(rate)])
+			rates[st1]= numpy.array([rate])
 			fringerates[st1]= numpy.array([fringerate])
-			delays[st1] = numpy.array([float(delay)])
+			delays[st1] = numpy.array([delay])
 			dates[st1] = [date]
 			times[st1] = [time]
 
 		if st2 in rates.keys():
-			rates[st2] = numpy.append(rates[st2], float(rate))
+			rates[st2] = numpy.append(rates[st2], rate)
 			fringerates[st2] = numpy.append(fringerates[st2], fringerate)
-			delays[st2] = numpy.append(delays[st2], float(delay))
+			delays[st2] = numpy.append(delays[st2], delay)
 			dates[st2].append(date)
 			times[st2].append(time)
 		else:
-			rates[st2]= numpy.array([float(rate)])
+			rates[st2]= numpy.array([rate])
 			fringerates[st2]= numpy.array([fringerate])
-			delays[st2] = numpy.array([float(delay)])
+			delays[st2] = numpy.array([delay])
 			dates[st2] = [date]
 			times[st2] = [time]
 

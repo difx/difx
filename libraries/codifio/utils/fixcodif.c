@@ -71,6 +71,8 @@ int main(int argc, char *argv[]) {
 
   int groupID = -1;
   int threadID = -1;
+
+  int i;
     
   // Parse command line options with getopt
   static struct option options[] = {
@@ -105,7 +107,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  for (int i=optind; i<argc; i++) {
+  for (i=optind; i<argc; i++) {
     if (i>optind) printf("\n");
     printf("%s:\n", argv[i]);
     
