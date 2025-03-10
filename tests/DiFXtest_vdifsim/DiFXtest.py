@@ -931,11 +931,11 @@ def main():
 
 
   # list of test names
-  test_name_list = ["usb-2-station","usb-4-band-2-station","usb-10-station","usb-lsb-10-station","usb-2-station-complex","lsb-2-station","usb-complex-vs-complex","complex-usb-vs-lsb"]
-  gpu_compatable_test_name_list = ["usb-2-station-gpu","usb-4-band-2-station-gpu","usb-10-station-gpu","usb-lsb-10-station-gpu","usb-2-station-complex-gpu","lsb-2-station-gpu","usb-complex-vs-complex-gpu","complex-usb-vs-lsb-gpu"]
+  test_name_list = ["usb-2-station","usb-4-band-2-station","usb-10-station","usb-lsb-10-station","usb-complex-vs-real","lsb-2-station","usb-complex-vs-complex","complex-usb-vs-lsb"]
+  gpu_compatable_test_name_list = ["usb-2-station-gpu","usb-4-band-2-station-gpu","usb-10-station-gpu","usb-lsb-10-station-gpu","usb-complex-vs-real-gpu","lsb-2-station-gpu","usb-complex-vs-complex-gpu","complex-usb-vs-lsb-gpu"]
 
   # Dictionary with pass/fail status of each test {"test name" : [binary file same (results), FITS file same (true/false)]} 
-  passfail = {"usb-2-station":["",True],"usb-4-band-2-station":["",True],"usb-10-station":["",True],"usb-lsb-10-station":["",True],"usb-2-station-complex":["",True],"lsb-2-station":["",True],"usb-complex-vs-complex":["",True],"complex-usb-vs-lsb":["",True]}
+  passfail = {"usb-2-station":["",True],"usb-4-band-2-station":["",True],"usb-10-station":["",True],"usb-lsb-10-station":["",True],"usb-complex-vs-real":["",True],"lsb-2-station":["",True],"usb-complex-vs-complex":["",True],"complex-usb-vs-lsb":["",True]}
 
 
   # Add gpu mode tests to list of tests to be run 
@@ -982,10 +982,15 @@ def main():
     generate_filelist(testname)    
 
     # generated v2d file needs to be edited in order to generated complex sampled data
-    if (testname == "usb-2-station-complex" or testname == "usb-2-station-complex-gpu"):
-      add_complex_sampling_to_v2d(testname)
-    if (testname == "usb-complex-vs-complex" or testname == "usb-complex-vs-complex-gpu" or "complex-usb-vs-lsb-gpu" or "complex-usb-vs-lsb"):
-      add_complex_sampling_to_v2d_all_complex(testname)
+    if (testname == "usb-complex-vs-real" or testname == "usb-complex-vs-real-gpu"):
+        print("complex format change") 
+        print(testname)
+        add_complex_sampling_to_v2d(testname)
+    if (testname == "usb-complex-vs-complex" or testname == "usb-complex-vs-complex-gpu" or testname == "complex-usb-vs-lsb-gpu" or testname ==  "complex-usb-vs-lsb"):
+        print("complex format change")
+        add_complex_sampling_to_v2d_all_complex(testname)
+
+
 
 
     run_vex2difx(testname)
