@@ -13,6 +13,7 @@ Version 1.6
 * vsum : add --exhaustive option that generates some statistics based on the full file
 * vmux : don't resurrect previous frame after a large data gap
 * vmux : account for filler frames introduced by a large data gap
+* Add a few more nice to have corner turners: 20-thread and 24-thread up to 16bits
 
 Version 1.5
 ~~~~~~~~~~~
