@@ -9,7 +9,8 @@ Version 1.7
   - use numpy.frombuffer(<ctypes output>, dtype='complex64') to interpret output as complex data
 * m5kb, m5subband and zerocorr: use fftw's memory allocation functions
 * for 4 bit VDIF, make reconstructed sample values symmetric.  That is, the value corresponding to 2^(nbit-1) is no longer zero.
-
+* if environment variable SYMMETRIC_8_BIT_VDIF is defined, then 8-bit VDIF will make symmetric reconstructed values.
+  - This is kind of a hack that deserves a rethink...
 
 Version 1.6
 * Post DiFX-2.6

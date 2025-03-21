@@ -72,7 +72,13 @@ static void initluts()
 				      -2.5/FourBit1sigma,-1.5/FourBit1sigma,-0.5/FourBit1sigma,0.5/FourBit1sigma,1.5/FourBit1sigma,2.5/FourBit1sigma,
 				      3.5/FourBit1sigma,4.5/FourBit1sigma,5.5/FourBit1sigma,6.5/FourBit1sigma,7.5/FourBit1sigma};
 	int b, i, l, li;
+	double offset8bit = 128.0;	/* default value: leads to "asymmetric sampling option" */
 	
+	if(getenv("SYMMETRIC_8_BIT_VDIF")!= 0)
+	{
+		offset8bit = 127.5;	/* with this value, there is no zero reconstructed state and there are equal number of + and - states */
+	}
+
 	for(i = 0; i < 8; i++)
 	{
 		zeros[i] = 0.0;
@@ -111,7 +117,7 @@ static void initluts()
 		}
 
 		/* lut8bit */
-		lut8bit[b] = (b-128)/3.3;	/* This scaling mimics 2-bit data if 8 bit RMS==~10 */
+		lut8bit[b] = (b-offset8bit)/3.3;	/* This scaling mimics 2-bit data if 8 bit RMS==~10 */
 
 		/* Complex lookups */
 
@@ -135,7 +141,6 @@ static void initluts()
 		l =  b & 0xF;
 		li = (b>>4) & 0xF;
 		complex_lut4bit[b] =  lut16level[l] + lut16level[li]*I;
-
 	}
 }
 
