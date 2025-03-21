@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
   int nchan=0, bits=0, isComplex=0, dataSize=0, frameSize=0;
   char *output_dir = NULL, errormsg[1000];
   int opt;
+  int i;
 
   struct option options[] = {
     {"outdir", 1, 0, 'd'},
@@ -86,7 +87,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Loop over each file provided in the arguments
-  for (int i = optind; i < argc; i++) {
+  for (i = optind; i < argc; i++) {
     char *input_filename = argv[i];
     int fd = open(input_filename, O_RDWR);
     if (fd < 0) {
@@ -178,11 +179,13 @@ void rotate_band(unsigned char *buffer, ssize_t bytes, int bits, int dataSize, i
 
   int timeSamples = dataSize*8 / (bits*nchan);
   if (bits==8) {
+    int i;
     int8_t *samples;
     if (nchan==1) {
-      for (int i=0; i<nframe; i++) {
+      for (i=0; i<nframe; i++) {
+        int j;
 	samples = (int8_t*)&buffer[frameSize*i+CODIF_HEADER_BYTES];
-	for (int j=2; j<timeSamples; j+=4) {
+	for (j=2; j<timeSamples; j+=4) {
 	  samples[j] *= -1;
 	  samples[j+1] *= -1;
 	}
