@@ -22,6 +22,8 @@
 
 #define SCALE 10000.0               // amplitude factor to normalize for fourfit
 
+static int CalculateNIndex(const DifxInput *D, int a1, int a2);
+
 int new_type1 (DifxInput *D,                    // ptr to a filled-out difx input structure
                struct fblock_tag *pfb,          // ptr to filled-in fblock table
                int nb,                          // (next open) index to base_index array
@@ -133,7 +135,8 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
 
                                     // construct and write type 100 record
     memcpy (t100.baseline, blines+2*nb, 2);
-    t100.nindex = D->baseline[blind].nFreq * D->baseline[blind].nPolProd[0];
+    //t100.nindex = D->baseline[blind].nFreq * D->baseline[blind].nPolProd[0];
+    t100.nindex = CalculateNIndex(D, a1, a2);
     write_t100 (&t100, fout[nb]);
 
     if (a1 != a2)                   // cross-correlation
@@ -156,7 +159,7 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                     }
                 if (ref >= 0 && rem >= 0)
                     {
-                    put_t101 (&t101, fout[nb], pfb[n].stn[0].find,
+                    put_t101 (&t101, fout[nb], pfb[n].stn[0].fmk4,
                               pfb[n].stn[0].chan_id, pfb[n].stn[1].chan_id);
                     scale_factor[nb] = SCALE * factor[pfb[n].stn[0].bs - 1]
                                              * factor[pfb[n].stn[1].bs - 1];
@@ -176,7 +179,7 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                                     // first time antenna match?
                 if (a1 == pfb[n].stn[is].ant && pfb[n].stn[is].first_time)
                     {
-                    put_t101 (&t101, fout[nb], pfb[n].stn[is].find,
+                    put_t101 (&t101, fout[nb], pfb[n].stn[is].fmk4,
                               pfb[n].stn[is].chan_id, pfb[n].stn[is].chan_id);
                     scale_factor[nb] = SCALE;
                                     // form cross-pol chan_id string 
@@ -211,7 +214,7 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                           && pfb[m].stn[1].ant == a1
                           && pfb[m].stn[1].first_time))
                             {
-                            put_t101 (&t101, fout[nb], pfb[n].stn[is].find,
+                            put_t101 (&t101, fout[nb], pfb[n].stn[is].fmk4,
                                       pfb[n].stn[is].chan_id, xpol_string);
                             }
                     }
@@ -250,3 +253,27 @@ void put_t101 (struct type_101 *t101,
                                     // and write this type 101
     write_t101 (t101, fout);
     }
+
+//this function is needed to compute t100.nindex properly with multiple datastream
+//stations, previously d2m4 erroneously used:
+//nindex = D->baseline[blind].nFreq * D->baseline[blind].nPolProd[0];
+//which is correct when there is a single datastream containing all of the
+//frequencies and pol-products, but wrong for multi-stream station data
+static int CalculateNIndex(const DifxInput *D, int a1, int a2)
+{
+    int i;
+    int count = 0;
+    //if any antenna has multiple datastreams, we need
+    //to loop through all the 'baselines' and sum up nfreq*npolprods on each one
+    for (i=0; i<D->nBaseline; i++)
+    {
+        int dsant1 = D->datastream[D->baseline[i].dsA].antennaId;
+        int dsant2 = D->datastream[D->baseline[i].dsB].antennaId;
+        if( (dsant1 == a1 && dsant2 == a2) || (dsant1 == a2 && dsant2 == a1) )
+        {
+            count += D->baseline[i].nFreq * D->baseline[i].nPolProd[0];
+        }
+    }
+    return count;
+}
+

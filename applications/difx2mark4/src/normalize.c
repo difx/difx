@@ -5,7 +5,9 @@
 //
 // created                                      rjc 2011.5.24
 // modified to allow simultaneous R/L/X/Y pols  rjc 2015.11.2
-// handle baseline-dependent nvis & vrsize      rjc  2018.10.18
+// handle baseline-dependent nvis & vrsize      rjc 2018.10.18
+// support redundant freq ids in ac lookup      jw  2024.07
+// move nvis & vrsize into vrmeta               jw  2024.07
 
 #include <stdio.h>
 #include <string.h>
@@ -13,11 +15,12 @@
 #include <math.h>
 #include "difx2mark4.h"
 
-void normalize (struct CommandLineOptions *opts,  // array of command line options
+
+void normalize (const DifxInput * D,              // ptr to a filled-out difx input structure
+                struct CommandLineOptions *opts,  // array of command line options
+                vis_record_meta *vrmeta,          // array of vis. record meta data (num channels, size in byte, pfb index)
                 vis_record *vrec,                 // pointer to start of vis. buffer
                 int nvrtot,                       // total # of vis. records in buffer
-                int *nvis,                        // number of visibility points in record
-                int *vrsize,                      // size of each vis record (bytes)
                 struct fblock_tag *pfb)           // ptr to filled-in fblock table
     {
     int i,
@@ -39,6 +42,8 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
     double t,                       // time of current records
            factor,
            sum,
+           pant_ref,
+           pant_rem,
            pant[256][MAX_DFRQ][4];  // sqrt of power per antenna avg over channels
                                     // indexed by [ant][freq][pol]
                                     // pol index mapping:
@@ -52,36 +57,30 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
     for (fr=0; fr<MAX_DFRQ; fr++)   // first initialize pmap array to an identity map
         pmap[fr] = fr;
 
-                                    // now make a pass through the fblock, finding the lowest
-                                    // freq index for pairs of antennas, and overwriting those
-                                    // in the pmap
-    nf = -1;
-    while (pfb[++nf].stn[REF].ant >= 0) // check for end-of-table marker
+                                    // now make a pass through the DiFX freq table, finding
+                                    // all identical frequencies (whose IDs can be encountered
+                                    // in SWIN visibilities, vrec[]::freq_index), and update
+                                    // pmap[] to point all duplicate freqs to the lowest freq_index.
+    for (i=0; i < D->nFreq-1 && i < MAX_DFRQ-1; i++)
         {
-        if (nf >= MAX_FPPAIRS)
+        if (pmap[i] != i)
+            continue;
+        for (n=i+1; n < D->nFreq && n < MAX_DFRQ; n++)
             {
-                printf ("too many frequencies, exceeding MAX_FPPAIRS; redimension\n");
-                return;
-            }
-        if (pfb[nf].stn[REF].find != pfb[nf].stn[REM].find)
-            {
-                                    // found matching channels with different freq id's
-            if (pfb[nf].stn[REF].find < pfb[nf].stn[REM].find)
+                                    // at first keep distinction between sidebands, alas, this does
+                                    // not work out well for mixed-sideband baselines
+            if (isSameDifxFreq(&D->freq[i], &D->freq[n], /*ignore pcal:*/1))
+                pmap[n] = i;
+            else if(D->freq[i].sideband != D->freq[n].sideband)
+                                    // try harder: "ignore" sideband, sufficient to have identical freq coverage
                 {
-                                    // ref index lower, use it for remote antenna
-                if (pfb[nf].stn[REM].find >= MAX_DFRQ)
-                    printf ("out of bounds, pfb %d refers to REM freq idx %d which exceeds pmap array size MAX_DFRQ %d; redimension\n", nf, pfb[nf].stn[REM].find, MAX_DFRQ);
-                pmap[pfb[nf].stn[REM].find] = pfb[nf].stn[REF].find;
-                }
-                 
-            else
-                {
-                                    // rem index lower, use it for reference antenna
-                if (pfb[nf].stn[REF].find >= MAX_DFRQ)
-                    printf ("out of bounds, pfb %d refers to REF freq idx %d which exceeds pmap array size MAX_DFRQ %d; redimension\n", nf, pfb[nf].stn[REM].find, MAX_DFRQ);
-                pmap[pfb[nf].stn[REF].find] = pfb[nf].stn[REM].find;
-                }
-                 
+                DifxFreq flipped;
+                copyDifxFreq(&flipped, &D->freq[n]);
+                flipped.freq = (flipped.sideband == 'U') ? (flipped.freq + flipped.bw) : (flipped.freq - flipped.bw);
+                flipped.sideband = (flipped.sideband == 'U') ? 'L' : 'U';
+                if (isSameDifxFreq(&D->freq[i], &flipped, /*ignore pcal:*/1))
+                    pmap[n] = i;
+               }
             }
         }
 
@@ -102,7 +101,7 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
         pch = (char *) vr;          // leave vr pointing to start of range
         for (n=nbeg; n<nvrtot; n++)
             {
-            pch += vrsize[n];
+            pch += vrmeta[n].vrsize;
             vrloop = (vis_record *) pch;
             if (vrloop->iat != t)
                 break;
@@ -134,13 +133,20 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                 fr = pmap[vrloop->freq_index];
                                     // find average power across the band and save its sqrt
                 sum = 0.0;
-                for (i=0; i<nvis[n]; i++)
+                for (i=0; i<vrmeta[n].nvis; i++)
                     sum += vrloop->comp[i].real;
-                pant[aref][fr][pol] = sqrt (sum / nvis[n]);
+                if (sum < 0.0)
+                    {
+                    sum = 0.0; // avoid pant[]=sqrt(<0)=NaN
+                    //printf ("        bad auto data for ref/rem %d in record %d, DiFX frequency id %d\n", aref, n, vrloop->freq_index);
+                    }
+                pant[aref][fr][pol] = sqrt (sum / vrmeta[n].nvis);
+                // printf("normalize() AUTO ant=%d vis#=%d %c %cSB visfq=%d pmap[%d]=%d sum=%.3f pant[%d][%d][%d]=%.3f\n",
+                //         aref, n, polchar[pol], D->freq[vrloop->freq_index].sideband, vrloop->freq_index, vrloop->freq_index, fr, sum, aref, fr, pol, pant[aref][fr][pol]);
                 // printf("n %d aref %d fr %d pol %d pant %f\n",
                 //         n,aref,fr,pol,pant[aref][fr][pol]);
                 }
-            pch += vrsize[n];
+            pch += vrmeta[n].vrsize;
             vrloop = (vis_record *) pch;
             }
                                     // one last pass through all records for current time 
@@ -173,10 +179,16 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                         vr->pols[REM]);
                 continue;
                 }
+
             fr_remap = pmap[vr->freq_index];
+            pant_ref = pant[aref][fr_remap][polref];
+            pant_rem = pant[arem][fr_remap][polrem];
+
+            // printf("normalize() VIZ %d-%d vis#=%d %c%c %cSB  pmap[visfq=%d]=%d   autopwr ref=%.3f rem=%.3f\n",
+            //        aref, arem, n, polchar[polref], polchar[polrem], D->freq[vr->freq_index].sideband, vr->freq_index, fr_remap, pant_ref, pant_rem);
 
                                     // ensure that there is no 0-divide
-            if (pant[aref][fr_remap][polref] == 0.0 || pant[arem][fr_remap][polrem] == 0.0)
+            if (pant_ref == 0.0 || pant_rem == 0.0)
                 {
                 factor = 1.0;
                 n_aczero++;
@@ -186,14 +198,14 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                             n,aref,arem,fr_remap, vr->pols[REF],vr->pols[REM]);
                 }
             else
-                factor = 1.0 / (pant[aref][fr_remap][polref] * pant[arem][fr_remap][polrem]);
+                factor = 1.0 / (pant_ref * pant_rem);
 
-            for (i=0; i<nvis[n]; i++)
+            for (i=0; i<vrmeta[n].nvis; i++)
                 {
                 vr->comp[i].real *= factor;
                 vr->comp[i].imag *= factor;
                 }
-            pch = (char *) vr + vrsize[n];
+            pch = (char *) vr + vrmeta[n].vrsize;
             vr = (vis_record *) pch;
             }
         if (nend == nvrtot)         // exit if all records have been processed
