@@ -19,15 +19,15 @@ def get_testdir():
   filepath = os.path.realpath(os.path.dirname(__file__))
   return filepath
 
-def pre_checks():
+def pre_checks(vdif_generator='vdifsim'):
   locate = None
   locate = shutil.which('mpifxcorr')
   if (locate == None):
     print('mpifxcorr not found please make sure DiFX is installed')
     quit()
-  locate = shutil.which('vdifsim')
+  locate = shutil.which(vdif_generator)
   if (locate == None):
-    print('vdifsim not found, please make sure it is installed.')
+    print('vdif generator %s not found, please make sure it is installed.' % (vdif_generator))
     quit()
 
 
@@ -386,7 +386,7 @@ def rm_test_data():
     os.unlink(file_path)
 
 
-def run_vdifsim(testname):
+def run_vdifsim(testname, vdif_generator='vdifsim'):
 
   seed = "7276"   
  
@@ -399,12 +399,12 @@ def run_vdifsim(testname):
   f_vdifsimerr = open(vdifsimerrfile,"w")
 
   #arg = "runvdifsim --seed " + seed + " " + testname + "_*.input" 
-  arg = "vdifsim -s " + seed + " -c " + config_file + " "  + testname + "_*.input"
+  arg = vdif_generator + " -s " + seed + " -c " + config_file + " "  + testname + "_*.input"
   #print(arg)
   try:
     proc = subprocess.run(arg,cwd=working_directory,shell=True,stdout=f_vdifsimlog,stderr=f_vdifsimerr,check=True)
   except subprocess.CalledProcessError as e:
-    print("vdifsim failed check log files: ")
+    print("vdif generator %s failed, check log files: " % (vdif_generator))
     print(vdifsimlogfile)
     print(vdifsimerrfile)
     raise()
@@ -890,6 +890,7 @@ def main():
   parser.add_argument("-c","--cores",help="Comma delimited list of the processing cores used for data simulation and correlation (default = localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost)",default="localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost,localhost")
   parser.add_argument("-n","--numthreads",help="Integer number of threads per processing core.  More than one thread will speed runtime but reduce accuracy. (default=1)",default="1")
   parser.add_argument("-f","--filterautocorrs",help="Filter autocorrelations prior to FITS file comparison (yes/[no])",default="no")
+  parser.add_argument("-s","--simwrapper",help="The vdifsim program or wrapper script to use",default="vdifsim")
 
 
   input_args = parser.parse_args()
@@ -906,6 +907,7 @@ def main():
   usebenchmarkimfile = input_args.usebenchmarkimfile
   usebenchmarkimfile = usebenchmarkimfile.upper()
   cores = input_args.cores
+  vdifsimprogram = input_args.simwrapper
 
   numthreads = input_args.numthreads
 
@@ -917,7 +919,7 @@ def main():
   numcores = len(cores_list) + 2
 
   # Check basic installation/compatability issues
-  pre_checks()
+  pre_checks(vdif_generator=vdifsimprogram)
 
  
   # generate vdifsim config file
@@ -1006,7 +1008,7 @@ def main():
     if (testname[-3:] != "gpu"):
       if (is_testdata_empty(testname) or generateVDIF == "YES"):
           print("running vdifsim")
-          run_vdifsim(testname) 
+          run_vdifsim(testname, vdif_generator=vdifsimprogram) 
     if (testname[-3:] == "gpu"):  
       run_mpifxcorr_gpumode(testname, numcores)
     else:
