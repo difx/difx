@@ -19,15 +19,20 @@ def get_testdir():
   filepath = os.path.realpath(os.path.dirname(__file__))
   return filepath
 
-def pre_checks():
+def check_mpifxcor_installed():
   locate = None
   locate = shutil.which('mpifxcorr')
   if (locate == None):
     print('mpifxcorr not found please make sure DiFX is installed')
     quit()
+
+
+def check_vdifsim_installed():
+  locate = None
   locate = shutil.which('vdifsim')
   if (locate == None):
-    print('vdifsim not found, please make sure it is installed.')
+    print('vdifsim not found, please make sure you are using a version of DiFX that has vdifsim installed')
+    print('DiFXtest will work with most versions of DiFX after the test data has been generated.') 
     quit()
 
 
@@ -38,6 +43,8 @@ def print_version_info():
   with open(full_filepath,"r") as file:
     contents = file.read()
     print(contents)
+  difx_version = os.environ['DIFX_VERSION']
+  print("CURRENTLY USING VERSION: " + difx_version);
   print()
 
 def record_difx_version_info():
@@ -102,20 +109,22 @@ def generate_v2d(testname):
   testdata_dir = current_directory + "/testdata"
 
   args = "oms2v2d -v -v --sim " + testname + ".oms "
-  #subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.STDOUT,stderr=subprocess.STDOUT)
   logfile = working_directory + "/oms2v2d.log"
   errfile = working_directory + "/oms2vd2.err"
   log = open(logfile,"w")
   err = open(errfile,"w")
 
-
+  vdifsim_environment = read_path()
+  
   try:
-    proc =subprocess.run(args,cwd=working_directory,shell=True,stdout=log,stderr=err,check=True)
+    proc =subprocess.Popen(args,cwd=working_directory,shell=True,stdout=log,stderr=err,env={"PATH":vdifsim_environment})
+    proc.wait()
   except subprocess.CalledProcessError as e:
     print("oms2v2d failed check log files:")
     print()
-    raise()
 
+    raise()
+   
   return
 
 
@@ -154,10 +163,13 @@ def generate_filelist(testname):
   current_directory = get_testdir()
   working_directory = current_directory + "/" + testname + "/"
   testdata_dir = current_directory + "/testdata"
+  vdifsim_environment = read_path()
   if (testname[-3:] == "gpu"):
     basename = testname[:-4]  
     args = "makesimfilelist " + testname + ".vex " + testdata_dir + " --name=" + basename
-    subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+    proc =subprocess.Popen(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT,env={"PATH":vdifsim_environment})
+    proc.wait()
+#subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
     contents = os.listdir(working_directory)
     for item in contents:
       if (item[-9:] == ".filelist"):
@@ -166,10 +178,10 @@ def generate_filelist(testname):
         str2 = testname + "." 
         new_filelist_name = filelist_name.replace(str1,str2)
         os.rename(filelist_name,new_filelist_name)
-  else:
-    
+  else: 
     args = "makesimfilelist " + testname + ".vex " + testdata_dir
-    subprocess.call(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+    proc =subprocess.Popen(args,cwd=working_directory,shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT,env={"PATH":vdifsim_environment})
+    proc.wait()
   return 
 
 def get_results_and_setup_files():
@@ -386,6 +398,26 @@ def rm_test_data():
     os.unlink(file_path)
 
 
+def record_path():
+  path_value = os.environ.get('PATH')
+  current_directory =  get_testdir()
+  tmp_dir = current_directory + "/.tmp"
+  if (os.path.isdir(tmp_dir) == False):
+     os.mkdir(tmp_dir)
+  full_filepath = tmp_dir + "/path.txt"
+  fh = open(full_filepath,"w") 
+  fh.write(path_value)
+  fh.close()
+
+
+def read_path():
+  current_directory =  get_testdir()
+  tmp_dir = current_directory + "/.tmp"
+  full_filepath = tmp_dir + "/path.txt"
+  fh = open(full_filepath,"r")
+  path = fh.read()
+  return path
+
 def run_vdifsim(testname):
 
   seed = "7276"   
@@ -398,7 +430,6 @@ def run_vdifsim(testname):
   f_vdifsimlog = open(vdifsimlogfile,"w")
   f_vdifsimerr = open(vdifsimerrfile,"w")
 
-  #arg = "runvdifsim --seed " + seed + " " + testname + "_*.input" 
   arg = "vdifsim -s " + seed + " -c " + config_file + " "  + testname + "_*.input"
   #print(arg)
   try:
@@ -917,7 +948,7 @@ def main():
   numcores = len(cores_list) + 2
 
   # Check basic installation/compatability issues
-  pre_checks()
+  check_mpifxcor_installed()
 
  
   # generate vdifsim config file
@@ -1005,7 +1036,9 @@ def main():
     run_difxcalc(testname)
     if (testname[-3:] != "gpu"):
       if (is_testdata_empty(testname) or generateVDIF == "YES"):
-          print("running vdifsim")
+          check_vdifsim_installed()
+          record_path()
+          read_path()
           run_vdifsim(testname) 
     if (testname[-3:] == "gpu"):  
       run_mpifxcorr_gpumode(testname, numcores)
