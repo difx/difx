@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2017 by Walter Brisken                             *
+ *   Copyright (C) 2015-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -26,6 +26,7 @@
 #include <glob.h>
 #include "difx_input.h"
 #include "parsevis.h"
+#include "difxio_macros.h"
 
 const char program[] = "avgDiFX";
 const char author[] = "Walter Brisken <wbrisken@nrao.edu>";
@@ -301,7 +302,7 @@ AverageInput *openAverageInput(const char *filename)
 	A->nChan = A->D->freq->nChan;
 	A->data = (float *)malloc(A->nChan*2*sizeof(float));
 
-	snprintf(pattern, DIFXIO_FILENAME_LENGTH, "%s/DIFX*", A->D->job->outputFile);
+	snprintf_warn(pattern, DIFXIO_FILENAME_LENGTH, "%s/DIFX*", A->D->job->outputFile);
 	glob(pattern, 0, 0, &G);
 
 	if(G.gl_pathc != 1)
@@ -314,7 +315,7 @@ AverageInput *openAverageInput(const char *filename)
 		return 0;
 	}
 
-	snprintf(A->outputFile, DIFXIO_FILENAME_LENGTH, "%s", G.gl_pathv[0]);
+	snprintf_warn(A->outputFile, DIFXIO_FILENAME_LENGTH, "%s", G.gl_pathv[0]);
 	globfree(&G);
 
 	A->in = fopen(A->outputFile, "r");
@@ -382,7 +383,7 @@ void arg2fileset(char *dest, const char *src, int length)
 {
 	int l;
 
-	snprintf(dest, length, "%s", src);
+	snprintf_warn(dest, length, "%s", src);
 
 	l = strlen(dest);
 	if(l > 6)
@@ -446,7 +447,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	snprintf(cpHistory, MaxCommandSize, "cp -f %s/*.history %s/*.history %s.difx/", A1->D->job->outputFile, A2->D->job->outputFile, outputFileset);
+	snprintf_warn(cpHistory, MaxCommandSize, "cp -f %s/*.history %s/*.history %s.difx/", A1->D->job->outputFile, A2->D->job->outputFile, outputFileset);
 
 	rv = readAverageInput(A1);
 	if(rv != 0)
@@ -500,14 +501,14 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	snprintf(outputFilename, DIFXIO_FILENAME_LENGTH, "%s/%s.difx/%s", path, outputFileset, p); 
+	snprintf_warn(outputFilename, DIFXIO_FILENAME_LENGTH, "%s/%s.difx/%s", path, outputFileset, p); 
 
-	snprintf(A1->D->job->inputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.input", path, outputFileset);
-	snprintf(A1->D->job->calcFile, DIFXIO_FILENAME_LENGTH, "%s/%s.calc", path, outputFileset);
-	snprintf(A1->D->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s/%s.threads", path, outputFileset);
-	snprintf(A1->D->job->imFile, DIFXIO_FILENAME_LENGTH, "%s/%s.im", path, outputFileset);
-	snprintf(A1->D->job->outputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx", path, outputFileset);
-	snprintf(historyFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx/avgDIFX.history", path, outputFileset);
+	snprintf_warn(A1->D->job->inputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.input", path, outputFileset);
+	snprintf_warn(A1->D->job->calcFile, DIFXIO_FILENAME_LENGTH, "%s/%s.calc", path, outputFileset);
+	snprintf_warn(A1->D->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s/%s.threads", path, outputFileset);
+	snprintf_warn(A1->D->job->imFile, DIFXIO_FILENAME_LENGTH, "%s/%s.im", path, outputFileset);
+	snprintf_warn(A1->D->job->outputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx", path, outputFileset);
+	snprintf_warn(historyFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx/avgDIFX.history", path, outputFileset);
 
 	writeDifxCalc(A1->D);
 	writeDifxInput(A1->D);
@@ -524,7 +525,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	snprintf(cmd, 2*DIFXIO_FILENAME_LENGTH, "cp -f %s.difx/PCAL* %s.difx", inputFileset1, outputFileset);
+	snprintf_warn(cmd, 2*DIFXIO_FILENAME_LENGTH, "cp -f %s.difx/PCAL* %s.difx", inputFileset1, outputFileset);
 	system(cmd);
 
 	out = fopen(outputFilename, "w");
