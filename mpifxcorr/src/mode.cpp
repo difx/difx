@@ -873,8 +873,10 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
 
     // For double-sideband data, the LO frequency is at the centre of the band, not the band edge
     if (usecomplex) {
-      if (config->getDRecordedLowerSideband(configindex, datastreamindex, i)) lofreq = -lofreq;  // LSB case
-      if (usedouble) lofreq += config->getDRecordedBandwidth(configindex, datastreamindex, i)/2.0;  // Double sideband move LO to middle of band
+      if (config->getDRecordedLowerSideband(configindex, datastreamindex, i))
+        lofreq = -lofreq;  // LSB case
+      if (usedouble)
+        lofreq += config->getDRecordedBandwidth(configindex, datastreamindex, i)/2.0;  // Double sideband move LO to middle of band
     }
 
     switch(fringerotationorder) {
