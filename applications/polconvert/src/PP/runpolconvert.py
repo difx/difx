@@ -240,9 +240,9 @@ def runPolConvert(label, spw=-1, DiFXinput='',
         gains = gains[0:3]
         interpolation = interpolation[0:3]
 
-    # set the gaintype array to gainmeth, except for bandpass and XY0
+    # set the gaintype array to gainmeth, except for bandpass and XY0 / XYsmooth which have to be G
     gaintype = ['G' if ('XY0' in g or 'bandpass' in g or
-        'Gxyamp' in g) else gainmeth for g in gains]
+        'Gxyamp' in g or 'XYsmooth' in g) else gainmeth for g in gains]
 
     # PolConvert gets upset with no gains
     if len(gains) == 0:

@@ -19,17 +19,6 @@
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: oms2v2d 9157 2019-09-16 20:04:36Z WalterBrisken $
-# $HeadURL: $
-# $LastChangedRevision: 9157 $
-# $Author: WalterBrisken $
-# $LastChangedDate: 2019-09-16 14:04:36 -0600 (Mon, 16 Sep 2019) $
-#
-#============================================================================
-
 # Note: this utility can run under python2.7 or python3
 
 

@@ -11,6 +11,7 @@ bin_PROGRAMS = \
 	captureUDPVDIF \
 	multi2singlethreadVDIF \
 	padVDIF \
+    invalidateVDIFPackets \
 	cleanVDIF \
 	reorderVDIF \
 	fakemultiVDIF \
@@ -26,7 +27,9 @@ bin_PROGRAMS = \
 	splitVDIFbygap \
 	vdif2to8 \
 	vdifChanSelect \
+	vdifMeanRMS \
 	vdifSplitThreads \
+	vdifStateCount \
 	vmux \
 	vsum
 
@@ -42,6 +45,12 @@ endif
   bin_PROGRAMS += vdifSwapSideband
 endif
 
+if WITH_FFTW
+  bin_PROGRAMS += vdifPhase
+  vdifPhase_CFLAGS = $(FFTW_CFLAGS) $(INCLUDES)
+  vdifPhase_LDADD = $(FFTW3_LIBS) $(LDADD)
+endif
+
 noinst_PROGRAMS = \
 	testcornerturners
 
@@ -49,6 +58,7 @@ dist_bin_SCRIPTS = \
 	vdifbstate \
 	vdiffold \
 	vdifd \
+	vdifpcal \
 	vdifspec
 
 testcornerturners_SOURCES = \
@@ -80,6 +90,9 @@ countVDIFPackets_SOURCES = \
 
 padVDIF_SOURCES = \
 	padVDIF.c
+
+invalidateVDIFPackets_SOURCES = \
+    invalidateVDIFPackets.c
 
 extractSingleVDIFThread_SOURCES = \
 	extractSingleVDIFThread.c
@@ -122,6 +135,15 @@ vdifChanSelect_SOURCES = \
 
 vdifSplitThreads_SOURCES = \
 	vdifSplitThreads.c
+
+vdifStateCount_SOURCES = \
+	vdifStateCount.c
+
+vdifMeanRMS_SOURCES = \
+	vdifMeanRMS.c
+
+vdifPhase_SOURCES = \
+	vdifPhase.c
 
 generateVDIF_SOURCES = \
 	generateVDIF.c

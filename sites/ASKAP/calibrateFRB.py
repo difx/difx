@@ -131,11 +131,11 @@ allcalxcorplotfilename = os.path.abspath("allcalxcor{0}{1}.ps".format(xpol_prefi
 
 # Check if the ms already exists, abort if so
 if os.path.exists(targetmsfilename):
-    print targetmsfilename, "already exists - aborting here!!!"
+    print((targetmsfilename, "already exists - aborting here!!!"))
     sys.exit()
 
 if os.path.exists(calibratormsfilename):
-    print calibratormsfilename, "already exists - aborting here!!!"
+    print((calibratormsfilename, "already exists - aborting here!!!"))
     sys.exit()
 
 # If we are running targetonly, then check that all the calibration files exist
@@ -150,7 +150,7 @@ if options.targetonly:
     if xpolmodelfile != '' and not os.path.exists(xpolsnfilename):
         missingfiles.append(xpolsnfilename)
     if len(missingfiles) > 0:
-        print "Running targetonly but the following files are missing:", missingfiles
+        print(("Running targetonly but the following files are missing:", missingfiles))
         sys.exit()
 
 # Load up the target data if needed
@@ -198,8 +198,8 @@ if not options.targetonly:
         shadowdiameter = float(options.shadow[0])
         xtalkbl = float(options.shadow[1])
         vlbatasks.shadowflag(caldata, 1, shadowdiameter, xtalkbl)
-        print "Shadowing diameter: " + str(shadowdiameter)
-        print "Cross-talk baseline: " + str(xtalkbl)
+        print(("Shadowing diameter: " + str(shadowdiameter)))
+        print(("Cross-talk baseline: " + str(xtalkbl)))
     
 # Flag the target data, if desired
 if not options.calibrateonly:
@@ -209,8 +209,8 @@ if not options.calibrateonly:
         shadowdiameter = float(options.shadow[0])
         xtalkbl = float(options.shadow[1])
         vlbatasks.shadowflag(targetdata, 1, shadowdiameter, xtalkbl)
-        print "Shadowing diameter: " + str(shadowdiameter)
-        print "Cross-talk baseline: " + str(xtalkbl)
+        print(("Shadowing diameter: " + str(shadowdiameter)))
+        print(("Cross-talk baseline: " + str(xtalkbl)))
 
 # Run CLCOR to correct PANG if needed
 if xpolmodelfile != "":
@@ -272,8 +272,8 @@ if xpolmodelfile != "":
     if not options.targetonly:
         xpolscan = 1
         if not os.path.exists(xpolmodelfile):
-            print "Can't find xpol delay model  " + xpolmodelfile
-            print "Aborting!!"
+            print(("Can't find xpol delay model  " + xpolmodelfile))
+            print("Aborting!!")
             sys.exit(1)
         xpolmodel = AIPSImage("LKGSRC", "CLEAN", 1, 1)
         if xpolmodel.exists():

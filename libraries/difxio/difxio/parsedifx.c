@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: parsedifx.c 7850 2017-06-01 08:46:47Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/parsedifx.c $
-// $LastChangedRevision: 7850 $
-// $Author: JanWagner $
-// $LastChangedDate: 2017-06-01 16:46:47 +0800 (四, 2017-06-01) $
-//
-//============================================================================
 
 #define _GNU_SOURCE
 #include <stdio.h>

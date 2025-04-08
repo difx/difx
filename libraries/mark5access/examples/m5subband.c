@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken, Jan Wagner & Chris Phillips *
+ *   Copyright (C) 2008-2024 by Walter Brisken, Jan Wagner                 *
+ *                              Chris Phillips                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,21 +17,11 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5spec.c 6687 2015-06-03 02:14:10Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 6687 $
-// $Author: JanWagner $
-// $LastChangedDate: 2015-06-03 11:14:10 +0900 (Wed, 03 Jun 2015) $
-//
-//============================================================================
 
-// Useful thoughs at http://www.katjaas.nl/FFTwindow/FFTwindow&filtering.html
+// Useful thoughts at http://www.katjaas.nl/FFTwindow/FFTwindow&filtering.html
 
 #define OUTPUT_BITS 2             // desired quantization in output VDIF file, options are 2, 8, or 32 (2-bit VDIF encoding, 8-bit linear encoding, or 32-bit float)
-#define DEFAULT_IDFT_LEN 128      // default number of points to place accross extractable narrowband signal
+#define DEFAULT_IDFT_LEN 128      // default number of points to place across extractable narrowband signal
 #define STDDEV_MIN_SAMPLES 8192   // minimum number of output time domain samples to use in determining 'sigma' for 2-bit re-quantization
 #define USE_C2C_IDFT     0        // 1 to use complex-to-complex inverse DFT, 0 to use complex-to-real inverse DFT (faster, less tested)
 #define FFTW_FLAGS  FFTW_ESTIMATE // FFTW_ESTIMATE or FFTW_MEASURE or FFTW_PATIENT
@@ -112,7 +103,7 @@ typedef struct FilterConfig_tt {
 	int discard_incomplete_on_close;
 	float start_MHz;
 	float stop_MHz;
-	int npoints; // points to place accross the start_MHz--stop_MHz range
+	int npoints; // points to place across the start_MHz--stop_MHz range
 	enum WindowFunction winfunc;
 } FilterConfig_t;
 
@@ -541,12 +532,12 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	}
 	in_raw = malloc(sizeof(float)*Ldft);
 	out_converter_tmp = malloc(sizeof(char)*2*Lidft);
-	dft_in = fftwf_malloc(sizeof(fftw_real)*Ldft);
-	dft_out = fftwf_malloc(sizeof(fftwf_complex)*(Ldft/2+1));
-	idft_in = fftwf_malloc(sizeof(fftwf_complex)*Lidft+8);
-	idft_out = fftwf_malloc(sizeof(fftwf_complex)*Lidft+8);
-	out_td = fftwf_malloc(sizeof(fftw_real)*2*Lidft);
-	sigma_data = fftwf_malloc(sizeof(fftw_real)*min_sigma_nsamples);
+	dft_in = fftw_malloc(sizeof(fftw_real)*Ldft);
+	dft_out = fftw_malloc(sizeof(fftwf_complex)*(Ldft/2+1));
+	idft_in = fftw_malloc(sizeof(fftwf_complex)*Lidft+8);
+	idft_out = fftw_malloc(sizeof(fftwf_complex)*Lidft+8);
+	out_td = fftw_malloc(sizeof(fftw_real)*2*Lidft);
+	sigma_data = fftw_malloc(sizeof(fftw_real)*min_sigma_nsamples);
 	memset(dft_in, 0x00, sizeof(fftw_real)*Lidft);
 	memset(dft_out, 0x00, sizeof(fftwf_complex)*(Lidft/2+1));
 	memset(out_td, 0x00, sizeof(fftw_real)*2*Lidft);
@@ -731,6 +722,21 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 		printf("Finished in %.1f seconds, total throughput %.2f Ms/s.\n", dt, 1e-6*nidft*(Ldft/dt)/factor);
 		printf("Use format %s to decode the output VDIF file.\n", fmtstring);
 	}
+	
+	/* deallocate buffers */
+	for(i= 0; i < ms->nchan; ++i)
+	{
+		free(raw[i]);
+	}
+	free(raw);
+	free(in_raw);
+	free(out_converter_tmp);
+	fftw_free(dft_in);
+	fftw_free(dft_out);
+	fftw_free(idft_in);
+	fftw_free(idft_out);
+	fftw_free(out_td);
+	fftw_free(sigma_data);
 
 	return 0;
 }
@@ -1019,7 +1025,7 @@ int main(int argc, char **argv)
 	}
 	if ((fcfg.npoints < 16) || (fcfg.npoints & 1))
 	{
-		printf("Error: number of points accross narrowband signal must be even and >=16\n");
+		printf("Error: number of points across narrowband signal must be even and >=16\n");
 		return EXIT_FAILURE;
 	}
 

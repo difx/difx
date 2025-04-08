@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: evladefaults.h 2002 2010-03-04 16:24:27Z AdamDeller $
- * $HeadURL:  $
- * $LastChangedRevision: 2002 $
- * $Author: AdamDeller $
- * $LastChangedDate: 2010-03-05 00:24:27 +0800 (五, 2010-03-05) $
- *
- *==========================================================================*/
 #ifndef __EVLADEFAULTS_H__
 #define __EVLADEFAULTS_H__
 

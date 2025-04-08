@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: corrparams.h 10674 2022-10-10 11:44:49Z JanWagner $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/src/corrparams.h $
- * $LastChangedRevision: 10674 $
- * $Author: JanWagner $
- * $LastChangedDate: 2022-10-10 19:44:49 +0800 (一, 2022-10-10) $
- *
- *==========================================================================*/
 
 #ifndef __CORRPARAM_H__
 #define __CORRPARAM_H__
@@ -211,10 +201,12 @@ public:
 	VexClock clock;
 	double deltaClock;	// [sec]
 	double deltaClockRate;	// [sec/sec]
+	double deltaClockAccel;	// [sec/sec^2]
 	// flag
 	bool polSwap;		// If true, swap polarizations
 	bool polConvert;	// request change of basis from RL->XY or XY->RL
 	float phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
+	long phaseCalIntervalDivisor;// 1 default, >1 for infinite fractions e.g. interval 700 MHz / divisior 9 = spacing 77.777... MHz
 	enum ToneSelection toneSelection;	// Which tones to propagate to FITS
 	double toneGuardMHz;	// to avoid getting tones too close to band edges; default = bandwidth/8
 	int tcalFrequency;	// [Hz] (= 80 for VLBA)

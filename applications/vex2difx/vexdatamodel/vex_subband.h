@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_subband.h 7887 2017-07-07 17:48:34Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 7887 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2017-07-08 01:48:34 +0800 (六, 2017-07-08) $
- *
- *==========================================================================*/
 
 #ifndef __VEX_SUBBAND_H__
 #define __VEX_SUBBAND_H__

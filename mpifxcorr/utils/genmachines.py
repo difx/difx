@@ -18,16 +18,7 @@
 #   Free Software Foundation, Inc.,                                       *
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id$
-# $HeadURL: $
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
-#
-#============================================================================
+
 
 #from string import   
 from sys import exit
@@ -53,8 +44,8 @@ except ImportError:
     sys.exit(1)
 
 author  = 'Walter Brisken and Helge Rottmann'
-version = '2.5.0'
-verdate = '20200822'
+version = '2.5.1'
+verdate = '20231124'
 minMachinefileVersion = "1.0"   # cluster definition file must have at least this version
 
 defaultDifxMessagePort = 50200
@@ -91,6 +82,12 @@ def convertDateString2Mjd(dateStr):
     else:
         print('invalid date string', dateStr)
         return datetime(1900, 1, 1, 0, 0)
+
+def isListEmpty(inList):
+    '''Returns True if the potentially nested List is essentially empty.'''
+    if isinstance(inList, list):
+        return all( map(isListEmpty, inList) )
+    return False
 
 class MessageParser:
     """
@@ -393,6 +390,8 @@ def getvexantennamodlists(vexobsfile, startTime):
                     # add only modules to modlist that contain start time for this job, next module might not be in playback unit yet
                     if startTimeInPackTimeRange(startTime, vsn.group(3), vsn.group(4)):
                         modList.append(mod)
+                    elif verbose>0:
+                        print("Info: ignoring %s module %s as VEX marks it as outside the time range of the current scan." % (ant,str(mod)))
             if enddef:
                 antennaModuleList.append([ant,modList])
 
@@ -447,7 +446,7 @@ def adjustMark6datastreams(datastreams, inputfile, verbose, startTime):
                         i += 1
                         continue
                     # look for antenna in filename
-                    if verbose > 0:
+                    if verbose > 1:
                         print('trying to replace', stream.msn[i], 'with a valid mark6 msn')
                     msnsplit = (stream.msn[i]).split('_')
                     if len(msnsplit) >= 2 and (len(msnsplit[1]) == 2 or len(msnsplit[1]) == 1):
@@ -467,6 +466,7 @@ def adjustMark6datastreams(datastreams, inputfile, verbose, startTime):
                                     stream.msn.pop(i)
                                     msnlen -= 1
                         if antmodfound is False:
+                            print('Warning: could not determine Mark6 module for %s. Perhaps the station missing is from VEX $TAPELOG_OBS?' % (str(stream.msn[i])))
                             i += 1
 
 class StartTime:
@@ -563,6 +563,10 @@ def getDatastreamsFromInputFile(inputfile, verbose):
 def writethreads(basename, threads):
         """
         Write the threads file to be used by mpifxcor
+
+        Args:
+          basename (str): the basename (including full path) of the difx job
+          threads (int): the number of threads to start on each compute node
         """
         o = open(basename+'threads', 'w')
         o.write('NUMBER OF CORES:    %d\n' % len(threads))
@@ -570,7 +574,7 @@ def writethreads(basename, threads):
                 o.write('%d\n' % t)
         o.close()
 
-def writemachines(basename, hostname, results, datastreams, overheadcores, verbose, dorankfile=False):
+def writemachines(basename, hostname, results, datastreams, overheadcores, verbose, dorankfile=False, datastreamsOnly=False):
         """
         Write machines file to be used by mpirun
         """
@@ -632,8 +636,18 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                     dsnodes.append(matchNodes[0])
                 elif args.nocompute:
                     # Datastream has no unique responsible node, or is blank ie no actual recording
-                    # Under --nocompute mode, arbitrarily assign the first storage node
-                    dsnodes.append((difxmachines.getStorageNodes()[0]).name)
+                    # Under --nocompute mode, arbitrarily assign the first possible storage node
+                    foundNode = False
+                    for snode in difxmachines.getStorageNodes():
+                        if not snode.isInSlurm or snode.slurm_numProc < snode.slurm_maxProc:
+                            snode.slurm_numProc += 1
+                            dsnodes.append(snode.name)
+                            foundNode = True
+                            # print("Debug: %s: assigned node %s, slurm numProc %d maxProc %d" % (currentUrl,snode.name,snode.slurm_numProc,snode.slurm_maxProc))
+                            break
+                    if not foundNode:
+                        print("Warning: ran out of unassigned storage nodes, will oversubscribe.")
+                        dsnodes.append((difxmachines.getStorageNodes()[0]).name)
                 else:
                     # Datastream has no unique responsible node, or is blank ie no actual recording,
                     # default to a compute node
@@ -661,8 +675,10 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
 
                 if matchNode in difxmachines.getMk5NodeNames():
                     dsnodes.append(matchNode)
+                elif len(stream.vsn) < 1:
+                    print('Warning: A stream of type MODULE has a blank VSN - check your VEX $TAPELOG_OBS time ranges')
                 else:
-                    print('stream type MODULE with VSN %s, matching node %s not listed as an active mark5 host in machines file' % (stream.vsn,matchNode))
+                    print('Warning: stream type MODULE with VSN %s, matching node %s not listed as an active mark5 host in machines file' % (str(stream.vsn),matchNode))
                     return []
 
             elif stream.type == "MARK6":
@@ -694,13 +710,22 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                                     matchNode = r[4]
                 if matchNode in difxmachines.getMk6NodeNames():
                     dsnodes.append(matchNode)
+                elif isListEmpty(stream.msn):
+                    print('Warning: A stream of type MARK6 has a blank MSN list - check your VEX $TAPELOG_OBS time ranges')
                 else:
-                    print('stream type MARK6 with MSN %s, matching node %s not listed as an active mark6 host in machines file' % (str(stream.msn),matchNode))
+                    print('Warning: stream of type MARK6 with MSN %s, matching node %s not listed as an active mark6 host in machines file' % (str(stream.msn),matchNode))
                     return []
                 
         # write machine file
         o = open(basename+'machines', 'w')
-        
+
+        if datastreamsOnly:
+            for node in dsnodes:
+                o.write('%s\n' % (node))
+            o.close()
+
+            return 0
+
         # head node
         o.write('%s\n' % (hostname))
         
@@ -843,7 +868,7 @@ def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb, dora
                 return 1
 
         t = writemachines(basename, hostname, results, datastreams, overheadcores, verbose, dorankfile)
-        
+
         if len(t) == 0:
                 return 1
 
@@ -851,6 +876,103 @@ def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb, dora
                 writethreads(basename, t)
 
         return 0
+
+def runDatastreamsMerged(inputfiles, machinesfile, verbose, dothreads, useDifxDb):
+        # collect all datastreams
+        datastream_modules = []
+        datastream_module_SNs = []
+
+        datastream_files = []
+        datastream_file_paths = []
+
+        for infile in inputfiles:
+
+                if not infile.endswith('.input'):
+                        infile = infile + '.input'
+
+                datastreams = getDatastreamsFromInputFile(infile, verbose)
+
+                for ds in datastreams:
+
+                        # dsinfo = '%s %s %s %s' % (str(ds.type), str(ds.vsn), str(ds.msn), str(ds.path))
+
+                        if ds.type == 'FILE':
+                                if ds.path not in datastream_file_paths:
+                                        datastream_file_paths.append(ds.path)
+                                        datastream_files.append(ds)
+                        elif ds.type == 'MODULE':
+                                if ds.vsn not in datastream_module_SNs:
+                                        datastream_module_SNs.append(ds.vsn)
+                                        datastream_modules.append(ds)
+                        elif ds.type == 'MARK6':
+                                if str(ds.msn) not in datastream_module_SNs:
+                                        datastream_module_SNs.append(str(ds.msn))
+                                        datastream_modules.append(ds)
+                        else:   
+                                print("Unhandled stream: ", dsinfo)
+
+                if verbose:
+                        print('After %s:' % (str(infile)))
+                        print('  Files   : %s' % (str(datastream_file_paths)))
+                        print('  Modules : %s' % (str(datastream_module_SNs)))
+
+
+        if verbose > 0:
+                print('Jobs had the following data sources:')
+                print('File-based  :', datastream_file_paths)
+                print('Module-based:', datastream_module_SNs)
+
+        ok = True
+        datastreams = datastream_modules + datastream_files
+        results, conflicts, missing, notidle, incomplete = getVsnsByMulticast(10, datastreams, verbose)
+
+        if verbose > 0:
+                print('Found modules:')
+                for r in results:
+                        srchost, msgtype = r[0], r[1]
+                        if msgtype == 'mark6Status':
+                                print('  %-10s : %10s %10s %10s %10s' % (srchost, r[2]['slot1MSN'], r[2]['slot2MSN'], r[2]['slot3MSN'], r[2]['slot4MSN']))
+                        elif msgtype == 'mark6SlotStatus':
+                                print('  %-10s : %10s' % (srchost, r[2]['msn']))
+                        else:   
+                                print('  %-10s : %10s %10s   %s' % (srchost, r[2], r[3], r[4]))
+
+        if len(conflicts) > 0:
+                ok = False
+                print('Module conflicts:')
+                for c in conflicts:
+                        print('  %-10s : %10s %10s' % (c[0], c[1], c[2]))
+
+        if len(missing) > 0:
+                ok = False
+                print('Missing modules:')
+                for m in missing:
+                        slot = "unknown"
+                        if useDifxDb:
+                                child = subprocess.Popen(["getslot", m], stdout=subprocess.PIPE)
+                                (slot, stderr) = child.communicate()
+                        print('  %s (slot = %s )' % (m, slot.strip()))
+
+        if len(notidle) > 0:
+                ok = False
+                print('Modules not ready:')
+                for n in notidle:
+                        print('  %s' % n)
+
+        if len(incomplete) > 0:
+                if args.ignoreIncompleteModules == False:
+                        ok = False
+                print('Incomplete modules:')
+                for i in incomplete:
+                        print('  %s' % i)
+
+        if not ok:
+                print('Something was not okay')
+        else:
+                t = writemachines('io_nodes.', '', results, datastreams, 0, verbose, datastreamsOnly=True)
+
+        return ok
+
 
 def signalHandler(signal, frame):
         print('You pressed Ctrl+C!')
@@ -897,6 +1019,7 @@ if __name__ == "__main__":
         parser.add_argument("-r", "--rankfile", dest="dorankfile", action="store_true", default=False, help="additionally write an OpenMPI rank file")
         parser.add_argument("--ignore-incomplete-module", dest="ignoreIncompleteModules", action="store_true", default=True, help="Proceed even when Mark6 modules are found to be incomplete.")
         parser.add_argument("--nocompute", action="store_true", default=False, help="Do not include compute nodes in the .machines file.")
+        parser.add_argument("--all-datastreams", dest="mergeAllDatastreams", action="store_true", default=False, help="Look up datastream nodes from all DiFX input files; implies --nocompute.")
         parser.add_argument("input",  nargs='+', help= "DiFX inputs file(s)")
         
         args = parser.parse_args()
@@ -906,6 +1029,8 @@ if __name__ == "__main__":
         dothreads = args.dothreads
         useDifxDb = args.usedifxdb
         dorankfile = args.dorankfile
+        if args.mergeAllDatastreams:
+                args.nocompute = True
 
         # assign the cluster definition file
         if len(args.machinesfile) == 0:
@@ -930,7 +1055,7 @@ if __name__ == "__main__":
 
         quit = False
         for f in files:
-                if not isfile(f):
+                if not isfile(f) and not isfile(f+'.input'):
                         print('File %s not found' % f)
                         quit = True
         if quit:
@@ -971,8 +1096,12 @@ if __name__ == "__main__":
         if fail:
             print("ERROR: This version of genmachines requires a cluster defintion file of version > %s. Found version is: %s.%s" % (minMachinefileVersion, major,minor))
             exit(1)
+
+        if args.mergeAllDatastreams:
+                v = runDatastreamsMerged(files, 'io_nodes', verbose, dothreads, useDifxDb)
+        else:
         
-        for file in files:
-                v = run(file, machinesfile, overheadcores, verbose, dothreads, useDifxDb, dorankfile)
-                if v != 0:
-                        exit(v)
+                for file in files:
+                        v = run(file, machinesfile, overheadcores, verbose, dothreads, useDifxDb, dorankfile)
+                        if v != 0:
+                                exit(v)

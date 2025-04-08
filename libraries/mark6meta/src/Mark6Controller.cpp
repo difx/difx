@@ -1,5 +1,5 @@
 /*******************************************************************************
-* Copyright (C) 2016  Max-Planck-Institut für Radioastronomie, Bonn, Germany 
+* Copyright (C) 2024  Max-Planck-Institut für Radioastronomie, Bonn, Germany 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
@@ -13,16 +13,6 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: Mark6DiskDevice.cpp 9271 2019-11-13 03:10:11Z HelgeRottmann $
-// $HeadURL: $
-// $LastChangedRevision: 9271 $
-// $Author: HelgeRottmann $
-// $LastChangedDate: 2019-11-13 04:10:11 +0100 (Mi, 13. Nov 2019) $
-//
-//============================================================================
 #include "Mark6Controller.h"
 
 #include <stdio.h>

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: autobands.cpp 10661 2022-10-04 12:42:35Z JanWagner $
- * $HeadURL: $
- * $LastChangedRevision: 10661 $
- * $Author: JanWagner $
- * $LastChangedDate: 2022-10-04 20:42:35 +0800 (二, 2022-10-04) $
- *
- *==========================================================================*/
 
 #include <cassert>
 #include <cmath>
@@ -130,6 +120,7 @@ void AutoBands::clear()
 	this->Nant = 0;
 	spans.clear();
 	outputbands.clear();
+	userOutputbands.clear();
 }
 
 /**
@@ -744,7 +735,7 @@ void AutoBands::addUserOutputband(const ZoomFreq& band)
 	userband.extend(band.frequency, band.bandwidth);
 
 	// Add if not pre-existing
-	if (std::find(outputbands.begin(), outputbands.end(), userband) == outputbands.end())
+	if (std::find(userOutputbands.begin(), userOutputbands.end(), userband) == userOutputbands.end())
 	{
 		if (verbosity > 1)
 		{
@@ -760,7 +751,7 @@ void AutoBands::addUserOutputband(const ZoomFreq& band)
  *
  * Once the output band of 'inputfreq' has been determined, looks through
  * the list of frequencies 'allfreqs' and locates a match for that output
- * band. Returns the index of that match is returned.
+ * band. Returns the index of that match.
  *
  * If any of the two search stages fails to locate a frequency, the search
  * is repeated with a sideband flipped band having the same sky coverage.

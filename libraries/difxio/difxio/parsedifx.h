@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: parsedifx.h 4309 2012-03-09 16:10:09Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/parsedifx.h $
-// $LastChangedRevision: 4309 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2012-03-10 00:10:09 +0800 (六, 2012-03-10) $
-//
-//============================================================================
 
 #ifndef __PARSEDIFX__
 #define __PARSEDIFX__

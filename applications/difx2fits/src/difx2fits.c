@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Helge Rottmann            *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Helge Rottmann            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx2fits.c 10998 2023-06-21 18:29:27Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/difx2fits.c $
-// $LastChangedRevision: 10998 $
-// $Author: JanWagner $
-// $LastChangedDate: 2023-06-22 02:29:27 +0800 (四, 2023-06-22) $
-//
-//============================================================================
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -41,11 +32,10 @@ const char program[] = PACKAGE_NAME;
 const char author[]  = PACKAGE_BUGREPORT;
 const char version[] = VERSION;
 
-const double DefaultSniffInterval = 30.0;	/* sec */
 const double DefaultJobMatrixInterval = 20.0;	/* sec */
 const double DefaultDifxTsysInterval = 30.0;	/* sec */
 const double DefaultDifxPCalInterval = 30.0;	/* sec */
-const int    DefaultAllPcalTones     = 0;	
+const enum AllPcalTonesMode DefaultAllPcalTones = AllPcalTonesOff;
 
 /* FIXME: someday add option to specify EOP merge mode from command line */
 
@@ -125,7 +115,10 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  -x                  Don't produce sniffer output\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --sniff-time <t>\n");
-	fprintf(stderr, "  -T           <t>    Sniff output on a <t> second timescale (default %3.1f)\n", DefaultSniffInterval);
+	fprintf(stderr, "  -T           <t>    Sniff output on a <t> second timescale (default %3.1f)\n", DefaultSnifferSolutionInterval);
+	fprintf(stderr, "                      Set to zero to disable sniffing\n");
+	fprintf(stderr, "  --bpInterval <t>\n");
+	fprintf(stderr, "  -b           <t>    Sniffer XCB and ACB reported no more than every <t> minutes (default %3.1f)\n", DefaultSnifferBandpassInterval);
 	fprintf(stderr, "                      Set to zero to disable sniffing\n");
 	fprintf(stderr, "\n");
 #endif
@@ -157,6 +150,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --all-pcal-tones\n");
 	fprintf(stderr, "  -A                  Extract all phase calibration tones\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --two-pcal-tables   Make two pulse cal tables: one with 2 tones, one with all tones\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --primary-band <pb> Add PRIBAND keyword with value <pb> to FITS file\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --relabelCircular   Change naming of all polarizations to R/L\n");
@@ -171,7 +166,9 @@ static void usage(const char *pgm)
 	fprintf(stderr, "                      Read <file> and apply it as delay corrections to the output\n");
 	fprintf(stderr, "  --sourcelist <list>\n");
 	fprintf(stderr, "                      Only propagate source(s) listed (comma separated)\n");
-	fprintf(stderr, "%s responds to the following environment variables:\n", program);
+	fprintf(stderr, "  --freqlist <list>\n");
+	fprintf(stderr, "                      Only propagate IFs with listed low edge freqs (comma separated, MHz)\n");
+	fprintf(stderr, "\n%s responds to the following environment variables:\n", program);
 	fprintf(stderr, "    DIFX_GROUP_ID             If set, run with umask(2).\n");
 	fprintf(stderr, "    DIFX_VERSION              The DiFX version to report.\n");
 	fprintf(stderr, "    DIFX_LABEL                Your local DiFX version label.\n");
@@ -179,12 +176,13 @@ static void usage(const char *pgm)
 	fprintf(stderr, "    TCAL_PATH                 Path where switched power T_cal values are found.\n");
 	fprintf(stderr, "    TCAL_FILE                 Path to single specific T_cal file.\n");
 	fprintf(stderr, "    DIFX_MAX_SNIFFER_MEMORY   Max number of bytes to allow for sniffing.\n");
-	fprintf(stderr, "    DIFX2FITS_UVFITS_DUMP         Prints in stdout the ascii dump of records from the binary visilibity file. Warning: the output may be huge.\n");
+	fprintf(stderr, "    DIFX2FITS_UVFITS_DUMP     Prints in stdout the ascii dump of records from the binary visilibity file. Warning: the output may be huge.\n");
 	fprintf(stderr, "    DIFX2FITS_UVFITS_DUMP_UTCMIN  Sets the minimum UTC time tag for the visibility dump. Units are seconds. Default is zero.\n");
 	fprintf(stderr, "    DIFX2FITS_UVFITS_DUMP_UTCMAX  Sets the maximum UTC time tag for the visibility dump. Units are seconds. Default is 86400.\n");
-	fprintf(stderr, "    DIFX_USE_CABLE_CAL            If 0, then cable calibration files are ignored. Default is 1.\n");
+	fprintf(stderr, "    DIFX_USE_CABLE_CAL        If 0, then cable calibration files are ignored. Default is 1.\n");
+	fprintf(stderr, "    WRITEFIRSTDELAY           If set, save first delay spectrum as diagnostic to /tmp/firstDelay.txt\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "PLEASE file all bug reports at http://svn.atnf.csiro.au/trac/difx .\n");
+	fprintf(stderr, "PLEASE file all bug reports at https://github.com/difx/difx/issues .\n");
 	fprintf(stderr, "Include at a minimum the output of difx2fits with extra verbosity\n");
 	fprintf(stderr, "(that is with -v -v).  The .input, .im & .calc files may help too.\n");
 	fprintf(stderr, "\n");
@@ -197,11 +195,14 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts = (struct CommandLineOptions *)calloc(1, sizeof(struct CommandLineOptions));
 	
 	opts->writemodel = 1;
-	opts->sniffTime = DefaultSniffInterval;
 	opts->jobMatrixDeltaT = DefaultJobMatrixInterval;
 	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
 	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
 	opts->allpcaltones       = DefaultAllPcalTones;
+
+	resetDifxMergeOptions(&opts->mergeOptions);
+	resetDifxDataFilterOptions(&opts->filterOptions);
+	resetSnifferOptions(&opts->snifferOptions);
 
 	return opts;
 }
@@ -243,6 +244,9 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 			free(opts->includeSourceList);
 			opts->includeSourceList = 0;
 		}
+
+		deleteDifxDataFilterOptions(&opts->filterOptions);
+
 		free(opts);
 	}
 }
@@ -305,7 +309,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			        strcmp(argv[i], "-u") == 0)
 			{
 				opts->mergeOptions.freqMergeMode = FreqMergeModeUnion;
-				fprintf(stderr, "\nWarning: using mode that merges all frequency setups that are encountered into one master frequency setup.  In most cases is not what you want!  GMVA and RadioAstron correlation are known cases where this should be a useful capability.\n\n");
+				fprintf(stderr, "\nWarning: using mode that merges all frequency setups that are encountered into one comprehensive frequency setup.  In most cases is not what you want!  GMVA and RadioAstron correlation are known cases where this should be a useful capability.\n\n");
 			}
 			else if(strcmp(argv[i], "--zero") == 0 ||
 			        strcmp(argv[i], "-0") == 0)
@@ -316,7 +320,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--dont-sniff") == 0 ||
 			        strcmp(argv[i], "-x") == 0)
 			{
-				opts->sniffTime = -1.0;
+				opts->snifferOptions.solutionInterval = -1.0;
 			}
 			else if(strcmp(argv[i], "--sniff-all") == 0 ||
 			        strcmp(argv[i], "-S") == 0)
@@ -380,7 +384,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--all-pcal-tones") == 0 ||
 			        strcmp(argv[i], "-A") == 0)
 			{
-				opts->allpcaltones = 1;
+				opts->allpcaltones = AllPcalTonesOn;
+			}
+			else if(strcmp(argv[i], "--two-pcal-tables") == 0)
+			{
+				opts->allpcaltones = AllPcalTonesBoth;
 			}
 			else if(strcmp(argv[i], "--relabelCircular") == 0)
 			{
@@ -389,6 +397,10 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--vanVleck") == 0)
 			{
 				opts->doVanVleck = 1;
+			}
+			else if(strcmp(argv[i], "--bandpass") == 0)
+			{
+				opts->snifferOptions.writeBandpass = 1;
 			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
@@ -473,7 +485,13 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				        strcmp(argv[i], "-T") == 0)
 				{
 					++i;
-					opts->sniffTime = atof(argv[i]);
+					opts->snifferOptions.solutionInterval = atof(argv[i]);
+				}
+				else if(strcmp(argv[i], "--bpInterval") == 0 ||
+				        strcmp(argv[i], "-b") == 0)
+				{
+					++i;
+					opts->snifferOptions.bandpassInterval = atof(argv[i]);
 				}
 				else if(strcmp(argv[i], "--bin") == 0 ||
 				        strcmp(argv[i], "-B") == 0)
@@ -513,6 +531,31 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 						{
 							opts->includeSourceList[j] = ' ';
 						}
+					}
+				}
+				else if(strcmp(argv[i], "--freqlist") == 0)
+				{
+					int j, n;
+					char* token;
+
+					++i;
+					for (n = 1, j = 0; argv[i][j]; ++j)
+					{
+						if (argv[i][j] == ',')
+						{
+							++n;
+						}
+					}
+
+					opts->filterOptions.includeLowEdgeFreqsList = (double*)calloc(n+1, sizeof(double));
+
+					j = 0;
+					token = strtok(argv[i], ",");
+					while (token && j<n)
+					{
+						opts->filterOptions.includeLowEdgeFreqsList[j] = atof(token);
+						token = strtok(NULL, ",");
+						++j;
 					}
 				}
 				else if(strcmp(argv[i], "--applybandpass") == 0)
@@ -782,7 +825,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	return 0;
 }
 
-static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPrivate *out, const struct CommandLineOptions *opts, int passNum)
+static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPrivate *out, struct CommandLineOptions *opts, int passNum)
 {
 	struct fits_keywords keys;
 	long long last_bytes = 0;
@@ -916,18 +959,52 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D, struct fitsPriv
 		last_bytes = out->bytes_written;
 	}
 
-	printf("  PH -- phase cal           ");
-	fflush(stdout);
-	D = DifxInput2FitsPH(D, &keys, out, opts);
-	printf("                            ");
-	if(out->bytes_written == last_bytes)
+	if(opts->allpcaltones != AllPcalTonesBoth)
 	{
-		printf("No table written\n");
+		printf("  PH -- phase cal           ");
+		fflush(stdout);
+		D = DifxInput2FitsPH(D, &keys, out, opts, opts->allpcaltones);
+		printf("                            ");
+		if(out->bytes_written == last_bytes)
+		{
+			printf("No table written\n");
+		}
+		else
+		{
+			printf("%lld bytes\n", out->bytes_written - last_bytes);
+			last_bytes = out->bytes_written;
+		}
 	}
 	else
 	{
-		printf("%lld bytes\n", out->bytes_written - last_bytes);
-		last_bytes = out->bytes_written;
+		printf("  PH1 -- all phase cal      ");
+		fflush(stdout);
+		opts->allpcaltones = AllPcalTonesOn;
+		D = DifxInput2FitsPH(D, &keys, out, opts, AllPcalTonesOn);
+		printf("                            ");
+		if(out->bytes_written == last_bytes)
+		{
+			printf("No table written\n");
+		}
+		else
+		{
+			printf("%lld bytes\n", out->bytes_written - last_bytes);
+			last_bytes = out->bytes_written;
+		}
+		printf("  PH2 -- phase cal          ");
+		fflush(stdout);
+		opts->allpcaltones = AllPcalTonesOff;
+		D = DifxInput2FitsPH(D, &keys, out, opts, AllPcalTonesOff);
+		printf("                            ");
+		if(out->bytes_written == last_bytes)
+		{
+			printf("No table written\n");
+		}
+		else
+		{
+			printf("%lld bytes\n", out->bytes_written - last_bytes);
+			last_bytes = out->bytes_written;
+		}
 	}
 
 	printf("  WR -- weather             ");
@@ -1023,7 +1100,7 @@ static void relabelCircular(DifxInput *D)
 			}
 			if(D->datastream[i].recBandPolName[j] == 'Y' || D->datastream[i].recBandPolName[j] == 'V')
 			{
-				D->datastream[i].recBandPolName[j] = 'Y';
+				D->datastream[i].recBandPolName[j] = 'L';
 			}
 		}
 
@@ -1035,7 +1112,7 @@ static void relabelCircular(DifxInput *D)
 			}
 			if(D->datastream[i].zoomBandPolName[j] == 'Y' || D->datastream[i].zoomBandPolName[j] == 'V')
 			{
-				D->datastream[i].zoomBandPolName[j] = 'Y';
+				D->datastream[i].zoomBandPolName[j] = 'L';
 			}
 		}
 	}
@@ -1082,7 +1159,7 @@ static DifxInput **loadDifxInputSet(const struct CommandLineOptions *opts)
 			relabelCircular(Dset[i]);
 		}
 
-		Dset[i] = updateDifxInput(Dset[i], &opts->mergeOptions);
+		Dset[i] = updateDifxInput(Dset[i], &opts->mergeOptions, &opts->filterOptions);
 
 		if(opts->specAvg)
 		{
@@ -1118,13 +1195,17 @@ static int needToVanVleck(DifxInput **Dset, int n)
 
 	for(i = 0; i < n; ++i)
 	{
+		int maxDatastreams;
+		int *dsIds;
+
 		D = Dset[i];
 		q = 0;
 
+		maxDatastreams = DifxInputGetMaxDatastreamsPerAntenna(D);
+		dsIds = (int *)malloc(maxDatastreams*sizeof(int));
+
 		for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 		{
-			const int maxDatastreams = 8;
-			int dsIds[maxDatastreams];
 			int n;
 			int quantBits;
 
@@ -1145,12 +1226,21 @@ static int needToVanVleck(DifxInput **Dset, int n)
 			}
 			else if(q != quantBits)	/* if different antennas have different quantization, then we must do van vleck */
 			{
-				return 1;
+				q = -1;
+				break;
 			}
 			if(q > 2)	/* any quantization more than two bits should be handled here */
 			{
-				return 1;
+				q = -1;
+				break;
 			}
+		}
+		
+		free(dsIds);
+
+		if(q == -1)
+		{
+			return 1;
 		}
 	}
 
@@ -1158,7 +1248,7 @@ static int needToVanVleck(DifxInput **Dset, int n)
 }
 
 /* FIXME: use opts->eopMergeMode to drive merging of files */
-static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, int passNum, int *nWithoutPhaseCentre)
+static int convertFits(struct CommandLineOptions *opts, DifxInput **Dset, int passNum, int *nWithoutPhaseCentre)
 {
 	DifxInput *D;
 	struct fitsPrivate outfile;
@@ -1271,7 +1361,7 @@ static int convertFits(const struct CommandLineOptions *opts, DifxInput **Dset, 
 		printDifxInput(D);
 	}
 
-	D = updateDifxInput(D, &opts->mergeOptions);
+	D = updateDifxInput(D, &opts->mergeOptions, &opts->filterOptions);
 
 	if(!D)
 	{

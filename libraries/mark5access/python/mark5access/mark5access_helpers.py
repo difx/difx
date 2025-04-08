@@ -26,7 +26,10 @@ def get_sample_time(ms):
 
 def make_decoder_array(ms, nsamples, dtype=ctypes.c_float):
 	"""Returns a 'nchan x nsamples' array that can be passed to mark5_stream_decode()."""
-	DT_ARR   = dtype*nsamples
+	if ms.contents.iscomplex > 0:
+		DT_ARR = dtype*(2*nsamples)
+	else:
+		DT_ARR = dtype*nsamples
 	P_DT_ARR = ctypes.POINTER(dtype)*ms.contents.nchan
 	pdata = P_DT_ARR()
 	for i in range(ms.contents.nchan):

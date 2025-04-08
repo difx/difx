@@ -179,7 +179,7 @@ An antenna section allows properties of an individual antenna, such as position,
 | freqClockOffs  | string  | us    |                    | Adds clock offsets to each recorded frequency using the following format:freqClockOffs=f1,f2,f3,f4 (must be same length as number of recorded freqs, first value must be zero)  |
 | loOffsets      | string  | Hz    |                    | Adds LO offsets to each recorded frequency using the following format:loOffsets=f1,f2,f3,f4 (must be same length as number of recorded freqs) |
 | tcalFreq       | int     | Hz    | 0                  | Enables switched power detection at specified frequency |
-| phaseCalInt    | int     | MHz   | 1                  | Zero turns off phase cal extraction, positive value is the interval between tones to be extracted  |
+| phaseCalInt    | float   | MHz   | 1.0                | Zero turns off phase cal extraction, positive value is the interval between tones to be extracted  |
 | toneGuard      | float   | MHz   | 0.125 of bandwidth | When using toneSelection ''smart'' or ''most'' don't select tones within this range of band edge, if possible  |
 | toneSelection  | string  |       | ''smart''          | Use an algorithm to choose tones for you.  Read the code to learn more. |
 | sampling       | string  |       | ''REAL''           | Set to ''COMPLEX'' for complex sampled data or ''COMPLEX_DSB'' for double sideband  |

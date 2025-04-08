@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: reducepoly.c 7651 2017-02-19 21:26:24Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
- * $LastChangedRevision: 7651 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2017-02-20 05:26:24 +0800 (一, 2017-02-20) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <string.h>
@@ -390,7 +380,7 @@ int main(int argc, char **argv)
 			DifxInput *D;
 			
 			D = loadDifxInput(argv[a]);
-			D = updateDifxInput(D, 0);
+			D = updateDifxInput(D, 0, 0);
 			if(!D)
 			{
 				fprintf(stderr, "Update failed: D == 0.  Quitting\n");

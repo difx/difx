@@ -16,15 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: difxqueue.py 11095 2023-09-15 04:20:19Z ShaoguangGuo $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/difxqueue/difxqueue.py $
-# $LastChangedRevision: 11095 $
-# $Author: ShaoguangGuo $
-# $LastChangedDate: 2023-09-15 12:20:19 +0800 (五, 2023-09-15) $
-#
-#============================================================================
 
 from optparse import OptionParser
 from difxdb.business.versionhistoryaction import *

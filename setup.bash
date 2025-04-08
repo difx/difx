@@ -122,6 +122,10 @@ elif [ "$arch" = "x86_64" ] #64 bit
 then
   export DIFXBITS=64
   PrependPath PERL5LIB         "${DIFXROOT}/perl/lib64/perl$perlver/site_perl/$perlsver/x86_64-linux-thread-multi"
+elif [ "$arch" = "arm64" ] #64 bit
+then
+  export DIFXBITS=64
+  PrependPath PERL5LIB     "${DIFXROOT}/lib/perl$perlver/site_perl/$perlsver/darwin-thread-multi-2level:${DIFXROOT}/lib/perl$perlver/site_perl"
 else
   echo "Unknown architecture $arch - leaving paths unaltered"
 fi
@@ -129,10 +133,10 @@ fi
 ####### LIBRARY/EXECUTABLE PATHS ############
 PrependPath PATH             "${DIFXMPIDIR}"/bin
 PrependPath PATH             "${DIFXROOT}"/bin
-if [ -z "${IPP_LIBRARY_PATH}" ]; then
+if [ -n "${IPP_LIBRARY_PATH}" ]; then
     PrependPath LD_LIBRARY_PATH "${IPP_LIBRARY_PATH}"
 fi
-if [ -z "${MPI_LIBRARY_PATH}" ]; then
+if [ -n "${MPI_LIBRARY_PATH}" ]; then
     PrependPath LD_LIBRARY_PATH "${MPI_LIBRARY_PATH}"
 fi
 if [ "$OS" = "darwin" ] 

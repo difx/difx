@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: difxio.h 9598 2020-07-08 08:37:08Z JanWagner $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio.h $
- * $LastChangedRevision: 9598 $
- * $Author: JanWagner $
- * $LastChangedDate: 2020-07-08 16:37:08 +0800 (三, 2020-07-08) $
- *
- *==========================================================================*/
 #ifndef DIFXIO_H
 #define DIFXIO_H
 

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mk6copy.c 9559 2020-06-18 12:50:12Z JanWagner $
-// $HeadURL$
-// $LastChangedRevision: 9559 $
-// $Author: JanWagner $
-// $LastChangedDate: 2020-06-18 20:50:12 +0800 (四, 2020-06-18) $
-//
-//============================================================================
 //
 // mk6copy [-s] <Mark6 scan name> <destination>
 //

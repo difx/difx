@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: corrparams.cpp 10831 2022-11-17 02:03:58Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/src/corrparams.cpp $
- * $LastChangedRevision: 10831 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-11-17 10:03:58 +0800 (四, 2022-11-17) $
- *
- *==========================================================================*/
 
 #define _XOPEN_SOURCE
 #include <iostream>
@@ -967,6 +957,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 			std::cout << "Note: the fake keyword in the DATASTREAM section is deprecated and won't be an option in some future version of vex2difx.  Please instead use: source=fake" << std::endl;
 		}
 		++noteCount;
+
 		dataSource = DataSourceFake;
 		basebandFiles.clear();
 		basebandFiles.push_back(VexBasebandData(value, 0, -1));
@@ -1173,9 +1164,11 @@ AntennaSetup::AntennaSetup(const std::string &name) : vexName(name), defaultData
 	axisOffset = AXIS_OFFSET_NOT_SET;
 	deltaClock = 0.0;
 	deltaClockRate = 0.0;
+	deltaClockAccel = 0.0;
 	clock.mjdStart = -1e9;
 	clockorder = 1;
 	phaseCalIntervalMHz = -1;
+	phaseCalIntervalDivisor = 1;
 	toneGuardMHz = -1.0;
 	toneSelection = ToneSelectionSmart;
 	tcalFrequency = -1;
@@ -1297,6 +1290,15 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		deltaClockRate = parseDouble(value) / 1.0e6;	// convert from us/sec to sec/sec
+	}
+	else if(key == "deltaClockAccel")
+	{
+		if(deltaClockAccel != 0.0)
+		{
+			std::cerr << "Warning: antenna " << vexName << " has multiple deltaClockAccel definitions" << std::endl;
+			++nWarn;
+		}
+		deltaClockAccel = parseDouble(value) / 1.0e6;	// convert from us/sec to sec/sec
 	}
 	else if(key == "X" || key == "x")
 	{
@@ -1468,11 +1470,16 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			std::cout << "Note: the fake keyword in the ANTENNA section is deprecated and won't be an option in some future version of vex2difx.  Please instead use: source=fake" << std::endl;
 		}
 		++noteCount;
+
 		defaultDatastreamSetup.dataSource = DataSourceFake;
 	}
 	else if(key == "phaseCalInt")
 	{
 		ss >> phaseCalIntervalMHz;
+	}
+	else if(key == "phaseCalIntDivisor")
+	{
+		ss >> phaseCalIntervalDivisor;
 	}
 	else if(key == "toneGuard")
 	{
@@ -2913,7 +2920,7 @@ int CorrParams::sanityCheck()
 			std::cerr << "Warning: the default antenna's coordinates are set!" << std::endl;
 			++nWarn;
 		}
-		if(a->clock.offset != 0 || a->clock.rate != 0 || a->clock.accel != 0 || a->clock.jerk != 0 || a->clock.offset_epoch != 0 || a->deltaClock != 0 || a->deltaClockRate != 0)
+		if(a->clock.offset != 0 || a->clock.rate != 0 || a->clock.accel != 0 || a->clock.jerk != 0 || a->clock.offset_epoch != 0 || a->deltaClock != 0 || a->deltaClockRate != 0 || a->deltaClockAccel != 0)
 		{
 			std::cerr << "Warning: the default antenna's clock parameters are set!" << std::endl;
 			++nWarn;
@@ -3654,6 +3661,7 @@ std::ostream& operator << (std::ostream &os, const AntennaSetup &x)
 	}
 	os << "  polSwap=" << x.polSwap << std::endl;
 	os << "  phaseCalInt=" << x.phaseCalIntervalMHz << std::endl;
+	os << "  phaseCalIntDivisor=" << x.phaseCalIntervalDivisor << std::endl;
 	os << "  tcalFreq=" << x.tcalFrequency << std::endl;
 
 	os << "}" << std::endl;

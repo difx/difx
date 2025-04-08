@@ -15,16 +15,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: filterDifx2Fits.py 10597 2022-08-18 07:27:44Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/misc/filterDifx2Fits.py $
-# $LastChangedRevision: 10597 $
-# $Author: JanWagner $
-# $LastChangedDate: 2022-08-18 15:27:44 +0800 (四, 2022-08-18) $
-#
-#============================================================================
 import os
 import sys
 import glob

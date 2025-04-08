@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 #include <mpi.h>
 #include "config.h"
 #include "visibility.h"
@@ -43,10 +33,22 @@
 #include <difxmessage.h>
 #include "alert.h"
 
+#ifndef MAX_PATH
+#define MAX_PATH 256
+#endif
+
+//static string sec2time(const int& sec)
+//{
+//  ostringstream oss;
+//  oss << setfill('0');
+//  oss << setw(2) << sec/3600 << ":" << setw(2) << (sec/60)%60 << ":" << setw(2) << sec%60;
+//  return oss.str();
+//}
+
 Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer, int dbufferlen, int eseconds, int scan, int scanstartsec, int startns, const string * pnames)
   : config(conf), visID(id), currentscan(scan), currentstartseconds(scanstartsec), currentstartns(startns), numvisibilities(numvis), executeseconds(eseconds), todiskbufferlength(dbufferlen), polnames(pnames), todiskbuffer(dbuffer)
 {
-  int status, binloop, maxbinloop = 1;
+  int binloop, status;
 
   //cverbose << startl << "About to create visibility " << id << "/" << numvis << endl;
   estimatedbytes = 0;
@@ -75,6 +77,7 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer,
   offsetns = 0;
   changeConfig(currentconfigindex);
   maxfiles = 1;
+  maxbinloop = 1;
   for(int i=0;i<model->getNumScans();i++)
   {
     binloop = 1;
@@ -103,7 +106,7 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer,
 // Note: not to be called until .difx/ dir is created.
 void Visibility::initialisePcalFiles()
 {
-  char pcalfilename[256];
+  char pcalfilename[MAX_PATH];
   ofstream pcaloutput;
   set<string> completedstations;
 
@@ -113,8 +116,8 @@ void Visibility::initialisePcalFiles()
     for(int c=0;c<config->getNumConfigs();c++)
     {
       if(completedstations.find(config->getDStationName(c, i)) != completedstations.end())
-        continue;	
-      if(config->getDPhaseCalIntervalMHz(c, i) > 0)
+        continue;
+      if(config->getDPhaseCalIntervalHz(c, i) > 0)
       {
         sprintf(pcalfilename, "%s/PCAL_%05d_%06d_%s", config->getOutputFilename().c_str(), config->getStartMJD(), config->getStartSeconds(), config->getDStationName(c, i).c_str());
         pcaloutput.open(pcalfilename, ios::app);
@@ -134,7 +137,7 @@ void Visibility::initialisePcalFiles()
       }
     }
   }
-}       
+}
 
 Visibility::~Visibility()
 {
@@ -199,13 +202,6 @@ bool Visibility::addData(cf32* subintresults)
     cwarn << startl << "Somehow Visibility " << visID << " ended up with " << currentsubints << " subintegrations - was expecting only " << subintsthisintegration << endl;
 
   return (currentsubints>=subintsthisintegration); //are we finished integrating?
-}
-
-string sec2time(const int& sec) {
-  ostringstream oss;
-  oss << setfill('0');
-  oss << setw(2) << sec/3600 << ":" << setw(2) << (sec/60)%60 << ":" << setw(2) << sec%60; 
-  return oss.str();
 }
 
 void Visibility::increment()
@@ -309,7 +305,8 @@ void Visibility::updateTime()
   }
 }
 
-void Visibility::copyVisData(char **buf, int *bufsize, int *nbuf) {
+void Visibility::copyVisData(char **buf, int *bufsize, int *nbuf)
+{
   char *ptr;
   int ntowrite;
   int32_t atsec, datasize;
@@ -361,7 +358,7 @@ void Visibility::writedata()
   int dumpmjd, intsec;
   double dumpseconds, acw;
 
-//  cdebug << startl << "Vis. " << visID << " is starting to write out data" << endl;
+  //cdebug << startl << "Vis. " << visID << " is starting to write out data" << endl;
 
   if(currentscan >= model->getNumScans() || currentstartseconds + model->getScanStartSec(currentscan, expermjd, experseconds) >= executeseconds)
   {
@@ -437,7 +434,7 @@ void Visibility::writedata()
         for(int s=0;s<model->getNumPhaseCentres(currentscan);s++) {
           //its in units of integration width in ns, so scale to get something which is 1.0 for no decorrelation
           baselineshiftdecorrs[i][freqindex][s] = floatresults[resultindex]/(1000000000.0*config->getIntTime(currentconfigindex));
-//TODO: when targetfreq != freqindex, what to do, multiply-in/average to form decorr for N:1 freq:targetfreq case?
+          //TODO: when targetfreq != freqindex, what to do, multiply-in/average to form decorr for N:1 freq:targetfreq case?
           baselineshiftdecorrs[i][targetfreqindex][s] = baselineshiftdecorrs[i][freqindex][s];
           resultindex++;
         }
@@ -496,6 +493,8 @@ void Visibility::writedata()
       freqindex = config->getBFreqIndex(currentconfigindex, i, j);
       targetfreqindex = config->getBTargetFreqIndex(currentconfigindex, i, j);
       coreindex = config->getCoreResultBaselineOffset(currentconfigindex, freqindex, i);
+      if(coreindex < 0)
+        csevere << startl << "Baseline " << i << " input freqId " << freqindex << " with destination freqId " << targetfreqindex << " is not mapped to any location in the output data array!" << endl;
       freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
       targetfreqchannels = config->getFNumChannels(targetfreqindex)/config->getFChannelsToAverage(targetfreqindex);
       paddingchannels = config->getFChannelsToAverage(freqindex) - config->getFNumChannels(freqindex) % config->getFChannelsToAverage(freqindex);
@@ -651,7 +650,7 @@ void Visibility::writedata()
   //calibrate the pulse cal
   for(int i=0;i<numdatastreams;i++)
   {
-    if(config->getDPhaseCalIntervalMHz(currentconfigindex, i) > 0)
+    if(config->getDPhaseCalIntervalHz(currentconfigindex, i) > 0)
     {
       resultindex = config->getCoreResultPCalOffset(currentconfigindex, i)*2;
       for(int j=0;j<config->getDNumRecordedBands(currentconfigindex, i); j++)
@@ -680,16 +679,16 @@ void Visibility::writedata()
 
   //all calibrated, now just need to write out
   if(config->getOutputFormat() == Configuration::DIFX)
-    writedifx(dumpmjd, dumpseconds);
+    writeSWIN(dumpmjd, dumpseconds);
   else
-    writeascii(dumpmjd, dumpseconds);
+    writeASCII(dumpmjd, dumpseconds);
 
-//  cdebug << startl << "Vis. " << visID << " has finished writing data" << endl;
+  //cdebug << startl << "Vis. " << visID << " has finished writing data" << endl;
 
   return;
 }
 
-void Visibility::writeascii(int dumpmjd, double dumpseconds)
+void Visibility::writeASCII(int dumpmjd, double dumpseconds)
 {
   ofstream output;
   int binloop, freqchannels, freqindex, targetfreqindex;
@@ -710,7 +709,7 @@ void Visibility::writeascii(int dumpmjd, double dumpseconds)
   }
   sprintf(datetimestring, "%05u_%02u%02u%02u_%06u", mjd, hours, minutes, seconds, microseconds);
   cinfo << startl << "Mjd is " << mjd << ", hours is " << hours << ", minutes is " << minutes << ", seconds is " << seconds << endl;
-  
+
   if(config->pulsarBinOn(currentconfigindex) && !config->scrunchOutputOn(currentconfigindex))
     binloop = config->getNumPulsarBins(currentconfigindex);
   else
@@ -730,12 +729,9 @@ void Visibility::writeascii(int dumpmjd, double dumpseconds)
         {
           for(int k=0;k<config->getBNumPolProducts(currentconfigindex, i, j);k++)
           {
-	    stringstream fname;
             //write out to a naive filename
-
-	    fname << "baseline_" << i << "_freq_" << j << "_product_" << k << "_" << datetimestring << "_source_" << s << "_bin_" << b << ".output";
-
-            //output.open(string(string("baseline_")+itoa(i,sbuf,10)+"_freq_"+char('0' + j)+"_product_"+char('0'+k)+"_"+datetimestring+"_source_"+char('0'+s)+"_bin_"+char('0'+b)+".output").c_str(), ios::out|ios::trunc);
+            stringstream fname;
+            fname << "baseline_" << i << "_freq_" << j << "_product_" << k << "_" << datetimestring << "_source_" << s << "_bin_" << b << ".output";
             output.open(fname.str().c_str(), ios::out|ios::trunc);
             for(int l=0;l<freqchannels;l++) {
               atindex = resultindex+l;
@@ -762,12 +758,11 @@ void Visibility::writeascii(int dumpmjd, double dumpseconds)
         {
           freqindex = config->getDTotalFreqIndex(currentconfigindex, i, k);
           if(config->isFrequencyUsed(currentconfigindex, freqindex) || config->isEquivalentFrequencyUsed(currentconfigindex, freqindex)) {
-	    stringstream fname;
+            stringstream fname;
             freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
             //write out to naive filename
             fname << "datastream_" << i << "_crosspolar_" << j << "_product_" << k << "_" << datetimestring << "_bin_" << 0 << ".output";
             output.open(fname.str().c_str(), ios::out|ios::trunc);
-	    //            output.open(string(string("datastream_")+char('0' + i)+"_crosspolar_"+char('0' + j)+"_product_"+char('0'+k)+"_"+datetimestring+"_bin_"+char('0'+0)+".output").c_str(), ios::out|ios::trunc);
             for(int l=0;l<freqchannels;l++) {
               atindex = resultindex + l;
               output << l << " " << sqrt(results[atindex].re*results[atindex].re + results[atindex].im*results[atindex].im) << " " << atan2(results[atindex].im, results[atindex].re) << endl;
@@ -783,12 +778,10 @@ void Visibility::writeascii(int dumpmjd, double dumpseconds)
   }
 }
 
-void Visibility::writedifx(int dumpmjd, double dumpseconds)
+void Visibility::writeSWIN(int dumpmjd, double dumpseconds)
 {
-  ofstream output;
   ofstream pcaloutput;
-  char filename[256];
-  char pcalfilename[256];
+  char pcalfilename[MAX_PATH];
   char pcalstr[256];
   string pcalline;
   int binloop, freqindex, baselinefreqindex, numpolproducts, resultindex, coreindex, coreoffset, freqchannels;
@@ -843,11 +836,12 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
 
       // source data location and size
       coreindex = config->getCoreResultBaselineOffset(currentconfigindex, freqindex, i);
+      if(coreindex < 0)
+        csevere << startl << "Error finding SWIN data to store for baseline " << i << ", output freqId " << freqindex << " was not associated with any section of result data array!" << endl;
       resultindex = config->getCoreResultBaselineOffset(currentconfigindex, freqindex, i); // to print out comparison 'coreindex+coreoffset' vs 'resultindex, resultindex+=freqchannels'
       freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
-      if(config->getFNumChannels(freqindex) % config->getFChannelsToAverage(freqindex) != 0) {
-       cout << "visbility.cpp " << __LINE__ << " ERROR: outputband nch " << config->getFNumChannels(freqindex) << " not divisible by " << config->getFChannelsToAverage(freqindex) << endl;
-      }
+      if(config->getFNumChannels(freqindex) % config->getFChannelsToAverage(freqindex) != 0)
+        csevere << startl << "visbility.cpp " << __LINE__ << " ERROR: outputband nch " << config->getFNumChannels(freqindex) << " not divisible by " << config->getFChannelsToAverage(freqindex) << endl;
       numpolproducts = config->getBNumPolProducts(currentconfigindex, i, baselinefreqindex);
 
       filecount = 0;
@@ -870,7 +864,6 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
             // follow core.cpp indexing
             coreoffset = (b*numpolproducts + k)*freqchannels;
 
-            //open the file for appending in ascii and write the ascii header
             if(baselineweights[i][freqindex][b][k] > 0.0)
             {
               //cout << "About to write out baseline[" << i << "][" << s << "][" << k << "] from coreindex " << coreindex+coreoffset << ", whose 6th vis is " << results[coreindex+correoffset+6].re << " + " << results[coreindex+coreoffset+6].im << " i" << endl;
@@ -878,19 +871,14 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
                 currentweight = baselineweights[i][freqindex][b][k]*baselineshiftdecorrs[i][freqindex][s];
               else
                 currentweight = baselineweights[i][freqindex][b][k];
-              writeDiFXHeader(&output, baselinenumber, dumpmjd, dumpseconds, currentconfigindex, sourceindex, freqindex, polpair, b, 0, currentweight, buvw, filecount);
-
-              //close, reopen in binary and write the binary data, then close again
-              //For both USB and LSB data, the Nyquist channel has already been excised by Core. In
-              //the case of correlating USB with LSB data, the first datastream defines which is the 
+              appendSWINHeaderBuffered(baselinenumber, dumpmjd, dumpseconds, currentconfigindex, sourceindex, freqindex, polpair, b, 0, currentweight, buvw, filecount);
+              appendSWINDataBuffered(&(results[coreindex+coreoffset]), freqchannels*sizeof(cf32), filecount);
+              //Note: For both USB and LSB data, the Nyquist channel has already been excised by Core. In
+              //the case of correlating USB with LSB data, the first datastream defines which is the
               //Nyquist channels.  In any case, the numchannels that are written out represent the
               //the valid part of the, and run from lowest frequency to highest frequency.  For USB
               //data, the first channel is the DC - for LSB data, the last channel is the DC
-              //output.write((char*)(&(results[resultindex])), freqchannels*sizeof(cf32));
-              memcpy(&(todiskbuffer[todiskmemptrs[filecount]]), &(results[coreindex+coreoffset]), freqchannels*sizeof(cf32));
-              todiskmemptrs[filecount] += freqchannels*sizeof(cf32);
             }
-
             // NB: need a different increment? otoh maybe not, 'freqchannels' here === targetfreqchannels since this is a target freq
             resultindex += freqchannels;
           }//for(numpoln)
@@ -901,26 +889,15 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
     }//for(freqs)
   }//for(baselines)
 
-  //now write all the different files out to disk, one hit per file
-  filecount = 0;
-  for(int s=0;s<model->getNumPhaseCentres(currentscan);s++)
-  {
-    for(int b=0;b<binloop;b++)
-    {
-      sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), expermjd, experseconds, s, b);
-      output.open(filename, ios::app);
-      output.write(&(todiskbuffer[filecount*(todiskbufferlength/numfiles)]), todiskmemptrs[filecount]-filecount*(todiskbufferlength/numfiles));
-      output.close();
-      if(!output)
-         csevere << startl << "Error trying to write more data to " << filename << " : " << strerror(errno) << "!!" << endl;
-      filecount++;
-    }
-  }
+  //now write all the different files out to disk, multi-file, one hit per file
+  flushBuffersToDisk(true);
 
   if(model->getNumPhaseCentres(currentscan) == 1)
     sourceindex = model->getPhaseCentreSourceIndex(currentscan, 0);
   else
     sourceindex = model->getPointingCentreSourceIndex(currentscan);
+
+  filecount = 0;
   todiskmemptrs[0] = 0;
 
   //now each autocorrelation visibility point if necessary
@@ -946,11 +923,10 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
               freqindex = config->getDTotalFreqIndex(currentconfigindex, i, k);
             }
           }
-          if(config->isFrequencyOutput(currentconfigindex, freqindex)) {
+          if(config->isFrequencyOutput(currentconfigindex, freqindex) || config->isEquivalentFrequencyOutput(currentconfigindex, freqindex)) {
             freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
             if(autocorrweights[i][j][k] > 0.0)
             {
-              //open, write the header and close
               if(k<config->getDNumRecordedBands(currentconfigindex, i))
                 polpair[0] = config->getDRecordedBandPol(currentconfigindex, i, k);
               else
@@ -959,13 +935,9 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
                 polpair[1] = polpair[0];
               else
                 polpair[1] = config->getOppositePol(polpair[0]);
-              writeDiFXHeader(&output, baselinenumber, dumpmjd, dumpseconds, currentconfigindex, sourceindex, freqindex, polpair, 0, 0, autocorrweights[i][j][k], buvw, 0);
-
-              //open, write the binary data and close
-              //see baseline writing section for description of treatment of USB/LSB data and the Nyquist channel
-              //output.write((char*)(&(results[resultindex])), freqchannels*sizeof(cf32));
-              memcpy(&(todiskbuffer[todiskmemptrs[0]]), &(results[resultindex]), freqchannels*sizeof(cf32));
-              todiskmemptrs[0] += freqchannels*sizeof(cf32);
+              appendSWINHeaderBuffered(baselinenumber, dumpmjd, dumpseconds, currentconfigindex, sourceindex, freqindex, polpair, 0, 0, autocorrweights[i][j][k], buvw, filecount);
+              appendSWINDataBuffered(&(results[resultindex]), freqchannels*sizeof(cf32), filecount);
+              //nb: see baseline writing section for description of treatment of USB/LSB data and the Nyquist channel
             }
             resultindex += freqchannels;
           }
@@ -976,13 +948,8 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
 
   if(todiskmemptrs[0] > 0)
   {
-    //write out the autocorrelations, all in one hit
-    sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), expermjd, experseconds, 0, 0);
-    output.open(filename, ios::app);
-    output.write(todiskbuffer, todiskmemptrs[0]);
-    output.close();
-    if(!output)
-      csevere << startl << "Error trying to write more data to " << filename << " : " << strerror(errno) << "!!" << endl;
+    //write out the autocorrelations, all in one hit, not multi-file
+    flushBuffersToDisk(false);
   }
 
 
@@ -1023,11 +990,11 @@ The four columns are:
 
   for(int i=0;i<numdatastreams;i++)
   {
-    if(config->getDPhaseCalIntervalMHz(currentconfigindex, i) > 0)
+    if(config->getDPhaseCalIntervalHz(currentconfigindex, i) > 0)
     {
       nonzero = false;
       // write the header string
-      sprintf(pcalstr, "%s %13.7f %9.7f %d %d %d",
+      sprintf(pcalstr, "%s %17.11f %13.11f %d %d %d",
               config->getDStationName(currentconfigindex, i).c_str(), pcalmjd,
               config->getIntTime(currentconfigindex)/86400.0, i,
               config->getDNumRecordedBands(currentconfigindex, i),
@@ -1086,6 +1053,43 @@ The four columns are:
   }
 }
 
+void Visibility::flushBuffersToDisk(bool multifile)
+{
+  char filename[MAX_PATH];
+  ofstream output;
+  if(multifile)
+  {
+    int filenr = 0, binloop = 1, numfiles = 1;
+
+    if(config->pulsarBinOn(currentconfigindex) && !config->scrunchOutputOn(currentconfigindex))
+      binloop = config->getNumPulsarBins(currentconfigindex);
+    numfiles = binloop*model->getNumPhaseCentres(currentscan);
+
+    for(int s=0;s<model->getNumPhaseCentres(currentscan);s++)
+    {
+        for(int b=0;b<binloop;b++)
+        {
+          sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), config->getStartMJD(), config->getStartSeconds(), s, b);
+          output.open(filename, ios::app);
+          output.write(&(todiskbuffer[filenr*(todiskbufferlength/numfiles)]), todiskmemptrs[filenr] - filenr*(todiskbufferlength/numfiles));
+          output.close();
+          if(!output)
+            csevere << startl << "Error trying to write more data to " << filename << " : " << strerror(errno) << "!!" << endl;
+          filenr++;
+        }
+    }
+  }
+  else
+  {
+    sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), config->getStartMJD(), config->getStartSeconds(), 0, 0);
+    output.open(filename, ios::app);
+    output.write(todiskbuffer, todiskmemptrs[0]);
+    output.close();
+    if(!output)
+      csevere << startl << "Error trying to write more data to " << filename << " : " << strerror(errno) << "!!" << endl;
+  }
+}
+
 void Visibility::multicastweights()
 {
   float *weight;
@@ -1136,13 +1140,14 @@ void Visibility::multicastweights()
   difxMessageSendDifxStatus3(DIFX_STATE_RUNNING, "", mjd, numdatastreams, weight, expermjd + experseconds/86400.0, expermjd + (experseconds + executeseconds)/86400.0);
 
   delete [] weight;
-} 
+}
 
-
-void Visibility::writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, float weight, double buvw[3], int filecount)
+// likely obsolete, ASCI output is unbuffered multi-file with no headers, cf. writeASCII()
+void Visibility::appendASCIIHeaderBuffered(int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, float weight, double buvw[3], int filecount)
 {
   double dweight = weight;
-  /* *output << setprecision(15);
+  /*
+  *output << setprecision(15);
   *output << "BASELINE NUM:       " << baselinenum << endl;
   *output << "MJD:                " << dumpmjd << endl;
   *output << "SECONDS:            " << dumpseconds << endl;
@@ -1156,6 +1161,7 @@ void Visibility::writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd
   *output << "U (METRES):         " << buvw[0] << endl;
   *output << "V (METRES):         " << buvw[1] << endl;
   *output << "W (METRES):         " << buvw[2] << endl;
+  */
   sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "BASELINE NUM:       %d\n", baselinenum);
   todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
   sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "MJD:                %d\n", dumpmjd);
@@ -1193,7 +1199,12 @@ void Visibility::writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd
     todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
     sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "W (METRES):         0.0\n");
     todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
-  }*/
+  }
+}
+
+void Visibility::appendSWINHeaderBuffered(int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, float weight, double buvw[3], int filecount)
+{
+  double dweight = weight;
   *((unsigned int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = SYNC_WORD;
   todiskmemptrs[filecount] += 4;
   *((int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = BINARY_HEADER_VERSION;
@@ -1222,6 +1233,12 @@ void Visibility::writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd
   todiskmemptrs[filecount] += 3*8;
 }
 
+void Visibility::appendSWINDataBuffered(void * srcdata, size_t numbytes, int filecount)
+{
+  memcpy(&(todiskbuffer[todiskmemptrs[filecount]]), srcdata, numbytes);
+  todiskmemptrs[filecount] += numbytes;
+}
+
 void Visibility::changeConfig(int configindex)
 {
   int pulsarwidth;
@@ -1244,7 +1261,7 @@ void Visibility::changeConfig(int configindex)
     pulsarwidth = 1;
     if(pulsarbinon && !config->scrunchOutputOn(currentconfigindex))
       pulsarwidth = config->getNumPulsarBins(currentconfigindex);
-//    cverbose << startl << "Starting to delete some old arrays" << endl;
+//  cverbose << startl << "Starting to delete some old arrays" << endl;
     //need to delete the old arrays before allocating the new ones
     for(int i=0;i<numdatastreams;i++) {
       delete [] autocorrcalibs[i];
@@ -1390,4 +1407,5 @@ void Visibility::changeConfig(int configindex)
     cverbose << startl << "Finished the pulsar bin initialisation" << endl;
   }
 }
+
 // vim: shiftwidth=2:softtabstop=2:expandtab

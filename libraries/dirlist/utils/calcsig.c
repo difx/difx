@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: calcsig.c 7763 2017-05-16 18:18:27Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 7763 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-05-17 02:18:27 +0800 (三, 2017-05-17) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

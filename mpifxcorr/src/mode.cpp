@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 
 #include <mpi.h>
 #include <iomanip>
@@ -410,25 +400,21 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
   }
   // Phase cal stuff
   PCal::setMinFrequencyResolution(1e6);
-  if(config->getDPhaseCalIntervalMHz(configindex, datastreamindex))
+  if(config->getDPhaseCalIntervalHz(configindex, datastreamindex) > 0)
   {
-    pcalresults = new cf32*[numrecordedbands];
-    extractor = new PCal*[numrecordedbands];
-    pcalnbins = new int[numrecordedbands];
+    pcalresults = new cf32*[numrecordedbands]();
+    extractor = new PCal*[numrecordedbands]();
     for(int i=0;i<numrecordedbands;i++)
     {
       localfreqindex = conf->getDLocalRecordedFreqIndex(confindex, dsindex, i);
-      pcalresults[i] = new cf32[conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex)];
-      extractor[i] = PCal::getNew(1e6*recordedbandwidth,
-                                  1e6*config->getDPhaseCalIntervalMHz(configindex, datastreamindex),
-                                  config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex), 0,
-                                  sampling, tcomplex);
+      const long denom = config->getDPhaseCalDenominator(configindex, datastreamindex);
+      const fraction tonespacing(config->getDPhaseCalIntervalHz(configindex, datastreamindex), denom);
+      const fraction toneoffset(config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex), denom);
+      pcalresults[i] = new cf32[conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex)]();
+      extractor[i] = PCal::getNew(1e6*recordedbandwidth, tonespacing, toneoffset, 0, sampling, tcomplex);
       if (extractor[i]->getLength() != conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex))
         csevere << startl << "Developer Error: configuration.cpp and pcal.cpp do not agree on the number of tones: " << extractor[i]->getLength() << " != " << conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex) << " ." << endl;
       estimatedbytes += extractor[i]->getEstimatedBytes();
-      pcalnbins[i] = extractor[i]->getNBins();
-//      if (pcalOffset>=0)
-//        cverbose << startl << "PCal extractor internally uses " << pcalnbins[i] << " spectral channels (" << (long)(1e3*recordedbandwidth/pcalnbins[i]) << " kHz/channel)" << endl;
     }
   }
 
@@ -583,7 +569,7 @@ Mode::~Mode()
   delete [] weights;
   delete [] autocorrelations;
 
-  if(config->getDPhaseCalIntervalMHz(configindex, datastreamindex))
+  if(config->getDPhaseCalIntervalHz(configindex, datastreamindex) > 0)
   {
     for(int i=0;i<numrecordedbands;i++) {
        delete extractor[i];
@@ -591,7 +577,6 @@ Mode::~Mode()
     }
     delete[] pcalresults;
     delete[] extractor;
-    delete[] pcalnbins;
   }
 
   if(sk != 0) //also need to delete kurtosis stuff
@@ -771,11 +756,12 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
   nearestsampletime = nearestsample*sampletime;
   fracsampleerror = float(starttime - nearestsampletime);
 
-  if(!(config->getDPhaseCalIntervalMHz(configindex, datastreamindex) == 0)) 
+  if(!(config->getDPhaseCalIntervalHz(configindex, datastreamindex) == 0))
   {
+      size_t samplenrsincestart = nearestsample + static_cast<size_t>(double(datasec*1e9+datans)/(sampletime*1e3) + 0.5);
       for(int i=0;i<numrecordedbands;i++)
       {
-        extractor[i]->adjustSampleOffset(datasamples+nearestsample);
+        extractor[i]->adjustSampleOffset(samplenrsincestart);
         if (!usecomplex)
 	        status = extractor[i]->extractAndIntegrate (&(unpackedarrays[i][nearestsample
 	                 - unpackstartsamples]), fftchannels);
@@ -886,21 +872,11 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
     lofreq = config->getDRecordedFreq(configindex, datastreamindex, i);
 
     // For double-sideband data, the LO frequency is at the centre of the band, not the band edge
-    if (usecomplex && usedouble)
-    {
-      if (config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
-        lofreq -= config->getDRecordedBandwidth(configindex, datastreamindex, i)/2.0;
-      } else {
-        lofreq += config->getDRecordedBandwidth(configindex, datastreamindex, i)/2.0;
-      }
-      // For lower sideband complex data, the effective LO is at negative frequency, not positive
-      if (usecomplex && config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
-        lofreq = -lofreq;
-      }
-    } else if(usecomplex) {
-      if (usecomplex && config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
-        lofreq = -lofreq;
-      }
+    if (usecomplex) {
+      if (config->getDRecordedLowerSideband(configindex, datastreamindex, i))
+        lofreq = -lofreq;  // LSB case
+      if (usedouble)
+        lofreq += config->getDRecordedBandwidth(configindex, datastreamindex, i)/2.0;  // Double sideband move LO to middle of band
     }
 
     switch(fringerotationorder) {
@@ -1225,6 +1201,7 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
                 }
               }
               else {
+		// By grabbing the "upper half" of the FFT output, channels are naturally in frequency assending order, even for LSB data
                 status = vectorCopy_cf32(&(fftd[recordedbandchannels]), fftoutputs[j][subloopindex], recordedbandchannels);
               }
             }

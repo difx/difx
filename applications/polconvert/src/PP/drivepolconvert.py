@@ -685,6 +685,7 @@ def useTheUserIFlist(o):
     o.zlist = o.iflist.split(',')
     o.zfirst = int(o.zlist[0])
     o.zfinal = int(o.zlist[-1])
+    o.zffs.append((o.zfirst,o.zfinal))
     print("User list zff: %d,%d"%(o.zfirst,o.zfinal))
     if o.verb: print('zlist is',o.zlist)
     return True

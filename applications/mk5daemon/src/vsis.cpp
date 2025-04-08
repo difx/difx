@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vsis.cpp 7671 2017-03-06 20:22:26Z MarkWainright $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/vsis.cpp $
- * $LastChangedRevision: 7671 $
- * $Author: MarkWainright $
- * $LastChangedDate: 2017-03-07 04:22:26 +0800 (二, 2017-03-07) $
- *
- *==========================================================================*/
 
 
 #include <cstdio>

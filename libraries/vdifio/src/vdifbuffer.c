@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2020 Walter Brisken                                *
+ *   Copyright (C) 2013-2024 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdifbuffer.c 9868 2020-12-20 15:51:00Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk/src/vdifio.h $
-// $LastChangedRevision: 9868 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2020-12-20 23:51:00 +0800 (日, 2020-12-20) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <vdifio.h>

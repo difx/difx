@@ -1,15 +1,15 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # A script to write a binconfig file for use in correlating data with pulsar tools in DiFX
 
 import os, sys
 
 if len(sys.argv) != 6:
-    print "usage: %s <start phase> <num bins> <step phase> <polyco name> <binconfig name>" % sys.argv[0]
+    print("usage: %s <start phase> <num bins> <step phase> <polyco name> <binconfig name>" % sys.argv[0])
     sys.exit()
 
 if os.path.exists(sys.argv[5]):
-    print sys.argv[5], "exists"
+    print(sys.argv[5], "exists")
     sys.exit()
 
 polyconame = sys.argv[4]

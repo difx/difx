@@ -6,7 +6,7 @@
 import os, sys
 
 if not len(sys.argv) == 5:
-        print("Usage: {0} <file with weights for bins> <target data base name> <RFI data with full path> <output file base name>".format(sys.argv[0]))
+        print(("Usage: {0} <file with weights for bins> <target data base name> <RFI data with full path> <output file base name>".format(sys.argv[0])))
         sys.exit()
 
 rfisub_weights_file = sys.argv[1]

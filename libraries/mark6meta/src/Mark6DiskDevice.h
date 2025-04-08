@@ -1,5 +1,5 @@
 /*******************************************************************************
-* Copyright (C) 2016  Max-Planck-Institut für Radioastronomie, Bonn, Germany 
+* Copyright (C) 2024  Max-Planck-Institut für Radioastronomie, Bonn, Germany 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
@@ -13,16 +13,6 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: Mark6DiskDevice.h 7764 2017-05-16 18:23:07Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 7764 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-05-17 02:23:07 +0800 (三, 2017-05-17) $
-//
-//============================================================================
 #ifndef MARK6DISKDEVICE_H
 #define	MARK6DISKDEVICE_H
 
@@ -50,10 +40,16 @@ public:
     Mark6DiskDevice(const Mark6DiskDevice &device);
     virtual ~Mark6DiskDevice();
     void reset();
+    void clearPartitions();
+    void createPartitions();
     void addPartition(std::string partitionName);
+    void writeMeta( Mark6Meta &meta, std::string rootMetaPath);
+    void makeDataDir(std::string rootPath);
+
+    void parseMeta();
     std::vector<Mark6Partition> getPartitions() const;
     std::string getName() const;
-    int mountDisk(std::string dataPath, std::string metaPath);
+    int mountDisk(std::string dataPath, std::string metaPath, bool readwrite);
     int mountPartition(int partitionNumber, std::string mountPath);
     void unmountDisk();
     
@@ -72,6 +68,7 @@ public:
     int getPosition() const;
     void setSasAddress(std::string sasAddress);
     std::string getSasAddress() const;
+    long capacityMB_m;
     
 
 private:

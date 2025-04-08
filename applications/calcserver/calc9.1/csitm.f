@@ -400,7 +400,7 @@ C               Make sure interpolation is over no more than 10 years!!
      *             ', Data epoch = ',F10.2, ', Site epoch = ',F10.2,/,
      *             ' Maximum difference allowed is 10 years!! Check',
      *             ' input codes SITERECV and INTRVAL4/INTERVAL. ') 
-                  CALL CKILL (6HSITI  , 0, 0 )
+                  CALL CKILL('SITI', int2(0), int2(0))
                   STOP
                  Endif
 C 
@@ -438,7 +438,7 @@ C  Check for a geocenter station and set flag if so
 C           Write(6,'("SITI: Goecenter site = site # ",I3)') Zero_site
           Else      ! More than one geocenter site! Not allowed!
            Write(6,'("SITBLK: More than 1 geocenter site! Quitting!")')
-           CALL CKILL (6HSITI  , 0, 0 )
+           CALL CKILL('SITI', int2(0), int2(0))
           Endif
         Endif
       Enddo
@@ -504,13 +504,13 @@ C     If only one site zenith path delay, copy for all stations.
 C
 C     Check for database interface errors. If an error is found, KILL.
        DO N = 1,5
-           NN = N
-           IF ( KERR(NN) .NE. 0 ) CALL CKILL (6HSITI  , NN, KERR(NN) )
+         NN = N
+         IF(KERR(NN).NE.0) CALL CKILL('SITI',int2(NN),int2(KERR(NN)))
        ENDDO
 C
 C     There may be only one site zenith atmosphere delay.
        IF( KERR(6) .NE. 0 .AND. KERR(6) .NE. 2 )
-     .     CALL CKILL (6HSITI  , 6, KERR(6) )
+     .     CALL CKILL('SITI', int2(6), int2(KERR(6)))
 C
       ENDIF
 C
@@ -519,7 +519,7 @@ C
       DO 302 N = 7,10
         NN = N
         IF( KERR(N) .EQ. 0) GO TO 302
-          CALL CKILL (6HSITI  ,NN, KERR(NN))
+          CALL CKILL('SITI', int2(NN), int2(KERR(NN)))
  302  CONTINUE
 C
 C     Calculate the neccesary site geometry.
@@ -836,7 +836,7 @@ C     numbers are supplied by modlTask.
 C      CALL GETA ('BASELINE      ', LNBASE, 4, 2, 1, NDO, KERR )
       CALL GETI ('BASELINE      ', IDBASE, 2, 1, 1, NDO, KERR)
       IF ( KERR .EQ. 0 ) GO TO 310
-      CALL CKILL (6HSITG  , 1, KERR )
+      CALL CKILL('SITG', int2(1), int2(KERR))
 C
 C-VLBA moved this to later in this module in order to support geocentric
 C single station baselines and two station baselines on the surface of
@@ -1006,7 +1006,7 @@ C     Abnormal conclusion.       .
   700 WRITE ( 6, 9300 )
  9300 FORMAT (1X, 'CALC has been terminated in subroutine SITG.  ',
      1            'The baseline identification was not successful.' )
-      CALL CKILL (6HSITG  , 0, 0)
+      CALL CKILL('SITG', int2(0), int2(0))
       END
 C
 C******************************************************************************
@@ -1432,7 +1432,7 @@ C
         Kerr(5) = 0
         Kerr(6) = 0
        Else
-        Call CKILL(6HSITBLK,0,0)
+        CALL CKILL('SITBLK', int2(0), int2(0))
        Endif
 C
 C       print *, ' SITXYZ ', SITXYZ
@@ -1578,7 +1578,7 @@ C
         Kerr(9)  = 0
         Kerr(10) = 0
        Else
-        Call CKILL(6HOCNIN ,0,0)
+        CALL CKILL('OCNIN', int2(0), int2(0))
        Endif
 C
 C       print *, ' SITOAM ', SITOAM
@@ -1597,12 +1597,12 @@ C
 C   error on Read
  180  Continue
       print *, 'OCNIN: Error on read of ocean loading file '
-        Call CKILL(6HOCNIN ,0,0)
+        CALL CKILL('OCNIN', int2(0), int2(0))
 C
 C   error on OPEN
  240  Continue
       print *, 'OCNIN: Error on OPEN of ocean loading file '
-        Call CKILL(6HOCNIN ,0,0)
+        CALL CKILL('OCNIN', int2(0), int2(0))
 C
  270  Continue
       Return

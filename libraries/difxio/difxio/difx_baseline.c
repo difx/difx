@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_baseline.c 10579 2022-08-02 10:58:00Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_baseline.c $
-// $LastChangedRevision: 10579 $
-// $Author: JanWagner $
-// $LastChangedDate: 2022-08-02 18:58:00 +0800 (二, 2022-08-02) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

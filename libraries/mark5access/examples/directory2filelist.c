@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011-2017 by Helge Rottmann                             *
+ *   Copyright (C) 2011-2024 by Helge Rottmann, Walter Brisken             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: directory2filelist.c 7717 2017-04-26 16:01:21Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 7717 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-04-27 00:01:21 +0800 (四, 2017-04-27) $
-//
-//============================================================================
 
 #define _LARGEFILE64_SOURCE 1
 #define _FILE_OFFSET_BITS 64
@@ -49,7 +39,7 @@ const char author[]  = "Helge Rottmann";
 const char version[] = "1.4";
 const char verdate[] = "2015 May 21";
 
-const int MJD_UNIX0 = 40587;	// MJD at beginning of unix time
+const int MJD_UNIX0 = 40587;	// MJD at beginning of Unix time
 
 static int64_t eofReadLength = (80000+40000);
 

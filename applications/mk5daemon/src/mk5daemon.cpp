@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: mk5daemon.cpp 10522 2022-06-28 13:32:41Z HelgeRottmann $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/src/mk5daemon.cpp $
- * $LastChangedRevision: 10522 $
- * $Author: HelgeRottmann $
- * $LastChangedDate: 2022-06-28 21:32:41 +0800 (二, 2022-06-28) $
- *
- *==========================================================================*/
 
 #include <cstdio>
 #include <cstdlib>
@@ -1103,6 +1093,7 @@ int main(int argc, char **argv)
     Mk5Daemon *D;
     time_t t, lastTime;
     char message[DIFX_MESSAGE_LENGTH];
+    std::stringstream msgStream;
     char str[16];
     const char *p, *u;
     double mjd;
@@ -1263,10 +1254,11 @@ int main(int argc, char **argv)
                 backup = clog.rdbuf();
                 clog.rdbuf(mk6out.rdbuf());
 
-		D->mark6 = new Mark6();
 
                 Logger_logData(D->log, mk6out.str().c_str());
                 mk6out.str("");
+                
+                D->mark6 = new Mark6();
 #else
 		fprintf(stderr, "Error: mark6 option provided but Mark6 support is not compiled in.\n");
 
@@ -1324,7 +1316,8 @@ int main(int argc, char **argv)
                                     {
 
                                         D->mark6->pollDevices();
-                                        D->mark6->sendStatusMessage();
+                                        //D->mark6->sendStatusMessage();
+                                        D->mark6->sendSlotStatusMessage();
                                         Logger_logData(D->log, mk6out.str().c_str());
                                         mk6out.str("");
                                     }
@@ -1333,10 +1326,10 @@ int main(int argc, char **argv)
                                     {
                                         cerr << "No valid Mark6 metadata found, retrying again later. The error was: " << ex.what() << endl;   
                                     }
-				    catch(...)
+				    /*catch(...)
 				    {
 					cout << "error" << endl;
-				    }
+				    }*/
                                 }
                                     //D->mark6.pollDevices();
 			}
@@ -1538,34 +1531,26 @@ int main(int argc, char **argv)
 
    }
 #ifdef HAS_MARK6META
-   catch(Mark6Exception& ex)
+   catch(const std::exception& ex) 
    {
     
-        cerr << "The following error has occured: " << ex.what() << endl;
-        cerr << "This might be caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root!" << endl;
-        cerr << "Aborting" << endl;
-        exit(EXIT_FAILURE);
-   }
-   catch(Mark6MountException& ex)
-   {
-        cerr << "The following error has occured: " << ex.what() << endl;
-        cerr << "This might be caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root!" << endl;
-        cerr << "Aborting" << endl;
-        exit(EXIT_FAILURE);
-       
-   }    
-   catch(Mark6InvalidMetadata& ex)
-   {
-        cerr << "The following error has occured: " << ex.what() << endl;
-        cerr << "Aborting" << endl;
+        // restore clog redirection
+
+        msgStream << "ERROR: " << ex.what() << "\n"; 
+        msgStream << "Note: Some problems are caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root! \n";
+        msgStream << "Aborting" << endl;
+    
+        string tmp = msgStream.str();
+
+        Logger_logData(D->log, tmp.c_str());
         exit(EXIT_FAILURE);
    }
 #endif
-   catch(...)
+/*   catch(...)
    {
 	cerr << "An unexpected error has occured. Aborting" << endl;
 	exit(EXIT_FAILURE);
    }
-
+*/
    return 0;
 }

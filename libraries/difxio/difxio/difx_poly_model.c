@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_poly_model.c 7851 2017-06-01 17:16:41Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_poly_model.c $
-// $LastChangedRevision: 7851 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-06-02 01:16:41 +0800 (五, 2017-06-02) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -322,6 +322,8 @@ typedef struct
 typedef struct
 {
         int slot;
+        enum Mark6State state;
+	char message[DIFX_MESSAGE_LENGTH];
 	char msn[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
 	char group[DIFX_MESSAGE_MARK6_GROUP_LENGTH+2];
 	int numDisks;

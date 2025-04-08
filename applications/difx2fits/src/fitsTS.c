@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsTS.c 10492 2022-06-06 23:26:40Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsTS.c $
-// $LastChangedRevision: 10492 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-07 07:26:40 +0800 (二, 2022-06-07) $
-//
-//============================================================================
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -36,7 +26,6 @@
 #include "difx2fits.h"
 #include "other.h"
 #include "util.h"
-
 
 typedef struct
 {
@@ -812,10 +801,9 @@ static int processTsysFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
-	const int MaxDatastreamsPerAntenna=8;
-
 	char bandFormFloat[8];
-	int origDsIds[MaxDatastreamsPerAntenna];
+	int maxDatastreams;
+	int *origDsIds;
 	
 	/*  define the flag FITS table columns */
 	struct fitsBinTableColumn columns[] =
@@ -848,6 +836,9 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 	{
 		return D;
 	}
+
+	maxDatastreams = DifxInputGetMaxDatastreamsPerAntenna(D);
+	origDsIds = (int *)malloc(maxDatastreams*sizeof(int));
 
 	T = newDifxTcal();
 
@@ -919,7 +910,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 			{
 				int i;
 
-				n = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(origDsIds, D, antId, jobId, MaxDatastreamsPerAntenna);
+				n = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(origDsIds, D, antId, jobId, maxDatastreams);
 				for(i = 0; i < n; ++i)
 				{
 					v = getDifxTsys(D, p_fits_keys, jobId, antId, origDsIds[i], opts, nRowBytes, fitsbuf, nColumn, columns, out, T, nRec);
@@ -973,6 +964,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 	/*  free memory, and return */
 	free(alreadyHasTsys);
 	free(fitsbuf);
+	free(origDsIds);
 
 	deleteDifxTcal(T);
 

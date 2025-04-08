@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsML.c 10492 2022-06-06 23:26:40Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsML.c $
-// $LastChangedRevision: 10492 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-07 07:26:40 +0800 (二, 2022-06-07) $
-//
-//============================================================================
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -80,7 +71,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 	int nRowBytes;
 	char str[80];
 	int32_t arrayId1;
-	int a, i, k, p, s;
+	int i, k, p, s;
 	double shiftedClock[array_N_POLY];
 	float freqVar[array_MAX_BANDS];
 	float faraday;
@@ -201,29 +192,17 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 
 		for(p = 0; p < np; ++p)
 		{
-			for(a = 0; a < config->nAntenna; ++a)
+			int antId;
+
+			for(antId = 0; antId < scan->nAntenna; ++antId)
 			{
 				const DifxAntenna *da;
 				const DifxPolyModel *P;
-				int dsId, antId;
 				int32_t antId1;
 				double ppoly[array_MAX_BANDS][array_N_POLY];
 				double gpoly[array_N_POLY];
 				double prate[array_MAX_BANDS][array_N_POLY];
 				double grate[array_N_POLY];
-
-				dsId = config->ant2dsId[a];
-				if(dsId < 0 || dsId >= D->nDatastream)
-				{
-					continue;
-				}
-				/* convert to D->antenna[] index ... */
-				antId = D->datastream[dsId].antennaId;
-
-				if(antId < 0 || antId >= scan->nAntenna)
-				{
-					continue;
-				}
 
 				da = D->antenna + antId;
 

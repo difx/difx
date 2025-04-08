@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id:  $
-// $HeadURL:  $
-// $LastChangedRevision: $
-// $Author: $
-// $LastChangedDate:  $
-//
-//============================================================================
 
 #ifndef __MARK6GATHER_H__
 #define __MARK6GATHER_H__

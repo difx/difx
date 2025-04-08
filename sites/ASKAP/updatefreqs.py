@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 import os,sys, argparse
 
 
@@ -14,11 +14,11 @@ freqdeffile = args.chan
 nchan = args.nchan
 
 if not os.path.exists(vexfile):
-    print vexfile + " doesn't exist"
+    print((vexfile + " doesn't exist"))
     sys.exit(1)
 
 if not os.path.exists(freqdeffile):
-    print freqdeffile + " doesn't exist"
+    print((freqdeffile + " doesn't exist"))
     sys.exit(1)
 
 npol = args.npol
@@ -30,7 +30,7 @@ fcount = 0
 vcount = 0
 freqsplitline = freqdeflines[fcount].split()
 if len(freqsplitline) != 3:
-    print "Invalid chandef line", freqdeflines[fcount]
+    print(("Invalid chandef line", freqdeflines[fcount]))
     sys.exit()
 initbw = float(freqsplitline[2])
 for line in vexfilelines:
@@ -39,12 +39,12 @@ for line in vexfilelines:
         vexfilelines[vcount] = newline
     elif "chan_def" in line:
         if fcount >= len(freqdeflines):
-            print "Too many chan_defs in the vex file!  Length of freqdef was ", len(freqdeflines)
+            print(("Too many chan_defs in the vex file!  Length of freqdef was ", len(freqdeflines)))
             sys.exit(1)
         vexsplitline = line.split()
         freqsplitline = freqdeflines[fcount].split()
         if len(freqsplitline) != 3:
-            print "Invalid chandef line", freqdeflines[fcount]
+            print(("Invalid chandef line", freqdeflines[fcount]))
             sys.exit()
         freq = float(freqsplitline[0])
         sideband = freqsplitline[1]
@@ -54,7 +54,7 @@ for line in vexfilelines:
         elif sideband == "L":
             freq += bw/2.0
         else:
-            print "Invalid sideband ", freqsplitline[1]
+            print(("Invalid sideband ", freqsplitline[1]))
             sys.exit()
         newline = "     chan_def = : %.12f MHz : %s :   %.15f MHz : &CH%02d : &BBC%02d : &U_Cal;\n" % (freq, sideband, bw, fcount+1, fcount+1)
         vexfilelines[vcount] = newline
@@ -70,7 +70,7 @@ for line in vexfilelines:
     vcount += 1
 
 if not fcount == len(freqdeflines):
-    print "Only replaced ", fcount, " frequencies, but there were ", len(freqdeflines), " in the chandef file!"
+    print(("Only replaced ", fcount, " frequencies, but there were ", len(freqdeflines), " in the chandef file!"))
     sys.exit()
 
 vexout = open(vexfile, "w")
@@ -84,7 +84,7 @@ for line in freqdeflines:
 stitchfreqs = []
 
 if npol==2:
-    freqs=freqs[:len(freqs)/2]
+    freqs=freqs[:len(freqs)//2]
 
 for freq in freqs:
     if freq+1 in freqs and freq+2 in freqs and freq+3 in freqs:
@@ -93,7 +93,7 @@ for freq in freqs:
         stitchfreqs.append(freq)
 stitchfreqs.sort()
 if len(stitchfreqs) == 0:
-    print "Couldn't find any freqs to stitch! aborting"
+    print("Couldn't find any freqs to stitch! aborting")
     sys.exit()
 
 if nchan%32==0: # Must be divisible by 32 to merge
@@ -115,7 +115,7 @@ stitch_oversamplenum: 32
 stitch_oversampledenom: 27
 stitch_nstokes: {}
 stitch_antennas: *
-stitch_basefreqs: '''.format(nchan*4/32*27, nstokes))
+stitch_basefreqs: '''.format(nchan*4//32*27, nstokes))
     for i, freq in enumerate(stitchfreqs):
         stitchout.write("%.1f" % (freq-0.5))
         if not i == len(stitchfreqs)-1:
@@ -124,4 +124,4 @@ stitch_basefreqs: '''.format(nchan*4/32*27, nstokes))
     stitchout.write("verbose: True\n")
     stitchout.close()
 else:
-    print "Warning: Cannot merge data in number of frequency points per coarse channel ({}) is not divisible by 32".format(nchan)
+    print(("Warning: Cannot merge data in number of frequency points per coarse channel ({}) is not divisible by 32".format(nchan)))

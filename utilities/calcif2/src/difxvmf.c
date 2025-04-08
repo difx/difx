@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id$
- * $HeadURL: $
- * $LastChangedRevision$
- * $Author$
- * $LastChangedDate$
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <string.h>
@@ -114,7 +104,7 @@ int processFile(const char *inputFile, const DifxMergeOptions *mergeOptions, con
 		printf("Warning: calcif2: working on unversioned job\n");
 	}
 
-	D = updateDifxInput(D, mergeOptions);
+	D = updateDifxInput(D, mergeOptions, 0);
 	if(!D)
 	{
 		fprintf(stderr, "Error: %s updateDifxInput(): update of %s failed.\n", program, inputFile);

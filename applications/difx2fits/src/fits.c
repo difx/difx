@@ -14,6 +14,46 @@ static int fitsWriteZeroes (struct fitsPrivate *);
 static int fitsWriteEndTable (struct fitsPrivate *);
 static int fitsItemSize(const char *);
 
+static void resetExtVers(struct fitsPrivate *fp)
+{
+	int i;
+
+	for(i = 0; i < MAX_EXTENSIONS; ++i)
+	{
+		fp->extensionVersions[i].name[0] = 0;
+		fp->extensionVersions[i].version = 0;
+	}
+}
+
+static int getExtVer(struct fitsPrivate *fp, const char *extname)
+{
+	int i;
+
+	for(i = 0; i < MAX_EXTENSIONS; ++i)
+	{
+		if(fp->extensionVersions[i].name[0] == 0)
+		{
+			break;
+		}
+		if(strncmp(extname, fp->extensionVersions[i].name, MAX_EXTENSION_NAME_SIZE) == 0)
+		{
+			return ++fp->extensionVersions[i].version;
+		}
+	}
+	if(i == MAX_EXTENSIONS)
+	{
+		fprintf(stderr, "Developer error: MAX_EXTENSIONS is too small.\n");
+		
+		exit(0);
+	}
+
+	/* first extension of this kind */
+	snprintf(fp->extensionVersions[i].name, MAX_EXTENSION_NAME_SIZE, "%s", extname);
+	fp->extensionVersions[i].version = 1;
+	
+	return fp->extensionVersions[i].version;
+}
+
 /*******************************************************************************
 */
 int fitsReadOpen		/* open FITS file for reading only */
@@ -47,6 +87,8 @@ int fitsWriteOpen		/* create FITS file and open it for writing */
  * RETURNS OK = 0 | ERROR = -1
  */
 {
+    resetExtVers(pFile);
+
     /* open stream */
     if ((pFile->fp = fopen (filename, "w")) == 0)
         { 
@@ -183,8 +225,7 @@ int fitsWriteBinTable
     struct fitsPrivate *pFile,	/* pointer to FITS file control struct */
     int num_col,		/* size of columns[] */
     const struct fitsBinTableColumn columns[],
-    int row_bytes,		/* byte count for 
-				   future fitsWriteBinRow() calls */
+    int row_bytes,		/* byte count for future fitsWriteBinRow() calls */
     const char extname[]
     )
 /*
@@ -193,6 +234,9 @@ int fitsWriteBinTable
 {
     int i;
     char keyword[9];
+    int extver;
+
+    extver = getExtVer(pFile, extname);
 
     if (row_bytes > 0)
 	{
@@ -240,7 +284,7 @@ int fitsWriteBinTable
     if (fitsWriteString (pFile, "EXTNAME", extname, "") == -1)
 	return -1;
 
-    if (fitsWriteInteger (pFile, "EXTVER", 1, "") == -1)
+    if (fitsWriteInteger (pFile, "EXTVER", extver, "") == -1)
 	return -1;
 
     /* write contents of given columns[] */

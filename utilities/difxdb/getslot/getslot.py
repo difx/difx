@@ -16,15 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: getslot.py 10129 2021-08-27 18:53:25Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/getslot/getslot.py $
-# $LastChangedRevision: 10129 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2021-08-28 02:53:25 +0800 (六, 2021-08-28) $
-#
-#============================================================================
 
 import os
 import sys
@@ -35,12 +26,9 @@ from difxdb.model import model
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision: 10129 $"
-__date__ ="$Date: 2021-08-28 02:53:25 +0800 (六, 2021-08-28) $"
-__lastAuthor__="$Author: HelgeRottmann $"
 
 def printUsage():
-    print("%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__))
+    print("%s   %s  \n" % (__prog__,  __author__))
     print("A program to get the location of a disk module\n")
     print("Usage: %s <VSN>\n\n"  % __prog__)
     print("%s requires the DIFXROOT environment to be defined." % __prog__)

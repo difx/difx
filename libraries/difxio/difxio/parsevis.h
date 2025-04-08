@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: parsevis.h 4119 2011-12-10 22:35:36Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/parsevis.h $
-// $LastChangedRevision: 4119 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2011-12-11 06:35:36 +0800 (日, 2011-12-11) $
-//
-//============================================================================
 
 #ifndef __PARSE_VIS_H__
 #define __PARSE_VIS_H__

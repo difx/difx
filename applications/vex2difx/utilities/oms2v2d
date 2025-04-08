@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2009-2022 by Walter Brisken                             *
+#   Copyright (C) 2009-2025 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -19,26 +19,14 @@
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: oms2v2d 10679 2022-10-18 21:51:41Z MarkWainright $
-# $HeadURL: $
-# $LastChangedRevision: 10679 $
-# $Author: MarkWainright $
-# $LastChangedDate: 2022-10-19 05:51:41 +0800 (三, 2022-10-19) $
-#
-#============================================================================
-
-# Note: this utility can run under python2.7 or python3
-
 from sys import exit, argv
-from os.path import isfile, isdir
+from os.path import isfile, isdir, expanduser
 from os import umask, popen, system, getenv
+import datetime
 
 program = 'oms2v2d'
-version = '1.18'
-verdate = '20221018'
+version = '1.24'
+verdate = '20250106'
 author = 'Walter Brisken, Mark Wainright'
 
 def usage(pgm):
@@ -66,6 +54,8 @@ def usage(pgm):
 	print('  -s       make .v2d file for vlitebuf-based evlbi w/ 1032 byte frames\n')
 	print('  --profile')
 	print('  -p       generate .v2d for profile mode\n')
+	print('  --sim')
+	print('  -S       generate .v2d file for vdifsim\n')
 	print('  --dual')
 	print('  -D       configure for two datastreams\n')
 	print('  --quad')
@@ -74,6 +64,7 @@ def usage(pgm):
 	print('  -O       configure for eight datastreams\n')
 	print('  --quiet')
 	print('  -q       be less verbose\n')
+	print('  -x       exclude any station from correlation that has no .filelist file present\n')
 	print('<oms file> is a .oms file produced by sched\n')
 	print('If environment variable VLBA_STATION_FORMAT is set,')
 	print('the file at that location will be read and it will')
@@ -84,6 +75,24 @@ def usage(pgm):
 	print('<fmt> is the format designator, e.g., VDIF/5032/2 .\n')
 	exit(0)
 
+vdifsimDotFile = expanduser('~/.vdifsim')
+
+def loadvdifsimDotFile():
+	try:
+		data = open(vdifsimDotFile, 'r').readlines()
+		print('Found %s' % vdifsimDotFile)
+		computeMachines = []
+		antennaMachines = {}
+		for d in data:
+			s = d.strip().split('#')[0].split()
+			if len(s) == 1:
+				computeMachines.append(s[0])
+			elif len(s) >= 3:
+				antennaMachines[s[0].upper()] = s[2]
+		return computeMachines, antennaMachines
+	except IOError:
+		print('Note: %s not found' % vdifsimDotFile)
+		return None, None
 
 def readOMS(filename, verbose):
 	if verbose > 1:
@@ -161,38 +170,15 @@ def readOMS(filename, verbose):
 
 	return current
 
-# read the dbs.start file and return a dictionary of DBS start date-times
-def readDBSStart():
-	dbsStart = {}
+# check if DBS is used at site
+def dbsFormatChange(site, oms):
 
-	difxBase = getenv('DIFX_BASE')
-	dbsStartPath = difxBase + '/dbs.start'
+	dbsSites = ['SC', 'HN', 'NL', 'FD', 'LA', 'PT', 'KP', 'BR', 'OV', 'MK', 'GB']
 	
-	try:
-		dbsStartLines = open(dbsStartPath).readlines()
-		if len(dbsStartLines) > 0:
-			for line in dbsStartLines:
-				if line[0] != '#':
-					pair = line.split()
-					dbsStart[pair[0]] = pair[1]
-	except FileNotFoundError:
-		# continue if file not found
-		pass
-
-	return dbsStart
-
-# check if DBS start is earlier than project info start and if format is Mark5B
-def dbsFormatChange(site, dbsStart, oms):
-	
-	siteStart = dbsStart[site]
-
-	# get PROJECT_INFO START date-time
-	projectInfoStart = oms['PROJECT_INFO'][0]['START'][0]
-
 	# get STATION_SETUP FORMAT
 	stationSetupFormat = oms['STATION_SETUP'][0]['FORMAT'][0]
 
-	if stationSetupFormat == 'MARK5B' and siteStart < projectInfoStart:
+	if stationSetupFormat == 'MARK5B' and site in dbsSites:
 		return True
 	else:
 		return False
@@ -268,8 +254,30 @@ def dropzeros(s):
 		ss = '0' + ss
 	return ss
 
-def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, profile, dbsStart, verbose):
+def writev2d(oms, v2dFile, prefix, nrt, filebased, sim, datacopyFormat, evlbiType, nStream, profile, needClockEOP, exclude, verbose):
+
+	# generate filelist filenames based on files that may be in the local directory:
+	# Priority of filelist names:
+	# #1 <prefix>.<station>.filelist
+	# #2 <prefix>.<station>.mark6filelist
+	# #3 <station>.filelist
+	# #1 will be the default if no file is found
+	filelistFiles = {}
+	for s in oms['STATION_INFO']:
+		stationName = s['STATION_ID'][0]
+		filelistFile = '%s.%s.filelist' % (prefix.lower(), stationName.lower())
+		if not isfile(filelistFile):
+			altFilelistFile = '%s.%s.mark6filelist' % (prefix.lower(), stationName.lower())
+			if isfile(altFilelistFile):
+				filelistFile = altFilelistFile
+			else:
+				altFilelistFile = '%s.filelist' % stationName.lower()
+				if isfile(altFilelistFile):
+					filelistFile = altFilelistFile
+		filelistFiles[stationName] = filelistFile
+
 	machineMap = {'BR':'swc001', 'FD':'swc002', 'HN':'swc003', 'KP':'swc004', 'LA':'swc005', 'MK':'swc006', 'NL':'swc007', 'OV':'swc008', 'PT':'swc009', 'SC':'swc010', 'Y':'swc011', 'GB':'swc012'}
+	excludeAntennas = []
 	corr = oms['CORRELATOR_PARAMETERS'][0]
 
 	if verbose > 0:
@@ -304,18 +312,33 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 		else:
 			doPolar = 'True'
 
+	projectMJD = 0
+
 	stations = []
 	for s in oms['STATION_INFO']:
-		stations.append(s['STATION_ID'][0])
+		stationName = s['STATION_ID'][0]
+		if exclude:
+			filelistFile = filelistFiles[stationName]
+			if not isfile(filelistFile):
+				excludeAntennas.append(stationName)
+				continue
+		stations.append(stationName)
+		if projectMJD == 0:
+			mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
+			mjdday = s['START'][0].split('/')[0].split('-')
+			yr = int(mjdday[0])
+			doy = int(mjdday[1])
+			projectMJD = (datetime.datetime(yr, 1, 1) + datetime.timedelta(doy-1) - mjd0).days
+
 	stations.sort()
-	stnString = stations[0]
-	for s in stations[1:]:
-		stnString += ', ' + s
+	stnString = ', '.join(stations)
 
 	out.write('# base .v2d file generated by %s version %s operating on file %s\n\n' % (program, version, omsFile))
 	out.write('vex = %s\n\n' % vexFile)
+	if len(excludeAntennas) > 0:
+		out.write('# Antennas excluded due to lack of filelist files: %s\n' % (', '.join(excludeAntennas)))
 	out.write('antennas = %s\n\n' % stnString)
-	out.write('maxLength=3200\n\n')
+	out.write('maxLength = 500\n\n')
 
 	if filebased:
 		out.write('delayModel = difxcalc+met\n\n')
@@ -327,13 +350,25 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 		out.write('machines = %s\n' % machineString)
 		out.write('nCore = 10\n')
 		out.write('nThread = 12\n\n')
-		out.write('singleScan = True\n\n')
 
 	if profile:
 		out.write('# profile mode selected:\n')
 		out.write('mode = profile\n')
 		out.write('startSeries = 100\n')
 		out.write('minSubarray = 1\n\n')
+
+	if sim:
+		compute_machines, antenna_machines = loadvdifsimDotFile()
+		if compute_machines == None or antenna_machines == None:
+			print('Sim mode relies on a ~/.vdifsim file existing.')
+			exit(0)
+
+		machineString = ','.join(compute_machines)
+		out.write('machines = %s\n' % machineString)
+		out.write('nCore = %d\n' % (len(compute_machines) - 1))
+		out.write('nThread = 12\n\n')
+
+	out.write('singleScan = True\n\n')
 
 	for s in oms['SOURCE_INFO']:
 		srcParams = ''
@@ -351,26 +386,46 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 		data = open(a).readlines()
 		for d in data:
 			s = d.strip().split()
-			fmt[s[0].upper()] = s[1]
+			if len(s) < 2:
+				continue
+			if len(s) > 2:
+				startMJD = float(s[2])
+			else:
+				startMJD = 0.0
+			if startMJD < mjdNow():
+				fmt[s[0].upper()] = s[1]
 
 	for s in stations:
 		extra = ''
 		nds = 0
 		dsData = []
+		filelistFile = filelistFiles[s]
+		filelistType = filelistFile.split('.')[-1]  # usually 'filelist' or 'mark6filelist'
+		filelistStatement = '%s=%s' % (filelistType, filelistFile)
 		if nrt:
-			extra += 'filelist=%s_%s.filelist machine=%s ' % (prefix.lower(), s.lower(), machineMap[s])
+			# this mode, which is no longer supported, uses a non-standard filelist filename
+			extra += '%s=%s_%s.filelist machine=%s ' % (filelistType, prefix.lower(), s.lower(), machineMap[s])
 		elif filebased:
-			filelistFile = '%s.%s.filelist' % (prefix.lower(), s.lower())
 			machine = getMachineFromFilelist(filelistFile)
 			if machine == None:
 				machine = machineMap[s]
 			if evlbiType == 'split':
-				dsInfo = 'filelist=%s machine=%s ' % (filelistFile, machine)
+				dsInfo = '%s machine=%s ' % (filelistStatement, machine)
 				if evlbiType == 'split':
 					dsInfo += 'frameSize=1032 '
 				dsData.append(dsInfo)
 			else:
-				extra += 'filelist=%s machine=%s ' % (filelistFile, machine)
+				extra += '%s machine=%s ' % (filelistStatement, machine)
+		elif sim:
+			try:
+				machine = antenna_machines[s.upper()]
+			except KeyError:
+				print('Station %s is not properly defined in %s.  Make sure both path and default machine are included.\n' % (s.upper(), vdifsimDotFile))
+				exit(0)
+			extra += '%s machine=%s ' % (filelistStatement, machine)
+			if needClockEOP:
+				extra += 'clockOffset=0 '
+			
 		elif evlbiType != None:
 			for d in range(nStream):
 				dsInfo = 'file=/tmp/vlitebuf_%02d/%%now.vdif%% machine=%s ' % (d, machineMap[s])
@@ -384,6 +439,16 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 				out.write('# ANTENNA %s -- Data not found\n' % s)
 				continue
 			extra += datacopyAntennaSetup
+
+		# automatically populate filelist if file exists and it was not already captured
+		if isfile(filelistFile) and not 'filelist=' in extra:
+			if len(dsData) > 1:
+				pass	# too complicated; cannot automatically generate filelist info
+			elif len(dsData) == 1:
+				if not 'filelist=' in dsData[0]:
+					dsData[0] += filelistStatement + ' '
+			else:
+				extra += filelistStatement + ' '
 
 		if s in fmt:
 			f = 'format=' + fmt[s] + ' '
@@ -405,13 +470,12 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 			extra += ' '
 
 		# check if DBS changed Mark5B to VDIF
-		if len(dbsStart) > 0 and dbsFormatChange(s, dbsStart, oms) == True:
+		if dbsFormatChange(s, oms) == True:
 			# DBS changed record format to VDIF5032
 			extra += 'format=VDIF5032 '
 
 		out.write('ANTENNA %s { toneSelection=smart %s}\n' % (s, extra))
-		if nds > 0:
-			out.write('\n')
+		out.write('\n')
 	out.write('\n')
 
 	out.write('SETUP default\n')
@@ -429,6 +493,13 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nS
 		out.write('  numBufferedFFTs = 10\n')
 	out.write('  maxNSBetweenACAvg = 2000000\n')
 	out.write('}\n')
+
+	if needClockEOP and projectMJD > 0:
+		out.write('\n# NOTE! The following EOP values are totally fictitious!  Do not use for science!\n')
+		for i in range(0, 5):
+			M = projectMJD - 2 + i
+			out.write('EOP %d { tai_utc=37 ut1_utc=0.236958 xPole=0.10597 yPole=0.53906 }\n' % M)
+
 	out.close()
 
 
@@ -445,8 +516,11 @@ stop = False
 profile = False
 nrt = False	# near real time mode
 filebased = False
+sim = False
 datacopyFormat = None
 evlbiType = None
+needClockEOP = False
+exclude = False
 verbose = 1
 nStream = 1
 for a in argv[1:]:
@@ -463,6 +537,8 @@ for a in argv[1:]:
 			nrt = True
 		elif a in ['-F', '--file']:
 			filebased = True
+		elif a in ['-S', '--sim']:
+			sim = True
 		elif a in ['-d', '--datacopy']:
 			datacopyFormat = 'VDIF'
 		elif a in ['--datacopy5b']:
@@ -479,6 +555,8 @@ for a in argv[1:]:
 			nStream = 4
 		elif a in ['-O', '--oct']:
 			nStream = 8
+		elif a in ['-x']:
+			exclude = True
 		else:
 			print('Unknown command line option: %s' % a)
 			stop = True
@@ -511,15 +589,18 @@ if not isfile(omsFile):
 	print('oms2v2d: Input oms file %s not found.  Quitting.\n' % omsFile)
 	exit(0)
 
-if isfile(prefix + '.vex.preobs'):
+if isfile(prefix + '.vex.obs'):
+	vexFile = prefix + '.vex.obs'
+elif isfile(prefix + '.vex.preobs'):
 	vexFile = prefix + '.vex.preobs'
 elif isfile(prefix + '.vex'):
 	if nrt or (evlbiType != None):
 		vexFile = prefix + '.vex.preobs'
+	elif sim:
+		vexFile = prefix + '.vex'
+		needClockEOP = True
 	else:
 		vexFile = prefix + '.vex.obs'
-elif isfile(prefix + '.vex.obs'):
-	vexFile = prefix + '.vex.obs'
 else:
 	print('No vex file found here.  It should be called %s.vex or %s.vex.preobs.' % (prefix, prefix))
 	if force:
@@ -542,9 +623,7 @@ if isfile(v2dFile):
 
 oms = readOMS(omsFile, verbose)
 
-dbsStart = readDBSStart()
-
-writev2d(oms, v2dFile, prefix, nrt, filebased, datacopyFormat, evlbiType, nStream, profile, dbsStart, verbose)
+writev2d(oms, v2dFile, prefix, nrt, filebased, sim, datacopyFormat, evlbiType, nStream, profile, needClockEOP, exclude, verbose)
 
 if evlbiType != None:
 	print('\nNOTE: if running in eVLBI mode for VLBA, consider using fiberLock.py to ensure routine network monitornig is turned off\n\n')

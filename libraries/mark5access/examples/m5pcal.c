@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2022 by Walter Brisken                             *
+ *   Copyright (C) 2010-2023 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5pcal.c 10490 2022-06-03 14:18:03Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/examples/m5pcal.c $
-// $LastChangedRevision: 10490 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-03 22:18:03 +0800 (五, 2022-06-03) $
-//
-//============================================================================
 
 #include "config.h"
 #include <complex.h>
@@ -41,8 +31,8 @@
 
 const char program[] = "m5pcal";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.10";
-const char verdate[] = "20220429";
+const char version[] = "0.11";
+const char verdate[] = "20231112";
 
 int ChunkSize = 0;
 const int MaxTones = 4096;
@@ -73,7 +63,7 @@ static void usage(const char *pgm)
 	printf("An offline pulse cal extractor.  Can use VLBA, Mark3/4, Mark5B, and single-thread\n");
 	printf("VDIF formats using the\nmark5access library.\n\n");
 	printf("Usage: %s [options] <infile> <dataformat> <freq1> [<freq2> ... ] <outfile>\n\n", program);
-	printf("  <infile> is the name of the input file\n\n");
+	printf("  <infile> is the name of the input file; use - for stdin\n\n");
 	printf("  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
 	printf("    VLBA1_2-256-8-2\n");
 	printf("    MKIV1_4-128-2-1\n");
@@ -593,30 +583,22 @@ int main(int argc, char **argv)
 
 	for(i = 1; i < argc; ++i)
 	{
-		if(isNumber(argv[i]))
+		if(argv[i][0] == '-')
 		{
-			if(nFreq >= MaxFreqs)
+			if(strcmp(argv[i], "-") == 0)
 			{
-				fprintf(stderr, "Warning: too many frequencies specified.  Stopping at %d\n", MaxFreqs);
-			}
-			else
-			{
-				v = atof(argv[i]);
-				if(v >= 0)
+				if(inFile == 0)
 				{
-					freq_kHz[nFreq] = (int)(v*1000.0 + 0.5);
+					inFile = argv[i];
 				}
 				else
 				{
-					freq_kHz[nFreq] = (int)(v*1000.0 - 0.5);
+					fprintf(stderr, "Spurious - in argument list.\n");
+
+					exit(EXIT_FAILURE);
 				}
-				fprintf(stderr, "freq_kHz[%d] = %d\n", nFreq, freq_kHz[nFreq]);
-				nFreq++;
 			}
-		}
-		else if(argv[i][0] == '-')
-		{
-			if(strcmp(argv[i], "--verbose") == 0 ||
+			else if(strcmp(argv[i], "--verbose") == 0 ||
 				strcmp(argv[i], "-v") == 0)
 			{
 				++verbose;
@@ -684,6 +666,27 @@ int main(int argc, char **argv)
 			}
 
 		}
+		else if(isNumber(argv[i]))
+		{
+			if(nFreq >= MaxFreqs)
+			{
+				fprintf(stderr, "Warning: too many frequencies specified.  Stopping at %d\n", MaxFreqs);
+			}
+			else
+			{
+				v = atof(argv[i]);
+				if(v >= 0)
+				{
+					freq_kHz[nFreq] = (int)(v*1000.0 + 0.5);
+				}
+				else
+				{
+					freq_kHz[nFreq] = (int)(v*1000.0 - 0.5);
+				}
+				fprintf(stderr, "freq_kHz[%d] = %d\n", nFreq, freq_kHz[nFreq]);
+				nFreq++;
+			}
+		}
 		else if(inFile == 0)
 		{
 			inFile = argv[i];
@@ -706,6 +709,7 @@ int main(int argc, char **argv)
 
 	if(!outFile || nFreq == 0)
 	{
+		printf("outFile = %s, nFreq = %d\n", outFile, nFreq);
 		usage(argv[0]);
 
 		return EXIT_FAILURE;

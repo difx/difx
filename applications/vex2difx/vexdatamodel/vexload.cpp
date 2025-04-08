@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2022 by Walter Brisken                             *
+ *   Copyright (C) 2009-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vexload.cpp 10846 2022-12-02 21:44:33Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/vexdatamodel/vexload.cpp $
- * $LastChangedRevision: 10846 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-12-03 05:44:33 +0800 (六, 2022-12-03) $
- *
- *==========================================================================*/
 
 #include <fstream>
 #include <cstring>
@@ -1290,6 +1280,10 @@ static int collectIFInfo(VexSetup &setup, VexData *V, Vex *v, const char *antDef
 		{
 			vif.phaseCalIntervalMHz = 200.0f;
 		}
+		else if(fabs(phaseCal-77777000) < 1.0)
+		{
+			vif.phaseCalIntervalMHz = 77.777f;
+		}
 		else
 		{
 			std::cerr << "Warning: Unsupported pulse cal interval of " << (phaseCal/1000000.0) << " MHz requested for antenna " << antDefName << "." << std::endl;
@@ -2228,6 +2222,10 @@ static int getDatastreamsSetup(VexSetup &setup, Vex *v, const char *antDefName, 
 		{
 			stream.parseFormatString("CODIF");
 		}
+		else if(strcasecmp(value, "NONE") == 0)
+		{
+			stream.parseFormatString("NONE");
+		}
 		else
 		{
 			std::cerr << "Error: " << modeDefName << " antenna " << antDefName << " : datastream " << stream.streamLink << " has a data format specification that is not handled: " << value << " ." << std::endl;
@@ -2499,7 +2497,7 @@ static int getModes(VexData *V, Vex *v)
 			if(type == VexSetup::SetupIncomplete)
 			{
 				++nIncomplete;
-					
+
 				if(reportIncompleteModes)
 				{
 					if(antModeIncompleteFile == 0)

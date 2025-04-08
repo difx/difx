@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_mode.h 10363 2022-01-27 22:57:59Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10363 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-01-28 06:57:59 +0800 (五, 2022-01-28) $
- *
- *==========================================================================*/
 
 #ifndef __VEX_MODE_H__
 #define __VEX_MODE_H__
@@ -61,7 +51,7 @@ public:
 	double getAverageSampleRate() const;	/* samples per second */
 	void swapPolarization(const std::string &antName);
 	void setSampling(const std::string &antName, unsigned int streamId, enum SamplingType dataSampling);
-	void setPhaseCalInterval(const std::string &antName, int phaseCalIntervalMHz);
+	void setPhaseCalInterval(const std::string &antName, float phaseCalIntervalMHz);
 	void selectTones(const std::string &antName, enum ToneSelection selection, double guardBandMHz);
 	void generateRecordChans();
 	bool hasDuplicateBands() const;

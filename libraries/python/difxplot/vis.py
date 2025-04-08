@@ -38,9 +38,7 @@ class AverageVis:
 
     def handle(self, vis):
         """Deal with a new vis"""
-        if not vis.baseline_name in [
-            b[0].name + "-" + b[1].name for b in self.plot.baselines
-        ]:
+        if not vis.baseline_name in [b[0].name + "-" + b[1].name for b in self.plot.baselines]:
             return
         update_plot = self.add(vis)
         if self.aver_amount != 1:
@@ -123,9 +121,9 @@ class Vis:
         self.ant2_name  = exp_info.telescopes[self.ant2_index].name
         self.baseline_name = self.ant1_name + '-' + self.ant2_name
         self.freq_index = freq_index
-        self.freq_low   = exp_info.freqs[freq_index].freq
+        self.freq_low   = exp_info.freqs[freq_index].low_edge()
         self.bandwidth  = exp_info.freqs[freq_index].bandwidth
-        self.freq_high  = self.freq_low + self.bandwidth
+        self.freq_high  = exp_info.freqs[freq_index].high_edge()
         self.lags = self.get_lags()
         self.snr = self.get_snr()
         self.offset = self.get_offset()

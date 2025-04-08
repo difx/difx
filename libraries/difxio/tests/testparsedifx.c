@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: testparsedifx.c 3944 2011-11-20 04:20:29Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
- * $LastChangedRevision: 3944 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2011-11-20 12:20:29 +0800 (日, 2011-11-20) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>

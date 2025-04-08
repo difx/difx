@@ -18,6 +18,15 @@ Version 3.8.0
     - Derived total delays are _not_ invariant to this
 * Create a .channels file that lists the frequency set as a function of time.
 * Add option to only propagate a finite list of sources
+* Add option to only propagate sky frequencies provided in a list of low band edge frequencies
+* Make new structure to pass options to sniffer (see snifferoptions.[ch]
+* Sniffer: option to set interval between bandpass (XCB and ACB) solutions;
+  - previously was hard coded to be 15 minutes
+* Sniffer: don't interpolate across scans, even on same source
+* Sniffer: flush last records before program exit
+* --two-pcal-tables option added: Will create one table as prescribed in the .input files and the other containing all of the pulse cal tones. ***experimental***
+* Use vanVleck correction of 1.0 in case of >= 8 bits per sample for both datastreams if an explicit value is not available.
+* --freqlist <freqs MHz> option added: keep only IFs with a low edge frequency found in the comma separated list, discard the rest
 
 Version 3.7.0
 * Post DiFX-2.6

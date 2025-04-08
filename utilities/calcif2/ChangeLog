@@ -1,5 +1,8 @@
 calcif2
 ~~~~~~~
+Version 2.8.1
+* Add "--zero" option, causing all delays to be set to zero.  This is useful for zero-baseline testing.
+
 Version 2.8.0
 * Bump version for DiFX-2.8, Nov 4, 2022
 

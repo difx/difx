@@ -201,7 +201,7 @@ int main (int argc, char * const argv[]) {
   }
 
   if (strlen(outdir)==0) {
-    fprintf(stderr, "Must supply output dirtectory - aborting\n");
+    fprintf(stderr, "Must supply output directory - aborting\n");
     return 1;
   }
 

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_spacecraft.c 11033 2023-08-08 15:57:56Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_spacecraft.c $
-// $LastChangedRevision: 11033 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2023-08-08 23:57:56 +0800 (二, 2023-08-08) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

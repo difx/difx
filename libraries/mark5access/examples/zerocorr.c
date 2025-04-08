@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2017 by Walter Brisken                             *
+ *   Copyright (C) 2010-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: zerocorr.c 9176 2019-09-19 14:14:48Z ChrisPhillips $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/examples/zerocorr.c $
-// $LastChangedRevision: 9176 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2019-09-19 22:14:48 +0800 (四, 2019-09-19) $
-//
-//============================================================================
 
 #include "config.h"
 #include <stdio.h>
@@ -39,8 +29,8 @@
 
 const char program[] = "zerocorr";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.4";
-const char verdate[] = "20170426";
+const char version[] = "0.5";
+const char verdate[] = "20240917";
 
 const int MaxLineLen = 256;
 
@@ -191,9 +181,9 @@ DataStream *newDataStream(FILE *in)
 	  ds->cdata = (fftw_complex **)calloc(ds->ms->nchan, sizeof(fftw_complex *));
 	  for(i = 0; i < ds->ms->nchan; ++i)
 	    {
-	      ds->cdata[i] = (fftw_complex *)calloc(ds->fftSize, sizeof(fftw_complex));
+	      ds->cdata[i] = (fftw_complex *)fftw_malloc(ds->fftSize*sizeof(fftw_complex));
 	    }
-	  ds->zdata = (fftw_complex *)calloc(ds->fftSize, sizeof(fftw_complex));
+	  ds->zdata = (fftw_complex *)fftw_malloc(ds->fftSize*sizeof(fftw_complex));
 	  ds->spec = (fftw_complex *)calloc(abs(ds->nChan), sizeof(fftw_complex));
 	  ds->plan = fftw_plan_dft_1d(ds->fftSize, ds->cdata[ds->subBand], ds->zdata, FFTW_FORWARD, FFTW_MEASURE);
 	  
@@ -201,9 +191,9 @@ DataStream *newDataStream(FILE *in)
 	  ds->data = (double **)calloc(ds->ms->nchan, sizeof(double *));
 	  for(i = 0; i < ds->ms->nchan; ++i)
 	    {
-	      ds->data[i] = (double *)calloc(ds->fftSize+2, sizeof(double));
+	      ds->data[i] = (double *)fftw_malloc((ds->fftSize+2)*sizeof(double));
 	    }
-	  ds->zdata = (fftw_complex *)calloc(ds->fftSize/2+2, sizeof(fftw_complex));
+	  ds->zdata = (fftw_complex *)fftw_malloc((ds->fftSize/2+2)*sizeof(fftw_complex));
 	  ds->spec = (fftw_complex *)calloc(abs(ds->nChan), sizeof(fftw_complex));
 	  ds->plan = fftw_plan_dft_r2c_1d(ds->fftSize, ds->data[ds->subBand], ds->zdata, FFTW_ESTIMATE);
 	}
@@ -226,7 +216,20 @@ void deleteDataStream(DataStream *ds)
 				{
 					if(ds->data[i])
 					{
-						free(ds->data[i]);
+						fftw_free(ds->data[i]);
+						ds->data[i] = 0;
+					}
+				}
+				free(ds->data);
+				ds->data = 0;
+			}
+			if(ds->cdata)
+			{
+				for(i = 0; i < ds->ms->nchan; ++i)
+				{
+					if(ds->cdata[i])
+					{
+						fftw_free(ds->cdata[i]);
 						ds->data[i] = 0;
 					}
 				}
@@ -238,7 +241,7 @@ void deleteDataStream(DataStream *ds)
 		}
 		if(ds->zdata)
 		{
-			free(ds->zdata);
+			fftw_free(ds->zdata);
 			ds->zdata = 0;
 		}
 		if(ds->spec)
@@ -269,10 +272,15 @@ int feedDataStream(DataStream *ds)
 	int i, status;
 	double scale;
 
-	if (ds->ms->iscomplex) {
-	  status = mark5_stream_decode_double_complex(ds->ms, ds->fftSize, ds->cdata);
-	} else {
-	  status = mark5_stream_decode_double(ds->ms, ds->fftSize, ds->data);
+	if (ds->ms->iscomplex)
+	{
+		status = mark5_stream_decode_double_complex(ds->ms, ds->fftSize, ds->cdata);
+		scale = 0.5/(ds->fftSize);
+	}
+	else
+	{
+		status = mark5_stream_decode_double(ds->ms, ds->fftSize, ds->data);
+		scale = 1.0/(ds->fftSize);
 	}
 
 	if(status < 0)
@@ -282,7 +290,6 @@ int feedDataStream(DataStream *ds)
 
 	fftw_execute(ds->plan);
 
-	scale = 1.0/(ds->fftSize);
 
 	if(ds->nChan > 0)
 	{
@@ -332,7 +339,7 @@ Baseline *newBaseline(const char *confFile)
 	in = fopen(confFile, "r");
 	if(!in)
 	{
-		fprintf(stderr, "Cannot open conf file %s\n", confFile);
+		fprintf(stderr, "Cannot open configuration file %s\n", confFile);
 	}
 
 	B = (Baseline *)calloc(1, sizeof(Baseline));
@@ -388,8 +395,8 @@ Baseline *newBaseline(const char *confFile)
 	{
 		B->nFFT = 0x7FFFFFFF;	/* effectively no limit */
 	}
-	B->visibility = (fftw_complex *)calloc(B->nChan, sizeof(fftw_complex));
-	B->lags = (fftw_complex *)calloc(B->nChan, sizeof(fftw_complex));
+	B->visibility = (fftw_complex *)fftw_malloc(B->nChan*sizeof(fftw_complex));
+	B->lags = (fftw_complex *)fftw_malloc(B->nChan*sizeof(fftw_complex));
 	B->ac1 = (double *)calloc(B->nChan, sizeof(double));
 	B->ac2 = (double *)calloc(B->nChan, sizeof(double));
 
@@ -419,6 +426,11 @@ Baseline *newBaseline(const char *confFile)
 	B->deltaF = B->ds1->deltaF;
 	B->deltaT = 1.0/(B->nChan*B->ds1->deltaF);
 
+	for(i = 0; i < B->nChan; ++i)
+	{
+		B->visibility[i] = 0.0;
+	}
+
 	return B;
 }
 
@@ -443,12 +455,12 @@ void deleteBaseline(Baseline *B)
 		}
 		if(B->visibility)
 		{
-			free(B->visibility);
+			fftw_free(B->visibility);
 			B->visibility = 0;
 		}
 		if(B->lags)
 		{
-			free(B->lags);
+			fftw_free(B->lags);
 			B->lags = 0;
 		}
 		if(B->ac1)
@@ -505,13 +517,13 @@ static void usage(const char *pgm)
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("A zero baseline cross correlator\n\n");
-	printf("Usage: %s [ <options> ] <conf file>\n\n", pgm);
+	printf("Usage: %s [ <options> ] <configuration file>\n\n", pgm);
 	printf("options can include:\n\n");
 	printf("  --help\n");
 	printf("  -h         Print this help information and quit\n\n");
 	printf("  --verbose\n");
 	printf("  -v         Increase the output verbosity\n\n");
-	printf("The conf file should have 17 lines as follows:\n\n"
+	printf("The configuration file should have 17 lines as follows:\n\n"
 "For the first datastream:\n"
 "   1  Input baseband data file name\n"
 "   2  Input format (e.g., Mark5B-2048-16-2)\n"
@@ -722,7 +734,7 @@ int main(int argc, char **argv)
 
 	if(confFile == 0)
 	{
-		fprintf(stderr, "\nError: no conf file provided on the command line.  Quitting.\n\n");
+		fprintf(stderr, "\nError: no configuration file provided on the command line.  Quitting.\n\n");
 
 		retval = EXIT_FAILURE;
 	}

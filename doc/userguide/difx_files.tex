@@ -1976,13 +1976,16 @@ Name		& Type		& Units 	& Defaults	& Comments \\
 name		& string	&       	&		& new name to assign to this antenna \\
 polSwap		& bool		&       	& False		& swap the polarizations (i.e., {\tt L} $\Leftrightarrow$ {\tt R}) for this antenna \\
 clockOffset	& float		& us		& vex value	& overrides the clock offset value from the vex file \\
-clockRate	& float		& us/s		& vex value	& overrides the clock offset rate value from the vex file \\
+clockRate	& float		& us/s		& vex value	& overrides the clock rate value from the vex file \\
+clockAccel	& float		& us/s/s	& vex value	& overrides the clock acceleration value from the vex file \\
 clockEpoch	& date		&		& vex value	& overrides the epoch of the clock rate value; must be present \\
 		&		&		&		& present if clockRate or clockOffset parameter is set \\
 deltaClock	& float		& us		& 0.0		& adds to the clock offset (either the vex value or the \\
-		&		&		&		& clockOffset above  \\
+		&		&		&		& clockOffset above)  \\
 deltaClockRate	& float		& us/s		& 0.0		& adds to the clock rate (either the vex value or the \\
-		&		&		&		& clockRate above \\
+		&		&		&		& clockRate above) \\
+deltaClockAccel	& float		& us/s/s	& 0.0		& adds to the clock acceleration (either the vex value or the \\
+		&		&		&		& clockAccel above) \\
 X		& float		& m		& vex value	& change the X coordinate of the antenna location \\
 Y		& float		& m		& vex value	& change the Y coordinate of the antenna location \\
 Z		& float		& m		& vex value	& change the Z coordinate of the antenna location \\
@@ -2010,6 +2013,8 @@ loOffsets 	& $[$float$]$	& Hz 		&		& adds LO offsets to each recorded frequency 
 tcalFreq	& int		& Hz		& 0 		& enables switched power detection at specified frequency \\
 phaseCalInt	& int		& MHz 		& 1		& zero turns off phase cal extraction, positive value is \\
 		&		&		&		& the interval between tones to be extracted \\
+phaseCalIntDivisor	& int		&  		& 1		& denumerator to express fractional spacings, e.g., \\
+		&		&		&		& interval 700 and divisor 9 for 700/9 MHz = 77.777... MHz \\
 toneGuard	& float		& MHz 		& 0.125 of bw	& when using toneSelection {\em smart} or {\em most} don't select tones \\
 		&		&		&		& within this range of band edge, if possible \\
 toneSelection & string  &		& {\tt smart}	& tone selection algorithm; see below \\

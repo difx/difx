@@ -3,12 +3,26 @@ Version 3.1.0
 * Fix for datastream to antenna mapping when not sorting antennas
 * oms2v2d: add mode to generate .v2d file that is useful for use with vdifsim
 * oms2v2d: do not require DIFX_BASE to be set
+* oms2v2d: automatically add filelist files if found in current directory
+  - look for <stn>.filelist as well as <prj>.<stn>.filelist
+* oms2v2d: option (-x) to exclude antennas that do not have filelist files present
+* oms2v2d: look for .mark6filelist files and write mark6filelist= into .v2d as appropriate
+* oms2v2d: all output default to single scan
 * Fix stale pointer to source after manipulating multi-phase-center bits
+* New ANTENNA parameter phaseCalIntDivisor for fractional spacings (phaseCalInt[MHz]/phaseCalIntDivisor)
+* New ANTENNA parameter deltaClockAccel to adjust clock acceleration without resetting other terms to zero like clockAccel does
+* New utility: mk6filelist, a simplified form of mk62v2d which does not require or modify the .v2d file.
+* Update wiki to ATNF -- note that even this will be old soon and the new github link will replace it.
+* Allow "NONE" data format.  This was allowed in previous vex parser version, but got lost when vex2 was added.
+* Fix "datastreams with no data" bug.  This was triggered when there was a job break in the middle of a scan and an antenna only had data during one part of the broken scan
+* Fix format override where VDIF/CODIF wouldn't change sampling type in some cases
+* vex2v2d: add option to make antenna complex-valued
 
 Version 3.0.0
 -------------
 * Fix for non-sorted antennas (back-ported from trunk)
 * Version bump prior to DiFX 2.8 branching
+* vexpeek: --scanfreqs option
 
 Version 2.99.3
 ~~~~~~~~~~~~~~
@@ -61,7 +75,7 @@ Version 2.7.0
 * Don't quit if unused antenna's filelist is absent
 * In ANTENNA {} now can set ds_filelist to a list of filelists, each one creating its own DATASTREAM
 * oms2v2d: some new functionality to assist VLBA eVLBI
-* vex2difx: support override of data frame size with frameSize parametr of DATASTREAM
+* vex2difx: support override of data frame size with frameSize parameter of DATASTREAM
 * vexpeek: new verbose mode
 * oms2v2d: fix crash in some modes if no data for project is found
 * vexpeek: option to view station coordinates

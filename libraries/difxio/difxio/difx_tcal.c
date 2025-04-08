@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_tcal.c 11076 2023-09-14 17:43:15Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/parsevis.h $
-// $LastChangedRevision: 11076 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2023-09-15 01:43:15 +0800 (五, 2023-09-15) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -96,7 +86,7 @@ void deleteDifxTcal(DifxTcal *dt)
 				{
 					if(dt->group[g]._freqRangeExceeded)
 					{
-						printf("Warning: Tcals for antena %s receiver %s did not span entire freq range.\n", dt->group[g].antenna, dt->group[g].receiver);
+						printf("Warning: Tcals for antenna %s receiver %s did not span entire freq range.\n", dt->group[g].antenna, dt->group[g].receiver);
 					}
 					free(dt->group[g].value);
 					dt->group[g].value = 0;
@@ -495,7 +485,7 @@ void fsummarizeDifxTcal(FILE *out, const DifxTcal *dt)
 
 /* below here are site-specific functions */
 
-/* 1. For a constant Tcal value over all frquencies */
+/* 1. For a constant Tcal value over all frequencies */
 
 int setDifxTcalConstant(DifxTcal *dt, float tcal1, char pol1, float tcal2, char pol2)
 {

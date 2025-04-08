@@ -30,6 +30,11 @@ typedef struct
 	double invalidPacketRate;	/* between 0 and 1 */
 	double clockOffset;		/* [us] */
 	double SEFD;			/* [Jy] */
+	int switchedPowerFreq;		/* [Hz] */
+	double switchedPowerFrac;	/* fraction of Rx noise; typically 0.02 */
+	int pulseCalInterval;		/* [MHz] */
+	double pulseCalFrac;		/* total pulse cal power as fraction of system power */
+	double pulseCalDelay;		/* [us] */
 	/* FIXME: add filter parameters, cross polarization, ... */
 } AntennaParameters;
 

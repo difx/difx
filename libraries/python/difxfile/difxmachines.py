@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: difxmachines.py 10988 2023-06-19 06:30:36Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/difxfile/difxmachines.py $
-# $LastChangedRevision: 10988 $
-# $Author: JanWagner $
-# $LastChangedDate: 2023-06-19 14:30:36 +0800 (一, 2023-06-19) $
-#
-#============================================================================
 
 __author__="Helge Rottmann and Cormac Reynolds"
 
@@ -35,10 +25,11 @@ import sys
 
 class DifxMachines(object):
 	"""
-	class for parsing the DiFX cluster definition file
+	class for parsing the DiFX cluster definition file, optionally
+	augmenting those entries with node infos from a SLURM config file
 	"""
 
-	def __init__(self, machinefile):
+	def __init__(self, machinefile, slurmconfigfile='/etc/slurm/slurm.conf'):
 		""" 
 		Constructor. Checks that machinefile exists. If not, an IOError is raised.
 		"""
@@ -46,6 +37,7 @@ class DifxMachines(object):
 		self.machinefile = machinefile
 		self.version = ""
 		self.nodes = {}
+		self.slurm_config = slurmconfigfile
 
 		if (not os.path.isfile(self.machinefile)):
 			raise IOError("DiFX machinefile: %s does not exist. " % self.machinefile)
@@ -371,9 +363,10 @@ class DifxMachines(object):
 		if len(self.version) == 0:
 			sys.exit("ERROR: Missing or malformed version statement in the machines file: %s" % self.machinefile)
 
+
 class Node:
 	"""
-	Storage class representing a node found in the cluster definition file
+	Storage class representing a node found in the DiFX cluster definition file
 	"""
 	name = ""
 	threads = 0
@@ -382,11 +375,17 @@ class Node:
 	isHeadnode = 0
 	fileUrls = []
 	networkUrls = []
+	isInSlurm = False
+	slurm_maxProc = -1
+	slurm_numProc = 0
 
 	def __str__(self):
 		result = "name=%s threads=%s isHeadnode=%s isMk5=%s isMk6=%s fileUrls=%s networkUrls=%s" % (self.name, self.threads, self.isHeadnode, self.isMk5, self.isMk6, self.fileUrls, self.networkUrls)
+		if self.isInSlurm:
+			result += " slurm:maxProc=%d slurm:numProc=%d" % (self.slurm_maxProc, self.slurm_numProc)
 		return(result)
-		
+
+
 if __name__ == "__main__":
 	# run python difxmachines <machinefile> to execute this test code
 	

@@ -40,7 +40,7 @@ AntennaDBEntry antennaDBEntries[] =	/* FIXME: add individual antennas of arrays?
 	{ "DSS24",          "DSS24",    -2354906.711,   -4646840.095,    3669242.325,   34.0, 0, "", VLBI_GROUP_DSN },
 	{ "DSS25",          "DSS25",    -2355022.014,   -4646953.204,    3669040.567,   34.0, 0, "", VLBI_GROUP_DSN },
 	{ "DSS26",          "DSS26",    -2354890.797,   -4647166.328,    3668871.755,   34.0, 0, "", VLBI_GROUP_DSN },
-	/* Canberra antenans */
+	/* Canberra antennas */
 	{ "DSS34",          "DSS34",    -4461147.7340,   2682439.2728,  -3674392.2725,  34.0, 0, "", VLBI_GROUP_DSN },		/* ITRF2014, 2019d solution */
 	{ "DSS35",          "DSS35",    -4461147.093,    2682568.925,   -3674152.093,   34.0, 0, "", VLBI_GROUP_DSN },
 	{ "DSS36",          "DSS36",    -4461169.0553,   2682814.7047,  -3674083.0790,  34.0, 0, "", VLBI_GROUP_DSN },		/* ITRF2014, 2019d solution */
@@ -318,7 +318,7 @@ void fprintAntennaDBEntry(FILE *out, const AntennaDBEntry *ae)
 	lat2str(latstr, StrSize, lat);
 	lon2str(lonstr, StrSize, lon);
 
-	fprintf(out, "%s  (%3.1f, %3.1f, %3.1f) = (%s, %s, %3.1f) D=%3.1fm A=%3.1fkm mount=%s lon=%9.7f lat=%9.7f\n", ae->name, ae->x, ae->y, ae->z, latstr, lonstr, alt, ae->diameter, ae->arrayExtent, ae->mountType[0] ? ae->mountType : "AZEL", lon, lat);
+	fprintf(out, "%s  (%3.1f, %3.1f, %3.1f) = (%s, %s, %4.2f) D=%3.1fm A=%3.1fkm mount=%s lon=%9.7f lat=%9.7f\n", ae->name, ae->x, ae->y, ae->z, latstr, lonstr, alt, ae->diameter, ae->arrayExtent, ae->mountType[0] ? ae->mountType : "AZEL", lon, lat);
 }
 
 const AntennaDBEntry *antennaDBGetByIndex(unsigned int index)

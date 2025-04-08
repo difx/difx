@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_write_calc.c 7484 2016-10-22 17:56:05Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_write_calc.c $
-// $LastChangedRevision: 7484 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2016-10-23 01:56:05 +0800 (日, 2016-10-23) $
-//
-//============================================================================
 
 #include <stdlib.h>
 #include <string.h>

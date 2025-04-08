@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_eop.c 10842 2022-12-01 00:38:49Z ChrisPhillips $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_eop.c $
-// $LastChangedRevision: 10842 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2022-12-01 08:38:49 +0800 (四, 2022-12-01) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

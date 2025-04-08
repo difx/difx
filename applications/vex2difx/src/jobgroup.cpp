@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: jobgroup.cpp 9321 2019-11-18 00:34:59Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 9321 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2019-11-18 08:34:59 +0800 (一, 2019-11-18) $
- *
- *==========================================================================*/
 
 #include <cstdlib>
 #include <algorithm>
@@ -36,6 +26,13 @@ bool JobGroup::hasScan(const std::string &scanName) const
 	return find(scans.begin(), scans.end(), scanName) != scans.end();
 }
 
+bool JobGroup::hasAntenna(const std::string &antennaName) const
+{
+	return (antennas.find(antennaName) != antennas.end());
+}
+
+// Generate a filtered list of events for internal use,
+// retaining only events related to scans and antennas of this JobGroup
 void JobGroup::genEvents(const std::list<Event> &eventList)
 {
 	for(std::list<Event>::const_iterator it = eventList.begin(); it != eventList.end(); ++it)
@@ -48,7 +45,18 @@ void JobGroup::genEvents(const std::list<Event> &eventList)
 			if(hasScan(it->scan))
 			{
 				events.push_back(*it);
-			}	
+			}
+		}
+		else if(it->eventType == Event::CLOCK_BREAK ||
+			it->eventType == Event::RECORD_START ||
+			it->eventType == Event::RECORD_STOP ||
+			it->eventType == Event::ANTENNA_START ||
+			it->eventType == Event::ANTENNA_STOP)
+		{
+			if(hasAntenna(it->name))
+			{
+				events.push_back(*it);
+			}
 		}
 		else
 		{

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 from __future__ import absolute_import
 from __future__ import print_function
@@ -109,7 +109,7 @@ for stokes in args.pols.split(','):
     print("Shape of Stokes {0} dynamic spectrum over selected range: {1}".format(stokes, dynspec[stokes][binstart:binstop+1].shape))
     normalised = np.mean(dynspec[stokes][binstart:binstop+1], 0) / np.mean(fscrunch[stokes][binstart:binstop+1])
     orderednormalised = np.sort(normalised)
-    y = np.array(range(nchan))/float(nchan)
+    y = np.array(list(range(nchan)))/float(nchan)
     lowestval = orderednormalised[0]
     startfitindex = 0
     while startfitindex < nchan and orderednormalised[startfitindex] < -lowestval:

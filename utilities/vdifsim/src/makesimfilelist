@@ -8,12 +8,13 @@ from os.path import isfile, isdir, expanduser
 #  makesimfilelist <prj.vex> [ <directory> ]
 
 program = 'makesimfilelist'
-version = 0.1
-verdate = '20230311'
+version = '0.1.2'
+verdate = '20231028'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 vex = None
 name = None
+outPaths = None
 outPath = ''
 force = False
 

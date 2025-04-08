@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mk5erase.cpp 7978 2017-09-04 21:57:09Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/mk5dir/mk5erase.cpp $
-// $LastChangedRevision: 7978 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-09-05 05:57:09 +0800 (二, 2017-09-05) $
-//
-//============================================================================
 
 #include <vector>
 #include <cstdio> 

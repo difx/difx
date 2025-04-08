@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+
+# Note: this utility can run under python2.7 or python3
+
+program = 'vdifpcal'
+author  = 'Walter Brisken'
+version = '0.1'
+verdate = '20231112'
+
+from os import system
+from sys import exit, argv
+
+def printVersion():
+	print('%s ver. %s  %s  %s' % (program, version, author, verdate))
+
+def usage():
+	print('')
+	printVersion()
+	print('')
+	print('A pulse cal extractor for VDIF data.  Uses vmux')
+	print('and m5pcal to do the heavy lifting.\n')
+	print('Usage : %s <infile> <frame size> <data rate> <threadlist> <freqs> <outfile> [<nbit>]\n' % program)
+	print('  <infile> is the name of the VDIF file\n')
+	print('  <frame size> is the size of each input VDIF frame, inc. header (e.g., 5032)\n')
+	print('  <data rate> is the stream data rate (Mbps)\n')
+	print('  <threadlist> is a comma-separated list of threads to process\n')
+	print('  <freqs> comma-separated list of offset frequencies (MHz; one')
+	print('     per channel) specifying location of first tone in band (often zeros)\n')
+	print('  <outfile> is the name of the output file\n')
+	print('  <nbit> is number of bits per sample (default is 2)\n')
+	print('Note: Not all m5pcal options are exposed here; use vmux')
+	print('     and m5pcal directly to access all functions.\n')
+
+if '--version' in argv:
+	printVersion()
+	exit()
+
+if len(argv) < 7:
+	usage()
+	exit()
+
+infile = argv[1]
+framesize = int(argv[2])
+datarate = int(argv[3])
+threadlist = argv[4]
+nt = len(threadlist.split(','))
+freqlist = ' '.join(argv[5].split(','))
+outfile = argv[6]
+
+offset = 0  # reinstate later if desired
+
+if len(argv) > 7:
+	nbit = int(argv[7])
+else:
+	nbit = 2
+
+nc = 1
+while(nc < nt):
+	nc *= 2
+
+outputpayload = nc*(framesize-32)
+framespersecond = (datarate*1000000)//(nt*(framesize-32)*8)
+outputdatarate = outputpayload*framespersecond*8//1000000
+
+cmd = 'vmux %s %d %d %s - %d | m5pcal - VDIF_%d-%d-%d-%d %s %s' % (infile, framesize, framespersecond, threadlist, offset, outputpayload, outputdatarate, nc, nbit, freqlist, outfile) 
+
+print('Executing: %s' % cmd)
+system(cmd)

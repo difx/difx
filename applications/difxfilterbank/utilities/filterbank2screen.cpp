@@ -53,14 +53,14 @@ int main(int argc, char *argv[])
   //loop through inspecting the data
   while (!input->eof()) {
     if(getData(input)) {
-      getMinMax(data, nchan, &miny, &maxy);
+      getMinMax(::data, nchan, &miny, &maxy);
       if(maxy != 0.0 || miny != 0.0) {
         sprintf(title, "Antenna=%s, Freq=%8.2f, Pol=%s, Time=%f, Int time (ms)=%5.2f, CoreID=%i, ThreadID=%i", antennaname.c_str(), freq, pol.c_str(), dumptime, inttimems, coreindex, threadindex);
         //cpgpage();
         plenv(0.0, static_cast<float>(nchan), miny, maxy, 0, 1);
         pllab("Channel number", "Unnormalised amplitude", title);
 	for(int q = 0; q < nchan; ++q) {
-	  ddata[q] = data[q];
+	  ddata[q] = ::data[q];
 	}
         plline(nchan, xaxis, ddata);
         usleep(100000);
@@ -122,7 +122,7 @@ bool getData(ifstream * input)
     extrachan = nchan-MAX_CHANNELS;
     nchan = MAX_CHANNELS;
   }
-  input->read((char*)data, sizeof(int)*nchan);
+  input->read((char*)::data, sizeof(int)*nchan);
   if(extrachan > 0)
     input->ignore(extrachan);
   return true;
