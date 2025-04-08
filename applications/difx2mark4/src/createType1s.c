@@ -94,6 +94,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                     // local function prototypes
     int recordIsFlagged (double, int, int, const DifxJob *);
     int getBaselineIndex (DifxInput *, int, int);
+    int numbotched, cntbotched = 0;
+    char botchmsg[256] = "all is well", botchold[256] = "ten o'clock and";
 
                                     // initialize memory as necessary
                                     // compensate for LSB fringe rotator direction
@@ -128,6 +130,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     currentScan = -1;
     while (TRUE)
         {
+        cntbotched=0;
         if (nvr == NOVIS)           // do we need to read a(nother) Swinburne file?
             {
                                     // form directory name for input file, based on jobId
@@ -293,7 +296,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 continue;           // to next record 
 
                                     // copy visibilities into type 120 record
-            for (i=0; i<nvis[nvr]; i++)
+            for (i=0, numbotched=0; i<nvis[nvr]; i++)
                 {                   
                 rscaled = rec->comp[i].real;
                 iscaled = rec->comp[i].imag;
@@ -301,8 +304,10 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                         || isinf (rscaled) || isinf (iscaled) 
                         || isnan (rscaled) || isnan (iscaled))
                     {               // impossibly large values overwritten with 0
-                    printf ("Warning! Corrupt visibility %le %le for baseline %c%c in input file\n",
-                            rscaled, iscaled, blines[2*n], blines[2*n+1]);
+                    // error message transferred below
+                    //printf ("Warning! Corrupt visibility %le %le for baseline %c%c in input file\n",
+                    //        rscaled, iscaled, blines[2*n], blines[2*n+1]);
+                    numbotched++;
                     rscaled = 0.0;
                     iscaled = 0.0;
                     }
@@ -321,6 +326,22 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                     {               // and conjugate for rotator direction difference
                     u.t120.ld.spec[nvis[nvr]-i-1].re =  rscaled;
                     u.t120.ld.spec[nvis[nvr]-i-1].im = -iscaled;
+                    }
+                }
+            if (numbotched>0)
+                {
+                snprintf (botchmsg, sizeof(botchmsg),
+                    "        Corrupt visibility %d times on baseline %c%c",
+                    numbotched, blines[2*n], blines[2*n+1]);
+                if (!strcmp(botchmsg, botchold))    // same thing, again
+                    {
+                    cntbotched++;
+                    }
+                else
+                    {
+                    if (cntbotched > 0) printf("%s (repeated %d more times)\n", botchmsg, cntbotched);
+                    strncpy(botchold,botchmsg,sizeof(botchold));
+                    cntbotched=0;
                     }
                 }
             strncpy (u.t120.baseline, blines+2*n, 2);
@@ -363,9 +384,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                         if (rec->pols[0]==polA && rec->pols[1]==polB) {
                             legal = 1;
                         }
-                        strncat(allowedpols, "|", 1);
-                        strncat(allowedpols, &polA, 1);
-                        strncat(allowedpols, &polB, 1);
+                        strncat(allowedpols, "|", 2);
+                        strncat(allowedpols, &polA, 2);
+                        strncat(allowedpols, &polB, 2);
                     }
                 }
                 if (!legal)
@@ -381,6 +402,12 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             write_t120 (&u.t120, fout[n]);
             n120[n]++;
             }                       // bottom of record loop (over nvr)
+
+        if (cntbotched>0)           // flush out final message on corrupt scans
+            {
+            printf("%s (repeated %d more times)\n", botchmsg, cntbotched);
+            cntbotched=0;
+            }
 
         if (*jobId == D->nJob       // if no more jobs for this scan
          || currentScan != scanId)  // or we've bumped into the next scan
