@@ -68,9 +68,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     static char corrdate[16];
     static int nvr = NOVIS,         // index of current visibility record
                nvrtot,              // total number of visibility records in buffer
-               nvis[NVRMAX],        // array of #visibilities for each record
-               vrsize[NVRMAX],      // array of visibility record sizes (bytes)
                currentScan;
+    static vis_record_meta
+               vrmeta[NVRMAX];      // array of vis. record metadata; #visibilities, record size, PFB index
     static vis_record *rec,
                       *vrec;
     
@@ -175,7 +175,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             strcat (inname, dent->d_name);
             closedir (pdir);
                                     // open and read a complete Swinburne file
-            gv_stat = get_vis (D, inname, opts, &nvrtot, nvis, vrsize, &vrec, corrdate, pfb,
+            gv_stat = get_vis (D, inname, opts, &nvrtot, vrmeta, &vrec, corrdate, pfb,
                                (D->job+*jobId)->antennaIdRemap ? (D->job+*jobId)->antennaIdRemap : noRemap );
             if (gv_stat < -1)       // -1 is normal (EOF); anything less is an error
                 {
@@ -190,7 +190,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             nvr = -1;               // set index just prior to first record in buffer
                                     // unless raw mode requested, normalize visibilities
             if (opts->raw == 0)
-                normalize (opts, vrec, nvrtot, nvis, vrsize, pfb);
+                normalize (D, opts, vrmeta, vrec, nvrtot, pfb);
             rec = vrec;
             }
 
@@ -209,7 +209,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 }
                                     // form pointer to current vis. record
             if (nvr > 0)
-                rec = (vis_record *) ((char *) rec + vrsize[nvr-1]);
+                rec = (vis_record *) ((char *) rec + vrmeta[nvr-1].vrsize);
                                     // check for new scan
             oldScan = currentScan;
             currentScan = DifxInputGetScanIdByJobId (D, rec->mjd+rec->iat/8.64e4-epsilon, *jobId);
@@ -287,7 +287,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                         blind = 0;      // use first one in list and muster on
                         }
                     rc = new_type1 (D, pfb, n, a1, a2, blind, base_index, scale_factor, stns,
-                                    blines, opts, fout, nvis[nvr], rootname, node, rcode, 
+                                    blines, opts, fout, vrmeta[nvr].nvis, rootname, node, rcode, 
                                     corrdate, rec->baseline, scanId);
                     if (rc < 0)
                         return (rc);
@@ -305,7 +305,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 continue;           // to next record 
 
                                     // copy visibilities into type 120 record
-            for (i=0; i<nvis[nvr]; i++)
+            for (i=0; i<vrmeta[nvr].nvis; i++)
                 {                   
                 rscaled = rec->comp[i].real;
                 iscaled = rec->comp[i].imag;
@@ -331,14 +331,15 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                     }
                 else                // reverse order of points in LSB spectrum
                     {               // and conjugate for rotator direction difference
-                    u.t120.ld.spec[nvis[nvr]-i-1].re =  rscaled;
-                    u.t120.ld.spec[nvis[nvr]-i-1].im = -iscaled;
+                    u.t120.ld.spec[vrmeta[nvr].nvis-i-1].re =  rscaled;
+                    u.t120.ld.spec[vrmeta[nvr].nvis-i-1].im = -iscaled;
                     }
                 }
             strncpy (u.t120.baseline, blines+2*n, 2);
                                     // FIXME (perhaps) -assumes all freqs have same PolProds as 0
                                     // insert index# for this channel
-            u.t120.index = 10 * rec->freq_index + 1;
+            //u.t120.index = 10 * rec->freq_index + 1;
+            u.t120.index = 10 * pfb[vrmeta[nvr].pfbindex].stn[0].fmk4 + 1;
                                     // tack on offset that represents polarization
             for (i=0; i<4; i++)     
                 if (strncmp (poltabc[i],  rec->pols, 2) == 0
@@ -353,7 +354,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             else
                 u.t120.fw.weight = rec->weight;
                                     // double-check that vis record pols match DiFX .input metadata
-            if (0) {
+            if (0)
+                {
                 char allowedpols[500];
                 int ff,pp, legal=0;
                                     // TODO: 'blind' from getBaselineIndex (D, a1, a2) futher above works only if both
@@ -384,8 +386,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                     fprintf(stderr,
                             "Warning: mismatch on baseline %d (%.2s-%.2s) freq %d vis data has pol %.2s, .input has %s\n",
                             rec->baseline, (stns + a1)->intl_name, (stns + a2)->intl_name, rec->freq_index, rec->pols, allowedpols);
-            }
-            u.t120.nlags = nvis[nvr];
+                }
+            u.t120.nlags = vrmeta[nvr].nvis;
                                     // calculate accumulation period index from start of scan
             u.t120.ap = (8.64e4 * (rec->mjd - D->scan[scanId].mjdStart) + rec->iat)
                                  / D->config[configId].tInt;
