@@ -1054,7 +1054,7 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 			return;
 		}
 	}
-	strncpy_warn(G->_xml_string+l, str, len);
+	strncpy(G->_xml_string+l, str, len);
 	G->_xml_string[len+l] = 0;
 }
 
