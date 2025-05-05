@@ -3,6 +3,7 @@ Version 2.8.1
 * Version post DiFX 2.8.1
 * Fix usage of recvfrom() and add some associated comments
 * difxparse.c: use new macro strncpy_warn to safely copy a string with possible truncation; emit a warning if truncation happens.
+* New macro definition for Mark5 and Mark6 string lengths that are long enough to include trailing zeros
 
 Version 2.8.0
 ~~~~~~~~~~~~~
