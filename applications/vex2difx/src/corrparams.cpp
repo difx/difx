@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2023 by Walter Brisken                             *
+ *   Copyright (C) 2009-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -792,6 +792,7 @@ DatastreamSetup::DatastreamSetup(const std::string &name) : difxName(name)
 	nBand = 0;				// Zero implies all.
 	tSys = 0.0;
 	frameSize = 0;
+	nBit = 0;
 
 	filelistReadFail = false;
 }
@@ -828,6 +829,10 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 	else if(key == "frameSize")
 	{
 		ss >> frameSize;
+	}
+	else if(key == "nBit")
+	{
+		ss >> nBit;
 	}
 	else if(key == "sampling")
 	{
@@ -1148,6 +1153,11 @@ int DatastreamSetup::merge(const DatastreamSetup *dss)
 	if(frameSize == 0)
 	{
 		frameSize = dss->frameSize;
+	}
+
+	if(nBit == 0)
+	{
+		nBit = dss->nBit;
 	}
 
 	return 0;
@@ -3608,6 +3618,10 @@ std::ostream& operator << (std::ostream &os, const DatastreamSetup &x)
 	if(x.frameSize != 0)
 	{
 		os << "  frameSize=" << x.frameSize << std::endl;
+	}
+	if(x.nBit != 0)
+	{
+		os << "  nBit=" << x.nBit << std::endl;
 	}
 	if(!x.machine.empty())
 	{
