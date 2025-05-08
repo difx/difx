@@ -41,12 +41,17 @@ typedef struct
 	int band;
 	char antName[ANTENNA_NAME_LENGTH];
 	int nFreq, nPoly, nDPFU, nTime;
-	float freq[2];
+	float freq[2];		/* [MHz] */
 	float poly[MAXTAB];
 	float DPFU[2];
 	float time[8];
 	float sxFlag;	/* 1 if it is an sx mode, otherwise 0 */
 } GainRow;
+
+void printGainRow(const GainRow *G)
+{
+	printf("GainRow: %s %d %f\n", G->antName, G->band, G->freq[0]);
+}
 
 static const float bandEdges[N_VLBA_BANDS+1] =
 {
@@ -58,7 +63,7 @@ static const float bandEdges[N_VLBA_BANDS+1] =
 	3900,	/* 6cm  C  */
 	6000,	/* 5cm  C  Different from above due to two separate gain curve files */
 	8000,	/* 4cm  X  */
-	10000,	/* 2cm  U  */
+	10001,	/* 2cm  U  */
 	18000, 	/* 1cm  K  */
 	26000, 	/*      Ka  Not yet existing */
 	40000,	/* 7mm  Q  */
@@ -130,7 +135,7 @@ static int getVLBAGainRow(GainRow *G, int nRow, const DifxAntenna *da, double fr
 		{
 			continue;
 		}
-		dfreq = fabs(band-G[r].freq[0]);
+		dfreq = fabs(freq-G[r].freq[0]);
 		if(dband < eband || (dband == eband && dfreq < efreq))
 		{
 			bestr = r;
