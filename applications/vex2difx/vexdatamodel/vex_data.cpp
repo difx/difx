@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2024 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2025 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1376,6 +1376,36 @@ void VexData::setStreamFrameSize(const std::string &modeName, const std::string 
 	else
 	{
 		std::cerr << "Developer error: setStreamFrameSize being called with modeName = " << modeName << " which returned modeId " << modeId << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
+}
+
+void VexData::setStreamNBit(const std::string &modeName, const std::string &antName, int dsId, int nBit)
+{
+	int modeId = getModeIdByDefName(modeName);
+
+	if(modeId >= 0)
+	{
+		VexMode &M = modes[modeId];
+		std::map<std::string,VexSetup>::iterator it = M.setups.find(antName);
+		if(it != M.setups.end())
+		{
+			if(nBit > 0)
+			{
+				it->second.streams[dsId].nBit = nBit;
+			}
+		}
+		else
+		{
+			std::cerr << "Developer error: setStreamNBit being called with antName = " << antName << " which is not found in mode " << modeName << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+	}
+	else
+	{
+		std::cerr << "Developer error: setStreamNBit being called with modeName = " << modeName << " which returned modeId " << modeId << std::endl;
 
 		exit(EXIT_FAILURE);
 	}
