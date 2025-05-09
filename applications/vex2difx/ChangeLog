@@ -17,6 +17,14 @@ Version 3.1.0
 * Fix "datastreams with no data" bug.  This was triggered when there was a job break in the middle of a scan and an antenna only had data during one part of the broken scan
 * Fix format override where VDIF/CODIF wouldn't change sampling type in some cases
 * vex2v2d: add option to make antenna complex-valued
+* Canonical VDIF threads no longer applies in Vex2 as the DATASTREAMS block has the needed information
+* Allow override of number of bits in a DATASTREAM block
+* Fix vex2 parse order issue by splitting getVexRev() as new function from getExper()
+* oms2v2d: no longer support VLBA station format file pointed to by $VLBA_STATION_FORMAT
+* The format override in the DATASTREAM block is now complete.  That is, setting format to "VDIF" will erase any pre-existing thread assignments.
+  - if only framesize is to change, then use frameSize=XXX instead
+  - if only number of bits per sample is to change, then use nBit=XXX instead
+  - if only changing from REAL to COMPLEX sampling, then use sampling=COMPLEX instead
 
 Version 3.0.0
 -------------

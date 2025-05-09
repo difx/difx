@@ -32,9 +32,12 @@ import subprocess
 import sys
 import shutil
 import traceback
+import glob
+import hashlib
 
 
 def taritup(tardir, tarfile, infile, gzip=False):
+    '''tar up the provided files, with option to compress the output'''
 
     print ("tarring up", tarfile)
     taroptions = options.taroptions
@@ -53,12 +56,19 @@ def taritup(tardir, tarfile, infile, gzip=False):
     subprocess.check_call(
             command, shell=True, stdout=sys.stdout, stderr=subprocess.PIPE)
 
+def do_checksum(filename, checksum_type="md5"):
+    '''returns a checksum (default md5) for a file'''
+    with open(filename, mode="rb") as f:
+        checksum = hashlib.file_digest(f, checksum_type)
+    return checksum
+
 
 usage = """%prog <path> <destination>
 will transfer <path> and all its subdirectories to <destination> on
 data.pawsey.org.au using pshell. Most files are tarred before transfer, but
 special files and large files are transferred unmodified. Files are first
-tarred/copied to $ARCHTMP before transfer.
+tarred/copied to $ARCHTMP before transfer. Also computes checksums for FITS
+files.
 
 e.g.
 %prog $CORR_DATA/v252aw /projects/VLBI/Archive/LBA/v252
@@ -90,6 +100,10 @@ parser.add_option(
         "--skip_copy", "-s",
         dest="skip_copy", action="store_true", default=False,
         help="Skip the initial copy/tar step and assume $ARCHTMP has all data to be transferred")
+#parser.add_option(
+#        "--exclude", "-e",
+#        type="str", dest="exclude",  default="slurm-*.out",
+#        help="Exclude files matching the regexp")
 
 (options, args) = parser.parse_args()
 
@@ -117,6 +131,20 @@ os.chdir(localdir)
 tarlists = dict()
 transfer = []
 publish = []
+
+# first create md5 checksums for the FITS files
+if not options.skip_copy:
+    for filename in glob.glob("*.FITS"):
+        md5sum = do_checksum(filename)
+        md5filename = filename + ".md5"
+        if options.verbose:
+            print (f"writing {md5filename} with checksum for {filename}")
+        with open(md5filename, mode="w") as f:
+            # don't write the filename as you would in normal md5sum because CASDA...
+            f.write(f"{md5sum.hexdigest()}\n")
+            #f.write(f"{md5sum.hexdigest()}  {filename}\n")
+            #f.write(" ".join([md5sum.hexdigest(), filename]) + "\n")
+        #print(" ".join([md5sum.hexdigest(), filename]), file=open(md5filename, mode="w"))
 
 for filename in os.listdir(os.curdir):
 
@@ -152,11 +180,15 @@ for filename in os.listdir(os.curdir):
         # ignore these (old, superseded jobs).
         print ("skipping", filename)
         continue
+    if re.match(r"slurm-.*\.out", filename):
+        # ignore slurm files that litter the place
+        print ("skipping", filename)
+        continue
 
     # certain file extensions never get tarred
     notar_ext = [
             r".fits\Z", ".rpf", ".uvfits", ".mark4", ".tar", passname+".v2d",
-            expname+".vex", expname+".skd", "notes.txt"]
+            expname+".vex", expname+".skd", "notes.txt", ".md5"]
     fileWithPath = os.path.join(os.path.abspath(os.curdir), filename)
     notar = False
     for extension in notar_ext:

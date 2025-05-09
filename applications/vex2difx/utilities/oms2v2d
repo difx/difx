@@ -25,8 +25,8 @@ from os import umask, popen, system, getenv
 import datetime
 
 program = 'oms2v2d'
-version = '1.24'
-verdate = '20250106'
+version = '1.25'
+verdate = '20250506'
 author = 'Walter Brisken, Mark Wainright'
 
 def usage(pgm):
@@ -66,13 +66,6 @@ def usage(pgm):
 	print('  -q       be less verbose\n')
 	print('  -x       exclude any station from correlation that has no .filelist file present\n')
 	print('<oms file> is a .oms file produced by sched\n')
-	print('If environment variable VLBA_STATION_FORMAT is set,')
-	print('the file at that location will be read and it will')
-	print('be used to override the data format for that station.')
-	print('Each line of this file should be of the form:')
-	print('  <stn> <fmt>')
-	print('Where <stn> is the station code (typically 2 letters) and')
-	print('<fmt> is the format designator, e.g., VDIF/5032/2 .\n')
 	exit(0)
 
 vdifsimDotFile = expanduser('~/.vdifsim')
@@ -380,21 +373,6 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, sim, datacopyFormat, evlbiTyp
 		out.write('SOURCE %s {%s }\n' % (s['SOURCE_NAME'][0], srcParams))
 	out.write('\n')
 
-	fmt = {}
-	a = getenv('VLBA_STATION_FORMAT')
-	if a:
-		data = open(a).readlines()
-		for d in data:
-			s = d.strip().split()
-			if len(s) < 2:
-				continue
-			if len(s) > 2:
-				startMJD = float(s[2])
-			else:
-				startMJD = 0.0
-			if startMJD < mjdNow():
-				fmt[s[0].upper()] = s[1]
-
 	for s in stations:
 		extra = ''
 		nds = 0
@@ -450,14 +428,6 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, sim, datacopyFormat, evlbiTyp
 			else:
 				extra += filelistStatement + ' '
 
-		if s in fmt:
-			f = 'format=' + fmt[s] + ' '
-			if len(dsData) > 0:
-				for i in range(len(dsData)):
-					dsData[i] += f
-			else:
-				dsData.append(f)
-
 		for ds in dsData:
 			out.write('DATASTREAM %s%d { %s}\n' % (s, nds, ds))
 			if nds == 0:
@@ -471,8 +441,8 @@ def writev2d(oms, v2dFile, prefix, nrt, filebased, sim, datacopyFormat, evlbiTyp
 
 		# check if DBS changed Mark5B to VDIF
 		if dbsFormatChange(s, oms) == True:
-			# DBS changed record format to VDIF5032
-			extra += 'format=VDIF5032 '
+			# DBS changed record format from Mark5B to Interlaced VDIF
+			extra += 'format=INTERLACEDVDIF/0:1:2:3:4:5:6:7:8:9:10:11:12:13:14:15/5032/2 '
 
 		out.write('ANTENNA %s { toneSelection=smart %s}\n' % (s, extra))
 		out.write('\n')

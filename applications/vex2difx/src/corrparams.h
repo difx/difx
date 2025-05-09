@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2021 by Walter Brisken                             *
+ *   Copyright (C) 2009-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -164,6 +164,7 @@ public:
 				// This is sometimes needed because format not known always at scheduling time
 				// Possible values: S2 VLBA MkIV/Mark4 Mark5B . Is converted to all caps on load
 	int frameSize;		// If set, a partial format override
+	int nBit;		// If set, a partial format override
 	std::set<int> recorderIds;	// List of recorder ids to associate with this datastream
 	enum DataSource dataSource;
 	enum SamplingType dataSampling;

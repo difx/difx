@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2020 by Walter Brisken & Helge Rottmann            *
+#   Copyright (C) 2008-2025 by Walter Brisken & Helge Rottmann            *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -44,8 +44,8 @@ except ImportError:
     sys.exit(1)
 
 author  = 'Walter Brisken and Helge Rottmann'
-version = '2.5.1'
-verdate = '20231124'
+version = '2.5.2'
+verdate = '20250509'
 minMachinefileVersion = "1.0"   # cluster definition file must have at least this version
 
 defaultDifxMessagePort = 50200
@@ -1006,7 +1006,7 @@ if __name__ == "__main__":
         epilog +=  '\nDIFX_MACHINES: required, unless -m option is given. -m overrides DIFX_MACHINES.'
         epilog +=  '\nDIFX_GROUP: if not defined a default of %s will be used.' % defaultDifxMessageGroup
         epilog +=  '\nDIFX_PORT: if not defined a default of %s will be used.' % defaultDifxMessagePort
-        epilog +=  '\nSee https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/clusterdef for documentation on the machines file format'
+        epilog +=  '\nSee https://github.com/difx/difx/wiki/clusterdef for documentation on the machines file format'
 
         description = 'A program to write the machines file appropriate for a particular DiFX job.'
 
