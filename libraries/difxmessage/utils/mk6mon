@@ -84,11 +84,11 @@ class Mk6MessageParser:
         else:
             row = self.rowsStatus[nodeFrom]
 
-        if messageType == "Mark6StatusMessage":
-            self.parseStatusMessage(dom, row)
-            self.rowsStatus[nodeFrom] = row
-            self.updateStatus = True
-        elif messageType == "Mark6SlotStatusMessage":
+        #if messageType == "Mark6StatusMessage":
+        #    self.parseStatusMessage(dom, row)
+        #    self.rowsStatus[nodeFrom] = row
+        #    self.updateStatus = True
+        if messageType == "Mark6SlotStatusMessage":
             self.parseSlotStatusMessage(dom, row)
             self.rowsStatus[nodeFrom] = row
             self.updateStatus = True
