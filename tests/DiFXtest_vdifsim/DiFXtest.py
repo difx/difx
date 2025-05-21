@@ -863,15 +863,15 @@ def repackage_tests(testnames):
 
 def unpackage_tests(testnames):
 
-  print("Unpacking test tarball.")
-  
+    
   unpack = False
   current_directory = get_testdir()
   for testname in testnames:
-    testname = current_directory + testname
+    testname = current_directory + "/" + testname
     if (os.path.isdir(testname) == False):
       unpack = True
   if (unpack):
+    print("Unpacking test tarball.") 
     subprocess.call("tar -zxvf tests.tgz",shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 def create_test_data(testname):
@@ -1007,6 +1007,9 @@ def main():
   
   # Run DiFX on all compatable tests 
   for testname in test_name_list:
+    if (is_testdata_empty(testname) or generateVDIF == "YES"):
+      check_vdifsim_installed()
+      record_path()
     rm_output_files(testname)
     generate_v2d(testname)
     set_numthreads(testname,numthreads)
@@ -1037,8 +1040,6 @@ def main():
     if (testname[-3:] != "gpu"):
       if (is_testdata_empty(testname) or generateVDIF == "YES"):
           check_vdifsim_installed()
-          record_path()
-          read_path()
           run_vdifsim(testname) 
     if (testname[-3:] == "gpu"):  
       run_mpifxcorr_gpumode(testname, numcores)
