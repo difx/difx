@@ -1,10 +1,10 @@
 
-Full documentation is at: http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx
+Full documentation is at: https://github.com/difx/difx/wiki/vex2difx
 
 Requirements:
 
-vex2difx requires a recent version of difxio available at:
-https://svn.atnf.csiro.au/difx/libraries/difxio/trunk
+vex2difx requires a recent version of difxio available within the same git repo as vex2difx:
+https://github.com/difx/difx
 
 To install from a fresh svn checkout, run the following:
 
