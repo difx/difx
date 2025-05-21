@@ -1,10 +1,11 @@
+# vex2difx
 
-Full documentation is at: https://github.com/difx/difx/wiki/vex2difx
-
+Full documentation is at: https://github.com/difx/difx/wiki/vex2difx 
+ 
 Requirements:
 
-vex2difx requires a recent version of difxio available within the same git repo as vex2difx:
-https://github.com/difx/difx
+vex2difx requires a recent version of difxio available at:
+https://github.com/difx/difx/tree/main/libraries/difxio
 
 To install from a fresh svn checkout, run the following:
 
