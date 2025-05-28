@@ -1,5 +1,5 @@
 vex = c212c.vex
-# https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx
+# https://github.com/difx/difx/wiki/vex2difx
 singleScan = True
 singleSetup = True
 minSubarray = 2

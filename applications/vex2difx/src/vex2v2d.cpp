@@ -472,23 +472,36 @@ int main(int argc, char **argv)
 
 			return EXIT_FAILURE;
 		}
-		else if(specRes > 0.0)
+		else if(strstr(argv[a], ".vex") != 0)  
 		{
-			printf("Error: too many non-optional parameters provided.\n\n");
-
-			return EXIT_FAILURE;
-		}
-		else if(vexFile == 0)
-		{
+			if(vexFile != 0)
+			{
+				printf("Error: multiple vex files specified\n\n");
+				return EXIT_FAILURE;
+			}
 			vexFile = argv[a];
 		}
-		else if(tInt <= 0.0)
+		else  
 		{
-			tInt = atof(argv[a]);
-		}
-		else
-		{
-			specRes = atof(argv[a]);
+			if(vexFile == 0)  
+			{
+				printf("Error: vex file must be specified before tInt or specRes\n\n");
+				return EXIT_FAILURE;
+			}
+			
+			if(tInt <= 0.0)  
+			{
+				tInt = atof(argv[a]);
+			}
+			else if(specRes <= 0.0)  
+			{
+				specRes = atof(argv[a]);
+			}
+			else
+			{
+				printf("Error: too many non-optional parameters provided.\n\n");
+				return EXIT_FAILURE;
+			}
 		}
 	}
 
@@ -566,3 +579,4 @@ int main(int argc, char **argv)
 
 	return v;
 }
+

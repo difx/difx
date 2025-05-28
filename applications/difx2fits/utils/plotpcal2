@@ -37,7 +37,7 @@ legalOps = ['amp', 'phase', 'delay', 'xy', 'ampphase']
 def usage(prog):
 	print('\n%s ver. %s  %s\n' % (program, version, author))
 	print('Usage: %s [options] operation toneSelections dataFiles\n' % prog)
-	print('Some more details are at: https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/plotpcal\n')
+	print('Some more details are at: https://github.com/difx/difx/wiki/plotpcal\n')
 	print('or by running   %s --doc' % prog)
 
 documentation = '''
