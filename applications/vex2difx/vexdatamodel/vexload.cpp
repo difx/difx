@@ -2464,8 +2464,6 @@ static int getDatastreamsSetup(VexSetup &setup, Vex *v, const char *antDefName, 
 		}
 	}
 
-	cerr << setup << endl;
-
 	return nWarn;
 }
 
