@@ -16,16 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: padVDIF.c 9394 2020-01-13 09:11:11Z JanWagner $
- * $HeadURL:  $
- * $LastChangedRevision: 9394 $
- * $Author: JanWagner $
- * $LastChangedDate: 2020-01-13 17:11:11 +0800 (一, 2020-01-13) $
- *
- *==========================================================================*/
+
 
 #include <stdio.h>
 #include <stdlib.h>
