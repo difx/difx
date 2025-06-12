@@ -56,7 +56,7 @@ try:
     dtermcal = ('%s/%s.'+qa2['d'])%(DiFXout,callabel) # Df0 | Df0gen
     bandpass = ('%s/%s.'+qa2['b'])%(DiFXout,conlabel) # bandpass-zphs | bandpassAPP
     ampgains = ('%s/%s.'+qa2['g'])%(DiFXout,conlabel) # flux_inf.APP
-    phsgains = ('%s/%s.'+qa2['p'])%(DiFXout,conlabel) # phase_int.APP*
+    phsgains = ('%s/%s.'+qa2['p'])%(DiFXout,conlabel) # phase_int.APP[.XYsmooth]
     xyrelphs = ('%s/%s.'+qa2['x'])%(DiFXout,callabel) # XY0.APP or XY0.ALMA | XY0kcrs.APP or XY0kcrs.ALMA
     gxyampli = ('%s/%s.'+qa2['y'])%(DiFXout,callabel) # Gxyamp.APP/Gxyamp.ALMA
     if v4tables:    #production v4
