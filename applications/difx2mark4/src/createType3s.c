@@ -579,7 +579,10 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     {
                                     if (D->freq[jfrec].sideband == 'L')
                                         {
-                                        f_rel = D->freq[jfdst].bw + f_rel;
+                                        if (f_rel < 0)
+                                            {
+                                            f_rel = D->freq[jfdst].bw + f_rel;
+                                            }
                                         isb = 1;
                                         }
                                     }
@@ -640,12 +643,15 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     i, t309.ntones);
 #endif
 
-                                }
-
                                         // DiFX-2.5/2.6 behaviour: quit after first matching mk4 pfb channel, ignore other channels
                                 if (found)
                                     break;
-                                
+
+                                }
+
+                            if (found)
+                                break;
+
                             }
                         }
 
