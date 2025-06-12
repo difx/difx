@@ -53,11 +53,11 @@ if v4tables is None:
 try:
     aantpath = ('%s/%s.'+qa2['a'])%(DiFXout,conlabel) # ANTENNA
     calapphs = ('%s/%s.'+qa2['c'])%(DiFXout,conlabel) # calappphase
-    dtermcal = ('%s/%s.'+qa2['d'])%(DiFXout,callabel) # Df0
-    bandpass = ('%s/%s.'+qa2['b'])%(DiFXout,conlabel) # bandpass-zphs
+    dtermcal = ('%s/%s.'+qa2['d'])%(DiFXout,callabel) # Df0 | Df0gen
+    bandpass = ('%s/%s.'+qa2['b'])%(DiFXout,conlabel) # bandpass-zphs | bandpassAPP
     ampgains = ('%s/%s.'+qa2['g'])%(DiFXout,conlabel) # flux_inf.APP
     phsgains = ('%s/%s.'+qa2['p'])%(DiFXout,conlabel) # phase_int.APP*
-    xyrelphs = ('%s/%s.'+qa2['x'])%(DiFXout,callabel) # XY0.APP or XY0.ALMA
+    xyrelphs = ('%s/%s.'+qa2['x'])%(DiFXout,callabel) # XY0.APP or XY0.ALMA | XY0kcrs.APP or XY0kcrs.ALMA
     gxyampli = ('%s/%s.'+qa2['y'])%(DiFXout,callabel) # Gxyamp.APP/Gxyamp.ALMA
     if v4tables:    #production v4
         calgains = [aantpath, calapphs, dtermcal,
