@@ -43,6 +43,10 @@ def getippversion(path):
         if isfile(ippheader):
             path += '/oneapi/ipp/latest/'
     if not isfile(ippheader):
+        ippheader = path+'/oneapi/ipp/latest/include/ipp/ippversion.h'
+        if isfile(ippheader):
+            path += '/oneapi/ipp/latest/'
+    if not isfile(ippheader):
         ippheader = ''
 
     if (ippheader==''):

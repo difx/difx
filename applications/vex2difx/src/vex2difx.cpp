@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2024 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2025 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -50,7 +50,6 @@ using namespace std;
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20221115");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -2947,7 +2946,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 static void usage(int argc, char **argv)
 {
 	cout << endl;
-	cout << program << " version " << version << "  " << author << " " << verdate << endl;
+	cout << program << " version " << version << "  " << author << endl;
 	cout << endl;
 	cout << "Usage:  " << argv[0] << " [<options>] <v2d file>" << endl;
 	cout << endl;
@@ -2985,7 +2984,7 @@ static void usage(int argc, char **argv)
 	cout << "            you intend." << endl;
 	cout << "  * Error   " << program << " could not complete due to this problem." << endl;
 	cout << endl;
-	cout << "See https://atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx for more information" << endl;
+	cout << "See https://github.com/difx/difx/wiki/vex2difx for more information" << endl;
 	cout << endl;
 	cout << "NOTE: This version now supports much of the vex2 specification (as well as the" << endl;
 	cout << "vex 1.5 specification) but it is only lightly tested.  Proceed with caution." << endl;
@@ -3278,6 +3277,7 @@ int main(int argc, char **argv)
 	}
 
 	applyCorrParams(V, *P, nWarn, nError, canonicalVDIFUsers);
+
 	calculateScanSizes(V, *P);
 
 	if(!canonicalVDIFUsers.empty())
