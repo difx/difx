@@ -35,6 +35,7 @@
 #include <vdifio.h>
 
 #include "config.h"
+
 #if USE_CODIFIO
 #include <codifio.h>
 #endif
@@ -89,7 +90,7 @@ double cal2mjd(int day, int month, int year);
 double tm2mjd(struct tm date);
 
 void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int iscomplex, int nobandpass, int noise,
-		  int bandwidth, float tone, float amp, float tone2, float amp2, int lsb, int doublesideband, 
+		  double bandwidth, float tone, float amp, float tone2, float amp2, int lsb, int doublesideband, 
 		  int hilbert, float *mean, float *stdDev);
 
 #define MAXSTR        255
@@ -130,7 +131,7 @@ int main (int argc, char * const argv[]) {
 
   int memsize = BUFSIZE;
   int nbits = 2;
-  int bandwidth = 64;
+  double bandwidth = 64;
   int channels = 1;
   int seed = 0;
   int ntap = DEFAULTTAP;
@@ -142,12 +143,17 @@ int main (int argc, char * const argv[]) {
   int lsb = 0;
   int doublesideband = 0;
   int usecodif = 0;
+  int norescale = 0;
   int year = -1;
   int month = -1;
   int day = -1;
   int dayno = -1;
-  uint64_t totalsamples=0;
+  int threadID = 0;
+#if USE_CODIFIO
+  int groupID = 0;
+#endif
   int period = 1;
+  uint64_t totalsamples=0;
   double mjd = -1;
   float tone =  0;  // MHz
   float tone2 = 0;  // MHz
@@ -182,10 +188,12 @@ int main (int argc, char * const argv[]) {
     {"seed", 1, 0, 's'},
     {"doublesideband", 0, 0, 'G'},
     {"lsb", 0, 0, 'L'},
-    {"hilbert", 0, 0, 'H'},
+    {"norescale", 0, 0, 'R'},
+    {"threadid", 1, 0, 'X'},
     {"help", 0, 0, 'h'},
 #if USE_CODIFIO
     {"codifio", 0, 0, 'Z'},
+    {"groupid", 1, 0, 'Y'},
     {"period", 1, 0, 'p'},
     {"totalsamples", 1, 0, 'Q'},
 #endif
@@ -245,15 +253,18 @@ int main (int argc, char * const argv[]) {
       CASEINT('F', framesize);
       CASEINT('C', channels);
       CASEINT('s', seed);
+      CASEINT('X', threadID);
       CASEBOOL('c', iscomplex);
       CASEBOOL('H', dohilbert);
       CASEBOOL('N', nobandpass);
       CASEBOOL('n', noise);
       CASEBOOL('L', lsb);
       CASEBOOL('G', doublesideband);
+      CASEBOOL('R', norescale);
 #if USE_CODIFIO
       CASEBOOL('Z', usecodif);
       CASEINT('p', period);
+      CASEINT('Y', groupID);
       CASEINT64('Q', totalsamples);
 #endif
       CASEFLOAT('B', memsize);
@@ -286,13 +297,20 @@ int main (int argc, char * const argv[]) {
 	printf("  -lsb                      Generate LSB data\n");
 	printf("  -doublesideband           Generate double sideband if complex (default single sideband)\n");
 	printf("  -hilbert                  Generate real data and convert to complex via hilbert transform\n");
+	printf("  -threadID <N>             Set threadID\n");
+#if USE_CODIFIO	
 	printf("  -codif                    Generate CODIF data\n");
+	printf("  -groupID <N>              Set groupID\n");
+	printf("  -p/-period                CODIF period (default 1))\n");
+	printf("  -totalsamples             Number of samples/period. Default calculate from bandwidth\n");
+#endif
 	printf("  -day <DAY>                Day of month of start time (now)\n");
 	printf("  -month <MONTH>            Month of start time (now)\n");
 	printf("  -dayno <DAYNO>            Day of year of start time (now)\n");
 	printf("  -year <YEAR>              Year of start time (now)\n");
 	printf("  -time <HH:MM:SS>          Year of start time (now)\n");
 	printf("  -mjd <MJD>                MJD of start time\n");
+	printf("  -nobandpass               Don't apply bandpass filter\n");
 	return(1);
 	break;
       
@@ -338,9 +356,11 @@ int main (int argc, char * const argv[]) {
     totalsamples = bandwidth*1e6*2/cfact;
     period=1;
   }  else {
-
+#if USE_CODIFIO
+    bandwidth = totalsamples/period/1e6/2*cfact;
+#endif
   }
-  
+
   framesize = (framesize/8)*8; // Round framesize multiple of 8
   // need integral number of frames/sec
   uint64_t bytesperperiod = completesample*totalsamples/8;
@@ -527,10 +547,10 @@ int main (int argc, char * const argv[]) {
 
     // Need to calculate a couple of these values
 #ifdef CODIFV2
-    status = createCODIFHeader(&cheader, framesize, 0, 0, nbits, nchan, sampleblock, period, totalsamples,
+    status = createCODIFHeader(&cheader, framesize, threadID, groupID, nbits, nchan, sampleblock, period, totalsamples,
 			       complexOutput, "Tt", 0);
 #else
-    status = createCODIFHeader(&cheader, framesize, 0, 0, nbits, nchan, sampleblock, period, totalsamples,
+    status = createCODIFHeader(&cheader, framesize, threadID, groupID, nbits, nchan, sampleblock, period, totalsamples,
 			       complexOutput, "Tt");
 #endif
     if (status!=CODIF_NOERROR) {
@@ -569,7 +589,7 @@ int main (int argc, char * const argv[]) {
   } else {
     header = (char*)&vheader;
     headerBytes = VDIF_HEADER_BYTES;
-    status = createVDIFHeader(&vheader, framesize, 0, nbits, nchan, complexOutput, "Tt");
+    status = createVDIFHeader(&vheader, framesize, threadID, nbits, nchan, complexOutput, "Tt");
     if (status!=VDIF_NOERROR) {
       printf("Error creating VDIF header. Aborting\n");
       exit(1);
@@ -616,6 +636,13 @@ int main (int argc, char * const argv[]) {
     }
     mean[0] /= nchan;
     stdDev[0] /= nchan;
+
+    if (norescale) {
+      if (nbits==8)
+	stdDev[0] = 10;
+      else if (nbits==16)
+	stdDev[0] = 40;
+    }
 
     for (i=0; i<loopframes; i++) {
 
@@ -868,8 +895,8 @@ inline Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
   x *= scale;
   if (x>127) // Clip
     x = 127;
-  else if (x<-127)
-    x = -127;
+  else if (x<-128)
+    x = -128;
   return lrintf(x);
 }
 
@@ -922,7 +949,7 @@ int pack16bitNchan(Ipp32f **in, int nchan, int off, Ipp16u *out, float mean, flo
   if (iscomplex) {
     for (i=off;i<len+off;i+=2) {
       for (n=0; n<nchan; n++) {
-	out[j] = (Ipp16u)scaleclip(in[n][i], scale);
+	out[j] = (Ipp16u)scaleclip16(in[n][i], scale);
 	if (!iscodif) out[j] ^= 0x80;
 	j++;
 	out[j] = (Ipp16u)scaleclip16(in[n][i+1], scale);
@@ -1014,7 +1041,7 @@ double tm2mjd(struct tm date) {
 #ifdef USEIPP
 
 void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int iscomplex, int nobandpass,
-		  int noise, int bandwidth, float tone, float amp, float tone2, float amp2, int lsb,
+		  int noise, double bandwidth, float tone, float amp, float tone2, float amp2, int lsb,
 		  int doublesideband, int hilbert, float *mean, float *stdDev) {
   int n, nsamp, cfact;
   IppStatus status;
@@ -1136,7 +1163,7 @@ void generateData(Ipp32f **data, int nframe, int samplesperframe, int nchan, int
 
 #else 
 void generateData(float **data, int nframe, int samplesperframe, int nchan,
-		  int iscomplex, int bandwidth, float tone, float *mean, float *stdDev) {
+		  int iscomplex, double bandwidth, float tone, float *mean, float *stdDev) {
   int i, n;
   float s;
 
