@@ -46,7 +46,7 @@ DiFX experiment with the Experiment Editor involve:
 
 The DiFX documentation provides a detailed explanation of <i>vex2difx</i> and
 the parameters that go into the <code>.v2d</code> file
-<a href="http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx">here</a>.
+<a href="https://github.com/difx/difx/wiki/vex2difx">here</a>.
 
 The Experiment Editor is launched either to create a new experiment
 (by picking "New" from the Queue Browser) in which case its title is

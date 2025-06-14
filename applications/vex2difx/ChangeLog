@@ -42,7 +42,7 @@ Version 2.99.3
 * in cases where it is known (e.g., vex2-based files) and the same across antennas, populate the "RX NAME" field in the .input file
 * increase maximum project code length to 24 (from 7)
 * Support for output band configuration
-* Note: fanout_def is now required for every data format, even VDIF.  See https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/formatdef for more info.
+* Note: fanout_def is now required for every data format, even VDIF.  See https://github.com/difx/difx/wiki/formatdef for more info.
 
 Version 2.99.2
 ~~~~~~~~~~~~~~

@@ -847,7 +847,7 @@ Program difxcalculator looks at a set of DiFX input files (``.input``,
 ``.calc``, etc.) and reports/calculates key operating parameters. This
 program is inspired by the ``difx_calculator.xls`` spread sheet
 available at
-http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/calculator.
+https://github.com/difx/difx/wiki/calculator.
 
 -  Usage: ``difxcalculator`` :math:`[` *options* :math:`]` *baseName*
    :math:`[`\ *speedUp*\ :math:`]`
@@ -3850,7 +3850,7 @@ Some information, including example ``.v2d`` sections, on setting up
 pulsar correlation can be found in §\ `[sec:pulsars] <#sec:pulsars>`__.
 
 You may find additional information at
-http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx .
+https://github.com/difx/difx/wiki/vex2difx .
 
 .. _sec:vexpeek:
 

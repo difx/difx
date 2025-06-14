@@ -14,15 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: difxslurm 10832 2022-11-17 14:11:11Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/sites/MPIfR/misc/difxslurm/difxslurm $
-# $LastChangedRevision: 10832 $
-# $Author: JanWagner $
-# $LastChangedDate: 2022-11-17 15:11:11 +0100 (Thu, 17 Nov 2022) $
-#
-#============================================================================
 #
 # Correlate an entire .joblist under a single SLUMR reservation.
 #

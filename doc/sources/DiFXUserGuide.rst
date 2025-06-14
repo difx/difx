@@ -2891,7 +2891,7 @@ Program difxcalculator looks at a set of DiFX input files (``.input``,
 ``.calc``, etc.) and reports/calculates key operating parameters. This
 program is inspired by the ``difx_calculator.xls`` spread sheet
 available at
-http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/calculator.
+https://github.com/difx/difx/wiki/calculator.
 
 -  Usage: ``difxcalculator`` :math:`[` *options* :math:`]` *baseName*
    :math:`[`\ *speedUp*\ :math:`]`
@@ -5890,7 +5890,7 @@ Some information, including example ``.v2d`` sections, on setting up
 pulsar correlation can be found in §\ `4 <#sec:pulsars>`__.
 
 You may find additional information at
-http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx .
+https://github.com/difx/difx/wiki/vex2difx .
 
 .. _sec:vexpeek:
 
@@ -7461,7 +7461,7 @@ $DIFX_MACHINES
 
 This section describes the format of a file used through DiFX-2.2. For
 more recent versions please see documentation on the DiFX wiki
-http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/start/ .
+https://github.com/difx/difx/wiki/start/ .
 
 Environment variable ``DIFX_MACHINES`` should point to a file containing
 a list of machines that are to be considered elements of the software
@@ -9682,7 +9682,7 @@ formal cross correlations are performed. To be useful, one must create
 and specify a ``.binconfig`` file and select only the pulsar(s) from the
 experiment.
 
-See http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx for
+See https://github.com/difx/difx/wiki/vex2difx for
 more complete information and examples.
 
 .. _sec:xcb:
@@ -11530,4 +11530,4 @@ http://bugs.aoc.nrao.edu *NGAS*,
 http://www.eso.org/projects/dfs/dfs-shared/web/ngas/ *VEX parameter
 definitions*, http://www.haystack.mit.edu/tech/vlbi/mark5/vex.html *DiFX
 Developer Pages*,
-http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/start
+https://github.com/difx/difx/wiki/start
