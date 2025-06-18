@@ -311,6 +311,7 @@ int main (int argc, char * const argv[]) {
 	printf("  -time <HH:MM:SS>          Year of start time (now)\n");
 	printf("  -mjd <MJD>                MJD of start time\n");
 	printf("  -nobandpass               Don't apply bandpass filter\n");
+	printf("  -R/-norescale             DOn't rescale the data\n");
 	return(1);
 	break;
       
