@@ -6,7 +6,7 @@ The official repo for DiFX.
 
 DiFX requires MPI, PGPLOT and IPP.
 
-Details see https://github.com/difx/difx/wiki/Installation
+Details see https://github.com/difx/difx/wiki/difx-installation
 
 ### For DiFX Users
 
