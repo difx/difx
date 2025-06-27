@@ -61,4 +61,4 @@ References
 .. [ngas] *NGAS*, \url{http://www.eso.org/projects/dfs/dfs-shared/web/ngas/}
 .. [doi] *Difx Operator Interface Users Guide*, Guerra, M., {\bf Coming soon!}
 .. [vex] *VEX parameter definitions*, \url{http://www.haystack.mit.edu/tech/vlbi/mark5/vex.html}
-.. [wiki] *DiFX Developer Pages*, \url{http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/start}
+.. [wiki] *DiFX Developer Pages*, \url{https://github.com/difx/difx/wiki/start}
