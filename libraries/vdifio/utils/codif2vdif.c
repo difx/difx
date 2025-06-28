@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <fcntl.h>
@@ -42,7 +43,7 @@
 #include <vdifio.h>
 #include <codifio.h>
 
-#define CHUNKSIZE 4096 
+#define CHUNKSIZE 4 // MByte
 #define MAXSTR        255
 #define WHITESPACE " \t"
 #define COMMENT_CHAR '#'
@@ -57,11 +58,16 @@
 #define PRINTINT(x)
 #define PRINTINT2(x) 
 
-void convertdata(int infile, int outfile, char *buf, int offset, int dovalid);
+//void convertdata(int infile, int outfile, char *buf, int offset, int dovalid);
 int calculateVDIFframesize(int max, long long bandwidth, int nchan, int bits, int iscomplex);
 int cal2mjd(int day, int month, int year);
 int outfilename(char *infilename, char *outname, char* postfix, char *outdir);
-void merge2vdif(Ipp8s *vdifframe, Ipp32fc **outchan, int offset, int nsample, Ipp32f *stddev);
+//void merge2vdif(Ipp8s *vdifframe, Ipp32fc **outchan, int offset, int nsample, Ipp32f *stddev);
+int allocMemory(Ipp8u **readFrames, Ipp32fc **dataBuf, Ipp8u **frameValidity, Ipp8u **fftValidity,
+		Ipp32fc **tmpFFT, int fftSize, int ifftSize, int frameSize, int nFrame, int bits,
+		int nchan);
+int readCODIFData(int infile, Ipp8u *codifFrames, Ipp8u *frameValidity, Ipp32fc *dataBuf,
+		  int frameSize, int nFrame, uint64_t firstframe);
 
 int main (int argc, char * const argv[]) {
   int nfile, infile, outfile, opt;
@@ -70,12 +76,15 @@ int main (int argc, char * const argv[]) {
   char outname[MAXSTR+1] = "";
   char *outdir = NULL;
   int outbits = 8;
-  //int dovalid = 1;
+  int dovalid = 1;
   IppStatus status;
   double bandwidth;
   char postfix[MAXSTR+1] = "vdif";
+  int vdifFrameSize, codifFrameSize, nFrame;
   vdif_header vheader;
   codif_header cheader;
+  Ipp8u *readFrames, *frameValidity, *fftValidity;
+  Ipp32fc *dataBuf, *tmpFFT;
   IppsDFTSpec_C_32fc *specFwd, *specInv;
   
   struct option options[] = {
@@ -148,13 +157,13 @@ int main (int argc, char * const argv[]) {
 
 
   // Initialise VDIF header
-  vdifframesize =  calculateVDIFframesize(9000, targetBandwidth*1e6, 1, outputBits, 1);  // This is excluding headersize
-  vdifframeSamples = vdifframesize*8 / 1 / (outputBits*2); // 1 pol, complex, 8bit
+  vdifFrameSize =  calculateVDIFframesize(9000, targetBandwidth*1e6, 1, outbits, 1);  // This is excluding headersize
+  int vdifframeSamples = vdifFrameSize*8 / 1 / (outbits*2); // 1 pol, complex, 8bit
   //bytesperOutputSample = 2 * 2; // 2pol, 8bit, complex
-  PRINTINT(vdifframesize);
+  PRINTINT(vdifFrameSize);
   PRINTINT(vdifframeSamples);
 
-  status = createVDIFHeader(&vheader, vdifframesize, threadid, outputbits, 1, 1, "At");
+  status = createVDIFHeader(&vheader, vdifFrameSize, threadid, outbits, 1, 1, "At");
   if (status!=VDIF_NOERROR) {
     fprintf(stderr, "Error creating VDIF header(%d). Aborting\n", status);
     exit(1);
@@ -165,8 +174,8 @@ int main (int argc, char * const argv[]) {
   vheader.extended3 = 0xBBBBBBBB;  
   vheader.extended4 = 0xCCCCCCCC;
 
-  vdifframeusec = vdifframesize*8 /(outputBits*2)/targetBandwidth; 
-  vdifframepersec = 1e6/vdifframeusec;
+  int vdifframeusec = vdifFrameSize*8 /(outbits*2)/targetBandwidth; 
+  int vdifframepersec = 1e6/vdifframeusec;
   PRINTINT(vdifframepersec);
 
   bool first = true;
@@ -218,18 +227,20 @@ int main (int argc, char * const argv[]) {
       close(outfile);
       exit(1);
     }
-    if (cheader->nbits!=8) {
-      fprintf(stderr, "Unsupported # bits (%d)\n", cheader->nbits);
+    int nbits = getCODIFBitsPerSample(&cheader);
+    if (nbits!=8 || nbits!=16) {
+      fprintf(stderr, "Unsupported # bits (%d)\n", cheader.nbits);
       close(infile);
       close(outfile);
       exit(1);
     }
-    if (!cheader->iscomplex) {
+    if (!cheader.iscomplex) {
       fprintf(stderr, "Not complex data\n");
       close(infile);
       close(outfile);
       exit(1);
     }
+    codifFrameSize = getCODIFFrameBytes(&cheader); 
 
     // Rewind file
     int sought = lseek(infile, 0, SEEK_SET);
@@ -246,7 +257,7 @@ int main (int argc, char * const argv[]) {
       bandwidth = (double)getCODIFTotalSamples(&cheader)/(double)getCODIFPeriod(&cheader);
       printf("DEBUG: Bandwidth=%f\n", bandwidth);
 
-      if (targetbandwidth*1.0e6*outchan>bandwidth) {
+      if (targetBandwidth*1.0e6*outchan>bandwidth) {
 	fprintf(stderr, "Requested output bandwidth > input bandwidth. Quiting\n");
 	close(infile);
 	close(outfile);
@@ -256,7 +267,10 @@ int main (int argc, char * const argv[]) {
       ifftSize = lround(targetBandwidth*1e6/bandwidth*fftSize);
       printf("DEBUG: Inverse FFT size = %d\n", ifftSize); // Should check sensible number is produced.
 
-      status = allocMemory();
+      nFrame = CHUNKSIZE*1024*1024/(codifFrameSize+CODIF_HEADER_BYTES);
+      
+      status = allocMemory(&readFrames, &dataBuf, &frameValidity, &fftValidity, &tmpFFT,
+			   fftSize, ifftSize, codifFrameSize, nFrame, nbits, 1);
       if (status) {
 	close(infile);
 	close(outfile);
@@ -268,13 +282,15 @@ int main (int argc, char * const argv[]) {
       Ipp8u *workbufFwd, *workbufInv, *dftInitBuf;
       Ipp8s *vdifframe;
       Ipp16s *dataptr=NULL;
-  
+
+      int sizeDFTSpec, sizeDFTInitBuf, wbufsize;
+      
       // Initialise FFT
       ippsDFTGetSize_C_32fc(fftSize, IPP_FFT_DIV_INV_BY_N, ippAlgHintFast,  &sizeDFTSpec, &sizeDFTInitBuf, &wbufsize);
       specFwd = (IppsDFTSpec_C_32fc*)ippsMalloc_8u(sizeDFTSpec);
       dftInitBuf = ippsMalloc_8u(sizeDFTInitBuf);
       workbufFwd = ippsMalloc_8u(wbufsize);
-      ippsDFTInit_C_32fc(CHANFFT, IPP_FFT_DIV_INV_BY_N, ippAlgHintFast, specFwd, dftInitBuf);
+      ippsDFTInit_C_32fc(fftSize, IPP_FFT_DIV_INV_BY_N, ippAlgHintFast, specFwd, dftInitBuf);
       if (dftInitBuf) ippFree(dftInitBuf);
 
       ippsDFTGetSize_C_32fc(ifftSize, IPP_FFT_DIV_INV_BY_N, ippAlgHintFast,  &sizeDFTSpec, &sizeDFTInitBuf, &wbufsize);
@@ -291,7 +307,8 @@ int main (int argc, char * const argv[]) {
     
 
     while (1) {
-      readCODIFData(infile, codifData, codifValidity, FFTSize);  // Read and unpack
+      int firstframe = 0; // Need to set
+      int readCODIFData(infile, readFrames, frameValidity, dataBuf, codifFrameSize, nFrame, firstframe);  // Read and unpack
     
       // Use FFT to filter
       int startpoint = (fftSize-ifftSize)/2;
@@ -329,9 +346,10 @@ void flip_band(Ipp32fc  *data, uint64_t n) {
 int allocMemory(Ipp8u **readFrames, Ipp32fc **dataBuf, Ipp8u **frameValidity, Ipp8u **fftValidity, Ipp32fc **tmpFFT,
 		int fftSize, int ifftSize, int frameSize, int nFrame, int bits, int nchan) {
 
-  int totalSamples = (frameSize-CODIF_HEADER_BYTES)*8/(nchan*bits*2)*snFrame;
+  int fullFrameSize = frameSize+CODIF_HEADER_BYTES;
+  int totalSamples = frameSize*8/(nchan*bits*2)*nFrame;
   
-  *readFrames = ippsMalloc_8u(frameSize*nFrame);
+  *readFrames = ippsMalloc_8u(totalFrameSize*nFrame);
   int nValidity  = (totalSamples + fftSize -1) / fftSize; // Maximum number of FFTs which will fit
   *frameValidity = ippsMalloc_8u(nFrame);
   *fftValidity = ippsMalloc_8u(nValidity);
@@ -344,11 +362,10 @@ int allocMemory(Ipp8u **readFrames, Ipp32fc **dataBuf, Ipp8u **frameValidity, Ip
     return(1);
   }
   return(0);
-};
-
+}
 
 // Read CODIF data and convert to floating point
-int readCODIFData(int infile, Ipp8u *codifFrames, Ipp8u *frameValidity, Ipp8u *fftValidity, Ipp32_fc *dataBuf
+int readCODIFData(int infile, Ipp8u *codifFrames, Ipp8u *frameValidity, Ipp32_fc *dataBuf,
 		  int frameSize, int nFrame, uint64_t firstframe) {
   ssize_t nread;
   codif_header *cheader;
@@ -360,7 +377,6 @@ int readCODIFData(int infile, Ipp8u *codifFrames, Ipp8u *frameValidity, Ipp8u *f
   datasize = framesize-CODIF_HEADER_BYTES;
   
   status = ippsZero_8u(frameValidity, nFrame);
-  //status = ippsZero_8u(fftValidity, ??);
   
   nread = read(infile, codifFrames, frameSize*nframe);
   if (nread==0) { // EOF

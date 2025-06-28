@@ -11,7 +11,7 @@ bin_PROGRAMS = \
 	captureUDPVDIF \
 	multi2singlethreadVDIF \
 	padVDIF \
-    invalidateVDIFPackets \
+	invalidateVDIFPackets \
 	cleanVDIF \
 	reorderVDIF \
 	fakemultiVDIF \
@@ -40,7 +40,10 @@ endif
 if USE_IPP 
 if !OLD_IPP
   bin_PROGRAMS += generateVDIF
-  bin_PROGRAMS += vdifLinear2circular	
+  bin_PROGRAMS += vdifLinear2circular
+if USE_CODIFIO
+    bin_PROGRAMS += codif2vdif
+endif
 endif
   bin_PROGRAMS += vdifSwapSideband
 endif
@@ -151,11 +154,15 @@ generateVDIF_SOURCES = \
 vdifSwapSideband_SOURCES = \
 	vdifSwapSideband.c
 
+codif2vdif_SOURCES = \
+        codif2vdif.c
+
 vdifLinear2circular_LDADD = $(IPP_LIBS) $(LDADD)
 
 vdifSwapSideband_LDADD = $(IPP_LIBS) $(LDADD)
 if USE_CODIFIO
   generateVDIF_LDADD = $(IPP_LIBS) $(LDADD) $(CODIFIO_LIBS)
+  codif2vdif_LDADD = $(IPP_LIBS) $(LDADD)
 else
   generateVDIF_LDADD = $(IPP_LIBS) $(LDADD)
 endif
