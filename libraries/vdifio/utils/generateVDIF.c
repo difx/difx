@@ -376,7 +376,7 @@ int main (int argc, char * const argv[]) {
     framesize -=8;
     if (framesize <= 0) {
       printf("Could not select valid framesize. Aborting\n");
-      printf("  nbit=%d, nchan=%d, iscomplex=%d, bandwidth=%d, completesample=%d bits\n", 
+      printf("  nbit=%d, nchan=%d, iscomplex=%d, bandwidth=%.1f, completesample=%d bits\n", 
 	     nbits, nchan, iscomplex, bandwidth, completesample);
       exit(1);
     }

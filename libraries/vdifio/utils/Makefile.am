@@ -162,7 +162,7 @@ vdifLinear2circular_LDADD = $(IPP_LIBS) $(LDADD)
 vdifSwapSideband_LDADD = $(IPP_LIBS) $(LDADD)
 if USE_CODIFIO
   generateVDIF_LDADD = $(IPP_LIBS) $(LDADD) $(CODIFIO_LIBS)
-  codif2vdif_LDADD = $(IPP_LIBS) $(LDADD)
+  codif2vdif_LDADD = $(IPP_LIBS) $(LDADD) $(CODIFIO_LIBS)
 else
   generateVDIF_LDADD = $(IPP_LIBS) $(LDADD)
 endif
