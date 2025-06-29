@@ -296,7 +296,7 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 
 
 int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode,
-	 int doublesideband, int nonorm, int bchan, int echan, int doAutocorr, int doTime, int doAll, int doBin)
+	 int doublesideband, int nonorm, int bchan, int echan, int doAutocorr, int doTime, int doAll, int doBin, double skyFreq)
 {
 	struct mark5_stream *ms;
 	double **spec;
@@ -417,11 +417,15 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	  WRITEUINT32(nchan);          // Total number of ectral points
 	  WRITEUINT32(bchan);          // First point saved
 	  WRITEUINT32(ms->nchan);      // Number of IF (VLBI channels)
-	  WRITEUINT32(bandwidth);      // Bandwidth (Hz)
+	  WRITEUINT32(bandwidth*1e6);  // Bandwidth (Hz)
 	  WRITEUINT32(ms->mjd);        // MJD of first integration
 	  WRITEUINT32(ms->sec + ms->ns/1e9 );   // Seconds within day of first integration
 	  WRITEFLOAT(tint);            // Integration time in seconds
-	  WRITEDOUBLE(bandwidth/2);    // Sky frequency of middle of band
+	  if (skyFreq>0) {
+	    WRITEDOUBLE(skyFreq*1e6);    // Sky frequency of middle of band
+	  } else { 
+	    WRITEDOUBLE(bandwidth/2);    // Sky frequency of middle of band
+	  }
 	}
 	
 	int loop=0;
@@ -673,6 +677,7 @@ int main(int argc, char **argv)
 	int doTime = 0;
 	int doAll = 0;
 	int doBin = 0;
+	double skyfreq = 0.0;
 	struct sigaction new_sigint_action;
 #if USEGETOPT
 	int opt;
@@ -687,6 +692,7 @@ int main(int argc, char **argv)
 		{"time", 0, 0, 't'},    // Treat nint as time in seconds, not number of FFTs
 		{"all", 0, 0, 'A'},     // Produce multiple integrations using all of file
 		{"bin", 0, 0, 'B'},     // Dump spectra in binary format
+		{"lo", 1, 0, 'l'},      // Sky frequency of middle of band
 		{"bchan", 1, 0, 'b'},
 		{"echan", 1, 0, 'e'},
 		{0, 0, 0, 0}
@@ -738,6 +744,10 @@ int main(int argc, char **argv)
 
 		case 'B': // bin  (Write spectra in binary format)
 		        doBin = 1;
+			break;
+
+		case 'l': // bin  (Write spectra in binary format)
+		        skyfreq = atof(optarg);
 			break;
 
 		case 't': // time  (Treat nint as time in seconds)
@@ -848,7 +858,7 @@ int main(int argc, char **argv)
 		echan = nchan;
 	}
 
-	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, nonorm, bchan, echan, doAutocorr, doTime, doAll, doBin);
+	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, nonorm, bchan, echan, doAutocorr, doTime, doAll, doBin, skyfreq);
 
 	return retval;
 }
