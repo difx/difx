@@ -2072,6 +2072,10 @@ calibrated phased arrays (i.e., phased ALMA).
      print("INDEX= "+', '.join(
         ['\'L%i|R%i\''%(i+1,i+1) for i in range(len(doIF))]), file=outf)
      print("/", file=outf)
+     for colnr in range(len(doIF)):
+       di = doIF[colnr] - 1
+       v = (colnr+1, colnr+1, di, FrInfo['FREQ (MHZ)'][di], FrInfo['SIDEBAND'][di], FrInfo['BW (MHZ)'][di]))
+       print("! Column %d = L%i|R%i : DiFX freq %d, %.5f MHz, %sSB, BW=%.2 MHz" % v, file=outf)
      fmt0 = "%i %i:%2.4f  "
      # boost field width to retain significant figures
      fmt1 = "%10.4f  "*len(doIF)
