@@ -1,5 +1,6 @@
 dist_bin_SCRIPTS = \
 	alist2accel.py \
+	alist2clock.py \
 	alist2clockbreaks.py \
 	distFourfit.py \
 	fplot2pdf fplot2png \
