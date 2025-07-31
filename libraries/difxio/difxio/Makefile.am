@@ -6,6 +6,7 @@ h_sources = \
 	difx_tcal.h \
 	difx_write.h \
 	difx_options.h \
+	difxio_macros.h \
 	parsedifx.h \
 	parsevis.h
 c_sources = \

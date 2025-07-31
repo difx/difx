@@ -21,7 +21,9 @@ filesDir="FILES"
 snrDir = "SNR"
 versionPrefix="v"
 
-geoFTPServer = "ivs.bkg.bund.de"
+# geoFTPServer = "ivs.bkg.bund.de"
+geoFTPServer = "ivsopar.obspm.fr"
+geoFTPPath = "pub/vlbi/ivsdata/aux"
     
 def curlDownload (url, remotePath, patterns, localPath):
 
@@ -212,7 +214,7 @@ def expPrepare(code):
         # get geodetic files
         if not os.path.exists(filesDir):
             os.mkdir(filesDir)
-        curlDownload(geoFTPServer, "/pub/vlbi/ivsdata/aux/%s/%s/"% (year, code.lower()), ["*.log", "*.skd", "*.vex", "*.txt"], filesDir)
+        curlDownload(geoFTPServer, "/%s/%s/%s/"% (geoFTPPath, year, code.lower()), ["*.log", "*.skd", "*.vex", "*.txt"], filesDir)
 
     return
 
