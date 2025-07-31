@@ -159,6 +159,7 @@ int main (int argc, char * const argv[]) {
   float tone2 = 0;  // MHz
   float amp = 0.1;
   float amp2 = 0.0;
+  float targetrms = 0.0;
   float duration = 0; // Seconds
   char *timestr = NULL;
 
@@ -177,6 +178,7 @@ int main (int argc, char * const argv[]) {
     {"amp2", 1, 0, 'A'},
     {"tone", 1, 0, 'T'},
     {"tone2", 1, 0, '2'},
+    {"targetrms", 1, 0, 'r'},
     {"ntap", 1, 0, 'x'},
     {"bufsize", 1, 0, 'B'},
     {"nbits", 1, 0, 'b'},
@@ -205,7 +207,7 @@ int main (int argc, char * const argv[]) {
   
   /* Read command line options */
   while (1) {
-    opt = getopt_long_only(argc, argv, "s:w:C:d:D:m:M:y:t:F:l:a:A:T:2:x:B:b:cNnZLhp:", options, NULL);
+    opt = getopt_long_only(argc, argv, "s:w:C:d:D:m:M:y:t:F:l:a:A:T:2:x:B:b:cNnZLhp:r:", options, NULL);
     if (opt==EOF) break;
     
 #define CASEINT(ch,var)                                     \
@@ -273,6 +275,7 @@ int main (int argc, char * const argv[]) {
       CASEFLOAT('2', tone2);
       CASEFLOAT('a', amp);
       CASEFLOAT('A', amp2);
+      CASEFLOAT('r', targetrms);
 
       case 't':
 	timestr = strdup(optarg);
@@ -311,7 +314,8 @@ int main (int argc, char * const argv[]) {
 	printf("  -time <HH:MM:SS>          Year of start time (now)\n");
 	printf("  -mjd <MJD>                MJD of start time\n");
 	printf("  -nobandpass               Don't apply bandpass filter\n");
-	printf("  -R/-norescale             DOn't rescale the data\n");
+	printf("  -norescale                Don't rescale the data\n");
+	printf("  -r/targetrms              Set target RMS for 8/16 bit modes\n");
 	return(1);
 	break;
       
@@ -320,6 +324,8 @@ int main (int argc, char * const argv[]) {
       break;
     }
   }
+
+  printf("Using target RMS %.1f\n", targetrms);
 
   int nchan = channels;
   if (argc==optind) {
@@ -643,6 +649,11 @@ int main (int argc, char * const argv[]) {
 	stdDev[0] = 10;
       else if (nbits==16)
 	stdDev[0] = 40;
+    } else if (targetrms>0.0) {
+      if (nbits==8)
+	stdDev[0] *= 10/targetrms;
+      else if (nbits==16)
+	stdDev[0] *= 40/targetrms;
     }
 
     for (i=0; i<loopframes; i++) {
@@ -896,8 +907,8 @@ inline Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
   x *= scale;
   if (x>127) // Clip
     x = 127;
-  else if (x<-128)
-    x = -128;
+  else if (x<-127)
+    x = -127;
   return lrintf(x);
 }
 
@@ -905,8 +916,8 @@ inline Ipp16s scaleclip16(Ipp32f x, Ipp32f scale) {
   x *= scale;
   if (x>IPP_MAX_16S) // Clip  
     x = IPP_MAX_16S;
-  else if (x<IPP_MIN_16S)
-    x = IPP_MIN_16S;
+  else if (x<(IPP_MIN_16S+1))
+    x = IPP_MIN_16S+1;
   return lrintf(x);
 }
 
