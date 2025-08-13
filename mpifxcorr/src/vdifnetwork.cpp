@@ -346,7 +346,6 @@ void VDIFNetworkDataStream::initialiseFile(int configindex, int fileindex)
 			cerror << startl << "Error: " << nrecordedbands << " recorded channels (bands) were recorded but they are divided unequally across " << nthreads << " threads.  This is not allowed.  Things will probably get very bad soon..." << endl;
 		}
 		setvdifmuxinputchannels(&vm, nBandPerThread);
-		//vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2000000LL*nBandPerThread));
 	}
 	else if(nrecordedbands < nthreads)
 	{
@@ -360,7 +359,6 @@ void VDIFNetworkDataStream::initialiseFile(int configindex, int fileindex)
 			cerror << startl << "Error: " << nthreads << " threads were recorded but they are divided unequally across " << nrecordedbands << " record channels (bands).  This is not allowed.  Things are about to go from bad to worse.  Hold onto your HAT..." << endl;
 		}
 		setvdifmuxfanoutfactor(&vm, nThreadPerBand);
-		//vdiffilesummarysetsamplerate(&fileSummary, static_cast<int64_t>(bw*2000000LL/nThreadPerBand));
 	}
 
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, vm.outputFrameSize, config->getDDecimationFactor(configindex, streamnum), config->getDAlignmentSeconds(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
