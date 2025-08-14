@@ -335,6 +335,32 @@ void VDIFNetworkDataStream::initialiseFile(int configindex, int fileindex)
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
+	if(nrecordedbands > nthreads)
+	{
+		int nBandPerThread = nrecordedbands/nthreads;
+
+		cinfo << startl << "Note: " << nBandPerThread << " recoded channels (bands) reside on each thread.  Support for this is new.  Congratulations for being bold and trying this out!  Warranty void in the 193 UN recognized nations." << endl;
+		
+		if(nBandPerThread * nthreads != nrecordedbands)
+		{
+			cerror << startl << "Error: " << nrecordedbands << " recorded channels (bands) were recorded but they are divided unequally across " << nthreads << " threads.  This is not allowed.  Things will probably get very bad soon..." << endl;
+		}
+		setvdifmuxinputchannels(&vm, nBandPerThread);
+	}
+	else if(nrecordedbands < nthreads)
+	{
+		/* must be a fanout mode (DBBC3 probably) */
+		int nThreadPerBand = nthreads/nrecordedbands;
+
+		cinfo << startl << "Note: " << nThreadPerBand << " threads are used to store each channel (band; e.g., this is a VDIF fanout mode).  Support for this is new.  Congratulations for experimenting with plausible code.  Warranty void on weekdays and select weekends." << endl;
+
+		if(nThreadPerBand * nrecordedbands != nthreads)
+		{
+			cerror << startl << "Error: " << nthreads << " threads were recorded but they are divided unequally across " << nrecordedbands << " record channels (bands).  This is not allowed.  Things are about to go from bad to worse.  Hold onto your HAT..." << endl;
+		}
+		setvdifmuxfanoutfactor(&vm, nThreadPerBand);
+	}
+
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, vm.outputFrameSize, config->getDDecimationFactor(configindex, streamnum), config->getDAlignmentSeconds(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
 	if(fanout != 1)
 	{
