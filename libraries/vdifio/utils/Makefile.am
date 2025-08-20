@@ -1,9 +1,13 @@
 
 AM_CPPFLAGS  = \
-	-I$(top_srcdir)/src -D_FILE_OFFSET_BITS=64
+	-I$(top_srcdir)/src -D_FILE_OFFSET_BITS=64 
+#	-I$(top_srcdir)/src -D_FILE_OFFSET_BITS=64 -fsanitize=address -g -O0 -fno-omit-frame-pointer
 
 LDADD = \
 	$(top_builddir)/src/libvdifio.la
+
+#LDFLAGS = -fsanitize=address
+
 
 bin_PROGRAMS = \
 	stripVDIF \
@@ -162,7 +166,7 @@ vdifLinear2circular_LDADD = $(IPP_LIBS) $(LDADD)
 vdifSwapSideband_LDADD = $(IPP_LIBS) $(LDADD)
 if USE_CODIFIO
   generateVDIF_LDADD = $(IPP_LIBS) $(LDADD) $(CODIFIO_LIBS)
-  codif2vdif_LDADD = $(IPP_LIBS) $(LDADD) $(CODIFIO_LIBS)
+  codif2vdif_LDADD = $(IPP_LIBS) $(LDADD) $(CODIFIO_LIBS)  
 else
   generateVDIF_LDADD = $(IPP_LIBS) $(LDADD)
 endif
