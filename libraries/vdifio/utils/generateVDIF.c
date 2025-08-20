@@ -729,6 +729,8 @@ int main (int argc, char * const argv[]) {
     ippsFree(pSpec);
     ippsFree(pcSpec);
   }
+  free(mean);
+  free(stdDev);  
   return(0);
 }
   
