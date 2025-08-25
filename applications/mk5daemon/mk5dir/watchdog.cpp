@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: watchdog.cpp 5169 2013-02-27 06:49:18Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/watchdog.cpp $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/mk5dir/watchdog.cpp $
 // $LastChangedRevision: 5169 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2013-02-27 14:49:18 +0800 (三, 2013-02-27) $

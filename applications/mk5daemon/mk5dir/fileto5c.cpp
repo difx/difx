@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: fileto5c.cpp 8691 2019-02-12 19:01:10Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/fileto5c.cpp $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/mk5dir/fileto5c.cpp $
 // $LastChangedRevision: 8691 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2019-02-13 03:01:10 +0800 (三, 2019-02-13) $

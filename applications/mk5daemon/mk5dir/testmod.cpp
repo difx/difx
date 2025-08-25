@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: testmod.cpp 7978 2017-09-04 21:57:09Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/testmod.cpp $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/mk5dir/testmod.cpp $
 // $LastChangedRevision: 7978 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2017-09-05 05:57:09 +0800 (二, 2017-09-05) $

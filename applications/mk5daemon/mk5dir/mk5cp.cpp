@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: mk5cp.cpp 8495 2018-09-20 18:11:40Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/mk5cp.cpp $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/mk5dir/mk5cp.cpp $
 // $LastChangedRevision: 8495 $
 // $Author: WalterBrisken $
 // $LastChangedDate: 2018-09-21 02:11:40 +0800 (五, 2018-09-21) $
