@@ -1,4 +1,4 @@
-FROM centos:8
+FROM --platform=linux/amd64 centos:8
 
 # Because Centos8 is EOL, we need to use the repos Vault where old things are archived:
 RUN \
@@ -6,10 +6,11 @@ RUN \
     sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
 
 # Enable epel & power tools repositories
-RUN yum -y install epel-release dnf-plugins-core && \
+RUN yum clean all && \
+    yum -y install epel-release dnf-plugins-core && \
     yum config-manager --set-enabled powertools
 
-RUN yum update -y \
+RUN yum clean all && yum update -y \
     && yum install -y vim \
     && yum install -y gcc \
     && yum install -y gcc-c++ \
@@ -33,14 +34,27 @@ RUN yum update -y \
 # to avoid source error
 #RUN rm /usr/bin/sh && ln -s /usr/bin/bash /usr/bin/sh
 
+RUN tee > /tmp/oneAPI.repo << EOF
+[oneAPI]
+name=Intel® oneAPI repository
+baseurl=https://yum.repos.intel.com/oneapi
+enabled=1
+gpgcheck=1
+repo_gpgcheck=0
+gpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+EOF
+
+RUN mv /tmp/oneAPI.repo /etc/yum.repos.d/oneAPI.repo
+
+RUN rpm --import https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+
 RUN cd ~ \
-  && wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/7e07b203-af56-4b52-b69d-97680826a8df/l_ipp_oneapi_p_2021.12.1.16_offline.sh\
-  && bash l_ipp_oneapi_p_2021.12.1.16_offline.sh -a -s --eula accept --install-dir /opt/ipp/ \
+  && yum install -y --nobest intel-oneapi-ipp-devel \
   && git clone https://github.com/difx/difx \
   && cd difx \
-  && git checkout dev \
+  && git checkout -b release-2.9.0-a origin/release-2.9.0-a \
   && source /root/difx/setup.bash \
-  && export IPPROOT=/opt/ipp \
+  && export IPPROOT=/opt/intel/ \
   && export PATH=$PATH:/usr/lib64/openmpi/bin/ \
   && export MPICXX=/usr/lib64/openmpi/bin/mpicxx \
   && export DIFXROOT=/usr/local/difx \
