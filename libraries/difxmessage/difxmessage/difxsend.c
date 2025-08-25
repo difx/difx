@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difxsend.c 10566 2022-07-29 16:26:50Z HelgeRottmann $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxmessage/difxmessage/difxsend.c $
-// $LastChangedRevision: 10566 $
-// $Author: HelgeRottmann $
-// $LastChangedDate: 2022-07-30 00:26:50 +0800 (六, 2022-07-30) $
-//
-//============================================================================
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -37,7 +27,7 @@
 const int MIN_SEND_GAP=20;
 
 /* Function that replaces illegal XML string characters with the
- * official "entity" replacements.  
+ * official "entity" replacements.
  *
  * Returns:
  *   Increse of string size on success, or -1 on error.
@@ -125,9 +115,9 @@ int difxMessageSend2(const char *message, int size)
 			ts.tv_sec = 0;
 			ts.tv_nsec = 1000*(MIN_SEND_GAP-dt);
 
-			/* The minimum gap prevents two messages from being sent too soon 
+			/* The minimum gap prevents two messages from being sent too soon
 			 * after each other, a condition that apparently can lead to lost
-			 * messages 
+			 * messages
 			 */
 			nanosleep(&ts, 0);
 		}
@@ -189,7 +179,7 @@ int difxMessageSendLoad(const DifxMessageLoad *load)
 	}
 
 	size = snprintf(message, DIFX_MESSAGE_LENGTH,
-		difxMessageXMLFormat, 
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_LOAD],
 		difxMessageSequenceNumber++, body);
 	
@@ -253,7 +243,7 @@ int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 		}
 
 		size = snprintf(message, DIFX_MESSAGE_LENGTH,
-			difxMessageXMLFormat, 
+			difxMessageXMLFormat,
 			DifxMessageTypeStrings[DIFX_MESSAGE_ALERT],
 			difxMessageSequenceNumber++, body);
 		
@@ -329,7 +319,7 @@ int difxMessageSendStop(const char *inputFilename, const char *mpiWrapper, const
 	}
 
 	size = snprintf(message, DIFX_MESSAGE_LENGTH,
-		difxMessageXMLFormat, 
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_STOP],
 		difxMessageSequenceNumber++, body);
 	
@@ -377,8 +367,8 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 				return -1;
 			}
 		}
-		printf("%s[%d] = %s %s\n", 
-			driveStats->moduleVSN, 
+		printf("%s[%d] = %s %s\n",
+			driveStats->moduleVSN,
 			driveStats->moduleSlot,
 			driveStats->serialNumber,
 			bins);
@@ -426,7 +416,7 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 			driveStats->serialNumber,
 			driveStats->modelNumber,
 			driveStats->diskSize,
-			driveStats->moduleVSN, 
+			driveStats->moduleVSN,
 			driveStats->moduleSlot,
 			driveStats->startMJD,
 			driveStats->stopMJD,
@@ -442,7 +432,7 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 		}
 
 		size = snprintf(message, DIFX_MESSAGE_LENGTH,
-			difxMessageXMLFormat, 
+			difxMessageXMLFormat,
 			DifxMessageTypeStrings[DIFX_MESSAGE_DRIVE_STATS],
 			difxMessageSequenceNumber++, body);
 		
@@ -460,7 +450,7 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 }
 
 /**
- * Sends out a message containing the Mark6 slot status information. 
+ * Sends out a message containing the Mark6 slot status information.
  * @return 0 in case of success; -1 otherwise
  */
 int difxMessageSendMark6SlotStatus(const DifxMessageMark6SlotStatus *mark6slotstatus)
@@ -469,7 +459,7 @@ int difxMessageSendMark6SlotStatus(const DifxMessageMark6SlotStatus *mark6slotst
 	int size = 0;
 	char body[DIFX_MESSAGE_LENGTH];
 	char message[DIFX_MESSAGE_LENGTH];
-	char msn[DIFX_MESSAGE_MARK6_MSN_LENGTH+2]; 
+	char msn[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
 
 	// validate msn and covert to upper case
 	if(strlen(mark6slotstatus->msn) != 8)
@@ -513,7 +503,7 @@ int difxMessageSendMark6SlotStatus(const DifxMessageMark6SlotStatus *mark6slotst
 	}
 
 	size = snprintf(message, DIFX_MESSAGE_LENGTH,
-		difxMessageXMLFormat, 
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_MARK6SLOTSTATUS],
 		difxMessageSequenceNumber++, body);
 
@@ -529,7 +519,7 @@ int difxMessageSendMark6SlotStatus(const DifxMessageMark6SlotStatus *mark6slotst
 	return(0);
 }
 /**
- * Sends out a message containing the Mark6 status information. 
+ * Sends out a message containing the Mark6 status information.
  * @return 0 in case of success; -1 otherwise
  */
 int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status)
@@ -540,10 +530,10 @@ int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status)
 	char body[DIFX_MESSAGE_LENGTH];
 	char message[DIFX_MESSAGE_LENGTH];
 
-	char msn1[DIFX_MESSAGE_MARK6_MSN_LENGTH+2]; 
-	char msn2[DIFX_MESSAGE_MARK6_MSN_LENGTH+2]; 
-	char msn3[DIFX_MESSAGE_MARK6_MSN_LENGTH+2]; 
-	char msn4[DIFX_MESSAGE_MARK6_MSN_LENGTH+2]; 
+	char msn1[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
+	char msn2[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
+	char msn3[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
+	char msn4[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
 	
 	// validate msn1 and covert to upper case
 	if(strlen(mark6status->msn1) != 8)
@@ -660,7 +650,7 @@ int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status)
 	}
 
 	size = snprintf(message, DIFX_MESSAGE_LENGTH,
-		difxMessageXMLFormat, 
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_MARK6STATUS],
 		difxMessageSequenceNumber++, body);
 
@@ -765,7 +755,7 @@ int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 	}
 
 	size = snprintf(message, DIFX_MESSAGE_LENGTH,
-		difxMessageXMLFormat, 
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_MARK5STATUS],
 		difxMessageSequenceNumber++, body);
 
@@ -784,10 +774,10 @@ int difxMessageSendMark6Activity(const DifxMessageMark6Activity *mark6activity)
 	char message[DIFX_MESSAGE_LENGTH];
 	char body[DIFX_MESSAGE_LENGTH];
 	char scanName[DIFX_MESSAGE_MAX_SCANNAME_LEN];
-	char activeVsn[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
+	char activeVsn[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
 	int size;
 
-        memset(activeVsn, 0 , DIFX_MESSAGE_MARK6_MSN_LENGTH+2);
+        memset(activeVsn, 0, DIFX_MESSAGE_MARK6_MSN_STR_LENGTH);
 
 	if(strlen(mark6activity->activeVsn) != DIFX_MESSAGE_MARK6_MSN_LENGTH)
 	{
@@ -844,7 +834,7 @@ int difxMessageSendMark6Activity(const DifxMessageMark6Activity *mark6activity)
 	}
 
 	size = snprintf(message, DIFX_MESSAGE_LENGTH,
-		difxMessageXMLFormat, 
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_MARK6ACTIVITY],
 		difxMessageSequenceNumber++, body);
 
@@ -975,7 +965,7 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, do
 		if(weight[i] >= 0)
 		{
 			n += snprintf(weightstr+n, DIFX_MESSAGE_LENGTH-n,
-				"<weight ant=\"%d\" wt=\"%5.3f\"/>", 
+				"<weight ant=\"%d\" wt=\"%5.3f\"/>",
 				i, weight[i]);
 			if(n >= DIFX_MESSAGE_LENGTH)
 			{
@@ -1104,7 +1094,7 @@ int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage,
 		if(weight[i] >= 0)
 		{
 			n += snprintf(weightstr+n, DIFX_MESSAGE_LENGTH-n,
-				"<weight ant=\"%d\" wt=\"%5.3f\"/>", 
+				"<weight ant=\"%d\" wt=\"%5.3f\"/>",
 				i, weight[i]);
 			if(n >= DIFX_MESSAGE_LENGTH)
 			{
@@ -1247,10 +1237,10 @@ int difxMessageSendDifxCommand(const char *command)
 	return difxMessageSend2(message, size);
 }
 
-/* mpiDestination: 
-	>= 0 implies mpiId, 
-	  -1 implies ALL, 
-	  -2 implies all Datastrems, 
+/* mpiDestination:
+	>= 0 implies mpiId,
+	  -1 implies ALL,
+	  -2 implies all Datastrems,
 	  -3 implies all Cores
 */
 int difxMessageSendDifxParameter(const char *name, const char *value, int mpiDestination)
@@ -1322,7 +1312,7 @@ int difxMessageSendDifxParameterTo(const char *name, const char *value, const ch
 		difxMessageToXMLFormat,
 		to,
 		DifxMessageTypeStrings[DIFX_MESSAGE_PARAMETER],
-		difxMessageSequenceNumber++, 
+		difxMessageSequenceNumber++,
 		body);
 
 	if(size >= DIFX_MESSAGE_LENGTH)

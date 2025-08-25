@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2014 by Walter Brisken                             *
+ *   Copyright (C) 2007-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -22,11 +22,19 @@
 #include <expat.h>
 #include "../difxmessage.h"
 
+/* The following macro safely replaces "strncpy" with "snprintf" and tests for string truncation, printing a warning if it occurs
+ * Parameters:
+ *   d = destination string
+ *   s = source string
+ *   l = full length of destination string (e.g., for "char d[12]", l is 12
+ */
+#define strncpy_warn(d,s,l) {int vv;vv=snprintf((d),(l),"%s",(s));if(vv >= (l)){fprintf(stderr,"Warning: String truncation (%d >= %d) at %s line %d\n", vv, (l), __FILE__, __LINE__);}}
+
 /* allow space or comma separated list of nodes */
 int addNodes(char nodes[][DIFX_MESSAGE_HOSTNAME_LENGTH], int maxNodes, int *n, const char *nodeList)
 {
 	int i;
-	int s=-1;
+	int s = -1;
 	int nNew = 0;
 
 	for(i = 0;; ++i)
@@ -101,7 +109,7 @@ static void XMLCALL startElement(void *userData, const char *name,
 			{
 				if(strcmp(atts[i], "node") == 0)
 				{
-					strncpy(S->headNode, atts[i+1], DIFX_MESSAGE_HOSTNAME_LENGTH-1);
+					strncpy_warn(S->headNode, atts[i+1], DIFX_MESSAGE_HOSTNAME_LENGTH);
 					S->headNode[DIFX_MESSAGE_HOSTNAME_LENGTH-1] = 0;
 				}
 			}
@@ -150,7 +158,7 @@ static void XMLCALL startElement(void *userData, const char *name,
 			{
 				if(strcmp(atts[i], "node") == 0)
 				{
-					strncpy(S->headNode, atts[i+1], DIFX_MESSAGE_HOSTNAME_LENGTH-1);
+					strncpy_warn(S->headNode, atts[i+1], DIFX_MESSAGE_HOSTNAME_LENGTH);
 					S->headNode[DIFX_MESSAGE_HOSTNAME_LENGTH-1] = 0;
 				}
 			}
@@ -255,8 +263,9 @@ static void XMLCALL endElement(void *userData, const char *name)
 	elem = G->_xml_element[G->_xml_level];
 	s = G->_xml_string;
 
-	if (strlen(s)>DIFX_MESSAGE_LENGTH) {
-	  fprintf(stderr, "Error: Message too long: \"%s\"\n", s);
+	if(strlen(s) > DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "Error: Message too long: \"%s\"\n", s);
 	}
 
 	if(G->_xml_string[0] != 0)
@@ -267,13 +276,11 @@ static void XMLCALL endElement(void *userData, const char *name)
 			{
 				if(strcmp(elem, "from") == 0)
 				{
-					strncpy(G->from, s, 31);
-					G->from[31] = 0;
+					strncpy_warn(G->from, s, DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH);
 				}
 				else if(strcmp(elem, "to") == 0)
 				{
-					strncpy(G->to[G->nTo], s, 31);
-					G->to[G->nTo][31] = 0;
+					strncpy_warn(G->to[G->nTo], s, DIFX_MESSAGE_PARAM_LENGTH);
 					G->nTo++;
 				}
 				else if(strcmp(elem, "mpiProcessId") == 0)
@@ -282,8 +289,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 				}
 				else if(strcmp(elem, "identifier") == 0)
 				{
-					strncpy(G->identifier, s, 31);
-					G->identifier[31] = 0;
+					strncpy_warn(G->identifier, s, DIFX_MESSAGE_IDENTIFIER_LENGTH);
 				}
 				else if(strcmp(elem, "type") == 0)
 				{
@@ -356,8 +362,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 				case DIFX_MESSAGE_ALERT:
 					if(strcmp(elem, "alertMessage") == 0)
 					{
-						strncpy(G->body.alert.message, s, DIFX_MESSAGE_LENGTH-1);
-						G->body.alert.message[DIFX_MESSAGE_LENGTH-1] = 0;
+						strncpy_warn(G->body.alert.message, s, DIFX_MESSAGE_LENGTH);
 					}
 					else if(strcmp(elem, "severity") == 0)
 					{
@@ -365,20 +370,17 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "input") == 0)
 					{
-						strncpy(G->body.alert.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-						G->body.alert.inputFilename[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+						strncpy_warn(G->body.alert.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					break;
 				case DIFX_MESSAGE_MARK5STATUS:
 					if(strcmp(elem, "bankAVSN") == 0)
 					{
-						strncpy(G->body.mk5status.vsnA, s, DIFX_MESSAGE_MARK5_VSN_LENGTH);
-						G->body.mk5status.vsnA[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
+						strncpy_warn(G->body.mk5status.vsnA, s, DIFX_MESSAGE_MARK5_VSN_STR_LENGTH);
 					}
 					else if(strcmp(elem, "bankBVSN") == 0)
 					{
-						strncpy(G->body.mk5status.vsnB, s, DIFX_MESSAGE_MARK5_VSN_LENGTH);
-						G->body.mk5status.vsnB[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
+						strncpy_warn(G->body.mk5status.vsnB, s, DIFX_MESSAGE_MARK5_VSN_STR_LENGTH);
 					}
 					else if(strcmp(elem, "statusWord") == 0)
 					{
@@ -407,8 +409,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "scanName") == 0)
 					{
-						strncpy(G->body.mk5status.scanName, s, 63);
-						G->body.mk5status.scanName[63] = 0;
+						strncpy_warn(G->body.mk5status.scanName, s, DIFX_MESSAGE_MAX_SCANNAME_LEN);
 					}
 					else if(strcmp(elem, "position") == 0)
 					{
@@ -437,13 +438,11 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "serialNumber") == 0)
 					{
-						strncpy(G->body.driveStats.serialNumber, s, DIFX_MESSAGE_DISC_SERIAL_LENGTH);
-						G->body.driveStats.serialNumber[DIFX_MESSAGE_DISC_SERIAL_LENGTH] = 0;
+						strncpy_warn(G->body.driveStats.serialNumber, s, DIFX_MESSAGE_DISC_SERIAL_STR_LENGTH);
 					}
 					else if(strcmp(elem, "modelNumber") == 0)
 					{
-						strncpy(G->body.driveStats.modelNumber, s, DIFX_MESSAGE_DISC_MODEL_LENGTH);
-						G->body.driveStats.modelNumber[DIFX_MESSAGE_DISC_MODEL_LENGTH] = 0;
+						strncpy_warn(G->body.driveStats.modelNumber, s, DIFX_MESSAGE_DISC_MODEL_STR_LENGTH);
 					}
 					else if(strcmp(elem, "size") == 0)
 					{
@@ -451,8 +450,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "moduleVSN") == 0)
 					{
-						strncpy(G->body.driveStats.moduleVSN, s, DIFX_MESSAGE_MARK5_VSN_LENGTH);
-						G->body.driveStats.moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
+						strncpy_warn(G->body.driveStats.moduleVSN, s, DIFX_MESSAGE_MARK5_VSN_STR_LENGTH);
 					}
 					else if(strcmp(elem, "moduleSlot") == 0)
 					{
@@ -484,53 +482,43 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						if(strcmp(elem, "ApiVer") == 0)
 						{
-							strncpy(G->body.mk5version.ApiVersion, s, 7);
-							G->body.mk5version.ApiVersion[7] = 0;
+							strncpy_warn(G->body.mk5version.ApiVersion, s, 8);
 						}
 						else if(strcmp(elem, "ApiDate") == 0)
 						{
-							strncpy(G->body.mk5version.ApiDateCode, s, 11);
-							G->body.mk5version.ApiDateCode[11] = 0;
+							strncpy_warn(G->body.mk5version.ApiDateCode, s, 12);
 						}
 						else if(strcmp(elem, "FirmVer") == 0)
 						{
-							strncpy(G->body.mk5version.FirmwareVersion, s, 7);
-							G->body.mk5version.FirmwareVersion[7] = 0;
+							strncpy_warn(G->body.mk5version.FirmwareVersion, s, 8);
 						}
 						else if(strcmp(elem, "FirmDate") == 0)
 						{
-							strncpy(G->body.mk5version.FirmDateCode, s, 11);
-							G->body.mk5version.FirmDateCode[11] = 0;
+							strncpy_warn(G->body.mk5version.FirmDateCode, s, 12);
 						}
 						else if(strcmp(elem, "MonVer") == 0)
 						{
-							strncpy(G->body.mk5version.MonitorVersion, s, 7);
-							G->body.mk5version.MonitorVersion[7] = 0;
+							strncpy_warn(G->body.mk5version.MonitorVersion, s, 8);
 						}
 						else if(strcmp(elem, "XbarVer") == 0)
 						{
-							strncpy(G->body.mk5version.XbarVersion, s, 7);
-							G->body.mk5version.XbarVersion[7] = 0;
+							strncpy_warn(G->body.mk5version.XbarVersion, s, 8);
 						}
 						else if(strcmp(elem, "AtaVer") == 0)
 						{
-							strncpy(G->body.mk5version.AtaVersion, s, 7);
-							G->body.mk5version.AtaVersion[7] = 0;
+							strncpy_warn(G->body.mk5version.AtaVersion, s, 8);
 						}
 						else if(strcmp(elem, "UAtaVer") == 0)
 						{
-							strncpy(G->body.mk5version.UAtaVersion, s, 7);
-							G->body.mk5version.UAtaVersion[7] = 0;
+							strncpy_warn(G->body.mk5version.UAtaVersion, s, 8);
 						}
 						else if(strcmp(elem, "DriverVer") == 0)
 						{
-							strncpy(G->body.mk5version.DriverVersion, s, 7);
-							G->body.mk5version.DriverVersion[7] = 0;
+							strncpy_warn(G->body.mk5version.DriverVersion, s, 8);
 						}
 						else if(strcmp(elem, "BoardType") == 0)
 						{
-							strncpy(G->body.mk5version.BoardType, s, 12);
-							G->body.mk5version.BoardType[11] = 0;
+							strncpy_warn(G->body.mk5version.BoardType, s, 12);
 						}
 						else if(strcmp(elem, "SerialNum") == 0)
 						{
@@ -541,28 +529,23 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						if(strcmp(elem, "PCBType") == 0)
 						{
-							strncpy(G->body.mk5version.DB_PCBType, s, 12);
-							G->body.mk5version.DB_PCBType[11] = 0;
+							strncpy_warn(G->body.mk5version.DB_PCBType, s, 12);
 						}
 						else if(strcmp(elem, "PCBSubType") == 0)
 						{
-							strncpy(G->body.mk5version.DB_PCBSubType, s, 12);
-							G->body.mk5version.DB_PCBSubType[11] = 0;
+							strncpy_warn(G->body.mk5version.DB_PCBSubType, s, 12);
 						}
 						else if(strcmp(elem, "PCBVer") == 0)
 						{
-							strncpy(G->body.mk5version.DB_PCBVersion, s, 8);
-							G->body.mk5version.DB_PCBVersion[7] = 0;
+							strncpy_warn(G->body.mk5version.DB_PCBVersion, s, 8);
 						}
 						else if(strcmp(elem, "FPGAConfig") == 0)
 						{
-							strncpy(G->body.mk5version.DB_FPGAConfig, s, 12);
-							G->body.mk5version.DB_FPGAConfig[11] = 0;
+							strncpy_warn(G->body.mk5version.DB_FPGAConfig, s, 12);
 						}
 						else if(strcmp(elem, "FPGAConfigVer") == 0)
 						{
-							strncpy(G->body.mk5version.DB_FPGAConfigVersion, s, 8);
-							G->body.mk5version.DB_FPGAConfigVersion[7] = 0;
+							strncpy_warn(G->body.mk5version.DB_FPGAConfigVersion, s, 8);
 						}
 						else if(strcmp(elem, "SerialNum") == 0)
 						{
@@ -577,8 +560,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 				case DIFX_MESSAGE_STATUS:
 					if(strcmp(elem, "message") == 0)
 					{
-						strncpy(G->body.status.message, s, DIFX_MESSAGE_LENGTH-1);
-						G->body.status.message[DIFX_MESSAGE_LENGTH-1] = 0;
+						strncpy_warn(G->body.status.message, s, DIFX_MESSAGE_LENGTH);
 					}
 					else if(strcmp(elem, "state") == 0)
 					{
@@ -606,21 +588,19 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "input") == 0)
 					{
-						strncpy(G->body.status.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-						G->body.status.inputFilename[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+						strncpy_warn(G->body.status.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					break;
 				case DIFX_MESSAGE_INFO:
 					if(strcmp(elem, "message") == 0)
 					{
-						strncpy(G->body.info.message, s, DIFX_MESSAGE_LENGTH-1);
-						G->body.info.message[DIFX_MESSAGE_LENGTH-1] = 0;
+						strncpy_warn(G->body.info.message, s, DIFX_MESSAGE_LENGTH);
 					}
 					break;
 				case DIFX_MESSAGE_COMMAND:
 					if(strcmp(elem, "command") == 0)
 					{
-						strncpy(G->body.command.command, s, DIFX_MESSAGE_LENGTH-1);
+						strncpy_warn(G->body.command.command, s, DIFX_MESSAGE_LENGTH);
 					}
 					break;
 				case DIFX_MESSAGE_PARAMETER:
@@ -647,40 +627,37 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "name") == 0)
 					{
-						strncpy(G->body.param.paramName, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						strncpy_warn(G->body.param.paramName, s, DIFX_MESSAGE_PARAM_LENGTH);
 					}
 					else if(strcmp(elem, "value") == 0)
 					{
-						strncpy(G->body.param.paramValue, s, DIFX_MESSAGE_LENGTH-1);
+						strncpy_warn(G->body.param.paramValue, s, DIFX_MESSAGE_LENGTH);
 					}
 					break;
 				case DIFX_MESSAGE_START:
 					if(strcmp(elem, "input") == 0)
 					{
-						strncpy(G->body.start.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						strncpy_warn(G->body.start.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "env") == 0)
 					{
 						if(G->body.start.nEnv < DIFX_MESSAGE_MAX_ENV)
 						{
-							strncpy(G->body.start.envVar[G->body.start.nEnv], s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+							strncpy_warn(G->body.start.envVar[G->body.start.nEnv], s, DIFX_MESSAGE_FILENAME_LENGTH);
 							G->body.start.nEnv++;
 						}
 					}
 					else if(strcmp(elem, "mpiWrapper") == 0)
 					{
-						strncpy(G->body.start.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-						G->body.start.mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+						strncpy_warn(G->body.start.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "mpiOptions") == 0)
 					{
-						strncpy(G->body.start.mpiOptions, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-						G->body.start.mpiOptions[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+						strncpy_warn(G->body.start.mpiOptions, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "difxProgram") == 0)
 					{
-						strncpy(G->body.start.difxProgram, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-						G->body.start.difxProgram[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+						strncpy_warn(G->body.start.difxProgram, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "force") == 0)
 					{
@@ -695,8 +672,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "difxVersion") == 0)
 					{
-						strncpy(G->body.start.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH-1);
-						G->body.start.difxVersion[DIFX_MESSAGE_VERSION_LENGTH-1] = 0;
+						strncpy_warn(G->body.start.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH);
 					}
 					else if(strcmp(elem, "restartSeconds") == 0)
 					{
@@ -716,76 +692,74 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "address") == 0 )
 					{
-						strncpy(G->body.start.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						strncpy_warn(G->body.start.address, s, DIFX_MESSAGE_PARAM_LENGTH);
 					}
 					else if(strcmp(elem, "port") == 0 )
 					{
-						G->body.start.port = atoi( s );
+						G->body.start.port = atoi(s);
 					}
 					break;
 				case DIFX_MESSAGE_MACHINESDEFINITION:
 					if(strcmp(elem, "input") == 0)
 					{
-						strncpy(G->body.machinesDefinition.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						strncpy_warn(G->body.machinesDefinition.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "mpiWrapper") == 0)
 					{
-						strncpy(G->body.machinesDefinition.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-						G->body.machinesDefinition.mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+						strncpy_warn(G->body.machinesDefinition.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "mpiOptions") == 0)
 					{
-						strncpy(G->body.machinesDefinition.mpiOptions, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-						G->body.machinesDefinition.mpiOptions[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+						strncpy_warn(G->body.machinesDefinition.mpiOptions, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "difxVersion") == 0)
 					{
-						strncpy(G->body.machinesDefinition.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH-1);
-						G->body.machinesDefinition.difxVersion[DIFX_MESSAGE_VERSION_LENGTH-1] = 0;
+						strncpy_warn(G->body.machinesDefinition.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH);
 					}
 					else if(strcmp(elem, "testProcessors") == 0 )
 					{
-					    if ( !strncmp( s, "true", 4 ) )
-						    G->body.machinesDefinition.testProcessors = 1;
+						if(strcmp(s, "true") == 0)
+						{
+							G->body.machinesDefinition.testProcessors = 1;
+						}
 						else
-						    G->body.machinesDefinition.testProcessors = 0;						
+						{
+							G->body.machinesDefinition.testProcessors = 0;						
+						}
 					}
 					else if(strcmp(elem, "machinesFile") == 0)
 					{
-						strncpy(G->body.machinesDefinition.machinesFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						strncpy_warn(G->body.machinesDefinition.machinesFilename, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "threadsFile") == 0)
 					{
-						strncpy(G->body.machinesDefinition.threadsFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						strncpy_warn(G->body.machinesDefinition.threadsFilename, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "address") == 0 )
 					{
-						strncpy(G->body.machinesDefinition.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						strncpy_warn(G->body.machinesDefinition.address, s, DIFX_MESSAGE_PARAM_LENGTH);
 					}
 					else if(strcmp(elem, "port") == 0 )
 					{
-						G->body.machinesDefinition.port = atoi( s );
+						G->body.machinesDefinition.port = atoi(s);
 					}
 					break;
 				case DIFX_MESSAGE_STOP:
 					if(strcmp(elem, "input") == 0)
 					{
-						strncpy( G->body.stop.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						strncpy_warn( G->body.stop.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "difxVersion") == 0)
 					{
-						strncpy(G->body.stop.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH-1);
-						G->body.stop.difxVersion[DIFX_MESSAGE_VERSION_LENGTH-1] = 0;
+						strncpy_warn(G->body.stop.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH);
 					}
 					else if(strcmp(elem, "difxProgram") == 0)
 					{
-						strncpy(G->body.stop.difxProgram, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-						G->body.stop.difxProgram[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+						strncpy_warn(G->body.stop.difxProgram, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "mpiWrapper") == 0)
 					{
-						strncpy(G->body.stop.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-						G->body.stop.mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+						strncpy_warn(G->body.stop.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					break;
 				case DIFX_MESSAGE_DIAGNOSTIC:
@@ -795,7 +769,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 
 						for(t = 0; t < NUM_DIFX_DIAGNOSTIC_TYPES; t++)
 						{
-							if(strcmp(DifxDiagnosticStrings[t],s) == 0)
+							if(strcmp(DifxDiagnosticStrings[t], s) == 0)
 							{
 								G->body.diagnostic.diagnosticType = t;
 							}
@@ -835,189 +809,180 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					break;
 				case DIFX_MESSAGE_FILETRANSFER:
-					if(strcmp(elem, "origin") == 0 )
+					if(strcmp(elem, "origin") == 0)
 					{
-						strncpy(G->body.fileTransfer.origin, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-					}
-					else if(strcmp(elem, "destination") == 0 )
-					{
-						strncpy(G->body.fileTransfer.destination, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-					}
-					else if(strcmp(elem, "dataNode") == 0 )
-					{
-						strncpy(G->body.fileTransfer.dataNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH-1);
-					}
-					else if(strcmp(elem, "direction") == 0 )
-					{
-						strncpy(G->body.fileTransfer.direction, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-					}
-					else if(strcmp(elem, "address") == 0 )
-					{
-						strncpy(G->body.fileTransfer.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-					}
-					else if(strcmp(elem, "port") == 0 )
-					{
-						G->body.fileTransfer.port = atoi( s );
-					}
-					break;
-				case DIFX_MESSAGE_FILEOPERATION:
-					if(strcmp(elem, "path") == 0 )
-					{
-						strncpy(G->body.fileOperation.path, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-					}
-					else if(strcmp(elem, "operation") == 0 )
-					{
-						strncpy(G->body.fileOperation.operation, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-					}
-					else if(strcmp(elem, "arg") == 0 )
-					{
-						strncpy(G->body.fileOperation.arg, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-					}
-					else if(strcmp(elem, "dataNode") == 0 )
-					{
-						strncpy(G->body.fileOperation.dataNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH-1);
-					}
-					else if(strcmp(elem, "address") == 0 )
-					{
-						strncpy(G->body.fileOperation.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-					}
-					else if(strcmp(elem, "port") == 0 )
-					{
-						G->body.fileOperation.port = atoi( s );
-					}
-					break;
-				case DIFX_MESSAGE_GETDIRECTORY:
-					if(strcmp(elem, "mark5") == 0 )
-					{
-						strncpy(G->body.getDirectory.mark5, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-					}
-					else if(strcmp(elem, "difxVersion") == 0)
-					{
-						strncpy(G->body.getDirectory.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH-1);
-						G->body.getDirectory.difxVersion[DIFX_MESSAGE_VERSION_LENGTH-1] = 0;
-					}
-					else if(strcmp(elem, "mpiWrapper") == 0)
-					{
-						strncpy(G->body.getDirectory.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-						G->body.getDirectory.mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
-					}
-					else if(strcmp(elem, "vsn") == 0 )
-					{
-						strncpy(G->body.getDirectory.vsn, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-					}
-					else if(strcmp(elem, "address") == 0 )
-					{
-						strncpy(G->body.getDirectory.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-					}
-					else if(strcmp(elem, "port") == 0 )
-					{
-						G->body.getDirectory.port = atoi( s );
-					}
-					else if(strcmp(elem, "generateNew") == 0 )
-					{
-						G->body.getDirectory.generateNew = atoi( s );
-					}
-					break;
-				case DIFX_MESSAGE_MARK5COPY:
-					if(strcmp(elem, "mark5") == 0 )
-					{
-						strncpy(G->body.mark5Copy.mark5, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-						G->body.mark5Copy.mark5[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
-					}
-					else if(strcmp(elem, "difxVersion") == 0)
-					{
-						strncpy(G->body.mark5Copy.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH-1);
-						G->body.mark5Copy.difxVersion[DIFX_MESSAGE_VERSION_LENGTH-1] = 0;
-					}
-					else if(strcmp(elem, "mpiWrapper") == 0)
-					{
-						strncpy(G->body.mark5Copy.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-						G->body.mark5Copy.mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
-					}
-					else if(strcmp(elem, "vsn") == 0 )
-					{
-						strncpy(G->body.mark5Copy.vsn, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-						G->body.mark5Copy.vsn[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
-					}
-					else if(strcmp(elem, "scans") == 0 )
-					{
-						strncpy(G->body.mark5Copy.scans, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-						G->body.mark5Copy.scans[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+						strncpy_warn(G->body.fileTransfer.origin, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "destination") == 0)
 					{
-						strncpy(G->body.mark5Copy.destination, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-						G->body.mark5Copy.destination[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+						strncpy_warn(G->body.fileTransfer.destination, s, DIFX_MESSAGE_FILENAME_LENGTH);
+					}
+					else if(strcmp(elem, "dataNode") == 0)
+					{
+						strncpy_warn(G->body.fileTransfer.dataNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH);
+					}
+					else if(strcmp(elem, "direction") == 0)
+					{
+						strncpy_warn(G->body.fileTransfer.direction, s, DIFX_MESSAGE_PARAM_LENGTH);
+					}
+					else if(strcmp(elem, "address") == 0)
+					{
+						strncpy_warn(G->body.fileTransfer.address, s, DIFX_MESSAGE_PARAM_LENGTH);
+					}
+					else if(strcmp(elem, "port") == 0)
+					{
+						G->body.fileTransfer.port = atoi(s);
+					}
+					break;
+				case DIFX_MESSAGE_FILEOPERATION:
+					if(strcmp(elem, "path") == 0)
+					{
+						strncpy_warn(G->body.fileOperation.path, s, DIFX_MESSAGE_FILENAME_LENGTH);
+					}
+					else if(strcmp(elem, "operation") == 0)
+					{
+						strncpy_warn(G->body.fileOperation.operation, s, DIFX_MESSAGE_PARAM_LENGTH);
+					}
+					else if(strcmp(elem, "arg") == 0)
+					{
+						strncpy_warn(G->body.fileOperation.arg, s, DIFX_MESSAGE_FILENAME_LENGTH);
+					}
+					else if(strcmp(elem, "dataNode") == 0)
+					{
+						strncpy_warn(G->body.fileOperation.dataNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH);
+					}
+					else if(strcmp(elem, "address") == 0)
+					{
+						strncpy_warn(G->body.fileOperation.address, s, DIFX_MESSAGE_PARAM_LENGTH);
+					}
+					else if(strcmp(elem, "port") == 0)
+					{
+						G->body.fileOperation.port = atoi(s);
+					}
+					break;
+				case DIFX_MESSAGE_GETDIRECTORY:
+					if(strcmp(elem, "mark5") == 0)
+					{
+						strncpy_warn(G->body.getDirectory.mark5, s, DIFX_MESSAGE_PARAM_LENGTH);
+					}
+					else if(strcmp(elem, "difxVersion") == 0)
+					{
+						strncpy_warn(G->body.getDirectory.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH);
+					}
+					else if(strcmp(elem, "mpiWrapper") == 0)
+					{
+						strncpy_warn(G->body.getDirectory.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH);
+					}
+					else if(strcmp(elem, "vsn") == 0)
+					{
+						strncpy_warn(G->body.getDirectory.vsn, s, DIFX_MESSAGE_PARAM_LENGTH);
+					}
+					else if(strcmp(elem, "address") == 0)
+					{
+						strncpy_warn(G->body.getDirectory.address, s, DIFX_MESSAGE_PARAM_LENGTH);
+					}
+					else if(strcmp(elem, "port") == 0)
+					{
+						G->body.getDirectory.port = atoi(s);
+					}
+					else if(strcmp(elem, "generateNew") == 0)
+					{
+						G->body.getDirectory.generateNew = atoi(s);
+					}
+					break;
+				case DIFX_MESSAGE_MARK5COPY:
+					if(strcmp(elem, "mark5") == 0)
+					{
+						strncpy_warn(G->body.mark5Copy.mark5, s, DIFX_MESSAGE_PARAM_LENGTH);
+					}
+					else if(strcmp(elem, "difxVersion") == 0)
+					{
+						strncpy_warn(G->body.mark5Copy.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH);
+					}
+					else if(strcmp(elem, "mpiWrapper") == 0)
+					{
+						strncpy_warn(G->body.mark5Copy.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH);
+					}
+					else if(strcmp(elem, "vsn") == 0 )
+					{
+						strncpy_warn(G->body.mark5Copy.vsn, s, DIFX_MESSAGE_PARAM_LENGTH);
+					}
+					else if(strcmp(elem, "scans") == 0 )
+					{
+						strncpy_warn(G->body.mark5Copy.scans, s, DIFX_MESSAGE_PARAM_LENGTH);
+					}
+					else if(strcmp(elem, "destination") == 0)
+					{
+						strncpy_warn(G->body.mark5Copy.destination, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "address") == 0 )
 					{
-						strncpy(G->body.mark5Copy.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-						G->body.mark5Copy.address[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+						strncpy_warn(G->body.mark5Copy.address, s, DIFX_MESSAGE_PARAM_LENGTH);
 					}
 					else if(strcmp(elem, "port") == 0 )
 					{
-						G->body.mark5Copy.port = atoi( s );
+						G->body.mark5Copy.port = atoi(s);
 					}
 					break;
 				case DIFX_MESSAGE_VEX2DIFXRUN:
-					if(strcmp(elem, "user") == 0 )
+					if(strcmp(elem, "user") == 0)
 					{
-						strncpy(G->body.vex2DifxRun.user, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						strncpy_warn(G->body.vex2DifxRun.user, s, DIFX_MESSAGE_PARAM_LENGTH);
 					}
-					else if(strcmp(elem, "node") == 0 )
+					else if(strcmp(elem, "node") == 0)
 					{
-						strncpy(G->body.vex2DifxRun.headNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH-1);
+						strncpy_warn(G->body.vex2DifxRun.headNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH);
 					}
-					else if(strcmp(elem, "difxVersion") == 0 )
+					else if(strcmp(elem, "difxVersion") == 0)
 					{
-						strncpy(G->body.vex2DifxRun.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH-1);
+						strncpy_warn(G->body.vex2DifxRun.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH);
 					}
-					else if(strcmp(elem, "passPath") == 0 )
+					else if(strcmp(elem, "passPath") == 0)
 					{
-						strncpy(G->body.vex2DifxRun.passPath, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						strncpy_warn(G->body.vex2DifxRun.passPath, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
-					else if(strcmp(elem, "file") == 0 )
+					else if(strcmp(elem, "file") == 0)
 					{
-						strncpy(G->body.vex2DifxRun.v2dFile, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						strncpy_warn(G->body.vex2DifxRun.v2dFile, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
-					else if(strcmp(elem, "address") == 0 )
+					else if(strcmp(elem, "address") == 0)
 					{
-						strncpy(G->body.vex2DifxRun.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						strncpy_warn(G->body.vex2DifxRun.address, s, DIFX_MESSAGE_PARAM_LENGTH);
 					}
-					else if(strcmp(elem, "port") == 0 )
+					else if(strcmp(elem, "port") == 0)
 					{
-						G->body.vex2DifxRun.port = atoi( s );
+						G->body.vex2DifxRun.port = atoi(s);
 					}
-					else if(strcmp(elem, "calcCommand") == 0 )
+					else if(strcmp(elem, "calcCommand") == 0)
 					{
-						strncpy(G->body.vex2DifxRun.calcCommand, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						strncpy_warn(G->body.vex2DifxRun.calcCommand, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
-					else if(strcmp(elem, "calcOnly") == 0 )
+					else if(strcmp(elem, "calcOnly") == 0)
 					{
-						G->body.vex2DifxRun.calcOnly = atoi( s );
+						G->body.vex2DifxRun.calcOnly = atoi(s);
 					}
 					break;
 				case DIFX_MESSAGE_MK5CONTROL:
-					if(strcmp(elem, "command") == 0 )
+					if(strcmp(elem, "command") == 0)
 					{
-						strncpy(G->body.mk5Control.command, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						strncpy_warn(G->body.mk5Control.command, s, DIFX_MESSAGE_PARAM_LENGTH);
 					}
-                                        else if(strcmp(elem, "targetNode") == 0 )
+                                        else if(strcmp(elem, "targetNode") == 0)
 					{
-						strncpy(G->body.mk5Control.targetNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH-1);
+						strncpy_warn(G->body.mk5Control.targetNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH);
 					}
-					else if(strcmp(elem, "address") == 0 )
+					else if(strcmp(elem, "address") == 0)
 					{
-						strncpy(G->body.mk5Control.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						strncpy_warn(G->body.mk5Control.address, s, DIFX_MESSAGE_PARAM_LENGTH);
 					}
-					else if(strcmp(elem, "port") == 0 )
+					else if(strcmp(elem, "port") == 0)
 					{
-						G->body.mk5Control.port = atoi( s );
+						G->body.mk5Control.port = atoi(s);
 					}
 				case DIFX_MESSAGE_TRANSIENT:
 					if(strcmp(elem, "jobId") == 0)
 					{
-						strncpy(G->body.transient.jobId, s, DIFX_MESSAGE_IDENTIFIER_LENGTH-1);
+						strncpy_warn(G->body.transient.jobId, s, DIFX_MESSAGE_IDENTIFIER_LENGTH);
 					}
 					else if(strcmp(elem, "startMJD") == 0)
 					{
@@ -1033,11 +998,11 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "destDir") == 0)
 					{
-						strncpy(G->body.transient.destDir, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						strncpy_warn(G->body.transient.destDir, s, DIFX_MESSAGE_FILENAME_LENGTH);
 					}
 					else if(strcmp(elem, "comment") == 0)
 					{
-						strncpy(G->body.transient.comment, s, DIFX_MESSAGE_COMMENT_LENGTH-1);
+						strncpy_warn(G->body.transient.comment, s, DIFX_MESSAGE_COMMENT_LENGTH);
 					}
 					else if(strcmp(elem, "dm") == 0)
 					{
@@ -1050,8 +1015,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "vsn") == 0)
 					{
-						strncpy(G->body.smart.moduleVSN, s, DIFX_MESSAGE_MARK5_VSN_LENGTH);
-						G->body.smart.moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
+						strncpy_warn(G->body.smart.moduleVSN, s, DIFX_MESSAGE_MARK5_VSN_LENGTH);
 					}
 					else if(strcmp(elem, "slot") == 0)
 					{
@@ -1060,7 +1024,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 				case DIFX_MESSAGE_VSIS:
 					if(strcmp(elem, "vsis") == 0)
 					{
-						strncpy(G->body.vsis.vsis, s, DIFX_MESSAGE_LENGTH-1);
+						strncpy_warn(G->body.vsis.vsis, s, DIFX_MESSAGE_LENGTH);
 					}
 					break;
 				default:
@@ -1090,7 +1054,7 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 			return;
 		}
 	}
-	strncpy(G->_xml_string+l, str, len);
+	memcpy(G->_xml_string+l, str, len);
 	G->_xml_string[len+l] = 0;
 }
 

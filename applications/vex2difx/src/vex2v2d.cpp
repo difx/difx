@@ -27,8 +27,8 @@
 #include "testvex.h"
 
 const char program[] = "vex2v2d";
-const char version[] = "0.3";
-const char verdate[] = "20250203";
+const char version[] = "0.4";
+const char verdate[] = "20250506";
 const char author[] = "Walter Brisken";
 
 const double defaultTInt = 2.0;		// [sec]
@@ -53,9 +53,9 @@ void usage(const char *pgm)
 	fprintf(stderr, "  --machines\n");
 	fprintf(stderr, "  -m       add information about VLBA machines and threads\n\n");
 	fprintf(stderr, "  --split\n");
-	fprintf(stderr, "  -s       specify the format as VLBA1032\n\n");
+	fprintf(stderr, "  -s       specify dataframe size to be 1032\n\n");
 	fprintf(stderr, "  --VDIF\n");
-	fprintf(stderr, "  -V       specify the format as VLBA5032\n\n");
+	fprintf(stderr, "  -V       specify the format as VDIF with 16 threads\n\n");
 	fprintf(stderr, "  --file\n");
 	fprintf(stderr, "  -F       set up for file-based correlation\n\n");
 	fprintf(stderr, "  --vlitebuf\n");
@@ -127,7 +127,7 @@ const char *getDatastreamMachine(const std::string &ant)
 	}
 }
 
-int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, bool doMachines, int vdifFrameSize, bool doFilelist, bool doVlitebuf, const char *threadsAbsent, const char *dropAntennas, const char *oneBitAntennas, const char *complexAntennas)
+int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, bool doMachines, const char *format, int vdifFrameSize, bool doFilelist, bool doVlitebuf, const char *threadsAbsent, const char *dropAntennas, const char *oneBitAntennas, const char *complexAntennas)
 {
 	FILE *out;
 	unsigned int nAntenna = V->nAntenna();
@@ -137,7 +137,7 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 	Lower(lexper);
 	bool first = true;
 
-	if(vdifFrameSize > 0 || nDatastream > 1 || oneBitAntennas != 0 || complexAntennas != 0)
+	if(format != 0 || vdifFrameSize > 0 || nDatastream > 1 || oneBitAntennas != 0 || complexAntennas != 0)
 	{
 		doDatastreams = true;
 	}
@@ -152,6 +152,8 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 	}
 	if(!out)
 	{
+		fprintf(stderr, "Error: cannot open %s for write\n", outFile);
+
 		return EXIT_FAILURE;
 	}
 
@@ -214,7 +216,7 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 			exit(EXIT_FAILURE);
 		}
 
-		bits = 2;
+		bits = 0;
 		if(oneBitAntennas)
 		{
 			if(strcasestr(oneBitAntennas, A->name.c_str()) != 0)
@@ -241,19 +243,37 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 			for(int d = 0; d < nDatastream; ++d)
 			{
 				fprintf(out, "DATASTREAM %s%d {", A->name.c_str(), d);
-				if(vdifFrameSize > 0 || bits > 0)
+				if(format)
 				{
-					int f, b;
-					
-					f = vdifFrameSize > 0 ? vdifFrameSize : 5032;
-					b = bits > 0 ? bits : 2;
-					if(isComplex)
+					if(strcmp(format, "VDIF") == 0)
 					{
-						fprintf(out, " format=VDIFC/%d/%d", f, b);
+						int b, f;
+						const char *fmt;
+						b = bits > 0 ? bits : 2;
+						f = vdifFrameSize > 0 ? vdifFrameSize : 5032;
+						fmt = isComplex ? "VDIFC" : "VDIF";
+						fprintf(out, " format=%s/0:1:2:3:4:5:6:7:8:9:10:11:12:13:14:15/%d/%d", fmt, f, b);
 					}
 					else
 					{
-						fprintf(out, " format=VDIF/%d/%d", f, b);
+						fprintf(stderr, "Unsupported format type: %s\n", format);
+
+						exit(EXIT_FAILURE);
+					}
+				}
+				else
+				{
+					if(vdifFrameSize > 0)
+					{
+						fprintf(out, " frameSize=%d",  vdifFrameSize);
+					}
+					if(bits > 0)
+					{
+						fprintf(out, " nBit=%d", bits);
+					}
+					if(isComplex)
+					{
+						fprintf(out, " sampling=COMPLEX");
 					}
 				}
 				if(doFilelist)
@@ -343,6 +363,7 @@ int main(int argc, char **argv)
 	const char *vexFile = 0;
 	char outFile[PATH_MAX] = "";
 	char *ext;
+	const char *format = 0;
 	int verbose = 0;
 	double tInt = 0.0;		// [sec]
 	double specRes = 0.0;		// [MHz]
@@ -400,7 +421,7 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[a], "-V") == 0 ||
 		        strcmp(argv[a], "--VDIF") == 0)
 		{
-			vdifFrameSize = 5032;
+			format = "VDIF";
 		}
 		else if(strcmp(argv[a], "-F") == 0 ||
 		        strcmp(argv[a], "--file") == 0)
@@ -451,23 +472,36 @@ int main(int argc, char **argv)
 
 			return EXIT_FAILURE;
 		}
-		else if(specRes > 0.0)
+		else if(strstr(argv[a], ".vex") != 0)  
 		{
-			printf("Error: too many non-optional parameters provided.\n\n");
-
-			return EXIT_FAILURE;
-		}
-		else if(vexFile == 0)
-		{
+			if(vexFile != 0)
+			{
+				printf("Error: multiple vex files specified\n\n");
+				return EXIT_FAILURE;
+			}
 			vexFile = argv[a];
 		}
-		else if(tInt <= 0.0)
+		else  
 		{
-			tInt = atof(argv[a]);
-		}
-		else
-		{
-			specRes = atof(argv[a]);
+			if(vexFile == 0)  
+			{
+				printf("Error: vex file must be specified before tInt or specRes\n\n");
+				return EXIT_FAILURE;
+			}
+			
+			if(tInt <= 0.0)  
+			{
+				tInt = atof(argv[a]);
+			}
+			else if(specRes <= 0.0)  
+			{
+				specRes = atof(argv[a]);
+			}
+			else
+			{
+				printf("Error: too many non-optional parameters provided.\n\n");
+				return EXIT_FAILURE;
+			}
 		}
 	}
 
@@ -527,7 +561,7 @@ int main(int argc, char **argv)
 		std::cout << std::endl;
 	}
 
-	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, doMachines, vdifFrameSize, doFilelist, doVlitebuf, threadsAbsent, dropAntennas, oneBitAntennas, complexAntennas);
+	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, doMachines, format, vdifFrameSize, doFilelist, doVlitebuf, threadsAbsent, dropAntennas, oneBitAntennas, complexAntennas);
 
 	if(outFile[0])
 	{
@@ -545,3 +579,4 @@ int main(int argc, char **argv)
 
 	return v;
 }
+

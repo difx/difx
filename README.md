@@ -6,7 +6,7 @@ The official repo for DiFX.
 
 DiFX requires MPI, PGPLOT and IPP.
 
-Details see https://github.com/difx/difx/wiki/Installation
+Details see https://github.com/difx/difx/wiki/difx-installation
 
 ### For DiFX Users
 
@@ -56,7 +56,7 @@ $ /path/to/difx/repo/install-difx
 
 The troubleshooting area on https://github.com/difx/difx/wiki/Documentation
 
-#### TESTING ####################
+## TESTING
 
 See https://github.com/difx/difx/wiki/Benchmarks
 
@@ -86,6 +86,15 @@ Please follows the [Contributor Covenant](http://contributor-covenant.org/versio
 
 This project exists thanks to all the people who contribute. 
 <a href="https://github.com/difx/difx/graphs/contributors"><img src="https://opencollective.com/difx/contributors.svg?width=890&button=false" /></a>
+
+
+## Citation
+
+If you use DiFX in your research, please consider citing our following papers:
+
+1. DiFX-2: Deller, A. T., W. F. Brisken, C. J. Phillips, John Morgan, W. Alef, R. Cappallo, E. Middelberg et al. "DiFX-2: a more flexible, efficient, robust, and powerful software correlator." Publications of the Astronomical Society of the Pacific 123, no. 901 (2011): 275.
+
+2. DiFX : Deller, Adam T., S. J. Tingay, Matthew Bailes, and C. West. "DiFX: a software correlator for very long baseline interferometry using multiprocessor computing environments." Publications of the Astronomical Society of the Pacific 119, no. 853 (2007): 318.
 
 ## License
 

@@ -882,6 +882,10 @@ Because the 2.7 series was never formally released, the notes below include all 
 \item Experimental support for Vienna Mapping Functions in calcif2
 \item Some features (within mpifxcorr and vex2difx) that provide additional options for real-time correlation
 \item Espresso modification to work with singularity (or docker) image
+\item difx2fits can now perform Van Vleck (and more, generalized to non-1-bit cases).  The resultant FITS file inidicates that this has been applied by setting the VANVLECK keyword to 1
+\begin{itemize}
+  \item This is done automatically in cases where either different antennas have different numbers of bits or in cases where number of bits of any antenna is greater than 2.
+\end{itemize}
 \end{enumerate}
 
 \subsubsection{Updates}
@@ -915,8 +919,70 @@ Because the 2.7 series was never formally released, the notes below include all 
 
 Many additional non-user-visible improvements were made to the code as well as many small user-visible improvements that do not warrant specific mention.
 The {\tt Changelog} files that are packaged with most of the DiFX software modules contain more detailed lists of code changes.
-DiFX 2.8.1 was released on XXX 2023.
+DiFX 2.8.1 was released on March 29, 2023.
 A wide array of testing has been done and this version is considered ready to be adopted by all DiFX users.
+
+\subsection{DiFX~2.9.0}
+
+The DiFX 2.9.0 release is the first to be made from github after the migration from the ATNF subversion repository.
+
+\subsubsection{New features}
+\begin{enumerate}
+\item Many improvements for vex2; vex2 should be considered usable now, but do watch for incorrect behavior
+\begin{itemize}
+  \item The concept of ``canonical VDIF threads'' (applicable to VLBA, and HSA only) was not extended to vex2 as vex2 has proper support for VDIF thread assignment through the DATASTREAMS block
+\end{itemize}
+\item difx2fits ``sniffer'' fringe fitter is now more precise through use of iterations of FFT and delay/rate recentering
+\item difx2fits now has experimental support for applying bandpass or delay corrections on-the-fly; see ChangeLog for more details
+\item experimental support for adding two pulse cal tables to the FITS file.  The intention is that one PC table has just two tones per sub-band and the other contains all the tones.
+\item Improved support for multiple independent (e.g., not phased) VLA antennas
+\item vdifio: some new utilities introduced that are useful for examining VDIF streams: vdifPhase, vidfStateCount, and vdifMeanRMS
+\item New program vdifsim can produce synthetic data for correlation over a wide range of observing setups
+\item VLBA only: when observing widely separated IFs at C-band, allow different gain curve values
+\item mk5daemon: support more than one Mark6 expansion chassis
+\end{enumerate}
+
+\subsubsection{Updates}
+\begin{enumerate}
+\item More new VDIF decoders and corner turners introduced to widen range of support
+\item Several widespread code quality improvements
+\begin{itemize}
+  \item Use fftw's memory allocation/deallocation when appropriate
+  \item Check return values of various string manipulation functions
+  \item Fix a few memory leaks
+  \item Fix spelling, whitespace, and other formatting
+  \item Improve correctness of some networking system calls
+\end{itemize}
+\item Math library IPP 2021.* is now supported
+\item mpifxcorr now uses more precise trigonometric functions that (very slightly) improve output data quality
+\begin{itemize}
+  \item Note: this will cause binary comparisons of data between DiFX versions to report differences
+\end{itemize}
+\item New Mark6 messages generalize to more slots per unit; operator interfaces may need updates to take advantage of these 
+\end{enumerate}
+
+\subsubsection{Bug fixes}
+\begin{enumerate}
+\item In some cases in previous DiFX versions some autocorrelations would be missing or incorrect.  This has been corrected (and back-ported to 2.8)
+\item A bug was fixed in vdifmux() (which is used in programs mpifxcorr and vmux) that dredged up an old data frame after a large gap in data.
+\end{enumerate}
+
+\subsubsection{Caveats}
+\begin{enumerate}
+\item Override of baseband data formats via the {\tt format=} parameter in vex2difx now completely changes the format; partial format changes should be made with {\tt nBit=}, {\tt frameSize=}, and {\tt sampling=}
+\item vdifsim can create single-sideband complex data but double-sideband complex data is not correctly created at this time
+\item vdifsim cannot handle zoom bands yet
+\item mark6meta: new (better) method to determine position of disks on SAS controller independent of controller manufacturer logic
+\begin{itemize}
+  \item Note that pre-existing config file {\tt /etc/default/mark6.cfg} will need to be removed
+\end{itemize}
+\end{enumerate}
+
+Many additional non-user-visible improvements were made to the code as well as many small user-visible improvements that do not warrant specific mention.
+The {\tt Changelog} files that are packaged with most of the DiFX software modules contain more detailed lists of code changes.
+DiFX 2.9.0 was released on XXX 2025.
+A wide array of testing has been done and this version is considered ready to be adopted by all DiFX users.
+
 
 
 %%%%  Future releases:
