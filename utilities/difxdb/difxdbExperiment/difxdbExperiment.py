@@ -23,6 +23,7 @@ import argparse
 from difxdb.difxdbconfig import DifxDbConfig
 from difxdb.model.dbConnection import Schema, Connection
 from difxdb.business.experimentaction import *
+from difxdb.business.filedataaction import *
 from difxdb.model import model
 from difxfile.difxdir import DifxDir
 from operator import  attrgetter
@@ -42,7 +43,7 @@ if __name__ == "__main__":
     parser.add_argument('expcode', type=str, help="the code of the experiment")
     parser.add_argument('--version', action='version', version="%(prog)s" + version)
     parser.add_argument('--show-export', dest="showExport", action='store_true', default=False, help="show the exported files of this experiment.")
-    parser.add_argument('--module-details', dest="moduleDetails", action='store_true', default=False, help="Show extended information for the modules used in this experiment.")
+    parser.add_argument('-d', '--data-details', dest="dataDetails", action='store_true', default=False, help="Show extended information of the data files and modules used in this experiment.")
 
     args = parser.parse_args()
 
@@ -91,10 +92,31 @@ if __name__ == "__main__":
         print("Comment:\t\t%s" % (experiment.comment))
         print("---------------------------------------")
 
+        title = "Data files: {station code} {path}"
+        if (args.dataDetails):
+            title += " {received} {number of scans}"
+
+        print("\n", title)
+        print("---------------------------------------")
+
+        files = getFilesByExperimentId(session, experiment.id)
+        for f in files:
+          if (args.dataDetails):
+            print (f.stationCode, f.location, f"{f.received:%Y-%m-%d}", f.numScans)
+          else:
+            print (f.stationCode, f.location)
+
+        title = "Modules: {station code} {vsn} {location}"
+        if (args.dataDetails):
+            title += " {received} {number of scans} {capacity} {data rate}"
+
+        print("\n", title)
+        print("---------------------------------------")
+
         sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
         for module in sortedModules:
-            if (args.moduleDetails):    
-                print(module.stationCode,  module.vsn, module.slot.location, module.capacity, module.datarate, module.numScans)
+            if (args.dataDetails):    
+                print(module.stationCode,  module.vsn, module.slot.location, f"{module.received:%Y-%m-%d}" , module.numScans, module.capacity, module.datarate)
             else:
                 print(module.stationCode,  module.vsn, module.slot.location)
 
