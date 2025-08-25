@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <difxio/difx_input.h>
 #include <pthread.h>
 #include <mpi.h>
@@ -25,6 +26,25 @@ void *datastreamProcessWrapper(void *data)
 	datastreamProcess(di->D, di->C, di->d);
 
 	return 0;
+}
+
+static int gcd(int a, int b)
+{
+	int r, i;
+
+	while(b != 0)
+	{
+		r = a % b;
+		a = b;
+		b = r;
+	}
+	
+	return a;
+}
+
+static int lcm(int a, int b)
+{
+	return (a/gcd(a, b))*b;
 }
 
 static int work(const DifxInput *D, const CommandLineOptions *opts, const Configuration *config)
@@ -122,6 +142,69 @@ static int work(const DifxInput *D, const CommandLineOptions *opts, const Config
 }
 
 /* return 0 if requirements are not met */
+int complianceCheckDatastreams(const DifxInput *D, const Configuration *config)
+{
+	int rv = 1;
+	int i;
+
+	if(!config)
+	{
+		return rv;
+	}
+
+	for(i = 0; i < D->nDatastream; ++i)
+	{
+		const AntennaParameters *p;
+		const DifxDatastream *dd;
+		int f;
+
+		dd = D->datastream + i;
+
+		p = getAntennaParametersConst(config, D->antenna[dd->antennaId].name);
+
+		if(p != 0 && p->pulseCalInterval > 0)
+		{
+			for(f = 0; f < dd->nRecFreq; ++f)
+			{
+				const DifxFreq *df;
+				int bw;		/* [MHz] */
+				int n;
+				double q;	/* [MHz] frequency in band of first tone */
+				int k;		/* [kHz] frequency in band of first tone, rounded to nearest kHz */
+				/* the chunk size must be a multiple of the following three numbers */
+				int d1;		/* based on pulse cal interval and bandwdith */
+				int d2;		/* based on pulse cal interval and first tone frequency */
+				int d;		/* least common multiple of the two */
+				int nSamp;
+
+				df = D->freq + f;
+				bw = round(df->bw);
+				n = (int)(df->freq / p->pulseCalInterval);
+				q = df->freq - n*p->pulseCalInterval;
+				if(q > 0)
+				{
+					q = p->pulseCalInterval - q;
+				}
+				k = round(1000*q);
+				d1 = (2*bw)/gcd(2*bw, p->pulseCalInterval);
+				d2 = (2000*bw)/gcd(2000*bw, k);
+				d = lcm(d1, d2);
+
+				nSamp = 2*D->nInChan;
+printf("%s %d  %f %f  %d %d %d %d  %d\n", D->antenna[dd->antennaId].name, p->pulseCalInterval, df->freq, df->bw, k, d1, d2, d, nSamp);
+				if(nSamp % d != 0)
+				{
+					printf("Error: Datastream %d (ant %s): number of samples %d is not a multiple of %s as dictated by pulse cal configuration.\n", i, D->antenna[dd->antennaId].name, nSamp, d);
+					rv = 0;
+				}
+			}
+		}
+	}
+
+	return rv;
+}
+
+/* return 0 if requirements are not met */
 int complianceCheck(const DifxInput *D)
 {
 	int d;
@@ -154,9 +237,9 @@ int complianceCheck(const DifxInput *D)
 		}
 
 		bits = D->datastream[d].quantBits;
-		if(bits != 1 && bits != 2 && bits != 4 && bits != 8)
+		if(bits != 1 && bits != 2 && bits != 4 && bits != 8 && bits != 16)
 		{
-			fprintf(stderr, "! datastream %d does not have one of: 1,2,4,8 bits per sample.  It reports %d\n", d, bits);
+			fprintf(stderr, "! datastream %d does not have one of: 1,2,4,8,16 bits per sample.  It reports %d\n", d, bits);
 			rv = 0;
 		}
 
@@ -236,7 +319,7 @@ int simulate(const CommandLineOptions *opts)
 			printDifxInput(D);
 		}
 
-		if(!complianceCheck(D))
+		if(!complianceCheck(D) || !complianceCheckDatastreams(D, config))
 		{
 			fprintf(stderr, "Rank %d : error: %s doesn't meet the requirements of this program.\n\n", mpiRank, opts->inputFile[i]);
 		}

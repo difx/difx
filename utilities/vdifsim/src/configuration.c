@@ -185,6 +185,34 @@ Configuration *loadConfigration(const char *filename)
 				}
 				A->clockOffset = p[0];
 			}
+
+			else if(strcasecmp(typeStr, "SwitchedPower") == 0)
+			{
+				if(n != 3)
+				{
+					fprintf(stderr, "%s line %d: SwitchedPower needs <Freq[Hz]> and <power[%%]>\n", filename, lineNumber);
+
+					break;
+				}
+				A->switchedPowerFreq = (int)(p[0] + 0.5);
+				A->switchedPowerFrac = p[1];
+			}
+			else if(strcasecmp(typeStr, "PulseCal") == 0)
+			{
+				if(n < 3 || n > 4)
+				{
+					fprintf(stderr, "%s line %d: PulseCal needs <Interval[MHz]> and <power[%%]>, and optionally <delay[us]>\n", filename, lineNumber);
+
+					break;
+				}
+				A->pulseCalInterval = (int)(p[0] + 0.5);
+				A->pulseCalFrac = p[1];
+				if(n >= 4)
+				{
+					A->pulseCalDelay = p[2];
+				}
+			}
+
 			else
 			{
 				fprintf(stderr, "%s line %d : Unknown antenna parameter: %s\n", filename, lineNumber, typeStr);

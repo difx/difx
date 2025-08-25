@@ -6,6 +6,7 @@
 #include <math.h>
 #include <glib.h>
 #include <vdifio.h>
+#include <stdint.h>
 #include "datastream.h"
 #include "model.h"
 
@@ -464,6 +465,35 @@ void encode8bit(unsigned char *dest, double *src, int N)
 	}
 }
 
+/* For optimal results, src[] should be zero mean with RMS=1.0 */
+void encode16bit(unsigned char *dest, double *src, int N)
+{
+	const double v0 = 0.01;		/* value not necessarily optimal, but with this many bits the sweet spot is large */
+	int i;
+	uint16_t *d;
+
+	d = (uint16_t *)dest;
+
+	for(i = 0; i < N; ++i)
+	{
+		int q;
+
+		q = src[i] / v0 + 32768;
+		if(q < 1)
+		{
+			d[i] = 0;
+		}
+		else if(q >= 65535)
+		{
+			d[i] = 65535;
+		}
+		else
+		{
+			d[i] = q;
+		}
+	}
+}
+
 void writeVDIF(const Datastream *d, const CommonSignal *C)
 {
 	vdif_header *vh;
@@ -516,6 +546,9 @@ void writeVDIF(const Datastream *d, const CommonSignal *C)
 			case 8:
 				encode8bit(data, ds->samples1sec + start, d->samplesPerFrame);
 				break;
+			case 16:
+				encode16bit(data, ds->samples1sec + start, d->samplesPerFrame);
+				break;
 			default:
 				fprintf(stderr, "Error: no encoder for other than 2 bits yet!\n");
 				exit(0);
@@ -559,6 +592,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		double freq_MHz;		/* [MHz] frequenncy in MHz */
 		int int_freq_MHz;
 		double frac_freq_MHz;
+		double *pulseCalSamples;
 
 		ds = d->subband + s;
 		cs = ds->cs;
@@ -566,7 +600,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		freq_MHz = ds->df->freq;
 		if(d->dd->dataSampling == SamplingComplexDSB)
 		{
-			/* In Duoble-Sideband mode, the sampled band is centered on the specified frequency */
+			/* In Double-Sideband mode, the sampled band is centered on the specified frequency */
 			/* The total bandwidth (sum of both sidebands) is given by specifed bandwidth */
 			if(ds->df->sideband == 'L')
 			{
@@ -583,6 +617,76 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		}
 		int_freq_MHz = (int)freq_MHz;
 		frac_freq_MHz = freq_MHz - int_freq_MHz;
+
+		if(d->parameters->pulseCalInterval > 0)
+		{
+			const epsilon = 0.001;	/* [MHz] don't use tones closer to band edge than this */
+			double cosFactor, sinFactor;
+			int tone1, tone2;	/* index of first and last tone to use */
+
+			/* These two values scale the cos and sin components of the tone */
+			/* In case of lower sideband complex, sinFactor has opposite sign */
+			cosFactor = 2.0*sqrt(d->SEFD*d->parameters->pulseCalFrac);
+			sinFactor = (ds->df->sideband == 'U') ? cosFactor : -cosFactor;
+
+			tone1 = (freq_MHz+epsilon)/d->parameters->pulseCalInterval + 1;
+			tone2 = (freq_MHz+ds->df->bw-epsilon)/d->parameters->pulseCalInterval - 1;
+
+			pulseCalSamples = (double *)calloc(ds->nSamp, sizeof(double));
+
+			if(tone2 >= tone1)
+			{
+				if(d->dd->dataSampling == SamplingReal)
+				{
+					int t;
+
+					for(t = tone1; t <= tone2; ++t)
+					{
+						double toneFreq;	/* [MHz] apparent tone frequency within band */
+						double sampleFactor, delayFactor;
+						int i;
+						
+						toneFreq = t * d->parameters->pulseCalInterval - freq_MHz;
+						sampleFactor = 2.0*M_PI*toneFreq/(2.0*ds->df->bw);
+						delayFactor = 2.0*M_PI*toneFreq*d->parameters->pulseCalDelay;
+						if(ds->df->sideband == 'U')
+						{
+							delayFactor = -delayFactor;	/* this choice of sign is consistent with m5pcal */
+						}
+
+						for(i = 0; i < ds->nSamp; ++i)
+						{
+							pulseCalSamples[i] += cosFactor*cos(delayFactor + i*sampleFactor);
+						}
+					}
+				}
+				else
+				{
+					int t;
+
+					for(t = tone1; t <= tone2; ++t)
+					{
+						double toneFreq;	/* [MHz] apparent tone frequency within band */
+						double sampleFactor, delayFactor;
+						int i;
+
+						toneFreq = t * d->parameters->pulseCalInterval - freq_MHz;
+						sampleFactor = 2.0*M_PI*toneFreq/(2.0*ds->df->bw);
+						delayFactor = 2.0*M_PI*toneFreq*d->parameters->pulseCalDelay;
+						if(ds->df->sideband == 'U')
+						{
+							delayFactor = -delayFactor;	/* this choice of sign is consistent with m5pcal */
+						}
+
+						for(i = 0; i < ds->nSamp; i += 2)
+						{
+							pulseCalSamples[i]   += cosFactor*cos(delayFactor + i*sampleFactor);
+							pulseCalSamples[i+1] += sinFactor*sin(delayFactor + i*sampleFactor);
+						}
+					}
+				}
+			}
+		}
 
 /* Loop over sub-second time (chunk) */
 		for(c = 0; c < ds->nChunk; ++c)
@@ -634,7 +738,44 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			copySamples(cs, ds->samps, actualSample, ds->nSamp);
 
 /* 2. additive noise */
-			add_rand_gauss_values(d->random, ds->samps, sqrt(d->SEFD), ds->nSamp);
+			if(d->parameters && d->parameters->switchedPowerFrac > 0.0)
+			{
+/* 2a. if switched power is requested, add that at the same time */
+				long long int index, index2;
+				long long int q;
+				long long int stop;
+				int spState;
+				
+				index = c * ds->nSamp;
+				stop = index + ds->nSamp;
+				index2 = 0;
+
+				q = d->parameters->switchedPowerFreq*2*index / ds->nSample1sec;
+				spState = 1 - (q % 2);
+
+				while(index2 < stop)
+				{
+					double s;
+
+					// get next transition
+					index2 = ceil(ds->nSample1sec*(q+1)/(2.0*d->parameters->switchedPowerFreq));
+					if(index2 > stop)
+					{
+						index2 = stop;
+					}
+
+					s = sqrt(d->SEFD * (1.0 + spState*d->parameters->switchedPowerFrac));
+					add_rand_gauss_values(d->random, ds->samps + (index % ds->nSamp), s, index2-index);
+					++q;
+					index = index2;
+					spState = 1-spState;
+				}
+			}
+			else
+			{
+				add_rand_gauss_values(d->random, ds->samps, sqrt(d->SEFD), ds->nSamp);
+			}
+
 
 /* 3. fringe rotation -- opposite sense as for correlator */
 			for(i = 0; i < ds->nSamp; ++i)
@@ -665,11 +806,27 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 /* 7. iFFT, C->R for real data or C->C for complex data */
 			fftw_execute(ds->ifftPlan);
 
-/* 8. place real-valued results in 1-second duration array */
+
+/* 8. apply pulse cal if desired */
+			if(d->parameters && d->parameters->pulseCalInterval > 0)
+			{
+				for(i = 0; i < ds->nSamp; ++i)
+				{
+					/* note that this is being done with real-valued arrays, but for complex data, both arrays are complex-valued */
+					ds->samps[i] += pulseCalSamples[i];
+				}
+			}
+
+/* 9. place results in 1-second duration array */
 			memcpy(ds->samples1sec + startSample, ds->samps, ds->nSamp*sizeof(double));
 		}
 
-/* 9. "AGC" -- normalize array prior to quantization */
+		if(d->parameters->pulseCalInterval > 0)
+		{
+			free(pulseCalSamples);
+		}
+
+/* 10. "AGC" -- normalize array prior to quantization */
 		normalize(ds->samples1sec, ds->nSample1sec);
 
 		/* if LSB, flip sign of alternate samples */

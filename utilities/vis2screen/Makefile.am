@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = foreign
+
 bin_PROGRAMS = printDiFX
 dist_bin_SCRIPTS = diffDiFX.py diffDiFX2.py checkDiFXViz.py plotDiFX.py \
 	plotDiFXPCal.py fringeFindDiFX.py plotDynamicSpectrum.py snipDiFX.py \
