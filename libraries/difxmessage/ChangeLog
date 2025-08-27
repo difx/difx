@@ -1,9 +1,17 @@
+Version 2.9
+~~~~~~~~~~~~~
+* Fix type of some variables from "long" to "int"
+* Improve error handling for errormon2 (add exception messages where needed, avoid AttributeError)
+* Version bump for DiFX 2.9
+
 Version 2.8.1
 ~~~~~~~~~~~~~
 * Version post DiFX 2.8.1
 * Fix usage of recvfrom() and add some associated comments
 * difxparse.c: use new macro strncpy_warn to safely copy a string with possible truncation; emit a warning if truncation happens.
 * New macro definition for Mark5 and Mark6 string lengths that are long enough to include trailing zeros
+* Statemon now has color coding as an option
+* testdifxmessagereceive improvements
 
 Version 2.8.0
 ~~~~~~~~~~~~~

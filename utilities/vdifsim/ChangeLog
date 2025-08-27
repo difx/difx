@@ -1,6 +1,12 @@
 Version 0.1.1
 -------------
 * Fix issue where the program generates 1 second too much data
+* SEFD is an option on command line
+* Allow random number seed to be supplied
+* Handles LSB for real and complex data
+* Include switched power and pcal
+* Fix some bugs that avoid possible uninitialised variables
+* Allow 16 bit VDIF to be simulated
 
 Version 0.1
 -----------

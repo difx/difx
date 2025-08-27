@@ -8,6 +8,7 @@
 * Include a check to ensure that the max stations is consistent 
 * across three include files
 * Fix a couple of bugs with overflowing arrays
+* Version for DiFX-2.9
 
 11.0.3
 ------
