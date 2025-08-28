@@ -7,6 +7,7 @@
 
 #define block vexblock
 #include <vex.h>
+#undef YYEMPTY
 #include <y.tab.h>
 #undef block
 
