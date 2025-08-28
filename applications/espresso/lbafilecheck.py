@@ -54,13 +54,14 @@ def makefilelists(
     #TEMPFILE = tempfile.NamedTemporaryFile()
     tempfilename = expname + "_" + telescope+"tempfilenamexxx.txt"
     TEMPFILE = open(tempfilename, "w")
-    command = " ".join(
-            ["ssh -q", machine, "'echo", filepattern, "|xargs ls -d'"])
+    command = " ".join(["ssh -q", machine, "'echo", filepattern, "|xargs ls -d'"])
     #command = " ".join(["ls", filepattern])
     print (command)
     filelist, error1 = subprocess.Popen(
             command, shell=True, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE).communicate()
+    #filelist = pexpect.run(command)
+    #filelist = filelist.split('\r\n')
     filelist = filelist.decode("utf-8").split("\n")
     error1 = error1.decode("utf-8")
     filelist.pop()
@@ -110,7 +111,7 @@ def makefilelists(
     TEMPFILE.close()
     OUTFILE.close()
     os.remove(TEMPFILE.name)
-    return telescope, len(filelist), nbad
+    return len(filelist), nbad
 
 
 def write_machines(expname, machines):
@@ -178,7 +179,7 @@ def write_run(expname, np, nthreads, options):
     else:
         # in case no prototype run file, this basic run file will work for
         # many sites
-        RUNFILE.write("mpirun -np {:d} {:s}".format(np, options))
+        RUNFILE.write("mpirun -np ", np, options)
         RUNFILE.write(" -machinefile {JOBNAME}.machines")
         RUNFILE.write(" $DIFXROOT/bin/mpifxcorr {JOBNAME}.input\n")
         RUNFILE.close()
@@ -188,14 +189,14 @@ def write_run(expname, np, nthreads, options):
         print ("could not change permissions of", runfilename)
 
 
-#def kill_children(pids):
-#    for pid in pids:
-#        try:
-#            os.kill(pid, 9)
-#        except:
-#            pass
-#    for pid in pids:
-#        os.waitpid(pid, 0)
+def kill_children(pids):
+    for pid in pids:
+        try:
+            os.kill(pid, 9)
+        except:
+            pass
+    for pid in pids:
+        os.waitpid(pid, 0)
 
 
 # the program starts here
@@ -250,10 +251,6 @@ parser.add_option(
         "-r", "--refmjd",
         type="str", dest="refmjd", default=None,
         help="Reference date for resolving Mk5B date ambiguity.")
-parser.add_option(
-        "-j", "--nprocs",
-        type="int", dest="nprocs", default=8,
-        help="Number of processes to run in parallel when making filelists. Default=%default")
 
 #parser.add_option( "--nproc_per_node", "-p",
 #        type='int', dest="nproc_per_node", default=1,
@@ -299,48 +296,55 @@ try:
 except:
     pass
 
-#pids = []
+pids = []
 datamachines = []
 
 if not options.nofilelist:
-    print ("Wait for process to finish.")
+    print ("Wait for process to finish. Do not press ^C.")
 
 # first create the filelists
-makefilelist_args = []
 for line in sorted(telescopedirs):
-    #line = line.strip("\n")
-    #line = line.strip()
-    line = re.compile(r"#.*").sub(r"", line)
-    if not re.match(r"\w", line):
-        continue
+    try:
+        #line = line.strip("\n")
+        #line = line.strip()
+        line = re.compile(r"#.*").sub(r"", line)
+        if not re.match(r"\w", line):
+            continue
 
-    telescope, data_area = re.split(r"\s*=\s*", line)
-    machine, dir_patterns = re.split(r"\s*:\s*", data_area)
-    dir_patterns = dir_patterns.split()
-    datamachines.append(machine)
+        telescope, data_area = re.split(r"\s*=\s*", line)
+        machine, dir_patterns = re.split(r"\s*:\s*", data_area)
+        dir_patterns = dir_patterns.split()
+        datamachines.append(machine)
 
-    # form list of args that we can execute in parallel
-    if not options.nofilelist:
-        makefilelist_args.append(
-                (telescope, data_area, machine, dir_patterns, globpatterns,
-                expname, options.refmjd))
+        # might as well do this in parallel in the background to speed things
+        # up, even if the control is a bit sloppy
+        if not options.nofilelist:
+            pid = os.fork()
+            pids.append(pid)
+            if pid == 0:
+                nfiles, nbad = makefilelists(
+                        telescope, data_area, machine, dir_patterns,
+                        globpatterns, expname, options.refmjd)
+                print ("got", nfiles, "files for", telescope, end="")
+                if nbad:
+                    print (" (", nbad, "corrupt )", end="")
+                print ()
+                os._exit(0)
+    except:
+        # clean up jobs if something goes awry
+        kill_children(pids)
+        #print "\n\nERROR: killing ssh processes due to error making file lists"
+        print ("\n\nERROR: killing processes due to error making file lists")
+        print ("ERROR: Check formatting of", args[0] + ":")
+        print (line)
+        raise Exception("could not make file list")
 
-#nprocs = min(8, multiprocessing.cpu_count())
-if not options.nofilelist:
-    with multiprocessing.Pool(options.nprocs) as pool:
-        #print (makefilelist_args[0])
-        try:
-            file_results = pool.starmap(makefilelists, makefilelist_args)
-        except:
-            pool.terminate()
-            pool.join()
-            raise Exception("File lists not generated")
-    for file_result in file_results:
-        telescope, nfiles, nbad = file_result
-        print ("got", nfiles, "files for", telescope, end="")
-        if nbad:
-            print (" (", nbad, "corrupt )", end="")
-        print ()
+# and wait for the filelist creation processes to finish
+#time.sleep(1)
+for pid in pids:
+    #print "sysWaiting for the child process ( pid = ", pid, ") to finish...\n"
+    os.waitpid(pid, 0)
+
 
 # now make a default machine, threads and run file
 try:

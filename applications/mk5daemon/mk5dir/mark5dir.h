@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id: mark5dir.h 7418 2016-08-05 16:34:41Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/mark5dir.h $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/mk5dir/mark5dir.h $
  * $LastChangedRevision: 7418 $
  * $Author: WalterBrisken $
  * $LastChangedDate: 2016-08-06 00:34:41 +0800 (六, 2016-08-06) $

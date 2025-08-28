@@ -1,15 +1,19 @@
 #!/usr/bin/python
 """
-Swap polarization labels at the given station(s).
+Usage: polswapDiFX.py [--inplace] <station[,station,station,...]> <difx basename>
 
-The polarization swaps are performed by changing the polarization labels inside the
-binary DiFX SWIN visibility data file, and accompanying PCal file(s) if present.
+Swaps the polarization labels for the given station(s).
 
-Output data are written into a new data set '<difx basename>swapped/{DIFX_*,PCAL_*}',
-unless the option --inplace is used, which modifies the original data set directly.
+Polarization swaps are performend on the labels in the binary DiFX SWIN visibility data,
+as well as in the DiFX text format PCal file data if present.
+
+The script will retain the original SWIN .difx and produce a pol-swapped copy, unless the
+option --inplace is used which carries out the swap on the original data.
+
+Output file without --inplace option:
+  <difx basename>swapped/DIFX_*
 """
 
-import argparse
 import glob, sys, os
 import shutil
 import numpy
@@ -18,7 +22,7 @@ import parseDiFX
 polswap = {'R':'L', 'L':'R', 'X':'Y', 'Y':'X', 'H':'V', 'V':'H'}
 polnames = 'RLXYHV'
 
-def polswapDifxFile(basename, targetAnts, doOverwrite=False, doPcal=True, verbose=False, restrictToFreqs_MHz=None):
+def polswapDifxFile(basename, targetAnts, doOverwrite=False, doPcal=True, verbose=False):
 	"""
 	Swap polarization labels in a binary SWIN DiFX visibility data file
 	"""
@@ -73,19 +77,8 @@ def polswapDifxFile(basename, targetAnts, doOverwrite=False, doPcal=True, verbos
 		ant2name = difx.getTelescope(h.antenna2 -1).name
 		origpols = str(h.polpair)
 
-		# Pol-swap only certain frequencies?
-		if restrictToFreqs_MHz:
-			fq = difx.getFrequency(h.freqindex)
-			freqMatch = False
-			for [range_lo,range_hi] in restrictToFreqs_MHz:
-				if fq.low_edge() >= range_lo and fq.high_edge() <= range_hi:
-					freqMatch = True
-					break
-		else:
-			freqMatch = True
-
 		# Modify the header (polpair) if station matches
-		if ((ant1name in targetAnts) or (ant2name in targetAnts)) and freqMatch:
+		if (ant1name in targetAnts) or (ant2name in targetAnts):
 			if ant1name in targetAnts:
 				h.polpair = polswap[h.polpair[0]] + h.polpair[1]
 			if ant2name in targetAnts:
@@ -197,16 +190,19 @@ def polswapPCalFiles(difxjobdir, targetAnts, verbose=False):
 
 if __name__ == '__main__':
 
-	parser = argparse.ArgumentParser(description=__doc__, add_help=True, formatter_class=argparse.RawDescriptionHelpFormatter)
-	parser.add_argument("-f", "--freq-range", dest="freqRange", help="Limit polswapping to certain frequency range(s) in MHz (example: 8000-9000,10000-11000)")
-	parser.add_argument("-i", "--inplace", action='store_true', help="Directly modify the input files, do not make a copy")
-	parser.add_argument("station", help="Station(s) to polswap <station,[,station,station,...]> (example: Ys)")
-	parser.add_argument("basename", nargs='+', metavar="basename", help="The DiFX job(s) to process (example: c221a_1021)")
-	args = parser.parse_args()
+	args = sys.argv[1:]
+	doOverwrite = False
 
-	ants = [a.upper() for a in args.station.split(',')]
-	if args.freqRange:
-		args.freqRange = [[float(fq) for fq in entry.split('-')] for entry in args.freqRange.split(',')]
+	if len(args) < 2 or args[0] in ['-h','--help']:
+		print (__doc__)
+		sys.exit(-1)
 
-	for difxf in args.basename:
-		polswapDifxFile(difxf, ants, args.inplace, doPcal=True, restrictToFreqs_MHz=args.freqRange)
+	if args[0] == '--inplace':
+		doOverwrite = True
+		args = args[1:]
+
+	ants = args[0].upper()
+	ants = [a.upper() for a in ants.split(',')]
+
+	for difxf in args[1:]:
+		polswapDifxFile(difxf,ants,doOverwrite,doPcal=True)

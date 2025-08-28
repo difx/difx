@@ -589,7 +589,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		DatastreamSubband *ds;
 		const CommonSubband *cs;
 		int c;
-		double freq_MHz;		/* [MHz] frequency in MHz */
+		double freq_MHz;		/* [MHz] frequenncy in MHz */
 		int int_freq_MHz;
 		double frac_freq_MHz;
 		double *pulseCalSamples;
@@ -776,6 +776,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 				add_rand_gauss_values(d->random, ds->samps, sqrt(d->SEFD), ds->nSamp);
 			}
 
+
 /* 3. fringe rotation -- opposite sense as for correlator */
 			for(i = 0; i < ds->nSamp; ++i)
 			{
@@ -805,6 +806,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 /* 7. iFFT, C->R for real data or C->C for complex data */
 			fftw_execute(ds->ifftPlan);
 
+
 /* 8. apply pulse cal if desired */
 			if(d->parameters && d->parameters->pulseCalInterval > 0)
 			{
@@ -827,7 +829,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 /* 10. "AGC" -- normalize array prior to quantization */
 		normalize(ds->samples1sec, ds->nSample1sec);
 
-/* 11. if LSB, flip sign of alternate samples */
+		/* if LSB, flip sign of alternate samples */
 		if(ds->df->sideband == 'L')
 		{
 			int i;
@@ -838,6 +840,6 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			}
 		}
 	}
-/* 12. quantize and create VDIF */
+/* 10. Quantize and create VDIF */
 	writeVDIF(d, C);
 }

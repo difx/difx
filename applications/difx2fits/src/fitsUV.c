@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: fitsUV.c 11059 2023-09-13 22:53:17Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsUV.c $
-// $LastChangedRevision: 11059 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2023-09-14 06:53:17 +0800 (四, 2023-09-14) $
+// $Id: fitsUV.c 10998 2023-06-21 18:29:27Z JanWagner $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsUV.c $
+// $LastChangedRevision: 10998 $
+// $Author: JanWagner $
+// $LastChangedDate: 2023-06-22 02:29:27 +0800 (四, 2023-06-22) $
 //
 //============================================================================
 #include "fits.h"
@@ -273,11 +273,7 @@ static double ***getDifxScaleFactor(const DifxInput *D, const struct CommandLine
 	int *bits;
 	double ***scale;
 	int polId, antennaId, a1, a2;
-	int maxDatastreams;
-	int *dsIds;
 	
-	maxDatastreams = DifxInputGetMaxDatastreamsPerAntenna(D);
-	dsIds = (int *)malloc(maxDatastreams*sizeof(int));
 	antScale = (double *)calloc(D->nAntenna, sizeof(double));
 	bits = (int *)calloc(D->nAntenna, sizeof(int));
 	if(!antScale || !bits)
@@ -318,6 +314,9 @@ static double ***getDifxScaleFactor(const DifxInput *D, const struct CommandLine
 	for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 	{
 		/* Now all scale factors here are antenna-based voltage scalings -WFB 20120312 */
+
+		const int maxDatastreams = 8;
+		int dsIds[maxDatastreams];
 		int n;
 		int quantBits;
 
@@ -402,7 +401,6 @@ static double ***getDifxScaleFactor(const DifxInput *D, const struct CommandLine
 
 	free(antScale);
 	free(bits);
-	free(dsIds);
 
 	return scale;
 }
@@ -962,20 +960,6 @@ int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const D
 	dv->sourceId = scan->phsCentreSrcs[dv->phaseCentre];
 	dv->freqId   = config->freqSetId;
 	dv->bandId   = dfs->freqId2IF[freqId];
-	if (opts->relabelCircular)
-	{
-		for(i = 0; i < 2; ++i)
-		{
-			if (polPair[i] == 'X')
-			{
-				polPair[i] = 'R';
-			}
-			else if (polPair[i] == 'Y')
-			{
-				polPair[i] = 'L';
-			}
-		}
-	}
 	dv->polId    = getPolProdId(dv, polPair, opts);
 
 	/* freqId should correspond to the freqId table for the actual sideband produced in the 
@@ -1644,7 +1628,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	    (opts->phaseCentre == 0 || opts->sniffAllPhaseCentres) &&
 	    opts->sniffTime > 0.0 )
 	{
-		S = newSniffer(D, dv->nComplex, fileBase, opts->sniffTime, opts->writeBandpass);
+		S = newSniffer(D, dv->nComplex, fileBase, opts->sniffTime);
 		if(S && opts->verbose > 1)
 		{
 			printf("    Sniffer memory usage ~= %lldMB\n", getSnifferMemoryUsage(S)/1000000);

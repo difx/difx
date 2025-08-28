@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: fitsTS.c 11082 2023-09-14 20:22:36Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsTS.c $
-// $LastChangedRevision: 11082 $
+// $Id: fitsTS.c 10492 2022-06-06 23:26:40Z WalterBrisken $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsTS.c $
+// $LastChangedRevision: 10492 $
 // $Author: WalterBrisken $
-// $LastChangedDate: 2023-09-15 04:22:36 +0800 (五, 2023-09-15) $
+// $LastChangedDate: 2022-06-07 07:26:40 +0800 (二, 2022-06-07) $
 //
 //============================================================================
 
@@ -812,9 +812,10 @@ static int processTsysFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
+	const int MaxDatastreamsPerAntenna=8;
+
 	char bandFormFloat[8];
-	int maxDatastreams;
-	int *origDsIds;
+	int origDsIds[MaxDatastreamsPerAntenna];
 	
 	/*  define the flag FITS table columns */
 	struct fitsBinTableColumn columns[] =
@@ -847,9 +848,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 	{
 		return D;
 	}
-
-	maxDatastreams = DifxInputGetMaxDatastreamsPerAntenna(D);
-	origDsIds = (int *)malloc(maxDatastreams*sizeof(int));
 
 	T = newDifxTcal();
 
@@ -921,7 +919,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 			{
 				int i;
 
-				n = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(origDsIds, D, antId, jobId, maxDatastreams);
+				n = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(origDsIds, D, antId, jobId, MaxDatastreamsPerAntenna);
 				for(i = 0; i < n; ++i)
 				{
 					v = getDifxTsys(D, p_fits_keys, jobId, antId, origDsIds[i], opts, nRowBytes, fitsbuf, nColumn, columns, out, T, nRec);
@@ -975,7 +973,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 	/*  free memory, and return */
 	free(alreadyHasTsys);
 	free(fitsbuf);
-	free(origDsIds);
 
 	deleteDifxTcal(T);
 

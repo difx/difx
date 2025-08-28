@@ -241,6 +241,8 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 	if(!flagOut)
 	{
 		fprintf(stderr, "Error: cannot open %s for write\n", fileName);
+
+		exit(1);
 	}
 
 	for(i = 1; i < D->nAntenna; ++i)
@@ -324,8 +326,8 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 
 							fqm = fq + (0.5 + l)*spbw;
 
-							index = (int)(fabs((R1-R2)*fqm)*(f/f0)*tInt*fftSize/dataSize +0.5);
-							if(index < fftSize)
+							index = (int)(fabs((R1-R2)*fqm)*(f/f0)*tInt*fftSize/dataSize + 0.5);
+							if(index < fftSize/2)
 							{
 								M += Fgate[index];
 							}

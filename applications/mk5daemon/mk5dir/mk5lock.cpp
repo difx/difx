@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id: mk5lock.cpp 7671 2017-03-06 20:22:26Z MarkWainright $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/mk5lock.cpp $
+// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/mk5dir/mk5lock.cpp $
 // $LastChangedRevision: 7671 $
 // $Author: MarkWainright $
 // $LastChangedDate: 2017-03-07 04:22:26 +0800 (二, 2017-03-07) $

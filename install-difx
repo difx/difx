@@ -6,6 +6,11 @@ import os,sys
 import getopt
 import re
 
+# Set this to true if compiling within a master_tags checkout
+# make trunk go away...
+master_tag = True
+#master_tag = False
+
 ###############################################################################
 # this function was once called main() but really it was only for help.
 def help(options=False, envivars=False, examples=False):
@@ -124,7 +129,6 @@ They are usually set up if you source the "setup-difx.bash" script (which
 must perhaps be adapted to your local circumstances):
 
     DIFX_VERSION    master tag "DiFX-2.6.2", &c., or "trunk" for developers
-                    Not actually required for building, but a good idea!
     DIFXROOT        absolute path to specify where the build products
                     are to be installed.  If you build outside of the
                     source tree, you may then remove the build directory
@@ -433,7 +437,16 @@ if(extraflags is not None):
 
 
 ##### Check that appropriate setup has been done ########
-difx_version = '' # Legacy from the SVN era - leave this blank to ensure paths are correct
+if not master_tag:
+    if os.environ.get('DIFX_VERSION') == None:
+        print("You must have already source'd setup.bash/setup.csh!")
+        print("DIFX_VERSION was undefined - aborting compilation")
+        raise RuntimeError("DIFX_VERSION undefined")
+    difx_version = os.environ.get('DIFX_VERSION')
+    if difx_version != "trunk":
+        difx_version = "branches/" + difx_version
+else:
+    difx_version = ''
 
 ##### OSX Specific changes
 if platform == "darwin":
@@ -450,6 +463,8 @@ if gfortran:
 
 ###### Targets ####################################################
 # auto_compile(doreconf, dolibtoolize, doautoheader, ..., dompicxx)
+
+# calcif2 is a utility on trunk but an application on master tags
 
 libtargets = []
 if components["difxio"]:
@@ -472,7 +487,7 @@ if components["vdifio"]:
     libtargets.append(["vdifio",     difx_version, True,True,True,False])
 
 utiltargets = []
-if components["calcif2"]:
+if components["calcif2"] and not master_tag:
     utiltargets.append(["calcif2",   difx_version, True,False,True,False])
 if components["difx2profile"]:
     utiltargets.append([
@@ -483,6 +498,8 @@ if components["vis2screen"]:
     utiltargets.append(["vis2screen",difx_version, True,False,False,True])
 
 apptargets = []
+if components["calcif2"] and master_tag:
+    apptargets.append(["calcif2",   difx_version, True,False,True,False])
 if components["calcserver"]:
     apptargets.append(["calcserver", difx_version, True,True,False,False])
 if components["difxcalc11"]:
@@ -549,6 +566,10 @@ setupdir = os.path.dirname(sys.argv[0])
 if not setupdir:
     setupdir = "."
 os_chdir(setupdir)
+
+# master_tags/ has no setup directory
+if not master_tag:
+    os_chdir("..")
 topdir = os.getcwd()
 
 # think a bit about pkgconfig path
@@ -556,13 +577,18 @@ pkg_config_path = blddir + "/pkgconfig"
 pkg_config_path += ":" + os.environ.get('PKG_CONFIG_PATH', '')
 os.environ['PKG_CONFIG_PATH'] = pkg_config_path
 
-# source dir build starts in topdir
+# source dir build starts in 'setup' of the svn tree and topdir of master_tag
 # inbdir is set True when the build directory differs from the source dir
-if blddir == topdir:
+if blddir == topdir + '/setup':
     if verb:
         print()
         print("Building/Installing from the source directory")
-        print("(not really recommended - you'll pollute your repo with build files!)")
+    inbdir = False
+    startdir = topdir + '/setup'
+elif master_tag and blddir == topdir:
+    if verb:
+        print()
+        print("Building/Installing from the master tag source directory")
     inbdir = False
     startdir = topdir
 else:
@@ -570,7 +596,10 @@ else:
         print()
         print("Building/Installing from the build directory:")
     inbdir = True
-    startdir = topdir
+    if master_tag:
+        startdir = topdir
+    else:
+        startdir = topdir + '/setup'
     # allow use of symbolic links in partial checkouts
     repldir = os.environ.get('DIFX_REPLDIR_PATH')
     if not repldir:

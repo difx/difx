@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: vex_scan.cpp 10985 2023-06-06 14:13:51Z WalterBrisken $
+ * $Id: vex_scan.cpp 10660 2022-10-04 10:31:37Z JanWagner $
  * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10985 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2023-06-06 22:13:51 +0800 (二, 2023-06-06) $
+ * $LastChangedRevision: 10660 $
+ * $Author: JanWagner $
+ * $LastChangedDate: 2022-10-04 18:31:37 +0800 (二, 2022-10-04) $
  *
  *==========================================================================*/
 
@@ -88,7 +88,7 @@ std::ostream& operator << (std::ostream &os, const VexScan &x)
 			os << (iter == x.phaseCenters.begin() ? '=' : ',') << *iter;
 		}
 	}
-	os <<   "\n  size=" << x.size << " bytes\n";
+	os <<   "\n  size=" << x.size << " bytes \n";
 
 	for(std::map<std::string,Interval>::const_iterator iter = x.stations.begin(); iter != x.stations.end(); ++iter)
 	{

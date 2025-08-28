@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: corrparams.cpp 10867 2023-01-03 17:22:51Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/corrparams.cpp $
- * $LastChangedRevision: 10867 $
+ * $Id: corrparams.cpp 10831 2022-11-17 02:03:58Z WalterBrisken $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/src/corrparams.cpp $
+ * $LastChangedRevision: 10831 $
  * $Author: WalterBrisken $
- * $LastChangedDate: 2023-01-04 01:22:51 +0800 (三, 2023-01-04) $
+ * $LastChangedDate: 2022-11-17 10:03:58 +0800 (四, 2022-11-17) $
  *
  *==========================================================================*/
 
@@ -967,7 +967,6 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 			std::cout << "Note: the fake keyword in the DATASTREAM section is deprecated and won't be an option in some future version of vex2difx.  Please instead use: source=fake" << std::endl;
 		}
 		++noteCount;
-
 		dataSource = DataSourceFake;
 		basebandFiles.clear();
 		basebandFiles.push_back(VexBasebandData(value, 0, -1));
@@ -1469,7 +1468,6 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			std::cout << "Note: the fake keyword in the ANTENNA section is deprecated and won't be an option in some future version of vex2difx.  Please instead use: source=fake" << std::endl;
 		}
 		++noteCount;
-
 		defaultDatastreamSetup.dataSource = DataSourceFake;
 	}
 	else if(key == "phaseCalInt")

@@ -185,6 +185,7 @@ Configuration *loadConfigration(const char *filename)
 				}
 				A->clockOffset = p[0];
 			}
+
 			else if(strcasecmp(typeStr, "SwitchedPower") == 0)
 			{
 				if(n != 3)
@@ -211,6 +212,7 @@ Configuration *loadConfigration(const char *filename)
 					A->pulseCalDelay = p[2];
 				}
 			}
+
 			else
 			{
 				fprintf(stderr, "%s line %d : Unknown antenna parameter: %s\n", filename, lineNumber, typeStr);
@@ -344,29 +346,6 @@ void printConfiguration(const Configuration *config)
 	if(config)
 	{
 		int i;
-
-		for(i = 0; i < config->nAntParm; ++i)
-		{
-			const AntennaParameters *A;
-
-			A = config->antParms + i;
-			printf("  Antenna %s:\n", A->name);
-			printf("    Dropped packet rate = %f\n", A->droppedPacketRate);
-			printf("    Invalid packet rate = %f\n", A->invalidPacketRate);
-			printf("    Clock offset = %f us\n", A->clockOffset);
-			printf("    SEFD = %f Jy\n", A->SEFD);
-			if(A->switchedPowerFrac > 0.0)
-			{
-				printf("    Switched power frequency = %d Hz\n", A->switchedPowerFreq);
-				printf("    Switched power = %f%% of SEFD\n", A->switchedPowerFrac * 100.0);
-			}
-			if(A->pulseCalFrac > 0.0)
-			{
-				printf("    Pulse cal interval = %d MHz\n", A->pulseCalInterval);
-				printf("    Pulse cal power = %f%% of SEFD\n", A->pulseCalFrac);
-				printf("    Pulse cal delay = %f us\n", A->pulseCalDelay);
-			}
-		}
 
 		if(config->fluxDensity)
 		{

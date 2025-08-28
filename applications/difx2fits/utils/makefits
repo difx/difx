@@ -22,11 +22,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id: makefits 10849 2022-12-05 20:55:43Z WalterBrisken $
-# $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/utils/makefits $
-# $LastChangedRevision: 10849 $
+# $Id: makefits 10700 2022-10-25 19:55:41Z WalterBrisken $
+# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/utils/makefits $
+# $LastChangedRevision: 10700 $
 # $Author: WalterBrisken $
-# $LastChangedDate: 2022-12-06 04:55:43 +0800 (二, 2022-12-06) $
+# $LastChangedDate: 2022-10-26 03:55:41 +0800 (三, 2022-10-26) $
 #
 #============================================================================
 
@@ -42,7 +42,7 @@ from time import gmtime, time
 program = 'makefits'
 version = '1.1'
 author  = 'Walter Brisken'
-verdate = '20221203'
+verdate = '20221025'
 
 calfiles = 'tsys flag pcal weather *.*.flag *.*.weather *.*.pcal *.*.tsys *.*.cablecal *.*.gain'
 
@@ -299,7 +299,8 @@ class JobList:
 			binrange = self.npsrbins
 		for b in range(binrange):
 			for s in range(self.nsrcfiles):
-				cmd = 'difx2fits -B %d --phasecentre %d %s ' % (b, s, options)
+				initcmd = 'difx2fits -B %d --phasecentre %d %%s ' % (b, s)
+				cmd = initcmd % options
 				if profilemode:
 					cmd += '--profilemode '
 				for j in self.jobs:

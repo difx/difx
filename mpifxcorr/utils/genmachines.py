@@ -632,18 +632,8 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                     dsnodes.append(matchNodes[0])
                 elif args.nocompute:
                     # Datastream has no unique responsible node, or is blank ie no actual recording
-                    # Under --nocompute mode, arbitrarily assign the first possible storage node
-                    foundNode = False
-                    for snode in difxmachines.getStorageNodes():
-                        if not snode.isInSlurm or snode.slurm_numProc < snode.slurm_maxProc:
-                            snode.slurm_numProc += 1
-                            dsnodes.append(snode.name)
-                            foundNode = True
-                            # print("Debug: %s: assigned node %s, slurm numProc %d maxProc %d" % (currentUrl,snode.name,snode.slurm_numProc,snode.slurm_maxProc))
-                            break
-                    if not foundNode:
-                        print("Warning: ran out of unassigned storage nodes, will oversubscribe.")
-                        dsnodes.append((difxmachines.getStorageNodes()[0]).name)
+                    # Under --nocompute mode, arbitrarily assign the first storage node
+                    dsnodes.append((difxmachines.getStorageNodes()[0]).name)
                 else:
                     # Datastream has no unique responsible node, or is blank ie no actual recording,
                     # default to a compute node
@@ -672,7 +662,7 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                 if matchNode in difxmachines.getMk5NodeNames():
                     dsnodes.append(matchNode)
                 else:
-                    print("stream type MODULE with VSN '%s', matching node '%s' not listed as an active mark5 host in machines file" % (stream.vsn,matchNode))
+                    print('stream type MODULE with VSN %s, matching node %s not listed as an active mark5 host in machines file' % (stream.vsn,matchNode))
                     return []
 
             elif stream.type == "MARK6":
