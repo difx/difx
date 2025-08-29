@@ -1,4 +1,4 @@
-AC_INIT([vdifsim],[0.1.1],[Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([vdifsim],[0.2],[Walter Brisken <wbrisken@nrao.edu>])
 AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE([foreign])
