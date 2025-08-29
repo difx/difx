@@ -8,6 +8,11 @@ Version 2.0.4 (merged; in prep) May 20, 2023
 Version 2.0.5 (reconciled) May 23, 2023
 Version 2.0.6 (reconciled) Aug 1, 2023
 Version 2.0.7 (reconciled with DiFX SVN) Aug 14, 2023, (DiFX GIT) Sep 27, 2023
+Version 2.0.7b fixes QA2TABLES, ANTAB Tsys columns now commented with sky freq,
+               and has docu update on misleading APP QA2 table scheme version info
+               https://github.com/marti-vidal-i/PolConvert/pull/14 into DiFX git
+               https://github.com/marti-vidal-i/PolConvert/pull/15 into DiFX git
+
 
 Version 1.8
 ~~~~~~~~~~~
