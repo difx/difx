@@ -51,8 +51,8 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-__version__ = "2.0.7  "  # 7 characters
-date = "Aug 14, 2023"
+__version__ = "2.0.7b "  # 7 characters
+date = "Aug 29, 2025"
 
 
 ################
@@ -160,7 +160,7 @@ def polconvert(
     mounts = {}
 ):
 
-    """POLCONVERT - STANDALONE VERSION 2.0.7
+    """POLCONVERT - STANDALONE VERSION 2.0.7b
 
      Similar parameters as the method defined in polconvert_CASA. The parameters specific
      of this task (i.e., polconvert_standalone::polconvert) may be useful to parallelize polconvert:
