@@ -1,4 +1,4 @@
-AC_INIT([CODIFIO],[0.8],[Chris.Philips@csiro.au])
+AC_INIT([CODIFIO],[0.9],[Chris.Philips@csiro.au])
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
