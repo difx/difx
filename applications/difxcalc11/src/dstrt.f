@@ -1251,7 +1251,10 @@
 !
          If (ch_cl(1:2) .eq. '-h') Call USAGE() 
          If (ch_cl(1:6) .eq. '--help') Call USAGE()
-!        If (ch_cl(1:2) .eq. '-v') Verbose = 1
+         If (ch_cl(1:2) .eq. '-v') Then
+            Verbose = Verbose + 1
+            Go to 100
+         Endif
 !        If (ch_cl(1:9) .eq. '--verbose') Verbose = 1
 !        If (ch_cl(1:2) .eq. '-q') Verbose = -1
 !        If (ch_cl(1:7) .eq. '--quiet') Verbose = -1
@@ -1333,16 +1336,6 @@
 !          Endif
 !        Endif
 !
-         If (ch_cl(1:2) .eq. '-v')  Then
-           Call GETARG(I+1,ch_cl)
-           Read(ch_cl,*,err=20) iv
-           Verbose = iv
-           Iskip = 1 
-           Go to 100
-  20        Continue
-           Verbose = 1
-           Go to 100
-         Endif
 !
          If (ch_cl(1:2) .eq. '-t') Then     
            Call GETARG(I+1,ch_cl)
@@ -1554,7 +1547,7 @@
      &  '  --help ',/                                                   &
      &  '  -h                 Print this help and quit.    ',//,        &
 !    &  '  --verbose ',/,                                               &
-     &  '  -v                 Verbose: Small printout.          ',//,   &
+     &  '  -v                 Increase verbosity; -v -v for more.',//,  &
 !    &  '  -v 1               Verbose: Small printout.          ',//,   &
 !    &  '  -v 2               Verbose: More printout.           ',/,    &
 !    &  '  -v 3               Verbose: Much more printout.     ',//,    &
