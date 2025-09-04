@@ -36,7 +36,7 @@ RUN yum clean all && yum update -y \
 # to avoid source error
 #RUN rm /usr/bin/sh && ln -s /usr/bin/bash /usr/bin/sh
 
-RUN tee > /tmp/oneAPI.repo << EOF
+RUN tee > /tmp/oneAPI.repo <<EOF
 [oneAPI]
 name=Intel® oneAPI repository
 baseurl=https://yum.repos.intel.com/oneapi
