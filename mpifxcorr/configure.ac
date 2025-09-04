@@ -1,4 +1,4 @@
-AC_INIT([mpifxcorr],[2.8],[Adam Deller <adeller@astro.swin.edu.au>])
+AC_INIT([mpifxcorr],[2.9],[Adam Deller <adeller@astro.swin.edu.au>])
 PACKAGE_VERSION=AC_PACKAGE_VERSION
 AC_SUBST([PACKAGE_VERSION])
 AC_SUBST([LIBRARY_VERSION])
@@ -51,19 +51,19 @@ AC_SUBST(mathcflags, [${MATH_CFLAGS}])
 dnl **********************************************************
 dnl **** Find difxmessage library                         ****
 dnl **********************************************************
-PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.8.0])
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.9.0])
 CPPFLAGS="${CPPFLAGS} ${DIFXMESSAGE_CFLAGS}"
 
 dnl **********************************************************
 dnl **** Find vdifio library                              ****
 dnl **********************************************************
-PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.5)
+PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.6)
 CPPFLAGS="${CPPFLAGS} ${VDIFIO_CFLAGS}"
 
 dnl **********************************************************
 dnl **** Find mark6sg library                              ****
 dnl **********************************************************
-PKG_CHECK_MODULES([MARK6SG], [mark6sg >= 2.0.3], [hasmark6sg=true], [hasmark6sg=false])
+PKG_CHECK_MODULES([MARK6SG], [mark6sg >= 2.0.4], [hasmark6sg=true], [hasmark6sg=false])
 AM_CONDITIONAL(WITH_MARK6SG, $hasmark6sg)
 if test $hasmark6sg = true; then
   CPPFLAGS="${CPPFLAGS} ${MARK6SG_CFLAGS}"
@@ -77,7 +77,7 @@ dnl **** Find mark5ipc library                            ****
 dnl **********************************************************
 m5ipc_enabled=true
 PKG_CHECK_MODULES(MARK5IPC,
-        [mark5ipc >= 2.8.0],
+        [mark5ipc >= 2.9.0],
 	[AC_DEFINE([HAVE_MARK5IPC], 1, [1=has MARK5IPC])],
 	m5ipc_enabled=false)
 AM_CONDITIONAL(WITH_MARK5IPC, $m5ipc_enabled)
@@ -138,14 +138,19 @@ AM_CONDITIONAL(WITH_SS, $ss_enabled)
 dnl **********************************************************
 dnl **** Find mark5access library                         ****
 dnl **********************************************************
-PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.6)
+PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.7)
 
 
 dnl for Mutex lock in datastream.cpp
 AC_CHECK_LIB(rt, clock_gettime)
 
 CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${VDIFIO_CFLAGS} ${MARK6SG_CFLAGS} ${MATH_CFLAGS} ${FFTW3_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET} ${OPENMP_CXXFLAGS} ${DIRLIST_CFLAGS} ${MARK6SG_CFLAGS}"
-LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${MARK6SG_LIBS} ${SS_LIBS} ${MATH_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} ${DIRLIST_LIBS} $LIBS"
+
+dnl Note: $MATH_LIBS is not included here.  It is added as needed
+dnl in _LDADD options for binaries that link to libmpifxcorr.
+dnl this allows utilities that don't need IPP not to be linked
+dnl with that library.
+LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${MARK6SG_LIBS} ${SS_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} ${DIRLIST_LIBS} $LIBS"
 
 
 dnl **********************************************************

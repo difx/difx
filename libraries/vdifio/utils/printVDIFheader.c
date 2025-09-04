@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2023 by Walter Brisken, Adam Deller                *
+ *   Copyright (C) 2014-2024 by Walter Brisken, Adam Deller                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: printVDIFheader.c 9371 2019-12-15 22:46:41Z WalterBrisken $
- * $HeadURL:  $
- * $LastChangedRevision: 9371 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2019-12-16 06:46:41 +0800 (一, 2019-12-16) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -16,15 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: expad.py 10644 2022-09-20 12:04:23Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/expad/expad.py $
-# $LastChangedRevision: 10644 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2022-09-20 20:04:23 +0800 (二, 2022-09-20) $
-#
-#============================================================================
 
 import os
 import sys
@@ -51,9 +42,6 @@ from difxutil.dbutil import *
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision: 10644 $"
-__date__ ="$Date: 2022-09-20 20:04:23 +0800 (二, 2022-09-20) $"
-__lastAuthor__="$Author: HelgeRottmann $"
 
 # minimum database schema version required by this program
 minSchemaMajor = 1
@@ -960,7 +948,7 @@ if __name__ == "__main__":
             sys.exit("Error: DIFXROOT environment must be defined.")
 
         usage = getUsage()
-        version = "%s\nSVN  %s\nOriginal author: %s\nLast changes by: %s\nLast changes on: %s" % (__prog__, __build__, __author__, __lastAuthor__, __date__)
+        version = ""
         parser = OptionParser(version=version, usage=usage)
         (options, args) = parser.parse_args()
 

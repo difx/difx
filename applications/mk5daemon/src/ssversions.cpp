@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: ssversions.cpp 5168 2013-02-26 17:58:59Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/src/ssversions.cpp $
- * $LastChangedRevision: 5168 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2013-02-27 01:58:59 +0800 (三, 2013-02-27) $
- *
- *==========================================================================*/
 
 #include <cstdio>
 #include <cstring>

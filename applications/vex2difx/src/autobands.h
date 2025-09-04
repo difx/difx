@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: autobands.h 10661 2022-10-04 12:42:35Z JanWagner $
- * $HeadURL: $
- * $LastChangedRevision: 10661 $
- * $Author: JanWagner $
- * $LastChangedDate: 2022-10-04 20:42:35 +0800 (二, 2022-10-04) $
- *
- *==========================================================================*/
 
 #ifndef __AUTOBANDS_H__
 #define __AUTOBANDS_H__
@@ -45,7 +35,7 @@ class freq;
 class AutoBands
 {
 public:
-	AutoBands() : outputbandwidth(-1), permitgaps(false), verbosity(0) { }
+	AutoBands();
 	AutoBands(double outputbandwidth_Hz, int verbosity=0, bool permitgaps=false);
 	~AutoBands();
 
@@ -55,12 +45,19 @@ public:
 	/// this can be a recorded band or a zoom band or just a virtual band.
 	class Band {
 	public:
-		double flow;		///< Start frequency of the spectral region in Hz
-		double fhigh;		///< Stop frequency of the spectral in Hz
+		double flow;		///< Start frequency of the spectral region in Hz, without overlaps
+		double fhigh;		///< Stop frequency of the spectral region in Hz
 		int antenna;		///< Arbitrary but unique antenna identifier
 
+		bool overlapping;	///< True if band overlaps with neighbour(s)
+		double min_flow;	///< Start frequency of the spectral region in Hz, with overlap retained
+		double max_fhigh;	///< Stop frequency of the spectral region in Hz
+
 		Band(double flow_, double fhigh_, int antenna_)
-			: flow(flow_),fhigh(fhigh_),antenna(antenna_) { }
+			: flow(flow_),fhigh(fhigh_),antenna(antenna_),overlapping(false),min_flow(flow_),max_fhigh(fhigh_) { }
+
+		Band(double flow_, double fhigh_, double flow_min_, double fhigh_max_, int antenna_)
+			: flow(flow_),fhigh(fhigh_),antenna(antenna_),overlapping(true),min_flow(flow_min_),max_fhigh(fhigh_max_) { }
 
 		double bandwidth() const;
 		bool operator==(const freq& rhs) const;
@@ -155,7 +152,10 @@ public:
 	void addRecbands(const std::vector<freq>& freqs, int antId = -1);
 
 	/// Return the greatest-common-divisor of a list of frequencies
-	double getGranularity(const std::vector<double>& freqs) const;
+	double computeGranularity(const std::vector<double>& freqs) const;
+
+	/// Set bandwidth granularity [Hz] to use if possbile when generating auto-zooms that form outputbands
+	double setAutozoomGranularity(const double& azgranularity_Hz);
 
 	/// Automatically build a set of outputbands and their constituent bands,
 	/// based upon previously registered (cf. addRecbands()) recorded bands.
@@ -188,6 +188,7 @@ public:
 	double minrecfreq, maxrecfreq;
 	unsigned int Nant;
 	double outputbandwidth;
+	double autozoomgranularity;
 	bool permitgaps;
 
 private:

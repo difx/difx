@@ -16,15 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: getmodules.py 7189 2016-01-15 12:47:46Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/getmodules/getmodules.py $
-# $LastChangedRevision: 7189 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2016-01-15 13:47:46 +0100 (Fr, 15. Jan 2016) $
-#
-#============================================================================
 
 import os
 import sys
@@ -39,21 +30,16 @@ import argparse
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision: 7189 $"
-__date__ ="$Date: 2016-01-15 13:47:46 +0100 (Fr, 15. Jan 2016) $"
-__lastAuthor__="$Author: HelgeRottmann $"
 
 def version():
     version = __prog__ + "\n"
-    version += "Build: %s\n" %  __build__
     version += "Author: %s\n" %  __author__
-    version += "Last Changed By: %s\n" %   __lastAuthor__
 
     return(version)
 
 def usage():
     usage = ""
-    usage += "%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__)
+    usage += "%s   %s  \n" % (__prog__, __author__)
     usage += "A program to list the current raw data inventory (modules and/or files).\n\n"
     usage += "NOTE: %s requires the DIFXROOT environment to be defined." % __prog__
     usage += "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf."

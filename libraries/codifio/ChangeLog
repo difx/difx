@@ -1,3 +1,15 @@
+Version 0.9
+~~~~~~~~~~~
+* Added utility codifSplitChan
+* Added utility fixcodif that can update headers
+* Added utility codif_dsb2ssb
+* Added utility codif_dumpheaders
+* Set CODIF SYNC word in codif.h
+* Add channel drop option, and multicast support, to codif write
+* Add reuse option so multiple processes can use the same port
+* Added ability to write out only headers
+* Version for DiFX-2.9
+
 Version 0.8
 ~~~~~~~~~~~
 * Version for DiFX-2.8, Nov 4, 2022

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mk5lock.cpp 7671 2017-03-06 20:22:26Z MarkWainright $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/mk5dir/mk5lock.cpp $
-// $LastChangedRevision: 7671 $
-// $Author: MarkWainright $
-// $LastChangedDate: 2017-03-07 04:22:26 +0800 (二, 2017-03-07) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

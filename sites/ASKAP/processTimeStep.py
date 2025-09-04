@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 import os,sys,glob,argparse,re,subprocess
 
 parser = argparse.ArgumentParser()
@@ -77,7 +77,7 @@ for a in antennadirs:
     else:
         beamdirs = [a + "/" + args.beam]
         if not os.path.exists(a + "/" + args.beam):
-            print a + "/" + args.beam + " doesn't exist, aborting"
+            print(a + "/" + args.beam + " doesn't exist, aborting")
             sys.exit()
     for b in beamdirs:
         if args.fpga == "":
@@ -91,16 +91,16 @@ for a in antennadirs:
     if len(examplefiles)>0: break
         
 if len(examplefiles) == 0:
-    print "Couldn't find any vcraft files"
+    print("Couldn't find any vcraft files")
     sys.exit()
     
 npol=len(beamdirs)
 if npol==0:
-    print "Could not find any beams. Aborting"
+    print("Could not find any beams. Aborting")
     sys.exit()
 
 if npol>2:
-    print "Too many beams found! Aborting"
+    print("Too many beams found! Aborting")
     sys.exit()
 
 
@@ -117,8 +117,8 @@ def runCommand(command, log):
 
     with open(log, "w") as log_file:
         outs, errs = proc.communicate()
-        print outs
-        print errs
+        print(outs)
+        print(errs)
         log_file.write(outs)
         log_file.write(errs)
     return proc.returncode
@@ -132,7 +132,7 @@ freqlabels = []
 for e in examplefiles:
     freqlabel = e.split('/')[-1][5:10]
     freqlabels.append(freqlabel)
-    print "Going to process", freqlabel
+    print("Going to process", freqlabel)
     #difx2fitscommand = difx2fitscommand + " " + freqlabel + "/craftfrbD2D.input"
     if not os.path.exists(freqlabel):
         os.mkdir(freqlabel)
@@ -185,10 +185,10 @@ for e in examplefiles:
         beamname = os.path.basename(beamdirs[1])
         torun += ' "%s/ak*/%s/*%s*vcraft"' % (timestep, beamname, freqlabel)
     
-    print torun
+    print(torun)
     ret = runCommand(torun, "vcraft2obs.log")
     if ret!=0:
-        print "vcraft2obs failed! (", ret, ")"
+        print("vcraft2obs failed! (", ret, ")")
         sys.exit(ret)
     
     if not os.path.exists("eop.txt"):
@@ -205,20 +205,20 @@ for e in examplefiles:
             if mjd is not None:
                 ret = os.system("getEOP.py -l {} > {}".format(mjd, topEOP))
                 if (ret!=0):
-                    print "WARNING: getEOP.py call not successful. Your eop.txt file is probably empty"
+                    print("WARNING: getEOP.py call not successful. Your eop.txt file is probably empty")
                     sys.exit(ret)    
             else:
-                print "Could not find MJD in obs.txt"
+                print("Could not find MJD in obs.txt")
                 sys.exit()
                 
-        print "Copying EOP from top dir"
+        print("Copying EOP from top dir")
         os.system("cp {} eop.txt".format(topEOP))
 
         
     #ret = os.system("./runaskap2difx | tee askap2difx.log")
     ret = runCommand("./runaskap2difx", "askap2difx.log")
     if ret!=0:
-        print "askap2difx failed! (", ret, ")"
+        print("askap2difx failed! (", ret, ")")
         sys.exit(ret)
 
     # if .bat0 does not exist in upper directory, copy back
@@ -242,10 +242,10 @@ for e in examplefiles:
 for freqlabel in freqlabels:
     d2dinput = glob.glob(freqlabel + "/*D2D.input")
     if len(d2dinput) > 1:
-        print "Too many D2D inputs in", freqlabel, "aborting rundifx2fits!"
+        print("Too many D2D inputs in", freqlabel, "aborting rundifx2fits!")
         sys.exit()
     elif len(d2dinput) == 0:
-        print "No D2D inputs found for", freqlabel, "aborting rundifx2fits!"
+        print("No D2D inputs found for", freqlabel, "aborting rundifx2fits!")
         sys.exit()
     difx2fitscommand = difx2fitscommand + " " + d2dinput[0]
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,21 +16,12 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx2fits.h 1520 2009-09-23 23:34:38Z AdamDeller $
-// $HeadURL: $
-// $LastChangedRevision: 1520 $
-// $Author: AdamDeller $
-// $LastChangedDate: 2009-09-23 17:34:38 -0600 (Wed, 23 Sep 2009) $
-//
-//============================================================================
 #ifndef __DIFX2FITS_H__
 #define __DIFX2FITS_H__
 
 #include <difxio.h>
 #include "fits.h"
+#include "snifferoptions.h"
 
 #define array_MAX_BANDS		32
 #define array_MAX_TONES		1024
@@ -39,6 +30,13 @@
 
 /* This sets leap secons if for some reason they were not otherwise conveyed */
 #define DEFAULT_IAT_UTC 33
+
+enum AllPcalTonesMode
+{
+	AllPcalTonesOff = 0,	/* put in PH table that which corresponds to job files */
+	AllPcalTonesOn,		/* put all pulse cal tones in PH table */
+	AllPcalTonesBoth 	/* create two PH tables, one according to job file and the other with all tones */
+};
 
 struct CommandLineOptions
 {
@@ -67,7 +65,6 @@ struct CommandLineOptions
 	int dontCombine;
 	int overrideVersion;
 	int dontIncludeVisibilities;
-	double sniffTime;
 	int pulsarBin;
 	int phaseCentre;
 	double DifxTsysAvgSeconds;
@@ -78,11 +75,15 @@ struct CommandLineOptions
 	int antpol;		/* if 1, then polarization is determined by antenna */        
 	int polxy2hv;		/* if 1, then polarization X/Y is transformed to H/V */
 	int localdir;		/* if 1, then *.calc, *.im, and *.difx are sought in the same directory as *.input files */
-	int allpcaltones;	/* if 1, then all phase calibration tones are extactred */
+	enum AllPcalTonesMode allpcaltones;
 	int relabelCircular;	/* if != 0, then relabel all polarizations as R/L regardless of their actual values */
 	int doVanVleck;		/* if != 0, then correct for Van Vleck (quantization correction) */
 	DifxMergeOptions mergeOptions;
+	DifxDataFilterOptions filterOptions;
+	SnifferOptions snifferOptions;
 };
+
+void resetExtVers();
 
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	struct fitsPrivate *out, const struct CommandLineOptions *opts);
@@ -118,7 +119,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts);
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts, enum AllPcalTonesMode allpcaltones);
 
 const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);

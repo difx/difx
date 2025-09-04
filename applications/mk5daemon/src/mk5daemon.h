@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: mk5daemon.h 10395 2022-02-18 12:37:07Z JanWagner $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/src/mk5daemon.h $
- * $LastChangedRevision: 10395 $
- * $Author: JanWagner $
- * $LastChangedDate: 2022-02-18 20:37:07 +0800 (五, 2022-02-18) $
- *
- *==========================================================================*/
 
 #ifndef __MK5DAEMON_H__
 #define __MK5DAEMON_H__

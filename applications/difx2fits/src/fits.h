@@ -34,6 +34,9 @@
 
 #define FITS_OBS_CODE_LENGTH	24
 
+#define MAX_EXTENSIONS		32
+#define MAX_EXTENSION_NAME_SIZE	16
+
 /* Structs for describing FITS data types: */
 
 struct fitsBinTableColumn
@@ -71,6 +74,12 @@ struct fitsMatrixPixels
 	int blank;
 };
 
+typedef struct
+{
+	char name[MAX_EXTENSION_NAME_SIZE];
+	int version;
+} ExtVer;
+
 /* private data structure for the FITS package */
 struct fitsPrivate
 {
@@ -80,6 +89,7 @@ struct fitsPrivate
 	int row_bytes;
 	fpos_t naxis2_offset;
 	int rows_written;
+	ExtVer extensionVersions[MAX_EXTENSIONS];
 };
 
 struct fits_keywords

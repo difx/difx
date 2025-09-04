@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_job.c 7665 2017-02-24 16:46:45Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_job.c $
-// $LastChangedRevision: 7665 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-02-25 00:46:45 +0800 (六, 2017-02-25) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -116,8 +106,8 @@ void deleteDifxJobArray(DifxJob *djarray, int nJob)
 		dj->flag = 0;
 		deleteRemap(dj->jobIdRemap);
 		dj->jobIdRemap = 0;
-		deleteRemap(dj->freqIdRemap);
-		dj->freqIdRemap = 0;
+		deleteRemap(dj->jobfreqIdRemap);
+		dj->jobfreqIdRemap = 0;
 		deleteRemap(dj->antennaIdRemap);
 		dj->antennaIdRemap = 0;
 		deleteRemap(dj->datastreamIdRemap);
@@ -155,7 +145,7 @@ void fprintDifxJob(FILE *fp, const DifxJob *dj)
 	fprintf(fp, "    flag file = %s\n", dj->flagFile);
 	fprintf(fp, "    output file = %s\n", dj->outputFile);
 	fprintRemap(fp, "  jobId", dj->jobIdRemap);
-	fprintRemap(fp, "  freqId", dj->freqIdRemap);
+	fprintRemap(fp, "  jobfreqId", dj->jobfreqIdRemap);
 	fprintRemap(fp, "  antennaId", dj->antennaIdRemap);
 	fprintRemap(fp, "  datastreamId", dj->datastreamIdRemap);
 	fprintRemap(fp, "  baselineId", dj->baselineIdRemap);
@@ -195,7 +185,7 @@ void copyDifxJob(DifxJob *dest, const DifxJob *src, int *antennaIdRemap)
 		}
 
 		dest->jobIdRemap = dupRemap(src->jobIdRemap);
-		dest->freqIdRemap = dupRemap(src->freqIdRemap);
+		dest->jobfreqIdRemap = dupRemap(src->jobfreqIdRemap);
 		dest->antennaIdRemap = dupRemap(src->antennaIdRemap);
 		dest->datastreamIdRemap = dupRemap(src->datastreamIdRemap);
 		dest->baselineIdRemap = dupRemap(src->baselineIdRemap);
@@ -287,10 +277,10 @@ void DifxJobQuashTrivialRemaps(DifxJob *dj)
 		deleteRemap(dj->jobIdRemap);
 		dj->jobIdRemap = 0;
 	}
-	if(isRemapTrivial(dj->freqIdRemap))
+	if(isRemapTrivial(dj->jobfreqIdRemap))
 	{
-		deleteRemap(dj->freqIdRemap);
-		dj->freqIdRemap = 0;
+		deleteRemap(dj->jobfreqIdRemap);
+		dj->jobfreqIdRemap = 0;
 	}
 	if(isRemapTrivial(dj->antennaIdRemap))
 	{

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Chris Phillips            *
+ *   Copyright (C) 2008-2023 by Walter Brisken & Chris Phillips            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5spec.c 10609 2022-08-23 16:28:37Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 10609 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-08-24 00:28:37 +0800 (三, 2022-08-24) $
-//
-//============================================================================
 
 // Change this to configure detection, if possible
 #define USEGETOPT 1
@@ -46,8 +36,8 @@
 
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken, Chris Phillips";
-const char version[] = "1.6";
-const char verdate[] = "20220429";
+const char version[] = "1.7";
+const char verdate[] = "20231215";
 
 volatile int die = 0;
 
@@ -99,6 +89,8 @@ static void usage(const char *pgm)
 	printf("    -d         Double sideband (complex) data\n\n");
 	printf("    -nonorm\n");
 	printf("    -N         Do not normalise\n\n");
+	printf("    -autocorr\n");
+	printf("    -a         Compute autocorrelation instead of spectrum\n\n");
 	printf("    -bchan=<x>\n");
 	printf("    -b <x>     Start output at channel number <x> (0-based)\n\n");
 	printf("    -echan=<x>\n");
@@ -117,7 +109,7 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 	cdata = (double complex **)malloc(ms->nchan*sizeof(double complex *));
 	for(j = 0; j < ms->nchan; ++j)
 	{
-		cdata[j] = (double complex*)malloc(nchan*sizeof(double complex));
+		cdata[j] = (double complex*)fftw_malloc(nchan*sizeof(double complex));
 		plan[j] = fftw_plan_dft_1d(nchan, cdata[j], zdata[j], FFTW_FORWARD, FFTW_MEASURE);
 	}
 
@@ -176,7 +168,7 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 	for(j = 0; j < ms->nchan; ++j)
 	{
 		fftw_destroy_plan(plan[j]);
-		free(cdata[j]);
+		fftw_free(cdata[j]);
 	}
 	free(plan);
 	free(cdata);
@@ -227,7 +219,7 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 	data = (double **)malloc(ms->nchan*sizeof(double *));
 	for(j = 0; j < ms->nchan; ++j)
 	{
-		data[j] = (double *)malloc((chunk+2)*sizeof(double));
+		data[j] = (double *)fftw_malloc((chunk+2)*sizeof(double));
 		plan[j] = fftw_plan_dft_r2c_1d(nchan*2, data[j], zdata[j], FFTW_MEASURE);
 	}
 	for(j = 0; j < nint; ++j)
@@ -299,7 +291,7 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 	for(j = 0; j < ms->nchan; ++j)
 	{
 		fftw_destroy_plan(plan[j]);
-		free(data[j]);
+		fftw_free(data[j]);
 	}
 	free(plan);
 	free(data);
@@ -310,8 +302,7 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 }
 
 
-int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset,
-	 polmodetype polmode, int doublesideband, int nonorm, int bchan, int echan)
+int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode, int doublesideband, int nonorm, int bchan, int echan, int doAutocorr)
 {
 	struct mark5_stream *ms;
 	double **spec;
@@ -323,6 +314,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	double f, sum, chanbw;
 	double x, y;
 	int docomplex;
+	double deltat;
 
 	total = unpacked = 0;
 
@@ -356,6 +348,8 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 		chunk = 2*nchan;
 	}
 
+	deltat = 1.0/ms->samprate;
+
 	out = fopen(outfile, "w");
 	if(!out)
 	{
@@ -371,7 +365,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	for(i = 0; i < ms->nchan; ++i)
 	{
 		spec[i] = (double *)calloc(nchan, sizeof(double));
-		zdata[i] = (fftw_complex *)malloc((nchan+2)*sizeof(fftw_complex));
+		zdata[i] = (fftw_complex *)fftw_malloc((nchan+2)*sizeof(fftw_complex));
 	}
 	for(i = 0; i < ms->nchan/2; ++i)
 	{
@@ -389,55 +383,168 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 
 	fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
 
-	/* normalize across all ifs/channels */
-	sum = 0.0;
-	for(c = 0; c < nchan; ++c)
-	{
-		for(i = 0; i < ms->nchan; ++i)
-		{
-			sum += spec[i][c];
-		}
-	}
-
-	f = ms->nchan*nchan/sum;
-	if(nonorm)
-	{
-		//printf("Norm Factor = %.3g\n", 1/f);
-		//f *= unpacked*256;
-		//printf("Updated Norm Factor = %.3g\n", 1/f);
-		f = 1.0/unpacked/256.0;
-	}
-	
 	chanbw = ms->samprate/(2.0e6*nchan);
 	if(docomplex)
 	{
 		chanbw *= 2;
 	}
 
-	for(c = bchan; c < echan; ++c)
+	if(doAutocorr)
 	{
-		fprintf(out, "%f ", (double)c*chanbw);
+		fftw_plan acplan;
+		double *psdtmp;
+		double*psd;
+		fftw_complex *psdfft;
+		double **ac;
+		int acsize;
+		int l;
+
+		acsize = nchan/2+1;
+
+		psdtmp = malloc(nchan*sizeof(double));
+		psd = fftw_malloc(nchan*sizeof(double));
+		psdfft = fftw_malloc(acsize*sizeof(fftw_complex));
+		ac = (double **)malloc(ms->nchan*sizeof(double *));
 		for(i = 0; i < ms->nchan; ++i)
 		{
-			fprintf(out, " %f", f*spec[i][c]);
+			ac[i] = malloc(acsize * sizeof(double));
 		}
-		if(polmode != NOPOL)
+
+		acplan = fftw_plan_dft_r2c_1d(nchan, psd, psdfft, FFTW_ESTIMATE);
+
+		for(i = 0; i < ms->nchan; ++i)
 		{
-		        for(i = 0; i < ms->nchan/2; ++i)
+			double m = -1.0;
+			int b = 0;
+			sum = 0.0;
+
+			for(c = 0; c < nchan; ++c)
 			{
-			        x = creal(zx[i][c])*f;
-				y = cimag(zx[i][c])*f;
-				fprintf(out, "  %f %f", sqrt(x*x+y*y), atan2(y, x));
+				double x, y;
+				x = creal(spec[i][c]);
+				y = cimag(spec[i][c]);
+				psdtmp[c] = x*x + y*y;
+				sum += psdtmp[c];
+				if(psdtmp[c] > m)
+				{
+					m = psdtmp[c];
+					b = c;
+				}
+			}
+			
+			/* subtract noise floor (at least approximately) and do roll */
+			sum /= nchan;
+			for(c = 0; c < nchan; ++c)
+			{
+				psd[c] = 0.0;
+			}
+			for(c = bchan; c < echan; ++c)
+			{
+				psdtmp[c] -= sum;
+				if(psdtmp[c] < 0.0)
+				{
+					psdtmp[c] = 0.0;
+				}
+				psd[(c - b + nchan) % nchan] = psdtmp[c];
+			}
+
+			fftw_execute(acplan);
+
+			for(l = 0; l < acsize; ++l)
+			{
+				ac[i][l] = cabs(psdfft[l]);
 			}
 		}
-		fprintf(out, "\n");
+
+		/* normalize the autocorr by its peak value, separately for each baseband channel */
+		for(i = 0; i < ms->nchan; ++i)
+		{
+			double m;
+			
+			m = 0.0;
+			for(l = 0; l < acsize; ++l)
+			{
+				if(ac[i][l] > m)
+				{
+					m = ac[i][l];
+				}
+			}
+			if(m > 0.0)
+			{
+				for(l = 0; l < acsize; ++l)
+				{
+					ac[i][l] /= m;
+				}
+			}
+		}
+
+		for(l = 0; l < acsize; ++l)
+		{
+			fprintf(out, "%f ", 2.0*l*deltat*1000000.0);
+			for(i = 0; i < ms->nchan; ++i)
+			{
+				fprintf(out, " %f", ac[i][l]);
+			}
+			/* FIXME: print cross correlations as well if requested? */
+			fprintf(out, "\n");
+		}
+
+		for(i = 0; i < ms->nchan; ++i)
+		{
+			free(ac[i]);
+		}
+		fftw_free(psdfft);
+		fftw_free(psd);
+		free(ac);
+		free(psdtmp);
+		fftw_destroy_plan(acplan);
+	}
+	else
+	{
+		/* normalize across all ifs/channels */
+		sum = 0.0;
+		for(c = 0; c < nchan; ++c)
+		{
+			for(i = 0; i < ms->nchan; ++i)
+			{
+				sum += spec[i][c];
+			}
+		}
+
+		f = ms->nchan*nchan/sum;
+		if(nonorm)
+		{
+			//printf("Norm Factor = %.3g\n", 1/f);
+			//f *= unpacked*256;
+			//printf("Updated Norm Factor = %.3g\n", 1/f);
+			f = 1.0/unpacked/256.0;
+		}
+	
+		for(c = bchan; c < echan; ++c)
+		{
+			fprintf(out, "%f ", (double)c*chanbw);
+			for(i = 0; i < ms->nchan; ++i)
+			{
+				fprintf(out, " %f", f*spec[i][c]);
+			}
+			if(polmode != NOPOL)
+			{
+				for(i = 0; i < ms->nchan/2; ++i)
+				{
+					x = creal(zx[i][c])*f;
+					y = cimag(zx[i][c])*f;
+					fprintf(out, "  %f %f", sqrt(x*x+y*y), atan2(y, x));
+				}
+			}
+			fprintf(out, "\n");
+		}
 	}
 
 	fclose(out);
 
 	for(i = 0; i < ms->nchan; ++i)
 	{
-		free(zdata[i]);
+		fftw_free(zdata[i]);
 		free(spec[i]);
 	}
 	for(i = 0; i < ms->nchan/2; ++i)
@@ -461,6 +568,7 @@ int main(int argc, char **argv)
 	polmodetype polmode = VLBA;
 	int doublesideband = 0;
 	int nonorm = 0;
+	int doAutocorr = 0;
 	struct sigaction new_sigint_action;
 #if USEGETOPT
 	int opt;
@@ -471,6 +579,7 @@ int main(int argc, char **argv)
 		{"dbbc", 0, 0, 'B'},  // DBBC channel ordering
 		{"nopol", 0, 0, 'P'}, // Don't compute the crosspol terms
 		{"help", 0, 0, 'h'},
+		{"autocorr", 0, 0, 'a'}, // compute autocorrelation function instead
 		{"bchan", 1, 0, 'b'},
 		{"echan", 1, 0, 'e'},
 		{0, 0, 0, 0}
@@ -510,6 +619,10 @@ int main(int argc, char **argv)
 
 		case 'e': // echan (output selection)
 			echan = atoi(optarg);
+			break;
+
+		case 'a': // autocorr  (do FFT of spectrum before writing out)
+			doAutocorr = 1;
 			break;
 
 		case 'h': // help
@@ -616,7 +729,7 @@ int main(int argc, char **argv)
 		echan = nchan;
 	}
 
-	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, nonorm, bchan, echan);
+	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, nonorm, bchan, echan, doAutocorr);
 
 	return retval;
 }

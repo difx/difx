@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 #include "datastream.h"
 #include "core.h"
 #include "fxmanager.h"
@@ -1367,7 +1357,7 @@ void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
       cfatal << startl << "Datastream " << mpiid << ": openstream() called but Datastream not configured for TCP or UDP!" << endl;
   }
 
-  status = bind(serversock, (struct sockaddr *)&server, sizeof(server));
+  status = ::bind(serversock, (struct sockaddr *)&server, sizeof(server));
   if (status!=0) {
     cerror << startl << "Datastream " << mpiid << ": Cannot bind eVLBI socket" << endl;
     close(serversock);

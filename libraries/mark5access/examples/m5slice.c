@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012-2020 by Chris Phillips                             *
+ *   Copyright (C) 2012-2024 by Chris Phillips                             *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
  *   the Free Software Foundation; either version 3 of the License, or     *
@@ -15,16 +15,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5slice.c 10490 2022-06-03 14:18:03Z WalterBrisken $
-// $HeadURL:  $
-// $LastChangedRevision: 10490 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-03 22:18:03 +0800 (五, 2022-06-03) $
-//
-//============================================================================
 
 #ifdef __APPLE__
 
@@ -170,7 +160,7 @@ int main(int argc, char **argv) {
     sook = lseek(infile, offsetbytes, SEEK_SET);
     if (sook==-1 || sook!=offsetbytes) {
       if (sook==-1)
-	perror("Skiping to offset\n");
+	perror("Skipping to offset\n");
       else
 	fprintf(stderr, "Could not offset to right place in file\n");
       close(infile);

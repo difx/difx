@@ -46,7 +46,7 @@ class MarkXMulticast:
 		self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 		self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		self.s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
-		self.s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 0)
+		self.s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
 		self.s.bind(('', self.mcastport))
 
 		mreq = struct.pack("4sl", socket.inet_aton(self.mcastaddr), socket.INADDR_ANY)

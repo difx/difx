@@ -234,17 +234,18 @@ def tableSchemeHelp():
     observations, and non-QA2 (solve) mode where a solution is derived
     from one scan and applied to others.
 
-    The first scheme has twelve versions, v0 .. v11 based on the development
-    history.  Currently v4 .. v11 are sensible; the default is v8.  This
-    scheme requires a set of tables (named with the the -l label argument):
+    PolConvert requires a set of tables (named with the the -l label argument):
+
+    Historically these could be described with twelve versions, v0 .. v11,
+    all containing variants of this set of tables:
 
         a <label>.concatenated.ms.ANTENNA
         c <label>.concatenated.ms.calappphase
-        d <label>.calibrated.ms.Df0.<APP|ALMA>
-        b <label>.concatenated.ms.bandpass-zphs
+        d <label>.calibrated.ms.<Df0|Df0gen>.<APP|ALMA>
+        b <label>.concatenated.ms.<bandpass-zphs|bandpassAPP>
         g <label>.concatenated.ms.flux_inf.<APP|ALMA>
-        p <label>.concatenated.ms.phase_int.<APP|ALMA><.XYsmooth>
-        x <label>.calibrated.ms.XY0.<APP|ALMA>
+        p <label>.concatenated.ms.phase_int.<APP|ALMA>[.XYsmooth]
+        x <label>.calibrated.ms.<XY0|XY0kcrs>.<APP|ALMA>
         y <label>.calibrated.ms.Gxyamp.<APP|ALMA>
     
     Here APP or ALMA refers to ALMA Phasing Project/System (APP/APS) scans
@@ -264,14 +265,20 @@ def tableSchemeHelp():
     v10 .    .    APP  .    APP  ALMA APP  APP  yes
     v11 .    .    APP  .    APP  APP  APP  ALMA yes
 
-    The second scheme assumes an initial reduction with <TBD.py>.
-
     If an alternate table for the XY0 phase is suggested, you can change
     the name with -Y; e.g. XY0.APP to XY0kcrs.APP
 
-    Finally an environment variable QA2TABLES may be set to a comma-sep
-    list of compete table names (ignoring label, concatenated and calibrated)
-    may be used for any arbitrary set of tables.
+    For data until year 2022 the built-in versions v4 .. v11 are sensible,
+    paired with overrides of '-Y XY0kcrs.APP' and '-B bandpassAPP' as needed.
+    For data from 2022 onwards the ALMA QA2 process has diverged such that
+    the above version schemes are obsolete and incompatible with APP QA2 output,
+    despite the READMEs in the APP QA2 deliverable suggesting otherwise.
+
+    An environment variable QA2TABLES may be set to a comma-separated list of
+    table names (omitting the label, concatenated.ms and calibrated.ms name prefixes)
+    to specify any arbitrary set of tables. For example, for EHT 2022:
+    $ export QA2TABLES="ANTENNA,calappphase,Df0gen.APP,bandpassAPP,flux_inf.APP.OpCorr,phase_int.APP.XYsmooth,XY0kcrs.APP,Gxyamp.APP"
+    $ drivepolconvert.py -q custom -l qa2label <etc>
     '''
     print(story)
 
@@ -338,6 +345,8 @@ def calibrationChecks(o):
     ### if push comes to shove
     else:               # supply via environment variable
         o.qal = os.environ['QA2TABLES'].split(',')
+        o.conlabel = o.label + '.concatenated.ms'
+        o.callabel = o.label + '.calibrated.ms'
     if tbwarn:
         print('\n\n ***You have selected an obsolete set of tables')
         print('Will proceed--but you had better known what you are doing.\n')
@@ -685,6 +694,7 @@ def useTheUserIFlist(o):
     o.zlist = o.iflist.split(',')
     o.zfirst = int(o.zlist[0])
     o.zfinal = int(o.zlist[-1])
+    o.zffs.append((o.zfirst,o.zfinal))
     print("User list zff: %d,%d"%(o.zfirst,o.zfinal))
     if o.verb: print('zlist is',o.zlist)
     return True

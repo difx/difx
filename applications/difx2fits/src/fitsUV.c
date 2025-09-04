@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsUV.c 10998 2023-06-21 18:29:27Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsUV.c $
-// $LastChangedRevision: 10998 $
-// $Author: JanWagner $
-// $LastChangedDate: 2023-06-22 02:29:27 +0800 (四, 2023-06-22) $
-//
-//============================================================================
 #include "fits.h"
 
 #include <stdlib.h>
@@ -263,6 +253,12 @@ static double vanVleck(int b1, int b2)
 		}
 	}
 
+	/* If both datastreams use 8 or more bits and the above table does not have an entry, it is reasonabl to assume that 1.0 is close enough */
+	if(b1 >= 8 && b2 >= 8)
+	{
+		return 1.0;
+	}
+
 	return 0.0;	/* effectively an error code */
 }
 
@@ -273,7 +269,11 @@ static double ***getDifxScaleFactor(const DifxInput *D, const struct CommandLine
 	int *bits;
 	double ***scale;
 	int polId, antennaId, a1, a2;
+	int maxDatastreams;
+	int *dsIds;
 	
+	maxDatastreams = DifxInputGetMaxDatastreamsPerAntenna(D);
+	dsIds = (int *)malloc(maxDatastreams*sizeof(int));
 	antScale = (double *)calloc(D->nAntenna, sizeof(double));
 	bits = (int *)calloc(D->nAntenna, sizeof(int));
 	if(!antScale || !bits)
@@ -314,9 +314,6 @@ static double ***getDifxScaleFactor(const DifxInput *D, const struct CommandLine
 	for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 	{
 		/* Now all scale factors here are antenna-based voltage scalings -WFB 20120312 */
-
-		const int maxDatastreams = 8;
-		int dsIds[maxDatastreams];
 		int n;
 		int quantBits;
 
@@ -401,6 +398,7 @@ static double ***getDifxScaleFactor(const DifxInput *D, const struct CommandLine
 
 	free(antScale);
 	free(bits);
+	free(dsIds);
 
 	return scale;
 }
@@ -825,9 +823,9 @@ int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const D
 	}
 
 	/* adjust freqId through remapping if needed */
-	if(dv->D->job[dv->jobId].freqIdRemap)
+	if(dv->D->job[dv->jobId].jobfreqIdRemap)
 	{
-		freqId = dv->D->job[dv->jobId].freqIdRemap[freqId];
+		freqId = dv->D->job[dv->jobId].jobfreqIdRemap[freqId];
 	}
 
 	/* if chan weights are written the data volume is 3/2 as large */
@@ -960,6 +958,20 @@ int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const D
 	dv->sourceId = scan->phsCentreSrcs[dv->phaseCentre];
 	dv->freqId   = config->freqSetId;
 	dv->bandId   = dfs->freqId2IF[freqId];
+	if (opts->relabelCircular)
+	{
+		for(i = 0; i < 2; ++i)
+		{
+			if (polPair[i] == 'X' || polPair[i] == 'H')
+			{
+				polPair[i] = 'R';
+			}
+			else if (polPair[i] == 'Y' || polPair[i] == 'V')
+			{
+				polPair[i] = 'L';
+			}
+		}
+	}
 	dv->polId    = getPolProdId(dv, polPair, opts);
 
 	/* freqId should correspond to the freqId table for the actual sideband produced in the 
@@ -1626,9 +1638,9 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 #ifdef HAVE_FFTW
 	if( (opts->pulsarBin == 0 || opts->sniffAllBins) &&
 	    (opts->phaseCentre == 0 || opts->sniffAllPhaseCentres) &&
-	    opts->sniffTime > 0.0 )
+	    opts->snifferOptions.solutionInterval > 0.0 )
 	{
-		S = newSniffer(D, dv->nComplex, fileBase, opts->sniffTime);
+		S = newSniffer(D, dv->nComplex, fileBase, &opts->snifferOptions);
 		if(S && opts->verbose > 1)
 		{
 			printf("    Sniffer memory usage ~= %lldMB\n", getSnifferMemoryUsage(S)/1000000);
@@ -1830,6 +1842,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 #ifdef HAVE_FFTW
 				if(S)
 				{
+					flushSniffer(S);
 					deleteSniffer(S);
 					fftw_cleanup();
 					S = 0;
@@ -1870,6 +1883,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 #ifdef HAVE_FFTW
 	if(S)
 	{
+		flushSniffer(S);
 		deleteSniffer(S);
 		fftw_cleanup();
 		S = 0;

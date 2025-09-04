@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2011 by Walter Brisken                             *
+ *   Copyright (C) 2006-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: test_mark5_stream.c 10490 2022-06-03 14:18:03Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 10490 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-03 22:18:03 +0800 (五, 2022-06-03) $
-//
-//============================================================================
 
 #include "config.h"
 #include <stdio.h>
@@ -310,7 +300,7 @@ int test5(const char *filename, const char *formatname, int offset,  int n)
 {
 	struct mark5_stream *ms;
 	float **data;
-	int i, j, k;
+	int i, j, k, v;
 	FILE *out;
 	char fn[MARK5_STREAM_ID_LENGTH];
 
@@ -333,7 +323,11 @@ int test5(const char *filename, const char *formatname, int offset,  int n)
 
 	mark5_stream_print(ms);
 
-	snprintf(fn, MARK5_STREAM_ID_LENGTH,"ms.%s", ms->formatname);
+	v = snprintf(fn, MARK5_STREAM_ID_LENGTH, "ms.%s", ms->formatname);
+	if(v >= MARK5_STREAM_ID_LENGTH)
+	{
+		fprintf(stderr, "Warning: test5: MARK5_STREAM_ID_LENGTH is too short (%d <= %d) for format %s\n", MARK5_STREAM_ID_LENGTH, v, ms->formatname);
+	}
 
 	out = fopen(fn, "w");
 

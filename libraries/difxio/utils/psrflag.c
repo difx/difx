@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2017 by Walter Brisken                             *
+ *   Copyright (C) 2014-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: difxcalculator.c 1419 2009-08-29 21:37:08Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/branches/difx-1.5/utils/difxcalculator.c $
- * $LastChangedRevision: 1419 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2009-08-29 15:37:08 -0600 (Sat, 29 Aug 2009) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,11 +25,12 @@
 #include <fftw3.h>
 #include <time.h>
 #include "difx_input.h"
+#include "difxio_macros.h"
 
 const char program[] = "psrflag";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.1";
-const char verdate[] = "20140211";
+const char verdate[] = "20240917";
 
 void usage()
 {
@@ -192,7 +183,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 		gate[i] = binWeight1;
 	}
 	
-	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.bin", pulsarName);
+	snprintf_warn(fileName, DIFXIO_FILENAME_LENGTH, "%s.bin", pulsarName);
 	out = fopen(fileName, "w");
 	if(!out)
 	{
@@ -221,7 +212,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 		Fgate[i] /= m;
 	}
 
-	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.fft", pulsarName);
+	snprintf_warn(fileName, DIFXIO_FILENAME_LENGTH, "%s.fft", pulsarName);
 	out = fopen(fileName, "w");
 	if(!out)
 	{
@@ -236,13 +227,11 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 		fclose(out);
 	}
 
-	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s%s.%s.flag", D->job->obsCode, D->job->obsSession, pulsarName);
+	snprintf_warn(fileName, DIFXIO_FILENAME_LENGTH, "%s%s.%s.flag", D->job->obsCode, D->job->obsSession, pulsarName);
 	flagOut = fopen(fileName, "w");
 	if(!flagOut)
 	{
 		fprintf(stderr, "Error: cannot open %s for write\n", fileName);
-
-		exit(1);
 	}
 
 	for(i = 1; i < D->nAntenna; ++i)
@@ -263,7 +252,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 
 			// printf("%s -- %s\n", D->antenna[i].name, D->antenna[j].name);
 
-			snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.%s-%s.rates", pulsarName, D->antenna[i].name, D->antenna[j].name);
+			snprintf_warn(fileName, DIFXIO_FILENAME_LENGTH, "%s.%s-%s.rates", pulsarName, D->antenna[i].name, D->antenna[j].name);
 			out = fopen(fileName, "w");
 
 			for(scanId = 0; scanId < D->nScan; ++scanId)
@@ -326,8 +315,8 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 
 							fqm = fq + (0.5 + l)*spbw;
 
-							index = (int)(fabs((R1-R2)*fqm)*(f/f0)*tInt*fftSize/dataSize + 0.5);
-							if(index < fftSize/2)
+							index = (int)(fabs((R1-R2)*fqm)*(f/f0)*tInt*fftSize/dataSize +0.5);
+							if(index < fftSize)
 							{
 								M += Fgate[index];
 							}
@@ -501,7 +490,7 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	D = updateDifxInput(D, 0);
+	D = updateDifxInput(D, 0, 0);
 	if(!D)
 	{
 		fprintf(stderr, "Update failed: D == 0.  Quitting\n");

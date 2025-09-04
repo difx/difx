@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 import os,sys,argparse
 
 parser = argparse.ArgumentParser(description='Turn a snoopy log into a binconfig and polyco for DiFX.')
@@ -10,29 +10,29 @@ args = parser.parse_args()
 fakepulsarperiod = 10 # seconds
 
 if args.freq < 0:
-    print "You have to supply a frequency for the snoopy files! Don't be lazy, that's how accidents happen."
+    print("You have to supply a frequency for the snoopy files! Don't be lazy, that's how accidents happen.")
     sys.exit()
 
 if args.timediff < -10000:
-    print "You have to specify a timediff! It should just be the geometric delay from ASKAP to the geocentre, "
-    print "now everything has been fixed.  Don't be lazy, that's how accidents happen."
+    print("You have to specify a timediff! It should just be the geometric delay from ASKAP to the geocentre, ")
+    print("now everything has been fixed.  Don't be lazy, that's how accidents happen.")
     sys.exit()
 timediffsec = args.timediff/1000.0
 
 if args.corrstartmjd < 0:
-    print "You have to specify a corrstartmjd. getGeometricDelay.py will give it to you"
+    print("You have to specify a corrstartmjd. getGeometricDelay.py will give it to you")
     sys.exit()
 
 with open(args.snoopylog) as snoopyin:
     snoopylines = snoopyin.readlines()
 nocommentlines = []
 for line in snoopylines:
-    print line
+    print(line)
     if len(line) > 1 and not line[0] =="#":
         nocommentlines.append(line)
-        print "Snoopy info", nocommentlines
+        print("Snoopy info", nocommentlines)
 if len(nocommentlines) != 1:
-    print "ERROR: No information found"
+    print("ERROR: No information found")
     sys.exit()
 splitline = nocommentlines[0].split()
 pulsewidthms = float(splitline[3])*1.7 # filterbank width = 1.7ms
@@ -41,15 +41,15 @@ mjd = float(splitline[7])
 
 # Figure out the time at the midpoint of the pulse
 midmjd = mjd - (dm * 0.00415 / ((args.freq/1e3)**2) - dm * 0.00415 / ((args.freq + 168)/1e3)**2)/86400.0
-print dm
-print "MJD at low frequency is ", mjd, "at middle of band is ", midmjd
+print(dm)
+print("MJD at low frequency is ", mjd, "at middle of band is ", midmjd)
 
 # Figure out the best int time
 subintsec = 0.13824
 bestinttime = 2*(midmjd - args.corrstartmjd)*86400
 nsubints = int(round(bestinttime / subintsec))
 bestinttime = nsubints * subintsec
-print "Best int time is", bestinttime
+print("Best int time is", bestinttime)
     
 # Figure out when to start the polyco (go back by somewhere in the range 1-2 seconds, to an integer second boundary)
 # Make the polyco reference time the same as the start of the file
@@ -58,8 +58,8 @@ polycorefseconds = int((args.corrstartmjd - int(args.corrstartmjd))*86400)
 #if polycorefseconds < 0:
 #    polycorefseconds += 86400
 #    polycorefmjdint -= 1
-hh = polycorefseconds/3600
-mm = (polycorefseconds - hh*3600)/60
+hh = polycorefseconds//3600
+mm = (polycorefseconds - hh*3600)//60
 ss = polycorefseconds - (hh*3600 + mm*60)
 polycorefmjdfloat = polycorefmjdint  + float(polycorefseconds)/86400.0
 

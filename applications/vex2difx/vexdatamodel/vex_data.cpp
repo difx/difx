@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2025 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_data.cpp 10425 2022-04-12 19:56:47Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/vexdatamodel/vex_data.cpp $
- * $LastChangedRevision: 10425 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-04-13 03:56:47 +0800 (三, 2022-04-13) $
- *
- *==========================================================================*/
 
 #include <fstream>
 #include <sstream>
@@ -815,7 +805,7 @@ void VexData::setClock(const std::string &antName, const VexClock &clock)
 }
 
 // deltaClock in sec and deltaClockRate in sec/sec
-void VexData::adjustClock(const std::string &antName, double deltaClock, double deltaClockRate)
+void VexData::adjustClock(const std::string &antName, double deltaClock, double deltaClockRate, double deltaClockAccel)
 {
 	for(std::vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
 	{
@@ -825,6 +815,7 @@ void VexData::adjustClock(const std::string &antName, double deltaClock, double 
 			{
 				c->offset += deltaClock;	// [sec]
 				c->rate += deltaClockRate;	// [sec/sec]
+				c->accel += deltaClockAccel;	// [sec/sec^2]
 			}
 		}
 	}
@@ -1390,6 +1381,36 @@ void VexData::setStreamFrameSize(const std::string &modeName, const std::string 
 	}
 }
 
+void VexData::setStreamNBit(const std::string &modeName, const std::string &antName, int dsId, int nBit)
+{
+	int modeId = getModeIdByDefName(modeName);
+
+	if(modeId >= 0)
+	{
+		VexMode &M = modes[modeId];
+		std::map<std::string,VexSetup>::iterator it = M.setups.find(antName);
+		if(it != M.setups.end())
+		{
+			if(nBit > 0)
+			{
+				it->second.streams[dsId].nBit = nBit;
+			}
+		}
+		else
+		{
+			std::cerr << "Developer error: setStreamNBit being called with antName = " << antName << " which is not found in mode " << modeName << std::endl;
+
+			exit(EXIT_FAILURE);
+		}
+	}
+	else
+	{
+		std::cerr << "Developer error: setStreamNBit being called with modeName = " << modeName << " which returned modeId " << modeId << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
+}
+
 void VexData::setStreamThreadsAbsent(const std::string &modeName, const std::string &antName, int dsId, const std::set<int> &threadsAbsent)
 {
 	int modeId = getModeIdByDefName(modeName);
@@ -1484,7 +1505,8 @@ double VexData::getLatestScanStop() const
 	return stop;
 }
 
-bool VexData::hasData(const std::string &antName, const VexScan &scan) const
+// If interval is null, use the scan interval
+bool VexData::hasData(const std::string &antName, const VexScan &scan, const Interval *interval) const
 {
 	bool hd = false;
 	const VexAntenna *A = getAntenna(antName);
@@ -1501,6 +1523,10 @@ bool VexData::hasData(const std::string &antName, const VexScan &scan) const
 
 		exit(EXIT_FAILURE);
 	}
+	if(interval == 0)
+	{
+		interval = &scan;
+	}
 	std::map<std::string,VexSetup>::const_iterator s = M->setups.find(antName);
 	if(s != M->setups.end())
 	{
@@ -1512,7 +1538,7 @@ bool VexData::hasData(const std::string &antName, const VexScan &scan) const
 			case DataSourceMark6:
 				for(std::vector<VexBasebandData>::const_iterator it = A->files.begin(); it != A->files.end(); ++it)
 				{
-					if(it->overlap(scan) > 0.0)
+					if(it->overlap(*interval) > 0.0)
 					{
 						hd = true;
 						break;
@@ -1522,7 +1548,7 @@ bool VexData::hasData(const std::string &antName, const VexScan &scan) const
 			case DataSourceModule:
 				for(std::vector<VexBasebandData>::const_iterator it = A->vsns.begin(); it != A->vsns.end(); ++it)
 				{
-					if(it->overlap(scan) > 0.0)
+					if(it->overlap(*interval) > 0.0)
 					{
 						hd = true;
 						break;

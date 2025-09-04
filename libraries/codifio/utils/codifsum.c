@@ -42,18 +42,18 @@ int main (int argc, char **argv) {
   codif_header *header;
 
  struct option options[] = {
-    {"skip", 1, 0, 's'},
-    {"verbose", 0, 0, 'v'},
+    {"skip", 1, 0, 'S'},
+    {"summary", 0, 0, 's'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
 
- int verbose = 0;
+ int summary = 0;
  int skip = 0;
 
  /* Read command line options */
   while (1) {
-    int opt = getopt_long_only(argc, argv, "s:v", options, NULL);
+    int opt = getopt_long_only(argc, argv, "S:s", options, NULL);
     if (opt==EOF) break;
     
 #define CASEINT(ch,var)                                     \
@@ -78,15 +78,16 @@ int main (int argc, char **argv) {
     
     switch (opt) {
 
-      CASEINT('s', skip);
+      CASEINT('S', skip);
 
-      case 'v':
-        verbose = 1;
+      case 's':
+        summary = 1;
         break;
+
     case 'h':
         printf("Usage: codifsum [options] <codiffile> [<codiffile> ...]\n");
-        printf("  -s <N>                    Skip N bytes at start of file\n");
-        printf("  -v                        Summary of codiffile\n");
+        printf("  -skip/-S <N>              Skip N bytes at start of file\n");
+        printf("  -summary/-s               Summary of codiffile\n");
         printf("  -h                        This list\n");
         return(1);
         break;
@@ -100,6 +101,7 @@ int main (int argc, char **argv) {
   header = (codif_header*)buf;
 
   for (i=optind; i<argc; i++) {
+    if (i>optind) printf("\n");
     printf("%s:\n", argv[i]);
 
     file = open(argv[i], OPENOPTIONS);
@@ -143,16 +145,17 @@ int main (int argc, char **argv) {
       int framesize = getCODIFFrameBytes(header)+CODIF_HEADER_BYTES;
       double framepersec = getCODIFFramepersec(header);
       double mjd = getCODIFFrameDMJD(header, 0.0);
-      if (verbose && !first) mjd += 1.0/framepersec/(24.0*60*60); // Adjust for time at end of frame
+      if (summary && !first) mjd += 1.0/framepersec/(24.0*60*60); // Adjust for time at end of frame
 
       mjd2cal(mjd, &day, &month, &year, &ut);
       turns_to_string(ut, 'H', 6, 40, timestr);
-      if (verbose) {
+      if (summary) {
 	if (first) {
 	  char complextype[2] = "";
 	  if (iscomplex) complextype[0] = 'C';
 	  printf("CODIF%s/%d/%d/%d", complextype, period, framesize, bits);
 	  printf("    CODIF%s_%d-%dm%d-%d-%d\n", complextype, framesize-CODIF_HEADER_BYTES, getCODIFFrameperperiod(header), period, nchan, bits);
+	  printf("ThreadID=%d GroupID=%d SecondaryID=%d\n", getCODIFThreadID(header), getCODIFGroupID(header), getCODIFSecondaryID(header));
 	  printf(" %02d/%02d/%d  %s\n", day, month, year, timestr);       	
 	} else {
 	  printf(" %02d/%02d/%d  %s\n", day, month, year, timestr);       	
@@ -188,7 +191,7 @@ int main (int argc, char **argv) {
 	printf("\n");
 	printf("NCHAN:       %d\n", nchan);
 	printf("SAMPLEBLOCK: %d\n", getCODIFSampleblockLength(header));
-	printf("FRAMELENGTH: %d\n", getCODIFFrameBytes(header));
+	printf("FRAMELENGTH: %llu\n", getCODIFFrameBytes(header));
 
 	printf("\n");
 	printf("#SAMPLES:    %"PRIu64"\n", getCODIFTotalSamples(header));
@@ -198,7 +201,7 @@ int main (int argc, char **argv) {
 	
 	printf("-------------------\n");
       }
-      if (verbose) {
+      if (summary) {
 	if (first) {
 	  first = 0;
 	  // Want to seek to last frame of file
@@ -226,8 +229,9 @@ int main (int argc, char **argv) {
 	}
       }
     }
+    close(file);
   }
-  close(file);
+  return(0);
 }
 
 void mjd2cal(double mjd, int *day, int *month, int *year, double *ut) {

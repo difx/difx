@@ -16,15 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id$
-# $HeadURL$
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
-#
-#============================================================================
 
 import os
 import sys
@@ -36,9 +27,6 @@ from optparse import OptionParser
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision$"
-__date__ ="$Date$"
-__lastAuthor__="$Author$"
 
 def printUsage():
     usage = ""
@@ -51,19 +39,25 @@ def printUsage():
     return usage
 
 def printSummary():
+
+    exps = [val.code for val in module.experiments]
+    expStr = ' '.join(exps)
+
     print("Slot:    %s" % module.slot.location)
     print("Station: %s" % module.stationCode)
     print("Scans:   %s" % module.numScans)
+    print("Experiments:   %s" % expStr)
 
 
 if __name__ == "__main__":
     
     usage = printUsage()
-    version = "%s\nSVN  %s\nOriginal author: %s\nLast changes by: %s\nLast changes on: %s" % (__prog__, __build__, __author__, __lastAuthor__, __date__)
+    version = ""
     parser = OptionParser(version=version, usage=usage)
     parser.add_option("-s", "--slot", action="store_true", dest="slot", default=False, help="show the library slot")
     parser.add_option("-S", "--station", action="store_true", dest="station", default=False, help="show the 2-letter station code")
     parser.add_option("-n", "--num-scans", action="store_true", dest="numScans", default=False, help="show the number of scans")
+    parser.add_option("-e", "--experiments", action="store_true", dest="exps", default=False, help="show the experiments of the module")
 
     (options, args) = parser.parse_args()
    
@@ -112,6 +106,11 @@ if __name__ == "__main__":
             summary = False
         if (options.numScans == True):
             print(module.numScans)
+            summary = False
+        if (options.exps == True):
+            exps = [val.code for val in module.experiments]
+            expStr = ' '.join(exps)
+            print(expStr)
             summary = False
 
         if summary == True:

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2021 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2025 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_data.h 10363 2022-01-27 22:57:59Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/vexdatamodel/vex_data.h $
- * $LastChangedRevision: 10363 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-01-28 06:57:59 +0800 (五, 2022-01-28) $
- *
- *==========================================================================*/
 
 #ifndef __VEXTABLES_H__
 #define __VEXTABLES_H__
@@ -86,7 +76,7 @@ public:
 	void setPhaseCalBase(const std::string &antName, float phaseCalBaseMHz);
 	void selectTones(const std::string &antName, enum ToneSelection selection, double guardBandMHz);
 	void setClock(const std::string &antName, const VexClock &clock);
-	void adjustClock(const std::string &antName, double deltaClock, double deltaClockRate);
+	void adjustClock(const std::string &antName, double deltaClock, double deltaClockRate, double deltaClockAccel);
 	void setTcalFrequency(const std::string &antName, int tcalFrequency);
 	void addExperEvents(std::list<Event> &events) const;
 	void addClockEvents(std::list<Event> &events) const;
@@ -110,6 +100,7 @@ public:
 	bool setFormat(const std::string &modeName, const std::string &antName, int dsId, const std::string &formatName);
 	void setStreamBands(const std::string &modeName, const std::string &antName, int dsId, int nBand, int startBand);
 	void setStreamFrameSize(const std::string &modeName, const std::string &antName, int dsId, int frameSize);
+	void setStreamNBit(const std::string &modeName, const std::string &antName, int dsId, int nBit);
 	void setStreamThreadsAbsent(const std::string &modeName, const std::string &antName, int dsId, const std::set<int> &threadsAbsent);
 	void setStreamThreadsIgnore(const std::string &modeName, const std::string &antName, int dsId, const std::set<int> &threadsIgnore);
 	double getEarliestScanStart() const;
@@ -118,7 +109,7 @@ public:
 	void setDataSource(unsigned int antId, unsigned int streamId, enum DataSource dataSource);
 	enum DataSource getDataSource(unsigned int antId, unsigned int streamId) const;
 	enum DataSource getDataSource(const std::string &antName, unsigned int streamId) const;
-	bool hasData(const std::string &antName, const VexScan &scan) const;
+	bool hasData(const std::string &antName, const VexScan &scan, const Interval *interval = 0) const;
 	int getPolarizations() const;
 	int getConvertedPolarizations() const;
 	bool isSX() const;

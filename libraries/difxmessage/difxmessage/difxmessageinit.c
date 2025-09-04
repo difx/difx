@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difxmessageinit.c 9639 2020-08-03 06:39:41Z ChrisPhillips $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxmessage/difxmessage/difxmessageinit.c $
-// $LastChangedRevision: 9639 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2020-08-03 14:39:41 +0800 (一, 2020-08-03) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

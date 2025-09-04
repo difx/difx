@@ -12,8 +12,8 @@ Output:
   <difx basename>/DIFX_*.ref_input    entries to use in a replacement .input file
 
 """
-from __future__ import absolute_import
-from __future__ import print_function
+
+
 import glob, sys, os, struct, time, math, numpy, copy, configparser
 import hashlib
 import parseDiFX
@@ -130,7 +130,7 @@ def getConfig(cfgfilename):
 
 """Look through dictionary for object, return key of object if it exists"""
 def findFreqObj(dict,freqobj):
-        for k in dict.keys():
+        for k in list(dict.keys()):
                 if (dict[k] == freqobj):
                         return k
         return None
@@ -138,7 +138,7 @@ def findFreqObj(dict,freqobj):
 """Invent next unique (numerical) key for dictionary"""
 def inventNextKey(dict):
         idNr = len(dict)
-        while idNr in dict.keys():
+        while idNr in list(dict.keys()):
                 idNr += 1
         return idNr
 
@@ -158,7 +158,7 @@ def vis_already_written(mjd,seconds,baseline,freqnr,polpair):
         history_secs = 5
         if (longsecs - vis_hashtable_cleanupSec) > (2*history_secs):
                 vis_hashtable_cleanupSec = longsecs - history_secs
-                curr_keys = vis_hashtable.keys()
+                curr_keys = list(vis_hashtable.keys())
                 nremoved = 0
                 for key in curr_keys:
                         if not (key in vis_hashtable):
@@ -263,12 +263,12 @@ def stitchVisibilityfile(basename,cfg):
         # Check stitch config: invent new zoom bands if necessary
         stitch_out_ids = []
         for fsky in stitch_basefreqs:
-                match_existing = [(out_freqs[key].freq==fsky and not out_freqs[key].lsb) for key in out_freqs.keys()]
+                match_existing = [(out_freqs[key].freq==fsky and not out_freqs[key].lsb) for key in list(out_freqs.keys())]
                 exists = any(match_existing)
                 if exists:
                         # Re-use an existing matching zoom frequency
                         i = match_existing.index(True)
-                        id = out_freqs.keys()[i]
+                        id = list(out_freqs.keys())[i]
                         zf = out_freqs[id]
                         stitch_out_ids.append(id)
                         old_id = freq_remaps.index(id)
@@ -611,7 +611,7 @@ def stitchVisibilityfile(basename,cfg):
 
         # New FREQ table
         new_freqs = []
-        for of in out_freqs.keys(): # dict into list
+        for of in list(out_freqs.keys()): # dict into list
                 out_freqs[of].specavg = out_freqs[of].specavg * cfg['target_chavg']
                 new_freqs.append(out_freqs[of])
 

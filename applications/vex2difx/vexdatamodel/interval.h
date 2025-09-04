@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: interval.h 7343 2016-06-14 16:29:17Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/interval.h $
- * $LastChangedRevision: 7343 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2016-06-15 00:29:17 +0800 (三, 2016-06-15) $
- *
- *==========================================================================*/
 
 #ifndef __INTERVAL_H__
 #define __INTERVAL_H__

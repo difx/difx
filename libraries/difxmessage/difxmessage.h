@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2017 by Walter Brisken                             *
+ *   Copyright (C) 2007-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: difxmessage.h 10566 2022-07-29 16:26:50Z HelgeRottmann $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxmessage/difxmessage.h $
- * $LastChangedRevision: 10566 $
- * $Author: HelgeRottmann $
- * $LastChangedDate: 2022-07-30 00:26:50 +0800 (六, 2022-07-30) $
- *
- *==========================================================================*/
 
 #ifndef __DIFX_MESSAGE_H__
 #define __DIFX_MESSAGE_H__
@@ -62,6 +52,13 @@ extern "C" {
 #define DIFX_MESSAGE_MAX_SMART_IDS	32
 #define DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH	64
 #define DIFX_MESSAGE_HOSTNAME_LENGTH	256
+
+/* Actual string lengths to accomodate trailing zero and maintain 16 bit alignment */
+#define DIFX_MESSAGE_MARK5_VSN_STR_LENGTH	(DIFX_MESSAGE_MARK5_VSN_LENGTH+2)
+#define DIFX_MESSAGE_MARK6_MSN_STR_LENGTH	(DIFX_MESSAGE_MARK6_MSN_LENGTH+2)
+#define DIFX_MESSAGE_MARK6_GROUP_STR_LENGTH	(DIFX_MESSAGE_MARK6_GROUP_LENGTH+1)
+#define DIFX_MESSAGE_DISC_SERIAL_STR_LENGTH	(DIFX_MESSAGE_DISC_SERIAL_LENGTH+1)
+#define DIFX_MESSAGE_DISC_MODEL_STR_LENGTH	(DIFX_MESSAGE_DISC_MODEL_LENGTH+1)
 
 #define _DIFX_MESSAGE_XML_STRING_LENGTH	1024
 
@@ -281,8 +278,8 @@ extern const char DriveStatsTypeStrings[][24];
 typedef struct
 {
 	enum Mk5State state;
-	char vsnA[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
-	char vsnB[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
+	char vsnA[DIFX_MESSAGE_MARK5_VSN_STR_LENGTH];
+	char vsnB[DIFX_MESSAGE_MARK5_VSN_STR_LENGTH];
 	unsigned int status;
 	char activeBank;
 	int scanNumber;
@@ -295,14 +292,14 @@ typedef struct
 typedef struct
 {
         enum Mark6State state;
-	char msn1[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
-	char msn2[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
-	char msn3[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
-	char msn4[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
-	char group1[DIFX_MESSAGE_MARK6_GROUP_LENGTH+2];
-	char group2[DIFX_MESSAGE_MARK6_GROUP_LENGTH+2];
-	char group3[DIFX_MESSAGE_MARK6_GROUP_LENGTH+2];
-	char group4[DIFX_MESSAGE_MARK6_GROUP_LENGTH+2];
+	char msn1[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
+	char msn2[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
+	char msn3[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
+	char msn4[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
+	char group1[DIFX_MESSAGE_MARK6_GROUP_STR_LENGTH];
+	char group2[DIFX_MESSAGE_MARK6_GROUP_STR_LENGTH];
+	char group3[DIFX_MESSAGE_MARK6_GROUP_STR_LENGTH];
+	char group4[DIFX_MESSAGE_MARK6_GROUP_STR_LENGTH];
 	int bank1Disks;
 	int bank2Disks;
 	int bank3Disks;
@@ -322,8 +319,10 @@ typedef struct
 typedef struct
 {
         int slot;
-	char msn[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
-	char group[DIFX_MESSAGE_MARK6_GROUP_LENGTH+2];
+        enum Mark6State state;
+	char message[DIFX_MESSAGE_LENGTH];
+	char msn[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
+	char group[DIFX_MESSAGE_MARK6_GROUP_STR_LENGTH];
 	int numDisks;
 	int numMissingDisks;
 } DifxMessageMark6SlotStatus;
@@ -331,7 +330,7 @@ typedef struct
 typedef struct
 {
         enum Mark6State state;
-	char activeVsn[DIFX_MESSAGE_MARK6_MSN_LENGTH+2];
+	char activeVsn[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
         unsigned int status;
         int scanNumber;
 	char scanName[DIFX_MESSAGE_MAX_SCANNAME_LEN];
@@ -531,10 +530,10 @@ typedef struct
 
 typedef struct
 {
-	char serialNumber[DIFX_MESSAGE_DISC_SERIAL_LENGTH+1];
-	char modelNumber[DIFX_MESSAGE_DISC_MODEL_LENGTH+1];
+	char serialNumber[DIFX_MESSAGE_DISC_SERIAL_STR_LENGTH];
+	char modelNumber[DIFX_MESSAGE_DISC_MODEL_STR_LENGTH];
 	int diskSize;	/* GB */
-	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
+	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_STR_LENGTH];
 	int moduleSlot;
 	double startMJD, stopMJD;
 	int bin[DIFX_MESSAGE_N_DRIVE_STATS_BINS];
@@ -548,7 +547,7 @@ typedef struct
  */
 typedef struct
 {
-	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
+	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_STR_LENGTH];
 	int moduleSlot;
 	double mjdData;	/* MJD when data was taken */
 	int nValue;

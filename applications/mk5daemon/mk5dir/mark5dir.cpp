@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: mark5dir.cpp 7835 2017-05-23 16:54:44Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/mk5dir/mark5dir.cpp $
- * $LastChangedRevision: 7835 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2017-05-24 00:54:44 +0800 (三, 2017-05-24) $
- *
- *==========================================================================*/
 
 #include <iostream>
 #include <cstdio>
@@ -2179,17 +2169,16 @@ int resetModuleDirectory(SSHANDLE xlrDevice, const char *vsn, int newStatus, int
 		strcpy(dirHeader->vsnNext, "NA");
 	}
 
-	if(dirData == 0)
+	if(dirLength > 0 && dirData == 0)
 	{
 		dirData = (char *)calloc(dirLength, 1);
 	}
 
-	printf("> Dir Size = %d  Dir Version = %d  Status = %d\n", 
-		dirLength, dirVersion, newStatus);
+	printf("> Dir Size = %d  Dir Version = %d  Status = %d\n", dirLength, dirVersion, newStatus);
 
-	WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, dirLength) );
 	if(dirData)
 	{
+		WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, dirLength) );
 		free(dirData);
 	}
 

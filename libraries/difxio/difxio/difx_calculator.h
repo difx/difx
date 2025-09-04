@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_calculator.h 2851 2010-11-30 21:12:09Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_calculator.h $
-// $LastChangedRevision: 2851 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2010-12-01 05:12:09 +0800 (三, 2010-12-01) $
-//
-//============================================================================
 
 #ifndef __DIFX_CALCULATOR_H__
 #define __DIFX_CALCULATOR_H__

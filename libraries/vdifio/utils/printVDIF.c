@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Adam Deller                                     *
+ *   Copyright (C) 2010-2024 by Adam Deller, Walter Brisken                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: printVDIF.c 7121 2015-11-29 16:41:34Z WalterBrisken $
- * $HeadURL:  $
- * $LastChangedRevision: 7121 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2015-11-30 00:41:34 +0800 (一, 2015-11-30) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: Freq.py 10474 2022-05-12 16:32:23Z JayBlanchard $
-# $HeadURL: $
-# $LastChangedRevision: 10474 $
-# $Author: JayBlanchard $
-# $LastChangedDate: 2022-05-13 00:32:23 +0800 (五, 2022-05-13) $
-#
-#============================================================================
 
 
 

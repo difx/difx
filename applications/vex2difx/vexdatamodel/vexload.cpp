@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2022 by Walter Brisken                             *
+ *   Copyright (C) 2009-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vexload.cpp 10846 2022-12-02 21:44:33Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/vexdatamodel/vexload.cpp $
- * $LastChangedRevision: 10846 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-12-03 05:44:33 +0800 (六, 2022-12-03) $
- *
- *==========================================================================*/
 
 #include <fstream>
 #include <cstring>
@@ -961,9 +951,12 @@ static int getSources(VexData *V, Vex *v)
 		p = (char *)get_source_lowl(src, T_REF_COORD_FRAME, v);
 		if(!p)
 		{
-			std::cerr << "Warning: Cannot find ref coord frame for source " << src << " .  Assuming J2000." << std::endl;
+			if(S->type == VexSource::Star)
+			{
+				std::cerr << "Warning: Cannot find ref coord frame for source " << src << " .  Assuming J2000." << std::endl;
 
-			++nWarn;
+				++nWarn;
+			}
 		}
 		else if(strcmp(p, "J2000") != 0)
 		{
@@ -1289,6 +1282,10 @@ static int collectIFInfo(VexSetup &setup, VexData *V, Vex *v, const char *antDef
 		else if(fabs(phaseCal-200000000.0) < 1.0)
 		{
 			vif.phaseCalIntervalMHz = 200.0f;
+		}
+		else if(fabs(phaseCal-77777000) < 1.0)
+		{
+			vif.phaseCalIntervalMHz = 77.777f;
 		}
 		else
 		{
@@ -2228,6 +2225,10 @@ static int getDatastreamsSetup(VexSetup &setup, Vex *v, const char *antDefName, 
 		{
 			stream.parseFormatString("CODIF");
 		}
+		else if(strcasecmp(value, "NONE") == 0)
+		{
+			stream.parseFormatString("NONE");
+		}
 		else
 		{
 			std::cerr << "Error: " << modeDefName << " antenna " << antDefName << " : datastream " << stream.streamLink << " has a data format specification that is not handled: " << value << " ." << std::endl;
@@ -2271,7 +2272,7 @@ static int getDatastreamsSetup(VexSetup &setup, Vex *v, const char *antDefName, 
 		threadId = atoi(value);
 		if(find(stream->threads.begin(), stream->threads.end(), threadId) != stream->threads.end())
 		{
-			std::cerr << "Error: " << modeDefName << " antenna " << antDefName << " : a duplicate thread number was encountered." << std::endl;
+			std::cerr << "Error: " << modeDefName << " antenna " << antDefName << " : a duplicate thread number was encountered: " << threadId << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -2499,7 +2500,7 @@ static int getModes(VexData *V, Vex *v)
 			if(type == VexSetup::SetupIncomplete)
 			{
 				++nIncomplete;
-					
+
 				if(reportIncompleteModes)
 				{
 					if(antModeIncompleteFile == 0)
@@ -2739,14 +2740,9 @@ static int getEOPs(VexData *V, Vex *v)
 	return nWarn;
 }
 
-static int getExper(VexData *V, Vex *v)
+static int getVexRev(VexData *V, Vex *v)
 {
-	llist *block;
-	double start, stop;
 	int nWarn = 0;
-
-	start = V->getEarliestScanStart() - 1.0/86400.0;
-	stop = V->getLatestScanStop() + 1.0/86400.0;
 
 	if(v->version)
 	{
@@ -2762,6 +2758,18 @@ static int getExper(VexData *V, Vex *v)
 
 		++nWarn;
 	}
+
+	return nWarn;
+}
+
+static int getExper(VexData *V, Vex *v)
+{
+	llist *block;
+	double start, stop;
+	int nWarn = 0;
+
+	start = V->getEarliestScanStart() - 1.0/86400.0;
+	stop = V->getLatestScanStop() + 1.0/86400.0;
 
 	block = find_block(B_EXPER, v);
 
@@ -2840,7 +2848,6 @@ static int getExper(VexData *V, Vex *v)
 	return nWarn;
 }
 
-
 VexData *loadVexFile(const std::string &vexFile, unsigned int *numWarnings)
 {
 	VexData *V;
@@ -2858,15 +2865,17 @@ VexData *loadVexFile(const std::string &vexFile, unsigned int *numWarnings)
 
 	V->setDirectory(vexFile.substr(0, vexFile.find_last_of('/')));
 
-	nWarn += getExper(V, v);
-	nWarn += getExtensions(V, v);
+	// Do not modify order of calls
+	nWarn += getVexRev(V, v);
 	nWarn += getAntennas(V, v);
 	nWarn += getSources(V, v);
 	nWarn += getScans(V, v);
 	nWarn += getModes(V, v);
 	nWarn += getVSNs(V, v);
 	nWarn += getEOPs(V, v);
-	*numWarnings = *numWarnings + nWarn;
+	nWarn += getExper(V, v);
+	nWarn += getExtensions(V, v);
+	*numWarnings += nWarn;
 
 	return V;
 }

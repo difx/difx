@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: tabulatedelays.c 10637 2022-09-18 13:31:40Z WalterBrisken $
- * $HeadURL: $
- * $LastChangedRevision: 10637 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-09-18 21:31:40 +0800 (日, 2022-09-18) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <string.h>
@@ -371,7 +361,7 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	D = updateDifxInput(D, 0);
+	D = updateDifxInput(D, 0, 0);
 	if(!D)
 	{
 		fprintf(stderr, "Update failed: D == 0.  Quitting.\n");

@@ -1,3 +1,26 @@
+Version 1.7
+* Post DiFX-2.8
+* Add option to m5bstate to look only at even or odd samples
+* Also handle 8+8 bit complex data in m5state
+* format_codif hangles 16 bit data
+* format_codif avoids possible time error when spanning UT day boundary
+* format_codif use long ints where necessary
+* m5pcal: can read from stdin
+* Remove SVN headers in files
+* Fix some spelling
+* Some fixes for python2->python3
+* Allow outputting of stream summary outside of mark5access
+* m5spec: Allow generation of autocorrelation, handle VDIFC complex data
+* Add Python ctypes-based bindings for decoding complex data
+* A few more example scripts converted to python3 
+  - ctypes has no complex data type, hence output is 2*N samples of ctypes.c_float
+  - use numpy.frombuffer(<ctypes output>, dtype='complex64') to interpret output as complex data
+* m5kb, m5subband and zerocorr: use fftw's memory allocation functions
+* for 4 bit VDIF, make reconstructed sample values symmetric.  That is, the value corresponding to 2^(nbit-1) is no longer zero.
+* if environment variable SYMMETRIC_8_BIT_VDIF is defined, then 8-bit VDIF will make symmetric reconstructed values.
+  - This is kind of a hack that deserves a rethink...
+* Version for DiFX-2.9
+
 Version 1.6
 * Post DiFX-2.6
 * All examples: Added support for new, generalised CODIF and VDIF naming scheme

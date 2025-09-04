@@ -53,6 +53,7 @@ parser = argparse.ArgumentParser(add_help=False, description='Runs fourfit on al
 parser.add_argument('-h', '--help',        help='Help', action='store_true')
 parser.add_argument('-r', '--refringe',    dest='refringe', action='store_true', help='Fit baselines even with existing fringe fits')
 parser.add_argument('-a', '--ant',         help='Fit only baselines to these antenna(s) given by comma separated 1-letter codes.', dest='antennas', default='')
+parser.add_argument('-A', '--auto',        dest='doauto', help='Fit also autocorrelations', action='store_true')
 parser.add_argument('-F', '--fgroup',      dest='freqgroup', help='Frequeny group to process, e.g., S', default=DEFAULT_FREQ_GROUP)
 parser.add_argument('-f', '--fourfit',     dest='fourfitwrapper', help='Fourfit setup and invocation script to use (default: %(default)s)', default=DEFAULT_FOURFIT)
 parser.add_argument('-c', '--controlfile', dest='controlfile', help='Fourfit control file to use for fringe fitting (default: %(default)s)', default=DEFAULT_CF)
@@ -214,7 +215,7 @@ class JobDispatch:
 				end = last
 			yield L[i:end]
 
-	def generateJobs(self, exptroot: str, antennaSubset=None, refringe=False):
+	def generateJobs(self, exptroot: str, antennaSubset=None, refringe=False, fitAuto=False):
 		'''
 		Split the set of scans+baselines under experiment dir into a series of small jobs that run in parallel
 		'''
@@ -226,8 +227,8 @@ class JobDispatch:
 
 		Ncompleted = 0
 		for scan in analyzer.listScans(exptroot):
-			blines = analyzer.listScanBaselines(scan)
-			completed = analyzer.listScanFittedBaselines(scan, freqgroup=self._freqgroupname)
+			blines = analyzer.listScanBaselines(scan, doAuto=fitAuto)
+			completed = analyzer.listScanFittedBaselines(scan, doAuto=fitAuto, freqgroup=self._freqgroupname)
 			if not refringe:
 				blines = list(blines - completed)
 			Ncompleted += len(completed)
@@ -344,7 +345,7 @@ if __name__ == "__main__":
 	handler.setMaxNodes(int(args.maxnodes))
 	handler.setMachines(nodepool.machines())
 
-	jobs = handler.generateJobs(expt_path, antennaSubset, args.refringe)
+	jobs = handler.generateJobs(expt_path, antennaSubset, args.refringe, args.doauto)
 	handler.executeJobs(jobs)
 
 	# tidy up the terminal again, messed up by subprocess.Popen() before

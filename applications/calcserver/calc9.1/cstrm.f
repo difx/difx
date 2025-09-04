@@ -484,7 +484,7 @@ C
       DO 300  N = 1,3
         NN = N
         IF ( KERR(N) .EQ. 0 ) GO TO 300
-           CALL CKILL (6HSTRI  , NN, KERR(NN) )
+           CALL CKILL('STRI', int2(NN), int2(KERR(NN)))
   300 CONTINUE
 C
 C   Check KSTRD for debug output.
@@ -614,7 +614,7 @@ C      CALL GETA ('STAR ID       ', LSTRNM, 4, 1, 1, NDO, KERR )
       CALL GETI  ('STAR ID       ', LSTRNM, 1, 1, 1, NDO, KERR)
       N = LSTRNM(1)
       IF ( KERR .EQ. 0 )  GO TO 320
-      CALL CKILL (6HSTRG  , 1, KERR )
+      CALL CKILL('STRG', int2(1), int2(KERR))
 C
 C     Construct the arrays which will hold the information for the
 C     source being used in the current observation in order to pass
@@ -738,7 +738,7 @@ C
  9300 FORMAT (" CALC has terminated in subroutine STRG.  ",
      1        ' The source identification was not successful. ' )
 C
-      CALL CKILL (6HSTRG  , 0, 0)
+      CALL CKILL('STRG', int2(0), int2(0))
       END
 C
 C*****************************************************************************
@@ -1206,7 +1206,7 @@ C
        If (Iquit.eq.0) Then
         Kerr(3) = 0
        Else
-        Call CKill(6HSTRIN ,0,0)
+        CALL CKILL('STRIN', int2(0), int2(0))
        Endif
 C
 C  Now we must replace the star a priori's in the data base
@@ -1222,12 +1222,12 @@ C
 C   Error on Read
  180  Continue
       print *, 'STRIN: Error on read of star catalog '
-        Call CKill(6HSTRIN ,0,0)
+        CALL CKILL('STRIN', int2(0), int2(0))
 C
 C   Error on OPEN
  240  Continue
       print *, 'STRIN: Error on OPEN of star catalog '
-        Call CKill(6HSTRIN ,0,0)
+        CALL CKILL('STRIN', int2(0), int2(0))
 C
  270  Continue
       Return

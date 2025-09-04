@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fileto5c.cpp 8691 2019-02-12 19:01:10Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/mk5dir/fileto5c.cpp $
-// $LastChangedRevision: 8691 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2019-02-13 03:01:10 +0800 (三, 2019-02-13) $
-//
-//============================================================================
 
 #include <cstdio>
 #include <cstdlib>

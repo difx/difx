@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 import os,sys,glob,numpy
 
 ## ORIGINALLY, THIS LOOPED OVER DIRECTORIES, BUT NOW IT IS JUST TO BE RUN ONCE PER DIRECTORY, IN THE DIRECTORY
@@ -22,9 +22,9 @@ for freqgroup in range(2):
     for line in open("offsets.txt").readlines():
         splitline = line.split()
         dsids = splitline[6].split('/')[0][1:].split('-')
-        if not dsids[0] in dscounts.keys():
+        if not dsids[0] in list(dscounts.keys()):
             dscounts[dsids[0]] = 0
-        if not dsids[1] in dscounts.keys():
+        if not dsids[1] in list(dscounts.keys()):
             dscounts[dsids[1]] = 0
         channel = int(splitline[-4])
         # Assuming the fringe should be at 0, it will show up at + or - 28 channels if there
@@ -36,7 +36,7 @@ for freqgroup in range(2):
             dscounts[dsids[0]] += 1
             dscounts[dsids[1]] -= 1
         else:
-            print "Strange channel:", channel # This is usually a spurious fringe at low S/N
+            print(("Strange channel:", channel)) # This is usually a spurious fringe at low S/N
     countlist = []
     for key in sorted(dscounts.keys()):
         #print "Dscount for DS", key, "was", dscounts[key]
@@ -50,7 +50,7 @@ for freqgroup in range(2):
             clockoffset = 6.75 # microsec
             if dscounts[key] < 0:
                 clockoffset = -6.75 # microsec
-            print "Adding offset of %f to datastream %s" % (clockoffset, key)
+            print(("Adding offset of %f to datastream %s" % (clockoffset, key)))
 
             # Go through and replace clock offset of 0 with 6.75 microseconds where necessary
             frbinputlines = open("craftfrb.input").readlines()

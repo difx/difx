@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 #ifndef MODE_H
 #define MODE_H
 
@@ -286,7 +276,6 @@ protected:
   cf32 * fftd;
 
   // variables for pcal
-  int * pcalnbins;
   cf32 ** pcalresults;
   PCal ** extractor;
   

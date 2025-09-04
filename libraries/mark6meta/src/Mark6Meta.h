@@ -1,5 +1,5 @@
 /*******************************************************************************
-* Copyright (C) 2016  Max-Planck-Institut für Radioastronomie, Bonn, Germany 
+* Copyright (C) 2024  Max-Planck-Institut für Radioastronomie, Bonn, Germany 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
@@ -13,16 +13,6 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: Mark6Meta.h 7764 2017-05-16 18:23:07Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 7764 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-05-17 02:23:07 +0800 (三, 2017-05-17) $
-//
-//============================================================================
 #ifndef MARK6META_H
 #define	MARK6META_H
 
@@ -51,6 +41,9 @@ public:
     Mark6Meta(const Mark6Meta& orig);
     virtual ~Mark6Meta();
     std::string getEMSN() const;
+    void setEMSN(std::string eMSN);
+    void setEMSN(std::string vsn, unsigned int capacity, unsigned int datarate, unsigned int numDisks);
+    void setSerials( std::map<int, std::string > serials);
     void parse(std::string);
     void reset();
     const std::map<int, std::string> &getSerials();

@@ -1,15 +1,23 @@
 #!/usr/bin/env python3
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: statemon 3797 2011-09-12 15:23:28Z WalterBrisken $
-# $HeadURL: $
-# $LastChangedRevision: 3797 $
-# $Author: WalterBrisken $
-# $LastChangedDate: 2011-09-12 17:23:28 +0200 (Mon, 12 Sep 2011) $
-#
-#============================================================================
+#**************************************************************************
+#   Copyright (C) 2008-2024 by Walter Brisken                             *
+#                                                                         *
+#   This program is free software; you can redistribute it and/or modify  *
+#   it under the terms of the GNU General Public License as published by  *
+#   the Free Software Foundation; either version 3 of the License, or     *
+#   (at your option) any later version.                                   *
+#                                                                         *
+#   This program is distributed in the hope that it will be useful,       *
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+#   GNU General Public License for more details.                          *
+#                                                                         *
+#   You should have received a copy of the GNU General Public License     *
+#   along with this program; if not, write to the                         *
+#   Free Software Foundation, Inc.,                                       *
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+#**************************************************************************
 
 # Note: this utility can run under python2.7 or python3
 
@@ -76,11 +84,11 @@ class Parser:
 		elif tag == 'microsec':
 			self.microsec = float(self.tmp)
 		elif tag == 'bytes':
-			self.bytes = long(self.tmp)
+			self.bytes = int(self.tmp)
 		elif tag == 'bytespersec':
 			self.rateMbps = 8.0*float(self.tmp)/1.0e6
 		elif tag == "numSubintsLost":
-			self.counter == long(self.tmp)
+			self.counter == int(self.tmp)
 		elif tag == "activeBufElements":
 			self.bufferstatus[2] = int(self.tmp)
 		elif tag == "startBufElement":
@@ -111,7 +119,7 @@ class Parser:
 			elif self.diagnosticType == 'ProcessingTime':
 				diagstr = '%.1f microsec spent processing last subint' % (self.microsec)
 			elif self.diagnosticType == 'DataConsumed':
-				diagstr = '%.2f MB of data consumedI' % (self.bytes/1e6)
+				diagstr = '%.2f MB of data consumed' % (self.bytes/1e6)
 			elif self.diagnosticType == 'InputDatarate':
 				diagstr = 'Data rate in last second: %.2f Mbps' % (self.rateMbps)
 			elif self.diagnosticType == 'NumSubintsLost':

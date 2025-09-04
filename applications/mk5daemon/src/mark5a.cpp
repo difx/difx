@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: mark5a.cpp 4845 2012-09-23 21:12:26Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/mk5daemon/src/mark5a.cpp $
- * $LastChangedRevision: 4845 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2012-09-24 05:12:26 +0800 (一, 2012-09-24) $
- *
- *==========================================================================*/
 
 #include <cstdio>
 #include <cstdlib>

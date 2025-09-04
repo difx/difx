@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
   //loop through inspecting the data
   while (!input->eof()) {
     if(getData(input)) {
-      getMinMax(data, nchan, &miny, &maxy);
+      getMinMax(::data, nchan, &miny, &maxy);
     }
     else {
       cout << "Skipping data since its all empty..." << endl;
@@ -100,7 +100,7 @@ bool getData(ifstream * input)
     extrachan = nchan-MAX_CHANNELS;
     nchan = MAX_CHANNELS;
   }
-  input->read((char*)data, sizeof(int)*nchan);
+  input->read((char*)::data, sizeof(int)*nchan);
   if(extrachan > 0)
     input->ignore(extrachan);
   return true;

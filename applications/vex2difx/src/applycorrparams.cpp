@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2025 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: applycorrparams.cpp 10530 2022-07-06 22:18:31Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10530 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-07-07 06:18:31 +0800 (四, 2022-07-07) $
- *
- *==========================================================================*/
 
 #include <cstdlib>
 #include "applycorrparams.h"
@@ -85,7 +75,7 @@ static void applyCorrParams_Clock(VexData *V, const CorrParams &params, unsigned
 			{
 				V->setClock(A->name, antSetup->clock);
 			}
-			V->adjustClock(A->name, antSetup->deltaClock, antSetup->deltaClockRate);
+			V->adjustClock(A->name, antSetup->deltaClock, antSetup->deltaClockRate, antSetup->deltaClockAccel);
 
 			if(!antSetup->difxName.empty())
 			{
@@ -148,6 +138,7 @@ static void applyCorrParams_MultiPhaseCenter(VexData *V, const CorrParams &param
 
 			exit(EXIT_FAILURE);
 		}
+
 		const SourceSetup *ss = params.getSourceSetup(S->defName);
 		if(ss)
 		{
@@ -189,6 +180,7 @@ static void applyCorrParams_MultiPhaseCenter(VexData *V, const CorrParams &param
 					{
 						continue;
 					}
+
 					V->deletePhaseCenters(scanNum);
 					if(ss->doPointingCentre)
 					{
@@ -356,6 +348,11 @@ static void applyCorrParams_Mode(VexData *V, const CorrParams &params, unsigned 
 					V->setStreamFrameSize(M->defName, it->first, ds, DS.frameSize);
 				}
 
+				if(DS.nBit > 0)
+				{
+					V->setStreamNBit(M->defName, it->first, ds, DS.nBit);
+				}
+
 				if(!DS.threadsAbsent.empty())
 				{
 					V->setStreamThreadsAbsent(M->defName, it->first, ds, DS.threadsAbsent);
@@ -367,7 +364,7 @@ static void applyCorrParams_Mode(VexData *V, const CorrParams &params, unsigned 
 			}
 
 			// apply canonical VDIF mapping if appropriate and if needed
-			if(usesCanonicalVDIF(it->first) && it->second.usesFormat(VexStream::FormatVDIF))
+			if(V->getVersion() < 2.0 && usesCanonicalVDIF(it->first) && it->second.usesFormat(VexStream::FormatVDIF))
 			{
 				V->setCanonicalVDIF(M->defName, it->first);
 				canonicalVDIFUsers.insert(it->first);
@@ -527,7 +524,7 @@ static void applyCorrParams_Data(VexData *V, const CorrParams &params, unsigned 
 							}
 
 							// apply canonical VDIF mapping if appropriate and if needed
-							if(usesCanonicalVDIF(it->first) && it->second.usesFormat(VexStream::FormatVDIF))
+							if(V->getVersion() < 2.0 && usesCanonicalVDIF(it->first) && it->second.usesFormat(VexStream::FormatVDIF))
 							{
 								V->setCanonicalVDIF(M->defName, it->first);
 								canonicalVDIFUsers.insert(it->first);

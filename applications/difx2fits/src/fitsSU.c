@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsSU.c 8014 2017-10-03 15:28:29Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsSU.c $
-// $LastChangedRevision: 8014 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-10-03 23:28:29 +0800 (二, 2017-10-03) $
-//
-//============================================================================
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>

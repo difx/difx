@@ -3,12 +3,43 @@ Version 3.1.0
 * Fix for datastream to antenna mapping when not sorting antennas
 * oms2v2d: add mode to generate .v2d file that is useful for use with vdifsim
 * oms2v2d: do not require DIFX_BASE to be set
+* oms2v2d: automatically add filelist files if found in current directory
+  - look for <stn>.filelist as well as <prj>.<stn>.filelist
+* oms2v2d: option (-x) to exclude antennas that do not have filelist files present
+* oms2v2d: look for .mark6filelist files and write mark6filelist= into .v2d as appropriate
+* oms2v2d: all output default to single scan
 * Fix stale pointer to source after manipulating multi-phase-center bits
+* New ANTENNA parameter phaseCalIntDivisor for fractional spacings (phaseCalInt[MHz]/phaseCalIntDivisor)
+* New ANTENNA parameter deltaClockAccel to adjust clock acceleration without resetting other terms to zero like clockAccel does
+* New utility: mk6filelist, a simplified form of mk62v2d which does not require or modify the .v2d file.
+* Add project code to file list names
+* Update wiki to ATNF -- note that even this will be old soon and the new github link will replace it.
+* Allow "NONE" data format.  This was allowed in previous vex parser version, but got lost when vex2 was added.
+* Fix "datastreams with no data" bug.  This was triggered when there was a job break in the middle of a scan and an antenna only had data during one part of the broken scan
+* refine vex2difx job splitting: consider events only at those antennas that are actually in a job group, ignore unrelated events
+* Fix format override where VDIF/CODIF wouldn't change sampling type in some cases
+* vex2v2d: add option to make antenna complex-valued
+* Canonical VDIF threads no longer applies in Vex2 as the DATASTREAMS block has the needed information
+* Allow override of number of bits in a DATASTREAM block
+* Fix vex2 parse order issue by splitting getVexRev() as new function from getExper()
+* oms2v2d: no longer support VLBA station format file pointed to by $VLBA_STATION_FORMAT
+* The format override in the DATASTREAM block is now complete.  That is, setting format to "VDIF" will erase any pre-existing thread assignments.
+  - if only framesize is to change, then use frameSize=XXX instead
+  - if only number of bits per sample is to change, then use nBit=XXX instead
+  - if only changing from REAL to COMPLEX sampling, then use sampling=COMPLEX instead
+* LSB bands (non-zoom) are allowed to contribute to outputbands
+* Allow vex2difx to specify destination freq IDs to be USB (was previously implicit)
+* Fix an error where incorrect name was used for checking when antenna names overridden in the v2d file
+* Fix check to avoid duplicate user-provided outputbands
+* have AutoBands replace edges of overlapped recbands with overlap mid-point freq (hide overlap from auto-zoom logic)
+  - this gets rid of some 'unnecessary' small zooms in overlapped regions in some cases
+* Version for DiFX 2.9
 
 Version 3.0.0
 -------------
 * Fix for non-sorted antennas (back-ported from trunk)
 * Version bump prior to DiFX 2.8 branching
+* vexpeek: --scanfreqs option
 
 Version 2.99.3
 ~~~~~~~~~~~~~~
@@ -20,7 +51,7 @@ Version 2.99.3
 * in cases where it is known (e.g., vex2-based files) and the same across antennas, populate the "RX NAME" field in the .input file
 * increase maximum project code length to 24 (from 7)
 * Support for output band configuration
-* Note: fanout_def is now required for every data format, even VDIF.  See https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/formatdef for more info.
+* Note: fanout_def is now required for every data format, even VDIF.  See https://github.com/difx/difx/wiki/formatdef for more info.
 
 Version 2.99.2
 ~~~~~~~~~~~~~~
@@ -61,7 +92,7 @@ Version 2.7.0
 * Don't quit if unused antenna's filelist is absent
 * In ANTENNA {} now can set ds_filelist to a list of filelists, each one creating its own DATASTREAM
 * oms2v2d: some new functionality to assist VLBA eVLBI
-* vex2difx: support override of data frame size with frameSize parametr of DATASTREAM
+* vex2difx: support override of data frame size with frameSize parameter of DATASTREAM
 * vexpeek: new verbose mode
 * oms2v2d: fix crash in some modes if no data for project is found
 * vexpeek: option to view station coordinates

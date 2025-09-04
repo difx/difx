@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2023 by Walter Brisken                             *
+ *   Copyright (C) 2009-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: corrparams.cpp 10831 2022-11-17 02:03:58Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/vex2difx/src/corrparams.cpp $
- * $LastChangedRevision: 10831 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-11-17 10:03:58 +0800 (四, 2022-11-17) $
- *
- *==========================================================================*/
 
 #define _XOPEN_SOURCE
 #include <iostream>
@@ -802,6 +792,7 @@ DatastreamSetup::DatastreamSetup(const std::string &name) : difxName(name)
 	nBand = 0;				// Zero implies all.
 	tSys = 0.0;
 	frameSize = 0;
+	nBit = 0;
 
 	filelistReadFail = false;
 }
@@ -838,6 +829,10 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 	else if(key == "frameSize")
 	{
 		ss >> frameSize;
+	}
+	else if(key == "nBit")
+	{
+		ss >> nBit;
 	}
 	else if(key == "sampling")
 	{
@@ -967,6 +962,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 			std::cout << "Note: the fake keyword in the DATASTREAM section is deprecated and won't be an option in some future version of vex2difx.  Please instead use: source=fake" << std::endl;
 		}
 		++noteCount;
+
 		dataSource = DataSourceFake;
 		basebandFiles.clear();
 		basebandFiles.push_back(VexBasebandData(value, 0, -1));
@@ -1159,6 +1155,11 @@ int DatastreamSetup::merge(const DatastreamSetup *dss)
 		frameSize = dss->frameSize;
 	}
 
+	if(nBit == 0)
+	{
+		nBit = dss->nBit;
+	}
+
 	return 0;
 }
 
@@ -1173,9 +1174,11 @@ AntennaSetup::AntennaSetup(const std::string &name) : vexName(name), defaultData
 	axisOffset = AXIS_OFFSET_NOT_SET;
 	deltaClock = 0.0;
 	deltaClockRate = 0.0;
+	deltaClockAccel = 0.0;
 	clock.mjdStart = -1e9;
 	clockorder = 1;
 	phaseCalIntervalMHz = -1;
+	phaseCalIntervalDivisor = 1;
 	toneGuardMHz = -1.0;
 	toneSelection = ToneSelectionSmart;
 	tcalFrequency = -1;
@@ -1297,6 +1300,15 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		deltaClockRate = parseDouble(value) / 1.0e6;	// convert from us/sec to sec/sec
+	}
+	else if(key == "deltaClockAccel")
+	{
+		if(deltaClockAccel != 0.0)
+		{
+			std::cerr << "Warning: antenna " << vexName << " has multiple deltaClockAccel definitions" << std::endl;
+			++nWarn;
+		}
+		deltaClockAccel = parseDouble(value) / 1.0e6;	// convert from us/sec to sec/sec
 	}
 	else if(key == "X" || key == "x")
 	{
@@ -1468,11 +1480,16 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			std::cout << "Note: the fake keyword in the ANTENNA section is deprecated and won't be an option in some future version of vex2difx.  Please instead use: source=fake" << std::endl;
 		}
 		++noteCount;
+
 		defaultDatastreamSetup.dataSource = DataSourceFake;
 	}
 	else if(key == "phaseCalInt")
 	{
 		ss >> phaseCalIntervalMHz;
+	}
+	else if(key == "phaseCalIntDivisor")
+	{
+		ss >> phaseCalIntervalDivisor;
 	}
 	else if(key == "toneGuard")
 	{
@@ -2913,7 +2930,7 @@ int CorrParams::sanityCheck()
 			std::cerr << "Warning: the default antenna's coordinates are set!" << std::endl;
 			++nWarn;
 		}
-		if(a->clock.offset != 0 || a->clock.rate != 0 || a->clock.accel != 0 || a->clock.jerk != 0 || a->clock.offset_epoch != 0 || a->deltaClock != 0 || a->deltaClockRate != 0)
+		if(a->clock.offset != 0 || a->clock.rate != 0 || a->clock.accel != 0 || a->clock.jerk != 0 || a->clock.offset_epoch != 0 || a->deltaClock != 0 || a->deltaClockRate != 0 || a->deltaClockAccel != 0)
 		{
 			std::cerr << "Warning: the default antenna's clock parameters are set!" << std::endl;
 			++nWarn;
@@ -3602,6 +3619,10 @@ std::ostream& operator << (std::ostream &os, const DatastreamSetup &x)
 	{
 		os << "  frameSize=" << x.frameSize << std::endl;
 	}
+	if(x.nBit != 0)
+	{
+		os << "  nBit=" << x.nBit << std::endl;
+	}
 	if(!x.machine.empty())
 	{
 		os << "  machine=" << x.machine << std::endl;
@@ -3654,6 +3675,7 @@ std::ostream& operator << (std::ostream &os, const AntennaSetup &x)
 	}
 	os << "  polSwap=" << x.polSwap << std::endl;
 	os << "  phaseCalInt=" << x.phaseCalIntervalMHz << std::endl;
+	os << "  phaseCalIntDivisor=" << x.phaseCalIntervalDivisor << std::endl;
 	os << "  tcalFreq=" << x.tcalFrequency << std::endl;
 
 	os << "}" << std::endl;

@@ -1,5 +1,5 @@
 /*******************************************************************************
-* Copyright (C) 2016  Max-Planck-Institut für Radioastronomie, Bonn, Germany 
+* Copyright (C) 2024  Max-Planck-Institut für Radioastronomie, Bonn, Germany 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
@@ -13,22 +13,14 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: Mark6DiskDevice.cpp 10911 2023-03-15 14:30:26Z HelgeRottmann $
-// $HeadURL: $
-// $LastChangedRevision: 10911 $
-// $Author: HelgeRottmann $
-// $LastChangedDate: 2023-03-15 22:30:26 +0800 (三, 2023-03-15) $
-//
-//============================================================================
 #include "Mark6DiskDevice.h"
 #include "Mark6.h"
 #include "Mark6Meta.h"
+#include "Mark6Util.h"
 
 #include <algorithm>
 #include <errno.h>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -37,6 +29,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -70,6 +63,7 @@ Mark6DiskDevice::Mark6DiskDevice(const Mark6DiskDevice &device)
     serial_m = device.serial_m;
     meta_m = device.meta_m;
     sasAddress_m = device.sasAddress_m;
+    capacityMB_m = device.capacityMB_m;
 }
 
 /**
@@ -83,6 +77,7 @@ void Mark6DiskDevice::reset()
     controllerId_m = -1;
     diskId_m = -1;
     serial_m = "";
+    capacityMB_m = 0;
 }
 
 vector<Mark6DiskDevice::Mark6Partition> Mark6DiskDevice::getPartitions() const {
@@ -114,6 +109,7 @@ bool Mark6DiskDevice::isValid()
 /**
  * Determines the position of the disk device within the module. This number should range from 0 to 7.
  * @return the position of the disk with in the module
+ * @return -1 in case of failure
  */
 int Mark6DiskDevice::getPosition() const {
     
@@ -147,6 +143,36 @@ int Mark6DiskDevice::getSlot() const {
     return(-1);
 }
 
+void Mark6DiskDevice::createPartitions()
+{
+    string cmd = "";
+
+    cmd = "parted -s -- /dev/" + name_m + " mktable gpt ";
+    execCommand(cmd.c_str());
+    cmd = "parted -s -- /dev/" + name_m + " mkpart primary xfs 1 -100M ";
+    execCommand(cmd.c_str());
+    cmd = "parted -s -- /dev/" + name_m + " mkpart primary xfs -100M 100%";
+    execCommand(cmd.c_str());
+
+//  partcmd = ['sudo', 'mkfs.xfs', '-f', disks[i]['disk'] + '1']
+    cmd = "mkfs.xfs -f /dev/" + name_m + "1";
+    execCommand(cmd.c_str());
+
+    cmd = "mkfs.xfs -f /dev/" + name_m + "2";
+    execCommand(cmd.c_str());
+
+
+}
+
+void Mark6DiskDevice::clearPartitions()
+{
+    string cmd = "";
+
+    cmd = "parted -s /dev/" + name_m + " rm 1 ";
+    execCommand(cmd.c_str()) ;
+    cmd = "parted -s /dev/" + name_m + " rm 2 ";
+    execCommand(cmd.c_str()) ;
+}
 
 
 /**
@@ -209,7 +235,7 @@ int Mark6DiskDevice::mountPartition(int partitionNumber, string mountPath)
     
    
     // now read metadata
-    //HR meta_m.parse(dest);    
+    //meta_m.parse(dest);    
         
     isMounted_m = true;
     //mountPath_m = dest;
@@ -226,7 +252,8 @@ int Mark6DiskDevice::mountPartition(int partitionNumber, string mountPath)
  * @throws Mark6MountException in case the device cannot be mounted
  * @returns 1 if both partitions were mounted successfully, 0 otherwise
  */
-int Mark6DiskDevice::mountDisk(string dataPath, string metaPath)
+int Mark6DiskDevice::mountDisk(string dataPath, string metaPath, bool readwrite)
+
 {
     struct stat file;
     string source = "";
@@ -237,6 +264,12 @@ int Mark6DiskDevice::mountDisk(string dataPath, string metaPath)
     if (partitions_m.size() != 2)
         return(0);
        
+    unsigned long  mountOpts =  MS_MGC_VAL | MS_RDONLY | MS_NOATIME;
+
+    if (readwrite)
+        mountOpts = MS_MGC_VAL | MS_NOATIME;
+
+
     // mount both partitions
     for (int i=0; i<2; i++)
     {
@@ -255,7 +288,7 @@ int Mark6DiskDevice::mountDisk(string dataPath, string metaPath)
             throw Mark6MountException (string("Mount point " + dest.str() + " does not exist." ));
         }
         
-        int ret = mount(source.c_str(), dest.str().c_str(), fsType_m.c_str(), MS_MGC_VAL | MS_RDONLY | MS_NOATIME, "");
+        int ret = mount(source.c_str(), dest.str().c_str(), fsType_m.c_str(), mountOpts, "");
     
         if (ret == -1)
         {
@@ -269,13 +302,62 @@ int Mark6DiskDevice::mountDisk(string dataPath, string metaPath)
         partitions_m[i].mountPath = dest.str();
     }
    
-    // now read metadata
-    meta_m.parse(partitions_m[1].mountPath);    
-        
     isMounted_m = true;
     //mountPath_m = dest;
     
+    
     return(1);
+}
+
+void Mark6DiskDevice::makeDataDir(string rootPath) {
+
+    stringstream ss;
+    string path;
+    
+    ss << rootPath << "/" <<  getSlot()+1 << "/" << getPosition() << "/data";
+    ss >> path;
+    //cout << "Creating: " << path << endl;
+    mkdir (path.c_str(), S_IRUSR| S_IWUSR | S_IRGRP | S_IWGRP |S_IROTH | S_IWOTH);
+    chmod(path.c_str(), S_IRWXU| S_IRWXG | S_IRWXO);
+}
+
+  
+
+/**
+ * Writes the meta information (eMSN, serials, state) to the .meta partition of the disk device
+ **/
+void Mark6DiskDevice::writeMeta(Mark6Meta &meta, string rootMetaPath)
+{
+
+    ofstream file;
+
+
+    file.open ((partitions_m[1].mountPath + "/eMSN").c_str());
+    //cout << "HR write Meta :" << meta.getEMSN() << endl;
+    file << meta.getEMSN();
+    file.close();
+    chmod((partitions_m[1].mountPath + "/eMSN").c_str(), S_IRUSR| S_IWUSR | S_IRGRP | S_IWGRP |S_IROTH | S_IWOTH);
+
+    file.open ((partitions_m[1].mountPath + "/disk_sn").c_str());
+    map<int,string> serials = meta.getSerials();
+    for (map<int, string>::iterator it=serials.begin(); it!=serials.end(); ++it)
+        file << it->first << ":" << it->second << '\n';
+    file.close();
+    chmod((partitions_m[1].mountPath + "/disk_sn").c_str(), S_IRUSR| S_IWUSR | S_IRGRP | S_IWGRP |S_IROTH | S_IWOTH);
+
+    file.open ((partitions_m[1].mountPath + "/state").c_str());
+    file << "erased";
+    file.close();
+    chmod((partitions_m[1].mountPath + "/state").c_str(), S_IRUSR| S_IWUSR | S_IRGRP | S_IWGRP |S_IROTH | S_IWOTH);
+
+
+    // attach new meta information to device
+    meta_m = meta;
+}
+
+void Mark6DiskDevice::parseMeta()
+{
+    meta_m.parse(partitions_m[1].mountPath);
 }
 
 void Mark6DiskDevice::unmountDisk()
@@ -295,6 +377,8 @@ void Mark6DiskDevice::unmountDisk()
     
     isMounted_m = false;
 }
+
+
 
 /**
  *

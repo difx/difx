@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: test_unpacker.c 10490 2022-06-03 14:18:03Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 10490 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-06-03 22:18:03 +0800 (五, 2022-06-03) $
-//
-//============================================================================
 
 #include "config.h"
 #include <stdio.h>
@@ -41,7 +31,7 @@ static void usage(const char *pgm)
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n");
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n");
-	printf("  alternatively for VDIF and CODIF, Mbps can be replaced by <FramesPerPeriod>m<AlignmentSeconds>, e.g.\n");
+	printf("  Alternatively for VDIF and CODIF, Mbps can be replaced by <FramesPerPeriod>m<AlignmentSeconds>, e.g.\n");
 	printf("    VDIF_1000-8000m1-1-2 (8000 frames per 1 second, x1000 bytes x 8 bits= 64 Mbps)\n");
 	printf("    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27  ~= 76 Mbps\n");
 	printf("    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");

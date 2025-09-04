@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2009-2022 by Walter Brisken                             *
+#   Copyright (C) 2009-2025 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -19,16 +19,6 @@
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: makefits 10700 2022-10-25 19:55:41Z WalterBrisken $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/utils/makefits $
-# $LastChangedRevision: 10700 $
-# $Author: WalterBrisken $
-# $LastChangedDate: 2022-10-26 03:55:41 +0800 (三, 2022-10-26) $
-#
-#============================================================================
 
 # Note: this utility can run under python2.7 or python3
 
@@ -40,11 +30,13 @@ from os.path import isfile, isdir, getsize
 from time import gmtime, time
 
 program = 'makefits'
-version = '1.1'
+version = '1.2'
 author  = 'Walter Brisken'
-verdate = '20221025'
+verdate = '20250109'
 
 calfiles = 'tsys flag pcal weather *.*.flag *.*.weather *.*.pcal *.*.tsys *.*.cablecal *.*.gain'
+
+otherfiles = '*.channels *.jobmatrix'
 
 def usage(prog):
 	print('\n%s ver %s  %s  %s' % (program, version, author, verdate))
@@ -299,8 +291,7 @@ class JobList:
 			binrange = self.npsrbins
 		for b in range(binrange):
 			for s in range(self.nsrcfiles):
-				initcmd = 'difx2fits -B %d --phasecentre %d %%s ' % (b, s)
-				cmd = initcmd % options
+				cmd = 'difx2fits -B %d --phasecentre %d %s ' % (b, s, options)
 				if profilemode:
 					cmd += '--profilemode '
 				for j in self.jobs:
@@ -435,7 +426,7 @@ class JobList:
 					print('Executing: %s' % cmd)
 				system(cmd)
 
-		cmd = 'rm %s' % calfiles
+		cmd = 'rm -f %s %s' % (calfiles, otherfiles)
 		if verbose:
 			print('Executing: %s' % cmd)
 		system(cmd)

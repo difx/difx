@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_stream.cpp 10363 2022-01-27 22:57:59Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10363 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-01-28 06:57:59 +0800 (五, 2022-01-28) $
- *
- *==========================================================================*/
 
 #include <cstdlib>
 #include <cstring>
@@ -298,6 +288,10 @@ void VexStream::setVDIFSubformat(const std::string &str)
 	{
 		dataSampling = SamplingComplexDSB;
 	}
+	else
+	{
+		dataSampling = SamplingReal;
+	}
 }
 
 bool VexStream::parseFormatString(const std::string &formatName)
@@ -415,6 +409,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		nRecordChan = matchInt(formatName, match[3]);
 		nBit = matchInt(formatName, match[4]);
 		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
+                setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
 
 		return true;
 	}
@@ -486,6 +481,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 			return false;
 		}
 		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
+		setVDIFSubformat(formatName);
 
 		return true;
 	}

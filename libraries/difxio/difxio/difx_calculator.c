@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2011 by Walter Brisken                             *
+ *   Copyright (C) 2010-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_calculator.c 4129 2011-12-12 05:34:16Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_calculator.c $
-// $LastChangedRevision: 4129 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2011-12-12 13:34:16 +0800 (一, 2011-12-12) $
-//
-//============================================================================
 
 #include <stdlib.h>
 #include "difx_calculator.h"
@@ -332,7 +322,7 @@ void printDifxCalculatorConfig(const DifxCalculatorConfig *c)
 	printDouble("Subint time (ms)",        c->tSubint*1000.0,   0, 0);
 	printDouble("Subints per int",         c->subintsPerInt,    "If not an integer, expect variable weights", 0);
 	printDouble("DS buffer obs. dur. (s)", c->datastreamBufferDur, 0, 0);
-	printDouble("DS read obs. dur. (s)",   c->datastreamReadDur, "Must not exceed 2^31 ms (~2 sec)", 0);
+	printDouble("DS read obs. dur. (s)",   c->datastreamReadDur, "Must not exceed 2^31 ns (~2 sec)", 0);
 	printDouble("Manager slack (sec)",     c->managerSlack, 0, 0);
 	printDouble("Core buffer obs. dur. (s)", c->coreBufferDur, 0, 0);
 }

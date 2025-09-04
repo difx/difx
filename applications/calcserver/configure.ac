@@ -1,4 +1,4 @@
-AC_INIT([CalcServer], [1.8], [])
+AC_INIT([CalcServer], [1.9], [])
 
 AM_INIT_AUTOMAKE([no-define])
 

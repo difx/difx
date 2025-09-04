@@ -51,7 +51,7 @@ aipsfile = args.aipsfile
 uvdata = AIPSUVData(name, aipsclass, aipsDisk, int(seq))
 
 if not uvdata.exists():
-    print aipsfile, "does not exists! Aborting"
+    print(aipsfile, "does not exists! Aborting")
     sys.exit()
 
 # Make a list of antennas
@@ -137,15 +137,15 @@ if avgIf:
             delays1[ant][0] = delay/N*1e9
             
     for ant in sorted(delays1):
-        print ant, delays1[ant][0]*scale
+        print(ant, delays1[ant][0]*scale)
 
 else:
 
     for ant in sorted(delays1):
         if delaysN[ant]==0:
-            print ant, 0
+            print(ant, 0)
         else:
             if num_pol>1:
-                print ant, ','.join([strFlt(delays1[ant][i]/delaysN[ant]*1e9*scale,p)+','+strFlt(delays2[ant][i]/delaysN[ant]*1e9*scale,p) for i in range(num_if)])
+                print(ant, ','.join([strFlt(delays1[ant][i]/delaysN[ant]*1e9*scale,p)+','+strFlt(delays2[ant][i]/delaysN[ant]*1e9*scale,p) for i in range(num_if)]))
             else:
-                print ant, ','.join([strFlt(delays1[ant][i]/delaysN[ant]*1e9*scale,p) for i in range(num_if)])
+                print(ant, ','.join([strFlt(delays1[ant][i]/delaysN[ant]*1e9*scale,p) for i in range(num_if)]))

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: autobands.cpp 10661 2022-10-04 12:42:35Z JanWagner $
- * $HeadURL: $
- * $LastChangedRevision: 10661 $
- * $Author: JanWagner $
- * $LastChangedDate: 2022-10-04 20:42:35 +0800 (二, 2022-10-04) $
- *
- *==========================================================================*/
 
 #include <cassert>
 #include <cmath>
@@ -44,6 +34,26 @@
 #include "zoomfreq.h"	// class ZoomFreq
 
 template class std::vector<AutoBands::Outputband>;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct freqComparator
+{
+	// Helper for custom sort - std::sort([begin], [end], freqComparator())
+	public: bool operator()(const freq& left, const freq& right) const
+	{
+		return left.fq < right.fq;
+	}
+};
+
+struct bandfreqComparator
+{
+	// Helper for custom sort - std::sort([begin], [end], bandfreqComparator())
+	public: bool operator()(const AutoBands::Band& left, const AutoBands::Band& right) const
+	{
+		return left.min_flow < right.min_flow;
+	}
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -108,11 +118,20 @@ bool AutoBands::Outputband::isComplete() const
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+AutoBands::AutoBands()
+{
+	this->outputbandwidth = -1;
+	this->verbosity = 0;
+	this->permitgaps = false;
+	this->autozoomgranularity = 0;
+}
+
 AutoBands::AutoBands(double outputbandwidth_Hz, int verbosity, bool permitgaps)
 {
 	this->outputbandwidth = outputbandwidth_Hz;
 	this->verbosity = verbosity;
 	this->permitgaps = permitgaps;
+	this->autozoomgranularity = 0;
 	clear();
 }
 
@@ -130,6 +149,7 @@ void AutoBands::clear()
 	this->Nant = 0;
 	spans.clear();
 	outputbands.clear();
+	userOutputbands.clear();
 }
 
 /**
@@ -142,6 +162,19 @@ void AutoBands::setBandwidth(double outputbandwidth_Hz)
 	{
 		outputbandwidth  *= 1e6;
 	}
+}
+
+/**
+ * Set bandwidth granularity in Hz to use if possbile when generating auto-zooms
+ * that form outputbands.
+ */
+double AutoBands::setAutozoomGranularity(const double& azgranularity_Hz)
+{
+    if (azgranularity_Hz >= 0)
+    {
+        this->autozoomgranularity = azgranularity_Hz;
+		std::cout << "AutoBands::setAutozoomGranularity " << this->autozoomgranularity << " Hz\n";
+    }
 }
 
 /**
@@ -165,6 +198,10 @@ void AutoBands::addRecbandUnique(const AutoBands::Band& recband)
 
 	if(!exists)
 	{
+		if(verbosity > 2)
+		{
+			std::cout << "AutoBands::addRecbandUnique(): ant " << recband.antenna << " adding " << recband << "\n";
+		}
 		bands.push_back(recband);
 	}
 }
@@ -175,20 +212,21 @@ void AutoBands::addRecbandUnique(const AutoBands::Band& recband)
 void AutoBands::addRecbands(const std::vector<double>& fstart, const std::vector<double>& fstop, int antId)
 {
 	assert(fstart.size() == fstop.size());
-	if(antId == -1)
-	{
-		antId = Nant;
-	}
+
+	// Zip (fstart,fstop) into a joint vector and addRecbands() it
+	std::vector<freq> freqs;
 	for(unsigned i = 0; i < fstart.size(); i++)
 	{
-		double lo = fstart[i], hi = fstop[i];
+		double lo = fstart[i], hi = fstop[i], bw;
 		if(lo > hi)
 		{
 			std::swap(lo, hi);
 		}
-		addRecbandUnique(AutoBands::Band(lo, hi, antId));
+		bw = hi - lo;
+		freqs.push_back(freq(lo, bw, 'U'));
 	}
-	Nant++;
+
+	this->addRecbands(freqs, antId);
 }
 
 /**
@@ -196,27 +234,71 @@ void AutoBands::addRecbands(const std::vector<double>& fstart, const std::vector
  */
 void AutoBands::addRecbands(const std::vector<freq>& freqs, int antId)
 {
+	if(freqs.empty())
+	{
+		return;
+	}
 	if(antId == -1)
 	{
 		antId = Nant;
 	}
+
+	// Flip frequencies to Upper Sideband
+	std::vector<AutoBands::Band> tidiedfreqs;
 	for(unsigned i = 0; i < freqs.size(); i++)
 	{
-		double lo = freqs[i].fq;
-		double hi = freqs[i].fq + ((freqs[i].sideBand == 'U') ? freqs[i].bw : -freqs[i].bw);
-		if(lo > hi)
+		if(freqs[i].sideBand == 'L')
 		{
-			std::swap(lo, hi);
+			tidiedfreqs.push_back(AutoBands::Band(freqs[i].fq - freqs[i].bw, freqs[i].fq, antId));
 		}
-		addRecbandUnique(AutoBands::Band(lo, hi, antId));
+		else
+		{
+			tidiedfreqs.push_back(AutoBands::Band(freqs[i].fq, freqs[i].fq + freqs[i].bw, antId));
+		}
 	}
+
+	// Sort by frequency and drop duplicates
+	sort(tidiedfreqs.begin(), tidiedfreqs.end(), bandfreqComparator());
+	tidiedfreqs.erase(unique(tidiedfreqs.begin(), tidiedfreqs.end()), tidiedfreqs.end());
+
+	// Detect overlapped bands, replace edges of overlap with mid-point frequency
+	for(unsigned i = 0; i < tidiedfreqs.size() - 1; i++)
+	{
+		double fhi = tidiedfreqs[i].fhigh;
+		if(fhi > tidiedfreqs[i+1].flow)
+		{
+			double overlap_half_bw = (fhi - tidiedfreqs[i+1].flow) / 2;
+			if(verbosity > 2)
+			{
+				std::cout << std::setw(15) << std::setprecision(11)
+					<< "AutoBands::addRecbands(<vector>): trimming overlapped recbands"
+					<< " by " << overlap_half_bw*1e-6 << " MHz of bw and shifting edges"
+					<< " of recband" << i << "_hi:" << fhi*1e-6 << " recband" << i+1 << "_lo:" << tidiedfreqs[i+1].flow*1e-6
+					<< " to joint mid " << (fhi - overlap_half_bw)*1e-6 << " MHz\n";
+			}
+			tidiedfreqs[i].overlapping = true;
+			tidiedfreqs[i+1].overlapping = true;
+			tidiedfreqs[i].fhigh  -= overlap_half_bw;
+			tidiedfreqs[i+1].flow += overlap_half_bw;
+			// tidiedfreqs[i].max_fhigh retains the original high edge of recband
+			// tidiedfreqs[i+1].min_flow retains the original low edge of the other recband
+		}
+	}
+
+
+	// Register the band details
+	for(unsigned i = 0; i < tidiedfreqs.size(); i++)
+	{
+		addRecbandUnique(tidiedfreqs[i]);
+	}
+
 	Nant++;
 }
 
 /**
  * Return the greatest-common-divisor of a list of frequencies
  */
-double AutoBands::getGranularity(const std::vector<double>& args) const
+double AutoBands::computeGranularity(const std::vector<double>& args) const
 {
 	if(args.size() < 1)
 	{
@@ -284,7 +366,7 @@ double AutoBands::autoBandwidth()
  * NB: Ideally we'd check only the set of definitely present antennas (v2d antennas=... + VEX scan antenna
  * list + filelist) since e.g. the most heavily channelized antenna might actually be absent and
  * thus better optimization of auto-zoombands (i.e., a reduction to fewer zooms) might be possible.
- * However, not all the required info is available from vex2difx at band construction/mapping stage to do that,
+ * However, not all of the required infos are available to vex2difx at the band construction/mapping stage,
  * hence we have to include all antennas in this check even if some antennas might be 'droppped' later on.
  */
 bool AutoBands::covered(double f0, double f1) const
@@ -744,7 +826,7 @@ void AutoBands::addUserOutputband(const ZoomFreq& band)
 	userband.extend(band.frequency, band.bandwidth);
 
 	// Add if not pre-existing
-	if (std::find(outputbands.begin(), outputbands.end(), userband) == outputbands.end())
+	if (std::find(userOutputbands.begin(), userOutputbands.end(), userband) == userOutputbands.end())
 	{
 		if (verbosity > 1)
 		{
@@ -760,7 +842,7 @@ void AutoBands::addUserOutputband(const ZoomFreq& band)
  *
  * Once the output band of 'inputfreq' has been determined, looks through
  * the list of frequencies 'allfreqs' and locates a match for that output
- * band. Returns the index of that match is returned.
+ * band. Returns the index of that match.
  *
  * If any of the two search stages fails to locate a frequency, the search
  * is repeated with a sideband flipped band having the same sky coverage.
@@ -1014,9 +1096,21 @@ std::ostream& operator << (std::ostream& os, const AutoBands& x)
 
 std::ostream& operator << (std::ostream& os, const AutoBands::Band& x)
 {
-	os << std::fixed
-		<< "start at " << std::setw(15) << std::setprecision(8) << (x.flow*1e-6) << " MHz with bw "
-		<< std::setw(11) << std::setprecision(7) << (x.bandwidth()*1e-6) << " MHz";
+	if (x.overlapping)
+	{
+		os << std::fixed
+			<< "overlapped " << std::setw(15) << std::setprecision(8) << x.min_flow*1e-6 << "--" << x.max_fhigh*1e-6 << " MHz bw "
+			<< std::setw(11) << std::setprecision(7) << ((x.max_fhigh-x.min_flow)*1e-6) << " MHz "
+			<< " unique " << std::setw(15) << std::setprecision(8) << x.flow*1e-6 << "--" << x.fhigh*1e-6 << " MHz with bw "
+			<< std::setw(11) << std::setprecision(7) << (x.bandwidth()*1e-6) << " MHz";
+	}
+	else
+	{
+		os << std::fixed
+			<< "start at " << std::setw(15) << std::setprecision(8) << (x.flow*1e-6) << " MHz with bw "
+			<< std::setw(11) << std::setprecision(7) << (x.bandwidth()*1e-6) << " MHz";
+	}
+
 	return os;
 }
 

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdifio.h 7356 2016-06-24 14:34:03Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk/src/vdifio.h $
-// $LastChangedRevision: 7356 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2016-06-25 00:34:03 +1000 (Sat, 25 Jun 2016) $
-//
-//============================================================================
 	
 #ifndef __CODIFIO_H__
 #define __CODIFIO_H__
@@ -41,6 +31,7 @@ extern "C" {
 #define CODIFV2
 
 #define CODIF_HEADER_BYTES		64
+#define CODIF_SYNC                      0xFEEDCAFE
 #define CODIF_MAX_THREAD_ID		65535
 
 #define CODIF_SUMMARY_MAX_THREADS	64
@@ -103,7 +94,7 @@ static inline int getCODIFComplex(const codif_header *header) { return (int)head
 static inline int getCODIFThreadID(const codif_header *header) { return (int)header->threadid; }
 static inline int getCODIFGroupID(const codif_header *header) { return (int)header->groupid; }
 static inline int getCODIFHeaderBytes(const codif_header *header) { return CODIF_HEADER_BYTES; }
-static inline int getCODIFFrameBytes(const codif_header *header) { return (int)(header->framelength8)*8; }
+static inline uint64_t getCODIFFrameBytes(const codif_header *header) { return ((uint64_t)header->framelength8)*8; }
 static inline int getCODIFPeriod(const codif_header *header) { return (int)header->period; }
 static inline int getCODIFSync(const codif_header *header) { return (int)header->sync; }
 static inline uint64_t getCODIFTotalSamples(const codif_header *header) { return header->totalsamples; }
@@ -112,7 +103,7 @@ uint64_t getCODIFFrameMJDSec(codif_header *header);
 int getCODIFFrameMJD(const codif_header *header);
 double getCODIFFrameDMJD(const codif_header *header, double framepersec);
 static inline int getCODIFFrameSecond(const codif_header *header) { return ((int)header->seconds)%86400; }
-static inline int getCODIFFrameNumber(const codif_header *header) { return (int)header->frame; }
+static inline uint32_t getCODIFFrameNumber(const codif_header *header) { return (uint32_t)header->frame; }
 static inline int getCODIFStationID(const codif_header *header) { return (int)header->stationid; }
 static inline int getCODIFSecondaryID(const codif_header *header) { return (int)header->secondaryid; }
 static inline int getCODIFBitsPerSample(const codif_header *header) { return ((int)header->nbits); }

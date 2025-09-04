@@ -3,7 +3,22 @@ Version 1.6
 * Post DiFX-2.8
 * vdifbstate: add option to look at only even or odd samples
 * filterVDIF: fix fclose on null pointer
-* vdiffile: fix calculation for end time
+* add vdifStateCount
+* add vdifpcal (equivalent to vmux + m5pcal)
+* add three new VDIF analysis utilities: 
+  - vdifPhase: look at time series of a tone's phase
+  - vdifStateCount: generate histogram of state counts
+  - vdifMeanRMS: calculate mean and RMS values on a 1 second cadence
+* Add new utility invalidateVDIFPackets to set some fraction of a file to invalid
+* Handle complex data in those new utilities
+* Remove SVN headers, fix some spelling
+* vsum : add --exhaustive option that generates some statistics based on the full file
+* vmux : don't resurrect previous frame after a large data gap
+* vmux : account for filler frames introduced by a large data gap
+* Add a few more nice to have corner turners: 20-thread and 24-thread up to 16bits
+* MAX_VDIF_FRAME_BYTES increased to 32k(to permit handling VGOS 64-channel data)
+* vdiffold able to choose threads to process
+* Version for DiFX-2.9
 
 Version 1.5
 ~~~~~~~~~~~

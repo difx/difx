@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsAG.c 10024 2021-05-25 14:53:00Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/applications/difx2fits/src/fitsAG.c $
-// $LastChangedRevision: 10024 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2021-05-25 22:53:00 +0800 (二, 2021-05-25) $
-//
-//============================================================================
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -153,8 +143,8 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fi
 	}
 	else
 	{
-		printf("\n\nWarning: IATUTC is not provided.  Assuming %3.1f seconds.\n\n", (double)(DEFAULT_IAT_UTC) );
-		fitsWriteFloat(out, "IATUTC", (double)(DEFAULT_IAT_UTC), "");
+		printf("\n\nWarning: IATUTC is not provided.  Assuming %3.1f seconds.\n\n", (double)DEFAULT_IAT_UTC);
+		fitsWriteFloat(out, "IATUTC", (double)DEFAULT_IAT_UTC, "");
 	}
 	
   	arrayWriteKeys(p_fits_keys, out);

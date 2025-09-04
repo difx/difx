@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
@@ -136,7 +126,12 @@ public:
   inline int getCompleteStrideLength(int configindex, int freqindex) const { return configs[configindex].completestridelength[freqindex]; }
   inline int getThreadResultFreqOffset(int configindex, int freqindex) const { return configs[configindex].threadresultfreqoffset[freqindex]; }
   inline int getThreadResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].threadresultbaselineoffset[freqindex][configbaselineindex]; }
-  inline int getCoreResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].coreresultbaselineoffset[freqindex][configbaselineindex]; }
+  inline int getCoreResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) const {
+    if (configs[configindex].coreresultbaselineoffset[freqindex] != NULL)
+      return configs[configindex].coreresultbaselineoffset[freqindex][configbaselineindex];
+    else
+      return -1;
+  }
   inline int getCoreResultBWeightOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].coreresultbweightoffset[freqindex][configbaselineindex]; }
   inline int getCoreResultBShiftDecorrOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].coreresultbshiftdecorroffset[freqindex][configbaselineindex]; }
   inline int getCoreResultAutocorrOffset(int configindex, int configdatastreamindex) const { return configs[configindex].coreresultautocorroffset[configdatastreamindex]; }
@@ -180,9 +175,13 @@ public:
   inline double getDTsys(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].tsys; }
   inline float getDPhaseCalIntervalMHz(int configindex, int configdatastreamindex) const
-    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalmhz; }
-  inline float getDPhaseCalBaseMHz(int configindex, int configdatastreamindex) const
-    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalbasemhz; }
+    { return float(datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalhz)*1e-6; }
+  inline long getDPhaseCalIntervalHz(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalhz; }
+  inline long getDPhaseCalDenominator(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecaldenominator; }
+  inline long getDPhaseCalBaseHz(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalbasehz; }
   inline int getDSwitchedPowerFrequency(int datastreamindex) const
     { return datastreamtable[datastreamindex].switchedpowerfrequency; }
   inline int getDMaxRecordedPCalTones(int configindex, int configdatastreamindex) const
@@ -244,7 +243,7 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedfreqpcaltones[recordedfreqindex]; }
   inline double getDRecordedFreqPCalToneFreqHz(int configindex, int configdatastreamindex, int recordedfreqindex, int tone) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaltonefreqshz[recordedfreqindex][tone]; }
-  inline int getDRecordedFreqPCalOffsetsHz(int configindex, int configdatastreamindex, int recordedfreqindex) const
+  inline long getDRecordedFreqPCalOffsetsHz(int configindex, int configdatastreamindex, int recordedfreqindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaloffsetshz[recordedfreqindex]; }
   inline double getDRecordedFreq(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex) const
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[datastreamrecordedfreqindex]].bandedgefreq; }
@@ -342,14 +341,14 @@ public:
   inline bool getFreqTableCorrelatedAgainstUpper(int index) const {return freqtable[index].correlatedagainstupper; }
   inline int getFNumChannels(int index) const { return freqtable[index].numchannels; }
   inline int getFChannelsToAverage(int index) const { return freqtable[index].channelstoaverage; }
-  inline int getFMatchingWiderBandIndex(int index) const { return freqtable[index].matchingwiderbandindex; }
-  inline int getFMatchingWiderBandOffset(int index) const { return freqtable[index].matchingwiderbandoffset; }
   inline bool isFrequencyUsed(int configindex, int freqindex) const
     { return configs[configindex].frequsedbysomebaseline[freqindex]; }
   inline bool isEquivalentFrequencyUsed(int configindex, int freqindex) const
     { return configs[configindex].equivfrequsedbysomebaseline[freqindex]; }
   inline bool isFrequencyOutput(int configindex, int freqindex) const
     { return configs[configindex].freqoutputbysomebaseline[freqindex]; }
+  inline bool isEquivalentFrequencyOutput(int configindex, int freqindex) const
+    { return configs[configindex].equivfreqoutputbysomebaseline[freqindex]; }
   inline bool isFrequencyOutput(int configindex, int baselineindex, int freqindex) const
     { return configs[configindex].freqoutputbybaseline[freqindex][baselineindex]; }
   inline bool isBFrequencyUsed(int configindex, int configbaselineindex, int freqindex) const
@@ -473,8 +472,15 @@ public:
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
     return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == KVN5B || f == VDIF || f == VDIFL || f == INTERLACEDVDIF || f == CODIF) && s == MK5MODULE); 
   }
+
+  // Return the number of framebytes as seen by Datastream (as in the data source)
   inline int getFrameBytes(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].framebytes; }
+
+  // Return the number of framebytes as seen by Core (i.e., after any multiplexing of thread data at DataStream)
+  inline int getMultiplexedFrameBytes(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].multiplexedframebytes; }
+
   inline dataformat getDataFormat(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].format; }
   inline datasource getDataSource(int configindex, int configdatastreamindex) const
@@ -540,11 +546,18 @@ public:
   double getFramesPerSecond(int configindex, int configdatastreamindex) const;
 
  /**
-  * @return The number of payload bytes in a data frame
+  * @return The number of payload bytes in a data frame as seen by DataStream as the data is loaded from source
   * @param configindex The index of the configuration being used (from the table in the input file)
   * @param configdatastreamindex The index of the datastream (from the table in the input file)
   */
   int getFramePayloadBytes(int configindex, int configdatastreamindex) const;
+
+ /**
+  * @return The number of payload bytes in a data frame as seen by Core (after any thread multiplexing)
+  * @param configindex The index of the configuration being used (from the table in the input file)
+  * @param configdatastreamindex The index of the datastream (from the table in the input file)
+  */
+  int getMultiplexedFramePayloadBytes(int configindex, int configdatastreamindex) const;
 
  /**
   * @return The fanout, or -1 if an error occurred
@@ -679,7 +692,7 @@ public:
   bool updateClock(std::string clockstring);
 
  /**
-  * Utility method which reads a line from a file, extracts a value and checks the keyword matches that expected
+  * Utility method which reads an obligatory line from a file, extracts a value and checks the keyword matches that expected
   * @param input Open input stream to read from
   * @param line Existing string to store value in
   * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
@@ -687,7 +700,7 @@ public:
   void getinputline(istream * input, std::string * line, std::string startofheader) const;
 
  /**
-  * Utility method which reads a line from a file, extracts a value and checks the keyword matches that expected
+  * Utility method which reads an obligatory line from a file, extracts a value and checks the keyword matches that expected
   * @param input Open input stream to read from
   * @param line Existing string to store value in
   * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
@@ -699,22 +712,34 @@ public:
   void getinputline(istream * input, std::string * line, std::string startofheader, bool verbose) const;
 
  /**
+  * Utility method which reads an optional line from a file, extracts a value and checks if keyword matches that expected
+  * @return true if the optional line was found
+  * @param input Open input stream to read from
+  * @param line Existing string to store value in
+  * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
+  */
+  bool getinputline_opt(istream * input, std::string * line, std::string startofheader) const;
+
+  /** Actual function **/
+  bool getinputline_opt(istream * input, std::string * line, std::string startofheader, bool verbose) const;
+
+ /**
+  * Utility method which reads an optional line from a file, extracts a value and checks if keyword matches that expected
+  * @return true if the optional line was found
+  * @param input Open input stream to read from
+  * @param line Existing string to store value in
+  * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
+  * @param intval An integer value which should follow startofheader
+  */
+  bool getinputline_opt(istream * input, std::string * line, std::string startofheader, int intval) const;
+
+ /**
   * Utility method which reads a line from a file, splitting it into a key and a value and storing both
   * @param input Open input stream to read from
   * @param key String to store key in
   * @param val String to store value in
   */
   void getinputkeyval(istream * input, std::string * key, std::string * val) const;
-
- /**
-  * Utility method which reads the next line from a file, splitting it into a key and a value and storing both.
-  * If the read key and expected key do not match, the line is "unread" i.e. placed back.
-  * @param input Open input stream to read from
-  * @param expectedkey Expected value of the key to be read
-  * @param key String to store key in
-  * @param val String to store value in
-  */
-  bool peekinputkeyval(istream * input, const std::string& expectedkey, std::string * key, std::string * val) const;
 
  /**
   * Utility method which converts a year,month,day into mjd and hour,minute,second into seconds from start of day
@@ -762,14 +787,14 @@ private:
     int channelstoaverage;
     int oversamplefactor;
     int decimationfactor;
-    int matchingwiderbandindex;
-    int matchingwiderbandoffset;
     string rxName;  // an optional name for the receiver producing this channel
     friend bool operator>(const struct freqdata_t&, const struct freqdata_t&);
     double bandlowedgefreq() const { return (!lowersideband) ? bandedgefreq : bandedgefreq-bandwidth; }
     int npcalsout; // not used by mpifxcorr, but used to quash a warning
+    ostream& printfreq(ostream& os) const;
   } freqdata;
   friend bool operator>(const struct Configuration::freqdata_t&, const struct Configuration::freqdata_t&);
+  friend ostream& operator<<(ostream&, Configuration::freqdata_t&);
 
   ///Storage struct for data from the baseline table of the input file
   typedef struct baselinedata_t {
@@ -830,6 +855,7 @@ private:
     bool * frequsedbysomebaseline;
     bool * equivfrequsedbysomebaseline;
     bool * freqoutputbysomebaseline;
+    bool * equivfreqoutputbysomebaseline;
     //finer bookkeeping of freqs
     bool ** frequsedbybaseline;         //[freq][baseline]
     bool ** equivfrequsedbybaseline;    //[freq][baseline]
@@ -877,14 +903,16 @@ private:
     datasampling sampling;
     complextype tcomplex;
     bool ismuxed;
-    float phasecalintervalmhz;
-    float phasecalbasemhz;
+    long phasecalintervalhz;
+    long phasecaldenominator; // default 1, >1 to interpret phasecalintervalhz as nominator of a fraction
+    long phasecalbasehz;
     int switchedpowerfrequency; // e.g., 80 Hz for VLBA
     int numbits;
     int bytespersamplenum;
     int bytespersampledenom;
     int framesamples;
-    int framebytes;
+    int framebytes; // The number of bytes in a frame as seen on the input to DataStream, i.e. as in the data source (possibly in separate threads)
+    int multiplexedframebytes; // The number of bytes in a frame as seen by Core, i.e., after any thread multiplexing
     double framespersecond;
     int alignmentseconds; // defaulted to 1, but can be >1 for CODIF.
     int nummuxthreads;
@@ -898,7 +926,7 @@ private:
     int *  recordedfreqtableindices;
     int *  numrecordedfreqpcaltones;
     double ** recordedfreqpcaltonefreqshz;
-    int * recordedfreqpcaloffsetshz;
+    long * recordedfreqpcaloffsetshz;
     double * recordedfreqclockoffsets;
     double * recordedfreqclockoffsetsdelta;
     double * recordedfreqphaseoffset;
@@ -1114,6 +1142,8 @@ private:
   int numconfigs, numrules, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength;
   long long estimatedbytes;
   string calcfilename, modelfilename, coreconffilename, outputfilename, jobname, obscode;
+  mutable string infilekey, infileval;
+  mutable bool infilekeyunconsumed;
   int * numprocessthreads;
   int * scanconfigindices;
   configdata * configs;

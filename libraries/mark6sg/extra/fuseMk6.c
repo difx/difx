@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fuseMk6.c 10555 2022-07-27 09:33:51Z JanWagner $
-// $HeadURL$
-// $LastChangedRevision: 10555 $
-// $Author: JanWagner $
-// $LastChangedDate: 2022-07-27 17:33:51 +0800 (三, 2022-07-27) $
-//
-//============================================================================
 //
 // fuseMk6 [-v] [-r \"pattern\"] <mountpoint>
 //

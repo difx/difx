@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: pbgen.c 7513 2016-11-02 07:01:39Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
- * $LastChangedRevision: 7513 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2016-11-02 15:01:39 +0800 (三, 2016-11-02) $
- *
- *==========================================================================*/
 
 #define _GNU_SOURCE
 #include <stdio.h>

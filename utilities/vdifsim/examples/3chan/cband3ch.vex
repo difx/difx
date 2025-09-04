@@ -1,0 +1,406 @@
+VEX_rev = 1.5;
+*    SCHED vers: Release 11.8; April 2023
+*    VEX/SCHED:  1.5.88
+*    Other versions: Sched:  11.8  Plot: 1.06  JPL-ephem: 1.01
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = cband3ch;
+*                                                      +------------+
+*                         PI revision number:          |    1.0000  |
+*                                                      +------------+
+*    mode:       RDBE/DDC
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def cband3ch;
+     exper_name = cband3ch;
+     exper_description = "cband3ch";
+     PI_name = "Walter Brisken";
+     PI_email = wbrisken@nrao.edu;
+*    address:   NRAO/DSOC
+*                
+*                
+*                
+*    phone:     505-234-5912
+*    during obs: 
+*    fax:        
+*
+*    year, doy: 2023,  78
+*    date     : Sun 19 Mar 2023
+*    MJD      : 60022
+     exper_nominal_start=2023y078d21h00m00s;
+     exper_nominal_stop=2023y078d21h00m20s;
+*
+     target_correlator = SOCORRO;
+*
+*    integr_time    :     1.000 s
+*    number_channels:    64
+*    number_antenna :  4
+*    cross_polarize : Yes
+*    weight_func    : UNIFORM
+*    distrib_medium : FTP
+*    distrib_format : FITS
+*    source_pos_cat : NOT SPECIFIED.
+*    corr_notes : 
+*               Test generation and correlation of data
+*
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def cnarrow8;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = 4909.00MHz3x8MHz:Hn:Fd:Ov:Sc;
+     ref $IF = LO@4100MHzRPolTone/1:Hn:Fd:Ov:Sc;
+     ref $BBC = 3BBCs:Hn:Fd:Ov:Sc;
+     ref $TRACKS = VDIF.3Ch2bit1to1:Hn:Fd:Ov:Sc;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Hn:Fd:Ov:Sc;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect:Hn:Fd:Ov:Sc;
+enddef;
+*
+def PulseCalOFF;
+     ref $PROCEDURES = Mode_02;
+     ref $FREQ = 4909.00MHz3x8MHz#02:Hn:Fd:Ov:Sc;
+     ref $IF = LO@4100MHzRPolNoTone:Hn:Fd:Ov:Sc;
+     ref $BBC = 3BBCs:Hn:Fd:Ov:Sc;
+     ref $TRACKS = VDIF.3Ch2bit1to1:Hn:Fd:Ov:Sc;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Hn:Fd:Ov:Sc;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = NoDetect:Hn:Fd:Ov:Sc;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def Hn;
+     ref $SITE = VLBA_HN;
+     ref $ANTENNA = VLBA_HN;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Fd;
+     ref $SITE = VLBA_FD;
+     ref $ANTENNA = VLBA_FD;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Ov;
+     ref $SITE = VLBA_OV;
+     ref $ANTENNA = VLBA_OV;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Sc;
+     ref $SITE = VLBA_SC;
+     ref $ANTENNA = VLBA_SC;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_02;
+     procedure_name_prefix =  "02";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def VLBA_HN;
+     site_type = fixed;
+     site_name = VLBA_HN;
+     site_ID = Hn;
+*    elev=  295.57 long= 071:59:11. lat= 42:56:01.0
+     site_position = 1446374.75710 m:-4447939.69470 m: 4322306.20610 m;
+     site_velocity = -0.015660   m/yr: -0.001620   m/yr:  0.004160  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 30.0: 35.0: 40.0: 45.0: 65.0: 70.0: 80.0:
+                                85.0: 90.0: 95.0:100.0:105.0:110.0:115.0:120.0:
+                               125.0:130.0:135.0:140.0:145.0:150.0:155.0:160.0:
+                               165.0:170.0:190.0:195.0:200.0:205.0:210.0:220.0:
+                               225.0:230.0:235.0:240.0:245.0:250.0:255.0:270.0:
+                               275.0:290.0:295.0:315.0:320.0:325.0:330.0:335.0:
+                               345.0:350.0:355.0:360.0;
+     horizon_map_el =  6.0 deg:  6.0:  6.0:  4.0:  5.0:  4.0:  4.0:  5.0:  5.0:
+                                 4.0:  5.0:  4.0:  4.0:  5.0:  3.0:  4.0:  4.0:
+                                 5.0:  4.0:  6.0:  5.0:  7.0:  7.0:  5.0:  3.0:
+                                 5.0:  4.0:  4.0:  2.0:  5.0:  5.0:  6.0:  6.0:
+                                 5.0:  6.0:  4.0:  5.0:  5.0:  4.0:  5.0:  5.0:
+                                 4.0:  4.0:  5.0:  5.0:  6.0:  5.0:  5.0:  6.0:
+                                 6.0:  5.0:  5.0:  6.0;
+enddef;
+*
+def VLBA_FD;
+     site_type = fixed;
+     site_name = VLBA_FD;
+     site_ID = Fd;
+*    elev= 1606.42 long= 103:56:41. lat= 30:38:06.1
+     site_position =-1324009.41200 m:-5332181.95760 m: 3231962.34920 m;
+     site_velocity = -0.012560   m/yr:  0.000440   m/yr: -0.005050  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0: 30.0: 35.0: 40.0: 45.0:
+                                50.0: 55.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:
+                                90.0: 95.0:100.0:105.0:110.0:115.0:150.0:155.0:
+                               160.0:220.0:225.0:230.0:240.0:245.0:250.0:255.0:
+                               260.0:265.0:270.0:275.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:315.0:325.0:330.0:335.0:340.0:
+                               345.0:360.0;
+     horizon_map_el =  5.0 deg:  4.0:  5.0:  5.0:  3.0:  3.0:  2.0:  3.0:  2.0:
+                                 2.0:  3.0:  4.0:  7.0:  5.0:  4.0:  4.0:  5.0:
+                                 6.0:  6.0:  5.0:  4.0:  3.0:  2.0:  2.0:  3.0:
+                                 2.0:  2.0:  4.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 5.0:  5.0:  4.0:  4.0:  3.0:  3.0:  2.0:  2.0:
+                                 3.0:  4.0:  5.0:  4.0:  4.0:  5.0:  6.0:  6.0:
+                                 5.0:  5.0;
+enddef;
+*
+def VLBA_OV;
+     site_type = fixed;
+     site_name = VLBA_OV;
+     site_ID = Ov;
+*    elev= 1196.31 long= 118:16:37. lat= 37:13:53.9
+     site_position =-2409150.52770 m:-4478573.07980 m: 3838617.29990 m;
+     site_velocity = -0.018330   m/yr:  0.006500   m/yr: -0.003940  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0: 25.0: 30.0: 35.0: 40.0:
+                                45.0: 50.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:
+                                90.0: 95.0:100.0:105.0:110.0:115.0:120.0:125.0:
+                               130.0:145.0:150.0:155.0:175.0:180.0:185.0:190.0:
+                               195.0:200.0:205.0:210.0:230.0:235.0:240.0:245.0:
+                               250.0:260.0:265.0:270.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:350.0:355.0:360.0;
+     horizon_map_el =  3.0 deg:  5.0:  5.0:  7.0:  9.0: 10.0: 12.0: 13.0: 13.0:
+                                14.0: 15.0: 15.0: 13.0: 12.0: 11.0: 10.0:  9.0:
+                                 8.0:  7.0:  6.0:  6.0:  5.0:  4.0:  3.0:  3.0:
+                                 4.0:  4.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 5.0:  5.0:  6.0:  7.0:  7.0:  6.0:  7.0:  8.0:
+                                 9.0:  9.0:  8.0:  7.0:  7.0:  5.0:  4.0:  4.0:
+                                 3.0:  3.0:  2.0:  2.0:  3.0:  3.0;
+enddef;
+*
+def VLBA_SC;
+     site_type = fixed;
+     site_name = VLBA_SC;
+     site_ID = Sc;
+*    elev=  -15.02 long= 064:35:01. lat= 17:45:23.7
+     site_position = 2607848.69850 m:-5488069.48010 m: 1932739.81690 m;
+     site_velocity =  0.007700   m/yr:  0.009280   m/yr:  0.012480  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 20.0: 25.0: 40.0: 45.0: 50.0: 55.0:
+                                60.0: 65.0: 70.0: 75.0: 80.0: 85.0: 95.0:100.0:
+                               105.0:110.0:115.0:120.0:125.0:130.0:135.0:140.0:
+                               145.0:150.0:155.0:160.0:165.0:175.0:180.0:185.0:
+                               190.0:200.0:205.0:210.0:215.0:220.0:230.0:235.0:
+                               240.0:245.0:250.0:260.0:265.0:270.0:275.0:280.0:
+                               360.0;
+     horizon_map_el =  2.0 deg:  2.0:  3.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 6.0:  6.0:  8.0:  9.0:  9.0:  8.0:  8.0:  9.0:
+                                10.0: 12.0: 14.0: 16.0: 16.0: 15.0: 13.0: 13.0:
+                                12.0: 11.0: 11.0: 10.0:  9.0:  9.0: 11.0: 13.0:
+                                14.0: 14.0: 15.0: 13.0: 12.0: 10.0: 10.0:  9.0:
+                                 8.0:  8.0:  7.0:  7.0:  6.0:  4.0:  3.0:  2.0:
+                                 2.0;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def VLBA_HN;
+     axis_type = az : el;
+     antenna_motion = el :  26.7 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  81.3 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.12990 m;
+enddef;
+*
+def VLBA_FD;
+     axis_type = az : el;
+     antenna_motion = el :  30.5 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  84.3 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13170 m;
+enddef;
+*
+def VLBA_OV;
+     axis_type = az : el;
+     antenna_motion = el :  28.7 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  84.5 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13090 m;
+enddef;
+*
+def VLBA_SC;
+     axis_type = az : el;
+     antenna_motion = el :  28.5 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  84.5 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13550 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+def 2RDBE2+NONE<;
+     record_transport_type = Mark6;
+     electronics_rack_type = RDBE2;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def J2005+7752;
+     source_name = J2005+7752;
+*    this source had calibrator code: V
+*    alternate source name: 2007+777
+*    alternate source name: J200530.9+77
+*    ICRF3 X/S astro solution,  15691 observations.
+     ra = 20h05m30.9985029s; dec =  77d52'43.247544"; ref_coord_frame = J2000;
+*    ra = 20h07m20.4301747s; dec =  77d43'58.123014"; ref_coord_frame = B1950;
+*    ra = 20h04m34.4200839s; dec =  77d56'18.710901"; ref_coord_frame = Date;
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def 4909.00MHz3x8MHz;
+* mode =  1    stations =Hn:Fd:Ov:Sc
+     sample_rate =    16.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4909.00 MHz : U :   8.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :  4918.00 MHz : U :   8.00 MHz : &CH02 : &BBC02 : &U_Cal; *Rcp
+     chan_def = :  4927.00 MHz : U :   8.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+enddef;
+*
+def 4909.00MHz3x8MHz#02;
+* mode =  2    stations =Hn:Fd:Ov:Sc
+     sample_rate =    16.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4909.00 MHz : U :   8.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = :  4918.00 MHz : U :   8.00 MHz : &CH02 : &BBC02 : &NoCal; *Rcp
+     chan_def = :  4927.00 MHz : U :   8.00 MHz : &CH03 : &BBC03 : &NoCal; *Rcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*
+def LO@4100MHzRPolTone/1;
+* mode =  1    stations =Hn:Fd:Ov:Sc
+     if_def = &IF_A : A : R :  4100.00 MHz : U : 1 MHz ; *   13600.00   4100.00  6cm     0 NA
+enddef;
+*
+def LO@4100MHzRPolNoTone;
+* mode =  2    stations =Hn:Fd:Ov:Sc
+     if_def = &IF_A : A : R :  4100.00 MHz : U ; * PCall off!   13600.00   4100.00  6cm     0 NA
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 3BBCs;
+* mode =  1    stations =Hn:Fd:Ov:Sc
+* mode =  2    stations =Hn:Fd:Ov:Sc
+     BBC_assign = &BBC01 :  1 : &IF_A;
+     BBC_assign = &BBC02 :  2 : &IF_A;
+     BBC_assign = &BBC03 :  3 : &IF_A;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def UsbDetect;
+* mode =  1    stations =Hn:Fd:Ov:Sc
+     phase_cal_detect = &U_Cal :  2 :  8 :  0 :  3;
+enddef;
+*
+def NoDetect;
+* mode =  2    stations =Hn:Fd:Ov:Sc
+     phase_cal_detect = &NoCal;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+def VDIF.3Ch2bit1to1;
+* mode =  1    stations =Hn:Fd:Ov:Sc
+* mode =  2    stations =Hn:Fd:Ov:Sc
+*    firmware_type = RDBE_DDC;
+*    format = VDIF, and fan-out = 1
+*    mode requires  16.00Mb/s/tr; stations using disks
+     track_frame_format = VDIF5032;
+     fanout_def =   : &CH01 : sign : 1:  1;
+     fanout_def =   : &CH01 :  mag : 1:  1;
+     fanout_def =   : &CH02 : sign : 1:  2;
+     fanout_def =   : &CH02 :  mag : 1:  2;
+     fanout_def =   : &CH03 : sign : 1:  3;
+     fanout_def =   : &CH03 :  mag : 1:  3;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def DiskVoid;
+* mode =  1    stations =Hn:Fd:Ov:Sc
+* mode =  2    stations =Hn:Fd:Ov:Sc
+*     Head positions irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def DiskVoid;
+* mode =  1    stations =Hn:Fd:Ov:Sc
+* mode =  2    stations =Hn:Fd:Ov:Sc
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =Hn:Fd:Ov:Sc
+* mode =  2    stations =Hn:Fd:Ov:Sc
+*    barrel-roll set to 'roll_off', so reverse-roll by  0 (1 head)
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment cband3ch
+* cband3ch                                                                
+scan No0001;
+     start=2023y078d21h00m00s; mode=PulseCalOFF; source=J2005+7752;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Hn:    0 sec:   20 sec:    0.000 GB:   : &ccw  : 1;
+     station=Fd:    0 sec:   20 sec:    0.000 GB:   : &ccw  : 1;
+     station=Ov:    0 sec:   20 sec:    0.000 GB:   : &ccw  : 1;
+     station=Sc:    0 sec:   20 sec:    0.000 GB:   : &ccw  : 1;
+endscan;

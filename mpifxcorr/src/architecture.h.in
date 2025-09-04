@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 
 /** \file architecture.h
  *  \brief File contains mapping for vector functions to specific architectures
@@ -71,6 +61,8 @@
 #elif(IPP_VERSION_MAJOR == 2018)
 #define IPP_9_API
 #elif(IPP_VERSION_MAJOR == 2019)
+#define IPP_9_API
+#elif(IPP_VERSION_MAJOR == 2020)
 #define IPP_9_API
 #elif(IPP_VERSION_MAJOR == 2021)
 #define IPP_9_API
@@ -162,7 +154,7 @@
 #define vectorCopy_cf32(src, dest, length)                                  ippsCopy_32fc(src, dest, length)
 #define vectorCopy_f64(src, dest, length)                                   ippsCopy_64f(src, dest, length)
 
-#define vectorCos_f32(src, dest, length)                                    ippsCos_32f_A11(src, dest, length)
+#define vectorCos_f32(src, dest, length)                                    ippsCos_32f_A21(src, dest, length)
 
 #define vectorConvertScaled_s16f32(src, dest, length, scalefactor)          ippsConvert_16s32f_Sfs(src, dest, length, scalefactor)
 #define vectorConvertScaled_f32s16(src, dest, length, rndmode, scalefactor) ippsConvert_32f16s_Sfs(src, dest, length, rndmode, scalefactor)
@@ -206,9 +198,9 @@
 
 #define vectorSet_f32(val, dest, length)                                    ippsSet_32f(val, dest, length)
 
-#define vectorSin_f32(src, dest, length)                                    ippsSin_32f_A11(src, dest, length)
+#define vectorSin_f32(src, dest, length)                                    ippsSin_32f_A21(src, dest, length)
 
-#define vectorSinCos_f32(src, sin, cos, length)                             ippsSinCos_32f_A11(src, sin, cos, length)
+#define vectorSinCos_f32(src, sin, cos, length)                             ippsSinCos_32f_A21(src, sin, cos, length)
 
 #ifdef IPP_9_API
 #define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)           genericSplitScaled_16s32f(src, dest, numchannels, chanlen)
@@ -599,7 +591,7 @@ inline vecStatus genericConj_32fc_I(cf32 *srcdest, int length)
 inline vecStatus genericConjFlip_32fc(const cf32 *src, cf32 *dest, int length)
 { for(int i=0;i<length;i++) {dest[i].re = src[length-1-i].re;dest[i].im = -src[length-1-i].im;} return vecNoErr; }
 
-/* #define vectorCos_f32(src, dest, length)                                    ippsCos_32f_A11(src, dest, length) */
+/* #define vectorCos_f32(src, dest, length)                                    ippsCos_32f_A21(src, dest, length) */
 inline vecStatus genericCos_32f(const f32 *src, f32 *dest, int length)
 { for(int i=0;i<length;i++) {dest[i] = cosf(src[i]);} return vecNoErr; }
 
@@ -746,11 +738,11 @@ inline vecStatus genericReal_32fc(const cf32 *c, f32 *re, int l)
 inline vecStatus genericSet_32f(const f32 val, f32 * dest, int length)
 { for(int i=0;i<length;i++) dest[i] = val; return vecNoErr; } // memset?
 
-/* #define vectorSin_f32(src, dest, length)                                    ippsSin_32f_A11(src, dest, length) */
+/* #define vectorSin_f32(src, dest, length)                                    ippsSin_32f_A21(src, dest, length) */
 inline vecStatus genericSin_32f(const f32 *src, f32 *dest, int length)
 { for(int i=0;i<length;i++) {dest[i] = sinf(src[i]);} return vecNoErr; }
 
-/* #define vectorSinCos_f32(src, sin, cos, length)                             ippsSinCos_32f_A11(src, sin, cos, length) */
+/* #define vectorSinCos_f32(src, sin, cos, length)                             ippsSinCos_32f_A21(src, sin, cos, length) */
 inline vecStatus genericSinCos_32f(const f32 *src, f32 *sin, f32 *cos, int length)
 /* { for(int i=0;i<length;i++) {sincosf(src[i],sin+i,cos+i);} return vecNoErr; } */
 { for(int i=0;i<length;i++) sin[i]=sinf(src[i]);

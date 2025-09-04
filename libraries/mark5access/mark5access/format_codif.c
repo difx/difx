@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2017 by Walter Brisken, Adam Deller, Chris Phillips*
+ *   Copyright (C) 2009-2024 by Walter Brisken, Adam Deller, Chris Phillips*
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: format_codif.c 10820 2022-11-14 03:18:27Z ChrisPhillips $
-// $HeadURL: $
-// $LastChangedRevision: 10820 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2022-11-14 11:18:27 +0800 (一, 2022-11-14) $
-//
-//============================================================================
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -159,6 +149,7 @@ static int mark5_stream_frame_time_codif(const struct mark5_stream *ms, int *mjd
 	struct mark5_format_codif *v;
 	unsigned long long fullframens;
 	codif_header *header;
+	int local_sec;
 
 	if(!ms)
 	{
@@ -177,20 +168,20 @@ static int mark5_stream_frame_time_codif(const struct mark5_stream *ms, int *mjd
 	{
 	  *mjd = getCODIFFrameMJD(header);
 	}
+#warning "***** Where does leapseconds come from"
+	local_sec = getCODIFFrameSecond(header)+fullframens/1000000000 + v->leapsecs;
+	if (local_sec>=86400) { // Could have bumped to next day
+	  local_sec -= 86400;
+	  if(mjd) (*mjd)++;
+	}
 	if(sec)
 	{
-#warning "***** Where does leapseconds come from"
-	  *sec = getCODIFFrameSecond(header)+fullframens/1000000000 + v->leapsecs;;
-	  if (*sec>86400) { // Could have bumped to next day. Max period ~ 18hrs)
-	    *sec -= 86400;
-	    if(mjd) (*mjd)++;
-	  }
+	  *sec = local_sec;
 	}
 	if(ns)
 	{
 	        *ns = fullframens % 1000000000;
 	}
-
 	return 0;
 }
 
@@ -1988,6 +1979,301 @@ static int codif_decode_4channel_8bit(struct mark5_stream *ms, int nsamp, float 
 	return nsamp - nblank;
 }
 
+/* The 16bit decoders assume RMS per sample = 8 */
+
+static int codif_decode_1channel_16bit(struct mark5_stream *ms, int nsamp, float **data)
+{
+	const int16_t *buf;
+	int o, i;
+	int nblank = 0;
+
+	buf = (const int16_t*)ms->payload;
+	i = ms->readposition/2;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i*2 >= ms->blankzoneendvalid[0])
+		{
+			data[0][o] = 0.0;
+			nblank++;
+		}
+		else
+		{
+		  data[0][o] = buf[i]/8.0;
+		}
+
+		i++;
+
+
+		if(i*2 >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (const int16_t*)ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i*2;
+
+	return nsamp - nblank;
+}
+
+static int codif_decode_2channel_16bit(struct mark5_stream *ms, int nsamp, float **data)
+{
+	const int16_t *buf;
+	int o, i;
+	int nblank = 0;
+
+	buf = (const int16_t*)ms->payload;
+	i = ms->readposition/2;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i*2 >= ms->blankzoneendvalid[0])
+		{
+		        data[0][o] = 0.0;
+		        data[1][o] = 0.0;
+			nblank++;
+			i += 2;
+		}
+		else
+		{
+		        data[0][o] = buf[i++]/8;
+		        data[1][o] = buf[i++]/8;
+		}
+
+
+		if(i*2 >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (const int16_t*)ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i*2;
+
+	return nsamp - nblank;
+}
+
+static int codif_decode_3channel_16bit(struct mark5_stream *ms, int nsamp, float **data)
+{
+	const int16_t *buf;
+	int o, i;
+	int nblank = 0;
+
+	buf = (const int16_t*)ms->payload;
+	i = ms->readposition/2;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i*2 >= ms->blankzoneendvalid[0])
+		{
+			data[0][o] = 0.0;
+			data[1][o] = 0.0;
+			data[2][o] = 0.0;
+			nblank++;
+			i += 4;
+		}
+		else
+		{
+		        data[0][o] = buf[i++]/8;
+		        data[1][o] = buf[i++]/8;
+		        data[2][o] = buf[i++]/8;
+			i++;
+		}
+
+
+		if(i*2 >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (const int16_t*)ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i*2;
+
+	return nsamp - nblank;
+}
+
+
+static int codif_decode_4channel_16bit(struct mark5_stream *ms, int nsamp, float **data)
+{
+        const int16_t *buf;
+	int o, i;
+	int nblank = 0;
+
+	buf = (const int16_t*)ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i >= ms->blankzoneendvalid[0])
+		{
+			data[0][o] = 0.0;
+			data[1][o] = 0.0;
+			data[2][o] = 0.0;
+			data[3][o] = 0.0;
+			i += 4;
+			nblank++;
+		}
+		else
+		{
+		        data[0][o] = buf[i++]/8.0;
+			data[1][o] = buf[i++]/8.0;
+			data[2][o] = buf[i++]/8.0;
+			data[3][o] = buf[i++]/8.0;
+		}
+
+
+		if(i*2 >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (const int16_t*)ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i*2;
+
+	return nsamp - nblank;
+}
+
+static int codif_decode_8channel_16bit(struct mark5_stream *ms, int nsamp, float **data)
+{
+        const int16_t *buf;
+	int o, i;
+	int nblank = 0;
+
+	buf = (const int16_t*)ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i >= ms->blankzoneendvalid[0])
+		{
+			data[0][o] = 0.0;
+			data[1][o] = 0.0;
+			data[2][o] = 0.0;
+			data[3][o] = 0.0;
+			data[4][o] = 0.0;
+			data[5][o] = 0.0;
+			data[6][o] = 0.0;
+			data[7][o] = 0.0;
+			i += 8;
+			nblank++;
+		}
+		else
+		{
+		        data[0][o] = buf[i++]/8.0;
+			data[1][o] = buf[i++]/8.0;
+			data[2][o] = buf[i++]/8.0;
+			data[3][o] = buf[i++]/8.0;
+		        data[4][o] = buf[i++]/8.0;
+			data[5][o] = buf[i++]/8.0;
+			data[6][o] = buf[i++]/8.0;
+			data[7][o] = buf[i++]/8.0;
+		}
+
+
+		if(i*2 >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (const int16_t*)ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i*2;
+
+	return nsamp - nblank;
+}
+
+static int codif_decode_16channel_16bit(struct mark5_stream *ms, int nsamp, float **data)
+{
+        const int16_t *buf;
+	int o, i;
+	int nblank = 0;
+
+	buf = (const int16_t*)ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i >= ms->blankzoneendvalid[0])
+		{
+			data[0][o] = 0.0;
+			data[1][o] = 0.0;
+			data[2][o] = 0.0;
+			data[3][o] = 0.0;
+			data[4][o] = 0.0;
+			data[5][o] = 0.0;
+			data[6][o] = 0.0;
+			data[7][o] = 0.0;
+			data[8][o] = 0.0;
+			data[9][o] = 0.0;
+			data[10][o] = 0.0;
+			data[11][o] = 0.0;
+			data[12][o] = 0.0;
+			data[13][o] = 0.0;
+			data[14][o] = 0.0;
+			data[15][o] = 0.0;
+			i += 16;
+			nblank++;
+		}
+		else
+		{
+		        data[0][o] = buf[i++]/8.0;
+			data[1][o] = buf[i++]/8.0;
+			data[2][o] = buf[i++]/8.0;
+			data[3][o] = buf[i++]/8.0;
+		        data[4][o] = buf[i++]/8.0;
+			data[5][o] = buf[i++]/8.0;
+			data[6][o] = buf[i++]/8.0;
+			data[7][o] = buf[i++]/8.0;
+		        data[8][o] = buf[i++]/8.0;
+			data[9][o] = buf[i++]/8.0;
+			data[10][o] = buf[i++]/8.0;
+			data[11][o] = buf[i++]/8.0;
+		        data[12][o] = buf[i++]/8.0;
+			data[13][o] = buf[i++]/8.0;
+			data[14][o] = buf[i++]/8.0;
+			data[15][o] = buf[i++]/8.0;
+		}
+
+		if(i*2 >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (const int16_t*)ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i*2;
+
+	return nsamp - nblank;
+}
+
+
 static int codif_decode_1channel_32bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const float *buf;
@@ -3067,11 +3353,11 @@ static int codif_complex_decode_16channel_8bit(struct mark5_stream *ms, int nsam
 
 static int codif_complex_decode_1channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
-	const uint16_t *buf;
+	const int16_t *buf;
 	int o, i;
 	int nblank = 0;
 
-	buf = (const uint16_t *)ms->payload;
+	buf = (const int16_t *)ms->payload;
 	i = ms->readposition/2;
 
 	for(o = 0; o < nsamp; o++)
@@ -3083,7 +3369,7 @@ static int codif_complex_decode_1channel_16bit(struct mark5_stream *ms, int nsam
 		}
 		else
 		{
-		  data[0][o] = ((int16_t)(buf[i]^0x8000) + (int16_t)(buf[i+1]^0x8000)*I)/8.0;  // Assume RMS==8
+		  data[0][o] = (buf[i]+buf[i+1]*I)/8.0;  // Assume RMS==8
 		  i+= 2;
 		}
 
@@ -3094,7 +3380,7 @@ static int codif_complex_decode_1channel_16bit(struct mark5_stream *ms, int nsam
 			{
 				return -1;
 			}
-			buf = (const uint16_t *)ms->payload;
+			buf = (const int16_t *)ms->payload;
 			i = 0;
 		}
 	}
@@ -3106,11 +3392,11 @@ static int codif_complex_decode_1channel_16bit(struct mark5_stream *ms, int nsam
 
 static int codif_complex_decode_2channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
-	const uint16_t *buf;
+	const int16_t *buf;
 	int o, i;
 	int nblank = 0;
 
-	buf = (const uint16_t *)ms->payload;
+	buf = (const int16_t *)ms->payload;
 	i = ms->readposition/2;
 
 	for(o = 0; o < nsamp; o++)
@@ -3123,9 +3409,9 @@ static int codif_complex_decode_2channel_16bit(struct mark5_stream *ms, int nsam
 		}
 		else
 		{
-		        data[0][o] = ((int16_t)(buf[i]^0x8000) + (int16_t)(buf[i+1]^0x8000)*I)/8.0;  // Assume RMS==8
+		        data[0][o] = (buf[i] + buf[i+1]*I)/8.0;  // Assume RMS==8
 			i+=2;
-		        data[1][o] = ((int16_t)(buf[i]^0x8000) + (int16_t)(buf[i+1]^0x8000)*I)/8.0;  // Assume RMS==8
+		        data[1][o] = (buf[i] + buf[i+1]*I)/8.0;  // Assume RMS==8
 			i+=2;
 		}
 
@@ -3135,7 +3421,7 @@ static int codif_complex_decode_2channel_16bit(struct mark5_stream *ms, int nsam
 			{
 				return -1;
 			}
-			buf = (const uint16_t *)ms->payload;
+			buf = (const int16_t *)ms->payload;
 			i = 0;
 		}
 	}
@@ -3147,11 +3433,11 @@ static int codif_complex_decode_2channel_16bit(struct mark5_stream *ms, int nsam
 
 static int codif_complex_decode_4channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
-	const uint16_t *buf;
+	const int16_t *buf;
 	int o, i, j;
 	int nblank = 0;
 
-	buf = (const uint16_t *)ms->payload;
+	buf = (const int16_t *)ms->payload;
 	i = ms->readposition/2;
 
 	for(o = 0; o < nsamp; o++)
@@ -3166,7 +3452,7 @@ static int codif_complex_decode_4channel_16bit(struct mark5_stream *ms, int nsam
 		else
 		{
 		  for (j=0; j<4; j++) {
-		        data[j][o] = ((int16_t)(buf[i]^0x8000) + (int16_t)(buf[i+1]^0x8000)*I)/8.0;  // Assume RMS==8
+		        data[j][o] = (buf[i] +buf[i+1]*I)/8.0;  // Assume RMS==8
 			i+=2;
 		  }
 		}
@@ -3177,7 +3463,7 @@ static int codif_complex_decode_4channel_16bit(struct mark5_stream *ms, int nsam
 			{
 				return -1;
 			}
-			buf = (const uint16_t *)ms->payload;
+			buf = (const int16_t *)ms->payload;
 			i = 0;
 		}
 	}
@@ -3189,11 +3475,11 @@ static int codif_complex_decode_4channel_16bit(struct mark5_stream *ms, int nsam
 
 static int codif_complex_decode_8channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
-	const uint16_t *buf;
+	const int16_t *buf;
 	int o, i, j;
 	int nblank = 0;
 
-	buf = (const uint16_t*)ms->payload;
+	buf = (const int16_t*)ms->payload;
 
 	i = ms->readposition/2;
 
@@ -3209,7 +3495,7 @@ static int codif_complex_decode_8channel_16bit(struct mark5_stream *ms, int nsam
 		else
 		{
 		  for (j=0; j<8; j++) {
-		    data[j][o] = ((int16_t)(buf[i]) + (int16_t)(buf[i+1])*I)/8.0;  // Assume RMS==8
+		        data[j][o] = (buf[i] + buf[i+1]*I)/8.0;  // Assume RMS==8
 			i+=2;
 		  }
 		}
@@ -3220,7 +3506,7 @@ static int codif_complex_decode_8channel_16bit(struct mark5_stream *ms, int nsam
 			{
 				return -1;
 			}
-			buf = (const uint16_t *)ms->payload;
+			buf = (const int16_t *)ms->payload;
 			i = 0;
 		}
 	}
@@ -3232,11 +3518,11 @@ static int codif_complex_decode_8channel_16bit(struct mark5_stream *ms, int nsam
 
 static int codif_complex_decode_14channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
-	const uint16_t *buf;
+	const int16_t *buf;
 	int o, i, j;
 	int nblank = 0;
 
-	buf = (const uint16_t *)ms->payload;
+	buf = (const int16_t *)ms->payload;
 	i = ms->readposition/2;
 
 	for(o = 0; o < nsamp; o++)
@@ -3251,8 +3537,7 @@ static int codif_complex_decode_14channel_16bit(struct mark5_stream *ms, int nsa
 		else
 		{
 		  for (j=0; j<14; j++) {
-		    //		        data[j][o] = ((int16_t)(buf[i]^0x8000) + (int16_t)(buf[i+1]^0x8000)*I)/8.0;  // Assume RMS==8
-		        data[j][o] = ((int16_t)buf[i] + (int16_t)buf[i+1]*I)/8.0;  // Assume RMS==8
+		        data[j][o] = (buf[i] + buf[i+1]*I)/8.0;  // Assume RMS==8
 			i+=2;
 		  }
 		}
@@ -3263,7 +3548,7 @@ static int codif_complex_decode_14channel_16bit(struct mark5_stream *ms, int nsa
 			{
 				return -1;
 			}
-			buf = (const uint16_t *)ms->payload;
+			buf = (const int16_t *)ms->payload;
 			i = 0;
 		}
 	}
@@ -3275,11 +3560,11 @@ static int codif_complex_decode_14channel_16bit(struct mark5_stream *ms, int nsa
 
 static int codif_complex_decode_16channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
 {
-	const uint16_t *buf;
+	const int16_t *buf;
 	int o, i, j;
 	int nblank = 0;
 
-	buf = (const uint16_t *)ms->payload;
+	buf = (const int16_t *)ms->payload;
 	i = ms->readposition/2;
 
 	for(o = 0; o < nsamp; o++)
@@ -3294,7 +3579,7 @@ static int codif_complex_decode_16channel_16bit(struct mark5_stream *ms, int nsa
 		else
 		{
 		  for (j=0; j<16; j++) {
-		        data[j][o] = ((int16_t)(buf[i]^0x8000) + (int16_t)(buf[i+1]^0x8000)*I)/8.0;  // Assume RMS==8
+		        data[j][o] = (buf[i] + buf[i+1]*I)/8.0;  // Assume RMS==8
 			i+=2;
 		  }
 		}
@@ -3305,7 +3590,7 @@ static int codif_complex_decode_16channel_16bit(struct mark5_stream *ms, int nsa
 			{
 				return -1;
 			}
-			buf = (const uint16_t *)ms->payload;
+			buf = (const int16_t *)ms->payload;
 			i = 0;
 		}
 	}
@@ -3859,12 +4144,9 @@ static int mark5_format_codif_make_formatname(struct mark5_stream *ms)
 
 static int mark5_format_codif_init(struct mark5_stream *ms)
 {
-
-    
 	struct mark5_format_codif *f;
-	unsigned int word2;
 	uint8_t bitspersample=0;
-	int framensNum, framensDen, dataarraylength, status;
+	int dataarraylength, status;
 	double dns;
 	codif_header *header;
 
@@ -3901,8 +4183,8 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 		
 		if(f->frameheadersize != 0 && f->frameheadersize != CODIF_HEADER_BYTES)
 		{
-			fprintf(m5stderr, "CODIF Warning: Changing frameheadersize from %d to 64\n",
-				f->frameheadersize);
+			fprintf(m5stderr, "CODIF Warning: Changing frameheadersize from %d to 64 for %s\n",
+				f->frameheadersize, ms->streamname);
 		}
 		f->frameheadersize = CODIF_HEADER_BYTES;
 
@@ -3910,22 +4192,22 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 
 		if(f->databytesperpacket != 0 && f->databytesperpacket != dataarraylength)
 		{
-			fprintf(m5stderr, "CODIF Warning: Changing databytesperpacket from %d to %d\n",
-				f->databytesperpacket, dataarraylength);
+			fprintf(m5stderr, "CODIF Warning: Changing databytesperpacket from %d to %d for %s\n",
+				f->databytesperpacket, dataarraylength, ms->streamname);
 		}
 		f->databytesperpacket = dataarraylength;
 
 		if (ms->nchan != 0 && ms->nchan != getCODIFNumChannels(header))
 		{
-			fprintf(m5stderr, "CODIF Warning: Changing nchan from %d to %d\n",
-				ms->nchan, getCODIFNumChannels(header));
+			fprintf(m5stderr, "CODIF Warning: Changing nchan from %d to %d for %s\n",
+				ms->nchan, getCODIFNumChannels(header), ms->streamname);
 		}
 		ms->nchan =  getCODIFNumChannels(header);
 
 		if (ms->nbit != 0 && ms->nbit != getCODIFBitsPerSample(header))
 		{
-			fprintf(m5stderr, "CODIF Warning: Changing nbit from %d to %d\n",
-				ms->nbit, header->nbits);
+			fprintf(m5stderr, "CODIF Warning: Changing nbit from %d to %d for %s\n",
+				ms->nbit, header->nbits, ms->streamname);
 		}
 		ms->nbit = getCODIFBitsPerSample(header);
 		bitspersample = ms->nbit;
@@ -3950,7 +4232,8 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 		status = set_decoder(ms->nbit, ms->nchan, header->iscomplex, &ms->decode, &ms->complex_decode, &ms->count);
 	
 		if (!status) {
-		  fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d\n", ms->nchan, ms->nbit);
+		  fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d for %s\n", ms->nchan, ms->nbit,
+			  ms->streamname);
 		  return 0;
 		}
 		
@@ -4047,7 +4330,7 @@ static int mark5_format_codif_validate(const struct mark5_stream *ms)
 	/* Check for overly unusual header  */
 	header = (codif_header *)ms->frame;
 
-	if(getCODIFSync(header) != 0xFEEDCAFE & getCODIFSync(header) != 0xADEADBEE)
+	if(getCODIFSync(header) != CODIF_SYNC)
 	{
 	        fprintf(m5stderr, "mark5_format_codif_validate: Skipping frame with wrong sync (0x%08X)\n", getCODIFSync(header));
 	        return 0;
@@ -4079,6 +4362,7 @@ static int mark5_format_codif_validate(const struct mark5_stream *ms)
 		{
 			fprintf(m5stdout, "CODIF validate[%lld]: %d %d %f : %d %d %lld\n",
 				ms->framenum,   mjd_d, sec_d, ns_d,   mjd_t, sec_t, ns_t);
+			fprintf(m5stdout, "DEBUG: %d %d\n", getCODIFFrameEpochSecOffset(header), getCODIFFrameNumber(header));
 			return 0;
 		}
 	}
@@ -4265,6 +4549,25 @@ int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex
 	    break;
 	  case 3004:
 	    *decode = codif_decode_4channel_8bit;
+	    break;
+	    
+	  case 4001:
+	    *decode = codif_decode_1channel_16bit;
+	    break;
+	  case 4002:
+	    *decode = codif_decode_2channel_16bit;
+	    break;
+	  case 4003:
+	    *decode = codif_decode_3channel_16bit;
+	    break;
+	  case 4004:
+	    *decode = codif_decode_4channel_16bit;
+	    break;
+	  case 4005:
+	    *decode = codif_decode_8channel_16bit;
+	    break;
+	  case 4006:
+	    *decode = codif_decode_16channel_16bit;
 	    break;
 	    
 	  case 5001:
@@ -4493,7 +4796,7 @@ int find_codif_frame(const unsigned char *data, int length, size_t *offset, int 
     for (*offset=0; *offset<length; (*offset)++) {
       header = (codif_header*)(data + *offset);
       
-      if (header->sync != 0xABADDEED) continue; // Sync
+      if (header->sync != CODIF_SYNC) continue; // Sync
 
       fsA = getCODIFFrameBytes(header);
       if (!is_legal_codif_framesize(fsA)) {
@@ -4508,7 +4811,7 @@ int find_codif_frame(const unsigned char *data, int length, size_t *offset, int 
 
       header = (codif_header*)(data + *offset + fsA + CODIF_HEADER_BYTES);
       
-      if (header->sync != 0xABADDEED) continue; // Sync
+      if (header->sync != CODIF_SYNC) continue; // Sync
 
       fsB = getCODIFFrameBytes(header);
       secB = header->seconds;

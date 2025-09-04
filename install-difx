@@ -6,11 +6,6 @@ import os,sys
 import getopt
 import re
 
-# Set this to true if compiling within a master_tags checkout
-# make trunk go away...
-master_tag = True
-#master_tag = False
-
 ###############################################################################
 # this function was once called main() but really it was only for help.
 def help(options=False, envivars=False, examples=False):
@@ -70,6 +65,9 @@ The install-difx options are:
 
    --withdatasim   Build the datasim application (requires gsl)
 
+   --withspice='installed SPICE directory' Build difxcalc including near-field
+                   making using of SPICE installed at this location
+
    --noinstall     Don't install, only build.
 
    --reconf        Reconfigure step by step rather than with autoreconf
@@ -110,7 +108,7 @@ The install-difx options are:
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
                     "mpifxcorr", "difxfilterbank", "hops", "m6support",
                     "polconvert", "guiServer", "mk5daemon", "difx_monitor",
-                    "datasim", "difxcalc11", "mark6sg", "mark6meta"]
+                    "datasim", "difxcalc11", "mark6sg", "mark6meta", "espresso"]
    --skip='...'    Does a normal build, but skips components in a comma
                    separated list (drawn from the --doonly list).
    --also='...'    Does a normal build, but adds components in a comma
@@ -129,6 +127,7 @@ They are usually set up if you source the "setup-difx.bash" script (which
 must perhaps be adapted to your local circumstances):
 
     DIFX_VERSION    master tag "DiFX-2.6.2", &c., or "trunk" for developers
+                    Not actually required for building, but a good idea!
     DIFXROOT        absolute path to specify where the build products
                     are to be installed.  If you build outside of the
                     source tree, you may then remove the build directory
@@ -176,7 +175,7 @@ try:
          "help-options", "help-environment", "help-examples",
          "mk5daemon", "withmonitor", "withdatasim", "perl", "withfb",
          "withhops", "withm6support", "withguiserver", "withpython",
-         "withpolconvert", "noinstall", "reconf", "noconf", "clean",
+         "withpolconvert", "withspice=", "noinstall", "reconf", "noconf", "clean",
          "g77", "extraflags=", "makeflags=", "withmark6meta",
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine",
          "doonly=", "skip=", "also=", "newver=", ])
@@ -206,6 +205,8 @@ noconf = False
 pristine = False
 dodoc = True
 dopybindings = False
+withspice = False
+spicedir = ""
 doipp = 0
 orgcwd = os.getcwd()
 components = {"perl"          :False,
@@ -236,6 +237,7 @@ components = {"perl"          :False,
               "difx_monitor"  :False,
               "datasim"       :False,
               "python"        :True,
+              "espresso"      :True,
 }
 def setNormalComponentsFalse():
 	global components
@@ -260,6 +262,7 @@ def setNormalComponentsFalse():
 	components["mpifxcorr"]= False
 	components["mark6sg"]= False
 	components["python"]= False
+	components["espresso"]= False
 def setOnlyComponents(only):
 	global components
 	setNormalComponentsFalse()
@@ -361,6 +364,9 @@ if len(opts) > 0:
             components["guiServer"] = True
         if o == "--withpython":
             dopybindings = True
+        if o == "--withspice":
+            withspice = True
+            spicedir = a
         if o == "--noinstall":
             noinstall = True
         if o == "--reconf":
@@ -437,16 +443,7 @@ if(extraflags is not None):
 
 
 ##### Check that appropriate setup has been done ########
-if not master_tag:
-    if os.environ.get('DIFX_VERSION') == None:
-        print("You must have already source'd setup.bash/setup.csh!")
-        print("DIFX_VERSION was undefined - aborting compilation")
-        raise RuntimeError("DIFX_VERSION undefined")
-    difx_version = os.environ.get('DIFX_VERSION')
-    if difx_version != "trunk":
-        difx_version = "branches/" + difx_version
-else:
-    difx_version = ''
+difx_version = '' # Legacy from the SVN era - leave this blank to ensure paths are correct
 
 ##### OSX Specific changes
 if platform == "darwin":
@@ -463,8 +460,6 @@ if gfortran:
 
 ###### Targets ####################################################
 # auto_compile(doreconf, dolibtoolize, doautoheader, ..., dompicxx)
-
-# calcif2 is a utility on trunk but an application on master tags
 
 libtargets = []
 if components["difxio"]:
@@ -487,7 +482,7 @@ if components["vdifio"]:
     libtargets.append(["vdifio",     difx_version, True,True,True,False])
 
 utiltargets = []
-if components["calcif2"] and not master_tag:
+if components["calcif2"]:
     utiltargets.append(["calcif2",   difx_version, True,False,True,False])
 if components["difx2profile"]:
     utiltargets.append([
@@ -498,8 +493,6 @@ if components["vis2screen"]:
     utiltargets.append(["vis2screen",difx_version, True,False,False,True])
 
 apptargets = []
-if components["calcif2"] and master_tag:
-    apptargets.append(["calcif2",   difx_version, True,False,True,False])
 if components["calcserver"]:
     apptargets.append(["calcserver", difx_version, True,True,False,False])
 if components["difxcalc11"]:
@@ -526,6 +519,8 @@ if components["difx_monitor"]:
     apptargets.append(["difx_monitor", difx_version, True,False,False,True])
 if components["datasim"]:
     apptargets.append(["datasim", difx_version, True,True,True,False])
+if components["espresso"]:
+    apptargets.append(["espresso", difx_version, True,True,False,False])
 
 for key in adjustments:
     todo = True
@@ -566,10 +561,6 @@ setupdir = os.path.dirname(sys.argv[0])
 if not setupdir:
     setupdir = "."
 os_chdir(setupdir)
-
-# master_tags/ has no setup directory
-if not master_tag:
-    os_chdir("..")
 topdir = os.getcwd()
 
 # think a bit about pkgconfig path
@@ -577,18 +568,13 @@ pkg_config_path = blddir + "/pkgconfig"
 pkg_config_path += ":" + os.environ.get('PKG_CONFIG_PATH')
 os.environ['PKG_CONFIG_PATH'] = pkg_config_path
 
-# source dir build starts in 'setup' of the svn tree and topdir of master_tag
+# source dir build starts in topdir
 # inbdir is set True when the build directory differs from the source dir
-if blddir == topdir + '/setup':
+if blddir == topdir:
     if verb:
         print()
         print("Building/Installing from the source directory")
-    inbdir = False
-    startdir = topdir + '/setup'
-elif master_tag and blddir == topdir:
-    if verb:
-        print()
-        print("Building/Installing from the master tag source directory")
+        print("(not really recommended - you'll pollute your repo with build files!)")
     inbdir = False
     startdir = topdir
 else:
@@ -596,10 +582,7 @@ else:
         print()
         print("Building/Installing from the build directory:")
     inbdir = True
-    if master_tag:
-        startdir = topdir
-    else:
-        startdir = topdir + '/setup'
+    startdir = topdir
     # allow use of symbolic links in partial checkouts
     repldir = os.environ.get('DIFX_REPLDIR_PATH')
     if not repldir:
@@ -630,7 +613,7 @@ def run(cmd):
             raise RuntimeError("Error running " + cmd + " in " + os.getcwd())
 
 ###### Subroutine to do the compiling of an auto-tool ###
-def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
+def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx, compname):
     thisdir = os.getcwd()   # somewhere below topdir
     if (doreconf and (reconf or os.system("autoreconf -if"))):
         if noconf and os.path.exists('configure'):
@@ -677,6 +660,8 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
         if dopybindings and check_configureAC_has(
             cfp+"/configure.ac", "with-python"):
                 configstring += " --with-python "
+        if compname == "difxio" and withspice:
+            configstring += " --with-spice-root={0}".format(spicedir)
         run(configstring)
 
     run(MAKEcommand + target)
@@ -895,7 +880,7 @@ for libtarget in libtargets:
         print()
         os_chdir(targetdir)
         auto_compile(libtarget[2], libtarget[3], libtarget[4],
-            difxroot, libtarget[5])
+            difxroot, libtarget[5], libtarget[0])
     else:
         print()
         print("******* Skipping "+targetdir)
@@ -972,7 +957,7 @@ for apptarget in apptargets:
         print()
         os_chdir(targetdir)
         auto_compile(apptarget[2], apptarget[3], apptarget[4],
-            difxroot, apptarget[5])
+            difxroot, apptarget[5], apptarget[0])
     else:
         print()
         print("******* Skipping "+targetdir)
@@ -998,7 +983,7 @@ for utiltarget in utiltargets:
         print("Building ", utiltarget[0])
         os_chdir(targetdir)
         auto_compile(utiltarget[2], utiltarget[3], utiltarget[4],
-            difxroot, utiltarget[5])
+            difxroot, utiltarget[5], utiltarget[0])
     else:
         print()
         print("******* Skipping "+targetdir)

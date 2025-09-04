@@ -125,7 +125,7 @@ rm -f $tag.txt
 for p
 do
     ( echo '' ; echo '' ) >> $tag.out
-    awk -v decimate=1 -v dsq=0 "$awks" $p >> $tag.out
+    grep -v ^! $p | awk -v decimate=1 -v dsq=0 "$awks" >> $tag.out
     eval `tail -1 $tag.out | cut -c2-`
     echo $job $antablines >> $tag.txt
     ndx=$(($ndx + 1))

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2015 by Walter Brisken                             *
+ *   Copyright (C) 2007-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5_format_d2k.c -1   $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_format_d2k.c $
-// $LastChangedRevision: -1 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2019-11-14 06:43:47 +0800 (四, 2019-11-14) $
-//
-//============================================================================
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -48,7 +38,7 @@ static const float HiMag = OPTIMAL_2BIT_HIGH;
 struct mark5_format_mark5b
 {
 	int nbitstream;
-	int kday;	/* kilo-mjd: ie 51000, 52000, ... */
+	int kday;	/* kilo-mjd: i.e., 51000, 52000, ... */
 };
 
 static float lut1bit[256][8];
@@ -2799,7 +2789,7 @@ static int onenc(struct mark5_stream *ms)
 	return 1;
 }
 
-//---- End Repeated cdoe
+//---- End Repeated code
 //#endif
 
 static int mark5_format_d2k_init(struct mark5_stream *ms)
@@ -2987,7 +2977,7 @@ struct mark5_format_generic *new_mark5_format_d2k(int Mbps, int nchan, int nbit,
 	}
 	else
 	{
-		fprintf(m5stderr, "decimation must be 1, 2 or a mult of 4\n");
+		fprintf(m5stderr, "decimation must be 1, 2 or a multiple of 4\n");
 	}
 
 	if(nbit == 1)

@@ -1,9 +1,23 @@
 Version 2.9
 ~~~~~~~~~~~
-* Fix missing/broken autocorrelations (ported to DiFX 2.8)
+* Fix missing/broken autocorrelation, e.g. when bands matched but differed in PCal spacing (ported to DiFX 2.8)
 * Fix for cross-polar autocorrelation weights (ported to DiFX 2.8)
 * Support for IPP 2021.*
-
+* Change linking to only link executables that need IPP against IPP
+* Support fractional-spaced Phase Cal such as Korean photonic 700/9 MHz
+* Fix bug in discontinuous time passed to PCal::adjustSampleOffset()
+* mpifxcorr PCAL file: extend MJD and IntTime from 7 to 11 decimal digits to avoid rounding error of ~1.6ms when tInt=0.8192s
+* Handle very short files (that end before a second datastream segment is read)
+* Bug fixes to prevent non-outputted output bands from interfering
+* Update to visibility class to allow max path length to be configured and improve visibility writing
+* By default use more accurate SinCos_A21 IPP call, not very low precision SinCos_A11 call.
+* This leads to a difference on the order of ~0.04% in visibility amplitides
+* Maintain (and use, rather than recalculating continually) multiplexedframebytes and multiplexedpayloadbytes
+* This incorporated some fixes to frame sizes in certain cases 
+* genmachines extended by an '--all-datastreams' flag to gather all datastream nodes from several DiFX input files
+* Do not accumulate negative pulsar bin weights into the visibility weight
+* Cross USB/LSB check revised to cover both stations of baseline and warn if target is not USB
+* Version for DiFX-2.9
 
 Version 2.8
 ~~~~~~~~~~~

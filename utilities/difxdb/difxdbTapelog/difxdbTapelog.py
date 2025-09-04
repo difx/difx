@@ -16,15 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: difxdbTapelog.py 10271 2021-10-21 09:43:12Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/difxdbTapelog/difxdbTapelog.py $
-# $LastChangedRevision: 10271 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2021-10-21 17:43:12 +0800 (四, 2021-10-21) $
-#
-#============================================================================
 
 import os
 import sys
@@ -40,12 +31,9 @@ from operator import  attrgetter
 
 __author__ = "Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__ = "$Revision: 10271 $"
-__date__ = "$Date: 2021-10-21 17:43:12 +0800 (四, 2021-10-21) $"
-__lastAuthor__ = "$Author: HelgeRottmann $"
 
 def printUsage():
-    print("%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__))
+    print("%s   %s \n" % (__prog__, __author__))
     print("A program to construct the TAPELOG_OBS section from all modules in the database belonging to an experiment.\n")
     print("Usage: %s <experiment_code>\n\n"  % __prog__)
     print("NOTE: %s requires the DIFXROOT and MARK5_DIR_PATH environment variables to be defined." % __prog__)

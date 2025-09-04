@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 #include <mpi.h>
 #include "core.h"
 #include "fxmanager.h"
@@ -714,7 +704,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
       modes[j]->zeroKurtosis();
     
     //reset pcal
-    if(config->getDPhaseCalIntervalMHz(procslots[index].configindex, j) > 0)
+    if(config->getDPhaseCalIntervalHz(procslots[index].configindex, j) > 0)
     {
       // Calculate the sample time. Every band has the same bandwidth.
       sampletimens = 1.0/(2.0*config->getDRecordedBandwidth(procslots[index].configindex, j, 0))*1e+3;
@@ -939,7 +929,14 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                         destbin = scratchspace->bins[fftsubloop][f][destchan];
                         scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][l].re += scratchspace->pulsarscratchspace[l].re;
                         scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][l].im += scratchspace->pulsarscratchspace[l].im;
-                        scratchspace->baselineweight[f][0][j][p] += bweight*binweights[destbin];
+                        /* Negative bin weights are generally used when scrunching to estimate and remove slowly-time-varying signal (e.g. RFI)
+                         * So really the baseline weight treat these on-pulse (positive weights) and off-pulse (negative weights) regions separately
+                         * since the off pulse subtraction is raising the noise a little - the narrower it is relative to the on pulse region, the more it raises the noise
+                         * However, there is no mechanism to carry this through with a single weight sum at the moment, so the quick and dirty solution is simply to ignore
+                         * all the negative weights in the calculation of baseline weight
+                         */ 
+                        if(binweights[destbin] > 0.0)
+                          scratchspace->baselineweight[f][0][j][p] += bweight*binweights[destbin];
                         destchan++;
                       }
                     }
@@ -1143,7 +1140,7 @@ void Core::copyPCalTones(int index, int threadid, Mode ** modes)
   //copy the pulse cal
   for(int i=0;i<numdatastreams;i++)
   {
-    if(config->getDPhaseCalIntervalMHz(procslots[index].configindex, i) > 0)
+    if(config->getDPhaseCalIntervalHz(procslots[index].configindex, i) > 0)
     {
       modes[i]->finalisepcal();
       resultindex = config->getCoreResultPCalOffset(procslots[index].configindex, i);
@@ -1154,7 +1151,7 @@ void Core::copyPCalTones(int index, int threadid, Mode ** modes)
         {
           procslots[index].results[resultindex].re += modes[i]->getPcal(j,k).re;
           procslots[index].results[resultindex].im += modes[i]->getPcal(j,k).im;
-	  resultindex++;
+          resultindex++;
         }
       }
     }
@@ -1726,6 +1723,8 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
 
   //get index into procslot::results[<out>] to concatenate spectra of phase centers, bins, and polzns there
   coreindex = config->getCoreResultBaselineOffset(procslots[index].configindex, freqindex, baseline);
+  if(coreindex < 0)
+    csevere << startl << "Baseline " << baseline << " input freqId " << freqindex << " with destination freqId " << targetfreqindex << " is not mapped to any Core results[] array index!";
 
   //collect spectra data from threadcrosscorrs etc, do the multi-phasecenter rotation (if necessary), spectral averaging (if necessary) and concatenation to Core procslot::results[]
   for(int s=0;s<model->getNumPhaseCentres(procslots[index].offsets[0]);s++)

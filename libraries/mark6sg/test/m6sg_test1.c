@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m6sg_test1.c 8476 2018-09-17 10:05:29Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark6sg/test/m6sg_test1.c $
-// $LastChangedRevision: 8476 $
-// $Author: JanWagner $
-// $LastChangedDate: 2018-09-17 18:05:29 +0800 (一, 2018-09-17) $
-//
-//============================================================================
 //
 // ./m6sg_test1
 //

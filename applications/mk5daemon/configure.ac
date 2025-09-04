@@ -1,4 +1,4 @@
-AC_INIT([mk5daemon], [2.8.0], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([mk5daemon], [2.9.0], [Walter Brisken <wbrisken@nrao.edu>])
 AC_CONFIG_HEADERS([config.h])
 
 AC_C_BIGENDIAN
@@ -21,12 +21,12 @@ AC_SEARCH_LIBS([sqrt], [m])
 AC_SEARCH_LIBS([pthread_create], [pthread])
 AC_SEARCH_LIBS([XML_Parse], [expat])
 
-PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.8.0])
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.9.0])
 PKG_CHECK_MODULES(MARK5IPC, [mark5ipc >= 2.8.0])
-PKG_CHECK_MODULES(M5ACCESS, [mark5access >= 1.6])
-PKG_CHECK_MODULES(MARK6META, [mark6meta >= 0.3], [AC_DEFINE(HAS_MARK6META, 1)], [hasmark6meta=false])
-PKG_CHECK_MODULES(MARK6SG, [mark6sg >= 2.0.3], [AC_DEFINE(HAS_MARK6SG, 1)], [hasmark6sg=false])
-PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.5)
+PKG_CHECK_MODULES(M5ACCESS, [mark5access >= 1.7])
+PKG_CHECK_MODULES(MARK6META, [mark6meta >= 0.4], [AC_DEFINE(HAS_MARK6META, 1)], [hasmark6meta=false])
+PKG_CHECK_MODULES(MARK6SG, [mark6sg >= 2.0.4], [AC_DEFINE(HAS_MARK6SG, 1)], [hasmark6sg=false])
+PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.6)
 
 AH_TEMPLATE(HAS_MARK6META, [True if mark6meta library has been found])
 AH_TEMPLATE(HAS_MARK6SG, [True if mark6sg library has been found])

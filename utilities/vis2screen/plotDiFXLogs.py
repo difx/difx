@@ -20,8 +20,10 @@ import datetime
 import glob
 import os, sys
 
+import parseDiFX
+
 __author__ = "Jan Wagner (MPIfR)"
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 
 
 def parse_args(args: []):
@@ -32,6 +34,7 @@ def parse_args(args: []):
 	parser.add_argument('-i', '--maxidletime',  help='Max expected idle time between jobs (default: %(default)d)', default=180, type=int)
 	parser.add_argument('-n', '--maxnodes',     help='Max number of nodes expected (default: %(default)d)', default=70, type=int)
 	parser.add_argument('-d', '--use-dirname',  help='Label data not by project but by subdirectory', action='store_true')
+	parser.add_argument('-R', '--dstream-rate', help='Recording rate of a datastream in Mbit/s (default: %(default)d). Sets the scale of throughput plots.', default=16000, type=int)
 	parser.add_argument('directories', nargs='*')
 	return parser.parse_args(args)
 
@@ -76,6 +79,24 @@ def getWallclockTime(difxlog):
 	return t
 
 
+def getInputfileInfos(difxlog):
+	'''
+	Inspects the DiFX .input associated with the DiFX log file.
+
+	Looks up the scan (job) length as VEX-scheduled in seconds,
+	the number of active datastreams, and the number of active
+	baselines.
+	The latter are DiFX-internal computational baselines and
+	these can exceed the number of physical baselines, e.g.,
+	the	correlation mode exhaustiveAutocorrs=True calculates
+	cross polar autocorrelations as zero baseline visibilities.
+	'''
+	inputfile = difxlog.replace(".difxlog", ".input")
+	settings = parseDiFX.get_common_settings(inputfile)
+	# dict 'settings': keys 'exectime', 'datastreams', 'baselines'
+	return settings
+
+
 def getNodeCount(difxlog):
 	'''
 	Check .machines file corresponding to the difxlog,
@@ -93,23 +114,31 @@ def getDataSeries(path, Nmax=0):
 	Return various data for all (or at most Nmax) .difxlog logs
 	and related files that can be found under the given 'path'.
 	'''
-	starttimes, wallclocktimes, nodecounts = [], [], []
+	starttimes, wallclocktimes, nodecounts, difxconfigs = [], [], [], []
 
 	for difxlog in glob.iglob(path + '/*.difxlog'):
 
 		t = getStartingTime(difxlog)
 		wt = getWallclockTime(difxlog)
 		nc = getNodeCount(difxlog)
-		# print('From ',difxlog, ' got ', t, wt, nc)
+		dc = getInputfileInfos(difxlog)
+
+		# print('From ' + difxlog + ' got ', t, wt, nc)
+		# print('From ' + difxlog + ' input file got ', dc)
+
+		if t <= 0 or wt <= 0 or nc <= 0:
+			# print('From ' + difxlog + ' got skippable data ', t, wt, nc)
+			continue
 
 		starttimes.append(t)
 		wallclocktimes.append(wt)
 		nodecounts.append(nc)
+		difxconfigs.append(dc)
 
 		if Nmax > 0 and len(starttimes) == Nmax:
 			break
 
-	return (starttimes,wallclocktimes, nodecounts)
+	return (starttimes, wallclocktimes, nodecounts, difxconfigs)
 
 
 def getExperimentName(path):
@@ -149,7 +178,10 @@ if __name__ == "__main__":
 
 	# Data and plots
 
-	fig, ((ax1,ax2),(ax3,ax4)) = plt.subplots(2, 2, constrained_layout=True)
+	fig1, ((ax1,ax2),(ax3,ax4)) = plt.subplots(2, 2, constrained_layout=True)
+	#fig2, ((f2ax1,f2ax2),()) = plt.subplots(2, 1, constrained_layout=True)
+	fig2, (f2ax1,f2ax2) = plt.subplots(1, 2, constrained_layout=True)
+	Ndrawn = 0
 
 	for path in userargs.directories:
 
@@ -158,19 +190,46 @@ if __name__ == "__main__":
 		else:
 			expt = getExperimentName(path)
 
-		data_tstartUnix, data_twall, data_nodecount = getDataSeries(path, Nmax=userargs.maxfiles)
+		data_tstartUnix, data_twall, data_nodecount, data_difxconfs = getDataSeries(path, Nmax=userargs.maxfiles)
+		if len(data_tstartUnix) <= 0:
+			print('No DiFX log files in directory ' + path)
+			continue
 
+		NN = range(len(data_twall))
 		iasc = np.argsort(data_tstartUnix) # indices that provide data_tstartUnix sorted by increasing time
 		tstartUnixSorted = [data_tstartUnix[ii] for ii in iasc]
 		tendUnixSorted = [data_tstartUnix[ii] + data_twall[ii] for ii in iasc]
 		t_gaps = [tstartUnixSorted[i+1] - tendUnixSorted[i] for i in range(len(tstartUnixSorted)-1)]
 
+		# Wall clock time related plots
 		ax1.hist(data_twall, bins_time, alpha=0.5, label=expt)
 		ax2.hist(data_nodecount, bins_numnodes, alpha=0.5, label=expt)
 		ax3.scatter(data_nodecount, data_twall, alpha=0.5, label=expt)
 		ax4.hist(t_gaps, bins_idletime, alpha=0.5, label=expt)
 
+		# Throughput metric related plots
+		data_tvexscan = [d['exectime'] for d in data_difxconfs]
+		data_numdatastreams = [d['datastreams'] for d in data_difxconfs] 
+		data_numbaselines = [d['baselines'] for d in data_difxconfs] 
+
+		R_Gbps = userargs.dstream_rate * 1e-3
+		derived_computenodecount = [data_nodecount[n] - data_numdatastreams[n] - 1 for n in NN]
+		derived_throughput = [data_numbaselines[n] * data_tvexscan[n] * R_Gbps / data_twall[n] for n in NN]
+		derived_throughput_normalized = [derived_throughput[n] / derived_computenodecount[n] for n in NN]
+
+		f2ax1.scatter(data_numdatastreams, derived_throughput_normalized, alpha=0.5, label=expt)
+		f2ax2.scatter(data_numbaselines, derived_throughput, alpha=0.5, label=expt)
+
 		plt.draw()
+		Ndrawn += 1
+
+		if max(data_twall) > userargs.maxruntime:
+			print("Warning: '%s' logs had max wallclock duration of %d sec, exceeds %d sec binning. Try --maxruntime %d" % (path, max(data_twall), userargs.maxruntime, 60*int(1 + max(data_twall)/60)))
+
+	# Early exit if no data
+
+	if Ndrawn <= 0:
+		sys.exit(0)
 
 	# Captions
 
@@ -191,5 +250,17 @@ if __name__ == "__main__":
 	ax4.legend(loc='upper right')
 	ax4.set_xlabel('Time (seconds)')
 
-	fig.set_size_inches(10, 6)
+	f2ax1.set_title('Compute node throughput metric')
+	f2ax1.legend(loc='lower right')
+	f2ax1.set_ylabel('Metric (Gbit/s)')
+	f2ax1.set_xlabel('Datastreams (#)')
+
+	f2ax2.set_title('Aggregate compute node throughput metric')
+	f2ax2.legend(loc='lower right')
+	f2ax2.set_ylabel('Metric (Gbit/s)')
+	f2ax2.set_xlabel('Baselines (#)')
+
+	fig1.set_size_inches(10, 6)
+	fig2.set_size_inches(10, 5)
+
 	plt.show()

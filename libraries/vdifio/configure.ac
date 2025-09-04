@@ -1,4 +1,4 @@
-AC_INIT([VDIFIO], [1.5], [difx-developers@nrao.edu])
+AC_INIT([VDIFIO], [1.6], [difx-developers@nrao.edu])
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
@@ -25,6 +25,11 @@ LT_INIT
 # Checks for libraries.
 AC_CHECK_LIB(m, sqrt)
 AC_CHECK_LIB(pthread, pthread_create,,[AC_MSG_ERROR("need libpthread")])
+PKG_CHECK_MODULES(FFTW3, fftw3, [hasfftw=true], [hasfftw=false])
+
+AC_SUBST(FFTW3_CFLAGS)
+AC_SUBST(FFTW3_LIBS)
+AM_CONDITIONAL(WITH_FFTW, $hasfftw)
 
 # Checks for header files.
 

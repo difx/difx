@@ -2,7 +2,7 @@ Version 3.8.0
 * Post DiFX-2.8
 * Remove restrictions on max number of datastreams
 * Fix some possible memory leaks in cases where there are sometimes no pulse cal tones.
-* Fixed the --relabelCircular option
+* Fixed the --relabelCircular option (handle H and V)
 * Streamline some logic in ML and MC tables (and fix incorrect use of ant2dsId[] in both cases)
 * Improve logical flow of sniffer; do proper 2-D interpolation.
 * Sniffer: do two-pass FFT; fringe fit quality seems equivalent to that in AIPS now  
@@ -18,6 +18,21 @@ Version 3.8.0
     - Derived total delays are _not_ invariant to this
 * Create a .channels file that lists the frequency set as a function of time.
 * Add option to only propagate a finite list of sources
+* Add option to only propagate sky frequencies provided in a list of low band edge frequencies
+* Make new structure to pass options to sniffer (see snifferoptions.[ch]
+* Sniffer: option to set interval between bandpass (XCB and ACB) solutions;
+  - previously was hard coded to be 15 minutes
+* Sniffer: don't interpolate across scans, even on same source
+* Sniffer: flush last records before program exit
+* --two-pcal-tables option added: Will create one table as prescribed in the .input files and the other containing all of the pulse cal tones. ***experimental***
+* Use vanVleck correction of 1.0 in case of >= 8 bits per sample for both datastreams if an explicit value is not available.
+* --freqlist <freqs MHz> option added: keep only IFs with a low edge frequency found in the comma separated list, discard the rest
+* Add y1, y2, y3 and y4 as legal antennas when adding gain VLBA-style gain tables
+* handle C band wideband receiver to extrapolate gains, other improvements to gain curve handling
+* Fix automatic extension table numbering
+* makefits: remove some files for better clean-up at end of process
+* fix VLA issue with gain calibration row selection
+* Version for DiFX-2.9
 
 Version 3.7.0
 * Post DiFX-2.6

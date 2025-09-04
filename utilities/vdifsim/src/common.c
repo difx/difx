@@ -230,7 +230,7 @@ CommonSignal *newCommonSignal(const DifxInput *D, const CommandLineOptions *opts
 	C->fluxDensity = opts->fluxDensity;
 	if(opts->randSeed)
 	{
-		g_rand_new_with_seed(opts->randSeed);
+		C->random = g_rand_new_with_seed(opts->randSeed);
 	}
 	else
 	{

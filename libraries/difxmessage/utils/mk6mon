@@ -2,7 +2,8 @@
 # coding: latin-1
 
 #**************************************************************************
-#   Copyright (C) 2008-2016 by Helge Rottmann, Mark Wainright and Walter Brisken *
+#   Copyright (C) 2008-2024 by Helge Rottmann, Mark Wainright             *
+#                           and Walter Brisken                            *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -19,17 +20,6 @@
 #   Free Software Foundation, Inc.,                                       *
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
-
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: mk6mon 10556 2022-07-27 09:44:21Z HelgeRottmann $
-# $HeadURL: $
-# $LastChangedRevision: 10556 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2022-07-27 17:44:21 +0800 (三, 2022-07-27) $
-#
-#============================================================================
 
 # Note: this utility can run under python2.7 or python3
 
@@ -50,8 +40,8 @@ def signal_handler(signal, frame):
 
 program = 'mk6mon'
 author  = 'Helge Rottmann, Mark Wainright and Walter Brisken'
-version = '2.7'
-verdate = '20220721'
+version = '2.8'
+verdate = '20230502'
 
 def usage(prog):
         print('%s ver. %s  %s  %s\n\n' % (program, version, author, verdate))
@@ -85,18 +75,20 @@ class Mk6MessageParser:
         messageType = dom.getElementsByTagName('type')[0].firstChild.data
 
         nodeFrom = dom.getElementsByTagName('from')[0].firstChild.data
-        
+        if '.' in nodeFrom:
+            nodeFrom = nodeFrom[:nodeFrom.find('.')]
+
         if nodeFrom not in self.rowsStatus.keys():
             row = {}
             newStatus = True
         else:
             row = self.rowsStatus[nodeFrom]
 
-        if messageType == "Mark6StatusMessage":
-            self.parseStatusMessage(dom, row)
-            self.rowsStatus[nodeFrom] = row
-            self.updateStatus = True
-        elif messageType == "Mark6SlotStatusMessage":
+        #if messageType == "Mark6StatusMessage":
+        #    self.parseStatusMessage(dom, row)
+        #    self.rowsStatus[nodeFrom] = row
+        #    self.updateStatus = True
+        if messageType == "Mark6SlotStatusMessage":
             self.parseSlotStatusMessage(dom, row)
             self.rowsStatus[nodeFrom] = row
             self.updateStatus = True
@@ -158,11 +150,14 @@ class Mk6MessageParser:
         host = dom.getElementsByTagName("from")[0].firstChild.data
         activeVSN = dom.getElementsByTagName("activeVSN")[0].firstChild.data
 
+        if '.' in host:
+            host = host[:host.find('.')]
+
         key = host + "_" + activeVSN
 
         if key not in self.rowsActivity.keys():
-                row = {}
-                updateActivity = True
+            row = {}
+            updateActivity = True
         else:
             row = self.rowsActivity[key]
 
@@ -187,6 +182,8 @@ class Mk6MessageParser:
         '''
 
         for slot in range(1,5):
+            if int(slot) > self.numSlots:
+                self.numSlots = int(slot)
             row["msn_{}".format(slot)] = dom.getElementsByTagName("slot{}MSN".format(slot))[0].firstChild.data
             row["numDisks_{}".format(slot)] = dom.getElementsByTagName("slot{}Disks".format(slot))[0].firstChild.data
             row["numMissingDisks_{}".format(slot)] = dom.getElementsByTagName("slot{}MissingDisks".format(slot))[0].firstChild.data

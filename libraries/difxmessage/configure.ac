@@ -1,4 +1,4 @@
-AC_INIT([difxmessage], [2.8.0], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([difxmessage], [2.9.0], [Walter Brisken <wbrisken@nrao.edu>])
 
 AC_CONFIG_HEADERS([config.h])
 
@@ -60,4 +60,5 @@ AC_CONFIG_FILES([
 	mark5ipc/Makefile \
 	utils/Makefile
 ])
-AC_OUTPUT
+
+AC_OUTPUT()
