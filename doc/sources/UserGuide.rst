@@ -4,7 +4,7 @@
 
 A Guide to the VLBA DiFX Correlator
 
-Version 2.8
+Version 2.9
 
 *Walter Brisken*
 
@@ -20,7 +20,7 @@ This manual assumes some familiarity with Mark5 units, Linux, and the
 general way in which a VLBI correlator is used. The following topics are
 discussed: running DiFX, coexistence issues with the VLBA hardware
 correlator, explanation of various file/document types, and detailed
-installation instructions. This manual covers DiFX version 2.5 and
+installation instructions. This manual covers DiFX version 2.9 and
 periodically will be updated to current with DiFX improvements. Please
 report any errors that are found in this manual to ``wbrisken@nrao.edu``
 or to the DiFX developers mailing list ``difx-developers@nrao.edu``.

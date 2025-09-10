@@ -6,7 +6,7 @@
 A Guide to the DiFX Software Correlator
 ===============================================
 
-Version 2.8
+Version 2.9
 
 *Walter Brisken*
 

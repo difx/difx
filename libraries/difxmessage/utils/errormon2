@@ -130,14 +130,17 @@ def makeFileHandler(logpath, logname, logcount):
 		file_handler.setLevel(alertLevels[logfile_level])
 		file_handler.doRollover()
 		return file_handler
-	except:
+	except Exception as e:
+		print(f"Error creating file handler: {e}")
 		return None
 
 fh = makeFileHandler(logpath, logname, logcount)
-try:
-	difxLogger.addHandler(fh)
-except:
-	# Adding exc_info=True writes the python exception to the log
+if fh is not None:
+	try:
+		difxLogger.addHandler(fh)
+	except Exception as e:
+		difxLogger.log(alertLevels[3], f"Error adding file handler: {e}", exc_info=True)
+else:
 	difxLogger.log(alertLevels[3], "Error starting log file. Only log to stdout", exc_info=True)
 
 ###############################################################################
@@ -247,8 +250,10 @@ def run():
 							if not(id in splitLoggers):
 								fh = makeFileHandler(logpath, logname + '-' + id, logcount)
 								splitLoggers[id] = logging.getLogger('DiFXAlert'+id)
-								splitLoggers[id].addHandler(fh)
-							splitLoggers[id].log(alertLevels[level], info)
+								if fh is not None:
+									splitLoggers[id].addHandler(fh)
+							if id in splitLoggers and splitLoggers[id] is not None:
+								splitLoggers[id].log(alertLevels[level], info)
 			except socket.timeout:
 				pass
 			except expat.ExpatError:
