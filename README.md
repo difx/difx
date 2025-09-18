@@ -1,4 +1,5 @@
 # DiFX
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16949346.svg)](https://doi.org/10.5281/zenodo.16949346)
 
 The official repo for DiFX.
 
@@ -90,7 +91,7 @@ This project exists thanks to all the people who contribute.
 
 ## Citation
 
-If you use DiFX in your research, please consider citing our following papers:
+If you use DiFX in your research, please consider citing it via DOI [10.5281/zenodo.16949346](https://doi.org/10.5281/zenodo.16949346) and our following papers:
 
 1. DiFX-2: Deller, A. T., W. F. Brisken, C. J. Phillips, John Morgan, W. Alef, R. Cappallo, E. Middelberg et al. "DiFX-2: a more flexible, efficient, robust, and powerful software correlator." Publications of the Astronomical Society of the Pacific 123, no. 901 (2011): 275.
 
