@@ -157,6 +157,8 @@ def genipppc(path, ippversion):
 
         if major == 7 or major == 8:
             out.write('Cflags: -I${base}/ipp/include\n')
+        elif  major == 2020 and minor == 0:
+            out.write('Cflags: -DIPP9 -I${base}/ipp/include\n')
         elif major < 2021 or (major == 2021 and minor < 10):
             out.write('Cflags: -DIPP9 -I${base}/include\n')
         elif major == 2021:

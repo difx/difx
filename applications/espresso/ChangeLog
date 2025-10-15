@@ -1,4 +1,14 @@
-Version 2.8
+Version 3.0
+~~~~~~~~~~~~~
+* Update criteria for marking job complete/incomplete
+* Some changes to better support slurm
+* Add option to re-sync an existing archive directory
+* Auto-load new job progress stats every minute.
+* Create a checksum before archiving.
+* Version for DiFX-2.9
+
+
+Version 2.9
 ~~~~~~~~~~~~~
 * drop pretence of python2 support everywhere
 * standardise the install process

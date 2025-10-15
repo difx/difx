@@ -1,3 +1,7 @@
+Version 2.5 - Version for DiFX-2.9
+	* Report experiments stored on the module
+	* Possibly additional updates that have not been logged
+
 post 2.6.1
 	* database: add Module.retired column
 DiFX-253

@@ -1,4 +1,4 @@
-AC_INIT([python], [1.3])
+AC_INIT([python], [1.4])
 
 AM_INIT_AUTOMAKE([foreign])
 

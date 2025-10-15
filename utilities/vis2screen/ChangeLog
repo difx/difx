@@ -1,8 +1,14 @@
+Version 1.1
+* add .difx plotter utility plotFringeSpectrum.py
+* generate a throughput-related second plot in plotDiFXLogs.py
+* Version for DiFX 2.9
+
 Version 1.0
 * New utility removeNonzoomAutosDiFX.py for removing rec-band autocorrelations from a zoom-only correlation
 * New utility diffDiFX2.py that compares visibility records, while remapping antenna&frequency Ids as appropriate.
   Report format differs from diffDiFX.py, hence still retaining diffDiFX.py for legacy use.
 * Migrated to parseDiFX package
+* Made some scripts require python3, and improve plotting
 
 Version 0.9
 * New utility printDiFXInput.py for showing frequency table and baseline freq x freq pairs

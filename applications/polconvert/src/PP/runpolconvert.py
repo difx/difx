@@ -15,7 +15,7 @@ import shutil
 import re
 import sys
 
-pcvers='2.0.7'
+pcvers='2.0.7b'
 if sys.version_info.major < 3:
     print('py2 polconvert execution in runpolconvert v' + pcvers)
 elif 'CASASTANDALONE' in os.environ and bool(os.environ['CASASTANDALONE'] is 'True'):

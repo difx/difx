@@ -1,3 +1,9 @@
+1.4
+----------------
+* Fix LSB labelling in difxplot
+* parseDiFX provides access to Config table
+* For DiFX-2.9
+
 1.3
 ----------------
 * Post DiFX-2.7

@@ -1,4 +1,4 @@
-AC_INIT([vdifsim],[0.1.1],[Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([vdifsim],[0.2],[Walter Brisken <wbrisken@nrao.edu>])
 AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE([foreign])
@@ -17,9 +17,9 @@ AC_SEARCH_LIBS([sqrt], [m])
 AC_CHECK_LIB(pthread, pthread_create,,[AC_MSG_ERROR("need libpthread")])
 
 PKG_CHECK_MODULES(GLIB, glib-2.0)
-PKG_CHECK_MODULES(DIFXIO, difxio >= 3.7.0)
-PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.5)
-PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.8.0])
+PKG_CHECK_MODULES(DIFXIO, difxio >= 3.8.0)
+PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.6)
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.9.0])
 PKG_CHECK_MODULES(FFTW, fftw3)
 PKG_CHECK_MODULES(GSL, gsl, [hasgsl=true], [hasgsl=false])
 if test "$hasgsl" == "true"; then

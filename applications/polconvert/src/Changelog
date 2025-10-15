@@ -1,6 +1,8 @@
-pre-v2.0.8
-- fix for the QA2TABLES env var
-- updated documentation on drivepolconvert.py -q <version>
+v2.0.7b
+- fixes the QA2TABLES env var (https://github.com/marti-vidal-i/PolConvert/pull/14)
+- refreshed help on "drivepolconvert.py -q <version>" (same PR #14 as above)
+- ANTAB Tsys columns are now labeled with their respective sky frequencies,
+  reducing the guesswork required from PIs (https://github.com/marti-vidal-i/PolConvert/pull/15)
 
 v2.0.7
 - progress on the merger between CASA and standalone cases

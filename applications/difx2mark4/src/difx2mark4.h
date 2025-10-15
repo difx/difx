@@ -32,7 +32,7 @@
 #define MAGLIM 10000.0              // threshold magnitude for vis. rejection
 #define MAX_FPPAIRS 48000           // dimensioned for b-lines x chans x pol_prods
 #define MAX_DFRQ 800                // allowed max number of *DiFX* frequencies
-#define NVRMAX 98304000             //max # of vis records, 4*64*3000*128
+#define NVRMAX 98304000             // max # of vis records, 4*64*3000*128
 
 // Type 309 records - limits for createType3s.c and write_t3??.c
 #define NPC_TONES 64                // max number of pcal tones in t309 record

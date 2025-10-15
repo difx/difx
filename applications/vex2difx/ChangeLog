@@ -12,9 +12,11 @@ Version 3.1.0
 * New ANTENNA parameter phaseCalIntDivisor for fractional spacings (phaseCalInt[MHz]/phaseCalIntDivisor)
 * New ANTENNA parameter deltaClockAccel to adjust clock acceleration without resetting other terms to zero like clockAccel does
 * New utility: mk6filelist, a simplified form of mk62v2d which does not require or modify the .v2d file.
+* Add project code to file list names
 * Update wiki to ATNF -- note that even this will be old soon and the new github link will replace it.
 * Allow "NONE" data format.  This was allowed in previous vex parser version, but got lost when vex2 was added.
 * Fix "datastreams with no data" bug.  This was triggered when there was a job break in the middle of a scan and an antenna only had data during one part of the broken scan
+* refine vex2difx job splitting: consider events only at those antennas that are actually in a job group, ignore unrelated events
 * Fix format override where VDIF/CODIF wouldn't change sampling type in some cases
 * vex2v2d: add option to make antenna complex-valued
 * Canonical VDIF threads no longer applies in Vex2 as the DATASTREAMS block has the needed information
@@ -25,6 +27,13 @@ Version 3.1.0
   - if only framesize is to change, then use frameSize=XXX instead
   - if only number of bits per sample is to change, then use nBit=XXX instead
   - if only changing from REAL to COMPLEX sampling, then use sampling=COMPLEX instead
+* LSB bands (non-zoom) are allowed to contribute to outputbands
+* Allow vex2difx to specify destination freq IDs to be USB (was previously implicit)
+* Fix an error where incorrect name was used for checking when antenna names overridden in the v2d file
+* Fix check to avoid duplicate user-provided outputbands
+* have AutoBands replace edges of overlapped recbands with overlap mid-point freq (hide overlap from auto-zoom logic)
+  - this gets rid of some 'unnecessary' small zooms in overlapped regions in some cases
+* Version for DiFX 2.9
 
 Version 3.0.0
 -------------
