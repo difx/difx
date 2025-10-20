@@ -1625,7 +1625,7 @@ Many additional non-user-visible improvements were made to the code as
 well as many small user-visible improvements that do not warrant
 specific mention. The ``Changelog`` files that are packaged with most of
 the DiFX software modules contain more detailed lists of code changes.
-DiFX 2.8.1 was released on XXX 2023. A wide array of testing has been
+DiFX 2.8.1 was released on March 29 2023. A wide array of testing has been
 done and this version is considered ready to be adopted by all DiFX
 users.
 

@@ -2,7 +2,7 @@ Version 3.8.0
 * Post DiFX-2.8
 * Remove restrictions on max number of datastreams
 * Fix some possible memory leaks in cases where there are sometimes no pulse cal tones.
-* Fixed the --relabelCircular option
+* Fixed the --relabelCircular option (handle H and V)
 * Streamline some logic in ML and MC tables (and fix incorrect use of ant2dsId[] in both cases)
 * Improve logical flow of sniffer; do proper 2-D interpolation.
 * Sniffer: do two-pass FFT; fringe fit quality seems equivalent to that in AIPS now  
@@ -28,6 +28,11 @@ Version 3.8.0
 * Use vanVleck correction of 1.0 in case of >= 8 bits per sample for both datastreams if an explicit value is not available.
 * --freqlist <freqs MHz> option added: keep only IFs with a low edge frequency found in the comma separated list, discard the rest
 * Add y1, y2, y3 and y4 as legal antennas when adding gain VLBA-style gain tables
+* handle C band wideband receiver to extrapolate gains, other improvements to gain curve handling
+* Fix automatic extension table numbering
+* makefits: remove some files for better clean-up at end of process
+* fix VLA issue with gain calibration row selection
+* Version for DiFX-2.9
 
 Version 3.7.0
 * Post DiFX-2.6

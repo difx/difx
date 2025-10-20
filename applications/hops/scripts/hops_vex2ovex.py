@@ -15,15 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: vex2ovex.py 7638 2017-02-06 20:53:05Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/vex2ovex/vex2ovex.py $
-# $LastChangedRevision: 7638 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2017-02-06 15:53:05 -0500 (Mon, 06 Feb 2017) $
-#
-#============================================================================
 # Modified for use in HOPS, by gbc Jun 2017...
 # Updated for Py3, by gbc Sep 2021...
 #============================================================================

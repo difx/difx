@@ -190,8 +190,8 @@ sed 's/^....//' > tb-$label/release.sh <<EOF
     done
     mv logs/packaging/* \\
         $release/logs/$proj-$class-packaging
-    ( date ; sleep 2 ; chmod 644 nohup.out ; mv nohup.out \\
-        $release/logs/$proj-$class-packaging/$label-$class-$subv-release.log )&
+    ( date ; sleep 2 ; chmod 644 nohup.out ; cp nohup.out \\
+        $release/logs/$proj-$class-packaging/$label-$class-$subv-release.log ; rm -f nohup.out )&
     disown
 EOF
 chmod +x tb-$label/release.sh

@@ -88,6 +88,7 @@
 #define DEFAULT_UPDATETIME  1.0
 #define UPDATE              20
 #define MAXTHREAD           30
+#define MAXGROUPID          10
 
 #define DEBUG(x) 
 
@@ -170,7 +171,8 @@ int main (int argc, char * const argv[]) {
   int filesize = DEFAULT_FILESIZE;
   int padding = 0;
   int threadid = -1;
-  int groupid = -1;
+  int groupids[MAXGROUPID];
+  int nGroupid = 0;
   int scale = 0;
   int drop  = 0;
   int forcebits = 0;
@@ -249,12 +251,16 @@ int main (int argc, char * const argv[]) {
      break;
 
     case 'g':
-      status = sscanf(optarg, "%d", &tmp);
-      if (status!=1 || tmp<0)
-	fprintf(stderr, "Bad groupid option %s\n", optarg);
-      else 
-	groupid = tmp;
-     break;
+      if (nGroupid >= MAXGROUPID) {
+        fprintf(stderr, "Too many --groupid options (max %d)\n", MAXGROUPID);
+        exit(1);
+      }
+      if (sscanf(optarg, "%d", &tmp) != 1 || tmp < 0) {
+        fprintf(stderr, "Bad groupid option '%s'\n", optarg);
+        exit(1);
+      }
+      groupids[nGroupid++] = tmp;
+      break;
 
     case 's':
       status = sscanf(optarg, "%d", &tmp);
@@ -374,7 +380,7 @@ int main (int argc, char * const argv[]) {
     exit(1);
   }
   
-  if (groupid>0 && splitgroup) {
+  if (nGroupid==1 && splitgroup) {
     fprintf(stderr, "Cannot split by group and filter single group. Quitting\n");
     exit(1);
   }
@@ -475,8 +481,6 @@ int main (int argc, char * const argv[]) {
     thisthread = getCODIFThreadID(cheader);
     thisgroup =  getCODIFGroupID(cheader);
 
-    //printf("DEBUG: Got F: %d S: %d  T: %d G: %d\n", thisframe, thisseconds, thisthread, thisgroup);
-    
     skip = 0;
     if (threadid>=0) {
       if (thisthread!=threadid) {
@@ -484,13 +488,30 @@ int main (int argc, char * const argv[]) {
 	skipped++;
       }
     }
+
+    if (!skip && nGroupid > 0) {
+      skip = 1;  // Assume skip unless match
+      for (i = 0; i < nGroupid; i++) {
+        if (thisgroup == groupids[i]) {
+          skip = 0;
+          break;
+        }
+      }
+      if (skip) skipped++;
+    }
+
+#if 0
     if (groupid>=0) {
       if (thisgroup!=groupid) {
 	skip=1;
 	skipped++;
       }
     }
-    
+    //if (!(thisgroup==258 || thisgroup==261 || thisgroup==262)) {
+    //  skip=1;
+    //  skipped++;
+    // }
+#endif
     if (!skip) {
       valid = 1;
       if (first) {
