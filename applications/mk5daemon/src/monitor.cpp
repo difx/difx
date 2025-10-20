@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -730,7 +730,7 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	else if(strncasecmp(cmd, "GetFileList_", 12) == 0 && strlen(cmd) == 13 && isdigit(cmd[12]))
 	{
 		int slot = cmd[12] - '0';
-		if(D->isMk6 && slot >= 1 && slot <= 4)
+		if(D->isMk6 && slot >= 1)
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH, "will execute Command=%s on slot %d\n", cmd, slot);
 			Logger_logData(D->log, message);
@@ -745,7 +745,7 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
                 string vsnStr(vsn) ;
                 //int slot = cmd[8] - '0';
 
-                if(D->isMk6 && slot >= 1 && slot <= 6)
+                if(D->isMk6 && slot >= 1)
                 {
                         snprintf(message, DIFX_MESSAGE_LENGTH, "will execute Command=%s on slot %d\n", cmd, slot);
                         Logger_logData(D->log, message);
