@@ -19,13 +19,14 @@ The main options are (with defaults in parentheses)
 
 and one of the simple tar targets,
 
-    tar=dxin|swin|fits|hops|hmix|haxp|pcin|pcqk|4fit
+    tar=dxin|swin|fits|hops|hmix|fmix|haxp|pcin|pcqk|4fit
 
 which specify which tarballs are to be made:
 
     dxin    DiFX input files
     swin    DiFX (SWIN) output files
     fits    difx2fits outputs
+    fmix    difx2fits outputs prior to polconvert (mixed pols, but relabeled)
     hops    difx2mark4 outputs following polconvert
     hmix    difx2mark4 outputs prior to polconvert (mixed pols)
     haxp    difx2mark4 outputs alma-only mixed pols 
@@ -35,10 +36,10 @@ which specify which tarballs are to be made:
 
 Or, for convenience,
 
-    tar=post-corr   does:   dxin swin haxp
+    tar=post-corr   does:   dxin swin haxp fmix
     tar=no-alma     does:   dxin swin fits hops
     tar=no-hops     does:   dxin swin fits
-    tar=pre-alma    does:   dxin swin hmix
+    tar=pre-alma    does:   dxin swin hmix fmix
     tar=post-alma   does:   pcin fits hops pcqk
 
 Note 4fit probably doesn't make sense in these groupings: The 4fit
@@ -409,6 +410,19 @@ fits)
     $d2ft || [ -d $fits ] || { echo no FITS output dir $fits; exit 3; }
     $d2ft && work=fits
     ;;
+fmix)
+    fits=${exp}-${relv}-$subv-$label-mixedpol.fits
+    FITS=${exp}-${relv}-$subv-$label-mixedpol
+    $verb && echo making FITS in `pwd`/$fits
+    $dry || dotar=true
+    tarname=${exp}-${relv}-$subv-$label-fmix.tar
+    $nuke && rm -rf $fits
+    $nuke && rm -f $workdir/$tarname && rm -f $destdir/$tarname &&
+             rm -f $workdir/logs/$tarname.log
+    content="$fits"
+    $d2ft || [ -d $fits ] || { echo no FITS output dir $fits; exit 3; }
+    $d2ft && work=fits
+    ;;
 hops|hmix|haxp)
     $verb && [ $tar = hops ] && echo making HOPS'(post-pc)'   in `pwd`/$expn
     $verb && [ $tar = hmix ] && echo making HOPS'(pre-pc)'    in `pwd`/$expn
@@ -515,6 +529,9 @@ post-corr)
     cd $workdir
     $0 tar=haxp $com1 $com2 $com3 $com4 $com5 $com6 || {
         echo swin failed ; exit 3; }
+    cd $workdir
+    $0 tar=fmix $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo fmix failed ; exit 3; }
     exit 0
     ;;
 pre-alma)
@@ -528,6 +545,9 @@ pre-alma)
     cd $workdir
     $0 tar=hmix $com1 $com2 $com3 $com4 $com5 $com6 || {
         echo hmix failed ; exit 3; }
+    cd $workdir
+    $0 tar=fmix $com1 $com2 $com3 $com4 $com5 $com6 || {
+        echo fmix failed ; exit 3; }
     exit 0
     ;;
 post-alma)
@@ -550,6 +570,7 @@ post-alma)
     dxin    DiFX input files
     swin    DiFX (SWIN) output files
     fits    difx2fits outputs
+    fmix    difx2fits outputs prior to polconvert (mixed pols, but relabeled)
     hops    difx2mark4 outputs
     hmix    difx2mark4 outputs prior to polconvert (mixed pols)
     haxp    difx2mark4 outputs alma-only mixed pols 
@@ -557,10 +578,10 @@ post-alma)
     pcqk    polconvert quick-look outputs (if ALMA)
     4fit    correlator fourfit output (pc'd; type 200s + alist)
 
-    tar=post-corr   does:   dxin swin haxp
+    tar=post-corr   does:   dxin swin haxp fmix
     tar=no-alma     does:   dxin swin fits hops
     tar=no-hops     does:   dxin swin fits
-    tar=pre-alma    does:   dxin swin hmix
+    tar=pre-alma    does:   dxin swin hmix fmix
     tar=post-alma   does:   pcin fits hops pcqk
 ....EOF
     exit 3
@@ -584,7 +605,7 @@ pcin)
     ls -l SourceList-$label.txt SideBand-$label.txt Jobs-$label.txt
     delete="SourceList-$label.txt SideBand-$label.txt Jobs-$label.txt"
     ;;
-fits)
+fits|fmix)
     # the problem here is that the directory needs to be named .fits
     # to correspond to the other packages, but that name is also used
     # for the FITS file generated in this directory.
@@ -599,8 +620,9 @@ fits)
     }
     parts="{log,xcb,wts,cpol,apd,apc,acb,jobmatrix,fits,fits_setup*}"
     $dry && {
+        echo cd `pwd`
         echo mkdir $FITS.work
-        echo $d2ftexec -v $ov $jobs $fitsout \> $fog
+        echo $d2ftexec -v $ov --relabelCircular $jobs $fitsout \> $fog
         $fitsname || echo mv $EXP* $FITS.work
         $fitsname && echo mv $FITS*$parts $FITS.work
         echo mv $FITS.work $FITS.fits
@@ -609,9 +631,10 @@ fits)
         $save && savename=$fits.save
         $verb && echo follow difx2fits with: &&
             echo '  'tail -n +1 -f `pwd`/$fog
-        echo $d2ftexec -v $ov $jobs $fitsout > $fog
+        echo cd `pwd` >> $fog
+        echo $d2ftexec -v $ov --relabelCircular $jobs $fitsout > $fog
         echo =================== >> $fog
-        $d2ftexec -v $ov $jobs $fitsout >> $fog 2>&1 || {
+        $d2ftexec -v $ov --relabelCircular $jobs $fitsout >> $fog 2>&1 || {
             echo difx2fits failed; exit 4; }
         # generate fits packaging summary with pcList.pl
         pclist=`type -p pcList.pl`
