@@ -26,7 +26,7 @@ which specify which tarballs are to be made:
     dxin    DiFX input files
     swin    DiFX (SWIN) output files
     fits    difx2fits outputs
-    fmix    difx2fits outputs prior to polconvert (mixed pols, but relabeled)
+    fmix    difx2fits outputs prior to polconvert (mixed pols, just relabeled X,Y -> R,L)
     hops    difx2mark4 outputs following polconvert
     hmix    difx2mark4 outputs prior to polconvert (mixed pols)
     haxp    difx2mark4 outputs alma-only mixed pols 
@@ -570,7 +570,7 @@ post-alma)
     dxin    DiFX input files
     swin    DiFX (SWIN) output files
     fits    difx2fits outputs
-    fmix    difx2fits outputs prior to polconvert (mixed pols, but relabeled)
+    fmix    difx2fits outputs prior to polconvert (mixed pols, just relabeled X,Y -> R,L)
     hops    difx2mark4 outputs
     hmix    difx2mark4 outputs prior to polconvert (mixed pols)
     haxp    difx2mark4 outputs alma-only mixed pols 
