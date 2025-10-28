@@ -380,7 +380,7 @@ dxin)
     content2=''
     for j in $jobs
     do
-      content2="$content2 ${j}.{input,calc,errs,flag,im}"
+      content2="$content2 ${j}.{input,calc,errs,flag,channelflags,im}"
       content2="$content2 ${j}.{machines,threads,difxlog}"
     done
     content=$content1$content2
@@ -448,7 +448,7 @@ pcin)
     content2=''
     for j in $jobs
     do
-      content2=" ${j}.{input,calc,flag,im}"
+      content2=" ${j}.{input,calc,flag,channelflags,im}"
     done
     content3=" ${exp}*.codes ${exp}*.conf ${exp}*.vex.obs"
     content=$content1$content2$content3
