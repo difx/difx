@@ -61,9 +61,9 @@ def parseOptions():
         ' the job files.  You need this if the files were copied from'
         '"path/" to "srcdir/" prior to executing this script.')
     secondy.add_argument('-l', '--suffices', dest='suffices',
-        metavar='LIST', default='input,calc,flag,im,difx,save',
+        metavar='LIST', default='input,calc,flag,channelflags,im,difx,save',
         help='comma-separated list of file/dir suffices ' +
-             'to process, default is "input,calc,flag,im,difx,save"')
+             'to process, default is "input,calc,flag,channelflags,im,difx,save"')
     secondy.add_argument('-o', '--orig', dest='orig',
         metavar='STRING', default='orig',
         help='suffix to be appended to original names')
@@ -171,10 +171,12 @@ def do_copy(o, src, dst):
         if o.verb: print(do_copy.__doc__ % ('file', src, dst))
         shutil.copy(src, dst)
         os.chmod(dst, 0o644)
-    else:
+    elif os.path.isdir(src):
         if o.verb: print(do_copy.__doc__ % (' dir', src, dst))
         shutil.copytree(src, dst)
         os.chmod(dst, 0o755)
+    else:
+        if o.verb: print(do_copy.__doc__ % (' warning: skip non-existing', src, dst))
 
 #
 # enter here to do the work
@@ -195,6 +197,7 @@ if __name__ == '__main__':
             if suf == 'input': do_input(o, src, dst)
             if suf == 'calc':  do_pathfix(o, src, dst)
             if suf == 'flag':  do_copy(o, src, dst)
+            if suf == 'channelflags':  do_copy(o, src, dst)
             if suf == 'im':    do_pathfix(o, src, dst)
             if suf == 'difx':  do_copy(o, src, dst)
             if suf == 'save':  do_save(o, src, dst)
