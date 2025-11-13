@@ -905,7 +905,7 @@ int pack2bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float
   return 0;
 }
 
-inline Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
+static inline Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
   x *= scale;
   if (x>127) // Clip
     x = 127;
@@ -914,7 +914,7 @@ inline Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
   return lrintf(x);
 }
 
-inline Ipp16s scaleclip16(Ipp32f x, Ipp32f scale) {
+static inline Ipp16s scaleclip16(Ipp32f x, Ipp32f scale) {
   x *= scale;
   if (x>IPP_MAX_16S) // Clip  
     x = IPP_MAX_16S;
