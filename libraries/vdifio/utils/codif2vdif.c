@@ -1,5 +1,5 @@
 /* Convert codif VLBI data to VDIF, using an FFT resampling approach
-   ie Forward then backwads FFT
+   ie Forward then backwards FFT
 
    Assume complex sampling - singe channel, single thread
 
@@ -59,8 +59,7 @@
 #include <vdifio.h>
 #include <codifio.h>
 
-//#define CHUNKSIZE 4 // MByte
-#define CHUNKSIZE 0.2 // MByte
+#define CHUNKSIZE 4 // MByte
 #define MAXSTR        255
 #define WHITESPACE " \t"
 #define COMMENT_CHAR '#'
@@ -110,7 +109,7 @@ int main (int argc, char * const argv[]) {
   IppStatus status;
   double bandwidth;
   char postfix[MAXSTR+1] = "vdif";
-  int vdifFrameSize, codifFrameSize, nFrame, nVDIFFrame, nFFT, samplesperframe, nExtra;
+  int vdifFrameSize, codifFrameSize, nFrame, nVDIFFrame, nFFT, samplesperframe, nExtra, codifPeriod;
   vdif_header vheader;
   codif_header cheader;
   Ipp8u *readFrames, *vdifBuf, *frameValidity, *fftValidity;
@@ -272,6 +271,7 @@ int main (int argc, char * const argv[]) {
       exit(1);
     }
     codifFrameSize = getCODIFFrameBytes(&cheader);
+    codifPeriod = getCODIFPeriod(&cheader);
 
     // Rewind file
     int sought = lseek(infile, 0, SEEK_SET);
@@ -285,7 +285,7 @@ int main (int argc, char * const argv[]) {
     if (first) {
       first = false;
 
-      bandwidth = (double)getCODIFTotalSamples(&cheader)/(double)getCODIFPeriod(&cheader);
+      bandwidth = (double)getCODIFTotalSamples(&cheader)/(double)codifPeriod;
       //printf("DEBUG: Bandwidth=%f\n", bandwidth);
 
       if (targetBandwidth*1.0e6*outchan>bandwidth) {
@@ -428,11 +428,12 @@ int main (int argc, char * const argv[]) {
     setVDIFFrameEpochSecOffset(&vheader, vdifSec);
     setVDIFFrameNumber(&vheader, firstVDIFFrame);
 
-    int64_t firstframe = firstSec*getCODIFFramesPerPeriod(&cheader) + firstFrame;
+    int64_t firstframe = (uint64_t)firstSec*getCODIFFramesPerPeriod(&cheader)/codifPeriod + firstFrame;
     Ipp32f *fptr;
     while (1) {
       nread = readCODIFData(infile, readFrames, frameValidity, dataBuf, codifFrameSize, nFrame, firstframe);  // Read and unpack
       firstframe += nread;
+      //printf("DEBUG: Read %d frames. Firstframe set to %d\n", nread, firstframe);
 
       if (nread<=0) break;
       if (nread*samplesperframe % fftSize) {
@@ -467,7 +468,8 @@ int main (int argc, char * const argv[]) {
       }
 
       // Requantise and convert to VDIF
-      int vdifframes = converttoVDIF(dataBuf, vdifBuf, &vheader, vdifFrameSize, nFFT*ifftSize, outbits, 10.0, vdifframepersec, edgeBuf, &nExtra);
+      int vdifframes = converttoVDIF(dataBuf, vdifBuf, &vheader, vdifFrameSize, nFFT*ifftSize,
+				     outbits, 10.0, vdifframepersec, edgeBuf, &nExtra);
 
       ssize_t writebytes = vdifframes*(vdifFrameSize+VDIF_HEADER_BYTES);
       ssize_t nwrote = write(outfile, vdifBuf, writebytes); 
@@ -577,15 +579,15 @@ int readCODIFData(int infile, Ipp8u *codifFrames, Ipp8u *frameValidity, Ipp32fc 
       samplesperframe = frameSize*8/(nchan*bits*2); // Assume complex
     }
 
-    framesinceEpoch = getCODIFFrameEpochSecOffset(cheader)*frameperperiod + getCODIFFrameNumber(cheader);
+    framesinceEpoch = (uint64_t)getCODIFFrameEpochSecOffset(cheader)*frameperperiod/period + getCODIFFrameNumber(cheader);
     frameOffset = framesinceEpoch - firstframe;
     
     if (frameOffset<0) { // Skip
-      printf("DEBUG: Skipping frame %" PRId64 ", too late (%d)\n", frameOffset, nFrame);
+      printf("DEBUG: Skipping frame %" PRId64 ", too late (%d\n", frameOffset, nFrame);
       continue;
     } else if (frameOffset>=(int64_t)nFrame) {
       // Should be rewinding file
-      printf("DEBUG: Skipping frame %" PRId64  ", too early (%d)\n", frameOffset, nFrame);
+      printf("DEBUG: Skipping frame %" PRId64  ", too late (%d)\n", frameOffset, nFrame);
       continue;
     }
     
@@ -607,6 +609,52 @@ int readCODIFData(int infile, Ipp8u *codifFrames, Ipp8u *frameValidity, Ipp32fc 
   return(nloop);
 }
 
+#define MAXPOS          3
+#define SMALLPOS        2
+#define SMALLNEG        1
+#define MAXNEG          0
+
+#define F2BIT(f,j) {					\
+  if(f >= maxposThresh)  /* large positive */		\
+    ch[j] = MAXPOS;					\
+  else if(f <= maxnegThresh) /* large negative */	\
+    ch[j] = MAXNEG;					\
+  else if(f > 0)  /* small positive */	         	\
+    ch[j] = SMALLPOS;					\
+  else  /* small negative */				\
+    ch[j] = SMALLNEG;					\
+}
+
+static inline int pack2bit1chan_complex(Ipp32fc *in, Ipp8u *out, int len) {
+  int i, j, ch[4];
+  Ipp32fc *f;
+  Ipp32f maxposThresh, maxnegThresh;
+  
+  if (len%2!=0) {
+    printf("Can only pack multiple of 2 samples!\n");
+    return(1);
+  }
+
+  // Assume mean removed and RMS set to 10
+  maxposThresh = 10*0.93;
+  maxnegThresh = -10*0.93;
+
+  f = in;
+  j = 0;
+  for (i=0;i<len;) {
+    F2BIT(f[i].re,0);
+    F2BIT(f[i].im,1);
+    i++;
+    F2BIT(f[i].re,2);
+    F2BIT(f[i].im,3);
+    i++;
+    out[j] = (ch[0])|((ch[1]<<2) )|((ch[2]<<4) )|((ch[3]<<6) );
+    j++;
+  }
+
+  return 0;
+}
+
 
 static inline int convertSamples(int bits, Ipp32fc *samples, Ipp8u *convertedData, int nSamples) {
   IppStatus status;
@@ -620,9 +668,11 @@ static inline int convertSamples(int bits, Ipp32fc *samples, Ipp8u *convertedDat
     IPPERROR(status);
     status = ippsXorC_16u_I(0x8000, (Ipp16u*)convertedData, nSamples*2);
     IPPERROR(status);
+  } else if (bits==2) { 
+    status = pack2bit1chan_complex(samples, convertedData, nSamples);
   } else {
     fprintf(stderr, "Error - do not support %d bit output\n", bits);
-    exit(1);
+    return(-1);
   }
   return(0);
 }
@@ -641,8 +691,8 @@ int converttoVDIF(Ipp32fc *dataBuf, Ipp8u *vdifData, vdif_header *vheader, int f
   scale = target/stddev;
 
   // Remove offset and scale by RMS
-  //status = ippsSubC_32f_I(mean, (Ipp32f*)dataBuf, samplesperframe*nframe*2);
-  //status = ippsMulC_32f_I(scale, (Ipp32f*)dataBuf, samplesperframe*nframe*2);
+  status = ippsSubC_32f_I(mean, (Ipp32f*)dataBuf, nVDIFsamples*2);
+  status = ippsMulC_32f_I(scale, (Ipp32f*)dataBuf, nVDIFsamples*2);
 
   int j=0;
   int nOffset = 0;
