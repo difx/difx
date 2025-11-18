@@ -3,7 +3,6 @@
 
    Assume complex sampling - singe channel, single thread
 
-
    Variables
 
    nFrame:          Number of CODIF frames to read per chunk]
@@ -16,8 +15,8 @@
    readFrames:    Raw CODIF data  
    dataBuf:       Unpacked CODIF data -> FFT filtered data (float)
    vdifBuf:       Packed VDIF data
-   frameValidity: Validity of CODIF data
-   fftValidity:   Validity of FFTs
+   frameValidity: Validity of CODIF data      ** 0 is invalid
+   fftValidity:   Validity of FFTs            ** 1 is invalid
 
 */
 
@@ -86,8 +85,8 @@ int allocMemory(Ipp8u **readFrames, Ipp32fc **dataBuf, Ipp8u **vdifBuf, Ipp8u **
 		int vdifframeSamples);
 int readCODIFData(int infile, Ipp8u *codifFrames, Ipp8u *frameValidity, Ipp32fc *dataBuf,
 		  int frameSize, int nFrame, int64_t firstframe);
-int converttoVDIF(Ipp32fc *dataBuf, Ipp8u *vdifData, vdif_header *vheader, int framesize, int nVDIFsample, int outputbits,
-		  Ipp32f target, int vdifframepersec, Ipp32fc *edgeBuf, int *nExtra);
+int converttoVDIF(Ipp32fc *dataBuf, Ipp8u *vdifData, vdif_header *vheader, int framesize, int nFFT, int ifftSize,
+		  int outputbits, Ipp32f target, int vdifframepersec, Ipp32fc *edgeBuf, int *nExtra, Ipp8u *fftValidity, int *edgeValid);
 
 void __printIppError(IppStatus status, const char *file, int line) {
     const char* message = ippGetStatusString(status);
@@ -110,6 +109,7 @@ int main (int argc, char * const argv[]) {
   double bandwidth;
   char postfix[MAXSTR+1] = "vdif";
   int vdifFrameSize, codifFrameSize, nFrame, nVDIFFrame, nFFT, samplesperframe, nExtra, codifPeriod;
+  int iFFT0, iFFT1;
   vdif_header vheader;
   codif_header cheader;
   Ipp8u *readFrames, *vdifBuf, *frameValidity, *fftValidity;
@@ -209,6 +209,7 @@ int main (int argc, char * const argv[]) {
   int vdifframepersec = 1e6/vdifframeusec;
   int vdifSamplePerSec = vdifframepersec*vdifframeSamples;
   
+  int edgeValid = 0;
   bool first = true;
   for (nfile=optind; nfile<argc; nfile++) {
 
@@ -324,7 +325,7 @@ int main (int argc, char * const argv[]) {
 	close(outfile);
 	exit(1);
       }
-
+      
       int sizeDFTSpec, sizeDFTInitBuf, wbufsize;
 
       // Initialise FFT
@@ -433,7 +434,6 @@ int main (int argc, char * const argv[]) {
     while (1) {
       nread = readCODIFData(infile, readFrames, frameValidity, dataBuf, codifFrameSize, nFrame, firstframe);  // Read and unpack
       firstframe += nread;
-      //printf("DEBUG: Read %d frames. Firstframe set to %d\n", nread, firstframe);
 
       if (nread<=0) break;
       if (nread*samplesperframe % fftSize) {
@@ -443,8 +443,20 @@ int main (int argc, char * const argv[]) {
 	exit(1);
       }
       nFFT = samplesperframe*nread / fftSize;
-      //PRINTINT(nFFT);
-    
+
+      // Calculate FFT Validity
+      status = ippsZero_8u(fftValidity, nread);  // 1 is invalid, 0 OK. 
+      for (int i=0; i<nread; i++) {
+	// frameValidity has 0 invalid, 1 OK
+	if (!frameValidity[i]) {
+	  iFFT0 = (int)floor((double)i*samplesperframe/(double)fftSize);
+	  iFFT1 = (int)floor((double)(i*samplesperframe+fftSize-1)/(double)fftSize);
+	  for (int j=iFFT1;j<=iFFT1;j++) {
+	    fftValidity[j] = 1;
+	  }
+	}
+      }
+      
       // Use FFT to filter
       int startPoint = (fftSize-ifftSize)/2;
       //int startPoint = 0;
@@ -468,8 +480,8 @@ int main (int argc, char * const argv[]) {
       }
 
       // Requantise and convert to VDIF
-      int vdifframes = converttoVDIF(dataBuf, vdifBuf, &vheader, vdifFrameSize, nFFT*ifftSize,
-				     outbits, 10.0, vdifframepersec, edgeBuf, &nExtra);
+      int vdifframes = converttoVDIF(dataBuf, vdifBuf, &vheader, vdifFrameSize, nFFT, ifftSize,
+				     outbits, 10.0, vdifframepersec, edgeBuf, &nExtra, fftValidity, &edgeValid);
 
       ssize_t writebytes = vdifframes*(vdifFrameSize+VDIF_HEADER_BYTES);
       ssize_t nwrote = write(outfile, vdifBuf, writebytes); 
@@ -677,12 +689,14 @@ static inline int convertSamples(int bits, Ipp32fc *samples, Ipp8u *convertedDat
   return(0);
 }
 
-int converttoVDIF(Ipp32fc *dataBuf, Ipp8u *vdifData, vdif_header *vheader, int framesize, int nVDIFsamples,
-		  int outputbits, Ipp32f target, int vdifframepersec, Ipp32fc *edgeBuf, int *nExtra) {
+int converttoVDIF(Ipp32fc *dataBuf, Ipp8u *vdifData, vdif_header *vheader, int framesize,
+		  int nFFT, int ifftSize, int outputbits, Ipp32f target, int vdifframepersec,
+		  Ipp32fc *edgeBuf, int *nExtra, Ipp8u *fftValidity, int *edgeValid) {
   IppStatus status;
   int fullFrameSize = framesize + VDIF_HEADER_BYTES;
   Ipp32f mean, stddev, scale;
 
+  int nVDIFsamples = nFFT * ifftSize;
   int samplesperframe = framesize*8/(outputbits*2); // #samples per VDIF frame
 
   // Get RMS of data - should add some time smoothing
@@ -700,11 +714,15 @@ int converttoVDIF(Ipp32fc *dataBuf, Ipp8u *vdifData, vdif_header *vheader, int f
   if (*nExtra>0) {
     status = ippsCopy_8u((Ipp8u*)vheader, vdifData, VDIF_HEADER_BYTES); // First frame
     IPPERROR(status);
-    status = convertSamples(outputbits, edgeBuf, &vdifData[VDIF_HEADER_BYTES], *nExtra);
-    if (status!=0) return status;
-    nOffset = samplesperframe-*nExtra;
-    int offsetBytes = *nExtra * outputbits * 2 / 8;
-    status = convertSamples(outputbits, dataBuf, &vdifData[VDIF_HEADER_BYTES+offsetBytes], nOffset); // Copy from start of dataBuf
+    if (*edgeValid) {
+      status = convertSamples(outputbits, edgeBuf, &vdifData[VDIF_HEADER_BYTES], *nExtra);
+      if (status!=0) return status;
+      nOffset = samplesperframe-*nExtra;
+      int offsetBytes = *nExtra * outputbits * 2 / 8;
+      status = convertSamples(outputbits, dataBuf, &vdifData[VDIF_HEADER_BYTES+offsetBytes], nOffset); // Copy from start of dataBuf
+    } else {
+      setVDIFFrameInvalid((vdif_header*)vdifData,1);
+    }
     nextVDIFHeader(vheader, vdifframepersec); 
     j++;
   } else if (*nExtra<0) {
@@ -715,17 +733,49 @@ int converttoVDIF(Ipp32fc *dataBuf, Ipp8u *vdifData, vdif_header *vheader, int f
   for (int i=0; i<nframe; i++) {
     status = ippsCopy_8u((Ipp8u*)vheader, &vdifData[fullFrameSize*j], VDIF_HEADER_BYTES);
     IPPERROR(status);
-    status = convertSamples(outputbits, &dataBuf[samplesperframe*i+nOffset],
-			    &vdifData[fullFrameSize*j+VDIF_HEADER_BYTES], samplesperframe);
+
+    // What FFTs does this frame corresond to
+    int iFFT0 = (int)floor((double)(samplesperframe*i+nOffset)/(double)ifftSize);
+    int iFFT1 = (int)floor((double)(samplesperframe*i+nOffset+ifftSize)/(double)ifftSize);
+    int valid = 1;
+    for (int k=iFFT0; k<iFFT1; k++) {
+      if (fftValidity[k]) {
+	valid = 0;
+	break;
+      }
+    }
+    if (valid) { // Don't bother converting if invalid data
+      status = convertSamples(outputbits, &dataBuf[samplesperframe*i+nOffset],
+			      &vdifData[fullFrameSize*j+VDIF_HEADER_BYTES], samplesperframe);
     if (status!=0) return(status);
+    } else {
+      setVDIFFrameInvalid((vdif_header*)&vdifData[fullFrameSize*j],1);
+    }
+ 
     nextVDIFHeader(vheader, vdifframepersec);
     j++;
   }
 
+  // Copy any left over samples
   *nExtra = (nVDIFsamples-nOffset)-nframe*samplesperframe;
   if (*nExtra>0) {
-    status = ippsCopy_32fc(&dataBuf[nframe*samplesperframe+nOffset], edgeBuf, *nExtra);
-    IPPERROR(status);
+    // Is this data valid?
+    int iFFT0 = (int)floor((double)(nframe*samplesperframe+nOffset)/(double)ifftSize);
+    int iFFT1 = (int)floor((double)(nVDIFsamples-1)/(double)ifftSize);
+    int valid = 1;
+    for (int k=iFFT0; k<iFFT1; k++) {
+      if (fftValidity[k]) {
+	valid = 0;
+	break;
+      }
+    }
+    if (valid) {
+      status = ippsCopy_32fc(&dataBuf[nframe*samplesperframe+nOffset], edgeBuf, *nExtra);
+      IPPERROR(status);
+      *edgeValid = 1;
+    } else {
+      *edgeValid = 0;
+    }
   } else if (*nExtra<0) {
     fprintf(stderr, "Error: Calculated left over bytes incorrectly\n");
     return(-1);
