@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+void compress_compress(unsigned char* p_wrk_mem, unsigned char* p_src_first, unsigned int src_len, unsigned char* p_dst_first, unsigned int* p_dst_len);
+void compress_decompress(unsigned char* p_wrk_mem, unsigned char* p_src_first, unsigned int src_len, unsigned char* p_dst_first, unsigned int* p_dst_len);
+
 static FILE *fopen_trials(char **name, char *mode)
     {
     FILE *fp = fopen(*name, mode);
@@ -12,7 +15,7 @@ static FILE *fopen_trials(char **name, char *mode)
     return(fp);
     }
 
-main (argc, argv)
+int main (argc, argv)
 int argc;
 char *argv[];
     {

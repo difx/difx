@@ -73,7 +73,7 @@ void print_vex_blocks(struct llist *blocks)
     blocks=blocks->next;
   }
 }
-void print_def_block(struct llist *items,void func())
+void print_def_block(struct llist *items,void func(struct llist *))
 {
   while (items!=NULL) {
     struct lowl *this_=(struct lowl *)items->ptr;

@@ -100,7 +100,7 @@ void Mark6Meta::parse(string rootPath)
         return;
     }
     // check if directory exists
-    if (( stat( rootPath.c_str(), &info ) != 0 ) || (!info.st_mode & S_IFDIR))
+    if (( stat( rootPath.c_str(), &info ) != 0 ) || !(info.st_mode & S_IFDIR))
     {
         return;
         ///throw  Mark6MountException("The meta directory: " + rootPath + " does not exist");
