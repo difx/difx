@@ -68,9 +68,9 @@ static void usage()
 }
 
 int main (int argc, char * const argv[]) {
-  int framesize=0, nfile, infile, outfile, rate, opt, frameperbuf, nframe, i;
+  int framesize=0, nfile, infile, outfile, opt, frameperbuf, nframe, i;
   int nread, status, nwrote, tmp, nchan=0, bits, isComplex=0, legacy=0, headersize=0, datasize=0;
-  int nextract=0, first, sock, bufsize=0, odatasize=0, oframesize=0, obufsize, oheadersize=0;
+  int nextract=0, first, bufsize=0, odatasize=0, oframesize=0, obufsize, oheadersize=0;
   float ftmp;
   double t0;
   char outname[MAXSTR+1] = "";

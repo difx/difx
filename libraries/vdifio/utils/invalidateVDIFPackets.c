@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2024 by Adam Deller                                     *
+ *   Copyright (C) 2024-2025 by Adam Deller                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -41,13 +41,12 @@ static void usage()
 
 int main(int argc, char **argv)
 {
-  int VERBOSE = 0;
   int MODULATION_PERIOD = 100;
   char buffer[MAX_VDIF_FRAME_BYTES];
   FILE * input;
   FILE * output;
-  int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
-  int nextmjd, nextsecond, nextnumber;
+  int readbytes, framebytes, framenumber, frameinvalid, datambps, framespersecond;
+  int nextnumber;
   int numinvalidframes, readvalidframes, readinvalidframes, wrotevalidframes, wroteinvalidframes;
   float invalidfraction = 0.0;
   long long framesread, frameswrote;
@@ -89,8 +88,6 @@ int main(int argc, char **argv)
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
     exit(EXIT_FAILURE);
   }
-  nextmjd = getVDIFFrameMJD(header);
-  nextsecond = getVDIFFrameSecond(header);
   nextnumber = getVDIFFrameNumber(header);
   framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
   printf("Frames per second is %d\n", framespersecond);
@@ -110,8 +107,6 @@ int main(int argc, char **argv)
       break;
     }
     header = (vdif_header*)buffer;
-    framemjd = getVDIFFrameMJD(header);
-    framesecond = getVDIFFrameSecond(header);
     framenumber = getVDIFFrameNumber(header);
     frameinvalid = getVDIFFrameInvalid(header);
     if(frameinvalid)
@@ -147,8 +142,8 @@ int main(int argc, char **argv)
   }
 
   printf("Read %lld and wrote %lld frames\n", framesread, frameswrote);
-  printf("In the input, there were %lld valid and %lld invalid frames\n", readvalidframes, readinvalidframes);
-  printf("In the output, there were %lld valid and %lld invalid frames\n", wrotevalidframes, wroteinvalidframes);
+  printf("In the input, there were %d valid and %d invalid frames\n", readvalidframes, readinvalidframes);
+  printf("In the output, there were %d valid and %d invalid frames\n", wrotevalidframes, wroteinvalidframes);
   fclose(input);
   fclose(output);
 
