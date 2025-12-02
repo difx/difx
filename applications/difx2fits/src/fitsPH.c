@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2024 by Walter Brisken & John Morgan & Leonid Petrov *
+ *   Copyright (C) 2008-2025 by Walter Brisken & John Morgan & Leonid Petrov *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1031,6 +1031,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	char line[MaxLineLength+1];
 	int nBand, nPol;
 	int nTone=0;
+	unsigned int totalTones;
 	int nDifxTone;
 	int nAccum = 0;
 	int lastnWindow;
@@ -1221,7 +1222,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		nTone = nDifxTone;
 	}
 
-	if(nTone*nBand > array_MAX_TONES)
+	totalTones = nTone*nBand;
+
+	if(totalTones > array_MAX_TONES)
 	{
 		printf("Developer Error: DifxInput2FitsPH: nTone(=%d)*nBand(=%d) exceeds array_MAX_TONES(=%d).  No pulse cal data will be enFITSulated.\n", nTone, nBand, array_MAX_TONES);
 
@@ -1237,8 +1240,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 
 	sprintf(stateFormFloat, "%dE", 4*nBand);
-	sprintf(toneFormFloat,  "%dE", nTone*nBand);
-	sprintf(toneFormDouble, "%dD", nTone*nBand);
+	sprintf(toneFormFloat,  "%dE", totalTones);
+	sprintf(toneFormDouble, "%dD", totalTones);
 	
 	if(nPol == 2)
 	{

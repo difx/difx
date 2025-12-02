@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2016 by Walter Brisken and Helge Rottmann          *
+ *   Copyright (C) 2009-2025 by Walter Brisken and Helge Rottmann          *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -18,6 +18,7 @@
  ***************************************************************************/
 
 #include <stdlib.h>
+#include "difxio/difxio_macros.h"
 #include "jobmatrix.h"
 
 struct _JobMatrix
@@ -123,7 +124,7 @@ void writeJobMatrix(const JobMatrix *jm, int passNum)
 	// write header line
 	for(a = 0; a < jm->nAntenna; ++a)
 	{
-		strncpy(name, jm->D->antenna[a].name, 2);
+		strncpy_warn(name, jm->D->antenna[a].name, 2);
 		name[2] = 0;
 		fprintf(out, "%s ", name);
 	}
@@ -164,7 +165,7 @@ void writeJobMatrix(const JobMatrix *jm, int passNum)
 		}
 		else
 		{
-			strncpy(lastday, timeStr, 9);
+			strncpy_warn(lastday, timeStr, 9);
 			lastday[9] = 0;
 			fprintf(out, "  %s", timeStr);
 		}

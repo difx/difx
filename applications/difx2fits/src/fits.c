@@ -146,6 +146,12 @@ int fitsWriteTable
     static char separator[] =
 	"------------------------------------------------";
 
+    if(num_col < 0 || num_col > 999)
+    {
+        fprintf(stderr, "Error: fitsWriteTable(): number of columns is %d -- out of range.\n", num_col);
+	exit(0);
+    }
+
     pFile->row_bytes = row_bytes;
 
     /* finish prior extension/matrix */
@@ -235,6 +241,12 @@ int fitsWriteBinTable
     int i;
     char keyword[9];
     int extver;
+
+    if(num_col < 0 || num_col > 999)
+    {
+        fprintf(stderr, "Error: fitsWriteiBinTable(): number of columns is %d -- out of range.\n", num_col);
+	exit(0);
+    }
 
     extver = getExtVer(pFile, extname);
 
