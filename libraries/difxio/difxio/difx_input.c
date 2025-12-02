@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2024 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2007-2025 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -23,6 +23,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <libgen.h>
+#include "difxio_macros.h"
 #include "difxio/difx_input.h"
 #include "difxio/difx_options.h"
 #include "difxio/parsedifx.h"
@@ -710,7 +711,7 @@ static int generateFreqSets(DifxInput *D, const DifxDataFilterOptions *filterOpt
 				dfs->IF[i].pol[0]   = dc->pol[0];
 				dfs->IF[i].pol[1]   = dc->pol[1];
 
-				strncpy(dfs->IF[i].rxName, D->freq[fqId].rxName, DIFXIO_RX_NAME_LENGTH);
+				strncpy_warn(dfs->IF[i].rxName, D->freq[fqId].rxName, DIFXIO_RX_NAME_LENGTH);
 				dfs->IF[i].rxName[DIFXIO_RX_NAME_LENGTH-1] = 0;
 
 				++dfs->nIF;
@@ -819,7 +820,11 @@ static const char *locateAltFilename(char *filename, const char *inputFileName, 
 			{
 				fprintf(stderr, "Info: %s file %s inaccessible, using %s instead due to user option --localdir\n", extension, filename, altName);
 			}
-			strncpy(filename, altName, DIFXIO_FILENAME_LENGTH-1);
+			v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s", altName);
+			if(v >= DIFXIO_FILENAME_LENGTH)
+			{
+				fprintf(stderr, "Developer error: locateAltFilename(): altName too long %d >= %d; continuing with possible truncation.\n", v, DIFXIO_FILENAME_LENGTH);
+			}
 		}
 		else
 		{
@@ -1111,7 +1116,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 		"PHASED ARRAY"
 	};
 	const int N_CONFIG_ROWS = sizeof(configKeys)/sizeof(configKeys[0]);
-	int configId, r, v;
+	int configId, r;
 	int rows[N_CONFIG_ROWS];
 
 	if(!D || !ip)
@@ -3896,13 +3901,14 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	l = strlen(inputFile);  
 	if(strcmp(inputFile + l - 6, ".input") == 0)
 	{
-		strncpy(CalcInName, inputFile, l - 6);
+		strncpy_warn(CalcInName, inputFile, l - 6);
 		CalcInName[l-6] = '\0';
 		strncat(CalcInName, ".calc", DIFXIO_FILENAME_LENGTH-1);
 	}
 	else
 	{
-		strncpy ( CalcInName, calcFile, DIFXIO_FILENAME_LENGTH ); /* just in case if inputFile name is insane */
+		/* just in case if inputFile name is insane */
+		strncpy_warn(CalcInName, calcFile, DIFXIO_FILENAME_LENGTH);
 	}
 
 	if(access( calcFile,   F_OK ) != 0 &&
@@ -3951,13 +3957,13 @@ DifxInput *loadDifxInput(const char *filePrefix)
 		l = strlen(inputFile);
 		if(strcmp(inputFile + l - 6, ".input") == 0)
 		{
-			strncpy(ImInName, inputFile, l - 6);
+			strncpy_warn(ImInName, inputFile, l - 6);
 			ImInName[l-6] = '\0';
 			strncat(ImInName, ".im", DIFXIO_FILENAME_LENGTH-1);
 		}
 		else
 		{
-			strncpy(ImInName, D->job->imFile, DIFXIO_FILENAME_LENGTH); ; /* just in case if inputFile name is insane */
+			strncpy_warn(ImInName, D->job->imFile, DIFXIO_FILENAME_LENGTH); /* just in case if inputFile name is insane */
 		}
 		if(access( D->job->imFile, F_OK ) != 0 &&
 		   access( ImInName,       F_OK ) == 0)
@@ -3973,7 +3979,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 					D->job->imFile, (char *)ImInName);
 				exit(EXIT_FAILURE);
 			}
-			strncpy(D->job->imFile, (char *)ImInName, DIFXIO_FILENAME_LENGTH);
+			strncpy_warn(D->job->imFile, (char *)ImInName, DIFXIO_FILENAME_LENGTH);
 		}
 
 		mp = newDifxParametersfromfile(D->job->imFile);
@@ -3994,18 +4000,18 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	}
 	if(D)
 	{
-		strncpy(OutputDirName, D->job->outputFile, DIFXIO_FILENAME_LENGTH);
+		strncpy_warn(OutputDirName, D->job->outputFile, DIFXIO_FILENAME_LENGTH);
 		strncat(OutputDirName, "/", DIFXIO_FILENAME_LENGTH-1);
 		l = strlen(inputFile);
 		if(strcmp(inputFile + l - 6, ".input") == 0)
 		{
-			strncpy(OutputDirInName, inputFile, l - 6);
+			strncpy_warn(OutputDirInName, inputFile, l - 6);
 			OutputDirInName[l-6] = '\0';
 			strncat(OutputDirInName, ".difx/", DIFXIO_FILENAME_LENGTH-1);
 		}
 		else
 		{
-			strncpy ( OutputDirInName, OutputDirName, DIFXIO_FILENAME_LENGTH ); /* just in case if inputFile name is insane */
+			strncpy_warn(OutputDirInName, OutputDirName, DIFXIO_FILENAME_LENGTH); /* just in case if inputFile name is insane */
 		} 
 		if(access( OutputDirName,   F_OK ) != 0 &&
 		   access( OutputDirInName, F_OK ) == 0 )
@@ -4097,7 +4103,7 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 		l = strlen(inputFile);
 		if(strcmp(inputFile + l - 6, ".input") == 0)
 		{
-			strncpy(CalcInName, inputFile, l - 6);
+			strncpy_warn(CalcInName, inputFile, l - 6);
 			CalcInName[l-6] = '\0';
 			strncat(CalcInName, ".calc", DIFXIO_FILENAME_LENGTH-1);
 		}
