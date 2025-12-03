@@ -155,7 +155,7 @@ public:
 	double computeGranularity(const std::vector<double>& freqs) const;
 
 	/// Set bandwidth granularity [Hz] to use if possbile when generating auto-zooms that form outputbands
-	double setAutozoomGranularity(const double& azgranularity_Hz);
+	void setAutozoomGranularity(const double& azgranularity_Hz);
 
 	/// Automatically build a set of outputbands and their constituent bands,
 	/// based upon previously registered (cf. addRecbands()) recorded bands.
