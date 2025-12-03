@@ -146,7 +146,7 @@ void Mark6Meta::parse(string rootPath)
     {
         ifstream groupfile(path.c_str());
 
-        int count = 0;
+        unsigned int count = 0;
         int groupCount = -1;
         while(getline(groupfile, line, ':')) 
         {

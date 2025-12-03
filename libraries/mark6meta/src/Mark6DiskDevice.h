@@ -50,7 +50,7 @@ public:
     std::vector<Mark6Partition> getPartitions() const;
     std::string getName() const;
     int mountDisk(std::string dataPath, std::string metaPath, bool readwrite);
-    int mountPartition(int partitionNumber, std::string mountPath);
+    int mountPartition(unsigned int partitionNumber, std::string mountPath);
     void unmountDisk();
     
     bool isMounted();
