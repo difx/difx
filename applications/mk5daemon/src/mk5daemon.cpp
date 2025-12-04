@@ -1090,7 +1090,7 @@ int main(int argc, char **argv)
     Options options;
 
     // FIXME: fixed length string arrays should be revisited
-    Mk5Daemon *D;
+    Mk5Daemon *D = 0;
     time_t t, lastTime;
     char message[DIFX_MESSAGE_LENGTH];
     std::stringstream msgStream;
@@ -1108,7 +1108,7 @@ int main(int argc, char **argv)
     int status;
 #ifdef HAS_MARK6META
     std:: ostringstream mk6out;
-    std::streambuf* backup;
+    std::streambuf* backup = 0;
 #endif
 
 #ifdef HAVE_XLRAPI_H
@@ -1522,7 +1522,9 @@ int main(int argc, char **argv)
 #ifdef HAS_MARK6META
         // restore clog redirection
         if(options.isMk6)
-              clog.rdbuf(backup);
+	{
+		clog.rdbuf(backup);
+	}
 #endif
         
 	deleteMk5Daemon(D);

@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <iostream>
 #include <unistd.h>
 #include <signal.h>
 #include <glob.h>
@@ -29,8 +30,8 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include "config.h"
+#include "macros.h"
 #include "mk5daemon.h"
-#include <iostream>
 
 
 using namespace std;
@@ -148,13 +149,13 @@ void handleMark6Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 		return;
 	}
 
-	strncpy(D->vsns[0], G->body.mark6status.msn1, 8);
+	strncpy_warn(D->vsns[0], G->body.mark6status.msn1, 8);
 	D->vsns[0][8] = 0;
-	strncpy(D->vsns[1], G->body.mark6status.msn2, 8);
+	strncpy_warn(D->vsns[1], G->body.mark6status.msn2, 8);
 	D->vsns[1][8] = 0;
-	strncpy(D->vsns[2], G->body.mark6status.msn3, 8);
+	strncpy_warn(D->vsns[2], G->body.mark6status.msn3, 8);
 	D->vsns[2][8] = 0;
-	strncpy(D->vsns[3], G->body.mark6status.msn4, 8);
+	strncpy_warn(D->vsns[3], G->body.mark6status.msn4, 8);
 	D->vsns[3][8] = 0;
 
 	if(G->body.mark6status.state == MARK6_STATE_OPENING ||
@@ -196,9 +197,9 @@ void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 		return;
 	}
 
-	strncpy(D->vsns[0], G->body.mk5status.vsnA, 8);
+	strncpy_warn(D->vsns[0], G->body.mk5status.vsnA, 8);
 	D->vsns[0][8] = 0;
-	strncpy(D->vsns[1], G->body.mk5status.vsnB, 8);
+	strncpy_warn(D->vsns[1], G->body.mk5status.vsnB, 8);
 	D->vsns[1][8] = 0;
 
 	if(G->body.mk5status.state == MARK5_STATE_OPENING ||
@@ -489,9 +490,7 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	cmd = G->body.command.command;
 
-	snprintf(message, DIFX_MESSAGE_LENGTH,
-		"Command: from=%s identifier=%s command=%s\n", 
-		G->from, G->identifier, cmd);
+	snprintf_warn(message, DIFX_MESSAGE_LENGTH, "Command: from=%s identifier=%s command=%s\n", G->from, G->identifier, cmd);
 	Logger_logData(D->log, message);
 
 
@@ -732,7 +731,7 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 		int slot = cmd[12] - '0';
 		if(D->isMk6 && slot >= 1)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "will execute Command=%s on slot %d\n", cmd, slot);
+			snprintf_warn(message, DIFX_MESSAGE_LENGTH, "will execute Command=%s on slot %d\n", cmd, slot);
 			Logger_logData(D->log, message);
 			Mk5Daemon_getMk6FileList(D, slot);
 		}
@@ -747,7 +746,7 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 
                 if(D->isMk6 && slot >= 1)
                 {
-                        snprintf(message, DIFX_MESSAGE_LENGTH, "will execute Command=%s on slot %d\n", cmd, slot);
+                        snprintf_warn(message, DIFX_MESSAGE_LENGTH, "will execute Command=%s on slot %d\n", cmd, slot);
                         Logger_logData(D->log, message);
                         // mark6meta starts slot indexing at 0
                         D->mark6->modInit(slot-1, string(vsnStr));
@@ -757,7 +756,7 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 #endif
 	else
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Command=%s not recognized!\n", cmd);
+		snprintf_warn(message, DIFX_MESSAGE_LENGTH, "Command=%s not recognized!\n", cmd);
 		Logger_logData(D->log, message);
 	}
 }
@@ -774,7 +773,7 @@ void handleDriveStats(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	c = &G->body.driveStats;
 
-	snprintf(message, DIFX_MESSAGE_LENGTH, 
+	snprintf_warn(message, DIFX_MESSAGE_LENGTH, 
 		"Drive statistivs report: from=%s identifier=%s disk=%s[%d]=%s\n", 
 		G->from, G->identifier, c->moduleVSN, c->moduleSlot, c->serialNumber);
 	Logger_logData(D->log, message);
@@ -809,8 +808,8 @@ void Mk5Daemon_reboot(Mk5Daemon *D)
 	DifxMessageMk5Status dm;
 
 	memset(&dm, 0, sizeof(DifxMessageMk5Status));
-	strncpy(dm.vsnA, D->vsns[0], 8);
-	strncpy(dm.vsnB, D->vsns[1], 8);
+	strncpy_warn(dm.vsnA, D->vsns[0], 8);
+	strncpy_warn(dm.vsnB, D->vsns[1], 8);
 	dm.state = MARK5_STATE_REBOOTING;
 	difxMessageSendMark5Status(&dm);
 
@@ -825,8 +824,8 @@ void Mk5Daemon_poweroff(Mk5Daemon *D)
 	DifxMessageMk5Status dm;
 
 	memset(&dm, 0, sizeof(DifxMessageMk5Status));
-	strncpy(dm.vsnA, D->vsns[0], 8);
-	strncpy(dm.vsnB, D->vsns[1], 8);
+	strncpy_warn(dm.vsnA, D->vsns[0], 8);
+	strncpy_warn(dm.vsnB, D->vsns[1], 8);
 	dm.state = MARK5_STATE_POWEROFF;
 	difxMessageSendMark5Status(&dm);
 
@@ -846,11 +845,11 @@ void Mk5Daemon_killJob(Mk5Daemon *D, const char *jobName)
 	char line[LineLength];
 	FILE *pin;
 
-	snprintf(cmd, CommandLength, "ps aux | grep \" mpifxcorr \" | grep %s.input", jobName);
+	snprintf_warn(cmd, CommandLength, "ps aux | grep \" mpifxcorr \" | grep %s.input", jobName);
 	pin = popen(cmd, "r");
 	if(!pin)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: popen failed for jobName=%s", jobName);
+		snprintf_warn(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: popen failed for jobName=%s", jobName);
 		Logger_logData(D->log, message);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 
@@ -867,9 +866,9 @@ void Mk5Daemon_killJob(Mk5Daemon *D, const char *jobName)
 		}
 		if(sscanf(line, "%*s%d", &pid) == 1)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: executing kill(%d, SIGKILL)\n", pid);
+			snprintf_warn(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: executing kill(%d, SIGKILL)\n", pid);
 			Logger_logData(D->log, message);
-			snprintf(message, CommandLength, "Killing mpifxcorr for job %s with process ID %d", jobName, pid);
+			snprintf_warn(message, CommandLength, "Killing mpifxcorr for job %s with process ID %d", jobName, pid);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 			kill(pid, SIGKILL);
 		}
@@ -879,11 +878,11 @@ void Mk5Daemon_killJob(Mk5Daemon *D, const char *jobName)
 	/* Now go back and make sure they are gone */
 	sleep(1);
 
-	snprintf(cmd, CommandLength, "ps aux | grep \" mpifxcorr \" | grep %s.input", jobName);
+	snprintf_warn(cmd, CommandLength, "ps aux | grep \" mpifxcorr \" | grep %s.input", jobName);
 	pin = popen(cmd, "r");
 	if(!pin)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: popen failed for jobName=%s (round 2)", jobName);
+		snprintf_warn(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: popen failed for jobName=%s (round 2)", jobName);
 		Logger_logData(D->log, message);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 
@@ -900,9 +899,9 @@ void Mk5Daemon_killJob(Mk5Daemon *D, const char *jobName)
 		}
 		if(sscanf(line, "%*s%d", &pid) == 1)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: Weird: pid %d remains after kill-9", pid);
+			snprintf_warn(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: Weird: pid %d remains after kill-9", pid);
 			Logger_logData(D->log, message);
-			snprintf(message, CommandLength, "Killing of job %s not successful.  Try again.", jobName);
+			snprintf_warn(message, CommandLength, "Killing of job %s not successful.  Try again.", jobName);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		}
 	}
