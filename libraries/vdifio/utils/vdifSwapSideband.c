@@ -365,12 +365,17 @@ int main (int argc, char * const argv[]) {
       }
       sprintf(outname, "%s/%s", outdir, argv[nfile]);
     } else {// File contains a "/"
+      int v;
       slashptr++;
       if (strlen(outdir)+strlen(slashptr)+1 > MAXSTR) {
 	fprintf(stderr, "%s/%s too long. Increase \"MAXSTR(%d)\"\n", outdir, slashptr, MAXSTR);
 	return(1);
       }
-      sprintf(outname, "%s/%s", outdir, slashptr);
+      v = snprintf(outname, MAXSTR, "%s/%s", outdir, slashptr);
+      if(v >= MAXSTR) {
+	fprintf(stderr, "%s/%s too long. Increase \"MAXSTR(%d)\"\n", outdir, slashptr, MAXSTR);
+	return(1);
+      }
     }
   
     outfile = open(outname, OPENWRITEOPTIONS, S_IRWXU|S_IRWXG|S_IRWXO); 
