@@ -527,7 +527,7 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 #ifdef HAS_MARK6META
 		if(D->isMk6)
 		{
-			D->mark6->sendStatusMessage();
+			D->mark6->sendSlotStatusMessage();
 		}
 #endif
 	}
