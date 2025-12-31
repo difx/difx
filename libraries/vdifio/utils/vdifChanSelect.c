@@ -69,7 +69,7 @@ static void usage()
 
 int main (int argc, char * const argv[]) {
   int framesize=0, nfile, infile, outfile, opt, frameperbuf, nframe, i;
-  int nread, status, nwrote, tmp, nchan=0, bits, isComplex=0, legacy=0, headersize=0, datasize=0;
+  int nread, status, nwrote, tmp, nchan=0, bits=0, isComplex=0, legacy=0, headersize=0, datasize=0;
   int nextract=0, first, bufsize=0, odatasize=0, oframesize=0, obufsize, oheadersize=0;
   float ftmp;
   double t0;
@@ -322,7 +322,7 @@ int main (int argc, char * const argv[]) {
       
       if (extract==NULL) {
 	if (isComplex) {
-	  fprintf(stderr, "Error: %d->%d channels, %dbits complex is not supported - aborting\n", nchan, nextract, bits/2);;
+	  fprintf(stderr, "Error: %d->%d channels, %dbits complex is not supported - aborting\n", nchan, nextract, bits/2);
 	} else {
 	  fprintf(stderr, "Error: %d->%d channels, %dbits is not supported - aborting\n", nchan, nextract, bits);
 	}
