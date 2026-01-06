@@ -152,7 +152,7 @@ int main(int argc, char** argv)
             {
                 fprintf(stderr,
                     "ERROR: file %d at offset %ld: mismatch in current wb_size %u vs. file block_size %u : blk %u, previous blk %lu\n",
-                    i, offset[i], bhdr[i].wb_size, fhdr[i].block_size, bhdr[i].blocknum, blocknum[i]
+                    i, offset[i], bhdr[i].wb_size, fhdr[i].block_size, bhdr[i].blocknum, (unsigned int)(blocknum[i])
                 );
 
                 do

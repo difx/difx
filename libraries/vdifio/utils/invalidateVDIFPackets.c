@@ -47,9 +47,10 @@ int main(int argc, char **argv)
   FILE * output;
   int readbytes, framebytes, framenumber, frameinvalid, datambps, framespersecond;
   int nextnumber;
-  int numinvalidframes, readvalidframes, readinvalidframes, wrotevalidframes, wroteinvalidframes;
+  int numinvalidframes;
+  long long int readvalidframes, readinvalidframes, wrotevalidframes, wroteinvalidframes;
   float invalidfraction = 0.0;
-  long long framesread, frameswrote;
+  long long int framesread, frameswrote;
   vdif_header *header;
 
   if(argc != 5)
@@ -142,8 +143,8 @@ int main(int argc, char **argv)
   }
 
   printf("Read %lld and wrote %lld frames\n", framesread, frameswrote);
-  printf("In the input, there were %d valid and %d invalid frames\n", readvalidframes, readinvalidframes);
-  printf("In the output, there were %d valid and %d invalid frames\n", wrotevalidframes, wroteinvalidframes);
+  printf("In the input, there were %lld valid and %lld invalid frames\n", readvalidframes, readinvalidframes);
+  printf("In the output, there were %lld valid and %lld invalid frames\n", wrotevalidframes, wroteinvalidframes);
   fclose(input);
   fclose(output);
 
