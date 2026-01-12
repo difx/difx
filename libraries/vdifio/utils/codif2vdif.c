@@ -326,7 +326,6 @@ int main (int argc, char * const argv[]) {
 	exit(1);
       }
 
-      int edgeValid = 0;
       int sizeDFTSpec, sizeDFTInitBuf, wbufsize;
 
       // Initialise FFT
@@ -775,7 +774,6 @@ int converttoVDIF(Ipp32fc *dataBuf, Ipp8u *vdifData, vdif_header *vheader, int f
       IPPERROR(status);
       *edgeValid = 1;
     } else {
-
       *edgeValid = 0;
     }
   } else if (*nExtra<0) {
