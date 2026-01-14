@@ -11,9 +11,9 @@ Details see https://github.com/difx/difx/wiki/difx-installation
 
 ### For DiFX Users
 
-At the time of writing, the current stable version of DiFX is DiFX-2.9. You can look the DiFX tags for more version.
+At the time of writing, the current stable version of DiFX is DiFX-2.9.0. You can look the DiFX tags for more version.
 
-Then we recommend the user to check out stable version right now. If you want to check out v2.9, just type :
+Then we recommend the user to check out stable version right now. If you want to check out v2.9.0, just type :
 
 ```bash
 $ git clone https://github.com/difx/difx
