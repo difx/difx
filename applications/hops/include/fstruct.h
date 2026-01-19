@@ -34,7 +34,7 @@ typedef struct
     float floatparm[4];	/* Auxiliary info if needed */
     } fstruct;
 
-extern void clear_fstruct();
+extern void clear_fstruct(fstruct *);
 
 #endif
 

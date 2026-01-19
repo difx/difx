@@ -32,6 +32,13 @@ int iword(char *instr, char *delim, int nword, char *outstr);
 
 bool_t pmap_unset(unsigned long prognum, unsigned long versnum);
 
+double mjd_fetch(int job_num, char *tbl_name, int row_num, char *keyname, char *err);
+float f_fetch(int job_num, char *tbl_name, int row_num, char *keyname, char *err);
+double d_fetch(int job_num, char *tbl_name, int row_num, char *keyname, char *err);
+int i_fetch(int job_num, char *p_tbl_name, int row_num, char *p_keyname, char *p_err);
+char *c_fetch(int job_num, char *p_tbl_name, int row_num, char *p_keyname, char *p_err);
+double asteroid(double mjdtime, int icolumn);
+
 struct JPL_Horizons_Tbl {
        double  ref_time;   /* Reference time (Julian Date) */
        double  ra;         /* Source RA (J2000/ICRF) */
@@ -129,9 +136,7 @@ ENVIRONMENT: Any
 
 /*******************************************************************************
 */
-double         ast_dopplr (mjdtime, u, v, w)
-    double          mjdtime;
-    double          u, v, w;
+double ast_dopplr (double mjdtime, double u, double v, double w)
 {
 
   double value[2], time[2], outval;
@@ -257,7 +262,6 @@ SVCXPRT *pTransport;
 * function.
 */
 {
-    double ast_dopplr();
     getCALC_arg argument;    /* RPC caller passes this */
     getCALC_res result;      /* we return this to RPC caller */
     time_t  timep, *tp;
@@ -619,7 +623,6 @@ ENVIRONMENT: vxWorks
 --$
 -*/
 {
-     extern double d_fetch();
      double d_val;
      char inword1[16],inword2[16],*err=0;
      int  i1_val,i2_val;
@@ -659,7 +662,6 @@ ENVIRONMENT: vxWorks
 --$
 -*/
 {
-     extern double mjd_fetch();
      double d_val;
      char inword1[16],inword2[16],*err=0;
      int  i1_val,i2_val;
@@ -700,7 +702,6 @@ ENVIRONMENT: vxWorks
 --$
 -*/
 {
-     extern float f_fetch();
      float f_val;
      double d_val;
      char inword1[16],inword2[16],*err=0;
@@ -748,7 +749,6 @@ ENVIRONMENT: vxWorks
 --$
 -*/
 {
-     extern int i_fetch();
      int i_val;
      char inword1[16],inword2[16],*err=0;
      int  i1_val,i2_val;
@@ -792,7 +792,6 @@ ENVIRONMENT: vxWorks
 --$
 -*/
 {
-     extern char *c_fetch();
      char inword1[16],inword2[16],*err=0;
      int  i1_val,i2_val,i;
      char  *cp0,*cp1;
@@ -876,19 +875,20 @@ ENVIRONMENT: Any
 
 /*++****************************************************************************
 */
-double d_fetch (job_num, tbl_name, row_num, keyname, err)
-int job_num;	       /* job index number in queue table */
-char *tbl_name;	       /* data table name requested */
-int row_num;	       /* data table row requested */
-char *keyname;	       /* data table keyword requested */
-char *err;	       /* some sort of error message */
+double d_fetch(int job_num, char *tbl_name, int row_num, char *keyname, char *err)
 /*
+* INPUTS:
+* int job_num;		job index number in queue table
+* char *tbl_name;	data table name requested
+* int row_num;		data table row requested
+* char *keyname;	data table keyword requested
+* char *err;		some sort of error message
 * RETURN ???
 *
 * retrieve a double precision value from user requested correlator data table
 -*/
 {
-    double value, mjdtime, parallax, dist_au, asteroid();
+    double value, mjdtime, parallax, dist_au;
     char in_keyword[16], in_tblname[16];
 
     strcpy (in_keyword, keyname);
@@ -980,13 +980,14 @@ ENVIRONMENT: Any
 /* externals */
 
 /*++**************************************************************************/
-float f_fetch (job_num, tbl_name, row_num, keyname, err)
-int job_num;	       /* job index number in queue table */
-char *tbl_name;	       /* data table name requested */
-int row_num;	       /* data table row requested */
-char *keyname;	       /* data table keyword requested */
-char *err;	       /* some sort of error message */
+float f_fetch(int job_num, char *tbl_name, int row_num, char *keyname, char *err)
 /*
+* INPUTS:
+* int job_num;		job index number in queue table
+* char *tbl_name;	data table name requested
+* int row_num;		data table row requested
+* char *keyname;	data table keyword requested
+* char *err;		some sort of error message
 * RETURN ???
 *
 * retrieve a float value from user requested correlator data table
@@ -1039,13 +1040,14 @@ ENVIRONMENT: Any
 
 /*++****************************************************************************
 */
-int i_fetch (job_num, p_tbl_name, row_num, p_keyname, p_err)
-int job_num;	       /* job index number in queue table */
-char *p_tbl_name;	       /* data table name requested */
-int row_num;	       /* data table row requested */
-char *p_keyname;	       /* data table keyword requested */
-char *p_err;	       /* some sort of error message */
+int i_fetch(int job_num, char *p_tbl_name, int row_num, char *p_keyname, char *p_err)
 /*
+* INPUTS:
+* int job_num;		job index number in queue table
+* char *p_tbl_name;	data table name requested
+* int row_num;		data table row requested
+* char *p_keyname;	data table keyword requested
+* char *p_err;		some sort of error message
 * RETURN ???
 *
 * retrieve an integer value from user requested correlator data table.
@@ -1084,13 +1086,14 @@ ENVIRONMENT: Any
 
 /*++****************************************************************************
 */
-char *c_fetch (job_num, p_tbl_name, row_num, p_keyname, p_err)
-int job_num;	       /* job index number in queue table */
-char *p_tbl_name;      /* data table name requested */
-int row_num;	       /* data table row requested */
-char *p_keyname;       /* data table keyword requested */
-char *p_err;	       /* some sort of error message */
+char *c_fetch(int job_num, char *p_tbl_name, int row_num, char *p_keyname, char *p_err)
 /*
+* INPUTS:
+* int job_num;		job index number in queue table
+* char *p_tbl_name;	data table name requested
+* int row_num;		data table row requested
+* char *p_keyname;	data table keyword requested
+* char *p_err;		some sort of error message
 * RETURN ???
 -*/
 {
@@ -1145,13 +1148,14 @@ ENVIRONMENT: Any
 
 /*++****************************************************************************
 */
-double mjd_fetch (job_num, tbl_name, row_num, keyname, err)
-int job_num;	       /* job index number in queue table */
-char *tbl_name;	       /* data table name requested */
-int row_num;	       /* data table row requested */
-char *keyname;	       /* data table keyword requested */
-char *err;	       /* some sort of error message */
+double mjd_fetch(int job_num, char *tbl_name, int row_num, char *keyname, char *err)
 /*
+* INPUTS:
+* int job_num;		job index number in queue table
+* char *tbl_name;	data table name requested
+* int row_num;		data table row requested
+* char *keyname;	data table keyword requested
+* char *err;		some sort of error message
 * RETURN ???
 *
 * retrieve a decimal mjd date/time from user requested correlator data table
@@ -1750,9 +1754,7 @@ int chr2_len;   	/* length of string to be copied from */
 }
 /*******************************************************************************
 */
-double         asteroid (mjdtime, icolumn)
-    double          mjdtime;
-    int             icolumn;
+double asteroid(double mjdtime, int icolumn)
 {
 
     double value[2], time[2], outval;

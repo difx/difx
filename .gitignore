@@ -7,12 +7,42 @@ INSTALL
 
 .*.swp
 
+# /applications/difx2fits
+/applications/difx2fits/config.h
+/applications/difx2fits/src/difx2fits
+
+# /applications/difxcalc11
+/applications/difxcalc11/src/difxcalc
+/applications/difxcalc11/src/param11.i
+
+# /applications/m6support
+/applications/m6support/config.h
+/applications/m6support/scan_check
+/applications/m6support/scan_fixer
+/applications/m6support/vdif_time
+/applications/m6support/vdifuse
+
+# /applications/mk5daemon
+/applications/mk5daemon/config.h
+/applications/mk5daemon/mk5dir/mk6dir
+
+# /applications/vex2difx
+/applications/vex2difx/config.h
+/applications/vex2difx/libtool
+/applications/vex2difx/src/vex2difx
+/applications/vex2difx/src/vex2v2d
+/applications/vex2difx/src/vexpeek
+/applications/vex2difx/vex/vex.yy.c
+/applications/vex2difx/vex/vex_parse.c
+/applications/vex2difx/vex/vex_parse.h
+/applications/vex2difx/vex/vex_parse.tab.c
+/applications/vex2difx/vex/vex_parse.tab.h
+
 # /applications/gui/trunk/gui/
 /applications/gui/trunk/gui/build
 
 # /applications/gui/trunk/gui/conf/
 /applications/gui/trunk/gui/conf/.DOISystemConfig.xml.swp
-
 
 # /applications/gui/trunk/gui/src/edu/nrao/difx/difxview/
 /applications/gui/trunk/gui/src/edu/nrao/difx/difxview/.DiFXManagerUI.java.swp
@@ -26,18 +56,144 @@ INSTALL
 # /applications/gui/trunk/xmllib/
 /applications/gui/trunk/xmllib/build
 
-
-# /applications/mk5daemon/branches/mk6/src/
-
-/applications/mk5daemon/branches/mk6/src/mk5daemon
-/applications/mk5daemon/branches/mk6/src/Makefile
-
 # applications/hops
 /applications/hops/hops_config.h.in
 /applications/hops/libltdl/
 /applications/hops/m4/argz.m4
 /applications/hops/m4/ltdl.m4
 
+# /libraries/codifio
+/libraries/codifio/utils/codifSplitChan
+/libraries/codifio/utils/codif_clip
+/libraries/codifio/utils/codif_dsb2ssb
+/libraries/codifio/utils/codif_dumpheaders
+/libraries/codifio/utils/fixcodif
+
+# /libraries/difxio
+/libraries/difxio/config.h
+/libraries/difxio/difxio.pc
+/libraries/difxio/libtool
+/libraries/difxio/tests/.libs/
+/libraries/difxio/tests/pbgen
+/libraries/difxio/tests/testantdb
+/libraries/difxio/tests/testdifxinput
+/libraries/difxio/tests/testephem
+/libraries/difxio/tests/testparsedifx
+/libraries/difxio/tests/testparsevis
+/libraries/difxio/tests/teststringarray
+/libraries/difxio/tests/testtcal
+/libraries/difxio/utils/.libs/
+/libraries/difxio/utils/avgDiFX
+/libraries/difxio/utils/calcderiv
+/libraries/difxio/utils/computetotals
+/libraries/difxio/utils/difxcalculator
+/libraries/difxio/utils/difxfilelist
+/libraries/difxio/utils/psrflag
+/libraries/difxio/utils/reducepoly
+/libraries/difxio/utils/tabulatedelays
+
+# /libraries/difxmessage
+/libraries/difxmessage/config.h
+/libraries/difxmessage/difxmessage.pc
+/libraries/difxmessage/libtool
+/libraries/difxmessage/mark5ipc.pc
+/libraries/difxmessage/utils/.libs/
+/libraries/difxmessage/utils/difxlog
+/libraries/difxmessage/utils/probemachine
+/libraries/difxmessage/utils/sendsmart
+/libraries/difxmessage/utils/sendtransient
+/libraries/difxmessage/utils/testdifxmessagedrivestats
+/libraries/difxmessage/utils/testdifxmessagereceive
+/libraries/difxmessage/utils/testdifxmessagereceivecond
+/libraries/difxmessage/utils/testdifxmessagesend
+/libraries/difxmessage/utils/testm5lock
+/libraries/difxmessage/utils/testseqnumbers
+/libraries/difxmessage/utils/updatedifxclock
+
+# /libraries/dirlist
+/libraries/dirlist/config.h
+/libraries/dirlist/dirlist.pc
+/libraries/dirlist/libtool
+/libraries/dirlist/tests/.libs/
+/libraries/dirlist/tests/test_copy
+/libraries/dirlist/tests/test_dirlist_parameter
+/libraries/dirlist/tests/test_filelist_read
+/libraries/dirlist/tests/test_old_read
+/libraries/dirlist/tests/test_tokenize
+/libraries/dirlist/utils/.libs/
+/libraries/dirlist/utils/2dirlist
+/libraries/dirlist/utils/calcsig
+/libraries/dirlist/utils/printdirlist
+
+# /libraries/mark5access
+/libraries/mark5access/bbsum/.libs/
+/libraries/mark5access/bbsum/bbsum
+/libraries/mark5access/config.h
+/libraries/mark5access/examples/.libs/
+/libraries/mark5access/examples/directory2filelist
+/libraries/mark5access/examples/fixmark5b
+/libraries/mark5access/examples/m5bstate
+/libraries/mark5access/examples/m5bsum
+/libraries/mark5access/examples/m5d
+/libraries/mark5access/examples/m5fb
+/libraries/mark5access/examples/m5findformats
+/libraries/mark5access/examples/m5fold
+/libraries/mark5access/examples/m5pcal
+/libraries/mark5access/examples/m5slice
+/libraries/mark5access/examples/m5spec
+/libraries/mark5access/examples/m5subband
+/libraries/mark5access/examples/m5test
+/libraries/mark5access/examples/m5time
+/libraries/mark5access/examples/m5timeseries
+/libraries/mark5access/examples/m5tsys
+/libraries/mark5access/examples/test5b
+/libraries/mark5access/examples/test_mark5_stream
+/libraries/mark5access/examples/test_unpacker
+/libraries/mark5access/examples/zerocorr
+/libraries/mark5access/libtool
+/libraries/mark5access/mark5access.pc
+
+# /libraries/mark6meta
+/libraries/mark6meta/config.h
+/libraries/mark6meta/libtool
+
+# /libraries/vdifio
+/libraries/vdifio/config.h
+/libraries/vdifio/libtool
+/libraries/vdifio/utils/.libs/
+/libraries/vdifio/utils/captureUDPVDIF
+/libraries/vdifio/utils/checkVDIF
+/libraries/vdifio/utils/cleanVDIF
+/libraries/vdifio/utils/countVDIFPackets
+/libraries/vdifio/utils/extractSingleVDIFThread
+/libraries/vdifio/utils/extractVDIFThreads
+/libraries/vdifio/utils/fakemultiVDIF
+/libraries/vdifio/utils/filterVDIF
+/libraries/vdifio/utils/generateVDIF
+/libraries/vdifio/utils/invalidateVDIFPackets
+/libraries/vdifio/utils/mk6vmux
+/libraries/vdifio/utils/multi2singlethreadVDIF
+/libraries/vdifio/utils/padVDIF
+/libraries/vdifio/utils/peekVDIF
+/libraries/vdifio/utils/printVDIF
+/libraries/vdifio/utils/printVDIFgaps
+/libraries/vdifio/utils/printVDIFheader
+/libraries/vdifio/utils/reorderVDIF
+/libraries/vdifio/utils/searchVDIF
+/libraries/vdifio/utils/splitVDIFbygap
+/libraries/vdifio/utils/stripVDIF
+/libraries/vdifio/utils/testcornerturners
+/libraries/vdifio/utils/vdif2to8
+/libraries/vdifio/utils/vdifChanSelect
+/libraries/vdifio/utils/vdifLinear2circular
+/libraries/vdifio/utils/vdifMeanRMS
+/libraries/vdifio/utils/vdifPhase
+/libraries/vdifio/utils/vdifSplitThreads
+/libraries/vdifio/utils/vdifStateCount
+/libraries/vdifio/utils/vdifSwapSideband
+/libraries/vdifio/utils/vmux
+/libraries/vdifio/utils/vsum
+/libraries/vdifio/vdifio.pc
 
 # /libraries/python/
 /libraries/python/*.pyc
@@ -46,6 +202,41 @@ INSTALL
 # /libraries/python/trunk/difxplot/
 /libraries/python/trunk/difxplot/__pycache__
 /libraries/python/trunk/difxplot/*.*~
+
+# /mpifxcorr
+/mpifxcorr/config.h
+/mpifxcorr/fxcorr.pc
+/mpifxcorr/mpifxcorr.pc
+/mpifxcorr/src/architecture.h
+/mpifxcorr/src/mpifxcorr
+/mpifxcorr/src/neuteredmpifxcorr
+/mpifxcorr/utils/checkmpifxcorr
+/mpifxcorr/utils/dedisperse_difx
+/mpifxcorr/utils/mpiinittest
+/mpifxcorr/utils/mpispeed
+
+# /sites/NRAO
+/sites/NRAO/SniffPlots/clockhist/clockhist
+/sites/NRAO/SniffPlots/plotapd/plotapd
+/sites/NRAO/SniffPlots/plotbp/plotbp
+/sites/NRAO/SniffPlots/plotgps/plotgps
+/sites/NRAO/SniffPlots/plotwt/plotwt
+/sites/NRAO/rcwlib/citlib.pc
+/sites/NRAO/rcwlib/libtool
+/sites/NRAO/rcwlib/rcwlib.pc
+/sites/NRAO/rcwlib/tests/.libs/
+/sites/NRAO/rcwlib/tests/testgetnum
+
+# /utilities/misc
+/utilities/misc/m5fb_makeheader
+
+# /utilities/pulsar
+/utilities/pulsar/difx2profile/config.h
+/utilities/pulsar/difx2profile/src/difx2profile
+
+# /utilities/vis2screen
+/utilities/vis2screen/printDiFX
+
 
 #########################################
 ##############autotools##################
