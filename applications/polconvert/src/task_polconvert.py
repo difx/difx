@@ -50,8 +50,8 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-__version__ = "2.0.7b "  # 7 characters
-date = 'Aug 29, 2025'
+__version__ = " 2.1b  "  # 7 characters
+date = 'Dec 11, 2025'
 
 
 ################
@@ -118,7 +118,7 @@ def polconvert(IDI='', OUTPUTIDI='', DiFXinput='', DiFXcalc='', doIF=[], linAntI
 # TOP/polconvert.xml would need to be updated to use these.
 ###
 
-  """ POLCONVERT - CASA INTERFACE VERSION 2.0.7b.
+  """ POLCONVERT - CASA INTERFACE VERSION 2.1b.
 
 Converts VLBI visibilities from mixed-polarization (linear-circular)
 into a circular basis. Works with single VLBI stations as well as with
