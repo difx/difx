@@ -93,7 +93,7 @@ else:
 ################
 
 # this is the CASA xml-based command sequence:
-# defaults are supplied & consistent with version 2.0.7b
+# defaults are supplied & consistent with version 2.0.7
 def polconvert(IDI='', OUTPUTIDI='', DiFXinput='', DiFXcalc='', doIF=[], linAntIdx=[1], 
                Range=[], ALMAant='', spw=-1, calAPP='', calAPPTime=[0.,5.], APPrefant='', 
                gains=[['NONE']], interpolation=[], gainmode=[], XYavgTime=0.0, 
@@ -105,7 +105,7 @@ def polconvert(IDI='', OUTPUTIDI='', DiFXinput='', DiFXcalc='', doIF=[], linAntI
                solveMethod='COBYLA', calstokes=[1.,0.,0.,0.], calfield=-1,
                saveArgs=False):
 
-  """ POLCONVERT - CASA INTERFACE VERSION 2.0.7b.
+  """ POLCONVERT - CASA INTERFACE VERSION 2.1b.
 
 Converts VLBI visibilities from mixed-polarization (linear-circular)
 into a circular basis. Works with single VLBI stations as well as with

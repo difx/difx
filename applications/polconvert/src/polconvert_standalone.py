@@ -161,7 +161,7 @@ def polconvert(
     mounts = {}
 ):
 
-    """POLCONVERT - STANDALONE VERSION 2.0.7b
+    """POLCONVERT - STANDALONE VERSION 2.1b
 
      Similar parameters as the method defined in polconvert_CASA. The parameters specific
      of this task (i.e., polconvert_standalone::polconvert) may be useful to parallelize polconvert:
