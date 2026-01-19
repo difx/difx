@@ -51,8 +51,8 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-__version__ = "2.0.7b "  # 7 characters
-date = "Aug 29, 2025"
+__version__ = " 2.1b  "  # 7 characters
+date = "Dec 11, 2025"
 
 
 ################
@@ -66,7 +66,8 @@ import os, sys
 
 try:
     mypath = os.path.dirname(__file__)
-    sys.path.append(mypath)
+    if mypath not in sys.path:
+      sys.path.append(mypath)
     import _PolConvert as PC
 
     goodclib = True
@@ -251,7 +252,8 @@ def polconvert(
         OFF.close()
 
     ## Set to non-ALMA:
-    if len(ALMAstuff) == 0:
+    usingALMA = len(ALMAstuff)>0
+    if not usingALMA:
         PC.setPCMode(0)
 
     #  amp_norm=0.0
@@ -267,13 +269,26 @@ def polconvert(
 
     # this turns into the verbosity argument of _PolConvert.so
     print("Entered polconvert_standalone::polconvert()")
-    DEBUG = False
+
+# DEBUG = False
+
+## TO ENTER "DEBUG MODE", run the command:
+###    export POLCONVERTDEBUG=True
+
+## TO QUIT "DEBUG MODE", run either the command:
+###  unset POLCONVERTDEBUG
+### OR: export POLCONVERTDEBUG=False
+### ... OR just don't do anything :D
+
 
     if "POLCONVERTDEBUG" in os.environ:
         if os.environ["POLCONVERTDEBUG"] == "True":
             DEBUG = True
         else:
             DEBUG = False
+    else:
+        DEBUG = False
+
     print("DEBUG setting is " + str(DEBUG))
     print("__name__ is " + __name__)
 
@@ -530,10 +545,10 @@ def polconvert(
                         % (SNAM, calcsoucoords[0][-1], calcsoucoords[1][-1])
                     )
 
-            antcoords = np.array(antcoords, dtype=np.float, order="C")
+            antcoords = np.array(antcoords, dtype=np.float64, order="C")
             antmounts = np.array(antmounts, order="C")
-            calcsoucoords[0] = np.array(calcsoucoords[0], dtype=np.float, order="C")
-            calcsoucoords[1] = np.array(calcsoucoords[1], dtype=np.float, order="C")
+            calcsoucoords[0] = np.array(calcsoucoords[0], dtype=np.float64, order="C")
+            calcsoucoords[1] = np.array(calcsoucoords[1], dtype=np.float64, order="C")
             printMsg("done parsing calc")
         except Exception as ex:
             printMsg(str(ex))
@@ -596,8 +611,8 @@ def polconvert(
             )
 
             soucoords = [
-                np.array(ffile[grsou].data["RAAPP"], dtype=np.float, order="C"),
-                np.array(ffile[grsou].data["DECAPP"], dtype=np.float, order="C"),
+                np.array(ffile[grsou].data["RAAPP"], dtype=np.float64, order="C"),
+                np.array(ffile[grsou].data["DECAPP"], dtype=np.float64, order="C"),
             ]
 
             if raappUnit == "DEGREES":
@@ -688,14 +703,15 @@ def polconvert(
             nchan = FrInfo["NUM CHANNELS"][nu]
             # MAX. NUMBER OF CHANNELS:
             chav = FrInfo["CHANS TO AVG"][nu]
-            if nu in doIF:
-                IFchan = max([IFchan, int(nchan / chav)])
             sb = {True: 1.0, False: -1.0}[FrInfo["SIDEBAND"][nu] == "U"]
             FrInfo["SIGN"][nu] = float(sb)
-            freqs = (
-                nu0 + np.linspace((sb-1.0)/2.0, (sb+1.0)/2.0, nchan//chav, endpoint=False)*bw)*1.0e6
-            if float(nchan // chav) != float(nchan / chav):
-                printMsg("linspace check chan: %d / %d = %f"%(nchan, chav, float(nchan / chav)))
+            if nu in doIF:
+                IFchan = max([IFchan, int(nchan / chav)])
+                if not usingALMA: # Already printed!
+                   if float(nchan // chav) != float(nchan / chav):
+                      printMsg("SPW %i. linspace check chan FAILED: %d / %d = %f"%(nu,nchan, chav, float(nchan / chav)))
+                   else:
+                      printMsg("SPW %i. linspace check chan PASSED: %d / %d = %f"%(nu,nchan, chav, float(nchan / chav)))
             freqs = (
                 nu0 + np.linspace((sb-1.0)/2.0, (sb+1.0)/2.0, nchan//chav, endpoint=False)*bw)*1.0e6
             metadata.append(freqs)
@@ -803,11 +819,11 @@ def polconvert(
     if type(feedRotation) is not list:
         printError("feedRotation must be a list of numbers")
     elif len(feedRotation) == 0:
-        feedRot = np.zeros(nTotAnt, order="C", dtype=np.float)
+        feedRot = np.zeros(nTotAnt, order="C", dtype=np.float64)
     elif len(feedRotation) != nTotAnt:
         printError("feedRotation must have %i entries!" % nTotAnt)
     else:
-        feedRot = np.pi / 180.0 * np.array(feedRotation, dtype=np.float, order="C")
+        feedRot = np.pi / 180.0 * np.array(feedRotation, dtype=np.float64, order="C")
 
     # Get the REAL number (and names) of linear-pol antennas in this dataset:
     nALMATrue = 0
@@ -1052,11 +1068,11 @@ def polconvert(
                 )
             Nus = 1.0e6 * np.array(
                 FrInfo["FREQ (MHZ)"][j - 1] + FrInfo["BW (MHZ)"][j - 1] * NuChan,
-                dtype=np.float,
+                dtype=np.float64,
             )
 
             for dfile in range(len(XYaddF)):
-                XYaddF[dfile][i].append(np.zeros(len(Nus), dtype=np.float, order="C"))
+                XYaddF[dfile][i].append(np.zeros(len(Nus), dtype=np.float64, order="C"))
                 XYaddF[dfile][i][-1][:] = (
                     2.0 * np.pi * (Nus - XYdelF[i][1]) * XYdelF[i][0]
                 )
@@ -1093,7 +1109,7 @@ def polconvert(
                 XYratioF[dfile][i].append(
                     np.ones(
                         FrInfo["NUM CHANNELS"][j - 1] // FrInfo["CHANS TO AVG"][j - 1],
-                        dtype=np.float,
+                        dtype=np.float64,
                         order="C",
                     )
                 )
@@ -1208,7 +1224,7 @@ def polconvert(
                             Nus = np.array(
                                 FrInfo["FREQ (MHZ)"][j - 1]
                                 + FrInfo["BW (MHZ)"][j - 1] * NuChan,
-                                dtype=np.float,
+                                dtype=np.float64,
                             )
 
                             #### BANDPASS MODE:
@@ -1388,7 +1404,7 @@ def polconvert(
     # plotAnt is no longer used by PC.PolConvert(), but is required by doSolve
     # the second argument is "PC:PolConvert::plIF" and controls whether the huge binary fringe files are written.
     try:
-
+    
         didit = PC.PolConvert(
             nALMATrue,
             plotIF,
@@ -1425,6 +1441,12 @@ def polconvert(
         # didit = 0
         printError("\n###\n### Done with PolConvert (status %d).\n###" % (didit))
 
+    if didit!=0:
+        print("\n    ABORTING!!! \n###")
+        return didit
+
+
+
     # GENERATE ANTAB FILE(s):
 
     if doAmpNorm:
@@ -1444,9 +1466,9 @@ def polconvert(
         else:
             printMsg("Gain file had %d entries" % len(entries))
 
-        IFs = np.zeros(len(entries), dtype=np.int)
+        IFs = np.zeros(len(entries), dtype=np.int32)
         Data = np.zeros((len(entries), 2))
-        AntIdx = np.zeros(len(entries), dtype=np.int)
+        AntIdx = np.zeros(len(entries), dtype=np.int32)
 
         for i, entry in enumerate(entries):
             IFs[i] = int(entry[0])
@@ -1768,12 +1790,19 @@ def polconvert(
                 file1 = "POLCONVERT.FRINGE/OTHERS.FRINGE_IF%i" % pli
                 file2 = "POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i" % pli
                 success = PS.ReadData(pli, file1, file2, 0.0)
-                NScan = PS.GetNScan(pli)
                 if success != 0:
-                    printError("Failed PolGainSolve: ERROR %i" % success)
-
-                AllFreqs.append(np.zeros(PS.GetNchan(pli), order="C", dtype=np.float))
+                    printError("Failed PolGainSolve ReadData: ERROR %i" % success)
+                NScan = PS.GetNScan(pli)
+                if NScan < 0:
+                    printError("Failed PolGainSolve NScan: ERROR %i" % NScan)
+                tempNchan = PS.GetNchan(pli)
+                if tempNchan < 0:
+                    printError("Failed PolGainSolve Nchan: ERROR %i" % tempNchan)
+                AllFreqs.append(np.zeros(tempNchan, order="C", dtype=np.float64))
                 ifsofIF = PS.GetIFs(pli, AllFreqs[-1])
+                if ifsofIF < 0:
+                    printError("Failed PolGainSolve GetIF: ERROR %i" % ifsofIF)
+
 
             MaxChan = max([np.shape(pp)[0] for pp in AllFreqs])
 
@@ -1788,7 +1817,9 @@ def polconvert(
             rateAnts = calAnts[:dropAnt] + calAnts[dropAnt + 1 :]
             printMsg("\n Estimate antenna delays & rates\n")
             for nsi in range(NScan):
-                PS.DoGFF(rateAnts, npix, True, nsi, 5.0)
+                isGFF = PS.DoGFF(rateAnts, npix, True, nsi, 5.0)
+                if isGFF < 0:
+                    printError("Failed PolGainSolve DoGFF with error %i"%isGFF)
 
             for ci in antcodes:
                 CGains["XYadd"][ci] = {}
@@ -1819,7 +1850,7 @@ def polconvert(
                         Npar, laux, fitAnts, solveAmp, solveQU, Stokes, useCov, feedRot
                     )
                     if rv != 0:
-                        printMsg("  PS.SetFit rv %d" % rv)
+                        printError("  PS.SetFit failed with error %d" % rv)
 
                     ## Auxiliary arrays for x-pol gain interpolation:
                     interpGain = [
@@ -1845,6 +1876,9 @@ def polconvert(
                         )
                         sys.stdout.flush()
 
+                        #testChi2 = PS.GetChi2(p0, -1.0, BPChan[chran], BPChan[chran + 1], 0, useRates, useDelays)
+                        #if testChi2<0.0:
+                        #    printError("PS.GetChi2 failed with error %i"%testChi2)
 
                         if fitMethod not in scipyMethods:
                             if fitMethod == "Levenberg-Marquardt":
@@ -1992,7 +2026,7 @@ def polconvert(
                         Npar, laux, fitAnts, solveAmp, solveQU, Stokes, useCov, feedRot
                     )
                     if rv != 0:
-                        printMsg("  PS.SetFit rv %d" % rv)
+                        printError("  PS.SetFit failed with error %d" % rv)
                     Nchans = np.shape(AllFreqs[plii])[0]
                     FreqChan = np.linspace(-Nchans / 2.0, Nchans / 2.0, Nchans)
                     if fitMethod not in scipyMethods:  # =='Levenberg-Marquardt':
@@ -2002,6 +2036,10 @@ def polconvert(
                     else:
 
                         # Preliminary fit (with no delays):
+                       # testChi2 = PS.GetChi2(p0,-1.0, 0, Nchans, 0, useRates,useDelays)
+                       # if testChi2<0.0:
+                       #     printError("PS.GetChi2 failed with error %i"%testChi2)
+
                         mymin = spopt.minimize(
                             PS.GetChi2, p0[:-nfitAnt], args=(-1.0, 0, Nchans, 0, useRates,useDelays), method=fitMethod)
                         p0[:-nfitAnt] = mymin.x

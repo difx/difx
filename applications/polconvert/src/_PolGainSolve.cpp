@@ -5,6 +5,8 @@
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
              University of Valencia (Spain)  
 
+	     Revised on Dec 2025
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -26,9 +28,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 // compiler warning that we use a deprecated NumPy API
 // #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 //#define NO_IMPORT_ARRAY
-#if PY_MAJOR_VERSION >= 3
-#define NPY_NO_DEPRECATED_API 0x0
-#endif
+//#if PY_MAJOR_VERSION >= 3
+//#define NPY_NO_DEPRECATED_API 0x0
+//#endif
 #include <numpy/npy_common.h>
 #include <numpy/arrayobject.h>
 
@@ -155,7 +157,6 @@ static PyMethodDef module_methods[] = {
 //}
  
 static long chisqcount = 0;
-//static long twincounter = 0;
 
 
 
@@ -174,15 +175,12 @@ static struct PyModuleDef pc_module_def = {
 PyMODINIT_FUNC PyInit__PolGainSolve(void)
 {
     PyObject *m = PyModule_Create(&pc_module_def);
-  //  import_array();
-  //  (void)gsl_set_error_handler(gsl_death);
     return(m);
 }
 #else
 PyMODINIT_FUNC init_PolGainSolve(void)
 {
     PyObject *m = Py_InitModule3("_PolGainSolve", module_methods, module_docstring);import_array();
-  //  (void)gsl_set_error_handler(gsl_death);
     if (m == NULL)
         return;
 
@@ -212,7 +210,7 @@ PyMODINIT_FUNC init_PolGainSolve(void)
    double *Tm = nullptr;
    double *BasWgt;
    int *doIF, *antFit; 
-   
+   int MaxAnt = 0; 
    double *feedAngle;
    double **DStokes; // = new double*[1];
    double UVTAPER = 1.e9;
@@ -233,10 +231,6 @@ PyMODINIT_FUNC init_PolGainSolve(void)
    bool doCov;
    double Stokes[4];
 
- //  gsl_matrix_view m; 
- //  gsl_vector_view x, v;
- //  gsl_permutation *perm;
-
    bool AddCrossHand = true;
    bool AddParHand = true;
    bool StokesSolve;
@@ -254,13 +248,8 @@ PyMODINIT_FUNC init_PolGainSolve(void)
 
 
 
-
+// Just a simple linear-equation system solver:
 bool solveSystem(int Neq, double *HessianOrig, double *ResidualsOrig, double *Solution, double *Errors){
-
-
-
-
-
 
     bool isSingular;
     int i,j,k;
@@ -354,10 +343,6 @@ bool solveSystem(int Neq, double *HessianOrig, double *ResidualsOrig, double *So
 
   };
 
-  // if(Hessian[Neq*Neq-1]==0.0){
-  //   missing[Nmissing]=Neq-1;Nmissing+=1;
-  //   printf("Antenna %i does not seem to have valid data EITHER.\n",i);
-  // };
 
    for(i=0;i<Neq*Neq;i++){U[i]=Hessian[i];};
 
@@ -390,7 +375,6 @@ bool solveSystem(int Neq, double *HessianOrig, double *ResidualsOrig, double *So
   int ifree, jfree;
   ifree=0; jfree=0;
 
- // printf("Nfree: %i %i %i\n",Neq,Nmissing,Nfree);
 
 
   for(i=0;i<Neq;i++){
@@ -453,13 +437,16 @@ bool solveSystem(int Neq, double *HessianOrig, double *ResidualsOrig, double *So
   };
 
 
-
-  delete Hessian;
-  delete Residuals;
-  delete invU;
-  delete Ufree;
-  delete invL;
-  delete ident;
+  delete[] L;
+  delete[] U;
+  delete[] missing;
+  delete[] buffer;
+  delete[] Hessian;
+  delete[] Residuals;
+  delete[] invU;
+  delete[] Ufree;
+  delete[] invL;
+  delete[] ident;
 
   isSingular = Nmissing>0;
   return isSingular;
@@ -470,10 +457,12 @@ bool solveSystem(int Neq, double *HessianOrig, double *ResidualsOrig, double *So
 
 
 
-
+// Self-explanatory:
 static PyObject *GetNchan(PyObject *self, PyObject *args){
   int cIF, k, j;
   PyObject *ret;
+
+  long Iret = 0;
 
 // append after first call
   if (!logFile) logFile = fopen("PolConvert.GainSolve.log","a");
@@ -481,9 +470,9 @@ static PyObject *GetNchan(PyObject *self, PyObject *args){
 
   if (!PyArg_ParseTuple(args, "i",&cIF)){
      sprintf(message,"Failed GetNchan! Check inputs!\n"); 
-     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
-     ret = Py_BuildValue("i",-1);
-     return ret;
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile); 
+     Iret = -10;
+     goto abort4; 
   };
 
    k=-1;
@@ -494,25 +483,30 @@ static PyObject *GetNchan(PyObject *self, PyObject *args){
   if(k<0){
     sprintf(message,"GetNchan: IF %d not found\n", cIF);
     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
-    PyObject *ret = Py_BuildValue("i",-2);
-    return ret;
+    Iret = -20;
+    goto abort4;
   };
 
 
 
   fprintf(logFile,"... and got %d\n", Nchan[k]); fflush(logFile);
-  ret = Py_BuildValue("i",Nchan[k]);
+  Iret = Nchan[k];
+
+abort4:
+
+  if(logFile){fclose(logFile); logFile = nullptr;};
+  ret = PyLong_FromLong(Iret);
   return ret;
 
 };
 
 
 
-
+// Self-explanatory:
 static PyObject *GetNScan(PyObject *self, PyObject *args){
   int cIF, k, j;
   PyObject *ret;
-
+  long Iret = 0;
 
 // append after first call
   if (!logFile) logFile = fopen("PolConvert.GainSolve.log","a");
@@ -520,9 +514,9 @@ static PyObject *GetNScan(PyObject *self, PyObject *args){
 
   if (!PyArg_ParseTuple(args, "i",&cIF)){
      sprintf(message,"Failed GetNScan! Check inputs!\n"); 
-     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
-     ret = Py_BuildValue("i",-1);
-     return ret;
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+     Iret = -30;
+     goto abort5;  
   };
 
 
@@ -534,25 +528,29 @@ static PyObject *GetNScan(PyObject *self, PyObject *args){
   if(k<0){
     sprintf(message,"GetNScan: IF %d not found\n", cIF);
     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
-    PyObject *ret = Py_BuildValue("i",-2);
-    return ret;
+    Iret = -40;
+    goto abort5;
   };
 
 
 
   fprintf(logFile,"... and got %d\n", NScan[k]); fflush(logFile);
-  ret = Py_BuildValue("i",NScan[k]);
+  Iret = NScan[k];
+
+abort5:
+  if(logFile) {fclose(logFile); logFile=nullptr;};
+  ret = PyLong_FromLong(Iret);
   return ret;
 
 };
 
 
 
-
+// Constructor:
 static PyObject *PolGainSolve(PyObject *self, PyObject *args){
 
-  PyObject *calant, *linant, *solints, *flagBas, *logNameObj;
-
+  PyObject *solints, *flagBas, *logNameObj;
+  PyArrayObject *linant, *calant;
 
   if (!PyArg_ParseTuple(args, "ddOOOOO",&RelWeight, &UVTAPER, &solints, &calant,
         &linant,&flagBas, &logNameObj)){
@@ -592,12 +590,14 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
   doIF = new int[1];
   antFit = new int[1];
 
+
+// Read python data pointers:  
   TAvg = (double) PyInt_AsLong(PyList_GetItem(solints,1));
   SolAlgor = (int) PyInt_AsLong(PyList_GetItem(solints,0));
 
-  Twins[0] = (int *)PyArray_DATA(PyList_GetItem(flagBas,0));
-  Twins[1] = (int *)PyArray_DATA(PyList_GetItem(flagBas,1));
-  Ntwin = PyArray_DIM(PyList_GetItem(flagBas,0),0);
+  Twins[0] = (int *)PyArray_DATA((PyArrayObject *)PyList_GetItem(flagBas,0));
+  Twins[1] = (int *)PyArray_DATA((PyArrayObject *)PyList_GetItem(flagBas,1));
+  Ntwin = PyArray_DIM((PyArrayObject *)PyList_GetItem(flagBas,0),0);
 
   sprintf(message,"There are %i baselines to flag\n",Ntwin);
   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
@@ -618,7 +618,7 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
   int i,j,k,l;
   k=0;
 
-  int MaxAnt = 0;
+  MaxAnt = 0;
   for(i=0;i<NCalAnt;i++){
     if(CalAnts[i]>MaxAnt){
       MaxAnt=CalAnts[i];
@@ -644,7 +644,6 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
       };
       if (isCal1 && isCal2){
         BasNum[i][j] = k;
-    //    printf("Baseline %i-%i will have assigned number %i\n",i+1,j+1,k);
         for(l=0;l<Nlin; l++){if(i==Lant[l]-1 || j==Lant[l]-1){LinBasNum[NLinBas]=k; NLinBas += 1; break; };};
         k += 1;
       };
@@ -654,14 +653,16 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
 
   int BNum;
   BasWgt = new double[k];
+  for(i=0;i<k;i++){BasWgt[i]=0.0;};
+
   for(i=0;i<MaxAnt;i++){
     for(j=i+1;j<MaxAnt;j++){
        BNum = BasNum[i][j];
-       if (BNum>=0){ //printf("Weighting baselines %i\n",BNum); 
-           BasWgt[BNum] = 1.0;} else {BasWgt[BNum]=0.0;};
+       if (BNum>=0){  
+           BasWgt[BNum] = 1.0;};
        for(l=0;l<Ntwin;l++){
          if((Twins[0][l]==i+1 && Twins[1][l]==j+1)||(Twins[0][l]==j+1 && Twins[1][l]==i+1)){
-           printf("Flagging baseline %i\n",BNum); BasNum[i][j] = -1; BasWgt[BNum] = 0.0; break;
+           printf("Flagging baseline %i\n",BNum); BasNum[i][j] = -1; if(BNum>=0){BasWgt[BNum] = 0.0;}; break;
          };
       };
     };
@@ -716,7 +717,6 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
   LR = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
   RL = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
   LL = (cplx64f***) malloc(MAXIF*sizeof(cplx64f**));
- // Rates = (double ***) malloc(MAXIF*sizeof(double**));
   for(i=0;i<5;i++){
     Rates[i] = (double ***) malloc(MAXIF*sizeof(double**));
     Delays[i] = (double ***) malloc(MAXIF*sizeof(double**));
@@ -732,14 +732,38 @@ static PyObject *PolGainSolve(PyObject *self, PyObject *args){
 
 
 
-
+// Free all pointers.
 static PyObject *FreeData(PyObject *self, PyObject *args) {
 
-  int i,j; 
+  int i,j,k; 
 
   if (!logFile) logFile = fopen("PolConvert.GainSolve.log","a");
   sprintf(message,"Freeing Data NIF = %d\n", NIF);
   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+
+
+  if (Tm){
+    delete[] Tm;
+    delete[] doIF;
+    delete[] antFit;
+    delete[] CovMat;
+    delete[] IndVec;
+    delete[] SolVec;
+    delete[] G1;
+    delete[] G2;
+    delete[] G1nu;
+    delete[] G2nu;
+    for(i=0;i<Npar+1;i++){delete[] DStokes[i];};
+    delete[] DStokes;
+    delete[] DirDer;
+    delete[] MBD1;
+    delete[] MBD2;
+    delete[] DerIdx;
+    delete[] AvVis;
+    sprintf(message,"Clearing previous allocation objects\n");
+    fprintf(logFile,"%s",message); // std::cout<<message; fflush(logFile);
+  };
+  Tm = nullptr;
 
 
   for(i=0;i<NIF;i++){
@@ -750,10 +774,49 @@ static PyObject *FreeData(PyObject *self, PyObject *args) {
     free(Ant1[i]);free(Ant2[i]);free(Scan[i]);free(Times[i]);
     free(PA1[i]);free(PA2[i]);free(RR[i]);free(RL[i]);free(UVGauss[i]);
     free(LR[i]);free(LL[i]);free(ScanDur[i]);free(Weights[i]);
-    delete Frequencies[i];
+    delete[] Frequencies[i];
   };
 
-  delete(UVWeights);
+  free(Ant1); free(Ant2); free(Times); free(Weights);
+  free(PA1); free(PA2); free(UVGauss);
+  free(RR); free(RL); free(LR); free(LL); free(ScanDur);
+
+
+  for (i=0; i<NBas; i++) { free(CrossSpec00[i]); free(CrossSpec11[i]); }
+  free(CrossSpec00); free(CrossSpec11);
+
+  for (i=0; i<NBas; i++) {
+        delete[] auxC00[i]; delete[] auxC01[i];
+        delete[] auxC10[i]; delete[] auxC11[i];
+        delete[] auxC00Flp[i]; delete[] auxC11Flp[i];
+    }
+    delete[] auxC00; delete[] auxC01; delete[] auxC10; delete[] auxC11;
+    delete[] auxC00Flp; delete[] auxC11Flp;
+
+  for (i=0; i<MaxAnt; i++) { delete[] BasNum[i]; }
+    delete[] BasNum;
+    delete[] LinBasNum;
+ 
+  delete[] BasWgt;
+  delete[] UVWeights;
+
+
+  for (k=0; k<5; k++) {
+        for (int i=0; i<NIF; i++) {
+            if (Delays[k] && Delays[k][i]) {
+                for (int j=0; j<NCalAnt; j++) {
+                    free(Delays[k][i][j]);    
+                    free(Rates[k][i][j]);
+                };
+                free(Delays[k][i]);
+                free(Rates[k][i]);
+            };
+        };
+        free(Delays[k]); free(Rates[k]);      
+    };
+
+
+
 
   if(NIF>0){
     free(NScan);free(Nchan);free(NVis);
@@ -781,20 +844,41 @@ static PyObject *FreeData(PyObject *self, PyObject *args) {
 static PyObject *ReadData(PyObject *self, PyObject *args) {
 
   int IFN;
+  long Iret = 0;
   const char *file1, *file2;
   std::ifstream CPfile, MPfile;
   double MaxDT;
 
+
+// Number of integration times:
+  int NDiffTimes = 0;
+  int TimeBuff = 1000;
+  double *DiffTimes = (double *) malloc(TimeBuff*sizeof(double));
+  bool isTime;
+
+
+
+  double *ScanTimes = new double[1];
+  bool isOut = true;
+  int currI = 0;
+  bool isGood, isFlipped;
+  cplx64f Exp1, Exp2;
+  cplx32f AuxRR, AuxRL, AuxLR, AuxLL;
+
+
+
+
+
+// Log File:
   if (!logFile) logFile = fopen("PolConvert.GainSolve.log","a");
   fprintf(logFile,"ReadData entered...\n"); fflush(logFile);
 
 
   if (!PyArg_ParseTuple(args, "issd", &IFN,&file1, &file2,&MaxDT)){
      sprintf(message,"Failed ReadData! Check inputs! (return -1)\n"); 
-     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
-     fclose(logFile);
-     PyObject *ret = Py_BuildValue("i",-1);
-     return ret;
+     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+     Iret = -50;
+     goto abort1;  
   };
 
   fprintf(logFile,"ReadData parsed...\n"); fflush(logFile);
@@ -824,10 +908,9 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
     NLVis = (int*) realloc(NLVis,MAXIF*sizeof(int));
     IFNum = (int*) realloc(IFNum,MAXIF*sizeof(int));
     if(!Nchan || !Frequencies || !NVis || !NCVis || !NLVis || !IFNum){
-      Nchan=nullptr; Frequencies=nullptr; NVis=nullptr; NCVis=nullptr; NLVis=nullptr; IFNum=nullptr;
-      fprintf(logFile,"(return -2)"); fflush(logFile);
-      PyObject *ret = Py_BuildValue("i",-2);
-      return ret;
+      fprintf(logFile,"(return -60)"); fflush(logFile);
+      Iret = -60;
+      goto abort1;
     };
 
 // Set memory for the visibilities and metadata:
@@ -845,23 +928,19 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
     LR = (cplx64f***) realloc(LR,MAXIF*sizeof(cplx64f**));
     RL = (cplx64f***) realloc(RL,MAXIF*sizeof(cplx64f**));
     LL = (cplx64f***) realloc(LL,MAXIF*sizeof(cplx64f**));
-   // Rates = (double ***) realloc(Rates,MAXIF*sizeof(double**));
     for(i=0;i<5;i++){
       Delays[i] = (double ***) realloc(Delays[i],MAXIF*sizeof(double**));
       Rates[i] = (double ***) realloc(Rates[i],MAXIF*sizeof(double**));
     };
     if(!Ant1 || !Ant2 || !Times || !Weights || !PA1 || !PA2 || !RR || !LR || !RL || !LL){
-      Ant1=nullptr; Ant2=nullptr; Times=nullptr; PA1=nullptr; PA2=nullptr; UVGauss=nullptr;
-      RR=nullptr; LR=nullptr; RL=nullptr; LL=nullptr; ScanDur=nullptr; Weights=nullptr;
-      fprintf(logFile,"(return -3)"); fflush(logFile);
-      PyObject *ret = Py_BuildValue("i",-3);
-      return ret;
+      fprintf(logFile,"(return -70)"); fflush(logFile);
+      Iret = -70;
+      goto abort1;
     };
     if(!Rates[0] || !Delays[0] || !Delays[1] || !Delays[2] || !Delays[3]){
-      for(i=0;i<5;i++){Rates[i] = nullptr; Delays[i]=nullptr;};
-      fprintf(logFile,"(return -4)"); fflush(logFile);
-      PyObject *ret = Py_BuildValue("i",-4);
-      return ret;
+      fprintf(logFile,"(return -80)"); fflush(logFile);
+      Iret = -80;
+      goto abort1;
     };
   };
 //////////
@@ -882,10 +961,9 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
       CrossSpec00[i] = (cplx64f *) realloc(CrossSpec00[i],MaxChan*sizeof(cplx64f));
       CrossSpec11[i] = (cplx64f *) realloc(CrossSpec11[i],MaxChan*sizeof(cplx64f));
       if(!CrossSpec00[i] || !CrossSpec11[i]){
-        CrossSpec00[i]=nullptr; CrossSpec11[i]=nullptr;
-        fprintf(logFile,"(return -5)"); fflush(logFile);
-        PyObject *ret = Py_BuildValue("i",-5);
-        return ret;
+        fprintf(logFile,"(return -90)"); fflush(logFile);
+        Iret = -90;
+	goto abort1;
       };
     };
   };
@@ -908,13 +986,6 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 
 
 
-// Number of integration times:
-  int NDiffTimes = 0;
-  int TimeBuff = 1000;
-  double *DiffTimes = (double *) malloc(TimeBuff*sizeof(double));
-  bool isTime;
-
-
 // Get Number of visibilities observed by the CalAnts (Circ Pol):
 
   NCVis[NIF-1] = 0;
@@ -925,7 +996,6 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 // eof() doesn't do what everyone thinks....
   while(!CPfile.eof() && CPfile.peek() >= 0){
     is1 = false; is2 = false;
-  //  CPfile.ignore(sizeof(int));
     CPfile.ignore(sizeof(double));   // daytemp
     CPfile.read(reinterpret_cast<char*>(&AuxA1), sizeof(int));
     CPfile.read(reinterpret_cast<char*>(&AuxA2), sizeof(int));
@@ -1002,11 +1072,6 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 
   fprintf(logFile, "\nFiles rewound\n"); fflush(logFile);
 
-// Read visibilities (Mix Pol):
-  int currI = 0;
-  bool isGood, isFlipped;
-  cplx64f Exp1, Exp2;
-  cplx32f AuxRR, AuxRL, AuxLR, AuxLL;
 
   i=0;
   while(!MPfile.eof() && MPfile.peek() >= 0){
@@ -1109,8 +1174,6 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 
   while(!CPfile.eof() && CPfile.peek() >= 0){
 // CPfile timestamp is here
-//    CPfile.ignore(sizeof(int));
-
 
     CPfile.read(reinterpret_cast<char*>(&AuxT), sizeof(double));
     CPfile.read(reinterpret_cast<char*>(&AuxA1), sizeof(int));
@@ -1213,7 +1276,7 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 // Sort times out:
   printf("There are %i int. times.\n",NDiffTimes);
   double temp;
-  bool isOut = true;
+  isOut = true;
   while (isOut){
     isOut = false;
     for(j=0;j<NDiffTimes-1;j++){
@@ -1235,7 +1298,8 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 
 
 // Get scans:
-  double ScanTimes[NDiffTimes];
+  delete[] ScanTimes;
+  ScanTimes = new double[NDiffTimes];
   NScan[NIF-1] = 1;
   ScanTimes[0] = DiffTimes[0];
   ScanDur[NIF-1] = (double*) malloc(NDiffTimes*sizeof(double));
@@ -1266,30 +1330,16 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 
 
 
-// FOR TESTING: PRINT PARANGLES AT START OF EACH SCAN:
-//int kk;
-//for(i=0;i<NScan[NIF-1];i++){
-// kk = 0;
-//  for(j=0;j<NVis[NIF-1];j++){
-//    if(Scan[NIF-1][j]==i && kk<50){kk+=1;
-//      printf("Scan %i: Time: %.3e, ANT: %i-%i, Psi: %.3e , %.3e | %.3e , %.3e \n",i,Times[NIF-1][j]-ScanTimes[0],Ant1[NIF-1][j],Ant2[NIF-1][j],PA1[NIF-1][j].real(),PA1[NIF-1][j].imag(), PA2[NIF-1][j].real(), PA2[NIF-1][j].imag());
-//    };
-//  };
-//};
-
-//  Rates[NIF-1] = (double **) malloc(NCalAnt*sizeof(double*));
   for(i=0;i<5;i++){
     Delays[i][NIF-1] = (double **) malloc(NCalAnt*sizeof(double*));
     Rates[i][NIF-1] = (double **) malloc(NCalAnt*sizeof(double*));
   };
   for(i=0;i<NCalAnt;i++){
-   // Rates[NIF-1][i] = (double *) malloc(NScan[NIF-1]*sizeof(double));
     for(k=0;k<5;k++){
       Delays[k][NIF-1][i] = (double *) malloc(NScan[NIF-1]*sizeof(double));
       Rates[k][NIF-1][i] = (double *) malloc(NScan[NIF-1]*sizeof(double));
     };
     for(k=0;k<NScan[NIF-1];k++){
-   //   Rates[NIF-1][i][k] = 0.0;
       for (j=0;j<5;j++){Delays[j][NIF-1][i][k] = 0.0; Rates[j][NIF-1][i][k] = 0.0;};
     };
   };
@@ -1306,7 +1356,20 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
   free(DiffTimes);
 
 
-  PyObject *ret = Py_BuildValue("i",0);
+abort1:
+  delete[] ScanTimes;
+  if(Iret!=0){
+      Nchan=nullptr; Frequencies=nullptr; NVis=nullptr; NCVis=nullptr; NLVis=nullptr; IFNum=nullptr;
+      Ant1=nullptr; Ant2=nullptr; Times=nullptr; PA1=nullptr; PA2=nullptr; UVGauss=nullptr;
+      RR=nullptr; LR=nullptr; RL=nullptr; LL=nullptr; ScanDur=nullptr; Weights=nullptr;
+      for(i=0;i<5;i++){
+        Rates[i] = nullptr; Delays[i]=nullptr; CrossSpec00[i]=nullptr; CrossSpec11[i]=nullptr;
+      };
+  };
+  if (CPfile.is_open()) CPfile.close();
+  if (MPfile.is_open()) MPfile.close();
+  if(logFile) {fclose(logFile); logFile=nullptr;};
+  PyObject *ret = PyLong_FromLong(Iret);
   return ret;
 };
 
@@ -1317,64 +1380,21 @@ static PyObject *ReadData(PyObject *self, PyObject *args) {
 
 
 
-#if 0
 /// GetIFs(ifNr) for invocation from Python like
-///    AllFreqs = []; ifsofIF = PS.GetIFs(pli); AllFreqs.append(ifsofIF)
-static PyObject *GetIFs(PyObject *self, PyObject *args) {
-int i,j,k;
-
-  PyObject *FreqsObj = PyList_New(0);
-
-  if (!logFile) logFile = fopen("PolConvert.GainSolve.log","a");
-
-  if (!PyArg_ParseTuple(args, "i", &i)){
-     sprintf(message,"Failed GetIFs! Check inputs!\n");
-     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
-     fclose(logFile);
-    PyObject *ret = Py_BuildValue("i",-1);
-    return ret;
-  };
-
-  sprintf(message,"Locating IFNum as %d \n", i);
-  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
-
-  k=-1;
-  for (j=0; j<NIF; j++){
-    if(IFNum[j] == i){k=j;break;};
-  };
-
-  if(k<0){
-    sprintf(message,"IF %d not found\n", i);
-    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
-    PyObject *ret = Py_BuildValue("i",-2);
-    return ret;
-  };
-
-  sprintf(message,"IF %d with %d chans, copying their freqs into Python PyList\n", i, Nchan[k]);
-  fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
-
-  for (j=0; j<Nchan[k]; j++){
-    PyList_Append(FreqsObj, PyFloat_FromDouble(Frequencies[k][j]));
-  };
-
-  return FreqsObj;
-};
-#else
-/// GetIFs(ifNr) for invocation from Python like
-///    AllFreqs = [];  AllFreqs.append(np.zeros(PS.GetNchan(pli), order="C", dtype=np.float)); rc = PS.GetIFs(pli, AllFreqs[-1])
 static PyObject *GetIFs(PyObject *self, PyObject *args) {  
 int i,j,k;
+long Iret = 0;
 
-  PyObject *FreqsObj;
+  PyArrayObject *FreqsObj;
+  double *copyFreq;
 
   if (!logFile) logFile = fopen("PolConvert.GainSolve.log","a");
 
   if (!PyArg_ParseTuple(args, "iO", &i,&FreqsObj)){
      sprintf(message,"Failed GetIFs! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
-     fclose(logFile);
-    PyObject *ret = Py_BuildValue("i",-1);
-    return ret;
+     Iret = -100;
+     goto abort2;
   };
 
   sprintf(message,"Locating IFNum as %d \n", i);
@@ -1388,32 +1408,27 @@ int i,j,k;
   if(k<0){
     sprintf(message,"IF %d not found\n", i);
     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
-    PyObject *ret = Py_BuildValue("i",-2);
-    return ret;
+    Iret = -110;
+    goto abort2;
   };
 
-//  long dims[1];
-//  dims[0] = (long) Nchan[k];
-//  npy_intp dims = Nchan[k];
-  double *copyFreq =  (double *)PyArray_DATA(FreqsObj); // new double[Nchan[k]];
+  copyFreq =  (double *)PyArray_DATA(FreqsObj);
 
   for (j=0; j<Nchan[k]; j++){
     copyFreq[j] = Frequencies[k][j];
   };
-//  printf("Holadola: %d\n",Nchan[k]);fflush(stdout);
 
-//  PyObject *out_Freq = PyArray_SimpleNewFromData(1, &dims, NPY_FLOAT, (void *)copyFreq);
-//  PyArray_ENABLEFLAGS(out_Freq, NPY_ARRAY_OWNDATA);
 
- // printf("Holadola 5\n");fflush(stdout);
   sprintf(message,"IF %d with %d chans\n", i, Nchan[k]);
   fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
   std::cout << std::flush;
-  PyObject *ret = Py_BuildValue("i",0);
 
+abort2:
+
+  if (logFile) {fclose(logFile); logFile=nullptr;};
+  PyObject *ret = PyLong_FromLong(Iret); 
   return ret;
 };
-#endif
 
 
 
@@ -1445,23 +1460,24 @@ double QuinnEstimate(cplx64f *FFTVec){
 
 
 
-
+// Forces fringe rates (not used at the moment).
 static PyObject *SetFringeRates(PyObject *self, PyObject *args) {
 
 
   int i,j,k,NantFix,cIF,cScan;
   double *rates[4];
+  long Iret = 0;
 
-  PyObject *ratesArr, *antList;
+  PyObject *antList;
+  PyArrayObject *ratesArr;
 
   if (!logFile) logFile = fopen("PolConvert.GainSolve.log","a");
 
   if (!PyArg_ParseTuple(args, "iiOO", &cIF, &cScan, &ratesArr, &antList)){
      sprintf(message,"Failed SetFringeRates! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
-     fclose(logFile);
-     PyObject *ret = Py_BuildValue("i",-1);
-     return ret;
+     Iret = -120;
+     goto abort3;
   };
 
 
@@ -1478,15 +1494,17 @@ static PyObject *SetFringeRates(PyObject *self, PyObject *args) {
     };
   };
 
-
-  PyObject *ret = Py_BuildValue("i",0);
+abort3:
+  if(logFile) {fclose(logFile); logFile=nullptr;};
+  PyObject *ret = PyLong_FromLong(Iret);
   return ret;
 };
 
 
 
 
-
+// A simplified Global Fringe Fitting 
+// (useful to pre-correct for high delays and/or rates).
 static PyObject *DoGFF(PyObject *self, PyObject *args) {
 
   int i,j,k,l,m, a1,a2, af1, af2, BNum,cScan;
@@ -1644,14 +1662,6 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
             memcpy(&BufferC[2][NcurrVis*Nchan[i]],&RL[i][k][0],Nchan[i]*sizeof(cplx64f));
             memcpy(&BufferC[3][NcurrVis*Nchan[i]],&LR[i][k][0],Nchan[i]*sizeof(cplx64f));
 
-// Apply parangle correction:
-         //   for(l=0;l<Nchan[i];l++){
-         //      BufferC[0][NcurrVis*Nchan[i]+l] *= PA1[i][k]/PA2[i][k];
-         //      BufferC[1][NcurrVis*Nchan[i]+l] *= PA2[i][k]/PA1[i][k];
-         //      BufferC[2][NcurrVis*Nchan[i]+l] *= PA1[i][k]*PA2[i][k];
-         //      BufferC[3][NcurrVis*Nchan[i]+l] /= (PA1[i][k]*PA2[i][k]);
-         //   };
-
             NcurrVis += 1;
             if (T1[j] < Times[i][k]){
               T1[j] = Times[i][k];
@@ -1703,8 +1713,6 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
 
 
         if (NcurrVis >2){
-      //    sprintf(message,"Peaks on baseline %i IF %i\n",j,i+1);
-      //    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
           Dnpix = (double) Nchan[i]*NcurrVis; 
 
 
@@ -1849,26 +1857,7 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
             sprintf(message,"WARNING! BASELINE %i HAS NO DATA IN IF %i!\n",j,i+1);
             fprintf(logFile,"%s",message); // std::cout<<message; 
             fflush(logFile);  
-
-            /*
-            for (gotAnts = false, a1=0; a1<NCalAnt; a1++){
-              for (a2=a1+1;a2<NCalAnt;a2++){
-                if(j == BasNum[CalAnts[a1]-1][CalAnts[a2]-1]){
-                  sprintf(message,"ANTS: %i-%i\n",CalAnts[a1]-1,CalAnts[a2]-1);
-                  fprintf(logFile,"%s",message); // std::cout<<message; 
-                  fflush(logFile);  
-                  gotAnts = true;
-                  break;
-                };
-              };
-            };
-            if (!gotAnts) {
-              sprintf(message,"NO-ANTS:\n");
-              fprintf(logFile,"%s",message); // std::cout<<message; 
-              fflush(logFile);  
-            };
-            */
-
+          
           };
 
 //////
@@ -1911,7 +1900,6 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
 
 
 // Setup memory:
-   // double *Hessian = new double[NantFit*NantFit];
     double **HessianDel = new double*[4];
     for(m=0;m<4;m++){HessianDel[m] = new double[NantFit*NantFit];};
     double *RateResVec[4]; // = new double[NantFit];
@@ -1920,12 +1908,10 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
     delete[] CovMat;
     CovMat = new double[NantFit*NantFit];
     for (i=0;i<NantFit*NantFit;i++){
-    //  Hessian[i] = 0.0;
       for(m=0;m<4;m++){HessianDel[m][i]=0.0;}
       CovMat[i] = 0.0;
     };
     for (i=0;i<NantFit;i++){
-   //   RateResVec[i] = 0.0;
       for(m=0;m<4;m++){DelResVec[m][i] = 0.0;RateResVec[m][i] = 0.0;};
     };
 
@@ -1936,7 +1922,7 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
 // AT THE MOMENT, WE COMBINE ALL IFS FOR THE SAME RATES AND DELAYS:
 
  for(i=0; i<NIF; i++){
-   printf("For IF %i:\n",IFNum[i]);fflush(stdout);
+   sprintf(message,"For IF %i:\n",IFNum[i]);fprintf(logFile,"%s",message);
    for (a1=0; a1<NCalAnt; a1++){
      for (a2=a1+1;a2<NCalAnt;a2++){
         BNum = BasNum[CalAnts[a1]-1][CalAnts[a2]-1];
@@ -1947,7 +1933,8 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
            };
         };
         if(BNum>=0){
-          printf("Bas: %i-%i | Rates: %.2e %.2e %.2e %.2e | Delays: %.2e %.2e %.2e %.2e\n",CalAnts[a1],CalAnts[a2],BLRates[0][i][BNum],BLRates[1][i][BNum],BLRates[2][i][BNum],BLRates[3][i][BNum],BLDelays[0][i][BNum],BLDelays[1][i][BNum],BLDelays[2][i][BNum],BLDelays[3][i][BNum]);fflush(stdout);
+          sprintf(message,"Bas: %i-%i | Rates: %.2e %.2e %.2e %.2e | Delays: %.2e %.2e %.2e %.2e\n",CalAnts[a1],CalAnts[a2],BLRates[0][i][BNum],BLRates[1][i][BNum],BLRates[2][i][BNum],BLRates[3][i][BNum],BLDelays[0][i][BNum],BLDelays[1][i][BNum],BLDelays[2][i][BNum],BLDelays[3][i][BNum]);fprintf(logFile,"%s",message);
+	  fflush(logFile);
         };
      };
    };
@@ -1981,7 +1968,6 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
                 for(m=0;m<4;m++){
                   RateResVec[m][af1] += BLWeights[m][i][BNum]*BLRates[m][i][BNum];
                   DelResVec[m][af1] += BLWeights[m][i][BNum]*BLDelays[m][i][BNum];
-           //       Hessian[af1*NantFit+af1] += BLWeights[m][i][BNum];
                   HessianDel[m][af1*NantFit+af1] += BLWeights[m][i][BNum];
                 };
               };
@@ -1990,15 +1976,12 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
                 for(m=0;m<4;m++){
                   RateResVec[m][af2] -= BLWeights[m][i][BNum]*BLRates[m][i][BNum];
                   DelResVec[m][af2] -= BLWeights[m][i][BNum]*BLDelays[m][i][BNum];
-           //       Hessian[af2*NantFit+af2] += BLWeights[m][i][BNum];
                   HessianDel[m][af2*NantFit+af2] += BLWeights[m][i][BNum];
                 };
               };
 
               if (af1>=0 && af2>=0){
                 for(m=0;m<4;m++){
-           //       Hessian[af1*NantFit+af2] -= BLWeights[m][i][BNum];
-           //       Hessian[af2*NantFit+af1] -= BLWeights[m][i][BNum];
                   HessianDel[m][af1*NantFit+af2] -= BLWeights[m][i][BNum];
                   HessianDel[m][af2*NantFit+af1] -= BLWeights[m][i][BNum];
                 };
@@ -2016,14 +1999,12 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
       for (i=0; i<NIF; i++){
 
         for(m=0;m<4;m++){
-    //      Hessian[0] += BLWeights[m][i][BNum];
           HessianDel[m][0] += BLWeights[m][i][BNum];
           RateResVec[m][0] += BLWeights[m][i][BNum]*BLRates[m][i][BNum];
           DelResVec[m][0] += BLWeights[m][i][BNum]*BLDelays[m][i][BNum];
         };
 
         for (j=0; j<NCalAnt; j++){
-      //    Rates[i][j][cScan] = 0.0;
           for(m=0;m<5;m++){
             Rates[m][i][j][cScan] = 0.0;
             Delays[m][i][j][cScan] = 0.0;
@@ -2040,30 +2021,31 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
       };
     };
 
-    printf("\n\nHessian Globalization Matrix (RR):\n\n");
+    sprintf(message,"\n\nHessian Globalization Matrix (RR):\n\n");
+    fprintf(logFile,"%s",message);fflush(logFile);
     bool isSingular;
     isSingular=false;
     for (i=0; i<NantFit; i++){
-      printf("  ");
-     // if (HessianDel[0][i*NantFit+i]==0.0){isSingular=true;};
+      sprintf(message,"  ");fprintf(logFile,"%s",message);
       for (j=0; j<NantFit; j++){
-        printf("%.2e ",HessianDel[0][i*NantFit+j]);
+        sprintf(message,"%.2e ",HessianDel[0][i*NantFit+j]);fprintf(logFile,"%s",message);
       };
-      printf("\n");
+      sprintf(message,"\n");fprintf(logFile,"%s",message);
     };
     if(isSingular){
       sprintf(message,"Possible singular matrix!\n"); 
       fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
     };
-    printf("\n");
-    printf("\n\n Residual baseline phase quantities (DELA || RATE):\n\n");
+    //printf("\n");
+    sprintf(message,"\n\n Residual baseline phase quantities (DELA || RATE):\n\n");
+    fprintf(logFile,"%s",message);
     for (i=0; i<NantFit; i++){
-      for(m=0;m<4;m++){printf(" %.2e |", DelResVec[m][i]);};
-      printf("| ");
-      for(m=0;m<4;m++){printf(" %.2e |", RateResVec[m][i]);};
-      printf("\n");
+      for(m=0;m<4;m++){sprintf(message," %.2e |", DelResVec[m][i]);fprintf(logFile,"%s",message);};
+      sprintf(message,"| ");fprintf(logFile,"%s",message);
+      for(m=0;m<4;m++){sprintf(message," %.2e |", RateResVec[m][i]);fprintf(logFile,"%s",message);};
+      sprintf(message,"\n");fprintf(logFile,"%s",message);
     };
-    printf("\n");
+    //printf("\n");
 
 
     double **SolRat = new double*[4];
@@ -2107,8 +2089,8 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
            Rates[4][0][i][cScan] = 0.0;
            Delays[4][0][i][cScan] = 0.0;
            for(j=0;j<4;j++){
-             Rates[j][0][i][cScan] = -SolRat[j][af1]; //gsl_vector_get(dd[j],af1);
-             Delays[j][0][i][cScan] = -SolDel[j][af1]; //gsl_vector_get(dd[j],af1);
+             Rates[j][0][i][cScan] = -SolRat[j][af1]; 
+             Delays[j][0][i][cScan] = -SolDel[j][af1]; 
              WgtTemp = 1./(SolErrDel[j][af1]*SolErrDel[j][af1]);
              WgtTot += WgtTemp;
              Delays[4][0][i][cScan] += -SolDel[j][af1]*WgtTemp;
@@ -2140,13 +2122,6 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
 // Print globalized results:
   for (i=0; i<NCalAnt; i++){
 
-/*
-    sprintf(message,
-        "Antenna %i -> Rate: %.3e Hz.  Delays: (%.2e, %.2e, %.2e, %.2e) ns.\n",
-        CalAnts[i],Rates[0][i][cScan],Delays[0][0][i][cScan]*1.e9,Delays[1][0][i][cScan]*1.e9,
-        Delays[2][0][i][cScan]*1.e9,Delays[3][0][i][cScan]*1.e9);
-    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
-*/
     sprintf(message, "\n -- Antenna %i: [ Rate (Hz) / Delay (ns) ]:\n",i); fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
     for(j=0; j<4; j++){
       sprintf(message, "POL %i: [ %.3e / %.3e ] \n",j,Rates[j][0][i][cScan],Delays[j][0][i][cScan]);
@@ -2156,10 +2131,6 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
 
 
 // Release memory:
-
-  for(m=0;m<4;m++){
-    fftw_free(BufferVis[m]); fftw_free(out[m]);
-  };
 
   delete[] T0;
   delete[] T1;
@@ -2182,10 +2153,22 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
   delete[] BLDelays;
   delete[] BLWeights;
   delete[] aroundPeak;
-//  delete[] Hessian;
   delete[] HessianDel;
-//  delete[] RateResVec;
 
+  fftw_free(AUX);                      
+  for (i=0; i<4; i++) {
+    fftw_destroy_plan(pFT[i]);
+    fftw_free(BufferVis[i]);
+    fftw_free(out[i]);
+    delete[] SolRat[i]; delete[] SolDel[i];
+    delete[] SolErrRat[i]; delete[] SolErrDel[i];
+    delete[] nu[i]; delete[] time[i];
+  };
+  delete[] pFT;
+  delete[] SolRat; delete[] SolDel;
+  delete[] SolErrRat; delete[] SolErrDel;
+  delete[] BufferVis; delete[] out;
+  fftw_cleanup();
 
 // Return success:
   PyObject *ret = Py_BuildValue("i",0);
@@ -2227,7 +2210,7 @@ static PyObject *DoGFF(PyObject *self, PyObject *args) {
 
 
 
-
+// Setup fit parameters and book memory.
 static PyObject *SetFit(PyObject *self, PyObject *args) {
 
   int i, j, k, oldNpar = Npar;
@@ -2237,21 +2220,20 @@ static PyObject *SetFit(PyObject *self, PyObject *args) {
 
 
 
-  PyObject *IFlist, *antList, *calstokes, *ret, *feedPy;
+  PyObject *IFlist, *antList, *calstokes, *ret;
+  PyArrayObject *feedPy;
 
   if (!PyArg_ParseTuple(args, "iOOiiOiO", 
      &Npar, &IFlist, &antList, &solveAmp, &solveQU, &calstokes, &useCov, &feedPy)){
         sprintf(message,"Failed SetFit! Check inputs!\n"); 
         fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
-        fclose(logFile);
+        fclose(logFile); logFile=nullptr;
         ret = Py_BuildValue("i",-1);
       return ret;
   };
 
 
   if (Tm){
-   // sprintf(message,"Clearing previous allocation objects\n");
-   // fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
     delete[] Tm;
     delete[] doIF;
     delete[] antFit;
@@ -2306,7 +2288,7 @@ static PyObject *SetFit(PyObject *self, PyObject *args) {
     if (!foundit){
       sprintf(message,"BAD IF NUMBER: %i\n",j); 
       fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
-      fclose(logFile);
+      fclose(logFile); logFile = nullptr;
       ret = Py_BuildValue("i",-1);
       return ret;
     };
@@ -2315,10 +2297,6 @@ static PyObject *SetFit(PyObject *self, PyObject *args) {
   CovMat = new double[Npar*Npar];
   IndVec = new double[Npar];
   SolVec = new double[Npar];
-//  m = gsl_matrix_view_array (CovMat, Npar, Npar);
-//  v = gsl_vector_view_array (IndVec, Npar);
-//  x = gsl_vector_view_array (SolVec, Npar);
-//  perm = gsl_permutation_alloc (Npar);
 
 //////////////////////
   StokesSolve = solveQU;
@@ -2366,38 +2344,61 @@ static PyObject *SetFit(PyObject *self, PyObject *args) {
 
 
 
-
+// Compute the Chi Square of a model of cross-polarization gains
+// (on both circular and linear antennas) using all four
+// correlation products.
 static PyObject *GetChi2(PyObject *self, PyObject *args) { 
 
   int Ch0, Ch1;
   int i, k,l, end;
   int j= -1;
+  long Iret = 0;
   double *CrossG;
-//  double dx = 1.0e-8;
   double Drate1R, Drate1L, Drate2R, Drate2L, Drate1, Drate2; 
   double Ddelay1R, Ddelay2R, Ddelay1L, Ddelay2L, Ddelay1, Ddelay2;
-//  double *DerAux1, *DerAux2;
-//  DerAux1 = new double[2];
-//  DerAux2 = new double[2];
-  PyObject *pars, *ret,*LPy;
+  PyObject *ret,*LPy;
+  PyArrayObject *pars;
   bool useRates, useDelays;
+
+  int MBD1p, MBD2p, G1pA,G1pF, G2pA, G2pF;
+  int BNum;
+  double Chi2 = 0.0;
+  double auxD1, auxD2;
+  double *chanFreq;
+
+ int currIF, a1, a2, ac1,ac2,af1, af2, currDer, currScan, nextScan;
+  int is1, is2; 
+
+  cplx64f Error;
+  cplx64f oneC, RateFactor, FeedFactor1, FeedFactor2, RRRate, RLRate, LRRate, LLRate;
+
+  cplx64f RM1, RP1;
+  cplx64f RM2, RP2;
+  cplx64f auxC1, auxC2, auxC3;
+
+  int Nflipped = 0;
+
+  double ParHandWgt = 1.0;
+  double CrossHandWgt = 1.0;
+  double Itot = 0.0;
+
+
+// Reference frequency for the MBD:
+  double RefNu = Frequencies[doIF[0]][0];
+
 
   if (!logFile) logFile = fopen("PolConvert.GainSolve.log","a");
   if (!PyArg_ParseTuple(args, "OOiiibb", &pars, &LPy, &Ch0, &Ch1,&end,&useRates,&useDelays)){
      sprintf(message,"Failed GetChi2! Check inputs!\n"); 
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
-     fclose(logFile);
-    ret = Py_BuildValue("i",-1);
-    return ret;
+     Iret = -130;
+     goto abortChi;
   };
 
 
-//  bool useDelay = false;
 
 
   chisqcount++;
-//  FILE *auxFile;
-//  if (chisqcount==1){auxFile = fopen("PolConvert.GainSolve.Calls","a");};
 
 
   Lambda = PyFloat_AsDouble(LPy);
@@ -2411,9 +2412,8 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
     if (Ch1 > Nchan[doIF[i]]){
       sprintf(message,"IF %i ONLY HAS %i CHANNELS. CHANNEL %i DOES NOT EXIST! \n",j,Nchan[doIF[i]], Ch1); 
       fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
-      fclose(logFile);
-      ret = Py_BuildValue("i",-1);
-      return ret;
+      Iret = -140;
+      goto abortChi;
     };
   };
 
@@ -2422,20 +2422,14 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
   if (Ch0<0 || Ch0>Ch1){
     sprintf(message,"BAD CHANNEL RANGE: %i TO %i. SHOULD ALL BE POSITIVE AND Ch0 < Ch1\n",Ch0,Ch1); 
     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);  
-    fclose(logFile);
-    ret = Py_BuildValue("i",-1);
-    return ret;
+    Iret = -150;
+    goto abortChi;
   };
 
 
 
-// Reference frequency for the MBD:
-  double RefNu = Frequencies[doIF[0]][0];
-
-// Memory to store the current gain ratios:
+// Memory to store the current gain ratios (aka cross-polarization gains):
   CrossG = (double *) PyArray_DATA(pars);
-
-
 
 
 
@@ -2448,26 +2442,6 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
   };
 
 
-  int currIF, a1, a2, ac1,ac2,af1, af2, currDer, currScan, nextScan;
-  int is1, is2; //, auxI1, auxI2;
-  //auxI1 = 0;
-
-
-
-  cplx64f Error;
-  cplx64f oneC, RateFactor, FeedFactor1, FeedFactor2, RRRate, RLRate, LRRate, LLRate; 
-
-  cplx64f RM1, RP1; 
-  cplx64f RM2, RP2; 
-  cplx64f auxC1, auxC2, auxC3;
-//  cplx64f *AvPA1 = new cplx64f[NBas]; 
-//  cplx64f *AvPA2 = new cplx64f[NBas];
-
-  int Nflipped = 0;
-
-  double ParHandWgt = 1.0;
-  double CrossHandWgt = 1.0;
-  double Itot = 0.0;
 
 // Avoid overflow errors to very large RelWeights (i.e., divide the crosshand
 // instead of multipyling the parhand)
@@ -2475,27 +2449,9 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 
 
 
-//  for(i=0;i<Npar;i++){
-//    IndVec[i] = 0.0;
-//   for(j=0;j<Npar;j++){
-//      CovMat[i*Npar+j]=0.0;
-//    };
-//  };
 
 
   oneC= cplx64f(1.0,0.0);
-
- // int Nder = 0;
-  int MBD1p, MBD2p, G1pA,G1pF, G2pA, G2pF;
-  int BNum;
-  double Chi2 = 0.0;
-  double auxD1, auxD2;
-  double *chanFreq;
-
-//  for(l=0;l<Npar+1;l++){
-//    for(i=0;i<4;i++){DStokes[l][i] = Stokes[i];};
-//  };
-
 
 
 
@@ -2523,7 +2479,6 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
         auxC11Flp[k][j] = cplx64f(0., 0.);
       };
       AvVis[k] = 0;
-   //   AvPA1[k] = oneC; AvPA2[2] = oneC;
     };
     for(k=0;k<NBas;k++){
       Tm[k]=Times[currIF][0];
@@ -2532,7 +2487,6 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 
 // Figure out which antennas do we have now
 // and whether we solve for them:
-   // currScan = Scan[currIF][0];
     for (k=0; k<NVis[currIF]; k++){
       a1 = Ant1[currIF][k];
       a2 = Ant2[currIF][k];
@@ -2570,9 +2524,6 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 
 // The crossGains at the ref. channel: 
 
-  //  Nder = 1;
-  //  DerIdx[0] = 0;
-     
 
 // Figure out the antenna gains being used now:
     if (solveAmp==0){
@@ -2580,27 +2531,12 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
       if (af1 >= 0){
         G1pA = -1; G1pF = af1;
         G1[0] = std::polar(1.0, CrossG[af1]); 
-     //   if(doCov){
-     //   for(j=1;j<Npar+1;j++){
-     //     G1[j] = G1[0];
-     //   };
-     //   G1[G1pF+1] = std::polar(1.0, CrossG[af1]+dx);
-     //   DerIdx[Nder] = G1pF+1;
-     //   Nder += 1;};
       } else { G1[0] = std::polar(1.0, 0.0); G1pA = -1; G1pF = -1;}; 
 
         if (af2 >= 0){
           G2pA = -1; G2pF = af2;
           G2[0] = std::polar(1.0, -CrossG[af2]); 
 
-    //      if(doCov){
-    //        for(j=1;j<Npar+1;j++){
-    //          G2[j] = G2[0];
-    //        };
-    //        G2[G2pF+1] = std::polar(1.0, -CrossG[af2]-dx);
-    //        DerIdx[Nder] = G2pF+1;
-    //        Nder += 1;
-    //      };
         } else { G2[0] = std::polar(1.0, 0.0); G2pA = -1; G2pF = -1;}; 
 
       
@@ -2610,31 +2546,12 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
       if (af1 >= 0){
         G1pA = af1*2; G1pF = G1pA+1;
         G1[0] = std::polar(CrossG[G1pA], CrossG[G1pF]);  // AMP+PHASE SPACE
-      //  if(doCov){
-      //    for(j=1;j<Npar+1;j++){
-      //      G1[j] = G1[0];
-      //    };
-      //    G1[G1pA+1] = std::polar(CrossG[G1pA]+dx, CrossG[G1pF]); // AMP+PHASE SPACE
-      //    G1[G1pF+1] = std::polar(CrossG[G1pA], CrossG[G1pF]+dx); // AMP+PHASE SPACE
-     //     DerIdx[Nder] = G1pA+1;
-     //     DerIdx[Nder+1] = G1pF+1;
-     //     Nder += 2;
-     //   };
 
       } else { G1[0] = std::polar(1.0, 0.0); G1pA=-1; G1pF=-1;};
 
         if (af2 >= 0){
           G2pA = af2*2; G2pF = G2pA+1;
           G2[0] = std::polar(CrossG[G2pA], -CrossG[G2pF]); // AMP+PHASE SPACE
-      //    if(doCov){
-      //      for(j=1;j<Npar+1;j++){
-      //        G2[j] = G2[0];
-      //      };
-      //      G2[G2pA+1] = std::polar(CrossG[G2pA]+dx, -CrossG[G2pF]); // AMP+PHASE SPACE
-      //      G2[G2pF+1] = std::polar(CrossG[G2pA], -CrossG[G2pF]-dx); // AMP+PHASE SPACE
-      //      DerIdx[Nder] = G2pA+1;
-      //      DerIdx[Nder+1] = G2pF+1;
-      //      Nder += 2;};
       } else { G2[0] = std::polar(1.0, 0.0);G2pA=-1; G2pF=-1;}; 
 
     };
@@ -2647,12 +2564,8 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
       AvVis[BNum] += 1;
       FeedFactor1 = std::polar(1.0, feedAngle[a1-1])*PA1[currIF][k]; 
       FeedFactor2 = std::polar(1.0, feedAngle[a2-1])*PA2[currIF][k];
-    //  AvPA1[BNum] *= FeedFactor1;
-    //  AvPA2[BNum] *= FeedFactor2;
 
       for (j=Ch0; j<Ch1; j++){
-
-
 
 // Add the multi-band delays:
         if (SolAlgor == 0){
@@ -2664,9 +2577,6 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
               MBD1p = NantFit*2+af1;
               MBD1[0] = CrossG[MBD1p]*(chanFreq[j]);
             };
-    //        if (j==Ch0 && doCov){
-    //          MBD1[MBD1p+1] = CrossG[MBD1p] + dx; DerIdx[Nder] = MBD1p+1; Nder += 1;
-    //        };
         } else {
            MBD1[0] = 0.0; MBD1p=-1;
         };
@@ -2678,27 +2588,12 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
             MBD2p = NantFit*2+af2;
             MBD2[0] = CrossG[MBD2p]*(chanFreq[j]);
           };
-      //    if (j==Ch0 && doCov){
-      //      MBD2[MBD2p+1] = CrossG[MBD2p] + dx; DerIdx[Nder] = MBD2p+1; Nder += 1;
-      //    };
         } else {
            MBD2[0] = 0.0; MBD2p = -1;
         };
         G1nu[0] = G1[0]*(std::polar(1.0,MBD1[0]));
         G2nu[0] = G2[0]*(std::polar(1.0,-MBD2[0]));
 
-    //    if(doCov){
-    //      for (l=1;l<Npar+1;l++){
-    //        G1nu[l] = G1nu[0];
-    //        G2nu[l] = G2nu[0];
-    //      };
-    //      G1nu[G1pA+1] = G1[G1pA+1]*(std::polar(1.0,MBD1[0]));
-    //      G2nu[G2pA+1] = G2[G2pA+1]*(std::polar(1.0,-MBD2[0]));
-    //      G1nu[G1pF+1] = G1[G1pF+1]*(std::polar(1.0,MBD1[0]));
-    //      G2nu[G2pF+1] = G2[G2pF+1]*(std::polar(1.0,-MBD2[0]));
-    //      G1nu[MBD1p+1] = G1[0]*(std::polar(1.0,MBD1[MBD1p+1]*(chanFreq[j])));
-    //      G2nu[MBD2p+1] = G2[0]*(std::polar(1.0,-MBD2[MBD2p+1]*(chanFreq[j])));
-    //    };
 
       } else {
 
@@ -2706,24 +2601,7 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
         G1nu[0] = G1[0]; 
         G2nu[0] = G2[0]; 
 
-   //     if(doCov){
-   //       for (l=1;l<Npar+1;l++){
-   //         G1nu[l] = G1nu[0];
-   //         G2nu[l] = G2nu[0];
-   //       };
-   //       G1nu[G1pA+1] = G1[G1pA+1];
-   //       G2nu[G2pA+1] = G2[G2pA+1];
-   //       G1nu[G1pF+1] = G1[G1pF+1];
-   //       G2nu[G2pF+1] = G2[G2pF+1];
-   //     };
      };
-
-   //  if(StokesSolve){
-   //    DerIdx[Nder]=Npar-1; DStokes[Npar-1][1] = DStokes[0][1]+dx; Nder += 1;
-   //    DerIdx[Nder]=Npar; DStokes[Npar][2] = DStokes[0][2]+dx; Nder += 1;
-   //  };
-
-
 
 
 
@@ -2764,22 +2642,16 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
     if(useDelays){
       RateFactor = std::polar(1.0, Drate1-Drate2 + Ddelay1-Ddelay2);
       RRRate = RateFactor*FeedFactor1/FeedFactor2; 
-    //  RateFactor = std::polar(1.0, Drate1R-Drate2L + Ddelay1R-Ddelay2L);
       RLRate = RateFactor*FeedFactor1/FeedFactor2; 
-    //  RateFactor = std::polar(1.0, Drate1L-Drate2R + Ddelay1L-Ddelay2R);
       LRRate = RateFactor*FeedFactor1/FeedFactor2; 
-    //  RateFactor = std::polar(1.0, Drate1L-Drate2L + Ddelay1L-Ddelay2L);
       LLRate = RateFactor*FeedFactor1/FeedFactor2; 
     } else {
       // TODO: Activate the rate correction, to improve gain estimates.
       // BUT some baselines usually give crazy rates (around 1Hz!!)
       RateFactor = std::polar(1.0, Drate1-Drate2);  
       RRRate = RateFactor*FeedFactor1/FeedFactor2;
-   //   RateFactor = std::polar(1.0, Drate1L-Drate2L);   
       LLRate = RateFactor/FeedFactor1*FeedFactor2; 
-   //   RateFactor = std::polar(1.0, Drate1R-Drate2L);  
       RLRate = RateFactor*FeedFactor1*FeedFactor2; 
-   //   RateFactor = std::polar(1.0, Drate1L-Drate2R);  
       LRRate = RateFactor/FeedFactor1/FeedFactor2; 
     };
 
@@ -2800,8 +2672,7 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 
 // Compute all the model derivatives:
 
-  //  for (l=0; l<Nder; l++){
-      currDer = 0; //DerIdx[l];
+      currDer = 0;
       RM1 = (oneC - G1nu[currDer]); RM2 = (oneC - G2nu[currDer]); 
       RP1 = (oneC + G1nu[currDer]); RP2 = (oneC + G2nu[currDer]); 
 
@@ -2810,15 +2681,12 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 // USE MINIMIZATION OF THE CROSS-HAND CORRELATIONS:
      if(AddCrossHand){
        if (is1 && is2){
-      //   printf("Cis12\n");fflush(stdout);
          auxC01[BNum][currDer] += (RP1*RP2*RL[currIF][k][j] + RM1*RP2*LL[currIF][k][j] + RP1*RM2*RR[currIF][k][j] + RM1*RM2*LR[currIF][k][j])*RLRate;
          auxC10[BNum][currDer] += (RP1*RP2*LR[currIF][k][j] + RM1*RP2*RR[currIF][k][j] + RP1*RM2*LL[currIF][k][j] + RM1*RM2*RL[currIF][k][j])*LRRate;
        } else if (is1){
-      //   printf("Cis1\n");fflush(stdout);
          auxC01[BNum][currDer] += (RP1*RL[currIF][k][j] + RM1*LL[currIF][k][j])*G2nu[currDer]*RLRate;
          auxC10[BNum][currDer] += (RP1*LR[currIF][k][j] + RM1*RR[currIF][k][j])*LRRate;
        } else if (is2){
-      //   printf("Cis2\n");fflush(stdout);
          auxC01[BNum][currDer] += (RP2*RL[currIF][k][j] + RM2*RR[currIF][k][j])*RLRate;
          auxC10[BNum][currDer] += (RP2*LR[currIF][k][j] + RM2*LL[currIF][k][j])*G1nu[currDer]*LRRate;
        } else {
@@ -2828,21 +2696,17 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
      };
 
 // USE GLOBAL CROSS-POLARIZATION FRINGE FITTING:
-  //   if(AddParHand){
        if (is1 && is2){
-      //   printf("Pis12\n");fflush(stdout);
          auxC1 = (RP1*RP2*RR[currIF][k][j] + RP2*RM1*LR[currIF][k][j] + RM2*RP1*RL[currIF][k][j] + RM1*RM2*LL[currIF][k][j])*RRRate;
          auxC2 = (RP1*RP2*LL[currIF][k][j] + RP2*RM1*RL[currIF][k][j] + RM2*RP1*LR[currIF][k][j] + RM1*RM2*RR[currIF][k][j])*LLRate;
          auxC00[BNum][currDer] += auxC1;
          auxC11[BNum][currDer] += auxC2;
        } else if (is1){
-      //   printf("Pis1\n");fflush(stdout);
          auxC1 = (RP1*RR[currIF][k][j] + RM1*LR[currIF][k][j])*RRRate;
          auxC2 = (RP1*LL[currIF][k][j] + RM1*RL[currIF][k][j])*G2nu[currDer]*LLRate;
          auxC00[BNum][currDer] += auxC1;
          auxC11[BNum][currDer] += auxC2;
        } else if (is2){
-      //   printf("Pis2\n");fflush(stdout);
          auxC1 = (RP2*RR[currIF][k][j] + RM2*RL[currIF][k][j])*RRRate;
          auxC2 = (RP2*LL[currIF][k][j] + RM2*LR[currIF][k][j])*G1nu[currDer]*LLRate;
          auxC00[BNum][currDer] += auxC1;
@@ -2853,7 +2717,6 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
          auxC00[BNum][currDer] += auxC1;
          auxC11[BNum][currDer] += auxC2;
        };
-  //   };
 
 // Accumulate the parallel hands with the flipped parangle:
        if(currDer==0){
@@ -2862,9 +2725,6 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
          auxC11Flp[BNum][0] += auxC2/auxC3;
          UVWeights[BNum] += UVGauss[currIF][k];
        };
-
-
-  // };  // Comes from   for (l=0; l<Nder; l++){
 
 
 
@@ -2880,12 +2740,7 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 // 
 // 
 // Did we reach the pre-averaging time?? If so, update the covariance+residuals:
-  //  if ((Times[currIF][k]>=Tm[BNum] + ScanDur[currIF][currScan]/DT) || !(currScan==nextScan)){
     if ((Times[currIF][k]>=Tm[BNum] + DT) || !(currScan==nextScan)){
-
-
-
-
 
 
       if(k<NVis[currIF]-1){Tm[BNum] = Times[currIF][k+1];};
@@ -2898,93 +2753,6 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 
 
 
-/*
-// Compute covariance matrix:
-      if(doCov){
-	
-////////////////////////////////////////////
-// CONTRIBUTION FROM THE PARALLEL HANDS:
-        if (RelWeight>0.0 && abs(auxC11[BNum][0])>0.0){
-          for(j=1;j<Nder;j++){
-            auxI1 = DerIdx[j];
-            auxC1 = (auxC00[BNum][auxI1]-auxC11[BNum][auxI1]-Error)/dx;
-// Incoherent approach:
-            DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
-            CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*ParHandWgt*BasWgt[BNum];
-            if(useCov){
-              for(l=j+1;l<Nder;l++){
-                auxI2 = DerIdx[l];
-// Incoherent approach:
-                 auxC2 = (auxC00[BNum][auxI2]-auxC11[BNum][auxI2]-Error)/dx;
-                 DerAux2[0] = auxC1.real()*auxC2.real(); DerAux2[1] = auxC1.imag()*auxC2.imag();
-                 CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*ParHandWgt*BasWgt[BNum];
-                 CovMat[(auxI2-1)*Npar+auxI1-1] = CovMat[(auxI1-1)*Npar+auxI2-1];
-              };  
-            };
-// Incoherent approach:
-            DerAux2[0] = (1.-Error.real())*auxC1.real(); DerAux2[1] = -Error.imag()*auxC1.imag();
-            IndVec[auxI1-1] += (DerAux2[0] + DerAux2[1])*ParHandWgt*BasWgt[BNum]; 
-          };
-        };
-
-  
-/////////////////////////////////////////////
-// CONTRIBUTION FROM THE CROSS HANDS: RL
-        if (AddCrossHand){
-          for(j=1;j<Nder;j++){
-            auxI1 = DerIdx[j];
-            auxC1 = auxC01[BNum][auxI1];
-            auxC1 -= auxC01[BNum][0];
-            auxC1 /= dx;
-// Incoherent approach:
-            DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
-            CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*CrossHandWgt*BasWgt[BNum];
-            if (useCov){
-              for(l=j+1;l<Nder;l++){
-                auxI2 = DerIdx[l];
-                auxC3 = auxC01[BNum][auxI2];
-                auxC3 -= auxC01[BNum][0];
-                auxC3 /= dx;
-// Incoherent approach:
-                DerAux2[0] = auxC1.real()*auxC3.real(); DerAux2[1] = auxC1.imag()*auxC3.imag();
-                CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt[BNum];
-                CovMat[(auxI2-1)*Npar+auxI1-1] = CovMat[(auxI1-1)*Npar+auxI2-1];
-              };  
-            };
-            auxC3 = auxC01[BNum][0];
-// Incoherent approach:
-            DerAux2[0] = auxC3.real()*auxC1.real(); DerAux2[1] = auxC3.imag()*auxC1.imag();
-            IndVec[auxI1-1] -= (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt[BNum]; 
-
-
-/////////////////////////////////////////////
-// CONTRIBUTION FROM THE CROSS HANDS: LR    
-            auxC1 = auxC10[BNum][auxI1];
-            auxC1 -= auxC10[BNum][0];
-            auxC1 /= dx;
-// Incoherent approach:
-            DerAux1[0] = auxC1.real()*auxC1.real(); DerAux1[1] = auxC1.imag()*auxC1.imag();
-            CovMat[(auxI1-1)*(Npar+1)] += (DerAux1[0] + DerAux1[1])*CrossHandWgt*BasWgt[BNum];
-            if (useCov){
-              for(l=j+1;l<Nder;l++){
-                auxI2 = DerIdx[l];
-                auxC3 = auxC10[BNum][auxI2];
-                auxC3 -= auxC10[BNum][0];
-                auxC3 /= dx;
-// Incoherent approach:
-               DerAux2[0] = auxC1.real()*auxC3.real(); DerAux2[1] = auxC1.imag()*auxC3.imag();
-               CovMat[(auxI1-1)*Npar+auxI2-1] += (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt[BNum];
-               CovMat[(auxI2-1)*Npar+auxI1-1] = CovMat[(auxI1-1)*Npar+auxI2-1];
-             };  
-           };
-           auxC3 = auxC10[BNum][0];
-// Incoherent approach:
-           DerAux2[0] = auxC3.real()*auxC1.real(); DerAux2[1] = auxC3.imag()*auxC1.imag();
-           IndVec[auxI1-1] -= (DerAux2[0] + DerAux2[1])*CrossHandWgt*BasWgt[BNum]; 
-         };
-       };
-     }; // Comes from if(doCov)
-*/
 
 
 
@@ -3039,8 +2807,6 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
     };
     AvVis[BNum] = 0;
     UVWeights[BNum] = 0.0;
-// TODO: DIVIDE AvPA BY NUMBER OF VISIBS!!!!!
-//    AvPA1[BNum] = oneC; AvPA2[BNum] = oneC;
 
    }; // Comes from:   if (Times[currIF][k]>=Tm[BNum] + DT)
 
@@ -3054,83 +2820,21 @@ static PyObject *GetChi2(PyObject *self, PyObject *args) {
 
 
 
-//double TheorImpr = 0.0;
-
-//if(doCov){
-// Solve the system:
-
-// Find the largest gradient:
-//double Largest = 0.0;
-//for(i=0;i<Npar;i++){
-//  if(CovMat[i*Npar+i]>Largest){Largest=CovMat[i*Npar+i];};
-//};
-
-// Fill in the Hessian's lower part:
-//for(i=0;i<Npar;i++){
-//  DirDer[i] = CovMat[i*Npar+i];
-//  CovMat[i*Npar+i] += Lambda*(Largest);
-//};
-
-
-/*
-gsl_death_by = GSL_SUCCESS;
-if (useCov){
-  gsl_linalg_LU_decomp (&m.matrix, perm, &s);
-  gsl_linalg_LU_solve(&m.matrix, perm, &v.vector, &x.vector);
-} else {
-  for(i=0;i<Npar;i++){SolVec[i] = IndVec[i]/CovMat[i*Npar+i];};
-};
-if (gsl_death_by != GSL_SUCCESS) {
-    PyObject *ret = Py_BuildValue("d",-13);
-    return ret;
-};
-*/
-
-
-//for(i=0;i<Npar;i++){SolVec[i] = Lambda*IndVec[i]/CovMat[i*Npar+i];};
-
-//for(i=0;i<Npar;i++){
-//  TheorImpr += DirDer[i]*SolVec[i]*SolVec[i] - 2.*IndVec[i]*SolVec[i];
-//  CrossG[i] += SolVec[i];
-//};
-
-
-//}; // comes from if(doCov)
-
-
-
-/*
-if (chisqcount==0){
-  sprintf(message,"%i %i-%i ",doIF[0], Ch0, Ch1);
-  fprintf(auxFile,"%s",message);
-
-  for(i=0;i<Npar;i++){
-    sprintf(message,"%.3e ",CrossG[i]); 
-    fprintf(auxFile,"%s",message);
-  };
-
-  sprintf(message," | %.3e \n",Chi2); 
-  fprintf(auxFile,"%s",message);
-  fclose(auxFile);
-};
-*/
-
- // if (SolAlgor==0){
- //    printf("\n Chi Squared: %.5e. Expected improvement: %.5e",Chi2,TheorImpr);
- //  };
 
   Chi2Old = Chi2;
 
     if (end==1){Chi2 = (Nflipped>0)?1.0:-1.0;};
 
-    ret = Py_BuildValue("d",Chi2);
+abortChi:
+// We return the ChiSq (if OK) or a negative error code:
+    if(Iret==0){
+	    ret = Py_BuildValue("d",Chi2);}
+    else {
+	    ret = PyLong_FromLong(Iret);
+    };
 
 
-//  delete[] AvPA1;
-//  delete[] AvPA2;
-
-
-
+  if(logFile){fclose(logFile); logFile = nullptr;};
   return ret;
 
 };

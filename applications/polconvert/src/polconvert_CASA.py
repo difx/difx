@@ -50,8 +50,8 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-__version__ = "2.0.7b "  # 7 characters
-date = 'Aug 29, 2025'
+__version__ = " 2.1b  "  # 7 characters
+date = 'Dec 11, 2025'
 
 
 ################
@@ -304,11 +304,22 @@ calibrated phased arrays (i.e., phased ALMA).
 
 # this turns into the verbosity argument of _PolConvert.so
   print('Entered polconvert_CASA::polconvert()')
-  DEBUG = False
+
+
+# DEBUG = False
+
+## TO ENTER "DEBUG MODE", run the command:
+###    export POLCONVERTDEBUG=True
+
+## TO QUIT "DEBUG MODE", run the command:
+###  unset POLCONVERTDEBUG 
 
   if 'POLCONVERTDEBUG' in os.environ:
      if os.environ['POLCONVERTDEBUG'] == 'True': DEBUG = True
      else:                                       DEBUG = False
+  else:
+     DEBUG = False
+
   print('DEBUG setting is ' + str(DEBUG))
   print('__name__ is ' + __name__)
 
@@ -819,8 +830,7 @@ calibrated phased arrays (i.e., phased ALMA).
       scgood[j] = [i for i in range(len(ADJ)) if BBN[i]==BBC[j] and ('PHASE_UPDATED' in ADJ[i] or 'PHASE_NOCHANGE' in ADJ[i])]
 
     SUBSCANDUR = time1[sc2flag[0][0]] - time0[sc2flag[0][0]]
-    sec = 1.
-
+    sec = 0.1
     for j in range(4):
      if len(sc2flag[j])>0:
       for si in sc2flag[j]:
@@ -834,8 +844,23 @@ calibrated phased arrays (i.e., phased ALMA).
         if timerange not in timeranges[j]:
           timeranges[j].append(timerange)
 
-# For testing:
     timerangesArr = [np.array(ti) for ti in timeranges]
+
+# For testing:
+#    import matplotlib
+#    matplotlib.use('TkAgg')
+#    import pylab as pl
+#    fig = pl.figure()
+#    sub = fig.add_subplot(121)  
+#    for kkk in range(4):
+#        sub.plot(np.array(scgood[kkk]),np.zeros(len(scgood[kkk])),'og')
+#        sub.plot(np.array(sc2flag[kkk]),np.zeros(len(sc2flag[kkk])),'or')
+#    sub2 = fig.add_subplot(122)
+#    for kkk in range(4):
+#        sub2.plot(np.array(scgood[kkk]),time0[np.array(scgood[kkk])],'og')
+#        sub2.plot(np.array(sc2flag[kkk]),time0[np.array(sc2flag[kkk])],'or')
+#
+#    pl.show()
 #########
 
 
@@ -862,17 +887,26 @@ calibrated phased arrays (i.e., phased ALMA).
    refants = np.array([allants.index(phants[t][refs[t]]) for t in range(len(phants))])
 
    antimes = [[[0.,0.]] for ian in allants]
+
+
+###################
+### This new code is to fix the missing time entries in calAPP
+   gaps = [[] for ian in allants]
+   for ti in range(len(time0)):
+       for antenna in phants[ti]:
+         ian = allants.index(antenna)
+         antimes[ian].append([time0[ti]-CALAPPDT+CALAPPTSHIFT,time1[ti]+CALAPPDT+CALAPPTSHIFT])
+         if len(antimes[ian])>2 and antimes[ian][-1][0]>antimes[ian][-2][1]:
+             if antenna in phants[ti-1]:
+                 gaps[ian].append([float(antimes[ian][-2][1]),float(antimes[ian][-1][0])])
+
    for ian,antenna in enumerate(allants):
-    for j,phan in enumerate(phants):
-      if antenna in phan:
-        antimes[ian].append([time0[j]-CALAPPDT+CALAPPTSHIFT,time1[j]+CALAPPDT+CALAPPTSHIFT])
-
-    auxarr = np.zeros((len(antimes[ian]),2))
-    auxarr[:] = antimes[ian]
-    antimes[ian] = auxarr
-    
+     antimes[ian] += gaps[ian]   
+     auxarr = np.zeros((len(antimes[ian]),2))
+     auxarr[:] = antimes[ian]
+     antimes[ian] = auxarr
    nphtimes = [len(anti) for anti in antimes]
-
+####################
 
   else:  # is(not)Phased
 
@@ -944,13 +978,14 @@ calibrated phased arrays (i.e., phased ALMA).
       nchan = FrInfo['NUM CHANNELS'][nu]
 # MAX. NUMBER OF CHANNELS:
       chav = FrInfo['CHANS TO AVG'][nu]
-      if nu in doIF:
-        IFchan = max([IFchan,int(nchan/chav)])
       sb = {True: 1.0 , False: -1.0}[FrInfo['SIDEBAND'][nu] == 'U']
       FrInfo['SIGN'][nu] = float(sb)
-      if float(nchan//chav) != nchan/chav:
-        printMsg("linspace check chan: %d / %d = %f" %
-            (nchan, chav, nchan/chav))
+      if nu in doIF:
+        IFchan = max([IFchan,int(nchan/chav)])
+        if float(nchan//chav) != nchan/chav:
+           printMsg("SPW %i. linspace check FAILED: chan: %d / %d = %f" %(nu,nchan, chav, nchan/chav))
+        else:
+           printMsg("SPW %i. linspace check PASSED: chan: %d / %d = %f" %(nu,nchan, chav, nchan/chav))
       freqs = (nu0 + np.linspace((sb-1.)/2.,(sb+1.)/2.,
         nchan//chav,    # should be exactly divisible
         endpoint=False)*bw)*1.e6
@@ -1252,7 +1287,7 @@ calibrated phased arrays (i.e., phased ALMA).
       spmask = tb.getcol('SPECTRAL_WINDOW_ID')==int(spw)
       trowns = tb.getcol('TIME')[spmask]
       tsort = np.argsort(trowns)
-      trow = trowns[tsort]
+      trow = np.copy(trowns[tsort])
       data = []
       flagrow = []
 
@@ -1270,9 +1305,11 @@ calibrated phased arrays (i.e., phased ALMA).
         for di in np.where(spmask)[0]:
           data.append(tb.getcell('FPARAM',di)) #[:,:,spmask])
           flagrow.append(tb.getcell('FLAG',di))
+        #print(data)
+      data = np.copy((np.array(data)).transpose(1,2,0)[:,:,tsort])
+      flagrow = np.copy((np.array(flagrow)).transpose(1,2,0)[:,:,tsort])
 
-      data = (np.array(data)).transpose(1,2,0)[:,:,tsort]
-      flagrow = (np.array(flagrow)).transpose(1,2,0)[:,:,tsort]
+
 
 #############
 
@@ -1282,12 +1319,15 @@ calibrated phased arrays (i.e., phased ALMA).
           antrow.append(allants.index(tabants[ai]))
         else:
           antrow.append(-1)
-      antrow = np.array(antrow)[tsort]
+      antrow = np.copy(np.array(antrow)[tsort])
 
 
       if np.shape(data)[0] == 2:  # A DUAL-POL GAIN (i.e., mode 'G')
         flagsf = np.logical_or(flagrow[0,:],flagrow[1,:])
-        flagsd = np.logical_or(np.abs(data[0,:])==0.0,np.abs(data[1,:])==0.0)
+        if kind[-1][-1]!=1:
+           flagsd = np.logical_or(np.abs(data[0,:])==0.0,np.abs(data[1,:])==0.0)
+        else:
+           flagsd = np.copy(flagsf)    
       else: # A GAIN IN MODE 'T'
         flagsf = np.copy(flagrow[0,:])
         flagsd = np.abs(data[0,:])==0.0
@@ -1295,6 +1335,10 @@ calibrated phased arrays (i.e., phased ALMA).
       tb.close()
       gaindata[-1][j].append(np.zeros(nchan).astype(np.float64))
       gaindata[-1][j][0][:] = gfreqs
+
+      if DEBUG:
+          print('Processing: %s (type: %s)'%(gain,gainType))
+
       for ant in range(NSUM[i]):
         gaindata[-1][j].append([])
         if np.shape(data)[0] == 2:  # A DUAL-POL GAIN (i.e., mode 'G')
@@ -1321,9 +1365,7 @@ calibrated phased arrays (i.e., phased ALMA).
         # All antennas MUST have the re-ref XY0 phase, even if not used
         # in the pol. calibration!  Traditionally .XY0 appears in the file
         # name, but there may be other gainTypes defined now or in the future.
-        if (gainType == 'Xfparang Jones' or
-            gainType == 'GlinXphf Jones' or
-            ".XY0" in gain):
+        if (gainType in ['Xfparang Jones','GlinXphf Jones','Kcross Jones'] or ".XY0" in gain):
           if dims[1]==0:
             antrowant = antrow==refants[0]
             dims = np.shape(dd0[:,antrowant])
@@ -1341,17 +1383,31 @@ calibrated phased arrays (i.e., phased ALMA).
         if not isFlagged:
           gaindata[-1][j][-1][0][:] = trow[antrowant]
 
-          if j==0:
-            gaindata[-1][j][-1][1][:] = np.abs(dd0[:,antrowant])
-          else: # CHANGE TO = 1.0 FOR TESTING:
-            gaindata[-1][j][-1][1][:] = np.abs(dd0[:,antrowant])
+         # if j==0:
+          gaindata[-1][j][-1][1][:] = np.abs(dd0[:,antrowant])
+         # else: # CHANGE TO = 1.0 FOR TESTING:
+         #   gaindata[-1][j][-1][1][:] = np.abs(dd0[:,antrowant])
           gaindata[-1][j][-1][2][:] = np.angle(dd0[:,antrowant])
           unwrap(gaindata[-1][j][-1][2]) #, check=ant<3)
           gaindata[-1][j][-1][3][:] = np.abs(dd1[:,antrowant])
           gaindata[-1][j][-1][4][:] = np.angle(dd1[:,antrowant])
           unwrap(gaindata[-1][j][-1][4]) #, check=ant<3)
           gaindata[-1][j][-1][5][:] = flags[:,antrowant]
-
+        if DEBUG and dims[0]>1:
+            print('Antenna %i: %s'%(ant, {True:"Flagged",False:"Good"}[isFlagged]))
+            outFileDebug = open("DEBUG_%i.dat"%j,"wb")
+            pk.dump(gaindata[-1][j][-1],outFileDebug)
+            outFileDebug.close()
+           # if ant==0:
+           #   if gainType == "Kcross Jones":
+           #     print('X: ',gaindata[-1][j][-1][1])
+           #     print('Y: ',gaindata[-1][j][-1][3])
+           #   else:
+           #     print('T: ',gaindata[-1][j][-1][0])
+           #     print('X: ',gaindata[-1][j][-1][2])
+           #     print('Y: ',gaindata[-1][j][-1][4])
+      if DEBUG:
+          print("Gain shape is: ",np.shape(gaindata[-1][j][-1][1]))
 
   doAmpNorm = amp_norm>0.0
 

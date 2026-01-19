@@ -104,10 +104,10 @@ bool Weighter::getWeight(int iant, double JDtime){
     };
   };
 
-//  if(!inside){
-//    sprintf(message,"T: %.5f ; ANT: %i ; %i\n",JDtime,iant,inside);
-//    fprintf(logFile,"%s",message);fflush(logFile);
-//  };
+  if(!inside){
+    sprintf(message,"No Phasing. T: %.5f ; ANT: %i ; %i\n",JDtime,iant,inside);
+    fprintf(logFile,"%s",message);fflush(logFile);
+  };
 
   return inside;
 

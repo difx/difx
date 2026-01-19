@@ -3,7 +3,9 @@
              Copyright (C) 2013-2022  Ivan Marti-Vidal
              Nordic Node of EU ALMA Regional Center (Onsala, Sweden)
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
-             University of Valencia (Spain)  
+             University of Valencia (Spain) 
+
+	     Revised on Dec 2025 
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -37,8 +39,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 DataIOFITS::~DataIOFITS() {
 
-  int i,j;
-  
+  int i,j,status;
+ 
+  printf("\nCalled FITS destructor\n");
+
+  if(ofile){ fits_flush_file(ofile, &status); fits_close_file(ofile, &status); ofile=nullptr;};
+    if (status){
+    sprintf(message,"\n\nPROBLEM CLOSING FILE!  ERR: %i\n\n",status);
+    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+  };
+  if(fptr){fits_close_file(fptr, &status); fptr=nullptr;};
+  if (status){
+    sprintf(message,"\n\nPROBLEM CLOSING FILE!  ERR: %i\n\n",status);
+    fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
+  };
+
   delete[] linAnts;
   delete[] currentVis;
   delete[] bufferVis;
@@ -51,6 +66,32 @@ DataIOFITS::~DataIOFITS() {
   delete[] is1;
   delete[] is2;
 
+
+
+
+  delete[] is1orig;
+  delete[] is2orig;
+  delete[] Basels;
+  delete[] an1;
+  delete[] an2;
+  delete[] field;
+  delete[] UVDist;
+  delete[] indexes;
+  delete[] conjugate;
+  delete[] JDTimes;
+  delete[] Times;
+  delete[] Vis2Save;
+  delete[] ParAng[0];
+  delete[] ParAng[1];
+
+
+
+
+
+
+
+
+
   for(i=0; i<NLinAnt;i++){
     for(j=0; j<Nfreqs; j++){delete[] averAutocorrs[i][j];};
       delete[] averAutocorrs[i];
@@ -58,6 +99,8 @@ DataIOFITS::~DataIOFITS() {
   delete[] averAutocorrs; 
 
   for(i=0;i<Nfreqs;i++){delete[] Freqvals[i];};
+//  delete[] Freqvals; // compiler warning when using -O3
+
 
 };
 
@@ -77,6 +120,8 @@ DataIOFITS::DataIOFITS(std::string outputfile, int NlinAnt, int *LinAnt,
          ArrayGeometry *Geom, bool doPar, FILE *logF) {
 
 
+  ofile = nullptr;
+  fptr = nullptr;  
   logFile = logF ;
   doWriteCirc = doSave;
   doParang = doPar;
@@ -167,8 +212,14 @@ DataIOFITS::DataIOFITS(std::string outputfile, int NlinAnt, int *LinAnt,
 
 // CLOSE FILE AT END:
 void DataIOFITS::finish(){
-   fits_close_file(ofile, &status);
- //  char *message;
+
+   printf("\nCalled FITS finish ");
+   if(ofile){printf("out "); fits_flush_file(ofile,&status); fits_close_file(ofile, &status);ofile=nullptr;};
+
+   printf("%i ",status);
+   if(fptr){printf("fptr "); fits_close_file(fptr, &status);fptr=nullptr;};
+   printf("%i \n",status);
+
    if (status){
      sprintf(message,"\n\nPROBLEM CLOSING FILE!  ERR: %i\n\n",status);
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
@@ -210,8 +261,8 @@ void DataIOFITS::saveCirculars(std::string inputfile) {
 
 
 // AUXILIARY MEMORY SPACE TO WRITE CIRCULAR VISIBS:
-   delete bufferVis ;
-   delete bufferData ;
+   delete[] bufferVis ;
+   delete[] bufferData ;
    bufferVis = new std::complex<float>[4*(Freqs[0].Nchan+1)] ;
    bufferData = new float[12*(Freqs[0].Nchan+1)] ;
 
@@ -286,7 +337,8 @@ void DataIOFITS::saveCirculars(std::string inputfile) {
   };
 
   delete[] circFile;
-
+  delete[] UVW;
+  delete[] FUVW;
 
 };
 
@@ -341,7 +393,7 @@ void DataIOFITS::readInput(std::string inputfile, int saveSource) {
    char NOCHAN[] = "NO_CHAN";
    char ANTENNA[] = "ANTENNA";
 
-   char card[FLEN_CARD]; 
+   char card[FLEN_CARD],auxCard[FLEN_CARD]; 
 
    int Nchan, i, ii, jj, kk, ll, auxI;
    int iband, ibfreq, ichw, isb;
@@ -367,6 +419,7 @@ void DataIOFITS::readInput(std::string inputfile, int saveSource) {
    fits_get_num_rows(fptr, &lNant, &status);
    Nants = (int) lNant;
 
+
 // READ FREQUENCY METADATA. ALLOCATE MEMORY.
    fits_movnam_hdu(fptr, BINARY_TBL, FREQUENCY,1, &status);
    if (status){
@@ -388,8 +441,21 @@ void DataIOFITS::readInput(std::string inputfile, int saveSource) {
 
    fits_read_key(fptr, TINT, NOBAND, &Nband, card, &status);
    fits_read_key(fptr, TINT, NOCHAN, &Nchan, card, &status);
-   fits_read_key(fptr, TDOUBLE, REFFREQ, &reffreq, card, &status);
-   fits_read_key(fptr, TDOUBLE, REFPIXL, &refpix, card, &status);
+   fits_read_keyword(fptr, REFFREQ, auxCard, card, &status);
+
+   //////////////////////////////////////////////////////////
+   // This is to avoid stupid issues with "locale" settings
+   // when doubles are read from the header:
+   std::istringstream auxKK(auxCard);
+   auxKK.imbue(std::locale("C"));
+   auxKK >> reffreq;   
+   fits_read_keyword(fptr, REFPIXL, auxCard, card, &status);
+   std::istringstream auxKK2(auxCard);
+   auxKK2.imbue(std::locale("C"));
+   auxKK2 >> refpix;
+   /////////////////////////////////////////////////////////
+
+
    if (status){
      sprintf(message,"\n\nPROBLEM READING FREQUENCY METADATA I!  ERR: %i\n\n",status);
      fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
@@ -439,7 +505,7 @@ void DataIOFITS::readInput(std::string inputfile, int saveSource) {
        double dchw = (double) chanwidth[ii] ;
        Freqs[ii+jj*Nband].Nu0 = reffreq + bandfreq[ii] - refpix*dchw;
        Freqs[ii+jj*Nband].SB = SB[ii]==1;
-       Freqvals[ii] = new double[Nchan];
+       Freqvals[ii+jj*Nband] = new double[Nchan];
 
        if (SB[ii]==1){
          for (auxI = 1; auxI<Nchan+1; auxI++) {
@@ -517,8 +583,8 @@ void DataIOFITS::readInput(std::string inputfile, int saveSource) {
     fits_get_colnum(fptr, CASEINSEN, WW1, &ww, &status);
     };
   } else {
-  fits_get_colnum(fptr, CASEINSEN, VV0, &uu, &status);
-  fits_get_colnum(fptr, CASEINSEN, WW0, &uu, &status);
+  fits_get_colnum(fptr, CASEINSEN, VV0, &vv, &status);
+  fits_get_colnum(fptr, CASEINSEN, WW0, &ww, &status);
   };
 
 
@@ -642,6 +708,7 @@ void DataIOFITS::readInput(std::string inputfile, int saveSource) {
   day0 = Dates[0];
 
   fits_close_file(fptr, &status);
+  fptr = nullptr;
   if (status){
     sprintf(message,"\n\nPROBLEM CLOSING FILE!  ERR: %i\n\n",status);
     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
@@ -649,6 +716,8 @@ void DataIOFITS::readInput(std::string inputfile, int saveSource) {
   };
 
 delete[] Dates;
+delete[] UVW;
+delete[] FUVW;
 return;
 };
 
@@ -678,13 +747,12 @@ bool DataIOFITS::setCurrentIF(int i){
   for (j=0;j<currFreq;j++){
      jump += 4*((long) Freqs[j].Nchan);
   };
-//  jump = 4*((long) Freqs[currFreq].Nchan)*((long) currBand);
   Nentry = 4*((long) Freqs[currFreq].Nchan);
-  delete currentVis ;
-  delete bufferVis ;
-  delete TwoLinearVis ;
-  delete bufferData ;
-  delete currentData ;
+  delete[] currentVis ;
+  delete[] bufferVis ;
+  delete[] TwoLinearVis ;
+  delete[] bufferData ;
+  delete[] currentData ;
   currentVis = new std::complex<float>[4*(Freqs[currFreq].Nchan+1)] ;
   bufferVis = new std::complex<float>[4*(Freqs[currFreq].Nchan+1)] ;
   TwoLinearVis = new std::complex<float>[4*(Freqs[currFreq].Nchan+1)] ;

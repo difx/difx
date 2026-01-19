@@ -151,27 +151,27 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
 
   int overWrite;
   int iMode, IFoffset;
-//  double PI = 3.1415926535; 
-//  double R2D = 180./PI; 
-//  double GrDel;
   // Object to return:
   PyObject *ret; 
-
-  ret = Py_BuildValue("i",-1);
-  
-  // Function arguments:
-//  int Ref, NIFs;
-  PyObject *pFName, *pZero, *pFreqInfo;
-  if (!PyArg_ParseTuple(args, "OOiiOi", &pFName, &pZero, &overWrite, &iMode, &pFreqInfo, &IFoffset)){printf("FAILED XPCalMF! Wrong arguments!\n"); fflush(stdout);  return ret;};
-
- // if (Ref<0 || Ref>2){printf("ERROR! Ref should be >=0 and <= 2\n"); fflush(stdout); return ret;}
-
+  long Iret;
 
   int NIF = 0;
   double *FRINI;
   double *FREND;
   double AuxF0, AuxF1, AuxF2;
   int i;
+ 
+
+  //ret = Py_BuildValue("i",-1);
+  Iret = -1;
+
+  // Function arguments:
+//  int Ref, NIFs;
+  PyObject *pFName, *pZero, *pFreqInfo;
+  if (!PyArg_ParseTuple(args, "OOiiOi", &pFName, &pZero, &overWrite, &iMode, &pFreqInfo, &IFoffset)){printf("FAILED XPCalMF! Wrong arguments!\n"); fflush(stdout);  return PyLong_FromLong(Iret);};
+
+
+
   
  // READ IF FREQUENCY LIMITS: 
    if ( PyList_Size(PyDict_Items(pFreqInfo)) > 0){
@@ -196,7 +196,7 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
       };
      // printf("IF %i: FROM %.4e TO %.4e\n",i,FRINI[i],FREND[i]);
     };
-  };
+  } else {FRINI = new double[1]; FREND = new double[1];};
 
   
   // GrDel *= 1.e-3*(2.*PI);
@@ -390,9 +390,7 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
   int *IF = new int[NTone];   
 
 // Auxiliary variables:
-//int FirstGood = -1;
 
-  //printf("STAGE 2\n");fflush(stdout);
 
 // Compute the average cross-polarization phases:
   cplx64d PCalTemp;
@@ -466,9 +464,6 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
 
 
   
-//  for (i=0; i<NTone; i++){
-//     printf(" %i  -   %.3f  %i \n",nIFZero,PCalNus[i],ZeroIt[i]);
-//  };
 
   std::string TelName, line, auxStr;
   std::stringstream tempStr;
@@ -579,18 +574,30 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
 
 
 
-
-
-
-  if(overWrite!=0){
-    //printf("Overwrite\n");fflush(stdout);
-    ret = Py_BuildValue("i",0);
-    return ret;
-
-  };
-
   double FrAux, PhAux, AuxA; 
   double ZeroAux;
+
+  double DNu = PCalNus[1] - PCalNus[0];
+  double IFDel00, IFDel01, IFDel0, IFDel1, NtoneIF;
+  double *NWrap = new double[NTone];
+  cplx64d AvPhasor;
+  double fitDelay, IFPhase;
+
+  int nUsableTones;
+  int *usableTones = new int[NTone];
+  FILE *outFile;
+  std::string outname; 
+  std::string SUFFIX(".CROSSPOL");
+ 
+
+  if(overWrite!=0){
+    Iret = 0;
+    ret = PyLong_FromLong(Iret);
+    goto finish;
+  };
+
+
+
 // Sort the data in order of increasing frequency:
   for (i=0; i<NTone-1; i++){
     for (j=i+1; j<NTone; j++){
@@ -609,18 +616,11 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
 // Connect phases among tones for each IF:
 
 
-  double DNu = PCalNus[1] - PCalNus[0];
-//  double FracP, IntP;
-  double IFDel00, IFDel01, IFDel0, IFDel1, NtoneIF;
-  double *NWrap = new double[NTone];
-  cplx64d AvPhasor;
-  double fitDelay, IFPhase;
-
-
  // If freq. info was not provided, guess the IFs:
  
    if (NIF==0){
      int AuxIF = 0;
+     delete[] FRINI; delete[] FREND;
      FRINI = new double[NTone]; FREND = new double[NTone];
      for (i=0; i<NTone-1; i++){
         if(PCalNus[i+1]-PCalNus[i] > 1.01*DNu){
@@ -661,9 +661,7 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
   
 //// LOOP OVER IFS:  
 
- int nUsableTones;
- int *usableTones = new int[NTone];
-    
+   
  for (k=0; k<NIF; k++){
  
    //printf("%i %i\n",NIF,k);
@@ -731,21 +729,22 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
   };
 
 
-  std::string SUFFIX(".CROSSPOL"); // = PyString_AsString(SuffixObj);
-  std::string outname = PcalFile + SUFFIX;  
-  FILE *outFile = fopen(outname.c_str(),"w");
+  outname = PcalFile + SUFFIX;  
+  outFile = fopen(outname.c_str(),"w");
 
- // printf("NTone = %i\n",NTone); fflush(stdout);
   
   fprintf(outFile,"# Freq (MHz) | X-Y Phase (deg.) | Amps (Norm.) | X-Y Delay (mus) | Av Phase (deg.) | Ref. Freq. (MHz) | IF \n");
   
   for (i=0;i<NTone;i++){
-   //   printf(" WRITING %i\n",i);fflush(stdout);
-   //    printf("%i %.8e  %.8e  %.8e\n",i,PCalNus[i],Phases[i],Amps[i]); fflush(stdout);
       fprintf(outFile,"%.8e  %.8e  %.8e  %.8e  %.8e  %.8e  %i\n", PCalNus[i], Phases[i]*R2D, Amps[i], Delays[i], RefPhases[i]*R2D, RefFreqs[i], IF[i]);
   };
 
   fflush(outFile);
+
+// Return filename (if created):  
+  ret = Py_BuildValue("s",outname.c_str());
+
+finish:
 
  // Release memory:
   for (i=0; i<NTone; i++){
@@ -770,25 +769,19 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
     delete[] NTimes;
     delete[] ZeroIt;
 
-/*
-  // Arrange data for output to Python:
-  npy_intp dims[1];
-  dims[0] = NTone;
-  PyObject *XYadd = (PyObject *) PyArray_SimpleNewFromData(1, dims, NPY_FLOAT64, (void *) Phases);
-  PyObject *XYnu =  (PyObject *) PyArray_SimpleNewFromData(1, dims, NPY_FLOAT64, (void *) PCalNus);
-  PyObject *XAmps = (PyObject *) PyArray_SimpleNewFromData(1, dims, NPY_FLOAT64, (void *) Amps);
-  ret = Py_BuildValue("[O,O,O]",XYnu,XYadd,XAmps);
-*/
+    delete[] FRINI;
+    delete[] FREND;
+    delete[] IFini;
+    delete[] IFend;
+    delete[] TOver;
+    delete[] IF;
+    delete[] usableTones;
 
-  //printf("Xcross %i\n",NTone);fflush(stdout);
-  
-  ret = Py_BuildValue("s",outname.c_str());
+
   return ret;
 
 
 };
-
-
 
 
 

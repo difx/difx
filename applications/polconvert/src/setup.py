@@ -65,6 +65,17 @@ sourcefiles4 = ['_XPCal.cpp']
 
 sourcefiles5 = ['_XPCalMF.cpp']
 
+
+AllSour = sourcefiles1+sourcefiles2+sourcefiles3+sourcefiles4+sourcefiles5
+for soi in AllSour:
+    os.system("touch %s"%soi)
+
+
+## Sanitizadores de memoria:
+#CXXFLAGS="-O0 -g -fsanitize=address,leak,undefined -fno-omit-frame-pointer"
+#LDFLAGS="-fsanitize=address,leak,undefined"
+
+
 c_ext1 = Extension("_PolConvert", sources=sourcefiles1,
                   extra_compile_args=["-Wno-deprecated","-O3","-std=c++11"],
                   library_dirs=libdirs,

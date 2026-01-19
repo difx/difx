@@ -3,6 +3,8 @@
                  Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
                  University of Valencia (Spain)
 
+		 Revised on Dec 2025.
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -31,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 
 
-
+// Destructor to free all pointers.
 DataIOSWIN::~DataIOSWIN() {
 
   int i, j;
@@ -54,7 +56,7 @@ DataIOSWIN::~DataIOSWIN() {
   delete[] Freqs;
   delete[] is1;
   delete[] is2;
-  delete[] UVDist;
+  delete[] filesizes;
 
   for (i=0; i<4; i++){
     delete[] currentVis[i];
@@ -71,10 +73,13 @@ DataIOSWIN::~DataIOSWIN() {
   for(i=0;i<Nfreqs;i++){
     delete[] Freqvals[i];
   };
+//  delete[] Freqvals; // Compiler warning with -O3;
 
 };
 
 
+
+// Constructor:
 DataIOSWIN::DataIOSWIN(int nfiledifx, std::string* difxfiles, int NlinAnt,
          int *LinAnt, double *Range, int nIF, int *nChan, int nIF2Conv,
          int *IF2Conv, int IFoffset, int Afilt, int *NchanAC,
@@ -195,11 +200,14 @@ double getMedian(double *X, int n0, int N){
 
   if(N%2){
     Nmed = N/2 -1;
-    return (Sorted[Nmed] + Sorted[Nmed+1])/2.;
+    Aux = (Sorted[Nmed] + Sorted[Nmed+1])/2.;
   } else {
     Nmed = (N+1)/2 -1;
-    return Sorted[Nmed];
+    Aux = Sorted[Nmed];
   };
+
+  delete[] Sorted;
+  return Aux;
 
 };
 
@@ -281,6 +289,8 @@ void DataIOSWIN::finish(){
      if (!isOverWrite){olddifx[auxI].close();};
   };
 
+  delete[] olddifx;
+  delete[] newdifx;
 };
 
 
@@ -681,6 +691,7 @@ FREE:
 
 
   delete[] circFile;
+  delete[] autoCorrs;
 
   if (nrec==0) {
     sprintf(message,"\n NO VALID DATA FOUND!");
@@ -694,6 +705,7 @@ FREE:
   };
 
   delete[] pol;
+  delete[] UVW;
 
 };
 
@@ -900,14 +912,6 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
 
 
 
-/*
-else if (isAutoCorr) {
-        for (k=0;k<Freqs[currFreq].Nchan; k++) {
-          currentVis[2][k] = 0.0;
-          currentVis[1][k] = 0.0;
-        };
-    };
-*/
    calField = field;
    JDTime = time;
    currConj = conj ;
@@ -928,7 +932,6 @@ else if (isAutoCorr) {
 
 
 int DataIOSWIN::getFileNumber(){
-//  printf("Entering FileNum: %i\n",currFreq);fflush(stdout);
   long rec; int fnum;
   int i;
   for(i=0;i<4;i++){
@@ -936,13 +939,11 @@ int DataIOSWIN::getFileNumber(){
     if(rec>=0){break;};
   };
 
-//    printf("REC: %ld\n",rec);fflush(stdout);
 
   if(rec>=0){
     fnum = Records[rec].fileNumber;
   } else {fnum = 0;};
 
- // printf("FNUM: %i\n",fnum);fflush(stdout);
 
   return fnum;
 };
@@ -1156,9 +1157,6 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap,
 ///////////////////////////////////
 
 
-//  if(isAutoCorr){printf("B: %i  | %.3e %.3e  |  %.3e %.3e  |  %.3e %.3e  | %.3e %.3e \n",canPlot,bufferVis[0][10].real(),bufferVis[0][10].imag(),bufferVis[1][10].real(),bufferVis[1][10].imag(),bufferVis[2][10].real(),bufferVis[2][10].imag(),bufferVis[3][10].real(),bufferVis[3][10].imag()); fflush(stdout);};
-
-//  if(isAutoCorr){printf("C: %i  | %.3e %.3e  |  %.3e %.3e  |  %.3e %.3e  | %.3e %.3e \n",canPlot,currentVis[0][10].real(),currentVis[0][10].imag(),currentVis[1][10].real(),currentVis[1][10].imag(),currentVis[2][10].real(),currentVis[2][10].imag(),currentVis[3][10].real(),currentVis[3][10].imag()); fflush(stdout);};
 };
 
 

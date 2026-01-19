@@ -1,3 +1,10 @@
+v2.1b
+- Adapted to newer API, so we can run this on more recent CASA versions.
+- Added support to Kcross tables (maybe useful for future QA2 strategies).
+- Improved memory management and runtime error handling.
+- Missing "validTime" entries in calAPP are now "guessed".
+- Code cleanup.
+
 v2.0.7b
 - fixes the QA2TABLES env var (https://github.com/marti-vidal-i/PolConvert/pull/14)
 - refreshed help on "drivepolconvert.py -q <version>" (same PR #14 as above)

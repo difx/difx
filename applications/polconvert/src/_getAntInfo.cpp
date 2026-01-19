@@ -136,48 +136,51 @@ static PyObject *getAntInfo(PyObject *self, PyObject *args){
   PyObject *IDI;
   int status, ist, imt, iAux;
   long lAux, jj;
+  long Iret = 0;
 
   status = 0;
+  Nants = -1;
 
-  if (!PyArg_ParseTuple(args, "O",&IDI)){
-     printf("Failed initialization of getAntInfo! Check inputs!\n"); 
-     PyObject *ret = Py_BuildValue("i",-1);
-     return ret;
-  };
-
-  std::string fname;
-  fname = PyString_AsString(IDI);
-
-  fitsfile *ifile;
   char ARRAY[] = "ARRAY_GEOMETRY";
   char STABXYZ[] = "STABXYZ";
   char MNTSTA[] = "MNTSTA";
+  
+  fitsfile *ifile;
+  ifile = nullptr;
+  std::string fname;
 
+
+  if (!PyArg_ParseTuple(args, "O",&IDI)){
+     printf("Failed initialization of getAntInfo! Check inputs!\n"); 
+     Iret = -1; goto abort1;
+  };
+
+  fname = PyString_AsString(IDI);
 
   fits_open_file(&ifile, fname.c_str(), READONLY, &status);
 
   if (status){
      printf("\n\nPROBLEM OPENING FILE!  ERR: %i\n\n",status);
-     return Py_BuildValue("i",1);
+     Iret = status; goto abort1;
   };
   fits_movnam_hdu(ifile, BINARY_TBL, ARRAY,1, &status);
 
   if (status){
      printf("\n\nPROBLEM ACCESSING ARRAY INFO!  ERR: %i\n\n",status); 
-     return Py_BuildValue("i",1);
+     Iret = status; goto abort1;
   };
 
   fits_get_num_rows(ifile, &lAux, &status);
   if(status){
     printf("\n\nPROBLEM ACCESSING ARRAY INFO!  ERR: %i\n\n",status);
-    return Py_BuildValue("i",1);
+    Iret = status; goto abort1;
   };
 
   Nants = (int) lAux;
 
 // Allocate memory:
-  delete Coords;
-  delete Mounts;
+  delete[] Coords;
+  delete[] Mounts;
 
   Coords = new double[3*Nants];
   Mounts = new int[Nants];
@@ -186,37 +189,47 @@ static PyObject *getAntInfo(PyObject *self, PyObject *args){
   fits_get_colnum(ifile, CASEINSEN, STABXYZ, &ist, &status);
   if(status){
     printf("\n\nPROBLEM ACCESSING ARRAY INFO!  ERR: %i\n\n",status);
-    return Py_BuildValue("i",1);
+    Iret = status; goto abort1;
   };
   fits_get_colnum(ifile, CASEINSEN, MNTSTA, &imt, &status);
   if(status){
     printf("\n\nPROBLEM ACCESSING ARRAY INFO!  ERR: %i\n\n",status);
-    return Py_BuildValue("i",1);
+    Iret = status; goto abort1;
   };
 
   for (jj=0;jj<Nants;jj++){
     fits_read_col(ifile, TDOUBLE, ist, jj+1, 1, 3, NULL, &Coords[3*jj], &iAux, &status);
     if(status){
       printf("\n\nPROBLEM ACCESSING ARRAY COORDINATES DATA!  ERR: %i\n\n",status);
-      return Py_BuildValue("i",2);
+      Iret = status; goto abort1;
     };
     fits_read_col(ifile, TINT, imt, jj+1, 1, 1, NULL, &Mounts[jj], &iAux, &status);
     if(status){
       printf("\n\nPROBLEM ACCESSING ARRAY MOUNTS DATA!  ERR: %i\n\n",status);
-      return Py_BuildValue("i",2);
+      Iret = status; goto abort1;
     };
     printf("ANTENNA %2li: X=%-9.1f Y=%-9.1f Z=%-9.1f | MOUNT: %i\n",
        jj,Coords[3*jj],Coords[3*jj+1],Coords[3*jj+2],Mounts[jj]);
   };
 
-  fits_close_file(ifile, &status);
 
-  if(status){
-    printf("\n\nPROBLEM CLOSING FITS-IDI!  ERR: %i\n\n",status);
-    return Py_BuildValue("i",3);
+  
+abort1:
+
+  if (Iret!=0 && Nants!=-1){ // back to defaults.
+    delete[] Coords; Coords = new double[3];
+    delete[] Mounts; Mounts = new int[1];
   };
 
-  return Py_BuildValue("i",0);
+  if(ifile){
+    fits_close_file(ifile, &status);
+    if(status){
+      printf("\n\nPROBLEM CLOSING FITS-IDI!  ERR: %i (Previous Error: %li)\n\n",status,Iret);
+      Iret = status;
+    };
+  };
+
+  return PyLong_FromLong(Iret);
 
 };
 

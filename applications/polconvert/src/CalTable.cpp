@@ -5,6 +5,8 @@
              Max-Planck-Institut fuer Radioastronomie (Bonn, Germany)
              University of Valencia (Spain)
 
+	     Revised on Dec 2025 (memory management + Kcross implementation)
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -31,11 +33,54 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 #define TWOPI 6.283185307179586
 #include <complex>
 
-CalTable::~CalTable() {};
+
+
+// Destructor to free all pointers.
+CalTable::~CalTable() {
+
+  long iLoop = Nants;
+  long i,j;
+  if (iLoop<1){iLoop = 1; Nchan=1;}; // Case of dummy table;
+
+  for(i=0;i<iLoop;i++){
+    delete[] Time[i];
+    delete[] flags[i];
+    delete[] bufferGain[0][i];
+    delete[] bufferGain[1][i];
+    for(j=0;j<Nchan;j++){
+      delete[] GainAmp[0][i][j];
+      delete[] GainAmp[1][i][j];
+      delete[] GainPhase[0][i][j];
+      delete[] GainPhase[1][i][j];
+    };
+    delete[] GainAmp[0][i];
+    delete[] GainAmp[1][i];
+    delete[] GainPhase[0][i];
+    delete[] GainPhase[1][i];
+  };
+
+  delete[] Ntimes;
+  delete[] firstTime;
+  delete[] Freqs;
+  delete[] preKt;
+  delete[] pret0;
+  delete[] pret1;
+  delete[] K0;
+  delete[] I0;
+  delete[] I1;
+  delete[] Time;
+  delete[] flags;
+  delete[] bufferGain[0];
+  delete[] bufferGain[1];
+  delete[] GainAmp[0];
+  delete[] GainAmp[1];
+  delete[] GainPhase[0];
+  delete[] GainPhase[1];
+};
 
 
 
-// Consturctor for dummy calibration table.
+// Constructor for dummy calibration table.
 // If Nants<0, the table is considered "dummy".
 
 CalTable::CalTable(int kind, FILE *logF){
@@ -45,11 +90,35 @@ CalTable::CalTable(int kind, FILE *logF){
   isTsys = kind==3;
   JDRange[0] = 0.; JDRange[1]=1.e20;
   gainChanged = true;
+
   Freqs = new double[1]; Freqs[0] = 1.0;
-  Time = new double*[1];
+  Time = new double*[1]; flags = new bool*[1];
+  flags[0] = new bool[1];
+  Ntimes = new long[1];
   Time[0] = new double[1]; Time[0][0] = 1.0;
+  firstTime = new bool[1]; 
+  GainAmp[0] = new double**[1]; 
+  GainAmp[0][0] = new double*[1]; GainAmp[0][0][0] = new double[1];
+  GainAmp[1] = new double**[1];
+  GainAmp[1][0] = new double*[1]; GainAmp[1][0][0] = new double[1];
+  GainPhase[0] = new double**[1];
+  GainPhase[0][0] = new double*[1]; GainPhase[0][0][0] = new double[1];
+  GainPhase[1] = new double**[1];
+  GainPhase[1][0] = new double*[1]; GainPhase[1][0][0] = new double[1];
+
+  bufferGain[0] = new std::complex<float>*[1];
+  bufferGain[1] = new std::complex<float>*[1];
+  bufferGain[0][0] = new std::complex<float>[1];
+  bufferGain[1][0] = new std::complex<float>[1];
+
+  preKt = new double[1]; pret0 = new long[1]; pret1 = new long[1];
+  K0 = new double[1]; I0 = new long[1]; I1 = new long[1];
+
   Verbose = false;
 };
+
+
+
 
 
 // Constructor for normal calibration table.
@@ -170,7 +239,7 @@ CalTable::CalTable(int kind, double **R1, double **P1,double **R2,double **P2,
 
 // Is this a bandpass gain or a time gain?
 bool CalTable::isBandpass() {
-  return Nchan>1;
+  return Nchan>1 || isDelay;
 };
 
 
@@ -187,22 +256,6 @@ void CalTable::fillGaps() {
 
  auxI = -1; // If all channels are flagged, no interpolation is done.
 
-/*
-//////////////////////
-// DEBUGGING CODE
-FILE *gainFile = fopen("GAINS.ASSESS.B4","ab");
-fwrite(&Nchan,sizeof(int),1,gainFile);
-   for (chan=0; chan<Nchan; chan++) {
-       fwrite(&GainAmp[0][0][chan][0],sizeof(double),1,gainFile); 
-       fwrite(&GainAmp[1][0][chan][0],sizeof(double),1,gainFile); 
-       fwrite(&GainPhase[0][0][chan][0],sizeof(double),1,gainFile); 
-       fwrite(&GainPhase[1][0][chan][0],sizeof(double),1,gainFile); 
-       fwrite(&flags[0][chan*Ntimes[0]+0],sizeof(bool),1,gainFile);
-   };
-fclose(gainFile);
-//////////////////////
-*/
-
  if (Nchan==1){
    for (ant=0; ant<Nants; ant++) {
      allflagged = true;
@@ -210,7 +263,7 @@ fclose(gainFile);
      if (allflagged){
        sprintf(message,"\nWARNING: ALMA ANTENNA #%i HAS ALL ITS TIMES FLAGGED!\n",ant);
        fprintf(logFile,"%s",message);
-       sprintf(message,"SETTING ITS GAIN TO ZERO. CHECK RESULTS CAREFULLY!\n\n");
+       sprintf(message,"SETTING ITS GAIN TO DUMMY. CHECK RESULTS CAREFULLY!\n\n");
        fprintf(logFile,"%s",message);
        fflush(logFile);
        for (tidx=0; tidx<Ntimes[ant]; tidx++) {
@@ -218,8 +271,8 @@ fclose(gainFile);
            GainAmp[0][ant][0][tidx] = 0.0;
            GainAmp[1][ant][0][tidx] = 0.0;
          } else {
-           GainAmp[0][ant][0][tidx] = 0.0;
-           GainAmp[1][ant][0][tidx] = 0.0;
+           GainAmp[0][ant][0][tidx] = 1.0;
+           GainAmp[1][ant][0][tidx] = 1.0;
          };
          GainPhase[0][ant][0][tidx] = 0.0;
          GainPhase[1][ant][0][tidx] = 0.0;
@@ -369,22 +422,6 @@ fclose(gainFile);
  };
 
 
-/*
-//////////////////////
-// DEBUGGING CODE
-FILE *gainFile2 = fopen("GAINS.ASSESS","ab");
-fwrite(&Nchan,sizeof(int),1,gainFile2);
-   for (chan=0; chan<Nchan; chan++) {
-       fwrite(&GainAmp[0][0][chan][0],sizeof(double),1,gainFile2); 
-       fwrite(&GainAmp[1][0][chan][0],sizeof(double),1,gainFile2); 
-       fwrite(&GainPhase[0][0][chan][0],sizeof(double),1,gainFile2); 
-       fwrite(&GainPhase[1][0][chan][0],sizeof(double),1,gainFile2); 
-       fwrite(&flags[0][chan*Ntimes[0]+0],sizeof(bool),1,gainFile2);
-   };
-fclose(gainFile2);
-//////////////////////
-*/
-
 return;
 };
 
@@ -471,7 +508,7 @@ void CalTable::setMapping(long mschan, double *freqs)
   MSChan = mschan;
   double mmod;
 
-if (SignFreq && Nchan>=1) {
+if (SignFreq && Nchan>1) {
 
   for (i=0; i<mschan; i++) {
     if (freqs[i] <= Freqs[0]){
@@ -493,7 +530,7 @@ if (SignFreq && Nchan>=1) {
     };
   };
 
-} else if(Nchan>=1) {
+} else if(Nchan>1) {
 
   for (i=0; i<mschan; i++) {
     if (freqs[i] >= Freqs[0]){
@@ -514,7 +551,10 @@ if (SignFreq && Nchan>=1) {
       };
      };
   };
-
+} else if(Nchan==1) {
+  for (i=0; i<mschan; i++) {
+     I0[i] = 0 ; I1[i] = 0 ; K0[i] = 1.0;	  
+  };
 } else {
   if (Verbose){
     printf("Undefined Behaviour: setMapping() with input mschan=%ld for interpolation, but CalTable was set up with Nchan=%ld < 1\n",mschan,Nchan);
@@ -528,7 +568,15 @@ if (SignFreq && Nchan>=1) {
 
 bool CalTable::setInterpolationTime(double itime) {
 
-  if (Verbose){printf("Set interpolation at time %.3f for %i antennas \n",itime,Nants);fflush(stdout);};
+  if (Verbose && Nchan>1){
+       sprintf(message,"Set interpolation at time %.3f for %i antennas \n",itime,Nants);
+       fprintf(logFile,"%s",message);
+       printf("%s",message);fflush(stdout);
+       sprintf(message,"Delay: %i, Dterm: %i, Tsys: %i\n",isDelay,isDterm,isTsys);
+       fprintf(logFile,"%s",message);
+       printf("%s",message);
+       fflush(stdout);
+  };
 
   if (itime == currTime) {gainChanged = false; return gainChanged;};
 
@@ -549,8 +597,10 @@ bool CalTable::setInterpolationTime(double itime) {
  for (iant=0; iant<Nants; iant++) {
 
    Nts = Ntimes[iant];
-   if (Verbose){
-     printf("Ant %i has %li times \n",iant,Nts); fflush(stdout);
+   if (Verbose && Nchan>1){
+     sprintf(message,"Ant %i has %li times \n",iant,Nts); 
+     fprintf(logFile,"%s",message);
+     printf("%s",message);fflush(stdout);
    };
    if (Nts == 1) {
      pret0[iant] = 0;
@@ -588,8 +638,10 @@ bool CalTable::setInterpolationTime(double itime) {
 
  };
 
-   if (Verbose){
-     printf("%li  %li  %.3f\n",ti0, ti1, Kt);fflush(stdout);
+   if (Verbose && Nchan>1 && gainChanged){
+     sprintf(message,"\nNtimes: %li | %li  %li  %.3f | %.3e -- %.3e \n",Nts,pret0[1], pret1[1], preKt[1],itime,Time[0][ti0]);
+     fprintf(logFile,"%s",message);
+     printf("%s",message);fflush(stdout);
    };
    currTime = itime;
    return gainChanged;
@@ -620,7 +672,7 @@ void CalTable::applyInterpolation(int iant, int mode, std::complex<float> *gain[
   double Kt, Kt2;
 
   double auxF0, auxF1, auxF2, auxF3, auxT0, auxT1, auxT2, auxT3;
-  if (Verbose){printf("Apply interpolation for antenna %i\n",iant);fflush(stdout);};
+ // if (Verbose){printf("Apply interpolation for antenna %i\n",iant);fflush(stdout);};
 
   if(Nants<0){return;};
 
@@ -629,7 +681,7 @@ void CalTable::applyInterpolation(int iant, int mode, std::complex<float> *gain[
   Kt = preKt[iant];
   Kt2 = 1.0-Kt;
 
-  if (Verbose){printf("indexes: %li %li  -  %.3f\n",ti0, ti1, Kt);fflush(stdout);};
+ // if (Verbose){printf("indexes: %li %li  -  %.3f\n",ti0, ti1, Kt);fflush(stdout);};
 
 
 // Interpolate in frequency (first) and time (second):
@@ -756,6 +808,12 @@ bool CalTable::getInterpolation(int iant, int ichan, std::complex<float> gain[2]
     gain[0] = bufferGain[0][iant][ichan];
     gain[1] = bufferGain[1][iant][ichan];
     success = true;
+  };
+
+  if(Verbose){
+    sprintf(message,"getting X-phases with Del: %i, Dt: %i, Tsys: %i; Nch: %li",isDelay,isDterm,isTsys,Nchan);
+    fprintf(logFile,"%s",message);
+    printf("%s",message);fflush(stdout);
   };
 
   return success;

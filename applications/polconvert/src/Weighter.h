@@ -42,6 +42,7 @@ class Weighter {
     FILE *logFile;
     char message[512];
     int nants;
+    bool Phased;
     long *ntimes, nASDMEntries; 
     int *ants; 
     int *refAnts;
