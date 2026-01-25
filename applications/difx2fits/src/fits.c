@@ -244,8 +244,8 @@ int fitsWriteBinTable
 
     if(num_col < 0 || num_col > 999)
     {
-        fprintf(stderr, "Error: fitsWriteiBinTable(): number of columns is %d -- out of range.\n", num_col);
-	exit(0);
+        fprintf(stderr, "Error: fitsWriteBinTable(): number of columns is %d -- out of range.\n", num_col);
+        exit(0);
     }
 
     extver = getExtVer(pFile, extname);

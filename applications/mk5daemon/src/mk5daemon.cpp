@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -236,7 +236,7 @@ int checkRunning(const char *hostname)
 	struct addrinfo hints;
 	struct addrinfo *servinfo;
 	const char drsQuery[] = "DTS_id?;";
-	int txBytes, rxBytes;
+	size_t txBytes, rxBytes;
 	char message[MaxMessageLength];
 	struct timeval tv;
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2025 by Walter Brisken and Helge Rottmann          *
+ *   Copyright (C) 2009-2026 by Walter Brisken and Helge Rottmann          *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -124,9 +124,11 @@ void writeJobMatrix(const JobMatrix *jm, int passNum)
 	// write header line
 	for(a = 0; a < jm->nAntenna; ++a)
 	{
-		strncpy_warn(name, jm->D->antenna[a].name, 2);
+		/* Just retain up to the first two letters of the antenna name */
+		name[0] = jm->D->antenna[a].name[0];
+		name[1] = jm->D->antenna[a].name[1];
 		name[2] = 0;
-		fprintf(out, "%s ", name);
+		fprintf(out, "%2s ", name);
 	}
 	fprintf(out, "\n\n");
 

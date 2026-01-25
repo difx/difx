@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2025 by Walter Brisken                             *
+ *   Copyright (C) 2007-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -53,9 +53,9 @@ extern "C" {
 #define DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH	64
 #define DIFX_MESSAGE_HOSTNAME_LENGTH	256
 
-/* Actual string lengths to accomodate trailing zero and maintain 16 bit alignment */
-#define DIFX_MESSAGE_MARK5_VSN_STR_LENGTH	(DIFX_MESSAGE_MARK5_VSN_LENGTH+2)
-#define DIFX_MESSAGE_MARK6_MSN_STR_LENGTH	(DIFX_MESSAGE_MARK6_MSN_LENGTH+2)
+/* Actual string lengths to accomodate trailing zero */
+#define DIFX_MESSAGE_MARK5_VSN_STR_LENGTH	(DIFX_MESSAGE_MARK5_VSN_LENGTH+1)
+#define DIFX_MESSAGE_MARK6_MSN_STR_LENGTH	(DIFX_MESSAGE_MARK6_MSN_LENGTH+1)
 #define DIFX_MESSAGE_MARK6_GROUP_STR_LENGTH	(DIFX_MESSAGE_MARK6_GROUP_LENGTH+1)
 #define DIFX_MESSAGE_DISC_SERIAL_STR_LENGTH	(DIFX_MESSAGE_DISC_SERIAL_LENGTH+1)
 #define DIFX_MESSAGE_DISC_MODEL_STR_LENGTH	(DIFX_MESSAGE_DISC_MODEL_LENGTH+1)

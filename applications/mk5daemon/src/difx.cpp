@@ -475,7 +475,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G, int noS
 		Mk5Daemon_system(D, command, 1);
 
 		/* write threads file */
-		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s.threads", filebase);
+		snprintf_warn(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s.threads", filebase);
 		
 		if(S->function == DIFX_START_FUNCTION_USNO)
 		{

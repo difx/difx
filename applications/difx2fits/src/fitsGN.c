@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2025 by Walter Brisken and Jay Blanchard           *
+ *   Copyright (C) 2008-2026 by Walter Brisken and Jay Blanchard           *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,6 +27,7 @@
 #include "difx2fits.h"
 #include "util.h"
 #include "other.h"
+#include "difxio/difxio_macros.h"
 #include "difxio/antenna_db.h"
 
 #define MAXENTRIES		8000UL
@@ -183,14 +184,15 @@ static int handleCbandGain(GainRow *G, int nRow, const DifxAntenna *da, double f
 
 static int isHSAAntenna(const char *token)
 {
+	const int MatchLength = ANTENNA_NAME_LENGTH+3;
 	const char antennas[] = " AR BR EB FD GB HN KP LA MK NL OV PT SC Y Y1 Y2 Y3 Y4 ";
-	char matcher[8];
+	char matcher[MatchLength];
 
 	if(strlen(token) >= ANTENNA_NAME_LENGTH)
 	{
 		return 0;
 	}
-	sprintf(matcher, " %s ", token);
+	snprintf_warn(matcher, MatchLength, " %s ", token);
 	if(strstr(antennas, matcher) != 0)
 	{
 		return 1;
