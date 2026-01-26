@@ -3901,7 +3901,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	l = strlen(inputFile);  
 	if(strcmp(inputFile + l - 6, ".input") == 0)
 	{
-		strncpy_warn(CalcInName, inputFile, l - 6);
+		strncpy_warn(CalcInName, inputFile, DIFXIO_FILENAME_LENGTH);
 		CalcInName[l-6] = '\0';
 		strncat(CalcInName, ".calc", DIFXIO_FILENAME_LENGTH-1);
 	}
@@ -3911,8 +3911,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 		strncpy_warn(CalcInName, calcFile, DIFXIO_FILENAME_LENGTH);
 	}
 
-	if(access( calcFile,   F_OK ) != 0 &&
-	   access( CalcInName, F_OK ) == 0)
+	if(access(calcFile, F_OK) != 0 && access(CalcInName, F_OK) == 0)
 	{
 		//
 		// --------- We cannot find Calc file as it is spefified in the *.input file,
@@ -3957,7 +3956,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 		l = strlen(inputFile);
 		if(strcmp(inputFile + l - 6, ".input") == 0)
 		{
-			strncpy_warn(ImInName, inputFile, l - 6);
+			strncpy_warn(ImInName, inputFile, DIFXIO_FILENAME_LENGTH);
 			ImInName[l-6] = '\0';
 			strncat(ImInName, ".im", DIFXIO_FILENAME_LENGTH-1);
 		}
@@ -3965,8 +3964,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 		{
 			strncpy_warn(ImInName, D->job->imFile, DIFXIO_FILENAME_LENGTH); /* just in case if inputFile name is insane */
 		}
-		if(access( D->job->imFile, F_OK ) != 0 &&
-		   access( ImInName,       F_OK ) == 0)
+		if(access(D->job->imFile, F_OK) != 0 && access(ImInName, F_OK) == 0)
 		{
 			//
 			// ---------------- If the cannot find D->job->imFile file as it is spefified in the *.input file,
@@ -4005,7 +4003,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 		l = strlen(inputFile);
 		if(strcmp(inputFile + l - 6, ".input") == 0)
 		{
-			strncpy_warn(OutputDirInName, inputFile, l - 6);
+			strncpy_warn(OutputDirInName, inputFile, DIFXIO_FILENAME_LENGTH);
 			OutputDirInName[l-6] = '\0';
 			strncat(OutputDirInName, ".difx/", DIFXIO_FILENAME_LENGTH-1);
 		}
@@ -4013,8 +4011,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 		{
 			strncpy_warn(OutputDirInName, OutputDirName, DIFXIO_FILENAME_LENGTH); /* just in case if inputFile name is insane */
 		} 
-		if(access( OutputDirName,   F_OK ) != 0 &&
-		   access( OutputDirInName, F_OK ) == 0 )
+		if(access(OutputDirName, F_OK) != 0 && access(OutputDirInName, F_OK) == 0)
 		{
 			//
 			// ------------- If the cannot find D->job->outputFile file as it is spefified in the *.input file,

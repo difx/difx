@@ -167,7 +167,7 @@ void writeJobMatrix(const JobMatrix *jm, int passNum)
 		}
 		else
 		{
-			strncpy_warn(lastday, timeStr, 9);
+			strncpy(lastday, timeStr, 9);
 			lastday[9] = 0;
 			fprintf(out, "  %s", timeStr);
 		}
