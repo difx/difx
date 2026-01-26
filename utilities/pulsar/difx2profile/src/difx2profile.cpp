@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  cout << &setprecision << 15 << endl;
+  cout << setprecision(15);
   for(int i=1;i<=njobs;i++) {
     cout << "Processing file " << i << "/" << njobs << endl;
 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
         cerr << "Error - the first .input file had no pulsar bins - aborting!" << endl;
         return EXIT_FAILURE;
       }
-      for(int k=1;k<frequencies.size();k++) {
+      for(unsigned int k=1;k<frequencies.size();k++) {
         const int j = frequencies.at(k);
         if(config->getFNumChannels(j)/config->getFChannelsToAverage(j) != nchannels) {
           cerr << "Error - input file " << i << " has different numbers of channels "
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
       visibilities = new float[2*nchannels];
     }
     else {
-      for(int k=0;k<frequencies.size();k++) {
+      for(unsigned int k=0;k<frequencies.size();k++) {
         const int j = frequencies.at(k);
         if(config->getFNumChannels(j)/config->getFChannelsToAverage(j) != nchannels) {
           cerr << "Error - input file " << i << " has different numbers of channels "

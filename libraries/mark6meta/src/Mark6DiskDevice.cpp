@@ -209,7 +209,7 @@ void Mark6DiskDevice::addPartition(std::string partitionName)
 
 
 
-int Mark6DiskDevice::mountPartition(int partitionNumber, string mountPath)
+int Mark6DiskDevice::mountPartition(unsigned int partitionNumber, string mountPath)
 {
     struct stat file;
     string source = "";

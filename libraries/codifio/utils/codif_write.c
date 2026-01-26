@@ -1,5 +1,5 @@
 /***************************************************************************
- *  Copyright (C) 2018-2022 by Chris Phillips                              *
+ *  Copyright (C) 2018-2025 by Chris Phillips                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -80,7 +80,7 @@
 
 #include <codifio.h>
 
-#define MAXSTR              200 
+#define MAXSTR              250 
 #define MAXPACKETSIZE       9500
 #define DEFAULT_PORT        52100
 #define DEFAULT_TIME        60
@@ -148,7 +148,7 @@ int lines = 0;
 
 int main (int argc, char * const argv[]) {
   char *buf, timestr[MAXSTR];
-  int threadIndex, fileIndex, tmp, opt, status, sock, skip, i, nfile;
+  int threadIndex, fileIndex, tmp, opt, status, sock, skip, i, nfile=0;
   int valid, period, thisthread = -1, thisgroup = -1;
   ssize_t nread, nwrote, nwrite;
   char msg[MAXSTR];
@@ -685,7 +685,7 @@ int main (int argc, char * const argv[]) {
       time_t itime = (time_t)floor(filetime);
       struct tm *date = gmtime(&itime); 
 
-      strftime(timestr, MAXSTR-1, "%j_%H%M%S", date);
+      strftime(timestr, MAXSTR, "%j_%H%M%S", date);
 
       if (splitthread || splitgroup) {
 	// Pass -1 for thread or groupID if not splitting
@@ -855,18 +855,22 @@ int openfile(char *fileprefix, char *timestr, int threadid, int groupid) {
   char filename[MAXSTR], msg[MAXSTR];
 
   if (threadid>=0 && groupid>0) 
-    snprintf(filename, MAXSTR-1, "%s_%s-%d-%d.cdf", fileprefix, timestr, threadid, groupid);
+    snprintf(filename, MAXSTR, "%s_%s-%d-%d.cdf", fileprefix, timestr, threadid, groupid);
   else if (threadid>=0) 
-    snprintf(filename, MAXSTR-1, "%s_%s-%d.cdf", fileprefix, timestr, threadid);
+    snprintf(filename, MAXSTR, "%s_%s-%d.cdf", fileprefix, timestr, threadid);
   else if (groupid>=0) 
-    snprintf(filename, MAXSTR-1, "%s_%s-%d.cdf", fileprefix, timestr, groupid);
+    snprintf(filename, MAXSTR, "%s_%s-%d.cdf", fileprefix, timestr, groupid);
   else
-    snprintf(filename, MAXSTR-1, "%s_%s.cdf", fileprefix, timestr);
+    snprintf(filename, MAXSTR, "%s_%s.cdf", fileprefix, timestr);
 
   // File name contained in buffer
   int ofile = open(filename, OPENOPTIONS,S_IRWXU|S_IRWXG|S_IRWXO); 
   if (ofile==-1) {
-    sprintf(msg, "Failed to open output file (%s)", filename);
+    int v;
+    v = snprintf(msg, MAXSTR, "Failed to open output file (%s)", filename);
+    if(v >= MAXSTR) {
+      fprintf(stderr, "Developer warning: MAXSTR too small: %d >= %d\n", v, MAXSTR);
+    }
     perror(msg);
   }
   return ofile;

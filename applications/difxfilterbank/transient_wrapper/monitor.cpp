@@ -66,13 +66,13 @@ static void *multicastMonitor(void *ptr)
 	{
 		char message[DIFX_MESSAGE_LENGTH];
 		char from[DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH];
-		int n, v;
+		int n;
 
 		n = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
 		if(n > 0)
 		{
 			message[n] = 0;
-			v = difxMessageParse(&G, message);
+			difxMessageParse(&G, message);
 			switch(G.type)
 			{
 			case DIFX_MESSAGE_STATUS:

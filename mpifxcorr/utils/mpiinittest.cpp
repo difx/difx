@@ -7,11 +7,8 @@ int main(int argc, char **argv)
 	MPI_Comm world, return_comm;
 	int numprocs, rank, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
-	char *buffer;
 	clock_t t1, t2;
 	struct timespec r1, r2;
-	double t0;
-	double dt;
 
 	t1 = clock();
 	clock_gettime(CLOCK_REALTIME, &r1);

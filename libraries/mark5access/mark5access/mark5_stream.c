@@ -1001,7 +1001,10 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 	struct mark5_format *mf;
 	int status, ntrack;
 	size_t offset;
-	int framesize, headersize;
+	int framesize;
+#ifdef HAVE_CODIFIO
+	int headersize;
+#endif
 
 	mark5_library_consistent();
 	

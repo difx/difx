@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "difxio/difxio_macros.h"
 #include "bandpass.h"
 
 /* freq [MHz] */
@@ -47,7 +48,7 @@ Bandpass *loadBandpass(const char *fileName, const DifxInput *D)
 	char str[MaxLength];
 	char type[MaxLength];
 	int antNum;
-	char ant[MaxLength];
+	char ant[MAX_ANTENNA_SITE_NAME_LENGTH];
 	int IFnum;
 	int nChan;
 	double f, bw;	/* [MHz] */
@@ -68,7 +69,7 @@ Bandpass *loadBandpass(const char *fileName, const DifxInput *D)
 
 	while(fgets(str, MaxLength, in) != 0)
 	{
-		if(sscanf(str, "%s%d%s%d%d%lf%lf%s", type, &antNum, ant, &IFnum, &nChan, &f, &bw, pol) == 8 && strcmp(type, "Bandpass") == 0)
+		if(sscanf(str, "%s%d%15s%d%d%lf%lf%s", type, &antNum, ant, &IFnum, &nChan, &f, &bw, pol) == 8 && strcmp(type, "Bandpass") == 0)
 		{
 			++n;
 		}
@@ -84,7 +85,7 @@ Bandpass *loadBandpass(const char *fileName, const DifxInput *D)
 	index = -1;
 	while(fgets(str, MaxLength, in) != 0)
 	{
-		if(sscanf(str, "%s%d%s%d%d%lf%lf%s", type, &antNum, ant, &IFnum, &nChan, &f, &bw, pol) == 8 && strcmp(type, "Bandpass") == 0)
+		if(sscanf(str, "%s%d%15s%d%d%lf%lf%s", type, &antNum, ant, &IFnum, &nChan, &f, &bw, pol) == 8 && strcmp(type, "Bandpass") == 0)
 		{
 			++index;
 			snprintf(B->data[index].antennaName, MAX_ANTENNA_SITE_NAME_LENGTH, "%s", ant);
@@ -97,7 +98,7 @@ Bandpass *loadBandpass(const char *fileName, const DifxInput *D)
 		}
 		else if(sscanf(str, "%s%s", type, obsCode) == 2 && strcmp(type, "obscode:") == 0)
 		{
-			snprintf(B->obsCode, DIFXIO_OBSCODE_LENGTH, "%s", obsCode);
+			snprintf_warn(B->obsCode, DIFXIO_OBSCODE_LENGTH, "%s", obsCode);
 		}
 		else if(sscanf(str, "%lf%lf%lf", &f, &x, &y) == 3)
 		{
@@ -109,6 +110,11 @@ Bandpass *loadBandpass(const char *fileName, const DifxInput *D)
 	fclose(in);
 
 	B->nPol = D->config->nPol;
+	if(B->nPol < 0 || B->nPol > 4)
+	{
+		fprintf(stderr, "Error: loadBandpass(): nPol = %d\n", B->nPol);
+		exit(0);
+	}
 	for(polId = 0; polId < D->config->nPol; ++polId)
 	{
 		B->pol[polId] = D->config->pol[polId];

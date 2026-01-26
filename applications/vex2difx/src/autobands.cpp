@@ -168,7 +168,7 @@ void AutoBands::setBandwidth(double outputbandwidth_Hz)
  * Set bandwidth granularity in Hz to use if possbile when generating auto-zooms
  * that form outputbands.
  */
-double AutoBands::setAutozoomGranularity(const double& azgranularity_Hz)
+void AutoBands::setAutozoomGranularity(const double& azgranularity_Hz)
 {
     if (azgranularity_Hz >= 0)
     {

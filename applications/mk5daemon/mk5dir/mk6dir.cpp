@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2018 by Mark Wainright                                  *
+ *   Copyright (C) 2018-2025 by Mark Wainright                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -457,9 +457,15 @@ int main(int argc, char **argv)
 			{
 				catalogState = 1;
 			}
-			else if(strlen(argv[a]) == 1 && atoi(argv[a]) >= 1 && atoi(argv[a]) <= MAX_SLOTS)
+			else if(strlen(argv[a]) == 1)
 			{
                                 slot = atoi(argv[a]);
+
+				if(slot < 0 || slot > MAX_SLOTS)
+				{
+					fprintf(stderr, "Error: slot number must be in [1..%d]\n", MAX_SLOTS);
+					exit(EXIT_FAILURE);
+				}
 
 				if(!getVSN(slot, vsn))
 				{
@@ -482,7 +488,7 @@ int main(int argc, char **argv)
 
 				slot = getSlot(vsn);
 
-				if(!slot)
+				if(slot < 0 || slot > MAX_SLOTS)
 				{
 					fprintf(stderr, "mk6dir in main() could not get slot for VSN %s\n", vsn);
 					exit(EXIT_FAILURE);
@@ -507,20 +513,27 @@ int main(int argc, char **argv)
 		// change state if requested
 		if(catalogState)
 		{
-			if(slot < 0)
+			if(slot < 0 || slot > MAX_SLOTS)
 			{
 				printf("No slot was identified via command line.  Doing nothing.\n");
 			}
 			else
 			{
-				char cmd[21];
+				const int CMD_SIZE = 32;
+				char cmd[CMD_SIZE];
+				int v;
 
 				if(verbose)
 				{
 					printf("Changing state of module in slot %d to \'cataloged\'.\n", slot);
 				}
 
-				sprintf(cmd, "mk6state cataloged %d", slot);
+				v = snprintf(cmd, CMD_SIZE, "mk6state cataloged %d", slot);
+				if(v >= CMD_SIZE)
+				{
+					fprintf(stderr, "Developer error: CMD_SIZE is too small: %d >= %d\n", v, CMD_SIZE);
+					exit(EXIT_FAILURE);
+				}
 				system(cmd);
 			}
 		}
