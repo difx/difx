@@ -2296,14 +2296,14 @@ def printBarcode(label, printCommand):
                 return
                 
         c = canvas.Canvas("/tmp/comedia_vsn.pdf")
-        c.setPageSize((89*mm,36*mm))
-        barcode39 = code39.Standard39(label, barHeight=12*mm, barWidth=0.28*mm, humanReadable=0, checksum=0)
+        c.setPageSize((86*mm,36*mm))
+        barcode39 = code39.Standard39(label, barHeight=10*mm, barWidth=0.32*mm, humanReadable=0, checksum=0, quiet=0)
 
         c.setFontSize(12)
-        c.drawString(6*mm, 30*mm, date.today().strftime("%d-%m-%Y"))
+        c.drawString(1*mm, 30*mm, date.today().strftime("%d-%m-%Y"))
         c.setFontSize(20)
-        c.drawString(6*mm, 17*mm, label)
-        barcode39.drawOn(c, 0, 5*mm)
+        c.drawString(1*mm, 22*mm, label)
+        barcode39.drawOn(c, 1*mm, 7*mm)
 
         c.showPage()
         c.save()
