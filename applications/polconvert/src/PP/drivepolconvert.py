@@ -277,7 +277,7 @@ def tableSchemeHelp():
     An environment variable QA2TABLES may be set to a comma-separated list of
     table names (omitting the label, concatenated.ms and calibrated.ms name prefixes)
     to specify any arbitrary set of tables. For example, for EHT 2022:
-    $ export QA2TABLES="ANTENNA,calappphase,Df0gen.APP,bandpassAPP,flux_inf.APP.OpCorr,phase_int.APP.XYsmooth,XY0kcrs.APP,Gxyamp.APP"
+    $ export QA2TABLES="ANTENNA,calappphase,Df0.APP,bandpassAPP,flux_inf.APP.OpCorr,phase_int.APP.XYsmooth,XY0kcrs.APP,Gxyamp.APP"
     $ drivepolconvert.py -q custom -l qa2label <etc>
     '''
     print(story)

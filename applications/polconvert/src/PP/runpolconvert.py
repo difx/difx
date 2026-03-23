@@ -62,7 +62,8 @@ try:
     if v4tables:    #production v4
         calgains = [aantpath, calapphs, dtermcal,
                     bandpass, ampgains, phsgains, xyrelphs, gxyampli]
-        calintrp = ['linear', 'nearest', 'linear', 'linear', 'linear']
+        # calintrp = ['linear', 'nearest', 'linear', 'linear', 'linear']
+        calintrp = ['nearest', 'nearest', 'linear', 'linear', 'linear'] # from C.Goddi apply_polconvert.py
     else:           #development v3
         calgains = [aantpath, calapphs, dtermcal,
                     bandpass, ampgains, phsgains, xyrelphs]
