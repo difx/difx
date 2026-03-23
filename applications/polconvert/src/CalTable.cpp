@@ -523,7 +523,11 @@ if (SignFreq && Nchan>1) {
            I0[i] = auxI;
            I1[i] = auxI+1;
            mmod = Freqs[auxI+1]-Freqs[auxI];
-           K0[i] = (1.0-(freqs[i]-Freqs[auxI])/mmod);
+           if(isLinear){
+              K0[i] = (1.0-(freqs[i]-Freqs[auxI])/mmod);
+           } else {
+              K0[i] = 1.0;
+           };
            break;
         };
       };
@@ -545,7 +549,11 @@ if (SignFreq && Nchan>1) {
            I0[i] = auxI;
            I1[i] = auxI+1;
            mmod = Freqs[auxI+1]-Freqs[auxI];
-           K0[i] = (1.0-(freqs[i]-Freqs[auxI])/mmod);
+           if(isLinear){
+              K0[i] = (1.0-(freqs[i]-Freqs[auxI])/mmod);
+           } else {
+              K0[i] = 1.0;
+           };
            break;
         };
       };
