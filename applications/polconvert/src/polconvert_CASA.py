@@ -103,7 +103,7 @@ def polconvert(IDI='', OUTPUTIDI='', DiFXinput='', DiFXcalc='', doIF=[], linAntI
                plotRange=[], plotAnt=-1, excludeAnts=[], excludeBaselines=[],
                doSolve=-1, solint=[1,1], doTest=True, npix=50, solveAmp=True,
                solveMethod='COBYLA', calstokes=[1.,0.,0.,0.], calfield=-1,
-               saveArgs=False):
+               saveArgs=False,plotSuffix=""):
 
   """ POLCONVERT - CASA INTERFACE VERSION 2.1b.
 
@@ -831,6 +831,13 @@ calibrated phased arrays (i.e., phased ALMA).
 
     SUBSCANDUR = time1[sc2flag[0][0]] - time0[sc2flag[0][0]]
     sec = 0.1
+
+## Code to avoid gaps in calAPP:
+    tSorting = np.argsort(time0)
+    for kki in range(1,len(time0)):
+       time0[tSorting[kki]] = time1[tSorting[kki-1]]+0.1
+
+
     for j in range(4):
      if len(sc2flag[j])>0:
       for si in sc2flag[j]:
@@ -891,17 +898,17 @@ calibrated phased arrays (i.e., phased ALMA).
 
 ###################
 ### This new code is to fix the missing time entries in calAPP
-   gaps = [[] for ian in allants]
+  # gaps = [[] for ian in allants]
    for ti in range(len(time0)):
        for antenna in phants[ti]:
          ian = allants.index(antenna)
          antimes[ian].append([time0[ti]-CALAPPDT+CALAPPTSHIFT,time1[ti]+CALAPPDT+CALAPPTSHIFT])
-         if len(antimes[ian])>2 and antimes[ian][-1][0]>antimes[ian][-2][1]:
-             if antenna in phants[ti-1]:
-                 gaps[ian].append([float(antimes[ian][-2][1]),float(antimes[ian][-1][0])])
+   #      if len(antimes[ian])>2 and antimes[ian][-1][0]>antimes[ian][-2][1]:
+   #          if antenna in phants[ti-1]:
+   #              gaps[ian].append([float(antimes[ian][-2][1]),float(antimes[ian][-1][0])])
 
    for ian,antenna in enumerate(allants):
-     antimes[ian] += gaps[ian]   
+   #  antimes[ian] += gaps[ian]
      auxarr = np.zeros((len(antimes[ian]),2))
      auxarr[:] = antimes[ian]
      antimes[ian] = auxarr
@@ -1422,7 +1429,7 @@ calibrated phased arrays (i.e., phased ALMA).
           'feedRotation':feedRotation, 'correctParangle':correctParangle, 
           'IDI_conjugated':IDI_conjugated, 'plotIF':plotIF, 'plotRange':plotRange, 
           'plotAnt':plotAnt, 'excludeAnts':excludeAnts, 'excludeBaselines':excludeBaselines, 
-          'doSolve':doSolve, 'solint':solint, 'doTest':doTest, 'npix':npix, 
+          'doSolve':doSolve, 'solint':solint, 'doTest':doTest, 'npix':npix, 'plotSuffix':plotSuffix,
           'solveAmp':solveAmp, 'solveMethod':solveMethod, 'calstokes':calstokes, 
           'calfield':calfield, 'ALMAstuff':ALMAstuff,'saveArgs':saveArgs,'amp_norm':amp_norm}
 

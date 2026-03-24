@@ -247,7 +247,7 @@ def polconvert(
             "mounts":mounts
         }
 
-        OFF = open("PolConvert_standalone.last", "wb")
+        OFF = open("PolConvert_standalone.last_%s"%plotSuffix, "wb")
         pk.dump(ARGS, OFF)
         OFF.close()
 
@@ -258,8 +258,7 @@ def polconvert(
 
     #  amp_norm=0.0
 
-    logName = "PolConvert%s.log" % plotSuffix
-
+    logName = "PolConvert_%s.log" % (plotSuffix)
 
 ## Codes for antenna mounts:
     MntCodes = {'AZ':0, 'EQ':1, 'OB':2, 'XY':3, 'NR':4, 'NL':5}
@@ -1431,7 +1430,7 @@ def polconvert(
             UseAutoCorrs,
             bool(correctParangle),
             DEBUG,
-            logName,
+            plotSuffix,
             ALMAstuff,
         )
 
@@ -1455,7 +1454,7 @@ def polconvert(
         printMsg("DPFU(amp_norm) is %f\n" % DPFU)
 
         try:
-            gfile = open("POLCONVERT.GAINS")
+            gfile = open("POLCONVERT.GAINS_%s"%plotSuffix)
         except:
             printError("No gain file written!")
 
@@ -1486,7 +1485,7 @@ def polconvert(
                     itime = np.where(Times == datum[0])[0]
                     Tsys[itime, ii + 1] = datum[1] * DPFU
 
-            outf = open("POLCONVERT_STATION_%s.ANTAB" % jnam, "w")
+            outf = open("POLCONVERT_%s_STATION_%s.ANTAB" % (plotSuffix,jnam), "w")
             print("GAIN AA  ELEV DPFU=%.3f   FREQ=10,100000" % DPFU, file=outf)
             print("POLY=1.0000E+00", file=outf)
             print("/", file=outf)
@@ -2214,7 +2213,7 @@ def polconvert(
             print("\n\n")
             printMsg("Plotting selected fringe for IF #%i" % pli)
 
-            frfile = open("POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i" % pli, "rb")
+            frfile = open("POLCONVERT.FRINGE_%s/POLCONVERT.FRINGE_IF%i" % (plotSuffix,pli), "rb")
 
             alldats = frfile.read(5)
             nchPlot, isParang = stk.unpack("ib", alldats)
@@ -2750,8 +2749,8 @@ def polconvert(
                                     % (pli, NBF, antcodes[ant1 - 1], antcodes[ant2 - 1])
                                 )
                                 pfile = open(
-                                    "FRINGE.PEAKS/FRINGE.PEAKS_IF%i_SCAN_%i_%s-%s.dat"
-                                    % (
+                                    "FRINGE.PEAKS_%s/FRINGE.PEAKS_IF%i_SCAN_%i_%s-%s.dat"
+                                    % ( plotSuffix,
                                         pli,
                                         NBF,
                                         antcodes[ant1 - 1],
@@ -2896,8 +2895,8 @@ def polconvert(
                 pl.ylim((0.0, 1.1 * np.max(CONVAMP[:, [1, 3, 5, 7]])))
                 fig.suptitle(jobLabel(DiFXinput) + " ANT: %i v %i" % (thisAnt, plotAnt))
                 fig.savefig(
-                    "FRINGE.PLOTS/ALL_IFs_ANT_%i_%i%s.png"
-                    % (thisAnt, plotAnt, plotSuffix)
+                    "FRINGE.PLOTS_%s/ALL_IFs_ANT_%i_%i%s.png"
+                    % (plotSuffix,thisAnt, plotAnt, plotSuffix)
                 )
 
                 fig3 = pl.figure()
@@ -2928,8 +2927,8 @@ def polconvert(
                     jobLabel(DiFXinput) + " ANT: %i v %i" % (thisAnt, plotAnt)
                 )
                 fig3.savefig(
-                    "FRINGE.PLOTS/RL_LR_RATIOS_ANT_%i_%i%s.png"
-                    % (thisAnt, plotAnt, plotSuffix)
+                    "FRINGE.PLOTS_%s/RL_LR_RATIOS_ANT_%i_%i%s.png"
+                    % (plotSuffix,thisAnt, plotAnt, plotSuffix)
                 )
 
     else:

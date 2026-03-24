@@ -292,7 +292,8 @@ static PyObject *PolConvert(PyObject *self, PyObject *args)
 
 // OPEN LOG FILE:
   char message[2048];
-  std::string logName = PyString_AsString(logNameObj);
+  std::string fileSuffix = PyString_AsString(logNameObj);
+  std::string logName = "PolConvert_"+fileSuffix+".log";
   FILE *logFile; logFile = fopen(logName.c_str(),"a");
 
 // Echo some calibration information:
@@ -987,10 +988,11 @@ if(PCMode){
   }
 
   if(doNorm){
+    std::string fileToOpen = "POLCONVERT.GAINS_"+fileSuffix;
     printf("CREATING GAIN FILE.\n"); 
     sprintf(message,"POLCONVERT.GAINS opened for writing");
     fprintf(logFile,"%s",message); std::cout<<message; fflush(logFile);
-    gainsFile = fopen("POLCONVERT.GAINS","wb");
+    gainsFile = fopen(fileToOpen.c_str(),"wb");
   };
 
   sprintf(message,"\n POLCONVERTING THE DATA.\n\n");
