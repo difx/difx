@@ -345,11 +345,11 @@ def getvexantennamodlists(vexobsfile, startTime):
     modList = []
 
     # Regexps to flexibly detect VEX entries and fields; can test with https://regex101.com/
-    reComment = re.compile("^\s*\*")
-    reSection = re.compile("^\s*\$\s*(.*?)\s*;")
-    reDef = re.compile("^\s*def\s+(.*?)\s*;")
-    reVSN = re.compile("\W*VSN\s*=\s*(.*?)\s*:\s*(.*?)\s*:\s*(.*?)\s*:\s*(.*?)\s*;")
-    reEnddef = re.compile("\W*enddef\s*;")
+    reComment = re.compile(r"^\s*\*")
+    reSection = re.compile(r"^\s*\$\s*(.*?)\s*;")
+    reDef = re.compile(r"^\s*def\s+(.*?)\s*;")
+    reVSN = re.compile(r"\W*VSN\s*=\s*(.*?)\s*:\s*(.*?)\s*:\s*(.*?)\s*:\s*(.*?)\s*;")
+    reEnddef = re.compile(r"\W*enddef\s*;")
 
     # Look up expt name and module info from VEX
     vexobs = open(vexobsfile, "r")
