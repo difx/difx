@@ -147,14 +147,41 @@ int main(int argc, char **argv)
 
 1.2 Building instructions
 
-These instructions assume that the library is installed and that
-the pkg_config program is installed and configured (with the 
+
+1.2.1 Using CMake
+
+If mark5access was installed via CMake, the easiest way to use it from
+your own CMake project is with find_package:
+
+  # CMakeLists.txt
+  cmake_minimum_required(VERSION 3.20)
+  project(mark5sum LANGUAGES C)
+
+  find_package(Mark5access REQUIRED)
+  add_executable(mark5sum mark5sum.c)
+  target_link_libraries(mark5sum PRIVATE DiFX::mark5access)
+
+Then build with:
+
+  mkdir build && cd build
+  cmake .. -DCMAKE_PREFIX_PATH=<prefix>
+  make
+
+Replace <prefix> with the path where mark5access is installed.  If it
+was installed into a standard location (e.g. /usr/local), the
+-DCMAKE_PREFIX_PATH flag can be omitted.
+
+1.2.2 Using pkg-config
+
+Both CMake and Autotools installs produce a pkg-config file.  These
+instructions assume that the library is installed and that the
+pkg_config program is installed and configured (with the 
 PKG_CONFIG_PATH environment variable properly set if not installed into
 a default location).
 
 To compile the this program:
 
-  gcc mark5sum.c -c `pkg-config --cflags mark5access
+  gcc mark5sum.c -c `pkg-config --cflags mark5access`
 
 And to link it:
 
@@ -164,11 +191,12 @@ If pkg-config is not installed properly, compilation can be done by
 explicitly adding include and library paths to the command lines above,
 respectively:
 
-  gcc mark5sum.c -c -I/usr/local/include/mark5access-1.0
-  gcc mark5sum.o -o mark5sum -L/usr/local/lib -lmark5access-1.0
+  gcc mark5sum.c -c -I/usr/local/include
+  gcc mark5sum.o -o mark5sum -L/usr/local/lib -lmark5access
 
-The use of pkg-config is encouraged as it will continue to work even if
-additional dependencies are added to mark5access in the future.
+The use of pkg-config or CMake's find_package is encouraged as it will
+continue to work even if additional dependencies are added to
+mark5access in the future.
 
 
 1.3 Run-time library configuration

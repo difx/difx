@@ -125,7 +125,14 @@ if(DIFX_BUILD_UTILS OR PROJECT_IS_TOP_LEVEL)
   endif()
 
   install(TARGETS ${_m5a_examples} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+  install(PROGRAMS examples/zerocorr_makeconfig.py
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
+    RENAME zerocorr_makeconfig)
 endif()
+
+# Install the convenience top-level header (mark5access.h -> <prefix>/include/)
+install(FILES mark5access.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Install the library and targets
 install(TARGETS mark5access
