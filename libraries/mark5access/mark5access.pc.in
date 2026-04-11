@@ -5,7 +5,7 @@ includedir=@includedir@
 StaticLibs=${libdir}/libmark5access.a
 
 Name: mark5access
-Description: library to parse difx input and output files
+Description: library to parse baseband data formats: Mark4, VLBA and Mark5B
 Requires: 
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lmark5access @MARK6SG_LIBS@ @CODIFIO_LIBS@

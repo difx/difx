@@ -1,0 +1,12 @@
+#ifndef MARK5ACCESS_CONFIG_H
+#define MARK5ACCESS_CONFIG_H
+
+#define PACKAGE_VERSION "@PROJECT_VERSION@"
+#define VERSION "@PROJECT_VERSION@"
+#define PACKAGE_NAME "@PROJECT_NAME@"
+
+#cmakedefine WORDS_BIGENDIAN 1
+#cmakedefine HAVE_CODIFIO 1
+#cmakedefine HAVE_MARK6SG 1
+
+#endif
