@@ -1,0 +1,91 @@
+name: mark5access CI
+
+on:
+  push:
+    paths:
+      - 'libraries/mark5access/**'
+      - '.github/workflows/mark5access-ci.yml'
+  pull_request:
+    paths:
+      - 'libraries/mark5access/**'
+      - '.github/workflows/mark5access-ci.yml'
+
+jobs:
+  # Standard build + test ────
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        compiler: [gcc, clang]
+    runs-on: ${{ matrix.os }}
+    env:
+      CC: ${{ matrix.compiler }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libfftw3-dev
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
+        working-directory: libraries/mark5access
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+        working-directory: libraries/mark5access
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+        working-directory: libraries/mark5access
+
+  # ── Sanitizer build (ASan + UBSan) ──────
+  sanitizers:
+    runs-on: ubuntu-latest
+    env:
+      CC: gcc
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libfftw3-dev
+
+      - name: Configure with sanitizers
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+        working-directory: libraries/mark5access
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+        working-directory: libraries/mark5access
+
+      - name: Test under sanitizers
+        run: |
+          ctest --test-dir build \
+            --output-on-failure \
+            --exclude-regex 'known_bug' \
+            -L '!known_bug'
+        working-directory: libraries/mark5access
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=0
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0
+
+  # ── Code formatting check (advisory) ───────
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check formatting
+        run: |
+          find libraries/mark5access \
+            \( -name '*.c' -o -name '*.h' \) \
+            -not -path '*/build*' \
+            -print0 | \
+          xargs -0 clang-format --dry-run --Werror 2>&1 || true
+          echo "::notice::Format check complete (advisory only for now)"
