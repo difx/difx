@@ -450,7 +450,7 @@ pcin)
     content2=''
     for j in $jobs
     do
-      content2=" ${j}.{input,calc,flag,channelflags,im}"
+      content2="$content2 ${j}.{input,calc,flag,channelflags,im}"
     done
     content3=" ${exp}*.codes ${exp}*.conf ${exp}*.vex.obs"
     content=$content1$content2$content3
