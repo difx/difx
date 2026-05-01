@@ -24,3 +24,7 @@ Y Sp	SPT (South Pole)    # cy4
 Y Sz	SPT (South Pole)    # cy5 onwards
 Z Az	SMT (Arizona)       # cy4
 Z Mg	SMT (Arizona)       # cy5 onwards
+t Kt    KVN Tamna           # tbd
+u Ku    KVN Ulsan           # tbd
+y Ky    KVN Yonsei          # 2024 onwards
+C Kc    KVN PyeongChang     # tbd
