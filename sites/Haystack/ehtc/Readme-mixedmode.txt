@@ -388,10 +388,12 @@ for r in tb-* ; do pushd $r ; nohup ./release.sh & disown ; popd ; done
 # if you aren't sure, execute them serially
 for r in tb-* ; do pushd $r ; nohup ./release.sh & wait   ; popd ; done &
 # monitor (if you want) with
-du -sBG tb-*
+du -scBG tb-*
 
 # and finally after everything is released count the products
-$ehtc/ehtc-release-check.sh | sed 's/^/### /'
+# this script requires polconvert inputs like $plst
+# should try to make it work for mixed-mode packaging
+#$ehtc/ehtc-release-check.sh | sed 's/^/### /'
 
 # after tarballs are delivered you can remove the polconvert swin dirs:
 # (these are not produced in the mixed-mode packaging; the .save folders are in $dout)
