@@ -243,7 +243,7 @@ $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs -R > $ers-jobs-map.txt
 ( cd $dout ; summarizeDifxlogs.py -c ) > $ers-difxlog-clr.txt
 cp -p $ers*.txt $release/logs
 cp -p $exp-$subv-v${vers}${ctry}p${iter}r${relv}.logfile $release/logs
-
+cp -p $ers.conf $release/logs
 
 ### Break here; the rest of the ONE TIME SETUP is optional fringe checks
 ### which are not required for mixed-mode releases. Do this line-by-line, if you want.
