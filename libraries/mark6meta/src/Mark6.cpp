@@ -953,6 +953,7 @@ Mark6DiskDevice Mark6::newDeviceFromUdev(udev_device *dev)
     const char *sasaddress = udev_device_get_sysattr_value(parent,"sas_address");
     const char *serial = udev_device_get_property_value(dev,"ID_SERIAL_SHORT");
     const char *idSasPath = udev_device_get_property_value(dev, "ID_SAS_PATH");
+    const char *idPath = udev_device_get_property_value(dev, "ID_PATH");
 
     string driver = "";
 
@@ -961,7 +962,7 @@ Mark6DiskDevice Mark6::newDeviceFromUdev(udev_device *dev)
         string devName = string(sysname);
         Mark6DiskDevice disk(devName);
 
-        //cout << "HR: " << devpath << endl;
+        //cout << "debug: " << devpath << endl;
         if (devpath != NULL)
         {
             int controllerId = parseControllerId(string(devpath));
@@ -973,20 +974,33 @@ Mark6DiskDevice Mark6::newDeviceFromUdev(udev_device *dev)
 
         }
   
-        //determine disk id
+        //determine disk id (= physical position on bus)
+        // older kernels use ID_SAS_PATH to encode the id
+        // in newer kernel versions ID_SAS_PATH does not exist anymore however
+        // the physical id is encoded in ID_PATH
         if (idSasPath != NULL)
         {
+            //cout << "debug: idSasPath = " << idSasPath << endl; 
             disk.setDiskId(parsePhyId(string(idSasPath)));
+        }
+        else if (idPath != NULL)
+        {
+            //cout << "debug: idPath = " << idPath << endl; 
+            disk.setDiskId(parsePhyId(string(idPath)));
         }
 
         //determine sas address
         if (sasaddress != NULL)
         {
+            //cout << "debug: idSasAddress = " << sasaddress << endl; 
             disk.setSasAddress(sasaddress);
         }
         //determine disk serial id
         if (serial != NULL)
+        {
+            //cout << "debug: serial = " << serial << endl;
             disk.setSerial(string(serial));
+        }
 
         return(disk);
 
@@ -1313,12 +1327,15 @@ int Mark6::enumerateDevices()
     
 }
 
+/**
+* Parse the physical disk id from the ID_PATH or ID_SAS_PATH udev property
+**/
 long Mark6::parsePhyId(std::string sasPath)
 {
     long diskId = -1;
     string phyId = "";
 
-    //cout << "ID_SAS_PATH: " << sasPath << endl;
+    //cout << "debug: ID_SAS_PATH: " << sasPath << endl;
 
     std::size_t found = sasPath.find("phy");
     if (found!=std::string::npos)
