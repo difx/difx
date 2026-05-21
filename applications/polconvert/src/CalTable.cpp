@@ -526,7 +526,7 @@ if (SignFreq && Nchan>1) {
            if(isLinear){
               K0[i] = (1.0-(freqs[i]-Freqs[auxI])/mmod);
            } else {
-              K0[i] = 1.0;
+              K0[i] = 1.0; 
            };
            break;
         };
@@ -793,6 +793,7 @@ void CalTable::applyInterpolation(int iant, int mode, std::complex<float> *gain[
        break;
 
   };
+
 
 
 };

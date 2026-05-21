@@ -139,6 +139,7 @@ def polconvert(
     plotAnt="",
     excludeAnts=[],
     excludeBaselines=[],
+    fitAnts=[],
     doSolve=-1,
     solint=[1, 1],
     doTest=True,
@@ -228,6 +229,7 @@ def polconvert(
             "plotAnt": plotAnt,
             "excludeAnts": excludeAnts,
             "excludeBaselines": excludeBaselines,
+            "fitAnts":fitAnts,
             "doSolve": doSolve,
             "solint": solint,
             "doTest": doTest,
@@ -259,6 +261,7 @@ def polconvert(
     #  amp_norm=0.0
 
     logName = "PolConvert_%s.log" % (plotSuffix)
+
 
 ## Codes for antenna mounts:
     MntCodes = {'AZ':0, 'EQ':1, 'OB':2, 'XY':3, 'NR':4, 'NL':5}
@@ -303,7 +306,7 @@ def polconvert(
     # Auxiliary function: print message (terminal and log):
     def printMsg(msg, doterm=True, dolog=True):
         if doterm:
-            print(msg)
+            print(msg,flush=True)
         if dolog:
             lfile = open(logName, "a")
             print(msg, file=lfile)
@@ -704,15 +707,31 @@ def polconvert(
             chav = FrInfo["CHANS TO AVG"][nu]
             sb = {True: 1.0, False: -1.0}[FrInfo["SIDEBAND"][nu] == "U"]
             FrInfo["SIGN"][nu] = float(sb)
-            if nu in doIF:
+
+            ## Get channel frequencies for non-ALMA:
+            if not usingALMA:
+              if (nu+1) in doIF:
                 IFchan = max([IFchan, int(nchan / chav)])
-                if not usingALMA: # Already printed!
-                   if float(nchan // chav) != float(nchan / chav):
-                      printMsg("SPW %i. linspace check chan FAILED: %d / %d = %f"%(nu,nchan, chav, float(nchan / chav)))
-                   else:
-                      printMsg("SPW %i. linspace check chan PASSED: %d / %d = %f"%(nu,nchan, chav, float(nchan / chav)))
-            freqs = (
-                nu0 + np.linspace((sb-1.0)/2.0, (sb+1.0)/2.0, nchan//chav, endpoint=False)*bw)*1.0e6
+                if float(nchan // chav) != float(nchan / chav):
+                   printMsg("SPW %i DiFX %i. linspace check chan FAILED: %d / %d = %f"%(nu+1, nu, nchan, chav, float(nchan / chav)))
+                else:
+                   printMsg("SPW %i DiFX %i. linspace check chan PASSED: %d / %d = %f"%(nu+1, nu, nchan, chav, float(nchan / chav)))
+              freqs = (nu0 + np.linspace((sb-1.0)/2.0, (sb+1.0)/2.0, nchan//chav, endpoint=False)*bw)*1.0e6
+
+            # Get them for ALMA (add a half-channel frequency shift to match exactly to the CASA-calibration gains:
+            else:
+              TrueNchan = nchan//chav
+
+              ## Channel width of ALMA (in MHz):
+              dNuALMA = 7.8125  
+              BPassShift = dNuALMA*0.5
+              
+              if sb<0.0:
+                 channels =  np.linspace(BPassShift,bw+BPassShift, TrueNchan, endpoint=False)
+              else:  
+                 channels =  np.linspace(-bw-BPassShift,BPassShift, TrueNchan, endpoint=False)
+              freqs = (nu0 + channels)*1.e6
+              
             metadata.append(freqs)
 
     #####
@@ -768,6 +787,17 @@ def polconvert(
         else:
             printMsg("Excluding antenna %s from the solution." % str(exA))
 
+    # ANTENNAS TO FIT FOR:
+    fitAntsThis = []
+    for exA in antcodes:
+        if (exA not in excludeAnts):
+            if len(fitAnts)==0 or (exA in fitAnts):
+                fitAntsThis.append(antcodes.index(exA) + 1)
+                printMsg("Gain for antenna %s will be fitted (if requested)." % str(exA))
+            else:
+                printMsg("Gain for antenna %s will NOT be fitted." % str(exA))
+
+
     ##z following section
     if type(plotAnt) is str and len(plotAnt) == 0:
         plotAnt = 1
@@ -779,6 +809,7 @@ def polconvert(
         else:
             plotAnt = antcodes.index(plotAnt) + 1
 
+    print("ANTCODES: ",antcodes,plotAnt)
     if plotAnt in linAntIdx or antcodes[plotAnt - 1] in linAntIdx:
         printMsg(
             "WARNING: Plotting will involve autocorrelations. \nThis has not been fully tested!"
@@ -854,6 +885,13 @@ def polconvert(
                 % idd
             )
             usePcal[idd] = False
+
+    # Excluded antennas must not require PCAL files.
+    # Missing PCAL data in excluded stations can abort run before solving.
+    for exA in excludeAnts:
+        if exA in usePcal and usePcal[exA]:
+            printMsg("Antenna %s is excluded from calibration; disabling Pcal usage for it." % exA)
+            usePcal[exA] = False
 
     printMsg("There are %i linear-polarization antennas in THIS dataset" % nALMATrue)
 
@@ -1125,7 +1163,6 @@ def polconvert(
 
     if isPcalUsed:
         import _XPCalMF as XP
-
         # printMsg('keys of XYadd:' + str(XYadd.keys()))
         # printMsg('keys of XYratio:' + str(XYratio.keys())+'\n')
 
@@ -1496,6 +1533,12 @@ def polconvert(
                 file=outf,
             )
             print("/", file=outf)
+            for colnr in range(len(doIF)):
+                di = doIF[colnr] - 1
+                sbcode = str(FrInfo['SIDEBAND'][di]).strip().upper()
+                fmid = FrInfo['FREQ (MHZ)'][di] + (FrInfo['BW (MHZ)'][di]/2 if sbcode[0]=='U' else -FrInfo['BW (MHZ)'][di]/2)
+                v = (colnr+1, colnr+1, colnr+1, di, FrInfo['FREQ (MHZ)'][di], sbcode, FrInfo['BW (MHZ)'][di], fmid)
+                print("! Column %d = L%i|R%i : DiFX freq %d, %.5f MHz %sSB bw %.2f MHz, center %.5f MHz" % v, file=outf)
             fmt0 = "%i %i:%2.4f  "
             # boost field width to retain significant figures
             fmt1 = "%10.4f  " * len(doIF)
@@ -1584,7 +1627,7 @@ def polconvert(
 
         def LMMin(p0, Ch0, Ch1):
 
-            MAXIT = maxIter * len(fitAnts)
+            MAXIT = maxIter * len(fitAntsThis)
             relchange = 1.0
 
             i = 0
@@ -1722,7 +1765,7 @@ def polconvert(
 
         def GrMin(p0, Ch0, Ch1):
 
-            MAXIT = maxIter * len(fitAnts)
+            MAXIT = maxIter * len(fitAntsThis)
             relchange = 1.0
 
             Lambda = 1.0
@@ -1760,12 +1803,12 @@ def polconvert(
 
             doSolveD = float(doSolve)
 
-            if doSolveD > 0.0:
-                fitAnts = list(calAnts)
-            else:
-                fitAnts = [
-                    ai for ai in linAntIdxTrue if ai in calAnts
-                ]  # list(linAntIdxTrue)
+            if doSolveD >= 0.0 and len(fitAntsThis)==0:
+                fitAntsThis = list(calAnts)
+           # else:
+           #     fitAnts = [
+           #         ai for ai in linAntIdxTrue if ai in calAnts
+           #     ]  # list(linAntIdxTrue)
 
             cAnts = np.array(calAnts, dtype=np.int32)
             lAnts = np.array(linAntIdxTrue, dtype=np.int32)
@@ -1838,29 +1881,29 @@ def polconvert(
                     # printMsg("  working %s,%s"%(str(plii),str(pli)))
                     Nchans = np.shape(AllFreqs[plii])[0]
 
-                    temp = [np.zeros(Nchans, dtype=np.complex64) for ci in fitAnts]
+                    temp = [np.zeros(Nchans, dtype=np.complex64) for ci in fitAntsThis]
                     BPChan = list(range(0, Nchans, ChAv))
                     if BPChan[-1] < Nchans - 1:
                         BPChan.append(Nchans - 1)
                     BPChan = np.array(BPChan, dtype=np.int32)
-                    Npar = len(fitAnts) * {True: 2, False: 1}[solveAmp]
+                    Npar = len(fitAntsThis) * {True: 2, False: 1}[solveAmp]
                     laux = [pli]
                     rv = PS.SetFit(
-                        Npar, laux, fitAnts, solveAmp, solveQU, Stokes, useCov, feedRot
+                        Npar, laux, fitAntsThis, solveAmp, solveQU, Stokes, useCov, feedRot
                     )
                     if rv != 0:
                         printError("  PS.SetFit failed with error %d" % rv)
 
                     ## Auxiliary arrays for x-pol gain interpolation:
                     interpGain = [
-                        np.zeros(len(BPChan) - 1, dtype=np.complex64) for ci in fitAnts
+                        np.zeros(len(BPChan) - 1, dtype=np.complex64) for ci in fitAntsThis
                     ]
                     interpChan = np.zeros(len(BPChan) - 1)
 
                     for chran in range(len(BPChan) - 1):
                         if chran == 0 and plii == 0:
                             p0 = []
-                            for ci in fitAnts:
+                            for ci in fitAntsThis:
                                 if solveAmp:
                                     p0 += [1.0, 0.0]
                                 else:
@@ -1919,7 +1962,7 @@ def polconvert(
                             FLIP = Chi2_final > 0.0
                             myfit = mymin.x
                         interpChan[chran] = 0.5 * (BPChan[chran] + BPChan[chran + 1])
-                        for ci, calant in enumerate(fitAnts):
+                        for ci, calant in enumerate(fitAntsThis):
                             PhasFactor = {True: np.pi, False: 0.0}[
                                 FLIP and (calant in linAntIdxTrue)
                             ]
@@ -1945,11 +1988,11 @@ def polconvert(
 #####
 ## Identify accidental pi jumps:
                     Namb = [0,0]; kj = 0
-                    NantHf = int(len(fitAnts)//2)
+                    NantHf = int(len(fitAntsThis)//2)
                     Saltos = [0]
                     for gi in range(len(interpGain[0])-1):
                         NjAnt = 0
-                        for ci in range(len(fitAnts)):         
+                        for ci in range(len(fitAntsThis)):         
                             if np.abs(np.angle(interpGain[ci][gi+1]/interpGain[ci][gi]))>np.pi/2.:
                                 NjAnt += 1
                         if NjAnt > NantHf:
@@ -1960,16 +2003,16 @@ def polconvert(
        
                     if Namb[1]>0 and Namb[0]>Namb[1]:
                         for kj in range(1,len(Saltos)-1,2):
-                            for ci in range(len(fitAnts)):
+                            for ci in range(len(fitAntsThis)):
                                 interpGain[ci][Saltos[kj]:Saltos[kj+1]] *= -1.0
                     elif Namb[1]>Namb[0]:
                         for kj in range(0,len(Saltos)-1,2):
-                            for ci in range(len(fitAnts)):
+                            for ci in range(len(fitAntsThis)):
                                 interpGain[ci][Saltos[kj]:Saltos[kj+1]] *= -1.0
          
 
 
-                    for ci, calant in enumerate(fitAnts):
+                    for ci, calant in enumerate(fitAntsThis):
                         #####
                         ## Prepare gain interpolation (connect phases across band):
 
@@ -2010,19 +2053,19 @@ def polconvert(
             else:
                 for plii, pli in enumerate(doIF):
                     Nchans = np.shape(AllFreqs[plii])[0]
-                    temp = [np.zeros(Nchans, dtype=np.complex64) for ci in fitAnts]
+                    temp = [np.zeros(Nchans, dtype=np.complex64) for ci in fitAntsThis]
                     p0 = []
-                    for ci in fitAnts:
+                    for ci in fitAntsThis:
                         if solveAmp:
                             p0 += [1.0, 0.0]
                         else:
                             p0 += [0.0]
-                    for ci in fitAnts:
+                    for ci in fitAntsThis:
                         p0 += [0.0]
                     laux = [pli]  # list(doIF)
-                    Npar = len(fitAnts) * {True: 3, False: 2}[solveAmp]
+                    Npar = len(fitAntsThis) * {True: 3, False: 2}[solveAmp]
                     rv = PS.SetFit(
-                        Npar, laux, fitAnts, solveAmp, solveQU, Stokes, useCov, feedRot
+                        Npar, laux, fitAntsThis, solveAmp, solveQU, Stokes, useCov, feedRot
                     )
                     if rv != 0:
                         printError("  PS.SetFit failed with error %d" % rv)
@@ -2051,7 +2094,7 @@ def polconvert(
                     FLIP = Chi2_final > 0.0
                     myfit = mymin.x
 
-                    for ci, calant in enumerate(fitAnts):
+                    for ci, calant in enumerate(fitAntsThis):
                         PhasFactor = {True: np.pi, False: 0.0}[
                             FLIP and (calant in linAntIdxTrue)
                         ]
@@ -2059,17 +2102,17 @@ def polconvert(
                             # AMP+PHASE SPACE:
                             #    temp[ci][:]= (myfit[2*ci]*np.exp(1.j*(PhasFactor + myfit[2*ci+1])))
                             temp[ci][:] = myfit[2*ci]*np.exp(
-                                1.0j*(PhasFactor + myfit[2*ci+1] + myfit[2 * len(fitAnts) + ci]*FreqChan)
+                                1.0j*(PhasFactor + myfit[2*ci+1] + myfit[2 * len(fitAntsThis) + ci]*FreqChan)
                             )
                         else:
                             #    temp[ci][BPChan[chran]:BPChan[chran+1]+1]= np.exp(1.j*(PhasFactor+myfit[ci]))
                             temp[ci][:] = np.exp(
-                                1.0j*(PhasFactor + myfit[ci] + myfit[len(fitAnts) + ci]*FreqChan)
+                                1.0j*(PhasFactor + myfit[ci] + myfit[len(fitAntsThis) + ci]*FreqChan)
                             )
                     for ci in antcodes:
                         CGains["XYratio"][ci][pli] = np.ones(len(temp[0]))
                         CGains["XYadd"][ci][pli] = np.zeros(len(temp[0]))
-                    for ci, calant in enumerate(fitAnts):
+                    for ci, calant in enumerate(fitAntsThis):
                         #####
                         ## Prepare gain interpolation (connect phases across band):
 
@@ -2213,7 +2256,7 @@ def polconvert(
             print("\n\n")
             printMsg("Plotting selected fringe for IF #%i" % pli)
 
-            frfile = open("POLCONVERT.FRINGE_%s/POLCONVERT.FRINGE_IF%i" % (plotSuffix,pli), "rb")
+            frfile = open("POLCONVERT.FRINGE/POLCONVERT.FRINGE_IF%i" % pli, "rb")
 
             alldats = frfile.read(5)
             nchPlot, isParang = stk.unpack("ib", alldats)
@@ -2749,9 +2792,8 @@ def polconvert(
                                     % (pli, NBF, antcodes[ant1 - 1], antcodes[ant2 - 1])
                                 )
                                 pfile = open(
-                                    "FRINGE.PEAKS_%s/FRINGE.PEAKS_IF%i_SCAN_%i_%s-%s.dat"
-                                    % ( plotSuffix,
-                                        pli,
+                                    "FRINGE.PEAKS/FRINGE.PEAKS_IF%i_SCAN_%i_%s-%s.dat"
+                                    % (pli,
                                         NBF,
                                         antcodes[ant1 - 1],
                                         antcodes[ant2 - 1],
@@ -2895,8 +2937,8 @@ def polconvert(
                 pl.ylim((0.0, 1.1 * np.max(CONVAMP[:, [1, 3, 5, 7]])))
                 fig.suptitle(jobLabel(DiFXinput) + " ANT: %i v %i" % (thisAnt, plotAnt))
                 fig.savefig(
-                    "FRINGE.PLOTS_%s/ALL_IFs_ANT_%i_%i%s.png"
-                    % (plotSuffix,thisAnt, plotAnt, plotSuffix)
+                    "FRINGE.PLOTS/ALL_IFs_ANT_%i_%i%s.png"
+                    % (thisAnt, plotAnt, plotSuffix)
                 )
 
                 fig3 = pl.figure()
@@ -2927,8 +2969,8 @@ def polconvert(
                     jobLabel(DiFXinput) + " ANT: %i v %i" % (thisAnt, plotAnt)
                 )
                 fig3.savefig(
-                    "FRINGE.PLOTS_%s/RL_LR_RATIOS_ANT_%i_%i%s.png"
-                    % (plotSuffix,thisAnt, plotAnt, plotSuffix)
+                    "FRINGE.PLOTS/RL_LR_RATIOS_ANT_%i_%i%s.png"
+                    % (thisAnt, plotAnt, plotSuffix)
                 )
 
     else:

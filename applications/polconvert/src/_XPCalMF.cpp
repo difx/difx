@@ -579,7 +579,7 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
 
   double DNu = PCalNus[1] - PCalNus[0];
   double IFDel00, IFDel01, IFDel0, IFDel1, NtoneIF;
-  double *NWrap = new double[NTone];
+  // double *NWrap = new double[NTone];
   cplx64d AvPhasor;
   double fitDelay, IFPhase;
 
@@ -682,7 +682,9 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
       IFDel00 = 0.0; IFDel01 = 0.0; IFDel0 = 0.0; IFDel1 = 0.0; 
 
       NtoneIF = (double) (nUsableTones); // Number of phasecal tones within the IF.
-
+      if (nUsableTones <= 0){
+        continue;
+      }
       
       for(j=0; j<nUsableTones; j++){
         l = usableTones[j];
@@ -693,7 +695,13 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
       IFDel0 /= NtoneIF ; IFDel1 /= NtoneIF;
 
       // Estimate the cross-polarization tone delay for this IF:
-      fitDelay = (IFDel01 - NtoneIF*IFDel0*IFDel1)/(IFDel00 - NtoneIF*IFDel0*IFDel0);
+      //fitDelay = (IFDel01 - NtoneIF*IFDel0*IFDel1)/(IFDel00 - NtoneIF*IFDel0*IFDel0);
+      if (nUsableTones < 2 || areSame((IFDel00 - NtoneIF*IFDel0*IFDel0), 0.0)){
+        fitDelay = 0.0;
+      } else {
+        fitDelay = (IFDel01 - NtoneIF*IFDel0*IFDel1)/(IFDel00 - NtoneIF*IFDel0*IFDel0);
+      }
+
 
       // Estimate the cross-polarization tone phase:
       AvPhasor = 0.0;
@@ -713,8 +721,7 @@ static PyObject *XPCalMF(PyObject *self, PyObject *args)
       };
       
       // Estimated phase of the iJump-th tone (group-delay extrapolation from the previous IF):
-      NWrap[i] = fitDelay*(PCalNus[i+1]-PCalNus[i]) + Phases[i]-Phases[i+1];
-
+      // NWrap[i] = fitDelay*(PCalNus[i+1]-PCalNus[i]) + Phases[i]-Phases[i+1];
       // Convert this difference into an integer number of wraps:
   //    NWrap[i] /= 2.*PI; FracP = modf(NWrap[i], &IntP);
   //    if (FracP>0.5){IntP += 1.;} else if(FracP<-0.5){IntP -= 1.;}; // Difference will always be <180 degrees.

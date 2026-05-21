@@ -1349,16 +1349,16 @@ if(PCMode){
 
 ////////////
                //indent level within getting average loop
-               if(verbose && j==0){
-                 printf("gainRatio (j=0): %.3e %.3e\n",
+               if(verbose && j<32){
+                 printf("gainRatio (%d): %.3e %.3e\n",j,
                       gainRatio[j].real(), gainRatio[j].imag());
-                 printf("Ktot00: %.3e %.3e\n",
+                 printf("Ktot00(%d): %.3e %.3e\n",j,
                       Ktotal[currAntIdx][0][0][j].real(), Ktotal[currAntIdx][0][0][j].imag());
-                 printf("Ktot01: %.3e %.3e\n",
+                 printf("Ktot01(%d): %.3e %.3e\n",j,
                       Ktotal[currAntIdx][0][1][j].real(), Ktotal[currAntIdx][0][1][j].imag());
-                 printf("Ktot10: %.3e %.3e\n",
+                 printf("Ktot10(%d): %.3e %.3e\n",j,
                       Ktotal[currAntIdx][1][0][j].real(), Ktotal[currAntIdx][1][0][j].imag());
-                 printf("Ktot11: %.3e %.3e\n",
+                 printf("Ktot11(%d): %.3e %.3e\n",j,
                       Ktotal[currAntIdx][1][1][j].real(), Ktotal[currAntIdx][1][1][j].imag()); 
                  if (allflagged) {printf("All flagged\n"); }
                  else {printf("Not flagged\n"); };

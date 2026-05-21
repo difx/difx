@@ -247,6 +247,10 @@ calibrated phased arrays (i.e., phased ALMA).
                     two antenna codenames) to NOT use in the 
                     cross-polarization gain estimates.
 
+  fixedAntennas: List of antennas whose data will be used in the 
+                 calibration estimates, BUT whose gains will not
+                 be fitted.
+
   doSolve: If negative, do not estimate the cross-polarization 
            gains. If positive or zero, estimate the gains using
            a Global Cross-Pol Fringe Fitting (GCPFF). The gains
@@ -335,7 +339,7 @@ calibrated phased arrays (i.e., phased ALMA).
 # Auxiliary function: print message (terminal and log):
   def printMsg(msg, doterm=True, dolog=True):
     if doterm:
-      print(msg)
+      print(msg,flush=True)
     if dolog:
       lfile = open("PolConvert.log","a")
       print(msg,file=lfile)
@@ -814,8 +818,6 @@ calibrated phased arrays (i.e., phased ALMA).
     time0 = tb.getcol('startValidTime')-CALAPPDT+CALAPPTSHIFT
     time1 = tb.getcol('endValidTime')+CALAPPDT+CALAPPTSHIFT
 
-
-
 #########
 # Figure out times with unphased data:
     ADJ = tb.getcol('adjustToken')
@@ -908,7 +910,7 @@ calibrated phased arrays (i.e., phased ALMA).
    #              gaps[ian].append([float(antimes[ian][-2][1]),float(antimes[ian][-1][0])])
 
    for ian,antenna in enumerate(allants):
-   #  antimes[ian] += gaps[ian]
+   #  antimes[ian] += gaps[ian]   
      auxarr = np.zeros((len(antimes[ian]),2))
      auxarr[:] = antimes[ian]
      antimes[ian] = auxarr
@@ -986,16 +988,27 @@ calibrated phased arrays (i.e., phased ALMA).
 # MAX. NUMBER OF CHANNELS:
       chav = FrInfo['CHANS TO AVG'][nu]
       sb = {True: 1.0 , False: -1.0}[FrInfo['SIDEBAND'][nu] == 'U']
+      
+      ## Channel width of ALMA (in MHz):
+      dNuALMA = 7.8125 
+      BPassShift = dNuALMA*0.5  # Half a channel
+
+      if sb<0.0:
+         channels =  np.linspace(BPassShift,bw+BPassShift, nchan//chav, endpoint=False)
+      else:  
+         channels =  np.linspace(-bw-BPassShift,BPassShift, nchan//chav, endpoint=False)
+
       FrInfo['SIGN'][nu] = float(sb)
-      if nu in doIF:
+
+      if (nu+1) in doIF:
         IFchan = max([IFchan,int(nchan/chav)])
         if float(nchan//chav) != nchan/chav:
-           printMsg("SPW %i. linspace check FAILED: chan: %d / %d = %f" %(nu,nchan, chav, nchan/chav))
+           printMsg("SPW %i DiFX %i. linspace check FAILED: chan: %d / %d = %f" %(nu+1, nu, nchan, chav, nchan/chav))
         else:
-           printMsg("SPW %i. linspace check PASSED: chan: %d / %d = %f" %(nu,nchan, chav, nchan/chav))
-      freqs = (nu0 + np.linspace((sb-1.)/2.,(sb+1.)/2.,
-        nchan//chav,    # should be exactly divisible
-        endpoint=False)*bw)*1.e6
+           printMsg("SPW %i DiFX %i. linspace check PASSED: chan: %d / %d = %f" %(nu+1, nu, nchan, chav, nchan/chav))
+
+      freqs = (nu0 + channels)*1.e6
+
       metadata.append(freqs)
 
 
@@ -1174,7 +1187,7 @@ calibrated phased arrays (i.e., phased ALMA).
   dtdata = []
   isLinear = []
   for i in OrigLinIdx:
-   isLinear.append(np.zeros(len(gains[i]),dtype=np.bool))
+   isLinear.append(np.zeros(len(gains[i]),dtype=bool))
    gaindata.append([])
    kind.append([])
    dtdata.append([])
@@ -1188,7 +1201,7 @@ calibrated phased arrays (i.e., phased ALMA).
        dtdata[-1][-1].append(np.zeros((nchan,ntime)).astype(np.float64))
        dtdata[-1][-1].append(np.zeros((nchan,ntime)).astype(np.float64))
        dtdata[-1][-1].append(np.zeros((nchan,ntime)).astype(np.float64))
-       dtdata[-1][-1].append(np.zeros((nchan,ntime)).astype(np.bool))
+       dtdata[-1][-1].append(np.zeros((nchan,ntime)).astype(bool))
    else:
     success = tb.open(os.path.join(dterms[i],'SPECTRAL_WINDOW'))
     if not success:
@@ -1239,7 +1252,7 @@ calibrated phased arrays (i.e., phased ALMA).
        dtdata[-1][-1].append(np.zeros(dims).astype(np.float64))
        dtdata[-1][-1].append(np.zeros(dims).astype(np.float64))
        dtdata[-1][-1].append(np.zeros(dims).astype(np.float64))
-       dtdata[-1][-1].append(np.zeros(dims).astype(np.bool))
+       dtdata[-1][-1].append(np.zeros(dims).astype(bool))
        dtdata[-1][-1][0][:] = (dd0[:,antrow==ant]).real
        dtdata[-1][-1][1][:] = (dd0[:,antrow==ant]).imag
        dtdata[-1][-1][2][:] = (dd1[:,antrow==ant]).real
@@ -1250,7 +1263,7 @@ calibrated phased arrays (i.e., phased ALMA).
        dtdata[-1][-1].append(np.zeros((dims[0],1)).astype(np.float64))
        dtdata[-1][-1].append(np.zeros((dims[0],1)).astype(np.float64))
        dtdata[-1][-1].append(np.zeros((dims[0],1)).astype(np.float64))
-       dtdata[-1][-1].append(np.zeros((dims[0],1)).astype(np.bool)) 
+       dtdata[-1][-1].append(np.zeros((dims[0],1)).astype(bool)) 
   
    for j,gain in enumerate(gains[i]):
      gaindata[-1].append([])
@@ -1268,7 +1281,7 @@ calibrated phased arrays (i.e., phased ALMA).
        gaindata[-1][j][-1].append(np.zeros((nchan,ntime)).astype(np.float64))
        gaindata[-1][j][-1].append(np.ones((nchan,ntime)).astype(np.float64))
        gaindata[-1][j][-1].append(np.zeros((nchan,ntime)).astype(np.float64))
-       gaindata[-1][j][-1].append(np.zeros((nchan,ntime)).astype(np.bool))
+       gaindata[-1][j][-1].append(np.zeros((nchan,ntime)).astype(bool))
      else:
 
 # Smooth X-Y differences:
@@ -1362,9 +1375,9 @@ calibrated phased arrays (i.e., phased ALMA).
                dd1 = Aux
         else:  # A GAIN ALREADY IN MODE 'T' OR NEW XY-PHASE:
          #  print("ONLY ONE POL", gainType)
-         dd0 = np.copy(data[0,:,:])
-         dd1 = np.copy(data[0,:,:])
-         if gainType == 'Xfparang Jones':
+          dd0 = np.copy(data[0,:,:])
+          dd1 = np.copy(data[0,:,:])
+          if gainType in ['Xfparang Jones','Xf Jones','Kcross Jones']:
             dd1[:] = 1.0
         antrowant = antrow==ant
         dims = np.shape(dd0[:,antrowant])
@@ -1372,7 +1385,7 @@ calibrated phased arrays (i.e., phased ALMA).
         # All antennas MUST have the re-ref XY0 phase, even if not used
         # in the pol. calibration!  Traditionally .XY0 appears in the file
         # name, but there may be other gainTypes defined now or in the future.
-        if (gainType in ['Xfparang Jones','GlinXphf Jones','Kcross Jones'] or ".XY0" in gain):
+        if (gainType in ['Xf Jones','Xfparang Jones','GlinXphf Jones','Kcross Jones'] or ".XY0" in gain):
           if dims[1]==0:
             antrowant = antrow==refants[0]
             dims = np.shape(dd0[:,antrowant])
@@ -1386,7 +1399,7 @@ calibrated phased arrays (i.e., phased ALMA).
         gaindata[-1][j][-1].append(np.zeros(dims).astype(np.float64))
         gaindata[-1][j][-1].append(np.ones(dims).astype(np.float64))
         gaindata[-1][j][-1].append(np.zeros(dims).astype(np.float64))
-        gaindata[-1][j][-1].append(np.zeros(dims).astype(np.bool))
+        gaindata[-1][j][-1].append(np.zeros(dims).astype(bool))
         if not isFlagged:
           gaindata[-1][j][-1][0][:] = trow[antrowant]
 
@@ -1429,7 +1442,7 @@ calibrated phased arrays (i.e., phased ALMA).
           'feedRotation':feedRotation, 'correctParangle':correctParangle, 
           'IDI_conjugated':IDI_conjugated, 'plotIF':plotIF, 'plotRange':plotRange, 
           'plotAnt':plotAnt, 'excludeAnts':excludeAnts, 'excludeBaselines':excludeBaselines, 
-          'doSolve':doSolve, 'solint':solint, 'doTest':doTest, 'npix':npix, 'plotSuffix':plotSuffix,
+          'doSolve':doSolve, 'solint':solint, 'doTest':doTest, 'npix':npix,'plotSuffix':plotSuffix, 
           'solveAmp':solveAmp, 'solveMethod':solveMethod, 'calstokes':calstokes, 
           'calfield':calfield, 'ALMAstuff':ALMAstuff,'saveArgs':saveArgs,'amp_norm':amp_norm}
 

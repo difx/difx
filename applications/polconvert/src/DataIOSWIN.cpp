@@ -800,7 +800,7 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
         fprintf(logFile,"%s",message); fflush(logFile);
 
         for (rec=0; rec<idx; rec++) {
-          sprintf(message,"%c%c ",
+          sprintf(message,"ONLY FOUND %c%c ",
               Records[indices[rec]].Pol[0],Records[indices[rec]].Pol[1]);
           fprintf(logFile,"%s",message); fflush(logFile);
         };
@@ -863,9 +863,12 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
       };
     };
 
+    int *whichFailed = new int[4]; // whichFailed[2];
+    bool oneFailed = false;
 
 // Get the data and return them:
     for (i=0; i<4; i++) {
+      whichFailed[i]=-1;
       if (currEntries[currFreq][i]>=0){
         rec = currEntries[currFreq][i];
         fnum = Records[rec].fileNumber;
@@ -873,6 +876,8 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
         newdifx[fnum].sync();
         newdifx[fnum].read(reinterpret_cast<char*>(currentVis[i]),Records[rec].byteEnd-Records[rec].byteIni);
       } else {
+	whichFailed[i] = 1;      
+	oneFailed = true;
         // nuke values that would have been overwritten by the missing data
         for (k=0; k<Freqs[currFreq].Nchan; k++) {
           currentVis[i][k] = (std::complex<float>)0;
@@ -880,6 +885,40 @@ bool DataIOSWIN::getNextMixedVis(double &JDTime, int &antenna, int &otherAnt, bo
       };
     };
 
+
+// FOR VGOS: If there is only one polarizer, the signal of the other
+// one will be a copy of the former:
+   if (oneFailed){
+ //XX and XY fails --> Failed X of Antenna 1:  XX <- YY ; XY <- -YX 
+         if(whichFailed[0]>0 && whichFailed[2]>0){
+	//	 printf("CASE 1\n");
+		 for (k=0; k<Freqs[currFreq].Nchan; k++){
+			 currentVis[0][k] = currentVis[1][k];
+			 currentVis[2][k] = -currentVis[3][k];		 
+		 };
+ //YX and YY fails --> Failed Y of Antenna 1: YY <- XX ; YX <- -XY
+	 } else if(whichFailed[3]>0 && whichFailed[1]>0){
+	//	 printf("CASE 2\n");
+		 for (k=0; k<Freqs[currFreq].Nchan; k++){
+			 currentVis[1][k] = currentVis[0][k];
+			 currentVis[3][k] = -currentVis[2][k];		 
+		 };
+ //XX and YX fails --> Failed X of Antenna 2: XX <- YY ; YX <- -XY
+         } else if(whichFailed[0]>0 && whichFailed[3]>0){
+	//	 printf("CASE 3\n");		 
+		 for (k=0; k<Freqs[currFreq].Nchan; k++){
+			 currentVis[0][k] = currentVis[1][k];
+			 currentVis[3][k] = -currentVis[2][k];		 
+		 };
+ //XY and YY fails --> Failed Y of Antenna 2: YY <- XX ; XY <- -YX 
+         } else if(whichFailed[1]>0 && whichFailed[2]>0){
+	//	 printf("CASE 4\n");		 
+		 for (k=0; k<Freqs[currFreq].Nchan; k++){
+			 currentVis[1][k] = currentVis[0][k];
+			 currentVis[2][k] = -currentVis[3][k];		 
+		 };
+         };
+   };
 
 
 // Case of auto-correlations (in the 2nd round of conversion):
@@ -1140,8 +1179,8 @@ void DataIOSWIN::applyMatrix(std::complex<float> *M[2][2], bool swap,
 // UPDATE THE AUXILIAR VISIBILITIES (I.E. FOR AUTOCORRS WITH MISSING CROSS-POLS):
 
 
- for (i=0; i<4; i++) {
-  if (currEntries[currFreq][i]<0 || isAutoCorr || isTwoLinear ) {
+ for (i=0; i<4; i++) {  // WARNING! REMOVED currEntries[currFreq][i]<0 of IF.
+  if (isAutoCorr || isTwoLinear ) {
    if (!canPlot){ // Case of auto-correlations (2nd round of conversion):
     for(k=0;k<Freqs[currFreq].Nchan; k++) {
       auxVis[i][k] = bufferVis[i][k];
