@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2023 by Walter Brisken and Helge Rottmann          *
+#   Copyright (C) 2008-2026 by Walter Brisken and Helge Rottmann          *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -20,8 +20,8 @@
 #**************************************************************************
 
 PROGRAM = 'startdifx'
-VERSION = '3.0.7'
-VERDATE = '20230316'
+VERSION = '3.0.8'
+VERDATE = '20260522'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -32,7 +32,7 @@ maxGenmachineFail = -1
 genmachines              = 'genmachines -v'
 defaultDelayModelProgram = 'calcif2'
 difx2fits                = 'difx2fits -v'
-mpiOptions               = '--mca mpi_yield_when_idle 1 --mca rmaps seq'
+mpiOptions               = "--mca mpi_yield_when_idle 1 --mca rmaps seq"
 agent                    = ''
 
 from sys import argv, exit, stdout
@@ -642,7 +642,7 @@ def runDirect(fileBase, machinesCache, restartSeconds):
         if len(agent) > 0:      # hand off to agent
                 cmd = '%s %s' % (agent, fileBase)
         else:                   # hand off to mpirun
-                cmd = 'mpirun -np %d --hostfile %s.machines %s  %s %s.input%s' % (np, fileBase, mpiOptions, difxProgram, fileBase, restartOption)
+                cmd = '`which mpirun` -np %d --hostfile %s.machines %s  %s %s.input%s' % (np, fileBase, mpiOptions, difxProgram, fileBase, restartOption)
 
         sendMessage(fileBase, 'Spawning', 'Spawning %d processes' % np)
         if verbose > 0:
