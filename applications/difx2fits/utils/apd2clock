@@ -1,0 +1,416 @@
+#!/bin/env python3
+
+from sys import exit, stdout
+import numpy as np
+import argparse
+from math import exp, log
+
+program = 'apd2clock'
+version = '0.1'
+author = 'Walter Brisken <wbrisken@nrao.edu>'
+verdate = '20260429'
+
+
+# trims a floating point value
+def stripZeros(s):
+	if s.find('.') < 0:
+		return s
+	while s[-1] == '0':
+		s = s[:-1]
+	if s[-1] == '.':
+		s = s[:-1]
+	return s
+
+
+# Provide:
+# M: Matrix of baseline-based measurements (delay-like quantities)
+# W: Matrix of baseline-based weights = 1/sigma
+# R: index (0-based) of reference antenna
+#
+# Returns:
+# Vector of antenna-based values
+def SolvePhaseClosure(M, W, R):
+	dim = len(M)
+	Ek = np.zeros(dim)
+	for k in range(dim):
+		for j in range(dim):
+			Ek[k] += 4.0*W[j][k]*W[j][k]*M[j][k]
+
+	Ekl = np.zeros([dim, dim])
+	for k in range(dim):
+		for l in range(dim):
+			Ekl[k][l] = 4.0*W[k][l]*W[k][l]
+		for j in range(dim):
+			Ekl[k][k] -= 4.0*W[k][j]*W[k][j]
+
+	# constrain reference value to be zero
+	Ek[R] = 0.0
+	for j in range(dim):
+		Ekl[j][R] = 0.0
+		Ekl[R][j] = 0.0
+	Ekl[R][R] = 1.0
+
+	EklInv = np.linalg.inv(Ekl)
+
+	return np.matmul(EklInv, Ek)
+
+# Provide:
+# M: Matrix of baseline-based measurements (amplitude quantities, > 0)
+# W: Matrix of baseline-based weights = 1/sigma
+#
+# Returns:
+# Vector of antenna-based values
+def SolveAmpClosure(M, W):
+	dim = len(M)
+	Ek = np.zeros(dim)
+	for k in range(dim):
+		for j in range(dim):
+			if M[j][k] > 0:
+				Ek[k] += 4.0*W[j][k]*W[j][k]*log(M[j][k])
+
+	Ekl = np.zeros([dim, dim])
+	for k in range(dim):
+		for l in range(dim):
+			Ekl[k][l] = 4.0*W[k][l]*W[k][l]
+		for j in range(dim):
+			Ekl[k][k] += 4.0*W[k][j]*W[k][j]
+
+	EklInv = np.linalg.inv(Ekl)
+
+	x = np.matmul(EklInv, Ek)
+	for k in range(dim):
+		try:
+			x[k] = exp(x[k])
+		except:
+			print('bad exp: k=%d x=%f' % (k, x[k]))
+
+	return x
+	
+def nextBaseline(bl1, bl2):
+	if bl2[0] == bl1[0] and bl2[1] == bl1[1]+1:
+		return True
+	if bl2[0] == bl1[0]+1 and bl2[1] == bl2[0]+1:
+		return True
+	return False
+
+# Return:
+#   obsCode, times
+#
+# times[] = array of time dictionaries
+# time = [intmjd, hours, sourceNum, sourceName, data[] ] (data[] indexed by baseline)
+# data = [ant1, ant2, antname1, antname2, meas[] ]  (zero-based ants; meas[] indexed by 0-based channel)
+# meas = [delay(ns), amp, phase(rad), rate(Hz)]
+def loadAPD(filename):
+	lastbl = (0, 0)
+	data = open(filename).readlines()
+	s = data[0].strip().split()
+	if s[0] == 'obscode:':
+		obscode = s[1]
+	else:
+		print('Unrecognized APD file format')
+		return None, None
+	
+	currentTime = [-1, -1.0, 1, '', []]
+	times = []
+	for d in data[1:]:
+		s = d.strip().split()
+		# s[0] = integer MJD
+		# s[1] = hours since UTC midnight
+		# s[2] = source ID
+		# s[3] = source name
+		# s[4] = ant1 (1-based index)
+		# s[5] = ant2 (1-based index)
+		# s[6] = ant1 name
+		# s[7] = ant2 name
+		# s[8] = number of channels
+		# remaining groups of 4 numbers: see "meas" above
+		intmjd = int(s[0])
+		hour = float(s[1])
+		srcNum = int(s[2])
+		bl = (int(s[4])-1, int(s[5])-1)
+		if intmjd != currentTime[0] or (hour != currentTime[1] and not nextBaseline(bl, lastbl)) or srcNum != currentTime[2]:
+			currentTime = [intmjd, hour, srcNum, s[3], []]
+			times.append(currentTime)
+		lastbl = bl
+		data = [bl[0], bl[1], s[6], s[7], []]
+		currentTime[4].append(data)
+		n = int(s[8])
+		for i in range(n):
+			meas = [float(s[9+4*i]), float(s[10+4*i]), float(s[11+4*i]), float(s[12+4*i])]
+			data[4].append(meas)
+
+	return obscode, times
+
+# Output is a dictionary of clock models indexed by antenna name
+# Each value is an array with units of [ns/day^degree, ns/day^(degree-1), ..., ns]
+# sign convention: FIXME
+def process(times, chans, degree, reftime=0.0):
+	mjds = []
+	values = []	# indexed by time index
+	for T in times:
+		D = T[4]
+		maxAnt = 0
+		for d in D:
+			if d[0] > maxAnt:
+				maxAnt = d[0]
+			if d[1] > maxAnt:
+				maxAnt = d[1]
+		ants = [None] * (maxAnt+1)
+		for d in D:
+			ants[d[0]] = d[2]
+			ants[d[1]] = d[3]
+		dim = len(ants)
+		measurementIndex = 0    # Delay only
+		try:
+			R = int(refant) - 1	# zero based
+		except:
+			try:
+				R = ants.index(refant)
+			except:
+				continue
+		
+		results = []
+		for b in range(len(D[0][4])):
+			if b in chans:
+				M = np.zeros([dim, dim])
+				W = np.zeros([dim, dim])
+				try:
+					for d in D:
+						a1 = d[0]
+						a2 = d[1]
+						v = d[4][b][measurementIndex]
+						w = d[4][b][1]
+						M[a1][a2] = -v
+						M[a2][a1] = v
+						W[a1][a2] = w
+						W[a2][a1] = w
+					x = SolvePhaseClosure(M, W, R)
+				except np.linalg.LinAlgError:
+					continue
+				results.append(x)
+		if len(results) > 0:
+			mjds.append(float(T[0]) + float(T[1])/24.0)
+			values.append(results)	# values[timeIndex][channel][antenna]
+
+	if reftime == 0:
+		reftime = 0.5*(max(mjds) + min(mjds))
+	T = np.array(mjds) - reftime
+	clockUpdate = {}
+	for a in range(len(ants)):	# FIXME: for now assume all times have same number of antennas
+		D = np.zeros(len(mjds))
+		for t in range(len(mjds)):
+			n = 0
+			for c in range(len(values[t])):
+				n += 1
+				D[t] += values[t][c][a]
+			D[t] /= n
+		M = np.polyfit(T, D, degree)
+		clockUpdate[ants[a]] = M
+	
+	return reftime, clockUpdate
+
+
+# chanFile looks like:
+
+# obscode:  TR045B
+# MJD 61135.39961227 2 1
+# 1 7181.750 16.000 U R
+# 2 7181.750 16.000 U L
+
+def selectChans(chanFile, pol):
+	maxRatio = 2.5
+	try:
+		data = open(chanFile).readlines()
+	except:
+		print('Could not read from %s' % chanFile)
+		exit(0)
+	IFs = []
+	maxFreq = 0
+	n = 0
+	for d in data[2:]:
+		s = d.strip().split()
+		n += 1
+		if n != int(s[0]):
+			print('%s is badly formatted' % chanFile)
+			exit(0)
+		f = float(s[1])
+		bw = float(s[2])
+		sb = s[3]
+		p = s[4]
+		if sb == 'L':
+			f -= 0.5*bw
+		else:
+			f += 0.5*bw
+		IFs.append([f, p])
+		if f > maxFreq and pol in [p, 'B']:
+			maxFreq = f
+	if maxFreq == 0:
+		print('No channels match', IFs)
+		exit(0)
+	chans = []
+	for i in range(len(IFs)):
+		if IFs[i][0] > maxFreq / maxRatio and pol in [IFs[i][1], 'B']:
+			chans.append(i)
+
+	return chans
+
+def tokenizeV2D(data):
+	tokens = []
+	specialChars = ['{', '=', '}', ',']
+	for line in data:
+		l = len(line)
+		tokenStart = 0
+		charType = 0	# 0 = unset, 1 = whitespace, 2 = other
+		for i in range(l):
+			if line[i] == '#':
+				tokenStart = i
+				break
+			if line[i] in specialChars:
+				if charType != 0:
+					tokens.append(line[tokenStart:i])
+				tokens.append(line[i])
+				charType = 0
+			elif line[i].isspace():
+				if charType == 0:
+					charType = 1
+					tokenStart = i
+				elif charType == 2:
+					tokens.append(line[tokenStart:i])
+					charType = 1
+					tokenStart = i
+			else:
+				if charType == 0:
+					charType = 2
+					tokenStart = i
+				elif charType == 1:
+					tokens.append(line[tokenStart:i])
+					charType = 2
+					tokenStart = i
+		tokens.append(line[tokenStart:])
+
+	return tokens
+
+def reassembleV2D(tokens, outputFile):
+	if outputFile != None:
+		output = open(outputFile, 'w')
+	else:
+		output = stdout
+	for t in tokens:
+		output.write(t)
+
+def updateV2D(reftime, clockUpdate, inputFile, outputFile):
+	parameters = ['clockEpoch', 'deltaClock', 'deltaClockRate']
+
+	data = open(inputFile).readlines()
+	tokens = tokenizeV2D(data)
+	newTokens = []
+	state = 0	# 0 = initial, 1 = found ANTENNA, 2 = fount antenna name, 3 = inside ANTENNA, 4 = looking for value
+	data = {}
+	for T in tokens:
+		keep = True
+		if state == 0 and T == 'ANTENNA':
+			state = 1
+		elif state == 1 and not T.isspace():
+			ant = T
+			if ant in clockUpdate:
+				if len(clockUpdate[ant]) > 2:
+					print('Error: v2d clock updates higher order than linear are not supported.')
+					exit(0)
+			values = {}
+			data[ant] = values
+			state = 2
+		elif state == 2 and T == '{':
+			state = 3
+		elif state == 3 and T in parameters:
+			param = T
+			state = 4
+			keep = False
+		elif state == 4:
+			if not T.isspace() and T != '=':
+				values[param] = float(T)
+				state = 3
+			keep = False
+		elif state == 3 and T == '}':
+			state = 0
+			# add back parameters as needed here
+			if 'clockEpoch' in values:
+				epoch = values['clockEpoch']
+			else:
+				epoch = reftime
+			delta = rate = 0.0
+			if 'deltaClock' in values:
+				delta = values['deltaClock']
+			if 'deltaClockRate' in values:
+				rate = values['deltaClockRate']
+
+			if ant in clockUpdate:
+				delta += clockUpdate[ant][-1] / 1000.0
+				if len(clockUpdate[ant]) > 1:
+					rate += clockUpdate[ant][-2] / 1000.0
+					delta += (epoch - reftime)*clockUpdate[ant][-2] / 1000.0
+			
+			if not newTokens[-1].isspace():
+				newTokens.append(' ')
+			if rate != 0 or 'clockEpoch' in values:
+				newTokens += ['clockEpoch', '=', stripZeros('%13.7f' % epoch), ' ']
+			if delta != 0:
+				newTokens += ['deltaClock', '=', stripZeros('%8.6f' % delta), ' ']
+			if rate != 0:
+				newTokens += ['deltaClockRate', '=', stripZeros('%10.8f' % rate), ' ']
+		if keep:
+			newTokens.append(T)
+	reassembleV2D(newTokens, outputFile)
+
+def updateVex(clockUpdate, inputFile, outputFile):
+	print('updating vex file not yet supported')
+
+# ------
+
+apdFile = None
+refant = 0
+pol = 'B'		# Both
+refantSet = False
+degree = 0		# 1 for linear, 2 for quadratic, ...
+chans = []
+
+parser = argparse.ArgumentParser('apd2clock', 'program to generate or update clock model based on an apd file', '')
+parser.add_argument('apdFile', help='file to process')
+parser.add_argument('-r', '--refant', help='specify a reference antenna, either by code or 1-based index')
+parser.add_argument('-d', '--degree', type=int, help='clock model order; 0 or 1 is supported')
+parser.add_argument('-i', '--input', help='input .vex or .v2d file; if not provided, just generate text output')
+parser.add_argument('-o', '--output', help='filename for output data, otherwise send to stdout')
+parser.add_argument('-p', '--polarization', help='polarization: R or L.  Will average both if not set')
+args = parser.parse_args()
+
+apdFile = args.apdFile
+if args.refant != None:
+	refantSet = True
+	refant = args.refant
+if args.polarization != None:
+	pol = args.polarization[0].upper()
+if args.degree != None:
+	degree = args.degree
+
+if len(chans) == 0:
+	chanFile = apdFile[:-4] + '.channels'
+	chans = selectChans(chanFile, pol)
+	print('Chans: ', chans);
+
+if apdFile == None:
+	parser.print_help()
+	exit(0)
+
+obscode, times = loadAPD(apdFile)
+
+reftime, clockUpdate = process(times, chans, degree)
+
+if args.input == None:
+	print('Ref time: %13.7f' % reftime)
+	for key, value in clockUpdate.items():
+		print('%s:' % key, value)
+else:
+	inputFile = args.input
+	if inputFile[-4:] in ['.v2d', '.e2d']:
+		updateV2D(reftime, clockUpdate, inputFile, args.output)
+	elif inputFile[-4:] == '.vex':
+		updateVex(clockUpdate, inputFile, args.output)
