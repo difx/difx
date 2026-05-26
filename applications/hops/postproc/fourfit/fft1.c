@@ -18,7 +18,7 @@
 #include <complex.h>
 #include "mk4_data.h"
 
-void FFT1 (complex In[MAXMAX*2], int NN, int ISign, complex Out[MAXMAX*2], int rev)    
+void FFT1 (complex In[MAXMAX*2], int NN, int ISign, complex Out[MAXMAX*2], int rev)
     {
     double wr,wi,wpr,wpi,wtemp,theta,tempr,tempi,Data[MAXMAX*8 + 1];
     int i,j,n,istep,mmax,m;
