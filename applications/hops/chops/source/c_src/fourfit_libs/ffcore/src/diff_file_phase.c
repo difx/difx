@@ -11,7 +11,7 @@
 #include <math.h>
 #include "param_struct.h"
 #include "pass_struct.h"
-
+#include "msg.h"
 
 double diff_file_phase (struct type_pass *p, // ptr to current pass structure
                         char fcode,          // frequency code [a..zA..Z$%]

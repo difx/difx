@@ -31,7 +31,7 @@ int main (int argc, char **argv)
     static struct fxparam fxp;
     struct loops loops;
     fstruct *files;
-    double set_reffreq();
+    double set_reffreq(struct fxparam *);
 
     set_progname("fringex");
     set_msglev(1);
