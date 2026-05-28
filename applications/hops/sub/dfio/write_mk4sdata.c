@@ -38,6 +38,7 @@ write_mk4sdata (struct mk4_sdata *sdata,
                                         /* filename input */
     ptr = (char *)strrchr (filename, '/');
     if (ptr == NULL) ptr = filename - 1;
+    prep_fstruct(&f_info);
     if (check_name (ptr+1, &f_info) != 0)
         {
         msg ("Badly formed file name '%s'", 2, ptr+1);

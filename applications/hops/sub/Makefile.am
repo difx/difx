@@ -1,17 +1,18 @@
 #
-# $Id: Makefile.am 3399 2021-10-26 20:05:16Z barrettj $
+# $Id: Makefile.am 4512 2026-05-10 21:48:06Z gbc $
 #
 
-if HAVE_DEVEL
 if HAVE_PYTHON
-SUBDIRS = . msg afio dfio util vex @M4PYDIR@
+SUBDIRS = . msg afio dfio util vex mk4py
+TESTS = importcheck.py
 else
 SUBDIRS = . msg afio dfio util vex
+TESTS =
 endif
-else
-SUBDIRS = . msg afio dfio util vex
-endif
+
 DIST_SUBDIRS = $(SUBDIRS)
+check_SCRIPTS = importcheck.py
+dist_check_SCRIPTS = importcheck.py
 
 #
 # eof
