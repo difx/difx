@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# $Id: chk_ff_3413.sh 330 2011-06-10 13:32:10Z rjc $
+# $Id: chk_ff_3413.sh 4383 2025-07-20 21:38:08Z gbc $
 #
-# canonical test suite for fourfit
+# canonical test suite for fourfit3
 #
 
 verb=false
@@ -15,16 +15,16 @@ export DATADIR=`cd $srcdir/testdata; pwd`
 os=`uname -s` || os=idunno
 grep -v $os $DATADIR/3413/cf3413 > ./cf3413
 
-$verb && type fourfit
+$verb && type $fourfit
 $verb && printenv > ff-3413-env.out
 
 rm -f ff-3413.ps
 $verb && echo \
-fourfit -t -d diskfile:ff-3413.ps -b GE -P LL \\ && echo \
+$fourfit -t -d diskfile:ff-3413.ps -b GE -P LL \\ && echo \
     -c ./cf3413 \\ && echo \
     $DATADIR/3413/278-1758/0552+398.wmtukg
 
-fourfit -t -d diskfile:ff-3413.ps -b GE -P LL \
+$fourfit -t -d diskfile:ff-3413.ps -b GE -P LL \
     -c ./cf3413 \
     $DATADIR/3413/278-1758/0552+398.wmtukg 2>/dev/null 1>&2
 [ -f ./ff-3413.ps ] || { echo ./ff-3413.ps missing && exit 2 ; }

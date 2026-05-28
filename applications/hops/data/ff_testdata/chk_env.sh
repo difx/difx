@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_env.sh 2182 2017-12-28 19:19:01Z gbc $
+# $Id: chk_env.sh 4582 2026-05-22 15:12:24Z gbc $
 #
 # environment setup -- HOPS_SETUP is not set or false
 # This script is really only needed for distcheck where
-# the normal setup doesn't work correctly (yet).
+# the normal setup doesn't work correctly (yet, if ever).
 #
 # ${HOPS_SETUP-'false'} || . $srcdir/chk_env.sh
 #
@@ -25,18 +25,28 @@ umask 0002
     $verb && echo path set up using $hops
     true
 } || {
+    $verb && echo creating a path directory
     rm -rf ./path
     mkdir ./path
     cd ./path
-    for e in adump aedit alist average bispec calamp cofit \
-	     coterp fold fourfit fourmer fplot fringex \
-	     pratio search
+    # the last line is IFFDIR items which are harmless to check
+    for e in adump aedit alist average cohfit \
+        fourfit fourmer fplot fringex search snratio \
+        bispec calamp cofit coterp hfold pratio
     do
 	[ -x ../../../postproc/$e/$e ] && ln -s ../../../postproc/$e/$e .
     done
+    # this is built so go to build
     for e in hops_data_links.pl
     do
 	[ -x ../../../scripts/$e ] && ln -s ../../../scripts/$e .
+    done
+    # this is source directory; different versions of automake
+    # put this in different levels of directory
+    for e in cohfit-driver.sh
+    do
+	[ -x ../../../../scripts/$e ] && ln -s ../../../../scripts/$e . || {
+    [ -x ../../../../../scripts/$e ] && ln -s ../../../../../scripts/$e . ; }
     done
     for t in blk_stmt.txt  pformat.txt
     do

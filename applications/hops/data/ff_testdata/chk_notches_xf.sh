@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# $Id: chk_notches_xf.sh 3333 2021-09-07 20:30:41Z gbc $
+# $Id: chk_notches_xf.sh 4383 2025-07-20 21:38:08Z gbc $
 #
 # Something to check notches using the fourmered data 3365 sample
 #
@@ -69,12 +69,12 @@ mv $cf $cf.got
 export HOPS_PLOT_DATA_MASK=0x87FFFFFF
 rm -rf pdd3365
 $verb && echo \
-    fourfit -t -c $cf.not -d diskfile:ff-3365-OP.not.ps -b OP -P LL $root
-    fourfit -t -c $cf.not -d diskfile:ff-3365-OP.not.ps -b OP -P LL $root
+    $fourfit -t -c $cf.not -d diskfile:ff-3365-OP.not.ps -b OP -P LL $root
+    $fourfit -t -c $cf.not -d diskfile:ff-3365-OP.not.ps -b OP -P LL $root
 for o in `ls pdd3365/*` ; do mv $o $o.not ; done
 $verb && echo \
-    fourfit -t -c $cf.got -d diskfile:ff-3365-OP.got.ps -b OP -P LL $root
-    fourfit -t -c $cf.got -d diskfile:ff-3365-OP.got.ps -b OP -P LL $root
+    $fourfit -t -c $cf.got -d diskfile:ff-3365-OP.got.ps -b OP -P LL $root
+    $fourfit -t -c $cf.got -d diskfile:ff-3365-OP.got.ps -b OP -P LL $root
 for o in `ls pdd3365/* | grep -a -v not` ; do mv $o $o.got ; done
 
 [ -s ff-3365-OP.not.ps -a -s ff-3365-OP.got.ps ] && second=true || second=false
@@ -93,13 +93,13 @@ echo .$a.$amp_got.$b.
 # ff-3365-OP.not.ps:7570 9384 M (2.419) SR
 low_not=2.409 high_not=2.429
 aok_not=$(echo "$low_not < $amp_not && $amp_not < $high_not" | bc -lq)
-$verb && 
+$verb &&
     echo aok_not is $aok_not and \
         "$low_not < $amp_not && $amp_not < $high_not" from $line_not
 # ff-3365-OP.got.ps:7570 9384 M (2.510) SR
 low_got=2.500 high_got=2.520
 aok_got=$(echo "$low_got < $amp_got && $amp_got < $high_got" | bc -lq)
-$verb && 
+$verb &&
     echo aok_got is $aok_got and \
         "$low_got < $amp_got && $amp_got < $high_got" from $line_got
 [ "$aok_not" -gt 0 -a "$aok_got" -gt 0 ] && third=true || third=false
@@ -118,14 +118,14 @@ echo .$a.$amp_got.$b.
 # ff-3365-OP.not.ps:7570 9653 M (111.9) SR
 low_not=111.0 high_not=112.8
 aok_not=$(echo "$low_not < $amp_not && $amp_not < $high_not" | bc -lq)
-$verb && 
+$verb &&
     echo aok_not is $aok_not and \
         "$low_not < $amp_not && $amp_not < $high_not" from $lsnr_not
 # ff-3365-OP.got.ps:7570 9653 M (116.1) SR
 #low_got=115.1 high_got=117.1
 low_got=71.1 high_got=71.3
 aok_got=$(echo "$low_got < $amp_got && $amp_got < $high_got" | bc -lq)
-$verb && 
+$verb &&
     echo aok_got is $aok_got and \
         "$low_got < $amp_got && $amp_got < $high_got" from $lsnr_got
 [ "$aok_not" -gt 0 -a "$aok_got" -gt 0 ] && fourth=true || fourth=false

@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_search.sh 408 2011-08-18 15:08:59Z gbc $
+# $Id: chk_search.sh 4574 2026-05-21 21:30:09Z gbc $
 #
 # Something to check search
 #

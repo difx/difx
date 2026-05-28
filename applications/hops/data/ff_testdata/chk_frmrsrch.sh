@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_frmrsrch.sh 541 2011-11-14 13:20:09Z gbc $
+# $Id: chk_frmrsrch.sh 4574 2026-05-21 21:30:09Z gbc $
 #
 # Something to check search on fourmered data.
 #
