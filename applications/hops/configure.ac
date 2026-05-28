@@ -293,7 +293,7 @@ AC_SUBST(GSL_LIBS)
 # the older gsl_multifit_nlin.h exists on 1.15.
 #
 # we have verified this on a 1.15 sustem
-# 
+#
 AC_PATH_PROG(BASH, bash, /bin/false)
 if $have_gsl ; then
 #   AX_PATH_GSL(2.7,  [gsl27atleast=true], gsl27atleast=false])
