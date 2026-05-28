@@ -1,5 +1,5 @@
 #
-# $Id$
+# Makefile for tests
 #
 
 # EXTRA_DIST = 3593.tar.gz 3593.tvf.gz
@@ -13,7 +13,6 @@ dist_check_SCRIPTS = test_harness.sh test_mk4b.py \
 if HAVE_PYTHON_EXTRA
 
 TESTS = test_harness.sh
-XFAIL_TESTS = test_harness.sh
 CLEANFILES = *.pc *.pyc *.tar.gz
 
 else

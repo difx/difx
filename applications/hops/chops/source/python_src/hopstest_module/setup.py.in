@@ -1,6 +1,6 @@
-from distutils.core import setup
+from @PYTHON_SETUP@ import setup
 
 setup(name='hopstestb',
       version='0.1',
-      package_dir={ '': '@abs_srcdir@' },
+      package_dir={ '': '@abs_builddir@' },
       packages=['hopstestb'])
