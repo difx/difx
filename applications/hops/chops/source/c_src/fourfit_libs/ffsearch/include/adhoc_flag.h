@@ -28,7 +28,9 @@ extern void adhoc_flag(struct type_param *pp,
 #define ADHOC_FLAG(PP, DF, FR, AP, PU, PL) do { \
     static int once = 1;                        \
     if (once) {                                 \
+      if ((PP)->ah_flag_files[0][0])            \
         msg("AHF(%s)",1,(PP)->ah_flag_files[0]);\
+      if ((PP)->ah_flag_files[1][0])            \
         msg("AHF(%s)",1,(PP)->ah_flag_files[1]);\
         once = 0;                               \
     }                                           \

@@ -132,7 +132,9 @@ void norm_xf (struct type_pass *pass,
         fftplan = fftw_plan_dft_1d (4 * nlags, (fftw_complex*) S, (fftw_complex*) xlag, FFTW_FORWARD, FFTW_MEASURE);
         }
     samp_per_ap = param->acc_period / param->samp_period;
-    freq_no = fcode(pass->pass_data[fr].freq_code, pass->control.chid);
+    // freq_no = fcode(pass->pass_data[fr].freq_code, pass->control.chid);
+    // See around line 280 of make_passes().
+    freq_no = pass->pass_data[fr].fcode_index;
 
                                         /* Point to current frequency */
     fdata = pass->pass_data + fr;
@@ -454,7 +456,8 @@ void norm_xf (struct type_pass *pass,
       //   }
 
 #if STATUS_AP_ACCOUNTING == 4
-#warning "STATUS_AP_ACCOUNTING == 4"
+// #warning "STATUS_AP_ACCOUNTING == 4"
+// warning disabled as this is how it has been for some time.
       for (ip=ips; ip<pass->pol+1; ip++)
         {
         if ((sb == 0 && usb_bypol[ip] == 0)

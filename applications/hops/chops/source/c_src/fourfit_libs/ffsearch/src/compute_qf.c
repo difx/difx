@@ -34,7 +34,7 @@ char *tape_qcode)
     int t1000_index, btable_index, fr, min, max, num_ap, ratio, perr;
     int slip_measure, slip_pct;
     int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
-    double diff1, diff2, intg_time, dur, fract;
+    double diff1, diff2, dur, fract;
     extern struct type_statistics statistics;
     extern struct type_filter filter;
 
@@ -89,6 +89,7 @@ char *tape_qcode)
         *errcode = 'B';
         }
                                         /* C epoch error condition test here */
+                                        // supplanted by channel cloning error
     else if (0==1)
         *errcode = 'C';
                                         /* D-code, at least 1 channel missing */
@@ -197,13 +198,5 @@ char *tape_qcode)
 
     return (0);
     }
-                                        /* Fraction of data processed ... */
-                                        /* Nominal scan duration */
-/*     t1000_index = (baseline - 1) / 8; */
-/*     btable_index = (baseline - 1) % 8; */
-/*     dur = root->t1000[t1000_index].barray[btable_index].bduration; */
-/*     if (dur == 0) dur = root->t1000[0].duration;   duration same on all baselines */
-/*     intg_time = status->total_ap * param->acc_period / pass->channels; */
-/*     fract = 10.0 * intg_time / dur; */
-/*     if (fract == 10.0) fract = 9.9; */
-/*     t4300->tape_qcode[5] = '0' + (int)(floor (fract)); */
+
+// intg_time was once computed here...decades ago; now in fill_206.c

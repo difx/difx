@@ -38,6 +38,7 @@ write_mk4corel (struct mk4_corel *corel,
                                         /* filename input */
     ptr = (char *)strrchr (filename, '/');
     if (ptr == NULL) ptr = filename - 1;
+    prep_fstruct(&f_info);
     if (check_name (ptr+1, &f_info) != 0)
         {
         msg ("Badly formed file name '%s'", 2, ptr+1);
