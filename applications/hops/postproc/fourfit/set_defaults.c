@@ -35,15 +35,15 @@ set_defaults()
     default_cfile = getenv("DEF_CONTROL");
     if (default_cfile == NULL)
         {
-        msg ("DEF_CONTROL environment variable undefined!", 2);
+        msg ("DEF_CONTROL undefined; using /dev/null", 2);
         default_cfile = def_control_null;
-        /* return (1); */
         }
-    if (parse_control_file(default_cfile, &(param.control_file_buff), &(param.set_string_buff)) != 0)
+    if (parse_control_file(default_cfile, &(param.control_file_buff),
+        &(param.set_string_buff), 3) != 0)
         {
         msg ("Fatal error parsing default control file '%s'", 3, default_cfile);
-	msg ("You must point $DEF_CONTROL to a valid fourfit", 3);
-	msg ("control file name", 3);
+        msg ("You must point $DEF_CONTROL (or -c) to a valid fourfit", 3);
+        msg ("control file name", 3);
         return (1);
         }
     return (0);

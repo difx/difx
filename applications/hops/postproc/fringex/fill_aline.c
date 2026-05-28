@@ -63,12 +63,18 @@ int fill_aline (struct mk4_fringe *fringe, struct vex *root, char *fname,
     if (sscanf (fname+lastslash, "%2s.%c.%hd.%6s", baseline, 
                 &(fsumm->freq_code), &(fsumm->extent_no), fsumm->root_id) != 4)
         {
-        msg ("Could not decode filename %s", 2, fname+lastslash);
-        return (-1);
+        char ignpol[20];
+        if (sscanf( fname+lastslash, "%2s.%c.%hd-%2s.%6s", baseline,
+            &(fsumm->freq_code), &(fsumm->extent_no), ignpol,
+            fsumm->root_id) != 5)
+            {
+            msg ("Could not decode filename with pol %s", 2, fname+lastslash);
+            return (-1);
+            }
         }
-    else 
-        strncpy (fsumm->baseline, baseline, 2);
+    strncpy (fsumm->baseline, baseline, 2);
 
+    // memcmp would be better, since sizeof(fr->t202->baseline) is 2
     if (strncmp (fsumm->baseline, fringe->t202->baseline, 2) != 0)
         {
         msg ("File %s actually contains baseline %2s", 2, fname, fringe->t202->baseline);

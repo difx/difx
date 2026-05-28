@@ -154,8 +154,19 @@ struct token_struct
 #define CASSEGRAIN_        123
 #define NASMYTHLEFT_       124
 #define NASMYTHRIGHT_      125
+#define MIXED_MODE_ROT_    126
+#define NOAUTOFRINGES_     127
+#define MOD4NUMBERING_     128
+#define POLFRINGNAMES_     129
+#define MBDRPLOPT_         130
+#define FRINGEOUT_DIR_     131
+#define FRQS_              132
+#define CLONE_IDS_         133
+#define CHAN_NOTCHES_      134
+#define CLONE_SNR_CHK_     135
+#define DISPLAY_CHANS_     136
                                 /* add new tokens at the bottom of the list */
-#define MAX_TOKENS         126  /* increase to equal or exceed # tokens */
+#define MAX_TOKENS         137  /* increase to equal or exceed # tokens */
 
 
         /* Definitions of token categories */
@@ -189,6 +200,7 @@ struct token_struct
 #define TO                  27
 #define VECTOR_STRING_PARAM 28
 #define STRING_PARAM        29
+#define SAVE_CHAR_PARAM     30
 #define INT_CONST           1048576
 
 
@@ -216,6 +228,7 @@ struct token_struct
 #define NEED_VECTOR_STRING  20
 #define NEED_VS_NUMBER      21
 #define NEED_STRING         22
+#define NEED_STRING_CHANS   23
 #define MAX_STATES          25   /* Increase to equal or exceed # states */
 
         /* Definitions of FSM actions */
@@ -240,5 +253,6 @@ struct token_struct
 #define SAVE_2ND_SCAN       18
 #define INSERT_STRING       19
 #define SAVE_CSV_LIST       20
+#define NEW_CODES           21
 
 #endif
