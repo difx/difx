@@ -178,13 +178,13 @@ if [$have_tr] ; then
 fi
 AC_GBC_NOTICE([EGREP is $EGREP])
 
-have_devel=false
 ### option disabled
 AC_SUBST(DEVLDIR)
 AC_SUBST(PROGDIR)
 AC_SUBST(IFFYDIR)
 #AC_SUBST(M4PYDIR)
-AM_CONDITIONAL(HAVE_DEVEL, $have_devel)
+AM_CONDITIONAL(HAVE_DEVEL, false)
+AM_CONDITIONAL(PURGE_NR, true)
 
 ##############################################################################
 ##############################################################################
