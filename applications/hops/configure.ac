@@ -68,9 +68,17 @@ else
         AC_GBC_NOTICE([Set: prefix is $prefix])
     fi
 fi
-HOPS_ARCH=`uname -m`-$VERSION
-AC_GBC_NOTICE([Setting HOPS_ARCH to $HOPS_ARCH])
-AC_SUBST(HOPS_ARCH,$HOPS_ARCH)
+# integration with DIFX compilation that sets --prefix to $DIFXROOT
+if test -n "$DIFXROOT" ; then
+    HOPS_ARCH=''
+    AC_GBC_NOTICE([Setting HOPS_ARCH to $HOPS_ARCH])
+    HOPS_ROOT="$DIFXROOT"
+    AC_GBC_NOTICE([Setting HOPS_ROOT to $HOPS_ROOT])
+else
+    HOPS_ARCH=`uname -m`-$VERSION
+    AC_GBC_NOTICE([Setting HOPS_ARCH to $HOPS_ARCH])
+    AC_SUBST(HOPS_ARCH,$HOPS_ARCH)
+fi
 
 #
 # Collected top-level enable/disable
@@ -995,12 +1003,13 @@ AM_CONDITIONAL(HAVE_OMPI, [test $have_ompi = true])
 needifxlibs=false
 needifx=optional
 ### option disabled
+have_d2m4=false
 AC_SUBST(D2M4DIR)
 AM_CONDITIONAL(HAVE_D2M4, [$have_d2m4])
 
 have_difx=false
 #
-# DiFX support, coercible via PKG_CONFIG_PATH
+# DiFX support if standalone, coercible via PKG_CONFIG_PATH
 # The PKG_CONFIG_PATH setup is also used by mark5 (if used)
 # If it has been set, it takes precedence to what we do here.
 #
