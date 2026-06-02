@@ -72,10 +72,10 @@ class APDDelay:
 				exit(0)
 
 class APDDelays:
-	def __init__(self, args):
+	def __init__(self, filename, unityWeights=False):
 		self.reset()
-		if len(args) > 0:
-			self.load(args)
+		if len(filename) > 0:
+			self.load(filename, unityWeights)
 
 	def reset(self):
 		self.mjdStart = 0.0
@@ -86,6 +86,9 @@ class APDDelays:
 		self.obsCode = ''
 		self.apdFile = ''
 		self.nChan = 0
+
+	def nAnt(self):
+		return len(self.antennaList)
 
 	def getAntennaId(self, ant):
 		if isinstance(ant, int):
@@ -107,11 +110,12 @@ class APDDelays:
 		print('APDDelays')
 		print('  obs: %s' % self.obsCode)
 		print('  file: %s' % self.apdFile)
+		print('  antennas: ', self.antennaList)
 		print('  antennas: %s' % ' '.join(self.antennaList))
-		print('  sources: %s' % ' '.join(self.sourceList))
+		#print('  sources: %s' % ' '.join(self.sourceList))
 		print('  n delay: %d\n' % len(self.delays))
 
-	def load(self, apdFile):
+	def load(self, apdFile, unityWeights=False):
 		self.reset()
 		self.apdFile = apdFile
 		data = open(apdFile).readlines()
@@ -123,6 +127,8 @@ class APDDelays:
 			exit(0)
 		for line in data[1:]:
 			delay = APDDelay(line)
+			if unityWeights:
+				delay.weight = [1.0]*len(delay.weight)
 			self.delays.append(delay)
 			self.nChan = max(len(delay.delay), self.nChan)
 			addElement(self.antennaList, delay.ant1Id, delay.ant1Name)
@@ -132,8 +138,38 @@ class APDDelays:
 				self.mjdStart = delay.mjd
 			if self.mjdEnd < delay.mjd:
 				self.mjdEnd = delay.mjd
+		L = [x for x in self.antennaList if x is not None]
+		if len(L) < len(self.antennaList):
+			print('Shortening antenna list from ', self.antennaList, ' to ', L)
+			antMap = []
+			j = 0
+			for a in self.antennaList:
+				antMap.append(j)
+				if a != None:
+					j += 1
+			self.antennaList = L
+			for D in self.delays:
+				D.ant1Id = antMap[D.ant1Id]
+				D.ant2Id = antMap[D.ant2Id]
 
-	def solveDelays(self, degree, chanList, refant, refTime = 0.0):
+	def medianWeights(self, chanList):
+		nChan=len(chanList)
+		N = len(self.delays)
+		W = [[] for c in chanList]
+		S = [0.0]*nChan
+		median = []
+		for D in self.delays:
+			for c in range(nChan):
+				S[c] += D.weight[chanList[c]]
+				W[c].append(D.weight[chanList[c]])
+		mean = [x/N for x in S]
+		for c in range(nChan):
+			W[c].sort()
+			median.append(W[c][N//2])
+		for c in range(nChan):
+			print('chan[%d] : min=%e mean=%e median=%e max=%e' % (chanList[c], W[c][0], mean[c], median[c], W[c][N-1]))
+
+	def solveDelays(self, degree, chanList, refant, referenceTime = 0.0):
 		if degree < 0 or degree > 1:
 			print('degree=%d out of supported range.' % degree)
 			exit(0)
@@ -141,8 +177,8 @@ class APDDelays:
 		N = len(self.antennaList)	# Number of antennas 
 		M = len(self.delays) 		# Number of measurements
 		C = self.nChan			# Number of channels
-		if refTime == 0.0:
-			refTime = 0.5*(self.mjdStart + self.mjdEnd)
+		if referenceTime == 0.0:
+			referenceTime = 0.5*(self.mjdStart + self.mjdEnd)
 
 		# Weight and measurement arrays
 		Wij = np.zeros([N, N])
@@ -152,7 +188,7 @@ class APDDelays:
 		T2ij = np.zeros([N, N])
 		for m in range(M):
 			D = self.delays[m]
-			t = D.mjd - refTime
+			t = D.mjd - referenceTime
 			for c in range(C):
 				if c in chanList:
 					Wij[D.ant1Id][D.ant2Id] += D.weight[c]
@@ -161,10 +197,10 @@ class APDDelays:
 					Tij[D.ant2Id][D.ant1Id] += t*D.weight[c]
 					T2ij[D.ant1Id][D.ant2Id] += t*t*D.weight[c]
 					T2ij[D.ant2Id][D.ant1Id] += t*t*D.weight[c]
-					Xij[D.ant1Id][D.ant2Id] += D.delay[c]
-					Xij[D.ant2Id][D.ant1Id] -= D.delay[c]
-					Yij[D.ant1Id][D.ant2Id] += t*D.delay[c]
-					Yij[D.ant2Id][D.ant1Id] -= t*D.delay[c]
+					Xij[D.ant1Id][D.ant2Id] += D.delay[c]*D.weight[c]
+					Xij[D.ant2Id][D.ant1Id] -= D.delay[c]*D.weight[c]
+					Yij[D.ant1Id][D.ant2Id] += t*D.delay[c]*D.weight[c]
+					Yij[D.ant2Id][D.ant1Id] -= t*D.delay[c]*D.weight[c]
 
 		# Weight and measurement vectors
 		Wi = np.zeros(N)
@@ -211,7 +247,7 @@ class APDDelays:
 		MM[refant][refant] = MM[N+refant][N+refant] = 1.0
 		VV[refant] = VV[N+refant] = 0.0
 
-		return refTime, np.matmul(np.linalg.inv(MM), VV)
+		return referenceTime, np.matmul(np.linalg.inv(MM), VV)
 
 
 # chanFile looks like:
@@ -302,7 +338,7 @@ def reassembleV2D(tokens, outputFile):
 	for t in tokens:
 		output.write(t)
 
-def updateV2D(reftime, clockUpdate, inputFile, outputFile):
+def updateV2D(referenceTime, clockUpdate, inputFile, outputFile):
 	parameters = ['clockEpoch', 'deltaClock', 'deltaClockRate']
 
 	data = open(inputFile).readlines()
@@ -340,7 +376,7 @@ def updateV2D(reftime, clockUpdate, inputFile, outputFile):
 			if 'clockEpoch' in values:
 				epoch = values['clockEpoch']
 			else:
-				epoch = reftime
+				epoch = referenceTime
 			delta = rate = 0.0
 			if 'deltaClock' in values:
 				delta = values['deltaClock']
@@ -351,7 +387,7 @@ def updateV2D(reftime, clockUpdate, inputFile, outputFile):
 				delta += clockUpdate[ant][-1] / 1000.0
 				if len(clockUpdate[ant]) > 1:
 					rate += clockUpdate[ant][-2] / 1000.0
-					delta += (epoch - reftime)*clockUpdate[ant][-2] / 1000.0
+					delta += (epoch - referenceTime)*clockUpdate[ant][-2] / 1000.0
 			
 			if not newTokens[-1].isspace():
 				newTokens.append(' ')
@@ -375,8 +411,9 @@ refant = 0
 pol = 'B'		# Both
 refantSet = False
 degree = 0		# 1 for linear, 2 for quadratic, ...
-reftime = 0.0           # [mjd]
+referenceTime = 0.0           # [mjd]
 chans = []
+unityWeights = False
 
 parser = argparse.ArgumentParser('apd2clock', 'program to generate or update clock model based on an apd file', '')
 parser.add_argument('apdFile', help='file to process')
@@ -385,7 +422,9 @@ parser.add_argument('-d', '--degree', type=int, help='clock model order; 0 or 1 
 parser.add_argument('-i', '--input', help='input .vex or .v2d file; if not provided, just generate text output')
 parser.add_argument('-o', '--output', help='filename for output data, otherwise send to stdout')
 parser.add_argument('-p', '--polarization', help='polarization: R or L.  Will average both if not set')
-parser.add_argument('-t', '--reftime', type=float, help='specify the reference time')
+parser.add_argument('-t', '--referenceTime', type=float, help='specify the reference time')
+parser.add_argument('-c', '--channels', type=str, help='explicitly list channeld IDs to use (0-based)')
+parser.add_argument('-u', '--unityWeights', action='store_true')
 args = parser.parse_args()
 
 apdFile = args.apdFile
@@ -396,8 +435,11 @@ if args.polarization != None:
 	pol = args.polarization[0].upper()
 if args.degree != None:
 	degree = args.degree
-if args.reftime != None:
-	reftime = args.reftime
+if args.referenceTime != None:
+	referenceTime = args.referenceTime
+if args.channels != None:
+	chans = [int(x) for x in args.channels.split(',')]
+unityWeights = args.unityWeights
 
 if len(chans) == 0:
 	chanFile = apdFile[:-4] + '.channels'
@@ -408,27 +450,39 @@ if apdFile == None:
 	parser.print_help()
 	exit(0)
 
-apd = APDDelays(apdFile)
+apd = APDDelays(apdFile, unityWeights)
 apd.summarize()
 refant = apd.getAntennaId(refant)
 
-t, c = apd.solveDelays(degree, chans, refant, reftime)
-print('Ref time = %14.8f' % t)
-print('Clock model = ', c)
+apd.medianWeights(chans)
+
+referenceTime, deltaClock = apd.solveDelays(degree, chans, refant, referenceTime)
+print('Reference time = %14.8f' % referenceTime)
+print('Delta clock = ', deltaClock)
 
 """
 obscode, times = loadAPD(apdFile)
 
-reftime, clockUpdate = process(times, chans, degree, reftime)
+referenceTime, clockUpdate = process(times, chans, degree, referenceTime)
 
 if args.input == None:
-	print('Ref time: %13.7f' % reftime)
+	print('Ref time: %13.7f' % referenceTime)
 	for key, value in clockUpdate.items():
 		print('%s:' % key, value)
 else:
-	inputFile = args.input
-	if inputFile[-4:] in ['.v2d', '.e2d']:
-		updateV2D(reftime, clockUpdate, inputFile, args.output)
-	elif inputFile[-4:] == '.vex':
-		updateVex(clockUpdate, inputFile, args.output)
 """
+if args.input != None:
+	inputFile = args.input
+	nAnt = apd.nAnt()
+
+	# reformat the clock update
+	clockUpdate = np.zeros([degree+1, nAnt])
+	for i in range(len(deltaClock)):
+		clockUpdate[degree - (i // nAnt)][i % nAnt] = deltaClock[i]
+
+	print('clockUpdate=', clockUpdate)
+
+	if inputFile[-4:] in ['.v2d', '.e2d']:
+		updateV2D(referenceTime, clockUpdate, inputFile, args.output)
+	elif inputFile[-4:] == '.vex':
+		updateVex(deltaClock, inputFile, args.output)
