@@ -240,12 +240,15 @@ class APDDelays:
 				VV[N+i] = -Yi[i]
 				
 
-		# Don't solve for refant values
-		for i in range(2*N):
-			MM[i][refant] = MM[refant][i] = 0.0
-			MM[i][N+refant] = MM[N+refant][i] = 0.0
-		MM[refant][refant] = MM[N+refant][N+refant] = 1.0
-		VV[refant] = VV[N+refant] = 0.0
+		# constrain refant values
+		refantWeight = Wij.mean()	# just need this to be right order of magnitude
+		refantDelay = 0.0
+		refantRate = 0.0
+		MM[refant][refant] += refantWeight
+		VV[refant] += refantWeight*refantDelay
+		if degree > 0:
+			MM[N+refant][N+refant] += refantWeight
+			VV[N+refant] += refantWeight*refantRate
 
 		return referenceTime, np.matmul(np.linalg.inv(MM), VV)
 
