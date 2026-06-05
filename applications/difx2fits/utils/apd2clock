@@ -44,15 +44,12 @@ def SolvePhaseClosure(M, W, R):
 			Ekl[k][k] -= 4.0*W[k][j]*W[k][j]
 
 	# constrain reference value to be zero
-	Ek[R] = 0.0
-	for j in range(dim):
-		Ekl[j][R] = 0.0
-		Ekl[R][j] = 0.0
-	Ekl[R][R] = 1.0
+	refantWeight = W.mean()
+	refantValue = 0.0
+	Ekl[R][R] += refantWeight
+	Ek[R] += refantValue
 
-	EklInv = np.linalg.inv(Ekl)
-
-	return np.matmul(EklInv, Ek)
+	return np.matmul(np.linalg.inv(Ekl), Ek)
 
 # Provide:
 # M: Matrix of baseline-based measurements (amplitude quantities, > 0)
