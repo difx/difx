@@ -14,9 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from difxdb.model import model
 from sqlalchemy import desc
-#from string import upper
 
 
 def experimentExists(session, code):
@@ -128,7 +128,7 @@ def addExperiment(session, code, types=[], analyst=None, obsDate=None, statuscod
         session.commit()     
     except Exception as e:
     
-        raise Exception("Error adding experiment" + e.message)
+        raise Exception("Error adding experiment" + str(e))
         session.rollback()
         
     session.flush()
