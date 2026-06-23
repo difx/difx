@@ -1503,7 +1503,7 @@ int main(int argc, char **argv)
 	}
 
 #ifdef HAVE_XLRAPI_H
-	if(D->recordPipe > 0)
+	if(D->recordPipe != 0)
 	{
 		pclose(D->recordPipe);
 		D->recordPipe = 0;
