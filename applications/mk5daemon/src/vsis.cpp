@@ -34,6 +34,7 @@
 #include "vsis_commands.h"
 #include "config.h"
 #include "mk5daemon.h"
+#include "errno.h"
 
 const int MaxFields = 24;
 const unsigned short VSIS_PORT = 2620;
