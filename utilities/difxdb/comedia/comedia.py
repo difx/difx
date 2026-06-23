@@ -118,9 +118,9 @@ class MainWindow(GenericWindow):
         self.filterModuleTypeVar.set(self.moduleTypes[0])
         
         # regular expressions for matching various VSN types
-        self.patternSataVSN = re.compile('([a-zA-Z]+[+]\d+)')
-        self.patternPataVSN = re.compile('([a-zA-Z]+[\-]\d+)')
-        self.patternMark6VSN = re.compile('([a-zA-Z]+[%]\d+)')
+        self.patternSataVSN = re.compile(r'([a-zA-Z]+[+]\d+)')
+        self.patternPataVSN = re.compile(r'([a-zA-Z]+[\-]\d+)')
+        self.patternMark6VSN = re.compile(r'([a-zA-Z]+[%]\d+)')
                 
     def show(self):
         
@@ -1174,7 +1174,7 @@ class CheckinWindow(GenericWindow):
         
     def _splitVSNLabelScan(self):
         
-        m = re.match('([a-zA-Z]+[%\+-]\d+)/(\d+)/(\d+).*', self.txtVSN.get().lstrip())
+        m = re.match(r'([a-zA-Z]+[%\+-]\d+)/(\d+)/(\d+).*', self.txtVSN.get().lstrip())
      
         if (m != None):
             vsn = m.group(1).upper()
