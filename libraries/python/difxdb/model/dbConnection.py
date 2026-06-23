@@ -82,7 +82,7 @@ class Schema(object):
 
         clear_mappers()
 
-        self.registry__.map_imperatively(Queue, self.jobTable, properties={'Pass':relationship(Pass, uselist=False),'status':relationship(JobStatus, uselist=False)})
+        self.registry__.map_imperatively(Queue, self.jobTable, properties={'Pass':relationship(Pass, uselist=False),'status':relationship(JobStatus, overlaps="status" , uselist=False)})
         self.registry__.map_imperatively(Job, self.jobTable, properties={'status':relationship(JobStatus, uselist=False)})
         self.registry__.map_imperatively(JobStatus, self.jobStatusTable)
         self.registry__.map_imperatively(Pass, self.passTable, properties={'experiment':relationship(Experiment, uselist=False), 'type':relationship(PassType, uselist=False)})
