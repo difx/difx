@@ -22,6 +22,8 @@ import os
 import time
 from datetime import date
 import sys
+
+# python2 /python3 compatibility
 if sys.version_info < (3, 0):
     import tkMessageBox
     from Tkinter import *
@@ -35,23 +37,21 @@ else:
 import PIL.Image, PIL.ImageFont, PIL.ImageDraw
 import subprocess
 
-
+#from sqlalchemy import * 
 from difxdb.business.versionhistoryaction import *
 from difxdb.business.experimentaction import * 
 from difxdb.business.moduleaction import *
 from difxdb.business.slotaction import *
-from difxdb.model.dbConnection import Schema, Connection
 from difxdb.model import model
 from difxutil.dbutil import *
 from difxdb.difxdbconfig import DifxDbConfig
 from difxfile.difxdir import *
 from difxfile.difxfilelist import *
+from difxdb.model.dbConnection import Schema, Connection
 
 from collections import deque
-
-from sqlalchemy import *
 from tkinter_difx.multilistbox import *
-from functools import partial
+#from functools import partial
 
 # minimum database schema version required by comedia
 minSchemaMajor = 1
