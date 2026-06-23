@@ -18,6 +18,9 @@ __author__="Helge Rottmann"
 from sqlalchemy import *
 from sqlalchemy.orm import *
 from difxdb.model.model import *
+#from model.model import *
+from sqlalchemy.orm import registry
+
 
 class Schema(object):
     """Describes the schema and mappers used by  SQLAlchemy """
@@ -25,42 +28,43 @@ class Schema(object):
     def __init__(self, connection):
         
         connStr = connection.getConnectionString()
+
         self.engine__ = create_engine(connStr, echo=connection.echo, pool_recycle=1000) 
         self.connection__ = self.engine__.connect()
     
-        self.metadata__ = MetaData(self.engine__)
-     
+        self.metadata__ = MetaData()
+        self.registry__ = registry()
         
+        self.metadata__.reflect(bind=self.engine__)
+     
         self.loadSchema()
         self.createMappers()
-    
 
     def _get_session(self):
         return scoped_session(sessionmaker(bind=self.engine__))
     session = property(_get_session)
     
-
     def loadSchema(self):
         
-        self.experimentTable = Table("Experiment", self.metadata__, autoload=True)
-        self.experimentStatusTable = Table("ExperimentStatus", self.metadata__, autoload=True)
-        self.experimentTypeTable = Table("ExperimentType", self.metadata__, autoload=True)
-        self.slotTable = Table("Slot", self.metadata__, autoload=True)
-        self.moduleTable = Table("Module", self.metadata__, autoload=True)
-        self.jobTable = Table("Job", self.metadata__, autoload=True)
-        self.jobStatusTable = Table("JobStatus", self.metadata__, autoload=True)
-        self.passTable = Table("Pass", self.metadata__, autoload=True)
-        self.passTypeTable = Table("PassType", self.metadata__, autoload=True)
-        self.versionHistoryTable = Table("VersionHistory", self.metadata__, autoload=True)
-        self.userTable = Table("User", self.metadata__, autoload=True)
-        self.exportFileTable = Table("ExportFile", self.metadata__, autoload=True)
-        self.fileDataTable = Table("FileData", self.metadata__, autoload=True)
-        self.experimentStatusHistoryTable = Table("ExperimentStatusHistory", self.metadata__, autoload=True)
+        self.experimentTable = Table("Experiment", self.metadata__, autoload_with=self.engine__)
+        self.experimentStatusTable = Table("ExperimentStatus", self.metadata__, autoload_with=self.engine__)
+        self.experimentTypeTable = Table("ExperimentType", self.metadata__, autoload_with=self.engine__)
+        self.slotTable = Table("Slot", self.metadata__, autoload_with=self.engine__)
+        self.moduleTable = Table("Module", self.metadata__, autoload_with=self.engine__)
+        self.jobTable = Table("Job", self.metadata__, autoload_with=self.engine__)
+        self.jobStatusTable = Table("JobStatus", self.metadata__, autoload_with=self.engine__)
+        self.passTable = Table("Pass", self.metadata__, autoload_with=self.engine__)
+        self.passTypeTable = Table("PassType", self.metadata__, autoload_with=self.engine__)
+        self.versionHistoryTable = Table("VersionHistory", self.metadata__, autoload_with=self.engine__)
+        self.userTable = Table("User", self.metadata__, autoload_with=self.engine__)
+        self.exportFileTable = Table("ExportFile", self.metadata__, autoload_with=self.engine__)
+        self.fileDataTable = Table("FileData", self.metadata__, autoload_with=self.engine__)
+        self.experimentStatusHistoryTable = Table("ExperimentStatusHistory", self.metadata__, autoload_with=self.engine__)
         
         #association table for many-to-many Experiment/Module relation 
-        self.experimentModuleTable = Table('ExperimentAndModule', self.metadata__, autoload=True)
-        self.experimentAndTypeTable = Table('ExperimentAndType', self.metadata__, autoload=True)
-        #self.experimentAndExportFileTable = Table('ExperimentAndExportFile', self.metadata__, autoload=True)
+        self.experimentModuleTable = Table('ExperimentAndModule', self.metadata__, autoload_with=self.engine__)
+        self.experimentAndTypeTable = Table('ExperimentAndType', self.metadata__, autoload_with=self.engine__)
+        #self.experimentAndExportFileTable = Table('ExperimentAndExportFile', self.metadata__, autoload_with=self.engine__)
   
         
 
@@ -75,29 +79,29 @@ class Schema(object):
         pass
 
     def createMappers(self):
-        
-        clear_mappers()
-        mapper(Queue, self.jobTable, properties={'Pass':relation(Pass, uselist=False),'status':relation(JobStatus, uselist=False)})
-        mapper(Job, self.jobTable, properties={'status':relation(JobStatus, uselist=False)})
-        mapper(JobStatus, self.jobStatusTable)
-        
-        mapper(Pass, self.passTable, properties={'experiment':relation(Experiment, uselist=False), 'type':relation(PassType, uselist=False)})
-        mapper(PassType, self.passTypeTable)
-        mapper(ExperimentStatus, self.experimentStatusTable)
-        mapper(Experiment, self.experimentTable, properties={'status':relation(ExperimentStatus, uselist=False, lazy="subquery"), \
-            'user':relation(User, primaryjoin=self.experimentTable.c.userID==self.userTable.c.id, uselist = False, lazy="subquery"), \
-            'releasedByUser':relation(User, primaryjoin=self.experimentTable.c.releasedByUserID==self.userTable.c.id, uselist = False, lazy="subquery"), \
-            'types':relation(ExperimentType, secondary=self.experimentAndTypeTable, primaryjoin=self.experimentAndTypeTable.c.experimentID==self.experimentTable.c.id, secondaryjoin=self.experimentAndTypeTable.c.experimentTypeID==self.experimentTypeTable.c.id, foreign_keys = [self.experimentAndTypeTable.c.experimentID, self.experimentAndTypeTable.c.experimentTypeID], lazy="subquery")}) 
 
-        mapper(Module, self.moduleTable, properties={'experiments': relation(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID], backref=backref('modules'))}) 
-        mapper(Slot, self.slotTable,properties={'module': relation(Module, uselist = False, backref=backref('slot', uselist=False))})
-        mapper(VersionHistory, self.versionHistoryTable)
-        mapper(User, self.userTable)
-        mapper(ExperimentType, self.experimentTypeTable)
-        mapper(ExperimentStatusHistory, self.experimentStatusHistoryTable)
-        mapper(FileData, self.fileDataTable, properties={'experiment': relation(Experiment, backref=backref('fileData'))})
-        #mapper(ExportFile, self.exportFileTable, properties={'experiment': relation(Experiment, uselist = False, backref=backref('exportFiles', uselist=False))})
-        mapper(ExportFile, self.exportFileTable, properties={'experiment': relation(Experiment, backref=backref('exportFiles'))})
+        clear_mappers()
+
+        self.registry__.map_imperatively(Queue, self.jobTable, properties={'Pass':relationship(Pass, uselist=False),'status':relationship(JobStatus, uselist=False)})
+        self.registry__.map_imperatively(Job, self.jobTable, properties={'status':relationship(JobStatus, uselist=False)})
+        self.registry__.map_imperatively(JobStatus, self.jobStatusTable)
+        self.registry__.map_imperatively(Pass, self.passTable, properties={'experiment':relationship(Experiment, uselist=False), 'type':relationship(PassType, uselist=False)})
+        self.registry__.map_imperatively(PassType, self.passTypeTable)
+        self.registry__.map_imperatively(ExperimentStatus, self.experimentStatusTable)
+        self.registry__.map_imperatively(Experiment, self.experimentTable, properties={'status':relationship(ExperimentStatus, uselist=False, lazy="subquery"), \
+            'user':relationship(User, primaryjoin=self.experimentTable.c.userID==self.userTable.c.id, uselist = False, lazy="subquery"), \
+            'releasedByUser':relationship(User, primaryjoin=self.experimentTable.c.releasedByUserID==self.userTable.c.id, uselist = False, lazy="subquery"), \
+            'types':relationship(ExperimentType, secondary=self.experimentAndTypeTable, primaryjoin=self.experimentAndTypeTable.c.experimentID==self.experimentTable.c.id, secondaryjoin=self.experimentAndTypeTable.c.experimentTypeID==self.experimentTypeTable.c.id, foreign_keys = [self.experimentAndTypeTable.c.experimentID, self.experimentAndTypeTable.c.experimentTypeID], lazy="subquery")}) 
+
+        self.registry__.map_imperatively(Module, self.moduleTable, properties={'experiments': relationship(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID], backref=backref('modules'))}) 
+        self.registry__.map_imperatively(Slot, self.slotTable,properties={'module': relationship(Module, uselist = False, backref=backref('slot', uselist=False))})
+        self.registry__.map_imperatively(VersionHistory, self.versionHistoryTable)
+        self.registry__.map_imperatively(User, self.userTable)
+        self.registry__.map_imperatively(ExperimentType, self.experimentTypeTable)
+        self.registry__.map_imperatively(ExperimentStatusHistory, self.experimentStatusHistoryTable)
+        self.registry__.map_imperatively(FileData, self.fileDataTable, properties={'experiment': relationship(Experiment, backref=backref('fileData'))})
+        self.registry__.map_imperatively(ExportFile, self.exportFileTable, properties={'experiment': relationship(Experiment, backref=backref('exportFiles'))})
+
 
 class Connection(object):
     
