@@ -33,8 +33,8 @@ def replaceClockSolutions(clockentry, delay, rate, skipRate=False):
     # clock_early = 2021y276d14h00m00s:-21.172 usec:2021y276d14h00m00s:1.02e-13;
     # clock_early = 2021y276d14h00m00s  : -21.172e-6   sec:2021y276d14h00m00s:1.02e-13;
 
-    #redelay= re.compile("(.*\d+\.\d+)(.*)")  # match non sci notation float, i.e. will not match -21.172e-6
-    redelay= re.compile("(.*\d+\.*\d*[eE]*[+-]*\d*)\s+(.*)")  # match also optional exponential notation
+    #redelay= re.compile(r"(.*\d+\.\d+)(.*)")  # match non sci notation float, i.e. will not match -21.172e-6
+    redelay= re.compile(r"(.*\d+\.*\d*[eE]*[+-]*\d*)\s+(.*)")  # match also optional exponential notation
 
     result = ""
     fields = clockentry.split(":")
@@ -66,7 +66,8 @@ def replaceClockSolutions(clockentry, delay, rate, skipRate=False):
 
 def read_stationMap(filename):
 
-    pandasargs = dict(delim_whitespace=True, comment='#', names=["oneletter", "twoletter"], index_col=False)
+    #pandasargs = dict(delim_whitespace=True, comment='#', names=["oneletter", "twoletter"], index_col=False) # Pandas 1.x
+    pandasargs = dict(sep=r"\s+", comment='#', names=["oneletter", "twoletter", "unknown"], index_col=False) # Pandas 2.x
     table = pd.read_csv(filename, **pandasargs)
     #print(table)
 
@@ -94,7 +95,7 @@ def parse_atime_str(atime, ayear):
 def parse_delay_str(delaystr):
     '''Parse a VEX $CLOCK delay entry (value with optional unit)'''
 
-    redelay = re.compile("\s*(.*\d+\.*\d*[eE]*[+-]*\d*)\s*(.*)")  # delay value plus unit, rarely in exponential notation
+    redelay = re.compile(r"\s*(.*\d+\.*\d*[eE]*[+-]*\d*)\s*(.*)")  # delay value plus unit, rarely in exponential notation
     delaymatch = redelay.match(delaystr)
     if not delaymatch:
         return 0
@@ -113,7 +114,7 @@ def parse_delay_str(delaystr):
 def parse_rate_str(ratestr):
     '''Parse a VEX $CLOCK rate entry (value with optional unit)'''
 
-    rerate = re.compile("\s*(.*\d+\.*\d*[eE]*[+-]*\d*)\s*(.*)")  # rate value possibly with unit, usually in exponential notation
+    rerate = re.compile(r"\s*(.*\d+\.*\d*[eE]*[+-]*\d*)\s*(.*)")  # rate value possibly with unit, usually in exponential notation
     ratematch = rerate.match(ratestr)
     if not ratematch:
         return 0
@@ -136,12 +137,12 @@ def read_vex_clocks(vexfile):
     clocks = {}
     clock_order = []
 
-    redef = re.compile("def\s+(..)\s*;")
-    reenddef = re.compile("enddef\s*;")
-    #reclock = re.compile(".*clock_early\s*=\s*(\d{4}y\d{3}d\d{2}h\d{2}m\d{2}s)\s*:\s*(.*\.\d+(e-?\d+)?)\s*;") # regex match groups: grp[1]:refEp grp[2]:'dly usec:refep:rate' with rate in sci notation 5e-14
-    #reclock = re.compile("clock_early\s*=\s*(\d{4}y)")
-    #reclock = re.compile("clock_early\s*=\s*({2}s)")
-    reclock = re.compile(".*clock_early\s*=\s*([^;]*);")
+    redef = re.compile(r"def\s+(..)\s*;")
+    reenddef = re.compile(r"enddef\s*;")
+    #reclock = re.compile(r".*clock_early\s*=\s*(\d{4}y\d{3}d\d{2}h\d{2}m\d{2}s)\s*:\s*(.*\.\d+(e-?\d+)?)\s*;") # regex match groups: grp[1]:refEp grp[2]:'dly usec:refep:rate' with rate in sci notation 5e-14
+    #reclock = re.compile(r"clock_early\s*=\s*(\d{4}y)")
+    #reclock = re.compile(r"clock_early\s*=\s*({2}s)")
+    reclock = re.compile(r".*clock_early\s*=\s*([^;]*);")
 
     start = False
     with open(vexfile) as file:
@@ -215,7 +216,7 @@ stations = sorted(list(set(''.join(grouped.groups.keys()))))
 valid = pd.DataFrame()
 for groupname, groupdata in grouped:
     caldata = groupdata.nlargest(columns='snr', n=args.navg)
-    calmean = caldata.mean()
+    calmean = caldata.mean(skipna=True, numeric_only=True)
     validRow = {
         'scan_id': caldata['scan_id'].values[0],
         'baseline': groupname,
@@ -225,7 +226,8 @@ for groupname, groupdata in grouped:
         'navg': len(caldata),
         'scan_time': parse_atime_str(min(caldata['timetag'].values), min(caldata['year'].values)) # fixme?
     }
-    valid = valid.append(validRow, ignore_index=True)
+    # valid = valid.append(validRow, ignore_index=True) # Pandas 1.x
+    valid = pd.concat([valid, pd.DataFrame(validRow)], ignore_index=True)  # Pandas 2.x
 
 ### Summarize
 
