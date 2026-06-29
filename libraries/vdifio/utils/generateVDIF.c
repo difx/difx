@@ -207,7 +207,7 @@ int main (int argc, char * const argv[]) {
   
   /* Read command line options */
   while (1) {
-    opt = getopt_long_only(argc, argv, "s:w:C:d:D:m:M:y:t:F:l:a:A:T:2:x:B:b:cNnZLhp:r:", options, NULL);
+    opt = getopt_long_only(argc, argv, "s:w:C:d:D:m:M:y:t:F:l:a:A:T:2:x:B:b:cNnZLhp:r:X:Y:", options, NULL);
     if (opt==EOF) break;
     
 #define CASEINT(ch,var)                                     \
