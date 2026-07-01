@@ -548,7 +548,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G, int noS
 	{
 		mpiOptions = S->mpiOptions;
 	}
-	else
+	else if((mpiOptions = getenv("DIFX_MPIRUNOPTIONS")) == 0)
 	{
 		mpiOptions = defaultMpiOptions;
 	}
