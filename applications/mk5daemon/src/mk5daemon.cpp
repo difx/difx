@@ -1314,9 +1314,7 @@ int main(int argc, char **argv)
                                 {
                                     try
                                     {
-
                                         D->mark6->pollDevices();
-                                        //D->mark6->sendStatusMessage();
                                         D->mark6->sendSlotStatusMessage();
                                         Logger_logData(D->log, mk6out.str().c_str());
                                         mk6out.str("");
