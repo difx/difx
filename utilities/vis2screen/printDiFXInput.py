@@ -265,7 +265,7 @@ def printDiFXInput(basename,opts,indent=2,version=2.6):
 					fq2,pol2 = getFreqPolOfBand(ds2,bl_band_2)					
 					outputfreq_members[destfreq].append(fq1)
 					outputfreq_members[destfreq].append(fq2)
-		outfreqs = outputfreq_members.keys()
+		outfreqs = list(outputfreq_members.keys())
 		outfreqs.sort()
 		for outfq in outfreqs:
 			constituents = list(set(outputfreq_members[outfq]))

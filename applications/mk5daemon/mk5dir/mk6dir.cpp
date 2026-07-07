@@ -287,7 +287,15 @@ void processMark6ScansSlot(int slot, char *vsn, char activityMsg, char verbose, 
 	FILE *summaryFile;
 
 	sprintf(summaryFilePath, "%s/%s.filelist", mk5dirpath, vsn);
-	tempSummaryFilePath = tempnam(mk5dirpath, "m6d_"); // note: tempnam() in final directory, otherwise rename() can fail with err 18 'Invalid cross-device link'
+
+	// tempSummaryFilePath = tempnam(mk5dirpath, "m6d_");
+	// note 1: tempnam() instead of tmpfile() is needed to have the temp file in the correct directory,
+	//         otherwise the later rename() can fail with err 18 'Invalid cross-device link'
+	// note 2: tempnam() unfortunately ignores the mk5dirpath wish if the env var TMPDIR exists
+	// note 3: more reliable is to use mktemp()
+	tempSummaryFilePath = (char*)malloc(256);
+	snprintf(tempSummaryFilePath, 256, "%s/m6d_XXXXXX", mk5dirpath);
+	mktemp(tempSummaryFilePath);
 	summaryFile = fopen(tempSummaryFilePath, "w");
 	if(!summaryFile)
 	{

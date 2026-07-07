@@ -162,11 +162,11 @@ def getvexantennamodlists(vexobsfile):
 	modList = []
 
 	# Regexps to flexibly detect VEX entries and fields; can test with https://regex101.com/
-	reComment = re.compile("^\s*\*")
-	reSection = re.compile("^\s*\$\s*(.*?)\s*;")
-	reDef = re.compile("^\s*def\s+(.*?)\s*;")
-	reVSN = re.compile("\W*VSN\s*=\s*(.*?)\s*:\s*(.*?)\s*:")
-	reEnddef = re.compile("\W*enddef\s*;")
+	reComment = re.compile(r"^\s*\*")
+	reSection = re.compile(r"^\s*\$\s*(.*?)\s*;")
+	reDef = re.compile(r"^\s*def\s+(.*?)\s*;")
+	reVSN = re.compile(r"\W*VSN\s*=\s*(.*?)\s*:\s*(.*?)\s*:")
+	reEnddef = re.compile(r"\W*enddef\s*;")
 
 	# Look up expt name and module info from VEX
 	vexobs = open(vexobsfile, "r")
@@ -221,7 +221,7 @@ def getvexantennamodlists(vexobsfile):
 	if not ok:
 		exit(1)
 	# harmless lack of info
-	if len(antennaModuleList) is 0:
+	if len(antennaModuleList) == 0:
 		print("no antennas with mark6 modules found, nothing more to do, exiting")
 		exit(0)
 	return (experName,antennaModuleList,modList)
@@ -245,7 +245,7 @@ def getv2dblock(lines, blocktype, blockname=None):
 	         locate the content of 'ANTENNA Aa { ... }'.
 	Returns: (block name, starting line nr, last line nr, content[])
 	'''
-	reBlocks = re.compile("(^\s*"  + str(blocktype) + "\s*(.*?)\s*\W{([^}]+))", re.MULTILINE | re.DOTALL)
+	reBlocks = re.compile(r"(^\s*"  + str(blocktype) + r"\s*(.*?)\s*\W{([^}]+))", re.MULTILINE | re.DOTALL)
 	reNewline = re.compile(r'\n')
 	blocklist = []
 
