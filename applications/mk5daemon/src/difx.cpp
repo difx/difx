@@ -34,7 +34,7 @@
 #include "macros.h"
 #include "mk5daemon.h"
 
-const char defaultMpiWrapper[] = "mpirun";
+const char defaultMpiWrapper[] = "`which mpirun`";
 const char defaultMpiOptions[] = "--mca mpi_yield_when_idle 1 --mca rmaps seq";
 const char defaultDifxProgram[] = "mpifxcorr";
 
