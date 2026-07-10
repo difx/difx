@@ -176,7 +176,15 @@ int mark5_unpack_complex_with_offset(struct mark5_stream *ms, const void *packed
 	/* set readposition to first desired sample */
 	ms->readposition = (offsetsamples % ms->framesamples)*ms->nchan*ms->nbit*2*ms->decimation/8;
 
-	ms->blanker(ms);
+	/* Do NOT call ms->blanker(ms) here: mark5_stream_next_frame() above has
+	 * already run either the blanker (frame validated good) or
+	 * mark5_stream_blank_frame() (validation failed, e.g. invalid bit set or
+	 * zero Data Frame Length).  An extra blanker call would overwrite the
+	 * whole-frame blanking of an invalid start frame with "all valid"
+	 * whenever the payload lacks fill pattern, so such frames (e.g. the
+	 * zeroed region past the end of a recording) would be decoded and
+	 * correlated as good data at full weight.  The real-sampled
+	 * mark5_unpack_with_offset() has no such call. */
 
 	return ms->complex_decode(ms, nsamp, unpacked);
 }
