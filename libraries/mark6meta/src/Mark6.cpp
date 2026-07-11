@@ -260,7 +260,7 @@ void Mark6::modInit (int slot, string vsn)
                
             // create new xfs-formated partitions
             device->createPartitions();
-              
+            
             //mount device read-write
             device->mountDisk(mountRootData_m, mountRootMeta_m, true);
 
