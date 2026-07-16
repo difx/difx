@@ -785,7 +785,7 @@ if doclean:
 
     os_chdir(topdir)
     if pristine:
-        run('find . -name Makefile.in -exec rm {} \;')
+        run(r'find . -name Makefile.in -exec rm {} \;')
     sys.exit(0)  # Clean exit
 
 
