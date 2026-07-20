@@ -79,7 +79,7 @@ def genPatterns(verb, stations, normallines):
                         r'SRC\s+\d+\s+ANT\s+' + tele.group(1))
                     antindex[ii] = tele.group(1)
                     if verb: print('',line.rstrip(),\
-                        'matches SRC\s+\d+\s+ANT\s+' + tele.group(1) + \
+                        r'matches SRC\s+\d+\s+ANT\s+' + tele.group(1) + \
                         ' at index ' + str(ii) + ' ANT ' + antindex[ii])
     return patterns, antindex
 
