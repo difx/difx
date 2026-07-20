@@ -44,7 +44,7 @@ out = ""
 bands = {'L': 1250, 'S': 2000, "C": 4000, "X": 7000,
     "K": 13000, "Q": 40000, "V": 50000, "W": 75000}
 
-reSection = re.compile("^\$(.*);")
+reSection = re.compile(r"^\$(.*);")
 
 def getExpname():
     '''

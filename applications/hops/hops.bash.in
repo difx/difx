@@ -66,8 +66,7 @@ Version="@srcdir@/$zero  [ @BUILD_DATE@ ]"
 case "nada$1" in
 nada--help)     echo "$Help"    ; exit 0 ;;
 nada--version)  echo "$Version" ; exit 0 ;;
-nada)                                    ;;
-nada*)          echo "$Help"    ; exit 1 ;;
+nada*)                                   ;;
 esac
 
 #
