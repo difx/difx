@@ -271,10 +271,11 @@
 !   Set the position portion of the nutation matrix to the identity matrix.
        CALL ROTAT ( 0.D0, int2(3), RPN2K6(1,1,1))
 !   Set the velocity portion of the nutation matrix to 0.0D0.
-       DO 600 N=1,3
-         DO 600 M=1,3
+       DO N=1,3
+         DO M=1,3
           RPN2K6(M,N,2) = 0.0D0
-  600  CONTINUE
+         END DO
+       END DO
       ENDIF
 !
 !   Check KNUTD for debug output.
