@@ -54,13 +54,13 @@ void remove_lockfile(); //must go through global variables
 
 int parse_lockfile_name(char* lockfile_name_base, lockfile_data_struct* result);
 
-int create_lockfile(char *rootname, char* lockfile_name);
+int create_lockfile(char *rootname, char* lockfile_name, int cand_seq_no);
 
 int check_stale(lockfile_data_struct* other);
 
 int lock_has_priority(lockfile_data_struct* other);
 
-int at_front(char* rootname, char* lockfile_name);
+int at_front(char* rootname, char* lockfile_name, int cand_seq_no);
 
 int wait_for_write_lock(char* rootname, char* lockfile_name, struct fileset *fset);
 

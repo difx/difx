@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_fringex.sh 3326 2021-09-04 13:05:05Z gbc $
+# $Id: chk_fringex.sh 4574 2026-05-21 21:30:09Z gbc $
 #
 # check that fringex runs in refringe mode
 #

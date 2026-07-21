@@ -1,6 +1,7 @@
 #ifndef T300_VERSION
 #define T300_VERSION 0
 
+#include <stdio.h>
 #include "mk4_typedefs.h"
 
                                         /* Set this to current version, */
@@ -22,4 +23,5 @@ struct type_300
     short       nsplines;               /* Number of splines in scan */
     };
 
+void write_t300 (struct type_300 *, FILE *);
 #endif

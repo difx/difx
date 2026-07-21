@@ -6,6 +6,7 @@
 // First created 2001.1.26  rjc
 // created v.1 with 64 channels & tones  2010.10.1   rjc
 
+#include <stdio.h>
 #include "mk4_typedefs.h"
 
 #define type_309_v1 type_309 
@@ -46,5 +47,6 @@ struct type_309
     } chan[64];
   };
 
+void write_t309 (struct type_309 *, FILE *);
 #endif 
 

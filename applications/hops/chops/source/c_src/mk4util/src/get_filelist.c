@@ -34,7 +34,7 @@ int
 get_filelist (int argc, char **argv, int type, fstruct **files)
     {
     char c;
-    int i, j, filenum, depth, lastslash, nalloc;
+    int i, j, filenum, depth, lastslash, nalloc, ddalloc;
     struct stat file_status;
     char *fname, *ddargv;
     static int first = TRUE;
@@ -75,37 +75,45 @@ get_filelist (int argc, char **argv, int type, fstruct **files)
                 }
             }
 #ifdef HAVE_CONFIG_H
+                                        /* post-CJL code here */
                                         /* Make sure this is a file/dir */
         if (stat(argv[i], &file_status) != 0)
-	    {
-	    msg ("Cannot find %s locally.", 1, argv[i]);
-	    ddargv = (char*) malloc(strlen(argv[i]) + strlen(datadir) + 3);
-	    if (ddargv == NULL)
-		{
-		msg ("Unable to allocate space for datadir/file", 2);
-		continue;
-		}
-	    sprintf(ddargv, "%s/%s", datadir, argv[i]);
-	    msg ("Trying %s in datadir.", 1, ddargv);
-	    if (stat(ddargv, &file_status) == 0) argv[i] = ddargv;
-	    else continue;		/* that didn't work, either */
-	    msg ("Examining %s", 3, argv[i]);
+            {
+            msg ("Cannot find %s locally.", 1, argv[i]);
+            ddargv = (char*) malloc(strlen(argv[i]) + strlen(datadir) + 3);
+            if (ddargv == NULL)
+                {
+                msg ("Unable to allocate space for datadir/file", 2);
+                continue;
+                }
+            ddalloc = 1;
+            sprintf(ddargv, "%s/%s", datadir, argv[i]);
+            msg ("Trying %s in datadir.", 1, ddargv);
+            if (stat(ddargv, &file_status) == 0)
+                { argv[i] = ddargv; }
+            else                        /* that didn't work, either */
+                { free(ddargv) ; continue; }
+            msg ("Examining %s", 3, argv[i]);
+            }
 #else /* HAVE_CONFIG_H */
         if (stat(argv[i], &file_status) != 0) continue
 #endif /* HAVE_CONFIG_H */
-	    }
+        else ddalloc = 0;
 
                                         /* Make list of data file names */
-					/* requested. extract_filename() is */
-					/* recursive, so it will descend */
-					/* directory levels until it finds */
+                                        /* requested. extract_filename() is */
+                                        /* recursive, so it will descend */
+                                        /* directory levels until it finds */
                                         /* the correlator files. */
         depth = 0;
         if (file_status.st_mode & S_IFDIR) 
             {
             if (extract_filenames (argv[i], type, 
                         files, &nalloc, &filenum, &depth) != 0)
+                {
+                if (ddalloc) free(ddargv);
                 return (1);
+                }
             }
                                         /* An ordinary file */
         else 
@@ -118,19 +126,24 @@ get_filelist (int argc, char **argv, int type, fstruct **files)
                 if (c == '/') lastslash = j;
             fname = argv[i] + lastslash;
                                         /* Is this a valid filename? */
+            prep_fstruct((*files)+filenum);
             if (check_name (fname, (*files)+filenum) != 0) continue;
                                         /* Is it of the desired type? */
             if (((*files)[filenum].type != type) && (type != -1)) continue;
                                         /* fill in filename */
-            (*files)[filenum].name = (char *) malloc (strlen(argv[i]) + 1);
+            (*files)[filenum].name = (char *)malloc(strlen(argv[i]) + 1);
             if ((*files)[filenum].name == NULL)
                 {
                 msg ("Unable to allocate space for file names", 2);
+                if (ddalloc) free(ddargv);
                 return (1);
                 }
             strcpy ((*files)[filenum].name, argv[i]);
-                                        /* OK, this one is accepted */
+            (*files)[filenum].namealloc = strlen((*files)[filenum].name) + 1;
+                                        /* OK, this one is accepted and */
+                                        /* namealloc registers a later free */
             filenum++;
+            if (ddalloc) free(ddargv);  /* not needed anymore */
             }
         }
                                         /* Terminate the file list */
@@ -152,3 +165,5 @@ get_filelist (int argc, char **argv, int type, fstruct **files)
 
     return (0);
     }
+
+/* eof */

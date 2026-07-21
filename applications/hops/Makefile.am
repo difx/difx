@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 3386 2021-10-15 13:14:34Z gbc $
+# $Id: Makefile.am 4130 2023-10-08 21:34:40Z gbc $
 #
 
 #
@@ -40,6 +40,17 @@ if HAVE_OMPI
 OMPIDIRS = @OMPIDIR@
 else
 OMPIDIRS =
+endif
+
+# turn on difx2mark4 installation, full monte
+if HAVE_D2M4
+D2M4DIRS = @D2M4DIR@
+TAR_D2M4 = -d2m4
+DCF_D2M4 = --enable-d2m4
+else
+D2M4DIRS =
+TAR_D2M4 =
+DCF_D2M4 =
 endif
 
 # turn on DOCS stuff
@@ -97,14 +108,18 @@ TAR_CHOP =
 DCF_CHOP = --disable-chops
 endif
 
+# python setup.py install checks for support for .pth files
+uilpv=_inst/lib/python$(PYTHON_VERSION)
+pythonsetupgyrations=$(abs_top_builddir)/$(PKGVERS)/$(uilpv)/site-packages
+
 DISTCHECK_CONFIGURE_FLAGS = \
 	$(DCF_HOPS) $(DCF_DEVL) $(DCF_DIFX) $(DCF_MARK5) \
-	$(DCF_CHOP) $(DCF_VXML)
-
+	$(DCF_CHOP) $(DCF_VXML) $(DCF_D2M4) \
+	PYTHONPATH=$(pythonsetupgyrations):$$PYTHONPATH
 
 # rev is -something
 # vers is a, b, test, &c
-TARNAME = $(TAR_HOPS)$(TAR_DEVL)$(TAR_DIFX)$(TAR_MARK5)
+TARNAME = $(TAR_HOPS)$(TAR_DEVL)$(TAR_DIFX)$(TAR_MARK5)$(TAR_D2M4)
 TARVERS = $(TARNAME)${rev}-@VERSION@${vers}
 TARBALL = $(TARVERS).tar.gz
 PKGVERS = $(PACKAGE)-@VERSION@
@@ -118,6 +133,7 @@ SUBDIRS = . $(HOPSDIRS) \
 	  $(HOPSDATA) \
 	  $(VXMLDIRS) \
 	  $(OMPIDIRS) \
+	  $(D2M4DIRS) \
 	  $(DOCSDIRS)
 
 EXTRA_DIST = README.txt Fink.txt MacPorts.txt svnrev.txt Copyright \
@@ -143,11 +159,17 @@ install-exec-hook:
 	    echo hops.bash was copied to ${HOME}/bin || \
 	    echo Put hops.bash where you can conveniently find it.
 
+# for developer convenience
 uninstall-hook:
 	-@[ -d ${HOME}/bin -a ! -h ${HOME}/bin/hops.bash ] && \
 	    echo ${PATH} | grep ${HOME}/bin >/dev/null && \
 	    rm -f ${HOME}/bin/hops.bash || \
 	    echo hops.bash was not removed as it is not in your PATH
+
+# note that this blows away all egg packages
+uninstall-local:
+	rm -f $(DESTDIR)$(pythondir)/easy-install.pth
+	rm -f $(DESTDIR)$(pythondir)/site*py*
 
 #
 # Various distribution options; recall that
@@ -193,7 +215,22 @@ reversion:
 	./config.status
 	$(MAKE) install
 
-CLEANFILES = config.summary
+# for developers
+check-local:
+	[ -f $(srcdir)/sub/importcheck.py.in -a \
+	  -f $(srcdir)/chops/importcheck.py.in ] && \
+		cmp $(srcdir)/sub/importcheck.py.in \
+		  $(srcdir)/chops/importcheck.py.in  && \
+			echo '**{chops,sub}/importcheck.py.in are synchronized**'. || \
+			echo '**{chops,sub}/importcheck.py.in are not synchronized.**'
+
+# do this alot...
+check.out:	Makefile.am
+	-make all install check -k |& tee check.out
+hurt-me: check.out
+	-grep FAIL check.out | grep -v '0$$'
+
+CLEANFILES = config.summary check.out
 
 #
 # eof

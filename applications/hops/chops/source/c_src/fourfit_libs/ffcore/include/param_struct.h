@@ -66,6 +66,7 @@ struct type_param
     int         gen_cf_record;          /* whether to generate cf record */
     int         nnotches;               /* alternative to passband */
     double      notches[MAXNOTCH][2];   /* alternative to passband */
+    char        chan_notches[MAXNOTCH+1];/* channel restriction for notches(null terminated) */
     double      speedup;                /* ration of playback speed to record speed */
     int         first_plot;             // number of first chan to plot, when overridden
     int         nplot_chans;            // number of plot channels when overridden
@@ -84,6 +85,15 @@ struct type_param
     int         est_pc_manual;          // estimate pc manual values
     int         mount_type[2];          // mount types for ref and rem
     double      elevation[2];           // elevation angle for ref and rem (radians)
+    int         mixed_mode_rot;         // iff true, rotate mixed LP-CP RY/YR data by 90
+    int         noautofringes;          // when true, skip fringing of autocorrs
+    int         mod4numbering;          // when true, fr.num % 4 is 0 (LL) 1 (RR) 2 (LR) 3 (RL)
+    int         polfringnames;          // when true, a poln label appears in fringe name
+    int         mbdrplopt[3];           // option(s) on SBD MBD DRate plots
+    char        fringeout_dir[256];     // alternate output directory for fringes
+    char        clones[2][MAXFREQ/2+1]; // [0] are existing codes, [1] are the clones
+    int         clone_snr_chk;          // when true, check for frequency overlap in clones
+    char        display_chans[MAXFREQ+5]; // channels to be displayed in the fringe plot
     };
 
 #define WIN_EDGE_SBD   0x01             /* masks for status.interp_err */

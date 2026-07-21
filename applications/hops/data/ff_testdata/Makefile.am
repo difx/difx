@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 3345 2021-09-09 20:56:07Z gbc $
+# $Id: Makefile.am 4585 2026-05-22 17:14:56Z gbc $
 #
 
 #AUTOMAKE_OPTIONS = serial-tests 
@@ -10,6 +10,15 @@ if HAVE_PYTHON
 pkgpython_PYTHON = hopstest.py
 check_SCRIPTS =  hopstestsuite.py
 endif
+
+# 2611 is the oldest fringe that I have found that is still viable
+# it was correlated several times and this was the last of that series
+# which was tuned up so that no control file is needed.  The observation
+# was made in 1993 and last correlated in 1999.
+EXP_2611 = testdata/2611/062-094600/3C345.nrxoiv \
+		testdata/2611/062-094600/B..nrxoiv \
+		testdata/2611/062-094600/BY..nrxoiv \
+		testdata/2611/062-094600/Y..nrxoiv
 
 # 2836 is Roger's canonical experiment, but it's only two stations
 # target_correlator = Haystack;  Mk4/hdw.
@@ -30,6 +39,16 @@ EXP_2843 =  testdata/2843/321-1701_0552+398/0552+398.oifhak \
 	    testdata/2843/321-1701_0552+398/I..oifhak \
 	    testdata/2843/321-1701_0552+398/IT..oifhak \
 	    testdata/2843/321-1701_0552+398/T..oifhak
+
+# this is an old S/X RD experiment from 2004 it clearly
+# had some issues to be investigated, but it is not clear
+# what the resolution was.
+EXP_3064 = testdata/3064/113-0256/4C39_25.qxajks \
+		testdata/3064/113-0256/N..qxajks \
+		testdata/3064/113-0256/NV..qxajks \
+		testdata/3064/113-0256/NV.S.9.qxajks \
+		testdata/3064/113-0256/NV.X.10.qxajks \
+		testdata/3064/113-0256/V..qxajks
 
 # 3365 is a scan suitable for fourmering
 # target_correlator = not specified  Mk4/hdw.
@@ -117,64 +136,87 @@ EXP_3772 = testdata/3772/cf3772 \
 	testdata/3772/No0001/AB..1T8DS3 \
 	testdata/3772/No0001/B..1T8DS3
 
+# 3769 is a several fringes from the ALMA Band7 commissioning test
+# this data is publicly available on the ALMA archive.  More scans
+# could be added to shake out issues on crappy scans.
+EXP_3769 =  testdata/3769/109-0356/3C279.1V53AD \
+			testdata/3769/109-0356/A..1V53AD \
+			testdata/3769/109-0356/AP.B.37.1V53AD \
+			testdata/3769/109-0356/AP.B.38.1V53AD \
+			testdata/3769/109-0356/AP.B.39.1V53AD \
+			testdata/3769/109-0356/AP.B.40.1V53AD \
+			testdata/3769/109-0356/P..1V53AD \
+			testdata/3769/109-0506/3C279.1V53B1 \
+			testdata/3769/109-0506/A..1V53B1 \
+			testdata/3769/109-0506/AJ.B.1.1V53B1 \
+			testdata/3769/109-0506/AJ.B.2.1V53B1 \
+			testdata/3769/109-0506/AJ.B.3.1V53B1 \
+			testdata/3769/109-0506/AJ.B.4.1V53B1 \
+			testdata/3769/109-0506/AS.B.45.1V53B1 \
+			testdata/3769/109-0506/AS.B.46.1V53B1 \
+			testdata/3769/109-0506/AS.B.47.1V53B1 \
+			testdata/3769/109-0506/AS.B.48.1V53B1 \
+			testdata/3769/109-0506/J..1V53B1 \
+			testdata/3769/109-0506/S..1V53B1
+
 AVERAGEFIX = testdata/average \
 	     testdata/average/080-low-2-subset.1sec \
 	     testdata/average/080-low-2-subset.averaged
 
 test_gs_device = nullpage
 
-TESTS_ENVIRONMENT = \
-	srcdir=$(srcdir) bindir=$(bindir) \
+TESTS_ENVIRONMENT = HOPS3=true \
+	srcdir=$(srcdir) bindir=$(bindir) abs_srcdir=$(abs_srcdir) \
 	GS_DEVICE=$(test_gs_device) PGPLOT_DIR=$(PGPLOT_DIR) \
-	PS2PDF=@PS2PDF@
+	PS2PDF=@PS2PDF@ fourfit=fourfit
 
-# FIXME: gs issue
-#       chk_ff_display.sh
-
+XFAIL_TESTS =
 if HAVE_DEVEL
 # chk_ff_3571.sh subsumed into chk_min_weight.sh
-TESTS = chk_ff_2836.sh chk_ff_2843.sh chk_ff_3372.sh \
-	chk_ff_3413.sh chk_ff_3756.sh \
+TESTS = chk_ff_2611.sh chk_ff_2836.sh chk_ff_2843.sh chk_ff_3064.sh \
+	chk_ff_3372.sh chk_ff_3413.sh chk_ff_3756.sh \
 	chk_baselines.sh chk_alist.sh chk_adump.sh \
 	chk_aedit.sh chk_fringex.sh chk_average.sh \
-	chk_avefix.sh chk_cofit.sh chk_search.sh \
-	chk_fourmer.sh chk_frmrsrch.sh chk_hdlinks.sh \
-	chk_min_weight.sh chk_passband.sh \
-	chk_notches.sh chk_notches_xf.sh \
-	chk_ff_3772pb.sh
+	chk_avefix.sh chk_cofit.sh chk_cohfit.sh chk_cohfit_driver.sh \
+	chk_search.sh chk_fourmer.sh chk_frmrsrch.sh chk_hdlinks.sh \
+	chk_min_weight.sh chk_passband.sh chk_notches.sh chk_notches_xf.sh \
+	chk_ff_3772pb.sh chk_misc_3756.sh chk_misc_3372.sh
+# FIXME: gs issue and seg fault race condition on input?
+# chk_ff_display.sh
 if HAVE_HSEARCH
 # the ps2pdf stuff is here as the counts are wrong
 # if chk_flagging.sh and chk_ff_dump.sh are not run
 TESTS += chk_flagging.sh chk_ff_dump.sh \
 	chk_ps2pdf.sh chk_ff_ps2pdf.sh
-endif
-#XFAIL_TESTS = ...
+else !HAVE_HSEARCH
+endif !HAVE_HSEARCH
 if HAVE_PYTHON
 TESTS += run_testsuite.sh
-#XFAIL_TESTS += ...
 endif
 # experiment data for devel
-expdata = $(EXP_2836) $(EXP_2843) $(EXP_3365) $(EXP_3372) $(EXP_3413) \
-	$(EXP_3571) $(EXP_3562) $(EXP_3756) $(EXP_3727) $(EXP_3772) \
-	$(AVERAGEFIX)
-else
-TESTS = chk_ff_2843.sh chk_baselines.sh \
+expdata = $(EXP_2611) $(EXP_2836) $(EXP_2843) $(EXP_3064) $(EXP_3365) \
+	$(EXP_3372) $(EXP_3413) $(EXP_3571) $(EXP_3562) $(EXP_3756) $(EXP_3727) \
+	$(EXP_3769) $(EXP_3772) $(AVERAGEFIX)
+else !HAVE_DEVEL
+TESTS = chk_ff_2611.sh chk_ff_2843.sh chk_ff_3064.sh chk_baselines.sh \
 	chk_alist.sh chk_adump.sh chk_aedit.sh chk_fringex.sh \
-	chk_fourmer.sh chk_hdlinks.sh
+	chk_average.sh chk_cohfit_driver.sh \
+	chk_search.sh chk_fourmer.sh chk_hdlinks.sh
 # experiment data for common
-expdata = $(EXP_2843) $(EXP_3365)
-endif
+expdata = $(EXP_2611) $(EXP_2843) $(EXP_3064) $(EXP_3365) $(EXP_3769)
+endif !HAVE_DEVEL
 
 EXTRA_DIST = $(expdata)
 
 dist_check_SCRIPTS = chk_env.sh $(TESTS)
 
 CLEANFILES = *.ps *.oifhak aedit.in *.out *.alist *.cofit *.coavg cf* *.avg \
-	     hopstestsuite.py *.pdf *.awk *.gnu
+	     hopstestsuite.py *.pdf *.awk *.gnu *.cohfit
 
 clean-local:
-	rm -rf DD 2843 3365 path datadir pdd*
+	rm -rf DD 2843 3365 path datadir pdd* fringes*
+	rm -rf cohdrv
 
 #
-# eof
+# eof vim: sts=4
 #

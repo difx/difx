@@ -18,6 +18,7 @@ $opts{'n'} = 1000000;
 $opts{'r'} = 0;
 $opts{'s'} = 'NONE';
 $opts{'g'} = 'NONE';
+$opts{'e'} = 0;
 $opts{'w'} = 0;
 $opts{'f'} = 0;
 $opts{'d'} = 0;
@@ -39,6 +40,7 @@ where the options are
 
   -s  target source                           [default: all]
   -g  group                                   [default: all]
+  -e  flag for extra-wide output              [default: NO]
 
   -r  reverse sense of second baseline        [default: NO]
   -w  alias mbd difference into ambig window  [default: NO]
@@ -53,14 +55,15 @@ The flag option -f appends . if scans are equal length
                            2 if scan 2 is longer.
 
 The group option restricts to freq#channels (B32, S06, X08 or similar).
+The -e flag is useful if you want to look at autocorrs.
 
 Version: $program_version
 ";
 
 if ( $#ARGV < 0 || $ARGV[0] eq "--help" ) { print "$USAGE"; exit(0); }
 
-getopts('a:b:x:y:m:n:p:q:rs:g:wfd',\%opts);
-my ($alist,$alist2,$base1,$base2,$minsnr,$maxsnr,$reverse_second,$targetpol1,
+getopts('a:b:x:y:m:n:p:q:rs:g:ewfd',\%opts);
+my ($alist,$alist2,$base1,$base2,$minsnr,$maxsnr,$reverse_second,$targetpol1,$extrawide,
     $targetpol2,$targetsource,$targetgroup,$aliasmbddiff,$flaglength,$skipdifferentlength);
 $alist=$opts{'a'};
 $alist2=$opts{'b'};
@@ -73,6 +76,7 @@ $targetpol1=$opts{'p'};
 $targetpol2=$opts{'q'};
 $targetsource=$opts{'s'};
 $targetgroup=$opts{'g'};
+$extrawide=$opts{'e'};
 $aliasmbddiff=$opts{'w'};
 $flaglength=$opts{'f'};
 $skipdifferentlength=$opts{'d'};
@@ -192,16 +196,39 @@ my ($sbdiff,$mbdiff,$dratediff,$ampratio,$phasediff);
 my ($nmatch,$avgsbdiff,$avgmbdiff,$avgdratediff,$tphasediff);
 
 print "*\n* 1 is $alist\n* 2 is $alist2\n*\n";
-format STDOUT_TOP =
+
+# wider version
+format WIDE_STDOUT_TOP =
+*                 Band Bl Band Bl   sbd       mbd        drate   amp     phase tphase     amp       amp   tphase tphase       snr         snr   scan  pols
+*HMMSS Source      1   1   2   2    diff      diff       diff    ratio   diff   diff       1         2      1      2           1           2    hhmm  1  2
+*---------------------------------------------------------------------------------------------------------------------------------------------------------
+.
+#
+format WIDE_STDOUT = 
+@0#### @<<<<<<<<< @<<< @< @<<< @< @##.##### @##.###### @##.#### @#.#### @###.# @###.# @####.### @####.### @###.# @###.# @######.### @######.### @<<< @< @< @
+$segtime[$j], $source[$j], $band[$j], $baseline[$j], $band2[$k], $altbaseline2[$k], $sbdiff, $mbdiff, $dratediff, $ampratio, $phasediff, $tphasediff, $amp[$j], $amp2[$k], $tphase[$j], $tphase2[$k], $snr[$j], $snr2[$k], $time2[$k], $pol[$j], $pol2[$k], $flag2[$k]
+.
+
+# original version
+format ORIG_STDOUT_TOP =
 *                 Band Bl Band Bl   sbd       mbd        drate   amp     phase tphase   amp     amp   tphase tphase     snr       snr   scan  pols
 *HMMSS Source      1   1   2   2    diff      diff       diff    ratio   diff   diff     1       2      1      2         1         2    hhmm  1  2
 *-------------------------------------------------------------------------------------------------------------------------------------------------
 .
-
-format STDOUT = 
+#
+format ORIG_STDOUT = 
 @0#### @<<<<<<<<< @<<< @< @<<< @< @##.##### @##.###### @##.#### @#.#### @###.# @###.# @##.### @##.### @###.# @###.# @####.### @####.### @<<< @< @< @
 $segtime[$j], $source[$j], $band[$j], $baseline[$j], $band2[$k], $altbaseline2[$k], $sbdiff, $mbdiff, $dratediff, $ampratio, $phasediff, $tphasediff, $amp[$j], $amp2[$k], $tphase[$j], $tphase2[$k], $snr[$j], $snr2[$k], $time2[$k], $pol[$j], $pol2[$k], $flag2[$k]
 .
+
+select(STDOUT);
+if ($extrawide) {
+    $~ = "WIDE_STDOUT";
+    $^ = "WIDE_STDOUT_TOP";
+} else {
+    $~ = "ORIG_STDOUT";
+    $^ = "ORIG_STDOUT_TOP";
+}
 
 $nmatch = 0;
 $avgsbdiff = 0;
@@ -238,12 +265,12 @@ for ($j = 0; $j < $i; $j++){
                while (($mbdiff-$sbdiff)<(-($ambig[$j]/2))) {$mbdiff += $ambig[$j];}
             }
             if ($amp[$j] > 0) { $ampratio = $amp2[$k]/$amp[$j];}
-            $phasediff = $phase2[$k]-$phase[$j];
-            if ($phasediff < 0) { $phasediff += 360;}
-            if ($phasediff > 360) { $phasediff -= 360;}
-            $tphasediff = $tphase2[$k]-$tphase[$j];
-            if ($tphasediff < 0) { $tphasediff += 360;}
-            if ($tphasediff > 360) { $tphasediff -= 360;}
+            $phasediff = int(($phase2[$k]-$phase[$j]) * 10 + .5) / 10.0;
+            if ($phasediff < 0.0) { $phasediff += 360.0;}
+            if ($phasediff >= 360.0) { $phasediff -= 360.0;}
+            $tphasediff = int(($tphase2[$k]-$tphase[$j]) * 10 + .5) / 10.0;
+            if ($tphasediff < 0.0) { $tphasediff += 360.0;}
+            if ($tphasediff >= 360.0) { $tphasediff -= 360.0;}
 
             if ($length[$j] < $length2[$k]){
                  $flag2[$k] = "2";

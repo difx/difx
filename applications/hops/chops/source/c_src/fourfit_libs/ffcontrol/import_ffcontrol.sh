@@ -18,6 +18,7 @@ else
     declare -a header_list=(
     "control.h"
     "parser.h"
+    "frqsupport.h"
     "ffcontrol.h"
     )
 

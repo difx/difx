@@ -30,13 +30,13 @@ int parse_cmdline (int argc, char **argv,
     {
     int err, dflag, iflag, rflag;
     double raoff, decoff, freq;
-    char c, rdarg[100], iarg[100], rarg[256];
+    char c, rdarg[100], iarg[6*MAXNSECS], rarg[256];
     extern char *optarg;
     extern int optind;
 
     if (argc == 1)
         {
-        syntax("$HeadURL: https://vault.haystack.mit.edu/svn/hops/trunk/postproc/fringex/parse_cmdline.c $");
+        syntax("postproc/fringex/parse_cmdline.c");
         return (1);
         }
                                         /* Defaults */
@@ -177,7 +177,7 @@ int parse_cmdline (int argc, char **argv,
                                         /* Bad syntax or -? specified */
     if (err)
         { 
-        syntax("$HeadURL: https://vault.haystack.mit.edu/svn/hops/trunk/postproc/fringex/parse_cmdline.c $");
+        syntax("postproc/fringex/parse_cmdline.c");
         return (-1);
         }
 

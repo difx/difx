@@ -81,6 +81,7 @@ create_fsm ()
     fsm_table (BLOCK_INTERIOR,	  VECTOR_INT_PARAM,  SAVE_TOKEN_NUM, NEED_VECTOR_INT);
     fsm_table (BLOCK_INTERIOR,	  VECTOR_FLOAT_PARAM,SAVE_TOKEN_NUM, NEED_VECTOR_FLOAT);
     fsm_table (BLOCK_INTERIOR,	  VECTOR_CHAR_PARAM, CLEAR_FREQS,    NEED_VECTOR_CHAR);
+    fsm_table (BLOCK_INTERIOR,	  SAVE_CHAR_PARAM,   CLEAR_FREQS,    NEED_STRING_CHANS);
     fsm_table (BLOCK_INTERIOR,	  VECTOR_STRING_PARAM,SAVE_TOKEN_NUM,NEED_VS_NUMBER);
     fsm_table (BLOCK_INTERIOR,	  CHAN_PARAM,        SAVE_TOKEN_NUM, NEED_CODES);
     fsm_table (BLOCK_INTERIOR,	  0,                 EOF_CLEANUP,    END_STATE);      
@@ -95,6 +96,8 @@ create_fsm ()
     fsm_table (NEED_TWO_FLOAT_2,  FLOAT,             INSERT_V_PAR,   BLOCK_INTERIOR);
     fsm_table (NEED_TWO_FLOAT_2,  INTEGER,           INSERT_V_PAR,   BLOCK_INTERIOR);
 
+    fsm_table (NEED_STRING,       ONE_CHAR,          INSERT_V_CHAR,  BLOCK_INTERIOR);
+    fsm_table (NEED_STRING,       TWO_CHAR,          INSERT_V_CHAR,  BLOCK_INTERIOR);
     fsm_table (NEED_STRING,       MANY_CHAR,         INSERT_STRING,  BLOCK_INTERIOR);
 
     fsm_table (NEED_VECTOR_INT,   INTEGER,           INSERT_V_PAR,   NEED_VECTOR_INT);
@@ -113,11 +116,17 @@ create_fsm ()
     fsm_table (NEED_CODES,        TWO_CHAR,          SAVE_CODES,     NEED_VECTOR_FLOAT);
     fsm_table (NEED_CODES,        MANY_CHAR,         SAVE_CODES,     NEED_VECTOR_FLOAT);
 
+    fsm_table (NEED_STRING_CHANS, ONE_CHAR,          NEW_CODES,      NEED_STRING_CHANS);
+    fsm_table (NEED_STRING_CHANS, TWO_CHAR,          NEW_CODES,      NEED_STRING_CHANS);
+    fsm_table (NEED_STRING_CHANS, MANY_CHAR,         NEW_CODES,      NEED_STRING_CHANS);
+    fsm_table (NEED_STRING_CHANS, MATCH_ALL,         POP_TOKEN,      BLOCK_INTERIOR);
+
     fsm_table (NEED_VS_NUMBER,    INTEGER,           INSERT_PAR,     NEED_VECTOR_STRING);
 
     fsm_table (NEED_VECTOR_STRING,ONE_CHAR,          INSERT_STRING,  NEED_VECTOR_STRING);
     fsm_table (NEED_VECTOR_STRING,TWO_CHAR,          INSERT_STRING,  NEED_VECTOR_STRING);
     fsm_table (NEED_VECTOR_STRING,MANY_CHAR,         INSERT_STRING,  NEED_VECTOR_STRING);
+    /*         current_state      token_type         action          next_state */
 
     fsm_table (0, 0, 0, 0);                                 /* mark table end */
 

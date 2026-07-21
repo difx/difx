@@ -4,7 +4,7 @@
  * The caller, make_plotdata(struct type_pass *pass) will have made most
  * of the calculations necessary to make the plot.  A few more are made
  * in make_postplot() and even in generate_text().  And the caller will
- * have estimated the SNR of the fringe based on theoretical factors.
+ * have estimated the SNR of the fringe based on theoretical factors, by:
  *
  * status.snr = status.delres_max * param.inv_sigma
  *          * sqrt((double)status.total_ap_frac * eff_npol)
@@ -91,7 +91,6 @@
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "apply_funcs.h"
-//#include "ff_misc_if.h"
 
 double adjust_snr(struct type_pass *pass, struct type_status *status)
 {
@@ -114,6 +113,8 @@ double adjust_snr(struct type_pass *pass, struct type_status *status)
                  1, sb, fr, chcnt, frac_bw, ap_bw, status->sb_bw_fracs[fr][sb],
                 status->sb_bw_origs[fr][sb], status->sb_bw_apcnt[fr][sb]);
         }
+    // if cloning is in effect, SNR will be over-estimated if
+    // the bandwidth corrections do not remove duplicated data.
 
     /* if chcnt is 0 we have no bw_corr to make */
     bw_corr = (chcnt > 0) ? sqrt(frac_bw / ap_bw) : 1.0;

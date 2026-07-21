@@ -1,6 +1,7 @@
+#!/usr/bin/python
 """integration test for proxy-cable-cal lib"""
 #core imports
-from __future__ import print_function
+#-3.13++#from __future__ import print_function
 from builtins import input
 from builtins import str
 import datetime

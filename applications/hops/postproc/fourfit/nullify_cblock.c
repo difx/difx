@@ -8,6 +8,7 @@
 ***********************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include "control.h"
 #include "ffcontrol.h"
 #include "mk4_sizes.h"
@@ -65,8 +66,18 @@ nullify_cblock (struct c_block *cb_ptr)
     cb_ptr -> mbd_anchor      = NULLINT;
     cb_ptr -> ion_smooth      = NULLINT;  
     cb_ptr -> est_pc_manual   = NULLINT;  
+    cb_ptr -> clone_snr_chk   = NULLINT;
     cb_ptr -> vbp_correct     = NULLINT;  
-    cb_ptr -> vbp_fit         = NULLINT;  
+    cb_ptr -> vbp_fit         = NULLINT;
+    cb_ptr -> mixed_mode_rot  = NULLINT;  
+    cb_ptr -> noautofringes   = NULLINT;
+    cb_ptr -> mod4numbering   = NULLINT;
+    cb_ptr -> polfringnames   = NULLINT;
+    cb_ptr -> fringeout_dir[0]= 0;
+    cb_ptr -> display_chans[0]= 0;
+
+    for (i=0; i<3; i++)
+        cb_ptr -> mbdrplopt[i] = NULLINT;
 
     for (i=0; i<5; i++)
         {
@@ -113,6 +124,9 @@ nullify_cblock (struct c_block *cb_ptr)
     for (i=0; i<MAXNOTCH; i++)
         cb_ptr -> notches[i][0] = 
         cb_ptr -> notches[i][1] = NULLFLOAT;
+    memset(cb_ptr->chan_notches, WILDCARD,
+        sizeof(cb_ptr->chan_notches)-1);
+    cb_ptr->chan_notches[MAXNOTCH] = '\0';
 
     for (i=0; i<4; i++)
         cb_ptr -> knot[i] = FALSE;
@@ -147,6 +161,12 @@ nullify_cblock (struct c_block *cb_ptr)
         cb_ptr -> chid[i] = '\0';
         cb_ptr -> chid_rf[i] = 0.0;
         }
+    cb_ptr -> chid[MAXFREQ] = '\0';
+
+    for (i=0; i<MAXFREQ/2+1; i++)
+        cb_ptr -> clones[0][i] = cb_ptr -> clones[1][i] = 0;
+    cb_ptr -> clones[0][MAXFREQ/2] = 
+    cb_ptr -> clones[1][MAXFREQ/2] = '\0';
 
     for (i=0; i<2*MAXFREQ; i++)
         cb_ptr -> index[i]= NULLINT;

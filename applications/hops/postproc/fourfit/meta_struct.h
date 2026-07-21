@@ -3,6 +3,11 @@
  * or generated during the plotting process/preparation
  * but not actually stored elsewhere.
  */
+#ifndef META_STRUCT_H__
+#define META_STRUCT_H__
+
+#include "ovex.h"
+#include "pass_struct.h"
 
 struct type_meta {
     /* defined in generate_text.c */
@@ -22,11 +27,22 @@ struct type_meta {
     char    ra[23];         /* R.A. */
     char    dec[23];        /* Decl */
 
-    /* defined in generate_graphs.c */
-    int     start_plot;     /* starting freq for segmented data */
-    int     nplots;         /* number of freqs for segmented data */
+    /* defined in generate_graphs.c; start is first, limit is last */
+    int     start_plot;     /* starting plot index for segmented data */
+    int     limit_plot;     /* number of segmented panels without ALL */
+    int     nplots;         /* number segmented panels (include ALL) */
+    int     vplots;         /* number visible segmented panels */
+    char    skip_plots[MAXFREQ+1]; /* nonzero flags skipped plots */
 };
 
+/* these are called from make_postplot() and used no-where else */
+/* tickinc is set in generate_graphs() and used in generate_text() */
+int generate_graphs(struct scan_struct *root, struct type_pass *pass,
+                    char *fringename, char *ps_file, double *tickinc);
+void generate_text(struct scan_struct *root, struct type_pass *pass,
+                    char *fringename, char *ps_file, double tickinc);
+
+#endif /* META_STRUCT_H__ */
 /*
  * eof
  */

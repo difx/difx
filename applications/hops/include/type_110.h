@@ -1,6 +1,7 @@
 #ifndef T110_VERSION
 #define T110_VERSION 0
 
+#include <stdio.h>
 #include "mk4_typedefs.h"
 
                                         /* Set this to current version, */

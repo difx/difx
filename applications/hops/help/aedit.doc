@@ -47,7 +47,7 @@ OPTION FLAGS:   -b "command string"
 
 ARGUMENTS:	None
 
-ENVIRONMENT:	AHELP, DISPLAY, DATADIR, SCHEDDIR, AFILEDIR, CORDATA
+ENVIRONMENT:	AHELP, DISPLAY, DATADIR, SCHEDDIR, AFILEDIR, CORDATA, PAGER
 
 
 DESCRIPTION:
@@ -182,5 +182,7 @@ device       outversion
 
 
 For further information, see the individual help for these commands
-using the aedit help facility--type "help" at the aedit prompt.
+using the aedit help facility--type "help" at the aedit prompt.  The
+help is paged using 'more' but you can set PAGER in the environment
+for 'less' or 'cat' or some other command.
 

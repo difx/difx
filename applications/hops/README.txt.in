@@ -173,10 +173,11 @@ will get you a new window with your normal shell and the proper environment.
 4. Finally
 ----------
 
-Copyright (c) 1992-2015 by Haystack Observatory, MIT.
+Copyright (c) 1992-2026 by Haystack Observatory, MIT.
 See the included file "Copyright" for the full notice.
 
-Authors: Colin Lonsdale, Roger Cappallo, and many others.
+Authors: Colin Lonsdale, Roger Cappallo, and many others,
+         finishing up with Geoff Crew and John Barrett.
 
 If you experience problems with this release, contact Geoff Crew
 (@PACKAGE_BUGREPORT@) who is to blame for this packaging.

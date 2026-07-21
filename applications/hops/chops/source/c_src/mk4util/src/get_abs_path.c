@@ -24,7 +24,6 @@ get_abs_path(char input[], char rootname[])
     char directory[256], abs_directory[512], r_fname[256];
     char workdir[256], temp[769];
     char *ptr;
-    /*char* strrchr(const char*, int);*/
 
     if (getcwd (workdir, 256) == NULL)
         {
@@ -52,7 +51,7 @@ get_abs_path(char input[], char rootname[])
             {
                                         /* This is current working directory */
             if (strlen (directory) == 1) strcpy (abs_directory, workdir);
-                                        /* Must tack on additional directory path */
+                                        /* tack on additional directory path */
             else if (strncmp (directory, "./", 2) == 0)
                 sprintf (abs_directory, "%s%s", workdir, directory + 1);
                                         /* Too nasty to do for now */
@@ -63,36 +62,22 @@ get_abs_path(char input[], char rootname[])
                 }
             else
                 {
-                msg ("Strangely formed directory specification ... quitting", 3);
+                msg ("Strange directory specification ... quitting", 3);
                 return (-1);
                 }
             }
         else                            /* Simple relative pathname */
             sprintf (abs_directory, "%s/%s", workdir, directory);
         }
-                                        /* Ok, we have the full path to the */
-                                        /* directory, and the root filename */
-                                        /* (This error checking should now be */
-                                        /* redundant, because we are using the */
-                                        /* UTIL library to get the names, which */
-                                        /* pre-checks anything that gets here) */
-    /*
-    if ((ret = check_name (r_fname, &fstemp)) != 0)
-        {
-        msg ("Badly formed root file name", 2);
-        msg  ("return code = %d, name = %s",2, ret, r_fname);
-        return (-1);
-        }
-    else if (fstemp.type != 0)
-        {
-        msg ("'%s' not a root file name", 3, r_fname);
-        return (-1);
-        }
-    */
-                                        /* Reconstruct full filename, and we */
-                                        /* are done.  Sometimes bad practise to */
-                                        /* sprintf to an argument, so ... */
-    sprintf (temp, "%s/%s", abs_directory, r_fname);
+
+        /* A redundant check on the root filename at this point
+         * was eliminated as redundant since we presumably came
+         * from the sub/util library which already did it.
+         *
+         * Now reconstruct full filename, and we are done once we
+         * transfer the result to temp and be sure of termination. */
+    snprintf (temp, sizeof(temp)-1, "%s/%s", abs_directory, r_fname);
+    temp[768] = 0;
     strcpy (rootname, temp);
 
     return (0);

@@ -68,6 +68,7 @@ init_000 (struct type_000 *t000,
             }
         }
     if (nslash != 3) err = TRUE;
+    prep_fstruct(&f_info);
     if (check_name (stripname, &f_info) != 0) err = TRUE;
 
     if (err)
@@ -75,17 +76,6 @@ init_000 (struct type_000 *t000,
         msg ("Filename '%s' not a valid correlator filename", 2, filename);
         return (-1);
         }
-
-//                               It appears someone has started using
-//                               improbably long scan directory names, 
-//                               so this sanity check is inappropriate
-//                               CJL, 2 May 2006
-//    if (strlen (dataname) > 39)
-//        {
-//        msg ("Filename '%s' is too long (max 39 chars)", 2, filename);
-//        return (-1);
-//        }
-
     else
         {
         strcpy (t000->name, dataname);

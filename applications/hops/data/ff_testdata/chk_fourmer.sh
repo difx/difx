@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_fourmer.sh 931 2014-02-23 15:12:21Z gbc $
+# $Id: chk_fourmer.sh 4574 2026-05-21 21:30:09Z gbc $
 #
 # a test for fourmer
 #
@@ -73,21 +73,21 @@ for bl in SP SO OP
 do
     rm -f $bl-{ff,fx}.out
     $verb && echo \
-    fourfit -m 1 -b $bl -t $wdir/$root \\ && echo \
+    $fourfit -m 1 -b $bl -t $wdir/$root \\ && echo \
 	set freqs $freqlist pc_mode manual
-    fourfit -m 1 -b $bl -t $wdir/$root \
+    $fourfit -m 1 -b $bl -t $wdir/$root \
 	set freqs $freqlist pc_mode manual >$bl-ff.out 2>&1
     pcp=`grep pc_phases $bl-ff.out`
     [ -n "$pcp" ] || { echo no pc_phases in $bl-ff.out; continue ; }
     $verb && echo \
-    fourfit -m 1 -b $bl $wdir/$root \\ && echo \
+    $fourfit -m 1 -b $bl $wdir/$root \\ && echo \
 	set freqs $freqlist pc_mode manual $pcp
-    fourfit -m 1 -b $bl $wdir/$root \
+    $fourfit -m 1 -b $bl $wdir/$root \
 	set freqs $freqlist pc_mode manual $pcp >$bl-fx.out 2>&1
 done
 
 set -- `ls ??-f?.out | wc -l` 0
-[ $1 -eq 6 ] || { echo fourfit of formed files problem ; exit 4; }
+[ $1 -eq 6 ] || { echo fourfit3 of formed files problem ; exit 4; }
 
 set -- `ls -s 3365/094-0644_HL/*.E.[123].$time` 0 .1. 0 .2. 0 .3.
 [ $1 -ge 100 ] || echo file $2 is too small

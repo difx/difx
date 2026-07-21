@@ -10,7 +10,7 @@
 /* and the program is assumed to be running from a normal terminal      */
 /* session which can be controlled using stty(1) commands.  The         */
 /* hardcopy capability, which is system-dependent, is implemented in    */
-/* the shell script $BIN/pplot_print.                                   */
+/* the shell script $BIN/pplot_print.sh                                 */
 /*                                                                      */
 /*      Inputs:     t221        pointer to type 221 record, filled in   */
 /*                  mode        0=basic, 1='p' and 'n' for prev, next   */
@@ -244,7 +244,7 @@ display_221 (struct type_221 *t221,
                 size = strlen (pplot);
                 fwrite (pplot, 1, size, fp);
                 fclose (fp);
-                sprintf (cmd, "pplot_print %s", ps_file);
+                sprintf (cmd, "pplot_print.sh %s", ps_file);
                 system_retval = system (cmd);
                 msg ("Printing hardcopy of postscript fringe plot", 2);
                                         /* Tidy up */
