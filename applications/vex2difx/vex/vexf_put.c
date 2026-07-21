@@ -48,8 +48,7 @@ fcreate_vex__
 #else
 fcreate_vex
 #endif
-(file_or_screen) 
-char **file_or_screen;
+(char **file_or_screen) 
 /*<      subroutine fcreate_vex(ptr_ch(file_or_screen//char(0)) >*/
 /*<      implicit none >*/
 /*<      character*(*) file_or_screen; >*/
@@ -71,8 +70,7 @@ fcreate_version__
 #else
 fcreate_version
 #endif
-(number) 
-char **number;
+(char **number) 
 /*<      subroutine fcreate_version(ptr_ch(number//char(0)) >*/
 /*<      implicit none >*/
 /*<      character*(*) file_or_screen; >*/
@@ -93,8 +91,7 @@ fcreate_block__
 #else
 fcreate_block
 #endif
-(blockname) 
-char **blockname;
+(char **blockname) 
 /*<      subroutine fcreate_block(ptr_ch(blockname)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) blockname; >*/
@@ -117,8 +114,7 @@ fcreate_def__
 #else
 fcreate_def
 #endif
-(defname) 
-char **defname;
+(char **defname) 
 /*<      subroutine fcreate_def(ptr_ch(defname)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) defname; >*/
@@ -163,8 +159,7 @@ fcreate_qref_qualifier__
 #else
 fcreate_qref_qualifier
 #endif
-(qualifier) 
-char **qualifier;
+(char **qualifier) 
 /*<      subroutine fcreate_qref_qualifier(ptr_ch(qualifier)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) qualifier; >*/
@@ -188,9 +183,7 @@ fcreate_qref__
 #else
 fcreate_qref
 #endif
-(blockname, keyword)
-char **blockname;
-char **keyword;
+(char **blockname, char **keyword)
 /*<      subroutine fcreate_qref(ptr_ch(blockname)//(char *)0, >*/
 /*<                              ptr_ch(keyword)//(char *)0) >*/
 /*<      implicit none >*/
@@ -218,9 +211,7 @@ fcreate_ref__
 #else
 fcreate_ref
 #endif
-(blockname, keyword)
-char **blockname;
-char **keyword;
+(char **blockname, char **keyword)
 /*<      subroutine fcreate_ref(ptr_ch(blockname)//(char *)0, >*/
 /*<                               ptr_ch(keyword)//(char *)0) >*/
 /*<      implicit none >*/
@@ -248,10 +239,7 @@ fcreate_external_ref__
 #else
 fcreate_external_ref
 #endif
-(filename, blockname, keyword) 
-char **filename;
-char **blockname;
-char **keyword;
+(char **filename, char **blockname, char **keyword) 
 /*<      subroutine fcreate_external_ref(ptr_ch(blockname)//(char *)0, >*/
 /*<                                      ptr_ch(filename)//(char *)0, >*/
 /*<                                      ptr_ch(keyword)//(char *)0) >*/
@@ -283,8 +271,7 @@ fcreate_scan__
 #else
 fcreate_scan
 #endif
-(str) 
-char **str;
+(char **str) 
 /*<      subroutine fcreate_scan(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -307,8 +294,7 @@ fend_scan__
 #else
 fend_scan
 #endif
-(str) 
-char **str;
+(char **str) 
 /*<      subroutine fend_scan >*/
 /*<      implicit none >*/
 
@@ -330,9 +316,7 @@ fcreate_comment__
 #else
 fcreate_comment
 #endif
-(where, comment) 
-char **where;
-char **comment;
+(char **where, char **comment) 
 /*<      subroutine fcreate_comment(ptr_ch(where)//(char *)0, >*/
 /*<                               ptr_ch(comment)//(char *)0) >*/
 /*<      implicit none >*/
@@ -359,8 +343,7 @@ fcreate_start__
 #else
 fcreate_start
 #endif
-(str) 
-char **str;
+(char **str) 
 /*<      subroutine fcreate_start(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -383,8 +366,7 @@ fcreate_mode__
 #else
 fcreate_mode
 #endif
-(str) 
-char **str;
+(char **str) 
 /*<      subroutine fcreate_mode(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -407,8 +389,7 @@ fcreate_source__
 #else
 fcreate_source
 #endif
-(str) 
-char **str;
+(char **str) 
 /*<      subroutine fcreate_source(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -431,10 +412,7 @@ fcreate_source2__
 #else
 fcreate_source2
 #endif
-(str,str2,str3)
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3)
 /*<      subroutine fcreate_source2(ptr_ch(str)//(char *)0, >*/
 /*<                                      ptr_ch(str2)//(char *)0, >*/
 /*<                                     ptr_ch(str4)//(char *)0) >*/
@@ -464,8 +442,7 @@ fcreate_source2_stations__
 #else
 fcreate_source2_stations
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_source2_stations(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -490,16 +467,7 @@ fcreate_station__
 #else
 fcreate_station
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8, str9)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
-char **str8;
-char **str9;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7, char **str8, char **str9)
 /*<      subroutine fcreate_station(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0, >*/
 /*<                                 ptr_ch(str3)//(char *)0, >*/
@@ -555,8 +523,7 @@ fcreate_station_drive_list__
 #else
 fcreate_station_drive_list
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_station_drive_list(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -580,15 +547,7 @@ fcreate_data_transfer__
 #else
 fcreate_data_transfer
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
-char **str8;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7, char **str8)
 /*<      subroutine fcreate_data_transfer(ptr_ch(str)//(char *)0, >*/
 /*<                                       ptr_ch(str2)//(char *)0, >*/
 /*<                                       ptr_ch(str3)//(char *)0, >*/
@@ -640,10 +599,7 @@ fcreate_intent__
 #else
 fcreate_intent
 #endif
-(str,str2,str3)
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3)
 /*<      subroutine fcreate_intent(ptr_ch(str)//(char *)0, >*/
 /*<                                      ptr_ch(str2)//(char *)0, >*/
 /*<                                     ptr_ch(str3)//(char *)0) >*/
@@ -673,14 +629,7 @@ fcreate_pointing_offset__
 #else
 fcreate_pointing_offset
 #endif
-(str,str2,str3,str4,str5,str6,str7)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7)
 /*<      subroutine fcreate_pointing_offset(ptr_ch(str)//(char *)0, >*/
 /*<                                      ptr_ch(str2)//(char *)0, >*/
 /*<                                      ptr_ch(str3)//(char *)0, >*/
@@ -722,9 +671,7 @@ fcreate_antenna_diam__
 #else
 fcreate_antenna_diam
 #endif
-(str, str2) 
-char **str;
-char **str2;
+(char **str, char **str2) 
 /*<      subroutine fcreate_antenna_diam(ptr_ch(str)//(char *)0, >*/
 /*<                                      ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -752,11 +699,7 @@ fcreate_axis_type2__
 #else
 fcreate_axis_type2
 #endif
-(str, str2, str3, str4)
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4)
 /*<      subroutine fcreate_axis_type2(ptr_ch(str)//(char *)0, >*/
 /*<                                   ptr_ch(str2)//(char *)0, >*/
 /*<                                   ptr_ch(str3)//(char *)0, >*/
@@ -792,9 +735,7 @@ fcreate_axis_type__
 #else
 fcreate_axis_type
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_axis_type(ptr_ch(str)//(char *)0, >*/
 /*<                                   ptr_ch(str2)//(char *)0) >*/
 /*<                                   ptr_ch(str3)//(char *)0, >*/
@@ -824,9 +765,7 @@ fcreate_axis_offset__
 #else
 fcreate_axis_offset
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_axis_offset(ptr_ch(str)//(char *)0, >*/
 /*<                                     ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -854,12 +793,7 @@ fcreate_antenna_motion__
 #else
 fcreate_antenna_motion
 #endif
-(str, str2, str3, str4, str5)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
+(char **str, char **str2, char **str3, char **str4, char **str5)
 /*<      subroutine fcreate_antenna_motion(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0, >*/
@@ -899,14 +833,7 @@ fcreate_antenna_motion2__
 #else
 fcreate_antenna_motion2
 #endif
-(str, str2, str3, str4, str5, str6, str7)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7)
 /*<      subroutine fcreate_antenna_motion(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0, >*/
@@ -954,18 +881,7 @@ fcreate_pointing_sector__
 #else
 fcreate_pointing_sector
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8, str9,str10,str11)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
-char **str8;
-char **str9;
-char **str10;
-char **str11;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7, char **str8, char **str9, char **str10, char **str11)
 /*<      subroutine fcreate_pointing_sector(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0, >*/
@@ -1029,19 +945,7 @@ fcreate_pointing_sector2__
 #else
 fcreate_pointing_sector2
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8, str9,str10,str11, str12)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
-char **str8;
-char **str9;
-char **str10;
-char **str11;
-char **str12;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7, char **str8, char **str9, char **str10, char **str11, char **str12)
 /*<      subroutine fcreate_pointing_sector2(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0, >*/
@@ -1109,9 +1013,7 @@ fcreate_nasmyth__
 #else
 fcreate_nasmyth
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_nasmyth(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -1139,10 +1041,7 @@ fcreate_bbc_assign__
 #else
 fcreate_bbc_assign
 #endif
-(str, str2, str3) 
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3) 
 /*<      subroutine fcreate_bbc_assign(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0) >*/
@@ -1174,12 +1073,7 @@ fcreate_stream_def__
 #else
 fcreate_stream_def
 #endif
-(str, str2, str3, str4, str5)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
+(char **str, char **str2, char **str3, char **str4, char **str5)
 /*<      subroutine fcreate_stream_def(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0, >*/
@@ -1215,10 +1109,7 @@ fcreate_stream_sample_rate__
 #else
 fcreate_stream_sample_rate
 #endif
-(str, str2, str3)
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3)
 /*<      subroutine fcreate_stream_sample_rate(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0) >*/
@@ -1248,9 +1139,7 @@ fcreate_stream_label__
 #else
 fcreate_stream_label
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_stream_sample_rate(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -1277,19 +1166,7 @@ fcreate_clock__
 #else
 fcreate_clock
 #endif
-(str, str2, str3, str4, str5)
-/*
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-*/
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
+(char **str, char **str2, char **str3, char **str4, char **str5)
 /*<      subroutine fcreate_clock(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0, >*/
@@ -1329,19 +1206,7 @@ fcreate_clock_early__
 #else
 fcreate_clock_early
 #endif
-(str, str2, str3, str4, str5)
-/*
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-*/
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
+(char **str, char **str2, char **str3, char **str4, char **str5)
 /*<      subroutine fcreate_clock_early(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0, >*/
@@ -1381,19 +1246,7 @@ fcreate_clock_early2__
 #else
 fcreate_clock_early2
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8, str9, str10, str11, str12)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
-char **str8;
-char **str9;
-char **str10;
-char **str11;
-char **str12;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7, char **str8, char **str9, char **str10, char **str11, char **str12)
 /*<      subroutine fcreate_clock_early2(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0, >*/
@@ -1461,8 +1314,7 @@ fcreate_record_transport_type__
 #else
 fcreate_record_transport_type
 #endif
-(name) 
-char **name;
+(char **name) 
 /*<      subroutine fcreate_record_transport_type(ptr_ch(name)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) name; >*/
@@ -1485,8 +1337,7 @@ fcreate_electronics_rack_type__
 #else
 fcreate_electronics_rack_type
 #endif
-(name) 
-char **name;
+(char **name) 
 /*<      subroutine fcreate_electronics_rack_type(ptr_ch(name)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) name; >*/
@@ -1509,8 +1360,7 @@ fcreate_number_drives__
 #else
 fcreate_number_drives
 #endif
-(name) 
-char **name;
+(char **name) 
 /*<      subroutine fcreate_number_drives(ptr_ch(name)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) name; >*/
@@ -1533,10 +1383,7 @@ fcreate_headstack__
 #else
 fcreate_headstack
 #endif
-(str, str2, str3) 
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3) 
 /*<      subroutine fcreate_headstack(ptr_ch(str)//(char *)0, >*/
 /*<                                   ptr_ch(str2)//(char *)0, >*/
 /*<                                   ptr_ch(str3)//(char *)0) >*/
@@ -1568,9 +1415,7 @@ fcreate_record_density__
 #else
 fcreate_record_density
 #endif
-(str, str2) 
-char **str;
-char **str2;
+(char **str, char **str2) 
 /*<      subroutine fcreate_record_density(ptr_ch(str)//(char *)0, >*/
 /*<                                        ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -1598,8 +1443,7 @@ fcreate_recording_system_id__
 #else
 fcreate_recording_system_id
 #endif
-(name) 
-char **name;
+(char **name) 
 /*<      subroutine fcreate_recording_system_id(ptr_ch(name)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) name; >*/
@@ -1622,11 +1466,7 @@ fcreate_tape_length__
 #else
 fcreate_tape_length
 #endif
-(str, str2, str3, str4) 
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4) 
 /*<      subroutine fcreate_tape_length(ptr_ch(str)//(char *)0, >*/
 /*<                                     ptr_ch(str2)//(char *)0, >*/
 /*<                                     ptr_ch(str3)//(char *)0, >*/
@@ -1662,14 +1502,7 @@ fcreate_tape_motion__
 #else
 fcreate_tape_motion
 #endif
-(str, str2, str3, str4, str5, str6, str7)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7)
 /*<      subroutine fcreate_tape_motion(ptr_ch(str)//(char *)0, >*/
 /*<                                     ptr_ch(str2)//(char *)0, >*/
 /*<                                     ptr_ch(str3)//(char *)0, >*/
@@ -1717,8 +1550,7 @@ fcreate_tape_control__
 #else
 fcreate_tape_control
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_tape_control(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -1742,11 +1574,7 @@ fcreate_equip__
 #else
 fcreate_equip
 #endif
-(str,str2,str3,str4)
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4)
 /*<      subroutine fcreate_equip(ptr_ch(str)//(char *)0, >*/
 /*<                               ptr_ch(str2)//(char *)0, >*/
 /*<                               ptr_ch(str3)//(char *)0, >*/
@@ -1779,9 +1607,7 @@ fcreate_dvalue_list__
 #else
 fcreate_dvalue_list
 #endif
-(str,str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_dvalue_list(ptr_ch(str)//(char *)0) >*/
 /*<                               ptr_ch(str2)//(char *)0, >*/
 /*<      implicit none >*/
@@ -1808,8 +1634,7 @@ fcreate_svalue_list__
 #else
 fcreate_svalue_list
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_svalue_list(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -1833,8 +1658,7 @@ fcreate_lvalue_list__
 #else
 fcreate_lvalue_list
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_lvalue_list(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -1858,8 +1682,7 @@ fcreate_composite_equip__
 #else
 fcreate_composite_equip
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_composite_equip(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -1883,9 +1706,7 @@ fcreate_equip_set__
 #else
 fcreate_equip_set
 #endif
-(str,str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_equip_set(ptr_ch(str)//(char *)0, >*/
 /*<                                  ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -1912,9 +1733,7 @@ fcreate_equip_info__
 #else
 fcreate_equip_info
 #endif
-(str,str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_equip_info(ptr_ch(str)//(char *)0, >*/
 /*<                                   ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -1941,12 +1760,7 @@ fcreate_connection__
 #else
 fcreate_connection
 #endif
-(str,str2,str3,str4,str5)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
+(char **str, char **str2, char **str3, char **str4, char **str5)
 /*<      subroutine fcreate_equip(ptr_ch(str)//(char *)0, >*/
 /*<                               ptr_ch(str2)//(char *)0, >*/
 /*<                               ptr_ch(str3)//(char *)0, >*/
@@ -1982,12 +1796,7 @@ fcreate_record_method__
 #else
 fcreate_record_method
 #endif
-(str,str2,str3,str4,str5)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
+(char **str, char **str2, char **str3, char **str4, char **str5)
 /*<      subroutine fcreate_record_method(ptr_ch(str)//(char *)0, >*/
 /*<                                      ptr_ch(str2)//(char *)0, >*/
 /*<                                      ptr_ch(str3)//(char *)0, >*/
@@ -2023,8 +1832,7 @@ fcreate_record_control__
 #else
 fcreate_record_control
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_record_control(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2048,10 +1856,7 @@ fcreate_datastream__
 #else
 fcreate_datastream
 #endif
-(str, str2, str3)
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3)
 /*<      subroutine fcreate_datastream(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0) >*/
@@ -2081,16 +1886,7 @@ fcreate_thread__
 #else
 fcreate_thread
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8, str9)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
-char **str8;
-char **str9;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7, char **str8, char **str9)
 /*<      subroutine fcreate_thread(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0, >*/
@@ -2138,11 +1934,7 @@ fcreate_channel__
 #else
 fcreate_channel
 #endif
-(str, str2, str3, str4)
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4)
 /*<      subroutine fcreate_thread(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0, >*/
@@ -2175,9 +1967,7 @@ fcreate_merged_datastream__
 #else
 fcreate_merged_datastream
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_thread(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2204,9 +1994,7 @@ fcreate_tai_utc__
 #else
 fcreate_tai_utc
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_tai_utc(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2234,9 +2022,7 @@ fcreate_a1_tai__
 #else
 fcreate_a1_tai
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_a1_tai(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2264,8 +2050,7 @@ fcreate_eop_ref_epoch__
 #else
 fcreate_eop_ref_epoch
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_eop_ref_epoch(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2289,8 +2074,7 @@ fcreate_num_eop_points__
 #else
 fcreate_num_eop_points
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_num_eop_points(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2314,9 +2098,7 @@ fcreate_eop_interval__
 #else
 fcreate_eop_interval
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_eop_interval(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2344,9 +2126,7 @@ fcreate_ut1_utc__
 #else
 fcreate_ut1_utc
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_ut1_utc(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2374,9 +2154,7 @@ fcreate_x_wobble__
 #else
 fcreate_x_wobble
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_x_wobble(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2404,9 +2182,7 @@ fcreate_y_wobble__
 #else
 fcreate_y_wobble
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_y_wobble(ptr_ch(str)//(char *)0, >*/
 /*<                                  ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2434,8 +2210,7 @@ fcreate_nut_ref_epoch__
 #else
 fcreate_nut_ref_epoch
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_nut_ref_epoch(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2459,8 +2234,7 @@ fcreate_num_nut_points__
 #else
 fcreate_num_nut_points
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_num_nut_points(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2484,9 +2258,7 @@ fcreate_nut_interval__
 #else
 fcreate_nut_interval
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_nut_interval(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2514,9 +2286,7 @@ fcreate_delta_psi__
 #else
 fcreate_delta_psi
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_delta_psi(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2544,9 +2314,7 @@ fcreate_delta_eps__
 #else
 fcreate_delta_eps
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_delta_eps(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2574,8 +2342,7 @@ fcreate_nut_model__
 #else
 fcreate_nut_model
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_nut_model(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2599,9 +2366,7 @@ fcreate_eop_origin__
 #else
 fcreate_eop_origin
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_eop_origin(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2674,9 +2439,7 @@ fcreate_nut_origin__
 #else
 fcreate_nut_origin
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_nut_origin(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2703,8 +2466,7 @@ fcreate_exper_num__
 #else
 fcreate_exper_num
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_exper_num(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2728,9 +2490,7 @@ fcreate_exper_name2__
 #else
 fcreate_exper_name2
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_exper_name2(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -2757,8 +2517,7 @@ fcreate_exper_name__
 #else
 fcreate_exper_name
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_exper_name(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2782,8 +2541,7 @@ fcreate_exper_description__
 #else
 fcreate_exper_description
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_exper_description(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2807,8 +2565,7 @@ fcreate_exper_nominal_start__
 #else
 fcreate_exper_nominal_start
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_exper_nominal_start(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2832,8 +2589,7 @@ fcreate_exper_nominal_stop__
 #else
 fcreate_exper_nominal_stop
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_exper_nominal_stop(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2857,8 +2613,7 @@ fcreate_pi_name__
 #else
 fcreate_pi_name
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_pi_name(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2882,8 +2637,7 @@ fcreate_pi_email__
 #else
 fcreate_pi_email
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_pi_email(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2907,8 +2661,7 @@ fcreate_contact_name__
 #else
 fcreate_contact_name
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_contact_name(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2932,8 +2685,7 @@ fcreate_contact_email__
 #else
 fcreate_contact_email
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_contact_email(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2957,8 +2709,7 @@ fcreate_scheduler_name__
 #else
 fcreate_scheduler_name
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_scheduler_name(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -2982,8 +2733,7 @@ fcreate_scheduler_email__
 #else
 fcreate_scheduler_email
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_scheduler_email(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3007,8 +2757,7 @@ fcreate_target_correlator__
 #else
 fcreate_target_correlator
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_target_correlator(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3032,10 +2781,7 @@ fcreate_scheduling_software__
 #else
 fcreate_scheduling_software
 #endif
-(str, str2, str3)
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3)
 /*<      subroutine fcreate_scheduling_software(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0, >*/
 /*<                                 ptr_ch(str3)//(char *)0) >*/
@@ -3065,10 +2811,7 @@ fcreate_vex_file_writer__
 #else
 fcreate_vex_file_writer
 #endif
-(str, str2, str3)
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3)
 /*<      subroutine fcreate_vex_file_writer(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0, >*/
 /*<                                 ptr_ch(str3)//(char *)0) >*/
@@ -3098,9 +2841,7 @@ fcreate_extension__
 #else
 fcreate_extension
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_extension(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -3128,16 +2869,7 @@ fcreate_chan_def__
 #else
 fcreate_chan_def
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8, str9)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
-char **str8;
-char **str9;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7, char **str8, char **str9)
 /*<      subroutine fcreate_chan_def(ptr_ch(str)//(char *)0, >*/
 /*<                                  ptr_ch(str2)//(char *)0, >*/
 /*<                                  ptr_ch(str3)//(char *)0, >*/
@@ -3192,8 +2924,7 @@ fcreate_chan_def_states__
 #else
 fcreate_chan_def_states
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_chan_def_states(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3218,17 +2949,7 @@ fcreate_chan_def2__
 #else
 fcreate_chan_def2
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8, str9, str10)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
-char **str8;
-char **str9;
-char **str10;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7, char **str8, char **str9, char **str10)
 /*<      subroutine fcreate_chan_def2(ptr_ch(str)//(char *)0, >*/
 /*<                                  ptr_ch(str2)//(char *)0, >*/
 /*<                                  ptr_ch(str3)//(char *)0, >*/
@@ -3287,8 +3008,7 @@ fcreate_chan_def2_states__
 #else
 fcreate_chan_def2_states
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_chan_def2_states(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3313,9 +3033,7 @@ fcreate_sample_rate__
 #else
 fcreate_sample_rate
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_sample_rate(ptr_ch(str)//(char *)0, >*/
 /*<                                  ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -3343,8 +3061,7 @@ fcreate_bits_per_sample__
 #else
 fcreate_bits_per_sample
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_bits_per_sample(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3368,9 +3085,7 @@ fcreate_cycle__
 #else
 fcreate_cycle
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_cycle(ptr_ch(str)//(char *)0, >*/
 /*<                                  ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -3398,8 +3113,7 @@ fcreate_switching_cycle__
 #else
 fcreate_switching_cycle
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_switching_cycle(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3423,9 +3137,7 @@ fcreate_headstack_pos__
 #else
 fcreate_headstack_pos
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_headstack_pos(ptr_ch(str)//(char *)0, >*/
 /*<                                       ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -3453,8 +3165,7 @@ fcreate_headstack_reference__
 #else
 fcreate_headstack_reference
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_headstack_reference(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3478,17 +3189,7 @@ fcreate_if_def__
 #else
 fcreate_if_def
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8, str9,str10)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
-char **str8;
-char **str9;
-char **str10;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7, char **str8, char **str9, char **str10)
 /*<      subroutine fcreate_if_def(ptr_ch(str)//(char *)0, >*/
 /*<                                ptr_ch(str2)//(char *)0, >*/
 /*<                                ptr_ch(str3)//(char *)0, >*/
@@ -3548,18 +3249,7 @@ fcreate_if_def2__
 #else
 fcreate_if_def2
 #endif
-(str, str3, str4, str5, str6, str7, str8, str9,str10,str11,str12)
-char **str;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
-char **str8;
-char **str9;
-char **str10;
-char **str11;
-char **str12;
+(char **str, char **str3, char **str4, char **str5, char **str6, char **str7, char **str8, char **str9, char **str10, char **str11, char **str12)
 /*<      subroutine fcreate_if_def(ptr_ch(str)//(char *)0, >*/
 /*<                                ptr_ch(str3)//(char *)0, >*/
 /*<                                ptr_ch(str4)//(char *)0, >*/
@@ -3623,9 +3313,7 @@ fcreate_receiver_name__
 #else
 fcreate_receiver_name
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_receiver_name(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -3652,8 +3340,7 @@ fcreate_sub_lo_frequencies__
 #else
 fcreate_sub_lo_frequencies
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_sub_lo_frequencies(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3677,8 +3364,7 @@ fcreate_sub_lo_sidebands__
 #else
 fcreate_sub_lo_sidebands
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_sub_lo_sidebands(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3702,11 +3388,7 @@ fcreate_switched_power__
 #else
 fcreate_switched_power
 #endif
-(str,str2,str3,str4)
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4)
 /*<      subroutine fcreate_switched_power(ptr_ch(str)//(char *)0, >*/
 /*<                               ptr_ch(str2)//(char *)0, >*/
 /*<                               ptr_ch(str3)//(char *)0, >*/
@@ -3739,8 +3421,7 @@ fcreate_phase_cal_detect__
 #else
 fcreate_phase_cal_detect
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_phase_cal_detect(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3764,8 +3445,7 @@ fcreate_phase_cal_detect_list__
 #else
 fcreate_phase_cal_detect_list
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_phase_cal_detect_list(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3789,8 +3469,7 @@ fcreate_s2_group_order__
 #else
 fcreate_s2_group_order
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_s2_group_order(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3814,9 +3493,7 @@ fcreate_tape_change__
 #else
 fcreate_tape_change
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_tape_change(ptr_ch(str)//(char *)0, >*/
 /*<                                     ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -3844,8 +3521,7 @@ fcreate_pass_order__
 #else
 fcreate_pass_order
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_pass_order(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -3869,9 +3545,7 @@ fcreate_new_tape_setup__
 #else
 fcreate_new_tape_setup
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_new_tape_setup(ptr_ch(str)//(char *)0, >*/
 /*<                                        ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -3899,9 +3573,7 @@ fcreate_new_source_command__
 #else
 fcreate_new_source_command
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_new_source_command(ptr_ch(str)//(char *)0, >*/
 /*<                                            ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -3929,9 +3601,7 @@ fcreate_headstack_motion__
 #else
 fcreate_headstack_motion
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_headstack_motion(ptr_ch(str)//(char *)0, >*/
 /*<                                          ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -3959,10 +3629,7 @@ fcreate_tape_prepass__
 #else
 fcreate_tape_prepass
 #endif
-(str, str2, str3) 
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3) 
 /*<      subroutine fcreate_tape_prepass(ptr_ch(str)//(char *)0, >*/
 /*<                                      ptr_ch(str2)//(char *)0, >*/
 /*<                                      ptr_ch(str3)//(char *)0) >*/
@@ -3994,10 +3661,7 @@ fcreate_parity_check__
 #else
 fcreate_parity_check
 #endif
-(str, str2, str3) 
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3) 
 /*<      subroutine fcreate_parity_check(ptr_ch(str)//(char *)0, >*/
 /*<                                      ptr_ch(str2)//(char *)0, >*/
 /*<                                      ptr_ch(str3)//(char *)0) >*/
@@ -4029,10 +3693,7 @@ fcreate_setup_always__
 #else
 fcreate_setup_always
 #endif
-(str, str2, str3) 
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3) 
 /*<      subroutine fcreate_setup_always(ptr_ch(str)//(char *)0, >*/
 /*<                                      ptr_ch(str2)//(char *)0, >*/
 /*<                                      ptr_ch(str3)//(char *)0) >*/
@@ -4064,11 +3725,7 @@ fcreate_postob_cal__
 #else
 fcreate_postob_cal
 #endif
-(str, str2, str3, str4) 
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4) 
 /*<      subroutine fcreate_postob_cal(ptr_ch(str)//(char *)0, >*/
 /*<                                    ptr_ch(str2)//(char *)0, >*/
 /*<                                    ptr_ch(str3)//(char *)0, >*/
@@ -4104,11 +3761,7 @@ fcreate_midob_cal__
 #else
 fcreate_midob_cal
 #endif
-(str, str2, str3, str4) 
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4) 
 /*<      subroutine fcreate_midob_cal(ptr_ch(str)//(char *)0, >*/
 /*<                                   ptr_ch(str2)//(char *)0, >*/
 /*<                                   ptr_ch(str3)//(char *)0, >*/
@@ -4144,11 +3797,7 @@ fcreate_preob_cal__
 #else
 fcreate_preob_cal
 #endif
-(str, str2, str3, str4) 
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4) 
 /*<      subroutine fcreate_preob_cal(ptr_ch(str)//(char *)0, >*/
 /*<                                   ptr_ch(str2)//(char *)0, >*/
 /*<                                   ptr_ch(str3)//(char *)0, >*/
@@ -4184,8 +3833,7 @@ fcreate_roll__
 #else
 fcreate_roll
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_roll(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4210,8 +3858,7 @@ fcreate_procedure_name_prefix__
 #else
 fcreate_procedure_name_prefix
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_procedure_name_prefix(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4235,9 +3882,7 @@ fcreate_roll_reinit_period__
 #else
 fcreate_roll_reinit_period
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_roll_reinit_period(ptr_ch(str)//(char *)0, >*/
 /*<                                            ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -4265,8 +3910,7 @@ fcreate_roll_inc_period__
 #else
 fcreate_roll_inc_period
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_roll_inc_period(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4290,8 +3934,7 @@ fcreate_roll_def__
 #else
 fcreate_roll_def
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_roll_def(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4315,11 +3958,7 @@ fcreate_literal__
 #else
 fcreate_literal
 #endif
-(str)
-     /*
-char **str;
-*/
-char **str;
+(char **str)
 /*<      subroutine fcreate_literal(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4343,8 +3982,7 @@ fcreate_sefd_model__
 #else
 fcreate_sefd_model
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_sefd_model(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4368,8 +4006,7 @@ fcreate_sefd_model_parameter__
 #else
 fcreate_sefd_model_parameter
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_sefd_model_parameter(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4393,10 +4030,7 @@ fcreate_sefd__
 #else
 fcreate_sefd
 #endif
-(str, str2, str3) 
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3) 
 /*<      subroutine fcreate_sefd(ptr_ch(str)//(char *)0, >*/
 /*<                              ptr_ch(str2)//(char *)0, >*/
 /*<                              ptr_ch(str3)//(char *)0) >*/
@@ -4426,8 +4060,7 @@ fcreate_site_name__
 #else
 fcreate_site_name
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_site_name(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4451,8 +4084,7 @@ fcreate_site_type__
 #else
 fcreate_site_type
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_site_type(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4476,9 +4108,7 @@ fcreate_site_id2__
 #else
 fcreate_site_id2
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_site_id(ptr_ch(str)//(char *)0) >*/
 /*<                              ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -4507,8 +4137,7 @@ fcreate_site_id__
 #else
 fcreate_site_id
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_site_id(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4532,13 +4161,7 @@ fcreate_site_position__
 #else
 fcreate_site_position
 #endif
-(str, str2, str3, str4, str5, str6)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6)
 /*<      subroutine fcreate_site_position(ptr_ch(str)//(char *)0, >*/
 /*<                                       ptr_ch(str2)//(char *)0, >*/
 /*<                                       ptr_ch(str3)//(char *)0, >*/
@@ -4582,8 +4205,7 @@ fcreate_site_position_epoch__
 #else
 fcreate_site_position_epoch
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_site_position_epoch(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4607,8 +4229,7 @@ fcreate_site_position_ref__
 #else
 fcreate_site_position_ref
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_site_position_ref(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4632,13 +4253,7 @@ fcreate_site_velocity__
 #else
 fcreate_site_velocity
 #endif
-(str, str2, str3, str4, str5, str6)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6)
 /*<      subroutine fcreate_site_velocity(ptr_ch(str)//(char *)0, >*/
 /*<                                       ptr_ch(str2)//(char *)0, >*/
 /*<                                       ptr_ch(str3)//(char *)0, >*/
@@ -4682,8 +4297,7 @@ fcreate_horizon_map_az__
 #else
 fcreate_horizon_map_az
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_horizon_map_az >*/
 /*<      implicit none >*/
 
@@ -4706,8 +4320,7 @@ fcreate_horizon_map_el__
 #else
 fcreate_horizon_map_el
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_horizon_map_el >*/
 /*<      implicit none >*/
 
@@ -4730,9 +4343,7 @@ fcreate_horizon_map__
 #else
 fcreate_horizon_map
 #endif
-(str, str2) 
-char **str;
-char **str2;
+(char **str, char **str2) 
 /*<      subroutine fcreate_horizon_map(ptr_ch(str)//(char *)0, >*/
 /*<                                        ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -4759,9 +4370,7 @@ fcreate_zen_atmos__
 #else
 fcreate_zen_atmos
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_zen_atmos(ptr_ch(str)//(char *)0, >*/
 /*<                                   ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -4789,11 +4398,7 @@ fcreate_ocean_load_vert__
 #else
 fcreate_ocean_load_vert
 #endif
-(str, str2, str3, str4) 
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4) 
 /*<      subroutine fcreate_ocean_load_vert(ptr_ch(str)//(char *)0, >*/
 /*<                                         ptr_ch(str2)//(char *)0, >*/
 /*<                                         ptr_ch(str3)//(char *)0, >*/
@@ -4829,11 +4434,7 @@ fcreate_ocean_load_horiz__
 #else
 fcreate_ocean_load_horiz
 #endif
-(str, str2, str3, str4) 
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4) 
 /*<      subroutine fcreate_ocean_load_horiz(ptr_ch(str)//(char *)0, >*/
 /*<                                          ptr_ch(str2)//(char *)0, >*/
 /*<                                          ptr_ch(str3)//(char *)0, >*/
@@ -4869,8 +4470,7 @@ fcreate_occupation_code__
 #else
 fcreate_occupation_code
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_occupation_code(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4894,9 +4494,7 @@ fcreate_inclination__
 #else
 fcreate_inclination
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_inclination(ptr_ch(str)//(char *)0, >*/
 /*<                                     ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -4924,8 +4522,7 @@ fcreate_eccentricity__
 #else
 fcreate_eccentricity
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_eccentricity(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -4949,9 +4546,7 @@ fcreate_arg_perigee__
 #else
 fcreate_arg_perigee
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_arg_perigee(ptr_ch(str)//(char *)0, >*/
 /*<                                     ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -4979,9 +4574,7 @@ fcreate_ascending_node__
 #else
 fcreate_ascending_node
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_ascending_node(ptr_ch(str)//(char *)0, >*/
 /*<                                        ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -5009,9 +4602,7 @@ fcreate_mean_anomaly__
 #else
 fcreate_mean_anomaly
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_mean_anomaly(ptr_ch(str)//(char *)0, >*/
 /*<                                      ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -5039,9 +4630,7 @@ fcreate_semi_major_axis__
 #else
 fcreate_semi_major_axis
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_semi_major_axis(ptr_ch(str)//(char *)0, >*/
 /*<                                         ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -5069,8 +4658,7 @@ fcreate_mean_motion__
 #else
 fcreate_mean_motion
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_mean_motion(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5094,8 +4682,7 @@ fcreate_orbit_epoch__
 #else
 fcreate_orbit_epoch
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_orbit_epoch(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5119,9 +4706,7 @@ fcreate_source_type__
 #else
 fcreate_source_type
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_source_type(ptr_ch(str)//(char *)0, >*/
 /*<                                     ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -5148,10 +4733,7 @@ fcreate_source_type2__
 #else
 fcreate_source_type2
 #endif
-(str, str2, str3)
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3)
 /*<      subroutine fcreate_source_type(ptr_ch(str)//(char *)0, >*/
 /*<                                     ptr_ch(str2)//(char *)0, >*/
 /*<                                     ptr_ch(str3)//(char *)0) >*/
@@ -5181,8 +4763,7 @@ fcreate_source_name__
 #else
 fcreate_source_name
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_source_name(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5206,8 +4787,7 @@ fcreate_ra__
 #else
 fcreate_ra
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_ra(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5231,8 +4811,7 @@ fcreate_iau_name__
 #else
 fcreate_iau_name
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_IAU_name(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5256,8 +4835,7 @@ fcreate_dec__
 #else
 fcreate_dec
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_dec(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5281,8 +4859,7 @@ fcreate_ref_coord_frame__
 #else
 fcreate_ref_coord_frame
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_ref_coord_frame(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5306,8 +4883,7 @@ fcreate_source_position_ref__
 #else
 fcreate_source_position_ref
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_source_position_ref(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5332,8 +4908,7 @@ fcreate_source_position_epoch__
 #else
 fcreate_source_position_epoch
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_source_position_epoch(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5358,9 +4933,7 @@ fcreate_ra_rate__
 #else
 fcreate_ra_rate
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_ra_rate(ptr_ch(str)//(char *)0, >*/
 /*<                                 ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -5389,9 +4962,7 @@ fcreate_dec_rate__
 #else
 fcreate_dec_rate
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_dec_rate(ptr_ch(str)//(char *)0, >*/
 /*<                                  ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -5420,9 +4991,7 @@ fcreate_velocity_wrt_lsr__
 #else
 fcreate_velocity_wrt_lsr
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_velocity_wrt_LSR(ptr_ch(str)//(char *)0, >*/
 /*<                                          ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -5451,20 +5020,7 @@ fcreate_source_model__
 #else
 fcreate_source_model
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8, str9,str10,str11,str12,str13)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
-char **str8;
-char **str9;
-char **str10;
-char **str11;
-char **str12;
-char **str13;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7, char **str8, char **str9, char **str10, char **str11, char **str12, char **str13)
 /*<      subroutine fcreate_source_model(ptr_ch(str)//(char *)0, >*/
 /*<                                      ptr_ch(str2)//(char *)0, >*/
 /*<                                      ptr_ch(str3)//(char *)0, >*/
@@ -5538,8 +5094,7 @@ fcreate_bsp_file_name__
 #else
 fcreate_bsp_file_name
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_bsp_file_name(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5563,8 +5118,7 @@ fcreate_bsp_object_id__
 #else
 fcreate_bsp_object_id
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_bsp_object_id(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5588,8 +5142,7 @@ fcreate_tle0__
 #else
 fcreate_tle0
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_tle0(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5613,8 +5166,7 @@ fcreate_tle1__
 #else
 fcreate_tle1
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_tle1(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5638,8 +5190,7 @@ fcreate_tle2__
 #else
 fcreate_tle2
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_tle2(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5663,14 +5214,7 @@ fcreate_datum__
 #else
 fcreate_datum
 #endif
-(str, str2, str3, str4, str5, str6, str7)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7)
 /*<      subroutine fcreate_datum(ptr_ch(str)//(char *)0, >*/
 /*<                                     ptr_ch(str2)//(char *)0, >*/
 /*<                                     ptr_ch(str3)//(char *)0, >*/
@@ -5718,21 +5262,7 @@ fcreate_vector__
 #else
 fcreate_vector
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8, str9, str10, str11,
- str12, str13)
-char **str;
-char **str2;
-char **str3;
-char **str4;
-char **str5;
-char **str6;
-char **str7;
-char **str8;
-char **str9;
-char **str10;
-char **str11;
-char **str12;
-char **str13;
+(char **str, char **str2, char **str3, char **str4, char **str5, char **str6, char **str7, char **str8, char **str9, char **str10, char **str11, char **str12, char **str13)
 /*<      subroutine fcreate_vector(ptr_ch(str)//(char *)0, >*/
 /*<                                     ptr_ch(str2)//(char *)0, >*/
 /*<                                     ptr_ch(str3)//(char *)0, >*/
@@ -5804,11 +5334,7 @@ fcreate_vsn__
 #else
 fcreate_vsn
 #endif
-(str, str2, str3, str4)
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4)
 /*<      subroutine fcreate_vsn(ptr_ch(str)//(char *)0, >*/
 /*<                          ptr_ch(str2)//(char *)0, >*/
 /*<                          ptr_ch(str3)//(char *)0, >*/
@@ -5845,11 +5371,7 @@ fcreate_vsn2__
 #else
 fcreate_vsn2
 #endif
-(str, str2, str3, str4)
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4)
 /*<      subroutine fcreate_vsn2(ptr_ch(str)//(char *)0, >*/
 /*<                          ptr_ch(str2)//(char *)0, >*/
 /*<                          ptr_ch(str3)//(char *)0, >*/
@@ -5886,10 +5408,7 @@ fcreate_fanin_def__
 #else
 fcreate_fanin_def
 #endif
-(str, str2, str3) 
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3) 
 /*<      subroutine fcreate_fanin_def(ptr_ch(str)//(char *)0, >*/
 /*<                                   ptr_ch(str2)//(char *)0, >*/
 /*<                                   ptr_ch(str3)//(char *)0) >*/
@@ -5921,8 +5440,7 @@ fcreate_fanin_def_list__
 #else
 fcreate_fanin_def_list
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fanin_def_list(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5946,8 +5464,7 @@ fcreate_fanout_def_subpass__
 #else
 fcreate_fanout_def_subpass
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fanout_def_subpass(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5971,8 +5488,7 @@ fcreate_fanout_def_headstack__
 #else
 fcreate_fanout_def_headstack
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fanout_def_headstack(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -5996,8 +5512,7 @@ fcreate_fanout_trksid_list__
 #else
 fcreate_fanout_trksid_list
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fanout_trksid_list(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -6021,8 +5536,7 @@ fcreate_fanout_bitstream_list__
 #else
 fcreate_fanout_bitstream_list
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fanout_bitstream_list(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -6046,8 +5560,7 @@ fcreate_track_frame_format__
 #else
 fcreate_track_frame_format
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_track_frame_format(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -6071,8 +5584,7 @@ fcreate_data_modulation__
 #else
 fcreate_data_modulation
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_data_modulation(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -6096,11 +5608,7 @@ fcreate_vlba_frmtr_sys_trk__
 #else
 fcreate_vlba_frmtr_sys_trk
 #endif
-(str, str2, str3, str4) 
-char **str;
-char **str2;
-char **str3;
-char **str4;
+(char **str, char **str2, char **str3, char **str4) 
 /*<      subroutine fcreate_vlba_frmtr_sys_trk(ptr_ch(str)//(char *)0, >*/
 /*<                                            ptr_ch(str2)//(char *)0, >*/
 /*<                                            ptr_ch(str3)//(char *)0, >*/
@@ -6136,9 +5644,7 @@ fcreate_vlba_trnsprt_sys_trk__
 #else
 fcreate_vlba_trnsprt_sys_trk
 #endif
-(str, str2)
-char **str;
-char **str2;
+(char **str, char **str2)
 /*<      subroutine fcreate_vlba_trnsprt_sys_trk(ptr_ch(str)//(char *)0, >*/
 /*<                                              ptr_ch(str2)//(char *)0) >*/
 /*<      implicit none >*/
@@ -6167,8 +5673,7 @@ fcreate_s2_recording_mode__
 #else
 fcreate_s2_recording_mode
 #endif
-(str)
-char **str;
+(char **str)
 /*<      subroutine fcreate_s2_recording_mode(ptr_ch(str)//(char *)0) >*/
 /*<      implicit none >*/
 /*<      character*(*) str; >*/
@@ -6192,10 +5697,7 @@ fcreate_s2_data_source__
 #else
 fcreate_s2_data_source
 #endif
-(str, str2, str3) 
-char **str;
-char **str2;
-char **str3;
+(char **str, char **str2, char **str3) 
 /*<      subroutine fcreate_s2_data_source(ptr_ch(str)//(char *)0, >*/
 /*<                                        ptr_ch(str2)//(char *)0, >*/
 /*<                                        ptr_ch(str3)//(char *)0) >*/

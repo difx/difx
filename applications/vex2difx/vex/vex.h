@@ -889,7 +889,7 @@ void print_qualifiers(struct llist *items);
 void print_lowl(struct llist *items);
 void print_lowl_st(int statement, void *ptr);
 
-void print_def_block(struct llist *items, void func());
+void print_def_block(struct llist *items, void func(struct llist *));
 void print_external(struct external *this_);
 
 void print_svalue(char *svalue);
@@ -1099,7 +1099,7 @@ get_literals(Llist **lowls_literal, char *station_in,
 int vex_open(const char *name, struct vex **vex);
 
 void
-create_vex(); /* (int screen_or_file) * zero(0) or one(1) resp.*/
+create_vex(char *); /* (int screen_or_file) * zero(0) or one(1) resp.*/
 
 void
 create_block(char *str);
