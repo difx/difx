@@ -97,7 +97,7 @@ struct {                          /* struct for bl means by source */
        int nsums;
        } sors[MAXSOR];
 
-void addsec();
+void addsec(char *);
 int parse_station_name (char *in_line, int nbl, char *ref, char *rem);
 
 // char progname[8] = "snratio";

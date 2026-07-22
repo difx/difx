@@ -1,3 +1,4 @@
+from .hopstestb import check_thread_is_alive
 from .hopstestb import FourFitThread
 from .hopstestb import find_fringe_files
 from .hopstestb import file_list_difference

@@ -76,6 +76,10 @@ int do_record_merge(char *fileAName, char *fileBName,
          
     get_abs_path (fileAName, fileAFullName);
     get_abs_path (fileBName, fileBFullName);
+
+    /* wipe garbage from these stack variables */
+    memset(&fsetA, 0, sizeof(struct fileset));
+    memset(&fsetB, 0, sizeof(struct fileset));
     
     get_fileset (fileAFullName, &fsetA);
                         // loop through all type-1 files related to A
@@ -205,7 +209,7 @@ int do_record_merge(char *fileAName, char *fileBName,
                 for (n = lasti+1; n < NUM_CH_MAP; n++)
                     if (t101->index == index_map[n][0])
                         {
-                        char *did = (index_map[n][0] == index_map[n][1])
+                        const char *did = (index_map[n][0] == index_map[n][1])
                                   ? "(remains)" : "(changed)";
                         msg("i=%d: %s %d to %d",
                             0, j, did, t101->index, index_map[n][1]);
@@ -400,7 +404,7 @@ int do_record_merge(char *fileAName, char *fileBName,
 
             get_abs_path(temp, fileFullName);
                             // copy A's data into C
-            sdataC = malloc(sizeof(sdataA));
+            sdataC = (struct mk4_sdata*) malloc(sizeof(sdataA));
             memcpy(sdataC, &sdataA, sizeof(sdataA));
                             // append copy B to copy C
                             // editing channel names as required

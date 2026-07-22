@@ -1,0 +1,1105 @@
+$OVEX_REV;
+rev = 1.5;
+*----------------------- begin $GLOBAL             ----------------------* 
+$GLOBAL;
+    ref $EXPER = RD0402;
+    ref $EOP = EOP112;
+*-----------------------   end $GLOBAL             ----------------------* 
+*----------------------- begin $EXPER              ----------------------* 
+$EXPER;
+  def RD0402;
+    exper_name = RD0402;
+    exper_num=3064;
+    exper_description = "R&D-2";
+    PI_name = nrv;
+    target_correlator = Haystack;
+  enddef;
+*-----------------------   end $EXPER              ----------------------* 
+*----------------------- begin $MODE               ----------------------* 
+$MODE;
+  def GEOSX8F-8F;
+    ref $FREQ = GEOSX8F-8F01:Kk:Ny:Wf:Wz;
+    ref $BBC = GEOSX8F-8F01:Kk;
+    ref $BBC = GEOSX8F-8F02:Ny:Wf:Wz;
+    ref $IF = GEOSX8F-8F01:Kk;
+    ref $IF = GEOSX8F-8F02:Ny:Wf:Wz;
+    ref $TRACKS = Mk34122-8F01:Kk:Ny:Wf:Wz;
+    ref $HEAD_POS = Mk34122-8F01:Kk:Ny:Wf:Wz;
+    ref $PASS_ORDER = Mk34122-8F01:Kk:Ny:Wf:Wz;
+    ref $ROLL = NO_ROLL:Kk:Ny:Wf:Wz;
+    ref $PHASE_CAL_DETECT = Standard:Kk:Ny:Wf:Wz;
+    ref $TRACKS = Mark4_format:Kk:Ny:Wf:Wz;
+  enddef;
+*-----------------------   end $MODE               ----------------------* 
+*----------------------- begin $EOP                ----------------------* 
+$EOP;
+ def EOP112;
+  TAI-UTC = 31 sec;
+  A1-TAI = 0.03439 sec;
+  eop_ref_epoch = 2004y111;
+  num_eop_points = 4;
+  eop_interval = 24 hr;
+  ut1-utc   = -0.451509 sec : -0.452109 sec : -0.452528 sec :-0.452593 sec ;
+  x_wobble  = -0.13280 asec : -0.13291 asec : -0.13326 asec :-0.13303 asec ;
+  y_wobble  =  0.37718 asec :  0.38021 asec :  0.38267 asec : 0.38509 asec ;
+ enddef;
+*-----------------------   end $EOP                ----------------------* 
+*----------------------- begin $CLOCK              ----------------------* 
+$CLOCK;
+ def Kk;  clock_early = 2004y112d00h00m :  0.081 usec : 2004y112d22h09m0s :   0.00e-12; enddef;
+ def Ny;  clock_early = 2004y112d00h00m :-16.690 usec : 2004y112d22h09m0s :   0.00e-12;
+          clock_early = 2004y113d05h46m :-16.457 usec : 2004y113d05h46m0s :   0.00e-12; enddef;
+ def Wf;  clock_early = 2004y112d00h00m :  5.300 usec : 2004y112d22h09m0s :   0.00e-12; enddef;
+ def Wz;  clock_early = 2004y112d00h00m : -7.768 usec : 2004y112d22h09m0s :  -0.45e-12; enddef;
+*-----------------------   end $CLOCK              ----------------------* 
+*----------------------- begin $STATION            ----------------------* 
+$STATION;
+  def Kk;
+    ref $SITE = KOKEE;
+    ref $ANTENNA = KOKEE;
+    ref $DAS = VLBA4_rack;
+    ref $DAS = Kk_102;
+*    ref $DAS = VLBA4_recorder;
+    ref $DAS = Mark5_recorder;
+    ref $DAS = 1_recorder;
+*    ref $DAS = thin_tape;
+*    ref $DAS = high_density;
+    ref $CLOCK = Kk;
+  enddef;
+  def Ny;
+    ref $SITE = NYALES20;
+    ref $ANTENNA = NYALES20;
+    ref $DAS = Mark4_rack;
+    ref $DAS = Ny_66;
+*    ref $DAS = Mark4_recorder;
+    ref $DAS = Mark5_recorder;
+    ref $DAS = 1_recorder;
+*    ref $DAS = thin_tape;
+*    ref $DAS = high_density;
+    ref $CLOCK = Ny;
+  enddef;
+  def Wf;
+    ref $SITE = WESTFORD;
+    ref $ANTENNA = WESTFORD;
+    ref $DAS = Mark4_rack;
+    ref $DAS = Wf_07;
+*    ref $DAS = Mark4_recorder;
+    ref $DAS = Mark5_recorder;
+    ref $DAS = 1_recorder;
+*    ref $DAS = thin_tape;
+*    ref $DAS = high_density;
+    ref $CLOCK = Wf;
+  enddef;
+  def Wz;
+    ref $SITE = WETTZELL;
+    ref $ANTENNA = WETTZELL;
+    ref $DAS = Mark4_rack;
+    ref $DAS = Wz_33;
+*    ref $DAS = Mark4_recorder;
+    ref $DAS = Mark5_recorder;
+    ref $DAS = 1_recorder;
+*    ref $DAS = thin_tape;
+*    ref $DAS = high_density;
+    ref $CLOCK = Wz;
+  enddef;
+*-----------------------   end $STATION            ----------------------* 
+*----------------------- begin $ANTENNA            ----------------------* 
+$ANTENNA;
+  def KOKEE;
+    antenna_diam =  20.00 m;
+    axis_type = az : el;
+    axis_offset = el:    .50800 m;
+    antenna_motion = az : 120.0 deg/min :     2 sec;
+    antenna_motion = el : 120.0 deg/min :     2 sec;
+    pointing_sector = &n : az :  270.0 deg :  810.0 deg : el :     .0 deg :   89.7 deg;
+  enddef;
+  def NYALES20;
+    antenna_diam =  20.00 m;
+    axis_type = az : el;
+    axis_offset = el:    .00000 m;
+    antenna_motion = az : 120.0 deg/min :     7 sec;
+    antenna_motion = el : 120.0 deg/min :     7 sec;
+    pointing_sector = &n : az :  260.0 deg :  809.0 deg : el :     .0 deg :   89.7 deg;
+  enddef;
+  def WESTFORD;
+    antenna_diam =  18.00 m;
+    axis_type = az : el;
+    axis_offset = el:    .31800 m;
+    antenna_motion = az : 200.0 deg/min :    10 sec;
+    antenna_motion = el : 120.0 deg/min :    10 sec;
+    pointing_sector = &n : az :  100.0 deg :  460.0 deg : el :    4.0 deg :   87.2 deg;
+  enddef;
+  def WETTZELL;
+    antenna_diam =  20.00 m;
+    axis_type = az : el;
+    axis_offset = el:    .00000 m;
+    antenna_motion = az : 180.0 deg/min :     0 sec;
+    antenna_motion = el :  90.0 deg/min :     0 sec;
+    pointing_sector = &n : az :  270.0 deg :  810.0 deg : el :    2.0 deg :   89.0 deg;
+  enddef;
+*-----------------------   end $ANTENNA            ----------------------* 
+*----------------------- begin $BBC                ----------------------* 
+$BBC;
+  def GEOSX8F-8F01;
+    BBC_assign = &BBC01 : 01 : &IF_A;
+    BBC_assign = &BBC02 : 02 : &IF_A;
+    BBC_assign = &BBC03 : 03 : &IF_A;
+    BBC_assign = &BBC04 : 04 : &IF_A;
+    BBC_assign = &BBC05 : 05 : &IF_C;
+    BBC_assign = &BBC06 : 06 : &IF_C;
+    BBC_assign = &BBC07 : 07 : &IF_C;
+    BBC_assign = &BBC08 : 08 : &IF_C;
+    BBC_assign = &BBC09 : 09 : &IF_B;
+    BBC_assign = &BBC10 : 10 : &IF_B;
+    BBC_assign = &BBC11 : 11 : &IF_B;
+    BBC_assign = &BBC12 : 12 : &IF_B;
+    BBC_assign = &BBC13 : 13 : &IF_B;
+    BBC_assign = &BBC14 : 14 : &IF_B;
+  enddef;
+  def GEOSX8F-8F02;
+    BBC_assign = &BBC01 : 01 : &IF_1N;
+    BBC_assign = &BBC02 : 02 : &IF_1N;
+    BBC_assign = &BBC03 : 03 : &IF_1N;
+    BBC_assign = &BBC04 : 04 : &IF_1N;
+    BBC_assign = &BBC05 : 05 : &IF_3N;
+    BBC_assign = &BBC06 : 06 : &IF_3N;
+    BBC_assign = &BBC07 : 07 : &IF_3N;
+    BBC_assign = &BBC08 : 08 : &IF_3N;
+    BBC_assign = &BBC09 : 09 : &IF_2N;
+    BBC_assign = &BBC10 : 10 : &IF_2N;
+    BBC_assign = &BBC11 : 11 : &IF_2N;
+    BBC_assign = &BBC12 : 12 : &IF_2N;
+    BBC_assign = &BBC13 : 13 : &IF_2N;
+    BBC_assign = &BBC14 : 14 : &IF_2N;
+  enddef;
+*-----------------------   end $BBC                ----------------------* 
+*----------------------- begin $DAS                ----------------------* 
+$DAS;
+  def VLBA4_rack;
+    electronics_rack_type = VLBA;
+  enddef;
+  def Mark4_rack;
+    electronics_rack_type = Mark4;
+  enddef;
+  def Mark5_recorder;
+    record_transport_type = Mark5A;
+  enddef;
+  def Kk_102;
+    recording_system_ID = 102;
+  enddef;
+  def Ny_66;
+    recording_system_ID = 66;
+  enddef;
+  def Wf_07;
+    recording_system_ID = 07;
+  enddef;
+  def Wz_33;
+    recording_system_ID = 33;
+  enddef;
+  def 1_recorder;
+    number_drives = 1;
+  enddef;
+*-----------------------   end $DAS                ----------------------* 
+*----------------------- begin $FREQ               ----------------------* 
+$FREQ;
+  def GEOSX8F-8F01;
+    chan_def = X1U : &X : 8212.99 MHz : U : 16.000 MHz : &Ch01 : &BBC01 : &X_cal;
+    chan_def = X1L : &X : 8212.99 MHz : L : 16.000 MHz : &Ch02 : &BBC01 : &L_cal;
+    chan_def = X2U : &X : 8252.99 MHz : U : 16.000 MHz : &Ch03 : &BBC02 : &X_cal;
+    chan_def = X3U : &X : 8352.99 MHz : U : 16.000 MHz : &Ch04 : &BBC03 : &X_cal;
+    chan_def = X4U : &X : 8512.99 MHz : U : 16.000 MHz : &Ch05 : &BBC04 : &X_cal;
+    chan_def = X5U : &X : 8732.99 MHz : U : 16.000 MHz : &Ch06 : &BBC05 : &X_cal;
+    chan_def = X6U : &X : 8852.99 MHz : U : 16.000 MHz : &Ch07 : &BBC06 : &X_cal;
+    chan_def = X7U : &X : 8912.99 MHz : U : 16.000 MHz : &Ch08 : &BBC07 : &X_cal;
+    chan_def = X8U : &X : 8932.99 MHz : U : 16.000 MHz : &Ch09 : &BBC08 : &X_cal;
+    chan_def = X8L : &X : 8932.99 MHz : L : 16.000 MHz : &Ch10 : &BBC08 : &L_cal;
+    chan_def = S1U : &S : 2213.99 MHz : U : 16.000 MHz : &Ch11 : &BBC09 : &S_cal;
+    chan_def = S2U : &S : 2243.99 MHz : U : 16.000 MHz : &Ch12 : &BBC10 : &S_cal;
+    chan_def = S3U : &S : 2288.99 MHz : U : 16.000 MHz : &Ch13 : &BBC11 : &S_cal;
+    chan_def = S4U : &S : 2303.99 MHz : U : 16.000 MHz : &Ch14 : &BBC12 : &S_cal;
+    chan_def = S5U : &S : 2358.99 MHz : U : 16.000 MHz : &Ch15 : &BBC13 : &S_cal;
+    chan_def = S6U : &S : 2383.99 MHz : U : 16.000 MHz : &Ch16 : &BBC14 : &S_cal;
+    sample_rate = 32.0 Ms/sec;
+  enddef;
+*-----------------------   end $FREQ               ----------------------* 
+*----------------------- begin $HEAD_POS           ----------------------* 
+$HEAD_POS;
+  def Mk34122-8F01;
+    headstack_pos =  1 :  -319 um :   175 um;
+    headstack_pos =  2 :    31 um :  -127 um;
+    headstack_pos =  3 :  -271 um :   223 um;
+    headstack_pos =  4 :    79 um :   -79 um;
+    headstack_pos =  5 :  -223 um :   271 um;
+    headstack_pos =  6 :   127 um :   -31 um;
+    headstack_pos =  7 :  -175 um :     0 um;
+  enddef;
+*-----------------------   end $HEAD_POS           ----------------------* 
+*----------------------- begin $IF                 ----------------------* 
+$IF;
+  def GEOSX8F-8F01;
+    if_def = &IF_A : A : R : 7600.0 MHz : U : 1 MHz : 0 Hz;
+    if_def = &IF_B : B : R : 1500.0 MHz : U : 1 MHz : 0 Hz;
+    if_def = &IF_C : C : R : 8100.0 MHz : U : 1 MHz : 0 Hz;
+  enddef;
+  def GEOSX8F-8F02;
+    if_def = &IF_1N : 1N : R : 8080.0 MHz : U : 1 MHz : 0 Hz;
+    if_def = &IF_2N : 2N : R : 2020.0 MHz : U : 1 MHz : 0 Hz;
+    if_def = &IF_3N : 3N : R : 8580.1 MHz : U : 1 MHz : 0 Hz;
+  enddef;
+*-----------------------   end $IF                 ----------------------* 
+*----------------------- begin $PHASE_CAL_DETECT   ----------------------* 
+$PHASE_CAL_DETECT;
+  def Standard;
+*    phase_cal_detect = &U_cal : 1;
+    phase_cal_detect = &S_cal : 1 : 8;
+    phase_cal_detect = &X_cal : 1 : 5;
+    phase_cal_detect = &L_cal : 0 : 0;
+*Use following line if you want pcal in LSB
+*    phase_cal_detect = &L_cal : -1 : -4;
+  enddef;
+*-----------------------   end $PHASE_CAL_DETECT   ----------------------* 
+*----------------------- begin $PASS_ORDER         ----------------------* 
+$PASS_ORDER;
+  def Mk34122-8F01;
+    pass_order =   1A :   2A :   3A :   4A :   5A :   6A :   7A;
+  enddef;
+*-----------------------   end $PASS_ORDER         ----------------------* 
+*----------------------- begin $ROLL               ----------------------* 
+$ROLL;
+  def NO_ROLL;
+    roll = off;
+  enddef;
+*-----------------------   end $ROLL               ----------------------* 
+*----------------------- begin $SCHED              ----------------------* 
+$SCHED;
+  scan 113-0256;
+    start = 2004y113d02h56m22s;
+    mode = GEOSX8F-8F;
+    source = 4C39.25;
+    station = Kk :    0 sec :   104 sec :     0 ft : 3A : &ccw : 1;
+    station = Ny :    0 sec :    40 sec :  1066 ft : 3A : &ccw : 1;
+    station = Wf :    0 sec :    40 sec :  3483 ft : 6A : &n : 1;
+    station = Wz :    0 sec :   104 sec :     0 ft : 1A : &ccw : 1;
+    fourfit_reftime = 2004y113d02h56m42s;   * Inserted by stcodes program
+  endscan;
+*-----------------------   end $SCHED              ----------------------* 
+*----------------------- begin $SITES              ----------------------* 
+$SITE;
+  def KOKEE;
+    site_type = fixed;
+    site_name = KOKEE;
+    site_ID = Kk;
+mk4_site_ID = K;  * Inserted by stcodes program
+    site_position = -5543837.617 m : -2054567.848 m :  2387851.939 m;
+    occupation_code = 72983001;
+  enddef;
+  def NYALES20;
+    site_type = fixed;
+    site_name = NYALES20;
+    site_ID = Ny;
+mk4_site_ID = N;  * Inserted by stcodes program
+    site_position =  1202462.769 m :   252734.407 m :  6237766.015 m;
+    horizon_map_az =    .0 deg :  10.0 :  60.0 :  65.0 : 120.0 : 128.0 : 150.0 : 152.0 : 162.0 : 176.0 : 190.0 : 226.0 : 230.0 : 250.0 : 256.0 : 266.0 : 270.0 : 290.0 : 310.0 : 360.0;
+    horizon_map_el =   2.0 deg :   4.0 :   4.0 :   2.0 :   2.0 :   5.0 :   5.0 :   7.0 :   9.0 :  12.0 :   5.0 :   8.0 :   6.0 :   6.0 :   7.0 :  12.0 :  12.0 :   4.0 :   2.0 :   2.0;
+    occupation_code = 73313301;
+  enddef;
+  def WESTFORD;
+    site_type = fixed;
+    site_name = WESTFORD;
+    site_ID = Wf;
+mk4_site_ID = E;  * Inserted by stcodes program
+    site_position =  1492206.600 m : -4458130.507 m :  4296015.532 m;
+    horizon_map_az =    .0 deg :  15.0 :  16.0 :  25.0 :  26.0 :  60.0 :  61.0 :  75.0 :  76.0 :  85.0 :  86.0 :  95.0 :  96.0 : 105.0 : 106.0 : 115.0 : 116.0 : 360.0;
+    horizon_map_el =   5.0 deg :   5.0 :   6.0 :   6.0 :   8.0 :   8.0 :   5.0 :   5.0 :   6.5 :   6.5 :   5.0 :   5.0 :   6.5 :   6.5 :   5.0 :   5.0 :   4.0 :   4.0;
+    occupation_code = 72097301;
+  enddef;
+  def WETTZELL;
+    site_type = fixed;
+    site_name = WETTZELL;
+    site_ID = Wz;
+mk4_site_ID = V;  * Inserted by stcodes program
+    site_position =  4075539.899 m :   931735.270 m :  4801629.352 m;
+    horizon_map_az =    .0 deg :  25.0 :  26.0 :  35.0 :  36.0 :  90.0 :  91.0 : 120.0 : 121.0 : 160.0 : 161.0 : 200.0 : 201.0 : 230.0 : 231.0 : 310.0 : 311.0 : 330.0 : 331.0 : 350.0 : 351.0 : 360.0;
+    horizon_map_el =   4.5 deg :   4.5 :   3.0 :   3.0 :   4.5 :   4.5 :   3.0 :   3.0 :   4.0 :   4.0 :   3.0 :   3.0 :   4.0 :   4.0 :   1.0 :   1.0 :   4.0 :   4.0 :   5.0 :   5.0 :   4.5 :   4.5;
+    occupation_code = 72247801;
+  enddef;
+*-----------------------   end $SITES              ----------------------* 
+*----------------------- begin $SOURCE             ----------------------* 
+$SOURCE;
+  def 4C39.25;
+    source_type = star;
+    source_name = 4C39.25;
+    IAU_name = 0923+392;
+    ra = 09h27m03.01391s;
+    dec = 39d02'20.8520";
+    ref_coord_frame = J2000;
+  enddef;
+*-----------------------   end $SOURCE             ----------------------* 
+*----------------------- begin $TRACKS             ----------------------* 
+$TRACKS;
+  def Mk34122-8F01;
+    bits/sample = 2;
+    multiplex_ratio = 2;
+    fanout_def = A : &Ch01 : sign : 1 : 02 : 04;
+    fanout_def = A : &Ch01 : mag : 1 : 10 : 12;
+    fanout_def = A : &Ch02 : sign : 1 : 06 : 08;
+    fanout_def = A : &Ch02 : mag : 1 : 14 : 16;
+    fanout_def = A : &Ch03 : sign : 1 : 18 : 20;
+    fanout_def = A : &Ch03 : mag : 1 : 22 : 24;
+    fanout_def = A : &Ch04 : sign : 1 : 26 : 28;
+    fanout_def = A : &Ch04 : mag : 1 : 30 : 32;
+    fanout_def = A : &Ch05 : sign : 1 : 03 : 05;
+    fanout_def = A : &Ch05 : mag : 1 : 07 : 09;
+    fanout_def = A : &Ch06 : sign : 1 : 11 : 13;
+    fanout_def = A : &Ch06 : mag : 1 : 15 : 17;
+    fanout_def = A : &Ch07 : sign : 1 : 19 : 21;
+    fanout_def = A : &Ch07 : mag : 1 : 23 : 25;
+    fanout_def = A : &Ch08 : sign : 1 : 27 : 29;
+    fanout_def = A : &Ch08 : mag : 1 : 31 : 33;
+    fanout_def = A : &Ch09 : sign : 2 : 02 : 04;
+    fanout_def = A : &Ch09 : mag : 2 : 10 : 12;
+    fanout_def = A : &Ch10 : sign : 2 : 06 : 08;
+    fanout_def = A : &Ch10 : mag : 2 : 14 : 16;
+    fanout_def = A : &Ch11 : sign : 2 : 18 : 20;
+    fanout_def = A : &Ch11 : mag : 2 : 22 : 24;
+    fanout_def = A : &Ch12 : sign : 2 : 26 : 28;
+    fanout_def = A : &Ch12 : mag : 2 : 30 : 32;
+    fanout_def = A : &Ch13 : sign : 2 : 03 : 05;
+    fanout_def = A : &Ch13 : mag : 2 : 07 : 09;
+    fanout_def = A : &Ch14 : sign : 2 : 11 : 13;
+    fanout_def = A : &Ch14 : mag : 2 : 15 : 17;
+    fanout_def = A : &Ch15 : sign : 2 : 19 : 21;
+    fanout_def = A : &Ch15 : mag : 2 : 23 : 25;
+    fanout_def = A : &Ch16 : sign : 2 : 27 : 29;
+    fanout_def = A : &Ch16 : mag : 2 : 31 : 33;
+  enddef;
+  def Mark4_format;
+    track_frame_format = Mark4;
+  enddef;
+* 1999-02-03
+*-------------------------
+$EVEX_REV;
+*-------------------------
+rev = 1.0;
+$EVEX;
+
+
+def 3064_std;
+  corr_exp#   = 3064;
+*
+  ovex_file   = /correlator/data/3064/3064.ovex;
+  lvex_file   = /correlator/data/3064/3064.lvex;
+  cvex_file   = /correlator/sysvex/global.cvex;
+  svex_file   = /correlator/sysvex/global.svex;
+*
+* AP_length   = 0.25 sec;
+  AP_length   = 1.0 sec;
+* AP_length   = 3.0 sec;
+  speedup_factor = 1.0;
+ref $CORR_CONFIG = C32-16NA;  * Override value
+* ref $SU_CONFIG  = std_test;
+  ref $SU_CONFIG  = std_test41;
+*
+  tape_mode   = random;
+  mirror    = allocate : compare : no_save;
+ enddef;
+* System cvex file
+*
+*Example of VEX task-specific correlator configuation file (.cvex).
+*The appropriate $CORR_CONFIG key will be specified for every task in order to
+*properly set up the correlator.
+*
+*Notes:
+*  1. Parameters beginning with '~' are pseudo-parameters to replaced by integers at setup.
+*
+*ARW 991208
+*
+*Revision log:
+*  When   Who     What
+* 991208  ARW     Original
+* 000719  KAD/JAB
+* 001029  JAB     Define S32-6C section configuration
+* 001130  ARW     Add summaries, delete obsolete/non-working modes
+*                 Define H3A; rework S32-11 to be cross-pol friendly
+* 001130  JAB     Modify D32-4CP to support 6 stations, 14 baselines
+* 001208  ARW     Restore mode D32-16A-ZP
+*
+*-----------------------------------------------------------------------------------------------
+$CVEX_REV;
+*-----------------------------------------------------------------------------------------------
+*
+rev = 1.0;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_CONFIG;
+*
+  def C32-16NA;                  *1 slice, 32 complex lags, 16 chans/stn, 8 stns max
+    ref $CORR_MODE = C32-16;
+    ignore_chan_names = off ;    *if 'on', assign virtual chan by SU output position
+                                 *instead of by chan name   
+    auto_corr = off;             * Suppress autocorrelations
+  enddef;
+* 
+*-----------------------------------------------------------------------------------------------
+$CORR_MODE;
+*
+  def C32-16;               *8 stations max, 32 lags, 16 chans/stn
+  *        ------board-----    bd    sect    strt   SU       SU      sect    strt   SU       SU
+  *        segment   slice   parms   mode    chip  chan     chan     mode    chip  chan     chan
+  *                                                (ref)    (rem)                  (ref)    (rem)
+    board = ~seg0 : ~slice0 : std1 : S32-8  :  0 : ~chn0  : ~chn0  : S32-8  :  8 : ~chn1  : ~chn1  :
+                                     S32-8  : 16 : ~chn2  : ~chn2  : S32-8  : 24 : ~chn3  : ~chn3  ;
+    board = ~seg1 : ~slice0 : std1 : S32-8  :  0 : ~chn4  : ~chn4  : S32-8  :  8 : ~chn5  : ~chn5  :
+                                     S32-8  : 16 : ~chn6  : ~chn6  : S32-8  : 24 : ~chn7  : ~chn7  ;
+    board = ~seg2 : ~slice0 : std1 : S32-8  :  0 : ~chn8  : ~chn8  : S32-8  :  8 : ~chn9  : ~chn9  :
+                                     S32-8  : 16 : ~chn10 : ~chn10 : S32-8  : 24 : ~chn11 : ~chn11 ;
+    board = ~seg3 : ~slice0 : std1 : S32-8  :  0 : ~chn12 : ~chn12 : S32-8  :  8 : ~chn13 : ~chn13 : 
+                                     S32-8  : 16 : ~chn14 : ~chn14 : S32-8  : 24 : ~chn15 : ~chn15 ; 
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_BD_PARMS;
+*-----------------------------------------------------------------------------------------------
+*
+*Specifies board-wide correlation parameters
+*
+  def std1;
+  *
+    accum_divide_ratio =   1   ;            *wrt SU data rate
+  *
+  *                       Over   Over
+  *                       BOCF   Data
+    shsmp_divide_ratio =   1   :  1  ;      *wrt SU data rate
+  *
+    sample_count_per_lag_enable = on  ;
+  *
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_SECTION_MODE;
+*
+  def S32-8;
+*                rel   -----------chip inputs-----------
+*               chip#  --X0--   --X1--   --X2--   --X3--
+*   Chip mode B7: X0/X2, X0/X3, X1/X2, X1/X3 cross        *      rem 
+    chip = B7  :  0  : ~stn0  : ~stn1  : ~stn2  : ~stn3  ;*       0  1  2  3  4  5  6  7
+    chip = B7  :  1  : ~stn0  : ~stn1  : ~stn4  : ~stn5  ;*    |------------------------
+    chip = B7  :  2  : ~stn0  : ~stn1  : ~stn6  : ~stn7  ;* r 0| +6  6  0  0  1  1  2  2
+    chip = B7  :  3  : ~stn2  : ~stn3  : ~stn4  : ~stn5  ;* e 1|    -6  0  0  1  1  2  2
+    chip = B7  :  4  : ~stn2  : ~stn3  : ~stn6  : ~stn7  ;* f 2|       +6  6  3  3  4  4
+    chip = B7  :  5  : ~stn4  : ~stn5  : ~stn6  : ~stn7  ;*   3|          -6  3  3  4  4
+*   Chip mode B13: X0/X3, X1/X2 cross; X0,X1,X2,X3 auto   *   4|             +7  7  5  5
+    chip = B13 :  6  : ~stn0  : ~stn2  : ~stn3  : ~stn1  ;*   5|                -7  5  5
+    chip = B13 :  7  : ~stn4  : ~stn6  : ~stn7  : ~stn5  ;*   6|                   +7  7
+  enddef;
+*
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_CHIP_MODE;
+*-----------------------------------------------------------------------------------------------
+*
+*For each block within a chip, specifies all internal chip signal-multiplexor settings
+*(except for the selection of the inputs X0, X1, X2, X3) and the block 'type' as a keyword
+*reference to the $CORR_BLOCK_MODE section.  Also specifies all correlation 'snakes' within
+*the chip.
+*
+*Test for determining whether a chip configuration is compatible with cross-pol processing:
+*  In the 'snake = complex : ...' statements, a signal name which appears in any 'ref'
+*  field may not appear also appear in the 'rem' field.
+*Examples:
+*  1. In configuration B7, X0 and X1 appear as 'ref' signals, and X2 and X3 appear as
+*     'rem' signals (count 2).  There is no overlap, so B7 is cross-pol friendly.
+*  2  In configuration H1, X0 and X1 appear as 'ref' signals, and X1, X2 and X3 appear as
+*     appear as 'rem' signals.  X1 appears in both, so H1 is cross-pol unfriendly.
+*
+*Note: The first field in the 'block=' statement is a reference to the relevant 
+*      $CORR_BLOCK_MODE keyword.
+*
+  def B7;
+  *                     -mux settings- 
+  *                 blk  M0  M1  M2  M3     
+    block = CHEAD  : A0 : 0 : 3 : 0 : 3 ; *            rem 
+    block = CHEAD  : A1 : 0 : 3 : 0 : 4 ; *             X0   X1   X2   X3 
+    block = CHEAD  : A2 : 0 : 3 : 0 : 3 ; *          |-------------------
+    block = CHEAD  : A3 : 0 : 3 : 0 : 4 ; *   ref  X0|           32C  32C
+    block = CDTAIL : B0 : 0 : 3 : 0 : 3 ; *        X1|           32C  32C
+    block = CDTAIL : B1 : 0 : 5 : 0 : 4 ; *        X2|
+    block = CDTAIL : B2 : 0 : 3 : 0 : 3 ; *        X3|
+    block = CDTAIL : B3 : 0 : 5 : 0 : 4 ;
+  *
+  *          type     ref  rem ----snake----------------
+    snake = complex : X0 : X3 : A0l-: B2l;
+    snake = complex : X0 : X2 : A1l-: B3l;
+    snake = complex : X1 : X2 : A2l-: B0l;
+    snake = complex : X1 : X3 : A3l-: B1l;
+  enddef;
+*
+  def B13;
+  *                     -mux settings-
+  *                 blk  M0  M1  M2  M3
+    block = CHEAD  : A0 : 0 : 3 : 0 : 3 ; *            rem 
+    block = AUTO   : A1 : 0 : 2 : 1 : 1 ; *             X0   X1   X2   X3
+    block = CHEAD  : A2 : 0 : 3 : 0 : 3 ; *          |-------------------
+    block = AUTO   : A3 : 0 : 2 : 1 : 1 ; *   ref  X0| 32A            32C
+    block = CDTAIL : B0 : 0 : 3 : 0 : 3 ; *        X1|      32A  32C
+    block = AUTO   : B1 : 0 : 2 : 1 : 1 ; *        X2|           32A
+    block = CDTAIL : B2 : 0 : 3 : 0 : 3 ; *        X3|                32A
+    block = AUTO   : B3 : 0 : 2 : 1 : 1 ;
+  *
+  *          type     ref  rem  ----snake----------------
+    snake = complex : X0 : X3 : A0l-: B2l;
+    snake = complex : X1 : X2 : A2l-: B0l;
+    snake = auto    : X0 :    : A1l : A1r;
+    snake = auto    : X1 :    : A3l : A3r;
+    snake = auto    : X2 :    : B3l : B3r;
+    snake = auto    : X3 :    : B1l : B1r;
+   enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_BLOCK_MODE;
+*-----------------------------------------------------------------------------------------------
+*
+  def CHEAD; * Complex head 
+  *                l_cell r_cell
+    rotator_mode =    3  :  3  ;        *multiply data by sinusoid
+    xdelay =          0  :  0  ;        *xdelay=0
+    ydelay =          0  :  0  ;        *ydelay=0
+    tap_motion_enable =     0  ;        *disable tap motion; lock to zero delay
+    header_mode =           1  ;        *force sample data invalid during header
+    invalid_on_tap_motion = 1  ;        *invalidate data on tap motion
+  enddef;
+*
+  def CDTAIL; * Complex tail with delay 
+  *               l_cell r_cell
+    rotator_mode =   0  :   0  ;        *pass data samples thru unchanged
+    xdelay =         0  :   0  ;        *xdelay=0
+    ydelay =         1  :   1  ;        *ydelay=1
+    tap_motion_enable =     1  ;        *enable tap motion
+    header_mode =           1  ;        *force sample data invalid during header
+    invalid_on_tap_motion = 1  ;        *invalidate data on tap motion
+  enddef;
+*
+  def AUTO; * Autocorrelation head 
+  *                l_cell r_cell
+    rotator_mode =   0   :  0  ;        *pass data samples thru unchanged
+    xdelay =         0   :  0  ;        *xdelay=0
+    ydelay =         0   :  0  ;        *ydelay=0 on left; ydelay=0 on right
+    tap_motion_enable =     0  ;        *disable tap motion; lock to zero delay
+    header_mode =           1  ;        *force sample data invalid during header
+    invalid_on_tap_motion = 0  ;        *irrelevant (no tap motion)
+  enddef;
+*Sample svex file
+*
+*Example of VEX task-specific SU configuation file (.svex).
+*The appropriate $SU_CONFIG key will be specified for every task in order to
+*properly set up each station unit.
+*
+*Notes:
+*  1. Parameters beginning with '~' are to be determined at setup time.
+*
+*ARW 981116
+* 
+*-----------------------------------------------------------------------------------------------
+$SVEX_REV;
+*-----------------------------------------------------------------------------------------------
+*
+rev = 1.0;
+*
+*-----------------------------------------------------------------------------------------------
+$SU_CONFIG;
+*
+    def std_test41; * same as above for std_41 case mat 2001.10.26
+	  ref $SU_CHAN_OUT = std_test41;
+	  ref $PCM_CONFIG = 4x4;
+	enddef;
+*
+
+*-----------------------------------------------------------------------------------------------
+$SU_CHAN_OUT;
+*
+  def std_test41;
+  * JAB was here 2000 May 18 
+  *                         SU-out  recorded      pcal        pcal
+  *                         Chan#   chan ID      freq_a      freq_b
+    channel_out_assignment =  0   : &Ch01    ;  *phase-cal freqs
+                                                *defined in ovex
+    channel_out_assignment =  2   : &Ch02    ;
+    channel_out_assignment =  4   : &Ch03    ;
+    channel_out_assignment =  6   : &Ch04    ;
+    channel_out_assignment =  8   : &Ch05    ;
+    channel_out_assignment = 10   : &Ch06    ;
+    channel_out_assignment = 12   : &Ch07    ;
+    channel_out_assignment = 14   : &Ch08    ;
+
+    channel_out_assignment =  1   : &Ch09    ;
+    channel_out_assignment =  3   : &Ch10    ;
+    channel_out_assignment =  5   : &Ch11    ;
+    channel_out_assignment =  7   : &Ch12    ;
+    channel_out_assignment =  9   : &Ch13    ;
+    channel_out_assignment = 11   : &Ch14    ;
+    channel_out_assignment = 13   : &Ch15    ;
+    channel_out_assignment = 15   : &Ch16    ;
+  enddef;
+
+*-----------------------------------------------------------------------------------------------
+$PCM_CONFIG;            *key specified in evex file
+*-----------------------------------------------------------------------------------------------
+*
+*Specifies algorithm for digital tone extraction by PCM for one channel.
+*'~freq_x' are replaced by tone numbers specified in 'channel_out_assignment=' statement of
+*$CRM_CONFIG (or corresponding defaults).
+*The normalized correlation coefficients are computed as the (dot product of the specified
+*counter values and the corresponding coefficient vector) divided by the Vldty count.
+*The validity count is always in counter 8.
+*See Mark IV memo #133 for explanation of normalization coeficients.
+*
+  def 4x4;   *4-level data, 4-level rotator; 2 tones/channel
+  *       $PCM_TABLES                 MSB        LSB        Vldty
+  *             ref    freq           ctr# coef  ctr# coef   ctr    coef
+    phase_cal = 4x4 : ~freq_a :  sin : 1 : 1.96 : 0 : 0.98 :  8  : -1.47 ;
+    phase_cal = 4x4 : ~freq_a :  cos : 3 : 1.96 : 2 : 0.98 :  8  : -1.47 ;
+    phase_cal = 4x4 : ~freq_b :  sin : 5 : 1.96 : 4 : 0.98 :  8  : -1.47 ;
+    phase_cal = 4x4 : ~freq_b :  cos : 7 : 1.96 : 6 : 0.98 :  8  : -1.47 ;
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$PCM_TABLES;
+*-----------------------------------------------------------------------------------------------
+*
+*Specifies contents of tables to be downloaded to PCM (see Mark IV memo 133).
+*One full period of must be specified in tabular form.
+*
+  def 4x4;
+*                sample
+*                 value        0   30  60 90  120 150 180 210 240 270 300 330 deg
+    table_values=   3 :  sin : 2 : 3 : 3 : 3 : 3 : 2 : 1 : 0 : 0 : 0 : 0 : 1 ;  *>200mv
+    table_values=   2 :  sin : 2 : 2 : 2 : 2 : 2 : 2 : 1 : 1 : 1 : 1 : 1 : 1 ;  *0 to 200mv
+    table_values=   1 :  sin : 1 : 1 : 1 : 1 : 1 : 1 : 2 : 2 : 2 : 2 : 2 : 2 ;  *0 to -200 mv
+    table_values=   0 :  sin : 1 : 0 : 0 : 0 : 0 : 1 : 2 : 3 : 3 : 3 : 3 : 2 ;  *<-200mv
+    table_values=   3 :  cos : 3 : 3 : 2 : 1 : 0 : 0 : 0 : 0 : 1 : 2 : 3 : 3 ;  *>200mv
+    table_values=   2 :  cos : 2 : 2 : 2 : 1 : 1 : 1 : 1 : 1 : 1 : 2 : 2 : 2 ;  *0 to 200mv
+    table_values=   1 :  cos : 1 : 1 : 1 : 2 : 2 : 2 : 2 : 2 : 2 : 1 : 1 : 1 ;  *0 to -200 mv
+    table_values=   0 :  cos : 0 : 0 : 1 : 2 : 3 : 3 : 3 : 3 : 2 : 1 : 0 : 0 ;  *<-200mv
+    tabular_delta_phase = 30 deg;
+  enddef;
+$LVEX_REV;
+rev = 1.0;
+*----------------------
+$LOG;
+*Summary of rd0402kk.log for KOKEE   . Station ID K. 
+*
+  def K;
+    scan 113-0256;
+      VSN = STREAMSTORV3;
+      disc_set_ID = HAY-0009-1942/08 : 8 ;
+      disc_serial = WD-WMA8C1894062 : WD-WMA8C1765120 : WD-WMA8C1696066 : WD-WMA8C1731588 : WD-WMA8C1388557 : WD-WMA8C1726547 : WD-WMA8C1697141 : WD-WMA8C1747193 : ; 
+      start_disc = 2004y113d02h56m22s : 558631264176 ;
+      stop_disc =  2004y113d02h58m06s : 571836831824 ;
+      source = 4C39.25;
+    endscan;
+  enddef;
+*
+*Summary of rd0402ny.log for NyAlesun. Station ID N. 
+*
+  def N;
+    scan 113-0256;
+      VSN = USN-0140/960/1024;
+      disc_set_ID = USN-0140-1925/08 : 8 ;
+      disc_serial = VNVD06G4H7953L : VNVD06G4H799BL : VNVD06G4H78L1L : VNVD06G4H79V1L : VNVD06G4H79UKL : VNVD06G4H79TTL : VNVD06G4H712XL : VNVD06G4H74VSL : ; 
+      start_disc = 2004y113d02h56m22s : 399810838680 ;
+      stop_disc =  2004y113d02h57m02s : 404824345904 ;
+      source = 4C39.25;
+    endscan;
+  enddef;
+*
+*Summary of rd0402wf.log for WESTFORD. Station ID E. 
+*
+  def E;
+    scan 113-0256;
+      VSN = USN-0011/988/1024;
+      disc_set_ID =  USN-0011-1925/08 : 8 ;
+      disc_serial = VNVD02G4GXP1GT : VNVD02G4GXM23T : VNVD02G4GXKZ1T : VNVD02G4GXJB1T : VNVD02G4GXM2NT : VNVD02G4GXJPLT : VNVD02G4GXMXMT : VNVD02G4GXKW7T : ; 
+      start_disc = 2004y113d02h56m22s : 715678570440 ;
+      stop_disc =  2004y113d02h57m02s : 720691995896 ;
+      source = 4C39.25;
+    endscan;
+  enddef;
+*
+*Summary of rd0402wz.log for WETTZELL. Station ID V. 
+*
+  def V;
+    scan 113-0256;
+      VSN = USN-0019/988/1024;
+      disc_set_ID = USN-0019-1934/08 : 8 ;
+      disc_serial = VNVD02G4G4BBBG : VNVD02G4G4V4EG : VNVD02G4G454BG : VNVD02G4G4V44G : VNVD02G4G4BB2G : VNVD02G4G4V4TG : VNVD02G4G4V4UG : VNVD02G4G4BDYG : ; 
+      start_disc = 2004y113d02h56m22s : 249503328992 ;
+      stop_disc =  2004y113d02h58m06s : 262708620896 ;
+      source = 4C39.25;
+    endscan;
+  enddef;
+* Revised:  2000 February 25, SRS 
+* Revised:  2000 February  7, JAB 
+*-------------------------
+$IVEX_REV;
+*-------------------------
+rev = 1.0;
+
+*-------------------------
+$CORR_INIT;
+ 
+ def INIT_5;
+  system_tempo = 1.00;
+* bocf_period = 16000000; *  2 cfs per second
+  bocf_period =  8000000; *  4 cfs per second
+* bocf_period =  6400000; *  5 cfs per second
+* bocf_period =  3200000; * 10 cfs per second
+  header_duration = 1920;
+  *
+  ref $PBS_INIT = PBS_0;
+  ref $PBS_INIT = PBS_1_Mk5;
+*  ref $PBS_INIT = PBS_1;
+  ref $PBS_INIT = PBS_2_Mk5;
+*  ref $PBS_INIT = PBS_2;
+  ref $PBS_INIT = PBS_3_Mk5;
+*  ref $PBS_INIT = PBS_3;
+  ref $PBS_INIT = PBS_4;
+  ref $PBS_INIT = PBS_5_Mk5; 
+*  ref $PBS_INIT = PBS_5; 
+  ref $PBS_INIT = PBS_6_Mk5; 
+*  ref $PBS_INIT = PBS_6; 
+*  ref $PBS_INIT = PBS_7_Mk5; 
+  * 
+  *                 corr   trmserve   CUCC    CUCC 
+  *                 crate  env_name  port A  port B 
+  CUCC_serial_ports = 0 :  TSERV0  :   9  :   10  ; 
+  CUCC_serial_ports = 1 :  TSERV0  :  11  :   12  ; 
+  *                                  port 
+  analog_switch =          TSERV0  :  13  ; 
+  start_stop_counter =     TSERV0  :  14  ; 
+  CF_edit_mask = 0x0000 ; * correlator frame edit mask 
+  *             measuremnt  swtch    OK range        fail 
+  *                  name    pos   frm      to      action 
+  timing_monitor =   CNTL0 :  9 : 0.5e-6 : 2.0e-6 :  0x0  ;
+  timing_monitor =   CNTL1 : 10 : 0.5e-6 : 2.0e-6 :  0x0  ;
+  timing_monitor =   TSPM  :  8 : 0.5e-6 : 2.0e-6 :  0x0  ;
+  * 
+ enddef;
+
+*-------------------------
+$PBS_INIT;
+*-------------------------
+ def PBS_0;
+  SU_ID                =  0 : SU0; 
+  * 
+  *                  trmserve  console  dpu 
+  *                  env_name   port    port 
+  SUCC_serial_ports = TSERV0 :   1    :  2  ; 
+  * 
+  ref $DRIVE_INIT      =  DRIVE_A;
+  ref $TRM_CONFIG      =  TRM1;
+  ref $SU/CORR_CONNECT =  STD0;
+* ref $SU/CORR_CONNECT =  NSTD1-0;
+* ref $SU/CORR_CONNECT =  NSTD2-0;
+  * 
+  *                measuremnt  swtch    OK range        fail 
+  *                   name      pos   frm      to      action 
+  timing_monitor = Playback_0 :  0 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+  * 
+ enddef;
+
+ def PBS_1_Mk5;
+  SU_ID                =  1 : SU1;
+  SUCC_serial_ports = TSERV0 :   3    :  4  ; 
+  ref $DRIVE_INIT      =  DRIVE_B_MARK5;
+  ref $TRM_CONFIG      =  TRM5;
+  ref $SU/CORR_CONNECT =  STD1;
+* ref $SU/CORR_CONNECT =  NSTD1-1;
+* ref $SU/CORR_CONNECT =  NSTD2-1;
+  timing_monitor = Playback_1 :  1 : 0.5e-6 : 2.0e-6 :  0x0 ; 
+ enddef;
+
+ def PBS_2_Mk5;
+  SU_ID                =  2 : SU2; 
+  SUCC_serial_ports = TSERV0 :   5    :  6  ; 
+  ref $DRIVE_INIT      =  DRIVE_C_MARK5;
+  ref $TRM_CONFIG      =  TRM5;
+  ref $SU/CORR_CONNECT =  STD2;
+* ref $SU/CORR_CONNECT =  NSTD1-2;
+* ref $SU/CORR_CONNECT =  NSTD2-2;
+  timing_monitor = Playback_2 :  2 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_3_Mk5;
+  SU_ID                =  3 : SU3;
+  SUCC_serial_ports = TSERV0 :   7    :  8  ; 
+  ref $DRIVE_INIT      =  DRIVE_D_MARK5;
+  ref $TRM_CONFIG      =  TRM5;
+  ref $SU/CORR_CONNECT =  STD3;
+* ref $SU/CORR_CONNECT =  NSTD1-3;
+* ref $SU/CORR_CONNECT =  NSTD2-3;
+  timing_monitor = Playback_3 :  3 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_4;
+  SU_ID                =  4 : SU4;
+  SUCC_serial_ports = TSERV1 :   1    : 02  ; 
+  ref $DRIVE_INIT      =  DRIVE_E;
+  ref $TRM_CONFIG      =  TRM1;
+  ref $SU/CORR_CONNECT =  STD4;
+* ref $SU/CORR_CONNECT =  NSTD1-4;
+* ref $SU/CORR_CONNECT =  NSTD2-4;
+  timing_monitor = Playback_4 :  4 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_5_Mk5;
+  SU_ID                =  5 : SU5;
+  SUCC_serial_ports = TSERV1 :   3    :  4  ; 
+  ref $DRIVE_INIT      =  DRIVE_F_MARK5;
+  ref $TRM_CONFIG      =  TRM5;
+  ref $SU/CORR_CONNECT =  STD5;
+* ref $SU/CORR_CONNECT =  NSTD1-5;
+* ref $SU/CORR_CONNECT =  NSTD2-5;
+  timing_monitor = Playback_5 :  5 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_6_Mk5;
+  SU_ID                =  6 : SU6;
+  SUCC_serial_ports = TSERV1 :   5    :  6  ; 
+  ref $DRIVE_INIT      =  DRIVE_G_MARK5;
+  ref $TRM_CONFIG      =  TRM5;
+  ref $SU/CORR_CONNECT =  STD6;
+* ref $SU/CORR_CONNECT =  NSTD1-5;
+* ref $SU/CORR_CONNECT =  NSTD2-5;
+  timing_monitor = Playback_6 :  6 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+* def PBS_7_Mk5;
+*  SU_ID                =  7 : SU7;
+*  SUCC_serial_ports = TSERV1 :   7    :  8  ; 
+*  ref $DRIVE_INIT      =  DRIVE_H_MARK5;
+*  ref $TRM_CONFIG      =  TRM5;
+*  ref $SU/CORR_CONNECT =  STD7;
+** ref $SU/CORR_CONNECT =  NSTD1-5;
+** ref $SU/CORR_CONNECT =  NSTD2-5;
+*  timing_monitor = Playback_7 :  7 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+* enddef;
+
+*-------------------------
+$DRIVE_INIT;
+*-------------------------
+ def DRIVE_A;
+  * MkIV drive, s/n 4603004AJ85
+  drive_type     = Mark4; * Mark4|VLBA
+  *             address    ID
+  mcb_address = 0x2000 : 0x20;
+  capstan_relative_diameter = 1.014;
+
+  vacuum_setting    = 5 : 0x1194 : 15 : 0x1194;  * @ HAYSTACK, drive 0
+  tape_acceleration = 67.5 ;
+
+ *                         hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   0   :   8;
+  headstack/DIM_connect  =   1   :  odd  :   1   :   8;
+  headstack/DIM_connect  =   1   : even  :   2   :   4;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   4;
+ *                         hdstk    fwd    rev    eqlzrs (Mbps)
+  monitor_module_track   =   1   :   21  :  20   :   2 : 4 : 8;  * rjc 2001.4.25
+
+ *                       hdstk    fbias   rbias  fast_out slow_out fast_in slow_in pscale  nscale
+ *                                                speed     speed    speed   speed
+  headstack_parms    =     1   : -235.2: -238.6:   160.6:    15.0:  153.9:   13.9: 179.0:  176.5;   * 2000.08.04
+ enddef;
+
+ def DRIVE_B_MARK5;
+  * MkV prototype, name dhcp252
+  drive_type     = Mark5A : dhcp252;
+ *                         hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   2   :   0;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   0;
+* enable headstack 2 for Mark 5
+  headstack/DIM_connect  =   2   : even  :   0   :   0;
+  headstack/DIM_connect  =   2   :  odd  :   1   :   0;
+ enddef;
+
+ def DRIVE_C_MARK5;
+  * MkV prototype, name dhcp241
+  drive_type     = Mark5A : dhcp241;
+ *                         hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   2   :   0;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   0;
+* enable headstack 2 for Mark 5
+  headstack/DIM_connect  =   2   : even  :   0   :   0;
+  headstack/DIM_connect  =   2   :  odd  :   1   :   0;
+ enddef;
+
+ def DRIVE_D_MARK5;
+  * MkV prototype, name dhcp246
+  drive_type     = Mark5A : dhcp246;
+ *                         hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   2   :   0;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   0;
+* enable headstack 2 for Mark 5
+  headstack/DIM_connect  =   2   : even  :   0   :   0;
+  headstack/DIM_connect  =   2   :  odd  :   1   :   0;
+ enddef;
+
+ def DRIVE_E;
+  * MkIV drive, s/n 4302917RA85
+  drive_type     = Mark4;
+  *             address    ID
+  mcb_address = 0x2400 : 0x34;
+  capstan_relative_diameter = 1.014;
+
+  vacuum_setting    = 5 : 0x11c6 : 15 : 0x11c6; * @ HAYSTACK, drive 4
+  tape_acceleration = 67.5 ;
+
+ *                         hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   0   :   8;
+  headstack/DIM_connect  =   1   :  odd  :   1   :   8;
+  headstack/DIM_connect  =   1   : even  :   2   :   4;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   4;
+
+ *                         hdstk    fwd    rev    eqlzrs (Mbps)
+  monitor_module_track   =   1   :   21  :  20   :   2 : 4 : 8;  * rjc 2001.4.25
+
+ *                         hdstk    fbias   rbias  ffspeed  fsspeed rfspeed rsspeed pscale  nscale
+  headstack_parms        =   1   :  -97.6:  -66.2:   190.2:    19.6:  181.9:   20.3: 174.4:  173.7;   * 2002.12.31
+ enddef;
+
+ def DRIVE_F_MARK5;
+  * MkV prototype, name mark5-03
+  drive_type     = Mark5A : mark5-03 ;
+ *                         hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   2   :   0;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   0;
+* enable headstack 2 for Mark 5
+  headstack/DIM_connect  =   2   : even  :   0   :   0;
+  headstack/DIM_connect  =   2   :  odd  :   1   :   0;
+ enddef;
+
+ def DRIVE_G_MARK5;
+  * MkV prototype, name mark5-21
+  drive_type     = Mark5A : mark5-21 ;
+ *                         hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   2   :   0;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   0;
+* enable headstack 2 for Mark 5
+  headstack/DIM_connect  =   2   : even  :   0   :   0;
+  headstack/DIM_connect  =   2   :  odd  :   1   :   0;
+
+ enddef;
+
+* def DRIVE_H_MARK5;
+*  * MkV prototype, name dhcp242
+**  drive_type     = Mark5A : dhcp242 ;
+*  drive_type     = Mark5A : mark5-21 ;
+* *                         hdstk   trks    DIMin   Eqlzr(Mbps)
+*  headstack/DIM_connect  =   1   : even  :   0   :   0;
+*  headstack/DIM_connect  =   1   :  odd  :   1   :   0;
+** enable headstack 2 for Mark 5
+*  headstack/DIM_connect  =   2   : even  :   2   :   0;
+*  headstack/DIM_connect  =   2   :  odd  :   3   :   0;
+*
+* enddef;
+
+*-------------------------
+$TRM_CONFIG;
+*-------------------------
+ def TRM1;
+ *                           M  b/s
+  TRM_order_within_channel = 4 : 2 : sign0 :  mag0  :  sign1 :  mag1 : sign2 :  mag2 : sign3 : mag3;
+  TRM_order_within_channel = 2 : 2 : sign0 :  mag0  :  sign1 :  mag1;
+  TRM_order_within_channel = 1 : 2 : sign0 :  mag0;
+  TRM_order_within_channel = 4 : 1 : sign0 :  sign1 :  sign2 :  sign3;
+  TRM_order_within_channel = 2 : 1 : sign0 :  sign1;
+  TRM_order_within_channel = 1 : 1 : sign0;
+ *
+  parity_error_limit          =   0.10;  * 10% (for frame editting purposes only)
+
+ *                                CRC    PErr   nosync  resync
+  invalid_frame_control       =   off :  on  :  off  :  on;
+ enddef;
+
+ def TRM5;
+ *                           M  b/s
+  TRM_order_within_channel = 4 : 2 : sign0 :  mag0  :  sign1 :  mag1 : sign2 :  mag2 : sign3 : mag3;
+  TRM_order_within_channel = 2 : 2 : sign0 :  mag0  :  sign1 :  mag1;
+  TRM_order_within_channel = 1 : 2 : sign0 :  mag0;
+  TRM_order_within_channel = 4 : 1 : sign0 :  sign1 :  sign2 :  sign3;
+  TRM_order_within_channel = 2 : 1 : sign0 :  sign1;
+  TRM_order_within_channel = 1 : 1 : sign0;
+ *
+  parity_error_limit          =   0.10;  * 10% (for frame editting purposes only)
+
+ *                                CRC    PErr   nosync  resync
+  invalid_frame_control       =   off :  off :  off  :  on;
+ enddef;
+
+*-------------------------
+$SU/CORR_CONNECT;
+*-------------------------
+ def STD0;
+ *              SU   Corr   InputBd
+ *            ChnGrp Segmt  ChnGrp
+ *SU_connect =  0 :  0  :    0;     * input board 0 / link 0A
+  SU_connect =  0 :  0  :    1;     * input board 0 / link 0A  rjc test 2002.11.6
+  SU_connect =  1 :  1  :    0;     * input board 1 / link 0A
+  SU_connect =  2 :  2  :    0;     * input board 2 / link 0A
+  SU_connect =  3 :  3  :    0;     * input board 3 / link 0A
+ enddef;
+
+ def STD1;
+ *              SU   Corr   InputBd
+ *            ChnGrp Segmt  ChnGrp
+ *SU_connect =  0 :  0  :    1;     * input board 0 / link 0B
+  SU_connect =  0 :  0  :    0;     * input board 0 / link 0B  rjc test 2002.11.6
+  SU_connect =  1 :  1  :    1;     * input board 1 / link 0B
+  SU_connect =  2 :  2  :    1;     * input board 2 / link 0B
+  SU_connect =  3 :  3  :    1;     * input board 3 / link 0B
+ enddef;
+
+ def STD2;
+ *              SU   Corr   InputBd
+ *            ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    2;     * input board 0 / link 1A
+  SU_connect =  1 :  1  :    2;     * input board 1 / link 1A
+  SU_connect =  2 :  2  :    2;     * input board 2 / link 1A
+  SU_connect =  3 :  3  :    2;     * input board 3 / link 1A
+ enddef;
+
+ def STD3;
+ *              SU   Corr   InputBd
+ *            ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    3;     * input board 0 / link 1B
+  SU_connect =  1 :  1  :    3;     * input board 1 / link 1B
+  SU_connect =  2 :  2  :    3;     * input board 2 / link 1B
+  SU_connect =  3 :  3  :    3;     * input board 3 / link 1B
+ enddef;
+ 
+
+ def STD4;
+ *              SU   Corr   InputBd
+ *            ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    4;     * input board 0 / link 2A
+  SU_connect =  1 :  1  :    4;     * input board 1 / link 2A
+  SU_connect =  2 :  2  :    4;     * input board 2 / link 2A
+  SU_connect =  3 :  3  :    4;     * input board 3 / link 2A
+ enddef;
+
+ def STD5;
+ *              SU   Corr   InputBd
+ *            ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    5;     * input board 0 / link 2B
+  SU_connect =  1 :  1  :    5;     * input board 1 / link 2B
+  SU_connect =  2 :  2  :    5;     * input board 2 / link 2B
+  SU_connect =  3 :  3  :    5;     * input board 3 / link 2B
+ enddef;
+
+ def STD6;
+ *              SU   Corr   InputBd
+ *            ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    6;     * input board 0 / link 3A
+  SU_connect =  1 :  1  :    6;     * input board 1 / link 3A
+  SU_connect =  2 :  2  :    6;     * input board 2 / link 3A
+  SU_connect =  3 :  3  :    6;     * input board 3 / link 3A
+ enddef;

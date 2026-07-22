@@ -18,12 +18,13 @@
 #include <string.h>
 #include <ctype.h>
 #include "aedit.h"
+#include "sizelimits.h"
 
 int set_stations(char *arg1, char *arg2, char *remarg)
 {
 	extern struct inputs inp;
 	int l, i, j;
-	char c, buf[150], outbuf[10];
+	char c, buf[150], outbuf[150];
 
 	sprintf(buf,"%s%s%s",arg1,arg2,remarg);
 	l = strlen(buf);
@@ -33,7 +34,7 @@ int set_stations(char *arg1, char *arg2, char *remarg)
 	    c = buf[i];
 	    if(isalpha(c)) {
 		if(strchr(outbuf,c) == NULL) {		/* No duplicates */
-		    if(j > 13) {			/* Check for overflow */
+		    if(j > MAXSTEXP) {			/* Check for overflow */
 			msg("Too many stations listed",2);
 			return(-1);
 		    }

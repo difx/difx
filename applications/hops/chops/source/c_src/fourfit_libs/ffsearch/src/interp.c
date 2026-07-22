@@ -204,7 +204,7 @@ void interp (struct type_pass *pass)
                         }
                     z = z * 1.0 / (double) status.total_ap_frac;
                     drf[isbd][imbd][idr] = abs_complex(z);
-                    msg ("drf[%d][%d][%d] %lf", 0, isbd, imbd, idr, drf[isbd][imbd][idr]);
+                    msg ("drf[%d][%d][%d] %lf", -1, isbd, imbd, idr, drf[isbd][imbd][idr]);
                     }
                                     // form the search bounds in all 3 dimensions
         xlim[0][0] = sbd_lower / status.sbd_sep - status.max_delchan + nl;

@@ -25,7 +25,7 @@
 
 struct interp_sdata
         {
-        hops_complex phasecal_lcp[MAX_PCF];               /* USB only for now */
+        hops_complex phasecal_lcp[MAX_PCF]; /* USB only for now */
         float pcweight_lcp;                 /* (see pcal_interp routine) */
         hops_complex phasecal_rcp[MAX_PCF];
         float pcweight_rcp;
@@ -33,24 +33,24 @@ struct interp_sdata
         float pos[4];                       /* lcp_usb, lcp_lsb, rcp_usb, rcp_lsb */
         float neg[4];
         float bigneg[4];
-        hops_complex mt_pcal[2];                 // pc phasor for multitone mode L:R or H:V
+        hops_complex mt_pcal[2];            // pc phasor for multitone mode L:R or H:V
         double mt_delay[2];                 // multitone delay (us) [L:R or H:V or X:Y]
         };
 
 struct data_corel
         {
         int flag;
-        struct type_120 *apdata_ll[2];          /* By sideband */
+        struct type_120 *apdata_ll[2];  // Correlated data by sideband
         struct type_120 *apdata_rr[2];
         struct type_120 *apdata_lr[2];
         struct type_120 *apdata_rl[2];
         int sband;
-        hops_complex *sbdelay;                       /* Allocated in fringe_search */
+        hops_complex *sbdelay;      // Allocated and freed in fringe_search
         struct interp_sdata ref_sdata;
         struct interp_sdata rem_sdata;
         float usbfrac;
         float lsbfrac;
-        hops_complex pc_phasor[4];  // extracted in rotate_pcal [LL:RR:LR:RL]
+        hops_complex pc_phasor[4];  // Extracted in rotate_pcal [LL:RR:LR:RL]
         };
 
 struct freq_corel
@@ -71,16 +71,22 @@ struct freq_corel
         short bbc_lcp[2];       /* Physical BBC numbers by station */
         short bbc_rcp[2];
         int index[8];           /* Corel index number by sideband/pol'n */
+        int nsb_channels;       /* count of sidebands for integration time */
+        int data_peers;         /* number of freq_corel sharing underlying data */
+        int corel_index;        /* index in the correlated data (freq_corel) */
+        int fcode_index;        /* index in list of frequency labels (control.chid) */
         int data_alloc;         /* Flag indicating whether space alloced for data */
-        struct data_corel *data;
+        struct data_corel *data;    /* pointer to first of parent.num_ap; the rest follow */
         };
 
 
+// pass_data[MAX_FREQ] seems to have been the case at one time,
+// but MAX_CHAN was boosted to twice that, presumably a DSB thing.
 struct type_pass
         {
         struct freq_corel       pass_data[MAX_CHAN];
         int                     nfreq;
-        int                     channels;
+        int                     channels;     // sum(fc nsb_channels)
         int                     nlags;
         int                     num_ap;
         int                     npctones;     // max number of pcal tones in any freq
@@ -106,4 +112,6 @@ static char fchars[64] =
 
 static char *polab[4] =
         { (char*)"LL", (char*)"RR", (char*)"LR", (char*)"RL" };
+
+extern void modify_pol (struct type_pass *p, char *polstr);
 #endif

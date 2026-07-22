@@ -1,0 +1,777 @@
+* 1999-02-03
+* exp2611.ovex
+*
+$OVEX_REV;
+rev = 1.5;
+*
+*-------------------------
+$GLOBAL;
+*-------------------------
+ ref $EXPER = EXP2611;
+ ref $EOP   = EOP129;
+
+*-------------------------
+$STATION;
+*-------------------------
+ def B;
+  ref $SITE    = EFLSBERG;
+  ref $ANTENNA = EFLSBERG;
+  ref $DAS     = Mark3A;
+  ref $DAS     = 33KBPI;
+  ref $DAS     = 8820FT;
+  ref $DAS     = EF_ID;
+  ref $DAS     = START/STOP;
+  ref $PHASE_CAL_DETECT = STANDARD;
+  ref $CLOCK   = EF;
+  ref $TAPELOG_OBS   = EF;
+ enddef;
+
+ def Y;
+  ref $SITE    = VLA;
+  ref $ANTENNA = VLA;
+  ref $DAS     = Mark3A;
+  ref $DAS     = 33KBPI;
+  ref $DAS     = 8820FT;
+  ref $DAS     = VLA_ID;
+  ref $DAS     = START/STOP;
+  ref $PHASE_CAL_DETECT = STANDARD;
+  ref $CLOCK   = VLA;
+  ref $TAPELOG_OBS   = VLA;
+ enddef;
+
+*-------------------------
+$MODE;
+*-------------------------
+ def C14;
+  ref $FREQ    = C14;
+  ref $BBC    = C14;
+  ref $IF     = C14;
+  ref $TRACKS    = Mark3A/56-14-1/14;
+  ref $TRACKS    = MARK4_TRK_FORMAT;
+  ref $HEAD_POS   = VLBA/1_HDSTK;
+  ref $PASS_ORDER   = Mark3A/ModeC;
+  ref $ROLL    = ROLL_OFF;
+* ref $PROCEDURES   = STANDARD_CAL;
+  ref $DAS    = START/STOP;
+ enddef;
+
+*-------------------------
+$SCHED;
+*-------------------------
+ scan 062-094600;
+  start  = 1993y062d09h46m00s;
+  mode   = C14;
+  source = 3C345;
+ *          stn data   data    strt
+ *          key start  stop    pos       pass
+  station = B : 0 sec: 55 sec: 3500 ft : 11B : : 1;  * changed to pass B  rjc 99.6.15
+  station = Y : 0 sec: 55 sec: 3550 ft : 8A  : : 1;
+ endscan;
+*
+*-------------------------
+$ANTENNA;
+*-------------------------
+ def EFLSBERG;
+  antenna_diam = 100 m;
+  axis_type  = az : el;
+  axis_offset  = az :  0 m;
+ *                      type  slew         settle
+  antenna_motion = az : 90 deg/min : 2 sec;
+  antenna_motion = el : 30 deg/min : 1 sec;
+ *                       sec id   axis  LoLim     HiLim    axis  LoLim   HiLim
+  pointing_sector = &ccw : az : -90 deg :  90 deg : el : 0 deg : 88 deg;
+  pointing_sector = &n   : az :  90 deg : 270 deg : el : 0 deg : 88 deg;
+  pointing_sector = &cw  : az : 270 deg : 450 deg : el : 0 deg : 88 deg;
+ enddef;
+
+ def VLA;
+  antenna_diam = 25 m;
+  axis_type  = az : el;
+  axis_offset  = az : 0 m;
+ *                      type  slew         settle
+  antenna_motion = az : 90 deg/min : 2 sec;
+  antenna_motion = el : 30 deg/min : 1 sec;
+ *                       sec id   axis  LoLim     HiLim    axis  LoLim   HiLim
+  pointing_sector = &ccw : az : -90 deg :  90 deg : el :  0 deg :  88 deg;
+  pointing_sector = &n   : az :  90 deg : 270 deg : el :  0 deg :  88 deg;
+  pointing_sector = &cw  : az : 270 deg : 450 deg : el :  0 deg :  88 deg;
+  pointing_sector = &ccwp: az : -90 deg :  90 deg : el : 92 deg : 120 deg;
+  pointing_sector = &np  : az :  90 deg : 270 deg : el : 92 deg : 120 deg;
+  pointing_sector = &cwp : az : 270 deg : 450 deg : el : 92 deg : 120 deg;
+ enddef;
+
+*-------------------------
+$BBC;
+*-------------------------
+ def C14;
+ *                   BBC id    phys#     IF id
+  BBC_assign = &BBCa :  1 : &IF_CL;
+  BBC_assign = &BBCb :  2 : &IF_CR;
+  BBC_assign = &BBCc :  3 : &IF_CL;
+  BBC_assign = &BBCd :  4 : &IF_CR;
+  BBC_assign = &BBCe :  5 : &IF_CL;
+  BBC_assign = &BBCf :  6 : &IF_CR;
+  BBC_assign = &BBCg :  7 : &IF_CL;
+  BBC_assign = &BBCh :  8 : &IF_CR;
+  BBC_assign = &BBCi :  9 : &IF_CL;
+  BBC_assign = &BBCj : 10 : &IF_CR;
+  BBC_assign = &BBCk : 11 : &IF_CL;
+  BBC_assign = &BBCl : 12 : &IF_CR;
+  BBC_assign = &BBCm : 13 : &IF_CL;
+  BBC_assign = &BBCn : 14 : &IF_CR;
+ enddef;
+
+*-------------------------
+$CLOCK;
+*-------------------------
+ def EF;
+ *                   valid from          clock early     clock early epoch       rate
+  clock_early = 1993y061d00h00m : -2.08 usec : 1993y061d00h00m0s : 0;
+ enddef;
+
+ def VLA;
+ *                   valid from          clock early     clock early epoch       rate
+  clock_early = 1993y061d00h00m : 230.6 usec : 1993y061d00h00m0s : 0;
+ enddef;
+
+*-------------------------
+$DAS;
+*-------------------------
+ def Mark3A;
+  record_transport_type = Mark3A;
+  electronics_rack_type = Mark3A;
+  number_drives   = 1;
+ *                 hdstk               drv#offset
+  headstack = 1 : write : 0;
+  headstack = 1 : read : 0;
+ enddef;
+
+ def 33KBPI;
+  record_density = 33333 bpi; * 'raw' bit density per track
+ enddef;
+
+ def 8820FT;
+  tape_length  = 8820 ft;
+ enddef;
+
+ def EF_ID;
+  recording_system_ID = 6;
+ enddef;
+
+ def VLA_ID;
+  recording_system_ID = 65;
+ enddef;
+
+ def START/STOP;
+  tape_motion   = start_stop; * no early start
+ enddef;
+
+*-------------------------
+$EOP;
+*-------------------------
+ def EOP129;
+  TAI-UTC = 26 sec;
+  A1-TAI = 0.03439 sec;
+  eop_ref_epoch = 1993y061d;
+  num_eop_points = 3;
+  eop_interval = 24 hr;
+  ut1-utc   = -0.09527 sec : -0.09527 sec : -0.09527 sec;
+  x_wobble  =  0.1727 asec :  0.1727 asec : 0.1727 asec;
+  y_wobble  =  0.2107 asec :  0.2107 asec : 0.2107 asec;
+ enddef;
+
+*-------------------------
+$EXPER;
+*-------------------------
+ def EXP2611;
+  exper_num = 2611;
+  exper_name = BR7A;
+  exper_description = "Roberts et al";
+  exper_nominal_start = 1993y061d23h10m;
+  exper_nominal_stop = 1993y062d13h30m;
+ enddef;
+
+*-------------------------
+$FREQ;
+*-------------------------
+ def C14;
+ *           ch   band    sky freq    net  chan   chan     BBC    phase-cal
+ *          name   id    at 0Hz BBC   SB    BW     id      id       id
+  chan_def = CL1 : &C : 4977.99 MHz : U : 2 MHz : &CH1  : &BBCa : &USB_CAL;
+  chan_def = CR1 : &C : 4977.99 MHz : U : 2 MHz : &CH2  : &BBCb : &USB_CAL;
+  chan_def = CR2 : &C : 4979.99 MHz : U : 2 MHz : &CH4  : &BBCd : &USB_CAL;
+  chan_def = CL3 : &C : 4981.99 MHz : U : 2 MHz : &CH5  : &BBCe : &USB_CAL;
+  chan_def = CR3 : &C : 4981.99 MHz : U : 2 MHz : &CH6  : &BBCf : &USB_CAL;
+  chan_def = CL4 : &C : 4983.99 MHz : U : 2 MHz : &CH7  : &BBCg : &USB_CAL;
+  chan_def = CR4 : &C : 4983.99 MHz : U : 2 MHz : &CH8  : &BBCh : &USB_CAL;
+  chan_def = CL5 : &C : 4985.99 MHz : U : 2 MHz : &CH9  : &BBCi : &USB_CAL;
+*
+* moved following channel so it would appear as output channel 8  rjc  99.6.16
+  chan_def = CL2 : &C : 4979.99 MHz : U : 2 MHz : &CH3  : &BBCc : &USB_CAL;
+  chan_def = CR5 : &C : 4985.99 MHz : U : 2 MHz : &CH10 : &BBCj : &USB_CAL;
+  chan_def = CL6 : &C : 4987.99 MHz : U : 2 MHz : &CH11 : &BBCk : &USB_CAL;
+  chan_def = CR6 : &C : 4987.99 MHz : U : 2 MHz : &CH12 : &BBCl : &USB_CAL;
+  chan_def = CL7 : &C : 4989.99 MHz : U : 2 MHz : &CH13 : &BBCm : &USB_CAL;
+  chan_def = CR7 : &C : 4989.99 MHz : U : 2 MHz : &CH14 : &BBCn : &USB_CAL;
+  sample_rate = 4 Ms/sec;
+ enddef;
+
+*-------------------------
+$HEAD_POS;
+*-------------------------
+ def VLBA/1_HDSTK;
+ *                       pos     hdstk-1
+ *                      ref#     position
+  headstack_pos =  1 : -330 um;
+  headstack_pos =  2 : -275 um;
+  headstack_pos =  3 : -220 um;
+  headstack_pos =  4 : -165 um;
+  headstack_pos =  5 : -110 um;
+  headstack_pos =  6 :  -55 um;
+  headstack_pos =  7 :    0 um;
+* headstack_pos =  8 :   55 um;
+* The following pass is a quick & dirty change to account for the oddball VLBA
+* pass table.  A correct fix would have two different $HEAD_POS sections, pointed
+* to by different MODE def's.              rjc  99.3.30
+*
+  headstack_pos =  8 :   79 um;
+  headstack_pos =  9 :  110 um;
+  headstack_pos = 10 :  165 um;
+  headstack_pos = 11 :  220 um;
+  headstack_pos = 12 :  275 um;
+ enddef;
+
+*-------------------------
+$IF;
+*-------------------------
+ def C14;
+ *                 phys      total    net  phase-cal p-cal base
+ *         IF id   name pol  LO        SB   freq spacing freq
+  if_def = &IF_CR : AN : R : 4500 MHz : U : 1 MHz : 0 Hz;
+  if_def = &IF_CL : BN : L : 4500 MHz : U : 1 MHz : 0 Hz;
+ enddef;
+
+*-------------------------
+$PASS_ORDER;
+*-------------------------
+ def Mark3A/ModeC;
+  pass_order = 1B : 1A : 2B : 2A : 3B : 3A : 4B : 4A : 5B : 5A : 6B : 6A :
+     7B : 7A : 8B : 8A : 9B : 9A :10B :10A :11A :11B :12B :12A ;
+* above line - swapped 11A with 11B to keep B happy       rjc 99.6.15
+ enddef;
+
+*-------------------------
+$PHASE_CAL_DETECT;
+*-------------------------
+ def STANDARD;
+ *                   pcal id  tone# tone#
+  phase_cal_detect = &USB_CAL : 1 : -1;
+ enddef;
+
+*-------------------------
+$ROLL;
+*-------------------------
+ def ROLL_OFF;
+  roll = off;
+ enddef;
+
+*-------------------------
+$SITE;
+*-------------------------
+ def EFLSBERG;
+  site_type  = fixed;
+  site_name  = EFLSBERG;
+  site_ID   = EF;
+  mk4_site_ID = B;
+ *                           x                   y                   z
+  site_position  = 4033949.4754 m : 486989.3991 m : 4900430.8244 m;
+  site_position_epoch = 1993y1d;
+  site_position_ref = GLB914F1;
+  site_velocity  = 0.0 cm/yr     : 0.0 cm/yr     : 0.0 cm/yr;
+
+  horizon_map_az  = 0 deg : 20 : 55 : 60 : 70 : 85 :100 :105 :115 :220 :230 :245 :270 :280 :300 :305 :330 :345 :360;
+  horizon_map_el  = 5 deg :  3 :  6 :  7 :  5 :  6 :  5 :  4 :  3 :  4 :  3 :  5 :  4 :  3 :  4 :  5 :  6 :  5;
+
+  zen_atmos   = 7 nsec;
+  ocean_load_vert  = 0 cm   : 90;
+  ocean_load_horiz = 0.0 cm : 52;
+
+  occupation_code  = a478;
+ enddef;
+
+ def VLA;
+  site_type  = fixed;
+  site_name  = VLA;
+  site_ID   = VL;
+  mk4_site_ID = Y;
+ *                           x                   y                   z
+  site_position  = -1601183.2500 m : -5041977.8500 m : 3554876.1800 m;
+  site_position_epoch = 1993y1d;
+  site_position_ref = GLB914F1;
+  site_velocity  = 0.0 cm/yr     : 0.0 cm/yr     : 0.0 cm/yr;
+
+  horizon_map_az  = 0 deg : 20 : 55 : 60 : 70 : 85 :100 :105 :115 :220 :230 :245 :270 :280 :300 :305 :330 :345 :360;
+  horizon_map_el  = 5 deg :  3 :  6 :  7 :  5 :  6 :  5 :  4 :  3 :  4 :  3 :  5 :  4 :  3 :  4 :  5 :  6 :  5;
+
+  zen_atmos   = 6.5 nsec;
+  ocean_load_vert  = 0 cm   : 90;
+  ocean_load_horiz = 0.0 cm : 52;
+
+  occupation_code  = b478;
+ enddef;
+
+*-------------------------
+$SOURCE;
+*-------------------------
+ def 3C345;
+  source_type   = quasar : calibrator;
+  source_name   = 3C345;
+  IAU_name      = 1641+399;
+  ra            = 16h42m58.80967s;
+  dec           = +39d48'36.9957";
+  ref_coord_frame     = J2000;
+  source_position_ref = GLB923Z;
+ enddef;
+
+*-------------------------
+$TAPELOG_OBS;
+*-------------------------
+ def EF;
+ *    drv#    VSN      start time        end time
+  VSN = 1 : USNO0390 : 1993y061d23h12m : 1993y062d11h11m;
+ enddef;
+
+ def VLA;
+ *    drv#    VSN      start time        end time
+  VSN = 1 : AF810009 : 1993y062d07h37m : 1993y062d11h10m;
+ enddef;
+
+*-------------------------
+$TRACKS;
+*-------------------------
+ def Mark3A/56-14-1/14;
+ *          sub-    chan   sign/
+ *          pass    id      mag  hdstk  track
+  fanout_def = A : &CH2  : sign : 1 : 4;
+  fanout_def = A : &CH4  : sign : 1 : 6;
+  fanout_def = A : &CH6  : sign : 1 : 8;
+  fanout_def = A : &CH8  : sign : 1 : 10;
+  fanout_def = A : &CH10 : sign : 1 : 12;
+  fanout_def = A : &CH12 : sign : 1 : 14;
+  fanout_def = A : &CH14 : sign : 1 : 16;
+  fanout_def = A : &CH1  : sign : 1 : 18;
+  fanout_def = A : &CH3  : sign : 1 : 20;
+  fanout_def = A : &CH5  : sign : 1 : 22;
+  fanout_def = A : &CH7  : sign : 1 : 24;
+  fanout_def = A : &CH9  : sign : 1 : 26;
+  fanout_def = A : &CH11 : sign : 1 : 28;
+  fanout_def = A : &CH13 : sign : 1 : 30;
+ *
+  fanout_def = B : &CH2  : sign : 1 : 5;
+  fanout_def = B : &CH4  : sign : 1 : 7;
+  fanout_def = B : &CH6  : sign : 1 : 9;
+  fanout_def = B : &CH8  : sign : 1 : 11;
+  fanout_def = B : &CH10 : sign : 1 : 13;
+  fanout_def = B : &CH12 : sign : 1 : 15;
+  fanout_def = B : &CH14 : sign : 1 : 17;
+  fanout_def = B : &CH1  : sign : 1 : 19;
+  fanout_def = B : &CH3  : sign : 1 : 21;
+  fanout_def = B : &CH5  : sign : 1 : 23;
+  fanout_def = B : &CH7  : sign : 1 : 25;
+  fanout_def = B : &CH9  : sign : 1 : 27;
+  fanout_def = B : &CH11 : sign : 1 : 29;
+  fanout_def = B : &CH13 : sign : 1 : 31;
+ *
+  bits/sample = 1;
+  multiplex_ratio = 1;
+ enddef;
+
+ def MARK4_TRK_FORMAT;
+    track_frame_format = Mark4;
+ enddef;
+* 1999-02-03
+*-------------------------
+$EVEX_REV;
+*-------------------------
+rev = 1.0;
+$EVEX;
+
+*-------------------------
+ def 2611_std;
+  corr_exp#   = 2611;
+
+  ovex_file   = /correlator/data/2611/2611.ovex;
+  lvex_file   = /correlator/data/2611/2611.lvex;
+  cvex_file   = /correlator/sysvex/global.cvex;
+  svex_file   = /correlator/sysvex/global.svex;
+
+  AP_length   = 0.5 sec;
+  speedup_factor = 1.0;
+
+  ref $CORR_CONFIG = B32-16;
+* ref $SU_CONFIG  = B: Y;
+  ref $SU_CONFIG  = std;
+
+  tape_mode   = random;
+  mirror    = allocate : compare : no_save;
+ enddef;
+*Sample cvex file
+*
+*Example of VEX task-specific correlator configuation file (.cvex).
+*The appropriate $CORR_CONFIG key will be specified for every task in order to
+*properly set up the correlator.
+*
+*Notes:
+*  1. Parameters beginning with '~' are pseudo-parameters to replaced by integers at setup.
+*
+*ARW 990506
+*
+*-----------------------------------------------------------------------------------------------
+$CVEX_REV;
+*-----------------------------------------------------------------------------------------------
+*
+rev = 1.0;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_CONFIG;
+*
+  def C32-1;                    *1 board, 32 complex lags, 1 chan/stn, 8 stns max
+	ref $CORR_MODE = C32-1;
+    ignore_chan_names = off ;    *if 'on', assign virtual chan by SU output position
+                                 *instead of by chan name	
+  enddef;
+*-----------------------------------------------------------------------------------------------
+$CORR_MODE;
+*
+  def C32-1;                *8 stations max, 32 lags, 1 chan/stn
+  *        ------board-----    bd   sect  strt   SU       SU    
+  *        segment   slice   parms  mode  chip  chan     chan   
+  *                                             (ref)    (rem)      
+    board = ~seg0 : ~slice0 : std1 : C32A:  0 : ~chn8  : ~chn8  ;
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_BD_PARMS;
+*-----------------------------------------------------------------------------------------------
+*
+*Specifies board-wide correlation parameters
+*
+  def std1;
+  *
+    accum_divide_ratio =   1   ;            *wrt SU data rate
+  *
+  *                       Over   Over
+  *                       BOCF   Data
+    shsmp_divide_ratio =   1   :  1  ;      *wrt SU data rate
+  *
+    sample_count_per_lag_enable = on  ;
+  *
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_SECTION_MODE;
+*
+  def C32A;
+*   Chip mode B13: X0/X1, X3/X2 cross; X0,X1,X2,X3 auto
+    chip = B13A:  0  : ~stn0  : ~stn1  :        :        ;
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_CHIP_MODE;
+*
+  def B13A;
+  *                     -mux settings-
+  *                blk  M0  M1  M2  M3
+    block = CHEAD : A0 : 0 : 3 : 0 : 3 ;
+    block = AUTO  : A1 : 0 : 2 : 1 : 1 ;
+    block = CHEAD : A2 : 3 : 3 : 4 : 3 ;
+    block = AUTO  : A3 : 0 : 2 : 1 : 1 ;
+    block = CTAIL : B0 : 0 : 3 : 0 : 3 ;
+    block = AUTO  : B1 : 0 : 2 : 1 : 1 ;
+    block = CTAIL : B2 : 3 : 3 : 2 : 3 ;
+    block = AUTO  : B3 : 0 : 2 : 1 : 1 ;
+  *
+  *          type     ref  rem  ----snake----------------
+    snake = complex : X0 : X1 : A0l-: B2l;
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_BLOCK_MODE;
+*-----------------------------------------------------------------------------------------------
+*
+  def CHEAD;
+  *                l_cell r_cell
+    rotator_mode =    3  :  3  ;        *multiply data by sinusoid
+    xdelay =          0  :  0  ;        *xdelay=0
+    ydelay =          0  :  0  ;        *ydelay=0
+    tap_motion_enable =     0  ;        *disable tap motion; lock to zero delay
+    header_mode =           1  ;        *force sample data invalid during header
+    invalid_on_tap_motion = 1  ;        *invalidate data on tap motion
+  enddef;
+*
+  def CTAIL;
+  *               l_cell r_cell
+    rotator_mode =   0  :   0  ;        *pass data samples thru unchanged
+    xdelay =         0  :   0  ;        *xdelay=0
+    ydelay =         1  :   1  ;        *ydelay=1
+    tap_motion_enable =     1  ;        *enable tap motion
+    header_mode =           1  ;        *force sample data invalid during header
+    invalid_on_tap_motion = 1  ;        *invalidate data on tap motion
+  enddef;
+*
+  def AUTO;
+  *                l_cell r_cell
+    rotator_mode =   0   :  0  ;        *pass data samples thru unchanged
+    xdelay =         0   :  0  ;        *xdelay=0
+    ydelay =         0   :  1  ;        *ydelay=0 on left; ydelay=1 on right
+    tap_motion_enable =     0  ;        *disable tap motion; lock to zero delay
+    header_mode =           1  ;        *force sample data invalid during header
+    invalid_on_tap_motion = 0  ;        *irrelevant (no tap motion)
+  enddef;
+*Sample svex file
+*
+*Example of VEX task-specific SU configuation file (.svex).
+*The appropriate $SU_CONFIG key will be specified for every task in order to
+*properly set up each station unit.
+*
+*Notes:
+*  1. Parameters beginning with '~' are to be determined at setup time.
+*
+*ARW 981116
+*
+*-----------------------------------------------------------------------------------------------
+$SVEX_REV;
+*-----------------------------------------------------------------------------------------------
+*
+rev = 1.0;
+*
+*-----------------------------------------------------------------------------------------------
+$SU_CONFIG;
+*-----------------------------------------------------------------------------------------------
+*
+    def std;
+	  ref $SU_CHAN_OUT = std;
+	  ref $PCM_CONFIG = 4x4;
+	enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$SU_CHAN_OUT;             *key specified in evex file
+*-----------------------------------------------------------------------------------------------
+*
+*The 'channel_out_assignment =' statement assigns recorded channels to specific CRM output
+*channels. If 'channel_out_assignment=' statement not present, CRM output channels are assigned
+*in the order defined in the $FREQ section.
+*
+*If 'pcal freq-x' fields are left null, phase-cal frequencies specified in $PHASE_CAL_DETECT
+*section will be used by default.
+*
+   def std;
+  *                         SU-out  recorded      pcal        pcal
+  *                         Chan#   chan ID      freq_a      freq_b
+    channel_out_assignment =  0   : &CH1     :   10000 Hz :  1.01 MHz ;  *phase-cal freqs
+                                                                         *usually defaulted
+    channel_out_assignment =  1   : &CH2     :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment =  2   : &CH3     :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment =  3   : &CH4     :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment =  4   : &CH5     :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment =  5   : &CH6     :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment =  6   : &CH7     :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment =  7   : &CH8     :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment =  8   : &CH9     :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment =  9   : &CH10    :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment = 10   : &CH11    :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment = 11   : &CH12    :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment = 12   : &CH13    :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment = 13   : &CH14    :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment = 14   : &CH15    :   10000 Hz :  1.01 MHz ;
+    channel_out_assignment = 15   : &CH16    :   10000 Hz :  1.01 MHz ;
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$PCM_CONFIG;            *key specified in evex file
+*-----------------------------------------------------------------------------------------------
+*
+*Specifies algorithm for digital tone extraction by PCM for one channel.
+*'~freq_x' are replaced by tone numbers specified in 'channel_out_assignment=' statement of
+*$CRM_CONFIG (or corresponding defaults).
+*The normalized correlation coefficients are computed as the (dot product of the specified
+*counter values and the corresponding coefficient vector) divided by the Vldty count.
+*The validity count is always in counter 8.
+*See Mark IV memo #133 for explanation of normalization coeficients.
+*
+  def 4x4;   *4-level data, 4-level rotator; 2 tones/channel
+  *       $PCM_TABLES                 MSB        LSB        Vldty
+  *             ref    freq           ctr# coef  ctr# coef   ctr    coef
+    phase_cal = 4x4 : ~freq_a :  sin : 1 : 1.96 : 0 : 0.98 :  8  : -1.47 ;
+    phase_cal = 4x4 : ~freq_a :  cos : 3 : 1.96 : 2 : 0.98 :  8  : -1.47 ;
+    phase_cal = 4x4 : ~freq_b :  sin : 5 : 1.96 : 4 : 0.98 :  8  : -1.47 ;
+    phase_cal = 4x4 : ~freq_b :  cos : 7 : 1.96 : 6 : 0.98 :  8  : -1.47 ;
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$PCM_TABLES;
+*-----------------------------------------------------------------------------------------------
+*
+*Specifies contents of tables to be downloaded to PCM (see Mark IV memo 133).
+*One full period of must be specified in tabular form.
+*
+  def 4x4;
+*                sample
+*                 value        0   30  60 90  120 150 180 210 240 270 300 330 deg
+    table_values=   3 :  sin : 2 : 3 : 3 : 3 : 3 : 2 : 1 : 0 : 0 : 0 : 0 : 1 ;  *>200mv
+    table_values=   2 :  sin : 2 : 2 : 2 : 2 : 2 : 2 : 1 : 1 : 1 : 1 : 1 : 1 ;  *0 to 200mv
+    table_values=   1 :  sin : 1 : 1 : 1 : 1 : 1 : 1 : 2 : 2 : 2 : 2 : 2 : 2 ;  *0 to -200 mv
+    table_values=   0 :  sin : 1 : 0 : 0 : 0 : 0 : 1 : 2 : 3 : 3 : 3 : 3 : 2 ;  *<-200mv
+    table_values=   3 :  cos : 3 : 3 : 2 : 1 : 0 : 0 : 0 : 0 : 1 : 2 : 3 : 3 ;  *>200mv
+    table_values=   2 :  cos : 2 : 2 : 2 : 1 : 1 : 1 : 1 : 1 : 1 : 2 : 2 : 2 ;  *0 to 200mv
+    table_values=   1 :  cos : 1 : 1 : 1 : 2 : 2 : 2 : 2 : 2 : 2 : 1 : 1 : 1 ;  *0 to -200 mv
+    table_values=   0 :  cos : 0 : 0 : 1 : 2 : 3 : 3 : 3 : 3 : 2 : 1 : 0 : 0 ;  *<-200mv
+    tabular_delta_phase = 30 deg;
+  enddef;
+*----------------------
+$LVEX_REV;
+*
+rev = 1.0;
+*----------------------
+$LOG;
+
+    def B;  * Eflsberg
+        scan 062-094600;
+            VSN        = USNO0390;      * check: B250
+*           head_pos   =  210 um;     
+            head_pos   =  847 um;      * B headstack offset by 1 head pitch  rjc 99.6.15 [srs 1999.06.29]
+*           head_pos   = -550 um;      * B headstack offset by 1 head pitch other way rjc 99.6.17
+            start_tape = 1993y062d09h46m00s : 3300 ft : 0 in/sec;
+            stop_tape  = 1993y062d09h46m55s ;
+        endscan;
+    enddef;
+
+    def Y;  * VLA
+        scan 062-094600;
+            VSN        = AF810009;      * check: C61F
+            head_pos   =   79 um;       * [srs 1999.06.29]
+*           head_pos   =   90 um;
+*           head_pos   =-1318 um;       * Y offset by -2 head pitches -- test rjc 99.6.15
+            start_tape = 1993y062d09h46m00s : 3600 ft : 0 in/sec;
+            stop_tape  = 1993y062d09h46m55s;
+        endscan;
+    enddef;
+* 1999-02-03
+*-------------------------
+$IVEX_REV;
+*-------------------------
+rev = 1.0;
+
+*-------------------------
+$CORR_INIT;
+*-------------------------
+ def INIT_A;
+  system_tempo = 1.00;
+  bocf_period  = 16000000;  * 2 bocfs per second
+
+  *
+  ref $PBS_INIT = PBS_0;
+  ref $PBS_INIT = PBS_1;
+*  ref $PBS_INIT = PBS_2;
+ enddef;
+
+*-------------------------
+$PBS_INIT;
+*-------------------------
+ def PBS_0;
+  SU_ID                =  0 : SU0;
+  ref $DRIVE_INIT      =  DRIVE_A;
+  ref $TRM_CONFIG      =  TRM1;
+* ref $SU/CORR_CONNECT =  STD0;
+  ref $SU/CORR_CONNECT =  TEST0;
+* ref $SU/CORR_CONNECT =  TEST1;   *auto-correlation test  rjc 99.7.29
+ enddef;
+
+ def PBS_1;
+  SU_ID                =  1 : SU1;
+  ref $DRIVE_INIT      =  DRIVE_B;
+  ref $TRM_CONFIG      =  TRM1;
+* ref $SU/CORR_CONNECT =  STD1;
+  ref $SU/CORR_CONNECT =  TEST1;
+* ref $SU/CORR_CONNECT =  TEST0;   *auto-correlation test  rjc 99.7.26
+ enddef;
+
+*-------------------------
+$DRIVE_INIT;
+*-------------------------
+ def DRIVE_A;
+  * mkiv drive, s/n 4603004AJ85
+  drive_type     = Mark4; * Mark4|VLBA
+  capstan_relative_diameter = 1.014;
+
+  vacuum_setting    = 5 : 0x0c80 : 15 : 0x1450;  * @ HAYSTACK, drive 0
+  tape_acceleration   = 67.5 ;
+
+ *                         hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   0   :   8;
+  headstack/DIM_connect  =   1   :  odd  :   1   :   8;
+ *                         hdstk    fwd    rev     eqlzr
+  monitor_module_track   =   1   :   21  :  21   :   2; * NB! forward value is wrong, but not used
+
+ *                       hdstk    fbias   rbias  ffspeed  fsspeed rfspeed rsspeed pscale  nscale
+  headstack_parms    =     1   : -187.7: -185.9:   160.6:    15.0:  153.9:   13.9: 178.6:  179.1;   * 1997-07-16
+ enddef;
+
+ def DRIVE_B;
+  * mkiv drive, s/n 4903059KD86
+  drive_type     = Mark4;
+  capstan_relative_diameter = 1.014;
+
+  vacuum_setting    = 5 : 0x0ed8 : 15 : 0x1900; * @ HAYSTACK, drive 1
+  tape_acceleration   = 67.5 ;
+
+ *                          hdstk trks DIMin Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   0   :   8;
+  headstack/DIM_connect  =   1   :  odd  :   1   :   8;
+
+ *                           hdstk    fwd    rev     eqlzr
+  monitor_module_track   =   1   :   20  :  20   :   2; * NB! forward value is wrong, but not used
+
+ *                       hdstk    fbias   rbias  ffspeed  fsspeed rfspeed rsspeed pscale  nscale
+  headstack_parms    =     1   : -136.5: -124.4:   115.7:    14.1:  121.5:   15.2: 173.3:  175.9;   * 1999-04-07
+ enddef;
+
+*-------------------------
+$TRM_CONFIG;
+*-------------------------
+ def TRM1;
+ *                           M  b/s
+  TRM_order_within_channel = 4 : 2 : sign0 :  mag0  :  sign1 :  mag1 : sign2 :  mag2 : sign3 : mag3;
+  TRM_order_within_channel = 2 : 2 : sign0 :  mag0  :  sign1 :  mag1;
+  TRM_order_within_channel = 1 : 2 : sign0 :  mag0;
+  TRM_order_within_channel = 4 : 1 : sign0 :  sign1 :  sign2 :  sign3;
+  TRM_order_within_channel = 2 : 1 : sign0 :  sign1;
+  TRM_order_within_channel = 1 : 1 : sign0;
+ *
+  parity_error_limit          =   1.0e-2;  * 1%
+
+ *                                CRC    PErr   nosync  resync
+  invalid_frame_control       =   on  :  on  :  off  :  on;
+* invalid_frame_control       =   off :  off :  off  :  off;  * rjc 990723 -- CHANGE BACK!!!
+ enddef;
+
+*-------------------------
+$SU/CORR_CONNECT;
+
+ def TEST0;
+ *              SU   Corr   InputBd
+ *            ChnGrp Segmt  ChnGrp
+  SU_connect =  3 :  0  :    0;
+  SU_connect =  1 :  1  :    0;
+  SU_connect =  2 :  2  :    0;
+  SU_connect =  0 :  3  :    0;
+ enddef;
+
+ def TEST1;
+ *              SU   Corr   InputBd
+ *            ChnGrp Segmt  ChnGrp
+  SU_connect =  3 :  0  :    1;
+  SU_connect =  1 :  1  :    1;
+  SU_connect =  2 :  2  :    1;
+  SU_connect =  0 :  3  :    1;
+ enddef;

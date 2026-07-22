@@ -28,15 +28,15 @@ static int reconcile_names(char *scanA, char *scanB, char *scanC)
     return(!strcmp(scanA, scanC));
     }
 
-static void revise(char *line, char *old, int olen, char *new)
+static void revise(char *line, char *old, int olen, char *new_val)
     {
     static char mine[MAX_CHARS];
     char *at, *rest;
     if ((at = strstr(line, old)) == NULL) return;		// not here
-    if (strlen(line) - olen + strlen(new) > MAX_CHARS) return;	// danger!
+    if (strlen(line) - olen + strlen(new_val) > MAX_CHARS) return;	// danger!
     *at = 0;
     rest = at + olen - 1;
-    sprintf(mine, "%s%s", new, rest);
+    sprintf(mine, "%s%s", new_val, rest);
     strcat(line, mine);
     }
 

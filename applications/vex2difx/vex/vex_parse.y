@@ -2105,8 +2105,7 @@ empty_name: /* empty */   {$$=NULL;}
 ;
 %%
 
-void yyerror(s)
-char const *s;
+void yyerror(const char *s)
 {
   fprintf(stderr,"%s at line %d\n",s,lines);
   exit(1);

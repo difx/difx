@@ -56,9 +56,7 @@ fvex_open__
 #else
 fvex_open
 #endif
-(name, vex)
-char **name;
-integer *vex;
+(char **name, integer *vex)
 /*<       integer function fvex_open(ptr_ch(name),vex) >*/
 /*<       character*(*) name >*/
 /*<       integer vex >*/
@@ -84,9 +82,7 @@ fget_vex_rev__
 #else
 fget_vex_rev
 #endif
-(version, version_len, vex)
-char **version;
-integer *version_len, *vex;
+(char **version, integer *version_len, integer *vex)
 /*<       integer function fget_vex_rev(ptr_ch(version),len(version), >*/
 /*<                                         vex) >*/
 /*<       implicit none >*/
@@ -145,9 +141,7 @@ fget_station_def__
 #else
 fget_station_def
 #endif
-(station, station_len, vex)
-char **station;
-integer *station_len, *vex;
+(char **station, integer *station_len, integer *vex)
 /*<       integer function fget_station_def(ptr_ch(station),len(station), >*/
 /*<                                         vex) >*/
 /*<       implicit none >*/
@@ -212,9 +206,7 @@ fget_mode_def__
 #else
 fget_mode_def
 #endif
-(mode, mode_len, vex)
-char **mode;
-integer *mode_len,*vex;
+(char **mode, integer *mode_len, integer *vex)
 /*<       integer function fget_mode_def(ptr_ch(mode),len(mode),vex) >*/
 /*<       implicit none >*/
 /*<       character*(*) mode >*/
@@ -276,9 +268,7 @@ fget_source_def__
 #else
 fget_source_def
 #endif
-(source, source_len, vex)
-char **source;
-integer *source_len,*vex;
+(char **source, integer *source_len, integer *vex)
 /*<       integer function fget_source_def(ptr_ch(source),len(source),vex) >*/
 /*<       implicit none >*/
 /*<       character*(*) source >*/
@@ -339,9 +329,7 @@ fget_all_lowl__
 #else
 fget_all_lowl
 #endif
-(station, mode, statement, primitive, vex) 
-char **station, **mode, **statement, **primitive;
-integer *vex;
+(char **station, char **mode, char **statement, char **primitive, integer *vex) 
 /*<      integer function fget_all_lowl(ptr_ch(station), >*/
 /*<     &                               ptr_ch(mode), >*/
 /*<     &                               ptr_ch(statement), >*/
@@ -403,9 +391,7 @@ fget_mode_lowl__
 #else
 fget_mode_lowl
 #endif
-(station, mode, statement, primitive, vex)
-char **station, **mode, **statement, **primitive;
-integer *vex;
+(char **station, char **mode, char **statement, char **primitive, integer *vex)
 /*<      integer function fget_mode_lowl(ptr_ch(station), >*/
 /*<     &                                ptr_ch(mode), >*/
 /*<     &                                ptr_ch(statement), >*/
@@ -469,9 +455,7 @@ fget_station_lowl__
 #else
 fget_station_lowl
 #endif
-( station, statement, primitive, vex)
-char **station, **statement, **primitive;
-integer *vex;
+(char ** station, char **statement, char **primitive, integer *vex)
 /*<      integer function fget_station_lowl(ptr_ch(station), >*/
 /*<     &                                 ptr_ch(statement), >*/
 /*<     &                                 ptr_ch(primitive), >*/
@@ -531,9 +515,7 @@ fget_global_lowl__
 #else
 fget_global_lowl
 #endif
-(statement, primitive, vex)
-char **statement, **primitive;
-integer *vex;
+(char **statement, char **primitive, integer *vex)
 /*<      integer function fget_global_lowl(ptr_ch(statement), >*/
 /*<     &                                 ptr_ch(primitive), >*/
 /*<	&                                 vex) >*/
@@ -589,9 +571,7 @@ fget_scan_station__
 #else
 fget_scan_station
 #endif
-(start, start_len, mode, mode_len, scanid, scanid_len, station, vex)
-char **start, **mode, **station, **scanid;
-integer *start_len, *mode_len, *scanid_len, *vex;
+(char **start, integer *start_len, char **mode, integer *mode_len, char **scanid, integer *scanid_len, char **station, integer *vex)
 /*<      integer function fget_scan_station(ptr_ch(start), len(start),>*/
 /*<     &                                   ptr_ch(mode), len(mode), >*/
 /*<     &                                   ptr_ch(scanid), len(scanid), >*/
@@ -669,9 +649,7 @@ fget_scan_data_transfer__
 #else
 fget_scan_data_transfer
 #endif
-(start, start_len, mode, mode_len, scanid, scanid_len, station, vex)
-char **start, **mode, **station, **scanid;
-integer *start_len, *mode_len, *scanid_len, *vex;
+(char **start, integer *start_len, char **mode, integer *mode_len, char **scanid, integer *scanid_len, char **station, integer *vex)
 /*<      integer function fget_scan_data_transfer(ptr_ch(start), len(start),>*/
 /*<     &                                   ptr_ch(mode), len(mode), >*/
 /*<     &                                   ptr_ch(scanid), len(scanid), >*/
@@ -749,9 +727,7 @@ fget_scan__
 #else
 fget_scan
 #endif
-(start, start_len, mode, mode_len, scanid, scanid_len, vex)
-char **start, **mode, **scanid;
-integer *start_len, *mode_len, *scanid_len,*vex;
+(char **start, integer *start_len, char **mode, integer *mode_len, char **scanid, integer *scanid_len, integer *vex)
 /*<      integer function fget_scan(ptr_ch(start),len(start),  */
 /*     &                           ptr_ch(mode),len(mode),     */
 /*     &                           ptr_ch(scanid),len(scanid), */
@@ -832,8 +808,7 @@ fget_station_scan__
 #else
 fget_station_scan
 #endif
-(n)
-integer *n;
+(integer *n)
 /*<      integer function fget_station_scan(n) >*/
 /*<      implicit none >*/
 /*<      integer n >*/
@@ -881,8 +856,7 @@ fget_data_transfer_scan__
 #else
 fget_data_transfer_scan
 #endif
-(n)
-integer *n;
+(integer *n)
 /*<      integer function fget_data_transfer_scan(n) >*/
 /*<      implicit none >*/
 /*<      integer n >*/
@@ -931,9 +905,7 @@ fget_source_lowl__
 #else
 fget_source_lowl
 #endif
-(source, statement, vex)
-char **source, **statement;
-integer *vex;
+(char **source, char **statement, integer *vex)
 /*<       integer function fget_source_lowl(ptr_chr(source), */
 /*                                          ptr_chr(statement), */
 /*                                          vex) >*/
@@ -983,8 +955,7 @@ fget_literal__
 #else
 fget_literal
 #endif
-(string)
-char *string;
+(char *string)
 /*<       integer function fget_literal(string) > */
 
 /*<       implicit none >*/
@@ -1038,8 +1009,7 @@ fget_literal_st__
 #else
 fget_literal_st
 #endif
-(string)
-char **string;
+(char **string)
 /*<       integer function fget_literal(ptr_chr(string) >*/
 /*<       implicit none >*/
 /*<       character*(*) string >*/
@@ -1080,9 +1050,7 @@ fvex_len__
 #else
 fvex_len
 #endif
-(field, field_len)
-char *field;
-ftnlen field_len;
+(char *field, ftnlen field_len)
 /*<       integer function fvex_len(field) >*/
 /*<       implicit none >*/
 /*<       character*(*) field >*/
@@ -1113,9 +1081,7 @@ fvex_field__
 #else
 fvex_field
 #endif
-(n, field, field_len)
-integer *n, *field_len;
-char **field;
+(integer *n, char **field, integer *field_len)
 /*<       integer function fvex_field(n,ptr_ch(field),len(field)) >*/
 /*<       implicit none >*/
 /*<       integer n >*/
@@ -1172,9 +1138,7 @@ fvex_units__
 #else
 fvex_units
 #endif
-(units, units_len)
-char **units;
-integer *units_len;
+(char **units, integer *units_len)
 /*<       integer function fvex_units(ptr_ch(units),len(units)) >*/
 /*<       implicit none >*/
 /*<       character*(*) units >*/
@@ -1210,8 +1174,7 @@ fvex_scan_intent__
 #else
 fvex_scan_intent
 #endif
-(n)
-integer *n;
+(integer *n)
 /*<       integer function fvex_scan_intent(n) >*/
 /*<       implicit none >*/
 /*<       integer n >*/
@@ -1254,8 +1217,7 @@ fvex_scan_pointing_offset__
 #else
 fvex_scan_pointing_offset
 #endif
-(n)
-integer *n;
+(integer *n)
 /*<       integer function fvex_scan_pointing_offset(n) >*/
 /*<       implicit none >*/
 /*<       integer n >*/
@@ -1298,8 +1260,7 @@ fvex_scan_source2__
 #else
 fvex_scan_source2
 #endif
-(n)
-integer *n;
+(integer *n)
 /*<       integer function fvex_scan_source2(n) >*/
 /*<       implicit none >*/
 /*<       integer n >*/
@@ -1342,10 +1303,7 @@ fvex_scan_source__
 #else
 fvex_scan_source
 #endif
-(n, src, src_len)
-integer *n;
-char **src;
-integer *src_len;
+(integer *n, char **src, integer *src_len)
 /*<       integer function fvex_scan_source(n,ptr_ch(src),len(src)) >*/
 /*<       implicit none >*/
 /*<       integer n >*/
@@ -1397,9 +1355,7 @@ fvex_double__
 #else
 fvex_double
 #endif
-(field, units, double__)
-char **field, **units;
-doublereal *double__;
+(char **field, char **units, doublereal *double__)
 /*<       integer function fvex_double(ptr_ch(field),ptr_ch(units),double) >*/
 /*<       implicit none >*/
 /*<       character*(*) field,units >*/
@@ -1576,9 +1532,7 @@ fvex_int__
 #else
 fvex_int
 #endif
-(field, int__)
-char **field;
-integer *int__;
+(char **field, integer *int__)
 /*<       integer function fvex_int(ptr_ch(field),int) >*/
 /*<       implicit none >*/
 /*<       character*(*) field >*/
@@ -1609,10 +1563,7 @@ fvex_date__
 #else
 fvex_date
 #endif
-(field, iarray, seconds)
-char **field;
-integer *iarray;
-doublereal *seconds;
+(char **field, integer *iarray, doublereal *seconds)
 /*<       integer function fvex_date(ptr_chr(field),iarray,seconds) >*/
 /*<       implicit none >*/
 /*<       character*(*) field >*/
@@ -1661,9 +1612,7 @@ fvex_ra__
 #else
 fvex_ra
 #endif
-(field, ra)
-char **field;
-doublereal *ra;
+(char **field, doublereal *ra)
 /*<       integer function fvex_ra(field,ra) >*/
 /*<       implicit none >*/
 /*<       character*(*) field >*/
@@ -1696,9 +1645,7 @@ fvex_dec__
 #else
 fvex_dec
 #endif
-(field, dec)
-char **field;
-doublereal *dec;
+(char **field, doublereal *dec)
 /*<       integer function fvex_dec(ptr_ch(field),dec) >*/
 /*<       implicit none >*/
 /*<       character*(*) field >*/
@@ -1745,13 +1692,12 @@ ptr_ch__
 #else
 ptr_ch
 #endif
-(char *ptr,ftnlen len)
+(char *ptr, ftnlen len)
 {
   return ptr;
 }
 /* ----------------------------------------------------------------------- */
-static int
-field_copy(char *field,int field_len,char *ptr)
+static int field_copy(char *field, int field_len, char *ptr)
 {
   int clen, len;
 

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 1527 2017-01-19 13:33:28Z gbc $
+# $Id: Makefile.am 4435 2026-04-26 18:01:49Z gbc $
 #
 
 SUBDIRS = .
@@ -11,10 +11,10 @@ solid_doc = adump.doc aedit.doc alist.doc \
 	    fplot.doc fringex.doc general.doc \
 	    libafio.doc libdfio.doc \
 	    libutil.doc \
-	    scripts.doc vhelp.doc 
+	    scripts.doc vhelp.doc \
+		average.doc cohfit.doc search.doc
 devel_doc = calamp.doc coterp.doc linkdata.doc pratio.doc \
-	    average.doc bispec.doc cofit.doc fearfit.doc hfold.doc \
-	    mmreduce.doc search.doc
+	    bispec.doc fearfit.doc hfold.doc mmreduce.doc
 quiet_doc = template.doc ff_control.doc ff_output.doc \
 	    ff_search.doc ff_vsfrnge.doc
 

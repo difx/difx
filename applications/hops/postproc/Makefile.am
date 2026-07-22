@@ -1,11 +1,13 @@
 #
-# $Id: Makefile.am 1048 2015-03-04 14:55:00Z rjc $
+# $Id: Makefile.am 4512 2026-05-10 21:48:06Z gbc $
 #
 
 if HAVE_DEVEL
-SUBDIRS = . adump aedit alist fourfit fourmer fplot fringex snratio @IFFYDIR@
+SUBDIRS = . adump aedit alist average cohfit \
+	fourfit fourmer fringex fplot search snratio @IFFYDIR@
 else
-SUBDIRS = . adump aedit alist fourfit fourmer fplot fringex snratio
+SUBDIRS = . adump aedit alist average cohfit \
+	fourfit fourmer fringex fplot search snratio
 endif
 DIST_SUBDIRS = $(SUBDIRS)
 

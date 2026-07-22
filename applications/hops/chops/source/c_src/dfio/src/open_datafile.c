@@ -40,7 +40,7 @@ open_datafile (char filename[],
     struct stat fil_status;
     fstruct f_info;
     extern int errno;
-                                        /* Assume current working dir if caller */
+                                        /* Try current working dir if caller */
                                         /* fails to provide full path */
     if (filename[0] != '/')
         {
@@ -68,6 +68,7 @@ open_datafile (char filename[],
     if (ptr == NULL) expdir[0] = '\0';
     else strncpy (expdir, ptr+1, sizeof (expdir));
                                         /* This fills f_info with useful data */
+    prep_fstruct(&f_info);
     if (check_name (name, &f_info) != 0)
         {
         msg ("Badly formed data file name '%s'", 3, filename);

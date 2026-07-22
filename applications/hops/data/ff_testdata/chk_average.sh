@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_average.sh 3326 2021-09-04 13:05:05Z gbc $
+# $Id: chk_average.sh 4573 2026-05-21 21:28:02Z gbc $
 #
 # this uses aedit's output, with fringex to average data
 #

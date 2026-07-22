@@ -1,6 +1,7 @@
+#!/usr/bin/python
 """integration test for ffres2pcp_lib"""
 #core imports
-from __future__ import print_function
+#-3.13++#from __future__ import print_function
 from builtins import str
 import datetime
 import argparse
@@ -30,6 +31,8 @@ def main():
     #configure test and run ffres2pcp
     config_obj = vpal.ffres2pcp_lib.Configuration()
     config_obj.exp_directory = exp_dir
+    config_obj.mode = 'VGOS'
+    config_obj.frequency_group = 'X'
     config_obj.network_reference_station = 'G'
     config_obj.target_stations = 'EV'
     config_obj.control_file = os.path.join( config_obj.exp_directory, 'cf_GEV_test')
@@ -58,7 +61,8 @@ def main():
     report_data.config_obj = config_obj
 
     #retrieve pre-existing pc_phases from control
-    apriori_pcp = vpal.ffres2pcp_lib.get_apriori_pc_phases( os.path.abspath(config_obj.control_file), config_obj.target_stations, config_obj.network_reference_station, config_obj.network_reference_station_pol, config_obj.frequency_group)
+    apriori_pcp = vpal.ffres2pcp_lib.get_apriori_pc_phases(config_obj)
+    #vpal.ffres2pcp_lib.get_apriori_pc_phases( os.path.abspath(config_obj.control_file), config_obj.target_stations, config_obj.network_reference_station, config_obj.network_reference_station_pol, config_obj.frequency_group)
     report_data.apriori_sspcp = apriori_pcp
 
     #generate station pc_phases for this experiment

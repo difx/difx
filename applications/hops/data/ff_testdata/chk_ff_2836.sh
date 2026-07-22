@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# $Id: chk_ff_2836.sh 3327 2021-09-04 13:47:06Z gbc $
+# $Id: chk_ff_2836.sh 4383 2025-07-20 21:38:08Z gbc $
 #
-# canonical test suite for fourfit
+# canonical test suite for fourfit3
 #
 
 verb=false
@@ -17,11 +17,11 @@ grep -v $os $DATADIR/2836/cf2836 > ./cf2836
 
 rm -f ff-2836.ps
 $verb && echo \
-fourfit -t -d diskfile:ff-2836.ps -b AE:X \\ && echo \
+$fourfit -t -d diskfile:ff-2836.ps -b AE:X \\ && echo \
     -c ./cf2836 \\ && echo \
     $DATADIR/2836/scan001/2145+067.olomfh
 
-fourfit -t -d diskfile:ff-2836.ps -b AE:X \
+$fourfit -t -d diskfile:ff-2836.ps -b AE:X \
     -c ./cf2836 \
     $DATADIR/2836/scan001/2145+067.olomfh 2>/dev/null 1>&2
 [ -f ./ff-2836.ps ] || { echo ./ff-2836.ps missing && exit 2 ; }

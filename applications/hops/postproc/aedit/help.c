@@ -88,6 +88,8 @@ void help(char *string)
         int n, i, match, nmatch;
         char c, filename[200], buf[200];
         struct stat statbuf;
+        char *pager = getenv("PAGER");
+        if (!pager) pager = "more";
 
         n = strlen(string);     /* Convert to lower case */
         for(i=0;i<n;i++) {
@@ -125,10 +127,12 @@ void help(char *string)
                 }
                 else perror("Help");
             }
-            else {              /* Simply "more" the file to stdout */
-                printf("\t\t\tAEDIT version 5.0\n\t\t\t-----------------\n\n");
-                fflush(stdout);
-                sprintf(buf,"cat %s | grep -v verbatim | more",filename);
+            else {              /* Simply send the file to PAGER or more */
+                if (msglev < 3) {
+                    printf("\t\t\tAEDIT version 5.0\n\t\t\t-----------------\n\n");
+                    fflush(stdout);
+                }
+                sprintf(buf,"cat %s | grep -v verbatim | %s", filename, pager);
                 if(system(buf) != 0) msg("System() problem", 2);
             }
         }
