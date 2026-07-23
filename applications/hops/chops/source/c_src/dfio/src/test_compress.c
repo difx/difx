@@ -7,9 +7,6 @@
 extern void compress_compress  (U8 *,U8 *,U32,U8 *,U32 *);
 extern void compress_decompress(U8 *,U8 *,U32,U8 *,U32 *);
 
-void compress_compress(unsigned char* p_wrk_mem, unsigned char* p_src_first, unsigned int src_len, unsigned char* p_dst_first, unsigned int* p_dst_len);
-void compress_decompress(unsigned char* p_wrk_mem, unsigned char* p_src_first, unsigned int src_len, unsigned char* p_dst_first, unsigned int* p_dst_len);
-
 static FILE *fopen_trials(char **name, char *mode)
     {
     FILE *fp = fopen(*name, mode);

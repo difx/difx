@@ -32,7 +32,6 @@ enum {USB_LCP, LSB_LCP, USB_RCP, LSB_RCP, NONE};
 enum {LCP, RCP};
 
 void sort_time (double *, double *, double *, double *, double *, int);
-int ap_mean (double start, double stop, double *coords, double *val1, double *val2, int n, int *nstart, double *result1, double *result2);
 
 
 int

@@ -9,7 +9,6 @@
 #include "mk4_data.h"
 #include "param_struct.h"
 #include "pass_struct.h"
-#include "msg.h"
 
 void update (struct type_pass* pass,
     int mbd_cell, double max_val, int lag, int drate_cell, int flag)
