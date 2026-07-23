@@ -199,6 +199,7 @@ int main (int argc, char * const argv[]) {
     {"scale", 1, 0, 's'},
     {"drop", 1, 0, 'd'},
     {"bits", 1, 0, 'b'},
+    {"bufsize", 1, 0, 'B'},
     //{"invert", 0, 0, 'I'},
     {"split", 0, 0, 'S'},
     {"splitgroup", 0, 0, 'G'},
@@ -330,11 +331,19 @@ int main (int argc, char * const argv[]) {
       splitgroup = true;
       break;
 
-   case 'w':
+    case 'w':
       wait = true;
       break;
       
-   case 'r':
+    case 'B':
+      status = sscanf(optarg, "%f", &ftmp);
+      if (status!=1 || ftmp<=0)
+	      fprintf(stderr, "Bad bufsize option %s\n", optarg);
+      else 
+	      bufsize = ftmp;
+      break;
+
+    case 'r':
       reuse = true;
       break;
       
@@ -723,7 +732,8 @@ int main (int argc, char * const argv[]) {
   
 int setup_net(unsigned short port, const char *ip, const char *group, int reuse,
 	      int *sock, float bufsize) {
-  int status;
+  int status, setsize;
+  socklen_t winlen;
   struct sockaddr_in server; 
 
   /* Initialise server's address */
@@ -753,6 +763,17 @@ int setup_net(unsigned short port, const char *ip, const char *group, int reuse,
   status = setsockopt(*sock, SOL_SOCKET, SO_RCVBUF, (char *) &udpbufbytes, sizeof(udpbufbytes));
   if (status!=0) {
     fprintf(stderr, "Warning: Could not set socket RCVBUF\n");
+  } else {
+    /* Check what the window size actually was set to */
+    winlen = sizeof(setsize);
+    status = getsockopt(*sock, SOL_SOCKET, SO_RCVBUF, (char *) &setsize, &winlen);
+    if (status!=0) {
+      perror("Getting socket options");
+    } else {
+      if (setsize < udpbufbytes*0.95) {
+	fprintf(stderr, "Warning:  Buffersize set to %.1f Mbytes, requested %.1f\n", setsize/1024/1024.0, udpbufbytes/1024/1024.0);
+      }
+    }
   }
 
   if (reuse) {
@@ -791,7 +812,7 @@ int setup_net(unsigned short port, const char *ip, const char *group, int reuse,
   }
   
   return(0);
-}
+  }
   
 double tim(void) {
   struct timeval tv;
