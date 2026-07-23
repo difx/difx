@@ -1,6 +1,7 @@
 #ifndef T100_VERSION
 #define T100_VERSION 0
 
+#include <stdio.h>
 #include "mk4_typedefs.h"
 
                                         /* Set this to current version, */
@@ -25,5 +26,7 @@ struct type_100
     short        nlags;                 /* # of lags in a type_120 record */
     short        nblocks;               /* # blocks per index number */
     };
+
+void write_t100 (struct type_100 *, FILE *);
 
 #endif

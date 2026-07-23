@@ -1,10 +1,10 @@
-AC_INIT([difxdb], [2.4] )
+AC_INIT([difxdb],[2.5 ])
 
 
 AM_INIT_AUTOMAKE
 
 
-AC_OUTPUT([ \
+AC_CONFIG_FILES([ \
 	Makefile \
 	comedia/Makefile \
 	expad/Makefile \
@@ -19,3 +19,4 @@ AC_OUTPUT([ \
 	difxdbExperiment/Makefile \
 	difxdbParseFiles/Makefile \
 ])
+AC_OUTPUT

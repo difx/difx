@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2024 by Adam Deller                                     *
+ *   Copyright (C) 2024-2025 by Adam Deller                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: padVDIF.c 9394 2020-01-13 09:11:11Z JanWagner $
- * $HeadURL:  $
- * $LastChangedRevision: 9394 $
- * $Author: JanWagner $
- * $LastChangedDate: 2020-01-13 17:11:11 +0800 (一, 2020-01-13) $
- *
- *==========================================================================*/
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,16 +41,16 @@ static void usage()
 
 int main(int argc, char **argv)
 {
-  int VERBOSE = 0;
   int MODULATION_PERIOD = 100;
   char buffer[MAX_VDIF_FRAME_BYTES];
   FILE * input;
   FILE * output;
-  int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
-  int nextmjd, nextsecond, nextnumber;
-  int numinvalidframes, readvalidframes, readinvalidframes, wrotevalidframes, wroteinvalidframes;
+  int readbytes, framebytes, framenumber, frameinvalid, datambps, framespersecond;
+  int nextnumber;
+  int numinvalidframes;
+  long long int readvalidframes, readinvalidframes, wrotevalidframes, wroteinvalidframes;
   float invalidfraction = 0.0;
-  long long framesread, frameswrote;
+  long long int framesread, frameswrote;
   vdif_header *header;
 
   if(argc != 5)
@@ -98,8 +89,6 @@ int main(int argc, char **argv)
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
     exit(EXIT_FAILURE);
   }
-  nextmjd = getVDIFFrameMJD(header);
-  nextsecond = getVDIFFrameSecond(header);
   nextnumber = getVDIFFrameNumber(header);
   framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
   printf("Frames per second is %d\n", framespersecond);
@@ -119,8 +108,6 @@ int main(int argc, char **argv)
       break;
     }
     header = (vdif_header*)buffer;
-    framemjd = getVDIFFrameMJD(header);
-    framesecond = getVDIFFrameSecond(header);
     framenumber = getVDIFFrameNumber(header);
     frameinvalid = getVDIFFrameInvalid(header);
     if(frameinvalid)

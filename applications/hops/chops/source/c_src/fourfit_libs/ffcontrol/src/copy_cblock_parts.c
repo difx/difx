@@ -149,8 +149,35 @@ copy_cblock_parts ( struct c_block* f, struct c_block* t)
         strcpy (t->sampler_codes, f->sampler_codes);
         }
 
+    if (f->clone_snr_chk != NULLINT)
+        t->clone_snr_chk = f->clone_snr_chk;
+        
     if (f->vbp_correct != NULLINT)
         t->vbp_correct = f->vbp_correct;
+        
+    if (f->mixed_mode_rot != NULLINT)
+        t->mixed_mode_rot = f->mixed_mode_rot;
+
+    if (f->noautofringes != NULLINT)
+        t->noautofringes = f->noautofringes;
+
+    if (f->mod4numbering != NULLINT)
+        t->mod4numbering = f->mod4numbering;
+
+    if (f->polfringnames != NULLINT)
+        t->polfringnames = f->polfringnames;
+
+    if (f->display_chans[0] != 0)
+        strcpy (t->display_chans, f->display_chans);
+
+    if (f->fringeout_dir[0] != 0)
+        strcpy (t->fringeout_dir, f->fringeout_dir);
+
+    for (i=0; i<3; i++)
+        {
+        if (f->mbdrplopt[i] != NULLINT)
+            t->mbdrplopt[i] = f->mbdrplopt[i];
+        }
 
     if (f->vbp_fit != NULLINT)
         t->vbp_fit = f->vbp_fit;
@@ -249,7 +276,10 @@ copy_cblock_parts ( struct c_block* f, struct c_block* t)
             t->notches[i][0] = f->notches[i][0];
         if (f->notches[i][1] != NULLFLOAT)
             t->notches[i][1] = f->notches[i][1];
+        if (f->chan_notches[i] != WILDCARD)
+            t->chan_notches[i] = f->chan_notches[i];
         }
+    t->chan_notches[MAXNOTCH] = '\0';
 
     if (f->index[0] != NULLINT)     // this needs work (deprecated)
         for (i=0; i<32; i++)
@@ -259,6 +289,8 @@ copy_cblock_parts ( struct c_block* f, struct c_block* t)
                                     // and the to-list are present in the resulting to-list
     for (i=0; i<MAXFREQ; i++)                         
         {
+        // note that CLEAR_FREQS will have set these
+        // all to 0 so this is a bit of a no-op:
         if (f->accept_sbs[i] != NULLINT)
             t->accept_sbs[i] &= f->accept_sbs[i];
 
@@ -268,7 +300,6 @@ copy_cblock_parts ( struct c_block* f, struct c_block* t)
                 {
                 if (f->pc_phase[i][j].ref != NULLFLOAT)
                     t->pc_phase[i][j].ref = f->pc_phase[i][j].ref;
-
                 if (f->pc_phase[i][j].rem != NULLFLOAT)
                     t->pc_phase[i][j].rem = f->pc_phase[i][j].rem;
                 }
@@ -307,12 +338,22 @@ copy_cblock_parts ( struct c_block* f, struct c_block* t)
                 }
             }
         }
-        if (f->chid_rf[0] != 0.0)   // chid_rf[0] is flag for chid override
-            {
-            strncpy (t->chid, f->chid, MAXFREQ);
-            for (j=0; j<strlen (t->chid); j++)
-                t->chid_rf[j] = f->chid_rf[j];
-            }
+    if (f->chid_rf[0] != 0.0)   // chid_rf[0] nonzero flags for chid was used
+        {
+        for (j=0; j<strlen (f->chid); j++)
+            t->chid_rf[j] = f->chid_rf[j];
+        strncpy(t->chid, f->chid, MAXFREQ);
+        t->chid[MAXFREQ] = '\0';
+        }
+    // chid and chid_rf are only set in the starter block; afterwards
+    // these areas are empty--so the test for usage is critical.
+
+    // likewise, for the clones
+    if (f->clones[0][0])
+        {
+        for (j=0; j<2; j++) strncpy(t->clones[j], f->clones[j], MAXFREQ/2);
+        t->clones[0][MAXFREQ/2] = t->clones[1][MAXFREQ/2] = '\0';
+        }
 
     return(0);
     }

@@ -1,4 +1,4 @@
-AC_INIT([vex2difx], [3.1.0], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([vex2difx], [3.1.1], [Walter Brisken <wbrisken@nrao.edu>])
 AC_CONFIG_HEADERS([config.h])
 
 AC_C_BIGENDIAN
@@ -13,15 +13,15 @@ AC_PROG_CC
 AC_PROG_F77
 AC_PROG_CPP
 AC_PROG_YACC
-AC_PROG_LEX([yywrap])
+AC_PROG_LEX([noyywrap])
 AC_PROG_CXX
 PKG_PROG_PKG_CONFIG
 
 AM_SANITY_CHECK
 
 AC_SEARCH_LIBS([sqrt], [m])
-PKG_CHECK_MODULES(DIFXIO, difxio >= 3.7.0)
-PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.7.0])
+PKG_CHECK_MODULES(DIFXIO, difxio >= 3.8.0)
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.9.0])
 PKG_CHECK_MODULES(DIRLIST, dirlist >= 0.2)
 
 LIBS="${LEXLIB} ${LIBS} ${DIFXIO_LIBS} ${DIRLIST_LIBS}"

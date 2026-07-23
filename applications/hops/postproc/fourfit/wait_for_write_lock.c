@@ -29,7 +29,7 @@
 //returns LOCK_PROCESS_HAS_PRIORITY if this process is at the front of the queue
 //returns LOCK_PROCESS_NO_PRIORITY if otherwise
 //returns and error code (various, see write_lock_mechanism.h) if an error
-int at_front(char* rootname, char* lockfile_name)
+int at_front(char* rootname, char* lockfile_name, int cand_seq_no)
     {
 
     //figure out root directory
@@ -86,7 +86,7 @@ int at_front(char* rootname, char* lockfile_name)
     if(process_priority != LOCK_PROCESS_HAS_PRIORITY){return process_priority;};
     
     //no other locks present, so go ahead and try to create a lock file
-    int lock_retval = create_lockfile(rootname, lockfile_name);
+    int lock_retval = create_lockfile(rootname, lockfile_name, cand_seq_no);
 
     if(lock_retval == LOCK_STATUS_OK)
         {
@@ -160,32 +160,27 @@ int at_front(char* rootname, char* lockfile_name)
     
     }
 
-int wait_for_write_lock(char* rootname, char* lockfile_name, struct fileset *fset)
+int wait_for_write_lock(char* rootname, char* lockfile_name,
+    struct fileset *fset)
     {
-    //this function gets the max file extent number seen at time of lock file creation 
-    //(or rather, the time which fileset() was run)
-    extern int get_fileset(char*, struct fileset* );
-    extern int max_seq_no;
-    
+    //this function gets the max file extent number seen at time of lock file
+    //creation (or rather, the time which fileset() was run);found in sub/util
+    // extern int get_fileset(char*, struct fileset* );
     int ret_val;
-    
     //wait until this process is at the front of the write queue
     int is_at_front = 0;
     int n_checks = 0;
     do
         {
-        //check for max sequence number
+        //check for max sequence number on disk
         ret_val = get_fileset(rootname, fset);
         if(ret_val != 0)
             {
             return LOCK_FILESET_FAIL;
             }
-        else
-            {
-                max_seq_no = fset->maxfile;
-            }
-          
-        is_at_front = at_front(rootname, lockfile_name);
+        //provisionally fset->maxfile is the largest fringe number on disk
+        //but we need to check that WE are allowed to take the successor:  
+        is_at_front = at_front(rootname, lockfile_name, fset->maxfile);
         n_checks++;
         if(is_at_front == LOCK_PROCESS_NO_PRIORITY){usleep(100000);}
         }
@@ -207,6 +202,7 @@ int wait_for_write_lock(char* rootname, char* lockfile_name, struct fileset *fse
     //made it here, so we have write priority now, just need to
     //check/update the extent number for type-2 files and return it
     ret_val = get_fileset(rootname, fset);
+    //fset->maxfile is the largest fringe number on disk
     if(ret_val == 0)
     {
         return LOCK_STATUS_OK;

@@ -1,30 +1,37 @@
 #
-# $Id: Makefile.am 3749 2022-10-29 15:22:57Z gbc $
+# $Id: Makefile.am 4600 2026-05-27 21:19:06Z gbc $
 #
-
 helpdir = $(pkgdatadir)/vhelp
 
-dist_bin_SCRIPTS =  vhelp env_check vhelper.sh pplot_print \
-		    hops_data_links.pl vhelp.sh fourphase_original \
-		    est_manual_phases.py hops_vex2ovex.py \
-		    compare-baselines-v6.pl pcplot tpcplot \
-			alma-vex-defs.py
+dist_bin_SCRIPTS =  vhelp env_check vhelper.sh pplot_print.sh \
+					hops_data_links.pl vhelp.sh fourphase_original \
+					est_manual_phases.py hops_vex2ovex.py \
+					compare-baselines-v6.pl pcplot tpcplot \
+					batch_compare_baselines.sh \
+					alma-vex-defs.py cohfit-driver.sh \
+					print_adhoc_lines.pl
+
 dist_help_DATA   =  vhelp1.awk vhelp2.awk
+
+check_SCRIPTS = report-disk-usage.sh
+TESTS_ENVIRONMENT = auto=true module=${MODULE} \
+					abs_top_srcdir=$(abs_top_srcdir) exclude='/swc/'
+TESTS = report-disk-usage.sh
 
 orig_scripts = vhelp.dist
 older_scripts = chipid cleanmess clkm clkmlink composer count \
-		  counts doa endall endmailers features fix_eps.pl \
-		  llog lmess lproc lsock Makefile.am mod opera pcal \
-		  rdoa runall.hay runmailers \
-		  start-corrman tapit tspm tuba
+				counts doa endall endmailers features fix_eps.pl \
+				llog lmess lproc lsock Makefile.am mod opera pcal \
+				rdoa runall.hay runmailers \
+				start-corrman tapit tspm tuba
 other_scripts =
 
 if HAVE_DEVEL
 noinst_SCRIPTS = $(older_scripts) $(orig_scripts)
-EXTRA_DIST = $(older_scripts) $(orig_scripts)
+EXTRA_DIST = $(older_scripts) $(orig_scripts) $(check_SCRIPTS)
 else
 noinst_SCRIPTS = $(other_scripts) $(orig_scripts)
-EXTRA_DIST = $(other_scripts) $(orig_scripts)
+EXTRA_DIST = $(other_scripts) $(orig_scripts) $(check_SCRIPTS)
 endif
 
 env_check: $(srcdir)/Makefile.am
@@ -40,7 +47,6 @@ vhelp1.awk: $(srcdir)/Makefile.am
 	echo '#{sub(/.SYNOPSIS:/,"\t");print "vhelp:  " $$0}' >> $@
 	echo '{split($$0,x,/:/);sub(/.doc/,"",x[1]);\
 	       printf "vhelp:  %-11.11s %s\n",x[1],x[3]}'     >> $@
-#	echo '{sub(/.SYNOPSIS:/,"\t");print "vhelp:  " $$0}' >> $@
 
 vhelp2.awk: $(srcdir)/Makefile.am
 	rm -f $@
@@ -67,5 +73,5 @@ vhelp vhelper.sh:	$(srcdir)/Makefile.am $(srcdir)/vhelp.dist
 CLEANFILES = vhelp vhelp1.awk vhelp2.awk env_check vhelper.sh
 
 #
-# eof
+# eof vim: sts=4
 #

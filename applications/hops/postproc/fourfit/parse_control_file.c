@@ -28,13 +28,16 @@ char *char_values;
 struct fsm_table_entry *fsm_base;
 int *line_end;
 
+// control_file_buff == stash stripped but unparsed contents of control file
+// set_string_buff == stash stripped but unparsed contents of set commands
 int
 parse_control_file (char* control_file_name,
-                    char** control_file_buff,  //stash stripped but unparsed contents of control file
-                    char** set_string_buff     //stash stripped but unparsed contents of set commands
+                    char** control_file_buff,
+                    char** set_string_buff,
+                    int where
 )
     {
-    int n;
+    int n, olvl = 10;
     int flag = 0;
     char *input_string;
 
@@ -77,9 +80,11 @@ parse_control_file (char* control_file_name,
         strcpy(*set_string_buff, input_string);
         }
         
+    if (getenv("PARSEDEBUG")) { olvl = msglev;  set_msglev(-3); }
                                                   /* perform lexical analysis */
-    init_tokens ();                               /* first set up token array */
+    init_tokens (where);                          /* first set up token array */
 
+    msg("calling lex", -2);
     if (lex (input_string) != 0)
         {
         msg ("Error lexically analyzing control file ", 2);
@@ -88,15 +93,16 @@ parse_control_file (char* control_file_name,
 
     create_fsm ();                                        /* create fsm table */
 
+    msg("calling parser", -2);
     if (parser () != 0)               /* parse token string and fill c_blocks */
         {
         msg ("Error parsing control file ", 2);
         return (-1);
         }
-
-
+    if (olvl < 5) set_msglev(olvl);
 
                                                   /* free up temporary storage */
+    free_tokens (where);
     free (input_string);
     free (fsm_base);
     free (tokens);

@@ -143,6 +143,10 @@ int Mark6DiskDevice::getSlot() const {
     return(-1);
 }
 
+/**
+* Adds both Mark6 disk partitions by making the relevant system calls to parted.
+* The partitions references are then added to the partitions_m vector
+**/
 void Mark6DiskDevice::createPartitions()
 {
     string cmd = "";
@@ -161,6 +165,11 @@ void Mark6DiskDevice::createPartitions()
     cmd = "mkfs.xfs -f /dev/" + name_m + "2";
     execCommand(cmd.c_str());
 
+    addPartition (name_m + "1");
+    addPartition (name_m + "2");
+
+    //cout << partitions_m.size() << endl;
+    //cout << "Leaving Mark6DiskDevice::createPartitions" << endl;
 
 }
 
@@ -200,7 +209,7 @@ void Mark6DiskDevice::addPartition(std::string partitionName)
 
 
 
-int Mark6DiskDevice::mountPartition(int partitionNumber, string mountPath)
+int Mark6DiskDevice::mountPartition(unsigned int partitionNumber, string mountPath)
 {
     struct stat file;
     string source = "";
@@ -255,6 +264,7 @@ int Mark6DiskDevice::mountPartition(int partitionNumber, string mountPath)
 int Mark6DiskDevice::mountDisk(string dataPath, string metaPath, bool readwrite)
 
 {
+    //cout << "Entering Mark6DiskDevice::mountDisk" << endl;
     struct stat file;
     string source = "";
     
@@ -262,7 +272,10 @@ int Mark6DiskDevice::mountDisk(string dataPath, string metaPath, bool readwrite)
     
     // verify that this disk has two partitions
     if (partitions_m.size() != 2)
+    {
+        //cout << "device contains no partitions. Returning" << endl;
         return(0);
+    }
        
     unsigned long  mountOpts =  MS_MGC_VAL | MS_RDONLY | MS_NOATIME;
 
@@ -329,6 +342,7 @@ void Mark6DiskDevice::makeDataDir(string rootPath) {
 void Mark6DiskDevice::writeMeta(Mark6Meta &meta, string rootMetaPath)
 {
 
+    //cout << "Entering Mark6DiskDevice::writeMeta" << endl;
     ofstream file;
 
 
@@ -357,6 +371,11 @@ void Mark6DiskDevice::writeMeta(Mark6Meta &meta, string rootMetaPath)
 
 void Mark6DiskDevice::parseMeta()
 {
+    //cout << "Entering Mark6DiskDevice::parseMeta" << endl;
+    if (partitions_m.size() == 0)
+    {    
+        return;
+    }
     meta_m.parse(partitions_m[1].mountPath);
 }
 

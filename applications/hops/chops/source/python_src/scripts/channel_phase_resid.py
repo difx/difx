@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
 #core imports
-from __future__ import print_function
-from __future__ import division
+#-3.13++#from __future__ import print_function
+#-3.13++#from __future__ import division
 from builtins import str
 from builtins import range
-from past.utils import old_div
+from mk4b.mk4b import old_div #from past.utils ...
 import argparse
 import sys
 import os
@@ -17,18 +17,18 @@ from datetime import datetime
 import numpy as np
 import scipy.stats
 
+#HOPS module imports
+import vpal.processing
+import vpal.utility
+import vpal.fringe_file_manipulation
+
 import matplotlib
-matplotlib.use("Agg", warn=False)
+matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 matplotlib.rcParams.update({'savefig.dpi':300})
 import pylab
-
-#HOPS module imports
-import vpal.processing
-import vpal.utility
-import vpal.fringe_file_manipulation
 
 
 ################################################################################
@@ -53,7 +53,7 @@ def main():
     parser.add_argument('-c', '--channels', dest='channels', help='specify the channels to be used, default=abcdefghijklmnopqrstuvwxyzABCDEF.', default='abcdefghijklmnopqrstuvwxyzABCDEF')
     parser.add_argument('-s', '--snr-min', type=float, dest='snr_min', help='set minimum allowed snr threshold, default=15.', default=15.)
     #parser.add_argument('-d', '--dtec-threshold', type=float, dest='dtec_thresh', help='set maximum allowed difference in dTEC, default=1.', default=1.0)
-    parser.add_argument('-q', '--quality-limit', type=int, dest='quality_lower_limit', help='set the lower limit on fringe quality (inclusive), default=3.', default=3)
+    parser.add_argument('-q', '--quality-limit', type=int, dest='quality_lower_limit', help='set the lower limit on fringe quality (inclusive), default=3.', default=5)
     parser.add_argument('-p', '--progress', action='store_true', dest='use_progress_ticker', help='monitor process with progress indicator', default=False)
     parser.add_argument('-b', '--begin-scan', dest='begin_scan_limit', help='limit the earliest scan to be used e.g 244-1719', default="000-0000")
     parser.add_argument('-e', '--end-scan', dest='end_scan_limit', help='limit the latest scan to be used, e.g. 244-2345', default="999-9999")
@@ -93,10 +93,10 @@ def main():
     
     qcode_list = []
     for q in list(range(args.quality_lower_limit, 10)):
-        qcode_list.append( str(q) )
+        qcode_list.append( q )
 
     #needed for plot-naming
-    control_file_stripped = re.sub('[/\.]', '', control_file)
+    #control_file_stripped = re.sub('[/\.]', '', control_file)
 
     #default output filename
     plot_name = "./channel_phaseresid_" + ref_station + "_" + stations + '_' + exp_name
@@ -129,11 +129,15 @@ def main():
         ################################################################################
         #collect/compute fringe files, and apply cuts
         set_commands = "set gen_cf_record true"
-        ff_list_pre = vpal.processing.load_and_batch_fourfit( \
-            os.path.abspath(exp_dir), bline[0], bline[1], os.path.abspath(control_file), set_commands, \
-            num_processes=args.num_proc, start_scan_limit=args.begin_scan_limit, \
-            stop_scan_limit=args.end_scan_limit, pol_products=[polprod], use_progress_ticker=args.use_progress_ticker \
-        )
+
+        ff_list_pre = vpal.processing.gather_fringe_files(exp_dir, control_file, [bline], pol_products=polprod, max_depth=2)
+        #ff_list_pre = gather_fringe_files(os.path.abspath(exp_dir), os.path.abspath(control_file), bline, pol_products=['I'], include_autos=False, exclude_list=None, max_depth=2)
+
+        #ff_list_pre = vpal.processing.load_and_batch_fourfit( \
+        #    os.path.abspath(exp_dir), bline[0], bline[1], os.path.abspath(control_file), set_commands, \
+        #    num_processes=args.num_proc, start_scan_limit=args.begin_scan_limit, \
+        #    stop_scan_limit=args.end_scan_limit, pol_products=[polprod], use_progress_ticker=args.use_progress_ticker \
+        #)
 
         print("n fringe files  =", str(len(ff_list_pre)))
         
@@ -164,6 +168,17 @@ def main():
                 else:
                     channel_freqs = chfreqs
 
+                station_sign = 0
+                if ref_station==ff.baseline[0]:
+                    # station is reference station in this scan
+                    station_sign = 1
+                elif ref_station==ff.baseline[1]:
+                    # station is remote station in this scan
+                    station_sign = -1
+                else:
+                    # Something's wrong
+                    print('Station not in this scan!', ref_station, ff.scan_name, ff.baseline)
+                    
                 phresid = vpal.fringe_file_manipulation.PhaseResidualData()
                 phresid.extract(ff.filename)
                 if phresid.is_valid is True:
@@ -171,7 +186,7 @@ def main():
                     phase_list_proxy = []
                     for ch,ph in list(phresid.phase_residuals.items()):
                         phase_index.append(ch)
-                        phase_list_proxy.append(ph)
+                        phase_list_proxy.append(station_sign * ph)
                     phase_list_proxy = [-1.0*(old_div(math.pi,180.0))*x for x in phase_list_proxy] #negate and convert to radians
                     phase_list_proxy = np.unwrap(phase_list_proxy) #arguments must be in radians
                     phase_list_proxy = [(old_div(180.0,math.pi))*x for x in phase_list_proxy] #convert back to degrees
@@ -219,8 +234,9 @@ def main():
     for ch in args.channels:
         channel_mean_phase[ch] = scipy.stats.circmean( np.asarray(channel_phase[ch]), high=180.0, low=-180.0) #compute circular mean phase
         channel_stddev[ch] = scipy.stats.circstd( np.asarray(channel_phase[ch]), high=180, low=-180) #compute circular std dev.
-        print( "(mean, std. dev) phase for channel: ", ch, " = ", channel_mean_phase[ch], channel_stddev[ch])
-
+        #print( "(mean, std. dev) phase for channel: ", ch, " = ", channel_mean_phase[ch], channel_stddev[ch])
+        print( "(mean, std. dev) phase for channel: ", ch, " =", '{:5.2f}'.format(channel_mean_phase[ch]).rjust(5), '{:5.2f}'.format(channel_stddev[ch]).ljust(5))
+        
 
 
     # store the frequencies and data in lists for plotting
@@ -245,13 +261,13 @@ def main():
     fig_width = fig_width_pt*inches_per_pt  # width in inches
     fig_height = fig_width*golden_mean      # height in inches
     fig_size = [fig_width,fig_height]
-                                                                        
+    
 
-    matplotlib.rcParams.update({'savefig.dpi':350,
-                                'text.usetex':True,
-                                'figure.figsize':fig_size,
-                                'font.family':"serif",
-                                'font.serif':["Times"]})
+    matplotlib.rcParams.update({'savefig.dpi':350,    
+                                'figure.figsize':fig_size})#,
+    #                            'text.usetex':True,
+    #                            'font.family':"serif",
+    #                            'font.serif':["Times"]})
     
     
     fig = pylab.figure(np.random.randint(0,1000))
@@ -262,14 +278,14 @@ def main():
     ax0.spines['top'].set_color('none')
     ax0.spines['bottom'].set_color('none')
     ax0.spines['left'].set_color('none')
-    ax0.spines['top'].set_color('none')
+    ax0.spines['right'].set_color('none')
     plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
     plt.xlabel('Channel Frequency [GHz]', labelpad=2, fontsize=8)
     
     for ii in list(range(4)):
 
         ax = fig.add_subplot(1,4,ii+1)
-
+        
         # first, plot the per-channel mean and stdev as errobars, store the freq of each channel for the top tickmarks
         xtick_locs = list()
         xtick_labels = list()
@@ -305,7 +321,7 @@ def main():
         pylab.grid(True, which='both', linestyle=':', alpha=0.6)
         pylab.xticks(fontsize=7)
 
-        pylab.ylim(-180,180)        
+        pylab.ylim(-90,90)
         if ii==0:
             pylab.yticks(fontsize=7)
             pylab.ylabel('Phase Residual [deg]', fontsize=8)

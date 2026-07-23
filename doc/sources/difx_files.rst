@@ -1292,7 +1292,7 @@ $DIFX_MACHINES
 
 This section describes the format of a file used through DiFX-2.2. For
 more recent versions please see documentation on the DiFX wiki
-http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/start/ .
+https://github.com/difx/difx/wiki/start/ .
 
 Environment variable ``DIFX_MACHINES`` should point to a file containing
 a list of machines that are to be considered elements of the software
@@ -3514,7 +3514,7 @@ formal cross correlations are performed. To be useful, one must create
 and specify a ``.binconfig`` file and select only the pulsar(s) from the
 experiment.
 
-See http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx for
+See https://github.com/difx/difx/wiki/vex2difx for
 more complete information and examples.
 
 .. _sec:xcb:

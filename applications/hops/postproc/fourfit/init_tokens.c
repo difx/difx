@@ -4,6 +4,7 @@
 *                each token.                                                  *
 *                                                 rjc  92.10.1                *
 ******************************************************************************/
+#include "msg.h"
 #include "parser.h"
 #include "control.h"
 #include "ffcontrol.h"
@@ -11,17 +12,35 @@
 
 #define tokenize(aa,bb,cc) {token_string[aa] = bb; token_cat[aa] = cc;}
 
-//could use the below lines to actually allocate memory for the strings instead (would need to be freed)
-//since the currenct implementation compiled under c++ renders:
-//warning: ISO C++11 does not allow conversion from string literal to 'char *' [-Wwritable-strings]
- 
+// Warning: ISO C++11 does not allow conversion from string literal to
+// 'char *' [-Wwritable-strings]; this can be fixed by allocating memory
+// for the strings and freeing once parsing is completely done:
 //#include <string.h>
 //#include <stdlib.h>
-//#define tokenize(aa,bb,cc) { token_string[aa] = (char*) malloc(sizeof(char)* strlen(bb) ); strcpy(token_string[aa], bb); token_cat[aa] = cc;}
+//#define tokenize(aa,bb,cc) do{\
+// token_string[aa] = (char*) malloc(sizeof(char)* strlen(bb) );\
+// strcpy(token_string[aa], bb); token_cat[aa] = cc;} while(0)
+//
+// parse_control_file.c:char *token_string[MAX_TOKENS];
+void free_tokens(int where)
+    {
+    // nothing for now, but introduce the stub.
+    msg("free_tokens @ %d",-2,where);
+    }
 
-
-int
-init_tokens ()
+// Note that the caller, parse_control_file() is called from 5 places:
+//  where=3: set_defaults.c (hops & chops)
+//      for the default default_cfile (called from top-level fourfit)
+//  where=0: parse_control_file..c (hops & chops)
+//      on control_filename (from parse_cmdline on -c arg)
+//  where=1: parse_control_file.c (hops & chops)
+//      on control_string (from parse_cmdline after a set option)
+//  where=2: construct_cblock.c (chops)
+//      after nullify_cblock()
+//  where=4: for_python_construct_cblock.c (HOPS4)
+//      after nullify_cblock()
+// and a msgs are emitted at init_tokens() and free_tokens().
+void init_tokens (int where)
     {
     int i;
     extern char *token_string[];          /* these token arrays could be put */
@@ -29,10 +48,9 @@ init_tokens ()
 
     for (i=0; i<MAX_TOKENS; i++)
     tokenize (i, "", 0);                  /* initialize all tokens to null */
-
+    msg("init_tokens @ %d",-2,where);
 
     /*       token #        string        category      */
-
     tokenize (STATION_,     "station",    STATION)
     tokenize (BASELINE_,    "baseline",   BASELINE)
     tokenize (SOURCE_,      "source",     SOURCE)
@@ -53,7 +71,8 @@ init_tokens ()
     tokenize (X_SLIP_SYNC_, "x_slip_sync",INT_PARAM)
     tokenize (Y_SLIP_SYNC_, "y_slip_sync",INT_PARAM)
     tokenize (FREQS_,       "freqs",      VECTOR_CHAR_PARAM)
-    tokenize (INDEX_,       "index",      VECTOR_INT_PARAM)
+    tokenize (FRQS_,        "frqs",       SAVE_CHAR_PARAM)
+    tokenize (INDEX_,       "index",      VECTOR_INT_PARAM) // deprecated
     tokenize (PC_PHASE_,    "pc_phases",  CHAN_PARAM)
     tokenize (PC_MODE_,     "pc_mode",    INT_PARAM)
     tokenize (PC_PERIOD_,   "pc_period",  INT_PARAM)
@@ -103,6 +122,7 @@ init_tokens ()
     tokenize (AVXPLOPT_,    "avxplopt",   TWO_FLOAT_PARAM)
     tokenize (GEN_CF_RECORD_,"gen_cf_record", INT_PARAM)
     tokenize (NOTCHES_,     "notches",    VECTOR_FLOAT_PARAM)
+    tokenize (CHAN_NOTCHES_,    "chan_notches",STRING_PARAM)
     tokenize (T_COHERE_,    "t_cohere",   FLOAT_PARAM)
     tokenize (IONOSPHERE_,  "ionosphere", FLOAT_PARAM)
     tokenize (DELAY_OFFS_,  "delay_offs", CHAN_PARAM)
@@ -149,6 +169,9 @@ init_tokens ()
     tokenize (ION_SMOOTH_,  "ion_smooth", INT_PARAM)
     tokenize (EST_PC_MANUAL_, "est_pc_manual", INT_PARAM)
     tokenize (CHAN_IDS_,    "chan_ids",   CHAN_PARAM)
+    tokenize (CLONE_IDS_,   "clone_ids",  STRING_PARAM)
+    tokenize (DISPLAY_CHANS_,"display_chans", STRING_PARAM)
+    tokenize (CLONE_SNR_CHK_,"clone_snr_chk", INT_PARAM)
     tokenize (VBP_CORRECT_, "vbp_correct", INT_PARAM)
     tokenize (VBP_FIT_,     "vbp_fit",    INT_PARAM)
     tokenize (VBP_COEFFS_,  "vbp_coeffs", VECTOR_FLOAT_PARAM)
@@ -158,8 +181,13 @@ init_tokens ()
     tokenize (CASSEGRAIN_,    "cassegrain",   INT_CONST + CASSEGRAIN)
     tokenize (NASMYTHLEFT_,   "nasmythleft",  INT_CONST + NASMYTHLEFT)
     tokenize (NASMYTHRIGHT_,  "nasmythright", INT_CONST + NASMYTHRIGHT)
+    tokenize (MIXED_MODE_ROT_, "mixed_pol_yshift90", INT_PARAM)
+    tokenize (NOAUTOFRINGES_, "noautofringes", INT_PARAM)
+    tokenize (MOD4NUMBERING_, "mod4numbering", INT_PARAM)
+    tokenize (POLFRINGNAMES_, "polfringnames", INT_PARAM)
+    tokenize (MBDRPLOPT_,     "mbdrplopt",     VECTOR_INT_PARAM)
+    tokenize (FRINGEOUT_DIR_, "fringeout_dir", STRING_PARAM)
+    /*       token #        string        category      */
 
-    //return value needed to correct function signature (value is not used, this function should be void)
-    //if this return value is not present, fourfit segfaults when compiled as C++...how interesting
-    return 0; 
     }
+/* eof */

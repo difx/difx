@@ -20,13 +20,13 @@
 # -- Project information -----------------------------------------------------
 
 project = 'DiFX User Guide'
-copyright = '2023, National Radio Astronomy Observatory'
+copyright = '2025, National Radio Astronomy Observatory'
 author = 'Walter Brisken'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = 'v2.8'
+release = 'v2.9'
 
 
 # -- General configuration ---------------------------------------------------

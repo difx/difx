@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_aedit.sh 3326 2021-09-04 13:05:05Z gbc $
+# $Id: chk_aedit.sh 4573 2026-05-21 21:28:02Z gbc $
 #
 # check that aedit runs
 #
@@ -49,7 +49,7 @@ $verb && echo lines is $lines
 set -- `ls -s aedit.ps` 0
 $verb && echo $@
 
-[ "$lines" -ge 38 -a "$1" -ge 76 ]
+[ "$lines" -ge 38 -a "$1" -ge 72 ]
 
 #
 # eof

@@ -13,18 +13,25 @@
 
 /*----------------------------------------------------------------------------*/
 //extern char   *account (const char *);
-extern int    check_name (char *, fstruct *);
+//
+// these were moved to fstruct.h
+//extern int  check_name (char *, fstruct *);
+//extern void clear _ fstruct (fstruct *);
+//extern int  get_filelist (int, char **, int, fstruct **);
+// extern int extract_filenames (char *, int, fstruct **, int *, int *, int *);
+//
 extern void   clear_date (date_struct *);
-extern void   clear_fstruct (fstruct *);
 extern int    confirm (char *);
 extern void   datec_to_datef (struct datec *, struct datef *);
 extern void   datef_to_datec (struct datef *, struct datec *);
 extern short  day_of_datef (struct datef);
 extern void   environment (void);
-extern int    extract_filenames (char *, int, fstruct **, int *, int *, int *);
+//
+// this was moved to fileset.h
+// should have been called get_fileset as it lives in fileset.c
 // extern int    fileset (char *, struct fileset *);
+//
 extern int    get_abs_path (char [], char []);
-extern int    get_filelist (int, char **, int, fstruct **);
 extern int    hptoie4 (float *, float *);
 extern int    hptoie8 (double *, double *);
 extern int    hptoie (int *, int *, int);

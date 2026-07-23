@@ -6,6 +6,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <difxmessage.h>
+#include <difxio/difxio_macros.h>
 #include <difxio/parsedifx.h>
 #include <sys/inotify.h>
 #include <sys/select.h>
@@ -564,7 +565,7 @@ static void generateIdentifier(const char *inputfile, int myID, char *identifier
 		s = 0;
 	}
 
-	strncpy(identifier, inputfile+s, DIFX_MESSAGE_IDENTIFIER_LENGTH-1);
+	strncpy_warn(identifier, inputfile+s, DIFX_MESSAGE_IDENTIFIER_LENGTH-1);
 	identifier[DIFX_MESSAGE_IDENTIFIER_LENGTH-1] = 0;
 	l = strlen(identifier);
 
@@ -1007,7 +1008,6 @@ int transientdaemon(TransientDaemonState *state)
 	char message[DIFX_MESSAGE_LENGTH];
 	char from[DIFX_MESSAGE_PARAM_LENGTH];
 	char str[MaxLineLength+1];
-	typedef void (*sighandler_t)(int);
 	int l, v, sock, inotify_fd, wd;
 	struct timeval tv;
 	fd_set readset;

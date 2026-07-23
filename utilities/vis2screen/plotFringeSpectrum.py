@@ -99,7 +99,7 @@ while True:
         break
 
     fq = difx.getFrequency(visrec.header.freqindex)
-    nchan = fq.numchan / fq.specavg
+    nchan = fq.numchan // fq.specavg
     if nchan >= maxchannels:
         print ("How embarrassing - you have tried to diff files with more than " + \
             str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!")

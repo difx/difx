@@ -200,7 +200,7 @@ for st in rates.keys():
 ax1.set_title("delay")
 ax1.legend(loc='center left', bbox_to_anchor=(1, 0.0), fancybox=True)
 #ax2.legend(loc='center left', bbox_to_anchor=(1, 0.5), fancybox=True)
-fig.text(0.75, 0.55, delayStat, family='courier', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
+fig.text(0.75, 0.55, delayStat, family='sans-serif', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
 print (delayStat)
 
 ylims = ax1.get_ylim()
@@ -213,7 +213,7 @@ ax1.set_ylim(ylims)
 if args.plotFR:
     ax2.set_title("fringe rate")
     ax2.set_ylabel('fringe rate [mHz]')
-    fig.text(0.75, 0.09, fringeRateStat,  family='courier', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
+    fig.text(0.75, 0.09, fringeRateStat,  family='sans-serif', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
     print (fringeRateStat)
 
     ylims = ax2.get_ylim()
@@ -226,11 +226,11 @@ if args.plotFR:
 else:
     ax2.set_title("delay rate")
     ax2.set_ylabel('delay rate [ps/s]')
-    fig.text(0.75, 0.09, rateStat,  family='courier', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
+    fig.text(0.75, 0.09, rateStat,  family='sans-serif', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
     print (rateStat)
 
-fig.text(0.01, 0.01, refTxt,  family='courier', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
-fig.text(0.20, 0.01, polTxt,  family='courier', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
+fig.text(0.01, 0.01, refTxt,  family='sans-serif', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
+fig.text(0.20, 0.01, polTxt,  family='sans-serif', bbox={'facecolor':'white', 'alpha':0.5, 'pad':10})
 
 plt.gcf().autofmt_xdate()
 if args.noPlot == False:

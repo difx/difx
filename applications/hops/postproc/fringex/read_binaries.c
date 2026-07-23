@@ -109,7 +109,7 @@ int read_binaries (fstruct *file, struct fxparam *fxp)
             msg ("Failure reading station %d data file %s", 2, j, stnfile_name);
             return (1);
             }
-	msg ("Read station file %s", 0, stnfile_name);
+        msg ("Read station file %s", 0, stnfile_name);
         }
 
                                         /* Set pointers in fxp */

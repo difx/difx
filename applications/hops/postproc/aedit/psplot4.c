@@ -50,7 +50,7 @@ int psplot4 (esum *data)
 	    msg ("Could not find file '%s' or '%s'", 3, vexname, altname);
             msg ("(You can make one from vex.obs with hops_vex2ovex.py)", 3);
 	    printf ("Enter full pathname of ovex file: ");
-	    if (fgets (vexname, 256, stdin) < 0) return(1);
+	    if (fgets (vexname, 256, stdin) == 0) return(1);
 	    len = strlen (vexname);
 	    if (vexname[len-1] == '\n') vexname[len-1] = '\0';
             isa = 0;

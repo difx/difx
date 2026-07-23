@@ -18,17 +18,42 @@
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <sys/stat.h>
 #include "adata.h"
 #include "general.h"
 #include "mk4_afio.h"
 #include "mk4_util.h"
 
+/*
+ * The option to insert polarization into fringe name gives us a choice
+ * here.  Presumably ONLY one matches, with pathname winning over altpname
+ * if both exists.  Paths are relative to DATADIR.  Return nonzero if
+ * no suitable file is found.  Note that altpname is the longer of the two.
+ */
+static int resolve_fringename(char *pathname, char *altpname)
+{
+    struct stat buf;
+    extern char datadir[];
+    char *fullpath;
+    int len = 264;  /* 256 + slop */
+    fullpath = malloc(len);
+    if (!fullpath) { perror("malloc"); return(1); }
+    snprintf(fullpath, len-1, "%s/%s", datadir, pathname);
+    if (0 != stat(fullpath, &buf)) {
+        snprintf(fullpath, len-1, "%s/%s", datadir, altpname);
+        if (0 == stat(fullpath, &buf)) strcpy(pathname, altpname);
+    }
+    free(fullpath);
+    return(0);
+}
+
 char *
 fringename(fringesum *fsumm)
     {
-    static char pathname[256];
+    static char pathname[256], altpname[256];
     int bad, i, scan_time, sday, shour, smin, ssec, year;
 
     bad = FALSE;
@@ -69,10 +94,23 @@ fringename(fringesum *fsumm)
                                 /* If new version, construct the whole thing */
                                 /* For Mk4, scan id replaces encoded scan time */
     if (fsumm->version > 4)
+        {
         (void)sprintf(pathname,"%d/%s/%s.%c.%d.%s",
                 fsumm->expt_no, fsumm->scan_id,
                 fsumm->baseline, fsumm->freq_code,
                 fsumm->extent_no, fsumm->root_id);
+        (void)sprintf(altpname,"%d/%s/%s.%c.%d-%s.%s",
+                fsumm->expt_no, fsumm->scan_id,
+                fsumm->baseline, fsumm->freq_code,
+                fsumm->extent_no, fsumm->polarization, fsumm->root_id);
+        if (resolve_fringename(pathname, altpname))
+            {
+            msg("No matching fringe file, punting.  Candidates:", 3);
+            msg("  %s", 3, pathname);
+            msg("  %s", 3, altpname);
+            return (NULL);
+            }
+        }
 
     else if (fsumm->version > 1)
         (void)sprintf(pathname,"%d/%03d-%02d%02d%02d/%s.%c.%d.%s",

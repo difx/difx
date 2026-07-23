@@ -1,11 +1,16 @@
-Version 2.9.0
--------------
-* version bump prior to 2.9.0 release
+Version 0.5
+-----------
+* Updates to compile cleanly on gcc 15.2.1
+* Change in API: partitionNumber type changed in "mountPartition" from int to unsigned int
+ - int mountPartition(unsigned int partitionNumber, std::string mountPath)
+ - It seems nothing uses this function within difx, so no downstream changes.
+
+Version 0.4
+-----------
 * support  Mark6 units with more than 4 slots
-* properly determine position of disks on the SAS controller bus independently
-from controller manufacturer logic
-* controller identification by PCI bus ID to preserve mounting logic through
-machine reboots
+* properly determine position of disks on the SAS controller bus independently from controller manufacturer logic
+* controller identification by PCI bus ID to preserve mounting logic through machine reboots
+* Version for DiFX-2.9
 
 Version 0.3
 -----------

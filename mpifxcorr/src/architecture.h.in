@@ -62,6 +62,8 @@
 #define IPP_9_API
 #elif(IPP_VERSION_MAJOR == 2019)
 #define IPP_9_API
+#elif(IPP_VERSION_MAJOR == 2020)
+#define IPP_9_API
 #elif(IPP_VERSION_MAJOR == 2021)
 #define IPP_9_API
 #endif

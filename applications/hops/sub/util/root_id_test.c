@@ -5,9 +5,10 @@
 #include "mk4_util.h"
 
 
-main (argc, argv)
-int argc;
-char *argv[];
+//main (argc, argv)
+//int argc;
+//char *argv[];
+int main(int argc, char **argv)
     {
     set_progname("testutil");
     set_msglev(2);

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -112,15 +112,14 @@ bool VexStream::Init()
 		exit(EXIT_FAILURE);
 	}
 
-        // of form CODIF[C]/[period seconds]/<size bytes>/<bits>          CODIF only
-        v = regcomp(&matchType9, "^(CODIF[A-Z]*)/([1-9]+[0-9]*)/([1-9]+[0-9]*)/([1-9]+[0-9]*)$", REG_EXTENDED);
-        if(v != 0)
-        {
-                std::cerr << "Developer Error: VexStream::Init(): compiling matchType9 failed" << std::endl;
+	// of form CODIF[C]/[period seconds]/<size bytes>/<bits>          CODIF only
+	v = regcomp(&matchType9, "^(CODIF[A-Z]*)/([1-9]+[0-9]*)/([1-9]+[0-9]*)/([1-9]+[0-9]*)$", REG_EXTENDED);
+	if(v != 0)
+	{
+		std::cerr << "Developer Error: VexStream::Init(): compiling matchType9 failed" << std::endl;
 
-                exit(EXIT_FAILURE);
-        }
-
+		exit(EXIT_FAILURE);
+	}
 
 	return true;
 }
@@ -409,7 +408,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		nRecordChan = matchInt(formatName, match[3]);
 		nBit = matchInt(formatName, match[4]);
 		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
-                setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
+		setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
 
 		return true;
 	}
@@ -456,22 +455,22 @@ bool VexStream::parseFormatString(const std::string &formatName)
 
 		return true;
 	}
-        else if(regexec(&matchType9, formatName.c_str(), 5, match, 0) == 0)
-        {
-                // of form CODIF[C or D]/<period seconds>/<size>/<bits>
-                format = stringToDataFormat(formatName.substr(0, match[1].rm_eo));
-                if(format == NumDataFormats)
-                {
-                        return false;
-                }
-                setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
+	else if(regexec(&matchType9, formatName.c_str(), 5, match, 0) == 0)
+	{
+		// of form CODIF[C or D]/<period seconds>/<size>/<bits>
+		format = stringToDataFormat(formatName.substr(0, match[1].rm_eo));
+		if(format == NumDataFormats)
+		{
+			return false;
+		}
+		setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
 		alignmentPeriod = matchInt(formatName, match[2]);
-                VDIFFrameSize = matchInt(formatName, match[3]);
-                nBit = matchInt(formatName, match[4]);
-                singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
+		VDIFFrameSize = matchInt(formatName, match[3]);
+		nBit = matchInt(formatName, match[4]);
+		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
 
-                return true;
-        }
+		return true;
+	}
 	else
 	{
 		// of form <fmt>

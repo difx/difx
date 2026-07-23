@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #define the the CHOPS and HOPS source directories
-export CHOPS_SRC_DIR="/swc/pops/trunk/chops"
-export HOPS_SRC_DIR="/swc/pops/trunk"
+export CHOPS_SRC_DIR="../../trunk/chops"
+export HOPS_SRC_DIR="../../trunk"
 
 #now run all of the import scripts with the checksum option
 source ./hops_checksum.sh

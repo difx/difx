@@ -52,7 +52,7 @@ struct type_param *param)
     int i, set, cslen, filenum;
     struct stat file_status;
     extern char *optarg;
-    extern int optind, do_only_new, test_mode, do_accounting, do_estimation;
+    extern int optind, test_mode, do_accounting, do_estimation;
     extern int write_xpower;
     extern int refringe, msglev, ap_per_seg, reftime_offset;
     int do_parse = FALSE,
@@ -98,7 +98,6 @@ struct type_param *param)
                 test_mode = TRUE;
                 do_accounting = TRUE;
                 do_estimation = TRUE;
-                do_only_new = FALSE;
                 break;
 
             case 'f':
@@ -111,7 +110,8 @@ struct type_param *param)
                     msg ("Invalid -m flag argument '%s'", 2, optarg);
                     msg ("Message level remains at %d", 2, msglev);
                     }
-                 //1/27/17 jpb, updated for include '4' as a special parameter which only prints the name of the generated fringe file
+                 //1/27/17 jpb, updated for include '4' as a special parameter
+                 //which only prints the name of the generated fringe file
                 if (msglev > 4) msglev = 4;
                 if (msglev < -3) msglev = -3;
                 break;
@@ -144,10 +144,6 @@ struct type_param *param)
                 test_mode = TRUE;
                 break;
 
-            case 'u':
-                do_only_new = TRUE;
-                break;
-
             case 'x':
                 displayopt = TRUE;
                 strcpy (display_name, "xwindow");
@@ -177,16 +173,12 @@ struct type_param *param)
                 return (1);
             }
         }
-                                        /* Check for silly states */
-    if (refringe && do_only_new)
-        {
-        msg ("The -r and -u flags are mutually exclusive.", 2);
-        return (1);
-        }
+
                                         /* Read main user control file */
     if (do_parse)
         {
-        if(parse_control_file (control_filename, &(param->control_file_buff), &(param->set_string_buff) ) != 0)
+        if(parse_control_file (control_filename, &(param->control_file_buff),
+            &(param->set_string_buff),0 ) != 0)
             {
             msg ("Fatal error parsing control file '%s'", 3, control_filename);
             return (1);
@@ -224,7 +216,8 @@ struct type_param *param)
                                         /* Parse command line override information */
     if (strlen (control_string) > 3)
         {
-        if(parse_control_file (control_string, &(param->control_file_buff), &(param->set_string_buff)) != 0)
+        if(parse_control_file (control_string,
+            &(param->control_file_buff), &(param->set_string_buff), 1) != 0)
             {
             msg ("Fatal error parsing -b option and/or 'set' parameters", 3);
             msg ("Constructed string was '%s'", 3, control_string);
@@ -279,7 +272,8 @@ int parse_polar (char *field, short *code)
         rc = 1;
     char buff[12];
     if (strcmp (field, "all") == 0)
-        kode = POL_ALL;                 // we will do all present polarizations, one at a time
+        kode = POL_ALL;                 // we will do all present polarizations,
+                                        // one at a time
     else if (strcmp (field, "I") == 0)
         {
         kode = POL_IXY;                 // form Stokes I for linear polarization data

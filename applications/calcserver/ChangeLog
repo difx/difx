@@ -1,3 +1,7 @@
+Version 1.9
+* Updates for compatability with newer versions of FORTRAN
+* Version for DiFX-2.9
+
 Version 1.8
 * disable writing of log files -- was poorly implemented
 * minor clean-up on the c-side (most compile warnings, dead code removal)

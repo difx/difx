@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -236,7 +236,7 @@ int checkRunning(const char *hostname)
 	struct addrinfo hints;
 	struct addrinfo *servinfo;
 	const char drsQuery[] = "DTS_id?;";
-	int txBytes, rxBytes;
+	size_t txBytes, rxBytes;
 	char message[MaxMessageLength];
 	struct timeval tv;
 
@@ -1090,7 +1090,7 @@ int main(int argc, char **argv)
     Options options;
 
     // FIXME: fixed length string arrays should be revisited
-    Mk5Daemon *D;
+    Mk5Daemon *D = 0;
     time_t t, lastTime;
     char message[DIFX_MESSAGE_LENGTH];
     std::stringstream msgStream;
@@ -1108,7 +1108,7 @@ int main(int argc, char **argv)
     int status;
 #ifdef HAS_MARK6META
     std:: ostringstream mk6out;
-    std::streambuf* backup;
+    std::streambuf* backup = 0;
 #endif
 
 #ifdef HAVE_XLRAPI_H
@@ -1503,7 +1503,7 @@ int main(int argc, char **argv)
 	}
 
 #ifdef HAVE_XLRAPI_H
-	if(D->recordPipe > 0)
+	if(D->recordPipe != 0)
 	{
 		pclose(D->recordPipe);
 		D->recordPipe = 0;
@@ -1522,7 +1522,9 @@ int main(int argc, char **argv)
 #ifdef HAS_MARK6META
         // restore clog redirection
         if(options.isMk6)
-              clog.rdbuf(backup);
+	{
+		clog.rdbuf(backup);
+	}
 #endif
         
 	deleteMk5Daemon(D);

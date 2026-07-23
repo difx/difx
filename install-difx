@@ -907,7 +907,10 @@ if components["mpifxcorr"]:
         print("Reusing mpifxcorr configuration")
     else:
         print("Reconfiguring mpifxcorr")
-        run("aclocal")
+        if os.path.exists('m4'):
+            run("aclocal -I m4")
+        else:
+            run("aclocal")
         run("autoconf")
         run("autoheader")
         run("automake -acf")

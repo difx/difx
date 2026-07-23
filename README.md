@@ -1,4 +1,5 @@
 # DiFX
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16949346.svg)](https://doi.org/10.5281/zenodo.16949346)
 
 The official repo for DiFX.
 
@@ -6,17 +7,19 @@ The official repo for DiFX.
 
 DiFX requires MPI, PGPLOT and IPP.
 
-Details see https://github.com/difx/difx/wiki/Installation
+Details see https://github.com/difx/difx/wiki/difx-installation
 
 ### For DiFX Users
 
-At the time of writing, the current stable version of DiFX is DiFX-2.8.1. You can look the DiFX tags for more version.
+At the time of writing, the current stable version of DiFX is DiFX-2.9.0. You can look the DiFX tags for more version.
 
-Then we recommend the user to check out stable version right now. If you want to check out v2.8.1, just type :
+Then we recommend the user to check out stable version right now. If you want to check out v2.9.0, just type :
 
 ```bash
-$ git clone https://github.com/difx/difx -b v2.8.1
+$ git clone https://github.com/difx/difx
 ```
+
+as the main branch is on version 2.9
 
 ### For DiFX Developers
 
@@ -76,7 +79,7 @@ See the userguide of DiFX.
 
 Feel free to join us!  [Open an issue](https://github.com/difx/difx/issues/new) or submit PRs is always welcome.
 
-Find more details on [CONTRIBUTION](CONTRIBUTION.md) .
+Find more details on [CONTRIBUTION](https://github.com/difx/difx/blob/main/CONTRIBUTION.md) .
 
 
 
@@ -90,7 +93,7 @@ This project exists thanks to all the people who contribute.
 
 ## Citation
 
-If you use DiFX in your research, please consider citing our following papers:
+If you use DiFX in your research, please consider citing it via DOI [10.5281/zenodo.16949346](https://doi.org/10.5281/zenodo.16949346) and our following papers:
 
 1. DiFX-2: Deller, A. T., W. F. Brisken, C. J. Phillips, John Morgan, W. Alef, R. Cappallo, E. Middelberg et al. "DiFX-2: a more flexible, efficient, robust, and powerful software correlator." Publications of the Astronomical Society of the Pacific 123, no. 901 (2011): 275.
 

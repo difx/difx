@@ -274,7 +274,6 @@ void Mk5DataStream::updateConfig(int segmentindex)
   bufferinfo[segmentindex].nsinc = int(((bufferbytes/numdatasegments)/framebytes)*(1000000000.0/double(framespersecond)) + 0.5);
 
   //take care of the case where an integral number of frames is not an integral number of blockspersend - ensure sendbytes is long enough
-  //note below, the math should produce a pure integer, but add 0.5 to make sure that the fuzziness of floats doesn't cause an off-by-one error
   bufferinfo[segmentindex].sendbytes = config->getDataBytes(bufferinfo[segmentindex].configindex,streamnum);
 }
 

@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_avefix.sh 1763 2017-06-02 18:08:08Z gbc $
+# $Id: chk_avefix.sh 4573 2026-05-21 21:28:02Z gbc $
 #
 # test the 'average' fix
 #

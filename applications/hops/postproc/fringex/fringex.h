@@ -30,6 +30,7 @@
 #include "mk4_dfio.h"
 #include "mk4_util.h"
 #include "mk4_vex.h"
+#include "msg.h"
 
 #define NFX_FCHAN MAXFREQ
 #define NFX_SB_64 64                /* type 205->ffit_chan */
@@ -81,7 +82,7 @@ struct fxparam
     };
 
                                         /* Structure for looping functions */
-#define MAXNSECS  50
+#define MAXNSECS  100                   /* Cf. MAX_NSEGLEN in cohfit */
 #define MAXRATES  500
 #define MAXDELAYS 500
 
