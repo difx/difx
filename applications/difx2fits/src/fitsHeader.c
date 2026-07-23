@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <glob.h>
 #include "difx2fits.h"
+#include "difxio/difxio_macros.h"
 
 #define SEC_DAY         86400.0             /* seconds in a mean solar day */
 #define MUSEC_DAY       86400000000.0       /* mus in a mean solar day */
@@ -98,7 +99,7 @@ static void writeDifxHistory(const DifxInput *D, struct fitsPrivate *out, const 
 	{
 		char pattern[PATH_MAX];
 
-		snprintf(pattern, PATH_MAX, "%s/*.history", D->job[j].outputFile);
+		snprintf_warn(pattern, PATH_MAX, "%s/*.history", D->job[j].outputFile);
 		glob(pattern, 0, 0, globs+j);
 		fileStart[j] = strlen(D->job[j].outputFile) + 1;
 	}

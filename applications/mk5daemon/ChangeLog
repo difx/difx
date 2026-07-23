@@ -1,3 +1,11 @@
+Version 2.9.1
+~~~~~~~~~~~~~
+* Post DiFX 2.9.0
+* Don't limit Mark6 slot count for DiFX Message instructions
+  - limit of 4 was present for mk6dir
+  - limit of 6 was present for modinit
+* Eliminate compiler warnings using g++ 15.2.1
+
 Version 2.9.0
 ~~~~~~~~~~~~~
 * Version for DiFX-2.9.0

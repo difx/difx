@@ -48,7 +48,7 @@ void *datastreamProcessWrapper(void *data)
 
 static int gcd(int a, int b)
 {
-	int r, i;
+	int r;
 
 	while(b != 0)
 	{
@@ -212,7 +212,7 @@ int complianceCheckDatastreams(const DifxInput *D, const Configuration *config)
 printf("%s %d  %f %f  %d %d %d %d  %d\n", D->antenna[dd->antennaId].name, p->pulseCalInterval, df->freq, df->bw, k, d1, d2, d, nSamp);
 				if(nSamp % d != 0)
 				{
-					printf("Error: Datastream %d (ant %s): number of samples %d is not a multiple of %s as dictated by pulse cal configuration.\n", i, D->antenna[dd->antennaId].name, nSamp, d);
+					printf("Error: Datastream %d (ant %s): number of samples %d is not a multiple of %d as dictated by pulse cal configuration.\n", i, D->antenna[dd->antennaId].name, nSamp, d);
 					rv = 0;
 				}
 			}

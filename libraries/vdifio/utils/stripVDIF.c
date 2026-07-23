@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2024 by Adam Deller, Chris Phillips                *
+ *   Copyright (C) 2010-2025 by Adam Deller, Chris Phillips                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
   FILE * input;
   FILE * output;
   int skipbytesinitial, skipbytesfront, skipbytesback;
-  int readbytes, framebytes, stationid, numchannels, bitspersample;
+  int readbytes, framebytes=0, stationid, numchannels, bitspersample;
   long long framesread;
   vdif_header *header;
 

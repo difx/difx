@@ -10,7 +10,7 @@ with these supplied in the environment:
     \$targ  the VEX target name
     \$class the eht target class (sci, cal or eht)
 
-Both logic variables default to true and that is the normal mode of
+The first two logic variables default to true and that is the normal mode of
 usage from Cycle5 onwards.  Previously the first could be set to false
 to pause the grind and allow development of a fourfit control file.
 The second value controls whether to run polconvert or not.  Thus:
@@ -27,14 +27,21 @@ of selected scans):
 
 (actually the first boolean is irrelevant of the 2nd is false).
 
+The third logic variable defaults to false and selects the mixed-mode
+packaging (swin, dxin, hmix, fmix via the pre-alma option to ehtc-tarballs.sh):
+
+    \$ehtc/ehtc-jsgrind.sh false false true
+
 In any case, a full set of environment variables as must be supplied.
 "
 #
 # While developing fourfit control file (earlier mode of execution):
-#  $ehtc/ehtc-jsgrind.sh false true
-#  $ehtc/ehtc-jsgrind.sh false false
-# once fourfit control file is established (this is the normal mode):
-#  $ehtc/ehtc-jsgrind.sh true true
+#  $ehtc/ehtc-jsgrind.sh false true false
+#  $ehtc/ehtc-jsgrind.sh false false false
+# once fourfit control file is established (this is the default mode):
+#  $ehtc/ehtc-jsgrind.sh true true false
+# To run mixed-mode packaging:
+#  $ehtc/ehtc-jsgrind.sh false false true
 #
 [ -z "$exp"   ] && { echo exp   must be defined ; exit 1 ; }
 [ -z "$evs"   ] && { echo evs   must be defined ; exit 1 ; }
@@ -76,15 +83,25 @@ polconvert=${2-'true'}
     echo "the 2nd argument must be true(run pc) or false (ff and release)"
     exit 1
 }
+mixedmode=${3-'false'}
+[ "$mixedmode" = true -o "$mixedmode" = false ] || {
+    echo "the 3rd argument must be true(run mixedmode) or false"
+    exit 1
+}
+
 [ $haveffconf$polconvert = truetrue   ] && {
     echo doing the full grind assuming a fourfit control file will be found ; }
 [ $haveffconf$polconvert = falsetrue  ] && {
     echo doing the polconversion processing and fourfit preparations
     echo after which you will need to create or update the fourfit
     echo control file and then run this script with two false arguments; }
-[ $haveffconf$polconvert = falsefalse ] && {
+[ $haveffconf$polconvert$mixedmode = falsefalsefalse ] && {
     echo proceeding to make the release script; }
+[ $haveffconf$polconvert$mixedmode = falsefalsetrue ] && {
+    echo proceeding with the mixed-mode release; }
 [ $haveffconf$polconvert = truefalse  ] && {
+    echo "$USAGE" ; echo poor logic choices...bailing out. ; exit 1 ; }
+[ $polconvert$mixedmode = truetrue  ] && {
     echo "$USAGE" ; echo poor logic choices...bailing out. ; exit 1 ; }
 
 # check that these grouping vars are defined
@@ -154,6 +171,58 @@ $polconvert && {
     # continue after 2nd 4fit
     makerelease=true
 }
+
+
+$mixedmode && {
+    # create the list of job inputs as $jobs
+    eval `$ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs $jselect -J $uf`
+    # display the list of selected jobs
+    echo "processing these jobs:"
+    echo \
+    $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs $jselect -R $uf
+    $ehtc/ehtc-joblist.py -i $dout/$evs -o *.obs $jselect -R $uf
+
+    # the mixed-mode packaging only uses the files in the $dout folder (original DiFX output),
+    # so we shouldn't need to run prepolconvert
+
+    # review list of jobs, review $scmp, $opts
+    #echo \
+    #prepolconvert.py -v -k -s $dout $jobs
+    #prepolconvert.py -v -k -s $dout $jobs
+    # evaluate partitioning of job list (use -v if error)
+    #echo \
+    #$zchk && $ehtc/ehtc-zoomchk.py -v $jobs
+    #$zchk && $ehtc/ehtc-zoomchk.py -v $jobs
+    # subdivide $jobs as necessary, do the polconvert on each set of $jobs
+    #echo \
+    #drivepolconvert.py -v $opts -l $pcal $jobs
+    #drivepolconvert.py -v $opts -l $pcal $jobs
+    #status=$?
+    # stop things dead in their tracks if we have an issue
+    # in order to prevent alot of stupid tarballing activity
+    #[ $status -eq 0 ] && { echo drivepolconvert.py exited normally ; } ||
+    #    { echo drivepolconvert.py exited with status $status; exit $status; }
+    # evaluate results on full set of $jobs--look at ALL_IFs plots; then
+
+    #--------------------------------------------------------------------------
+
+    # The mixed-mode release will not run fourfit, so we can proceed to run the
+    # tarballs.sh script via a separate postdrive script and then build the release
+    # script. ehtc-postdrive_mixedmode.sh calls tarballs for the pre-alma option.
+
+    echo \
+    $ehtc/ehtc-postdrive_mixedmode.sh eval $jobs
+    $ehtc/ehtc-postdrive_mixedmode.sh eval $jobs
+    makerelease=true
+    
+    #--------------------------------------------------------------------------
+} || {
+    # continue after 2nd 4fit
+    makerelease=true
+}
+
+
+
 
 $makerelease && {
 [ -d tarballs ] || { echo tarballs dir is missing; exit 2; }

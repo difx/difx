@@ -98,7 +98,7 @@ def filterVisibilityfile(basename):
 
 		# Get details of the visibility record
 		fq = difx.getFrequency(visrec.header.freqindex)
-		nchan = fq.numchan / fq.specavg
+		nchan = fq.numchan // fq.specavg
 
 		# Copy the record?
 		doCopy = True

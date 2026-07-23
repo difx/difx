@@ -1,5 +1,5 @@
 /***************************************************************************
- *  Copyright (C) 2018-2022 by Chris Phillips                              *
+ *  Copyright (C) 2018-2025 by Chris Phillips                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -80,7 +80,7 @@
 
 #include <codifio.h>
 
-#define MAXSTR              200 
+#define MAXSTR              250 
 #define MAXPACKETSIZE       9500
 #define DEFAULT_PORT        52100
 #define DEFAULT_TIME        60
@@ -88,6 +88,7 @@
 #define DEFAULT_UPDATETIME  1.0
 #define UPDATE              20
 #define MAXTHREAD           30
+#define MAXGROUPID          10
 
 #define DEBUG(x) 
 
@@ -147,7 +148,7 @@ int lines = 0;
 
 int main (int argc, char * const argv[]) {
   char *buf, timestr[MAXSTR];
-  int threadIndex, fileIndex, tmp, opt, status, sock, skip, i, nfile;
+  int threadIndex, fileIndex, tmp, opt, status, sock, skip, i, nfile=0;
   int valid, period, thisthread = -1, thisgroup = -1;
   ssize_t nread, nwrote, nwrite;
   char msg[MAXSTR];
@@ -170,7 +171,8 @@ int main (int argc, char * const argv[]) {
   int filesize = DEFAULT_FILESIZE;
   int padding = 0;
   int threadid = -1;
-  int groupid = -1;
+  int groupids[MAXGROUPID];
+  int nGroupid = 0;
   int scale = 0;
   int drop  = 0;
   int forcebits = 0;
@@ -249,12 +251,16 @@ int main (int argc, char * const argv[]) {
      break;
 
     case 'g':
-      status = sscanf(optarg, "%d", &tmp);
-      if (status!=1 || tmp<0)
-	fprintf(stderr, "Bad groupid option %s\n", optarg);
-      else 
-	groupid = tmp;
-     break;
+      if (nGroupid >= MAXGROUPID) {
+        fprintf(stderr, "Too many --groupid options (max %d)\n", MAXGROUPID);
+        exit(1);
+      }
+      if (sscanf(optarg, "%d", &tmp) != 1 || tmp < 0) {
+        fprintf(stderr, "Bad groupid option '%s'\n", optarg);
+        exit(1);
+      }
+      groupids[nGroupid++] = tmp;
+      break;
 
     case 's':
       status = sscanf(optarg, "%d", &tmp);
@@ -374,7 +380,7 @@ int main (int argc, char * const argv[]) {
     exit(1);
   }
   
-  if (groupid>0 && splitgroup) {
+  if (nGroupid==1 && splitgroup) {
     fprintf(stderr, "Cannot split by group and filter single group. Quitting\n");
     exit(1);
   }
@@ -475,8 +481,6 @@ int main (int argc, char * const argv[]) {
     thisthread = getCODIFThreadID(cheader);
     thisgroup =  getCODIFGroupID(cheader);
 
-    //printf("DEBUG: Got F: %d S: %d  T: %d G: %d\n", thisframe, thisseconds, thisthread, thisgroup);
-    
     skip = 0;
     if (threadid>=0) {
       if (thisthread!=threadid) {
@@ -484,13 +488,30 @@ int main (int argc, char * const argv[]) {
 	skipped++;
       }
     }
+
+    if (!skip && nGroupid > 0) {
+      skip = 1;  // Assume skip unless match
+      for (i = 0; i < nGroupid; i++) {
+        if (thisgroup == groupids[i]) {
+          skip = 0;
+          break;
+        }
+      }
+      if (skip) skipped++;
+    }
+
+#if 0
     if (groupid>=0) {
       if (thisgroup!=groupid) {
 	skip=1;
 	skipped++;
       }
     }
-    
+    //if (!(thisgroup==258 || thisgroup==261 || thisgroup==262)) {
+    //  skip=1;
+    //  skipped++;
+    // }
+#endif
     if (!skip) {
       valid = 1;
       if (first) {
@@ -664,7 +685,7 @@ int main (int argc, char * const argv[]) {
       time_t itime = (time_t)floor(filetime);
       struct tm *date = gmtime(&itime); 
 
-      strftime(timestr, MAXSTR-1, "%j_%H%M%S", date);
+      strftime(timestr, MAXSTR, "%j_%H%M%S", date);
 
       if (splitthread || splitgroup) {
 	// Pass -1 for thread or groupID if not splitting
@@ -834,18 +855,22 @@ int openfile(char *fileprefix, char *timestr, int threadid, int groupid) {
   char filename[MAXSTR], msg[MAXSTR];
 
   if (threadid>=0 && groupid>0) 
-    snprintf(filename, MAXSTR-1, "%s_%s-%d-%d.cdf", fileprefix, timestr, threadid, groupid);
+    snprintf(filename, MAXSTR, "%s_%s-%d-%d.cdf", fileprefix, timestr, threadid, groupid);
   else if (threadid>=0) 
-    snprintf(filename, MAXSTR-1, "%s_%s-%d.cdf", fileprefix, timestr, threadid);
+    snprintf(filename, MAXSTR, "%s_%s-%d.cdf", fileprefix, timestr, threadid);
   else if (groupid>=0) 
-    snprintf(filename, MAXSTR-1, "%s_%s-%d.cdf", fileprefix, timestr, groupid);
+    snprintf(filename, MAXSTR, "%s_%s-%d.cdf", fileprefix, timestr, groupid);
   else
-    snprintf(filename, MAXSTR-1, "%s_%s.cdf", fileprefix, timestr);
+    snprintf(filename, MAXSTR, "%s_%s.cdf", fileprefix, timestr);
 
   // File name contained in buffer
   int ofile = open(filename, OPENOPTIONS,S_IRWXU|S_IRWXG|S_IRWXO); 
   if (ofile==-1) {
-    sprintf(msg, "Failed to open output file (%s)", filename);
+    int v;
+    v = snprintf(msg, MAXSTR, "Failed to open output file (%s)", filename);
+    if(v >= MAXSTR) {
+      fprintf(stderr, "Developer warning: MAXSTR too small: %d >= %d\n", v, MAXSTR);
+    }
     perror(msg);
   }
   return ofile;

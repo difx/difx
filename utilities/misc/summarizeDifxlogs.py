@@ -56,7 +56,7 @@ def getWeights(logfile):
 		if len(weights) != len(curr_weights):
 			weights = curr_weights
 		else:
-			weights = map(add, weights, curr_weights)
+			weights = list(map(add, weights, curr_weights))
 			N += 1
 	weightfmt = '%%.%df' % (Ndecimals)
 	weighttrunc = 10.0**Ndecimals
@@ -75,7 +75,7 @@ def getWeightlabels(inputfile):
 			break
 		elif 'TELESCOPE NAME ' in l:
 			antindex = int(l[15:20].replace(':',' '))
-			name = l[20:].strip()
+			name = l[17:].strip()
 			if not name in telescopes:
 				telescopes[antindex] = name
 		elif 'TELESCOPE INDEX:' in l:
@@ -88,7 +88,6 @@ def getTimingsStr(logfile):
 	mpiDone = False
 	wallclockTime = -1
 	peakDatatime = -1
-	factor = -1
 
 	f = open(logfile, 'r')
 	f.seek(getLatestCorrelationOffset(logfile))
@@ -121,7 +120,7 @@ def getTimingsStr(logfile):
 			factor = wallclockTime/peakDatatime
 			if factor <= 1:
 				ccode = bcolors.GREEN
-			elif factor <= 10L:
+			elif factor <= 10:
 				ccode = bcolors.ORANGE
 			else:
 				ccode = bcolors.RED
@@ -131,7 +130,7 @@ def getTimingsStr(logfile):
 	else:
 		s = s + bcolors.GREEN + 'MpiDone' + bcolors.ENDC
 
-	return s,wallclockTime,factor
+	return s
 
 def weights2text(weights, labels, alltelescopes, weightfmt='%3.2f'):
 	s = ''
@@ -193,23 +192,17 @@ if len(files) <= 0:
 
 # Summaries
 if doTimefactors:
-	total_runtime = 0
-	avg_slowdown = 0
 	print ('## Wallclock times:')
 	for logname in files:
 		jobname = logname[:logname.rfind('.')]
-		timingsstr,runtime,slowdown = getTimingsStr(jobname + '.difxlog')
-		total_runtime += runtime
-		avg_slowdown += slowdown
+		timingsstr = getTimingsStr(logname)
 		print ('# %s : %s' % (jobname,timingsstr))
 	print ('#')
-	avg_slowdown = avg_slowdown / len(files)
-	print ('# Total wallclock: %.1f hours    Average slowdown: x%.3f' % (total_runtime/(60.0*60.0), avg_slowdown))
 if doWeights:
 	print ('## Weights:')
 	for logname in files:
 		jobname = logname[:logname.rfind('.')]
-		(weightvalues,weightfmt) = getWeights(jobname + '.difxlog')
+		(weightvalues,weightfmt) = getWeights(logname)
 		weightantennas = getWeightlabels(jobname + '.input')
 		telescopes = telescopes | set(weightantennas)
 		weightsstr = weights2text(weightvalues, weightantennas, telescopes, weightfmt)

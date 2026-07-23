@@ -80,7 +80,7 @@ def mergeDiFX(basename,antRemove,antKeep):
 		ant2name = telescopes[ant2-1].name.upper()
 
 		# Number of channels in this baseband
-		nchan = freqs[freqindex].numchan / freqs[freqindex].specavg
+		nchan = freqs[freqindex].numchan // freqs[freqindex].specavg
 
 		# Read the entire visibility data from disk
 		rawvis = difxfile.read(8*nchan)

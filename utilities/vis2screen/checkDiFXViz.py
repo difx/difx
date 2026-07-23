@@ -49,7 +49,7 @@ def checkVisibilityfile(basename, Nprintchans=4, phasecenterId=None, pulsarbinId
 		ant1name = difx.getTelescope(visrec.header.antenna1 - 1).name
 		ant2name = difx.getTelescope(visrec.header.antenna2 - 1).name
 		baselinestr = '%s-%s' % (ant1name,ant2name)					
-		nchan = fq.numchan / fq.specavg
+		nchan = fq.numchan // fq.specavg
 		T = visrec.header.mjd + visrec.header.seconds/86400.0
 		if TcurrAP < 0:
 			TcurrAP = T
