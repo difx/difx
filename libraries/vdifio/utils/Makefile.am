@@ -11,7 +11,7 @@ bin_PROGRAMS = \
 	captureUDPVDIF \
 	multi2singlethreadVDIF \
 	padVDIF \
-    invalidateVDIFPackets \
+	invalidateVDIFPackets \
 	cleanVDIF \
 	reorderVDIF \
 	fakemultiVDIF \
@@ -40,7 +40,7 @@ endif
 if USE_IPP 
 if !OLD_IPP
   bin_PROGRAMS += generateVDIF
-  bin_PROGRAMS += vdifLinear2circular	
+  bin_PROGRAMS += vdifLinear2circular
 endif
   bin_PROGRAMS += vdifSwapSideband
 endif

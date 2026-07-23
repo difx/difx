@@ -31,9 +31,13 @@ import re
 import subprocess
 import sys
 import shutil
+import traceback
+import glob
+import hashlib
 
 
 def taritup(tardir, tarfile, infile, gzip=False):
+    '''tar up the provided files, with option to compress the output'''
 
     print ("tarring up", tarfile)
     taroptions = options.taroptions
@@ -52,12 +56,19 @@ def taritup(tardir, tarfile, infile, gzip=False):
     subprocess.check_call(
             command, shell=True, stdout=sys.stdout, stderr=subprocess.PIPE)
 
+def do_checksum(filename, checksum_type="md5"):
+    '''returns a checksum (default md5) for a file'''
+    with open(filename, mode="rb") as f:
+        checksum = hashlib.file_digest(f, checksum_type)
+    return checksum
+
 
 usage = """%prog <path> <destination>
 will transfer <path> and all its subdirectories to <destination> on
 data.pawsey.org.au using pshell. Most files are tarred before transfer, but
 special files and large files are transferred unmodified. Files are first
-tarred/copied to $ARCHTMP before transfer.
+tarred/copied to $ARCHTMP before transfer. Also computes checksums for FITS
+files.
 
 e.g.
 %prog $CORR_DATA/v252aw /projects/VLBI/Archive/LBA/v252
@@ -85,6 +96,14 @@ parser.add_option(
         "--onejob", "-j",
         dest="onejob", action="store_true", default=False,
         help="Each job gets its own tar file (instead of each pass)")
+parser.add_option(
+        "--skip_copy", "-s",
+        dest="skip_copy", action="store_true", default=False,
+        help="Skip the initial copy/tar step and assume $ARCHTMP has all data to be transferred")
+#parser.add_option(
+#        "--exclude", "-e",
+#        type="str", dest="exclude",  default="slurm-*.out",
+#        help="Exclude files matching the regexp")
 
 (options, args) = parser.parse_args()
 
@@ -112,6 +131,20 @@ os.chdir(localdir)
 tarlists = dict()
 transfer = []
 publish = []
+
+# first create md5 checksums for the FITS files
+if not options.skip_copy:
+    for filename in glob.glob("*.FITS"):
+        md5sum = do_checksum(filename)
+        md5filename = filename + ".md5"
+        if options.verbose:
+            print (f"writing {md5filename} with checksum for {filename}")
+        with open(md5filename, mode="w") as f:
+            # don't write the filename as you would in normal md5sum because CASDA...
+            f.write(f"{md5sum.hexdigest()}\n")
+            #f.write(f"{md5sum.hexdigest()}  {filename}\n")
+            #f.write(" ".join([md5sum.hexdigest(), filename]) + "\n")
+        #print(" ".join([md5sum.hexdigest(), filename]), file=open(md5filename, mode="w"))
 
 for filename in os.listdir(os.curdir):
 
@@ -147,16 +180,21 @@ for filename in os.listdir(os.curdir):
         # ignore these (old, superseded jobs).
         print ("skipping", filename)
         continue
+    if re.match(r"slurm-.*\.out", filename):
+        # ignore slurm files that litter the place
+        print ("skipping", filename)
+        continue
 
-    # certain file names never get tarred
+    # certain file extensions never get tarred
     notar_ext = [
-            ".fits", ".rpf", ".uvfits", ".mark4", ".tar", passname+".v2d",
-            expname+".vex", expname+".skd", "notes.txt"]
+            r".fits\Z", ".rpf", ".uvfits", ".mark4", ".tar", passname+".v2d",
+            expname+".vex", expname+".skd", "notes.txt", ".md5"]
     fileWithPath = os.path.join(os.path.abspath(os.curdir), filename)
     notar = False
     for extension in notar_ext:
         if re.search(extension, filename, re.IGNORECASE):
             notar = True
+            publish.append(filename)
             break
 
     # only tar small files
@@ -166,7 +204,6 @@ for filename in os.listdir(os.curdir):
     if (os.path.exists(fileWithPath) and notar):
         # transfer this large (or special) file without tarring
         transfer.append(re.escape(fileWithPath))
-        publish.append(filename)
     else:
         # add to list of files to be tarred
         tarlists[targroup] += " " + re.escape(filename)
@@ -175,29 +212,31 @@ for filename in os.listdir(os.curdir):
 command = " ".join(["mkdir -p", archdir])
 subprocess.check_call(command, shell=True, stdout=sys.stdout)
 
-# tar up small files in this directory to Archive area, one correlator pass at
-# a time
-for targroup in tarlists.keys():
-    if tarlists[targroup]:
-        tarfile = targroup + ".tar"
-        taritup(archdir, tarfile, tarlists[targroup])
-
-# transfer each of the large files in turn
-print ("copying files")
-for srcfile in transfer:
-    command = " ".join(["cp", "-l", srcfile, archdir])
-    if options.verbose:
-        print ("\n" + command)
-    subprocess.check_call(command, shell=True, stdout=sys.stdout)
-
-# now tar up the clocks subdirectory
-if os.path.exists("clocks"):
-    taritup(archdir, "clocks.tar", "clocks")
+if not options.skip_copy:
+    # tar up small files in this directory to Archive area, one correlator pass at
+    # a time
+    for targroup in tarlists.keys():
+        if tarlists[targroup]:
+            tarfile = targroup + ".tar"
+            taritup(archdir, tarfile, tarlists[targroup])
+    
+    # transfer each of the large files in turn
+    print ("copying files")
+    for srcfile in transfer:
+        command = " ".join(["cp", "-l", srcfile, archdir])
+        if options.verbose:
+            print ("\n" + command)
+        subprocess.check_call(command, shell=True, stdout=sys.stdout)
+    
+    # now tar up the clocks subdirectory
+    if os.path.exists("clocks"):
+        taritup(archdir, "clocks.tar", "clocks")
 
 # and the mark4 output dir
 if mark4file:
     mark4tarfile = expname.upper()+".MARK4.tar.gz"
-    taritup(archdir, mark4tarfile, mark4file, gzip=True)
+    if not options.skip_copy:
+        taritup(archdir, mark4tarfile, mark4file, gzip=True)
     publish.append(mark4tarfile)
 
 # now transfer the lot to data.pawsey.org.au
@@ -226,6 +265,7 @@ except KeyboardInterrupt:
 except:
     print ("pshell transfer failed - check if your delegation expired")
     print ("Contents of {} have not been deleted".format(archdir))
+    traceback.print_exc()
 else:
     # publish the public files
     try:
@@ -244,6 +284,7 @@ else:
                     command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
     except:
         print ("Files not made public - please use web portal")
+        traceback.print_exc()
     if not options.keeparch:
         shutil.rmtree(archdir)
     print ("All done!")

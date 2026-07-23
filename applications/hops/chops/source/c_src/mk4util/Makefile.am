@@ -10,7 +10,8 @@ pkginclude_HEADERS = ./include/account.h ./include/fileset.h ./include/fstruct.h
 
 pkglib_LTLIBRARIES = libmk4utilb.la
 
-libmk4utilb_la_SOURCES = ./src/account.c ./src/check_name.c ./src/clear_date.c ./src/clear_fstruct.c ./src/confirm.c ./src/datec_to_datef.c ./src/datef_to_datec.c ./src/day_of_datef.c ./src/environment.c ./src/extract_filenames.c ./src/fileset.c ./src/get_abs_path.c ./src/get_filelist.c ./src/hptoie.c ./src/hptoie4.c ./src/hptoie8.c ./src/int_to_time.c ./src/ismk4.c ./src/minmax.c ./src/msg.c ./src/report_times.c ./src/root_belong.c ./src/root_id.c ./src/sexigesimal2hrdeg.c ./src/sort_names.c ./src/swap.c ./src/syntax.c ./src/time_to_double.c ./src/time_to_int.c ./src/adler32_checksum.c ./src/hops_complex.c
+# clear _ fstruct.c
+libmk4utilb_la_SOURCES = ./src/account.c ./src/check_name.c ./src/clear_date.c ./src/confirm.c ./src/datec_to_datef.c ./src/datef_to_datec.c ./src/day_of_datef.c ./src/environment.c ./src/extract_filenames.c ./src/fileset.c ./src/get_abs_path.c ./src/get_filelist.c ./src/hptoie.c ./src/hptoie4.c ./src/hptoie8.c ./src/int_to_time.c ./src/ismk4.c ./src/minmax.c ./src/msg.c ./src/report_times.c ./src/root_belong.c ./src/root_id.c ./src/sexigesimal2hrdeg.c ./src/sort_names.c ./src/swap.c ./src/syntax.c ./src/time_to_double.c ./src/time_to_int.c ./src/adler32_checksum.c ./src/hops_complex.c
 
 libmk4utilb_la_LDFLAGS = -avoid-version
 

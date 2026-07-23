@@ -11,7 +11,7 @@ from math import sqrt
 
 program = 'difxspeed'
 version = '0.6'
-verdate = '20190916'
+verdate = '20241104'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 inputFileExtension = '.difxspeed'
@@ -27,8 +27,7 @@ def usage(pgm):
 	print('  <benchmarkFile> describes the series of benchmarks to run.')
 	print('                  (must end in %s)\n' % inputFileExtension)
 	print('  <numIterations> is the number of times to run the test.\n')
-	print('See https://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/difxspeed for')
-	print('more information.\n')
+	print('See https://github.com/difx/difx/wiki/difxspeed for more information.\n')
 
 nExecute = 0
 def execute(cmd, verbose, pretend):

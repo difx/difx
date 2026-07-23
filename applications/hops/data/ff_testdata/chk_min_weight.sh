@@ -2,7 +2,7 @@
 #
 # $Id: chk_ff_3571.sh Thu Nov 17 10:19:27 EST 2016 jpb
 #
-# canonical test suite for fourfit
+# canonical test suite for fourfit3
 #
 
 verb=false
@@ -18,25 +18,25 @@ sed '/mbd_anchor sbd/a\
 min_weight 0.999
 ' < ./cf3571-ok > ./cf3571-mw
 
-$verb && type fourfit
+$verb && type $fourfit
 $verb && printenv > ff-3571-env.out
 
 rm -f ff-3571-ok.ps
 #run fourfit normally
 $verb && echo \
-fourfit -pt -d diskfile:ff-3571-ok.ps -b GE -c ./cf3571-ok -PI \\ && echo \
+$fourfit -pt -d diskfile:ff-3571-ok.ps -b GE -c ./cf3571-ok -PI \\ && echo \
     $DATADIR/3571/244-1717/0727-115.zbgwce
-fourfit -pt -d diskfile:ff-3571-ok.ps -b GE -c ./cf3571-ok -PI \
+$fourfit -pt -d diskfile:ff-3571-ok.ps -b GE -c ./cf3571-ok -PI \
     $DATADIR/3571/244-1717/0727-115.zbgwce
 [ -f ./ff-3571-ok.ps ] || { echo ./ff-3571-ok.ps missing && exit 2 ; }
 
 #run fourfit with min weight
 rm -f ff-3571-mw.ps
 $verb && echo \
-fourfit -pt -d diskfile:ff-3571-mw.ps -b GE -c ./cf3571-mw -PI \\ && echo \
+$fourfit -pt -d diskfile:ff-3571-mw.ps -b GE -c ./cf3571-mw -PI \\ && echo \
     $DATADIR/3571/244-1717/0727-115.zbgwce
 #run fourfit
-fourfit -pt -d diskfile:ff-3571-mw.ps -b GE -c ./cf3571-mw -PI \
+$fourfit -pt -d diskfile:ff-3571-mw.ps -b GE -c ./cf3571-mw -PI \
     $DATADIR/3571/244-1717/0727-115.zbgwce
 [ -f ./ff-3571-mw.ps ] || { echo ./ff-3571-mw.ps missing && exit 2 ; }
 

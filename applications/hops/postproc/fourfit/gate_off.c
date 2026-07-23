@@ -37,7 +37,9 @@ gate_off (struct type_pass* pass, int frq, int ap)
                                         /* control blk */
                                         /* Do all in milliseconds for integer */
                                         /* comparisons */
-    freq_no = fcode(pass->pass_data[frq].freq_code, pass->control.chid);
+    // freq_no = fcode(pass->pass_data[frq].freq_code, pass->control.chid);
+    // See around line 280 of make_passes().
+    freq_no = pass->pass_data[frq].fcode_index;
     mode = pass->control.switched_mode;
 
     period = (int)(pass->control.switched_period * 1000.0);

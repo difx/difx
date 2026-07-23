@@ -532,12 +532,12 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 	}
 	in_raw = malloc(sizeof(float)*Ldft);
 	out_converter_tmp = malloc(sizeof(char)*2*Lidft);
-	dft_in = fftwf_malloc(sizeof(fftw_real)*Ldft);
-	dft_out = fftwf_malloc(sizeof(fftwf_complex)*(Ldft/2+1));
-	idft_in = fftwf_malloc(sizeof(fftwf_complex)*Lidft+8);
-	idft_out = fftwf_malloc(sizeof(fftwf_complex)*Lidft+8);
-	out_td = fftwf_malloc(sizeof(fftw_real)*2*Lidft);
-	sigma_data = fftwf_malloc(sizeof(fftw_real)*min_sigma_nsamples);
+	dft_in = fftw_malloc(sizeof(fftw_real)*Ldft);
+	dft_out = fftw_malloc(sizeof(fftwf_complex)*(Ldft/2+1));
+	idft_in = fftw_malloc(sizeof(fftwf_complex)*Lidft+8);
+	idft_out = fftw_malloc(sizeof(fftwf_complex)*Lidft+8);
+	out_td = fftw_malloc(sizeof(fftw_real)*2*Lidft);
+	sigma_data = fftw_malloc(sizeof(fftw_real)*min_sigma_nsamples);
 	memset(dft_in, 0x00, sizeof(fftw_real)*Lidft);
 	memset(dft_out, 0x00, sizeof(fftwf_complex)*(Lidft/2+1));
 	memset(out_td, 0x00, sizeof(fftw_real)*2*Lidft);
@@ -722,6 +722,21 @@ int filterRealData(const char* infile, struct mark5_stream *ms, const int fdout,
 		printf("Finished in %.1f seconds, total throughput %.2f Ms/s.\n", dt, 1e-6*nidft*(Ldft/dt)/factor);
 		printf("Use format %s to decode the output VDIF file.\n", fmtstring);
 	}
+	
+	/* deallocate buffers */
+	for(i= 0; i < ms->nchan; ++i)
+	{
+		free(raw[i]);
+	}
+	free(raw);
+	free(in_raw);
+	free(out_converter_tmp);
+	fftw_free(dft_in);
+	fftw_free(dft_out);
+	fftw_free(idft_in);
+	fftw_free(idft_out);
+	fftw_free(out_td);
+	fftw_free(sigma_data);
 
 	return 0;
 }

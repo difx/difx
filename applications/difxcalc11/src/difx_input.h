@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_input.h 5102 2013-01-07 23:20:21Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_input.h $
-// $LastChangedRevision: 5102 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2013-01-07 16:20:21 -0700 (Mon, 07 Jan 2013) $
-//
-//============================================================================
 
 /*      #ifndef __DIFX_INPUT_H__               */
 #define __DIFX_INPUT_H__

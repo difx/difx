@@ -265,8 +265,12 @@ int pcal_interp (struct mk4_sdata *sd1,
                         {
                         t309 = sd->t309[j];
                                     // skip record if wrong channel or tone not present
+                                    // ntones is a COUNT, so valid indices are 0..ntones-1;
+                                    // the old "ipc > ntones" let ipc==ntones through, which
+                                    // reads acc[64] (one past chan[].acc[64][2]) and the
+                                    // subsequent set_complex clobbers the adjacent pcweight_*
                         if (strncmp(chan, t309->chan[pc_index[pc]].chan_name, 8)
-                            || ipc > t309->ntones)
+                            || ipc >= t309->ntones)
                             {
                             n--;
                             continue;
@@ -333,7 +337,7 @@ int pcal_interp (struct mk4_sdata *sd1,
                                         /* Apply these values to corel array */
                     if (stn == 0)
                         isd = &(fc->data[ap].ref_sdata);
-                    else  
+                    else
                         isd = &(fc->data[ap].rem_sdata);
 
                     switch (ch)

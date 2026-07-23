@@ -90,8 +90,6 @@ struct __attribute__((packed)) CTrow
 
 const DifxInput *DifxInput2FitsCT(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
-	static int extver = 1;  /* sequence number of this table type in FITS file */
-
 	struct CTrow row;
 
 	static struct fitsBinTableColumn columns[] =
@@ -122,7 +120,7 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D, struct fits_keywords *p_fi
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "CALC", extver++);
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "CALC");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 2, "");
 	fitsWriteString (out, "C_SRVR", D->job->calcServer, "");

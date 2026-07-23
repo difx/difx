@@ -1,24 +1,27 @@
 #
-# $Id: Makefile.am 3424 2021-11-01 15:19:35Z gbc $
+# $Id: Makefile.am 4512 2026-05-10 21:48:06Z gbc $
 #
 
 SUBDIRS = .
 
 AM_CPPFLAGS = @HOPS_INC@
 
-TESTS_ENVIRONMENT = srcdir=$(srcdir)
-TESTS             = fft_chk
+TESTS_ENVIRONMENT = abs_top_builddir=$(abs_top_builddir) \
+	abs_top_srcdir=$(abs_top_srcdir)
+TESTS             = fft_chk chk_ff_dfplot.sh chk_frqs.sh chk_clones.sh \
+					chk_cnotch.sh
 
 noinst_HEADERS = adhoc_flag.h control.h filter.h freqlist.h meta_struct.h \
 		 param_struct.h  parser.h pass_struct.h plot_struct.h \
 		 plot_data_dir.h refringe.h statistics.h apply_funcs.h \
-		 ffcontrol.h ffmath.h ffcore.h \
-                 ffio.h ffsearch.h
-
+		 ffcontrol.h ffmath.h ffcore.h ffio.h ffsearch.h \
+		 frqsupport.h
 
 bin_PROGRAMS = fourfit
 bin_SCRIPTS = 
 check_PROGRAMS = fft_chk
+dist_check_SCRIPTS = chk_ff_dfplot.sh chk_frqs.sh chk_clones.sh \
+					chk_cnotch.sh
 text_docs = new_parameters.txt data-flagging.txt channel_aliasing.txt \
 	parallactic-angle-correction.txt
 EXTRA_DIST = $(bin_SCRIPTS) $(text_docs)
@@ -76,7 +79,7 @@ fourfit_DEPENDENCIES = @MSG_DEP@ @DFIO_DEP@ @VEX_DEP@ @AFIO_DEP@ @UTIL_DEP@
 # check the fft code
 fft_chk_SOURCES = fft_chk.c
 # check function prototypes
-ff_misc_if_SOURCES = ff_misc_if.c
+# ff_misc_if_SOURCES = ff_misc_if.c
 
 else !HAVE_PNG
 fourfit_SOURCES = you_lose.c
@@ -92,13 +95,16 @@ fourfit_SOURCES = you_lose.c
 endif !HAVE_FFTW
 
 you_lose.c: Makefile.am
-	echo 'main(){return(' > $@
+	echo '#include <stdio.h>' > $@
+	echo 'int main(){return(' >> $@
 	echo 'puts("One or more of the required packages:")+' >> $@
 	echo 'puts("PNG, X11, PGPLOT or FFTW3 is missing.")+' >> $@
 	echo 'puts("Check your installation are recompile.")' >> $@
 	echo ');}' >> $@
 
-CLEANFILES = you_lose.c
+CLEANFILES = you_lose.c pplot_printer *.ps *.pdf *frq*.cf
+clean-local:
+	rm -rf ????
 
 #
 # eof

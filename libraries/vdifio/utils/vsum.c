@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2024 by Walter Brisken, Mark Wainright             *
+ *   Copyright (C) 2013-2025 by Walter Brisken, Mark Wainright             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,8 +31,8 @@
 
 const char program[] = "vsum";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>";
-const char version[] = "0.8";
-const char verdate[] = "20190507";
+const char version[] = "0.9";
+const char verdate[] = "20250212";
 
 static void usage(const char *pgm)
 {
@@ -43,6 +43,7 @@ static void usage(const char *pgm)
 	printf("  <options> can include:\n");
 	printf("    -h or --help       Print this usage information and quit\n");
 	printf("    -s or --shortsum   Print a short summary, also usable for input to vex2difx\n");
+	printf("    -e or --exhaustive Generate some statistics requiring full read of file\n");
 	printf("    -t or --timeoffset Add time offset to filetimes\n");
 #ifdef HAVE_MARK6SG
 	printf("    -6 or --mark6      Operate directly on Mark6 module data\n");
@@ -50,6 +51,116 @@ static void usage(const char *pgm)
 	printf("    --mark6slot <slot> Operate directly on all Mark6 scans found on module in <slot>\n");
 #endif
 	printf("\n");
+}
+
+static void summarizeFileExhaustive(const char *fileName, int isMark6)
+{
+	struct vdif_file_summary sum;
+	int r;
+
+	if(isMark6)
+	{
+		fprintf(stdout, "Exhaustive reporting is not available for Mark6 formatted data: %s\n", fileName);
+
+		return;
+	}
+
+	r = summarizevdiffile(&sum, fileName, 0);
+	if(r < 0)
+	{
+		fprintf(stderr, "File %s VDIF summary failed with return value %d\n\n", fileName, r);
+	}
+	else
+	{
+		FILE *in;
+		vdif_header *vh;
+		long long int nInvalid, nValid;
+		long long int threadHisto[2][1024];	/* first index: 0 = valid, 1 = invalid; second index thread Id */
+		long long int threadOutOfSequence[1024];
+		int lastFrame[1024];
+		int highestFrame;
+		int inferredFrameRate;
+		long long int missingFrames, totalFrames;
+		int t, f;
+
+		highestFrame = -1;
+		nInvalid = nValid = 0;
+		for(t = 0; t < 1024; ++t)
+		{
+			threadHisto[0][t] = threadHisto[1][t] = 0;
+			threadOutOfSequence[t] = 0;
+			lastFrame[t] = -1;
+		}
+
+		vh = (vdif_header *)malloc(sum.frameSize);
+		in = fopen(fileName, "r");
+
+		while(fread(vh, sum.frameSize, 1, in) > 0)
+		{
+			t = vh->threadid;
+			f = vh->frame;
+
+			if(f > highestFrame)
+			{
+				highestFrame = f;
+			}
+			if(vh->invalid)
+			{
+				++nInvalid;
+				++threadHisto[1][t];
+			}
+			else
+			{
+				++nValid;
+				++threadHisto[0][t];
+			}
+			if(lastFrame[t] >= 0)
+			{
+				if(f != 0 && f != lastFrame[t] + 1)
+				{
+					++threadOutOfSequence[t];
+				}
+			}
+			lastFrame[t] = f;
+		}
+		
+		fclose(in);
+		free(vh);
+
+		if(sum.framesPerSecond > 0)
+		{
+			inferredFrameRate = sum.framesPerSecond;
+		}
+		else
+		{
+			inferredFrameRate = highestFrame;
+		}
+		totalFrames = (sum.endSecond - sum.startSecond)*(long long)inferredFrameRate + (sum.endFrame - sum.startFrame + 1);
+		missingFrames = totalFrames - sum.fileSize/sum.frameSize;
+		
+		printf("Extended summary of ");
+		printvdiffilesummary(&sum);
+		printf("  highest frame number = %d\n", highestFrame);
+		printf("  inferred number of missing frames = %Ld\n", missingFrames);
+		printf("  number of valid frames = %Ld\n", nValid);
+		for(t = 0; t < 1024; ++t)
+		{
+			if(threadHisto[0][t] > 0) printf("    number in thread %4d = %Ld\n", t, threadHisto[0][t]);
+		}
+		printf("  number of invalid frames = %Ld\n", nInvalid);
+		for(t = 0; t < 1024; ++t)
+		{
+			if(threadHisto[1][t] > 0) printf("    number in thread %4d = %Ld\n", t, threadHisto[1][t]);
+		}
+		printf("  number of out of sequence frames for\n");
+		for(t = 0; t < 1024; ++t)
+		{
+			if(threadHisto[0][t] > 0 || threadHisto[1][t] > 0)
+			{
+				printf("    thread %4d = %Ld\n", t, threadOutOfSequence[t]);
+			}
+		}
+	}
 }
 
 /* NOTE: toff is never used in this function... */
@@ -176,6 +287,7 @@ int main(int argc, char **argv)
 	else
 	{
 		int a, slot;
+		int exhaustive = 0;
 		int shortSum = 0;
 		int isMark6 = 0;
 		int toff = 0;
@@ -186,6 +298,11 @@ int main(int argc, char **argv)
 			   strcmp(argv[a], "--shortsum") == 0)
 			{
 				shortSum = 1;
+			}
+			else if(strcmp(argv[a], "-e") == 0 ||
+			   strcmp(argv[a], "--exhaustive") == 0)
+			{
+				exhaustive = 1;
 			}
 			else if(strcmp(argv[a], "-h") == 0 ||
 			   strcmp(argv[a], "--help") == 0)
@@ -226,6 +343,10 @@ int main(int argc, char **argv)
 				exit(EXIT_SUCCESS);
 			}
 #endif
+			else if(exhaustive)
+			{
+				summarizeFileExhaustive(argv[a], isMark6);
+			}
 			else
 			{
 				summarizeFile(argv[a], shortSum, isMark6, toff);

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2019 by Walter Brisken                             *
+ *   Copyright (C) 2015-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -24,13 +24,14 @@
 #include <complex.h>
 #include <time.h>
 #include "difx_input.h"
+#include "difxio_macros.h"
 
 #define C_LIGHT	299792458.0
 
 const char program[] = "calcderiv";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const int version = 2;	/* for this program, must be an integer */
-const char verdate[] = "20191110";
+const char verdate[] = "20240917";
 
 void usage()
 {
@@ -89,17 +90,17 @@ int computeLMDerivatives(DifxInput *D, double deltaLM, const char *calcProgram, 
 		writeDifxCalc(D);
 
 		/* run calc11 */
-		snprintf(command, CommandLength, "rm %s", D->job->imFile);
+		snprintf_warn(command, CommandLength, "rm %s", D->job->imFile);
 		system(command);
-		snprintf(command, CommandLength, "%s %s", calcProgram, D->job->calcFile);
+		snprintf_warn(command, CommandLength, "%s %s", calcProgram, D->job->calcFile);
 		system(command);
 		/* FIXME: vex2difx should put calc version info in .calc file */
 		/* FIXME: option for calc 9 */
 
 		/* make copes for inspection */
-		snprintf(command, CommandLength, "cp %s %s.%02d\n", D->job->calcFile, D->job->calcFile, i);
+		snprintf_warn(command, CommandLength, "cp %s %s.%02d\n", D->job->calcFile, D->job->calcFile, i);
 		system(command);
-		snprintf(command, CommandLength, "cp %s %s.%02d\n", D->job->imFile, D->job->imFile, i);
+		snprintf_warn(command, CommandLength, "cp %s %s.%02d\n", D->job->imFile, D->job->imFile, i);
 		system(command);
 
 		/* load the updated version */
@@ -235,17 +236,17 @@ int computeXYZDerivatives(DifxInput *D, double deltaXYZ, const char *calcProgram
 		writeDifxCalc(D);
 
 		/* run calc11 */
-		snprintf(command, CommandLength, "rm %s", D->job->imFile);
+		snprintf_warn(command, CommandLength, "rm %s", D->job->imFile);
 		system(command);
-		snprintf(command, CommandLength, "calcif2 %s", D->job->calcFile);
+		snprintf_warn(command, CommandLength, "calcif2 %s", D->job->calcFile);
 		system(command);
 		/* FIXME: vex2difx should put calc version info in .calc file */
 		/* FIXME: option for calc 9 */
 
 		/* make copes for inspection */
-		snprintf(command, CommandLength, "cp %s %s.%02d\n", D->job->calcFile, D->job->calcFile, i);
+		snprintf_warn(command, CommandLength, "cp %s %s.%02d\n", D->job->calcFile, D->job->calcFile, i);
 		system(command);
-		snprintf(command, CommandLength, "cp %s %s.%02d\n", D->job->imFile, D->job->imFile, i);
+		snprintf_warn(command, CommandLength, "cp %s %s.%02d\n", D->job->imFile, D->job->imFile, i);
 		system(command);
 
 		/* load the updated version */
@@ -358,13 +359,13 @@ int run(const char *fileBase, int verbose, double deltaLM, double deltaXYZ)
 	}
 	else
 	{
-		snprintf(calcProgram, CommandLength, "%s", s);
+		snprintf_warn(calcProgram, CommandLength, "%s", s);
 	}
 
 	printf("Using %s to generate models\n", calcProgram);
 
 	/* 0. Run calc9 to get starting point */
-	snprintf(command, CommandLength, "calcif2 -f %s", fileBase);
+	snprintf_warn(command, CommandLength, "calcif2 -f %s", fileBase);
 	printf("Executing command: %s\n", command);
 	system(command);
 
@@ -425,9 +426,9 @@ int run(const char *fileBase, int verbose, double deltaLM, double deltaXYZ)
 	}
 
 	/* 3. back up original .calc file and save copy of original .im file */
-	snprintf(command, CommandLength, "cp %s %s.bak", D->job->calcFile, D->job->calcFile);
+	snprintf_warn(command, CommandLength, "cp %s %s.bak", D->job->calcFile, D->job->calcFile);
 	system(command);
-	snprintf(command, CommandLength, "cp %s %s.save", D->job->imFile, D->job->imFile);
+	snprintf_warn(command, CommandLength, "cp %s %s.save", D->job->imFile, D->job->imFile);
 	system(command);
 
 	/* 4. Do the calculations */
@@ -441,13 +442,13 @@ int run(const char *fileBase, int verbose, double deltaLM, double deltaXYZ)
 	}
 
 	/* 5. Restore the .calc file */
-	snprintf(command, CommandLength, "mv %s.bak %s", D->job->calcFile, D->job->calcFile);
+	snprintf_warn(command, CommandLength, "mv %s.bak %s", D->job->calcFile, D->job->calcFile);
 	system(command);
 
 	/* 6. Write the updated model file */
 	if(rv == 0)
 	{
-		snprintf(D->job->calcServer, DIFXIO_HOSTNAME_LENGTH, program);
+		snprintf_warn(D->job->calcServer, DIFXIO_HOSTNAME_LENGTH, "%s", program);
 		D->job->calcVersion = version;
 		D->job->calcProgram = 0;
 		writeDifxIM(D);

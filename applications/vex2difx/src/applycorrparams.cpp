@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2025 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -348,6 +348,11 @@ static void applyCorrParams_Mode(VexData *V, const CorrParams &params, unsigned 
 					V->setStreamFrameSize(M->defName, it->first, ds, DS.frameSize);
 				}
 
+				if(DS.nBit > 0)
+				{
+					V->setStreamNBit(M->defName, it->first, ds, DS.nBit);
+				}
+
 				if(!DS.threadsAbsent.empty())
 				{
 					V->setStreamThreadsAbsent(M->defName, it->first, ds, DS.threadsAbsent);
@@ -359,7 +364,7 @@ static void applyCorrParams_Mode(VexData *V, const CorrParams &params, unsigned 
 			}
 
 			// apply canonical VDIF mapping if appropriate and if needed
-			if(usesCanonicalVDIF(it->first) && it->second.usesFormat(VexStream::FormatVDIF))
+			if(V->getVersion() < 2.0 && usesCanonicalVDIF(it->first) && it->second.usesFormat(VexStream::FormatVDIF))
 			{
 				V->setCanonicalVDIF(M->defName, it->first);
 				canonicalVDIFUsers.insert(it->first);
@@ -519,7 +524,7 @@ static void applyCorrParams_Data(VexData *V, const CorrParams &params, unsigned 
 							}
 
 							// apply canonical VDIF mapping if appropriate and if needed
-							if(usesCanonicalVDIF(it->first) && it->second.usesFormat(VexStream::FormatVDIF))
+							if(V->getVersion() < 2.0 && usesCanonicalVDIF(it->first) && it->second.usesFormat(VexStream::FormatVDIF))
 							{
 								V->setCanonicalVDIF(M->defName, it->first);
 								canonicalVDIFUsers.insert(it->first);

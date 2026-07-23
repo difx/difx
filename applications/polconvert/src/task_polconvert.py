@@ -50,8 +50,8 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-__version__ = "2.0.7  "  # 7 characters
-date = 'Aug 14, 2023'
+__version__ = "2.0.7b "  # 7 characters
+date = 'Aug 29, 2025'
 
 
 ################
@@ -93,7 +93,7 @@ else:
 ################
 
 # this is the CASA xml-based command sequence:
-# defaults are supplied & consistent with version 2.0.7
+# defaults are supplied & consistent with version 2.0.7b
 def polconvert(IDI='', OUTPUTIDI='', DiFXinput='', DiFXcalc='', doIF=[], linAntIdx=[1],
                Range=[], ALMAant='', spw=-1, calAPP='', calAPPTime=[0.,5.], APPrefant='',
                gains=[['NONE']], interpolation=[], gainmode=[], XYavgTime=0.0,
@@ -118,7 +118,7 @@ def polconvert(IDI='', OUTPUTIDI='', DiFXinput='', DiFXcalc='', doIF=[], linAntI
 # TOP/polconvert.xml would need to be updated to use these.
 ###
 
-  """ POLCONVERT - CASA INTERFACE VERSION 2.0.7.
+  """ POLCONVERT - CASA INTERFACE VERSION 2.0.7b.
 
 Converts VLBI visibilities from mixed-polarization (linear-circular)
 into a circular basis. Works with single VLBI stations as well as with
@@ -2072,6 +2072,11 @@ calibrated phased arrays (i.e., phased ALMA).
      print("INDEX= "+', '.join(
         ['\'L%i|R%i\''%(i+1,i+1) for i in range(len(doIF))]), file=outf)
      print("/", file=outf)
+     for colnr in range(len(doIF)):
+       di = doIF[colnr] - 1
+       fmid = FrInfo['FREQ (MHZ)'][di] + (FrInfo['BW (MHZ)'][di]/2 if FrInfo['SIDEBAND'][di][0]=='U' else -FrInfo['BW (MHZ)'][di]/2)
+       v = (colnr+1, colnr+1, colnr+1, di, FrInfo['FREQ (MHZ)'][di], FrInfo['SIDEBAND'][di], FrInfo['BW (MHZ)'][di], fmid)
+       print("! Column %d = L%i|R%i : DiFX freq %d, %.5f MHz %sSB bw %.2f MHz, center %.5f MHz" % v, file=outf)
      fmt0 = "%i %i:%2.4f  "
      # boost field width to retain significant figures
      fmt1 = "%10.4f  "*len(doIF)

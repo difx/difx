@@ -38,8 +38,6 @@ static double current_mjd()
 		
 const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
-	static int extver = 1;  /* sequence number of this table type in FITS file */
-
 	char bandFormDouble[8];
 	char bandFormFloat[8];
 
@@ -114,7 +112,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
 	/* write "binary file extension description" to output file */
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "INTERFEROMETER_MODEL", extver++);
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "INTERFEROMETER_MODEL");
   
 	/* calloc space for storing table in FITS order */
 	fitsbuf = (char *)calloc(nRowBytes, 1);

@@ -85,8 +85,6 @@ int getGateWindow(const DifxPulsar *dp, int bin, double *phaseOpen, double *phas
 
 const DifxInput *DifxInput2FitsGM(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
-	static int extver = 1;  /* sequence number of this table type in FITS file */
-
 	char bandFormFloat[8], polyFormDouble[8];
 
 	struct fitsBinTableColumn columns[] =
@@ -135,6 +133,11 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D, struct fits_keywords *p_fi
 	{
 		nPoly = 2;
 	}
+	if(nPoly > 9)
+	{
+		fprintf(stderr, "Error: DifxInput2FitsGM(): polynomial size too large (%d > 9)\n", nPoly);
+		exit(0);
+	}
 
 	onPhase  = (float *)calloc(nBand, sizeof(float));
 	if(onPhase == 0)
@@ -167,7 +170,7 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D, struct fits_keywords *p_fi
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GATEMODL", extver++);
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GATEMODL");
 
 	/* write standard FITS header keywords and values to output file */
 	arrayWriteKeys(p_fits_keys, out);

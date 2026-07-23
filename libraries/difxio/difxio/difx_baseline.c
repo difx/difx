@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -209,7 +209,7 @@ void fprintDifxBaseline(FILE *fp, const DifxBaseline *db)
 		{
 			if(db->bandA[f])
 			{
-				fprintf(fp, " {", f);
+				fprintf(fp, " {");
 				for(p = 0; p < db->nPolProd[f]; p++)
 				{
 					fprintf(fp, "%d", db->bandA[f][p]);
@@ -230,7 +230,7 @@ void fprintDifxBaseline(FILE *fp, const DifxBaseline *db)
 		{
 			if(db->bandB[f])
 			{
-				fprintf(fp, " {", f);
+				fprintf(fp, " {");
 				for(p = 0; p < db->nPolProd[f]; p++)
 				{
 					fprintf(fp, "%d", db->bandB[f][p]);

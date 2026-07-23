@@ -8,6 +8,8 @@ SYNOPSIS:  Makes A-format files that summarize correlator data files
 SYNTAX:  alist [-ff] [-fr] [-o output file] [-v version] [data file list]
 		 Where all arguments except the data file list are optional.
 		 Note: all option flags must appear before the data file list
+         The default output is to version 5, but version 6 is required
+         for EHT work (more columns and decimal places).
 
 OPTION FLAGS:	-o outfile
 			By default, alist writes its A-format output
@@ -48,5 +50,5 @@ Alist provides a 1-line summary of each binary data file supplied to it.
 This file is suitable for immediate input to aedit or any other program
 that recognizes the format.  At present, only type 2 fourfit fringe files
 are supported.  Output formats range up through 5 (the current version),
-but a version 6 is in development with considerably more precision.
+and version 6 which supports more columns and output precision.
 

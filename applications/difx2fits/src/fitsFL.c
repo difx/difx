@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2024 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -21,12 +21,11 @@
 #include <sys/types.h>
 #include <string.h>
 #include <strings.h>
+#include "difxio/difxio_macros.h"
 #include "config.h"
 #include "difx2fits.h"
 #include "other.h"
 #include "util.h"
-
-static int extverFL = 1;  /* sequence number of this table type in FITS file */
 
 typedef struct
 {
@@ -282,7 +281,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 
 			if(nRec == 0)
 			{
-				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG", extverFL++);
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG");
 				arrayWriteKeys (p_fits_keys, out);
 				fitsWriteInteger(out, "TABREV", 2, "");
 				fitsWriteEnd(out);
@@ -392,8 +391,9 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 			for(j = 0; j < D->nJob; ++j)
 			{
 				l = strlen(D->job[j].inputFile);
-				strncpy(flagFile, D->job[j].inputFile, l);
-				snprintf(flagFile+l-5, DIFXIO_FILENAME_LENGTH-l+5, "%s.flag", D->antenna[antId].name);
+				strcpy(flagFile, D->job[j].inputFile);
+				/* Write "<ant>.flag" over "input" to generate flag filename to read */
+				snprintf_warn(flagFile+l-5, DIFXIO_FILENAME_LENGTH-l+5, "%s.flag", D->antenna[antId].name);
 
 				nRec = processFlagFile(D, p_fits_keys, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec, FreqTypeRecBand);
 			}
@@ -415,8 +415,9 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 		for(j = 0; j < D->nJob; ++j)
 		{
 			l = strlen(D->job[j].inputFile);
-			strncpy(flagFile, D->job[j].inputFile, l);
-			snprintf(flagFile+l-5, DIFXIO_FILENAME_LENGTH-l+5, "channelflags");
+			strcpy(flagFile, D->job[j].inputFile);
+			/* Write "channelflags" over "input" to generate flag filename to read */
+			snprintf_warn(flagFile+l-5, DIFXIO_FILENAME_LENGTH-l+5, "%s", "channelflags");
 
 			nRec = processFlagFile(D, p_fits_keys, 0, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec, FreqTypeDiFxFreq);
 		}
@@ -467,7 +468,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 			{
 				if(nRec == 0)
 				{
-					fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG", extverFL++);
+					fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG");
 					arrayWriteKeys (p_fits_keys, out);
 					fitsWriteInteger(out, "TABREV", 2, "");
 					fitsWriteEnd(out);

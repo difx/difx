@@ -27,8 +27,6 @@
 
 const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
-	static int extver = 1;  /* sequence number of this table type in FITS file */
-
 	char bandFormDouble[8];
 	char bandFormFloat[8];
 
@@ -98,7 +96,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SOURCE", extver++);
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SOURCE");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);

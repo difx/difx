@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# $Id: chk_ff_2843.sh 3327 2021-09-04 13:47:06Z gbc $
+# $Id: chk_ff_2843.sh 4383 2025-07-20 21:38:08Z gbc $
 #
-# canonical test suite for fourfit
+# canonical test suite for fourfit3
 #
 
 verb=false
@@ -14,12 +14,12 @@ export DATADIR=`cd $srcdir/testdata; pwd`
 
 rm -f ff-2843.ps
 $verb && echo \
-fourfit -t -d diskfile:ff-2843.ps -b AI:S \\ && echo \
+$fourfit -t -d diskfile:ff-2843.ps -b AI:S \\ && echo \
     $DATADIR/2843/321-1701_0552+398/0552+398.oifhak \\ && echo \
     set start -3
 
 # AIT
-fourfit -t -d diskfile:ff-2843.ps -b AI:S \
+$fourfit -t -d diskfile:ff-2843.ps -b AI:S \
     $DATADIR/2843/321-1701_0552+398/0552+398.oifhak \
     set start -3 2>/dev/null 1>&2
 [ -f ./ff-2843.ps ] || { echo ./ff-2843.ps missing && exit 2 ; }

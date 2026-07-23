@@ -37,7 +37,7 @@ int *npass)
     struct freq_corel *fc;
     extern void clear_pass (struct type_pass*);
     extern int generate_cblock (struct scan_struct*, struct type_pass*);
-    int i,j, k, sb, nsub, start_offset, stop_offset, nindices, usb, lsb, f,
+    int i,j, k, sb, nsub, start_offset, stop_offset, nindices, f,
         ngpt, n, m, ipass,igrp,
         scantime,f_c_index, pol, sbpol, ng, nsbind,     
         polprod_present[4];
@@ -74,7 +74,6 @@ int *npass)
     ng = 0;
     for (i=0; i<MAXFREQ; i++)
         {                               /* Don't process empty freq. table entries */
-//      if (corel[i].freq_code == ' ') 
         if (corel[i].frequency == 0.0) 
             continue;   
         group = corel[i].fgroup;
@@ -148,6 +147,7 @@ int *npass)
     msg ("constructing %d passes over %d frequency groups", 0, ngpt, ng);
     for (ipass=0; ipass<ngpt; ipass++)
         {
+        msg("Pass %d/%d", 1, ipass, ngpt);
                                         /* Allocate memory as required */
         *pass = (struct type_pass *)
             realloc (*pass, (*npass+1) * sizeof (struct type_pass));
@@ -163,6 +163,7 @@ int *npass)
         p = *pass + *npass;
         fc = p->pass_data;
                                         /* realloc() does not initialize */
+                                        /* and we do no alloc here */
         for (j=0; j<MAXFREQ; j++) 
             p->pass_data[j].data_alloc = FALSE;
         clear_pass (p);
@@ -243,10 +244,10 @@ int *npass)
                     if (fabs (corel[j].frequency - p->control.chid_rf[k]) < 0.01)
                         {
                         corel[j].freq_code = p->control.chid[k];
-                        msg("corel freq code %c overwrite for freq %d",1, corel[j].freq_code,j);
+                        msg("corel freq code %c overwrite for freq %d",-1, corel[j].freq_code,j);
                         break;
                         }
-                    else
+                    else                // provide a report on near misses
                         {
                         double diff = fabs(corel[j].frequency - p->control.chid_rf[k]);
                         if (diff < 0.1) msg("corel freq code %c miss: |%f - %f| = %f", 1,
@@ -256,16 +257,31 @@ int *npass)
             else
                 corel[j].freq_code = p->control.chid[j];
 
-
-
+            if (strlen(p->control.clones[1]) > 0 &&
+                strchr(p->control.clones[1], corel[j].freq_code))
+                {
+                // The processing for clones...comes a few hundred lines down,
+                // after source fc is populated.  Note we only get here if
+                // there is already correlated data for this code, and no more
+                // processing make sense as the clone will usurp this data.
+                msg("found %c (corel index %d) in %s -- this should not be", 5,
+                    corel[j].freq_code, j,  p->control.clones[1]);
+                // undo the code assignment
+                corel[j].freq_code = ' ';
+                continue;
+                }
                                         /* Copy freq_corel struct into this pass */
-            msg ("[make_passes] corel[j].freq_code %c",-3,corel[j].freq_code);
+            msg ("[make_passes] corel[j].freq_code %c pre-chid",-3,corel[j].freq_code);
             fc->freq_code = corel[j].freq_code;
+            fc->corel_index = j;
             f_c_index = j;
             for (k=0; k<strlen(p->control.chid); k++)
                 if (corel[j].freq_code == p->control.chid[k])
                     f_c_index = k;
             fc->frequency = corel[j].frequency;
+            fc->fcode_index = f_c_index;
+            msg ("[make_passes] corel[%d].freq_code %c freq %f fcindex %d", -3,
+                j, corel[j].freq_code, fc->frequency, f_c_index);
                                         // loop over ref & rem stations
             for (n=0; n<2; n++)  
                 {
@@ -306,7 +322,7 @@ int *npass)
                              || (ovex->st+param->ov_bline[n])->channels[j].polarization == 'Y';
                 }
             nindices = 0;
-            usb = lsb = FALSE;
+            fc->nsb_channels = 0;       /* redundancy check */
             for (sb = 0; sb < 2; sb++)
               {
               nsbind = 0;
@@ -334,25 +350,108 @@ int *npass)
                 }
                                         /* Keep count of "channels" included */
                                         /* THIS NEEDS CLOSER EXAMINATION */
-              if (nsbind > 0) 
-                  p->channels++;
+              if (nsbind > 0)
+                  {
+                  p->channels++;        /* used in fill_206 for intg_time */
+                  fc->nsb_channels++;
+                  }
               }
                                         /* If no index numbers for this */
                                         /* frequency pass skip_index(), */
                                         /* do not insert freq at all */
-            if (nindices == 0) 
+            if (nindices == 0)
+                {
+                msg("NO INDICES for this frequency %d", -1, j);
                 continue;
+                }
             fc->data = corel[j].data;
+            fc->data_peers = 1;
             fc++;
             p->nfreq++;
             msg ("Pass %d, freq = %f", -1, *npass + 1, corel[j].frequency);
             }                           /* Don't waste time with absent data */
         if (p->nfreq == 0) 
             continue;
+
+        //
+        // Send in the clones.... After some checking, we copy the entire
+        // pass data structure, but then have to replace certain areas with
+        // separate data structures so that phase cals &c. function corretly.
+        //
+        msg("Cloning session %s -> %s", 1, p->control.clones[0], p->control.clones[1]);
+        for (j = 0; j < strlen(p->control.clones[0]); j++)
+            {
+            char *chid = strchr(p->control.chid, p->control.clones[0][j]);
+            int ap;
+            msg("Cloning %c -> %c", 1, p->control.clones[0][j],
+                p->control.clones[1][j]);
+            if (!chid)
+                { // p->control.chid was updated in parser...
+                msg("Very strange, clone source for %c not in channel ids", 3,
+                    p->control.clones[0][j]);
+                continue;   // ignore the error and move on
+                }
+            // frequency index in pass_data of source data
+            for (k = 0; k < p->nfreq; k++)
+                if (*chid == p->pass_data[k].freq_code) break;
+                else msg("No match at p->pass_data[%d] = %c for %c", 1,
+                    k, p->pass_data[k].freq_code, *chid);
+            if (k == p->nfreq)
+                { // again it should have been found, but as above...
+                msg("Very strange, no match for %c", 3, *chid);
+                continue; // ignore the error and move on.
+                }
+            msg("Clone source %c == %c at pass_data[%d]", 1,
+                *chid, p->pass_data[k].freq_code, k);
+            *fc = p->pass_data[k];
+            // note cloning for integration time in both:
+            p->pass_data[k].data_peers++;
+            fc->data_peers++;
+            // give it the new code and boost total channels for intg time
+            fc->freq_code = p->control.clones[1][j];
+            for (i=0; i<strlen(p->control.chid); i++)
+                if (fc->freq_code == p->control.chid[i])
+                    f_c_index = i;
+            fc->fcode_index = f_c_index;
+            // make sure that the clone is accepted where its source was
+            p->channels += fc->nsb_channels;
+            // finally, give it a fresh copy of the data_corel structure.
+            // This mimics the original allocation done in set_pointers
+            // for the real data_corel structure.
+            fc->data_alloc = FALSE;
+            if (!(fc->data = (struct data_corel *)calloc(param->maxap + 1,
+                sizeof(struct data_corel))))
+                {
+                msg("Unable to clone %c data_corel structure", 3, *chid);
+                continue;
+                }
+            fc->data_alloc = TRUE;
+            // need to copy all APs here, since the compiler has no clue
+            //*(fc->data) = *(p->pass_data[k].data);
+            for (ap = 0; ap < p->num_ap; ap++)
+                fc->data[ap] = p->pass_data[k].data[ap];
+            // fc->data->sbdelay (in each) allocated/freed in fringe search
+            // fc->data->pc_phasor[] (in each) in rotate_pcal (from search)
+            // everything else is a copy of the source fc, and hopefully ok.
+            msg("cloned channel %d in to %c(%c) %d", 1,
+                k, fc->freq_code, *chid, fc->fcode_index);
+            fc++;
+            p->nfreq++;
+            }
+        // some bookkeeping to report iff we made some clones
+        if (j > 0)  // abusing j for sum of channels
+            {
+            for (i = j = 0; i < p->nfreq; i++, j+=p->pass_data[i].nsb_channels)
+                msg("pass_data[%d] aka %c has %d channels and %d peers", 1,
+                    i, p->pass_data[j].freq_code, p->pass_data[i].nsb_channels,
+                    p->pass_data[i].data_peers);
+            msg("channels is %d, sum is %d", 1, p->channels, j);
+            }
+
                                         /* This pass OK, proceed */
         (*npass)++;
         }
-    msg ("p->nfreq == %d  p->npols == %d", 1, p->nfreq, p->npols);
+    msg ("make_passes done: p->nfreq == %d  p->npols == %d", 1, p->nfreq, p->npols);
 
     return (0);
     }

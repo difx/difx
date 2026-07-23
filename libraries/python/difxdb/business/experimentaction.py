@@ -14,9 +14,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from difxdb.model import model
 from sqlalchemy import desc
-#from string import upper
+from sqlalchemy.sql import null
 
 
 def experimentExists(session, code):
@@ -95,6 +96,10 @@ def addExperiment(session, code, types=[], analyst=None, obsDate=None, statuscod
     state (=unknown). 
     '''
     
+    # workaround for sqlalchemy 2.1 throwing error when passing None to DATE field
+    if not obsDate:
+        obsDate = null()
+
     if (experimentExists(session, code)):
         raise Exception("Experiment with code %s already exists" % (code))
         return
@@ -112,7 +117,7 @@ def addExperiment(session, code, types=[], analyst=None, obsDate=None, statuscod
                 if expType is not None:
                     expTypes.append(expType)
     except:
-        raise Exception("Trying to set an unknown epxeriment type (%s)" (type))
+        raise Exception("Trying to set an unknown epxeriment type (%s)" % (type))
 
     experiment.types = expTypes
     
@@ -128,7 +133,7 @@ def addExperiment(session, code, types=[], analyst=None, obsDate=None, statuscod
         session.commit()     
     except Exception as e:
     
-        raise Exception("Error adding experiment" + e.message)
+        raise Exception("Error adding experiment" + str(e))
         session.rollback()
         
     session.flush()

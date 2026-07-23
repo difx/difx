@@ -25,8 +25,6 @@
 
 const DifxInput *DifxInput2FitsMC(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
-	static int extver = 1;  /* sequence number of this table type in FITS file */
-
 	char bandFormFloat[8];
 
 	struct fitsBinTableColumn columns[] =
@@ -114,7 +112,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D, struct fits_keywords *p_fi
 		}
 	}
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "MODEL_COMPS", extver++);
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "MODEL_COMPS");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
 	fitsWriteInteger(out, "FFT_SIZE", D->nInChan*2, "");

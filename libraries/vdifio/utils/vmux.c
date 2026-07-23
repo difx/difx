@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2024 by Walter Brisken                             *
+ *   Copyright (C) 2013-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -26,8 +26,8 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.14";
-const char verdate[] = "20220429";
+const char version[] = "0.15";
+const char verdate[] = "20250215";
 
 const int defaultChunkSize = 10000000;
 const int defaultNGap = 100;
@@ -131,6 +131,7 @@ void setSignals()
 int main(int argc, char **argv)
 {
 	const int MaxThreads=128;
+	unsigned char *tmpframe;
 	unsigned char *src;
 	unsigned char *dest;
 	FILE *in = 0;
@@ -163,6 +164,7 @@ int main(int argc, char **argv)
 	int nChanPerThread;
 	int fanoutFactor = 1;
 	const vdif_header *vh;
+	vdif_header *tmpvh;
 	struct vdif_mux vm;
 	int flags = VDIF_MUX_FLAG_RESPECTGRANULARITY;
 	int a;
@@ -467,12 +469,14 @@ int main(int argc, char **argv)
 
 	src = (unsigned char *)malloc(srcChunkSize);
 	dest = (unsigned char *)malloc(destChunkSize);
-	if(!src || !dest)
+	tmpframe = (unsigned char *)malloc(inputframesize*nThread);
+	if(!src || !dest | !tmpframe)
 	{
 		fprintf(stderr, "Allocation failed! Reduce the chunk size and try again.\n");
 
 		return EXIT_FAILURE;
 	}
+	tmpvh = (vdif_header *)tmpframe;
 
 	setSignals();
 
@@ -654,18 +658,20 @@ int main(int argc, char **argv)
 
 			fprintf(stderr, "JUMP %" PRId64 "  %" PRId64 " %" PRId64 "\n", nJump, nextFrame/framesPerSecond, nextFrame%framesPerSecond);
 
-			/* borrow one output frame of src memory... */
-			memcpy(src, dest, VDIF_HEADER_BYTES);
+			memcpy(tmpframe, dest, VDIF_HEADER_BYTES);
 			for(j = 0; j < nJump; ++j)
 			{
-				((vdif_header *)src)->seconds = (nextFrame+j)/framesPerSecond;
-				setVDIFFrameNumber((vdif_header *)src, (nextFrame+j)%framesPerSecond);
-				setVDIFFrameInvalid((vdif_header *)src, 1);
-				fwrite(src, 1, stats.outputFrameSize, out);
+				tmpvh->seconds = (nextFrame+j)/framesPerSecond;
+				setVDIFFrameNumber(tmpvh, (nextFrame+j)%framesPerSecond);
+				setVDIFFrameInvalid(tmpvh, 1);
+				fwrite(tmpframe, 1, stats.outputFrameSize, out);
 			}
+			stats.nFillerFrame += nJump;
 		}
-
-		fwrite(dest, 1, stats.destUsed, out);
+		else
+		{
+			fwrite(dest, 1, stats.destUsed, out);
+		}
 
 		if(stats.srcUsed <= 0)
 		{
@@ -707,6 +713,7 @@ int main(int argc, char **argv)
 
 	free(src);
 	free(dest);
+	free(tmpframe);
 
 	return 0;
 }

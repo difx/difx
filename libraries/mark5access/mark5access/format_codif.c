@@ -149,6 +149,7 @@ static int mark5_stream_frame_time_codif(const struct mark5_stream *ms, int *mjd
 	struct mark5_format_codif *v;
 	unsigned long long fullframens;
 	codif_header *header;
+	int local_sec;
 
 	if(!ms)
 	{
@@ -167,20 +168,20 @@ static int mark5_stream_frame_time_codif(const struct mark5_stream *ms, int *mjd
 	{
 	  *mjd = getCODIFFrameMJD(header);
 	}
+#warning "***** Where does leapseconds come from"
+	local_sec = getCODIFFrameSecond(header)+fullframens/1000000000 + v->leapsecs;
+	if (local_sec>=86400) { // Could have bumped to next day
+	  local_sec -= 86400;
+	  if(mjd) (*mjd)++;
+	}
 	if(sec)
 	{
-#warning "***** Where does leapseconds come from"
-	  *sec = getCODIFFrameSecond(header)+fullframens/1000000000 + v->leapsecs;;
-	  if (*sec>86400) { // Could have bumped to next day. Max period ~ 18hrs)
-	    *sec -= 86400;
-	    if(mjd) (*mjd)++;
-	  }
+	  *sec = local_sec;
 	}
 	if(ns)
 	{
 	        *ns = fullframens % 1000000000;
 	}
-
 	return 0;
 }
 
@@ -3521,7 +3522,7 @@ static int codif_complex_decode_14channel_16bit(struct mark5_stream *ms, int nsa
 	int o, i, j;
 	int nblank = 0;
 
-	buf = (const uint16_t *)ms->payload;
+	buf = (const int16_t *)ms->payload;
 	i = ms->readposition/2;
 
 	for(o = 0; o < nsamp; o++)
@@ -4231,7 +4232,7 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 		status = set_decoder(ms->nbit, ms->nchan, header->iscomplex, &ms->decode, &ms->complex_decode, &ms->count);
 	
 		if (!status) {
-		  fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d for \n", ms->nchan, ms->nbit,
+		  fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d for %s\n", ms->nchan, ms->nbit,
 			  ms->streamname);
 		  return 0;
 		}
@@ -4361,6 +4362,7 @@ static int mark5_format_codif_validate(const struct mark5_stream *ms)
 		{
 			fprintf(m5stdout, "CODIF validate[%lld]: %d %d %f : %d %d %lld\n",
 				ms->framenum,   mjd_d, sec_d, ns_d,   mjd_t, sec_t, ns_t);
+			fprintf(m5stdout, "DEBUG: %d %d\n", getCODIFFrameEpochSecOffset(header), getCODIFFrameNumber(header));
 			return 0;
 		}
 	}

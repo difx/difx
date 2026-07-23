@@ -83,6 +83,8 @@ struct CommandLineOptions
 	SnifferOptions snifferOptions;
 };
 
+void resetExtVers();
+
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	struct fitsPrivate *out, const struct CommandLineOptions *opts);
 

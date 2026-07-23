@@ -113,7 +113,9 @@ void norm_fx (struct type_pass *pass,
         nlags = param->nlags;
         fftplan = fftw_plan_dft_1d (4 * nlags, (fftw_complex*) S, (fftw_complex*) xlag, FFTW_FORWARD, FFTW_MEASURE);
         }
-    freq_no = fcode(pass->pass_data[fr].freq_code, pass->control.chid);
+    //freq_no = fcode(pass->pass_data[fr].freq_code, pass->control.chid);
+    // See around line 280 of make_passes().
+    freq_no = pass->pass_data[fr].fcode_index;
 
                                     /* Point to current frequency */
     fdata = pass->pass_data + fr;
@@ -263,49 +265,9 @@ void norm_fx (struct type_pass *pass,
         if (pass->control.min_weight > 0.0 &&
             pass->control.min_weight > t120->fw.weight) continue;
 
-#define STATUS_AP_ACCOUNTING 4      // 0 = original code
-                                    // 1 = place it at the bottom of poln loop
-                                    // 2 = place it outside the poln loop
-                                    // 3 = place it after spectral edits
-                                    // 4 = split things up
-// version 2 updates status prior to edits
-// version 3 updates status after the edits
-// FIXME:
-// 0 and 1 are completely equivalent and passes current suite.
-// 2 is also equivalent--it just requires that the loop logic be repeated.
-// 2 passes chk_passband, but the amp-scale on the time axis is wrong
-//
-// 3 passes chk_notches, but the amp-scale on the time axis is wrong
-// 3 fails chk_passband, with incorrect int.time, low amp and amp-scale on time plots
-//
-// 4 places passband and notches on the same footing in that the integration time
-//   and amplitudes are ok, but the SNR and amp-scale on time plots are wrong.
-//
-// -- oh, shit, notches test used old hardware-correlated data
-// (Sep 03, we seem to be down to 4 as the correct solution,
-// so the 1..3 cases are deletable, which we'll do now and
-// change 'warning' to 'error'.
-//
-// A new status parameter is needed to pass this correction onwards.
-//
-// adjust the ?sbfrac but something is not quite right there anyway....
-// status->total_ap for integration time, see also fill_206, fill_208
-// status->total_ap_frac is an editted version and is used in make_plot_data
-// and is what is used in for status.snr and status.prob_false
-// the separation of the two appears to have been started in Oct200 by cjl.
-// status.total_.sb_frac scale the two halves of the xp spectrum plot
-//
-// where do the MBD numbers come from if there is only one channel?
-// these values appear to be unstable between the 4 cases
-
         // it's not clear why all this accounting is done here
         if (ip == lastpol[sb])      // determine data weights by sideband
             {                       // last included polarization, do totals
-#if STATUS_AP_ACCOUNTING == 0
-#warning "STATUS_AP_ACCOUNTING == 0"
-            status->ap_num[sb][fr]++;
-            status->total_ap++;
-#endif /* STATUS_AP_ACCOUNTING == 0 */
                                     // sum to micro-edited totals
             if (sb)                 // lower sideband
                 {                   // 0 weight encoded by negative 0
@@ -315,11 +277,6 @@ void norm_fx (struct type_pass *pass,
                     datum->lsbfrac = 1.0;
                 else
                     datum->lsbfrac = t120->fw.weight;
-#if STATUS_AP_ACCOUNTING == 0
-                status->ap_frac[sb][fr] += datum->lsbfrac;
-                status->total_ap_frac   += datum->lsbfrac;
-                status->total_lsb_frac  += datum->lsbfrac;
-#endif /* STATUS_AP_ACCOUNTING == 0 */
                 }
             else                    // upper sideband
                 {
@@ -328,11 +285,6 @@ void norm_fx (struct type_pass *pass,
                     datum->usbfrac = 1.0;
                 else
                     datum->usbfrac = t120->fw.weight;
-#if STATUS_AP_ACCOUNTING == 0
-                status->ap_frac[sb][fr] += datum->usbfrac;
-                status->total_ap_frac   += datum->usbfrac;
-                status->total_usb_frac  += datum->usbfrac;
-#endif /* STATUS_AP_ACCOUNTING == 0 */
                 }
             }
 
@@ -402,17 +354,8 @@ void norm_fx (struct type_pass *pass,
                 xp_spec[i] += z;
                 }
             }                       // bottom of lags loop
-#if STATUS_AP_ACCOUNTING == 1
-#error "STATUS_AP_ACCOUNTING == 1"
-#endif /* STATUS_AP_ACCOUNTING == 1 */
         }                           // bottom of polarization loop
 
-#if STATUS_AP_ACCOUNTING == 2
-#error "STATUS_AP_ACCOUNTING == 2"
-#endif /* STATUS_AP_ACCOUNTING == 2 */
-
-#if STATUS_AP_ACCOUNTING == 4
-#warning "STATUS_AP_ACCOUNTING == 4"
       for (ip=ips; ip<pass->pol+1; ip++)
         {
         if ((sb == 0 && usb_bypol[ip] == 0)
@@ -436,7 +379,6 @@ void norm_fx (struct type_pass *pass,
                 }
             }
         }
-#endif /* STATUS_AP_ACCOUNTING == 4 */
 
                                     // also skip over this next section, if no data
       if ((sb == 0 && usb_present == 0) || (sb == 1 && lsb_present == 0))
@@ -477,12 +419,6 @@ void norm_fx (struct type_pass *pass,
           continue;
           }
 
-#if STATUS_AP_ACCOUNTING == 3
-#error "STATUS_AP_ACCOUNTING == 3"
-#endif /* STATUS_AP_ACCOUNTING == 3 */
-
-#if STATUS_AP_ACCOUNTING == 4
-#warning "STATUS_AP_ACCOUNTING == 4"
       for (ip=ips; ip<pass->pol+1; ip++)
         {
         if ((sb == 0 && usb_bypol[ip] == 0)
@@ -518,7 +454,6 @@ void norm_fx (struct type_pass *pass,
                 }
             }
         }
-#endif /* STATUS_AP_ACCOUNTING == 4 */
 
                                     /* Put sidebands together.  For each sb,
                                        the Xpower array, which is the FFT across

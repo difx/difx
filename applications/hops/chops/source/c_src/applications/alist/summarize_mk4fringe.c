@@ -39,7 +39,7 @@ summarize_mk4fringe (struct mk4_fringe *fr, fringesum *fsumm)
     fsumm->time_tag = time_to_int (fr->t200->scantime.year,
                                    fr->t200->scantime.day,
                                    fr->t200->scantime.hour,
-                                   fr->t200->scantime.minute, 
+                                   fr->t200->scantime.minute,
                                    isec);
     fsumm->scan_offset = 0;
     strncpy (fsumm->scan_id, fr->t200->scan_name, 31);
@@ -54,22 +54,30 @@ summarize_mk4fringe (struct mk4_fringe *fr, fringesum *fsumm)
     lastslash = 0;                      /* consistency */
     while ((c = fname[i++]) != 0)
         if (c == '/') lastslash = i;
-    if (sscanf (fname+lastslash, "%2s.%c.%hd.%6s", baseline, 
+    if (sscanf (fname+lastslash, "%2s.%c.%hd.%6s", baseline,
                 &(fsumm->freq_code), &(fsumm->extent_no), fsumm->root_id) != 4)
         {
-        msg ("Could not decode filename %s", 2, fname+lastslash);
-        return (-1);
+        char ignpol[20];
+        if (sscanf( fname+lastslash, "%2s.%c.%hd-%2s.%6s", baseline,
+            &(fsumm->freq_code), &(fsumm->extent_no), ignpol,
+            fsumm->root_id) != 5)
+            {
+            msg ("Could not decode filename with pol %s", 2, fname+lastslash);
+            return (-1);
+            }
         }
-    else strncpy (fsumm->baseline, baseline, 2);
+    strncpy (fsumm->baseline, baseline, 2);
+
+    // memcmp would be better, since sizeof(fr->t202->baseline) is 2
     if (strncmp (fsumm->baseline, fr->t202->baseline, 2) != 0)
         {
-        msg ("File %s actually contains baseline %2s", 2, fname, 
+        msg ("File %s actually contains baseline %2s", 2, fname,
                                                 fr->t202->baseline);
         return (-1);
         }
     nchans = (strcmp (fr->t205->version_no, "00") == 0) ? 16 : 64;
                                         /* Count frequencies from type 205 */
-    for (i=0; i<nchans; i++) 
+    for (i=0; i<nchans; i++)
         if (fr->t205->ffit_chan[i].ffit_chan_id == ' ') break;
     fsumm->no_freq = i;
                                         /* fgroup from fourfit, in pass struct, */
@@ -113,10 +121,10 @@ summarize_mk4fringe (struct mk4_fringe *fr, fringesum *fsumm)
                                         /* making sure we get right struct elements */
     fsumm->length = fr->t206->intg_time + 0.5;
     isec = fr->t200->fourfit_date.second + 0.5;
-    fsumm->procdate = time_to_int (fr->t200->fourfit_date.year, 
+    fsumm->procdate = time_to_int (fr->t200->fourfit_date.year,
                                             fr->t200->fourfit_date.day,
-                                            fr->t200->fourfit_date.hour, 
-                                            fr->t200->fourfit_date.minute, 
+                                            fr->t200->fourfit_date.hour,
+                                            fr->t200->fourfit_date.minute,
                                             isec);
     strncpy (fsumm->source, fr->t201->source, 31);
     fsumm->source[31] = '\0';

@@ -24,8 +24,6 @@
 
 const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
-	static int extver = 1;  /* sequence number of this table type in FITS file */
-
 	/*  define the antenna characteristic FITS table columns */
 	char bandFormFloat1[8];
 	char bandFormFloat2[8];
@@ -93,7 +91,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 		return 0;
 	}
 	
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "ANTENNA", extver++);
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "ANTENNA");
 
 	arrayWriteKeys (p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");

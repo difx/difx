@@ -195,7 +195,7 @@ def generate_clock_statements(hops_stn, vex_stn, afilename, clk0=None, explicit_
 
 			sbdelay = baseline['sbdelay']
 			rate = baseline['delay_rate']
-			if baseline[0] == hops_stn:
+			if baseline['baseline'][0] == hops_stn:
 				sbdelay = -sbdelay
 				rate = -rate
 
@@ -214,6 +214,10 @@ def generate_clock_statements(hops_stn, vex_stn, afilename, clk0=None, explicit_
 		rdelay = np.mean(delays)
 		rrate = np.mean(rates)
 
+		if T in time_series:
+			# fixme: look up index of existing entry, update the data
+			continue
+
 		time_series.append(T)
 		rdelay_series.append(rdelay)
 		rrate_series.append(rrate)
@@ -228,13 +232,15 @@ def generate_clock_statements(hops_stn, vex_stn, afilename, clk0=None, explicit_
 	# User-provided clock break times, include original VEX model epoch if also provided
 	if len(explicit_times) > 0:
 			brk_times = []
-			if clk0:
+			if clk0 and model_epoch not in explicit_times:
 				brk_times.append(model_epoch)
 			brk_times += explicit_times
+	brk_times.sort()
 
 	# Interpolate
 	xdata = [t.timestamp() for t in time_series]
 	xeval = [t.timestamp() for t in brk_times]
+
 	#brk_rates = Akima1DInterpolator(xdata, rate_series, method='makima')(xeval)  # scipy-1.13+ has 'method' arg
 	brk_rates = Akima1DInterpolator(xdata, rate_series)(xeval)
 	brk_delays = Akima1DInterpolator(xdata, delay_series)(xeval)

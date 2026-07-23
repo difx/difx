@@ -1,42 +1,61 @@
 To add a new (simple) parameter, one must modify a number
-of the sources.  The ones marked * are optional--depends
-on what you're changing.
+of the sources.  The ones marked * may be optional--depends
+on what you're changing.  Order revised in 3.25 to be saner
 
-  1. control.h
-    most likely the paraameter value needs to be kept in struct c_block
+  1. ../../help/fourfit.doc
+    document what the new parameter does (good to do this first so
+    you may remember what you were doing while you're doing it)
 
-  2. parser.h
-    most likely you'll need to provide a new token for the parameter
+  2. control.h
+    most likely the parameter value needs to be kept in struct c_block
+    see note 13 below and note other changes in the following steps....
 
-* 3. param_struct.h
-    it depends on what you're doing
+  3. ../../chops/source/python_src/ffcontrol_module/ffcontrol/ffcontrol.py.in
+    make sure the ctypes struct layout of the class FFControlStructureBase
+    in ffcontrol.py now matches the layout of the control_block struct in
+    control.h otherwise VGOS post-processing scripts may seg-fault
 
-  4. init_tokens.c
-    maps your tokens to the control file strings
-
-  5. default_cblock.c
+  4. default_cblock.c
     set the default value
 
-  6. nullify_cblock.c
+  5. nullify_cblock.c
     set to recognizible null value
 
-  7. copy_cblock_parts.c
+  6. copy_cblock_parts.c
     a line to copy it when non-null
 
-  8. parser.c
+* 7. param_struct.h
+    it depends on what you're doing, but changing param_struct is likely yes.
+    param struct often is updated from precorrect() (step 14)
+
+* 8. plot_data_dir.c
+    you may want to add outputs for your parameters (unless they only control)
+
+  9. parser.h
+    most likely you'll need to provide a new token for the parameter
+
+  10. init_tokens.c
+    maps your tokens to the control file strings
+
+* 11. create_fsm.c
+    if your change also requires changes the fsm, most likely no.
+    at the very least, review the file to be sure your parser will work.
+
+  12. parser.c
     appropriate fsm changes
 
-* 9. create_fsm.c
-    if your change also requires changes the fsm
+  13. ../../data/ff_testdata/chk..sh or ./chk*sh, Makefile, TESTS
+     add test(s) to verify that what you changed works.  At the very least
+     you need to do this to be sure you got the parser and fsm correct.
 
-* 10. implementation:
-    precorrect.c -- if changes prior to fringe search
-    ...
+  14. implementation:
+    main ->... organize_data ... make_passes ... fringe_search
+      fringe_search -> apply_filter ... precorrect ... ion_search*
+      ion_search* drive the search....
+    precorrect.c -- if changes prior to fringe search or plotting
+      ... and almost certainly other things deeper into it ...
 
-  11. ../../help/fourfit.doc
-    document what the new parameter does
+  15. finally (or repeatedly for testing), synchronize any changes with chops HOPS4
+     (HOPS3: chops/import_hops.sh, HOPS4: hops-git/data/import_from_hops3.sh)
 
-* 12. ../../data/ff_testdata/chk..sh
-    consider adding a test to verify that what you changed
-    does what you want (now and into the future).
-
+eof

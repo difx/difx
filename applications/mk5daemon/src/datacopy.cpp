@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Walter Brisken                             *
+ *   Copyright (C) 2009-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -21,6 +21,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
+#include "macros.h"
 #include "mk5daemon.h"
 
 #define OPTIONS_LENGTH	512
@@ -40,7 +41,7 @@ static void *mk5cpRun(void *ptr)
 
 	Logger_logData(params->D->log, "mk5cp starting\n");
 
-	snprintf(command, MAX_COMMAND_SIZE, "su -l %s -c 'mk5cp %s'", params->D->userID, params->options);
+	snprintf_warn(command, MAX_COMMAND_SIZE, "su -l %s -c 'mk5cp %s'", params->D->userID, params->options);
 	Mk5Daemon_system(params->D, command, 1);
 
 	Logger_logData(params->D->log, "mk5cp done\n");
@@ -76,10 +77,16 @@ static void makedir(Mk5Daemon *D, const char *options)
 	}
 
 	l = i-a;
-	strncpy(dir, options+a, l);
+	if(l > MAX_FILENAME_SIZE)
+	{
+		fprintf(stderr, "Developer error: makedir(): filename size too small: %d >= %d; truncating.\n", l, MAX_FILENAME_SIZE);
+
+		l = MAX_FILENAME_SIZE;
+	}
+	strncpy_warn(dir, options+a, l);
 	dir[l] = 0;
 
-	snprintf(command, MAX_COMMAND_SIZE, "mkdir -m 777 -p %s", dir);
+	snprintf_warn(command, MAX_COMMAND_SIZE, "mkdir -m 777 -p %s", dir);
 
 	Mk5Daemon_system(D, command, 1);
 }
@@ -108,7 +115,7 @@ void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *options)
 		D->process = PROCESS_MK5COPY;
 
 		P->D = D;
-		snprintf(P->options, OPTIONS_LENGTH, "%s", options);
+		snprintf_warn(P->options, OPTIONS_LENGTH, "%s", options);
 		
 		pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);

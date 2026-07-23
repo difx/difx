@@ -94,7 +94,7 @@ static inline int getCODIFComplex(const codif_header *header) { return (int)head
 static inline int getCODIFThreadID(const codif_header *header) { return (int)header->threadid; }
 static inline int getCODIFGroupID(const codif_header *header) { return (int)header->groupid; }
 static inline int getCODIFHeaderBytes(const codif_header *header) { return CODIF_HEADER_BYTES; }
-static inline int getCODIFFrameBytes(const codif_header *header) { return (int)(header->framelength8)*8; }
+static inline uint64_t getCODIFFrameBytes(const codif_header *header) { return ((uint64_t)header->framelength8)*8; }
 static inline int getCODIFPeriod(const codif_header *header) { return (int)header->period; }
 static inline int getCODIFSync(const codif_header *header) { return (int)header->sync; }
 static inline uint64_t getCODIFTotalSamples(const codif_header *header) { return header->totalsamples; }
@@ -103,7 +103,7 @@ uint64_t getCODIFFrameMJDSec(codif_header *header);
 int getCODIFFrameMJD(const codif_header *header);
 double getCODIFFrameDMJD(const codif_header *header, double framepersec);
 static inline int getCODIFFrameSecond(const codif_header *header) { return ((int)header->seconds)%86400; }
-static inline int getCODIFFrameNumber(const codif_header *header) { return (int)header->frame; }
+static inline uint32_t getCODIFFrameNumber(const codif_header *header) { return (uint32_t)header->frame; }
 static inline int getCODIFStationID(const codif_header *header) { return (int)header->stationid; }
 static inline int getCODIFSecondaryID(const codif_header *header) { return (int)header->secondaryid; }
 static inline int getCODIFBitsPerSample(const codif_header *header) { return ((int)header->nbits); }

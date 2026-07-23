@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
 #core imports
-from __future__ import print_function
-from __future__ import division
+#-3.13++#from __future__ import print_function
+#-3.13++#from __future__ import division
 from builtins import zip
 from builtins import range
-from past.utils import old_div
+from mk4b.mk4b import old_div #from past.utils ...
 import argparse
 import sys
 import os
@@ -56,9 +56,15 @@ def process_fourphase_text(exp_report):
     vpal.utility.print_table(config_table, n_digits=3)
     print("-----------------------")
     print("fourphase data summary:")
+    print("(delays in nsec; phases in deg)")
     print("-----------------------")
     data_table = []
-    header_line = ["station", "n_total", "n_used", "n_cut", "mean_delay (ns)", "delay_error (ns)", "median_delay(ns)", "median abs deviation (ns)", "mean_phase (deg)", "phase_error (deg)"]
+    #header_line = ["station", "n_total", "n_used", "n_cut", "mean_delay (ns)", "delay_error (ns)", "median_delay(ns)", "median abs deviation (ns)", "mean_phase (deg)", "phase_error (deg)"]
+    header_line = ["station", "n_total", "n_used", "n_cut", "mean delay", "delay err", "median delay", "delay err", "mean phase", "phase err"]
+
+    # instead of printing the mean and median, just print whichever is used in the control file,
+    # and instead include the change from the previous control file (need to add this as an optional input)
+
     data_table.append(header_line)
     micro_to_nano = 1000.0
     for key, obj in list(exp_report.generated_station_offsets.items()):
@@ -376,6 +382,8 @@ def process_ffres2pcp_plot(report_data, result_table):
                 ax = auto_fig.add_subplot(111)
                 ax.set_ylabel('Maximum dTEC deviation from mean (TECU)')
                 ax.set_xlabel('Minimum SNR over all pol-products', labelpad=20)
+                ax.set_xlim(0.9*report_data.config_obj.min_snr,1.1*max(all_min_snr_list))
+                ax.set_ylim(0,1.05*report_data.config_obj.dtec_tolerance)
                 plt.title("Scan selection for station: " + st + ", pol: " + p)
                 all_scans = plt.plot(all_min_snr_list, all_dtec_mdev_list, 'k.')
                 selected_scans = plt.plot(selected_min_snr_list, selected_dtec_mdev_list, 'b*')

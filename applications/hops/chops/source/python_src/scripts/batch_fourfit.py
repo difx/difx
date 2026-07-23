@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #core imports
-from __future__ import print_function
+#-3.13++#from __future__ import print_function
 from builtins import range
 import datetime
 import argparse
@@ -35,6 +35,7 @@ def main():
     parser.add_argument('-d', '--disable-cf-caching', action="store_true", dest='disable_caching', help='disable type_222 control file record caching in fringe files (caching is on by default).', default='False')
     parser.add_argument('-p', '--progress', action='store_true', dest='use_progress_ticker', help='monitor process with progress indicator', default=False)
     parser.add_argument('-t', '--tec-file', dest='tec_file', help='JSON file with per-scan, per-station TEC estimates', default=None)
+    parser.add_argument('-r', '--use_ref_station', action='store_true', dest='use_ref_station', help='only process baselines to reference station (first station in list)', default=False)
 
     args = parser.parse_args()
 
@@ -103,7 +104,7 @@ def main():
 
     ff_list = vpal.processing.load_and_batch_fourfit(abs_exp_dir, stations[0], stations[1:], \
                                                      control_file_path, set_commands, \
-                                                     network_reference_baselines_only=False, num_processes=args.num_proc, \
+                                                     network_reference_baselines_only=args.use_ref_station, num_processes=args.num_proc, \
                                                      start_scan_limit=start_scan_limit, stop_scan_limit=stop_scan_limit, \
                                                      pol_products=polprods, use_progress_ticker=args.use_progress_ticker, \
                                                      log_fourfit_processes=True, use_ionex_file=args.tec_file )

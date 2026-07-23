@@ -472,8 +472,15 @@ public:
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
     return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == KVN5B || f == VDIF || f == VDIFL || f == INTERLACEDVDIF || f == CODIF) && s == MK5MODULE); 
   }
+
+  // Return the number of framebytes as seen by Datastream (as in the data source)
   inline int getFrameBytes(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].framebytes; }
+
+  // Return the number of framebytes as seen by Core (i.e., after any multiplexing of thread data at DataStream)
+  inline int getMultiplexedFrameBytes(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].multiplexedframebytes; }
+
   inline dataformat getDataFormat(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].format; }
   inline datasource getDataSource(int configindex, int configdatastreamindex) const
@@ -539,11 +546,18 @@ public:
   double getFramesPerSecond(int configindex, int configdatastreamindex) const;
 
  /**
-  * @return The number of payload bytes in a data frame
+  * @return The number of payload bytes in a data frame as seen by DataStream as the data is loaded from source
   * @param configindex The index of the configuration being used (from the table in the input file)
   * @param configdatastreamindex The index of the datastream (from the table in the input file)
   */
   int getFramePayloadBytes(int configindex, int configdatastreamindex) const;
+
+ /**
+  * @return The number of payload bytes in a data frame as seen by Core (after any thread multiplexing)
+  * @param configindex The index of the configuration being used (from the table in the input file)
+  * @param configdatastreamindex The index of the datastream (from the table in the input file)
+  */
+  int getMultiplexedFramePayloadBytes(int configindex, int configdatastreamindex) const;
 
  /**
   * @return The fanout, or -1 if an error occurred
@@ -897,7 +911,8 @@ private:
     int bytespersamplenum;
     int bytespersampledenom;
     int framesamples;
-    int framebytes;
+    int framebytes; // The number of bytes in a frame as seen on the input to DataStream, i.e. as in the data source (possibly in separate threads)
+    int multiplexedframebytes; // The number of bytes in a frame as seen by Core, i.e., after any thread multiplexing
     double framespersecond;
     int alignmentseconds; // defaulted to 1, but can be >1 for CODIF.
     int nummuxthreads;

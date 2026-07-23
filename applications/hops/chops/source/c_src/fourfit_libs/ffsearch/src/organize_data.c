@@ -103,6 +103,7 @@ struct c_block *cb_head
                                         /* ordered time vs frequency array */
                                         /* Failure (partial or complete) is */
                                         /* indicated by null ptrs in main array */
+    // corel is cleared in this routine
     if (set_pointers (stn1, stn2, cdata, param, corel) != 0)
         {
         msg ("set_pointers() fails", 2);

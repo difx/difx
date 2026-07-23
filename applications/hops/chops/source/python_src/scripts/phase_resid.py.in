@@ -1,11 +1,11 @@
 #!@PYTHON@
 
 #core imports
-from __future__ import print_function
-from __future__ import division
+@PYTHON_FUTURE@from __future__ import print_function
+@PYTHON_FUTURE@from __future__ import division
 from builtins import str
 from builtins import range
-from past.utils import old_div
+from @PYTHON_OLDIVB@ import old_div #from past.utils ...
 import argparse
 import sys
 import os
@@ -87,11 +87,16 @@ def main():
 
     baseline_list = vpal.processing.construct_valid_baseline_list(abs_exp_dir, stations[0], stations[1:], network_reference_baselines_only=False)
 
+    baseline_list.sort()
+    
     print('Baselines:', baseline_list)
+
+
     
     qcode_list = []
     for q in list(range(args.quality_lower_limit, 10)):
-        qcode_list.append( str(q) )
+        qcode_list.append( q )
+    #print(qcode_list)
 
     #needed for plot-naming
     control_file_stripped = re.sub('[/\.]', '', control_file)
@@ -115,20 +120,22 @@ def main():
         ################################################################################
         #collect/compute fringe files, and apply cuts
         set_commands = "set gen_cf_record true"
-        ff_list = vpal.processing.load_and_batch_fourfit( \
+        ff_list_pre = vpal.processing.load_and_batch_fourfit( \
             os.path.abspath(exp_dir), bline[0], bline[1], os.path.abspath(control_file), set_commands, \
             num_processes=args.num_proc, start_scan_limit=args.begin_scan_limit, \
             stop_scan_limit=args.end_scan_limit, pol_products=[polprod], use_progress_ticker=args.use_progress_ticker \
         )
 
-        print("n fringe files  =", str(len(ff_list)))
+        print("n fringe files =", str(len(ff_list_pre)))
         
         #apply cuts
         filter_list = []
         filter_list.append( vpal.utility.DiscreteQuantityFilter("quality", qcode_list) )
-        filter_list.append( vpal.utility.ContinuousQuantityFilter("snr", args.snr_min, 500) )
-        vpal.utility.combined_filter(ff_list, filter_list)
+        filter_list.append( vpal.utility.ContinuousQuantityFilter("snr", args.snr_min, 5000) )
+        ff_list = vpal.utility.combined_filter(ff_list_pre, filter_list)
 
+        print("n fringe files after cuts =", str(len(ff_list)))        
+        
         if len(ff_list) == 0:
             print("Error: no fringe files available after cuts, skipping baseline: ", bline)
 
@@ -190,7 +197,10 @@ def main():
                 if len(channel_phase_list[ch]) != 0:
                     channel_mean_phase[ch] = scipy.stats.circmean( np.asarray(channel_phase_list[ch]), high=180.0, low=-180.0) #compute circular mean phase
                     channel_stddev[ch] = scipy.stats.circstd( np.asarray(channel_phase_list[ch]), high=180, low=-180) #computer circular std dev.
-                    print( "(mean, std. dev) phase for channel: ", ch, " = ", channel_mean_phase[ch], channel_stddev[ch])
+
+                    #print( "(mean, std. dev) phase for channel: ", ch, " =", ''.join(str(np.round(channel_mean_phase[ch],2)).rjust(5)), "+/-", ''.join(str(np.round(channel_stddev[ch],2)).ljust(6)))
+                    print( "(mean, std. dev) phase for channel: ", ch, " =", '{:5.2f}'.format(channel_mean_phase[ch]).rjust(5), '{:5.2f}'.format(channel_stddev[ch]).ljust(5))
+
                 for phr in phase_residuals:
                     if ch in phr.phase_residuals and ch in channel_mean_phase:
                         scan = phr.scan_name

@@ -1,12 +1,12 @@
+#!/usr/bin/python
 """utility classes/functions primarily related to regression testing of HOPS/fourfit"""
 
 #core imports
-from __future__ import print_function
-from __future__ import division
-from future import standard_library
-standard_library.install_aliases()
+#-3.13++#from __future__ import print_function
+#-3.13++#from __future__ import division
 from builtins import str
-from past.utils import old_div
+#from past.utils import old_div
+from mk4 import old_div
 from builtins import range
 from io import open
 import os

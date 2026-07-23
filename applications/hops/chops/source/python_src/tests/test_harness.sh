@@ -1,6 +1,35 @@
 #!/bin/bash
 
-#we only run this test if the user explicitly set this variable
+# use the version from the source tree
+TESTDATA_ARCHIVE="/home/gbc-work/HOPS/build-3.26-nd/../trunk/chops/source/python_src/tests/3593.tar.gz"
+tarsource=''
+if [ -s "$TESTDATA_ARCHIVE" ]; then
+    tarsource='from source tree'
+elif [ -n "$MHO_REGRESSION_DATA" -a -d "$MHO_REGRESSION_DATA" ]; then
+    # try to find it in the MHO area
+    unpack="/home/gbc-work/HOPS/build-3.26-nd/../trunk/data/legacy_unpack.sh"
+    if [ -x "$unpack" ] ; then
+        assignment=`MHO_REGRESSION_EXTRACT=false $unpack 3593`
+        [ -n "$assignment" ] && eval "$assignment"
+        TESTDATA_ARCHIVE=$mhoregtgz
+        if [ -s "$TESTDATA_ARCHIVE" ]; then
+            tarsource='from MHO Data'
+        fi
+    fi
+else
+    echo not finding data tarball, so disabling check
+    RUNCHOPSCHECK='disabled'
+    echo you should try to locate a copy and place it in
+    echo /home/gbc-work/HOPS/build-3.26-nd/../trunk/chops/source/python_src/tests
+    echo or alternatively set up an MHO_REGRESSION_DATA area
+fi
+if [ -n "$tarsource" ] ; then
+    echo using test archive from here:
+    ls -l $TESTDATA_ARCHIVE
+fi
+echo
+
+#default is to run a shortened test
 if [ -z "$RUNCHOPSCHECK" ]; then
     #don't run the full suite of tests unless there is an environmental
     #variable called RUNCHOPSCHECK is present, when it is not, we will just
@@ -39,8 +68,8 @@ if [ -z "$RUNCHOPSCHECK" ]; then
     #add them to our path
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$FFCONTROL_LIB_DIR:$MK4B_LIB_DIR:$VEXPY_LIB_DIR
     export PYTHONPATH=$PYTHONPATH:$HOPSTESTB_DIR:$VPAL_DIR:$FFCONTROL_DIR:$MK4B_DIR:$AFIOB_DIR:$VEXPY_DIR
-    export CHOPS_SRC_DIR="/swc/pops/trunk/chops"
-    export TEXT="/swc/pops/trunk/chops/source/c_src/vex/text"
+    export CHOPS_SRC_DIR="../../../../../trunk/chops"
+    export TEXT="../../../../../trunk/chops/source/c_src/vex/text"
 
     ################################################################################
 
@@ -51,18 +80,20 @@ if [ -z "$RUNCHOPSCHECK" ]; then
     #to avoid making a mess in the source directory its easiest to
     #just copy all the data files we need into the build directory
     CURRENT_TEST_DIR="./3593"
-    TESTDATA_ARCHIVE="/swc/pops/trunk/chops/source/python_src/tests/3593.tar.gz"
+    #starting with a wipe of any previous such directory
     if [ -d "$CURRENT_TEST_DIR" ]; then
         chmod -R u+rw $CURRENT_TEST_DIR
         rm -rf "$CURRENT_TEST_DIR"
     fi
-    tar -xzvf "$TESTDATA_ARCHIVE" ./;
+    # this is migrating from its location in HOPS3...3.25
+    # TESTDATA_ARCHIVE="../../../../../trunk/chops/source/python_src/tests/3593.tar.gz"
+    tar -xzvf "$TESTDATA_ARCHIVE"
     chmod -R u+rw $CURRENT_TEST_DIR
 
     #run the test suite (environmental var DATADIR should be set before running this)
     #the -B option is makes sure that python doesn't produce any __pycache__ (.pyc)
     #files that we have to clean up later
-    /usr/bin/python -B /swc/pops/trunk/chops/source/python_src/tests/test_mk4b.py $CURRENT_TEST_DIR
+    /usr/bin/python -B ./test_mk4b.py $CURRENT_TEST_DIR
     MK4B_PASS_FAIL=$?
 
     #reset
@@ -86,6 +117,10 @@ if [ -z "$RUNCHOPSCHECK" ]; then
     fi
 
     exit 0
+elif [ x$RUNCHOPSCHECK = xdisabled ] ; then
+    echo tests disabled
+    exit 77
+    echo
 else
     #run the test
     ################################################################################
@@ -120,8 +155,8 @@ else
     #add them to our path
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$FFCONTROL_LIB_DIR:$MK4B_LIB_DIR:$VEXPY_LIB_DIR
     export PYTHONPATH=$PYTHONPATH:$HOPSTESTB_DIR:$VPAL_DIR:$FFCONTROL_DIR:$MK4B_DIR:$AFIOB_DIR:$VEXPY_DIR
-    export CHOPS_SRC_DIR="/swc/pops/trunk/chops"
-    export TEXT="/swc/pops/trunk/chops/source/c_src/vex/text"
+    export CHOPS_SRC_DIR="../../../../../trunk/chops"
+    export TEXT="../../../../../trunk/chops/source/c_src/vex/text"
 
     ################################################################################
 
@@ -132,27 +167,29 @@ else
     #to avoid making a mess in the source directory its easiest to
     #just copy all the data files we need into the build directory
     CURRENT_TEST_DIR="./3593"
-    TESTDATA_ARCHIVE="/swc/pops/trunk/chops/source/python_src/tests/3593.tar.gz"
+    #starting with a wipe of any previous such directory
     if [ -d "$CURRENT_TEST_DIR" ]; then
         chmod -R u+rw $CURRENT_TEST_DIR
         rm -rf "$CURRENT_TEST_DIR"
     fi
+    # this is migrating from its location in HOPS3...3.25
+    # TESTDATA_ARCHIVE="../../../../../trunk/chops/source/python_src/tests/3593.tar.gz"
     tar -xzvf "$TESTDATA_ARCHIVE" ./;
     chmod -R u+rw $CURRENT_TEST_DIR
 
     #run the test suite (environmental var DATADIR should be set before running this)
     #the -B option is makes sure that python doesn't produce any __pycache__ (.pyc)
     #files that we have to clean up later
-    /usr/bin/python -B /swc/pops/trunk/chops/source/python_src/tests/test_mk4b.py $CURRENT_TEST_DIR
+    /usr/bin/python -B ./test_mk4b.py $CURRENT_TEST_DIR
     MK4B_PASS_FAIL=$?
 
-    /usr/bin/python -B /swc/pops/trunk/chops/source/python_src/tests/test_ffres2pcp.py $CURRENT_TEST_DIR
+    /usr/bin/python -B ./test_ffres2pcp.py $CURRENT_TEST_DIR
     FFRES2PCP_PASS_FAIL=$?
 
-    /usr/bin/python -B /swc/pops/trunk/chops/source/python_src/tests/test_fourphase.py $CURRENT_TEST_DIR
+    /usr/bin/python -B ./test_fourphase.py $CURRENT_TEST_DIR
     FOURPHASE_PASS_FAIL=$?
 
-    /usr/bin/python -B /swc/pops/trunk/chops/source/python_src/tests/test_pcc_generate.py $CURRENT_TEST_DIR
+    /usr/bin/python -B ./test_pcc_generate.py $CURRENT_TEST_DIR
     PCC_PASS_FAIL=$?
 
     #reset
@@ -175,7 +212,6 @@ else
       exit 1
     fi
 fi
-
 
 #
 # eof

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -236,7 +236,7 @@ int checkRunning(const char *hostname)
 	struct addrinfo hints;
 	struct addrinfo *servinfo;
 	const char drsQuery[] = "DTS_id?;";
-	int txBytes, rxBytes;
+	size_t txBytes, rxBytes;
 	char message[MaxMessageLength];
 	struct timeval tv;
 
@@ -1090,9 +1090,10 @@ int main(int argc, char **argv)
     Options options;
 
     // FIXME: fixed length string arrays should be revisited
-    Mk5Daemon *D;
+    Mk5Daemon *D = 0;
     time_t t, lastTime;
     char message[DIFX_MESSAGE_LENGTH];
+    std::stringstream msgStream;
     char str[16];
     const char *p, *u;
     double mjd;
@@ -1107,7 +1108,7 @@ int main(int argc, char **argv)
     int status;
 #ifdef HAS_MARK6META
     std:: ostringstream mk6out;
-    std::streambuf* backup;
+    std::streambuf* backup = 0;
 #endif
 
 #ifdef HAVE_XLRAPI_H
@@ -1253,10 +1254,11 @@ int main(int argc, char **argv)
                 backup = clog.rdbuf();
                 clog.rdbuf(mk6out.rdbuf());
 
-		D->mark6 = new Mark6();
 
                 Logger_logData(D->log, mk6out.str().c_str());
                 mk6out.str("");
+                
+                D->mark6 = new Mark6();
 #else
 		fprintf(stderr, "Error: mark6 option provided but Mark6 support is not compiled in.\n");
 
@@ -1314,7 +1316,7 @@ int main(int argc, char **argv)
                                     {
 
                                         D->mark6->pollDevices();
-                                        D->mark6->sendStatusMessage();
+                                        //D->mark6->sendStatusMessage();
                                         D->mark6->sendSlotStatusMessage();
                                         Logger_logData(D->log, mk6out.str().c_str());
                                         mk6out.str("");
@@ -1501,7 +1503,7 @@ int main(int argc, char **argv)
 	}
 
 #ifdef HAVE_XLRAPI_H
-	if(D->recordPipe > 0)
+	if(D->recordPipe != 0)
 	{
 		pclose(D->recordPipe);
 		D->recordPipe = 0;
@@ -1520,7 +1522,9 @@ int main(int argc, char **argv)
 #ifdef HAS_MARK6META
         // restore clog redirection
         if(options.isMk6)
-              clog.rdbuf(backup);
+	{
+		clog.rdbuf(backup);
+	}
 #endif
         
 	deleteMk5Daemon(D);
@@ -1529,26 +1533,18 @@ int main(int argc, char **argv)
 
    }
 #ifdef HAS_MARK6META
-   catch(Mark6Exception& ex)
+   catch(const std::exception& ex) 
    {
     
-        cerr << "The following error has occured: " << ex.what() << endl;
-        cerr << "This might be caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root!" << endl;
-        cerr << "Aborting" << endl;
-        exit(EXIT_FAILURE);
-   }
-   catch(Mark6MountException& ex)
-   {
-        cerr << "The following error has occured: " << ex.what() << endl;
-        cerr << "This might be caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root!" << endl;
-        cerr << "Aborting" << endl;
-        exit(EXIT_FAILURE);
-       
-   }    
-   catch(Mark6InvalidMetadata& ex)
-   {
-        cerr << "The following error has occured: " << ex.what() << endl;
-        cerr << "Aborting" << endl;
+        // restore clog redirection
+
+        msgStream << "ERROR: " << ex.what() << "\n"; 
+        msgStream << "Note: Some problems are caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root! \n";
+        msgStream << "Aborting" << endl;
+    
+        string tmp = msgStream.str();
+
+        Logger_logData(D->log, tmp.c_str());
         exit(EXIT_FAILURE);
    }
 #endif

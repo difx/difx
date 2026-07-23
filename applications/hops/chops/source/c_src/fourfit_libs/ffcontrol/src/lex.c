@@ -174,18 +174,10 @@ int is_char (char *next_token)
        validity;
 
    n = strlen (next_token);
-
-// if (n < 1 || n > MAXFREQ)
-//    validity = 0;                          /* wrong length, post as invalid */
-//
-// else
-//    {
-      validity = 1;
-      for (i=0; i<n; i++)
-         if (isgraph (next_token[i]) == 0)
+   validity = 1;
+   for (i=0; i<n; i++)
+       if (isgraph (next_token[i]) == 0)
             validity = 0;           /* non-printing character, post not valid */
-//    }
-//
    return (validity);
    }
 
@@ -230,7 +222,10 @@ int lex (char* input_string)
         if ( (n = is_keyword (next_token)) )         /* see if token is a keyword */
             {
             if (token_cat[n] < INT_CONST)     
+                {
                 tokens[itok].symbol = n;             /* just a normal keyword */
+                tokens[itok].value = 0;              /* wipe garbage value */
+                }
 
             else
                 {               /* special integer constant, substitute value */
@@ -308,31 +303,3 @@ int lex (char* input_string)
     return (0);                                        /* signal AOK from lex */
     }
 
-
-
-
-   
-/*
-// this was commented out at some point and
-// the common routine is found in parser.c
-// // int fcode(char c)
-	{
-	int i;
-//	char fchars[64];
-	
-	for (i = 0; i < MAXFREQ; i++)
-		if (c == fchars[i]) return i;
-	}
-	
-char get_fchar_by_index(int i)
-	{
-		if(i < MAXFREQ)
-		{
-			return fchars[i];
-		}
-		else
-		{
-			return '\0';
-		}
-	}
-*/

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2024 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2007-2025 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -23,6 +23,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <libgen.h>
+#include "difxio_macros.h"
 #include "difxio/difx_input.h"
 #include "difxio/difx_options.h"
 #include "difxio/parsedifx.h"
@@ -710,7 +711,7 @@ static int generateFreqSets(DifxInput *D, const DifxDataFilterOptions *filterOpt
 				dfs->IF[i].pol[0]   = dc->pol[0];
 				dfs->IF[i].pol[1]   = dc->pol[1];
 
-				strncpy(dfs->IF[i].rxName, D->freq[fqId].rxName, DIFXIO_RX_NAME_LENGTH);
+				strncpy_warn(dfs->IF[i].rxName, D->freq[fqId].rxName, DIFXIO_RX_NAME_LENGTH);
 				dfs->IF[i].rxName[DIFXIO_RX_NAME_LENGTH-1] = 0;
 
 				++dfs->nIF;
@@ -819,7 +820,11 @@ static const char *locateAltFilename(char *filename, const char *inputFileName, 
 			{
 				fprintf(stderr, "Info: %s file %s inaccessible, using %s instead due to user option --localdir\n", extension, filename, altName);
 			}
-			strncpy(filename, altName, DIFXIO_FILENAME_LENGTH-1);
+			v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s", altName);
+			if(v >= DIFXIO_FILENAME_LENGTH)
+			{
+				fprintf(stderr, "Developer error: locateAltFilename(): altName too long %d >= %d; continuing with possible truncation.\n", v, DIFXIO_FILENAME_LENGTH);
+			}
 		}
 		else
 		{
@@ -997,7 +1002,13 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 	dp->nPolyco = 0;
 	dp->polyco = 0;
 
-	snprintf(dp->fileName, DIFXIO_FILENAME_LENGTH, "%s", fileName);
+	v = snprintf(dp->fileName, DIFXIO_FILENAME_LENGTH, "%s", fileName);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "Developer error: loadPulsarConfigFile: DIFXIO_FILENAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_FILENAME_LENGTH, v);
+
+		exit(0);
+	}
 
 	for(i = 0; i < nPolycoFiles; ++i)
 	{
@@ -1105,7 +1116,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 		"PHASED ARRAY"
 	};
 	const int N_CONFIG_ROWS = sizeof(configKeys)/sizeof(configKeys[0]);
-	int configId, r, v;
+	int configId, r;
 	int rows[N_CONFIG_ROWS];
 
 	if(!D || !ip)
@@ -1128,6 +1139,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 		DifxConfig *dc;
 		int N;
 		int blId, dsId;	/* baseline and datastream Ids within config */
+		int v;
 
 		dc = D->config + configId;
 		N = DifxParametersbatchfind(ip, rows[N_CONFIG_ROWS-1], configKeys, N_CONFIG_ROWS, rows);
@@ -1137,7 +1149,13 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 
 			return 0;
 		}
-		snprintf(dc->name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, rows[0]));
+		v = snprintf(dc->name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, rows[0]));
+		if(v >= DIFXIO_FORMAT_LENGTH)
+		{
+			fprintf(stderr, "Developer error: parseDifxInputConfigurationTable: DIFXIO_NAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_NAME_LENGTH, v);
+
+			exit(0);
+		}
 		dc->tInt           = atof(DifxParametersvalue(ip, rows[1]));
 		dc->subintNS       = atoi(DifxParametersvalue(ip, rows[2]));
 		dc->guardNS        = atoi(DifxParametersvalue(ip, rows[3]));
@@ -1267,22 +1285,28 @@ static DifxInput *parseDifxInputRuleTable(DifxInput *D, const DifxParameters *ip
 	D->rule  = newDifxRuleArray(D->nRule);
 	for(rule = 0; rule < D->nRule; ++rule)
 	{
+		int v;
+
 		r = DifxParametersfind1(ip, r+1, "RULE %d SOURCE", rule);
 		if(r>=0)
 		{
-			//snprintf(D->rule[rule].sourceName, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
 			DifxStringArrayaddlist(&D->rule[rule].sourceName, DifxParametersvalue(ip, r));
 		}
 		r = DifxParametersfind1(ip, r+1, "RULE %d SCAN ID", rule);
 		if(r>=0)
 		{
-			//snprintf(D->rule[rule].scanId, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
 			DifxStringArrayaddlist(&D->rule[rule].scanId, DifxParametersvalue(ip, r));
 		}
 		r = DifxParametersfind1(ip, r+1, "RULE %d CALCODE", rule);
 		if(r>=0)
 		{
-			snprintf(D->rule[rule].calCode, DIFXIO_CALCODE_LENGTH, "%s", DifxParametersvalue(ip, r));
+			v = snprintf(D->rule[rule].calCode, DIFXIO_CALCODE_LENGTH, "%s", DifxParametersvalue(ip, r));
+			if(v >= DIFXIO_CALCODE_LENGTH)
+			{
+				fprintf(stderr, "Developer error: parseDifxInputRuleTable: DIFXIO_CALCODE_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_CALCODE_LENGTH, v);
+
+				exit(0);
+			}
 		}
 		r = DifxParametersfind1(ip, r+1, "RULE %d QUAL", rule);
 		if(r>=0)
@@ -1306,7 +1330,13 @@ static DifxInput *parseDifxInputRuleTable(DifxInput *D, const DifxParameters *ip
 
 			return 0;
 		}
-		snprintf(D->rule[rule].configName, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
+		v = snprintf(D->rule[rule].configName, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
+		if(v >= DIFXIO_NAME_LENGTH)
+		{
+			fprintf(stderr, "Developer error: parseDifxInputRuleTable: DIFXIO_NAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_NAME_LENGTH, v);
+
+			exit(0);
+		}
 	}
 
 	return D;
@@ -1439,8 +1469,7 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D, const DifxParameter
 	rows[N_ANT_ROWS-1] = 0;		/* initialize start */
 	for(a = 0; a < D->nAntenna; ++a)
 	{
-		int N;
-		int i;
+		int N, i, v;
 
 		N = DifxParametersbatchfind1(ip, rows[N_ANT_ROWS-1], antKeys, a, N_ANT_ROWS, rows);
 		if(N < N_ANT_ROWS)
@@ -1449,7 +1478,13 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D, const DifxParameter
 
 			return 0;
 		}
-		snprintf(D->antenna[a].name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, rows[0]));
+		v = snprintf(D->antenna[a].name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, rows[0]));
+		if(v >= DIFXIO_NAME_LENGTH)
+		{
+			fprintf(stderr, "Developer error: parseDifxInputTelescopeTable: DIFXIO_NAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_NAME_LENGTH, v);
+
+			exit(0);
+		}
 		D->antenna[a].clockrefmjd = atof(DifxParametersvalue(ip, rows[1]));
 		D->antenna[a].clockorder  = atoi(DifxParametersvalue(ip, rows[2]));
 		r = rows[2];
@@ -1497,7 +1532,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 
 	for(e = 0; e < D->nDatastream; ++e)
 	{
-		int i, r1;
+		int i, r1, v;
 
 		r = DifxParametersfind(ip, r+1, "TELESCOPE INDEX");
 		if(r < 0)
@@ -1515,7 +1550,13 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 			
 			return 0;
 		}
-		snprintf(D->datastream[e].dataFormat, DIFXIO_FORMAT_LENGTH, "%s", DifxParametersvalue(ip, r));
+		v = snprintf(D->datastream[e].dataFormat, DIFXIO_FORMAT_LENGTH, "%s", DifxParametersvalue(ip, r));
+		if(v >= DIFXIO_FORMAT_LENGTH)
+		{
+			fprintf(stderr, "Developer error: parseDifxInputDatastreamTable: DIFXIO_FORMAT_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_FORMAT_LENGTH, v);
+
+			exit(0);
+		}
 	
 		r = DifxParametersfind(ip, r+1, "QUANTISATION BITS");
 		if(r < 0)
@@ -1545,8 +1586,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 		D->datastream[e].dataSampling = stringToSamplingType( DifxParametersvalue(ip, r) );
 		if(D->datastream[e].dataSampling >= NumSamplingTypes)
 		{
-			fprintf(stderr, "Error: DATA SAMPLING was %s and is not supported\n", 
-				DifxParametersvalue(ip, r) );
+			fprintf(stderr, "Error: DATA SAMPLING was %s and is not supported\n", DifxParametersvalue(ip, r) );
 			
 			return 0;
 		}
@@ -1561,8 +1601,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 		D->datastream[e].dataSource = stringToDataSource( DifxParametersvalue(ip, r) );
 		if(D->datastream[e].dataSource >= NumDataSources)
 		{
-			fprintf(stderr, "Error: DATA SOURCE was %s and is not supported\n",
-				DifxParametersvalue(ip, r) );
+			fprintf(stderr, "Error: DATA SOURCE was %s and is not supported\n", DifxParametersvalue(ip, r) );
 			
 			return 0;
 		}
@@ -1946,7 +1985,15 @@ static DifxInput *parseDifxInputNetworkTable(DifxInput *D, const DifxParameters 
 		r = DifxParametersfind1(ip, r, "PORT NUM %d", i);
 		if(r > 0)
 		{
-			snprintf(ds->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", DifxParametersvalue(ip, r));
+			int v;
+
+			v = snprintf(ds->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", DifxParametersvalue(ip, r));
+			if(v >= DIFXIO_ETH_DEV_SIZE)
+			{
+				fprintf(stderr, "Developer error: parseDifxInputNetworkTable: DIFXIO_ETH_DEV_SIZE was set too small (%d).  This use case needed it to be %d\n", DIFXIO_ETH_DEV_SIZE, v);
+
+				exit(0);
+			}
 		}
 
 		r = DifxParametersfind1(ip, r, "TCP WINDOW (KB) %d", i);
@@ -2123,7 +2170,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	int nScan = 0;
 	int nFound = 0;
 
-	if (!D || !cp)
+	if(!D || !cp)
 	{
 		return 0;
 	}
@@ -2137,7 +2184,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	}
 
 	D->job->jobId    = atoi(DifxParametersvalue(cp, rows[0]));
-	snprintf(D->job->obsCode, DIFXIO_OBSCODE_LENGTH, "%s", DifxParametersvalue(cp, rows[1]));
+	v = snprintf(D->job->obsCode, DIFXIO_OBSCODE_LENGTH, "%s", DifxParametersvalue(cp, rows[1]));
+	if(v >= DIFXIO_OBSCODE_LENGTH)
+	{
+		fprintf(stderr, "Developer error: populateCalc: DIFXIO_OBSCODE_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_OBSCODE_LENGTH, v);
+
+		exit(0);
+	}
 	nTel             = atoi(DifxParametersvalue(cp, rows[2]));
 	D->nSource       = atoi(DifxParametersvalue(cp, rows[3]));
 	D->nScan         = atoi(DifxParametersvalue(cp, rows[4]));
@@ -2167,19 +2220,37 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	row = DifxParametersfind(cp, 0, "DIFX VERSION");
 	if(row > 0)
 	{
-		snprintf(D->job->difxVersion, DIFXIO_VERSION_LENGTH, "%s", DifxParametersvalue(cp, row));
+		v = snprintf(D->job->difxVersion, DIFXIO_VERSION_LENGTH, "%s", DifxParametersvalue(cp, row));
+		if(v >= DIFXIO_VERSION_LENGTH)
+		{
+			fprintf(stderr, "Developer error: populateCalc: DIFXIO_VERSION_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_VERSION_LENGTH, v);
+
+			exit(0);
+		}
 	}
 
 	row = DifxParametersfind(cp, 0, "DIFX LABEL");
 	if(row > 0)
 	{
-		snprintf(D->job->difxLabel, DIFXIO_VERSION_LENGTH, "%s", DifxParametersvalue(cp, row));
+		v = snprintf(D->job->difxLabel, DIFXIO_VERSION_LENGTH, "%s", DifxParametersvalue(cp, row));
+		if(v >= DIFXIO_VERSION_LENGTH)
+		{
+			fprintf(stderr, "Developer error: populateCalc: DIFXIO_VERSION_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_VERSION_LENGTH, v);
+
+			exit(0);
+		}
 	}
 
 	row = DifxParametersfind(cp, 0, "SESSION");
 	if(row >= 0)
 	{
-		snprintf(D->job->obsSession, DIFXIO_SESSION_LENGTH, "%s", DifxParametersvalue(cp, row));
+		v = snprintf(D->job->obsSession, DIFXIO_SESSION_LENGTH, "%s", DifxParametersvalue(cp, row));
+		if(v >= DIFXIO_SESSION_LENGTH)
+		{
+			fprintf(stderr, "Developer error: populateCalc: DIFXIO_SESSION_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_SESSION_LENGTH, v);
+
+			exit(0);
+		}
 	}
 	row = DifxParametersfind(cp, 0, "TAPER FUNCTION");
 	if(row >= 0)
@@ -2199,7 +2270,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	row = DifxParametersfind(cp, 0, "VEX FILE");
 	if(row >= 0)
 	{
-		snprintf(D->job->vexFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+		v = snprintf(D->job->vexFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+		if(v >= DIFXIO_FILENAME_LENGTH)
+		{
+			fprintf(stderr, "Developer error: populateCalc: DIFXIO_FILENAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_FILENAME_LENGTH, v);
+
+			exit(0);
+		}
 	}
 	row = DifxParametersfind(cp, 0, "DUTY CYCLE");
 	if(row >= 0)
@@ -2209,7 +2286,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	row = DifxParametersfind(cp, 0, "DELAY MODEL");
 	if(row >= 0)
 	{
-		snprintf(D->job->delayModel, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+		v = snprintf(D->job->delayModel, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+		if(v >= DIFXIO_FILENAME_LENGTH)
+		{
+			fprintf(stderr, "Developer error: populateCalc: DIFXIO_FILENAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_FILENAME_LENGTH, v);
+
+			exit(0);
+		}
 	}
 	row = DifxParametersfind(cp, 0, "JOB START TIME");
 	if(row >= 0)
@@ -2285,7 +2368,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		row = DifxParametersfind1(cp, 0, "TELESCOPE %d SHELF", a);
 		if(row > 0)
 		{
-			snprintf(D->antenna[a].shelf, DIFXIO_SHELF_LENGTH, "%s", DifxParametersvalue(cp, row));
+			v = snprintf(D->antenna[a].shelf, DIFXIO_SHELF_LENGTH, "%s", DifxParametersvalue(cp, row));
+			if(v >= DIFXIO_SHELF_LENGTH)
+			{
+				fprintf(stderr, "Developer error: populateCalc: DIFXIO_SHELF_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_SHELF_LENGTH, v);
+
+				exit(0);
+			}
 		}
 	}
 	
@@ -2306,10 +2395,22 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 
 			return 0;
 		}
-		snprintf(D->source[i].name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, rows[0]));
+		v = snprintf(D->source[i].name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, rows[0]));
+		if(v >= DIFXIO_NAME_LENGTH)
+		{
+			fprintf(stderr, "Developer error: populateCalc: DIFXIO_NAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_NAME_LENGTH, v);
+
+			exit(0);
+		}
 		D->source[i].ra = atof(DifxParametersvalue(cp, rows[1]));
 		D->source[i].dec = atof(DifxParametersvalue(cp, rows[2]));
-		snprintf(D->source[i].calCode, DIFXIO_CALCODE_LENGTH, "%s", DifxParametersvalue(cp, rows[3]));
+		v = snprintf(D->source[i].calCode, DIFXIO_CALCODE_LENGTH, "%s", DifxParametersvalue(cp, rows[3]));
+		if(v >= DIFXIO_CALCODE_LENGTH)
+		{
+			fprintf(stderr, "Developer error: populateCalc: DIFXIO_CALCODE_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_CALCODE_LENGTH, v);
+
+			exit(0);
+		}
 		D->source[i].qual = atoi(DifxParametersvalue(cp, rows[4]));
 		//The fitsSourceId is left unset for now - the only way to set this is by calling updateDifxInput
 		row = DifxParametersfind1(cp, 0, "SOURCE %d PM RA (ARCSEC/YR)", i);
@@ -2358,7 +2459,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 
 			return 0;
 		}
-		snprintf(D->scan[i].identifier, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+		v = snprintf(D->scan[i].identifier, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+		if(v >= DIFXIO_NAME_LENGTH)
+		{
+			fprintf(stderr, "Developer error: populateCalc: DIFXIO_NAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_NAME_LENGTH, v);
+
+			exit(0);
+		}
 		row = DifxParametersfind1(cp, 0, "SCAN %d START (S)", i);
 		if(row < 0)
 		{
@@ -2387,7 +2494,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 
 			return 0;
 		}
-		snprintf(D->scan[i].obsModeName, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+		v = snprintf(D->scan[i].obsModeName, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+		if(v >= DIFXIO_NAME_LENGTH)
+		{
+			fprintf(stderr, "Developer error: populateCalc: DIFXIO_NAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_NAME_LENGTH, v);
+
+			exit(0);
+		}
 		row = DifxParametersfind1(cp, row, "SCAN %d UVSHIFT INTERVAL (NS)", i);
 		if(row < 0)
 		{
@@ -2505,7 +2618,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			row = DifxParametersfind(cp, row, "FRAME");
 			if(row > 0)
 			{
-				snprintf(D->spacecraft[s].frame, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+				v = snprintf(D->spacecraft[s].frame, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+				if(v >= DIFXIO_NAME_LENGTH)
+				{
+					fprintf(stderr, "Developer error: populateCalc: DIFXIO_NAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_NAME_LENGTH, v);
+
+					exit(0);
+				}
 			}
 			else
 			{
@@ -2518,16 +2637,34 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 				
 				return 0;
 			}
-			snprintf(D->spacecraft[s].name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, rows[0]));
+			v = snprintf(D->spacecraft[s].name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, rows[0]));
+			if(v >= DIFXIO_NAME_LENGTH)
+			{
+				fprintf(stderr, "Developer error: populateCalc: DIFXIO_NAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_NAME_LENGTH, v);
+
+				exit(0);
+			}
 			row = DifxParametersfind1(cp, rows[0], "SPACECRAFT %d EPHEM", s);
 			if(row > 0)
 			{
-				snprintf(D->spacecraft[s].ephemFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+				v = snprintf(D->spacecraft[s].ephemFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+				if(v >= DIFXIO_FILENAME_LENGTH)
+				{
+					fprintf(stderr, "Developer error: populateCalc: DIFXIO_FILENAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_FILENAME_LENGTH, v);
+
+					exit(0);
+				}
 			}
 			row = DifxParametersfind1(cp, rows[0], "SPACECRAFT %d ID", s);
 			if(row > 0)
 			{
-				snprintf(D->spacecraft[s].ephemObject, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+				v = snprintf(D->spacecraft[s].ephemObject, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+				if(v >= DIFXIO_NAME_LENGTH)
+				{
+					fprintf(stderr, "Developer error: populateCalc: DIFXIO_NAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_NAME_LENGTH, v);
+
+					exit(0);
+				}
 			}
 			D->spacecraft[s].nPoint = atoi(DifxParametersvalue(cp, rows[1]));
 			D->spacecraft[s].pos = (sixVector *)calloc(D->spacecraft[s].nPoint, sizeof(sixVector));
@@ -2650,8 +2787,15 @@ static DifxInput *parseCalcServerInfo(DifxInput *D, DifxParameters *p)
 	r = DifxParametersfind(p, 0, "CALC SERVER");
 	if(r >= 0)
 	{
-		snprintf(D->job->calcServer, DIFXIO_HOSTNAME_LENGTH, "%s",
-			DifxParametersvalue(p, r));
+		int v;
+
+		v = snprintf(D->job->calcServer, DIFXIO_HOSTNAME_LENGTH, "%s", DifxParametersvalue(p, r));
+		if(v >= DIFXIO_HOSTNAME_LENGTH)
+		{
+			fprintf(stderr, "Developer error: parseCalcServerInfo: DIFXIO_HOSTNAME_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_HOSTNAME_LENGTH, v);
+
+			exit(0);
+		}
 	}
 
 	r = DifxParametersfind(p, 0, "CALC PROGRAM");
@@ -3757,17 +3901,17 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	l = strlen(inputFile);  
 	if(strcmp(inputFile + l - 6, ".input") == 0)
 	{
-		strncpy(CalcInName, inputFile, l - 6);
+		strncpy_warn(CalcInName, inputFile, DIFXIO_FILENAME_LENGTH);
 		CalcInName[l-6] = '\0';
 		strncat(CalcInName, ".calc", DIFXIO_FILENAME_LENGTH-1);
 	}
 	else
 	{
-		strncpy ( CalcInName, calcFile, DIFXIO_FILENAME_LENGTH ); /* just in case if inputFile name is insane */
+		/* just in case if inputFile name is insane */
+		strncpy_warn(CalcInName, calcFile, DIFXIO_FILENAME_LENGTH);
 	}
 
-	if(access( calcFile,   F_OK ) != 0 &&
-	   access( CalcInName, F_OK ) == 0)
+	if(access(calcFile, F_OK) != 0 && access(CalcInName, F_OK) == 0)
 	{
 		//
 		// --------- We cannot find Calc file as it is spefified in the *.input file,
@@ -3812,16 +3956,15 @@ DifxInput *loadDifxInput(const char *filePrefix)
 		l = strlen(inputFile);
 		if(strcmp(inputFile + l - 6, ".input") == 0)
 		{
-			strncpy(ImInName, inputFile, l - 6);
+			strncpy_warn(ImInName, inputFile, DIFXIO_FILENAME_LENGTH);
 			ImInName[l-6] = '\0';
 			strncat(ImInName, ".im", DIFXIO_FILENAME_LENGTH-1);
 		}
 		else
 		{
-			strncpy(ImInName, D->job->imFile, DIFXIO_FILENAME_LENGTH); ; /* just in case if inputFile name is insane */
+			strncpy_warn(ImInName, D->job->imFile, DIFXIO_FILENAME_LENGTH); /* just in case if inputFile name is insane */
 		}
-		if(access( D->job->imFile, F_OK ) != 0 &&
-		   access( ImInName,       F_OK ) == 0)
+		if(access(D->job->imFile, F_OK) != 0 && access(ImInName, F_OK) == 0)
 		{
 			//
 			// ---------------- If the cannot find D->job->imFile file as it is spefified in the *.input file,
@@ -3834,7 +3977,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 					D->job->imFile, (char *)ImInName);
 				exit(EXIT_FAILURE);
 			}
-			strncpy(D->job->imFile, (char *)ImInName, DIFXIO_FILENAME_LENGTH);
+			strncpy_warn(D->job->imFile, (char *)ImInName, DIFXIO_FILENAME_LENGTH);
 		}
 
 		mp = newDifxParametersfromfile(D->job->imFile);
@@ -3855,21 +3998,20 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	}
 	if(D)
 	{
-		strncpy(OutputDirName, D->job->outputFile, DIFXIO_FILENAME_LENGTH);
+		strncpy_warn(OutputDirName, D->job->outputFile, DIFXIO_FILENAME_LENGTH);
 		strncat(OutputDirName, "/", DIFXIO_FILENAME_LENGTH-1);
 		l = strlen(inputFile);
 		if(strcmp(inputFile + l - 6, ".input") == 0)
 		{
-			strncpy(OutputDirInName, inputFile, l - 6);
+			strncpy_warn(OutputDirInName, inputFile, DIFXIO_FILENAME_LENGTH);
 			OutputDirInName[l-6] = '\0';
 			strncat(OutputDirInName, ".difx/", DIFXIO_FILENAME_LENGTH-1);
 		}
 		else
 		{
-			strncpy ( OutputDirInName, OutputDirName, DIFXIO_FILENAME_LENGTH ); /* just in case if inputFile name is insane */
+			strncpy_warn(OutputDirInName, OutputDirName, DIFXIO_FILENAME_LENGTH); /* just in case if inputFile name is insane */
 		} 
-		if(access( OutputDirName,   F_OK ) != 0 &&
-		   access( OutputDirInName, F_OK ) == 0 )
+		if(access(OutputDirName, F_OK) != 0 && access(OutputDirInName, F_OK) == 0)
 		{
 			//
 			// ------------- If the cannot find D->job->outputFile file as it is spefified in the *.input file,
@@ -3958,7 +4100,7 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 		l = strlen(inputFile);
 		if(strcmp(inputFile + l - 6, ".input") == 0)
 		{
-			strncpy(CalcInName, inputFile, l - 6);
+			strncpy_warn(CalcInName, inputFile, l - 6);
 			CalcInName[l-6] = '\0';
 			strncat(CalcInName, ".calc", DIFXIO_FILENAME_LENGTH-1);
 		}

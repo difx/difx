@@ -79,7 +79,7 @@ def filterVisibilityfile(basename,targetAnts):
 		seconds = vishdr[2]
 
 		# Number of channels in this baseband
-		nchan = freqs[freqindex].numchan / freqs[freqindex].specavg
+		nchan = freqs[freqindex].numchan // freqs[freqindex].specavg
 
 		# Read the entire visibility data from disk
 		rawvis = difxfile.read(8*nchan)

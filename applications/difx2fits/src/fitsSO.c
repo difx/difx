@@ -25,8 +25,6 @@
 
 const DifxInput *DifxInput2FitsSO(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
-	static int extver = 1;  /* sequence number of this table type in FITS file */
-
 	struct fitsBinTableColumn columns[] =
 	{
 		{"SPACECR", "16A", "spacecraft name", 0},
@@ -88,7 +86,7 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D, struct fits_keywords *p_fi
 
 			if(nRec == 0)
 			{
-				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SPACECRAFT_ORBIT", extver++);
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SPACECRAFT_ORBIT");
 				arrayWriteKeys(p_fits_keys, out);
 				fitsWriteInteger(out, "TABREV", 1, "");
 				fitsWriteEnd(out);

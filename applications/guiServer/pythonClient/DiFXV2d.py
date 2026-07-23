@@ -30,7 +30,7 @@
 #
 #  In parsing .v2d data, the class makes no initial assumptions about the .v2d
 #  content beyond adherence to a few basic formatting rules (described in the
-#  <i>vex2difx</i> documentation <a href="http://www.atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx">here</a>).
+#  <i>vex2difx</i> documentation <a href="https://github.com/difx/difx/wiki/vex2difx">here</a>).
 #  These rules include:
 #    <ul>
 #    <li>Comments start with a "#" character and consume the rest of the line they are on
