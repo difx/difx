@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2015 by Walter Brisken                             *
+ *   Copyright (C) 2006-2024 by Walter Brisken, Richard Dodson             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5_stream.h 5533 2013-08-07 05:43:41Z RichardDodson $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.h $
-// $LastChangedRevision: 5533 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2019-11-14 08:56:26 +0800 (四, 2019-11-14) $
-//
-//============================================================================
 
 #ifndef __MARK5_STREAM_H__
 #define __MARK5_STREAM_H__
@@ -97,7 +87,7 @@ struct mark5_stream
 	int nchan;		/* # of data channels; all will be decoded */
 	int nbit;		/* quantization bits of data */
         int iscomplex;          /* Are voltages complex or real */
-	int samplegranularity;	/* decoding and copying must be in mults of */
+	int samplegranularity;	/* decoding and copying must be in multiples of this */
 	int framegranularity;	/* min num of frames to have int. ns length */
 	int mjd;		/* date of first found frame */
 	int sec;		/* time of first found frame */
@@ -174,12 +164,8 @@ struct mark5_format_generic
 {
 	int (*init_format)(struct mark5_stream *ms);	/* required */
 	int (*final_format)(struct mark5_stream *ms);	/* required */
-  //	int (*decode)(struct mark5_stream *ms, 		/* required */
-  //		int nsamp, float **data); 
         decodeFunc decode;                              /* required */
         countFunc count;
-  //	int (*complex_decode)(struct mark5_stream *ms,
-  //		int nsamp, mark5_float_complex **data);
         int iscomplex;
 	complex_decodeFunc complex_decode; 
 	int (*validate)(const struct mark5_stream *ms);
@@ -194,7 +180,7 @@ struct mark5_format_generic
 	int alignmentseconds;
 	int nchan;
 	int nbit;
-	int decimation;					/* decimationling factor */
+	int decimation;					/* decimation factor */
 	void (*genheaders)(const struct mark5_stream *ms, int n, unsigned char *where);
 };
 

@@ -16,17 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5fixtrack.c 5105 2013-01-08 09:27:22Z HelgeRottmann $
-// $HeadURL: https://svn.atnf.csiro.au/difx/sites/MPIfR/mark5/m5fixtrack/m5fixtrack.c $
-// $LastChangedRevision: 5105 $
-// $Author: HelgeRottmann $
-// $LastChangedDate: 2013-01-08 17:27:22 +0800 (二, 2013-01-08) $
-//
-//============================================================================
-//
+
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>

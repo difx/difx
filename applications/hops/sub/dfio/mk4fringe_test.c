@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "mk4_data.h"
+#include "mk4_dfio.h"
 #include "msg.h"
 
 // char progname[] = "test_mk4fringe";
@@ -39,9 +40,10 @@ struct date date;
     fflush (stdout);
     }
 
-main (argc, argv)
-int argc;
-char *argv[];
+//main (argc, argv)
+//int argc;
+//char *argv[];
+int main(int argc, char **argv)
     {
     struct mk4_fringe fringe;
     struct type_200 *t200;

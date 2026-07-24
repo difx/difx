@@ -1,5 +1,6 @@
 /***************************************************************************
- *  Copyright (C) 2009-2015 by Adam Deller/Walter Brisken/Chris Phillips   *
+ *  Copyright (C) 2009-2024 by Adam Deller/Walter Brisken/Chris Phillips/  *
+ *                             Jan Wagner                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +17,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdifio.c 9975 2021-03-16 10:11:42Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/vdifio/src/vdifio.c $
-// $LastChangedRevision: 9975 $
-// $Author: JanWagner $
-// $LastChangedDate: 2021-03-16 18:11:42 +0800 (二, 2021-03-16) $
-//
-//============================================================================
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -221,7 +212,7 @@ int setVDIFEpochMJD(vdif_header *header, int mjd) {
 }
 
 int nextVDIFHeader(vdif_header *header, int framepersec) {
-  // This would fail if there were 16777216 frames/sec (ie 2^24) due to overflow so at least fail in this case
+  // This would fail if there were 16777216 frames/sec (i.e., 2^24) due to overflow so at least fail in this case
   assert(framepersec!=16777216);
   header->frame++; 
   if (header->frame>framepersec) {

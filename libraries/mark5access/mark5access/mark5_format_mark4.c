@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2012 by Walter Brisken                             *
+ *   Copyright (C) 2006-2024 by Walter Brisken, Chris Phillips             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5_format_mark4.c 9176 2019-09-19 14:14:48Z ChrisPhillips $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/mark5access/mark5_format_mark4.c $
-// $LastChangedRevision: 9176 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2019-09-19 22:14:48 +0800 (四, 2019-09-19) $
-//
-//============================================================================
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -6930,7 +6920,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	}
 	else
 	{
-		fprintf(m5stderr, "decimation must be 1, 2 or mult of 4\n");
+		fprintf(m5stderr, "decimation must be 1, 2 or multiple of 4\n");
 	}
 
 	if(nbit == 1)

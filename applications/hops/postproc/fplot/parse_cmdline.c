@@ -27,17 +27,47 @@
 
 #include "mk4_util.h"
 
+#if HAVE_STRCASECMP
+# define CMP    strncasecmp
+#else /* HAVE_STRCASECMP */
+# define CMP    strncmp
+#endif /* HAVE_STRCASECMP */
+
+/*
+ * synchronize with fourfit -d filename options:
+ * pshardcopy -> -h, hardcopy -> -l, xwindow or psscreen -> -x
+ * diskfile:<name> to -d <name> or ps2pdf:<name> to -p <name> .
+ */
+static void sync_fourfit(int *display, char **file_name)
+{
+    if        (!CMP(*file_name, "pshardcopy", strlen("pshardcopy"))) {
+        *display = HARDCOPY; *file_name = "NotUsedPsHardCopy"; return;
+    } else if (!CMP(*file_name, "hardcopy", strlen("hardcopy"))) {
+        *display = PRINTLPR; *file_name = "NotUsedHardCopy";   return;
+    } else if (!CMP(*file_name, "xwindow", strlen("xwindow"))) {
+        *display = XWINDOW;  *file_name = "NotUsedXwindow";    return;
+    } else if (!CMP(*file_name, "psscreen", strlen("psscreen"))) {
+        *display = GSDEVICE; *file_name = "NotUsedPsScreen";   return;
+    } else if (!CMP(*file_name, "diskfile", strlen("diskfile"))) {
+        *display = DISKFILE, *file_name = *file_name + 9;      return;
+    } else if (!CMP(*file_name, "ps2pdf", strlen("ps2pdf"))) {
+        *display = PSTOPDF,  *file_name = *file_name + 7;      return;
+    } /* else nothing needs to be done */
+}
+
 int
-parse_cmdline (int argc, char** argv, fstruct** files, int* display, char** file_name)
+parse_cmdline (int argc, char** argv,
+    fstruct** files, int* display, char** file_name, int *poln)
     {
     int err;
     char c;
     extern char *optarg;
     extern int optind, msglev;
                                         /* Interpret command line flags */
+    *poln = -1;         /* no select */
     *display = NONE;
     err = FALSE;
-    while((c=getopt(argc,argv,"xd:p:hlm:")) != -1) 
+    while((c=getopt(argc,argv,"xd:p:hlm:P:")) != -1) 
         {
         switch (c) 
             {
@@ -50,6 +80,7 @@ parse_cmdline (int argc, char** argv, fstruct** files, int* display, char** file
                 if (*display != NONE) err = TRUE;
                 else *display = DISKFILE;
                 *file_name = optarg;
+                sync_fourfit(display, file_name);
                 break;
 
             case 'p':
@@ -78,7 +109,24 @@ parse_cmdline (int argc, char** argv, fstruct** files, int* display, char** file
                 if (msglev < -3) msglev = -3;
                 break;
 
-
+// fourfit/pass_struct.h defines:
+// #define POL_LL 0
+// #define POL_RR 1
+// #define POL_LR 2
+// #define POL_RL 3
+            case 'P':
+                *poln = 0x1111; /* hex read as binary */
+                if (optarg[0] == 'X' || optarg[0] == 'L') *poln &= 0x1010;
+                if (optarg[0] == 'Y' || optarg[0] == 'R') *poln &= 0x1011;
+                if (optarg[1] == 'X' || optarg[1] == 'L') *poln &= 0x0101;
+                if (optarg[1] == 'Y' || optarg[1] == 'R') *poln &= 0x0111;
+                if (*poln & 0x1100) {
+                    msg ("Invalid -P argument '%s'(%x)", 2, optarg, *poln);
+                    err = TRUE;
+                } else {
+                    msg ("Selecting polarization {LL,RR,LR,RL}[b%x]", 1,*poln);
+                }
+                break;
             case '?':
                 err = TRUE;
                 break;

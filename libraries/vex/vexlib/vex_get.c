@@ -1,13 +1,3 @@
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vex_get.c 10188 2021-09-17 05:39:03Z ChrisPhillips $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/vex/vexlib/vex_get.c $
-// $LastChangedRevision: 10188 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2021-09-17 13:39:03 +0800 (五, 2021-09-17) $
-//
-//============================================================================
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

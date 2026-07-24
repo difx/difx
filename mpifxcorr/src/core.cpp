@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 #include <mpi.h>
 #include "core.h"
 #include "fxmanager.h"
@@ -939,7 +929,14 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                         destbin = scratchspace->bins[fftsubloop][f][destchan];
                         scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][l].re += scratchspace->pulsarscratchspace[l].re;
                         scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][l].im += scratchspace->pulsarscratchspace[l].im;
-                        scratchspace->baselineweight[f][0][j][p] += bweight*binweights[destbin];
+                        /* Negative bin weights are generally used when scrunching to estimate and remove slowly-time-varying signal (e.g. RFI)
+                         * So really the baseline weight treat these on-pulse (positive weights) and off-pulse (negative weights) regions separately
+                         * since the off pulse subtraction is raising the noise a little - the narrower it is relative to the on pulse region, the more it raises the noise
+                         * However, there is no mechanism to carry this through with a single weight sum at the moment, so the quick and dirty solution is simply to ignore
+                         * all the negative weights in the calculation of baseline weight
+                         */ 
+                        if(binweights[destbin] > 0.0)
+                          scratchspace->baselineweight[f][0][j][p] += bweight*binweights[destbin];
                         destchan++;
                       }
                     }
@@ -1726,6 +1723,8 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
 
   //get index into procslot::results[<out>] to concatenate spectra of phase centers, bins, and polzns there
   coreindex = config->getCoreResultBaselineOffset(procslots[index].configindex, freqindex, baseline);
+  if(coreindex < 0)
+    csevere << startl << "Baseline " << baseline << " input freqId " << freqindex << " with destination freqId " << targetfreqindex << " is not mapped to any Core results[] array index!";
 
   //collect spectra data from threadcrosscorrs etc, do the multi-phasecenter rotation (if necessary), spectral averaging (if necessary) and concatenation to Core procslot::results[]
   for(int s=0;s<model->getNumPhaseCentres(procslots[index].offsets[0]);s++)

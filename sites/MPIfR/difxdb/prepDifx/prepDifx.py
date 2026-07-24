@@ -1,16 +1,6 @@
 #! /usr/bin/env python3
 # coding: latin-1
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: prepDifx.py 10500 2022-06-10 13:03:43Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/sites/MPIfR/difxdb/prepDifx/prepDifx.py $
-# $LastChangedRevision: 10500 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2022-06-10 21:03:43 +0800 (五, 2022-06-10) $
-#
-#============================================================================
 
 import argparse
 import os
@@ -31,7 +21,9 @@ filesDir="FILES"
 snrDir = "SNR"
 versionPrefix="v"
 
-geoFTPServer = "ivs.bkg.bund.de"
+# geoFTPServer = "ivs.bkg.bund.de"
+geoFTPServer = "ivsopar.obspm.fr"
+geoFTPPath = "pub/vlbi/ivsdata/aux"
     
 def curlDownload (url, remotePath, patterns, localPath):
 
@@ -222,7 +214,7 @@ def expPrepare(code):
         # get geodetic files
         if not os.path.exists(filesDir):
             os.mkdir(filesDir)
-        curlDownload(geoFTPServer, "/pub/vlbi/ivsdata/aux/%s/%s/"% (year, code.lower()), ["*.log", "*.skd", "*.vex", "*.txt"], filesDir)
+        curlDownload(geoFTPServer, "/%s/%s/%s/"% (geoFTPPath, year, code.lower()), ["*.log", "*.skd", "*.vex", "*.txt"], filesDir)
 
     return
 

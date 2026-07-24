@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Chris Phillips & Richard Dodson *
+ *   Copyright (C) 2008-2024 by Walter Brisken, Chris Phillips,            *
+ *                              Richard Dodson                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +17,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m5fb.c 0001 2012-05-25 01:15:33Z RichardDOdson $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 0001 $
-// $Author: RichardDodson $
-// $LastChangedDate: 2012-05-25 09:15:33 +0800 (Fri, 25 May 2012) $
-//
-//============================================================================
 
 // Change this to configure detection, if possible
 #define USEGETOPT 1
@@ -47,8 +38,8 @@
 const char program[] = "m5fb";
 const char author[]  = "Richard Dodson";
 //  Copied extensively from m5spec by Walter Brisken & Chris Phillips
-const char version[] = "1.3";
-const char verdate[] = "20220429";
+const char version[] = "1.4";
+const char verdate[] = "20240917";
 
 volatile int die = 0;
 
@@ -115,7 +106,7 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 	cdata = (double complex **)malloc(ms->nchan*sizeof(double complex *));
 	for(j = 0; j < ms->nchan; ++j)
 	{
-		cdata[j] = (double complex*)malloc(nchan*sizeof(double complex));
+		cdata[j] = (double complex*)fftw_malloc(nchan*sizeof(double complex));
 		plan[j] = fftw_plan_dft_1d(nchan, cdata[j], zdata[j], FFTW_FORWARD, FFTW_MEASURE);
 	}
 
@@ -184,7 +175,7 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 	for(j = 0; j < ms->nchan; ++j)
 	{
 		fftw_destroy_plan(plan[j]);
-		free(cdata[j]);
+		fftw_free(cdata[j]);
 	}
 	free(plan);
 	free(cdata);
@@ -209,7 +200,7 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 		data = (double **)malloc(ms->nchan*sizeof(double *));
 		for(j = 0; j < ms->nchan; ++j)
 		{
-			data[j] = (double *)malloc((chunk+2)*sizeof(double));
+			data[j] = (double *)fftw_malloc((chunk+2)*sizeof(double));
 			plan[j] = fftw_plan_dft_r2c_1d(nchan*2, data[j], zdata[j], FFTW_MEASURE);
 		}
 	}
@@ -295,7 +286,7 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 		for(j = 0; j < ms->nchan; ++j)
 		{
 			fftw_destroy_plan(plan[j]);
-			free(data[j]);
+			fftw_free(data[j]);
 		}
 		free(plan);
 		free(data);
@@ -316,7 +307,7 @@ int print_header(struct mark5_stream *ms, struct hd_info hi,FILE *fo)
 	m = i/60;
 	s = i-m*60;
 
-	strncpy(tmp,"KVNTN",5);
+	strcpy(tmp, "KVNTN");
 	//i=(int) strlen(ms->streamname);
 	//strncpy(tmp,(char *)strchr((char *)(ms->streamname+i+3),'_')+1,32);
 	//(strchr(tmp,'_'))[0]='\0';
@@ -360,7 +351,7 @@ int print_header(struct mark5_stream *ms, struct hd_info hi,FILE *fo)
 	printf("Frequency Ch.1  : %f\n",hi.freq);
 	printf("Sampling Time   : %d\n",hi.nint);
 	printf("Num bits/sample : 8\n");
-	printf("Data Format     : integer binary, little endian\n");
+	printf("Data Format     : integer binary, little-endian\n");
 	printf("Polarizations   : %s\n",hi.polid);
 	printf("MJD             : %d\n",ms->mjd+56000);
 	printf("UTC             : %02d:%02d:%02d\n",h,m,s);
@@ -449,7 +440,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	for(i = 0; i < ms->nchan; ++i)
 	{
 		spec[i] = (double *)calloc(nchan, sizeof(double));
-		zdata[i] = (fftw_complex *)malloc((nchan+2)*sizeof(fftw_complex));
+		zdata[i] = (fftw_complex *)fftw_malloc((nchan+2)*sizeof(fftw_complex));
 	}
 	for(i = 0; i < ms->nchan/2; ++i)
 	{
@@ -594,7 +585,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 
 	for(i = 0; i < ms->nchan; ++i)
 	{
-		free(zdata[i]);
+		fftw_free(zdata[i]);
 		free(spec[i]);
 	}
 	for(i = 0; i < ms->nchan/2; ++i)
@@ -652,7 +643,7 @@ int main(int argc, char **argv)
 
 			case 'a': // Ascii output
 				output_bin=0;
-				printf("Outputing ASCII file\n");
+				printf("Outputting ASCII file\n");
 				break;
 
 			case 'p': // polstring

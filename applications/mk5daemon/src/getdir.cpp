@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: getdir.cpp 6580 2015-03-26 14:04:13Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/getdir.cpp $
- * $LastChangedRevision: 6580 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2015-03-26 22:04:13 +0800 (四, 2015-03-26) $
- *
- *==========================================================================*/
 
 #include <cstdio>
 #include <cstring>

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: mk5putdir.cpp 7435 2016-08-27 14:56:44Z WalterBrisken $
- * $HeadURL: $
- * $LastChangedRevision: 7435 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2016-08-27 22:56:44 +0800 (六, 2016-08-27) $
- *
- *==========================================================================*/
 
 #include <cstdio>
 #include <cstdlib>

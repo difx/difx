@@ -14,16 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: DatePicker.py 10207 2021-09-24 09:43:24Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/tkinter/DatePicker.py $
-# $LastChangedRevision: 10207 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2021-09-24 17:43:24 +0800 (五, 2021-09-24) $
-#
-#============================================================================
 
 import calendar
 import datetime

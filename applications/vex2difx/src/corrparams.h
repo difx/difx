@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2021 by Walter Brisken                             *
+ *   Copyright (C) 2009-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: corrparams.h 10966 2023-05-09 06:52:03Z JanWagner $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/corrparams.h $
- * $LastChangedRevision: 10966 $
- * $Author: JanWagner $
- * $LastChangedDate: 2023-05-09 14:52:03 +0800 (二, 2023-05-09) $
- *
- *==========================================================================*/
 
 #ifndef __CORRPARAM_H__
 #define __CORRPARAM_H__
@@ -174,6 +164,7 @@ public:
 				// This is sometimes needed because format not known always at scheduling time
 				// Possible values: S2 VLBA MkIV/Mark4 Mark5B . Is converted to all caps on load
 	int frameSize;		// If set, a partial format override
+	int nBit;		// If set, a partial format override
 	std::set<int> recorderIds;	// List of recorder ids to associate with this datastream
 	enum DataSource dataSource;
 	enum SamplingType dataSampling;
@@ -211,6 +202,7 @@ public:
 	VexClock clock;
 	double deltaClock;	// [sec]
 	double deltaClockRate;	// [sec/sec]
+	double deltaClockAccel;	// [sec/sec^2]
 	// flag
 	bool polSwap;		// If true, swap polarizations
 	bool polConvert;	// request change of basis from RL->XY or XY->RL

@@ -1,4 +1,4 @@
-AC_INIT([dirlist], [0.2], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([dirlist], [0.3], [Walter Brisken <wbrisken@nrao.edu>])
 
 AC_CONFIG_HEADERS([config.h])
 

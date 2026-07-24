@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: zoomfreq.h 10673 2022-10-10 11:12:22Z JanWagner $
- * $HeadURL: $
- * $LastChangedRevision: 10673 $
- * $Author: JanWagner $
- * $LastChangedDate: 2022-10-10 19:12:22 +0800 (一, 2022-10-10) $
- *
- *==========================================================================*/
 
 #ifndef __ZOOMFREQ_H__
 #define __ZOOMFREQ_H__

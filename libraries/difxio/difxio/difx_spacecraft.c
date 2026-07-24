@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2021 by Walter Brisken                             *
+ *   Copyright (C) 2008-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_spacecraft.c 10303 2021-10-27 17:15:44Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_spacecraft.c $
-// $LastChangedRevision: 10303 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2021-10-28 01:15:44 +0800 (四, 2021-10-28) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +23,7 @@
 #include <math.h>
 #include "config.h"
 #include "difxio/difx_write.h"
+#include "difxio_macros.h"
 
 /* include spice files for spacecraft navigation if libraries are present */
 #if HAVE_SPICE
@@ -80,8 +71,8 @@ DifxSpacecraft *dupDifxSpacecraftArray(const DifxSpacecraft *src, int n)
 			dest[s].axisVectors = (RadioastronAxisVectors *)calloc(dest[s].nPoint, sizeof(RadioastronAxisVectors));
 			memcpy(dest[s].axisVectors, src[s].axisVectors, dest[s].nPoint*sizeof(RadioastronAxisVectors));
 		}
-		strncpy(dest[s].ephemFile, src[s].ephemFile, DIFXIO_FILENAME_LENGTH);
-		strncpy(dest[s].ephemObject, src[s].ephemObject, DIFXIO_NAME_LENGTH);
+		strncpy_warn(dest[s].ephemFile, src[s].ephemFile, DIFXIO_FILENAME_LENGTH);
+		strncpy_warn(dest[s].ephemObject, src[s].ephemObject, DIFXIO_NAME_LENGTH);
 	}
 
 	return dest;
@@ -552,8 +543,8 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 
 	/* TODO: add mechanism to just load in state vectors */
 
-	strncpy(ds->ephemFile, ephemFile, DIFXIO_FILENAME_LENGTH);
-	strncpy(ds->ephemObject, objectName, DIFXIO_NAME_LENGTH);
+	strncpy_warn(ds->ephemFile, ephemFile, DIFXIO_FILENAME_LENGTH);
+	strncpy_warn(ds->ephemObject, objectName, DIFXIO_NAME_LENGTH);
 
 	l = strlen(ephemFile);
 	if(l > 4 && strcmp(ephemFile+l-4, ".bsp") == 0)
@@ -588,9 +579,9 @@ int computeDifxSpacecraftTwoLineElement(DifxSpacecraft *ds, double mjd0, double 
 		ldpool_c(naifFile);
 	}
 
-	strncpy(lines[0], line1, MaxLineLength);
+	strncpy_warn(lines[0], line1, MaxLineLength);
 	lines[0][MaxLineLength-1] = 0;
-	strncpy(lines[1], line2, MaxLineLength);
+	strncpy_warn(lines[1], line2, MaxLineLength);
 	lines[1][MaxLineLength-1] = 0;
 
 	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and intializing */
@@ -655,8 +646,8 @@ static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)
 	dest->nPoint = src->nPoint;
 	dest->pos = (sixVector *)calloc(dest->nPoint, sizeof(sixVector));
 	memcpy(dest->pos, src->pos, dest->nPoint*sizeof(sixVector));
-	strncpy(dest->ephemFile, src->ephemFile, DIFXIO_FILENAME_LENGTH);
-	strncpy(dest->ephemObject, src->ephemObject, DIFXIO_NAME_LENGTH);
+	strncpy_warn(dest->ephemFile, src->ephemFile, DIFXIO_FILENAME_LENGTH);
+	strncpy_warn(dest->ephemObject, src->ephemObject, DIFXIO_NAME_LENGTH);
 }
 
 static void mergeSpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src1, const DifxSpacecraft *src2)

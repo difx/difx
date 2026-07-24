@@ -45,6 +45,7 @@ make
 %{_bindir}/extractVDIFThreads
 %{_bindir}/filterVDIF
 %{_bindir}/countVDIFPackets
+%{_bindir}/invalidateVDIFPackets
 %{_bindir}/printVDIF
 %{_bindir}/printVDIFheader
 %{_bindir}/searchVDIF
@@ -57,6 +58,10 @@ make
 %{_bindir}/vdifspec
 %{_bindir}/vdiffold
 %{_bindir}/vdifbstate
+%{_bindir}/vdifMeanRMS
+%{_bindir}/vdifPhase
+%{_bindir}/vdifStateCount
+%{_bindir}/vdifpcal
 %{_bindir}/printVDIFgaps
 %{_bindir}/vdifChanSelect
 %{_bindir}/checkVDIF

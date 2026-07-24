@@ -1,7 +1,25 @@
+Version 1.8
+~~~~~~~~~~
+* add correct use of D->job->antennaIdRemap[] as in DiFX 2.5.5 and 2.6.3, which never made it into SVN Trunk nor 2.8 somehow
+* I think some of the below are duplicates of entries in Version 1.7 - but came in after DiFX-2.8
+* Correct bugs that occurred for stations with multiple datastreams
+* fix for difx2mark4 t309 in-band tone freq offsets that inadvertently exceeded the recorded bandwidth
+* update d2m4 pfb[] bookeeping
+* d2m4 normalize() improved pmap[] so it maps all redundant vex2difx-introduced freq IDs back to the first corresponding freq ID
+* tidied up use of 'filteredbw' over 'opts->bandwidth'
+* increase d2m4 NVRMAX to 98304000 like used in difx 281
+* Version for DiFX-2.9, August 2025
+
 Version 1.7
 ~~~~~~~~~~~
 * rjc 2020.6.26
 * fix parallactic angle bug in first t303 record
+* improved frequency table bookkeeping, avoiding duplicates, registering outputbands
+* fixed bug in '-w <bandwidth MHz>' that dropped all zooms at edges of parent bands
+* re-fixed issue of '-d' (or *.input) not working due to ignored DiFX antenna Id remap
+* fixed a normalization issue where autocorrelations were not looked up by their
+  actual DiFX freq IDs, stemming from vex2difx behaviour that creates own freq IDs for
+  every station that has a differing PCal spacing
 * Version for DiFX-2.8, Nov 4, 2022
 
 Version 1.6

@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (C) 2007-2022 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2007-2024 by Walter Brisken, Adam Deller,               *
+ *                              Helge Rottmann and Jan Wagner              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +17,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_input.h 10862 2022-12-29 19:23:21Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_input.h $
-// $LastChangedRevision: 10862 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-12-29 12:23:21 -0700 (Thu, 29 Dec 2022) $
-//
-//============================================================================
 
 #ifndef __DIFX_INPUT_H__
 #define __DIFX_INPUT_H__
@@ -54,7 +45,7 @@
 
 #define DIFXIO_FILENAME_LENGTH		PATH_MAX
 #define DIFXIO_NAME_LENGTH		32
-#define DIFXIO_FORMAT_LENGTH		128
+#define DIFXIO_FORMAT_LENGTH		512
 #define DIFXIO_CALCODE_LENGTH		4
 #define DIFXIO_VERSION_LENGTH		64
 #define DIFXIO_HOSTNAME_LENGTH		256

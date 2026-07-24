@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: remap.c 7665 2017-02-24 16:46:45Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 7665 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-02-25 00:46:45 +0800 (六, 2017-02-25) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

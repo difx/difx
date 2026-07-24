@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5access.h 795 2008-09-15 13:34:00Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/mark5access.h $
-// $LastChangedRevision: 795 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2008-09-15 21:34:00 +0800 (一, 2008-09-15) $
-//
-//============================================================================
 #ifndef MARK5ACCESS_H
 #define MARK5ACCESS_H
 

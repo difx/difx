@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vexdatamodel.h 7343 2016-06-14 16:29:17Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_input.h $
-// $LastChangedRevision: 7343 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2016-06-15 00:29:17 +0800 (三, 2016-06-15) $
-//
-//============================================================================
 
 
 #ifndef __VEXDATAMODEL_H__

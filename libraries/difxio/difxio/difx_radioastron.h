@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_radioastron.h 7261 2016-02-27 00:28:17Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/parsevis.h $
-// $LastChangedRevision: 7261 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2016-02-27 08:28:17 +0800 (六, 2016-02-27) $
-//
-//============================================================================
 
 #ifndef __RADIOASTRON_H__
 #define __RADIOASTRON_H__

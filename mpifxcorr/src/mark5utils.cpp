@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: mark5utils.cpp 5453 2013-06-28 02:13:50Z WalterBrisken $
- * $HeadURL: $
- * $LastChangedRevision: 5453 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2013-06-27 20:13:50 -0600 (Thu, 27 Jun 2013) $
- *
- *==========================================================================*/
 
 #include <cstdio>
 #include <cstring>

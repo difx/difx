@@ -15,7 +15,7 @@ import shutil
 import re
 import sys
 
-pcvers='2.0.7'
+pcvers='2.0.7b'
 if sys.version_info.major < 3:
     print('py2 polconvert execution in runpolconvert v' + pcvers)
 elif 'CASASTANDALONE' in os.environ and bool(os.environ['CASASTANDALONE'] is 'True'):
@@ -53,11 +53,11 @@ if v4tables is None:
 try:
     aantpath = ('%s/%s.'+qa2['a'])%(DiFXout,conlabel) # ANTENNA
     calapphs = ('%s/%s.'+qa2['c'])%(DiFXout,conlabel) # calappphase
-    dtermcal = ('%s/%s.'+qa2['d'])%(DiFXout,callabel) # Df0
-    bandpass = ('%s/%s.'+qa2['b'])%(DiFXout,conlabel) # bandpass-zphs
+    dtermcal = ('%s/%s.'+qa2['d'])%(DiFXout,callabel) # Df0 | Df0gen
+    bandpass = ('%s/%s.'+qa2['b'])%(DiFXout,conlabel) # bandpass-zphs | bandpassAPP
     ampgains = ('%s/%s.'+qa2['g'])%(DiFXout,conlabel) # flux_inf.APP
-    phsgains = ('%s/%s.'+qa2['p'])%(DiFXout,conlabel) # phase_int.APP*
-    xyrelphs = ('%s/%s.'+qa2['x'])%(DiFXout,callabel) # XY0.APP or XY0.ALMA
+    phsgains = ('%s/%s.'+qa2['p'])%(DiFXout,conlabel) # phase_int.APP[.XYsmooth]
+    xyrelphs = ('%s/%s.'+qa2['x'])%(DiFXout,callabel) # XY0.APP or XY0.ALMA | XY0kcrs.APP or XY0kcrs.ALMA
     gxyampli = ('%s/%s.'+qa2['y'])%(DiFXout,callabel) # Gxyamp.APP/Gxyamp.ALMA
     if v4tables:    #production v4
         calgains = [aantpath, calapphs, dtermcal,
@@ -240,9 +240,9 @@ def runPolConvert(label, spw=-1, DiFXinput='',
         gains = gains[0:3]
         interpolation = interpolation[0:3]
 
-    # set the gaintype array to gainmeth, except for bandpass and XY0
+    # set the gaintype array to gainmeth, except for bandpass and XY0 / XYsmooth which have to be G
     gaintype = ['G' if ('XY0' in g or 'bandpass' in g or
-        'Gxyamp' in g) else gainmeth for g in gains]
+        'Gxyamp' in g or 'XYsmooth' in g) else gainmeth for g in gains]
 
     # PolConvert gets upset with no gains
     if len(gains) == 0:

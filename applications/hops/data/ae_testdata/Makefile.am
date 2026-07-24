@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 2875 2019-10-09 14:44:35Z barrettj $
+# $Id: Makefile.am 4380 2025-07-20 18:14:06Z gbc $
 #
 
 #AUTOMAKE_OPTIONS = serial-tests 
@@ -22,10 +22,10 @@ TESTS_ENVIRONMENT = \
 	GS_DEVICE=$(test_gs_device) PGPLOT_DIR=$(PGPLOT_DIR)
 
 if HAVE_DEVEL
-TESTS = chk_env.sh chk_fsumm.sh
+TESTS = chk_env.sh chk_fsumm.sh chk_aedit_help.sh
 expdata = $(AEDATA1) $(AEDATA2)
 else
-TESTS = chk_env.sh chk_fsumm.sh
+TESTS = chk_env.sh chk_fsumm.sh chk_aedit_help.sh
 expdata = $(AEDATA1)
 endif
 
@@ -33,7 +33,7 @@ EXTRA_DIST = $(expdata)
 
 dist_check_SCRIPTS = $(TESTS)
 
-CLEANFILES = blk_stmt.txt pformat.txt *.?summ
+CLEANFILES = blk_stmt.txt pformat.txt *.?summ aeherrs
 
 clean-local:
 

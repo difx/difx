@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: difxcalculator.c 1419 2009-08-29 21:37:08Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/branches/difx-1.5/utils/difxcalculator.c $
- * $LastChangedRevision: 1419 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2009-08-29 15:37:08 -0600 (Sat, 29 Aug 2009) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>

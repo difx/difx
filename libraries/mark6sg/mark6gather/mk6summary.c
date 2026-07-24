@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mk6summary.c 7590 2016-12-07 00:41:57Z ChrisPhillips $
-// $HeadURL: $
-// $LastChangedRevision: 7590 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2016-12-06 18:41:57 -0600 (Tue, 06 Dec 2016) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

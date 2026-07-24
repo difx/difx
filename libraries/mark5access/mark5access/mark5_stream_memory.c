@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2015 by Walter Brisken                             *
+ *   Copyright (C) 2006-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5_stream_memory.c 7053 2015-10-28 15:31:15Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/mark5access/mark5_stream_memory.c $
-// $LastChangedRevision: 7053 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2015-10-28 23:31:15 +0800 (三, 2015-10-28) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

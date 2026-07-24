@@ -72,7 +72,10 @@ def getEvs(antab):
     construct the job prefix (glob)
     '''
     ersplit = re.sub(r'-AA.antab', '', antab).split('-')
-    evs = ersplit[0] + '-*-' + ersplit[2]
+    if len(ersplit) > 2:
+        evs = ersplit[0] + '-*-' + ersplit[2]
+    else:
+        evs = ersplit[0]
     return evs
 
 def getJnum(antab):

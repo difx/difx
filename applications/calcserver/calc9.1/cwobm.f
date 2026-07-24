@@ -367,7 +367,7 @@ C   Verify that the wobble control flag is okay.
         Write(6,'(
      *  "In WOBI, Wobble module control flag has invalid value.",/,
      *  "KWOBC =",i5)') KWOBC
-        Call CKill(6hWOBI  ,0,0)
+        CALL CKILL('WOBI', int2(0), int2(0))
       Endif
 C ---------------------------------------------------------------------------
 C  If using data base EOP input, get the X and Y wobble values from the data 
@@ -416,13 +416,13 @@ C
       If(KERR(1).eq.2) Then
         Write(6,'(
      .  "In WOBI: The wobble table in database has wrong size.")')
-        Call CKill(6hWOBI  ,KERR(1),1)
+        CALL CKILL('WOBI', int2(KERR(1)), int2(1))
       Endif
 C
       If (.not.table_found) Then
         Write(6,'(
      .  "This database contains NO polar motion data. Quitting!")')
-        CALL CKILL(6HWOBI  ,5,KERR(5))
+        CALL CKILL('WOBI', int2(5), int2(KERR(5)))
       Endif
 C
       Increment = WOBIF(2) + 0.01
@@ -433,7 +433,7 @@ C
      .  "The length of the wobble table from the database is",I5,/,
      .  "CALC Wobble module currently supports only",I5)') Tab_len,
      .  LEN_WOB_TABLE
-        CALL CKILL(6hWOBI,0,0)
+        CALL CKILL('WOBI', int2(0), int2(0))
       Endif
 C
       ELSE                           !Data Base or External Input?
@@ -495,7 +495,7 @@ C        'GET' the tabular values, if not external input.
      .   CALL GET4 ('PWOBX&YT      ',XYWOB,2,Tab_len,1,NDO,KERR(6))
         If(type_found.eq.'X')
      .   CALL GET4 ('EWOBX&YT      ',XYWOB,2,Tab_len,1,NDO,KERR(6))
-        If(KERR(6).ne.0) Call CKill(6hWOBI  ,6,kerr(6))
+        If(KERR(6).ne.0) CALL CKILL('WOBI', int2(6), int2(kerr(6)))
       ENDIF
 C
 C  'PUT' the module text message.
@@ -556,7 +556,7 @@ C
         MEPOCH = NEPOCH
         IF (MEPOCH .GT. MXEPCH) MEPOCH = MXEPCH
         CALL GET4('ROTEPOCH      ',ROTEPH,2,MEPOCH,1,NDO,KERR(7))
-        IF (KERR(7) .NE. 0) CALL CKILL(6HWOBI  ,7,KERR(7))
+        IF (KERR(7) .NE. 0) CALL CKILL('WOBI', int2(7), int2(KERR(7)))
       ELSE
         MEPOCH = ndays
       ENDIF
@@ -1344,7 +1344,7 @@ C   Code for linear interpolation
           Write(6,'(
      .    "Error in WOBMU! Attempted to interpolate polar motion",/,
      .    "outside of PM table. INT =",i5)') INT
-       Call CKILL(6hWOBMU ,0,0)
+       CALL CKILL('WOBMU', int2(0), int2(0))
         Endif
 C
 C   Interpolate linearly. Don't change the units.
@@ -1406,5 +1406,5 @@ C     Abnormal conclusion.
  9300 FORMAT (1X, ' CALC has terminated in subroutine WOBMU.',/,
      . ' The interpolation is outside the range of the wobble table.',
      . /,'  NN = ', I2, ' ILAST = ', I2, '.' )
-      CALL CKILL (6HWOBMU , 0, 0)
+      CALL CKILL('WOBMU', int2(0), int2(0))
       END

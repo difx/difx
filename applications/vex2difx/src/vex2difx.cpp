@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2024 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2025 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,6 +31,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <difxio/difx_input.h>
+#include <difxio/difxio_macros.h>
 #include <difxmessage.h>
 #include <vexdatamodel.h>
 
@@ -50,7 +51,6 @@ using namespace std;
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20221115");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -154,29 +154,25 @@ static DifxJob *makeDifxJob(string directory, const Job& J, int nAntenna, const 
 		exit(EXIT_FAILURE);
 	}
 
-	snprintf(job->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input", fileBase);
-	snprintf(job->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc",  fileBase);
-	snprintf(job->flagFile,    DIFXIO_FILENAME_LENGTH, "%s.flag",  fileBase);
-	snprintf(job->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im",    fileBase);
+	snprintf_warn(job->inputFile, DIFXIO_FILENAME_LENGTH, "%s.input", fileBase);
+	snprintf_warn(job->calcFile,  DIFXIO_FILENAME_LENGTH, "%s.calc",  fileBase);
+	snprintf_warn(job->flagFile,  DIFXIO_FILENAME_LENGTH, "%s.flag",  fileBase);
+	snprintf_warn(job->imFile,    DIFXIO_FILENAME_LENGTH, "%s.im",    fileBase);
 	if(P->outPath.empty())
 	{
-		snprintf(job->outputFile, DIFXIO_FILENAME_LENGTH, "%s.difx", fileBase);
+		snprintf_warn(job->outputFile, DIFXIO_FILENAME_LENGTH, "%s.difx", fileBase);
 	}
 	else
 	{
-		snprintf(job->outputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx", P->outPath.c_str(), jobName);
+		snprintf_warn(job->outputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx", P->outPath.c_str(), jobName);
 	}
 	if(P->threadsFile.empty())
 	{
-		v = snprintf(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", fileBase);
+		snprintf_warn(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", fileBase);
 	}
 	else
 	{
-		v = snprintf(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s", P->threadsFile.c_str());
-	}
-	if(v >= DIFXIO_FILENAME_LENGTH)
-	{
-		cerr << "Developer error: makeDifxJob: threadsFile wanted " << v << " bytes, not " << DIFXIO_FILENAME_LENGTH << " .  Truncating."  << endl;
+		snprintf_warn(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s", P->threadsFile.c_str());
 	}
 
 	return job;
@@ -755,7 +751,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 	int nFreq;
 	DifxBaseline *bl;
 	DifxConfig *config;
-	int freqId, destFreqId, altFreqId, blId, configId;
+	int freqId, destFreqId, destFreqId2, blId, configId;
 	double lowedgefreq, altlowedgefreq;
 	double globalBandwidth = 0;
 
@@ -954,6 +950,11 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 			// Here we disable "normal" autocorrelations and instead construct autocorrs as baselines
 			// This allows us to grab cross-hand autocorrs when the polarisations are in different baselines
 
+			// The sideband convention for the cross product of the two bands selected above is:
+			// - LSB/LSB produces an LSB visibility
+			// - USB/USB produces an USB visibility
+			// - mixed-sideband (LSB/USB, USB/LSB) produce an USB visibility
+
 			int enda1 = D->nAntenna-1;
 			if(P->exhaustiveAutocorrs)
 			{
@@ -1025,12 +1026,14 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 							nFreq = 0; // this counts the actual number of freqs
 
+							// Antenna 1 recorded bands vs. all bands of antenna 2
 							for(int f = 0; f < D->datastream[ds1].nRecFreq; ++f)
 							{
 								bool zoom2 = false;	// did antenna 2 zoom band make match?
 
 								freqId = D->datastream[ds1].recFreqId[f];
 								destFreqId = D->datastream[ds1].recFreqDestId[f];
+								destFreqId2 = -1;
 
 								if(strcmp(D->freq[freqId].rxName, "null") == 0)
 								{
@@ -1067,7 +1070,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									//look for another freqId which matches band but is opposite sideband
 									for(int f2 = 0; f2 < D->datastream[ds2].nRecFreq; ++f2)
 									{
-										altFreqId = D->datastream[ds2].recFreqId[f2];
+										int altFreqId = D->datastream[ds2].recFreqId[f2];
 										altlowedgefreq = D->freq[altFreqId].freq;
 										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
 										{
@@ -1086,6 +1089,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										   D->freq[freqId].bw == D->freq[altFreqId].bw)
 										{
 											n2 = DifxDatastreamGetRecBands(D->datastream+ds2, altFreqId, a2p, a2c);
+											destFreqId2 = D->datastream[ds2].recFreqDestId[f2];
 										}
 									}
 								}
@@ -1094,7 +1098,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									//still no dice? Try the zoom bands of datastream 2 with the same sideband
 									for(int f2 = 0; f2 < D->datastream[ds2].nZoomFreq; ++f2)
 									{
-										altFreqId = D->datastream[ds2].zoomFreqId[f2];
+										int altFreqId = D->datastream[ds2].zoomFreqId[f2];
 										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
 										{
 											continue;
@@ -1104,6 +1108,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										   D->freq[freqId].sideband == D->freq[altFreqId].sideband)
 										{
 											n2 = DifxDatastreamGetZoomBands(D->datastream+ds2, altFreqId, a2p, a2c);
+											destFreqId2 = D->datastream[ds2].zoomFreqDestId[f2];
 											zoom2 = true;
 										}
 									}
@@ -1113,7 +1118,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									//still no dice? Try the opposite sidebands of zoom bands of datastream 2
 									for(int f2 = 0; f2 < D->datastream[ds2].nZoomFreq; ++f2)
 									{
-										altFreqId = D->datastream[ds2].zoomFreqId[f2];
+										int altFreqId = D->datastream[ds2].zoomFreqId[f2];
 										altlowedgefreq = D->freq[altFreqId].freq;
 										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
 										{
@@ -1127,6 +1132,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										   D->freq[freqId].bw == D->freq[altFreqId].bw)
 										{
 											n2 = DifxDatastreamGetZoomBands(D->datastream+ds2, altFreqId, a2p, a2c);
+											destFreqId2 = D->datastream[ds2].zoomFreqDestId[f2];
 											zoom2 = true;
 										}
 									}
@@ -1149,8 +1155,13 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										}
 									}
 								}
-								bl->destFq[nFreq] = destFreqId;
 								bl->nPolProd[nFreq] = nPol;
+
+								if(destFreqId2 >= 0 && D->freq[destFreqId].sideband == 'L' && D->freq[destFreqId2].sideband == 'U')
+								{
+									destFreqId = destFreqId2;
+								}
+								bl->destFq[nFreq] = destFreqId;
 
 								if(nPol == 0)
 								{
@@ -1175,6 +1186,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								++nFreq;
 							}
 
+							// Antenna 1 zoom bands vs. all bands of antenna 2
 							for(int f = 0; f < D->datastream[ds1].nZoomFreq; ++f)
 							{
 								bool zoom2 = false;	// did antenna 2 zoom band make match?
@@ -1183,6 +1195,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 								freqId = D->datastream[ds1].zoomFreqId[f];
 								destFreqId = D->datastream[ds1].zoomFreqDestId[f];
+								destFreqId2 = -1;
 
 								// Unlike for recbands, don't query corrSetup->correlateFreqId as all defined zoom bands should be correlated
 
@@ -1198,7 +1211,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 
 								for(int f2 = 0; f2 < D->datastream[ds2].nRecFreq; ++f2)
 								{
-									altFreqId = D->datastream[ds2].recFreqId[f2];
+									int altFreqId = D->datastream[ds2].recFreqId[f2];
 									if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
 									{
 										continue;
@@ -1208,6 +1221,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									   D->freq[altFreqId].sideband == 'U')
 									{
 										n2 = DifxDatastreamGetRecBands(D->datastream+ds2, altFreqId, a2p, a2c);
+										destFreqId2 = D->datastream[ds2].recFreqDestId[f2];
 									}
 								}
 
@@ -1216,7 +1230,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 									//look for another freqId which matches band but is opposite sideband
 									for(int f2 = 0; f2 < D->datastream[ds2].nRecFreq; ++f2)
 									{
-										altFreqId = D->datastream[ds2].recFreqId[f2];
+										int altFreqId = D->datastream[ds2].recFreqId[f2];
 										altlowedgefreq = D->freq[altFreqId].freq;
 										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
 										{
@@ -1230,23 +1244,28 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										   D->freq[freqId].bw == D->freq[altFreqId].bw)
 										{
 											n2 = DifxDatastreamGetRecBands(D->datastream+ds2, altFreqId, a2p, a2c);
+											destFreqId2 = D->datastream[ds2].recFreqDestId[f2];
 										}
 									}
 								}
+
 								if(n2 == 0)
 								{
+									//still no dice? Try same sideband zoom bands of datastream 2
 									n2 = DifxDatastreamGetZoomBands(D->datastream+ds2, freqId, a2p, a2c);
 									if(n2 > 0)
 									{
+										destFreqId2 = D->datastream[ds2].zoomFreqDestId[a2c[0]];
 										zoom2 = true;
 									}
 								}
+
 								if(n2 == 0)
 								{
 									//still no dice? Try the opposite sidebands of zoom bands of datastream 2
 									for(int f2 = 0; f2 < D->datastream[ds2].nZoomFreq; ++f2)
 									{
-										altFreqId = D->datastream[ds2].zoomFreqId[f2];
+										int altFreqId = D->datastream[ds2].zoomFreqId[f2];
 										altlowedgefreq = D->freq[altFreqId].freq;
 										if(!blockedfreqids[a2].empty() && blockedfreqids[a2].find(altFreqId) != blockedfreqids[a2].end())
 										{
@@ -1260,6 +1279,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										   D->freq[freqId].bw == D->freq[altFreqId].bw)
 										{
 											n2 = DifxDatastreamGetZoomBands(D->datastream+ds2, altFreqId, a2p, a2c);
+											destFreqId2 = D->datastream[ds2].zoomFreqDestId[f2];
 											zoom2 = true;
 										}
 									}
@@ -1282,8 +1302,13 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 										}
 									}
 								}
-								bl->destFq[nFreq] = destFreqId;
 								bl->nPolProd[nFreq] = nPol;
+
+								if(destFreqId2 >= 0 && D->freq[destFreqId].sideband == 'L' && D->freq[destFreqId2].sideband == 'U')
+								{
+									destFreqId = destFreqId2;
+								}
+								bl->destFq[nFreq] = destFreqId;
 
 								if(nPol == 0)
 								{
@@ -2565,7 +2590,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 									blockedfreqids[dd->antennaId].insert(dd->recFreqId[parentFreqIndices[nZoom]]);
 								}
 //Corner case BUG: if an LSB-flipping-only zoom *actually* is output, i.e. zoom equal to output,
-//_but_ output fqId differs due to bookkeeping from zoom fqId index, we incorrectly block the LSB-flip...
+//_but_ output fqId differs due to PCal-related bookkeeping from zoom fqId index, we incorrectly block the LSB-flip...
 //Commenting out for now:
 //								if(dd->zoomFreqId[nZoom] != dd->zoomFreqDestId[nZoom])
 //								{
@@ -2918,7 +2943,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 static void usage(int argc, char **argv)
 {
 	cout << endl;
-	cout << program << " version " << version << "  " << author << " " << verdate << endl;
+	cout << program << " version " << version << "  " << author << endl;
 	cout << endl;
 	cout << "Usage:  " << argv[0] << " [<options>] <v2d file>" << endl;
 	cout << endl;
@@ -2956,7 +2981,7 @@ static void usage(int argc, char **argv)
 	cout << "            you intend." << endl;
 	cout << "  * Error   " << program << " could not complete due to this problem." << endl;
 	cout << endl;
-	cout << "See https://atnf.csiro.au/vlbi/dokuwiki/doku.php/difx/vex2difx for more information" << endl;
+	cout << "See https://github.com/difx/difx/wiki/vex2difx for more information" << endl;
 	cout << endl;
 	cout << "NOTE: This version now supports much of the vex2 specification (as well as the" << endl;
 	cout << "vex 1.5 specification) but it is only lightly tested.  Proceed with caution." << endl;
@@ -3249,6 +3274,7 @@ int main(int argc, char **argv)
 	}
 
 	applyCorrParams(V, *P, nWarn, nError, canonicalVDIFUsers);
+
 	calculateScanSizes(V, *P);
 
 	if(!canonicalVDIFUsers.empty())

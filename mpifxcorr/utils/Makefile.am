@@ -2,7 +2,7 @@ AM_CPPFLAGS = \
 	-I$(top_builddir)/src \
 	-I$(top_srcdir)/src
 
-bin_PROGRAMS = checkmpifxcorr dedisperse_difx mpispeed
+bin_PROGRAMS = checkmpifxcorr dedisperse_difx mpispeed mpiinittest
 
 dist_bin_SCRIPTS = \
 	genmachines.py \
@@ -19,12 +19,15 @@ checkmpifxcorr_SOURCES = \
 dedisperse_difx_SOURCES = \
 	dedisperse_difx.cpp
 
+mpiinittest_SOURCES = \
+	mpiinittest.cpp
+
 mpispeed_SOURCES = \
 	mpispeed.cpp
 
-checkmpifxcorr_LDADD = ../src/libmpifxcorr.a
+checkmpifxcorr_LDADD = ../src/libmpifxcorr.a ${mathlibs}
 
-dedisperse_difx_LDADD = ../src/libmpifxcorr.a
+dedisperse_difx_LDADD = ../src/libmpifxcorr.a ${mathlibs}
 
 install-exec-hook:
 	mv $(DESTDIR)$(bindir)/genmachines.py $(DESTDIR)$(bindir)/genmachines

@@ -15,16 +15,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: filterDifx2Mark4.py 10598 2022-08-18 07:34:21Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/misc/filterDifx2Mark4.py $
-# $LastChangedRevision: 10598 $
-# $Author: JanWagner $
-# $LastChangedDate: 2022-08-18 15:34:21 +0800 (四, 2022-08-18) $
-#
-#============================================================================
 import os
 import sys
 import glob

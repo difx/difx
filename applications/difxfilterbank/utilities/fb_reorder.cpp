@@ -139,7 +139,8 @@ void parse_cmdline(const int argc, char * const argv[], GlobalOptions *options);
 void print_usage();
 
 // globals
-static int debug=0,buf_debug=3437;
+static int debug=0;
+//static int buf_debug=3437;
 static int64_t scan_start_time_ns=0;
 static FILE *fpd;
 
@@ -764,7 +765,6 @@ This is where the weighted median of the Tcal signal is subtracted.
 Also apply some simple auto-flagging rules if required.
 ******************************/
 int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
-    static int have_non_zero =0;
     static int64_t last_median_time_ns=0;
 
     ChunkHeader header;
@@ -907,7 +907,6 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
         }
       }
 
-      have_non_zero = 1;
       if (debug) fprintf(fpd,"Sent buffer for time: %d.%09d. Additions: %f\n",bufinfo->buffers[buf_ind].time_s,
                             bufinfo->buffers[buf_ind].time_ns, bufinfo->buffers[buf_ind].n_added);
 

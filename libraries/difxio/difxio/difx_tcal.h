@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_tcal.h 7701 2017-04-12 13:25:51Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/parsevis.h $
-// $LastChangedRevision: 7701 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-04-12 21:25:51 +0800 (三, 2017-04-12) $
-//
-//============================================================================
 
 /* TODO:
  * o Offer more different interpolation types

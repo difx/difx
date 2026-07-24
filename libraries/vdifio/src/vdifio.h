@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2020 by Adam Deller / Walter Brisken               *
+ *   Copyright (C) 2009-2024 by Adam Deller / Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdifio.h 9925 2021-02-23 15:43:09Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/vdifio/src/vdifio.h $
-// $LastChangedRevision: 9925 $
-// $Author: JanWagner $
-// $LastChangedDate: 2021-02-23 23:43:09 +0800 (二, 2021-02-23) $
-//
-//============================================================================
 	
 #ifndef __VDIFIO_H__
 #define __VDIFIO_H__

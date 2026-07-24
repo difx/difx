@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2017 Walter Brisken                                *
+ *   Copyright (C) 2013-2024                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,15 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdiffile.c 8223 2018-03-28 13:00:49Z JanWagner $
-// $HeadURL: $
-// $LastChangedRevision: 8223 $
-// $Author: JanWagner $
-// $LastChangedDate: 2018-03-28 15:00:49 +0200 (Wed, 28 Mar 2018) $
-//
 //============================================================================
 //
 // Assistive VDIF reader. Allows opening a (multi-threaded) VDIF file and
@@ -405,7 +396,7 @@ static int vdifreader_estimate_fps(struct vdif_file_reader *rd)
 	// Max expected FPS: assume 16 Gbps at current frame size (max the Mark6 can cope with)
 	const int max_fps = (rd->details.nThread + 1) * 16e9 / (8.0 * (rd->details.frameSize - sizeof(vdif_header)));
 
-	// Go to beginnig of file
+	// Go to beginning of file
 	off_t orig_pos;
 
 	orig_pos = ftello(rd->fd[0]);
@@ -607,7 +598,7 @@ static int vdifreader_get_frame(struct vdif_file_reader *rd, int threadIdx, int 
 	}
 	else
 	{
-		// TODO: could honor the 'offset' here rather than use it only for the fillpattern
+		// TODO: could honor the 'offset' here rather than use it only for the fill pattern
 
 		// Actual frame from underlying thread-file
 		if (fread(outbuf, 1, nbyte, rd->fd[threadIdx]) < 1)

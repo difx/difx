@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: VisibilityHeader.py 10140 2021-09-09 11:47:57Z HelgeRottmann $
-# $HeadURL: $
-# $LastChangedRevision: 10140 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2021-09-09 19:47:57 +0800 (四, 2021-09-09) $
-#
-#============================================================================
 
 
 

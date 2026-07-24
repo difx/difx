@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019 by Walter Brisken                                  *
+ *   Copyright (C) 2019-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id$
- * $HeadURL: $
- * $LastChangedRevision$
- * $Author$
- * $LastChangedDate$
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <string.h>
@@ -36,8 +26,8 @@
 
 const char program[] = "difxvmf";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.2";
-const char verdate[] = "20190821";
+const char version[] = "0.3";
+const char verdate[] = "20250613";
 
 void usage()
 {
@@ -55,7 +45,7 @@ void usage()
 	printf("  DIFX_VMF_DATA : writable directory for caching downloaded VMF coefficients\n\n");
 	printf("This program takes a DiFX fileset (including the .im file) and modifies the wet\n");
 	printf("and dry troposphere values based on the Vienna Mapping Functions.  This program\n");
-	printf("retrieves the needed external data from http://vmf.geo.tuwien.ac.at .  The .im\n");
+	printf("retrieves the needed external data from https://vmf.geo.tuwien.ac.at .  The .im\n");
 	printf("file will be replaced with an updated version.\n\n");
 	printf("If --usewx is specified, files of the form <project>.<stn>.weather will be looked\n");
 	printf("for in the local directory and used to supply metrology data, overriding defaults.\n\n");

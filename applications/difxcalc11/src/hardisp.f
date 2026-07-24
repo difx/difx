@@ -910,8 +910,9 @@
 !
       IGAP = N
 !
-      DO 1 I = 1,N
- 1    K(I) = I
+      DO I = 1,N
+        K(I) = I
+      ENDDO
  5    IF(IGAP.LE.1) GO TO 25
 !
       IGAP = IGAP/2

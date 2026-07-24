@@ -253,6 +253,12 @@ static double vanVleck(int b1, int b2)
 		}
 	}
 
+	/* If both datastreams use 8 or more bits and the above table does not have an entry, it is reasonabl to assume that 1.0 is close enough */
+	if(b1 >= 8 && b2 >= 8)
+	{
+		return 1.0;
+	}
+
 	return 0.0;	/* effectively an error code */
 }
 
@@ -956,11 +962,11 @@ int DifxVisNewUVData(DifxVis *dv, const struct CommandLineOptions *opts, const D
 	{
 		for(i = 0; i < 2; ++i)
 		{
-			if (polPair[i] == 'X')
+			if (polPair[i] == 'X' || polPair[i] == 'H')
 			{
 				polPair[i] = 'R';
 			}
-			else if (polPair[i] == 'Y')
+			else if (polPair[i] == 'Y' || polPair[i] == 'V')
 			{
 				polPair[i] = 'L';
 			}
@@ -1836,6 +1842,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 #ifdef HAVE_FFTW
 				if(S)
 				{
+					flushSniffer(S);
 					deleteSniffer(S);
 					fftw_cleanup();
 					S = 0;
@@ -1876,6 +1883,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 #ifdef HAVE_FFTW
 	if(S)
 	{
+		flushSniffer(S);
 		deleteSniffer(S);
 		fftw_cleanup();
 		S = 0;

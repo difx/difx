@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2016-2017 by Walter Brisken                             *
+ *   Copyright (C) 2016-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: dirlist_datum_mark6.cpp 7763 2017-05-16 18:18:27Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 7763 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-05-17 02:18:27 +0800 (三, 2017-05-17) $
-//
-//============================================================================
 
 #include <sstream>
 #include <iostream>
@@ -320,7 +310,6 @@ int loadMark6SList(DirList &D, const char *fileName, std::stringstream &error)
 			break;
 		case LookingForId:
 			scanId.clear();
-			scanId.str();
 			if(isdigit(str[i]))
 			{
 				state = GettingId;

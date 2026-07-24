@@ -45,7 +45,7 @@ The install-difx options are:
 
    --mk5daemon     Install mk5daemon (not installed by default)
 
-   --perl          Install some non-standard perl utilities (deprecated)
+   --perl          Install some non-standard perl utilities 
 
    --withmonitor   Try to build the difx_monitor application (requires pgplot)
 
@@ -64,6 +64,9 @@ The install-difx options are:
    --withpython    Build Python bindings for certain libraries (requires ctypes)
 
    --withdatasim   Build the datasim application (requires gsl)
+
+   --withspice='installed SPICE directory' Build difxcalc including near-field
+                   making using of SPICE installed at this location
 
    --noinstall     Don't install, only build.
 
@@ -105,7 +108,7 @@ The install-difx options are:
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
                     "mpifxcorr", "difxfilterbank", "hops", "m6support",
                     "polconvert", "guiServer", "mk5daemon", "difx_monitor",
-                    "datasim", "difxcalc11", "mark6sg", "mark6meta"]
+                    "datasim", "difxcalc11", "mark6sg", "mark6meta", "espresso"]
    --skip='...'    Does a normal build, but skips components in a comma
                    separated list (drawn from the --doonly list).
    --also='...'    Does a normal build, but adds components in a comma
@@ -172,7 +175,7 @@ try:
          "help-options", "help-environment", "help-examples",
          "mk5daemon", "withmonitor", "withdatasim", "perl", "withfb",
          "withhops", "withm6support", "withguiserver", "withpython",
-         "withpolconvert", "noinstall", "reconf", "noconf", "clean",
+         "withpolconvert", "withspice=", "noinstall", "reconf", "noconf", "clean",
          "g77", "extraflags=", "makeflags=", "withmark6meta",
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine",
          "doonly=", "skip=", "also=", "newver=", ])
@@ -202,6 +205,8 @@ noconf = False
 pristine = False
 dodoc = True
 dopybindings = False
+withspice = False
+spicedir = ""
 doipp = 0
 orgcwd = os.getcwd()
 components = {"perl"          :False,
@@ -232,6 +237,7 @@ components = {"perl"          :False,
               "difx_monitor"  :False,
               "datasim"       :False,
               "python"        :True,
+              "espresso"      :True,
 }
 def setNormalComponentsFalse():
 	global components
@@ -256,6 +262,7 @@ def setNormalComponentsFalse():
 	components["mpifxcorr"]= False
 	components["mark6sg"]= False
 	components["python"]= False
+	components["espresso"]= False
 def setOnlyComponents(only):
 	global components
 	setNormalComponentsFalse()
@@ -357,6 +364,9 @@ if len(opts) > 0:
             components["guiServer"] = True
         if o == "--withpython":
             dopybindings = True
+        if o == "--withspice":
+            withspice = True
+            spicedir = a
         if o == "--noinstall":
             noinstall = True
         if o == "--reconf":
@@ -509,6 +519,8 @@ if components["difx_monitor"]:
     apptargets.append(["difx_monitor", difx_version, True,False,False,True])
 if components["datasim"]:
     apptargets.append(["datasim", difx_version, True,True,True,False])
+if components["espresso"]:
+    apptargets.append(["espresso", difx_version, True,True,False,False])
 
 for key in adjustments:
     todo = True
@@ -601,7 +613,7 @@ def run(cmd):
             raise RuntimeError("Error running " + cmd + " in " + os.getcwd())
 
 ###### Subroutine to do the compiling of an auto-tool ###
-def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
+def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx, compname):
     thisdir = os.getcwd()   # somewhere below topdir
     if (doreconf and (reconf or os.system("autoreconf -if"))):
         if noconf and os.path.exists('configure'):
@@ -648,6 +660,8 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
         if dopybindings and check_configureAC_has(
             cfp+"/configure.ac", "with-python"):
                 configstring += " --with-python "
+        if compname == "difxio" and withspice:
+            configstring += " --with-spice-root={0}".format(spicedir)
         run(configstring)
 
     run(MAKEcommand + target)
@@ -771,7 +785,7 @@ if doclean:
 
     os_chdir(topdir)
     if pristine:
-        run('find . -name Makefile.in -exec rm {} \;')
+        run(r'find . -name Makefile.in -exec rm {} \;')
     sys.exit(0)  # Clean exit
 
 
@@ -866,7 +880,7 @@ for libtarget in libtargets:
         print()
         os_chdir(targetdir)
         auto_compile(libtarget[2], libtarget[3], libtarget[4],
-            difxroot, libtarget[5])
+            difxroot, libtarget[5], libtarget[0])
     else:
         print()
         print("******* Skipping "+targetdir)
@@ -893,7 +907,10 @@ if components["mpifxcorr"]:
         print("Reusing mpifxcorr configuration")
     else:
         print("Reconfiguring mpifxcorr")
-        run("aclocal")
+        if os.path.exists('m4'):
+            run("aclocal -I m4")
+        else:
+            run("aclocal")
         run("autoconf")
         run("autoheader")
         run("automake -acf")
@@ -943,7 +960,7 @@ for apptarget in apptargets:
         print()
         os_chdir(targetdir)
         auto_compile(apptarget[2], apptarget[3], apptarget[4],
-            difxroot, apptarget[5])
+            difxroot, apptarget[5], apptarget[0])
     else:
         print()
         print("******* Skipping "+targetdir)
@@ -969,7 +986,7 @@ for utiltarget in utiltargets:
         print("Building ", utiltarget[0])
         os_chdir(targetdir)
         auto_compile(utiltarget[2], utiltarget[3], utiltarget[4],
-            difxroot, utiltarget[5])
+            difxroot, utiltarget[5], utiltarget[0])
     else:
         print()
         print("******* Skipping "+targetdir)

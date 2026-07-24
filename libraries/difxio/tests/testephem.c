@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: testephem.c 5250 2013-04-16 23:33:59Z WalterBrisken $
- * $HeadURL: $
- * $LastChangedRevision: 5250 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2013-04-17 07:33:59 +0800 (三, 2013-04-17) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>

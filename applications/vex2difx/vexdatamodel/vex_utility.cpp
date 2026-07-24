@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_utility.cpp 7541 2016-11-15 03:47:45Z WalterBrisken $
- * $HeadURL: $
- * $LastChangedRevision: 7541 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2016-11-15 11:47:45 +0800 (二, 2016-11-15) $
- *
- *==========================================================================*/
 
 #include <set>
 #include <iostream>

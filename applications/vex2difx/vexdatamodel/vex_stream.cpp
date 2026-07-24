@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_stream.cpp 10363 2022-01-27 22:57:59Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10363 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-01-28 06:57:59 +0800 (五, 2022-01-28) $
- *
- *==========================================================================*/
 
 #include <cstdlib>
 #include <cstring>
@@ -122,15 +112,14 @@ bool VexStream::Init()
 		exit(EXIT_FAILURE);
 	}
 
-        // of form CODIF[C]/[period seconds]/<size bytes>/<bits>          CODIF only
-        v = regcomp(&matchType9, "^(CODIF[A-Z]*)/([1-9]+[0-9]*)/([1-9]+[0-9]*)/([1-9]+[0-9]*)$", REG_EXTENDED);
-        if(v != 0)
-        {
-                std::cerr << "Developer Error: VexStream::Init(): compiling matchType9 failed" << std::endl;
+	// of form CODIF[C]/[period seconds]/<size bytes>/<bits>          CODIF only
+	v = regcomp(&matchType9, "^(CODIF[A-Z]*)/([1-9]+[0-9]*)/([1-9]+[0-9]*)/([1-9]+[0-9]*)$", REG_EXTENDED);
+	if(v != 0)
+	{
+		std::cerr << "Developer Error: VexStream::Init(): compiling matchType9 failed" << std::endl;
 
-                exit(EXIT_FAILURE);
-        }
-
+		exit(EXIT_FAILURE);
+	}
 
 	return true;
 }
@@ -298,6 +287,10 @@ void VexStream::setVDIFSubformat(const std::string &str)
 	{
 		dataSampling = SamplingComplexDSB;
 	}
+	else
+	{
+		dataSampling = SamplingReal;
+	}
 }
 
 bool VexStream::parseFormatString(const std::string &formatName)
@@ -415,6 +408,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		nRecordChan = matchInt(formatName, match[3]);
 		nBit = matchInt(formatName, match[4]);
 		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
+		setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
 
 		return true;
 	}
@@ -461,22 +455,22 @@ bool VexStream::parseFormatString(const std::string &formatName)
 
 		return true;
 	}
-        else if(regexec(&matchType9, formatName.c_str(), 5, match, 0) == 0)
-        {
-                // of form CODIF[C or D]/<period seconds>/<size>/<bits>
-                format = stringToDataFormat(formatName.substr(0, match[1].rm_eo));
-                if(format == NumDataFormats)
-                {
-                        return false;
-                }
-                setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
+	else if(regexec(&matchType9, formatName.c_str(), 5, match, 0) == 0)
+	{
+		// of form CODIF[C or D]/<period seconds>/<size>/<bits>
+		format = stringToDataFormat(formatName.substr(0, match[1].rm_eo));
+		if(format == NumDataFormats)
+		{
+			return false;
+		}
+		setVDIFSubformat(formatName.substr(0, match[1].rm_eo));
 		alignmentPeriod = matchInt(formatName, match[2]);
-                VDIFFrameSize = matchInt(formatName, match[3]);
-                nBit = matchInt(formatName, match[4]);
-                singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
+		VDIFFrameSize = matchInt(formatName, match[3]);
+		nBit = matchInt(formatName, match[4]);
+		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
 
-                return true;
-        }
+		return true;
+	}
 	else
 	{
 		// of form <fmt>
@@ -486,6 +480,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 			return false;
 		}
 		singleThread = isSingleThreadVDIF(formatName.substr(0, match[1].rm_eo));
+		setVDIFSubformat(formatName);
 
 		return true;
 	}

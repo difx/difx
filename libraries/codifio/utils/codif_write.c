@@ -1,5 +1,5 @@
 /***************************************************************************
- *  Copyright (C) 2018-2022 by Chris Phillips                              *
+ *  Copyright (C) 2018-2025 by Chris Phillips                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: $
-// $HeadURL: $
-// $LastChangedRevision: $
-// $Author:$
-// $LastChangedDate: $
-//
-//============================================================================
 
 /**********************************************************************************************
 
@@ -90,7 +80,7 @@
 
 #include <codifio.h>
 
-#define MAXSTR              200 
+#define MAXSTR              250 
 #define MAXPACKETSIZE       9500
 #define DEFAULT_PORT        52100
 #define DEFAULT_TIME        60
@@ -98,6 +88,7 @@
 #define DEFAULT_UPDATETIME  1.0
 #define UPDATE              20
 #define MAXTHREAD           30
+#define MAXGROUPID          10
 
 #define DEBUG(x) 
 
@@ -128,7 +119,7 @@ typedef struct files {
   int file;
 } files;
 
-int setup_net(unsigned short port, const char *ip, int *sock);
+int setup_net(unsigned short port, const char *ip, const char *group, int reuse, int *sock, float bufsize);
 int matchthread(datastats *allstats, int nthread, int threadID, int groupID);
 int matchfile(files *ofiles, int nfles, int threadID, int groupID);
 int openfile(char *fileprefix, char *timestr, int threadid, int groupid);
@@ -157,7 +148,7 @@ int lines = 0;
 
 int main (int argc, char * const argv[]) {
   char *buf, timestr[MAXSTR];
-  int threadIndex, fileIndex, tmp, opt, status, sock, skip, i, nfile;
+  int threadIndex, fileIndex, tmp, opt, status, sock, skip, i, nfile=0;
   int valid, period, thisthread = -1, thisgroup = -1;
   ssize_t nread, nwrote, nwrite;
   char msg[MAXSTR];
@@ -167,25 +158,32 @@ int main (int argc, char * const argv[]) {
   time_t filetime=0;
   codif_header *cheader=NULL;
   int16_t *s16, *cdata;
+  int64_t *i64, *o64;
   int8_t *s8;
   uint32_t lastseconds, lastframe, thisframe, thisseconds, framesperperiod;
   files ofile[MAXTHREAD];
 
   unsigned int port = DEFAULT_PORT;
   char *ip = NULL;
+  char *multicastGroup = NULL;
   char *fileprefix = NULL;
   int time = DEFAULT_TIME;
   int filesize = DEFAULT_FILESIZE;
   int padding = 0;
   int threadid = -1;
-  int groupid = -1;
+  int groupids[MAXGROUPID];
+  int nGroupid = 0;
   int scale = 0;
+  int drop  = 0;
   int forcebits = 0;
   //int invert = 0;
   int splitthread = false;
   int splitgroup = false;
   int verbose = 0;
+  int header_only = 0;
+  int bufsize = 100;
   int wait = false; // Don't start timing till first packet arrives
+  int reuse = false; // Allow processes to use same port
   
   struct option options[] = {
     {"port", 1, 0, 'p'},
@@ -193,17 +191,22 @@ int main (int argc, char * const argv[]) {
     {"threadid", 1, 0, 'T'},
     {"groupid", 1, 0, 'g'},
     {"ip", 1, 0, 'i'},
+    {"multicast", 1, 0, 'm'},
     {"outfile", 1, 0, 'o'},
     {"time", 1, 0, 't'},
     {"updatetime", 1, 0, 'u'},
     {"filesize", 1, 0, 'f'},
     {"scale", 1, 0, 's'},
+    {"drop", 1, 0, 'd'},
     {"bits", 1, 0, 'b'},
+    {"bufsize", 1, 0, 'B'},
     //{"invert", 0, 0, 'I'},
     {"split", 0, 0, 'S'},
     {"splitgroup", 0, 0, 'G'},
     {"verbose", 0, 0, 'V'},
+    {"header", 0, 0, 'H'},
     {"wait", 0, 0, 'w'},
+    {"resuse", 0, 0, 'r'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
@@ -219,7 +222,7 @@ int main (int argc, char * const argv[]) {
   updatetime = DEFAULT_UPDATETIME;
 
   while (1) {
-    opt = getopt_long_only(argc, argv, "i:T:P:p:t:hwg:G", options, NULL);
+    opt = getopt_long_only(argc, argv, "i:T:P:p:t:hwg:GH", options, NULL);
     if (opt==EOF) break;
 
     switch (opt) {
@@ -249,12 +252,16 @@ int main (int argc, char * const argv[]) {
      break;
 
     case 'g':
-      status = sscanf(optarg, "%d", &tmp);
-      if (status!=1 || tmp<0)
-	fprintf(stderr, "Bad groupid option %s\n", optarg);
-      else 
-	groupid = tmp;
-     break;
+      if (nGroupid >= MAXGROUPID) {
+        fprintf(stderr, "Too many --groupid options (max %d)\n", MAXGROUPID);
+        exit(1);
+      }
+      if (sscanf(optarg, "%d", &tmp) != 1 || tmp < 0) {
+        fprintf(stderr, "Bad groupid option '%s'\n", optarg);
+        exit(1);
+      }
+      groupids[nGroupid++] = tmp;
+      break;
 
     case 's':
       status = sscanf(optarg, "%d", &tmp);
@@ -262,6 +269,14 @@ int main (int argc, char * const argv[]) {
 	fprintf(stderr, "Bad scale option %s\n", optarg);
       else 
 	scale = tmp;
+      break;
+
+    case 'd':
+      status = sscanf(optarg, "%d", &tmp);
+      if (status!=1 || tmp<=0 || tmp>15)
+	fprintf(stderr, "Bad drop option %s\n", optarg);
+      else 
+	drop = tmp;
       break;
 
     case 'b':
@@ -300,14 +315,14 @@ int main (int argc, char * const argv[]) {
       ip = strdup(optarg);
       break;
 
+    case 'm':
+      multicastGroup = strdup(optarg);
+      break;
+      
     case 'o':
       fileprefix = strdup(optarg);
       break;
 
-      //    case 'I':
-      //invert = 1;
-      //break;
- 
     case 'S':
       splitthread = true;
       break;
@@ -316,12 +331,28 @@ int main (int argc, char * const argv[]) {
       splitgroup = true;
       break;
 
-   case 'w':
+    case 'w':
       wait = true;
+      break;
+      
+    case 'B':
+      status = sscanf(optarg, "%f", &ftmp);
+      if (status!=1 || ftmp<=0)
+	      fprintf(stderr, "Bad bufsize option %s\n", optarg);
+      else 
+	      bufsize = ftmp;
+      break;
+
+    case 'r':
+      reuse = true;
       break;
       
     case 'V':
       verbose = 1;
+      break;
+      
+    case 'H':
+      header_only = 1;
       break;
       
     case 'h':
@@ -331,13 +362,17 @@ int main (int argc, char * const argv[]) {
       printf("  -T/-threadid <N>       Only record threadid N\n");
       printf("  -g/-groupid <N>        Only record groupid N\n");
       printf("  -i/-ip <IP>            Receive data from host IP\n");
+      printf("  -m/-multicast <G.G.G.G>  Receive data oin muticast group G.G.G.G\n");
       printf("  -o/-outfile <NAME>     output prefix NAME\n");
       printf("  -t/-time <N>           Record for N seconds\n");
       printf("  -f/-filesize <N>       Write files N seconds long\n");
       printf("  -s/-scale <S>          Reduce data to 8 bits, dividing by S\n");
+      printf("  -d/-drop <D>           Drop some channels. 4= Keep 16bytes, drop 16bytes. 2== Keep 8 bytes, drop 24\n");
       printf("  -S/-split              Write threads to separate files\n");
       printf("  -G/-splitgroup         Write groups to separate files\n");
       printf("  -w/-wait               Wait for first packet before starting recording timer\n");
+      printf("  -H/header              Write headers only\n");
+	     //      printf("  -r/-reuse              Allow multiple processes to use same port in multicast mode\n");
       printf("  -V/-verbose            Verbose output/n");
       printf("  -h/-help               This list\n");
       return(1);
@@ -354,9 +389,19 @@ int main (int argc, char * const argv[]) {
     exit(1);
   }
   
-  if (groupid>0 && splitgroup) {
+  if (nGroupid==1 && splitgroup) {
     fprintf(stderr, "Cannot split by group and filter single group. Quitting\n");
     exit(1);
+  }
+
+  if (!(drop==0 || drop==4)) {
+    fprintf(stderr, "Error: Do not support drop mode %d\n", drop);
+    exit(1);
+  }
+
+  if (reuse && multicastGroup==NULL) {
+    printf("Warning: Canonly reuse port for multicast mode\n");
+    reuse = 0;
   }
   
   if (padding>0) printf("Warning: Discarding %d bytes per packet\n", padding);
@@ -373,7 +418,7 @@ int main (int argc, char * const argv[]) {
   cheader = (codif_header*)buf;
   cdata = (int16_t*) &buf[CODIF_HEADER_BYTES];
 
-  status = setup_net(port, ip, &sock);
+  status = setup_net(port, ip, multicastGroup, reuse, &sock, bufsize);
     
   if (status)  exit(1);
 
@@ -411,6 +456,24 @@ int main (int argc, char * const argv[]) {
     
     if (wait && first) {
       t0 = tim();
+
+      char buffer[26];
+      int millisec;
+      struct tm* tm_info;
+      struct timeval tv;
+
+      gettimeofday(&tv, NULL);
+      
+      millisec = lrint(tv.tv_usec/1000.0); // Round to nearest millisec
+      if (millisec>=1000) { // Allow for rounding up to nearest second
+	millisec -=1000;
+	tv.tv_sec++;
+      }
+
+      tm_info = localtime(&tv.tv_sec);
+
+      strftime(buffer, 26, "%Y:%m:%d %H:%M:%S", tm_info);
+      printf("%s.%03d\n", buffer, millisec);
     }
     
     // Block alarm signal while we are updating these values
@@ -427,8 +490,6 @@ int main (int argc, char * const argv[]) {
     thisthread = getCODIFThreadID(cheader);
     thisgroup =  getCODIFGroupID(cheader);
 
-    //printf("DEBUG: Got F: %d S: %d  T: %d G: %d\n", thisframe, thisseconds, thisthread, thisgroup);
-    
     skip = 0;
     if (threadid>=0) {
       if (thisthread!=threadid) {
@@ -436,18 +497,33 @@ int main (int argc, char * const argv[]) {
 	skipped++;
       }
     }
+
+    if (!skip && nGroupid > 0) {
+      skip = 1;  // Assume skip unless match
+      for (i = 0; i < nGroupid; i++) {
+        if (thisgroup == groupids[i]) {
+          skip = 0;
+          break;
+        }
+      }
+      if (skip) skipped++;
+    }
+
+#if 0
     if (groupid>=0) {
       if (thisgroup!=groupid) {
 	skip=1;
 	skipped++;
       }
     }
-    
+    //if (!(thisgroup==258 || thisgroup==261 || thisgroup==262)) {
+    //  skip=1;
+    //  skipped++;
+    // }
+#endif
     if (!skip) {
       valid = 1;
       if (first) {
-	//printf("DEBUG: First\n");
-	//first = false;
 	threadIndex = 0;
 	fileIndex = 0;
 	allstats[0].threadid = thisthread;
@@ -509,11 +585,11 @@ int main (int argc, char * const argv[]) {
 	if (nread<allstats[threadIndex].minpkt_size) allstats[threadIndex].minpkt_size = nread;
 	allstats[threadIndex].sum_pkts += nread;
       }
-
+      nread -= padding;
+      
       // What file is this
       if (splitthread || splitgroup) 
 	fileIndex = matchfile(ofile, nfile, splitthread ? thisthread : -1, splitgroup? thisgroup: -1);
-      //printf("DEBUG: FI: %d\n", fileIndex);
 
       if (fileIndex==-1) {
 	if (nfile>=MAXTHREAD) {
@@ -525,7 +601,6 @@ int main (int argc, char * const argv[]) {
 	ofile[fileIndex].threadid = splitthread? thisthread : -1;
 	ofile[fileIndex].groupid = splitgroup? thisgroup : -1;
 	ofile[fileIndex].file = -1;
-	//printf("DEBUG: ofile %d added %d/%d\n", fileIndex, ofile[fileIndex].threadid, ofile[fileIndex].groupid);
       } 
       
       npacket++;
@@ -539,12 +614,50 @@ int main (int argc, char * const argv[]) {
     }
 
     if (skip) continue;
+    // These checks really could be moved to when thread or group first encountered
+    if (drop==4) {
+      int framesize = getCODIFFrameBytes(cheader);
+      
+      if (getCODIFNumChannels(cheader)<8 || getCODIFNumChannels(cheader)%8) { // Should look at size of complete sample
+	fprintf(stderr, "Wrong number of channels to support drop mode 4\n");
+	exit(1);
+      }
+      if (framesize%32) {
+	fprintf(stderr, "Wrong framesize to support drop mode 4\n");
+	exit(1);
+      }
+
+      // Skip over first 32 bytes as they are unchanged
+      i64 = (int64_t*) &buf[CODIF_HEADER_BYTES+32];
+      o64 = (int64_t*) &buf[CODIF_HEADER_BYTES+16];
+      int i;
+      for (i = 1; i < framesize/32; i++) {
+	*o64 = *i64;
+	o64++; i64++;
+	*o64 = *i64;
+	o64++; i64++;
+	i64 += 2; // Skip the next 16 bytes
+      }
+
+      setCODIFNumChannels(cheader,getCODIFNumChannels(cheader)/2);
+      setCODIFFrameBytes(cheader, framesize/2);
+      setCODIFSampleblockLength(cheader, getCODIFSampleblockLength(cheader)/2);
+      nread = (nread-CODIF_HEADER_BYTES)/2 + CODIF_HEADER_BYTES;
+    }
 
     if (scale>0) { // Should check nbits==16
+      if (getCODIFBitsPerSample(cheader)!=16) { 
+	fprintf(stderr, "Error: Trying to scale data which is not 16 bits\n");
+	exit(1);
+      }
+
+      setCODIFBitsPerSample(cheader, 8);
+      setCODIFFrameBytes(cheader, getCODIFFrameBytes(cheader)/2);
+      
       s16 = cdata;
       s8 = (int8_t*)cdata;
       int i;
-      for (i=0; i< (nread-padding-CODIF_HEADER_BYTES)/sizeof(int16_t); i++) {
+      for (i=0; i< (nread-CODIF_HEADER_BYTES)/sizeof(int16_t); i++) {
 	*s16 /= scale;
 	if (*s16>127)
 	  *s16 = 127;
@@ -554,9 +667,9 @@ int main (int argc, char * const argv[]) {
 	s16++;
 	s8++;
       }
-      nwrite = (nread-padding-CODIF_HEADER_BYTES)/sizeof(int16_t) + CODIF_HEADER_BYTES;
+      nwrite = (nread-CODIF_HEADER_BYTES)/sizeof(int16_t) + CODIF_HEADER_BYTES;
     } else {
-      nwrite = nread - padding;
+      nwrite = nread;
     }
     
     t2 = tim();
@@ -581,7 +694,7 @@ int main (int argc, char * const argv[]) {
       time_t itime = (time_t)floor(filetime);
       struct tm *date = gmtime(&itime); 
 
-      strftime(timestr, MAXSTR-1, "%j_%H%M%S", date);
+      strftime(timestr, MAXSTR, "%j_%H%M%S", date);
 
       if (splitthread || splitgroup) {
 	// Pass -1 for thread or groupID if not splitting
@@ -597,6 +710,8 @@ int main (int argc, char * const argv[]) {
 	if (ofile[fileIndex].file==-1) exit(1);
       }
     }
+
+    if(header_only) nwrite = CODIF_HEADER_BYTES;
 
     nwrote = write(ofile[fileIndex].file, buf, nwrite);
     if (nwrote==-1) {
@@ -615,8 +730,10 @@ int main (int argc, char * const argv[]) {
   return(0);
 }
   
-int setup_net(unsigned short port, const char *ip, int *sock) {
-  int status;
+int setup_net(unsigned short port, const char *ip, const char *group, int reuse,
+	      int *sock, float bufsize) {
+  int status, setsize;
+  socklen_t winlen;
   struct sockaddr_in server; 
 
   /* Initialise server's address */
@@ -624,7 +741,7 @@ int setup_net(unsigned short port, const char *ip, int *sock) {
   server.sin_family = AF_INET;
   server.sin_port = htons(port);
 
-  if (ip==NULL) 
+  if (ip==NULL || group!=NULL) 
     server.sin_addr.s_addr = htonl(INADDR_ANY); /* Anyone can connect */
   else {
     server.sin_addr.s_addr = inet_addr(ip);
@@ -641,14 +758,33 @@ int setup_net(unsigned short port, const char *ip, int *sock) {
     return(1);
   }
 
-  int udpbufbytes = 10*1024*1024;
-  status = setsockopt(*sock, SOL_SOCKET, SO_RCVBUF,
-		      (char *) &udpbufbytes, sizeof(udpbufbytes));
-    
+  if (bufsize<=0) bufsize = 10;
+  int udpbufbytes = bufsize*1024*1024;
+  status = setsockopt(*sock, SOL_SOCKET, SO_RCVBUF, (char *) &udpbufbytes, sizeof(udpbufbytes));
   if (status!=0) {
     fprintf(stderr, "Warning: Could not set socket RCVBUF\n");
-  } 
+  } else {
+    /* Check what the window size actually was set to */
+    winlen = sizeof(setsize);
+    status = getsockopt(*sock, SOL_SOCKET, SO_RCVBUF, (char *) &setsize, &winlen);
+    if (status!=0) {
+      perror("Getting socket options");
+    } else {
+      if (setsize < udpbufbytes*0.95) {
+	fprintf(stderr, "Warning:  Buffersize set to %.1f Mbytes, requested %.1f\n", setsize/1024/1024.0, udpbufbytes/1024/1024.0);
+      }
+    }
+  }
 
+  if (reuse) {
+    u_int yes = 1;
+    status = setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, (char*) &yes, sizeof(yes));
+    if (status<0) {
+      perror("Reusing ADDR failed");
+      return(1);
+    }
+  }
+  
   status = bind(*sock, (struct sockaddr *)&server, sizeof(server));
   if (status!=0) {
     perror("Error binding socket");
@@ -656,8 +792,27 @@ int setup_net(unsigned short port, const char *ip, int *sock) {
     return(1);
   }
 
+  if (group!=NULL) {
+    struct ip_mreqn mreq;
+    mreq.imr_multiaddr.s_addr = inet_addr(group);
+
+    if (ip==NULL) {
+      mreq.imr_address.s_addr = htonl(INADDR_ANY);
+    } else {
+      printf("Using %s\n", ip);
+      mreq.imr_address.s_addr = inet_addr(ip);
+    }
+    mreq.imr_ifindex = 0;
+    status = setsockopt(*sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+    if (status <0) {
+      printf("%d\n", errno);
+      perror("setsockopt mreq");
+      return(1);
+    }
+  }
+  
   return(0);
-}
+  }
   
 double tim(void) {
   struct timeval tv;
@@ -721,18 +876,22 @@ int openfile(char *fileprefix, char *timestr, int threadid, int groupid) {
   char filename[MAXSTR], msg[MAXSTR];
 
   if (threadid>=0 && groupid>0) 
-    snprintf(filename, MAXSTR-1, "%s_%s-%d-%d.cdf", fileprefix, timestr, threadid, groupid);
+    snprintf(filename, MAXSTR, "%s_%s-%d-%d.cdf", fileprefix, timestr, threadid, groupid);
   else if (threadid>=0) 
-    snprintf(filename, MAXSTR-1, "%s_%s-%d.cdf", fileprefix, timestr, threadid);
+    snprintf(filename, MAXSTR, "%s_%s-%d.cdf", fileprefix, timestr, threadid);
   else if (groupid>=0) 
-    snprintf(filename, MAXSTR-1, "%s_%s-%d.cdf", fileprefix, timestr, groupid);
+    snprintf(filename, MAXSTR, "%s_%s-%d.cdf", fileprefix, timestr, groupid);
   else
-    snprintf(filename, MAXSTR-1, "%s_%s.cdf", fileprefix, timestr);
+    snprintf(filename, MAXSTR, "%s_%s.cdf", fileprefix, timestr);
 
   // File name contained in buffer
   int ofile = open(filename, OPENOPTIONS,S_IRWXU|S_IRWXG|S_IRWXO); 
   if (ofile==-1) {
-    sprintf(msg, "Failed to open output file (%s)", filename);
+    int v;
+    v = snprintf(msg, MAXSTR, "Failed to open output file (%s)", filename);
+    if(v >= MAXSTR) {
+      fprintf(stderr, "Developer warning: MAXSTR too small: %d >= %d\n", v, MAXSTR);
+    }
     perror(msg);
   }
   return ofile;

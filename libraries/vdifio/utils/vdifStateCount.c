@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2023 by Walter Brisken                                  *
+ *   Copyright (C) 2023-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,8 +27,8 @@
 
 const char program[] = "vdifStateCount";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.2";
-const char verdate[] = "20231221";
+const char version[] = "0.3";
+const char verdate[] = "20240227";
 
 volatile int die = 0;
 
@@ -308,8 +308,8 @@ void usage()
 	fprintf(stderr, "Options can include:\n");
 	fprintf(stderr, "  -h  or  --help      print this help and quit\n");
 	fprintf(stderr, "  -c  or  --compact   print compact version of histogram [default]\n");
-	fprintf(stderr, "  -n  or  --nonzero   print only non-zero elements of historgram\n");
-	fprintf(stderr, "  -a  or  --all       print entire historgram\n");
+	fprintf(stderr, "  -n  or  --nonzero   print only non-zero elements of histogram\n");
+	fprintf(stderr, "  -a  or  --all       print entire histogram\n");
 	fprintf(stderr, "  -e  or  --even      print only even bins\n");
 	fprintf(stderr, "  -o  or  --odd       print only odd bins\n");
 	fprintf(stderr, "  -1                  consider all bins [default]\n");
@@ -525,8 +525,6 @@ int main(int argc, char **argv)
 		rv = fread(data, payloadSize, 1, in);
 		if(rv != 1)
 		{
-			fprintf(stderr, "Weird: data frame %" PRId64 " is incomplete.\n", frameCount);
-			
 			break;
 		}
 

@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: testseqnumbers.c 5286 2013-05-09 00:53:25Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxmessage/utils/testseqnumbers.c $
- * $LastChangedRevision: 5286 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2013-05-09 08:53:25 +0800 (四, 2013-05-09) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <string.h>

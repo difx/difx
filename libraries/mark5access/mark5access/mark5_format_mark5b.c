@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2015 by Walter Brisken                             *
+ *   Copyright (C) 2007-2024 by Walter Brisken, Jan Wagner                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark5_format_mark5b.c 9617 2020-07-14 14:34:31Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/mark5access/mark5_format_mark5b.c $
-// $LastChangedRevision: 9617 $
-// $Author: JanWagner $
-// $LastChangedDate: 2020-07-14 22:34:31 +0800 (二, 2020-07-14) $
-//
-//============================================================================
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -48,7 +38,7 @@ static const float HiMag = OPTIMAL_2BIT_HIGH;
 struct mark5_format_mark5b
 {
 	int nbitstream;
-	int kday;	/* kilo-mjd: ie 51000, 52000, ... */
+	int kday;	/* kilo-mjd: i.e., 51000, 52000, ... */
 };
 
 static float lut1bit[256][8];
@@ -3025,13 +3015,13 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps, int nchan, int nb
 	{
 		decoderindex += 12;
 	}
-	else if(decimation % 4 == 0)  /* all mults of 4 */
+	else if(decimation % 4 == 0)  /* all multiples of 4 */
 	{
 		decoderindex += 24;
 	}
 	else
 	{
-		fprintf(m5stderr, "decimation must be 1, 2 or a mult of 4\n");
+		fprintf(m5stderr, "decimation must be 1, 2 or a multiple of 4\n");
 	}
 
 	if(nbit == 1)

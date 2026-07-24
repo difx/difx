@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_scan.cpp 10985 2023-06-06 14:13:51Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10985 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2023-06-06 22:13:51 +0800 (二, 2023-06-06) $
- *
- *==========================================================================*/
 
 #include "vex_scan.h"
 

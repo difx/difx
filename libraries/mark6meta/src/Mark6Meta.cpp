@@ -1,5 +1,5 @@
 /*******************************************************************************
-* Copyright (C) 2016  Max-Planck-Institut für Radioastronomie, Bonn, Germany 
+* Copyright (C) 2024  Max-Planck-Institut für Radioastronomie, Bonn, Germany 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
@@ -13,16 +13,6 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: Mark6Meta.cpp 10521 2022-06-28 12:46:07Z HelgeRottmann $
-// $HeadURL: $
-// $LastChangedRevision: 10521 $
-// $Author: HelgeRottmann $
-// $LastChangedDate: 2022-06-28 20:46:07 +0800 (二, 2022-06-28) $
-//
-//============================================================================
 #include "Mark6Meta.h"
 #include "Mark6.h"
 #include "Mark6Module.h"
@@ -70,9 +60,26 @@ std::vector<std::string> Mark6Meta::getGroup() const {
     return group_m;
 }
    
+void Mark6Meta::setSerials( map<int, string > serials) {
+    serials_m = serials;
+}
+
 string Mark6Meta::getEMSN() const {
     return eMSN_m;
 }
+
+void Mark6Meta::setEMSN(string eMSN) {
+    eMSN_m = eMSN;
+}
+
+void Mark6Meta::setEMSN(std::string vsn, unsigned int capacity, unsigned int datarate, unsigned int numDisks)
+{
+    std::stringstream ss;
+
+    ss << vsn << "/" << capacity << "/" << datarate << "/" << numDisks;
+    ss >> eMSN_m;
+}
+
 /**
  * Parses the meta data of a Mark6 disk device. 
  * Since the meta data is located on a partition the disk device needs 
@@ -86,11 +93,17 @@ void Mark6Meta::parse(string rootPath)
     string line;
     string group;
 
-    // check if directory exists
-    if (( stat( rootPath.c_str(), &info ) != 0 ) || (!info.st_mode & S_IFDIR))
+    //cout << "Entering: Mark6Meta::parse" <<endl;
+    if (rootPath.empty())
     {
-        throw  Mark6MountException("The meta directory: " + rootPath + " does not exist");
-        
+        //cout << "Meta root path not set" << endl;
+        return;
+    }
+    // check if directory exists
+    if (( stat( rootPath.c_str(), &info ) != 0 ) || !(info.st_mode & S_IFDIR))
+    {
+        return;
+        ///throw  Mark6MountException("The meta directory: " + rootPath + " does not exist");
     }
     
     // read contents of eMSN file
@@ -133,7 +146,7 @@ void Mark6Meta::parse(string rootPath)
     {
         ifstream groupfile(path.c_str());
 
-        int count = 0;
+        unsigned int count = 0;
         int groupCount = -1;
         while(getline(groupfile, line, ':')) 
         {

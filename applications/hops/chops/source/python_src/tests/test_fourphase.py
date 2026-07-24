@@ -1,6 +1,7 @@
+#!/usr/bin/python
 """integration test for fourphase_lib"""
 #core imports
-from __future__ import print_function
+#-3.13++#from __future__ import print_function
 from builtins import str
 import datetime
 import argparse
@@ -32,8 +33,11 @@ def main():
 
     #now configure and run fourphase
     config_obj = vpal.fourphase_lib.Configuration()
+    config_obj.mode = 'VGOS'
+    config_obj.frequency_group = 'X'
     config_obj.exp_directory = exp_dir
-    config_obj.stations = ref_station + rem_stations
+    config_obj.network_reference_station = ref_station
+    config_obj.target_stations = rem_stations
     config_obj.control_file = os.path.join( exp_dir, 'cf_GEV_test_pcphases')
     config_obj.num_proc = 8
     config_obj.verbosity = 3

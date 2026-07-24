@@ -2,7 +2,8 @@
 """
 Usage: polrelabelDiFX.py [--inplace] [--swap] <station[,station,...]> <difx basename> [<difx basename> ...]
 
-Changes data polarization *labels* of the given station(s) from linear to circular.
+Changes linear polarization labels to circular in visibility records
+of baselines with the listed station(s).
 
 The original SWIN data are retained intact and a new SWIN visibility data set is output,
 unless the --inplace option is specified, in which case changes are carried out on the
@@ -81,13 +82,15 @@ def polrelabelVisibilityfile(basename, targetAnts, doOverwrite=False, verbose=Fa
 
 		# Modify the header (polpair) if station matches
 		if (ant1name in targetAnts) or (ant2name in targetAnts):
+			old_polpair = str(h.polpair)
 			if ant1name in targetAnts:
 				h.polpair = polrelabel[h.polpair[0]] + h.polpair[1]
 			if ant2name in targetAnts:
 				h.polpair = h.polpair[0] + polrelabel[h.polpair[1]]
-			if verbose:
-				print ("relabel: %s-%s pol %s --> %s" % (ant1name,ant2name,origpols,h.polpair))
-			nrelabeled += 1
+			if h.polpair != old_polpair:
+				nrelabeled += 1
+				if verbose:
+					print ("relabel: %s-%s pol %s --> %s" % (ant1name,ant2name,origpols,h.polpair))
 		else:
 			if verbose:
 				print ("pass: %s-%s pol %s" % (ant1name,ant2name,h.polpair))

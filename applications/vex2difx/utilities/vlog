@@ -18,16 +18,6 @@
 #   Free Software Foundation, Inc.,                                       *
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: vlog 9158 2019-09-16 20:31:15Z WalterBrisken $
-# $HeadURL: $
-# $LastChangedRevision: 9158 $
-# $Author: WalterBrisken $
-# $LastChangedDate: 2019-09-17 04:31:15 +0800 (二, 2019-09-17) $
-#
-#============================================================================
 
 # Note: this utility can run under python2.7 or python3
 

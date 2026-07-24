@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011-2012 by Walter Brisken                             *
+ *   Copyright (C) 2011-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the Lesser GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vsis.cpp 7671 2017-03-06 20:22:26Z MarkWainright $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/vsis.cpp $
- * $LastChangedRevision: 7671 $
- * $Author: MarkWainright $
- * $LastChangedDate: 2017-03-07 04:22:26 +0800 (二, 2017-03-07) $
- *
- *==========================================================================*/
 
 
 #include <cstdio>
@@ -40,9 +30,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include "macros.h"
 #include "vsis_commands.h"
 #include "config.h"
 #include "mk5daemon.h"
+#include "errno.h"
 
 const int MaxFields = 24;
 const unsigned short VSIS_PORT = 2620;
@@ -310,7 +302,7 @@ int handleVSIS(Mk5Daemon *D, int sock)
 	}
 	message[v] = 0;
 
-	snprintf(logMessage, DIFX_MESSAGE_LENGTH, "VSI-S received: %s\n", message);
+	snprintf_warn(logMessage, DIFX_MESSAGE_LENGTH, "VSI-S received: %s\n", message);
 	Logger_logData(D->log, logMessage);
 
 	for(int i = 0; message[i]; ++i)
@@ -335,7 +327,7 @@ int handleVSIS(Mk5Daemon *D, int sock)
 		}
 	}
 
-	snprintf(logMessage, DIFX_MESSAGE_LENGTH, "VSI-S responding: %s\n", response);
+	snprintf_warn(logMessage, DIFX_MESSAGE_LENGTH, "VSI-S responding: %s\n", response);
 	Logger_logData(D->log, logMessage);
 
 	r += snprintf(response+r, DIFX_MESSAGE_LENGTH-r, "\n");
@@ -351,6 +343,7 @@ int handleVSIS(Mk5Daemon *D, int sock)
 
 int Mk5Daemon_startVSIS(Mk5Daemon *D)
 {
+	char message[DIFX_MESSAGE_LENGTH];
 	const int reuse_addr = 1;
 	struct addrinfo hints, *res;
 	char portstr[6];
@@ -358,7 +351,7 @@ int Mk5Daemon_startVSIS(Mk5Daemon *D)
 
 	Mk5Daemon_stopVSIS(D);
 
-	snprintf(portstr, 6, "%u", VSIS_PORT);
+	snprintf_warn(portstr, 6, "%u", VSIS_PORT);
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;  // use IPv4 or IPv6, whichever
@@ -399,7 +392,8 @@ int Mk5Daemon_startVSIS(Mk5Daemon *D)
 	freeaddrinfo(res);
 	if(v < 0)
 	{
-		Logger_logData(D->log, "Cannot bind accept socket for VSI-S\n");
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot bind accept socket for VSI-S (errno %d, %s)\n", errno, strerror(errno));
+		Logger_logData(D->log, message);
 
 		return -1;
 	}
@@ -439,7 +433,7 @@ void controlVSIS(Mk5Daemon *D, const DifxMessageGeneric *G)
 	
 	cmd = G->body.vsis.vsis;
 
-	snprintf(message, DIFX_MESSAGE_LENGTH,
+	snprintf_warn(message, DIFX_MESSAGE_LENGTH,
 		"vsis instruction: from=%s identifier=%s instruction=%s\n", 
 		G->from, G->identifier, cmd);
 	Logger_logData(D->log, message);
@@ -454,7 +448,7 @@ void controlVSIS(Mk5Daemon *D, const DifxMessageGeneric *G)
 	}
 	else
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "vsis instruction=%s not recognized!\n", cmd);
+		snprintf_warn(message, DIFX_MESSAGE_LENGTH, "vsis instruction=%s not recognized!\n", cmd);
 		Logger_logData(D->log, message);
 	}
 }

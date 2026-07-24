@@ -594,6 +594,8 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		double frac_freq_MHz;
 		double *pulseCalSamples;
 
+		pulseCalSamples = 0;
+
 		ds = d->subband + s;
 		cs = ds->cs;
 		//freq_MHz = ds->df->freq + 0.5*ds->df->bw;
@@ -602,13 +604,15 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		{
 			/* In Double-Sideband mode, the sampled band is centered on the specified frequency */
 			/* The total bandwidth (sum of both sidebands) is given by specifed bandwidth */
+
+			/* FIXME: are the += and -= correct here? */
 			if(ds->df->sideband == 'L')
 			{
-				freq_MHz += ds->df->bw / 2.0;
+				freq_MHz -= ds->df->bw / 2.0;
 			}
 			else
 			{
-				freq_MHz -= ds->df->bw / 2.0;
+				freq_MHz += ds->df->bw / 2.0;
 			}
 		}
 		else if(ds->df->sideband == 'L')
@@ -618,9 +622,9 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		int_freq_MHz = (int)freq_MHz;
 		frac_freq_MHz = freq_MHz - int_freq_MHz;
 
-		if(d->parameters->pulseCalInterval > 0)
+		if(d->parameters && d->parameters->pulseCalInterval > 0)
 		{
-			const epsilon = 0.001;	/* [MHz] don't use tones closer to band edge than this */
+			const double epsilon = 0.001;	/* [MHz] don't use tones closer to band edge than this */
 			double cosFactor, sinFactor;
 			int tone1, tone2;	/* index of first and last tone to use */
 
@@ -785,7 +789,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 				ft = delay_center_samples + (i - 0.5*ds->nSamp)/cs->sampRate * rate_us_s * freq_MHz;
 				ft -= round(ft);
 
-				phi = 2*M_PI*ft;	// FIXME: Check sign correctness for LSB
+				phi = 2*M_PI*ft;
 				ds->frSamps[i] = ds->samps[i] * (cos(phi) + I*sin(phi));
 			}
 
@@ -794,19 +798,56 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 
 /* 5. fine delay -- fractional sample correction */
 /* 6. apply channel filter (which has FFT scaling compensation built in) */
-			for(i = 0; i <= ds->nSamp/2; ++i)
+			if(d->dd->dataSampling == SamplingComplexDSB)
 			{
-				double phi;
+				/* FIXME: not sure this is correct... */
+				int ns2, ns4;
+				
+				ns2 = ds->nSamp/2;
+				ns4 = ds->nSamp/4;
 
-				phi = 2.0*M_PI*fracSample*i/ds->nSamp;	// FIXME: check sign correctness for LSB
-				ds->spec[i] *= d->filter[i] * (cos(phi) + I*sin(phi));
+				for(i = 0; i <= ns2; ++i)
+				{
+					double phi;
+
+					phi = 2.0*M_PI*fracSample*(i-ns4)/ds->nSamp;
+					ds->spec[i] *= d->filter[i] * (cos(phi) + I*sin(phi));
+				}
+			}
+			else
+			{
+				for(i = 0; i <= ds->nSamp/2; ++i)
+				{
+					double phi;
+
+					phi = 2.0*M_PI*fracSample*i/ds->nSamp;
+					ds->spec[i] *= d->filter[i] * (cos(phi) + I*sin(phi));
+				}
 			}
 
 /* 7. iFFT, C->R for real data or C->C for complex data */
+			if(d->dd->dataSampling == SamplingComplexDSB)
+			{
+				/* FIXME: not sure this is correct... */
+				int ns2, ns4;
+
+				ns2 = ds->nSamp/2;
+				ns4 = ds->nSamp/4;
+
+				/* roll the frequency domain representation by BW/2 */
+				for(i = 0; i <= ns2; ++i)
+				{
+					double complex t;
+
+					t = ds->spec[i];
+					ds->spec[i] = ds->spec[i+ns4];
+					ds->spec[i+ns4] = t;
+				}
+			}
 			fftw_execute(ds->ifftPlan);
 
 /* 8. apply pulse cal if desired */
-			if(d->parameters && d->parameters->pulseCalInterval > 0)
+			if(pulseCalSamples)
 			{
 				for(i = 0; i < ds->nSamp; ++i)
 				{
@@ -819,7 +860,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			memcpy(ds->samples1sec + startSample, ds->samps, ds->nSamp*sizeof(double));
 		}
 
-		if(d->parameters->pulseCalInterval > 0)
+		if(pulseCalSamples)
 		{
 			free(pulseCalSamples);
 		}

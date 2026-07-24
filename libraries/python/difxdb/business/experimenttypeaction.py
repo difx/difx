@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: experimenttypeaction.py 7191 2016-01-15 13:00:39Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/difxdb/business/experimenttypeaction.py $
-# $LastChangedRevision: 7191 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2016-01-15 21:00:39 +0800 (五, 2016-01-15) $
-#
-#============================================================================
 from difxdb.model import model
 
 def getTypes(session):

@@ -39,6 +39,7 @@ mark5_stream._fields_ = [
     ('alignmentseconds', c_int),
     ('nchan', c_int),
     ('nbit', c_int),
+    ('iscomplex', c_int),
     ('samplegranularity', c_int),
     ('framegranularity', c_int),
     ('mjd', c_int),
@@ -74,6 +75,7 @@ mark5_stream._fields_ = [
     ('init_format', CFUNCTYPE(c_int, POINTER(mark5_stream))),
     ('final_format', CFUNCTYPE(c_int, POINTER(mark5_stream))),
     ('decode', CFUNCTYPE(c_int, POINTER(mark5_stream), c_int, POINTER(POINTER(c_float)))),
+    ('complex_decode', CFUNCTYPE(c_int, POINTER(mark5_stream), c_int, POINTER(POINTER(c_float)))),
     ('count', CFUNCTYPE(c_int, POINTER(mark5_stream), c_int, POINTER(c_uint))),
     ('validate', CFUNCTYPE(c_int, POINTER(mark5_stream))),
     ('resync', CFUNCTYPE(c_int, POINTER(mark5_stream))),
@@ -95,11 +97,13 @@ mark5_stream_generic._fields_ = [
 class mark5_format_generic(Structure):
     pass
 decodeFunc = CFUNCTYPE(c_int, POINTER(mark5_stream), c_int, POINTER(POINTER(c_float)))
+complex_decodeFunc = CFUNCTYPE(c_int, POINTER(mark5_stream), c_int, POINTER(POINTER(c_float)))
 countFunc = CFUNCTYPE(c_int, POINTER(mark5_stream), c_int, POINTER(c_uint))
 mark5_format_generic._fields_ = [
     ('init_format', CFUNCTYPE(c_int, POINTER(mark5_stream))),
     ('final_format', CFUNCTYPE(c_int, POINTER(mark5_stream))),
     ('decode', decodeFunc),
+    ('complex_decode', complex_decodeFunc),
     ('count', countFunc),
     ('validate', CFUNCTYPE(c_int, POINTER(mark5_stream))),
     ('resync', CFUNCTYPE(c_int, POINTER(mark5_stream))),
@@ -112,6 +116,7 @@ mark5_format_generic._fields_ = [
     ('alignmentseconds', c_int),
     ('nchan', c_int),
     ('nbit', c_int),
+    ('iscomplex', c_int),
     ('decimation', c_int),
     ('genheaders', CFUNCTYPE(None, POINTER(mark5_stream), c_int, POINTER(c_ubyte))),
 ]
@@ -160,6 +165,9 @@ mark5_stream_set_blanker.argtypes = [POINTER(mark5_stream), Mark5Blanker]
 mark5_stream_decode = _libraries['libmark5access.so'].mark5_stream_decode
 mark5_stream_decode.restype = c_int
 mark5_stream_decode.argtypes = [POINTER(mark5_stream), c_int, POINTER(POINTER(c_float))]
+mark5_stream_decode_complex = _libraries['libmark5access.so'].mark5_stream_decode_complex
+mark5_stream_decode_complex.restype = c_int
+mark5_stream_decode_complex.argtypes = [POINTER(mark5_stream), c_int, POINTER(POINTER(c_float))]
 mark5_stream_decode_double = _libraries['libmark5access.so'].mark5_stream_decode_double
 mark5_stream_decode_double.restype = c_int
 mark5_stream_decode_double.argtypes = [POINTER(mark5_stream), c_int, POINTER(POINTER(c_double))]
@@ -184,6 +192,9 @@ mark5_unpack.argtypes = [POINTER(mark5_stream), c_void_p, POINTER(POINTER(c_floa
 mark5_unpack_with_offset = _libraries['libmark5access.so'].mark5_unpack_with_offset
 mark5_unpack_with_offset.restype = c_int
 mark5_unpack_with_offset.argtypes = [POINTER(mark5_stream), c_void_p, c_int, POINTER(POINTER(c_float)), c_int]
+mark5_unpack_complex = _libraries['libmark5access.so'].mark5_unpack_complex
+mark5_unpack_complex.restype = c_int
+mark5_unpack_complex.argtypes = [POINTER(mark5_stream), c_void_p, POINTER(POINTER(c_float)), c_int]
 new_mark5_format_vlba = _libraries['libmark5access.so'].new_mark5_format_vlba
 new_mark5_format_vlba.restype = POINTER(mark5_format_generic)
 new_mark5_format_vlba.argtypes = [c_int, c_int, c_int, c_int, c_int]
@@ -270,14 +281,14 @@ __all__ = ['mark5_stream_next_frame', 'new_mark5_format_mark4',
            'int64_t', 'mark5_format_vdif_set_leapsecs',
            'new_mark5_format_vlba_nomod', 'delete_mark5_format',
            'MK5_FORMAT_MARK4', 'Mark5Blanker',
-           'mark5_stream_get_sample_time', 'mark5_unpack',
+           'mark5_stream_get_sample_time', 'mark5_unpack', 'mark5_unpack_complex',
            'mark5_format_generic', 'new_mark5_format_vlba',
            'delete_mark5_format_generic', 'MK5_BLANKER_NONE',
            'new_mark5_format_d2k', 'new_mark5_stream_memory',
            'MK5_BLANKER_CODIF', 'mark5_stream_fix_mjd',
            'new_mark5_format_mark5b', 'mark5_format_generic_print',
            'new_mark5_format_from_name', 'MK5_FORMAT_UNKNOWN',
-           'new_mark5_format_from_stream', 'decodeFunc',
+           'new_mark5_format_from_stream', 'decodeFunc', 'complex_decodeFunc',
            'MK5_BLANKER_VDIF', 'print_mark5_format',
            'mark5_stream_seek', 'mark5_stream_file_add_infile',
            'new_mark5_stream_absorb', 'new_mark5_stream_file',
@@ -289,7 +300,7 @@ __all__ = ['mark5_stream_next_frame', 'new_mark5_format_mark4',
            'mark5_library_setoption',
            'new_mark5_format_generic_from_string',
            'MK5_BLANKER_MARK5', 'mark5_stream_copy', 'Mark5Format',
-           'mark5_stream_decode', 'MK5_FORMAT_VLBN',
+           'mark5_stream_decode', 'mark5_stream_decode_complex', 'MK5_FORMAT_VLBN',
            'mark5_stream_resync', 'mark5_stream_decode_double',
            'MK5_FORMAT_MARK5B', 'mark5_stream_set_blanker',
            'new_mark5_format_kvn5b', 'MK5_FORMAT_VLBA',

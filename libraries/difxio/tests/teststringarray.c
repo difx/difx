@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: teststringarray.c 4115 2011-12-10 22:13:44Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
- * $LastChangedRevision: 4115 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2011-12-11 06:13:44 +0800 (日, 2011-12-11) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <math.h>

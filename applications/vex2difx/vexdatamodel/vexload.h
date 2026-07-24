@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vexload.h 10845 2022-12-02 21:37:56Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/vexdatamodel/vexload.h $
- * $LastChangedRevision: 10845 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-12-03 05:37:56 +0800 (六, 2022-12-03) $
- *
- *==========================================================================*/
 
 #ifndef __VEXLOAD_H__
 #define __VEXLOAD_H__

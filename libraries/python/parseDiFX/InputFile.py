@@ -13,23 +13,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: InputFile.py 10549 2022-07-26 12:21:49Z HelgeRottmann $
-# $HeadURL: $
-# $LastChangedRevision: 10549 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2022-07-26 20:21:49 +0800 (二, 2022-07-26) $
-#
-#============================================================================
 
-from .Common import get_common_settings, get_freqtable_info, get_telescopetable_info, get_datastreamtable_info, get_baselinetable_info, get_datatable_info
+from .Common import get_common_settings, get_configtable_info, get_freqtable_info, get_telescopetable_info, get_datastreamtable_info, get_baselinetable_info, get_datatable_info
 
 class InputFile:
 
     def __init__(self):
         self.common = None
+        self.numconfigs, self.configs = 0, None
         self.numfreqs, self.freqs = 0, None
         self.numtelescopes, self.telescopes = 0, None
         self.numdatastreams, self.datastreams = 0, None
@@ -40,6 +31,7 @@ class InputFile:
 
     def fromfile(self, inputfile):
         self.common = get_common_settings(inputfile)
+        self.numconfigs, self.configs = get_configtable_info(inputfile)
         self.numfreqs, self.freqs = get_freqtable_info(inputfile)
         self.numtelescopes, self.telescopes = get_telescopetable_info(inputfile)
         self.numdatastreams, self.datastreams = get_datastreamtable_info(inputfile)

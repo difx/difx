@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_intent.cpp 10265 2021-10-16 16:00:54Z WalterBrisken $
- * $HeadURL: $
- * $LastChangedRevision: 10265 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2021-10-16 10:00:54 -0600 (Sat, 16 Oct 2021) $
- *
- *==========================================================================*/
 
 #include "vex_intent.h"
 

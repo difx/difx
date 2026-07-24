@@ -48,9 +48,9 @@ struct getCALC_arg {
         double ypole[5];        /* earth pole offset, y (arcsecs) */
      
         double pressure_a;      /* surface pressure stna (millibars) 
-                                 * enter 0.0 for none availiable */
+                                 * enter 0.0 for none available */
         double pressure_b;      /* surface pressure stnb (millibars) 
-                                 * enter 0.0 for none availiable */
+                                 * enter 0.0 for none available */
 
         char  *station_a;       /* station A name */
         char  *axis_type_a;     /* station A mount type, 'altz', 'equa',
@@ -91,12 +91,11 @@ typedef struct getCALC_res getCALC_res;
 #define	CALCPROG ((unsigned long)(0x20000340))
 #define	CALCVERS ((unsigned long)(1))
 #define	GETCALC ((unsigned long)(1))
-extern  getCALC_res * getcalc_1();
-extern int calcprog_1_freeresult();
+getCALC_res * getcalc_1(struct getCALC_arg *argp, CLIENT *clnt);
 
 /* the xdr functions */
-extern bool_t xdr_getCALC_arg();
-extern bool_t xdr_CALCRecord();
-extern bool_t xdr_getCALC_res();
+bool_t xdr_getCALC_arg(XDR *xdrs, ...);
+bool_t xdr_CALCRecord(XDR *xdrs, ...);
+bool_t xdr_getCALC_res(XDR *xdrs, ...);
 
 #endif /* !_CALC_H_RPCGEN */

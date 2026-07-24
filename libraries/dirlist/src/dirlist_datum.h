@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: dirlist_datum.h 8956 2019-05-24 17:28:20Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 8956 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2019-05-25 01:28:20 +0800 (六, 2019-05-25) $
-//
-//============================================================================
 
 #ifndef __DIRLIST_DATUM_H__
 #define __DIRLIST_DATUM_H__

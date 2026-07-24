@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2023 by Walter Brisken & John Morgan & Leonid Petrov *
+ *   Copyright (C) 2008-2025 by Walter Brisken & John Morgan & Leonid Petrov *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsPH.c 10952 2023-04-07 18:12:10Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsPH.c $
-// $LastChangedRevision: 10952 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2023-04-08 02:12:10 +0800 (六, 2023-04-08) $
-//
-//============================================================================
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -584,7 +574,7 @@ static int parseDifxPulseCal(const char *line,
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS],
 	float pulseCalRate[2][array_MAX_TONES],
 	int refDay, const DifxInput *D, int *configId, 
-	int year, const struct CommandLineOptions *opts)
+	int year, const struct CommandLineOptions *opts, enum AllPcalTonesMode allpcaltones)
 {
 	const DifxFreq *df;
 	const DifxDatastream *dd;
@@ -817,7 +807,7 @@ static int parseDifxPulseCal(const char *line,
 			/* set up pcal information for this recFreq (only up to nRecTones)*/
 			/* nRecTone is simply the number of tones that fall within the recorded band */
 			/* not all of them may be desired. */
-			nRecTone = DifxDatastreamGetPhasecalTones(toneFreq, dd, df, nt, opts->allpcaltones);
+			nRecTone = DifxDatastreamGetPhasecalTones(toneFreq, dd, df, nt, allpcaltones);
 
 			nSkip = 0;				/* number of tones skipped because they weren't selected in the .input file */
 			if(nRecTone <= tone)
@@ -952,12 +942,62 @@ static int countTones(const DifxDatastream *dd)
 	return n;
 }
 
+/* slight variant of the similar named function in difxio */
+static int DifxInputGetMaxTones2(const DifxInput *D, enum AllPcalTonesMode allpcaltones)
+{
+	int d, nTones;
+	int maxTones = 0;
+	double lowest, highest;
+
+	if(allpcaltones == AllPcalTonesOff)
+	{
+		/* A case when we use the tones defined in the difx input file */
+		for(d = 0; d < D->nDatastream; ++d)
+		{
+			int f;
+
+			if(D->datastream[d].phaseCalIntervalMHz == 0)
+			{
+				continue;
+			}
+			for(f = 0; f < D->datastream[d].nRecFreq; ++f)
+			{
+				int fd;
+
+				fd = D->datastream[d].recFreqId[f];
+				if(fd < 0)
+				{
+					break;
+				}
+				if(D->freq[fd].nTone > maxTones)
+				{
+					maxTones = D->freq[fd].nTone;
+				}
+			}
+		}
+        } 
+        else
+	{
+		/* A case when we use all the tones */
+		for(d = 0; d < D->nDatastream; ++d)
+		{
+			nTones = DifxDatastreamGetPhasecalRange(D->datastream + d, &(D->freq[D->datastream[d].recFreqId[0]]), &lowest, &highest);
+			if(nTones > maxTones)
+			{
+				maxTones = nTones;
+			}
+		}
+	}
+
+	return maxTones;
+}
+
 /* Create FITS PH table out of available TSM-derived VLBA classic pulse cal data files (.pcal),
  * non-DiFX cable cal files (.cablecal), or DiFX-extracted phase cal tone files (PCAL_*)
  */
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	const struct CommandLineOptions *opts)
+	const struct CommandLineOptions *opts, enum AllPcalTonesMode allpcaltones)
 {
 	char stateFormFloat[8];
 	char toneFormDouble[8];
@@ -991,6 +1031,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	char line[MaxLineLength+1];
 	int nBand, nPol;
 	int nTone=0;
+	unsigned int totalTones;
 	int nDifxTone;
 	int nAccum = 0;
 	int lastnWindow;
@@ -1162,7 +1203,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		printf("    Number of pcal tones from external files: %d\n", nTone);
 	}
 
-	nDifxTone = DifxInputGetMaxTones(D);
+	nDifxTone = DifxInputGetMaxTones2(D, allpcaltones);
 	if(opts->verbose)
 	{
 		printf("    Number of DiFX exteracted pcal tones:     %d\n", nDifxTone);
@@ -1181,7 +1222,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		nTone = nDifxTone;
 	}
 
-	if(nTone*nBand > array_MAX_TONES)
+	totalTones = nTone*nBand;
+
+	if(totalTones > array_MAX_TONES)
 	{
 		printf("Developer Error: DifxInput2FitsPH: nTone(=%d)*nBand(=%d) exceeds array_MAX_TONES(=%d).  No pulse cal data will be enFITSulated.\n", nTone, nBand, array_MAX_TONES);
 
@@ -1197,8 +1240,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 
 	sprintf(stateFormFloat, "%dE", 4*nBand);
-	sprintf(toneFormFloat,  "%dE", nTone*nBand);
-	sprintf(toneFormDouble, "%dD", nTone*nBand);
+	sprintf(toneFormFloat,  "%dE", totalTones);
+	sprintf(toneFormDouble, "%dD", totalTones);
 	
 	if(nPol == 2)
 	{
@@ -1220,7 +1263,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		exit(EXIT_FAILURE);
 	}
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "PHASE-CAL");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "PHASE-CAL");	/* There can be more than one of these tables */
 	arrayWriteKeys (p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
 	fitsWriteInteger(out, "NO_TONES", nTone, "");
@@ -1479,7 +1522,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						continue;	/* to next line in file */
 					}
 					originalDsId = parseDifxPulseCal(line, originalDsIds, nds, nBand, nTone, &newSourceId, &newScanId, &time, jobId,
-							pulseCalFreq, pulseCalRe, pulseCalIm, stateCount, pulseCalRate, refDay, D, &newConfigId, year, opts);
+							pulseCalFreq, pulseCalRe, pulseCalIm, stateCount, pulseCalRate, refDay, D, &newConfigId, year, opts, allpcaltones);
 					if(originalDsId >= 0)
 					{
 						nLines++;
@@ -1571,7 +1614,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							
 							originalDsId = parseDifxPulseCal(line, originalDsIds, nds, nBand, nTone, &newSourceId, &newScanId, &time, jobId,
 										pulseCalFreq, pulseCalRe, pulseCalIm, stateCount, pulseCalRate,
-										refDay, D, &newConfigId, year, opts);
+										refDay, D, &newConfigId, year, opts, allpcaltones);
 
 							if(FITSPH_DEBUG > 2)
 							{

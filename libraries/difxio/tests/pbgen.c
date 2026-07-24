@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012-2016 by John Morgan & Walter Brisken               *
+ *   Copyright (C) 2012-2025 by John Morgan & Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: pbgen.c 7513 2016-11-02 07:01:39Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
- * $LastChangedRevision: 7513 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2016-11-02 15:01:39 +0800 (三, 2016-11-02) $
- *
- *==========================================================================*/
 
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -141,20 +131,17 @@ int getMergedDifxInput(int argc, char **argv, DifxInput *D)
 
 int main(int argc, char **argv)
 {
-	int error;
 	DifxInput *D = 0;
 	DifxInput *D1 = 0;
 	DifxInput *D2 = 0;
-	DifxAntenna *da = 0;
 	//FIXME need to choose phase centre and time increment at command line!!
-	int n, s, a, np, dsId, antId;
+	int n, s, a, dsId, antId;
 	int phaseCentre = 0;
 	int tInc;
 	int new_scan= 1;
 	int header= 1;
 	double distance, pangle; 
 	int i, l;
-	int nJob = 0;
 
 	char *baseFile[MAX_INPUT_FILES];
 	int nBaseFile = 0;
@@ -356,15 +343,12 @@ int main(int argc, char **argv)
 	for(s = 0; s < D->nScan; ++s)
 	{
 		const DifxScan *scan;
-		const DifxJob *job;
 		const DifxConfig *config;
 		const DifxPolyModel *im_pointing, *im_source;
-		int configId, jobId, terms;
+		int configId, terms;
 		double mjd, dt;
 		double az_pointing, el_pointing, az_source, el_source;
 		scan = D->scan + s;
-		jobId = scan->jobId;
-		job = D->job + jobId;
 		configId = scan->configId;
 
 		if(configId < 0)
@@ -381,11 +365,7 @@ int main(int argc, char **argv)
 		//FIXME should check if this changes (at least check if nAnt changes)
 		//maybe just rewrite participating antennas at the start of each scan.
 
-		if(scan->im)
-		{
-			np = scan->nPoly;
-		}
-		else
+		if(!scan->im)
 		{
 			fprintf(stderr, "No IM info available for scan %d: skipping generation of ML table\n", s);
 			continue;
@@ -419,8 +399,6 @@ int main(int argc, char **argv)
 			for(a = 0; a < config->nAntenna; ++a)
 			//for(a = 0; a < 1; ++a)
 			{
-				const DifxAntenna *da;
-				const DifxPolyModel *P;
 				int dsId, antId;
 
 				dsId = config->ant2dsId[a];
@@ -435,8 +413,6 @@ int main(int argc, char **argv)
 				{
 					continue;
 				}
-
-				da = D->antenna + antId;
 
 				if(scan->im[antId] == 0)
 				{

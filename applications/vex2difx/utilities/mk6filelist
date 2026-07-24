@@ -29,8 +29,8 @@ from datetime import *
 import re
 
 program = 'mk6filelist'
-version = '0.3'
-verdate = '20240212'
+version = '0.4'
+verdate = '20240304'
 author = 'Mark Wainright and Walter Brisken'
 
 MARK6_VSN_IDS = ['%']
@@ -158,11 +158,11 @@ def getvexantennamodlists(vexobsfile):
 	modList = []
 
 	# Regexps to flexibly detect VEX entries and fields; can test with https://regex101.com/
-	reComment = re.compile("^\s*\*")
-	reSection = re.compile("^\s*\$\s*(.*?)\s*;")
-	reDef = re.compile("^\s*def\s+(.*?)\s*;")
-	reVSN = re.compile("\W*VSN\s*=\s*(.*?)\s*:\s*(.*?)\s*:")
-	reEnddef = re.compile("\W*enddef\s*;")
+	reComment = re.compile(r"^\s*\*")
+	reSection = re.compile(r"^\s*\$\s*(.*?)\s*;")
+	reDef = re.compile(r"^\s*def\s+(.*?)\s*;")
+	reVSN = re.compile(r"\W*VSN\s*=\s*(.*?)\s*:\s*(.*?)\s*:")
+	reEnddef = re.compile(r"\W*enddef\s*;")
 
 	# Look up expt name and module info from VEX
 	vexobs = open(vexobsfile, "r")
@@ -215,7 +215,7 @@ def getvexantennamodlists(vexobsfile):
 	if not ok:
 		exit(1)
 	# harmless lack of info
-	if len(antennaModuleList) is 0:
+	if len(antennaModuleList) == 0:
 		print("no antennas with mark6 modules found, nothing more to do, exiting")
 		exit(0)
 	return (experName,antennaModuleList,modList)
@@ -286,12 +286,12 @@ if verbose > 1:
 		print ("%s recorded on %s" % (antMod[0], antMod[1]))
 	print('')
 
-# make an antenna.filelist for each antenna in the antenna module list
+# make an <project>.<antenna>.mark6filelist for each antenna in the antenna module list
 antList = []
 antNoModuleFileList = []
 for (ant,modlist) in antennaModuleList:
 	antList.append(ant.upper())
-	antennaFileName = experName.lower() + '.' + ant.lower() + '.filelist'
+	antennaFileName = experName.lower() + '.' + ant.lower() + '.mark6filelist'
 	antFileWritten = False
 	antfile = open(antennaFileName, 'w')
 	missingAntModules = []
@@ -325,7 +325,7 @@ for (ant,modlist) in antennaModuleList:
 
 if len(antNoModuleFileList) > 0:
 	for ant in antNoModuleFileList:
-		antFileName = experName.lower() + '.' + ant.lower() + '.filelist'
+		antFileName = experName.lower() + '.' + ant.lower() + '.mark6filelist'
 		if verbose > 1:
 			print ("Warning: using VEX %s for antenna %s to generate tentative %s. Please verify it manually!" % (ant, vexObsFile, antFileName))
 		scandata = getvexscandata(ant, vexObsFile)

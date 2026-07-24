@@ -109,7 +109,7 @@ public class VEX2XML {
         System.out.println("VEX2XML v. 1.2");
         System.out.println("(C) MIT Haystack Observatory, 2013-2018");
         System.out.println("Authors: Victor Pankratius, Geoffrey Crew");
-        System.out.println("$HeadURL: https://vault.haystack.mit.edu/svn/hops/trunk/vex2xml/src4/VEX2XML.java $");
+        System.out.println("$HeadURL: svn+ssh://vault.haystack.mit.edu/svn/hops/trunk/vex2xml/src4/VEX2XML.java $");
         System.out.println("-------------------------------------" +
             "-------------------------------------");
         

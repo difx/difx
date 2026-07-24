@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: dateutil.py 8684 2019-02-05 12:58:17Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/difxutil/dateutil.py $
-# $LastChangedRevision: 8684 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2019-02-05 20:58:17 +0800 (二, 2019-02-05) $
-#
-#============================================================================
 from datetime import *
 import math
 

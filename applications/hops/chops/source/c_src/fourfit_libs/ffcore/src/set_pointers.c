@@ -132,7 +132,6 @@ struct freq_corel *corel)
 
                                         /* Now start filling up corel struct */
         fc = corel + fqno;
-//      fc->freq_code = fchars[fqno];
         fc->frequency = flist[fqno].sky_frequency;
                                         /* Frequency group is 1st char of */
                                         /* channel id by Mk4 corr. convention */

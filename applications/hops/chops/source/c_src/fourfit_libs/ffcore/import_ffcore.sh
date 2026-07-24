@@ -85,6 +85,7 @@ else
 
     declare -a source_list=(
     "create_lockfile.c"
+    "diff_file_phase.c"
     "fourfit_signal_handler.c"
     "wait_for_write_lock.c"
     "clear_pass.c"
@@ -102,6 +103,8 @@ else
     "generate_cblock.c"
     "vrot.c"
     "pcal_interp.c"
+    "stcount_interp.c"
+    "update.c"
     "ff_misc_if.c"
     )
 

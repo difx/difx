@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: zoomfreq.cpp 10673 2022-10-10 11:12:22Z JanWagner $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/util.h $
- * $LastChangedRevision: 10673 $
- * $Author: JanWagner $
- * $LastChangedDate: 2022-10-10 19:12:22 +0800 (一, 2022-10-10) $
- *
- *==========================================================================*/
 
 #include "zoomfreq.h"
 #include "freq.h"

@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: model.py 10706 2022-10-31 07:44:33Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/difxdb/model/model.py $
-# $LastChangedRevision: 10706 $
-# $Author: JanWagner $
-# $LastChangedDate: 2022-10-31 15:44:33 +0800 (一, 2022-10-31) $
-#
-#============================================================================
 class Module(object):
     pass
     

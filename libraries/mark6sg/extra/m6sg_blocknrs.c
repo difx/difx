@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014 by Jan Wagner                                      *
+ *   Copyright (C) 2014-2025 by Jan Wagner                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: m6sg_blocknrs.c 9788 2020-10-29 09:27:58Z JanWagner $
-// $HeadURL$
-// $LastChangedRevision: 9788 $
-// $Author: JanWagner $
-// $LastChangedDate: 2020-10-29 17:27:58 +0800 (四, 2020-10-29) $
-//
-//============================================================================
 //
 // m6sg_blocknrs /mnt/disks/1/[0-7]/testrecording.vdif
 //
@@ -161,8 +151,8 @@ int main(int argc, char** argv)
             if (bhdr[i].wb_size != fhdr[i].block_size && offset[i] < (file_size[i] - fhdr[i].block_size))
             {
                 fprintf(stderr,
-                    "ERROR: file %d at offset %ld: mismatch in current wb_size %u vs. file block_size %u : blk %u, previous blk %u\n",
-                    i, offset[i], bhdr[i].wb_size, fhdr[i].block_size, bhdr[i].blocknum, blocknum[i]
+                    "ERROR: file %d at offset %ld: mismatch in current wb_size %u vs. file block_size %u : blk %u, previous blk %lu\n",
+                    i, offset[i], bhdr[i].wb_size, fhdr[i].block_size, bhdr[i].blocknum, (unsigned int)(blocknum[i])
                 );
 
                 do

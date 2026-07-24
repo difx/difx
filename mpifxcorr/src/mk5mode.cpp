@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL: $
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 #include <mpi.h>
 #include "mk5mode.h"
 #include "mk5.h"
@@ -131,9 +121,25 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
     int erasedsamples = 0;
 
     mungedoffset = sampleoffset % mark5stream->samplegranularity;
+    // For complex data the erasure must be done in complex-sample units:
+    // unpackedcomplexarrays is a cast of the same memory, so indexing the
+    // float array with these (complex-sample) bounds zeroes float elements
+    // [unpacksamples+mungedoffset, samplestounpack) - i.e. the re/im of the
+    // complex sample at the MIDDLE of the FFT window (fftchannels/2) - rather
+    // than the intended beyond-window tail. That corrupted one mid-window
+    // sample per FFT for every granularity>1 complex config, while leaving
+    // the returned weight exactly 1.0 (the two erased floats were counted as
+    // two samples, cancelling the extra ones mark5access had reported).
     for(int i = 0; i < mungedoffset; i++) {
       for(int b = 0; b < mark5stream->nchan; ++b) {
-        if(unpackedarrays[b][i] != 0.0) {
+        if(usecomplex) {
+          if(unpackedcomplexarrays[b][i].re != 0.0f || unpackedcomplexarrays[b][i].im != 0.0f) {
+            unpackedcomplexarrays[b][i].re = 0.0f;
+            unpackedcomplexarrays[b][i].im = 0.0f;
+            erasedsamples++;
+          }
+        }
+        else if(unpackedarrays[b][i] != 0.0) {
           unpackedarrays[b][i] = 0.0;
           erasedsamples++;
         }
@@ -141,7 +147,14 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
     }
     for(int i = unpacksamples + mungedoffset; i < samplestounpack; i++) {
       for(int b = 0; b < mark5stream->nchan; ++b) {
-        if(unpackedarrays[b][i] != 0.0) {
+        if(usecomplex) {
+          if(unpackedcomplexarrays[b][i].re != 0.0f || unpackedcomplexarrays[b][i].im != 0.0f) {
+            unpackedcomplexarrays[b][i].re = 0.0f;
+            unpackedcomplexarrays[b][i].im = 0.0f;
+            erasedsamples++;
+          }
+        }
+        else if(unpackedarrays[b][i] != 0.0) {
           unpackedarrays[b][i] = 0.0;
           erasedsamples++;
         }

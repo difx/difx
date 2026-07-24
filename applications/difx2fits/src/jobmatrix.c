@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2016 by Walter Brisken and Helge Rottmann          *
+ *   Copyright (C) 2009-2026 by Walter Brisken and Helge Rottmann          *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,18 +16,9 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: jobmatrix.c 10605 2022-08-22 22:53:15Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/jobmatrix.c $
- * $LastChangedRevision: 10605 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-08-23 06:53:15 +0800 (二, 2022-08-23) $
- *
- *==========================================================================*/
 
 #include <stdlib.h>
+#include "difxio/difxio_macros.h"
 #include "jobmatrix.h"
 
 struct _JobMatrix
@@ -133,9 +124,11 @@ void writeJobMatrix(const JobMatrix *jm, int passNum)
 	// write header line
 	for(a = 0; a < jm->nAntenna; ++a)
 	{
-		strncpy(name, jm->D->antenna[a].name, 2);
+		/* Just retain up to the first two letters of the antenna name */
+		name[0] = jm->D->antenna[a].name[0];
+		name[1] = jm->D->antenna[a].name[1];
 		name[2] = 0;
-		fprintf(out, "%s ", name);
+		fprintf(out, "%2s ", name);
 	}
 	fprintf(out, "\n\n");
 

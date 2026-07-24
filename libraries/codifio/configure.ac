@@ -1,4 +1,4 @@
-AC_INIT([CODIFIO],[0.8],[Chris.Philips@csiro.au])
+AC_INIT([CODIFIO],[0.9],[Chris.Philips@csiro.au])
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
@@ -17,7 +17,7 @@ AC_C_BIGENDIAN
 
 # Checks for programs.
 AC_PATH_PROG([PYTHON],[python])
-AC_PROG_CC
+AC_PROG_CC_C99
 LT_INIT
 
 # Checks for libraries.

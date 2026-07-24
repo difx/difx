@@ -6,7 +6,7 @@ SUBDIRS = .
 
 AM_CPPFLAGS = -I. -I$(srcdir)/include -I$(srcdir)/../../msg/include -I$(srcdir)/../../mk4util/include -DHAVE_CONFIG_H -I$(srcdir)/../ffcore/include
 
-pkginclude_HEADERS = ./include/control.h ./include/parser.h ./include/ffcontrol.h
+pkginclude_HEADERS = ./include/control.h ./include/parser.h ./include/ffcontrol.h ./include/frqsupport.h
 
 pkglib_LTLIBRARIES = libffcontrolb.la
 

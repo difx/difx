@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: bbsum.c 3853 2011-10-09 03:23:09Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark5access/bbsum/bbsum.c $
-// $LastChangedRevision: 3853 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2011-10-09 11:23:09 +0800 (日, 2011-10-09) $
-//
-//============================================================================
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE

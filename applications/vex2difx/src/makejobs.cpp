@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: makejobs.cpp 8543 2018-10-16 17:26:50Z JimJacobs $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/util.h $
- * $LastChangedRevision: 8543 $
- * $Author: JimJacobs $
- * $LastChangedDate: 2018-10-17 01:26:50 +0800 (三, 2018-10-17) $
- *
- *==========================================================================*/
 
 #include <cstdlib>
 #include <sstream>
@@ -89,6 +79,10 @@ static void genJobGroups(std::vector<JobGroup> &JGs, const VexData *V, const Cor
 		JobGroup &JG = JGs.back();
 		JG.scans.push_back(scans.front());
 		JG.setTimeRange(*scan);
+		for(std::map<std::string,Interval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+		{
+			JG.antennas.insert(it->first);
+		}
 		scans.pop_front();
 
 		const VexScan *scan1 = V->getScanByDefName(JG.scans.back());

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_baseline.c 10579 2022-08-02 10:58:00Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/difxio/difxio/difx_baseline.c $
-// $LastChangedRevision: 10579 $
-// $Author: JanWagner $
-// $LastChangedDate: 2022-08-02 18:58:00 +0800 (二, 2022-08-02) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -219,7 +209,7 @@ void fprintDifxBaseline(FILE *fp, const DifxBaseline *db)
 		{
 			if(db->bandA[f])
 			{
-				fprintf(fp, " {", f);
+				fprintf(fp, " {");
 				for(p = 0; p < db->nPolProd[f]; p++)
 				{
 					fprintf(fp, "%d", db->bandA[f][p]);
@@ -240,7 +230,7 @@ void fprintDifxBaseline(FILE *fp, const DifxBaseline *db)
 		{
 			if(db->bandB[f])
 			{
-				fprintf(fp, " {", f);
+				fprintf(fp, " {");
 				for(p = 0; p < db->nPolProd[f]; p++)
 				{
 					fprintf(fp, "%d", db->bandB[f][p]);

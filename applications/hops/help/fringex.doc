@@ -75,7 +75,7 @@ OPTION FLAGS: 	-a
 			accumulation period of the data.  The default
 			value is 9999 seconds, which the program
 			interprets as the entire scan.  Instead of a
-			single number, iarg can be a list of up to 15
+			single number, iarg can be a list of up to 100
 			numbers, comma separated with no embedded
 			spaces.  Fringex will perform one segmenting
 			pass at each specified integration time,

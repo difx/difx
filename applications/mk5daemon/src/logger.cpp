@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: logger.cpp 4091 2011-12-09 13:53:39Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/logger.cpp $
- * $LastChangedRevision: 4091 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2011-12-09 21:53:39 +0800 (五, 2011-12-09) $
- *
- *==========================================================================*/
 
 #include <cstdio>
 #include <cstdlib>

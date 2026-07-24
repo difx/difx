@@ -37,6 +37,7 @@ void freq_spacing (struct type_pass *pass)
     extern struct type_param param;
     extern struct type_status status;
 #if ORIGINAL_FREQ_SPACING_CODE
+// this hasn't been used in a while, so a warning is appropriate
 #warning "using original freq_spacing() MBD sample space"
                                         // this assumes there is data in all channels
                                         /* Find the lowest frequency, the smallest */
@@ -59,7 +60,8 @@ void freq_spacing (struct type_pass *pass)
         }
     avg_freq /= pass->nfreq;
 #else /* ORIGINAL_FREQ_SPACING_CODE */
-#warning "using modified freq_spacing() MBD sample space"
+//#warning "using modified freq_spacing() MBD sample space"
+//this has been the norm for a while, so no need for a warning
     // this version ignores channels with no data
     int mnfr = 0, mxfr = pass->nfreq-1, frcnt = 1;
     while (status.apbyfreq[mxfr] == 0 && mxfr > mnfr) mxfr--;

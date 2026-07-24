@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: difx_config.c 7647 2017-02-16 20:32:32Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxio/trunk/difxio/difx_config.c $
-// $LastChangedRevision: 7647 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-02-16 14:32:32 -0600 (Thu, 16 Feb 2017) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

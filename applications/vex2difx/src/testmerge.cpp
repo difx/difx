@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex2difx.cpp 6854 2015-07-18 16:46:05Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 6854 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2015-07-18 10:46:05 -0600 (Sat, 18 Jul 2015) $
- *
- *==========================================================================*/
 
 #include <vector>
 #include <set>

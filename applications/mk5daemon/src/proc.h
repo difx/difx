@@ -16,17 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: proc.h 1953 2010-02-10 20:57:48Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/branches/difx-1.5/src/proc.h $
- * $LastChangedRevision: 1953 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2010-02-10 13:57:48 -0700 (Wed, 10 Feb 2010) $
- *
- *==========================================================================*/
-
 #ifndef __PROC_H__
 #define __PROC_H__
 

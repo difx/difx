@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include "msg.h"
 #include "param_struct.h"
 #include "pass_struct.h"
 
@@ -47,7 +48,10 @@ double diff_file_phase (struct type_pass *p, // ptr to current pass structure
             {
                                     // free previous memory if it's there
             if (pmall[i] != NULL)
+            {
                 free (pmall[i]);
+                pmall[i] = NULL;
+            }
                                     // open baseline files if non-null
             if (p->control.adhoc_file[i][0] != '\0')
                 {
@@ -122,7 +126,7 @@ double diff_file_phase (struct type_pass *p, // ptr to current pass structure
                         }
                                     // realloc enough space to store the next line
                     nchunks++;
-                    pmall[i] = realloc (pmall[i], nchunks * lleng);
+                    pmall[i] = realloc (pmall[i], nchunks * lleng); 
                     if (pmall[i] == NULL)
                         {
                         msg ("realloc failure in diff_file_phase; skipping rest of file", 2);
@@ -139,16 +143,15 @@ double diff_file_phase (struct type_pass *p, // ptr to current pass structure
                         pd[nchan[i]+1+n] = pd[n];
                     nl[i] = 2;
                     }
-                                    // denote new baseline in memory
-                bl_mem[i] = param.baseline[i];
                 }
+
+                                    // denote new baseline in memory
+            bl_mem[i] = param.baseline[i];
             }
                                     // data are in memory array 
                                     // now find differential phase
     for (i=0; i<2; i++)
-
-    for (i=0; i<2; i++)
-        if (p->control.adhoc_file[i][0] != '\0')
+        if (p->control.adhoc_file[i][0] != '\0' && pmall[i] != NULL )
             {
                                     // determine frequency index
             pch = strchr (p->control.adhoc_file_chans[i], fcode);
@@ -161,6 +164,7 @@ double diff_file_phase (struct type_pass *p, // ptr to current pass structure
                 }
             nch = pch - p->control.adhoc_file_chans[i];
             pd = (double *) pmall[i];
+
                                     // bound t to be within data coverage region
             if (t < pd[0])          // earlier than first time?
                 t_bound = pd[0];
@@ -172,7 +176,7 @@ double diff_file_phase (struct type_pass *p, // ptr to current pass structure
                 
 
             for (n=1; n<nl[i]; n++)
-                if (pd[n * (nchan[i] + 1)] > t_bound)
+                if (pd[n * (nchan[i] + 1)] >= t_bound)
                     break;      
                                     // on exit, containing interval is n-1 .. n
             t_a = pd[(n - 1) * (nchan[i] + 1)];
@@ -190,4 +194,3 @@ double diff_file_phase (struct type_pass *p, // ptr to current pass structure
                                     // match sign sense of manual pcal
     return (phase[0] - phase[1]);
     }
-

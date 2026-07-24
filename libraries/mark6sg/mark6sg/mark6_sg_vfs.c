@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014 by Jan Wagner                                      *
+ *   Copyright (C) 2014-2025 by Jan Wagner                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mark6_sg_vfs.c 10551 2022-07-26 12:41:48Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/mark6sg/mark6sg/mark6_sg_vfs.c $
-// $LastChangedRevision: 10551 $
-// $Author: JanWagner $
-// $LastChangedDate: 2022-07-26 20:41:48 +0800 (二, 2022-07-26) $
-//
-//============================================================================
 #include "mark6sg.h"
 #include "mark6_sg_vfs_impl.h"
 #include "mark6_sg_format.h"
@@ -266,11 +256,16 @@ int mark6_sg_open(const char *scanname, int flags)
 
 #if HAVE_DIFXMESSAGE
     if (1) {
+        int v;
         DifxMessageMark6Activity m6act;
         memset(&m6act, 0x00, sizeof(m6act));
         memcpy(m6act.activeVsn, vfd->activeMSN, sizeof(vfd->activeMSN));
         m6act.state = MARK6_STATE_OPEN;
-        snprintf(m6act.scanName, sizeof(m6act.scanName)-1, "%s", vfd->scanname);
+        v = snprintf(m6act.scanName, sizeof(m6act.scanName), "%s", vfd->scanname);
+        if(v >= sizeof(m6act.scanName))
+        {
+            fprintf(stderr, "Warning: mark6_sg_close(): scanName truncated (%d >= %lu)\n", v, sizeof(m6act.scanName));
+        }
         difxMessageSendMark6Activity(&m6act);
     }
 #endif
@@ -437,11 +432,16 @@ int mark6_sg_close(int fd)
 
 #if HAVE_DIFXMESSAGE
     if (1) {
+        int v;
         DifxMessageMark6Activity m6act;
         memset(&m6act, 0x00, sizeof(m6act));
         memcpy(m6act.activeVsn, vfd->activeMSN, sizeof(vfd->activeMSN));
         m6act.state = MARK6_STATE_CLOSE;
-        snprintf(m6act.scanName, sizeof(m6act.scanName)-1, "%s", vfd->scanname);
+        v = snprintf(m6act.scanName, sizeof(m6act.scanName), "%s", vfd->scanname);
+        if(v >= sizeof(m6act.scanName))
+        {
+            fprintf(stderr, "Warning: mark6_sg_close(): scanName truncated (%d >= %lu)\n", v, sizeof(m6act.scanName));
+        }
         difxMessageSendMark6Activity(&m6act);
     }
 #endif
@@ -646,6 +646,7 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
             DifxMessageMark6Activity m6act;
             struct timeval now;
             double dt;
+            int v;
 
             gettimeofday(&now, NULL);
             dt = (now.tv_sec - prev_time.tv_sec) + 1e-6*(now.tv_usec - prev_time.tv_usec);
@@ -655,7 +656,11 @@ ssize_t mark6_sg_pread(int fd, void* buf, size_t count, off_t rdoffset)
             m6act.state = MARK6_STATE_PLAY;
             m6act.position = rdoffset;
             m6act.rate = (delta_read*8e-6)/dt;
-            snprintf(m6act.scanName, sizeof(m6act.scanName)-1, "%s", vfd->scanname);
+            v = snprintf(m6act.scanName, sizeof(m6act.scanName), "%s", vfd->scanname);
+            if(v >= sizeof(m6act.scanName))
+            {
+                fprintf(stderr, "Warning: mark6_sg_close(): scanName truncated (%d >= %lu)\n", v, sizeof(m6act.scanName));
+            }
             difxMessageSendMark6Activity(&m6act);
 
             gettimeofday(&prev_time, NULL);

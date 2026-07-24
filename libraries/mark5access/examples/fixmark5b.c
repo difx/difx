@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2017 by Walter Brisken                             *
+ *   Copyright (C) 2013-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fixmark5b.c 7676 2017-03-09 04:28:46Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 7676 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2017-03-09 12:28:46 +0800 (四, 2017-03-09) $
-//
-//============================================================================
 
 #include "config.h"
 #include <stdio.h>

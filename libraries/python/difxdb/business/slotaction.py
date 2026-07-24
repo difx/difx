@@ -14,16 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: slotaction.py 7658 2017-02-22 14:53:57Z HelgeRottmann $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/difxdb/business/slotaction.py $
-# $LastChangedRevision: 7658 $
-# $Author: HelgeRottmann $
-# $LastChangedDate: 2017-02-22 22:53:57 +0800 (三, 2017-02-22) $
-#
-#============================================================================
 from difxdb.model import model
 
 def slotExists(session, location):

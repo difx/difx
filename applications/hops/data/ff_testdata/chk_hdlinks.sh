@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_hdlinks.sh 325 2011-06-09 18:56:07Z gbc $
+# $Id: chk_hdlinks.sh 4574 2026-05-21 21:30:09Z gbc $
 #
 # Script to check hops_data_links.pl
 #

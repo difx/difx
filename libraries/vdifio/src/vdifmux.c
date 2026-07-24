@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2020 Walter Brisken                                *
+ *   Copyright (C) 2013-2024 Walter Brisken, Jan Wagner                    *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,17 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdifmux.c 9925 2021-02-23 15:43:09Z JanWagner $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk/src/vdifio.h $
-// $LastChangedRevision: 9925 $
-// $Author: JanWagner $
-// $LastChangedDate: 2021-02-23 23:43:09 +0800 (二, 2021-02-23) $
-//
-//============================================================================
-
 
 #include <stdio.h>
 #include <string.h>
@@ -167,7 +156,7 @@ int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPer
 
 	set_nOutputChan(vm);
 
-	/* NOTE!!! legacy header support is not yet complete.  It is being designed so that it may be possible to come from and go to either LEGACY or nonLEGACY headers */
+	/* NOTE!!!  Legacy header support is not yet complete.  It is being designed so that it may be possible to come from and go to either LEGACY or nonLEGACY headers */
 	/* to complete the feature, all reference to VDIF_HEADER_BYTES in vdifmux() need to be replaced */
 
 	if(flags & VDIF_MUX_FLAG_INPUTLEGACY)
@@ -523,7 +512,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int maxDestIndex;
 	int maxSrcIndex;
 	int bytesProcessed = -1;		/* the program return value */
-	int firstGoodByte = -1;			/* location of first non-fillpattern frame */
+	int firstGoodByte = -1;			/* location of first non-fill pattern frame */
 	int nEnd = 0;				/* number of frames processed after the end of the buffer first reached */
 	int nGoodOutput = 0;
 	int nBadOutput = 0;
@@ -665,7 +654,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			memcpy(&outputHeader, vh, 16);
 			if(vm->flags & VDIF_MUX_FLAG_PROPAGATEVALIDITY)
 			{
-				/* FIXME: handle heirarchical multiplexing */
+				/* FIXME: handle hierarchical multiplexing */
 
 				outputHeader.edv4.dummy = 0;
 				outputHeader.edv4.masklength = vm->nThread/vm->fanoutFactor;

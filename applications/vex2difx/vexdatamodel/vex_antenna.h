@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_antenna.h 10416 2022-03-20 21:38:38Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10416 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-03-21 05:38:38 +0800 (一, 2022-03-21) $
- *
- *==========================================================================*/
 
 #ifndef __VEX_ANTENNA_H__
 #define __VEX_ANTENNA_H__

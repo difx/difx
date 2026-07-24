@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_extension.cpp 10267 2021-10-17 16:30:40Z WalterBrisken $
- * $HeadURL:  $
- * $LastChangedRevision: 10267 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2021-10-17 10:30:40 -0600 (Sun, 17 Oct 2021) $
- *
- *==========================================================================*/
 
 #include "vex_extension.h"
 

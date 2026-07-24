@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: parserhelp.cpp 8211 2018-03-26 07:40:55Z ChrisPhillips $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream/src/vex2difx.cpp $
- * $LastChangedRevision: 8211 $
- * $Author: ChrisPhillips $
- * $LastChangedDate: 2018-03-26 15:40:55 +0800 (一, 2018-03-26) $
- *
- *==========================================================================*/
 
 #include <iostream>
 #include <cstdio>

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,22 +16,13 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsHeader.c 10537 2022-07-15 20:18:57Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsHeader.c $
-// $LastChangedRevision: 10537 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-07-16 04:18:57 +0800 (六, 2022-07-16) $
-//
-//============================================================================
 #include <sys/time.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 #include <glob.h>
 #include "difx2fits.h"
+#include "difxio/difxio_macros.h"
 
 #define SEC_DAY         86400.0             /* seconds in a mean solar day */
 #define MUSEC_DAY       86400000000.0       /* mus in a mean solar day */
@@ -108,7 +99,7 @@ static void writeDifxHistory(const DifxInput *D, struct fitsPrivate *out, const 
 	{
 		char pattern[PATH_MAX];
 
-		snprintf(pattern, PATH_MAX, "%s/*.history", D->job[j].outputFile);
+		snprintf_warn(pattern, PATH_MAX, "%s/*.history", D->job[j].outputFile);
 		glob(pattern, 0, 0, globs+j);
 		fileStart[j] = strlen(D->job[j].outputFile) + 1;
 	}

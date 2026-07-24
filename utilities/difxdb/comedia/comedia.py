@@ -15,16 +15,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: comedia.py 10635 2022-09-14 09:06:54Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb/comedia/comedia.py $
-# $LastChangedRevision: 10635 $
-# $Author: JanWagner $
-# $LastChangedDate: 2022-09-14 17:06:54 +0800 (三, 2022-09-14) $
-#
-#============================================================================
 __author__="Helge Rottmann"
 
 import re
@@ -32,6 +22,8 @@ import os
 import time
 from datetime import date
 import sys
+
+# python2 /python3 compatibility
 if sys.version_info < (3, 0):
     import tkMessageBox
     from Tkinter import *
@@ -45,23 +37,21 @@ else:
 import PIL.Image, PIL.ImageFont, PIL.ImageDraw
 import subprocess
 
-
+#from sqlalchemy import * 
 from difxdb.business.versionhistoryaction import *
 from difxdb.business.experimentaction import * 
 from difxdb.business.moduleaction import *
 from difxdb.business.slotaction import *
-from difxdb.model.dbConnection import Schema, Connection
 from difxdb.model import model
 from difxutil.dbutil import *
 from difxdb.difxdbconfig import DifxDbConfig
 from difxfile.difxdir import *
 from difxfile.difxfilelist import *
+from difxdb.model.dbConnection import Schema, Connection
 
 from collections import deque
-
-from sqlalchemy import *
 from tkinter_difx.multilistbox import *
-from functools import partial
+#from functools import partial
 
 # minimum database schema version required by comedia
 minSchemaMajor = 1
@@ -128,9 +118,9 @@ class MainWindow(GenericWindow):
         self.filterModuleTypeVar.set(self.moduleTypes[0])
         
         # regular expressions for matching various VSN types
-        self.patternSataVSN = re.compile('([a-zA-Z]+[+]\d+)')
-        self.patternPataVSN = re.compile('([a-zA-Z]+[\-]\d+)')
-        self.patternMark6VSN = re.compile('([a-zA-Z]+[%]\d+)')
+        self.patternSataVSN = re.compile(r'([a-zA-Z]+[+]\d+)')
+        self.patternPataVSN = re.compile(r'([a-zA-Z]+[\-]\d+)')
+        self.patternMark6VSN = re.compile(r'([a-zA-Z]+[%]\d+)')
                 
     def show(self):
         
@@ -1184,7 +1174,7 @@ class CheckinWindow(GenericWindow):
         
     def _splitVSNLabelScan(self):
         
-        m = re.match('([a-zA-Z]+[%\+-]\d+)/(\d+)/(\d+).*', self.txtVSN.get().lstrip())
+        m = re.match(r'([a-zA-Z]+[%\+-]\d+)/(\d+)/(\d+).*', self.txtVSN.get().lstrip())
      
         if (m != None):
             vsn = m.group(1).upper()
@@ -2307,7 +2297,7 @@ def printBarcode(label, printCommand):
                 
         c = canvas.Canvas("/tmp/comedia_vsn.pdf")
         c.setPageSize((89*mm,36*mm))
-        barcode39 = code39.Standard39(label, barHeight=10*mm, barWidth=0.27*mm, humanReadable=0, checksum=0)
+        barcode39 = code39.Standard39(label, barHeight=12*mm, barWidth=0.28*mm, humanReadable=0, checksum=0)
 
         c.setFontSize(12)
         c.drawString(6*mm, 30*mm, date.today().strftime("%d-%m-%Y"))

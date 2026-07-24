@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken and Jay Blanchard           *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsGN.c 11074 2023-09-14 17:39:04Z JayBlanchard $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsGN.c $
-// $LastChangedRevision: 11074 $
-// $Author: JayBlanchard $
-// $LastChangedDate: 2023-09-15 01:39:04 +0800 (五, 2023-09-15) $
-//
-//============================================================================
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -37,6 +27,7 @@
 #include "difx2fits.h"
 #include "util.h"
 #include "other.h"
+#include "difxio/difxio_macros.h"
 #include "difxio/antenna_db.h"
 
 #define MAXENTRIES		8000UL
@@ -51,14 +42,19 @@ typedef struct
 	int band;
 	char antName[ANTENNA_NAME_LENGTH];
 	int nFreq, nPoly, nDPFU, nTime;
-	float freq[2];
+	float freq[2];		/* [MHz] */
 	float poly[MAXTAB];
 	float DPFU[2];
 	float time[8];
 	float sxFlag;	/* 1 if it is an sx mode, otherwise 0 */
 } GainRow;
-	
-static const float bandEdges[N_VLBA_BANDS+1] = 
+
+void printGainRow(const GainRow *G)
+{
+	printf("GainRow: %s %d %f\n", G->antName, G->band, G->freq[0]);
+}
+
+static const float bandEdges[N_VLBA_BANDS+1] =
 {
 	0, 	/* 90cm P  */
 	450,	/* 50cm    */
@@ -68,7 +64,7 @@ static const float bandEdges[N_VLBA_BANDS+1] =
 	3900,	/* 6cm  C  */
 	6000,	/* 5cm  C  Different from above due to two separate gain curve files */
 	8000,	/* 4cm  X  */
-	10000,	/* 2cm  U  */
+	10001,	/* 2cm  U  */
 	18000, 	/* 1cm  K  */
 	26000, 	/*      Ka  Not yet existing */
 	40000,	/* 7mm  Q  */
@@ -102,10 +98,10 @@ static int getVLBAGainRow(GainRow *G, int nRow, const DifxAntenna *da, double fr
 	double efreq, dfreq;
 	const char *antName = da->name;
 
-	if (!(isDifxAntennaInGroup(da, VLBI_GROUP_HSA) || isDifxAntennaInGroup(da, VLBI_GROUP_VLA)))
-	  {
-	    fprintf(stderr, "\nWarning: You are using VLBA gain curve handling for non VLBA antenna: %s\n", antName);
-	  }
+	if(!(isDifxAntennaInGroup(da, VLBI_GROUP_HSA) || isDifxAntennaInGroup(da, VLBI_GROUP_VLA)))
+	{
+		fprintf(stderr, "\nWarning: You are using VLBA gain curve handling for non VLBA antenna: %s\n", antName);
+	}
 	efreq = 1e11;
 	eband = N_VLBA_BANDS;
 
@@ -123,7 +119,7 @@ static int getVLBAGainRow(GainRow *G, int nRow, const DifxAntenna *da, double fr
 
 	for(r = 0; r < nRow; ++r)
 	{
-		if(strcmp(antName, G[r].antName) != 0)
+		if(strcasecmp(antName, G[r].antName) != 0)
 		{
 			continue;
 		}
@@ -140,7 +136,7 @@ static int getVLBAGainRow(GainRow *G, int nRow, const DifxAntenna *da, double fr
 		{
 			continue;
 		}
-		dfreq = fabs(band-G[r].freq[0]);
+		dfreq = fabs(freq-G[r].freq[0]);
 		if(dband < eband || (dband == eband && dfreq < efreq))
 		{
 			bestr = r;
@@ -161,7 +157,8 @@ static int handleCbandGain(GainRow *G, int nRow, const DifxAntenna *da, double f
 
   cLowRow = getVLBAGainRow(G, nRow, da, 4900, mjd, 0); //0 is sxFlag
 
-  if(cLowRow == -1) {
+  if(cLowRow == -1)
+  {
     //We didn't get a gain so return what we normally would (which might still be -1)
     return getVLBAGainRow(G, nRow, da, freq, mjd, 0);
   }
@@ -169,7 +166,8 @@ static int handleCbandGain(GainRow *G, int nRow, const DifxAntenna *da, double f
   //-2.294x10^-6 from fit to full data
   //-1.11x10^-6 from two gains (perhaps more accurate as these are based off much more data)
   //Calc new gain based off 6cm gain +- freq change * above value
-  for(i=0; i<2; i++) {
+  for(i=0; i<2; i++)
+  {
     newDPFU[i] = (G[cLowRow].DPFU[i]-(freq - G[cLowRow].freq[i])*0.00000111);
   }
 
@@ -186,14 +184,15 @@ static int handleCbandGain(GainRow *G, int nRow, const DifxAntenna *da, double f
 
 static int isHSAAntenna(const char *token)
 {
-	const char antennas[] = " AR BR EB FD GB HN KP LA MK NL OV PT SC Y ";
-	char matcher[8];
+	const int MatchLength = ANTENNA_NAME_LENGTH+3;
+	const char antennas[] = " AR BR EB FD GB HN KP LA MK NL OV PT SC Y Y1 Y2 Y3 Y4 ";
+	char matcher[MatchLength];
 
 	if(strlen(token) >= ANTENNA_NAME_LENGTH)
 	{
 		return 0;
 	}
-	sprintf(matcher, " %s ", token);
+	snprintf_warn(matcher, MatchLength, " %s ", token);
 	if(strstr(antennas, matcher) != 0)
 	{
 		return 1;
@@ -467,7 +466,7 @@ static int parseGN(const char *filename, int row, GainRow *G)
 			else
 			{
 				if(isHSAAntenna(token) || isVLITEAntenna(token))
-				  {  
+				{
 					v = snprintf(G[row].antName, ANTENNA_NAME_LENGTH, "%s", token);
 					if(v >= ANTENNA_NAME_LENGTH)
 					{
@@ -500,15 +499,15 @@ static void GainRowsSetTimeBand(GainRow *G, int nRow)
 		{
 			continue;
 		}
-		if(G[i].nPoly != 0 && G[i].nFreq != 0 && 
+		if(G[i].nPoly != 0 && G[i].nFreq != 0 &&
 		   G[i].nTime != 0 && G[i].nDPFU != 0)
 		{
-			G[i].mjd1 = ymd2mjd(G[i].time[0], 
-					    G[i].time[1], 
-					    G[i].time[2]) + 
+			G[i].mjd1 = ymd2mjd(G[i].time[0],
+					    G[i].time[1],
+					    G[i].time[2]) +
 					    G[i].time[3]/24.0;
-			G[i].mjd2 = ymd2mjd(G[i].time[4], 
-					    G[i].time[5], 
+			G[i].mjd2 = ymd2mjd(G[i].time[4],
+					    G[i].time[5],
 					    G[i].time[6]) +
 					    G[i].time[7]/24.0;
 		}
@@ -619,7 +618,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 	{
 		{"ANTENNA_NO", "1J", "antenna id from array geom. tbl", 0},
 		{"ARRAY", "1J", "????", 0},
-		{"FREQID", "1J", "freq id from frequency tbl", 0}, 
+		{"FREQID", "1J", "freq id from frequency tbl", 0},
 		{"TYPE_1", bandFormInt, "gain curve type", 0},
 		{"NTERM_1", bandFormInt, "number of terms", 0},
 		{"X_TYP_1", bandFormInt, "abscissa type of plot", 0},
@@ -659,7 +658,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 	/* 1-based indices for FITS file */
 	int32_t antId1, freqId1, arrayId1;
 
-	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
+	/* Note: This is a particular NaN variant the FITS-IDI format/convention
 	 * wants, namely 0xFFFFFFFF */
 	union
 	{
@@ -765,7 +764,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 				  { //we are at C-band VLBA -> inter/extrapolate gains
 				    r = handleCbandGain(G, nRow, &D->antenna[antId], freq, mjd);
 				  }
-				else 
+				else
 				  {
 				  r = getVLBAGainRow(G, nRow, &D->antenna[antId], freq, mjd, sxFlag);
 				  }

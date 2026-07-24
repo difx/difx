@@ -19,18 +19,6 @@
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
 
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: checkdir 9410 2020-01-22 19:33:24Z WalterBrisken $
-# $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/checkdir $
-# $LastChangedRevision: 9410 $
-# $Author: WalterBrisken $
-# $LastChangedDate: 2020-01-23 03:33:24 +0800 (四, 2020-01-23) $
-#
-#============================================================================
-
-
 program = 'checkdir'
 version = '0.9'
 author  = 'Walter Brisken'

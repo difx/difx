@@ -25,9 +25,8 @@ all-local:
 install-exec-local:
 	mkdir -p $(DESTDIR)$(prefix)/lib/python/ 
 	mkdir -p $(DESTDIR)$(prefix)/bin/ 
-	cp -av $(bin_SCRIPTS)  $(DESTDIR)$(prefix)/bin/
-	$(PYTHON) $(srcdir)/setup.py install \
-	--prefix $(DESTDIR)$(prefix) --install-lib=$(DESTDIR)$(prefix)/lib/python/
+	(cd $(srcdir); cp -av $(bin_SCRIPTS)  $(DESTDIR)$(prefix)/bin/)
+	(cd $(srcdir); $(PYTHON) setup.py install --prefix $(DESTDIR)$(prefix) --install-lib=$(DESTDIR)$(prefix)/lib/python/)
 # TODO: DiFX uses peculiar location, not the standard site-packages, need to choose lib vs lib64 below
 
 # not supported by very old Python setuptools:

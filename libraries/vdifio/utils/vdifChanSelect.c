@@ -68,9 +68,9 @@ static void usage()
 }
 
 int main (int argc, char * const argv[]) {
-  int framesize=0, nfile, infile, outfile, rate, opt, frameperbuf, nframe, i;
-  int nread, status, nwrote, tmp, nchan=0, bits, isComplex=0, legacy=0, headersize=0, datasize=0;
-  int nextract=0, first, sock, bufsize=0, odatasize=0, oframesize=0, obufsize, oheadersize=0;
+  int framesize=0, nfile, infile, outfile, opt, frameperbuf, nframe, i;
+  int nread, status, nwrote, tmp, nchan=0, bits=0, isComplex=0, legacy=0, headersize=0, datasize=0;
+  int nextract=0, first, bufsize=0, odatasize=0, oframesize=0, obufsize, oheadersize=0;
   float ftmp;
   double t0;
   char outname[MAXSTR+1] = "";
@@ -201,7 +201,7 @@ int main (int argc, char * const argv[]) {
   }
 
   if (strlen(outdir)==0) {
-    fprintf(stderr, "Must supply output dirtectory - aborting\n");
+    fprintf(stderr, "Must supply output directory - aborting\n");
     return 1;
   }
 
@@ -322,7 +322,7 @@ int main (int argc, char * const argv[]) {
       
       if (extract==NULL) {
 	if (isComplex) {
-	  fprintf(stderr, "Error: %d->%d channels, %dbits complex is not supported - aborting\n", nchan, nextract, bits/2);;
+	  fprintf(stderr, "Error: %d->%d channels, %dbits complex is not supported - aborting\n", nchan, nextract, bits/2);
 	} else {
 	  fprintf(stderr, "Error: %d->%d channels, %dbits is not supported - aborting\n", nchan, nextract, bits);
 	}
@@ -385,12 +385,17 @@ int main (int argc, char * const argv[]) {
       }
       sprintf(outname, "%s/%s", outdir, argv[nfile]);
     } else {// File contains a "/"
+      int v;
       slashptr++;
       if (strlen(outdir)+strlen(slashptr)+1 > MAXSTR) {
 	fprintf(stderr, "%s/%s too long. Increase \"MAXSTR(%d)\"\n", outdir, slashptr, MAXSTR);
 	return(1);
       }
-      sprintf(outname, "%s/%s", outdir, slashptr);
+      v = snprintf(outname, MAXSTR, "%s/%s", outdir, slashptr);
+      if(v >= MAXSTR) {
+	fprintf(stderr, "%s/%s too long. Increase \"MAXSTR(%d)\"\n", outdir, slashptr, MAXSTR);
+	return(1);
+      }
     }
   
     outfile = open(outname, OPENWRITEOPTIONS, S_IRWXU|S_IRWXG|S_IRWXO); 

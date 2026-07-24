@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: difxdir.py 9769 2020-10-16 09:13:50Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/difxfile/difxdir.py $
-# $LastChangedRevision: 9769 $
-# $Author: JanWagner $
-# $LastChangedDate: 2020-10-16 17:13:50 +0800 (五, 2020-10-16) $
-#
-#============================================================================
 
 __author__="Helge Rottmann"
 

@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mpifxcorr.cpp 2818 2010-11-19 23:36:12Z AdamDeller $
-// $HeadURL: https://svn.atnf.csiro.au/difx/mpifxcorr/trunk/src/mpifxcorr.cpp $
-// $LastChangedRevision: 2818 $
-// $Author: AdamDeller $
-// $LastChangedDate: 2010-11-19 16:36:12 -0700 (Fri, 19 Nov 2010) $
-//
-//============================================================================
 
 #include <mpi.h>
 #include <stdlib.h>

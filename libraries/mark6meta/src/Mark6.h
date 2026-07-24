@@ -1,5 +1,5 @@
 /*******************************************************************************
-* Copyright (C) 2016  Max-Planck-Institut für Radioastronomie, Bonn, Germany 
+* Copyright (C) 2024  Max-Planck-Institut für Radioastronomie, Bonn, Germany 
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
@@ -13,23 +13,16 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: Mark6.h 11045 2023-08-24 12:15:28Z HelgeRottmann $
-// $HeadURL: $
-// $LastChangedRevision: 11045 $
-// $Author: HelgeRottmann $
-// $LastChangedDate: 2023-08-24 14:15:28 +0200 (Thu, 24 Aug 2023) $
-//
-//============================================================================
 #ifndef MARK6_H
 #define	MARK6_H
 
 #include <string>
 #include <vector>
 #include <poll.h>
-
+#include <libudev.h>
+#include <iostream>
+#include <sstream>
+#include <difxmessage.h>
 #include "Mark6DiskDevice.h"
 #include "Mark6Module.h"
 #include "Mark6Controller.h"
@@ -71,9 +64,11 @@ private:
         struct udev *udev_m;
         struct udev_monitor *mon;
         bool verifyDevices_m;
+        bool initRawDevice_m;
 	std::vector<Mark6DiskDevice> mountedDevices_m;
 	std::vector<Mark6DiskDevice> removedDevices_m;
         std::vector<Mark6DiskDevice> newDevices_m;
+        std::vector<Mark6DiskDevice> rawDevices_m;
         std::vector<std::string> newPartitions_m;
         std::vector<Mark6Controller> controllers_m;
         std::vector<Mark6Module> modules_m;
@@ -86,13 +81,15 @@ private:
         int numSlots_m;                 // the number of slots present in the mark6 system (2 per controller)
         int readControllerConfig();
         void writeControllerConfig();
-        
+        Mark6DiskDevice newDeviceFromUdev(udev_device *dev);
         void manageDeviceChange();
         int verifyDevices();
 	void validateMountDevices();
         int parseControllerId(std::string devpath);
         long parseDiskId(std::string sasAddress, std::string driver);
         long parsePhyId(std::string sasPath);
+        bool moduleChange_m;
+        std::string configFile_m;
 public:
         Mark6();
 	~Mark6();
@@ -109,11 +106,18 @@ public:
         int getSlot(std::string eMSN);
         void sendStatusMessage();
         void sendSlotStatusMessage();
+        void sendActivityMessage(std::string vsn, int slot, std::string msg);
+        void modInit(int slot, std::string eMSN);
         Mark6Controller *getControllerById(int id);
         std::vector<Mark6DiskDevice> getMountedDevices() const {
             return mountedDevices_m;
         }
-        
+        std::vector<Mark6Module> getMountedModules() const {
+            return modules_m;
+        }
+        bool isModuleChange() const {
+            return moduleChange_m;
+        }
 };
 
 #endif	/* MARK6_H */

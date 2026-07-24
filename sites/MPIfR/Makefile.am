@@ -3,6 +3,7 @@ SUBDIRS = \
 	difxdb/difxarchive \
 	difxdb/difxexport \
 	difxdb/prepDifx \
+	geo \
 	GMVA \
 	misc/getObsFiles \
 	misc/datacheckers \

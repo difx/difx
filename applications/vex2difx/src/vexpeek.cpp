@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vexpeek.cpp 10851 2022-12-09 17:35:10Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk/src/vexpeek.cpp $
- * $LastChangedRevision: 10851 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-12-10 01:35:10 +0800 (六, 2022-12-10) $
- *
- *==========================================================================*/
 
 #include <vector>
 #include <set>

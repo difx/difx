@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vsn.cpp 7556 2016-11-22 16:23:54Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/vsn.cpp $
-// $LastChangedRevision: 7556 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2016-11-23 00:23:54 +0800 (三, 2016-11-23) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: job.cpp 10530 2022-07-06 22:18:31Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10530 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-07-07 06:18:31 +0800 (四, 2022-07-07) $
- *
- *==========================================================================*/
 
 #include <cstring>
 #include <fstream>
@@ -49,7 +39,7 @@ void Job::assignAntennas(const VexData &V, std::list<std::pair<int,std::string> 
 			if(find(jobAntennas.begin(), jobAntennas.end(), a->first) == jobAntennas.end())
 			{
 				allAntennas.push_back(std::pair<int,std::string>(jobId,a->first));
-				if(V.hasData(a->first, *S))	// a->first is antenna name
+				if(V.hasData(a->first, *S, this))	// a->first is antenna name
 				{
 					jobAntennas.push_back(a->first);
 				}

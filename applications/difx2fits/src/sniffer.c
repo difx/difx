@@ -27,6 +27,7 @@ typedef struct
 	fftw_complex **bandpass;	/* [BBC][Chan] ; zero if no writing of bandpass requested */
 	fftw_complex ****ifSpectrum;	/* [IF][Stokes][Time][Chan]; note that Stokes=0,1 just point to data in spectrum, or zero if single pol */
 	int a1, a2, sourceId;
+	int scanId;
 	double mjdStart, mjdMax;
 	double mjdSum;
 	int mjdCount;
@@ -162,6 +163,7 @@ static Accumulator *newAccumulatorArray(Sniffer *S, int n, int writeBandpass)
 		A[a].weightMax = (double *)calloc(nBBC, sizeof(double));
 		A[a].lastDump = (double *)calloc(S->D->nSource, sizeof(double));
 		A[a].sourceId = -1;
+		A[a].scanId = -1;
 
 		A[a].ifWeightSum = (double **)malloc(A[a].nIF*sizeof(double *));
 		A[a].if2bbc = (int **)malloc(A[a].nIF*sizeof(int *));
@@ -612,6 +614,7 @@ static void dumpBandpasses(const Sniffer *S)
 	}
 }
 
+
 void deleteSniffer(Sniffer *S)
 {
 	if(S)
@@ -1010,6 +1013,7 @@ static void findChanRatePeak(const Sniffer *S, int *specChan, double *specPhaseR
  */
 static void findDelayRatePeak(const Sniffer *S, double *delay, double *phaseRate, double *amp, double *phase, int timeBinFactor, int chanBinFactor)
 {
+	static int first = 1;
 	fftw_complex z;
 	double max2, amp2;
 	double peak2D[3][3];
@@ -1035,6 +1039,36 @@ static void findDelayRatePeak(const Sniffer *S, double *delay, double *phaseRate
 			}
 		}
 	}
+
+	if(first)	/* Write diagnostic delay spectrum for first record if env var is set */
+	{
+		first = 0;
+		if(getenv("WRITEFIRSTDELAY") != 0)
+		{
+			FILE *out;
+			int i;
+			double factor, scale;
+
+			printf("Saving first diagnostic delay spectrum to /tmp/firstDelay.txt\n");
+			factor = 1.0/(S->bw*S->fftOversample*chanBinFactor/1000.0);
+			scale = 1.0/max2;
+			out = fopen("/tmp/firstDelay.txt", "w");
+			for(i = 0; i < S->fft_nx/2; ++i)
+			{
+				z = S->fftbuffer[bestj*S->fft_nx + i + S->fft_nx/2];
+				amp2 = creal(z*~z);
+				fprintf(out, "%f %e\n", (i-S->fft_nx/2)*factor, amp2*scale);
+			}
+			for(i = 0; i < S->fft_nx/2; ++i)
+			{
+				z = S->fftbuffer[bestj*S->fft_nx + i];
+				amp2 = creal(z*~z);
+				fprintf(out, "%f %e\n", i*factor, amp2*scale);
+			}
+			fclose(out);	
+		}
+	}
+
 	z = S->fftbuffer[bestj*S->fft_nx + besti];
 	
 	if(phase)
@@ -1091,7 +1125,7 @@ static int dump(Sniffer *S, Accumulator *A)
 	int maxNRec = 0;
 	double mjd;
 
-	if(A->sourceId < 0 || S->configId < 0 || A->mjdCount < 0)
+	if(A->sourceId < 0 || A->scanId < 0 || S->configId < 0 || A->mjdCount < 0)
 	{
 		return 0;
 	}
@@ -1262,8 +1296,7 @@ static int dump(Sniffer *S, Accumulator *A)
 		}
 		fprintf(S->wts, "\n");
 	}
-
-	else
+	else if(maxNRec >= A->nTime*3/4)
 	{
 		int bbc;
 		int ifNum;
@@ -1325,7 +1358,6 @@ static int dump(Sniffer *S, Accumulator *A)
 			fftw_execute(S->plan2);
 
 			findDelayRatePeak(S, &delay, &phaseRate, amp + bbc, &phase, 1, 1);
-
 
 /* FIXME: need to implement the delayRate portion of the logic: delayRate = phaseRate/(freq/1000.0) */
 
@@ -1422,6 +1454,19 @@ static int dump(Sniffer *S, Accumulator *A)
 	free(amp);
 
 	return 0;
+}
+
+void flushSniffer(Sniffer *S)
+{
+	int a1, a2;
+
+	for(a1 = 0; a1 < S->nAntenna; ++a1)
+	{
+		for(a2 = 0; a2 < S->nAntenna; ++a2)
+		{
+			dump(S, &S->accum[a1][a2]);
+		}
+	}
 }
 
 static void add(Accumulator *A, int bbc, int index, float weight, const float *data, int stride, int isLSB, double mjd)
@@ -1574,14 +1619,14 @@ int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 		}
 	}
 
-
 	A = &(S->accum[a1][a2]);
 
-	if(mjd > A->mjdMax || A->sourceId != sourceId)
+	if(mjd > A->mjdMax || A->sourceId != sourceId || A->scanId != scanId)
 	{
 		dump(S, A);
 		resetAccumulator(A);
 		A->sourceId = sourceId;
+		A->scanId = scanId;
 	}
 	if(A->mjdStart < 50000.0)
 	{

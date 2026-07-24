@@ -1,8 +1,16 @@
+3.8.1
+* Post DiFX-2.9
+* Using gcc 15.2.1, clean up most of the remaining warnings
+
 3.8.0
 * Post DiFX 2.8
 * New function DifxInputGetMaxDatastreamsPerAntenna()
 * Add all VLA pads to antenna list
 * Add antenna memberships (not complete) and membership test functions
+* Remap frequency setups that are equivalent to appropriate IFs (prevent lost autocorrs when mixing pulse cal setups)
+* Increase data format length to support >32 thread INTERLACEDVDIF format strings
+* difx_spacecraft compatible with newer version of SPICE
+* Version for DiFX-2.9
 
 3.7.0
 * Post DiFX 2.6

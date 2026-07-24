@@ -69,7 +69,7 @@ elif len(mjdrange) == 2:
 
 while not len(nextheader) == 0:
     freqindex = nextheader[5]
-    nchan = freqs[freqindex].numchan/freqs[freqindex].specavg
+    nchan = freqs[freqindex].numchan//freqs[freqindex].specavg
     if nchan > maxchannels:
         print ("How embarrassing - you have tried to read files with more than " + \
               str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!")

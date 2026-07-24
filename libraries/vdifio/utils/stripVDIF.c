@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Adam Deller                                     *
+ *   Copyright (C) 2010-2025 by Adam Deller, Chris Phillips                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: stripVDIF.c 9524 2020-05-15 01:55:36Z ChrisPhillips $
- * $HeadURL:  $
- * $LastChangedRevision: 9524 $
- * $Author: ChrisPhillips $
- * $LastChangedDate: 2020-05-15 09:55:36 +0800 (五, 2020-05-15) $
- *
- *==========================================================================*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -64,7 +54,7 @@ int main(int argc, char **argv)
   FILE * input;
   FILE * output;
   int skipbytesinitial, skipbytesfront, skipbytesback;
-  int readbytes, framebytes, stationid, numchannels, bitspersample;
+  int readbytes, framebytes=0, stationid, numchannels, bitspersample;
   long long framesread;
   vdif_header *header;
 

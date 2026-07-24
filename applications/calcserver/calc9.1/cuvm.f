@@ -83,7 +83,7 @@ C     CALL GET4('UVF/ASEC      ',U_V     ,2,1,1,NDO,KERR)
 C      print *, ' Database (U,V) ', U_V 
       IF(KERR.NE.0) then
         write(6,'("UVG: Failure to obtain ref frequency.")')
-        CALL CKILL(6HUVG   ,1,KERR)
+        CALL CKILL('UVG', int2(1), int2(KERR))
       Endif
 C    Convert from MHz to Hz.
       REF_FREQ = REF_FREQ*1.D6

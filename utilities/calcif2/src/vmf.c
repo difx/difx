@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2019 by Walter Brisken                                  *
+ *   Copyright (C) 2019-2025 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL: $
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -226,7 +216,7 @@ int loadVMFData(VMFData *data, int maxRows, int mjdStart, int nDay, int verbose)
 			char cmd[MaxCommandLength];
 			/* get the file */
 
-			n = snprintf(url, MaxCommandLength, "http://vmf.geo.tuwien.ac.at/trop_products/VLBI/VMF3/VMF3_OP/daily/%d/%s", year, fileName);
+			n = snprintf(url, MaxCommandLength, "https://vmf.geo.tuwien.ac.at/trop_products/VLBI/VMF3/VMF3_OP/daily/%d/%s", year, fileName);
 			if(n >= MaxURLLength)
 			{
 				fprintf(stderr, "Developer error: loadVMFData(): url too short: %d < %d\n", MaxURLLength, n+1);

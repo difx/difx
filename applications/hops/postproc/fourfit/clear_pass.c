@@ -18,7 +18,9 @@ clear_pass (struct type_pass *pass)
     int i;
     extern void clear_freq_corel (struct freq_corel*);
 
-    for (i=0; i<MAXFREQ; i++) clear_freq_corel (pass->pass_data + i);
+    // somewhere, somehow, freq_corel.pass_data[MAX_CHAN] was done
+    for (i=0; i<MAX_CHAN; i++) clear_freq_corel (pass->pass_data + i);
+    //for (i=0; i<MAXFREQ; i++) clear_freq_corel (pass->pass_data + i);
     pass->nfreq = 0;
     pass->channels = 0;
     pass->num_ap = 0;

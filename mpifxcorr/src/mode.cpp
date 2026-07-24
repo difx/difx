@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 
 #include <mpi.h>
 #include <iomanip>
@@ -768,9 +758,7 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
 
   if(!(config->getDPhaseCalIntervalHz(configindex, datastreamindex) == 0))
   {
-      long samplenrsincestart = long(datasec)*long(recordedbandwidth) + datasamples+nearestsample;
-      if (!usecomplex)
-        samplenrsincestart += long(datasec)*long(recordedbandwidth);
+      size_t samplenrsincestart = nearestsample + static_cast<size_t>(double(datasec*1e9+datans)/(sampletime*1e3) + 0.5);
       for(int i=0;i<numrecordedbands;i++)
       {
         extractor[i]->adjustSampleOffset(samplenrsincestart);
@@ -884,21 +872,11 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
     lofreq = config->getDRecordedFreq(configindex, datastreamindex, i);
 
     // For double-sideband data, the LO frequency is at the centre of the band, not the band edge
-    if (usecomplex && usedouble)
-    {
-      if (config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
-        lofreq -= config->getDRecordedBandwidth(configindex, datastreamindex, i)/2.0;
-      } else {
-        lofreq += config->getDRecordedBandwidth(configindex, datastreamindex, i)/2.0;
-      }
-      // For lower sideband complex data, the effective LO is at negative frequency, not positive
-      if (usecomplex && config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
-        lofreq = -lofreq;
-      }
-    } else if(usecomplex) {
-      if (usecomplex && config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
-        lofreq = -lofreq;
-      }
+    if (usecomplex) {
+      if (config->getDRecordedLowerSideband(configindex, datastreamindex, i))
+        lofreq = -lofreq;  // LSB case
+      if (usedouble)
+        lofreq += config->getDRecordedBandwidth(configindex, datastreamindex, i)/2.0;  // Double sideband move LO to middle of band
     }
 
     switch(fringerotationorder) {
@@ -1223,6 +1201,7 @@ void Mode::process(int index, int subloopindex)  //frac sample error is in micro
                 }
               }
               else {
+		// By grabbing the "upper half" of the FFT output, channels are naturally in frequency assending order, even for LSB data
                 status = vectorCopy_cf32(&(fftd[recordedbandchannels]), fftoutputs[j][subloopindex], recordedbandchannels);
               }
             }

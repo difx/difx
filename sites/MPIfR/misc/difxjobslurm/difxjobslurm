@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+#===========================================================================
+# Copyright (C) 2021  Max-Planck-Institut für Radioastronomie, Bonn, Germany
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#===========================================================================
+#
+# Correlate an entire .joblist under a single SLUMR reservation.
+#
+# Intended to be invoked via DiFX
+#
+# $ startdifx -A difxjobslurm <vlbitrack.joblist>
+#
+# The script inspects the .input files associated with the provided .joblist,
+# determines the full set of all Datastreams (Mark6, files, ...) and their
+# location on the cluster via genmachines.py
+#
+# Uses SLURM to reserve those datastream nodes, as well as a fixed
+# number of compute nodes. Reservation is done with SLURM salloc.
+# The same salloc launches a 2nd stage script, difxjobslurm_stage2.
+#
+# The 2nd stage script determines its SLURM-assigned compute nodes and
+# stores them into the .machine file(s), together with genmachines-assigned
+# datastream nodes.
+#
+# Lastly, the script invokes  startdifx --nomachines <vlbitrack.joblist>
+# i.e. uses the SLURM-assigned nodes, but runs DiFX outside of SLURM,
+# with mpirun rather than srun.
+#
+# The flow is:
+#  startdifx -A difxjobslurm
+#  -> difxjobslurm  : genmachines.py --all-datastreams + salloc
+#    -> difxjobslurm_stage2  :  srun /usr/bin/hostname + genmachines
+#      -> startdifx --nomachines :  mpirun
+#
+#============================================================================
+
+set -m               # for backgrounding 'salloc'
+#set -o xtrace       # for tracing/debugging this bash script
+
+## Specific settings (adjust for your cluster)
+partition=correlator
+computenodecount=30
+computenodetag=compute
+threadspercompute=19
+
+
+## Check args
+if [[ "$1" == "" || "$1" == "-h" || "$1" == "--help" ]]; then
+	echo "Correlate an entire .joblist under a single SLUMR reservation."
+	echo "Usage: $0 <file.joblist>"
+	exit 0
+fi
+jobfile=`realpath $1`
+jobpath=`dirname $jobfile`
+joblist=`basename $jobfile`
+
+argextension=${1##*\.}
+if [[ "$argextension" != "joblist" ]]; then
+	echo "error: unrecognized joblist file extension '$joblist', expected e.g. 'file.joblist'"
+	exit 1
+fi
+
+jobs=`tail -n +2 $jobpath/$joblist | cut -d " " -f 1`
+if [[ "$jobs" == "" ]]; then
+	echo "error: could not find any scans in $jobfile"
+	exit 2
+fi
+
+if [[ "$DIFXROOT" == "" ]]; then
+	echo "error: DIFXROOT env var is empty '', could not determine DiFX environment"
+	exit 3
+fi
+
+
+## Generate io_nodes.dsmachines which is a union set of all recorders
+## required for the correlation of the .joblist scans
+DS_HOSTFILE=`mktemp /tmp/$joblist.all_datastreams.XXXXXX`
+echo
+echo "Gathering list of all datastreams involved in $jobfile"
+cd $jobpath
+$DIFXROOT/bin/genmachines --nocompute --all-datastreams -v $jobs
+mv io_nodes.machines $DS_HOSTFILE
+
+# Convert machine file into comma-separated list suitable for 'salloc'
+ionodelist=`cat $DS_HOSTFILE | grep --no-filename -e "mark6-[0-9]*" -e "mark5fx[0-9]*" -e "io[0-9]*" | sort | uniq | paste -sd","`
+ionodecount=`cat $DS_HOSTFILE | sort | uniq | wc -l`
+
+totalnodecount=$((computenodecount+ionodecount))
+
+echo
+echo "Determined $ionodecount data nodes for SLURM - $ionodelist"
+echo "Using fixed number of $computenodecount compute nodes for SLURM - free node assignment"
+echo
+
+echo "At `date` invoking SLURM to allocate and launch 2nd stage:"
+
+echo salloc -J $joblist \
+        -p correlator --nodes=$ionodecount --nodelist=$ionodelist --overcommit --oversubscribe : \
+        -p correlator --nodes=$computenodecount --constraint=$computenodetag --overcommit --cpus-per-task=$threadspercompute --ntasks-per-node=1 \
+		$DIFXROOT/bin/difxjobslurm_stage2.sh $jobpath/$joblist
+
+salloc -J $joblist \
+        -p correlator --nodes=$ionodecount --nodelist=$ionodelist --overcommit --oversubscribe : \
+        -p correlator --nodes=$computenodecount --constraint=$computenodetag --overcommit --cpus-per-task=$threadspercompute --ntasks-per-node=1 \
+		$DIFXROOT/bin/difxjobslurm_stage2.sh $jobfile

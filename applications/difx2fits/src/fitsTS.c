@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fitsTS.c 11082 2023-09-14 20:22:36Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsTS.c $
-// $LastChangedRevision: 11082 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2023-09-15 04:22:36 +0800 (五, 2023-09-15) $
-//
-//============================================================================
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -36,7 +26,6 @@
 #include "difx2fits.h"
 #include "other.h"
 #include "util.h"
-
 
 typedef struct
 {

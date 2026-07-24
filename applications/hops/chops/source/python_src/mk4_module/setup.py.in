@@ -1,7 +1,6 @@
-from distutils.core import setup
+from @PYTHON_SETUP@ import setup
 
-#TODO fix verions number to generated from cmake/autoconf
 setup(name='mk4',
       version='0.1',
-      package_dir={ '': '@abs_srcdir@' },
+      package_dir={ '': '@abs_builddir@' },
       packages=['mk4b', 'afiob'])

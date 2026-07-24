@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: pcList.pl 9669 2020-08-18 17:23:48Z GeoffreyCrew $
-# $HeadURL: $
-# $LastChangedRevision: 9669 $
-# $Author: GeoffreyCrew $
-# $LastChangedDate: 2020-08-19 01:23:48 +0800 (三, 2020-08-19) $
-#
-#============================================================================
 
 use strict;
 use warnings;

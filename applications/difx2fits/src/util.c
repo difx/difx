@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2021 by Walter Brisken & Leonid Petrov             *
+ *   Copyright (C) 2008-2025 by Walter Brisken & Leonid Petrov             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,21 +16,11 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: util.c 10605 2022-08-22 22:53:15Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk/src/fitsTS.c $
-// $LastChangedRevision: 10605 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2022-08-23 06:53:15 +0800 (二, 2022-08-23) $
-//
-//============================================================================
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <glob.h>
+#include "difxio/difxio_macros.h"
 #include "difx2fits.h"
 #include "util.h"
 
@@ -214,7 +204,7 @@ int sortjobpcal(const DifxInput *D, int antennaId, int *jobxref)
 		int v;
 
 		strarr[i] = malloc(DIFXIO_FILENAME_LENGTH+1);
-		v = snprintf(globPattern, DIFXIO_FILENAME_LENGTH, "%s/PCAL*%s", D->job[i].outputFile, D->antenna[antennaId].name);
+		snprintf_warn(globPattern, DIFXIO_FILENAME_LENGTH, "%s/PCAL*%s", D->job[i].outputFile, D->antenna[antennaId].name);
 		v = glob2(__FUNCTION__, globPattern, 0, 0, &globBuffer);
 		if(v == 0)
 		{

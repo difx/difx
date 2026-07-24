@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2018 by Walter Brisken                                  *
+ *   Copyright (C) 2018-2024 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mk6vmux.c 8411 2018-09-05 14:37:38Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 8411 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2018-09-05 22:37:38 +0800 (三, 2018-09-05) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <string.h>

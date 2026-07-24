@@ -1,5 +1,5 @@
 /***************************************************************************
- *  Copyright (C) 2015-2018 by Walter Brisken                              *
+ *  Copyright (C) 2015-2024 by Walter Brisken                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: vdifmark6.c 8356 2018-06-21 20:23:00Z MarkWainright $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk/src/vdifio.c $
-// $LastChangedRevision: 8356 $
-// $Author: MarkWainright $
-// $LastChangedDate: 2018-06-21 15:23:00 -0500 (Thu, 21 Jun 2018) $
-//
-//============================================================================
 
 #include <stdio.h>
 #define _GNU_SOURCE

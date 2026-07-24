@@ -16,7 +16,7 @@
 !       2000-2050, obtained from the JPL site. We use the standard JPL
 !       subroutines
 !
-!       PLEPH, STATE, INTERP, and SPLIT, with a few modifications, but all
+!       PLEPH, STATE, INTERP, and CSPLIT, with a few modifications, but all
 !       unchanged from Calc 9.
 !
 !       October 2012: Now using the JPL DE421 ephemeris, little Endian
@@ -621,7 +621,7 @@
       END
 !
 !****************************************************************************
-      SUBROUTINE SPLIT(TT,FR)
+      SUBROUTINE CSPLIT(TT,FR)
       Implicit None
 !
 !   THIS SUBROUTINE BREAKS A D.P. NUMBER INTO A D.P. INTEGER
@@ -803,11 +803,11 @@
       IF(ET2(1) .EQ. 0.D0) RETURN
 !
       S=ET2(1)-.5D0
-      CALL SPLIT(S,PJD(1))
-      CALL SPLIT(ET2(2),PJD(3))
+      CALL CSPLIT(S,PJD(1))
+      CALL CSPLIT(ET2(2),PJD(3))
       PJD(1)=PJD(1)+PJD(3)+.5D0
       PJD(2)=PJD(2)+PJD(4)
-      CALL SPLIT(PJD(2),PJD(3))
+      CALL CSPLIT(PJD(2),PJD(3))
       PJD(1)=PJD(1)+PJD(3)
 !
 !       ERROR RETURN FOR EPOCH OUT OF RANGE

@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: moduleaction.py 10705 2022-10-29 20:07:12Z JanWagner $
-# $HeadURL: https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8.1/libraries/python/difxdb/business/moduleaction.py $
-# $LastChangedRevision: 10705 $
-# $Author: JanWagner $
-# $LastChangedDate: 2022-10-30 04:07:12 +0800 (日, 2022-10-30) $
-#
-#============================================================================
 from difxdb.model import model
 import os
 

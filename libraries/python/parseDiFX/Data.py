@@ -13,16 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: Datastream.py 9222 2019-10-17 12:09:33Z JanWagner $
-# $HeadURL: $
-# $LastChangedRevision: 9222 $
-# $Author: JanWagner $
-# $LastChangedDate: 2019-10-17 14:09:33 +0200 (Thu, 17 Oct 2019) $
-#
-#============================================================================
 
 class Data:
     '''

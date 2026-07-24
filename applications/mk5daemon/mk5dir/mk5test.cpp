@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mk5test.cpp 6007 2014-03-21 10:02:19Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 6007 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2014-03-21 18:02:19 +0800 (五, 2014-03-21) $
-//
-//============================================================================
 
 #include <stdio.h>
 #include <stdlib.h>

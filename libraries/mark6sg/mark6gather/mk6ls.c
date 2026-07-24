@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: mk6ls.c 7491 2016-10-30 22:21:45Z WalterBrisken $
-// $HeadURL: $
-// $LastChangedRevision: 7491 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2016-10-30 17:21:45 -0500 (Sun, 30 Oct 2016) $
-//
-//============================================================================
 
 #define _GNU_SOURCE
 

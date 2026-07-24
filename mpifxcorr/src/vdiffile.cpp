@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2022 by Adam Deller and Walter Brisken             *
+ *   Copyright (C) 2006-2024 by Adam Deller and Walter Brisken             *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -14,16 +14,6 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL: https://svn.atnf.csiro.au/difx/mpifxcorr/trunk/src/mk5.cpp $
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
 
 #include <cmath>
 #include <cstring>
@@ -87,7 +77,7 @@ VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int
 
 	readbufferslotsize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*21LL/10LL;
 	readbufferslotsize -= (readbufferslotsize % conf->getFrameBytes(0, streamnum));	// always read in chunks of frame size
-	readbuffersize = readbufferslots * readbufferslotsize;
+	readbuffersize = (long long)readbufferslots * (long long)readbufferslotsize;
 	readbufferleftover = 0;
 	readbuffer = new unsigned char[readbuffersize];
 
@@ -405,10 +395,9 @@ int VDIFDataStream::calculateControlParams(int scan, int offsetsec, int offsetns
 
 	//if we got here, we found a configindex we are happy with.  Find out the mk5 details
 	payloadbytes = config->getFramePayloadBytes(bufferinfo[looksegment].configindex, streamnum);
-	framebytes = config->getFrameBytes(bufferinfo[looksegment].configindex, streamnum);
 	framespersecond = config->getFramesPerSecond(bufferinfo[looksegment].configindex, streamnum);
 	payloadbytes *= config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum);
-	framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum) + VDIF_HEADER_BYTES;
+	framebytes = config->getMultiplexedFrameBytes(bufferinfo[looksegment].configindex, streamnum);
 	framespersecond /= config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum);
 
 	samplingtype = config->getDSampling(bufferinfo[looksegment].configindex, streamnum);
@@ -492,15 +481,14 @@ void VDIFDataStream::updateConfig(int segmentindex)
 		return;
 	}
 
-	int oframebytes = (config->getFrameBytes(bufferinfo[segmentindex].configindex, streamnum) - VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[segmentindex].configindex, streamnum) + VDIF_HEADER_BYTES;
+	int oframebytes = config->getMultiplexedFrameBytes(bufferinfo[segmentindex].configindex, streamnum);
 	int oframespersecond = config->getFramesPerSecond(bufferinfo[segmentindex].configindex, streamnum) / config->getDNumMuxThreads(bufferinfo[segmentindex].configindex, streamnum);
 
 	//correct the nsinc - should be number of output frames*frame time
 	bufferinfo[segmentindex].nsinc = int(((bufferbytes/numdatasegments)/oframebytes)*(1000000000.0/double(oframespersecond)) + 0.5);
 
 	//take care of the case where an integral number of frames is not an integral number of blockspersend - ensure sendbytes is long enough
-	//note below, the math should produce a pure integer, but add 0.5 to make sure that the fuzziness of floats doesn't cause an off-by-one error
-	bufferinfo[segmentindex].sendbytes = int(((((double)bufferinfo[segmentindex].sendbytes)* ((double)config->getSubintNS(bufferinfo[segmentindex].configindex)))/(config->getSubintNS(bufferinfo[segmentindex].configindex) + config->getGuardNS(bufferinfo[segmentindex].configindex)) + 0.5));
+	bufferinfo[segmentindex].sendbytes = config->getDataBytes(bufferinfo[segmentindex].configindex,streamnum);
 }
 
 void VDIFDataStream::initialiseFile(int configindex, int fileindex)

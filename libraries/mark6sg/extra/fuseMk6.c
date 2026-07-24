@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014 by Jan Wagner                                      *
+ *   Copyright (C) 2014-2025 by Jan Wagner                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: fuseMk6.c 10555 2022-07-27 09:33:51Z JanWagner $
-// $HeadURL$
-// $LastChangedRevision: 10555 $
-// $Author: JanWagner $
-// $LastChangedDate: 2022-07-27 17:33:51 +0800 (三, 2022-07-27) $
-//
-//============================================================================
 //
 // fuseMk6 [-v] [-r \"pattern\"] <mountpoint>
 //
@@ -116,7 +106,7 @@ static void *fusem6_init(struct fuse_conn_info *conn)
 
 static int fusem6_open(const char *path, struct fuse_file_info *fi)
 {
-	int rc, i;
+	int rc, i, v;
 	struct stat st;
 
 	if ((fi->flags & O_RDONLY) != O_RDONLY)
@@ -149,7 +139,11 @@ static int fusem6_open(const char *path, struct fuse_file_info *fi)
 	// TODO: somehow determine actual MSN(s) list of the accessed module(s),
 	//       or the original MSN of off-module raw data
 	char fakeMSN[9] = { '\0' };
-	snprintf(fakeMSN, sizeof(fakeMSN), "fuse%04d", getpid() % 10000);
+	v = snprintf(fakeMSN, sizeof(fakeMSN), "fuse%04d", getpid() % 10000);
+	if(v >= sizeof(fakeMSN))
+	{
+		fprintf(stderr, "Warning: fusem6_open(): fakeMSN too long (%d >= %lu)\n", v, sizeof(fakeMSN));
+	}
 	mark6_sg_active_msn(fi->fh, fakeMSN);
 
 	return 0;

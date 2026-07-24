@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2025 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id: vex_stream.h 10363 2022-01-27 22:57:59Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/vex2difx/branches/multidatastream_refactor/src/vex2difx.cpp $
- * $LastChangedRevision: 10363 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2022-01-28 06:57:59 +0800 (五, 2022-01-28) $
- *
- *==========================================================================*/
 
 #ifndef __VEX_STREAM_H__
 #define __VEX_STREAM_H__
@@ -64,7 +54,7 @@ public:
 
 	static char DataFormatNames[NumDataFormats+1][16];
 
-	VexStream() : sampRate(0.0), nBit(0), nRecordChan(0), VDIFFrameSize(0), singleThread(false), format(FormatNone), dataSampling(SamplingReal), dataSource(DataSourceUnspecified), alignmentPeriod(1), difxTsys(0.0) {}
+	VexStream() : sampRate(0.0), nBit(0), nRecordChan(0), fanout(1), VDIFFrameSize(0), singleThread(false), format(FormatNone), dataSampling(SamplingReal), dataSource(DataSourceUnspecified), alignmentPeriod(1), difxTsys(0.0) {}
 
 	double dataRateMbps() const { return sampRate*nBit*nRecordChan/1000000.0; }
 	static enum DataFormat stringToDataFormat(const std::string &str);

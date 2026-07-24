@@ -6,6 +6,7 @@ enum PrintFormat
 {
 	PrintFormatHuman = 0,
 	PrintFormatMachine,
+	PrintFormatMachine2,
 	PrintFormatCSV
 };
 
@@ -41,6 +42,10 @@ int main(int argc, char **argv)
 		{
 			format = PrintFormatMachine;
 		}
+		else if(strcmp(argv[a], "-2") == 0 || strcmp(argv[a], "--machine2") == 0)
+		{
+			format = PrintFormatMachine2;
+		}
 		else if(strcmp(argv[a], "-c") == 0 || strcmp(argv[a], "--csv") == 0)
 		{
 			format = PrintFormatCSV;
@@ -69,7 +74,7 @@ int main(int argc, char **argv)
 
 			printf("%5.3f %5.3f %5.3f  %5.6f %5.6f %5.3f  %5.2f # %s %s\n", ae->x, ae->y, ae->z, lat, lon, alt, ae->diameter, ae->name, ae->ivsName);
 		}
-		else if(format == PrintFormatMachine)
+		else if(format == PrintFormatMachine2)
 		{
 			double lat, lon, alt; /* rad, rad, m */
 

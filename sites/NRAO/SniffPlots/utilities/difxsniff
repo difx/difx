@@ -18,16 +18,6 @@
 #   Free Software Foundation, Inc.,                                       *
 #   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 #**************************************************************************
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id: difxsniff 9303 2019-11-15 03:16:05Z WalterBrisken $
-# $HeadURL: $
-# $LastChangedRevision: 9303 $
-# $Author: WalterBrisken $
-# $LastChangedDate: 2019-11-15 11:16:05 +0800 (五, 15 11 2019) $
-#
-#============================================================================
 
 from sys import argv, exit
 from os import chdir, popen, system, getcwd

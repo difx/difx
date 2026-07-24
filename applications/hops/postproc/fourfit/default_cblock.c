@@ -62,6 +62,7 @@ default_cblock (struct c_block *cb_ptr)
     for (i=0; i<MAXNOTCH; i++)
         cb_ptr -> notches[i][0] = 0.0;
         cb_ptr -> notches[i][1] = 1.0E6;
+    memset(cb_ptr->chan_notches, '@', sizeof(cb_ptr->chan_notches));
 
     cb_ptr -> t_cohere      = -1.0;
     cb_ptr -> ionosphere.ref= 0.0;
@@ -74,7 +75,9 @@ default_cblock (struct c_block *cb_ptr)
     cb_ptr -> ion_window[1]  =  20.0;
     cb_ptr -> ion_npts       = 1;
     cb_ptr -> interpolator   = SIMUL;
-    cb_ptr -> station_delay.ref  = 0;   // a priori station delay (default changed from 150ns to 0 per AEN request on 02/20/18 JPB)
+    // a priori station delay (default changed from 150ns to 0
+    // per AEN request on 02/20/18 JPB)
+    cb_ptr -> station_delay.ref  = 0;
     cb_ptr -> station_delay.rem  = 0;
     cb_ptr -> pc_delay_l.ref= 0.0;
     cb_ptr -> pc_delay_l.rem= 0.0;
@@ -86,8 +89,18 @@ default_cblock (struct c_block *cb_ptr)
     cb_ptr -> mbd_anchor    = MODEL;
     cb_ptr -> ion_smooth    = FALSE;
     cb_ptr -> est_pc_manual = FALSE;
+    cb_ptr -> clone_snr_chk = FALSE;
     cb_ptr -> vbp_correct   = FALSE;
     cb_ptr -> vbp_fit       = FALSE;
+    cb_ptr -> mixed_mode_rot = FALSE;
+    cb_ptr -> noautofringes = FALSE;
+    cb_ptr -> mod4numbering = FALSE;
+    cb_ptr -> polfringnames = FALSE;
+    cb_ptr -> mbdrplopt[0]  = 0;
+    cb_ptr -> mbdrplopt[1]  = 1;
+    cb_ptr -> mbdrplopt[2]  = 1;
+    cb_ptr -> fringeout_dir[0] = 0;
+    cb_ptr -> display_chans[0] = 0;
 
     for (i=0; i<2; i++)                              // clear ref and rem values
         {
@@ -141,7 +154,11 @@ default_cblock (struct c_block *cb_ptr)
         cb_ptr -> chid_rf[i] = 0.0;
         }
 
-    strncpy (cb_ptr->chid, FCHARS, MAXFREQ); // default single letter freq codes abc...
+    strncpy (cb_ptr->chid, FCHARS, MAXFREQ); // default freq codes abc...
+    for (i=0; i<MAXFREQ/2+1; i++)
+        cb_ptr->clones[0][i] = cb_ptr->clones[1][i] = 0;    // no clones
+    cb_ptr->chid[MAXFREQ] = '\0';
+    cb_ptr->clones[0][MAXFREQ/2] = cb_ptr->clones[1][MAXFREQ/2] = '\0';
 
     return(0);
     }

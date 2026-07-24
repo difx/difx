@@ -1,5 +1,6 @@
 /***************************************************************************
- *   Copyright (C) 2009-2022 by Walter Brisken, Adam Deller, Chris Phillips*
+ *   Copyright (C) 2009-2025 by Walter Brisken, Adam Deller,               *
+ *                              Chris Phillips, Geoffrey Crew              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +17,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: format_vdif.c 10572 2022-08-01 12:51:06Z GeoffreyCrew $
-// $HeadURL: $
-// $LastChangedRevision: 10572 $
-// $Author: GeoffreyCrew $
-// $LastChangedDate: 2022-08-01 20:51:06 +0800 (一, 2022-08-01) $
-//
-//============================================================================
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -77,11 +68,17 @@ static void initluts()
 	/* Warning: these are different than for VLBA/Mark4/Mark5B! */
 	const float lut2level[2] = {-1.0, 1.0};
 	const float lut4level[4] = {-HiMag, -1.0, 1.0, HiMag};
-	const float lut16level[16] = {-8/FourBit1sigma,-7/FourBit1sigma,-6/FourBit1sigma,-5/FourBit1sigma,-4/FourBit1sigma,
-				      -3/FourBit1sigma,-2/FourBit1sigma,-1/FourBit1sigma,0,1/FourBit1sigma,2/FourBit1sigma,
-				      3/FourBit1sigma,4/FourBit1sigma,5/FourBit1sigma,6/FourBit1sigma,7/FourBit1sigma};
+	const float lut16level[16] = {-7.5/FourBit1sigma,-6.5/FourBit1sigma,-5.5/FourBit1sigma,-4.5/FourBit1sigma,-3.5/FourBit1sigma,
+				      -2.5/FourBit1sigma,-1.5/FourBit1sigma,-0.5/FourBit1sigma,0.5/FourBit1sigma,1.5/FourBit1sigma,2.5/FourBit1sigma,
+				      3.5/FourBit1sigma,4.5/FourBit1sigma,5.5/FourBit1sigma,6.5/FourBit1sigma,7.5/FourBit1sigma};
 	int b, i, l, li;
+	double offset8bit = 128.0;	/* default value: leads to "asymmetric sampling option" */
 	
+	if(getenv("SYMMETRIC_8_BIT_VDIF")!= 0)
+	{
+		offset8bit = 127.5;	/* with this value, there is no zero reconstructed state and there are equal number of + and - states */
+	}
+
 	for(i = 0; i < 8; i++)
 	{
 		zeros[i] = 0.0;
@@ -120,7 +117,7 @@ static void initluts()
 		}
 
 		/* lut8bit */
-		lut8bit[b] = (b-128)/3.3;	/* This scaling mimics 2-bit data if 8 bit RMS==~10 */
+		lut8bit[b] = (b-offset8bit)/3.3;	/* This scaling mimics 2-bit data if 8 bit RMS==~10 */
 
 		/* Complex lookups */
 
@@ -144,7 +141,6 @@ static void initluts()
 		l =  b & 0xF;
 		li = (b>>4) & 0xF;
 		complex_lut4bit[b] =  lut16level[l] + lut16level[li]*I;
-
 	}
 }
 

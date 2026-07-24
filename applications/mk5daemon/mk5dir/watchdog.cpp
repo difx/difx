@@ -16,16 +16,6 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id: watchdog.cpp 5169 2013-02-27 06:49:18Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/watchdog.cpp $
-// $LastChangedRevision: 5169 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2013-02-27 14:49:18 +0800 (三, 2013-02-27) $
-//
-//============================================================================
 
 #include <stdlib.h>
 #include <string.h>
