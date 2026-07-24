@@ -43,15 +43,15 @@ if test ${ipp_enabled} = 0; then
 else
 	MATH_LIBS="${IPP_LIBS} ${LIBS}"
 	MATH_CFLAGS="${IPP_CFLAGS}"
-    # ippGetNumThreads and ippSetNumThreads are removed deprecation 2026 onwards
-    AS_IF([ippmajor=`pkg-config --modversion ipp |& cut -d. -f1`],
-        [IPPmajor=$ippmajor],[IPPmajor=0])
-    AC_MSG_NOTICE([ippmajor is $ippmajor, IPPmajor is $IPPmajor])
-    if test $IPPmajor -ge 2026 ; then
-        DEPNUMTHR='-D"ippSetNumThreads(X)=0" -D"ippGetNumThreads(X)=0"'
-    else
-        DEPNUMTHR=''
-    fi
+#   # ippGetNumThreads and ippSetNumThreads are removed deprecation 2026 onwards
+#   AS_IF([ippmajor=`pkg-config --modversion ipp |& cut -d. -f1`],
+#       [IPPmajor=$ippmajor],[IPPmajor=0])
+#   AC_MSG_NOTICE([ippmajor is $ippmajor, IPPmajor is $IPPmajor])
+#   if test $IPPmajor -ge 2026 ; then
+#       DEPNUMTHR='-D"ippSetNumThreads(X)=0" -D"ippGetNumThreads(X)=0"'
+#   else
+#       DEPNUMTHR=''
+#   fi
 fi
 
 AC_SUBST(mathlibs, [${MATH_LIBS}])
@@ -61,13 +61,15 @@ dnl **********************************************************
 dnl **** Find difxmessage library                         ****
 dnl **********************************************************
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.9.0])
-CPPFLAGS="${CPPFLAGS} ${DIFXMESSAGE_CFLAGS} ${DEPNUMTHR}"
+#CPPFLAGS="${CPPFLAGS} ${DIFXMESSAGE_CFLAGS} ${DEPNUMTHR}"
+CPPFLAGS="${CPPFLAGS} ${DIFXMESSAGE_CFLAGS}"
 
 dnl **********************************************************
 dnl **** Find vdifio library                              ****
 dnl **********************************************************
 PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.6)
-CPPFLAGS="${CPPFLAGS} ${VDIFIO_CFLAGS} ${DEPNUMTHR}"
+#CPPFLAGS="${CPPFLAGS} ${VDIFIO_CFLAGS} ${DEPNUMTHR}"
+CPPFLAGS="${CPPFLAGS} ${VDIFIO_CFLAGS}"
 
 dnl **********************************************************
 dnl **** Find mark6sg library                              ****
