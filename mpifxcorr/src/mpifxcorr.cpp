@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2020 by Adam Deller                                *
+ *   Copyright (C) 2006-2026 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
 
   char myhostname[200];
   gethostname(myhostname, sizeof(myhostname)-1);
-#if(ARCH == INTEL)
+#if(ARCH == INTEL && defined(IPP_VERSION_MAJOR) && (IPP_VERSION_MAJOR<2021))
   ippSetNumThreads(1);
 #endif
   cout << "About to run MPIInit on node " << myhostname << endl;
