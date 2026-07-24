@@ -168,7 +168,7 @@ def genipppc(path, ippversion):
         elif major == 2022:
             out.write('Cflags: -DIPP9 -I${base}/include/ipp\n')
         else:
-            out.write('Cflags: -DIPP9 -I${base}/include\n') # oneapi setup
+            out.write('Cflags: -DIPP9 -I${base}/include -I${base}/include/ipp\n') # oneapi setup
 
     else:
         print('Sorry, IPP %d not yet supported by this script\n' % major)
