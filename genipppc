@@ -28,7 +28,8 @@ def getippversion(path):
     ippheader = path+'/include/ippversion.h'
     if not isfile(ippheader):
         ippheader = path+'/ipp/include/ippversion.h'
-        path += '/ipp'
+        if isfile(ippheader):
+            path += '/ipp'
     if not isfile(ippheader):
         ippheader = path+'/include/ipp/ippversion.h'
     if not isfile(ippheader):
