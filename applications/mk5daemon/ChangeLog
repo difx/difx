@@ -1,3 +1,15 @@
+Version 2.9.1
+~~~~~~~~~~~~~
+* Post DiFX 2.9.0
+* Don't limit Mark6 slot count for DiFX Message instructions
+  - limit of 4 was present for mk6dir
+  - limit of 6 was present for modinit
+* Eliminate compiler warnings using g++ 15.2.1
+* Look for environment variable DIFX_MPIRUNOPTIONS and use to set mpirun flags when starting DiFX
+* call `which mpirun` rather than mpirun so the full path is sent
+* remove --bynode from mpirun options.  If needed, apply with environment variable DIFX_MPIRUNOPTIONS
+  - At NRAO w/ openmpi-4.1.8 this is now set to --mca rmaps seq --bind-to none --mca pml ucx --mca btl ^uct,ofi --mca mtl ^ofi --mca mpi_yield_when_idle 1 
+
 Version 2.9.0
 ~~~~~~~~~~~~~
 * Version for DiFX-2.9.0

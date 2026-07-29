@@ -36,6 +36,7 @@ mk5daemon_SOURCES = \
 	proc.h \
 	swap.cpp \
 	swap.h \
+	macros.h \
 	mk5daemon.cpp \
 	mk5daemon.h \
 	$(streamstor_sources)
