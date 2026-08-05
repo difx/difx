@@ -93,7 +93,7 @@ static inline uint64_t wordswap(uint64_t a) {uint64_t b; uint32_t *c = (uint32_t
 static inline int getCODIFComplex(const codif_header *header) { return (int)header->iscomplex; }
 static inline int getCODIFThreadID(const codif_header *header) { return (int)header->threadid; }
 static inline int getCODIFGroupID(const codif_header *header) { return (int)header->groupid; }
-static inline int getCODIFHeaderBytes(const codif_header *) { return CODIF_HEADER_BYTES; }
+static inline int getCODIFHeaderBytes(const codif_header *header) { return CODIF_HEADER_BYTES; }
 static inline uint64_t getCODIFFrameBytes(const codif_header *header) { return ((uint64_t)header->framelength8)*8; }
 static inline int getCODIFPeriod(const codif_header *header) { return (int)header->period; }
 static inline int getCODIFSync(const codif_header *header) { return (int)header->sync; }
