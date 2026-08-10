@@ -213,9 +213,12 @@ void moduleSummary(VexData *V)
 		std::vector<VexBasebandData> *vsns;
 
 		vsns = V->getVSNs(it->first);
-		for(std::vector<VexBasebandData>::const_iterator vi = vsns->begin(); vi != vsns->end(); ++vi)
+		if(vsns)
 		{
-			std::cout << it->first << " " << vi->filename << " " << vi->mjdStart << " " << vi->mjdStop << std::endl;
+			for(std::vector<VexBasebandData>::const_iterator vi = vsns->begin(); vi != vsns->end(); ++vi)
+			{
+				std::cout << it->first << " " << vi->filename << " " << vi->mjdStart << " " << vi->mjdStop << std::endl;
+			}
 		}
 	}
 
