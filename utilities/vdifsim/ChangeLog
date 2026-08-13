@@ -1,3 +1,8 @@
+Version 0.3
+-----------
+* Increase common buffer size to be a bit more than +- earth radius extra
+  - not accommodates full range of earth-bound antennas
+
 Version 0.2
 -----------
 * Version 0.1.1 below existed for quite some time with different commits happening
