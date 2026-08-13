@@ -65,6 +65,8 @@ The install-difx options are:
 
    --withdatasim   Build the datasim application (requires gsl)
 
+   --withvdifsim   Build the vdifsim application (requires gsl and fftw)
+
    --withspice='installed SPICE directory' Build difxcalc including near-field
                    making using of SPICE installed at this location
 
@@ -108,7 +110,8 @@ The install-difx options are:
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
                     "mpifxcorr", "difxfilterbank", "hops", "m6support",
                     "polconvert", "guiServer", "mk5daemon", "difx_monitor",
-                    "datasim", "difxcalc11", "mark6sg", "mark6meta", "espresso"]
+                    "datasim", "vdifsim", "difxcalc11", "mark6sg", "mark6meta",
+                    "espresso"]
    --skip='...'    Does a normal build, but skips components in a comma
                    separated list (drawn from the --doonly list).
    --also='...'    Does a normal build, but adds components in a comma
@@ -173,7 +176,7 @@ try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "fhv",
         ["force", "help", "verb",
          "help-options", "help-environment", "help-examples",
-         "mk5daemon", "withmonitor", "withdatasim", "perl", "withfb",
+         "mk5daemon", "withmonitor", "withdatasim", "withvdifsim", "perl", "withfb",
          "withhops", "withm6support", "withguiserver", "withpython",
          "withpolconvert", "withspice=", "noinstall", "reconf", "noconf", "clean",
          "g77", "extraflags=", "makeflags=", "withmark6meta",
@@ -236,6 +239,7 @@ components = {"perl"          :False,
               "mk5daemon"     :False,
               "difx_monitor"  :False,
               "datasim"       :False,
+              "vdifsim"       :False,
               "python"        :True,
               "espresso"      :True,
 }
@@ -348,6 +352,8 @@ if len(opts) > 0:
             components["difx_monitor"] = True
         if o == "--withdatasim":
             components["datasim"] = True
+        if o == "--withvdifsim":
+            components["vdifsim"] = True
         if o == "--perl":
             components["perl"] = True
         if o == "--withfb":
@@ -489,6 +495,8 @@ if components["difx2profile"]:
 	"pulsar/difx2profile",       difx_version, True,False,True,True])
 if components["misc"]:
     utiltargets.append(["misc",      difx_version, True,False,False,False])
+if components["vdifsim"]:
+    utiltargets.append(["vdifsim",   difx_version, True,True,True,True])
 if components["vis2screen"]:
     utiltargets.append(["vis2screen",difx_version, True,False,False,True])
 
@@ -651,9 +659,16 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx, compnam
             configstring += cache
         # configstring = cfp + "/configure --prefix=" + prefix + cache
         if dompicxx:
-            if cache != 'none':
-                configstring += "-CXX"
-            configstring += " CXX=" + mpicxx
+            if compname == 'vdifsim':
+                # One-off exception: vdifsim uses mpicc not mpicxx.  reuse the infrastructure.
+                # could add other programs needing mpicc here
+                if cache != 'none':
+                    configstring += " -CC"
+                configstring += " CC=" + mpicxx.replace('mpicxx', 'mpicc')
+            else:
+                if cache != 'none':
+                    configstring += " -CXX"
+                configstring += " CXX=" + mpicxx
         if dopybindings and check_configureAC_has(
             cfp+"/configure.ac", "enable-python"):
                 configstring += " --enable-python "
