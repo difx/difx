@@ -6,9 +6,9 @@ import argparse
 from math import exp, log
 
 program = 'apd2clock2'
-version = '0.1'
+version = '0.2'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
-verdate = '20260601'
+verdate = '20260609'
 
 
 # trims a floating point value
@@ -118,6 +118,7 @@ class APDDelays:
 	def load(self, apdFile, unityWeights=False):
 		self.reset()
 		self.apdFile = apdFile
+		nanRows = 0
 		data = open(apdFile).readlines()
 		s = data[0].strip().split()
 		if s[0] == 'obscode:':
@@ -126,18 +127,21 @@ class APDDelays:
 			print('File format of %s is not recognized as a .apd file.' % apdFile)
 			exit(0)
 		for line in data[1:]:
-			delay = APDDelay(line)
-			if unityWeights:
-				delay.weight = [1.0]*len(delay.weight)
-			self.delays.append(delay)
-			self.nChan = max(len(delay.delay), self.nChan)
-			addElement(self.antennaList, delay.ant1Id, delay.ant1Name)
-			addElement(self.antennaList, delay.ant2Id, delay.ant2Name)
-			addElement(self.sourceList, delay.sourceId, delay.sourceName)
-			if self.mjdStart < 1.0 or self.mjdStart > delay.mjd:
-				self.mjdStart = delay.mjd
-			if self.mjdEnd < delay.mjd:
-				self.mjdEnd = delay.mjd
+			if line.lower().find('nan') >= 0:
+				nanRows += 1
+			else:
+				delay = APDDelay(line)
+				if unityWeights:
+					delay.weight = [1.0]*len(delay.weight)
+				self.delays.append(delay)
+				self.nChan = max(len(delay.delay), self.nChan)
+				addElement(self.antennaList, delay.ant1Id, delay.ant1Name)
+				addElement(self.antennaList, delay.ant2Id, delay.ant2Name)
+				addElement(self.sourceList, delay.sourceId, delay.sourceName)
+				if self.mjdStart < 1.0 or self.mjdStart > delay.mjd:
+					self.mjdStart = delay.mjd
+				if self.mjdEnd < delay.mjd:
+					self.mjdEnd = delay.mjd
 		L = [x for x in self.antennaList if x is not None]
 		if len(L) < len(self.antennaList):
 			print('Shortening antenna list from ', self.antennaList, ' to ', L)
@@ -151,6 +155,8 @@ class APDDelays:
 			for D in self.delays:
 				D.ant1Id = antMap[D.ant1Id]
 				D.ant2Id = antMap[D.ant2Id]
+		if nanRows > 0:
+			print('Note: %d row(s) discarded because of NaNs' % nanRows)
 
 	def medianWeights(self, chanList):
 		nChan=len(chanList)
@@ -239,7 +245,6 @@ class APDDelays:
 			else:
 				VV[N+i] = -Yi[i]
 				
-
 		# constrain refant values
 		refantWeight = Wij.mean()	# just need this to be right order of magnitude
 		refantDelay = 0.0
@@ -387,11 +392,11 @@ def updateV2D(referenceTime, clockUpdate, inputFile, outputFile):
 				rate = values['deltaClockRate']
 
 			if ant in clockUpdate:
-				delta += clockUpdate[ant][-1] / 1000.0
+				delta += clockUpdate[ant][0] / 1000.0
 				if len(clockUpdate[ant]) > 1:
-					rate += clockUpdate[ant][-2] / 1000.0
-					delta += (epoch - referenceTime)*clockUpdate[ant][-2] / 1000.0
-			
+					rate += clockUpdate[ant][1] / 1000.0
+					delta += (epoch - referenceTime)*clockUpdate[ant][1] / 1000.0
+
 			if not newTokens[-1].isspace():
 				newTokens.append(' ')
 			if rate != 0 or 'clockEpoch' in values:
@@ -463,29 +468,22 @@ referenceTime, deltaClock = apd.solveDelays(degree, chans, refant, referenceTime
 print('Reference time = %14.8f' % referenceTime)
 print('Delta clock = ', deltaClock)
 
-"""
-obscode, times = loadAPD(apdFile)
-
-referenceTime, clockUpdate = process(times, chans, degree, referenceTime)
-
-if args.input == None:
-	print('Ref time: %13.7f' % referenceTime)
-	for key, value in clockUpdate.items():
-		print('%s:' % key, value)
-else:
-"""
 if args.input != None:
 	inputFile = args.input
 	nAnt = apd.nAnt()
 
 	# reformat the clock update
-	clockUpdate = np.zeros([degree+1, nAnt])
-	for i in range(len(deltaClock)):
-		clockUpdate[degree - (i // nAnt)][i % nAnt] = deltaClock[i]
+	clockUpdate = {}
+	for i in range(nAnt):
+		a = apd.antennaList[i]
+		clockUpdate[a] = np.zeros(degree+1)
+		for j in range(degree + 1):
+			clockUpdate[a][j] = deltaClock[i + nAnt*j]
 
 	print('clockUpdate=', clockUpdate)
 
 	if inputFile[-4:] in ['.v2d', '.e2d']:
+		print()
 		updateV2D(referenceTime, clockUpdate, inputFile, args.output)
 	elif inputFile[-4:] == '.vex':
 		updateVex(deltaClock, inputFile, args.output)
