@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 # NB: using Python2 because the extremely convenient JIVE 'vex.py' module utilized
 # here is based on MultiDict+lex+yacc and is not readily portable to python3 :-(
 '''
@@ -208,7 +208,7 @@ class ZoomFreqs:
 		f.close()
 
 		lines = [line.split('#')[0].strip() for line in lines]
-		lines = [re.sub('\s+',' ',line).strip() for line in lines]
+		lines = [re.sub(r'\s+',' ',line).strip() for line in lines]
 		lines = [line for line in lines if len(line)>0]
 		n = 0
 
@@ -271,7 +271,7 @@ class OutputbandFreqs:
 		f.close()
 
 		lines = [line.split('#')[0].strip() for line in lines]
-		lines = [re.sub('\s+',' ',line).strip() for line in lines]
+		lines = [re.sub(r'\s+',' ',line).strip() for line in lines]
 		lines = [line for line in lines if len(line)>0]
 		print('OutputbandFreqs::loadV2D')
 		print(lines)
