@@ -1,6 +1,7 @@
 #ifndef T301_VERSION
 #define T301_VERSION 0
 
+#include <stdio.h>
 #include "mk4_typedefs.h"
 
 					/* Set this to current version, */
@@ -18,4 +19,5 @@ struct type_301
     double	delay_spline[6];	/* Delay spline coefficients */
     };
 
+void write_t301 (struct type_301 *, FILE *);
 #endif

@@ -127,6 +127,8 @@ int search (struct type_pass *pass)
         // count of fr that actually have data after norm_fx
         if (status.apbyfreq[fr] > 0) status.napbyfreq ++;
         }
+        msg("norm_fx/xf done, napbybyfreq is %d,%d... total %d nonzero(freqs)", 1,
+            status.apbyfreq[0], status.apbyfreq[1], status.napbyfreq);
                                         /* norm can flag data, so check we still */
                                         /* have some! */
     if (status.total_ap == 0 || status.napbyfreq == 0)
@@ -194,10 +196,11 @@ int search (struct type_pass *pass)
             {
                 zero_complex(&(data[i]) );
             }
-            // check that mb_index value is legit
+            // include legal mb_index value and combine clones sharing frequency
             for (fr = 0; fr < pass->nfreq; fr++)
                 if (status.mb_index[fr] < MBD_GRID_MAX)
-                    data[status.mb_index[fr]] = rate_spectrum[fr][dr_index];
+                    data[status.mb_index[fr]] += rate_spectrum[fr][dr_index]
+                        / (double)pass->pass_data[fr].data_peers;
 
                                                 // FFT to delay resolution function
             fftw_execute (fftplan);

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 3399 2021-10-26 20:05:16Z barrettj $
+# $Id: Makefile.am 4512 2026-05-10 21:48:06Z gbc $
 #
 
 SUBDIRS = .
@@ -81,7 +81,9 @@ aedit_SOURCES = you_lose.c
 endif !HAVE_PGPLOT
 
 you_lose.c: Makefile.am
-	echo 'main(){return(puts("Missing PNG, X11 or PGPLOT\n"));}' > $@
+	echo '#include <stdio.h>' > $@
+	echo 'int main()' >> $@
+	echo '{return(puts("Missing PNG, X11, PGPLOT or GSL\n"));}' >> $@
 
 CLEANFILES = you_lose.c
 

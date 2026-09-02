@@ -3,8 +3,8 @@
 # Script to manufacture various VEX artifacts for use with ALMA data
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
+#-3.13++#from __future__ import absolute_import
+#-3.13++#from __future__ import print_function
 import optparse
 import sys
 

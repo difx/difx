@@ -3,8 +3,8 @@
 /* Creates a file in the same directory as the root file which can be   */
 /* used to signal other running fourfit processes that a fringe file    */
 /* is about to be create. This is necessary to keep simultaneously      */
-/* running fourfit processes from clobbering each others files          */
-/* the lock file has as a name with the following format:               */
+/* running fourfit processes from clobbering each others files.         */
+/* The lock file has as a name with the following format:               */
 /* PROC_ID.lock, and contains the value of the epoch second at which    */
 /* it was generated, this might be somewhat vulnerable to process-id    */
 /* recycling, but as long we are not spawning thousands of fourfit      */
@@ -119,7 +119,8 @@ int check_stale(lockfile_data_struct* other)
 
 int lock_has_priority(lockfile_data_struct* other)
     {
-    //returns LOCK_PROCESS_HAS_PRIORITY if this process has priority over the other lock 
+    //returns LOCK_PROCESS_HAS_PRIORITY if this process has priority
+    //  over the other's lock 
     //returns LOCK_PROCESS_NO_PRIORITY if this process does not have priority
     //returns LOCK_STALE_ERROR if there is a stale lock error
 
@@ -137,7 +138,7 @@ int lock_has_priority(lockfile_data_struct* other)
         {
         return LOCK_PROCESS_HAS_PRIORITY;
         }
-    else if( global_lockfile_data.pid == other->pid) //different hosts or pid recycling
+    else if( global_lockfile_data.pid == other->pid)    // tie-break w/time
         {
         if( global_lockfile_data.time_sec < other->time_sec )
             {
@@ -154,7 +155,7 @@ int lock_has_priority(lockfile_data_struct* other)
                 return LOCK_PROCESS_NO_PRIORITY;
                 }
             }
-        else
+        else    // ours is > other->pid
             {
             return LOCK_PROCESS_NO_PRIORITY;
             }
@@ -166,11 +167,10 @@ int lock_has_priority(lockfile_data_struct* other)
 
     }
 
-int create_lockfile(char *rootname, char* lockfile_name)
+int create_lockfile(char *rootname, char* lockfile_name, int max_seq_no)
     {
     //max file extent number seen at time of lock file creation 
     //(or rather, the time which fileset() was run)
-    extern int max_seq_no;
   
     //get the host name
     char host_name[256] = {'\0'};
@@ -200,7 +200,8 @@ int create_lockfile(char *rootname, char* lockfile_name)
     strcpy(lockfile_name, rootname);
     char* end_ptr = strrchr(lockfile_name, '/');
     end_ptr++;
-    sprintf(end_ptr, "%u.%u.%lx.%lx.%s.lock", pid, sequence_to_reserve, epoch_sec, micro_sec, host_name);
+    sprintf(end_ptr, "%u.%u.%lx.%lx.%s.lock",
+        pid, sequence_to_reserve, epoch_sec, micro_sec, host_name);
     
     FILE* lockfile = fopen(lockfile_name, "w+" );
     if (lockfile!=NULL)

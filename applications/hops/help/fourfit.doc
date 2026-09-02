@@ -1,37 +1,33 @@
 Documentation for the program "fourfit"
--- last update 2019.8.16
+-- last update 2024.3.22
 ---------------------------------------
 
 COMMAND NAME:   fourfit
 
 SYNOPSIS:  Performs fringe searching for continuum MkIV data
 
-SYNTAX:  fourfit [-a] [-b BB:F] [-c controlfile] [-d display device] [-e]
-            [-f value] [-m value] [-n value] [-p] [-r afile] [-s naps]
-            [-tux] [-P polar_pair] [-T trefoffs] [-X] data file list 
+SYNTAX:  fourfit [-aeptx] [-b BB:F] [-c controlfile] [-d device]
+            [-f value] [-m value] [-n value] [-r afile] [-s naps]
+            [-P polar_pair] [-T trefoffs] [-X] data file list
             [set <control file syntax statements>]
-         Where all arguments except the data file list are optional.
-         The [-r afile] option replaces the data file list, however.
-         The "set" argument and the commands which follow it must
-         come last.  All option flags must appear before the data file
-         list.  Option flags can come in any order.
+         Where all arguments except the data file list are optional,
+         except when the [-r afile] option is present in which case
+         the data file list is ignored.  All option flags must appear
+         before the data file list (if no -r).  Option flags can come
+         in any order and simple flags (a,e,p,t and x may be combined).
+
+         The "set" option comes last and has the effect of appending
+         (last word: over-riding previous directives).
 
     Here are examples of command-line invocations of fourfit, with
     an explanation of what they do:
 
-fourfit -pt -c control 101-0620/3C279.051V4B
+fourfit -pat -c control 101-0620/3C279.051V4B set freqs a b
         Test mode, steps through all baselines polarizations for
-        this scan.  Without the -pt, the fringes would just be
+        this scan.  Without the -pat, the fringes would just be
         written in individual files in 101-0620, with one file
-        per baseline-pol-frequencygroup type.
-
-fourfit -txas -m 1 -c control 018-234505 set mb_win -0.0034 .004 freqs a b
-        Test mode, xwindow display, accounting switched on, cross
-        power spectrum plot switched on, moderately verbose, use
-        control file named "control" in current working directory,
-        process all data in scan directory 018-234505, override
-        multiband delay search window and select channels 'a' and
-        'b' only.
+        per baseline-pol-frequency group type. Accounting is on.
+        All channels are ignored except a and b.
 
 fourfit -r refr_list -c control -d hardcopy -b AT:S
         Process all data referenced by type 2 lines in the A-file
@@ -76,47 +72,51 @@ OPTION FLAGS:
             can be found later in this document.
 
         -d display_device
-            Upon completion of a fringe fit, fourfit can
-            optionally display the results using postscript.
-            The valid choices for "display_device" are:
-                hardcopy          send the plot directly to lpr
-                pshardcopy        print the plot via pplot_print
-                xwindow           show the plot in an X11 window
-                psscreen          the same, but allow GS_* options
-                diskfile:file.ps  save the plot in "file.ps"
-                ps2pdf:file.ps    use "file.ps" to make "file.pdf"
-            If a %d printf token is present an incrementing number
-            will be used.
+            Upon completion of a fringe fit, fourfit optionally
+            display the results using ghostscript (gs) as configured
+            when you build fourfit.  Valid "display_device" choices:
+
+                hardcopy          print via lpr or lpr -P MK4_PRINTER
+                pshardcopy        print the plot via pplot_print.sh
+                xwindow           displays it with the gs 'x11' device
+                psscreen          displays it with default gs device.
+                diskfile?file.ps  save the plot in "file.ps"
+                ps2pdf?file.ps    use "file.ps" to make "file.pdf"
+
+            Case is ignored.  For GS options, start with: gs --help.
+
+            When a %d (or other integer) is found in the 'file' part of
+            the argument, an incrementing number will be used (over the
+            life of fourfit).  You may also use %B, %F and %P to have
+            the baseline, frequency group and polarization inserted in
+            place of those two-character combinations.  The ? here is
+            any character that the shell is happy with.  %P does not
+            work in all cases due to some nasty history.
 
         -e
             If specified, this option estimates the time required for
-            processing by fringing the first scan and extrapolating to
-            the remaining scans.  It is equivalent to -a -t with no
-            display device, followed by some estimation.  Only the
+            processing by fringing the first scan and crudely extrapolating
+            to the remaining scans.  It activates -a and -t; only the
             first data file mentioned will be included in the estimate.
 
         -f first channel
             overrides the default first channel (0) to facilitate
-            plotting when there are more than 16 channels (see -n)
+            plotting when there are more than 16 channels (see -n).
+            See -n and display_chans option for the control file below.
 
         -m value
             This flag controls the verbosity of the program via
-            the integer argument "value", which typically ranges from 3
-            (virtually silent except for major errors) to -3 
-            (incredibly verbose, of use only to the authors of 
-            the program).  The default is 2. An additional mode can
-            be toggled on when m=4. This mode prints nothing except
-            the name of the generated fringe file, which can be useful
-            when calling fourfit from other scripts.
+            the integer argument "value", which is forced to the
+            range [-3,3].  Exceptionally 4 may be used which prints
+            nothing except the fringe name.
 
         -n number of channels
-            When channels are overridden (see also the -f flag)
-            this tells how many channels to put on the plot. Note
-            that neither -f nor -n affect the actual fringe fit,
-            just the plotting thereof.
+            This reduces the number of displayed channels from the
+            default of all channels.  See -f above as well as the
+            display_chans directive for the control file.
 
         -p 
-            This is equivalent to "-d psscreen".
+            This is equivalent to "-d psscreen", see -d above.
 
         -r afile
             Puts fourfit into "refringe" mode.  Fourfit refringing
@@ -125,8 +125,8 @@ OPTION FLAGS:
             line (i.e. the latter are ignored when the -r flag
             is specified).  The input A-file, of which there can
             be only one, may contain root, corel or fringe lines,
-            but only the fringe lines are used to determine which
-            data to process, by baseline and frequency subgroup.
+            but only the (type 2) fringe lines are used to determine
+            which data to process, by baseline and frequency subgroup.
             Obviously, the -r flag is inconsistent with the -u
             flag, and specifying both is an error.  Note that for
             afiles using HP-1000 (version 1) line formats, fourfit
@@ -151,17 +151,8 @@ OPTION FLAGS:
             fringe-fitting strategies, in order to avoid cluttering
             up the disk.
 
-        -u
-            Normally, fourfit processes all data consistent with
-            the data file list and the control information.  When
-            this flag is specified, fourfit will also check the
-            information in the type-2100 record of the root to 
-            see if the data have already been processed by fourfit.
-            If so, the data in question are skipped.  The "u"
-            stands for update mode.
-
         -x
-            This is equivalent to "-d xwindow".
+            This is equivalent to "-d xwindow", see -d above.
 
         -P pp
             Controls polarization processing, where the 2 character
@@ -179,17 +170,17 @@ OPTION FLAGS:
             If this option is invoked, the fourfit reference
             time will be calculated by taking the nominal scan
             start time from the ovex file and adding trefoffs
-            (which is an integer # of seconds) to it.
+            (which is a positive integer # of seconds) to it.
 
         -X
             Forces fourfit to write cross-power spectra into
             type 230 records. This option is typically used for
-            import into AIPS.
+            import into AIPS or diagnostics.
 
 ARGUMENTS:  data file list
             This mandatory argument or arguments tells fourfit
             which data files to process.  The format of the data
-            file specification is the standard one for all MkIV
+            file specification is the standard one for all HOPS
             software.  You may specify individual filenames, 
             scan directories which contain data files, 
             experiment directories, or any combination of
@@ -204,11 +195,6 @@ ARGUMENTS:  data file list
             such restrictions, all data associated with the 
             specified root files are processed.
 
-            Beware of trying to specify too many files or scan
-            directories, as it is possible to overflow the Unix
-            argument list buffer on large experiments.  In such
-            cases, specify the experiment directory instead.
-
         The postscript rendering is performed by ghostscript
         [gs(1)], and GS_* environment variables can be used
         to produce a variety of graphics when the "psscreen"
@@ -222,18 +208,18 @@ ARGUMENTS:  data file list
         set <control file syntax statements>
             This command line argument is optional, and
             is intended to permit rapid, temporary modification
-            of 'fourfit' behaviour without the need to edit the
+            of 'fourfit' behavior without the need to edit the
             control file.  The word "set" tells fourfit to expect
             additional control information on the rest of the
             command line.  The syntax of this control information
             is identical to that of the control file (see
             detailed description below).  The control file
             parser will detect syntax errors and abort if you
-            do not follow the rules as laid down.  The control
-            information you specify after the "set" argument
-            on the command line applies to all data to be
-            processed, and overrides whatever the control file
-            itself specified for the parameters in question.
+            do not follow the rules.  The control information you
+            specify after the "set" argument on the command line
+            applies to all data to be processed, and overrides
+            whatever the control file itself specified for the
+            parameters in question.
 
 ENVIRONMENT:    DEF_CONTROL, DISPLAY, DATADIR, GS_DEVICE, GS_OPTIONS,
                 HOPS_PLOT_DATA_MASK, HOPS_AMP_SEG_FILTER, HOPS_EST_PC_BIAS,
@@ -245,18 +231,20 @@ Fourfit is the functional analogue of FRNGE on the HP-1000 systems, and
 searches the data represented by the root and corel files for fringes,
 writing the results of the search to files of type fringe.  The emphasis
 in the design of the program has been speed and flexibility, particularly
-with regard to future enhancements.  Algorithmically, the program is
-closely modelled on FRNGE, with only minor enhancements as yet, based on
-the availablity of greater computing resources.
+with regard to future enhancements (of which there have been a great many).
 
-Below is a preliminary form of a document describing in detail the format and
-syntax of the control file:
+Algorithmically, the program was closely modelled on FRNGE, with minor
+enhancements, but evolution has made a number of structural changes.
+The HOPS3 era ends in 2024, with a captured version that will stop evolving.
+The HOPS4 era then begins with a more robust framework allowing greater
+future flexibility.
 
-* Example of current syntax for fourfit control file
-* This file makes no semantic sense for a real experiment; rather, it is used
-* to illustrate typical command syntaxes.
+Here is a (nonsensical) sample of a control file to give you an idea
+what it looks like.  As there are now over 100 directives, this is
+necessarily limited to some basic ones.
 
-ref_freq  8213.15                 * global commands come first
+* global commands come first
+ref_freq  8213.15
 start -10
 
 if station L and f_group X
@@ -280,9 +268,10 @@ if station A
    pc_delay_r -5.9
    ionosphere 18.0
 
-if (station V or baseline KT) and source 3C279       * parentheses NYI
+* all windows are in usec, but the delay rate plot is in ns/s
+* with a range typically in ps/s
+if (station V or baseline KT) and source 3C279
    sb_win -0.5 0.5    mb_win 0.02 0.02  dr_win -1.0E-6 0.5E-6
-
 else
    sb_win 0.0 0.0     mb_win 0.02 0.02  dr_win -1.0E-6 0.5E-6
 
@@ -296,31 +285,27 @@ if baseline K? and not scan 250-120000 to 251-235959
    switched scan_start
    period 30
    gates abcfgh  0 30  0 10  15 25     0 10  15 25  0 30
-
-
 * End of sample control file
 
 
-
-SELECTOR KEYWORDS       VALUES
+SELECTOR KEYWORDS     VALUES
    station            1 character
    baseline           2 characters
    source             string of 1-8 chars
    f_group            1 character
    scan               UT-epoch (special format), or:
-              < UT-epoch
-              > UT-epoch
-              UT-epoch1 to UT-epoch2  (inclusive time range)
+                      < UT-epoch
+                      > UT-epoch
+                      UT-epoch1 to UT-epoch2  (inclusive time range)
 
 
 
 SYNTACTIC KEYWORDS
    if
-   else   (NYI)
+   else
    and
    or
    not
-   ()     (NYI)
    <>
    to
    ?
@@ -334,7 +319,12 @@ ACTION KEYWORDS         VALUES
    adhoc_phase        'sinewave', 'polynomial', or 'file'
    adhoc_poly         <7 floats/integers (mixture OK)
    adhoc_tref         float
+   avxpzoom           2 floats
+   avxplopt           2 int
    chan_ids           n char string, followed by n floats
+   clone_ids          a 2n-char string
+   clone_snr_chk      `true' or `false` (default: false)
+   chan_notches       an (n-char) string
    dc_block           `true' or `false' (default: false)
    dec_offset         float
    delay_offs         n char string, followed by n floats
@@ -342,10 +332,12 @@ ACTION KEYWORDS         VALUES
    delay_offs_r       n char string, followed by n floats
    delay_offs_x       n char string, followed by n floats
    delay_offs_y       n char string, followed by n floats
+   display_chans      n-char-string (channels to display; cf -f and -n)
    dr_win             2 floats
    est_pc_manual      int
    fmatch_bw_pct      float
    freqs              n chars
+   frqs               n char string
    gates              n char string, followed by 2n floats
    gen_cf_record      'true' or 'false' (default: false)
    index              n ints
@@ -358,12 +350,14 @@ ACTION KEYWORDS         VALUES
    mb_win             2 floats
    mbd_anchor         'sbd' or 'model' (default: model)
    min_weight         float
+   mbdrplopt          3 ints
+   mod4numbering      `true' or `false'
+   polfringnames      `true' or `false'
    mount_type         'no_mount', 'cassegrain', 'nasmythleft' or 'nasmythright'
+   noautofringes      `true' or `false'
    notches            2n floats
    optimize_closure   'true' or 'false' (default: false)
    passband           2 floats
-   avxpzoom           2 floats
-   avxplopt           2 int
    pc_amp_hcode       float
    pc_delay_l         float
    pc_delay_r         float
@@ -384,6 +378,7 @@ ACTION KEYWORDS         VALUES
    pc_tonemask        n char string, followed by n floats
    period             int
    plot_data_dir      string
+   fringeout_dir      string
    ra_offset          float
    ref_freq           float
    samplers           int, followed by up to 8 strings
@@ -401,16 +396,6 @@ ACTION KEYWORDS         VALUES
    use_samples        `true' or `false'
    weak_channel       float
 
-*** deprecated -- for backward mk4 compatibility only ***
-   index         alternate method used to select data channels, based on the
-                 original corel index number. Not as well supported as freqs,
-                 and is current being phased out.
-   max_parity         float
-   x_crc              `keep' or `discard'
-   x_slip_sync        `keep', `discard', or an integer
-   y_crc              `keep' or `discard'
-   y_slip_sync        `keep', `discard', or an integer
-
 KEYWORD SEMANTICS
 
 **scan selection**
@@ -425,10 +410,18 @@ KEYWORD SEMANTICS
    freqs         controls which frequency channels get included in the fit.
                  The letters a-p correspond to the order that the frequencies
                  appear in the root file (assuming 16 channels). With no
-                 suffix, DSB is implied, if both sidebands are present.
+                 suffix, DSB is implied if both sidebands are present.
                  A plus suffix denotes USB, a minus is used for LSB.
                  After 26 channels, the uppercase alphabet is used,
                  then 10 digits, finally '$' and '%' (i.e. 64 channels).
+   frqs          same as freqs, but presented as a string (no spaces).
+                 Additional handling is applied, so that ~ represents a
+                 range of channels (e.g. a~d is abcd).  If channel aliasing
+                 is in effect, % is converted to an alias of the preceding
+                 channel (and consumes a letter in the process; see NOTE).
+                 The +/- sideband indicators still have their usual meanings.
+                 If you've already used frqs in the control file, then
+                 in the 'set' command you can only adjust with freqs.
    start         start time for data to be included.
    stop          stop    "   "    "  "   "    "
                  Arguments of start and stop are integers with an optional
@@ -455,27 +448,6 @@ KEYWORD SEMANTICS
                  Note: passband and notches should not both be applied;
                  you will get a warning (just in case you know what you are
                  doing) in the fourfit plot, but no fatal error.
-   avxpzoom      a pair of numbers that allows you to "zoom in" on the average
-                 cross-power spectrum plot.  The first number is the location
-                 (in plot window x coordinates, ranging from 0.0 to 1.0) of
-                 interest and the second number is the width (again in plot
-                 window x coordinates).  This is useful to use with the
-                 passband option.
-   avxplopt      two numbers providing options for plotting of this window.
-                 The second number can be -7, -1, 0, 1 or +7.  The default
-                 behavior obtains with 0.  With non-negative values, the
-                 amplitude is plotted first, with negative values, the phase
-                 is plotted first--0 and 1 are equivalent.  With +/-7 the
-                 phase points will be connected with a faint reddish line.
-                 The first number (useful when passband is active) is an
-                 amplitude threshold (in pixels, defaulting to 20) for
-                 amplitude/phase data to be discarded.  The fourier transform,
-                 interpolation and smoothing process generate small values
-                 which clutter the plot and it is usually better to discard
-                 them.  This is only done for nonzero values of the second
-                 number.  The RGB values in the +/-7 option may be set as
-                 you like using HOPS_FF_PHASE_CLR to be a cvs triplet of
-                 red,green,blue on a 0..1 scale (see pgplot documentation).
    notches       a list of non-overlapping lower/upper bounds pairs (in MHz)
                  to exclude from the spectral passband.  (Passband may be
                  applied prior to removal of these notches.)  Note that the
@@ -488,6 +460,15 @@ KEYWORD SEMANTICS
                  Note: passband and notches should not both be applied;
                  you will get a warning (just in case you know what you are
                  doing) in the fourfit plot, but no fatal error.
+   chan_notches  Nominally an n-char string of channel labels (freqs/frqs)
+                 corresponding directly to the list of notches.  You may use
+                 an @ character to have notches apply to all channels, and
+                 if frqs has been used ~ may be used for a range of channels.
+                 Finally @|N will be treated as a string of N channels marked
+                 with @.  (Here N is not to be confused with channel N.)  For
+                 robustness, it is an error if the expanded length of the
+                 string does not match the number of notches (which must have
+                 previously been declared).
    dc_block      if set to true, zero out lowest cross-power spectral
                  channel; useful for suppressing DC bias
    min_weight    fraction of data which must be present for inclusion.
@@ -495,13 +476,6 @@ KEYWORD SEMANTICS
                  the correlator to represent the fraction of data actually
                  supporting the correlation value.  If you specify a minimum
                  weight, any AP not meeting this threshold will be discarded.
-
-   *** deprecated filtering commands - for backward compatibility only: ***
-   max_parity    maximum allowable fraction of bytes in error
-   x_slip_sync   maximum # of frames w/ re-sync in reference station
-   y_slip_sync      "    "  "    "   "     "     " remote      "
-   x_crc         either keep or discard AP if reference time has CRC error
-   y_crc           "      "   "    "    "  "  remote      "   "   "    "
 
 **search**       control the fringe-searching process
 
@@ -522,7 +496,6 @@ KEYWORD SEMANTICS
                  dimension at a time, for 3 cycles. The simultaneous mode
                  (simul for brevity) constructs a 5x5x5 cube of data points
                  and does a 3D quintic interpolation.
-
 
 **corrections**  apply corrections to the data, either before or after fit
 
@@ -637,16 +610,34 @@ KEYWORD SEMANTICS
              and elevation angles are currently evaluated only at the start
              of the scan.
 
-** miscellaneous functions
+** miscellaneous functions or capabilites **
+
    chan_ids      changes the assignment of the channel labels
                  "abcdef..xyzABC..XYZ01..789$%" from the default values
-                 to the ones specified by the corresponding list of floats
-                 This is useful to prevent mis-matched IFs within one experiment
+                 to the ones (MHz) specified by the corresponding list of floats
+                 This is useful to prevent mis-matched IFs within an experiment
                  from causing the same channel label to be ambiguously used on
-                 various baselines.  (You should ideally use exactly the same
-                 frequencies as would be assigned by default.)  Note that this
-                 directive must appear prior to any mention of channels by id
-                 (as the mapping is changed with this command).
+                 various baselines.  (Values within 0.01 MHz are a match.)
+                 Note that this directive must appear prior to any mention of
+                 channels by id (as the mapping is changed with this command).
+   clone_ids     adds additional channels as clones of existing channels.
+                 This provides a pathway for special editing of channels that
+                 are created by output bands which need, e.g. different phases
+                 in different parts of frequency space.  As with chan_ids, this
+                 directive must appear before mention of the new channels.
+                 If chan_ids is used, chan_ids must appear before clone_ids.
+                 The argument is an even length string with the channels to
+                 clone followed by the channel labels to use.  The first half
+                 should correspond to recorded channels, the second half should
+                 not.  (The maximum number of frequencies, including the
+                 clones, is limited to 64, for a variety of reasons.)
+   clone_snr_chk when true, checks SNR and raises 'C' quality code flag.  For
+                 correct SNR estimates, no bits should be used twice (NYI).
+   fringeout_dir if present will (create and) use this directory for output
+                 fringes rather than co-location with the correlated data.
+                 This must be an absolute pathname.  Subdirectories for
+                 experiment name and scan will then be created along with
+                 a bogus root file (so that the niceties are preserved).
    plot_data_dir if present will be used as a path to dump the plot data
                  in a self-documented ascii form to allow export of plot
                  information to other arenas (specialized plots, &c).  One
@@ -654,7 +645,8 @@ KEYWORD SEMANTICS
                  the files that are produced: there is help for the options
                  that may be used to manipulate the content.
    fmatch_bw_pct associate freqs < this percentage of bw together (25% default)
-   pc_amp_hcode  generate an H code iff any pcal amps less than this (0.005 default)
+   pc_amp_hcode  generate an H code iff any pcal amps less than this
+                 value (0.005 by default)
    weak_channel  the ratio of single_channel_amp to coherent_sum_amp 
                  below which a G code is assigned to the scan (0.5 default)
    gen_cf_record if true, saves the full control file in the fringe record
@@ -680,8 +672,8 @@ KEYWORD SEMANTICS
                  not correct delay but will line up the phases, 0.5 will only
                  correct half of the delay (e.g. which could be used as part
                  of an iterative process), and 1.0 is the default which
-                 chooses phases to remove the MBD.  If 0x100 is set (for
-                 the 0x02..0x08 methods), the delay so calculated is transferred
+                 chooses phases to remove the MBD.  If 0x100 is set (for the
+                 0x02..0x08 methods), the delay so calculated is transferred
                  to the sbd values.  In this case an environment variable
                  HOPS_EST_PC_MDLY is used.  In all of these cases the output is
                  text suitable for inclusion in a control file.  (Note that
@@ -689,6 +681,65 @@ KEYWORD SEMANTICS
                  sos setting 0x100 really means add 256 to 2, 4 or 8.)
                  A script est_manual_phases.py is available to drive a full
                  determination of manual pc phases using these options.
+                 Note that the -f and -n options restrict the output to that
+                 range of channels, independent of display_chans.
+   avxpzoom      a pair of numbers that allows you to "zoom in" on the average
+                 cross-power spectrum plot.  The first number is the location
+                 (in plot window x coordinates, ranging from 0.0 to 1.0) of
+                 interest and the second number is the width (again in plot
+                 window x coordinates).  This is useful to use with the
+                 passband option. ('avxp' is short for averaged cross-power.)
+   avxplopt      two numbers providing options for plotting of this window.
+                 The second number can be -7, -1, 0, 1 or +7.  The default
+                 behavior obtains with 0.  With non-negative values, the
+                 amplitude is plotted first, with negative values, the phase
+                 is plotted first--0 and 1 are equivalent.  With +/-7 the
+                 phase points will be connected with a faint reddish line.
+                 The first number (useful when passband is active) is an
+                 amplitude threshold (in pixels, defaulting to 20) for
+                 amplitude/phase data to be discarded.  The fourier transform,
+                 interpolation and smoothing process generate small values
+                 which clutter the plot and it is usually better to discard
+                 them.  This is only done for nonzero values of the second
+                 number.  The RGB values in the +/-7 option may be set as
+                 you like using HOPS_FF_PHASE_CLR to be a cvs triplet of
+                 red,green,blue on a 0..1 scale (see pgplot documentation).
+   mbdrplopt     three integers affecting the delay and MBD delay-rate plots.
+                 If the first number is non-zero, the stacking of the traces
+                 is reversed (i.e. MBD first, delay-rate second).  The second
+                 integer is a divider for the horizontal axis to show
+                 increasingly more detail at the center of the plot.  The
+                 third integer does the same, but for the SBD plot.
+                 ('mbdr' is short for multi-band delay-rate.)
+   mod4numbering if 'true' forces the fringe numbers to be chosen
+                 to be well-ordered with polarization, specifically 1..4
+                 cycle through LL, RR, LR and RL.  There is no
+                 guarantee that there are no gaps in the numbering.
+                 Other pol cases revert to normal(sequential) numbering.
+   polfringnames if 'true' put a polarization label in the fringe
+                 name: NNNN -> NNNN-PP.  This option is independent of
+                 mod4numbering and one may do either or both, but the results
+                 may not work for all uses.  The only supported pol'n options
+                 are LL,RR,LR and RL (or X or Y substitions).  Other cases
+                 revert to normal(no pol label in fringe name).  This option
+                 is in development and should not yet be used for production.
+   noautofringes if 'true' will skip fringes for auto correlations as an
+                 alternative to more complex logic in the control file.
+   display_chans a channel character string using the same syntax as frqs.
+                 Optionally, @N may appear at the end, which means to skip
+                 N correlated channels between the displayed ones.  In the
+                 32 channel era, this allows you to do, e.g. @4 so that only
+                 7-8 channels are displayed.  @0 is implied if @N is missing.
+                 When display_chans is used, -f and -n further reduce the
+                 list of channels to be displayed.  In all cases, the first,
+                 last and "All" plots are ensured to be present.  (Note that
+                 "All" is automatically dropped when only one channel is to
+                 be plotted.)  What you get is not always what you thought.
+
+NOTE:
+   As there are many special purpose features that have been introduced,
+   it is not necessarily the case that all options work in all situations.
+   (This is especially true as geodetic and astronomic back ends diverge.)
 
 SPECIAL KEYWORD VALUES
    ?         wild card character
@@ -707,7 +758,7 @@ ERROR CODES
       if the notches are tiny...but proper accounting of SNR is failing.
    B  Some form of interpolation error, usually due to fringes at the
       edge of some window
-   C  (some epoch error condition that is no longer used)
+   C  Some sort of channel cloning error when clone_snr_check is used.
    D  missing track
    E  Solution is at the edge of some window.
    F  Originally meant no data found; now notes Station Unit "forks"
@@ -723,7 +774,6 @@ SPECIAL FORMATS
            appropriate.  This format will match that of a scan directory,
            if the UT-epoch that is being specified is an actual scan time.
 
-
 GENERAL GUIDELINES
 
    1) White space is ignored; i.e., multiple spaces and line feeds all
@@ -731,13 +781,14 @@ GENERAL GUIDELINES
    2) Multiple commands per line are fine.
    3) Comments: anything from an asterisk through the end of the line
       is ignored.
-   4) Nested ifs are not allowed (or necessary). Nested parentheses in
-      an if condition are fine (NYI).
-      As of 94.1.16, parentheses are not supported. The logical operators,
-      in decreasing order of precedence are (not, and, or).
+   4) Nested ifs are not allowed.  The logical operators, in decreasing
+      order of precedence are (not, and, or) and that seems sufficient.
+      (The plan was to allow parentheses and more complicated logic, but
+      that was never implemented.)
    5) Wildcard "?" matches any single character for f_group, station, or
       baseline, any string (of up to 8 characters) for source, and any
-      time-value for scan.
+      time-value for scan.  Remember to escape it if you use it on the
+      command line.
    6) Phase cal and delay offsets are treated station by station. If not
       in a "station context", then values are applied to remote stn only.
    7) Only freqs that are chosen for both stations in a baseline are 
@@ -745,3 +796,5 @@ GENERAL GUIDELINES
    8) If multiple if-blocks match a particular passes' choice of baseline,
       f_group, source, and scan criteria, then the later values assigned
       to each parameter overwrite the earlier ones.
+
+eof

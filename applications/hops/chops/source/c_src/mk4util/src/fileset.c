@@ -24,10 +24,31 @@
 #include "mk4_util.h"
 #include <regex.h>
 
+/*
+ * If by some chance fset was previously used,
+ * then we need to free any alloc'd names.
+ * See prep_fstruct() and wipe_fstruct() in sub/util/check_names.c
+ */
+static inline void clear_fset(struct fileset *fset)
+{
+    int ii;
+    fstruct *f_info;
+    for (ii=0, f_info = fset->file; ii<MAXFSET; ii++, f_info++)
+        if (f_info->name) {
+            if (f_info->namealloc > 0 && f_info->namealloc < 256) {
+                if (f_info->type > 0 && f_info->type < 5 &&
+                    f_info->rootcode[6] == 0) {
+                    free(f_info->name);
+                }
+            }
+        }
+    memset(fset, 0, sizeof(struct fileset));
+}
+
 int
 get_fileset(char *rootname, struct fileset *fset)
     {
-    int i, nfil, rerc;
+    int i, nfil, rerc, pmod;
     char temp[1024], *ptr, *rootcode;
     DIR *dp, *opendir(const char *);
     struct dirent *ds, *readdir(DIR *);
@@ -35,12 +56,9 @@ get_fileset(char *rootname, struct fileset *fset)
     regex_t preg;
     regmatch_t pmatch[3];
                                         /* Initialize */
-    fset->expno = 0;
-    fset->scandir[0] = '\0';
-    fset->scanname[0] = '\0';
-    fset->rootname[0] = '\0';
-    fset->maxfile = 0;
-    for (i=0; i<MAXFSET; i++) clear_fstruct (fset->file + i);
+
+    /* clean slate... */
+    clear_fset(fset);
                                         /* Dissect input rootname */
                                         /* First check for sensible input */
     if (rootname[0] != '/')
@@ -112,6 +130,7 @@ get_fileset(char *rootname, struct fileset *fset)
                                         /* Analyze the filename.  Nonzero */
                                         /* return indicates that this is not */
                                         /* a correlator related file, so skip */
+        prep_fstruct(&fstemp);
         if (check_name (ds->d_name, &fstemp) != 0) continue;
                                         /* Is it a member of this fileset? */
         if (strcmp (rootcode, fstemp.rootcode) != 0) continue;
@@ -130,12 +149,24 @@ get_fileset(char *rootname, struct fileset *fset)
                                         /* This is non-root member of fileset */
                                         /* Store the information in fset */
         if (fstemp.filenum > fset->maxfile) fset->maxfile = fstemp.filenum;
+                                        /* same thing, for mod4numbering */
+        pmod = fstemp.filenum % 4;
+        if (fstemp.filenum > fset->mxfiles[pmod])
+            fset->mxfiles[pmod] = fstemp.filenum;
+
+        /* fset->file is statically allocated to MAXFSET entries */
         memcpy (fset->file + nfil, &fstemp, sizeof (fstruct));
-                                        /* This allocates memory, but only */
-                                        /* up to a max of 16 bytes/file, so we */
-                                        /* ignore memory leak problem */
+
+        /* Note well that the memory malloc'd by strdup() will be freed when the
+         * fset is re-used.  If it is not re-used, we will have a growing leak */
         fset->file[nfil].name = strdup (ds->d_name);
+        fset->file[nfil].namealloc = strlen(fset->file[nfil].name) + 1;
         nfil++;
+        if (nfil >= MAXFSET)
+            {
+            msg ("Too many files; only using first %d\n", 2, MAXFSET);
+            break;
+            }
         }
 
     closedir (dp);

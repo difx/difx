@@ -67,7 +67,7 @@ static void init_flag_table(void)
 static char *table_report(char *e, int n)
 {
     static char buf[2*MAX_NUM_FREQS + 2];
-    unsigned char *b = buf - 1;
+    char *b = buf - 1;
     while (n-- > 0){
         *(++b) = (*e & 0xF0)>>4;
         if (*b < 10) *b += '0'; else *b += 'A' - 10;
@@ -92,9 +92,9 @@ static AHFFC_Entry *populate_entry(AHFFC_Entry *table, char *file)
 {
     static char buf[MAX_LEN_FLAG_LINE];
     FILE *fp = fopen(file, "r");
-    char *bytes = malloc(MAX_NUM_FREQS + 2);
-    char *name = malloc(strlen(file)+2);
-    double *times = (double*)malloc((NUM_FLAG_LINES+2) * sizeof(double));
+    char *bytes = (char*) malloc(MAX_NUM_FREQS + 2);
+    char *name = (char*) malloc(strlen(file)+2);
+    double *times = (double*) malloc((NUM_FLAG_LINES+2) * sizeof(double));
     int load, offset, nibble, bread, addr, usb, lastusb, lastlsb, limit;
     int loaded = NUM_FLAG_LINES + 2, readable = MAX_NUM_FREQS + 2;
 
@@ -125,7 +125,7 @@ static AHFFC_Entry *populate_entry(AHFFC_Entry *table, char *file)
         msg(" entry: %s", 1, buf);
         if (load >= loaded) {
             loaded += NUM_FLAG_LINES;
-            times = realloc(times, loaded);
+            times = (double*) realloc(times, loaded);
             if (!times) {
                 perror("populate_entry:realloc:times");
                 msg("Unable to expand flag file %s", 3, file);
@@ -135,7 +135,7 @@ static AHFFC_Entry *populate_entry(AHFFC_Entry *table, char *file)
         }
         if (bread + MAX_NUM_FREQS >= readable) {
             readable += MAX_NUM_FREQS;
-            bytes = realloc(bytes, readable);
+            bytes = (char*) realloc(bytes, readable);
             if (!bytes) {
                 perror("populate_entry:realloc:bytes");
                 msg("Unable to expand flag file %s", 3, file);
@@ -202,7 +202,7 @@ static AHFFC_Entry *populate_entry(AHFFC_Entry *table, char *file)
 static AHFFC_Entry *import_file(char *file)
 {
     int rv;
-    ENTRY try, *erv;
+    ENTRY attempt, *erv;
     AHFFC_Entry *usable;
 
     /* initialization and sanity checks */
@@ -210,9 +210,9 @@ static AHFFC_Entry *import_file(char *file)
     if (flag_table_init > 1) return((AHFFC_Entry *)0);
 
     /* first try to find it */
-    try.key = file;
-    try.data = (void*)(long)flag_table_open;
-    rv = hsearch_r(try, ENTER, &erv, &htable);
+    attempt.key = file;
+    attempt.data = (void*)(long)flag_table_open;
+    rv = hsearch_r(attempt, ENTER, &erv, &htable);
     if (!rv) {
         perror("import_file:hsearch_r");
         msg("Disabling all flagging activity", 3);
@@ -306,7 +306,7 @@ static unsigned char *locate_entry(char *file, double thyme)
     }
 
     /* ep->lindex is the entry to use */
-    return(ep->table + (ep->lindex = index) * (ep->nbytes));
+    return (unsigned char*) (ep->table + (ep->lindex = index) * (ep->nbytes));
 }
 
 /*

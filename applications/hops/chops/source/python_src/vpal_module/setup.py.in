@@ -1,10 +1,11 @@
 #VGOS Postprocessing Auxiliary Libraries (VPAL)
 #requires: ['numpy', 'scipy', 'matplotlib']
 #optional: ['progress']
-from distutils.core import setup
+from @PYTHON_SETUP@ import setup
+
 setup(name='vpal',
     version='0.1',
-    package_dir={ '': '@abs_srcdir@' },
+    package_dir={ '': '@abs_builddir@' },
     packages=['vpal'],
     requires=['numpy', 'scipy', 'matplotlib']
 )

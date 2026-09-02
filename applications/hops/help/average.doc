@@ -1,0 +1,148 @@
+Documentation for the program "average"
+---------------------------------------
+
+COMMAND NAME:   average
+
+SYNOPSIS:  Performs various averaging functions on A-file data
+
+SYNTAX:  average [-abch][-i integration time] [-m msglevel] [-o outfile] 
+			[-s snrfactor] [-x] input_file(s)
+		-a switches on execution time accounting
+		-b specifies binary input mode (use only with "fringex -b")
+		-c Means output data records suitable for input to cofit
+		-h if specified, suppress header in output file
+		-i specifies integration time in seconds (0 means scan average)
+		-m controls verbosity
+		-o means write to outfile, default is stdout
+		-s specifies snr adjustment factor for noise debiasing
+		-x averages across scan boundaries (default is not to do so)
+		if input files are not provided, the standard input is used.
+
+OPTION FLAGS:	-a
+			Switches on the standard HOPS execution time
+			accounting package (a crude form of profiling)
+		-b
+			Normally, average reads A-format data in ascii
+			form.  The -b flag is a performance option which 
+			tells average to read the data directly as a 
+			binary memory A-file format, skipping the ascii 
+			parsing step.  Only the "fringex" program
+			knows how to generate such data, and when invoked
+			with its own -b flag can write the data without having
+			to format all the ascii fields.  The data flow between
+			fringex and average can be very voluminous, and the
+			formatting and parsing can be very time-consuming.
+			Use of matched -b flags and a unix pipe between these
+			two programs cuts total execution time by roughly a
+			factor of 6.
+
+		-c
+			Normally, baseline data are incoherently averaged, and
+			the results are placed in normal, datatype "I" records
+			(see aformat.doc for details).  When this flag is 
+			specified, the output datatype is "J", and two fields
+			are modified.  The duration field is overwritten by the
+			segment length used in the scan average, and the number
+			of segments used in the average is temporarily placed
+			in the srch_cotime field.  These fields are needed by
+			the cofit program, and only cofit will accept type "J"
+			data (it will not accept anything else).
+
+		-h
+			Normally, the output file will contain a header line
+			at the top which labels the fields.  This flag
+			suppresses the header line, so the output file will
+			contain only data.
+
+		-i integration time
+			This option specifies the time interval for which
+			the data should be averaged.  The default unit
+			is seconds, but you can append a "m" or "h" to
+			specify minutes or hours.  The current implementation
+			permits only certain "round number" averaging times.
+			You can specify the string "scan" to tell average
+			to perform a full scan average, where a scan is
+			defined as a set of data with a common baseline,
+			frequency code and root id.  If the -i flag is
+			omitted, a scan average is performed.
+
+		-m msglevel
+			The lower the msglevel number, the more verbose
+			the program gets.  The default is 1, and the range
+			-3 to +3 is supported.
+
+		-o outfile
+			If this flag is specified, the program will write
+			its output to the specified file.  If not, it will
+			write to stdout.
+
+		-s snrfactor
+			Historically this program had the wrong formula
+			(it used the SNR of A^2, not A) and included an
+			empirical fudge factor of 0.95 (or 0.925) which
+			is probably related to Mark4 correlator fudges
+			(rather than the current unfudged DiFX correlator).
+			The current implementation uses the correct formula
+			with no fudge factor (i.e. snrfactor == 1).  Use this
+			flag with snrfactor>0 and you have the new formula with
+			a multiplicative factor of snrfactor.  Use this flag
+			with snrfactor<0 and you will get the old behavior
+			with a fudge factor of -snrfactor.
+
+		-x
+			By default, average will not integrate across
+			scan boundaries.  If the -x flag is specified,
+			the integration time will be the sole determinant
+			of integration start and stop times.  This flag
+			is incompatible with a zero or absent integration
+			time specification.
+
+
+ARGUMENTS:	input_file(s)
+			These are the names of the A-files to process.
+			The program is designed to accept valid A-files
+			from any origin, though in most applications they
+			will be the output of fringex.	The files may
+			contain a mixture of types, but type 0 (root) and 1
+			(corel) lines will be ignored.	A mixture of type 2
+			(fringe) and 3 (triangle) lines is not acceptable.
+			Average will recognize the file type, and perform
+			baseline or bispectrum averaging as appropriate.
+			The input file(s) do not have to be sorted.
+			All option flags must precede the input file
+			names on the command line.  Multiple input files
+			are simply concatenated.  If no input filename is
+			specified, average reads from stdin, permitting
+			its use in pipes.  If the input originates from
+			fringex, it may contain more than one set of data,
+			each with its own segmentation time.  Each set will
+			generate separate averaged output.  This feature
+			is an efficiency measure.
+
+ENVIRONMENT:	None
+
+
+DESCRIPTION:
+
+There are situations, particularly in millimeter VLBI, where flexible
+data averaging capabilities are required.  This program is intended to
+fulfill all data averaging needs in HOPS.  It operates exclusively on
+standard A-file format data, and performs coherent and incoherent baseline
+averaging, and bispectrum averaging.  The algorithms are taken from Rogers,
+Doeleman and Moran (1995).
+
+Typically, the user will segment data generated by fourfit, using program
+fringex, so that the segment length is comfortably shorter than the
+coherence time.  The data may then be experimentally averaged coherently
+to get a better estimate of the coherence time, and generate an optimally
+averaged coherent dataset.  This dataset will then be passed through aedit
+to form closure triangle records.  The baseline data will be incoherently
+averaged by average, and the closure data will be bispectrally averaged.
+The resulting averaged datasets will then represent the best possible
+estimates of fringe amplitudes and closure phases, which can then be
+combined to form an imaging dataset, or independently fringe-searched
+perhaps as part of an iterative loop.
+
+Average is not limited to fringex output, and will likely have application
+to multiscan incoherent (or perhaps even coherent) averaging for detection
+of faint sources at any wavelength.

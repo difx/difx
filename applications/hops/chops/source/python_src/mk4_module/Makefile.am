@@ -1,18 +1,20 @@
 #
-# $Id$
+# Makefile for mk4_module
 #
-# MAKEFLAGS = -k if desperate
 
 AM_CPPFLAGS = -I. -I$(srcdir)/include \
 	-I$(srcdir)/../../c_src/msg/include \
 	-I$(srcdir)/../../c_src/mk4util/include \
 	-I$(srcdir)/../../c_src/dfio/include \
-	-I$(srcdir)/../../c_src/afiob/include -Wall -Wextra -DHAVE_CONFIG_H
+	-I$(srcdir)/../../c_src/afiob/include \
+	-Wall -Wextra -DHAVE_CONFIG_H
 
-pkginclude_HEADERS = ./include/mk4_module_extern.h
+pkginclude_HEADERS = include/mk4_module_extern.h
 pkglib_LTLIBRARIES = libmk4iob.la
 
+# this one is real but imported for simplicity?
 dfioorigsources = src/mk4_module_extern.c
+# these are imported via rsync
 dfiohacksources = src/addr_100.c \
 	src/addr_101.c src/addr_110.c \
 	src/addr_120.c src/addr_200.c \
@@ -69,60 +71,75 @@ dfiohacksources = src/addr_100.c \
 	src/write_record.c
 
 # give automake a clue it is in for trouble
-BUILT_SOURCES = $(dfioorigsources) $(dfiohacksources) importstamp
+BUILT_SOURCES = $(dfioorigsources) $(dfiohacksources)
 
 $(dfioorigsources): importstamp
 $(dfiohacksources): importstamp
 
 importstamp: $(srcdir)/src $(srcdir)/../../c_src/dfio/src
-	[ -f Makefile.am ] || { [ -d src ] || mkdir src ;\
-	[ -f src/mk4_module_extern.c ] || cp -p $(srcdir)/src/mk4_module_extern.c src ;\
-	for s in $(dfiohacksources); do [ -f $$s ] || cp -p $(srcdir)/../../c_src/dfio/$$s src ; done ; }
+	[ -f Makefile.am ] || {\
+		[ -d src ] || mkdir src ;\
+		[ -f src/mk4_module_extern.c ] ||\
+		cp -p $(srcdir)/src/mk4_module_extern.c src ;\
+		for s in $(dfiohacksources);\
+		do [ -f $$s ] || cp -p $(srcdir)/../../c_src/dfio/$$s src ; done ; }
 	touch importstamp
 
-libmk4iob_la_SOURCES =  $(dfioorigsources) $(dfiohacksources)
+nodist_libmk4iob_la_SOURCES =  $(dfioorigsources) $(dfiohacksources)
 
-libmk4iob_la_LIBADD =  ../../c_src/msg/libmsgb.la ../../c_src/afio/libafiob.la ../../c_src/mk4util/libmk4utilb.la
+libmk4iob_la_LIBADD = \
+	../../c_src/msg/libmsgb.la \
+	../../c_src/afio/libafiob.la \
+	../../c_src/mk4util/libmk4utilb.la
 
 libmk4iob_la_LDFLAGS = -avoid-version
 
-SRC_FILES = mk4b/__init__.py \
-	mk4b/mk4b.py \
-	afiob/__init__.py \
-	afiob/afiob.py
+# configure generates CFG_FILES and automatically adds them to dist
+SRC_FILES = mk4b/__init__.py afiob/__init__.py
+CFG_FILES = mk4b/mk4b.py afiob/afiob.py
 
-EXTRA_DIST = $(SRC_FILES) setup.py.in
+# mk4_module_extern.c is a nodist library source not copied from elsewhere
+EXTRA_DIST = $(SRC_FILES) setup.py.in $(dfioorigsources)
 
-if HAVE_PYTHON
+CLEANFILES = importstamp
 
-all-local:
-	(mkdir -p ./build)
-	(rsync -av --exclude 'Makefile.*' $(srcdir)/ .)
-	(chmod -R u+rwx .)
-	($(PYTHON) setup.py build --verbose)
+DISTCLEANFILES = setup.py $(SRC_FILES) $(CFG_FILES)
 
 clean-local:
-	rm -rf ./build
-	[ -f Makefile.am ] || rm -rf src
+	rm -rf ./build ./dist mk4.egg-info
+	[ -f Makefile.am ] || rm -rf src afiob mk4b setup.py include CMakeLists.txt
 
+#if HAVE_PYTHON
+if HAVE_PYTHON_EXTRA
+# note the above library is useless without python
+
+$(CFG_FILES): $(top_builddir)/config.status
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+
+all-local: $(CFG_FILES) setup.py
+	(mkdir -p ./build)
+	(rsync -av --exclude 'Makefile.*' --exclude *.swp \
+		--exclude CMake* --exclude \*.in $(srcdir)/ .)
+	(chmod -R u+w .)
+	($(PYTHON) setup.py build --verbose)
+
+#the awk gibberish is necessary to extract a list of files installed by pip
 install-exec-local:
-	($(PYTHON) setup.py install \
-		--prefix $(DESTDIR)$(prefix) \
-		--record $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_mk4_files.txt \
-		--verbose)
+	[ -d $(DESTDIR)$(pythondir) ] || mkdir -p $(DESTDIR)$(pythondir)
+	$(PYTHON) -m pip install . --upgrade --target=$(DESTDIR)$(pythondir)
+	PYTHONUSERBASE=@prefix@ pip show -f mk4 |\
+    awk '/^Location:/ {sub(/^Location: /, "", $$0); loc=$$0} \
+         /^Files:/ {flag=1; next} \
+         flag && NF && gsub(" |\t","") {print loc "/" $$0}' |\
+         tee $(DESTDIR)$(pythondir)/install_mk4_files.txt
 
 uninstall-local:
-	cat $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_mk4_files.txt | xargs rm -rf
-	rm -rf $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_mk4_files.txt
-
-CLEANFILES = $(SRC_FILES) ./include/mk4_module_extern.h ./src/mk4_module_extern.c setup.py.in \
-	importstamp
-
-DISTCLEANFILES = setup.py
-
+	cat $(DESTDIR)$(pythondir)/install_mk4_files.txt | xargs rm -rf
+	rm -rf $(DESTDIR)$(pythondir)/install_mk4_files.txt
+	rm -rf $(DESTDIR)$(pythondir)/mk4*
+	rm -rf $(DESTDIR)$(pythondir)/afiob*
 endif
 
 #
 # eof
 #
-

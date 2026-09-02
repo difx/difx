@@ -1,7 +1,7 @@
 #!@PYTHON@
 
 #core imports
-from __future__ import print_function
+@PYTHON_FUTURE@from __future__ import print_function
 from builtins import str
 import datetime
 import argparse
@@ -142,7 +142,8 @@ def main():
         #now configure and run fourphase
         fourphase_conf = vpal.fourphase_lib.Configuration()
         fourphase_conf.exp_directory = os.path.abspath(work_dir)
-        fourphase_conf.stations = ref_station + rem_stations
+        fourphase_conf.network_reference_station = ref_station.strip()
+        fourphase_conf.target_stations = rem_stations
         fourphase_conf.control_file = os.path.abspath( initial_cf) #this should be a cf produced by ffres2pcp
         fourphase_conf.num_proc = args.num_proc
         fourphase_conf.verbosity = args.verbosity

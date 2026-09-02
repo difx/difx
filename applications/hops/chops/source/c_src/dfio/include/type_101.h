@@ -1,6 +1,7 @@
 #ifndef T101_VERSION
 #define T101_VERSION 0
 
+#include <stdio.h>
 #include "mk4_typedefs.h"
 
                                        /* Set this to current version, */
@@ -25,4 +26,5 @@ struct type_101
     int          blocks[1];             /* One entry per block in snake */
     };
 
+void write_t101 (struct type_101 *, FILE *);
 #endif

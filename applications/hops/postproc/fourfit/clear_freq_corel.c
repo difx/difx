@@ -38,9 +38,11 @@ clear_freq_corel (struct freq_corel *corel)
         corel->bbc_lcp[i] = -1;
         corel->bbc_rcp[i] = -1;
         }
-/*     corel->pcal_freq = 0.0; */
-/*     corel->pcal_location = -1; */
     for (i=0; i<8; i++) corel->index[i] = 0;
-    if (corel->data_alloc) free (corel->data);
+    corel->nsb_channels = 0;
+    corel->data_peers = 0;
+    corel->corel_index = corel->fcode_index = -1;
+    if (corel->data_alloc == TRUE && corel->data != NULL){ free (corel->data); corel->data = NULL; }
     corel->data_alloc = FALSE;
+    corel->data = NULL;     // stop bad code with segfault
     }

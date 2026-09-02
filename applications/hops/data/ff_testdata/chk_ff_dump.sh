@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# $Id: chk_ff_dump.sh 2430 2018-07-05 13:53:31Z gbc $
+# $Id: chk_ff_dump.sh 4383 2025-07-20 21:38:08Z gbc $
 #
-# canonical test suite for fourfit
+# canonical test suite for fourfit3
 #
 
 verb=false
@@ -18,10 +18,10 @@ rm -f ff-2843pdd.ps ff-2843cpy.ps ff-2843fil.ps
 
 # step one, process normally
 $verb && echo \
-fourfit -t -d diskfile:ff-2843pdd.ps -b AI:S \\ && echo \
+$fourfit -t -d diskfile:ff-2843pdd.ps -b AI:S \\ && echo \
     $DATADIR/2843/321-1701_0552+398/0552+398.oifhak \\ && echo \
     set start -3 plot_data_dir pdd2843
-fourfit -t -d diskfile:ff-2843pdd.ps -b AI:S \
+$fourfit -t -d diskfile:ff-2843pdd.ps -b AI:S \
     $DATADIR/2843/321-1701_0552+398/0552+398.oifhak \
     set start -3 plot_data_dir pdd2843 2>/dev/null 1>&2
 mv pdd2843/321-1701_0552+398-AI-S-RR.oifhak \
@@ -30,13 +30,13 @@ mv pdd2843/321-1701_0552+398-AI-S-RR.oifhak \
 # step two, make a filter
 $verb && echo \
 HOPS_PLOT_DATA_MASK=0x01000000 HOPS_AMP_SEG_FILTER=15.0 \\ && echo \
-fourfit -t -d diskfile:ff-2843cpy.ps -b AI:S \\ && echo \
+$fourfit -t -d diskfile:ff-2843cpy.ps -b AI:S \\ && echo \
     $DATADIR/2843/321-1701_0552+398/0552+398.oifhak \\ && echo \
     set start -3 plot_data_dir pdd2843
 # original amp is 21.664
 # discard segments with amp < 18
 HOPS_PLOT_DATA_MASK=0x01000000 HOPS_AMP_SEG_FILTER=18.0 \
-fourfit -t -d diskfile:ff-2843cpy.ps -b AI:S \
+$fourfit -t -d diskfile:ff-2843cpy.ps -b AI:S \
     $DATADIR/2843/321-1701_0552+398/0552+398.oifhak \
     set start -3 plot_data_dir pdd2843 2>/dev/null 1>&2
 sed '/SEG_AMP_FILTER/,/END_AMP_FILTER/!d' \
@@ -48,10 +48,10 @@ sed '/SEG_AMP_FILTER/,/END_AMP_FILTER/!d' \
 
 # step three, use the filter
 $verb && echo \
-fourfit -t -d diskfile:ff-2843fil.ps -b AI:S \\ && echo \
+$fourfit -t -d diskfile:ff-2843fil.ps -b AI:S \\ && echo \
     $DATADIR/2843/321-1701_0552+398/0552+398.oifhak \\ && echo \
     set start -3 adhoc_flag_file pdd2843/adhoc_flag_file
-fourfit -t -d diskfile:ff-2843fil.ps -b AI:S \
+$fourfit -t -d diskfile:ff-2843fil.ps -b AI:S \
     $DATADIR/2843/321-1701_0552+398/0552+398.oifhak \
     set start -3 adhoc_flag_file pdd2843/adhoc_flag_file 2>/dev/null 1>&2
 

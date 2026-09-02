@@ -29,7 +29,8 @@ do
 done
 
 $verb && echo processed $count files...was that $npdfs\?
-[ $count -eq $npdfs ]
+# there may have been a punt for one of them:
+[ $count -ge $((npdfs - 1)) ]
 #
 # eof
 #

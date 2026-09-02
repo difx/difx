@@ -16,7 +16,6 @@
 #include "param_struct.h"
 #include "pass_struct.h"
 #include "apply_funcs.h"
-//#include "ff_misc_if.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -97,7 +96,14 @@ void apply_usb_notch(double lo, double hi,
 
 /*
  * Mark the bits to nuke in xp_flags, and then do the deed as
- * the with passband exclusion case.
+ * the with passband exclusion case.  When there are non-null
+ * characters in param->chan_notches[] we only apply each notch
+ * if the corresponding character is '@' or the freq code.
+ *
+ * apply_notches (sb, ap, fdata, xp_spec, nlags*2, datum, status, param);
+ * fdata = pass->pass_data + fr and its code is thus fdata->freq_code;
+ *
+ * for clone channels, clone_snr_check is done using status->xpnotchpband
  */
 void apply_notches(int sb, int ap,
                    struct freq_corel *fdata,
@@ -109,7 +115,7 @@ void apply_notches(int sb, int ap,
     {
     int ii, nuked = 0, dv;
     double lo, hi, factor, oldfrac, newfrac, edge;
-    int *xp_flags;
+    int* xp_flags = NULL;
 
     // mark temporary space and return immediately if no work
     // using 1 for notches and 0 for passband, -1 as 'no action'
@@ -127,10 +133,23 @@ void apply_notches(int sb, int ap,
     dv = (param->corr_type == DIFX) ? 4 : 2 ;
 
     edge = fdata->frequency + (sb ? -1.0 : 1.0) * 0.5e-6 / param->samp_period;
-    msg ("Ap %d: applying %d notches to %s channel %lf..%lf",
-        0,ap,param->nnotches,(sb?"lsb":"usb"),fdata->frequency, edge);
+    if (ap == 0) msg ("applying %d notches to %s channel %lf..%lf", 1,
+        param->nnotches,(sb?"lsb":"usb"),fdata->frequency, edge);
     for (ii = 0; ii < param->nnotches; ii++)
         {
+        if (!(param->chan_notches[ii] == '@' ||
+              param->chan_notches[ii] == fdata->freq_code))
+              {
+              if (ap == 0)
+                msg("ignoring notch %d--it is for %c and fc is %c", 1,
+                  ii, param->chan_notches[ii], fdata->freq_code);
+              continue;
+              }
+        else if (ap == 0)
+            {
+                msg("allowing notch %d for %c as fc is %c", 1,
+                    ii, param->chan_notches[ii], fdata->freq_code);
+            }
         lo = param->notches[ii][0];
         hi = param->notches[ii][1];
         if (hi <= lo)
@@ -141,19 +160,27 @@ void apply_notches(int sb, int ap,
         if (sb) apply_lsb_notch(lo, hi, fdata, xp_flags, npts, ap, param);
         else    apply_usb_notch(lo, hi, fdata, xp_flags, npts, ap, param);
         // save relative locations in the xp spectrum space
-        if (sb) // LSB: assert ( fdata->frequency > edge )
+        // used in generate_graphs() to illustrate notching
+        // edge is non-dc edge of the band (freq is dc edge)
+        if (sb) // LSB: assert ( edge < lo < hi < fdata->frequency )
             {
-            if (fdata->frequency > lo && lo > edge)
-                status->xpnotchpband[2*ii+0] = lo - fdata->frequency;
-            if (fdata->frequency > hi && hi > edge)
-                status->xpnotchpband[2*ii+1] = hi - fdata->frequency;
+                if(2*ii+1 < 2*MAXNOTCH )
+                {
+                if (fdata->frequency > lo && lo > edge)
+                    status->xpnotchpband[2*ii+0] = lo - fdata->frequency;
+                if (fdata->frequency > hi && hi > edge)
+                    status->xpnotchpband[2*ii+1] = hi - fdata->frequency;
+                }
             }
-        else    // USB: assert( edge > fdata->frequency )
+        else    // USB: assert( fdata->frequency < lo < hi < edge )
             {
-            if (edge > lo && lo > fdata->frequency)
-                status->xpnotchpband[2*ii+0] = lo - fdata->frequency;
-            if (edge > hi && hi > fdata->frequency)
-                status->xpnotchpband[2*ii+1] = hi - fdata->frequency;
+                if(2*ii+1 < 2*MAXNOTCH )
+                {
+                if (edge > lo && lo > fdata->frequency)
+                    status->xpnotchpband[2*ii+0] = lo - fdata->frequency;
+                if (edge > hi && hi > fdata->frequency)
+                    status->xpnotchpband[2*ii+1] = hi - fdata->frequency;
+                }
             }
         }
 
@@ -181,8 +208,11 @@ void apply_notches(int sb, int ap,
     status->sb_bw_fracs[MAXFREQ+1][sb] = (factor>0.0) ? 1/factor : 0.0;
     status->sb_bw_origs[MAXFREQ+1][sb] = oldfrac; // to undo this later
 
-    msg ("%s: ap %d nuke/npts %3d/%3d %.3lf->%.3lf (%.3lf)", 0,
-        sb ? "lsb" : "usb", ap, nuked, npts, oldfrac, newfrac, factor);
+    if (ap == 0) msg ("%s: notch nuke/npts %3d/%3d %.3lf->%.3lf (%.3lf)", 1,
+        sb ? "lsb" : "usb", nuked, npts, oldfrac, newfrac, factor);
+        
+        
+    free(xp_flags);
     }
 
 /* eof */

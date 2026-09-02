@@ -1,6 +1,7 @@
 #ifndef T302_VERSION
 #define T302_VERSION 0
 
+#include <stdio.h>
 #include "mk4_typedefs.h"
 
 					/* Set this to current version, */
@@ -18,4 +19,5 @@ struct type_302
     double	phase_spline[6];	/* Phase spline coefficients */
     };
 
+void write_t302 (struct type_302 *, FILE *);
 #endif

@@ -51,12 +51,12 @@ else
         fi
     done
 
+    #"clear _ fstruct.c"
     declare -a source_list=(
         "account.c"
 		"adler32_checksum.c"
         "check_name.c"
         "clear_date.c"
-        "clear_fstruct.c"
         "confirm.c"
         "datec_to_datef.c"
         "datef_to_datec.c"

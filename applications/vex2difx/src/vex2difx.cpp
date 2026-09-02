@@ -31,6 +31,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <difxio/difx_input.h>
+#include <difxio/difxio_macros.h>
 #include <difxmessage.h>
 #include <vexdatamodel.h>
 
@@ -153,29 +154,25 @@ static DifxJob *makeDifxJob(string directory, const Job& J, int nAntenna, const 
 		exit(EXIT_FAILURE);
 	}
 
-	snprintf(job->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input", fileBase);
-	snprintf(job->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc",  fileBase);
-	snprintf(job->flagFile,    DIFXIO_FILENAME_LENGTH, "%s.flag",  fileBase);
-	snprintf(job->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im",    fileBase);
+	snprintf_warn(job->inputFile, DIFXIO_FILENAME_LENGTH, "%s.input", fileBase);
+	snprintf_warn(job->calcFile,  DIFXIO_FILENAME_LENGTH, "%s.calc",  fileBase);
+	snprintf_warn(job->flagFile,  DIFXIO_FILENAME_LENGTH, "%s.flag",  fileBase);
+	snprintf_warn(job->imFile,    DIFXIO_FILENAME_LENGTH, "%s.im",    fileBase);
 	if(P->outPath.empty())
 	{
-		snprintf(job->outputFile, DIFXIO_FILENAME_LENGTH, "%s.difx", fileBase);
+		snprintf_warn(job->outputFile, DIFXIO_FILENAME_LENGTH, "%s.difx", fileBase);
 	}
 	else
 	{
-		snprintf(job->outputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx", P->outPath.c_str(), jobName);
+		snprintf_warn(job->outputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx", P->outPath.c_str(), jobName);
 	}
 	if(P->threadsFile.empty())
 	{
-		v = snprintf(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", fileBase);
+		snprintf_warn(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", fileBase);
 	}
 	else
 	{
-		v = snprintf(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s", P->threadsFile.c_str());
-	}
-	if(v >= DIFXIO_FILENAME_LENGTH)
-	{
-		cerr << "Developer error: makeDifxJob: threadsFile wanted " << v << " bytes, not " << DIFXIO_FILENAME_LENGTH << " .  Truncating."  << endl;
+		snprintf_warn(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s", P->threadsFile.c_str());
 	}
 
 	return job;

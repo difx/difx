@@ -360,7 +360,8 @@ int make_plotdata(struct type_pass *pass)
         status.inc_avg_amp_freq += abs_complex(sum_freq) * status.amp_corr_fact;
         }
 
-    ion_covariance (pass);              // do ionosphere covariance analysis
+    if (param.ion_pts > 1)
+        ion_covariance (pass);          // do ionosphere covariance analysis
 
     for (ap = pass->ap_off; ap < pass->ap_off+pass->num_ap; ap++)
         {

@@ -14,18 +14,9 @@ struct gat_struct
    short duration;                 /* in secs */
    };
 
-/*
-struct istats 
-    {
-    int             ref;
-    int             rem;
-    };
-
-struct dstats 
-    {
-    double          ref;
-    double          rem;
-    };
+/* moved to include/general.h
+   struct istats { int    ref; int    rem; };
+   struct dstats { double ref; double rem; };
 */
 
 struct c_block                     /* Elemental control block structure */
@@ -43,12 +34,13 @@ struct c_block                     /* Elemental control block structure */
    short knot[4];                  /* knot[i] true when cond[i] "not-ed" */
 
 
-          /* Filter, corrections, etc. to apply to data within qualifying scan */
+         /* Filter, corrections, etc. to apply to data within qualifying scan */
 
    short skip;                     /* iff true, don't fourfit matching scans */
    double min_weight;              /* min t120->fw.weight for AP acceptance */
    double ref_freq;                /* force fourfit to use this ref. freq. (MHz) */
    int accept_sbs[MAXFREQ];        /* accept USB, LSB, DSB iff = 1, 2, 3 */
+   // this is deprecated:
    short index[2*MAXFREQ];         /* index numbers of acceptable sidebands */
    struct istats pc_mode;          /* phase cal modes */
    struct istats pc_period;        // phase cal integration period (in ap's)
@@ -58,10 +50,12 @@ struct c_block                     /* Elemental control block structure */
                                              for manual or additive pcal */
    struct istats pc_tonemask[MAXFREQ];// tone exclusion mask by channel in multitone
    struct dstats lsb_offset;       /* LSB phase offset in degrees */
+   // these 4 are deprecated
    short x_crc;                    /* flag to keep/discard AP having a crc error */
    short y_crc;
    short x_slip_sync;              /* max. # of frame resyncs to still use AP's data */
    short y_slip_sync;
+
    double sb_window[2];            /* bounds of single band delay search window (us) */
    double mb_window[2];            /* bounds of multi-band delay search window (us) */
    double dr_window[2];            /* bounds of delay-rate search window (us/s) */
@@ -92,6 +86,7 @@ struct c_block                     /* Elemental control block structure */
    int gen_cf_record;              /* whether to general control file record */
    int nnotches;                   /* alternative to passband */
    double notches[MAXNOTCH][2];    /* alternative to passband */
+   char chan_notches[MAXNOTCH+1];  /* channel restriction for notches(null terminated) */
    double t_cohere;                /* coherence time (s) for co-adding fringe rates */
    struct dstats ionosphere;       // a priori ionospheres (TEC units = 1e16 el/m^2)
    struct dstats delay_offs[MAXFREQ];// additive delay offset(ns) by channel  ##DELAY_OFFS##
@@ -110,13 +105,22 @@ struct c_block                     /* Elemental control block structure */
    double weak_channel;            // G code if single_chan_amp/coherent_amp < weak_channel
    double pc_amp_hcode;            // H code iff any pc amplitude less than this
    double fmatch_bw_pct;           // fractional bw % used for frequency matching
-   char chid[MAXFREQ];             // single letter ch id codes for freq override
-   double chid_rf[MAXFREQ];        // freqs corresponding to above codes
+   char chid[MAXFREQ+1];           // single letter ch id codes (abcd... unless chid_ids)
+   double chid_rf[MAXFREQ];        // MHz, iff chid_ids, used in make_passes()
+   char clones[2][MAXFREQ/2+1];    // [0] is existing labels, [1] is the new ones
+   int clone_snr_chk;              // when true, check for frequency overlap in clones
+   char display_chans[MAXFREQ+5];  // channels to be displayed in the fringe plot
    int vbp_correct;                // iff true, modify xpower phase with video bandpass model
    int vbp_fit;                    // iff true, do algebraic model fit for video bandpass
    struct dstats vbp_coeffs[5];    // video bandpass model coeffs (deg)
    char vbp_file[2][256];          // if not null, specifies filename for video bandpass corr.
    int mount_type[2];              // non-zero implies field-rotation-corrections should be made.
+   int mixed_mode_rot;             // iff true, rotate all RY and YR data by 90 degrees (geodesy mixed-mode feature) 
+   int noautofringes;              // when true, skip fringing of autocorrs
+   int mod4numbering;              // when true, fr.num % 4 is 0 (LL) 1 (RR) 2 (LR) 3 (RL)
+   int polfringnames;              // when true, a poln label appears in fringe name
+   int mbdrplopt[3];               // option(s) on MBD DRate SBD plots
+   char fringeout_dir[256];        // alternative output directory (rather than where root is)
    };
 
           /* Defined values for various structure variables */

@@ -19,11 +19,11 @@ int realloc_segs(struct fxparam *fxp, int nsegs)
     if (nsegs > fxp->nsegs_allocd)
     {
         //we need to reallocate the space available for the segments
-        fxp->rsum = realloc(fxp->rsum, nsegs*sizeof(double) );
-        fxp->isum = realloc(fxp->isum, nsegs*sizeof(double) );
-        fxp->segsec = realloc(fxp->segsec, nsegs*sizeof(double) );
-        fxp->segcount = realloc(fxp->segcount, nsegs*sizeof(double) );
-        fxp->seglen = realloc(fxp->seglen, nsegs*sizeof(double) );
+        fxp->rsum = (double*) realloc(fxp->rsum, nsegs*sizeof(double) );
+        fxp->isum = (double*) realloc(fxp->isum, nsegs*sizeof(double) );
+        fxp->segsec = (double*) realloc(fxp->segsec, nsegs*sizeof(double) );
+        fxp->segcount =  (double*) realloc(fxp->segcount, nsegs*sizeof(double) );
+        fxp->seglen = (double*) realloc(fxp->seglen, nsegs*sizeof(double) );
         fxp->nsegs_allocd = nsegs;
 
         if(fxp->rsum == NULL ||  fxp->isum == NULL || fxp->segsec == NULL || fxp->segcount == NULL || fxp->seglen == NULL )

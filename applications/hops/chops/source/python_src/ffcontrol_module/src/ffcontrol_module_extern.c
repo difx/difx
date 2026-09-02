@@ -1,4 +1,4 @@
-#include <stddef.h> 
+#include <stddef.h>
 
 char progname[200] = "ffcontrolpy.so";
 int msglev = 3;

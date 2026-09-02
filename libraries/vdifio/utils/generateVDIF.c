@@ -411,8 +411,18 @@ int main (int argc, char * const argv[]) {
 
    IPPMALLOC(scratchHilbert, 32fc, frameperbuf*samplesperframe);
    status = ippsHilbertGetSize_32f32fc(frameperbuf*samplesperframe, ippAlgHintNone, &sizeSpec, &sizeBuf);
+   if (status != ippStsNoErr) {
+     fprintf(stderr, "Error calling ippsHilbertGetSize for %d points (%s) (Line %d)\n",
+	     frameperbuf*samplesperframe, ippGetStatusString(status), __LINE__ -3);
+     exit(1);
+   }
 
    hSpec = (IppsHilbertSpec*)ippMalloc(sizeSpec);
+   if (hSpec==NULL) {
+     fprintf(stderr, "Error allocating %d bytes for Hilbert spec (%d point transform) at line %d\n",
+	     sizeSpec, frameperbuf*samplesperframe, __LINE__ -3);
+     exit(EXIT_FAILURE);
+   }
    IPPMALLOC(hBuffer, 8u, sizeBuf);
    status = ippsHilbertInit_32f32fc(frameperbuf*samplesperframe, ippAlgHintNone, hSpec, hBuffer);
     if (status != ippStsNoErr) {
