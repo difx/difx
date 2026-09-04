@@ -32,7 +32,7 @@ int setup_plot (struct plot_info *pd, int nplot, struct frqexp fqex)
     {
     extern struct inputs inp;
     int i, year, day, hour, min, sec, tdiff;
-    char buf[50];
+    char buf[50], buf2[50];
     float xpos, ypos, ymin, ymax, ydif, yinc, xinc;
     float charsize;
 
@@ -139,8 +139,16 @@ int setup_plot (struct plot_info *pd, int nplot, struct frqexp fqex)
     else if (pd->plotby == QUAD_PLOT)
 	sprintf (buf, "Quad %s at %c-band", pd->ampcl, pd->frq);
     else sprintf (buf, "%c-band", pd->frq);
-    if(strlen (pd->source) > 0) sprintf (buf,"%s   Source: %s", buf, pd->source);
-    cpgmtxt ("T", 0.3, 0.0, 0.0, buf);
+    
+    if(strlen (pd->source) > 0)
+    {
+        sprintf (buf2,"%s   Source: %s", buf, pd->source);
+    }
+    else
+    {
+        sprintf (buf2,"%s   Source: %s", buf, pd->source);
+    }
+    cpgmtxt ("T", 0.3, 0.0, 0.0, buf2);
 					/* Label axes, special if time */
     if (pd->xaind == AX_TIMETAG)
 	{

@@ -1629,6 +1629,131 @@ DiFX 2.8.1 was released on March 29 2023. A wide array of testing has been
 done and this version is considered ready to be adopted by all DiFX
 users.
 
+DiFX 2.9.0
+----------
+
+This release adds many new features that were built up in the ~2 years since the 2.8.1 release, and was the first to be constructed fully on git.
+
+.. _new-features-12:
+
+New features and updates
+~~~~~~~~~~~~~~~~~~~~~~~
+
+#. Support for IPP2021.
+
+#. ``mpifxcorr``: Added support for unusual pcal frequencies.
+
+#. ``mpifxcorr``: Use more accurate SinCos functions, which leads to ~0.04% change in amplitudes.
+
+#. ``mpifxcorr``: Some streamlining (and corrections) for multithreaded VDIF multiplexing.
+
+#. ``codifio``: Added numerous utilities, ability to filter channels, and multicast support.
+
+#. ``difxio``: Add support for all VLA antenna pads, and support newer versions of SPICE (spacecraft tracking).
+
+#. ``mark5access``: Additions for CODIF formats and allow symmetric unpack values for 4 and 8 bit VDIF via environment variable definition.
+
+#. ``mark6meta``: Support Mark6 units with more than 4 slots, improve disk position determination.
+
+#. ``vdifio``: Add some new utilities and new functionality, and ``MAX_VDIF_FRAME_BYTES`` increased to 32k (to permit handling VGOS 64-channel data).
+
+#. ``vis2screen``: Add ``.difx`` plotter utility ``plotFringeSpectrum.py``.
+
+#. ``calcserver``: Updates for compatability with newer versions of FORTRAN.
+
+#. ``difx2fits``: Handle various single VLA stations for gain curve.
+
+#. ``difx2fits``: Improve configurability to propagate only given frequencies and/or sources.
+
+#. ``difx2fits``: Add EXPERIMENTAL option to apply a complex bandpass or delay prior to writing FITS file, and remove restriction on maximum number of datastreams.
+
+#. ``difx2fits``: Add external utility (``apd2antenna``) that converts ``.apd`` file into antenna-based quantities (plus other sniffer improvements).
+
+#. ``difx2mark4``: Increase d2m4 NVRMAX to 98304000.
+
+#. ``difxcalc11``: Add Y3 (and Y4 for future option) to ocean tables.
+
+#. ``difxcalc11``: Increase max sources to be 1000 consistently (was 300 or 1000), and increase the maximum number of stations to 254 (was ~40 to ~80).
+
+#. ``espresso``: Better support slurm, better monitoring, other minor improvements.
+
+#. ``mk5daemon``: Support for >1 expansion unit, other minor improvements.
+
+#. ``vex2difx``: Numerous improvements to oms2v2d.
+
+#. ``vex2difx``: New ANTENNA parameters ``phaseCalIntDivisor`` for fractional spacings, ``deltaClockAccel`` to adjust clock acceleration.
+
+#. ``vex2difx``: New utility ``mk6filelist``, a simplified form of mk62v2d which does not require or modify the ``.v2d`` file.
+
+#. ``vex2difx``: Add project code to file list names.
+
+#. ``vex2difx``: Allow "NONE" data format. This was allowed in previous vex parser version, but got lost when vex2 was added.
+
+#. ``vex2difx``: ``vex2v2d`` added option to make antenna complex-valued.
+
+#. ``vex2difx``: Allow override of number of bits in a DATASTREAM block, and complete format override in the DATASTREAM block is now possible (setting format to "VDIF" will erase any pre-existing thread assignments).
+
+#. ``vex2difx``: LSB bands (non-zoom) are allowed to contribute to outputbands.
+
+#. ``vex2difx``: Allow to specify destination freq IDs to be USB (was previously implicit).
+
+.. _bug-fixes-12:
+
+Bug fixes
+~~~~~~~~
+
+#. ``mpifxcorr``: Fixed broken/missing autocorrelations and cross-polar autocorrelations in some band-matching cases.
+
+#. ``mpifxcorr``: Fixed pcal rounding errors.
+
+#. ``difxio``: Ensure subbands which differ only by pcals are not treated differently.
+
+#. ``mark5access``: Bugfixes for CODIF formats.
+
+#. python: Fix some LSB plot labelling.
+
+#. ``difx2fits``: Numerous minor corrections.
+
+#. ``difx2mark4``: Several fixes related to antenna remapping and/or multiple datastreams.
+
+#. ``difxcalc11``: Ensure that parameters are used for these max values, and that they are consistent everywhere across multiple includes.
+
+#. ``vex2difx``: Fix for datastream to antenna mapping when not sorting antennas.
+
+#. ``vex2difx``: Fix "datastreams with no data" bug (was triggered by job break in the middle of a scan where one antenna had short data).
+
+#. ``vex2difx``: Refined job splitting by considering events only at those antennas that are actually in a job group, ignore unrelated events.
+
+#. ``vex2difx``: Fix format override where VDIF/CODIF wouldn't change sampling type in some cases.
+
+#. ``vex2difx``: Fix vex2 parse order issue by splitting getVexRev() as new function from getExper().
+
+#. ``vex2difx``: Fix an error where incorrect name was used for checking when antenna names overridden in the v2d file.
+
+#. ``vex2difx``: Improve autoband logic, and fix check to avoid duplicate user-provided outputbands.
+
+DiFX 2.9.0 was released on September 5, 2025.
+
+DiFX 2.9.1
+----------
+
+DiFX 2.9.1 is a minor release focusing primarily on an updated version of HOPS, alongside a few small  bug fixes.
+
+.. _new-features-13:
+
+New features and updates
+~~~~~~~~~~~~~~~~~~~~~~~
+
+#. HOPS: updated to version 3.26.
+
+.. _bug-fixes-13:
+
+Bug fixes
+~~~~~~~~
+
+#. mpifxcorr: fixes for handling complex VDIF data.
+
+
 Features left to implement
 ==========================
 

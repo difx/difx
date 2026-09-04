@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "mk4_typedefs.h"
+#include "mk4_dfio.h"
+
+extern void compress_compress  (U8 *,U8 *,U32,U8 *,U32 *);
+extern void compress_decompress(U8 *,U8 *,U32,U8 *,U32 *);
 
 static FILE *fopen_trials(char **name, char *mode)
     {
@@ -12,9 +17,10 @@ static FILE *fopen_trials(char **name, char *mode)
     return(fp);
     }
 
-main (argc, argv)
-int argc;
-char *argv[];
+int main(int argc, char **argv)
+//main (argc, argv)
+//int argc;
+//char *argv[];
     {
     /* char teststr[]=
 	"This is a test - This is a test This is a test This is a test"; */

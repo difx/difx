@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "msg.h"
 #include "hops_complex.h"
 #include "mk4_data.h"
 #include "param_struct.h"
@@ -20,7 +21,7 @@
 
 void rotate_pcal(struct type_pass *pass)
     {
-    int ap, fr, i, ip;
+    int ap, fr, i, ip, rotations = 0;
     int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
     hops_complex rrpcal[2];
     double theta,
@@ -116,7 +117,9 @@ void rotate_pcal(struct type_pass *pass)
                     theta = 0.0;
                                         // save resulting phasor in time-freq array
                 cor_data->pc_phasor[ip] = exp_complex (cmplx_unit_I * (theta - zeta + eta[ip]));
+                rotations++;
                 }
             }
         }
+        msg("rotate pcal done with %d pc_phasors populated", 1, rotations);
     }

@@ -5,8 +5,8 @@
 '''
 Script to estimate manual phases in a fourfit control file
 '''
-from __future__ import absolute_import
-from __future__ import print_function
+#-3.13++#from __future__ import absolute_import
+#-3.13++#from __future__ import print_function
 import argparse
 import fileinput
 import os
@@ -39,7 +39,7 @@ def parseOptions():
     ''')
     use = '%(prog)s [options]\n'
     use += '  Version '
-    use += '$Id: est_manual_phases.py.in 3373 2021-09-20 18:12:39Z gbc $'
+    use += '$Id: est_manual_phases.py.in 4334 2025-03-11 23:35:18Z gbc $'
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     required = parser.add_argument_group('required options')

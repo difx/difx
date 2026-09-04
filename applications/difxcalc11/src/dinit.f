@@ -404,7 +404,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        If (CFRAD(N) .le. 0.D0) Write(6,1077) N, CFRAD(N), SITXYZ(1,N),  &
      &        SITXYZ(2,N), SITXYZ(3,N)
- 1077  Format('SITI: N,CFRAD,SITXYZ(N): 'I2,4F14.4)
+ 1077  Format('SITI: N,CFRAD,SITXYZ(N): ',I2,4F14.4)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !   Compute geocentric latitudes

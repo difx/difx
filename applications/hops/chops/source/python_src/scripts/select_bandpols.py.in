@@ -321,7 +321,9 @@ for iddir in range(n_datadir):
     #
     # Any of the filenames can be picked; we pick the 0-th:
     #
-    exn = re.findall('(\.[A-y]{2}[0-9]{4}\.|\.[A-y][0-9]{5}\.)', fns[0])
+    # 4/26/24 -- replace old regex with Jan W.'s version to pick up non-standard experiment names
+    #exn = re.findall('(\.[A-y]{2}[0-9]{4}\.|\.[A-y][0-9]{5}\.)', fns[0])
+    exn = re.findall('(\.[A-z]+[A-z0-9]*\.)[A-z].[A-z].[A-z].dat', fns[0])
     exn = exn[0][1:-1]
 
     #

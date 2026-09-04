@@ -4,11 +4,11 @@
 # 08/08/18 first version jpb
 
 #core imports
-from __future__ import print_function
-from __future__ import division
+@PYTHON_FUTURE@from __future__ import print_function
+@PYTHON_FUTURE@from __future__ import division
 from builtins import str
 from builtins import zip
-from past.utils import old_div
+from @PYTHON_OLDIVB@ import old_div #from past.utils ...
 import datetime
 import argparse
 import re

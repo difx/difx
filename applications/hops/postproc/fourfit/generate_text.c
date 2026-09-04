@@ -54,9 +54,7 @@
 #define setgreen pscat ("0.0 0.6 0.0 setrgbcolor\n")
 #define setmagenta pscat ("1.0 0.0 1.0 setrgbcolor\n")
 #define setblack pscat ("0.0 0.0 0.0 setrgbcolor\n")
-                                        // allow markers in file
-#define pslabel(lab) pscat ("%"  lab  "\n")
-
+#define pslabel(lab) pscat ("%"  lab  "\n") // allow markers in file
 
 void generate_text (struct scan_struct *root,
                     struct type_pass *pass,
@@ -138,6 +136,7 @@ void generate_text (struct scan_struct *root,
     pscat ("/SR {dup stringwidth neg exch neg exch rmoveto show} def\n");
     pscat ("/M {moveto} def\n");
     pscat ("/Helvetica-Bold findfont 180 scalefont setfont\n");
+    pslabel("fourfit text");
 
     if (param.corr_type == DIFX)
         sprintf (buffer, "Mk4/DiFX %s %s rev %hd",
@@ -970,9 +969,14 @@ void generate_text (struct scan_struct *root,
                                     // construct type 1 name from type 2 name
     strcpy (buf, input_filename+strlen(input_filename)-7);
     strcpy (input_filename+i+4, buf);
-    sprintf (buf, "Control file: %s    Input file: %s    Output file: %s",
-             control_filename, input_filename, output_filename);
+    //sprintf (buf, "Control file: %s    Input file: %s    Output file: %s",
+    //         control_filename, input_filename, output_filename);
+    sprintf (buf, "Control file: %s    Input file: %s",
+             control_filename, input_filename);
     psleft (0.00, ypos, buf);
+    ypos -= 0.012;
+    sprintf(buf, "Output file: %s", output_filename);
+    psright (1.00, ypos, buf);
     ypos -= 0.012;
                                     // samplers line, possibly
     if (pass->control.nsamplers)

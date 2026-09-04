@@ -263,9 +263,9 @@ class DifxMachines(object):
 	
 		lineCount = 0
 
-		reLine = re.compile("^\s*(.*?)\s*,\s*([0-2]?)\s*,\s*(\d{1,})\s*,?\s*(.*)")	
-		reRange = re.compile("(.+)\[(.*)\-(.*)\]")
-		reLetter = re.compile("[a-z]")		
+		reLine = re.compile(r"^\s*(.*?)\s*,\s*([0-2]?)\s*,\s*(\d{1,})\s*,?\s*(.*)")	
+		reRange = re.compile(r"(.+)\[(.*)\-(.*)\]")
+		reLetter = re.compile(r"[a-z]")		
 
 		lines = open(self.machinefile).readlines()
 		for line in lines:

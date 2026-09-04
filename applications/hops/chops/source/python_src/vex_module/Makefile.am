@@ -1,7 +1,6 @@
 #
-# $Id$
+# Makefile for vex module
 #
-# MAKEFLAGS = -k if desperate
 
 AM_CPPFLAGS = -I. -I$(srcdir)/include \
 	-I$(srcdir)/../../c_src/msg/include \
@@ -11,7 +10,9 @@ AM_CPPFLAGS = -I. -I$(srcdir)/include \
 pkginclude_HEADERS = ./include/vexpy_module_extern.h
 pkglib_LTLIBRARIES = libvexpyb.la
 
+# this one is real but imported for simplicity?
 vexyorigsources = src/vexpy_module_extern.c
+# these are imported via rsync
 vexyhacksources = src/block_params.c \
 	src/check_intrange.c src/check_realrange.c \
 	src/check_scan.c src/check_stloc.c \
@@ -51,55 +52,67 @@ vexyhacksources = src/block_params.c \
 	src/vex_init.c src/write_vexfile.c
 
 # give automake a clue it is in for trouble
-BUILT_SOURCES = $(vexyorigsources) $(vexyhacksources) importstamp
-
-$(vexyorigsources): importstamp
-$(vexyhacksources): importstamp
+BUILT_SOURCES = $(vexyorigsources) $(vexyhacksources)
+$(vexyorigsources) $(vexyhacksources): importstamp
 
 importstamp: $(srcdir)/src $(srcdir)/../../c_src/vex/src
-	[ -f Makefile.am ] || { [ -d src ] || mkdir src ;\
-	[ -f src/vexpy_module_extern.c ] || cp -p $(srcdir)/src/vexpy_module_extern.c src ;\
-	for s in $(vexyhacksources); do [ -f $$s ] || cp -p $(srcdir)/../../c_src/vex/$$s src ; done ; }
+	[ -f Makefile.am ] || {\
+		[ -d src ] || mkdir src ;\
+		[ -f src/vexpy_module_extern.c ] || \
+			cp -p $(srcdir)/src/vexpy_module_extern.c src ;\
+		for s in $(vexyhacksources);\
+			do [ -f $$s ] || cp -p $(srcdir)/../../c_src/vex/$$s src ; done ; }
 	touch importstamp
 
-libvexpyb_la_SOURCES = $(vexyorigsources) $(vexyhacksources)
+nodist_libvexpyb_la_SOURCES = $(vexyorigsources) $(vexyhacksources)
 
-libvexpyb_la_LIBADD = ../../c_src/msg/libmsgb.la ../../c_src/mk4util/libmk4utilb.la
+libvexpyb_la_LIBADD = ../../c_src/msg/libmsgb.la \
+	../../c_src/mk4util/libmk4utilb.la
 
 libvexpyb_la_LDFLAGS = -avoid-version
 
-SRC_FILES = vexpy/__init__.py \
-	vexpy/vexpy.py
+SRC_FILES = vexpy/__init__.py
+CFG_FILES = vexpy/vexpy.py
 
-EXTRA_DIST = $(SRC_FILES) setup.py.in
+# vexpy_module_extern.c needed here as it the 'SOURCE' copy is nodist
+EXTRA_DIST = $(SRC_FILES) setup.py.in $(srcdir)/src/vexpy_module_extern.c
 
-if HAVE_PYTHON
+CLEANFILES = importstamp
 
-all-local:
-	(mkdir -p ./build)
-	(rsync -av --exclude 'Makefile.*' $(srcdir)/ .)
-	(chmod -R u+rwx .)
-	($(PYTHON) setup.py build --verbose)
+DISTCLEANFILES = setup.py $(SRC_FILES) $(CFG_FILES)
 
 clean-local:
-	rm -rf ./build
-	[ -f Makefile.am ] || rm -rf src
+	rm -rf ./build ./dist vexpy.egg-info
+	[ -f Makefile.am ] || rm -rf src include setup.py vexpy CMakeLists.txt
 
+#if HAVE_PYTHON
+if HAVE_PYTHON_EXTRA
+# note the above library is useless without python
+
+$(CFG_FILES): $(top_builddir)/config.status
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+
+all-local: $(CFG_FILES) setup.py
+	(mkdir -p ./build)
+	(rsync -av --exclude 'Makefile.*' --exclude *.swp \
+		--exclude CMake* --exclude \*.in $(srcdir)/ .)
+	(chmod -R u+w .)
+	($(PYTHON) setup.py build --verbose)
+
+#the awk gibberish is necessary to extract a list of files installed by pip
 install-exec-local:
-	($(PYTHON) setup.py install \
-		--prefix $(DESTDIR)$(prefix) \
-		--record $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_vexpy_files.txt \
-		--verbose)
+	[ -d $(DESTDIR)$(pythondir) ] || mkdir -p $(DESTDIR)$(pythondir)
+	$(PYTHON) -m pip install . --upgrade --target=$(DESTDIR)$(pythondir)
+	PYTHONUSERBASE=@prefix@ pip show -f vexpy |\
+	awk '/^Location:/ {sub(/^Location: /, "", $$0); loc=$$0} \
+		 /^Files:/ {flag=1; next} \
+		 flag && NF && gsub(" |\t","") {print loc "/" $$0}' |\
+		 tee $(DESTDIR)$(pythondir)/install_vexpy_files.txt
 
 uninstall-local:
-	cat $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_vexpy_files.txt | xargs rm -rf
-	rm -rf $(DESTDIR)$(pythondir)/$(PKG_NAME)/install_vexpy_files.txt
-
-CLEANFILES = $(SRC_FILES) ./include/vexpy_module_extern.h ./src/vexpy_module_extern.c setup.py.in \
-	importstamp
-
-DISTCLEANFILES = setup.py
-
+	cat $(DESTDIR)$(pythondir)/install_vexpy_files.txt | xargs rm -rf
+	rm -rf $(DESTDIR)$(pythondir)/install_vexpy_files.txt
+	rm -rf $(DESTDIR)$(pythondir)/vexpy*
 endif
 
 #

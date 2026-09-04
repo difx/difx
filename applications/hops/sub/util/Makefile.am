@@ -1,11 +1,12 @@
 #
-# $Id: Makefile.am 3453 2021-11-17 21:53:29Z gbc $
+# $Id: Makefile.am 4182 2024-03-02 00:18:12Z gbc $
 #
 
 SUBDIRS = .
 
-TESTS = test_root_id test_syntax test_vextext
-TESTS_ENVIRONMENT = srcdir=$(srcdir)
+TESTS = test_root_id test_syntax test_vextext chk_get_filelist.sh
+TESTS_ENVIRONMENT = srcdir=$(srcdir) abs_top_srcdir=$(abs_top_srcdir) \
+	testverb=true
 
 AM_CPPFLAGS = -I$(top_srcdir)/include \
 	-DHOPS_VEX_TEXT_SHARE_DIR='"$(pkgdatadir)/text"' \
@@ -16,7 +17,7 @@ pkginclude_HEADERS =
 pkglib_LIBRARIES = libmk4util.a
 
 libmk4util_a_SOURCES = check_name.c datec_to_datef.c extract_filenames.c  \
-		       root_belong.c clear_fstruct.c datef_to_datec.c  \
+		       root_belong.c datef_to_datec.c  \
 		       get_filelist.c root_id.c confirm.c day_of_datef.c  \
 		       sort_names.c hptoie.c hptoie4.c hptoie8.c  \
 		       time_to_int.c int_to_time.c environment.c  \
@@ -26,7 +27,8 @@ libmk4util_a_SOURCES = check_name.c datec_to_datef.c extract_filenames.c  \
 		       adler32_checksum.c hops_complex.c
 
 # the original test program
-check_PROGRAMS = test_root_id test_syntax test_vextext
+check_PROGRAMS = test_root_id test_syntax test_vextext test_get_filelist
+dist_check_SCRIPTS = chk_get_filelist.sh
 
 test_root_id_SOURCES = root_id_test.c
 test_root_id_LDADD = -L. -lmk4util @MSG_LIB@
@@ -36,6 +38,9 @@ test_syntax_LDADD = -L. -lmk4util @MSG_LIB@
 
 test_vextext_SOURCES = test_vextext.c
 test_vextext_LDADD = -L. -lmk4util @MSG_LIB@
+
+test_get_filelist_SOURCES = test_get_filelist.c
+test_get_filelist_LDADD = -L. -lmk4util @MSG_LIB@
 
 #
 # eof

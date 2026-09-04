@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -158,17 +158,13 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --embedded\n");
 	fprintf(stderr, "  -e             Configure for running within a pipe and with messages to stdout\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Note: This program responds to the following "
-			"environment variables:\n");
-	fprintf(stderr, "  DIFX_LOG_DIR : change log path from default [%s]\n",
-		DefaultLogPath);
-	fprintf(stderr, "  DIFX_MESSAGE_GROUP : change multicast group "
-		"from default [%s]\n", DefaultDifxGroup);
-	fprintf(stderr, "  DIFX_MESSAGE_PORT : change multicast port "
-		"from default [%d]\n", DefaultDifxMonitorPort);
-	fprintf(stderr, "  STREAMSTOR_BIB_PATH : change streamstor firmware "
-		"path from default\n");
+	fprintf(stderr, "Note: This program responds to the following environment variables:\n");
+	fprintf(stderr, "  DIFX_LOG_DIR : change log path from default [%s]\n", DefaultLogPath);
+	fprintf(stderr, "  DIFX_MESSAGE_GROUP : change multicast group from default [%s]\n", DefaultDifxGroup);
+	fprintf(stderr, "  DIFX_MESSAGE_PORT : change multicast port from default [%d]\n", DefaultDifxMonitorPort);
+	fprintf(stderr, "  STREAMSTOR_BIB_PATH : change streamstor firmware path from default (Mark5 only)\n");
 	fprintf(stderr, "  DIFX_USER_ID : change user account for executing remote commands from default [%s]\n", DefaultDifxUser);
+	fprintf(stderr, "  DIFX_MPIRUNOPTIONS : use to set mpirun flags when starting DiFX\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "IPv6 compliance: VSIS TCP port: likely\n");
 	fprintf(stderr, "                 DiFX multicast: yes, vis difxmessage\n");
@@ -236,7 +232,7 @@ int checkRunning(const char *hostname)
 	struct addrinfo hints;
 	struct addrinfo *servinfo;
 	const char drsQuery[] = "DTS_id?;";
-	int txBytes, rxBytes;
+	size_t txBytes, rxBytes;
 	char message[MaxMessageLength];
 	struct timeval tv;
 
@@ -1314,9 +1310,7 @@ int main(int argc, char **argv)
                                 {
                                     try
                                     {
-
                                         D->mark6->pollDevices();
-                                        //D->mark6->sendStatusMessage();
                                         D->mark6->sendSlotStatusMessage();
                                         Logger_logData(D->log, mk6out.str().c_str());
                                         mk6out.str("");
@@ -1503,7 +1497,7 @@ int main(int argc, char **argv)
 	}
 
 #ifdef HAVE_XLRAPI_H
-	if(D->recordPipe > 0)
+	if(D->recordPipe != 0)
 	{
 		pclose(D->recordPipe);
 		D->recordPipe = 0;

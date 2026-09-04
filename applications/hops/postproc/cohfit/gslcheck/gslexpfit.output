@@ -1,0 +1,24 @@
+iter  0: A = 1.0000, lambda = 1.0000, b = 0.0000, cond(J) =      inf, |f(x)| = 88.4448
+iter  1: A = 4.5109, lambda = 2.5258, b = 1.0704, cond(J) =  26.2686, |f(x)| = 24.0646
+iter  2: A = 4.8565, lambda = 1.7442, b = 1.1669, cond(J) =  23.7470, |f(x)| = 11.9797
+iter  3: A = 4.9356, lambda = 1.5713, b = 1.0767, cond(J) =  17.5849, |f(x)| = 10.7355
+iter  4: A = 4.8678, lambda = 1.4838, b = 1.0252, cond(J) =  16.3428, |f(x)| = 10.5000
+iter  5: A = 4.8118, lambda = 1.4481, b = 1.0076, cond(J) =  15.7925, |f(x)| = 10.4786
+iter  6: A = 4.7983, lambda = 1.4404, b = 1.0041, cond(J) =  15.5840, |f(x)| = 10.4778
+iter  7: A = 4.7967, lambda = 1.4395, b = 1.0037, cond(J) =  15.5396, |f(x)| = 10.4778
+iter  8: A = 4.7965, lambda = 1.4394, b = 1.0037, cond(J) =  15.5344, |f(x)| = 10.4778
+iter  9: A = 4.7965, lambda = 1.4394, b = 1.0037, cond(J) =  15.5339, |f(x)| = 10.4778
+iter 10: A = 4.7965, lambda = 1.4394, b = 1.0037, cond(J) =  15.5339, |f(x)| = 10.4778
+iter 11: A = 4.7965, lambda = 1.4394, b = 1.0037, cond(J) =  15.5339, |f(x)| = 10.4778
+summary from method 'trust-region/levenberg-marquardt'
+number of iterations: 11
+function evaluations: 16
+Jacobian evaluations: 12
+reason for stopping: small gradient
+initial |f(x)| = 88.444756
+final   |f(x)| = 10.477801
+chisq/dof = 1.1318
+A      = 4.79653 +/- 0.18704
+lambda = 1.43937 +/- 0.07390
+b      = 1.00368 +/- 0.03473
+status = success

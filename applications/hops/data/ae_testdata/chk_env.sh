@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_env.sh 1381 2016-07-27 14:00:52Z gbc $
+# $Id: chk_env.sh 4575 2026-05-21 21:31:28Z gbc $
 #
 # environment setup -- HOPS_SETUP is not set or false
 # This script is really only needed for distcheck where
@@ -22,9 +22,10 @@ $verb &&
 umask 0002
 [ -n "$bindir" -a -d "$bindir" -a -x "$tste" -a -x $hops ] && {
     . $hops
-    $verb && echo path set up using $hops
+    echo path set up using $hops
     true
 } || {
+    echo path set up locally in path
     rm -rf ./path
     mkdir ./path
     cd ./path
@@ -42,6 +43,7 @@ umask 0002
     export LD_LIBRARY_PATH LD_LIBRARY_PATH=$PGPLOT_DIR:$LD_LIBRARY_PATH
     export DEF_CONTROL=/dev/null
     export TEXT=`pwd`
+    export AHELP=$srcdir/../../help/aedit
     $verb &&
 	echo made links in `pwd` &&
 	echo TEXT is $TEXT &&
@@ -52,6 +54,7 @@ umask 0002
 	echo ''
     cd ..
 }
+echo AHELP is $AHELP
 
 #
 # eof

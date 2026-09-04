@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2025 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -149,14 +149,10 @@ void handleMark6Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 		return;
 	}
 
-	strncpy_warn(D->vsns[0], G->body.mark6status.msn1, 8);
-	D->vsns[0][8] = 0;
-	strncpy_warn(D->vsns[1], G->body.mark6status.msn2, 8);
-	D->vsns[1][8] = 0;
-	strncpy_warn(D->vsns[2], G->body.mark6status.msn3, 8);
-	D->vsns[2][8] = 0;
-	strncpy_warn(D->vsns[3], G->body.mark6status.msn4, 8);
-	D->vsns[3][8] = 0;
+	strncpy_warn(D->vsns[0], G->body.mark6status.msn1, DIFX_MESSAGE_MARK6_MSN_STR_LENGTH);
+	strncpy_warn(D->vsns[1], G->body.mark6status.msn2, DIFX_MESSAGE_MARK6_MSN_STR_LENGTH);
+	strncpy_warn(D->vsns[2], G->body.mark6status.msn3, DIFX_MESSAGE_MARK6_MSN_STR_LENGTH);
+	strncpy_warn(D->vsns[3], G->body.mark6status.msn4, DIFX_MESSAGE_MARK6_MSN_STR_LENGTH);
 
 	if(G->body.mark6status.state == MARK6_STATE_OPENING ||
 	   G->body.mark6status.state == MARK6_STATE_OPEN ||
@@ -197,10 +193,8 @@ void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 		return;
 	}
 
-	strncpy_warn(D->vsns[0], G->body.mk5status.vsnA, 8);
-	D->vsns[0][8] = 0;
-	strncpy_warn(D->vsns[1], G->body.mk5status.vsnB, 8);
-	D->vsns[1][8] = 0;
+	strncpy_warn(D->vsns[0], G->body.mk5status.vsnA, DIFX_MESSAGE_MARK5_VSN_STR_LENGTH);
+	strncpy_warn(D->vsns[1], G->body.mk5status.vsnB, DIFX_MESSAGE_MARK5_VSN_STR_LENGTH);
 
 	if(G->body.mk5status.state == MARK5_STATE_OPENING ||
 	   G->body.mk5status.state == MARK5_STATE_OPEN ||
@@ -526,7 +520,8 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 #ifdef HAS_MARK6META
 		if(D->isMk6)
 		{
-			D->mark6->sendStatusMessage();
+			usleep(1000);
+			D->mark6->sendSlotStatusMessage();
 		}
 #endif
 	}
@@ -740,7 +735,7 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
         {
                 int slot;
                 char vsn[8];
-                sscanf( cmd, "modinit_%d_%s", &slot, vsn);
+                sscanf(cmd, "modinit_%d_%s", &slot, vsn);
                 string vsnStr(vsn) ;
                 //int slot = cmd[8] - '0';
 
@@ -808,8 +803,8 @@ void Mk5Daemon_reboot(Mk5Daemon *D)
 	DifxMessageMk5Status dm;
 
 	memset(&dm, 0, sizeof(DifxMessageMk5Status));
-	strncpy_warn(dm.vsnA, D->vsns[0], 8);
-	strncpy_warn(dm.vsnB, D->vsns[1], 8);
+	strncpy_warn(dm.vsnA, D->vsns[0], DIFX_MESSAGE_MARK5_VSN_STR_LENGTH);
+	strncpy_warn(dm.vsnB, D->vsns[1], DIFX_MESSAGE_MARK5_VSN_STR_LENGTH);
 	dm.state = MARK5_STATE_REBOOTING;
 	difxMessageSendMark5Status(&dm);
 
@@ -824,8 +819,8 @@ void Mk5Daemon_poweroff(Mk5Daemon *D)
 	DifxMessageMk5Status dm;
 
 	memset(&dm, 0, sizeof(DifxMessageMk5Status));
-	strncpy_warn(dm.vsnA, D->vsns[0], 8);
-	strncpy_warn(dm.vsnB, D->vsns[1], 8);
+	strncpy_warn(dm.vsnA, D->vsns[0], DIFX_MESSAGE_MARK5_VSN_STR_LENGTH);
+	strncpy_warn(dm.vsnB, D->vsns[1], DIFX_MESSAGE_MARK5_VSN_STR_LENGTH);
 	dm.state = MARK5_STATE_POWEROFF;
 	difxMessageSendMark5Status(&dm);
 

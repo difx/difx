@@ -20,7 +20,7 @@ int pr_csumm(void)
         extern struct datasumm csumm;
         extern int cscan, cflag;
         int i, j, year, day, hour, min, sec, type, ret;
-        char qclist[20], buf[150];
+        char qclist[20], buf[150], buf2[150];
 
         if((cscan-cflag) == 0) {
             msg("No unflagged corel data!",2);
@@ -65,14 +65,16 @@ int pr_csumm(void)
         printf("\nQuality code summary:\n");
         sprintf(qclist,"ABCDEFGH0123456789?");
         buf[0] = '\0';                  /* Make nice format */
+        for(i=0; i<150; i++){buf[i] = '\0'; buf2[i] = '\0';}
         for(i=0;i<19;i++) {
-            sprintf(buf,"%s%c ",buf,qclist[i]);
-            if(csumm.qcodes[i] >= 10000) sprintf(buf,"%s    ",buf);
-            else if(csumm.qcodes[i] >= 1000) sprintf(buf,"%s   ",buf);
-            else if(csumm.qcodes[i] >= 100) sprintf(buf,"%s  ",buf);
-            else if(csumm.qcodes[i] >= 10) sprintf(buf,"%s ",buf);
+            sprintf(buf,"%s%c ", buf2, qclist[i]);
+            if(csumm.qcodes[i] >= 10000) sprintf(buf2,"%s    ",buf);
+            else if(csumm.qcodes[i] >= 1000) sprintf(buf2,"%s   ",buf);
+            else if(csumm.qcodes[i] >= 100) sprintf(buf2,"%s  ",buf);
+            else if(csumm.qcodes[i] >= 10) sprintf(buf2,"%s ",buf);
+            else sprintf(buf2,"%s",buf);
         }
-        printf("\t%s\n",buf);
+        printf("\t%s\n",buf2);
         printf("\t");
         for(i=0;i<19;i++) printf("%d ",csumm.qcodes[i]);
         printf("\n\nThere are %d flagged records present\n\n",cflag);

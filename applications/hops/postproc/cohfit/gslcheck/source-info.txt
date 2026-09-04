@@ -1,0 +1,13 @@
+This marquadt test example was provided by
+    https://www.gnu.org/software/gsl/doc/html/nls.html
+and copyright per usual GNU Software Library standards.
+
+The bspline code example is #3, found at
+    https://www.gnu.org/software/gsl/doc/html/bspline.html
+
+The minimizer example comes from the first Example of
+    https://www.gnu.org/software/gsl/doc/html/min.html
+
+All of this is covered by the usual GNU Software Library,
+i.e. GNU General Public License, and the HTML pages are
+copyright 1996-2024 by the GSL Team.

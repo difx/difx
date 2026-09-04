@@ -4,6 +4,9 @@
 #    TEC; parse scan calc files for station position, orientation, and time;
 #    and calculate line-of-sight TEC per station.
 #
+#    Adapted from PolConvert by Ivan Marti-Vidal, (C) 2021
+#    https://github.com/marti-vidal-i/PolConvert/blob/main/EU-VGOS/EUVGOS_PY3/PY_PHASES.py
+#
 #    Copyright (C) 2022  D Hoak
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -19,7 +22,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from __future__ import print_function
+#-3.13++#from __future__ import print_function
 
 import os, sys
 import argparse
@@ -35,8 +38,9 @@ import scipy.interpolate as spint
 
 # inputs are
 # - a DiFX experiment directory (for calc files)
-# - a directory to find (or put) the ionex map files
+# - a directory to find (or put) the IONEX map files
 # - a name for the output JSON file
+# - an IONEX product (default is the final JPL solution, "jplg")
 
 # steps:
 #
@@ -47,21 +51,71 @@ import scipy.interpolate as spint
 
 # dict to store two-letter-to-one-letter station codes
 # for translating calc files, where the two-letter codes are capitalized
-stations_2to1 = {}
-stations_2to1['WF'] = 'E'
-stations_2to1['GS'] = 'G'
-stations_2to1['MG'] = 'M'
-stations_2to1['K2'] = 'H'
-stations_2to1['YJ'] = 'Y'
-stations_2to1['WS'] = 'V'
-stations_2to1['OE'] = 'S'
-stations_2to1['OW'] = 'T'
-stations_2to1['HB'] = 'L'
-stations_2to1['IS'] = 'I'
 
 
 
-def build_calc_dict(difx_directory):
+
+def build_station_code_dict(codes_file=None):
+    '''
+    Function to read a "codes" or "stations.m" file used for difx2mark4 and build a dict
+    matching two-letter station codes (needed for the CALC files) to single-letter
+    station codes (needed for the mk4 files).
+
+    Expects the input codes_file to have the format:
+
+    E Wf
+    G Gs
+    H K2
+    V Ws
+    Y Yj
+
+    Returns a dict.
+    '''
+
+    stations_2to1 = {}
+    stations_2to1['WF'] = 'E'
+    stations_2to1['GS'] = 'G'
+    stations_2to1['MG'] = 'M'
+    stations_2to1['K2'] = 'H'
+    stations_2to1['KE'] = 'K'
+    stations_2to1['YJ'] = 'Y'
+    stations_2to1['WS'] = 'V'
+    stations_2to1['OE'] = 'S'
+    stations_2to1['OW'] = 'T'
+    stations_2to1['HB'] = 'O'
+    stations_2to1['IS'] = 'I'
+    stations_2to1['NN'] = 'N'
+    stations_2to1['SA'] = 'A'
+    stations_2to1['WN'] = 'W'
+    stations_2to1['YG'] = 'P'
+    stations_2to1['HV'] = 'J'
+
+    if codes_file is None:
+        return stations_2to1
+    else:
+        codes = open(codes_file)
+        lines = codes.readlines()
+        codes.close()
+
+        for line in lines:
+            if len(line.rstrip('\n').split(' '))>2:
+                print('Station codes file has the wrong format!')
+                sys.exit()
+            else:
+                l1, l2 = line.rstrip('\n').split(' ')
+                stations_2to1[l2.upper()] = l1
+
+        return stations_2to1
+
+
+        
+
+    
+    
+
+
+
+def build_calc_dict(difx_directory, stations_2to1):
     '''
     Function to read *.calc files from a DiFX experiment directory
     
@@ -121,7 +175,7 @@ def build_calc_dict(difx_directory):
                         calc_dict['stations'][tel_name]['Y'] = float(temp[-1])
                     if temp[2]=='Z' and station is not None:
                         calc_dict['stations'][tel_name]['Z'] = float(temp[-1])
-                        print(calc_dict['stations'], station, tel_name, temp[2])
+                        #print(calc_dict['stations'], station, tel_name, temp[2])
 
                 # parse the scan name
                 if line.startswith('SCAN'):
@@ -138,7 +192,6 @@ def build_calc_dict(difx_directory):
                         RA = float(temp[-1])
                     if temp[2]=='DEC:':
                         DEC = float(temp[-1])
-
 
 
             #print(SCAN_NAME, scan_stations, SOURCE_NAME, YY, MM, DD, hh, mm)
@@ -158,12 +211,8 @@ def build_calc_dict(difx_directory):
             calc_dict[SCAN_NAME]['minute'] = mm
             calc_dict[SCAN_NAME]['sec'] = ss
 
-
-
-
         
     print('Collected',ii,'scans.')
-
 
     return calc_dict
 
@@ -194,24 +243,59 @@ def download_ionex_map(ionex_data_directory, YYYY, DOY, ion_center='jpl', num='0
     
     '''
 
-    ftp_path = 'ftp://gdc.cddis.eosdis.nasa.gov/gps/products/ionex/'
-    file_name = ion_center + 'g' + DOY+num + '.' + YYYY[2:4] + 'i.Z'
-    file_path = os.path.join(ftp_path, YYYY, DOY, file_name)
+    #ftp_path = 'ftp://gdc.cddis.eosdis.nasa.gov/gps/products/ionex/'
+    ftp_path = 'ftp://gdc.cddis.eosdis.nasa.gov/gnss/products/ionex/'
+    
+    # The CDDIS IONEX files had their filename format changed in late 2023/early 2024
+    # As of June 2024, the c1p and c2p predict files are still available with the old
+    # filename format
+
+    # Rapid and final solutions from JPL, ESA, IGS, CAS, and COD are available with different
+    # latencies with the new filename format.
+
+    # The file format should be the same...
+    
+    if ion_center=='c1p' or ion_center=='c2p' or int(YYYY)<2024:
+        print('Using old filename format for IONEX file.')
+        file_name = ion_center + 'g' + DOY+num + '.' + YYYY[2:4] + 'i.Z'
+        unzipped_fname = ion_center + 'g' + DOY+num + '.' + YYYY[2:4] + 'i'
+        file_path = os.path.join(ftp_path, YYYY, DOY, file_name)
+        #print(file_path)
+        
+    elif ion_center=='jpl' or ion_center=='esa' or ion_center=='igs' or ion_center=='upc' or ion_center=='cod' and int(YYYY)>2023:
+        print('Using new filename format for IONEX file.')
+
+        file_name = ion_center.upper() + '0OPSFIN_' + YYYY + DOY + '0000_01D_02H_GIM.INX.gz'
+        unzipped_fname = ion_center.upper() + '0OPSFIN_' + YYYY + DOY + '0000_01D_02H_GIM.INX'
+        file_path = os.path.join(ftp_path, YYYY, DOY, file_name)
+        #print(file_path)
+
+    #elif ion_center=='cas'
+        
+    else:
+        print('Analysis center not supported!  Please choose one of c1p, c2p, jpl, esa, upc, cod, or igs.')
+        sys.exit()
+        
+    # ESA0OPSFIN_20240660000_01D_02H_GIM.INX.gz
+    # JPL0OPSFIN_20241430000_01D_02H_GIM.INX.gz
+    # JPL0OPSFIN_20240660000_01D_02H_GIM.INX.gz
+    # IGS0OPSFIN_20240660000_01D_02H_GIM.INX.gz
     
     # check that the file doesn't already exist
-    if not os.path.exists(os.path.join(ionex_data_directory,file_name[0:-2])):
-            
+    if not os.path.exists(os.path.join(ionex_data_directory,unzipped_fname)):
+        
         print('Downloading IONEX map for', YYYY, DOY)
+        #print(file_name[0:-3])
         sys_call = 'curl -u anonymous:'+email+' -O --ftp-ssl '+file_path
         
         os.system(sys_call)
         os.system('gunzip '+file_name)
-        os.system('mv '+file_name[0:-2]+' '+ionex_data_directory)
+        os.system('mv '+unzipped_fname+' '+ionex_data_directory)
         
     #else:
     #	print('IONEX map file for '+YYYY+' '+DOY+' already exists, no need to download.')
 	
-    return os.path.join(ionex_data_directory,file_name[0:-2])
+    return os.path.join(ionex_data_directory,unzipped_fname)
 
 
 
@@ -360,11 +444,8 @@ def calc_scan_TEC(calc_dict, scan, ionex_file, station, LFACT=1.0):
     LAT = np.arctan2(calc_dict['stations'][station]['Z'],np.sqrt(calc_dict['stations'][station]['Y']**2.+calc_dict['stations'][station]['X']**2.))
     LON = np.arctan2(calc_dict['stations'][station]['Y'],calc_dict['stations'][station]['X'])
     
-    
     TELCOORDS[TNAM] = [LAT*180./np.pi,LON*180./np.pi]
-    
-    HANG = (GMST - RA)%(2.*np.pi) + LON
-    
+    HANG = (GMST - RA)%(2.*np.pi) + LON    
     ELEV = np.arcsin(SinDec*np.sin(LAT)+np.cos(LAT)*CosDec*np.cos(HANG))
     ZANG = np.pi/2. - ELEV
     
@@ -372,7 +453,6 @@ def calc_scan_TEC(calc_dict, scan, ionex_file, station, LFACT=1.0):
         AZIM = np.arctan2(-CosDec*np.sin(HANG),np.cos(LAT)*SinDec - np.sin(LAT)*CosDec*np.cos(HANG))
     else:
         AZIM = 0.0
-
     if AZIM<0.0:
         AZIM += 2.*np.pi
         
@@ -434,19 +514,23 @@ def main():
     parser.add_argument('difx_directory', help='DiFX experiment directory containing per-scan calc files')
     parser.add_argument('ionex_directory', help='directory to store the IONEX data files')
     parser.add_argument('outfile', help='output filename for the JSON table')
+    parser.add_argument('-a', '--analysis_center', dest='analysis_center', help='IONEX analysis center (c1p, c2p, cor, jpr, jpl, etc; default is jpl)', default='esa')
+    parser.add_argument('-c', '--codes_file', dest='codes_file', help='file matching 1-letter to 2-letter station codes; same file used in difx2mark4', default=None)
     
     
     args = parser.parse_args()
     #print('args: ', args)
-    
+
+    stations_2to1 = build_station_code_dict(args.codes_file)
+
     # build the dictionary of calc parameters (station coordinates, source rad/dec, scan time)
     print('Collecting information from the calc files')
-    calc_dict = build_calc_dict(args.difx_directory)
+    calc_dict = build_calc_dict(args.difx_directory, stations_2to1)
     
     
     ### build the dict of TEC values for each station and scan
     vgos_TEC_dict = {}
-    for scan in calc_dict.keys():
+    for scan in sorted(calc_dict.keys()):
         if 'year' in calc_dict[scan]: # need to distinguish between keys for scans and the station keys with coordinates
                 
             d0 = dt.date(calc_dict[scan]['year'],1,1)
@@ -456,14 +540,23 @@ def main():
             DOY = "{0:03}".format(dayofyear)
             
             # figure out what days are covered by the experiment and get the ionex files
-            ionex_filename =  download_ionex_map(args.ionex_directory, YYYY, DOY)
+            ionex_filename =  download_ionex_map(args.ionex_directory, YYYY, DOY, ion_center=args.analysis_center)
             
             if scan not in vgos_TEC_dict:
                 vgos_TEC_dict[scan] = {}
                 
+            print('Calculating station TECs for scan',scan)
+
             for sta in calc_dict[scan]['scan_stations']:
-                sta_TEC = calc_scan_TEC(calc_dict, scan, ionex_filename, sta)
-                print(scan, sta, np.round(sta_TEC,3))
+
+                if args.analysis_center=='jpl':
+                    # the JPL IONEX predicts are not in agreement with VLBI results as of Jan1 2025
+                    # it looks like they are too large by 10x...but there are still large errors present
+                    sta_TEC = calc_scan_TEC(calc_dict, scan, ionex_filename, sta) / 10.
+                else:
+                    sta_TEC = calc_scan_TEC(calc_dict, scan, ionex_filename, sta)
+                    
+                #print(scan, sta, np.round(sta_TEC,3))
                 vgos_TEC_dict[scan][sta] = round(np.round(sta_TEC,3),3)
 			
 

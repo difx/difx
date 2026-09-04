@@ -110,7 +110,7 @@ static void parsing_error (int state_num, int ntok)
          state[state_num], token_string[tokens[ntok].symbol]);
    }
 
-int fcode (char c, char *codes)
+static inline int fcode (char c, char *codes)
 	{
 	int i;
 	
@@ -120,46 +120,35 @@ int fcode (char c, char *codes)
     return -1;
 	}
 
+// easier to put this in a separate file
+#define ALLOW_FRQS_CODE
+#include <ctype.h>
+#include "frqsupport.h"
+#undef  ALLOW_FRQS_CODE
 
+// Made master_codes static; as an automatic variable
+// its contents are unpredictable and we want it to
+// persist between calls to the parser().  As str
+// operations are called NULL termination is needed.
+static char master_codes[MAXFREQ+1];
+// flag that frqs, rather than freqs has been used
+// at some time during the lex/parser cycles.
+static int withfrqs = 0;
 
-
-
+extern struct token_struct *tokens;   /* input struct of tokens & values   */
+extern double *float_values;          /* array of actual fl. pt. values    */
+extern struct fsm_table_entry *fsm_base;             /* start of fsm table */
+extern struct c_block *cb_head;                  /* start of c_block chain */
+extern char *char_values;             /* pointer to array of actual strings*/
+extern int msglev;
 
 int parser (void)
    {
-   extern struct token_struct *tokens;   /* input struct of tokens & values   */
-   extern double *float_values;          /* array of actual fl. pt. values    */
-   extern struct fsm_table_entry *fsm_base;             /* start of fsm table */
-   extern struct c_block *cb_head;                  /* start of c_block chain */
-   extern char *char_values;             /* pointer to array of actual strings*/
-   extern int msglev;
-
-
-   int i,
-       nstat,
-       ntok,
-       next_state,
-       found,
-       action,
-       tnum,
-       tval,
-       toknum,
-       negation,
-       nv,
-       sideband,
-       parsed_scan[2],
-       parsed_knot[5],
-       ns;
-
-   char parsed_f_group,
-        parsed_station,
-        parsed_baseline[2],
-        parsed_source[32],
-        parsed_codes[MAXFREQ],
-        *psc,
-        chan[2];
-                                            // master_codes static so "set" works
-   static char master_codes[MAXFREQ];
+   int i, tctr = (msglev <= -2)?0:-1, need_is_save,
+       nstat, ntok, next_state, found, action, tnum, tval, toknum,
+       negation, nv, sideband, parsed_scan[2], parsed_knot[5], ns;
+   char parsed_f_group, parsed_station, parsed_baseline[2],
+        parsed_source[32], parsed_codes[MAXFREQ+1], *psc, chan[4];
    float fval;      // historical choice
    double dval;     // some things require this
 
@@ -171,8 +160,10 @@ int parser (void)
 
    if (master_codes[0] == '\0')
        strncpy (master_codes, FCHARS, sizeof (master_codes));
+   parsed_codes[MAXFREQ] =
+   master_codes[MAXFREQ] = '\0';
 
-   msg ("Following parser triples are token_number:state:category", -2);
+   msg ("Parser triples are token_number:state:category", -2);
 
    ntok = 0;                   /* point to beginning of input token structure */
 
@@ -213,9 +204,10 @@ int parser (void)
 
       if (msglev <= -2)                    /* replace with new msg if no lf's */
           {
-          if (ntok % 7 == 0)
-              printf ("\n");          /* print line feed after every 7 tokens */
-          printf ("%d:%d:%d  ",ntok,next_state,tokens[ntok].category);
+          /* print line feed after every 9 tokens */
+          if (tctr % 9 == 0) fprintf (stderr, "%s: ", progname);
+          fprintf (stderr, " %d:%d:%d",ntok,next_state,tokens[ntok].category);
+          if ((++tctr % 9) == 0) { fprintf (stderr, "\n"); fflush(stderr); }
           }
 
       for (nstat=0; fsm_base[nstat].current_state != 0; nstat++)
@@ -244,6 +236,10 @@ int parser (void)
             case SAVE_TOKEN_NUM:
                toknum = tnum;
                nv = 0;                          /* clear vector element index */
+               // if it is a CHAN_PARAM requesting SAVE_TOKEN_NUM,
+               // then we need to note that if frqs was ever used.
+               if (tctr>=0) { fprintf (stderr, "\n"); tctr=0; }
+               need_is_save = (frqs_CHAN_PARAM(toknum) && withfrqs) ? 1 : 0;
                break;
 
 
@@ -395,6 +391,8 @@ int parser (void)
                        cb_ptr -> ion_smooth = tval;
                    else if (toknum == EST_PC_MANUAL_)
                        cb_ptr -> est_pc_manual = tval;
+                   else if (toknum == CLONE_SNR_CHK_)
+                       cb_ptr -> clone_snr_chk = tval;
                    else if (toknum == VBP_CORRECT_)
                        cb_ptr -> vbp_correct = tval;
                    else if (toknum == VBP_FIT_)
@@ -407,13 +405,21 @@ int parser (void)
                        else if (cb_ptr -> baseline[0] == WILDCARD) // rem station
                            cb_ptr -> mount_type[1] = tval;
                        }
+                   else if (toknum == MIXED_MODE_ROT_)
+                       cb_ptr -> mixed_mode_rot = tval;
+                   else if (toknum == NOAUTOFRINGES_)
+                       cb_ptr -> noautofringes = tval;
+                   else if (toknum == MOD4NUMBERING_)
+                       cb_ptr -> mod4numbering = tval;
+                   else if (toknum == POLFRINGNAMES_)
+                       cb_ptr -> polfringnames = tval;
 
                break;
 
 
             case INSERT_V_PAR:
                for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
-                   if (toknum == INDEX_)
+                   if (toknum == INDEX_)    // deprecated
                        {
                        if (nv == 2*MAXFREQ)
                            {
@@ -759,8 +765,24 @@ int parser (void)
                            }
                        }
 
+                   else if (toknum == MBDRPLOPT_)
+                       {
+                       if (nv > 2)
+                           {
+                           msg ("Too many mbdrplopt integers",2);
+                           return (-1);
+                           }
+                       if (tokens[ntok].category == INTEGER)
+                           {
+                           cb_ptr -> mbdrplopt[nv] = tval;
+                           }
+                       else
+                           {
+                           msg ("mbdrplopt numbers must be integers",2);
+                           return (-1);
+                           }
+                       }
 
-// ##DELAY_OFFS##  for next clause
                    else if (toknum == DELAY_OFFS_) // is this a channel delay offset?
                        {
                        i = fcode(parsed_codes[nv], master_codes);
@@ -895,8 +917,10 @@ int parser (void)
                        {
                        if (nv == 0)       // save ch string as new master copy
                            {
-                           strncpy (master_codes, parsed_codes, sizeof (master_codes));
-                           strncpy (cb_ptr->chid, parsed_codes, sizeof (master_codes));
+                           strncpy (master_codes, parsed_codes, MAXFREQ);
+                           strncpy (cb_ptr->chid, parsed_codes, MAXFREQ);
+                           // ensure null termination, anal compulsive, yes.
+                           master_codes[MAXFREQ] = cb_ptr->chid[MAXFREQ] = '\0';
                            }
                                           // allow int or float input values
                        if (tokens[ntok].category == INTEGER)
@@ -905,20 +929,53 @@ int parser (void)
                            dval = float_values[tval];
                        cb_ptr -> chid_rf[nv] = dval;
                        }
-
+               // end of for cb_ptr=cond_start...
                nv++;                       /* bump index for next vector parm */
                break;
+               // end of case INSERT_V_PAR:
 
 
 
             case INSERT_V_CHAR:                 /* first figure out side band */
+               if (toknum == CLONE_IDS_ && tnum != TWO_CHAR_)
+                   {
+                   msg("Clone ids must be 2,4,... characters", 3);
+                   return(-2);
+                   }
                if (tnum == ONE_CHAR_)
                    {
-                   chan[0] = char_values[tval];
-                   sideband = DSB;
+                   if (toknum == CHAN_NOTCHES_)
+                       { // chan_notches case with just one notch -- handle & break
+                       if (tctr>=0) { fprintf (stderr, "\n"); tctr=0; }
+                       if (frqs_chan_notches(char_values+tval, master_codes, cond_start))
+                           return(-3);  // appropriate complaint will already be made.
+                       break;
+                       }
+                   else
+                       { // freqs usage
+                       chan[0] = char_values[tval];
+                       sideband = DSB;
+                       }
                    }
                else if (tnum == TWO_CHAR_)
                    {
+                   if (toknum == CLONE_IDS_)
+                       {
+                       memcpy (chan, char_values+tval, 2);
+                       chan[2] = '\0';  // null terminate
+                       if (tctr>=0) { fprintf (stderr, "\n"); tctr=0; }
+                       if (frqs_clone_ids(chan, master_codes, cond_start))
+                           return(-4);  // appropriate complaint will already be made.
+                       break;
+                       }
+                   else if (toknum == CHAN_NOTCHES_)
+                       { // chan_notches case with two notches -- handle & break
+                       if (tctr>=0) { fprintf (stderr, "\n"); tctr=0; }
+                       if (frqs_chan_notches(char_values+tval, master_codes, cond_start))
+                           return(-5);  // appropriate complaint will already be made.
+                       break;
+                       }
+                   // otherwise continue with INSERT_V_CHAR for 2 chars
                    memcpy (chan, char_values+tval, 2);
                    if (chan[1] == '+')
                        sideband = USB;
@@ -983,15 +1040,30 @@ int parser (void)
                                     char_values+tval, 128);
                        }
                else if (toknum == ADHOC_FLAG_FILE_)
+                   {
+                   // update char_values+tval according to frqs rules
+                   // this is the only case where STRING, rather than CHAN_PARMS
+                   // was used for the channel list
+                   if (withfrqs && tctr>=0) { fprintf (stderr, "\n"); tctr=0; }
+                   char *revised_channels = withfrqs
+                       ? frqs_expand_codes(char_values+tval, master_codes)
+                       : char_values+tval;
+                   if (withfrqs && !revised_channels)
+                       {
+                       msg ("Error ~expanding adhoc flag file channels.",2);
+                       return (-1);
+                       }
                    for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
                        {
                        if (cb_ptr -> baseline[1] == WILDCARD)      // ref station
                            strncpy (cb_ptr -> adhoc_flag_files[0],
-                                    char_values+tval, 256);
+                                    revised_channels, 256);
                        else if (cb_ptr -> baseline[0] == WILDCARD) // rem station
                            strncpy (cb_ptr -> adhoc_flag_files[1],
-                                    char_values+tval, 256);
+                                    revised_channels, 256);
                        }
+                   if (withfrqs) free(revised_channels);
+                   }
                else if (toknum == PLOT_DATA_DIR_)
                    for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
                        {
@@ -1002,7 +1074,20 @@ int parser (void)
                            strncpy (cb_ptr -> plot_data_dir[1],
                                     char_values+tval, 256);
                        }
+               else if (toknum == FRINGEOUT_DIR_)
+                   for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
+                       {
+                       if (cb_ptr -> baseline[1] == WILDCARD ||
+                           cb_ptr -> baseline[0] == WILDCARD)
+                           strncpy (cb_ptr -> fringeout_dir, char_values+tval, 256);
+                       }
                                 // video bandpass file name
+               else if (toknum == DISPLAY_CHANS_)
+                   {
+                   if (tctr>=0) { fprintf (stderr, "\n"); tctr=0; }
+                   if (frqs_display_chans(char_values+tval, master_codes, cond_start))
+                        return(-6);  // appropriate complaint will already be made.
+                   }
                else if (toknum == VBP_FILE_)
                    for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
                        {
@@ -1011,8 +1096,20 @@ int parser (void)
                        else if (cb_ptr -> baseline[0] == WILDCARD) // rem station
                            strncpy (cb_ptr -> vbp_file[1], char_values+tval, 256);
                        }
-
+               else if (toknum == CHAN_NOTCHES_)
+                   {
+                   if (tctr>=0) { fprintf (stderr, "\n"); tctr=0; }
+                   if (frqs_chan_notches(char_values+tval, master_codes, cond_start))
+                       return(-7);  // appropriate complaint will already be made.
+                   }
+               else if (toknum == CLONE_IDS_)
+                   {
+                   if (tctr>=0) { fprintf (stderr, "\n"); tctr=0; }
+                   if (frqs_clone_ids(char_values+tval, master_codes, cond_start))
+                       return(-8);  // appropriate complaint will already be made.
+                   }
                break;
+               // end of INSERT_STRING
 
             case POP_TOKEN:
                ntok--;                                  /* stay on same token */
@@ -1098,11 +1195,41 @@ int parser (void)
                negation = FALSE;
                break;
 
+            case NEW_CODES:
+               withfrqs++;
             case SAVE_CODES:
-               memset (parsed_codes,'\0',MAXFREQ);               /* pad with nulls */
+               memset (parsed_codes,'\0',MAXFREQ+1);     /* pad with nulls */
                i = strlen (char_values + tval);
                i = (i > MAXFREQ) ? MAXFREQ : i;      /* move at most MAXFREQ chars */
-               memcpy (parsed_codes, char_values + tval, i);
+               // should probably complain about that.
+               if (need_is_save) {   /* SAVE_CODES for CHAN_PARAM */
+                   /* re-interpret parsed_codes frqs_new_codes() */
+                   if (tctr>=0) { fprintf (stderr, "\n"); tctr=0; }
+                   char *revised = frqs_expand_codes(char_values + tval, master_codes);
+                   if (!revised) {
+                       if (tctr>=0) { fprintf (stderr, "\n"); tctr=0; }
+                       msg("Unable to save codes for CHAN_PARAM, %s", 3,
+                           char_values + tval);
+                       return(-9); // appropriate complaint will already be made.
+                   }
+                   memcpy (parsed_codes, revised, strlen(revised));
+                   free(revised);
+                   msg("Revised codes for CHAN_PARAM %s", 1, parsed_codes);
+               } else if (action == SAVE_CODES) {
+                   /* original processing for original action */
+                   if (tctr>=0) { fprintf (stderr, "\n"); tctr=0; }
+                   msg("SAVE_CODES %s (%d)", 1, char_values + tval, i);
+                   memcpy (parsed_codes, char_values + tval, i);
+               } else if (action == NEW_CODES) {
+                    /* re-interpret parsed_codes frqs_new_codes() returns 0 normally */
+                    /* cond_start so that it propages as in INSERT_V_CHAR */
+                    if (tctr>=0) { fprintf (stderr, "\n"); tctr=0; }
+                    msg("NEW_CODES %s (%d)", 1, char_values + tval, i);
+                    memcpy (parsed_codes, char_values + tval, i);
+                    if (0>frqs_new_codes(parsed_codes, master_codes, cond_start))
+                        return(-10); // appropriate complaint will already be made.
+               }
+               need_is_save = 0;
                break;
 
             case GEN_CBLOCKS:           /* generate one or more c_blocks that
@@ -1170,6 +1297,9 @@ int parser (void)
 
    while (next_state != END_STATE);
 
+   if (tctr>0) fprintf (stderr, "\n");
+   if (msglev<-2) { msg("exit parser", -2); fflush(stderr); }
    return (0);                                          /* successful return! */
    }
 
+/* eof */

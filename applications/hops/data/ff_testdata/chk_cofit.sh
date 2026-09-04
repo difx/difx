@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_cofit.sh 3326 2021-09-04 13:05:05Z gbc $
+# $Id: chk_cofit.sh 4573 2026-05-21 21:28:02Z gbc $
 #
 # exercises cofit
 #
@@ -18,6 +18,8 @@ time=oifhak
 
 [ -d $DATADIR/$rdir ] || { echo Missing 2843 data; exit 2;}
 
+ls -l alist-aedit.coavg
+
 $verb && echo \
 cofit -d alist-aedit.ps/ps \\ && echo \
 '   -o alist-aedit.cofit alist-aedit.coavg' \\ && echo \
@@ -30,7 +32,8 @@ cofit -d alist-aedit.ps/ps \
 set -- `wc -l alist-aedit.cofit alist-aedit-1.cofit alist-aedit-2.cofit`
 $verb && echo wc is $@
 
-[ "$1" -eq 6 -a "$3" -eq 59 -a "$5" -eq 5 ]
+echo "$1" == 6 -a "$3" == 59 -a "$5" == 6
+[ "$1" -eq 6 -a "$3" -eq 59 -a "$5" -eq 6 ]
 
 #
 # eof

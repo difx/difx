@@ -55,15 +55,16 @@
 #define PDD_SEG_AMP_FILTER  0x01000000
 #define PDD_MODELINFO       0x02000000
 #define PDD_FINEPRINT       0x04000000
-#define PDD_SEG_RESERVED2   0x08000000
+#define PDD_CONTROL_BLOCK   0x08000000
 #define PDD_SEG_RESERVED3   0x10000000
 #define PDD_SEG_RESERVED4   0x20000000
 #define PDD_SEG_RESERVED5   0x40000000
 #define PDD_LEGEND          0x80000000
-#define PDD_ALL             0x83FFFFFF
+#define PDD_ALL             0x8FFFFFFF
 #define PDD_SOME \
     (PDD_HEADER|PDD_SBD_AMP|PDD_MBD_AMP|PDD_DLYRATE|PDD_XPSPEC|PDD_PHASOR \
-    |PDD_WEIGHTS|PDD_MEAN_AP|PDD_SEG_AMP|PDD_SEG_PHS|PDD_LEGEND)
+    |PDD_WEIGHTS|PDD_MEAN_AP|PDD_SEG_AMP|PDD_SEG_PHS|PDD_LEGEND \
+    |PDD_FINEPRINT|PDD_CONTROL_BLOCK)
 
 
 #define R2D(RAD) ((RAD) * (M_1_PI * 180.0))
@@ -134,7 +135,10 @@ static void dump_header(FILE *fp, char *outname, struct type_dump *dp)
     fprintf(fp, "# AmpCorrFact      %f\n", dp->status->amp_corr_fact);
     fprintf(fp, "#\n");
     fprintf(fp, "# StartPlot        %d\n", dp->meta->start_plot);
-    fprintf(fp, "# NPlots           %d\n", dp->meta->nplots);
+    fprintf(fp, "# LimitPlot        %d\n", dp->meta->limit_plot);
+    fprintf(fp, "# NumberOfPlots    %d\n", dp->meta->nplots);
+    fprintf(fp, "# VisiblePlots     %d\n", dp->meta->vplots);
+    fprintf(fp, "# SkipPlotList     %s\n", dp->meta->skip_plots);
     fprintf(fp, "# ChannelsBefore   '");
     for (ii = 0; ii < dp->meta->start_plot; ii++)
         fprintf(fp, " %c", dp->pass->pass_data[ii].freq_code);
@@ -147,6 +151,8 @@ static void dump_header(FILE *fp, char *outname, struct type_dump *dp)
     for ( ; ii < dp->pass->nfreq; ii++)
         fprintf(fp, " %c", dp->pass->pass_data[ii].freq_code);
     fprintf(fp, "'\n");
+    fprintf(fp, "# CloneSources     %s\n", dp->param->clones[0]);
+    fprintf(fp, "# CloneChannels    %s\n", dp->param->clones[1]);
     fprintf(fp, "#\n");
 }
 
@@ -313,11 +319,13 @@ static void dump_fineprint(FILE *fp, struct type_dump *dp)
         strncpy(tcohere, "infinite", sizeof(tcohere));
     fprintf(fp, "# CoherenceTime           '%s'\n", tcohere);
 
-    fprintf(fp, "# IonWindow(TEC)          '%8.2f %8.2f'\n",
+    fprintf(fp, "# IonWindow(TEC)          '%14.3f %14.3f'\n",
         dp->param->win_ion[0], dp->param->win_ion[1]);
-    fprintf(fp, "# SBWindow(us)            '%8.3f %8.3f'\n",
+    fprintf(fp, "# SBWindow(us)            '%14.3f %14.3f'\n",
         dp->param->win_sb[0], dp->param->win_sb[1]);
-    fprintf(fp, "# MBWindow(us)            '%8.3f %8.3f'\n",
+    fprintf(fp, "# MBWindow(us)            '%14.6f %14.6f'\n",
+        dp->param->win_mb[0], dp->param->win_mb[1]);
+    fprintf(fp, "# DRWindow(us)            '%14.9f %14.9f'\n",
         dp->param->win_mb[0], dp->param->win_mb[1]);
     fprintf(fp, "# InterpolationMethod     '%s'\n",
         (dp->param->interpol == ITERATE) ? "iterative interpolator" :
@@ -330,13 +338,79 @@ static void dump_fineprint(FILE *fp, struct type_dump *dp)
             dp->status->xpnotchpband[0], dp->status->xpnotchpband[1]);
     if (dp->param->nnotches > 0) {
         fprintf(fp, "# NumberOfNotches         '%d'\n", dp->param->nnotches);
-        fprintf(fp, "# NotchesInAvXPSpectrum   '");
-        for (ii = 0; ii < dp->param->nnotches; ii++)
+        fprintf(fp, "# NotchesInAvXPMHzOffset  '");
+        for (ii = 0; ii < 2*dp->param->nnotches; ii++)
             fprintf(fp, " %lf", dp->status->xpnotchpband[ii]);
         fprintf(fp, "'\n");
+        fprintf(fp, "# ChannelNotchRestrict    '");
+        for (ii = 0; ii < dp->param->nnotches; ii++)
+            fprintf(fp, " %c", dp->param->chan_notches[ii]);
+        fprintf(fp, "'\n");
     }
+    fprintf(fp, "# CloneSNRCheck             '%d'\n",
+        dp->param->clone_snr_chk);
 
-    //FIXME -- yet morethings that should be output
+    //FIXME -- yet more things that should be output
+    fprintf(fp, "\n");
+}
+/*
+ * This dumps out the control block from the param structure
+ * which SHOULD be the collapse of all in the chain operating on
+ * the current pass.  It should be noted that many references to
+ * things in param could be replaced by references to the control
+ * block, since that is where they came from originally.
+ * The output format is raw, intended for debugging.  As a reminder,
+ * make_passes() collapses all relevant cblocks using generate_cblock().
+ */
+static void dump_control_block(FILE *fp, struct type_dump *dp)
+{
+    fprintf(fp, "# PARAMCONTROLBLOCK\n");
+    int nfreq = dp->pass->nfreq, ff, fc, fi;
+    fprintf(fp, "# Baseline %2.2s Source %32.32s "
+        "Group %c start %d end %d knot 0x%d%d%d%d %s\n",
+        dp->pass->control.baseline,
+        dp->pass->control.source,
+        dp->pass->control.f_group,
+        dp->pass->control.scan[0],
+        dp->pass->control.scan[1],
+        dp->pass->control.knot[0], dp->pass->control.knot[1],
+        dp->pass->control.knot[2], dp->pass->control.knot[3],
+        dp->pass->control.skip ? "skip" : "keep");
+
+    //FIXME -- yet more things that should be output
+
+    fprintf(fp, "# ChannelIds '%s'\n", dp->pass->control.chid);
+    for (ff = 0; ff < nfreq; ) {
+        fc = dp->pass->pass_data[ff].freq_code;
+        fi = dp->pass->pass_data[ff].fcode_index;
+        if ((ff%2) == 0) fprintf(fp, "# PCPhase ");
+        fprintf(fp, " %c(%02d:%02d) ref %8.3f %8.3f rem %8.3f %8.3f ",
+            fc, ff, fi,
+            dp->pass->control.pc_phase[fi][0].ref,
+            dp->pass->control.pc_phase[fi][1].ref,
+            dp->pass->control.pc_phase[fi][0].rem,
+            dp->pass->control.pc_phase[fi][1].rem);
+        if (++ff == nfreq || (ff%2) == 0) fprintf(fp, "\n");
+    } 
+    for (ff = 0; ff < nfreq; ) {
+        fc = dp->pass->pass_data[ff].freq_code;
+        fi = dp->pass->pass_data[ff].fcode_index;
+        if ((ff%2) == 0) fprintf(fp, "# PCDOPol ");
+        fprintf(fp, " %c(%02d:%02d) ref %8.3f %8.3f rem %8.3f %8.3f ",
+            fc, ff, fi,
+            dp->pass->control.delay_offs_pol[fi][0].ref,
+            dp->pass->control.delay_offs_pol[fi][1].ref,
+            dp->pass->control.delay_offs_pol[fi][0].rem,
+            dp->pass->control.delay_offs_pol[fi][1].rem);
+        if (++ff == nfreq || (ff%2) == 0) fprintf(fp, "\n");
+    }
+    fprintf(fp, "# DisplayChannels           '%s'\n",
+        dp->pass->control.display_chans);
+
+    fprintf(fp, "#\n");
+    //FIXME -- yet more things that should be output
+
+    fprintf(fp, "#\n");
 }
 
 /*
@@ -539,9 +613,12 @@ static void dump_legend(FILE *fp, char *lb)
     PDD_DESCRIBE(fp, PDD_SEG_AMP_FILTER);
     PDD_DESCRIBE(fp, PDD_MODELINFO);
     PDD_DESCRIBE(fp, PDD_FINEPRINT);
+    PDD_DESCRIBE(fp, PDD_CONTROL_BLOCK);
     PDD_DESCRIBE(fp, PDD_LEGEND);
     PDD_DESCRIBe(fp, PDD_SOME, "the default");
     PDD_DESCRIBe(fp, PDD_ALL, "everything");
+    fprintf(fp,
+        "# You may use the symbolic names or 0x values or'd by '|'\n\n");
     fprintf(fp,
         "# PDD_SEG_AMP_FILTER is special in that if you then supply\n"
         "# an environment variable HOPS_AMP_SEG_FILTER; a table of ad\n"
@@ -557,16 +634,80 @@ static void dump_legend(FILE *fp, char *lb)
         "# or limited by the -f -n command line options.\n");
 }
 
+/* syntactic sugar to do the obvious thing */
+#define STRASS(PM,PDD,VAL) do{if(!strcmp(PM,PDD))return(VAL);}while(0)
+static int grok_pdd(char *pm)
+{
+    int dm = 0;
+    STRASS(pm,"PDD_HEADER"          , 0x00000001);
+    STRASS(pm,"PDD_SBD_AMP"         , 0x00000002);
+    STRASS(pm,"PDD_MBD_AMP"         , 0x00000004);
+    STRASS(pm,"PDD_DLYRATE"         , 0x00000008);
+    STRASS(pm,"PDD_XPSPEC"          , 0x00000010);
+    STRASS(pm,"PDD_PHASOR"          , 0x00000020);
+    STRASS(pm,"PDD_WEIGHTS"         , 0x00000040);
+    STRASS(pm,"PDD_MEAN_AP"         , 0x00000080);
+    STRASS(pm,"PDD_SEG_AMP"         , 0x00000100);
+    STRASS(pm,"PDD_SEG_PHS"         , 0x00000200);
+    STRASS(pm,"PDD_SEG_FRAC_USB"    , 0x00000400);
+    STRASS(pm,"PDD_SEG_FRAC_LSB"    , 0x00000800);
+    STRASS(pm,"PDD_SEG_REFSCNT_USB" , 0x00001000);
+    STRASS(pm,"PDD_SEG_REFSCNT_LSB" , 0x00002000);
+    STRASS(pm,"PDD_SEG_REMSCNT_USB" , 0x00004000);
+    STRASS(pm,"PDD_SEG_REMSCNT_LSB" , 0x00008000);
+    STRASS(pm,"PDD_SEG_REFBIAS_USB" , 0x00010000);
+    STRASS(pm,"PDD_SEG_REFBIAS_LSB" , 0x00020000);
+    STRASS(pm,"PDD_SEG_REMBIAS_USB" , 0x00040000);
+    STRASS(pm,"PDD_SEG_REMBIAS_LSB" , 0x00080000);
+    STRASS(pm,"PDD_SEG_REFPCAL"     , 0x00100000);
+    STRASS(pm,"PDD_SEG_REMPCAL"     , 0x00200000);
+    STRASS(pm,"PDD_SEG_PLOT_INFO"   , 0x00400000);
+    STRASS(pm,"PDD_SEG_RESERVED1"   , 0x00800000);
+    STRASS(pm,"PDD_SEG_AMP_FILTER"  , 0x01000000);
+    STRASS(pm,"PDD_MODELINFO"       , 0x02000000);
+    STRASS(pm,"PDD_FINEPRINT"       , 0x04000000);
+    STRASS(pm,"PDD_CONTROL_BLOCK"   , 0x08000000);
+    STRASS(pm,"PDD_SEG_RESERVED3"   , 0x10000000);
+    STRASS(pm,"PDD_SEG_RESERVED4"   , 0x20000000);
+    STRASS(pm,"PDD_SEG_RESERVED5"   , 0x40000000);
+    STRASS(pm,"PDD_LEGEND"          , 0x80000000);
+    STRASS(pm,"PDD_ALL"             , 0x8FFFFFFF);
+    return(dm);
+}
+#undef STRASS
+
+static int grok_hops_plot_data_mask(char **phpdm)
+{
+    char *pm, *copy;
+    int damask = PDD_SOME;
+
+    *phpdm = getenv("HOPS_PLOT_DATA_MASK");
+    if (!*phpdm) return(PDD_SOME);    /* default treatment */
+    copy = malloc(strlen(*phpdm) + 2);
+    strcpy(copy, *phpdm);
+    pm = strtok(copy, "|");
+    if (pm) {
+        damask = 0x0;
+        do {
+            damask |= (pm[0] == 'P')
+                    ? grok_pdd(pm)
+                    : (int)strtoul(pm, 0, 16);
+        } while ((pm = strtok(NULL, "|")));
+    }
+    free(copy);
+    return(damask);
+}
+
 /*
  * Main entry to writing out the data; returns system errno on errors.
  */
 static int populate_data_file(char *outname, struct type_dump *dp)
 {
-    char *hpdm = getenv("HOPS_PLOT_DATA_MASK");
     FILE *fp = fopen(outname, "w");
+    char *hpdm;
     int rv, nlags2 = 2 * dp->param->nlags;
     int drates = dp->status->drsp_size < 256 ? 256 : dp->status->drsp_size;
-    int datamask = (hpdm) ? (int)strtoul(hpdm, 0, 16) : PDD_SOME;
+    int datamask = grok_hops_plot_data_mask(&hpdm);
 
     if (!fp) {
         perror("dump_plot_data2dir:fopen");
@@ -577,7 +718,7 @@ static int populate_data_file(char *outname, struct type_dump *dp)
     /* all the magic numbers */
     if (datamask & PDD_HEADER) {
       dump_header(fp, outname, dp);
-      fprintf(fp, "# HOPS_PLOT_DATA_MASK %0X (%s)\n", datamask,
+      fprintf(fp, "# HOPS_PLOT_DATA_MASK 0x%0X (%s)\n", datamask,
         hpdm ? hpdm : "undefined");
       fprintf(fp, "\n");
     }
@@ -684,7 +825,11 @@ static int populate_data_file(char *outname, struct type_dump *dp)
       dump_modelinfo(fp, dp);
     if (datamask & PDD_FINEPRINT)
       dump_fineprint(fp, dp);
-    if (datamask & (PDD_SEG_PLOT_INFO|PDD_MODELINFO|PDD_FINEPRINT))
+    if (datamask & PDD_CONTROL_BLOCK)
+      dump_control_block(fp, dp);
+    if (datamask & (    // any of the above
+        PDD_SEG_PLOT_INFO|PDD_MODELINFO|
+        PDD_FINEPRINT|PDD_CONTROL_BLOCK))
       fprintf(fp, "\n");
 
     /* dump out a flagging table */

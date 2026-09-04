@@ -1,6 +1,7 @@
 #ifndef T303_VERSION
 #define T303_VERSION 0
 
+#include <stdio.h>
 #include "mk4_typedefs.h"
 
                     /* Set this to current version, */
@@ -23,4 +24,5 @@ struct type_303
     double w[6];
     };
 
+void write_t303 (struct type_303 *, FILE *);
 #endif

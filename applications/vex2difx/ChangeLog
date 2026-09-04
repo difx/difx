@@ -1,6 +1,7 @@
 Version 3.1.1
 -------------
-* Reduce build warnings using g++ 15.2.1.  Only remaining ones are in the vex/ directory
+* Reduce build warnings using g++ 15.2.1.
+* fix vexpeek segfault if listing modules but none present
 
 Version 3.1.0
 -------------

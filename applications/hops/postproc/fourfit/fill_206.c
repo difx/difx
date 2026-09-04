@@ -43,10 +43,14 @@ struct type_206 *t206)
     t206->first_ap = pass->ap_off;
     t206->last_ap = pass->ap_off + pass->num_ap;
                                             /* Take account of fractional APs */
+
+    // if cloning is enabled and no editing, channels and total_ap_frac
+    // are both increased proportionately, so intg_time is ok here...
     if (pass->channels > 0)
         t206->intg_time = status->total_ap_frac * param->acc_period / pass->channels;
 
     // this arises from bandwidth editing, see discussion in adjust_snr.c
+    // ...assuming any cloning handling does not screw it up.
     if (status->tot_sb_bw_aperr > 0.0)
         t206->intg_time += status->tot_sb_bw_aperr * param->acc_period / pass->channels;
 

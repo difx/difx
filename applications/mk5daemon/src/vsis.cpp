@@ -34,6 +34,7 @@
 #include "vsis_commands.h"
 #include "config.h"
 #include "mk5daemon.h"
+#include "errno.h"
 
 const int MaxFields = 24;
 const unsigned short VSIS_PORT = 2620;
@@ -342,6 +343,7 @@ int handleVSIS(Mk5Daemon *D, int sock)
 
 int Mk5Daemon_startVSIS(Mk5Daemon *D)
 {
+	char message[DIFX_MESSAGE_LENGTH];
 	const int reuse_addr = 1;
 	struct addrinfo hints, *res;
 	char portstr[6];
@@ -390,7 +392,8 @@ int Mk5Daemon_startVSIS(Mk5Daemon *D)
 	freeaddrinfo(res);
 	if(v < 0)
 	{
-		Logger_logData(D->log, "Cannot bind accept socket for VSI-S\n");
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot bind accept socket for VSI-S (errno %d, %s)\n", errno, strerror(errno));
+		Logger_logData(D->log, message);
 
 		return -1;
 	}

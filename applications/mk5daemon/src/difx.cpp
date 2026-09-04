@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2025 by Walter Brisken & John Spitzak              *
+ *   Copyright (C) 2008-2026 by Walter Brisken & John Spitzak              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,7 +34,7 @@
 #include "macros.h"
 #include "mk5daemon.h"
 
-const char defaultMpiWrapper[] = "mpirun";
+const char defaultMpiWrapper[] = "`which mpirun`";
 const char defaultMpiOptions[] = "--mca mpi_yield_when_idle 1 --mca rmaps seq";
 const char defaultDifxProgram[] = "mpifxcorr";
 
@@ -475,7 +475,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G, int noS
 		Mk5Daemon_system(D, command, 1);
 
 		/* write threads file */
-		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s.threads", filebase);
+		snprintf_warn(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s.threads", filebase);
 		
 		if(S->function == DIFX_START_FUNCTION_USNO)
 		{
@@ -548,7 +548,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G, int noS
 	{
 		mpiOptions = S->mpiOptions;
 	}
-	else
+	else if((mpiOptions = getenv("DIFX_MPIRUNOPTIONS")) == 0)
 	{
 		mpiOptions = defaultMpiOptions;
 	}

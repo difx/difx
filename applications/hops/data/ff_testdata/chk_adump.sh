@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_adump.sh 3326 2021-09-04 13:05:05Z gbc $
+# $Id: chk_adump.sh 4573 2026-05-21 21:28:02Z gbc $
 #
 # check that adump dumps snr and phase
 #
