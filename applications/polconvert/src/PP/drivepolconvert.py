@@ -1217,12 +1217,20 @@ def createCasaInputParallel(o):
         o.amap_dicts = ad
         o.zoomfreqs = sorted(list(zf))
         o.targfreqs = sorted(list(tf))
+
+        # rebuild o.iflist using the targfreqs for this specific job, so
+        # createCasaCommand() doesn't use the union of all the target freqs from all the jobs
+        freqIds = o.targfreqs
+        o.iflist = ','.join(sorted(freqIds))
+        
         o.nargs = na
         o.jobnums = jn
         o.djobs = dj
         o.remotename = rn
         o.zfirst,o.zfinal = ff
         o.zffs = ff
+        print('First, final IFs for this job:',ff)
+        
         if createCasaInput(o, odjobs, '..', workdir):
             cmdfile,fullpath = createCasaCommand(o, job, workdir)
             if cmdfile == 'error':

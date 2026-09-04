@@ -227,6 +227,10 @@ INSTALL
 /sites/NRAO/rcwlib/tests/.libs/
 /sites/NRAO/rcwlib/tests/testgetnum
 
+# /sites/MPIfR
+/sites/MPIfR/mark5/m5tone/m5tone
+/sites/MPIfR/vdif/modifyVDIF
+
 # /utilities/misc
 /utilities/misc/m5fb_makeheader
 

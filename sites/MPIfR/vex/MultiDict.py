@@ -1,5 +1,8 @@
 import UserDict
 
+# Note: obsolete, replaced by python3 package https://pypi.org/project/multidict/
+# from which the newer MultiDict can be loaded with 'from multidict import MultiDict'
+
 class MultiDict(UserDict.DictMixin):
 
     def __init__(self, *args, **kwds):

@@ -894,7 +894,7 @@ void Mk5Daemon_killJob(Mk5Daemon *D, const char *jobName)
 		}
 		if(sscanf(line, "%*s%d", &pid) == 1)
 		{
-			snprintf_warn(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: Weird: pid %d remains after kill-9", pid);
+			snprintf_warn(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: Weird: pid %d remains after \"kill -9\"", pid);
 			Logger_logData(D->log, message);
 			snprintf_warn(message, CommandLength, "Killing of job %s not successful.  Try again.", jobName);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);

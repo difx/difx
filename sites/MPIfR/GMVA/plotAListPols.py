@@ -47,7 +47,7 @@ def getAlistData(alistname, refStation, remStation=None, verbose=True, relabelLi
 
         # Convert afiob timestamp from seconds-since-1980 into unix seconds-since-1970
         time_tag_tunix = frec.time_tag + 315532800
-        T = datetime.datetime.utcfromtimestamp(time_tag_tunix)
+        T = datetime.datetime.fromtimestamp(time_tag_tunix, datetime.UTC)
 
         # Antennas of baseline, ref.ant. always first
         ant1 = refStation

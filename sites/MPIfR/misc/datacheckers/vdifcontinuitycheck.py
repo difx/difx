@@ -186,7 +186,7 @@ while not(done):
 		if (len(th_sec.values()) > 1):
 			# All threads at same second? Give a frame-shift report
 			firsttID = min(th_byteoffsets.keys())
-			if (th_sec.values().count(th_sec[firsttID]) == len(th_sec.values())):
+			if (list(th_sec.values()).count(th_sec[firsttID]) == len(th_sec.values())):
 				firstoffset = th_byteoffsets[firsttID]
 				offsets_report = 'Threads alignment       :  '
 				for ttid in th_byteoffsets:

@@ -46,9 +46,9 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, phaseRateH
 
 	# Open file
 	try:
-		m5file = m5lib.new_mark5_stream_file(fn, ctypes.c_longlong(offset))
-		m5fmt  = m5lib.new_mark5_format_generic_from_string(fmt)
-		ms     = m5lib.new_mark5_stream_absorb(m5file, m5fmt)
+		m5file = m5lib.mark5access.new_mark5_stream_file(bytes(fn, 'utf-8'), ctypes.c_longlong(offset))
+		m5fmt  = m5lib.mark5access.new_mark5_format_generic_from_string(bytes(fmt, 'utf-8'))
+		ms     = m5lib.mark5access.new_mark5_stream_absorb(m5file, m5fmt)
 		dms    = ms.contents
 	except:
 		print ('Error: problem opening or decoding %s\n' % (fn))
@@ -59,8 +59,8 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, phaseRateH
 	if_data = ctypes.cast(pdata[if_nr-1], ctypes.POINTER(ctypes.c_float*Ldft))
 
 	# Derived settings
-	Lnyq  = numpy.floor(Ldft/2 - 1)
-	nint  = numpy.round(float(dms.samprate)*Tint_sec/float(Ldft))
+	Lnyq  = int(numpy.floor(Ldft/2 - 1))
+	nint  = int(numpy.round(float(dms.samprate)*Tint_sec/float(Ldft)))
 	Tint  = float(nint*Ldft)/float(dms.samprate)
 	pcbin = Ldft*float(tonefreq_Hz)/float(dms.samprate)
 	drift_phase0 = 0
@@ -79,6 +79,7 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, phaseRateH
 	if (pcbin != int(pcbin)):
 		print ('Error: tone bin is not an integer (bin=%f). Adjust Ldft or frequency.' % (pcbin))
 		return 1
+	pcbin = int(pcbin)
 
 	# Spectral data
 	winf  = numpy.kaiser(Ldft, 7.0)                      # Kaiser window function
@@ -107,7 +108,7 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, phaseRateH
 	while True:
 
 		# Get next full slice of data
-		rc = m5lib.mark5_stream_decode(ms, Ldft, pdata)
+		rc = m5lib.mark5access.mark5_stream_decode(ms, Ldft, pdata)
 		if (rc < 0):
 			print ('\n<EOF> status=%d' % (rc))
 			return 0
@@ -133,7 +134,7 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, phaseRateH
 
 		# Report the result at end of each averaging period
 		iter = iter + 1
-		print ('%d/%d  \r' % (iter, nint)), 
+		print ('%d/%d  \r' % (iter, nint), end='')
 		if (iter % nint)==0:
 
 			# Timestamp at mid-point of integration
@@ -224,7 +225,7 @@ def main(argv=sys.argv):
 
 	fin   = argv[0]
 	fmt   = argv[1]
-	fout  = open(argv[2], 'wb', 1)
+	fout  = open(argv[2], 'w', 1)
 	if_nr = int(argv[3])
 	Tint  = float(argv[4])
 	tfreq = float(argv[5])

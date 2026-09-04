@@ -58,7 +58,7 @@ while not len(nextheader) == 0:
     seconds   = nextheader[2]
     freqindex = nextheader[5]
     polpair   = nextheader[6]
-    nchan     = freqs[freqindex].numchan/freqs[freqindex].specavg
+    nchan     = freqs[freqindex].numchan//freqs[freqindex].specavg
     ant1      = baseline % 256
     ant2      = (baseline-ant1)/256
     ant1name  = telescopes[ant1-1].name

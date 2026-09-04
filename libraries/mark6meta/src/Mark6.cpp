@@ -200,7 +200,7 @@ void Mark6::modInit (int slot, string vsn)
     stringstream ss;
     char message[64]; 
 
-    clog  << "Starting modinit of module " << vsn << " in slot " << slot  << endl;
+    //cout << "Starting modinit" << endl;
     //cout << "Number of slots: " << numSlots_m << endl;
 
     if ((slot < 0) || (slot > numSlots_m))
@@ -447,7 +447,6 @@ void Mark6::manageDeviceChange()
     vector<Mark6DiskDevice> tempRemoveDevices;
     Mark6DiskDevice *disk;
     
-   // cout << "Entered Mark6::manageDeviceChange" << endl;
     moduleChange_m = false;
 
     // new devices have been found
@@ -478,13 +477,13 @@ void Mark6::manageDeviceChange()
             try {
                 // mount both partitions
                 tempDevices[i].mountDisk(mountRootData_m, mountRootMeta_m, false);
+                //cout << "Mounting device" << endl;
 
                 // read the meta information
                 tempDevices[i].parseMeta();
 
             } catch (exception& e) {
                 // log the exception and go on (needed when dealing with unitialized modules)
-                //cout << e.what() << endl;
                 clog << e.what() << endl;
             }
 
@@ -600,7 +599,6 @@ void Mark6::manageDeviceChange()
             
         }        
     }    
-    //cout << "Leaving Mark6::manageDeviceChange" << endl;
 }
 
 /**
@@ -953,6 +951,12 @@ Mark6DiskDevice Mark6::newDeviceFromUdev(udev_device *dev)
     const char *sasaddress = udev_device_get_sysattr_value(parent,"sas_address");
     const char *serial = udev_device_get_property_value(dev,"ID_SERIAL_SHORT");
     const char *idSasPath = udev_device_get_property_value(dev, "ID_SAS_PATH");
+    const char *idPath = udev_device_get_property_value(dev, "ID_PATH");
+
+    // RHEL8 removed ID_SAS_PATH, use ID_PATH instead and allow for both cases
+    if (idSasPath == NULL && idPath != NULL){
+        idSasPath = idPath;
+    }
 
     string driver = "";
 
@@ -961,7 +965,7 @@ Mark6DiskDevice Mark6::newDeviceFromUdev(udev_device *dev)
         string devName = string(sysname);
         Mark6DiskDevice disk(devName);
 
-        //cout << "HR: " << devpath << endl;
+        //cout << "debug: " << devpath << endl;
         if (devpath != NULL)
         {
             int controllerId = parseControllerId(string(devpath));
@@ -973,20 +977,33 @@ Mark6DiskDevice Mark6::newDeviceFromUdev(udev_device *dev)
 
         }
   
-        //determine disk id
+        //determine disk id (= physical position on bus)
+        // older kernels use ID_SAS_PATH to encode the id
+        // in newer kernel versions ID_SAS_PATH does not exist anymore however
+        // the physical id is encoded in ID_PATH
         if (idSasPath != NULL)
         {
+            //cout << "debug: idSasPath = " << idSasPath << endl; 
             disk.setDiskId(parsePhyId(string(idSasPath)));
+        }
+        else if (idPath != NULL)
+        {
+            //cout << "debug: idPath = " << idPath << endl; 
+            disk.setDiskId(parsePhyId(string(idPath)));
         }
 
         //determine sas address
         if (sasaddress != NULL)
         {
+            //cout << "debug: idSasAddress = " << sasaddress << endl; 
             disk.setSasAddress(sasaddress);
         }
         //determine disk serial id
         if (serial != NULL)
+        {
+            //cout << "debug: serial = " << serial << endl;
             disk.setSerial(string(serial));
+        }
 
         return(disk);
 
@@ -1308,17 +1325,19 @@ int Mark6::enumerateDevices()
 
     udev_enumerate_unref(enumerate);
 
-    //cout << "Found devices: " << devCount << endl;
     return(devCount);
     
 }
 
+/**
+* Parse the physical disk id from the ID_PATH or ID_SAS_PATH udev property
+**/
 long Mark6::parsePhyId(std::string sasPath)
 {
     long diskId = -1;
     string phyId = "";
 
-    //cout << "ID_SAS_PATH: " << sasPath << endl;
+    //cout << "debug: ID_SAS_PATH: " << sasPath << endl;
 
     std::size_t found = sasPath.find("phy");
     if (found!=std::string::npos)

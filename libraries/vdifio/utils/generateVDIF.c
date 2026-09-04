@@ -207,7 +207,7 @@ int main (int argc, char * const argv[]) {
   
   /* Read command line options */
   while (1) {
-    opt = getopt_long_only(argc, argv, "s:w:C:d:D:m:M:y:t:F:l:a:A:T:2:x:B:b:cNnZLhp:r:", options, NULL);
+    opt = getopt_long_only(argc, argv, "s:w:C:d:D:m:M:y:t:F:l:a:A:T:2:x:B:b:cNnZLhp:r:X:Y:", options, NULL);
     if (opt==EOF) break;
     
 #define CASEINT(ch,var)                                     \
@@ -376,7 +376,7 @@ int main (int argc, char * const argv[]) {
     framesize -=8;
     if (framesize <= 0) {
       printf("Could not select valid framesize. Aborting\n");
-      printf("  nbit=%d, nchan=%d, iscomplex=%d, bandwidth=%d, completesample=%d bits\n", 
+      printf("  nbit=%d, nchan=%d, iscomplex=%d, bandwidth=%.1f, completesample=%d bits\n", 
 	     nbits, nchan, iscomplex, bandwidth, completesample);
       exit(1);
     }
@@ -739,6 +739,8 @@ int main (int argc, char * const argv[]) {
     ippsFree(pSpec);
     ippsFree(pcSpec);
   }
+  free(mean);
+  free(stdDev);  
   return(0);
 }
   
@@ -913,7 +915,7 @@ int pack2bitNchan(Ipp32f **in, int nchan, int off, Ipp8u *out, float mean, float
   return 0;
 }
 
-inline Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
+static inline Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
   x *= scale;
   if (x>127) // Clip
     x = 127;
@@ -922,7 +924,7 @@ inline Ipp8s scaleclip(Ipp32f x, Ipp32f scale) {
   return lrintf(x);
 }
 
-inline Ipp16s scaleclip16(Ipp32f x, Ipp32f scale) {
+static inline Ipp16s scaleclip16(Ipp32f x, Ipp32f scale) {
   x *= scale;
   if (x>IPP_MAX_16S) // Clip  
     x = IPP_MAX_16S;

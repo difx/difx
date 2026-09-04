@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 # NB: using Python2 because the extremely convenient JIVE 'vex.py' module utilized
 # here is based on MultiDict+lex+yacc and is not readily portable to python3 :-(
 '''
@@ -28,6 +28,7 @@ import math, fractions, os, re, sys
 import vex  # same as utilized by autozooms module
 
 try:
+	import numpy as np
 	import matplotlib.cm as colormaps
 	import matplotlib.pyplot as plt
 	import matplotlib.patches as patches
@@ -208,7 +209,7 @@ class ZoomFreqs:
 		f.close()
 
 		lines = [line.split('#')[0].strip() for line in lines]
-		lines = [re.sub('\s+',' ',line).strip() for line in lines]
+		lines = [re.sub(r'\s+',' ',line).strip() for line in lines]
 		lines = [line for line in lines if len(line)>0]
 		n = 0
 
@@ -271,7 +272,7 @@ class OutputbandFreqs:
 		f.close()
 
 		lines = [line.split('#')[0].strip() for line in lines]
-		lines = [re.sub('\s+',' ',line).strip() for line in lines]
+		lines = [re.sub(r'\s+',' ',line).strip() for line in lines]
 		lines = [line for line in lines if len(line)>0]
 		print('OutputbandFreqs::loadV2D')
 		print(lines)
@@ -319,7 +320,8 @@ class Charting:
 		a = 0.9 + 0.1*(self.wedgecount % 2)
 		self.wedgecount += 1
 
-		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color, alpha=a))
+		# ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color, alpha=a))
+		ax.add_patch(patches.Polygon(xy=np.column_stack([x,y]), fill=True, edgecolor='black', facecolor=color, alpha=a))
 
 		if channelID:
 			ax.text(channel.flow + bw/4, yy-height/4, str(channelID), fontsize=10)
@@ -334,7 +336,8 @@ class Charting:
 		a = 0.3 + 0.1*(self.zoombarcount % 2)
 		self.zoombarcount += 1
 
-		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='white', facecolor=color, alpha=a))
+		#ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='white', facecolor=color, alpha=a))
+		ax.add_patch(patches.Polygon(xy=np.column_stack([x,y]), fill=True, edgecolor='white', facecolor=color, alpha=a))
 
 
 	def plotOutputbandBar(self, ax, ymin, ymax, channel, color=[0.0/255,152.0/255,143.0/255]):
@@ -346,7 +349,8 @@ class Charting:
 		a = 0.1 + 0.1*(self.obbarcount % 2)
 		self.obbarcount += 1
 
-		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color, alpha=a))
+		#ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color, alpha=a))
+		ax.add_patch(patches.Polygon(xy=np.column_stack([x,y]), fill=True, edgecolor='black', facecolor=color, alpha=a))
 
 
 	def visualize(self, vexChannels, zoomChannels=None, outputBands=None, fqNameSubset=None):
@@ -405,7 +409,7 @@ class Charting:
 			lowest_ch_freq = 1e99
 			for channel_nr in range(0,len(channels)):
 				channel = channels[channel_nr]
-				self.plotFreqchannelWedge(ax, ylevel, wedgeheight, channel_nr, channel, color=cmap(allFreqs.index(freq)))
+				self.plotFreqchannelWedge(ax, ylevel, wedgeheight, channel_nr, channel, color=cmap(list(allFreqs).index(freq)))
 				lowest_ch_freq = min(lowest_ch_freq, channel.flow)
 			ax.text(lowest_ch_freq, ylevel+1.10*wedgeheight/2, 'VEX ' + str(freq), fontsize=10, fontweight='bold')
 

@@ -98,6 +98,9 @@ def parseOptions():
     action.add_argument('-L', '--labels', dest='labels',
         action='store_true', default=False,
         help='provide a summary list of proj/targ/class groups and label')
+    action.add_argument('-Y', '--mixedmode', dest='mixedmode',
+        action='store_true', default=False,
+        help='provide a list of proj/targ/class jsgrin jobs with syntax for mixed-mode packaging')
     action.add_argument('-B', '--blprods', dest='blprods',
         action='store_true', default=False,
         help='provide a report on baseline-pol channel products')
@@ -692,7 +695,7 @@ def doGroups(o, doLabels):
         elif proj != 'sgra' and targ == 'SGRA':                  clss = 'eht'
         else:                                                    clss = 'cal'
         ans.add(':'.join([proj,targ,clss]))
-    if doLabels:
+    if doLabels and not o.mixedmode:
         #print 'false && { # start with a short job'
         last='zippo'
         print('# The tests with exit are a reminder to make adjustments above')
@@ -707,6 +710,22 @@ def doGroups(o, doLabels):
             exprt=('  export proj=%s targ=%s class=%s' % tuple(a.split(':')))
             print('%-54s    label=%s-%s' % (exprt,proj,targ))
             print(('  nohup $ehtc/ehtc-jsgrind.sh < /dev/null ' +
+                '> $label-$subv.log 2>&1' ))
+            last = proj
+        print('}')
+    elif doLabels and o.mixedmode:
+        last='zippo'
+        for a in sorted(list(ans)):
+            proj,targ,clss = a.split(':')
+            if proj != last and last != 'zippo':
+                print('}')
+            if proj != last:
+                #print('[ -z "$QA2_' + proj + '" ] && echo QA2 error && exit 1')
+                print('false && {')
+                print('  echo processing ' + proj + ' job block.')
+            exprt=('  export proj=%s targ=%s class=%s' % tuple(a.split(':')))
+            print('%-54s    label=%s-%s' % (exprt,proj,targ))
+            print(('  nohup $ehtc/ehtc-jsgrind.sh false false true ' +
                 '> $label-$subv.log 2>&1' ))
             last = proj
         print('}')

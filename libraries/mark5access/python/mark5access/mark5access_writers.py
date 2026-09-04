@@ -33,7 +33,7 @@ class VDIFEncapsulator:
 		self.__init__()
 
 		## Parse the mark5access-like format string
-		fmt = re.split('[\_|-]+', format)
+		fmt = re.split(r'[\_|-]+', format)
 		(self.payloadbytes,Rmbps,nch,nbit) = [int(x) for x in fmt[1:]]
 
 		## Check the data rate
