@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2025 by Walter Brisken                                  *
+ *   Copyright (C) 2026 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,8 +27,8 @@
 #include "testvex.h"
 
 const char program[] = "vex2v2d";
-const char version[] = "0.4";
-const char verdate[] = "20250506";
+const char version[] = "0.5";
+const char verdate[] = "20260904";
 const char author[] = "Walter Brisken";
 
 const double defaultTInt = 2.0;		// [sec]
@@ -85,10 +85,6 @@ const char *getDatastreamMachine(const std::string &ant)
 	{
 		return "swc002";
 	}
-	else if(ant == "GB")
-	{
-		return "swc011";
-	}
 	else if(ant == "HN")
 	{
 		return "swc003";
@@ -123,7 +119,7 @@ const char *getDatastreamMachine(const std::string &ant)
 	}
 	else
 	{
-		return "swc020";
+		return "swc000";
 	}
 }
 
@@ -184,7 +180,7 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 	fprintf(out, "\n\n");
 	if(doMachines)
 	{
-		fprintf(out, "machines = swc000, swc011, swc012, swc013, swc014, swc015, swc016, swc017, swc018, swc019, swc020\n");
+		fprintf(out, "machines = swc000, swc001, swc002, swc003, swc004, swc005, swc006, swc007, swc008, swc009, swc010\n");
 		fprintf(out, "nCore = 10\n");
 		fprintf(out, "nThread = 4\n\n");
 	}
