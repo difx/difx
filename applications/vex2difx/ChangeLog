@@ -2,6 +2,7 @@ Version 3.1.1
 -------------
 * Reduce build warnings using g++ 15.2.1.
 * fix vexpeek segfault if listing modules but none present
+* vex2v2d: work toward making this generic and not VLBA specific
 
 Version 3.1.0
 -------------
