@@ -156,6 +156,7 @@ public:
 	bool removeAntenna(const std::string name);	// Note: cannot pass name as reference!
 	void setAntennaPolConvert(const std::string &name, bool doConvert);
 	void setAntennaDifxName(const std::string &name, const std::string &difxName);
+	void setAntennaVgosComplexFlip(const std::string &name, bool vgosComplexFlip);
 
 	size_t nMode() const { return modes.size(); }
 	int getModeIdByDefName(const std::string &defName) const;

@@ -255,6 +255,7 @@ static DifxAntenna *makeDifxAntennas(const Job &J, const VexData *V, int *n)
 		A[i].offset[0] = ant->axisOffset;
 		A[i].offset[1] = 0.0;
 		A[i].offset[2] = 0.0;
+		A[i].vgosComplexFlip = ant->vgosComplexFlip ? 1 : 0;
 	}
 
 	return A;

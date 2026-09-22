@@ -2042,6 +2042,26 @@ void Configuration::processTelescopeTable(istream * input)
       getinputline(input, &line, "CLOCK COEFF ", i);
       telescopetable[i].clockpoly[j] = atof(line.c_str());
     }
+
+    // PARSE VGOS COMPLEX FLIP FLAG
+    // vgoscomplexflip has a default value of false this key may not be present in the input file
+    telescopetable[i].vgoscomplexflip = false;
+   
+    ostringstream keystream;
+    keystream << "TELESCOPE " << i << " VGOS COMPLEX FLIP";
+    
+ 
+    if(getinputline_opt(input, &line, keystream.str()))
+    {
+      if(line == "TRUE" || line == "true" || line == "T" || line == "t" || line == "1")
+      {
+        telescopetable[i].vgoscomplexflip = true;
+      }
+      //std::cout << "VGOS COMPLEX FLIP for telescope " << i << " (" << telescopetable[i].name << ") is set to " << (telescopetable[i].vgoscomplexflip ? "TRUE" : "FALSE") << std::endl;
+      //std::exit(0);
+    }
+    // END PARSE VGOS COMPLEX FLIP FLAG
+
   }
 }
 

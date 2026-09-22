@@ -51,6 +51,12 @@ static float complex complex_lut1bit[256][4];
 static float complex complex_lut2bit[256][2];
 static float complex complex_lut4bit[256];
 
+
+/* Pre complex conjugated lookup tables for complex LSB VGOS hack */
+static float complex complex_lut1bit_conj[256][4];
+static float complex complex_lut2bit_conj[256][2];
+static float complex complex_lut4bit_conj[256];
+
 /* for use in counting high states; 2-bit support only at this time */
 static unsigned char countlut2bit[256][4];
 
@@ -127,6 +133,8 @@ static void initluts()
 		         l =  (b>> (2*i)) & 0x1;
 			 li = (b>> (2*i+1)) & 0x1;
 			 complex_lut1bit[b][i] =  lut2level[l] + lut2level[li]*I;
+			 /* Conjugated equivalent for VGOS Hack */
+			 complex_lut1bit_conj[b][i] = lut2level[l] - lut2level[li]*I;
 		}
 
 		/* 2 bit real, 2 bit imaginary */
@@ -135,12 +143,16 @@ static void initluts()
 		         l =  (b>> (4*i)) & 0x3;
 			 li = (b>> (4*i+2)) & 0x3;
 			 complex_lut2bit[b][i] =  lut4level[l] + lut4level[li]*I;
+			 /* Conjugated equivalent for VGOS Hack */
+			 complex_lut2bit_conj[b][i] = lut4level[l] - lut4level[li]*I;
 		}
 
 		/* 4 bit real, 4 bit imaginary */
 		l =  b & 0xF;
 		li = (b>>4) & 0xF;
 		complex_lut4bit[b] =  lut16level[l] + lut16level[li]*I;
+		/* Conjugated equivalent for VGOS Hack */
+		complex_lut4bit_conj[b] = lut16level[l] - lut16level[li]*I;
 	}
 }
 
@@ -3159,6 +3171,8 @@ static int vdif_complex_decode_1channel_1bit_decimation1(struct mark5_stream *ms
 
 	buf = ms->payload;
 	i = ms->readposition;
+	/* Select the lookup table based on whether the VGOS hack is enabled or not */
+	const float complex (*selected_lut)[4] = ms->invert_imaginary ? complex_lut1bit_conj : complex_lut1bit;
 
 	for(o = 0; o < nsamp; ++o)
 	{
@@ -3169,7 +3183,7 @@ static int vdif_complex_decode_1channel_1bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp = complex_lut1bit[buf[i]];
+			fcp = selected_lut[buf[i]];
 		}
 
 		++i;
@@ -3205,6 +3219,9 @@ static int vdif_complex_decode_2channel_1bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table based on whether the VGOS hack is enabled or not */
+	const float complex (*selected_lut)[4] = ms->invert_imaginary ? complex_lut1bit_conj : complex_lut1bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3217,7 +3234,7 @@ static int vdif_complex_decode_2channel_1bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp = complex_lut1bit[buf[i]];
+			fcp = selected_lut[buf[i]];
 		}
 
 		++i;
@@ -3251,6 +3268,9 @@ static int vdif_complex_decode_4channel_1bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table based on whether the VGOS hack is enabled or not */
+	const float complex (*selected_lut)[4] = ms->invert_imaginary ? complex_lut1bit_conj : complex_lut1bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3263,7 +3283,7 @@ static int vdif_complex_decode_4channel_1bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp = complex_lut1bit[buf[i]];
+			fcp = selected_lut[buf[i]];
 		}
 
 		++i;
@@ -3296,6 +3316,9 @@ static int vdif_complex_decode_8channel_1bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table based on whether the VGOS hack is enabled or not */
+	const float complex (*selected_lut)[4] = ms->invert_imaginary ? complex_lut1bit_conj : complex_lut1bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3309,9 +3332,9 @@ static int vdif_complex_decode_8channel_1bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut1bit[buf[i]];
+			fcp0 = selected_lut[buf[i]];
 			++i;
-			fcp1 = complex_lut1bit[buf[i]];
+			fcp1 = selected_lut[buf[i]];
 			++i;
 		}
 
@@ -3347,6 +3370,9 @@ static int vdif_complex_decode_16channel_1bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+    /* Select the lookup table based on whether the VGOS hack is enabled or not */
+	const float complex (*selected_lut)[4] = ms->invert_imaginary ? complex_lut1bit_conj : complex_lut1bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3360,13 +3386,13 @@ static int vdif_complex_decode_16channel_1bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut1bit[buf[i]];
+			fcp0 = selected_lut[buf[i]];
 			++i;
-			fcp1 = complex_lut1bit[buf[i]];
+			fcp1 = selected_lut[buf[i]];
 			++i;
-			fcp2 = complex_lut1bit[buf[i]];
+			fcp2 = selected_lut[buf[i]];
 			++i;
-			fcp3 = complex_lut1bit[buf[i]];
+			fcp3 = selected_lut[buf[i]];
 			++i;
 		}
 
@@ -3410,6 +3436,9 @@ static int vdif_complex_decode_1channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3422,7 +3451,7 @@ static int vdif_complex_decode_1channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp = complex_lut2bit[buf[i]];
+			fcp = selected_lut[buf[i]];
 		}
 
 		++i;
@@ -3454,6 +3483,9 @@ static int vdif_complex_decode_2channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3466,7 +3498,7 @@ static int vdif_complex_decode_2channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp = complex_lut2bit[buf[i]];
+			fcp = selected_lut[buf[i]];
 		}
 
 		i++;
@@ -3497,6 +3529,9 @@ static int vdif_complex_decode_3channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3510,8 +3545,8 @@ static int vdif_complex_decode_3channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
 		}
 
 		data[0][o] = fcp0[0];
@@ -3541,6 +3576,9 @@ static int vdif_complex_decode_4channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3554,8 +3592,8 @@ static int vdif_complex_decode_4channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
 		}
 
 		data[0][o] = fcp0[0];
@@ -3586,6 +3624,9 @@ static int vdif_complex_decode_5channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3599,9 +3640,9 @@ static int vdif_complex_decode_5channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -3635,6 +3676,9 @@ static int vdif_complex_decode_6channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3648,9 +3692,9 @@ static int vdif_complex_decode_6channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -3684,6 +3728,9 @@ static int vdif_complex_decode_7channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+    /* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3697,10 +3744,10 @@ static int vdif_complex_decode_7channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
 		}
 
 		data[0][o] = fcp0[0];
@@ -3734,6 +3781,9 @@ static int vdif_complex_decode_8channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3747,10 +3797,10 @@ static int vdif_complex_decode_8channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
 		}
 
 		data[0][o] = fcp0[0];
@@ -3785,6 +3835,9 @@ static int vdif_complex_decode_9channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3798,11 +3851,11 @@ static int vdif_complex_decode_9channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i]];
 			i += 4;
 		}
 
@@ -3839,6 +3892,9 @@ static int vdif_complex_decode_10channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3852,11 +3908,11 @@ static int vdif_complex_decode_10channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i]];
 			i += 4;
 		}
 
@@ -3894,6 +3950,9 @@ static int vdif_complex_decode_11channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3907,12 +3966,12 @@ static int vdif_complex_decode_11channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i++]];
-			fcp5 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i++]];
+			fcp5 = selected_lut[buf[i]];
 			i += 3;
 		}
 
@@ -3951,6 +4010,9 @@ static int vdif_complex_decode_12channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3964,12 +4026,12 @@ static int vdif_complex_decode_12channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i++]];
-			fcp5 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i++]];
+			fcp5 = selected_lut[buf[i]];
 			i += 3;
 		}
 
@@ -4009,6 +4071,9 @@ static int vdif_complex_decode_13channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4022,13 +4087,13 @@ static int vdif_complex_decode_13channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i++]];
-			fcp5 = complex_lut2bit[buf[i++]];
-			fcp6 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i++]];
+			fcp5 = selected_lut[buf[i++]];
+			fcp6 = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -4069,6 +4134,9 @@ static int vdif_complex_decode_14channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4082,13 +4150,13 @@ static int vdif_complex_decode_14channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i++]];
-			fcp5 = complex_lut2bit[buf[i++]];
-			fcp6 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i++]];
+			fcp5 = selected_lut[buf[i++]];
+			fcp6 = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -4130,6 +4198,9 @@ static int vdif_complex_decode_15channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4143,14 +4214,14 @@ static int vdif_complex_decode_15channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i++]];
-			fcp5 = complex_lut2bit[buf[i++]];
-			fcp6 = complex_lut2bit[buf[i++]];
-			fcp7 = complex_lut2bit[buf[i++]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i++]];
+			fcp5 = selected_lut[buf[i++]];
+			fcp6 = selected_lut[buf[i++]];
+			fcp7 = selected_lut[buf[i++]];
 		}
 
 		data[0][o] = fcp0[0];
@@ -4192,6 +4263,9 @@ static int vdif_complex_decode_16channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4205,14 +4279,14 @@ static int vdif_complex_decode_16channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i++]];
-			fcp5 = complex_lut2bit[buf[i++]];
-			fcp6 = complex_lut2bit[buf[i++]];
-			fcp7 = complex_lut2bit[buf[i++]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i++]];
+			fcp5 = selected_lut[buf[i++]];
+			fcp6 = selected_lut[buf[i++]];
+			fcp7 = selected_lut[buf[i++]];
 		}
 
 		data[0][o] = fcp0[0];
@@ -4255,6 +4329,9 @@ static int vdif_complex_decode_32channel_2bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4270,7 +4347,7 @@ static int vdif_complex_decode_32channel_2bit_decimation1(struct mark5_stream *m
 		{
 		  for (j=0; j<16; j++) 
 		  {
-		        fcp[j] = complex_lut2bit[buf[i]]; 
+		        fcp[j] = selected_lut[buf[i]]; 
 			i++;
 		  }
 		}
@@ -4306,6 +4383,9 @@ static int vdif_complex_decode_64channel_2bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4321,7 +4401,7 @@ static int vdif_complex_decode_64channel_2bit_decimation1(struct mark5_stream *m
 		{
 		  for (j=0; j<32; j++) 
 		  {
-		        fcp[j] = complex_lut2bit[buf[i]]; 
+		        fcp[j] = selected_lut[buf[i]]; 
 			i++;
 		  }
 		}
@@ -4356,6 +4436,9 @@ static int vdif_complex_decode_1channel_4bit_decimation1(struct mark5_stream *ms
 	const unsigned char *buf;
 	int o, i;
 	int nblank = 0;
+   
+    /* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
 
 	buf = ms->payload;
 	i = ms->readposition;
@@ -4369,7 +4452,7 @@ static int vdif_complex_decode_1channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i]];
 		}
 
 		++i;
@@ -4396,6 +4479,9 @@ static int vdif_complex_decode_2channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4410,8 +4496,8 @@ static int vdif_complex_decode_2channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
 		}
 
 		if(i >= ms->databytes)
@@ -4436,6 +4522,9 @@ static int vdif_complex_decode_3channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4451,9 +4540,9 @@ static int vdif_complex_decode_3channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -4479,6 +4568,9 @@ static int vdif_complex_decode_4channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4495,10 +4587,10 @@ static int vdif_complex_decode_4channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
 		}
 
 		if(i >= ms->databytes)
@@ -4523,6 +4615,9 @@ static int vdif_complex_decode_5channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4540,11 +4635,11 @@ static int vdif_complex_decode_5channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i]];
 			i += 4;
 		}
 
@@ -4570,6 +4665,9 @@ static int vdif_complex_decode_6channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4588,12 +4686,12 @@ static int vdif_complex_decode_6channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i]];
 			i += 3;
 		}
 
@@ -4619,6 +4717,9 @@ static int vdif_complex_decode_7channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4638,13 +4739,13 @@ static int vdif_complex_decode_7channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -4670,6 +4771,9 @@ static int vdif_complex_decode_8channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4690,14 +4794,14 @@ static int vdif_complex_decode_8channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
 		}
 
 		if(i >= ms->databytes)
@@ -4722,6 +4826,9 @@ static int vdif_complex_decode_9channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4743,15 +4850,15 @@ static int vdif_complex_decode_9channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i]];
 			i += 8;
 		}
 
@@ -4777,6 +4884,9 @@ static int vdif_complex_decode_10channel_4bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4799,16 +4909,16 @@ static int vdif_complex_decode_10channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i]];
 			i += 7;
 		}
 
@@ -4834,6 +4944,9 @@ static int vdif_complex_decode_11channel_4bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4857,17 +4970,17 @@ static int vdif_complex_decode_11channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i++]];
-			data[10][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i++]];
+			data[10][o] = selected_lut[buf[i]];
 			i += 6;
 		}
 
@@ -4893,6 +5006,9 @@ static int vdif_complex_decode_12channel_4bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4917,18 +5033,18 @@ static int vdif_complex_decode_12channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i++]];
-			data[10][o] = complex_lut4bit[buf[i++]];
-			data[11][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i++]];
+			data[10][o] = selected_lut[buf[i++]];
+			data[11][o] = selected_lut[buf[i]];
 			i += 5;
 		}
 
@@ -4953,6 +5069,9 @@ static int vdif_complex_decode_13channel_4bit_decimation1(struct mark5_stream *m
 	const unsigned char *buf;
 	int o, i;
 	int nblank = 0;
+
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
 
 	buf = ms->payload;
 	i = ms->readposition;
@@ -4979,19 +5098,19 @@ static int vdif_complex_decode_13channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i++]];
-			data[10][o] = complex_lut4bit[buf[i++]];
-			data[11][o] = complex_lut4bit[buf[i++]];
-			data[12][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i++]];
+			data[10][o] = selected_lut[buf[i++]];
+			data[11][o] = selected_lut[buf[i++]];
+			data[12][o] = selected_lut[buf[i]];
 			i += 4;
 		}
 
@@ -5016,6 +5135,9 @@ static int vdif_complex_decode_14channel_4bit_decimation1(struct mark5_stream *m
 	const unsigned char *buf;
 	int o, i;
 	int nblank = 0;
+
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
 
 	buf = ms->payload;
 	i = ms->readposition;
@@ -5043,20 +5165,20 @@ static int vdif_complex_decode_14channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i++]];
-			data[10][o] = complex_lut4bit[buf[i++]];
-			data[11][o] = complex_lut4bit[buf[i++]];
-			data[12][o] = complex_lut4bit[buf[i++]];
-			data[13][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i++]];
+			data[10][o] = selected_lut[buf[i++]];
+			data[11][o] = selected_lut[buf[i++]];
+			data[12][o] = selected_lut[buf[i++]];
+			data[13][o] = selected_lut[buf[i]];
 			i += 3;
 		}
 
@@ -5081,6 +5203,9 @@ static int vdif_complex_decode_15channel_4bit_decimation1(struct mark5_stream *m
 	const unsigned char *buf;
 	int o, i;
 	int nblank = 0;
+
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
 
 	buf = ms->payload;
 	i = ms->readposition;
@@ -5109,21 +5234,21 @@ static int vdif_complex_decode_15channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i++]];
-			data[10][o] = complex_lut4bit[buf[i++]];
-			data[11][o] = complex_lut4bit[buf[i++]];
-			data[12][o] = complex_lut4bit[buf[i++]];
-			data[13][o] = complex_lut4bit[buf[i++]];
-			data[14][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i++]];
+			data[10][o] = selected_lut[buf[i++]];
+			data[11][o] = selected_lut[buf[i++]];
+			data[12][o] = selected_lut[buf[i++]];
+			data[13][o] = selected_lut[buf[i++]];
+			data[14][o] = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -5148,6 +5273,9 @@ static int vdif_complex_decode_16channel_4bit_decimation1(struct mark5_stream *m
 	const unsigned char *buf;
 	int o, i;
 	int nblank = 0;
+
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
 
 	buf = ms->payload;
 	i = ms->readposition;
@@ -5177,22 +5305,22 @@ static int vdif_complex_decode_16channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i++]];
-			data[10][o] = complex_lut4bit[buf[i++]];
-			data[11][o] = complex_lut4bit[buf[i++]];
-			data[12][o] = complex_lut4bit[buf[i++]];
-			data[13][o] = complex_lut4bit[buf[i++]];
-			data[14][o] = complex_lut4bit[buf[i++]];
-			data[15][o] = complex_lut4bit[buf[i++]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i++]];
+			data[10][o] = selected_lut[buf[i++]];
+			data[11][o] = selected_lut[buf[i++]];
+			data[12][o] = selected_lut[buf[i++]];
+			data[13][o] = selected_lut[buf[i++]];
+			data[14][o] = selected_lut[buf[i++]];
+			data[15][o] = selected_lut[buf[i++]];
 		}
 
 		if(i >= ms->databytes)
@@ -5218,6 +5346,11 @@ static int vdif_complex_decode_1channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
+	
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5230,7 +5363,7 @@ static int vdif_complex_decode_1channel_8bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]* imag_sign *I; 
 		}
 
 		i+= 2;
@@ -5257,6 +5390,10 @@ static int vdif_complex_decode_2channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5271,9 +5408,9 @@ static int vdif_complex_decode_2channel_8bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
 		}
 
@@ -5299,6 +5436,10 @@ static int vdif_complex_decode_3channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5314,11 +5455,11 @@ static int vdif_complex_decode_3channel_8bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 4;
 		}
 
@@ -5344,6 +5485,10 @@ static int vdif_complex_decode_4channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5360,13 +5505,13 @@ static int vdif_complex_decode_4channel_8bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
 		}
 
@@ -5392,6 +5537,10 @@ static int vdif_complex_decode_5channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5409,15 +5558,15 @@ static int vdif_complex_decode_5channel_8bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 8;
 		}
 
@@ -5443,6 +5592,10 @@ static int vdif_complex_decode_6channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5461,17 +5614,17 @@ static int vdif_complex_decode_6channel_8bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[5][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[5][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 6;
 		}
 
@@ -5497,6 +5650,10 @@ static int vdif_complex_decode_7channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+    /* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5516,19 +5673,19 @@ static int vdif_complex_decode_7channel_8bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[5][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[5][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[6][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[6][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 4;
 		}
 
@@ -5554,6 +5711,10 @@ static int vdif_complex_decode_8channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5574,21 +5735,21 @@ static int vdif_complex_decode_8channel_8bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[5][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[5][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[6][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[6][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
-			data[7][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
+			data[7][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I; 
 			i += 2;
 		}
 
@@ -5614,6 +5775,10 @@ static int vdif_complex_decode_9channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i, j;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5632,7 +5797,7 @@ static int vdif_complex_decode_9channel_8bit_decimation1(struct mark5_stream *ms
 		{
 			for(j = 0; j < 9; ++j)
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
+		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I;
 				i += 2;
 			}
 			i += 14;
@@ -5660,6 +5825,10 @@ static int vdif_complex_decode_10channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5678,7 +5847,7 @@ static int vdif_complex_decode_10channel_8bit_decimation1(struct mark5_stream *m
 		{
 			for(j = 0; j < 10; ++j)
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
+		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I;
 				i += 2;
 			}
 			i += 12;
@@ -5706,6 +5875,11 @@ static int vdif_complex_decode_11channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+    /* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5724,7 +5898,7 @@ static int vdif_complex_decode_11channel_8bit_decimation1(struct mark5_stream *m
 		{
 			for(j = 0; j < 11; ++j)
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
+		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I;
 				i += 2;
 			}
 			i += 10;
@@ -5752,6 +5926,10 @@ static int vdif_complex_decode_12channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5770,7 +5948,7 @@ static int vdif_complex_decode_12channel_8bit_decimation1(struct mark5_stream *m
 		{
 			for(j = 0; j < 12; ++j)
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
+		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I;
 				i += 2;
 			}
 			i += 8;
@@ -5798,6 +5976,10 @@ static int vdif_complex_decode_13channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5816,7 +5998,7 @@ static int vdif_complex_decode_13channel_8bit_decimation1(struct mark5_stream *m
 		{
 			for(j = 0; j < 13; ++j)
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
+		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I;
 				i += 2;
 			}
 			i += 6;
@@ -5844,6 +6026,10 @@ static int vdif_complex_decode_14channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5862,7 +6048,7 @@ static int vdif_complex_decode_14channel_8bit_decimation1(struct mark5_stream *m
 		{
 			for(j = 0; j < 14; ++j)
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
+		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I;
 				i += 2;
 			}
 			i += 4;
@@ -5890,6 +6076,10 @@ static int vdif_complex_decode_15channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5908,7 +6098,7 @@ static int vdif_complex_decode_15channel_8bit_decimation1(struct mark5_stream *m
 		{
 			for(j = 0; j < 15; ++j)
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
+		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I;
 				i += 2;
 			}
 			i += 2;
@@ -5936,6 +6126,10 @@ static int vdif_complex_decode_16channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	   outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -5954,7 +6148,7 @@ static int vdif_complex_decode_16channel_8bit_decimation1(struct mark5_stream *m
 		{
 			for(j = 0; j < 16; ++j)
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
+		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*imag_sign*I;
 				i += 2;
 			}
 		}
@@ -5983,6 +6177,10 @@ static int vdif_complex_decode_1channel_16bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = (const uint16_t *)ms->payload;
 	i = ms->readposition/2;
 
@@ -5995,7 +6193,7 @@ static int vdif_complex_decode_1channel_16bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 		}
 		
 		i += 2;
@@ -6022,6 +6220,10 @@ static int vdif_complex_decode_2channel_16bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = (const uint16_t *)ms->payload;
 	i = ms->readposition/2;
 
@@ -6036,7 +6238,7 @@ static int vdif_complex_decode_2channel_16bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;
 			data[1][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
 			i += 2;
@@ -6064,6 +6266,10 @@ static int vdif_complex_decode_4channel_16bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = (const uint16_t *)ms->payload;
 	i = ms->readposition/2;
 
@@ -6080,13 +6286,13 @@ static int vdif_complex_decode_4channel_16bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;                           
-			data[1][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[1][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;                           
-			data[2][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[2][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;                           
-			data[3][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[3][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;
 		}
 
@@ -6112,6 +6318,10 @@ static int vdif_complex_decode_8channel_16bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = (const uint16_t*)ms->payload;
 	i = ms->readposition/2;
 
@@ -6132,21 +6342,21 @@ static int vdif_complex_decode_8channel_16bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;                                                           
-			data[1][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[1][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;                                                           
-			data[2][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[2][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;                                                           
-			data[3][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[3][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;                                                           
-			data[4][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[4][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;                                                           
-			data[5][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[5][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;                                                           
-			data[6][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[6][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;                                                           
-			data[7][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+			data[7][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 			i += 2;
 		}
 
@@ -6172,6 +6382,10 @@ static int vdif_complex_decode_16channel_16bit_decimation1(struct mark5_stream *
 	int o, i, j;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+
 	buf = (const uint16_t *)ms->payload;
 	i = ms->readposition/2;
 
@@ -6190,7 +6404,7 @@ static int vdif_complex_decode_16channel_16bit_decimation1(struct mark5_stream *
 		{
 			for(j = 0; j < 16; ++j)
 			{
-				data[j][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+				data[j][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*imag_sign*I/8.0;
 				i += 2;
 			}
 		}
@@ -6219,6 +6433,11 @@ static int vdif_complex_decode_1channel_32bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Calculate the imaginary sign base on whether the complex VGOS Hack is engaged or not 
+	outside of the loop */
+	const float imag_sign = ms->invert_imaginary ? -1.0f : 1.0f;
+	
+
 	buf = (const uint32_t *)ms->payload;
 	i = ms->readposition/4;
 
@@ -6231,7 +6450,7 @@ static int vdif_complex_decode_1channel_32bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = (le32toh(buf[i])/8.0 - (1<<28)) + (le32toh(buf[i+1])/8.0 - (1<<28))*I;
+			data[0][o] = (le32toh(buf[i])/8.0 - (1<<28)) + (le32toh(buf[i+1])/8.0 - (1<<28))*I*imag_sign;
 		}
 
 		i += 2;

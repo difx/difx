@@ -43,6 +43,19 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
     }
     //create the mark5_stream used for unpacking
     mark5stream = new_mark5_stream( new_mark5_stream_unpacker(0), new_mark5_format_generic_from_string(formatname) );
+    
+
+
+    if(config->useVGOSComplexVDIFHack(confindex, dsindex))
+    {
+      string stName = config->getDStationName(confindex, dsindex);
+      printf("Mk5Mode::Mk5Mode : Using VGOS Complex VDIF Hack for station %s (data stream %d)\n", stName.c_str(), dsindex);
+      mark5stream->invert_imaginary = 1;
+    } else {
+      //printf("Mk5Mode::Mk5Mode : NOT using VGOS Complex VDIF Hack for stream index %d\n", dsindex);
+      mark5stream->invert_imaginary = 0;
+    }
+
     if(mark5stream == 0)
     {
       cfatal << startl << "Mk5Mode::Mk5Mode : mark5stream is null" << endl;
@@ -103,13 +116,13 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
   if(usecomplex) 
   {
     goodsamples = mark5_unpack_complex_with_offset(mark5stream, data, unpackstartsamples, (mark5_float_complex**)unpackedcomplexarrays, samplestounpack);
-    if(config->useVGOSComplexVDIFHack())
-    {
-      for(int i = 0; i < mark5stream->nchan; ++i)
-      {
-        vectorConj_cf32_I(unpackedcomplexarrays[i], samplestounpack);
-      }
-    }
+//    if(config->useVGOSComplexVDIFHack())
+//    {
+//      for(int i = 0; i < mark5stream->nchan; ++i)
+//      {
+//        vectorConj_cf32_I(unpackedcomplexarrays[i], samplestounpack);
+//      }
+//    }
   }
   else
   {
@@ -121,25 +134,9 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
     int erasedsamples = 0;
 
     mungedoffset = sampleoffset % mark5stream->samplegranularity;
-    // For complex data the erasure must be done in complex-sample units:
-    // unpackedcomplexarrays is a cast of the same memory, so indexing the
-    // float array with these (complex-sample) bounds zeroes float elements
-    // [unpacksamples+mungedoffset, samplestounpack) - i.e. the re/im of the
-    // complex sample at the MIDDLE of the FFT window (fftchannels/2) - rather
-    // than the intended beyond-window tail. That corrupted one mid-window
-    // sample per FFT for every granularity>1 complex config, while leaving
-    // the returned weight exactly 1.0 (the two erased floats were counted as
-    // two samples, cancelling the extra ones mark5access had reported).
     for(int i = 0; i < mungedoffset; i++) {
       for(int b = 0; b < mark5stream->nchan; ++b) {
-        if(usecomplex) {
-          if(unpackedcomplexarrays[b][i].re != 0.0f || unpackedcomplexarrays[b][i].im != 0.0f) {
-            unpackedcomplexarrays[b][i].re = 0.0f;
-            unpackedcomplexarrays[b][i].im = 0.0f;
-            erasedsamples++;
-          }
-        }
-        else if(unpackedarrays[b][i] != 0.0) {
+        if(unpackedarrays[b][i] != 0.0) {
           unpackedarrays[b][i] = 0.0;
           erasedsamples++;
         }
@@ -147,14 +144,7 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
     }
     for(int i = unpacksamples + mungedoffset; i < samplestounpack; i++) {
       for(int b = 0; b < mark5stream->nchan; ++b) {
-        if(usecomplex) {
-          if(unpackedcomplexarrays[b][i].re != 0.0f || unpackedcomplexarrays[b][i].im != 0.0f) {
-            unpackedcomplexarrays[b][i].re = 0.0f;
-            unpackedcomplexarrays[b][i].im = 0.0f;
-            erasedsamples++;
-          }
-        }
-        else if(unpackedarrays[b][i] != 0.0) {
+        if(unpackedarrays[b][i] != 0.0) {
           unpackedarrays[b][i] = 0.0;
           erasedsamples++;
         }

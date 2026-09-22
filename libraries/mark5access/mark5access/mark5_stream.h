@@ -114,6 +114,9 @@ struct mark5_stream
 	const unsigned char *datawindow;	/* pointer to data window */
 	int readposition;	/* index into frame of current read */
 
+    /* For Complex LSB VGOS Hack*/
+	int invert_imaginary;
+
 	/* data blanking */
 	int log2blankzonesize;
 	int blankzonestartvalid[MAXBLANKZONES];
@@ -144,6 +147,8 @@ struct mark5_stream
 	 * to satisfy the matching validate function
 	 */
 	void (*genheaders)(const struct mark5_stream *ms, int n, unsigned char *where);
+
+
 };
 
 struct mark5_stream_generic

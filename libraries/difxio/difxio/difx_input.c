@@ -1493,6 +1493,23 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D, const DifxParameter
 			r = DifxParametersfind2(ip, r, "CLOCK COEFF %d/%d", a, i);
 			D->antenna[a].clockcoeff[i] = atof(DifxParametersvalue(ip, r));
 		}
+
+		/* ==================== VGOS COMPLEX FLIP ==================== */
+		r = DifxParametersfind1(ip, 0, "TELESCOPE %d VGOS COMPLEX FLIP", a);
+		if(r >= 0)
+		{
+			const char *val = DifxParametersvalue(ip, r);
+			if(strcasecmp(val, "true") == 0 || strcmp(val, "1") == 0)
+			{
+				D->antenna[a].vgosComplexFlip = 1;
+			}
+			else
+			{
+				D->antenna[a].vgosComplexFlip = 0;
+			}
+		}
+		/* Note: If key is absent, newDifxAntennaArray already zeroed it to 0 (false) */
+		/* =========================================================================== */
 	}
 
 	return D;

@@ -99,6 +99,7 @@ public:
 	std::map<std::string, NasmythType> nasmyth;	// maps band link to nasmyth type; default to NasmythNone if not found
 
 	// Some antenna/site things that are not based on vex parameters (but could be carried as an extension)
+	bool vgosComplexFlip = false;  // VGOS specific sideband correction flag
 
 };
 
