@@ -1,7 +1,6 @@
 #! /usr/bin/python
 # coding: latin-1
 
-
 import tarfile
 import pexpect
 import os
@@ -15,7 +14,6 @@ import glob
 import shutil
 import logging
 from optparse import OptionParser
-from string import lower, strip
 from os.path import isdir
 from subprocess import Popen, PIPE
 try:
@@ -45,8 +43,10 @@ tmpDir = "tmp_difxarchive"
 logfile = ""
 tmpPath = ""
 code = ""
+options = []
 logger = None
 tmpEnv = os.environ
+
 
 def getUsage():
     
@@ -60,8 +60,9 @@ def getUsage():
         usage += "NOTE: %s requires the DIFXROOT environment to be defined.\n" % __prog__
     usage += "The program reads the database configuration and other parameters from difxdb.ini located under $DIFXROOT/conf."
 
-    
+
     return(usage)
+
 
 def exitOnError(exception):
     '''
@@ -84,7 +85,10 @@ def renewTicket(user):
     '''
     renews the kerberos ticket (needed for jobs that run for a very long time
     '''
+
     cmd = '/usr/bin/kinit -R %s@%s' % (user, krbDomain)
+    if options.verbose:
+        logger.info("Kerberos renew auth: " + str(cmd))
     kinit = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True,env=tmpEnv)
     kinit.wait()
 
@@ -103,9 +107,14 @@ def getTicket(user):
 
     kinitcmd = '/usr/bin/kinit'
     kinit_args = [ kinitcmd, '-l 48h', '-r 30d','%s@%s' % (user,krbDomain) ]
+    if options.verbose:
+        logger.info("Kerberos auth: " + str(' '.join(kinit_args)))
     kinit = Popen(kinit_args, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=tmpEnv)
     kinit.stdin.write('%s\n' % password)
     kinit.wait()
+    if options.verbose:
+        rc = kinit.read()
+        logger.info("Kerberos auth result: " + str(rc))
 
 
 def destroyTicket():
@@ -114,51 +123,51 @@ def destroyTicket():
 
 
 def readConfig():
-    
+
     if (os.getenv("DIFXROOT") == None):
         exitOnError("DIFXROOT environment must be defined.")
         #sys.exit("Error: DIFXROOT environment must be defined.")
-            
+
     configName = os.getenv("DIFXROOT") + "/conf/difxdb.ini"
-        
+
     config = DifxDbConfig(configName)
-    
+
     if not config.sectionExists("difxarchive"):
-        
+
         logger.info ("Configuration file does not contain a section for difxarchive yet. Adding a default one for you. Please edit %s and restart difxarchive." % configName)
         config.addSection("difxarchive")
         config.set('difxarchive', 'archiveserver', 'ADD_ARCHIVE_SERVER')
         config.set('difxarchive', 'defaultuser', 'ADD_DEFAULT_USER')
         config.set('difxarchive', 'archiveremotepath', 'ADD_REMOTE_PATH')
         config.set('difxarchive', 'refbackuppath', 'ADD_PATH')
-        
+
         config.writeConfig()
         exit(0)
-    
+
     return (config)
 
 
 def getTransferFileCount(source, destination, rsyncOptions=""):
-	
+
     cmd = 'rsync -az --stats --dry-run %s %s %s' % ( rsyncOptions, source, destination) 
     if options.verbose:
         logger.info("Executing: " + str(cmd))
     proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=tmpEnv)
 
     remainder = proc.communicate()[0]
-    
+
     matchTotal = re.findall(r'Number of files: (\d+)', remainder)
     if len(matchTotal) > 0:
-	totalCount = int(matchTotal[0])
+        totalCount = int(matchTotal[0])
     else:
-	exitOnError(Exception("Error parsing rsync output. Contact the developer."))
+        exitOnError(Exception("Error parsing rsync output. Contact the developer."))
 
     mn = re.findall(r'Number of.*files transferred: (\d+)', remainder)
     if len(mn) > 0:
-	fileCount = int(mn[0])
+        fileCount = int(mn[0])
     else:
-	exitOnError(Exception("Error parsing rsync output. Contact the developer."))
-    
+        exitOnError(Exception("Error parsing rsync output. Contact the developer."))
+
     if options.verbose:
         logger.info ("Number of files to be transferred: %d " % fileCount)
     
@@ -166,76 +175,76 @@ def getTransferFileCount(source, destination, rsyncOptions=""):
 
 
 def syncDir(path, user, config, fileCount):
-    
+
     server = config.get("difxarchive", "archiveserver")
     remotePath = config.get("difxarchive", "archiveremotepath")
-    
+
     logger.info( "Syncing files from %s to: %s" % (path, server))
-    
+
     cmd = 'rsync -av --no-perms --chmod=ugo=rwX --progress %s %s@%s:%s' % ( path, user, server, remotePath) 
-        
+
     proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=tmpEnv)
-    
+
     while True:
         output = proc.stdout.readline()
 
         if not output:
             break
-            
+
         if 'to-check' in output:
-            
+
              m = re.findall(r'to-check=(\d+)/(\d+)', output)
              progress = (100 * (int(m[0][1]) - int(m[0][0]))) / fileCount
              sys.stdout.write('\rDone: %s %% ' % progress)
              #sys.stdout.write('\rRemaining: %s / %s' % (m[0][0], m[0][1]) )
              sys.stdout.flush()
-             
+
              if int(m[0][0]) == 0:
                       break
-                      
+
     sys.stdout.write('\n')
     return
 
 
 def buildReferenceOptions():
-    
+
     includePattern = ["*.vex", "*.obs", "*.skd", "*.v2d", "*.input", "*.difxlog", "*.log", "cf_*", "rf_*"]
-    
+
     cmd = " --exclude '*' --include '*/' "
     for pattern in includePattern:
         cmd += " --include '%s' " % pattern
-    
+
     cmd += " --exclude '*' --exclude '*.difx' "
-    
+
     return(cmd)
-    
-    
+
+
 def syncReferenceDir(path, referencePath, fileCount, options):
-    
-    
+
+
     # check that destination path has trailing slash
     if not referencePath.endswith(os.path.sep):
         referencePath += os.path.sep
-        
+
     # check that source path has NO trailing slash
     if  path.endswith(os.path.sep):
         path = path[:-1]
-     
+
     cmd = "rsync -av --progress " + options
-    
+
     cmd += path + " " + referencePath
-    
+
     print (cmd)
     logger.info( "Syncing reference files from %s to: %s" % (path, referencePath))
 
     proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,env=tmpEnv)    
-    
+
     while True:
         output = proc.stdout.readline()
-        
+
         if not output:
             break
-            
+
         if 'to-check' in output:
              m = re.findall(r'to-check=(\d+)/(\d+)', output)
              progress = (100 * (int(m[0][1]) - int(m[0][0]))) / fileCount
@@ -244,7 +253,7 @@ def syncReferenceDir(path, referencePath, fileCount, options):
 
              if int(m[0][0]) == 0 :
                       break
-    
+
     sys.stdout.write('\n')
     return
 
@@ -262,6 +271,7 @@ def makeTarfilename(outDir, filename):
 
 
 def makeBasedir(rootPath):
+
     baseDir = os.path.dirname(rootPath)
     if len(baseDir) == 0:
         baseDir = "."
@@ -422,7 +432,7 @@ def packDirectory(rootPath, packDir, outDir, filename, recurse=True):
     errorCount = 0
 
     logger.info("Creating tar file %s" % (tarfilename))
-#
+
     tarOpts = " --create "
 
     if options.zip:
@@ -485,7 +495,7 @@ def setupLoggers(logPath, code):
     logger = logging.getLogger("difxarchive")
     logger.setLevel(logging.INFO)
     # logging to file
-    
+
     logfile = "%s/difxarchive_%s.log" % (logPath, code)
     fh = logging.FileHandler(logfile)
     fh.setLevel(logging.INFO)
@@ -499,15 +509,15 @@ def setupLoggers(logPath, code):
     logger.addHandler(fh)
     logger.addHandler(ch)
 
-    
+
 def confirmAction():
-    
+
      # if --force option was used skip confirmation
     if not options.force:
-            
+
         print ('Are you sure you want to proceed? [y/N]')
-        a = lower(sys.stdin.readline())
-        if strip(a) == 'y':
+        a = str(sys.stdin.readline()).lower()
+        if a.strip() == 'y':
             print ('OK -- proceeding\n')
         else:
             print ('Not continuing.\n')
@@ -520,40 +530,40 @@ def confirmAction():
 def confirmArchiveDirs(archiveDirs):
     while True:
 
-	if len(archiveDirs) == 0:
-		dirs = "None"
-	else:
-		dirs = ' ' .join(archiveDirs)
-
-        print ("-------------------------------------------------")
-        print ("Will archive all files in the top-level directory")
-        print ("plus the following directories: ", dirs)
-        print ("-------------------------------------------------")
-
-        while True:
-            ret = raw_input("Proceed using this selection? [y/n] (n for making changes): ")
-            ret = lower(ret.strip())
-            if (ret == "n"):
-                change = True
-                break 
-            elif (ret == "y"):
-                change = False
-                break
-
-        if change:
-            ret = raw_input("Specify directories to be archived (space separated list): ")
-            archiveDirs = ret.split()
+        if len(archiveDirs) == 0:
+            dirs = "None"
         else:
-            break
+            dirs = ' ' .join(archiveDirs)
+
+            print ("-------------------------------------------------")
+            print ("Will archive all files in the top-level directory")
+            print ("plus the following directories: ", dirs)
+            print ("-------------------------------------------------")
+
+            while True:
+                ret = raw_input("Proceed using this selection? [y/n] (n for making changes): ")
+                ret = ret.strip().lower()
+                if (ret == "n"):
+                    change = True
+                    break
+                elif (ret == "y"):
+                    change = False
+                    break
+
+            if change:
+                ret = raw_input("Specify directories to be archived (space separated list): ")
+                archiveDirs = ret.split()
+            else:
+                break
 
     return archiveDirs
 
-    
+
 def getArchiveDirs(path):
 
     archiveDirs = []
     prodDirs = []
-    searchStr = "%s(\d+)" % versionPrefix
+    searchStr = r"%s(\d+)" % versionPrefix
     version = 0
     reProdDir = re.compile(searchStr)
 
@@ -579,7 +589,7 @@ def getArchiveDirs(path):
 
         for dir in prodDirs:
             archiveDirs.append(dir)
-    
+
         # remove archive directory from list of candidate directories
         if tmpDir in dirnames:
             dirnames.remove(tmpDir)
@@ -594,7 +604,7 @@ def getArchiveDirs(path):
 
         return archiveDirs, filenames
 
-    
+
 def cleanup():
 
     logging.shutdown()
@@ -604,13 +614,14 @@ def cleanup():
         # remove the tmp_difxlog directory and all its subdirs
         if not options.keepTar:
             shutil.rmtree(path, ignore_errors=False)
-    
+
+
 if __name__ == "__main__":
 
     usage = getUsage()
-    
+
     parser = OptionParser(version="%prog " + __build__, usage=usage)
-    
+
     parser.add_option("-u", "--user", dest="user", type="string" ,action="store", help="Do the archival as the specified user. This overrides the defaultuser directive in difxdb.ini")
     parser.add_option("-f", "--force", dest="force" ,action="store_true", default=False, help="Delete files without further confirmation ")
     parser.add_option("-a", "--all", dest="all" ,action="store_true", default=False, help="Backup all files and directories.")
@@ -624,19 +635,18 @@ if __name__ == "__main__":
 
     # parse the command line. Options will be stored in the options list. Leftover arguments will be stored in the args list
     (options, args) = parser.parse_args()   
-     
-    if len(args) < 2 :
-	parser.print_help()
-	exit(0)
 
-    code = lower(args[0])
+    if len(args) < 2 :
+        parser.print_help()
+        exit(0)
+
+    code = str(args[0]).lower()
     path = args[1]
 
     # remove a trailing slash if it exists
     if path[-1:] == "/":
-	path = path[0:-1]
+        path = path[0:-1]
 
-    
     if not options.dbOnly:
         # check that path exists
         if not isdir(path):
@@ -689,33 +699,34 @@ if __name__ == "__main__":
     # check that experiment exists in the database
     if not experimentExists(session, code):
         exitOnError("Experiment with code %s not found in the database." % code)
-        
+
     # check if the experiment has already been archived
     if isExperimentArchived(session, code):
         print ("Experiment has been archived already.")
         confirmAction()
-    
+
     if not isSchemaVersion(session, minSchemaMajor, minSchemaMinor):
         major, minor = getCurrentSchemaVersionNumber(session)
         exitOnError("Current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor))
-    
+
     session.close()
-    
+
     server = config.get("difxarchive", "archiveserver")
     remotePath = config.get("difxarchive", "archiveremotepath")
-    
+
     destination = user + "@" + server + ":" + remotePath
 
     completeSuccess = False
 
     try:
         if not options.dbOnly:
-	
+
             # obtain kerberos ticket
             getTicket(user)
-                
+
             # construct the list of files and directories to be archived
             archiveDirs, filenames = getArchiveDirs(path)
+            print(path, archiveDirs)
 
             # pack the directories
             for dir in archiveDirs:
@@ -730,7 +741,7 @@ if __name__ == "__main__":
             passCount = 0
             while True:
                 total, fileCount = getTransferFileCount(archiveDir, destination)
-                
+
                 if options.verbose:
                     print ("Remaining files to be transfered: ", fileCount)
 
@@ -739,12 +750,12 @@ if __name__ == "__main__":
 
                 # copy files to the archive server
                 syncDir(archiveDir, user, config, total )
-                
+
                 logger.info ("Pass %d. Syncing %d files" % (passCount, fileCount))
                 passCount +=1
             logger.info("Finished")
             renewTicket(user)
-                
+
 
             # Now copy the reference files
             destDir = "%s/%s" % (config.get("difxarchive", "refbackuppath"), code)
@@ -783,15 +794,16 @@ if __name__ == "__main__":
             while True:
                 srcDir = "%s/*" % (path)
                 syncOptions = "--exclude '*/' --exclude '" + logfile + "' "
-		syncOptions += "--exclude '*.calc' " 
-		syncOptions += "--exclude '*.im' " 
-		syncOptions += "--exclude '*.threads' " 
-		syncOptions += "--exclude '*.machines' " 
-		syncOptions += "--exclude '*.flag' " 
-		syncOptions += "--exclude '*.fits' " 
-		syncOptions += "--exclude '*.FITS' " 
-		syncOptions += "--exclude '*.jobmatrix' " 
-		
+                syncOptions += "--exclude '*.calc' "
+                syncOptions += "--exclude '*.im' "
+                syncOptions += "--exclude '*.threads' "
+                syncOptions += "--exclude '*.machines' "
+                syncOptions += "--exclude '*.flag' "
+                syncOptions += "--exclude '*.channelflags' "
+                syncOptions += "--exclude '*.fits' "
+                syncOptions += "--exclude '*.FITS' "
+                syncOptions += "--exclude '*.jobmatrix' "
+
                 total, fileCount = getTransferFileCount(srcDir, destDir, syncOptions)
                 if (fileCount == 0):
                     break
@@ -819,10 +831,10 @@ if __name__ == "__main__":
             print ('Archival process completed. Now deleting path %s including all files and subdirectories' % path)
             confirmAction()
             logger.info("Deleted %s" % (path))
-#
+
             shutil.rmtree(path, ignore_errors=True)
-        
-        
+
+
         completeSuccess = True
 
     except Exception as e:
@@ -838,6 +850,3 @@ if __name__ == "__main__":
             # allow deletion of tar files in cleanup()
             options.keepTar = False
         cleanup()
-        
-    
-   

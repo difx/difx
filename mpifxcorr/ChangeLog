@@ -1,6 +1,7 @@
 * Post version 2.9
 * Fixed bug that zeroed complex sampled data inadvertently when samplegranularity > 1
 * Fixed bug that allowed garbage data to be correlated for complex-sampled data for the last integration of a scan (one or two FFTs worth)
+* startdifx: run `which mpirun` instead of just mpirun to prevent possible version mismatches
 
 Version 2.9
 ~~~~~~~~~~~

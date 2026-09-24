@@ -262,8 +262,10 @@ CommonSignal *newCommonSignal(const DifxInput *D, const CommandLineOptions *opts
 				cs->freq = D->freq + freqId;
 				cs->pol = ds->recBandPolName[b];
 				cs->sampRate = 2 * (int)(cs->freq->bw*1000000.0 + 0.5);
-				cs->nSample = (int)(cs->sampRate * 1.024);		/* array to be 1024ms long */
-				cs->index0 = (int)(cs->sampRate * 0.001);		/* zero point of array is 1ms into array */
+				/* Make array long enough to accomodate +- 1 earth radius of delay */
+				/* Works out nicely with powers of 2! */
+				cs->nSample = (int)(cs->sampRate * 1.048576);		/* array to be 1048576 us long */
+				cs->index0 = (int)(cs->sampRate * 0.024288);		/* zero point of array is 24288 us into array */
 				cs->spectrum = (double complex *)fftw_malloc((cs->nSample+2)*sizeof(double));
 				cs->samples = (double *)fftw_malloc(cs->nSample*sizeof(double));
 				cs->fftPlan = fftw_plan_dft_c2r_1d(cs->nSample, cs->spectrum, cs->samples, FFTW_ESTIMATE | FFTW_DESTROY_INPUT);

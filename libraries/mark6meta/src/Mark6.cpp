@@ -200,7 +200,7 @@ void Mark6::modInit (int slot, string vsn)
     stringstream ss;
     char message[64]; 
 
-    clog  << "Starting modinit of module " << vsn << " in slot " << slot  << endl;
+    //cout << "Starting modinit" << endl;
     //cout << "Number of slots: " << numSlots_m << endl;
 
     if ((slot < 0) || (slot > numSlots_m))
@@ -447,7 +447,6 @@ void Mark6::manageDeviceChange()
     vector<Mark6DiskDevice> tempRemoveDevices;
     Mark6DiskDevice *disk;
     
-   // cout << "Entered Mark6::manageDeviceChange" << endl;
     moduleChange_m = false;
 
     // new devices have been found
@@ -478,13 +477,13 @@ void Mark6::manageDeviceChange()
             try {
                 // mount both partitions
                 tempDevices[i].mountDisk(mountRootData_m, mountRootMeta_m, false);
+                //cout << "Mounting device" << endl;
 
                 // read the meta information
                 tempDevices[i].parseMeta();
 
             } catch (exception& e) {
                 // log the exception and go on (needed when dealing with unitialized modules)
-                //cout << e.what() << endl;
                 clog << e.what() << endl;
             }
 
@@ -600,7 +599,6 @@ void Mark6::manageDeviceChange()
             
         }        
     }    
-    //cout << "Leaving Mark6::manageDeviceChange" << endl;
 }
 
 /**
@@ -954,6 +952,11 @@ Mark6DiskDevice Mark6::newDeviceFromUdev(udev_device *dev)
     const char *serial = udev_device_get_property_value(dev,"ID_SERIAL_SHORT");
     const char *idSasPath = udev_device_get_property_value(dev, "ID_SAS_PATH");
     const char *idPath = udev_device_get_property_value(dev, "ID_PATH");
+
+    // RHEL8 removed ID_SAS_PATH, use ID_PATH instead and allow for both cases
+    if (idSasPath == NULL && idPath != NULL){
+        idSasPath = idPath;
+    }
 
     string driver = "";
 
@@ -1322,7 +1325,6 @@ int Mark6::enumerateDevices()
 
     udev_enumerate_unref(enumerate);
 
-    //cout << "Found devices: " << devCount << endl;
     return(devCount);
     
 }

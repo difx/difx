@@ -34,7 +34,7 @@
 #include "macros.h"
 #include "mk5daemon.h"
 
-const char defaultMpiWrapper[] = "mpirun";
+const char defaultMpiWrapper[] = "`which mpirun`";
 const char defaultMpiOptions[] = "--mca mpi_yield_when_idle 1 --mca rmaps seq";
 const char defaultDifxProgram[] = "mpifxcorr";
 
@@ -548,7 +548,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G, int noS
 	{
 		mpiOptions = S->mpiOptions;
 	}
-	else
+	else if((mpiOptions = getenv("DIFX_MPIRUNOPTIONS")) == 0)
 	{
 		mpiOptions = defaultMpiOptions;
 	}
@@ -622,7 +622,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G, int noS
 		//  RSA key requests.
 		if(S->function == DIFX_START_FUNCTION_USNO)
 		{
-			snprintf_warn(command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'source %s/setup.bash; %s -np %d --bynode --hostfile %s.machines %s %s %s %s 2>&1'", 
+			snprintf_warn(command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'source %s/setup.bash; %s -np %d --hostfile %s.machines %s %s %s %s 2>&1'", 
 				user, S->headNode, workingDir, mpiWrapper, 1 + S->nDatastream + S->nProcess,
 				filebase, mpiOptions, difxProgram, restartOption, S->inputFilename);
 		}
@@ -632,13 +632,13 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G, int noS
 		{
 			if(noSu)
 			{
-				snprintf_warn(command, MAX_COMMAND_SIZE, "ssh -x %s@%s \"%s -np %d --bynode --hostfile %s.machines %s %s %s %s\" 2>&1", 
+				snprintf_warn(command, MAX_COMMAND_SIZE, "ssh -x %s@%s \"%s -np %d --hostfile %s.machines %s %s %s %s\" 2>&1", 
 					user, S->headNode, mpiWrapper, 1 + S->nDatastream + S->nProcess, filebase,
 					mpiOptions, difxProgram, restartOption, S->inputFilename);
 			}
 			else
 			{
-				snprintf_warn(command, MAX_COMMAND_SIZE, "su - %s -c 'ssh -x %s \"%s -np %d --bynode --hostfile %s.machines %s %s %s %s\"' 2>&1", 
+				snprintf_warn(command, MAX_COMMAND_SIZE, "su - %s -c 'ssh -x %s \"%s -np %d --hostfile %s.machines %s %s %s %s\"' 2>&1", 
 					user, S->headNode, mpiWrapper, 1 + S->nDatastream + S->nProcess, filebase,
 					mpiOptions, difxProgram, restartOption, S->inputFilename);
 			}

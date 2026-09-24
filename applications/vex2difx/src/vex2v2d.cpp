@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2025 by Walter Brisken                                  *
+ *   Copyright (C) 2026 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -21,18 +21,23 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <string>
+#include <map>
 #include <limits.h>
 #include <vexdatamodel.h>
 #include <vex_utility.h>
 #include "testvex.h"
 
 const char program[] = "vex2v2d";
-const char version[] = "0.4";
-const char verdate[] = "20250506";
+const char version[] = "0.6";
+const char verdate[] = "20260909";
 const char author[] = "Walter Brisken";
 
 const double defaultTInt = 2.0;		// [sec]
 const double defaultSpecRes = 0.25;	// [MHz]
+
+const char VLBAMachines[] = "swc000,swc001,swc002,swc003,swc004,swc005,swc006,swc007,swc008,swc009,swc010";
+const char VLBADatastreams[] = "br:swc001,fd:swc002,hn:swc003,kp:swc004,la:swc005,mk:swc006,nl:swc007,ov:swc008,pt:swc009,sc:swc010";
 
 void usage(const char *pgm)
 {
@@ -51,7 +56,15 @@ void usage(const char *pgm)
 	fprintf(stderr, "  --polar\n");
 	fprintf(stderr, "  -p       form cross-polar products [default]\n\n");
 	fprintf(stderr, "  --machines\n");
-	fprintf(stderr, "  -m       add information about VLBA machines and threads\n\n");
+	fprintf(stderr, "  -m       add default information about VLBA machines\n\n");
+	fprintf(stderr, "  --machineList=<list>\n");
+	fprintf(stderr, "           add explicit comma-separated list of machines\n");
+	fprintf(stderr, "           first listed one is head node, rest are core nodes\n\n");
+	fprintf(stderr, "  --datastreamMap=<map>\n");
+	fprintf(stderr, "           <map> is comma-separated list of colon-separated pairs\n");
+	fprintf(stderr, "           e.g., br:swc001,fd:swc002,hn:swc003\n\n");
+	fprintf(stderr, "  --threads=<number>\n");
+	fprintf(stderr, "           configure for <number> threads per core process\n\n");
 	fprintf(stderr, "  --split\n");
 	fprintf(stderr, "  -s       specify dataframe size to be 1032\n\n");
 	fprintf(stderr, "  --VDIF\n");
@@ -75,59 +88,40 @@ void usage(const char *pgm)
 	fprintf(stderr, "  -8       set up for eight datastreams per antenna\n\n");
 }
 
-const char *getDatastreamMachine(const std::string &ant)
+/* adapted from https://stackoverflow.com/questions/38812780/split-string-into-key-value-pairs-using-c */
+std::map<std::string, std::string> mappify(std::string const& s)
 {
-	if(ant == "BR") 
+	std::map<std::string, std::string> m;
+
+	std::string::size_type key_pos = 0;
+	std::string::size_type key_end;
+	std::string::size_type val_pos;
+	std::string::size_type val_end;
+	std::string key;
+
+	while((key_end = s.find(':', key_pos)) != std::string::npos)
 	{
-		return "swc001";
+		if((val_pos = s.find_first_not_of(":", key_end)) == std::string::npos)
+			break;
+
+		if((val_end = s.find(',', val_pos)) == std::string::npos)
+			val_end = s.size();
+
+		key = s.substr(key_pos, key_end - key_pos);
+		Lower(key);
+		m.emplace(key, s.substr(val_pos, val_end - val_pos));
+
+		key_pos = val_end + 1;
+
+		if(val_end == s.size())
+			break;
 	}
-	else if(ant == "FD")
-	{
-		return "swc002";
-	}
-	else if(ant == "GB")
-	{
-		return "swc011";
-	}
-	else if(ant == "HN")
-	{
-		return "swc003";
-	}
-	else if(ant == "KP")
-	{
-		return "swc004";
-	}
-	else if(ant == "LA")
-	{
-		return "swc005";
-	}
-	else if(ant == "MK")
-	{
-		return "swc006";
-	}
-	else if(ant == "NL")
-	{
-		return "swc007";
-	}
-	else if(ant == "OV")
-	{
-		return "swc008";
-	}
-	else if(ant == "PT")
-	{
-		return "swc009";
-	}
-	else if(ant == "SC")
-	{
-		return "swc010";
-	}
-	else
-	{
-		return "swc020";
-	}
+
+	return m;
 }
 
-int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, bool doMachines, const char *format, int vdifFrameSize, bool doFilelist, bool doVlitebuf, const char *threadsAbsent, const char *dropAntennas, const char *oneBitAntennas, const char *complexAntennas)
+
+int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool force, bool doPolar, double tInt, double specRes, int nDatastream, const char *machineList, std::map<std::string,std::string> &dsMap, int nThread, const char *format, int vdifFrameSize, bool doFilelist, bool doVlitebuf, const char *threadsAbsent, const char *dropAntennas, const char *oneBitAntennas, const char *complexAntennas)
 {
 	FILE *out;
 	unsigned int nAntenna = V->nAntenna();
@@ -182,12 +176,21 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 		fprintf(out, "    # excluded antennas: %s", dropAntennas);
 	}
 	fprintf(out, "\n\n");
-	if(doMachines)
+	if(machineList)
 	{
-		fprintf(out, "machines = swc000, swc011, swc012, swc013, swc014, swc015, swc016, swc017, swc018, swc019, swc020\n");
-		fprintf(out, "nCore = 10\n");
-		fprintf(out, "nThread = 4\n\n");
+		int nComma = 0;	/* one to one mapping of commas to cores as the first listed machine is the head node */
+		int i;
+		for(i = 0; machineList[i]; ++i)
+		{
+			if(machineList[i] == ',')
+			{
+				++nComma;
+			}
+		}
+		fprintf(out, "machines=%s\n", machineList);
+		fprintf(out, "nCore=%d\n", nComma);
 	}
+	fprintf(out, "nThread=%d\n\n", nThread);
 	fprintf(out, "delayModel = difxcalc\n\n");
 	fprintf(out, "singleScan = true\n\n");
 
@@ -202,19 +205,19 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 	for(unsigned int a = 0; a < nAntenna; ++a)
 	{
 		const VexAntenna *A = V->getAntenna(a);
-		const char *machine;
+		std::string machine;
 		std::string lname = A->name;
 		Lower(lname);
-		machine = getDatastreamMachine(A->name);
 		int bits;
 		int isComplex;
 
-		if(doMachines && machine == 0)
+		if(dsMap.find(lname) == dsMap.end())
 		{
-			fprintf(stderr, "Error: Machine mode was used for unsupported antenna: %s\n", A->name.c_str());
+			fprintf(stderr, "Error: no datastream specified for antenna: %s\n", A->name.c_str());
 
 			exit(EXIT_FAILURE);
 		}
+		machine = dsMap[lname];
 
 		bits = 0;
 		if(oneBitAntennas)
@@ -291,10 +294,7 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 				{
 					fprintf(out, " file=/tmp/vlitebuf_%02d/%%now.vdif%%", d);
 				}
-				if(doMachines)
-				{
-					fprintf(out, " machine=%s", machine);
-				}
+				fprintf(out, " machine=%s", machine.c_str());
 				if(threadsAbsent && threadsAbsent[0])
 				{
 					fprintf(out, " threadsAbsent=%s", threadsAbsent);
@@ -322,10 +322,7 @@ int write_v2d(const VexData *V, const char *vexFile, const char *outFile, bool f
 			{
 				fprintf(out, " file=/tmp/vlitebuf_00/%%now.vdif%%");
 			}
-			if(doMachines)
-			{
-				fprintf(out, " machine=%s", machine);
-			}
+			fprintf(out, " machine=%s", machine.c_str());
 			if(threadsAbsent && threadsAbsent[0])
 			{
 				fprintf(out, " threadsAbsent=%s", threadsAbsent);
@@ -369,7 +366,6 @@ int main(int argc, char **argv)
 	double specRes = 0.0;		// [MHz]
 	bool force = false;
 	bool doPolar = true;
-	bool doMachines = false;
 	bool doFilelist = false;
 	bool doStdout = false;
 	bool doVlitebuf = false;
@@ -379,6 +375,9 @@ int main(int argc, char **argv)
 	const char *dropAntennas = 0;
 	const char *oneBitAntennas = 0;
 	const char *complexAntennas = 0;
+	const char *machineList = 0;
+	int nThread = 10;
+	std::map<std::string,std::string> dsMap;
 
 	for(a = 1; a < argc; ++a)
 	{
@@ -411,7 +410,10 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[a], "-m") == 0 ||
 		        strcmp(argv[a], "--machines") == 0)
 		{
-			doMachines = true;
+			fprintf(stderr, "Warning: vex2v2d is operating with the deprecated --machines option.\n");
+			fprintf(stderr, "Please update your usage to use --machineList and --datastreamMap options instead.\n");
+			machineList = VLBAMachines;
+			dsMap = mappify(VLBADatastreams);
 		}
 		else if(strcmp(argv[a], "-s") == 0 ||
 		        strcmp(argv[a], "--split") == 0)
@@ -448,6 +450,18 @@ int main(int argc, char **argv)
 		else if(strncmp(argv[a], "--complex=", 10) == 0)
 		{
 			complexAntennas = argv[a]+10;
+		}
+		else if(strncmp(argv[a], "--machineList=", 14) == 0)
+		{
+			machineList = argv[a]+14;
+		}
+		else if(strncmp(argv[a], "--datastreamMap=", 16) == 0)
+		{
+			dsMap = mappify(argv[a]+16);
+		}
+		else if(strncmp(argv[a], "--threads=", 10) == 0)
+		{
+			nThread = atoi(argv[a]+10);
 		}
 		else if(strcmp(argv[a], "-2") == 0)
 		{
@@ -561,7 +575,7 @@ int main(int argc, char **argv)
 		std::cout << std::endl;
 	}
 
-	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, doMachines, format, vdifFrameSize, doFilelist, doVlitebuf, threadsAbsent, dropAntennas, oneBitAntennas, complexAntennas);
+	v = write_v2d(V, vexFile, outFile, force, doPolar, tInt, specRes, nDatastream, machineList, dsMap, nThread, format, vdifFrameSize, doFilelist, doVlitebuf, threadsAbsent, dropAntennas, oneBitAntennas, complexAntennas);
 
 	if(outFile[0])
 	{
