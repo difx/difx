@@ -2389,7 +2389,7 @@ static int vdif_decode_16channel_4bit_decimation1(struct mark5_stream *ms, int n
 		{
 			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			nblank++;
-			i += 4;
+			i += 8;
 		}
 		else
 		{
@@ -3111,11 +3111,11 @@ static int vdif_decode_8channel_16bit_decimation1(struct mark5_stream *ms, int n
 
 static int vdif_decode_1channel_32bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	const uint16_t *buf;
+	const uint32_t *buf;
 	int o, i;
 	int nblank = 0;
 
-	buf = (const uint16_t *)ms->payload;
+	buf = (const uint32_t *)ms->payload;
 	i = ms->readposition/4;
 
 	for(o = 0; o < nsamp; ++o)
@@ -3138,7 +3138,7 @@ static int vdif_decode_1channel_32bit_decimation1(struct mark5_stream *ms, int n
 			{
 				return -1;
 			}
-			buf = (const uint16_t *)ms->payload;
+			buf = (const uint32_t *)ms->payload;
 			i = 0;
 		}
 	}

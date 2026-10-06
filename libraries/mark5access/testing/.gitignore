@@ -1,0 +1,5 @@
+test_vdif_unpack
+bench_vdif_unpack
+*.o
+*.dSYM
+*.csv
