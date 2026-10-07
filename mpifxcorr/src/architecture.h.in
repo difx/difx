@@ -1133,6 +1133,461 @@ inline vecStatus gen2DFFT_CtoC_32fc(const cf32 *src, int sstp, cf32 *dest, int d
 #define vectorSqrt_f32_I(srcdest, len)                                      genericSqrt_32f_I(srcdest, len)
 #define vectorFFTInv_CCSToR_32f(src, dest,fftspec,buff)    vectorFFT_CtoR_f32(src, dest,fftspec,buff)
 
+// ---------------------------------------------------------------------------
+// AVX2/FMA versions of generic routines
+//
+// Compiled in when the compiler targets a CPU with AVX2 and FMA (Intel
+// Haswell (2013) or later, AMD Zen or later), e.g. with -march=x86-64-v3 or
+// -march=native, unless ARCH_NO_SIMD is defined.  The plain versions above are
+// used otherwise, and always for routines not redefined here.  gcc does not
+// vectorize most of the plain loops at -O2 even when targeting AVX2, as it
+// cannot rule out overlap of the arrays.
+//
+// The results are those of the plain versions except that:
+//  - products and sums may be fused (FMA), as gcc also does with the plain
+//    code when targeting a CPU with FMA;
+//  - Sum, Mean and DotProduct add the elements in a different order;
+//  - Sin, Cos, SinCos and Phase use polynomial approximations, accurate to
+//    1.6 ulp (sin, cos) and 3.1 ulp (Phase); IPP's _A21 functions guarantee
+//    21 bits, about 4 ulp.
+// As with IPP, source and destination may be the same array (in place) but
+// must not otherwise overlap.
+// ---------------------------------------------------------------------------
+
+#if defined(__AVX2__) && defined(__FMA__) && !defined(ARCH_NO_SIMD)
+#define ARCH_SIMD_AVX2 1
+
+#include <immintrin.h>
+
+// Loops over arrays one vector at a time.  The last, partial, block (if any)
+// uses masked loads and stores, which do not touch elements past the end.
+struct avxBlock { int i; bool part; __m256i mask; };
+
+inline __m256i avxMask32(int n) { return _mm256_cmpgt_epi32(_mm256_set1_epi32(n), _mm256_setr_epi32(0, 1, 2, 3, 4, 5, 6, 7)); }
+inline __m256i avxMask64(int n) { return _mm256_cmpgt_epi64(_mm256_set1_epi64x(n), _mm256_setr_epi64x(0, 1, 2, 3)); }
+
+// f(block) for each block of 8 floats from element i on; complex arrays are
+// handled as arrays of 2*length floats
+template<class F> inline void avxLoop32(int i, int n, F f)
+{ avxBlock b = { i, false, _mm256_setzero_si256() };
+  for(; b.i + 8 <= n; b.i += 8) f(b);
+  if(b.i < n) { b.part = true; b.mask = avxMask32(n - b.i); f(b); } }
+// the same for doubles, 4 at a time
+template<class F> inline void avxLoop64(int i, int n, F f)
+{ avxBlock b = { i, false, _mm256_setzero_si256() };
+  for(; b.i + 4 <= n; b.i += 4) f(b);
+  if(b.i < n) { b.part = true; b.mask = avxMask64(n - b.i); f(b); } }
+
+inline __m256 avxLd(const f32 *p, const avxBlock &b)
+{ return b.part ? _mm256_maskload_ps(p + b.i, b.mask) : _mm256_loadu_ps(p + b.i); }
+inline __m256d avxLd(const f64 *p, const avxBlock &b)
+{ return b.part ? _mm256_maskload_pd(p + b.i, b.mask) : _mm256_loadu_pd(p + b.i); }
+inline void avxSt(f32 *p, __m256 v, const avxBlock &b)
+{ if(b.part) _mm256_maskstore_ps(p + b.i, b.mask, v); else _mm256_storeu_ps(p + b.i, v); }
+inline void avxSt(f64 *p, __m256d v, const avxBlock &b)
+{ if(b.part) _mm256_maskstore_pd(p + b.i, b.mask, v); else _mm256_storeu_pd(p + b.i, v); }
+
+inline const f32 *avxF(const cf32 *p) { return (const f32 *)p; }
+inline f32 *avxF(cf32 *p) { return (f32 *)p; }
+
+// products of 4 interleaved complex values
+inline __m256 avxCmul(__m256 a, __m256 b)
+{ return _mm256_fmaddsub_ps(_mm256_moveldup_ps(a), b, _mm256_mul_ps(_mm256_movehdup_ps(a), _mm256_permute_ps(b, 0xB1))); }
+// a vector of 4 copies of a complex value, broadcast as one 64-bit value (gcc
+// makes _mm256_setr_ps of the parts with 4 stores and a load, which stalls)
+inline __m256 avxCset(cf32 v) { double d; memcpy(&d, &v, sizeof(d)); return _mm256_castpd_ps(_mm256_set1_pd(d)); }
+// sign bits of the imaginary parts
+inline __m256 avxConjMask() { return _mm256_setr_ps(0.0f, -0.0f, 0.0f, -0.0f, 0.0f, -0.0f, 0.0f, -0.0f); }
+// 4 complex values in reverse order
+inline __m256 avxCrev(__m256 a) { return _mm256_castpd_ps(_mm256_permute4x64_pd(_mm256_castps_pd(a), 0x1B)); }
+// 8 complex values (a: 0-3, b: 4-7) as 8 real and 8 imaginary parts
+inline __m256 avxCre(__m256 a, __m256 b)
+{ return _mm256_castpd_ps(_mm256_permute4x64_pd(_mm256_castps_pd(_mm256_shuffle_ps(a, b, 0x88)), 0xD8)); }
+inline __m256 avxCim(__m256 a, __m256 b)
+{ return _mm256_castpd_ps(_mm256_permute4x64_pd(_mm256_castps_pd(_mm256_shuffle_ps(a, b, 0xDD)), 0xD8)); }
+
+// Copy
+inline vecStatus avxCopy_8u(const u8 *src, u8 *dest, int length) { if(length > 0) memcpy(dest, src, length*sizeof(u8)); return vecNoErr; }
+inline vecStatus avxCopy_16s(const s16 *src, s16 *dest, int length) { if(length > 0) memcpy(dest, src, length*sizeof(s16)); return vecNoErr; }
+inline vecStatus avxCopy_32s(const s32 *src, s32 *dest, int length) { if(length > 0) memcpy(dest, src, length*sizeof(s32)); return vecNoErr; }
+inline vecStatus avxCopy_32f(const f32 *src, f32 *dest, int length) { if(length > 0) memcpy(dest, src, length*sizeof(f32)); return vecNoErr; }
+inline vecStatus avxCopy_32fc(const cf32 *src, cf32 *dest, int length) { if(length > 0) memcpy(dest, src, length*sizeof(cf32)); return vecNoErr; }
+inline vecStatus avxCopy_64f(const f64 *src, f64 *dest, int length) { if(length > 0) memcpy(dest, src, length*sizeof(f64)); return vecNoErr; }
+
+// Real float arithmetic
+inline vecStatus avxAdd_32f_I(const f32 *src, f32 *srcdest, int length)
+{ avxLoop32(0, length, [=](const avxBlock &b) { avxSt(srcdest, _mm256_add_ps(avxLd(srcdest, b), avxLd(src, b)), b); }); return vecNoErr; }
+inline vecStatus avxSub_32f_I(const f32 *src, f32 *srcdest, int length)
+{ avxLoop32(0, length, [=](const avxBlock &b) { avxSt(srcdest, _mm256_sub_ps(avxLd(srcdest, b), avxLd(src, b)), b); }); return vecNoErr; }
+inline vecStatus avxMul_32f_I(const f32 *src, f32 *srcdest, int length)
+{ avxLoop32(0, length, [=](const avxBlock &b) { avxSt(srcdest, _mm256_mul_ps(avxLd(srcdest, b), avxLd(src, b)), b); }); return vecNoErr; }
+inline vecStatus avxMul_32f(const f32 *src1, const f32 *src2, f32 *dest, int length)
+{ avxLoop32(0, length, [=](const avxBlock &b) { avxSt(dest, _mm256_mul_ps(avxLd(src1, b), avxLd(src2, b)), b); }); return vecNoErr; }
+// dest = src2/src1, as ippsDiv_32f
+inline vecStatus avxDivide_32f(const f32 *src1, const f32 *src2, f32 *dest, int length)
+{ avxLoop32(0, length, [=](const avxBlock &b) { avxSt(dest, _mm256_div_ps(avxLd(src2, b), avxLd(src1, b)), b); }); return vecNoErr; }
+inline vecStatus avxAddC_32f(const f32 *src, const f32 val, f32 *dest, int length)
+{ const __m256 v = _mm256_set1_ps(val);
+  avxLoop32(0, length, [=](const avxBlock &b) { avxSt(dest, _mm256_add_ps(avxLd(src, b), v), b); }); return vecNoErr; }
+inline vecStatus avxAddC_32f_I(const f32 val, f32 *srcdest, int length)
+{ const __m256 v = _mm256_set1_ps(val);
+  avxLoop32(0, length, [=](const avxBlock &b) { avxSt(srcdest, _mm256_add_ps(avxLd(srcdest, b), v), b); }); return vecNoErr; }
+inline vecStatus avxMulC_32f(const f32 *src, const f32 val, f32 *dest, int length)
+{ const __m256 v = _mm256_set1_ps(val);
+  avxLoop32(0, length, [=](const avxBlock &b) { avxSt(dest, _mm256_mul_ps(avxLd(src, b), v), b); }); return vecNoErr; }
+inline vecStatus avxMulC_32f_I(const f32 val, f32 *srcdest, int length)
+{ const __m256 v = _mm256_set1_ps(val);
+  avxLoop32(0, length, [=](const avxBlock &b) { avxSt(srcdest, _mm256_mul_ps(avxLd(srcdest, b), v), b); }); return vecNoErr; }
+inline vecStatus avxDivC_32f_I(const f32 val, f32 *srcdest, int length)
+{ return avxMulC_32f_I(1/val, srcdest, length); }
+inline vecStatus avxSqr_32f_I(f32 *srcdest, int length)
+{ avxLoop32(0, length, [=](const avxBlock &b) { __m256 v = avxLd(srcdest, b); avxSt(srcdest, _mm256_mul_ps(v, v), b); }); return vecNoErr; }
+inline vecStatus avxSqrt_32f_I(f32 *srcdest, int length)
+{ avxLoop32(0, length, [=](const avxBlock &b) { avxSt(srcdest, _mm256_sqrt_ps(avxLd(srcdest, b)), b); }); return vecNoErr; }
+inline vecStatus avxAbs_32f_I(f32 *srcdest, int length)
+{ const __m256 sign = _mm256_set1_ps(-0.0f);
+  avxLoop32(0, length, [=](const avxBlock &b) { avxSt(srcdest, _mm256_andnot_ps(sign, avxLd(srcdest, b)), b); }); return vecNoErr; }
+inline vecStatus avxSet_32f(const f32 val, f32 *dest, int length)
+{ const __m256 v = _mm256_set1_ps(val);
+  avxLoop32(0, length, [=](const avxBlock &b) { avxSt(dest, v, b); }); return vecNoErr; }
+
+// Real double arithmetic
+inline vecStatus avxAdd_64f_I(const f64 *src, f64 *srcdest, int length)
+{ avxLoop64(0, length, [=](const avxBlock &b) { avxSt(srcdest, _mm256_add_pd(avxLd(srcdest, b), avxLd(src, b)), b); }); return vecNoErr; }
+inline vecStatus avxAddC_64f(const f64 *src, const f64 val, f64 *dest, int length)
+{ const __m256d v = _mm256_set1_pd(val);
+  avxLoop64(0, length, [=](const avxBlock &b) { avxSt(dest, _mm256_add_pd(avxLd(src, b), v), b); }); return vecNoErr; }
+inline vecStatus avxAddC_64f_I(const f64 val, f64 *srcdest, int length)
+{ const __m256d v = _mm256_set1_pd(val);
+  avxLoop64(0, length, [=](const avxBlock &b) { avxSt(srcdest, _mm256_add_pd(avxLd(srcdest, b), v), b); }); return vecNoErr; }
+inline vecStatus avxMulC_64f(const f64 *src, const f64 val, f64 *dest, int length)
+{ const __m256d v = _mm256_set1_pd(val);
+  avxLoop64(0, length, [=](const avxBlock &b) { avxSt(dest, _mm256_mul_pd(avxLd(src, b), v), b); }); return vecNoErr; }
+inline vecStatus avxMulC_64f_I(const f64 val, f64 *srcdest, int length)
+{ const __m256d v = _mm256_set1_pd(val);
+  avxLoop64(0, length, [=](const avxBlock &b) { avxSt(srcdest, _mm256_mul_pd(avxLd(srcdest, b), v), b); }); return vecNoErr; }
+inline vecStatus avxSqr_64f_I(f64 *srcdest, int length)
+{ avxLoop64(0, length, [=](const avxBlock &b) { __m256d v = avxLd(srcdest, b); avxSt(srcdest, _mm256_mul_pd(v, v), b); }); return vecNoErr; }
+
+// Complex arithmetic
+inline vecStatus avxAdd_32fc_I(const cf32 *src, cf32 *srcdest, int length)
+{ return avxAdd_32f_I(avxF(src), avxF(srcdest), 2*length); }
+inline vecStatus avxSub_32fc_I(const cf32 *src, cf32 *srcdest, int length)
+{ return avxSub_32f_I(avxF(src), avxF(srcdest), 2*length); }
+// dest = src2 - src1, as ippsSub_32fc
+inline vecStatus avxSub_32fc(const cf32 *src1, const cf32 *src2, cf32 *dest, int length)
+{ const f32 *s1 = avxF(src1), *s2 = avxF(src2); f32 *d = avxF(dest);
+  avxLoop32(0, 2*length, [=](const avxBlock &b) { avxSt(d, _mm256_sub_ps(avxLd(s2, b), avxLd(s1, b)), b); }); return vecNoErr; }
+inline vecStatus avxMul_32fc(const cf32 *src1, const cf32 *src2, cf32 *dest, int length)
+{ const f32 *s1 = avxF(src1), *s2 = avxF(src2); f32 *d = avxF(dest);
+  avxLoop32(0, 2*length, [=](const avxBlock &b) { avxSt(d, avxCmul(avxLd(s1, b), avxLd(s2, b)), b); }); return vecNoErr; }
+inline vecStatus avxMul_32fc_I(const cf32 *src, cf32 *srcdest, int length)
+{ const f32 *s = avxF(src); f32 *sd = avxF(srcdest);
+  avxLoop32(0, 2*length, [=](const avxBlock &b) { avxSt(sd, avxCmul(avxLd(sd, b), avxLd(s, b)), b); }); return vecNoErr; }
+inline vecStatus avxMulC_32fc(const cf32 *src, const cf32 val, cf32 *dest, int length)
+{ const f32 *s = avxF(src); f32 *d = avxF(dest); const __m256 v = avxCset(val);
+  avxLoop32(0, 2*length, [=](const avxBlock &b) { avxSt(d, avxCmul(avxLd(s, b), v), b); }); return vecNoErr; }
+inline vecStatus avxMulC_32fc_I(const cf32 val, cf32 *srcdest, int length)
+{ f32 *sd = avxF(srcdest); const __m256 v = avxCset(val);
+  avxLoop32(0, 2*length, [=](const avxBlock &b) { avxSt(sd, avxCmul(avxLd(sd, b), v), b); }); return vecNoErr; }
+inline vecStatus avxAddProduct_32fc(const cf32 *src1, const cf32 *src2, cf32 *accumulator, int length)
+{ const f32 *s1 = avxF(src1), *s2 = avxF(src2); f32 *acc = avxF(accumulator);
+  avxLoop32(0, 2*length, [=](const avxBlock &b) { avxSt(acc, _mm256_add_ps(avxLd(acc, b), avxCmul(avxLd(s1, b), avxLd(s2, b))), b); }); return vecNoErr; }
+// real times complex
+inline vecStatus avxMul_32f32fc(const f32 *src1, const cf32 *src2, cf32 *dest, int length)
+{ const f32 *s2 = avxF(src2); f32 *d = avxF(dest); const __m256i dup = _mm256_setr_epi32(0, 0, 1, 1, 2, 2, 3, 3); int i = 0;
+  for(; i + 4 <= length; i += 4)
+    _mm256_storeu_ps(d + 2*i, _mm256_mul_ps(_mm256_permutevar8x32_ps(_mm256_castps128_ps256(_mm_loadu_ps(src1 + i)), dup), _mm256_loadu_ps(s2 + 2*i)));
+  for(; i < length; i++) { dest[i].re = src1[i]*src2[i].re; dest[i].im = src1[i]*src2[i].im; }
+  return vecNoErr; }
+inline vecStatus avxConj_32fc(const cf32 *src, cf32 *dest, int length)
+{ const f32 *s = avxF(src); f32 *d = avxF(dest); const __m256 m = avxConjMask();
+  avxLoop32(0, 2*length, [=](const avxBlock &b) { avxSt(d, _mm256_xor_ps(avxLd(s, b), m), b); }); return vecNoErr; }
+inline vecStatus avxConj_32fc_I(cf32 *srcdest, int length)
+{ return avxConj_32fc(srcdest, srcdest, length); }
+// dest[i] = conj(src[length-1-i]); src and dest must not overlap
+inline vecStatus avxConjFlip_32fc(const cf32 *src, cf32 *dest, int length)
+{ const __m256 m = avxConjMask(); int i = 0;
+  for(; i + 4 <= length; i += 4)
+    _mm256_storeu_ps(avxF(dest + i), _mm256_xor_ps(avxCrev(_mm256_loadu_ps(avxF(src + length - 4 - i))), m));
+  for(; i < length; i++) { dest[i].re = src[length-1-i].re; dest[i].im = -src[length-1-i].im; }
+  return vecNoErr; }
+inline vecStatus avxFlip_32fc(const cf32 *src, cf32 *dest, int length)
+{ int i = 0;
+  for(; i + 4 <= length; i += 4)
+    _mm256_storeu_ps(avxF(dest + i), avxCrev(_mm256_loadu_ps(avxF(src + length - 4 - i))));
+  for(; i < length; i++) dest[i] = src[length-1-i];
+  return vecNoErr; }
+inline vecStatus avxRealToCplx_32f(const f32 *real, const f32 *imag, cf32 *complx, int length)
+{ f32 *d = avxF(complx); int i = 0;
+  for(; i + 8 <= length; i += 8)
+    { __m256 re = real ? _mm256_loadu_ps(real + i) : _mm256_setzero_ps();
+      __m256 im = imag ? _mm256_loadu_ps(imag + i) : _mm256_setzero_ps();
+      __m256 lo = _mm256_unpacklo_ps(re, im), hi = _mm256_unpackhi_ps(re, im);
+      _mm256_storeu_ps(d + 2*i, _mm256_permute2f128_ps(lo, hi, 0x20));
+      _mm256_storeu_ps(d + 2*i + 8, _mm256_permute2f128_ps(lo, hi, 0x31)); }
+  for(; i < length; i++) { complx[i].re = real ? real[i] : 0; complx[i].im = imag ? imag[i] : 0; }
+  return vecNoErr; }
+inline vecStatus avxReal_32fc(const cf32 *c, f32 *re, int l)
+{ int i = 0;
+  for(; i + 8 <= l; i += 8) _mm256_storeu_ps(re + i, avxCre(_mm256_loadu_ps(avxF(c + i)), _mm256_loadu_ps(avxF(c + i + 4))));
+  for(; i < l; i++) re[i] = c[i].re;
+  return vecNoErr; }
+inline vecStatus avxMagnitude_32fc(const cf32 *src, f32 *dest, int length)
+{ int i = 0;
+  for(; i + 8 <= length; i += 8)
+    { __m256 a = _mm256_loadu_ps(avxF(src + i)), b = _mm256_loadu_ps(avxF(src + i + 4));
+      __m256 h = _mm256_hadd_ps(_mm256_mul_ps(a, a), _mm256_mul_ps(b, b));
+      _mm256_storeu_ps(dest + i, _mm256_sqrt_ps(_mm256_castpd_ps(_mm256_permute4x64_pd(_mm256_castps_pd(h), 0xD8)))); }
+  for(; i < length; i++) dest[i] = sqrtf(src[i].re*src[i].re + src[i].im*src[i].im);
+  return vecNoErr; }
+
+// Sums: four accumulators, so that additions do not wait for each other
+inline __m256 avxSum8(const f32 *s, int n)
+{ __m256 a0 = _mm256_setzero_ps(), a1 = a0, a2 = a0, a3 = a0; int i = 0;
+  for(; i + 32 <= n; i += 32)
+    { a0 = _mm256_add_ps(a0, _mm256_loadu_ps(s + i)); a1 = _mm256_add_ps(a1, _mm256_loadu_ps(s + i + 8));
+      a2 = _mm256_add_ps(a2, _mm256_loadu_ps(s + i + 16)); a3 = _mm256_add_ps(a3, _mm256_loadu_ps(s + i + 24)); }
+  avxLoop32(i, n, [&](const avxBlock &b) { a0 = _mm256_add_ps(a0, avxLd(s, b)); });
+  return _mm256_add_ps(_mm256_add_ps(a0, a1), _mm256_add_ps(a2, a3)); }
+inline vecStatus avxSum_32fc(const cf32 *src, int length, cf32 *sum)
+{ __m256 a = avxSum8(avxF(src), 2*length);
+  __m128 h = _mm_add_ps(_mm256_castps256_ps128(a), _mm256_extractf128_ps(a, 1));
+  h = _mm_add_ps(h, _mm_movehl_ps(h, h));
+  sum[0].re = _mm_cvtss_f32(h); sum[0].im = _mm_cvtss_f32(_mm_shuffle_ps(h, h, 1));
+  return vecNoErr; }
+inline vecStatus avxMean_32fc(const cf32 *src, int length, cf32 *mean, int hint)
+{ avxSum_32fc(src, length, mean);
+  if (length>0) {mean[0].re /= length; mean[0].im /= length;} return vecNoErr; }
+inline vecStatus avxDotProduct_64f(const f64 *src1, const f64 *src2, int length, f64 *output)
+{ __m256d a0 = _mm256_setzero_pd(), a1 = a0, a2 = a0, a3 = a0; int i = 0;
+  for(; i + 16 <= length; i += 16)
+    { a0 = _mm256_fmadd_pd(_mm256_loadu_pd(src1 + i), _mm256_loadu_pd(src2 + i), a0);
+      a1 = _mm256_fmadd_pd(_mm256_loadu_pd(src1 + i + 4), _mm256_loadu_pd(src2 + i + 4), a1);
+      a2 = _mm256_fmadd_pd(_mm256_loadu_pd(src1 + i + 8), _mm256_loadu_pd(src2 + i + 8), a2);
+      a3 = _mm256_fmadd_pd(_mm256_loadu_pd(src1 + i + 12), _mm256_loadu_pd(src2 + i + 12), a3); }
+  avxLoop64(i, length, [&](const avxBlock &b) { a0 = _mm256_fmadd_pd(avxLd(src1, b), avxLd(src2, b), a0); });
+  a0 = _mm256_add_pd(_mm256_add_pd(a0, a1), _mm256_add_pd(a2, a3));
+  __m128d h = _mm_add_pd(_mm256_castpd256_pd128(a0), _mm256_extractf128_pd(a0, 1));
+  output[0] = _mm_cvtsd_f64(_mm_add_sd(h, _mm_unpackhi_pd(h, h)));
+  return vecNoErr; }
+
+// Conversions
+inline vecStatus avxConvert_16s32f(const s16 *src, f32 *dest, int length)
+{ int i = 0;
+  for(; i + 8 <= length; i += 8)
+    _mm256_storeu_ps(dest + i, _mm256_cvtepi32_ps(_mm256_cvtepi16_epi32(_mm_loadu_si128((const __m128i *)(src + i)))));
+  for(; i < length; i++) dest[i] = src[i];
+  return vecNoErr; }
+// dest = src*2^-scalefactor, as ippsConvert_16s32f_Sfs
+inline vecStatus avxConvertScaled_16s32f(const s16 *src, f32 *dest, int length, int scalefactor)
+{ const f32 tmp = powf(2, -scalefactor); const __m256 v = _mm256_set1_ps(tmp); int i = 0;
+  for(; i + 8 <= length; i += 8)
+    _mm256_storeu_ps(dest + i, _mm256_mul_ps(_mm256_cvtepi32_ps(_mm256_cvtepi16_epi32(_mm_loadu_si128((const __m128i *)(src + i)))), v));
+  for(; i < length; i++) dest[i] = src[i]*tmp;
+  return vecNoErr; }
+inline vecStatus avxConvert_32s32f(const s32 *src, f32 *dest, int length)
+{ avxLoop32(0, length, [=](const avxBlock &b) {
+    __m256i v = b.part ? _mm256_maskload_epi32((const int *)src + b.i, b.mask) : _mm256_loadu_si256((const __m256i *)(src + b.i));
+    avxSt(dest, _mm256_cvtepi32_ps(v), b); });
+  return vecNoErr; }
+inline vecStatus avxConvert_64f32f(const f64 *src, f32 *dest, int length)
+{ int i = 0;
+  for(; i + 4 <= length; i += 4) _mm_storeu_ps(dest + i, _mm256_cvtpd_ps(_mm256_loadu_pd(src + i)));
+  for(; i < length; i++) dest[i] = src[i];
+  return vecNoErr; }
+
+// sin and cos of 8 values.  x = q*pi/2 + r with |r| <= pi/4, pi/2 being split
+// in three parts so that r is accurate (Cody and Waite; exact products with
+// FMA); polynomials from Cephes.  Accurate to about 1 ulp for |x| below
+// AVX_TRIG_MAX; other values (including infinities and NaNs) are passed to
+// sinf and cosf.
+#define AVX_TRIG_MAX 65536.0f
+inline void avxSinCos8(__m256 x, __m256 *sinx, __m256 *cosx)
+{ const __m256 q = _mm256_round_ps(_mm256_mul_ps(x, _mm256_set1_ps(0.636619746685028f)), _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+  __m256 r = _mm256_fnmadd_ps(q, _mm256_set1_ps(1.5707963705062866f), x);
+  r = _mm256_fnmadd_ps(q, _mm256_set1_ps(-4.371138828673793e-08f), r);
+  r = _mm256_fnmadd_ps(q, _mm256_set1_ps(-1.7151245100058819e-15f), r);
+  const __m256 z = _mm256_mul_ps(r, r);
+  __m256 ps = _mm256_fmadd_ps(_mm256_set1_ps(-1.9515295891e-4f), z, _mm256_set1_ps(8.3321608736e-3f));
+  ps = _mm256_fmadd_ps(ps, z, _mm256_set1_ps(-1.6666654611e-1f));
+  ps = _mm256_fmadd_ps(_mm256_mul_ps(ps, z), r, r);
+  __m256 pc = _mm256_fmadd_ps(_mm256_set1_ps(2.443315711809948e-5f), z, _mm256_set1_ps(-1.388731625493765e-3f));
+  pc = _mm256_fmadd_ps(pc, z, _mm256_set1_ps(4.166664568298827e-2f));
+  pc = _mm256_fmadd_ps(_mm256_mul_ps(pc, z), z, _mm256_fnmadd_ps(_mm256_set1_ps(0.5f), z, _mm256_set1_ps(1.0f)));
+  // quadrant q mod 4: 0 (s, c), 1 (c, -s), 2 (-s, -c), 3 (-c, s)
+  const __m256i qi = _mm256_cvtps_epi32(q);
+  const __m256 swap = _mm256_castsi256_ps(_mm256_cmpeq_epi32(_mm256_and_si256(qi, _mm256_set1_epi32(1)), _mm256_set1_epi32(1)));
+  const __m256 ssign = _mm256_castsi256_ps(_mm256_slli_epi32(_mm256_and_si256(qi, _mm256_set1_epi32(2)), 30));
+  const __m256 csign = _mm256_castsi256_ps(_mm256_slli_epi32(_mm256_and_si256(_mm256_add_epi32(qi, _mm256_set1_epi32(1)), _mm256_set1_epi32(2)), 30));
+  __m256 s = _mm256_xor_ps(_mm256_blendv_ps(ps, pc, swap), ssign);
+  __m256 c = _mm256_xor_ps(_mm256_blendv_ps(pc, ps, swap), csign);
+  s = _mm256_blendv_ps(s, x, _mm256_cmp_ps(x, _mm256_setzero_ps(), _CMP_EQ_OQ));	// sin(-0) = -0
+  const int big = _mm256_movemask_ps(_mm256_cmp_ps(_mm256_andnot_ps(_mm256_set1_ps(-0.0f), x), _mm256_set1_ps(AVX_TRIG_MAX), _CMP_NLT_UQ));
+  if(big)
+    { float xs[8], ss[8], cs[8];
+      _mm256_storeu_ps(xs, x); _mm256_storeu_ps(ss, s); _mm256_storeu_ps(cs, c);
+      for(int k = 0; k < 8; k++) if(big & (1 << k)) { ss[k] = sinf(xs[k]); cs[k] = cosf(xs[k]); }
+      s = _mm256_loadu_ps(ss); c = _mm256_loadu_ps(cs); }
+  *sinx = s; *cosx = c; }
+inline vecStatus avxSinCos_32f(const f32 *src, f32 *sin, f32 *cos, int length)
+{ avxLoop32(0, length, [=](const avxBlock &b) { __m256 s, c; avxSinCos8(avxLd(src, b), &s, &c); avxSt(sin, s, b); avxSt(cos, c, b); });
+  return vecNoErr; }
+inline vecStatus avxSin_32f(const f32 *src, f32 *dest, int length)
+{ avxLoop32(0, length, [=](const avxBlock &b) { __m256 s, c; avxSinCos8(avxLd(src, b), &s, &c); avxSt(dest, s, b); });
+  return vecNoErr; }
+inline vecStatus avxCos_32f(const f32 *src, f32 *dest, int length)
+{ avxLoop32(0, length, [=](const avxBlock &b) { __m256 s, c; avxSinCos8(avxLd(src, b), &s, &c); avxSt(dest, c, b); });
+  return vecNoErr; }
+
+// atan2(y, x) of 8 values: reduced to atan(t), |t| <= tan(pi/8), with
+// polynomial from Cephes; accurate to about 3 ulp.  Infinities and NaNs are
+// passed to atan2.
+inline __m256 avxAtan2_8(__m256 y, __m256 x)
+{ const __m256 sign = _mm256_set1_ps(-0.0f);
+  const __m256 ax = _mm256_andnot_ps(sign, x), ay = _mm256_andnot_ps(sign, y);
+  const __m256 mx = _mm256_max_ps(ax, ay), mn = _mm256_min_ps(ax, ay);
+  // min/max in [0, 1]; 0 if both are 0
+  __m256 a = _mm256_and_ps(_mm256_div_ps(mn, mx), _mm256_cmp_ps(mx, _mm256_setzero_ps(), _CMP_NEQ_OQ));
+  const __m256 big = _mm256_cmp_ps(a, _mm256_set1_ps(0.414213562373095f), _CMP_GT_OQ);
+  const __m256 t = _mm256_blendv_ps(a, _mm256_div_ps(_mm256_sub_ps(a, _mm256_set1_ps(1.0f)), _mm256_add_ps(a, _mm256_set1_ps(1.0f))), big);
+  const __m256 z = _mm256_mul_ps(t, t);
+  __m256 p = _mm256_fmadd_ps(_mm256_set1_ps(8.05374449538e-2f), z, _mm256_set1_ps(-1.38776856032e-1f));
+  p = _mm256_fmadd_ps(p, z, _mm256_set1_ps(1.99777106478e-1f));
+  p = _mm256_fmadd_ps(p, z, _mm256_set1_ps(-3.33329491539e-1f));
+  p = _mm256_fmadd_ps(_mm256_mul_ps(p, z), t, t);
+  __m256 r = _mm256_add_ps(p, _mm256_and_ps(big, _mm256_set1_ps(0.785398163397448f)));
+  // pi/2 - r where |y| > |x|; pi - r where x < 0 (pi/2 and pi in two parts)
+  r = _mm256_blendv_ps(r, _mm256_add_ps(_mm256_sub_ps(_mm256_set1_ps(1.5707963705062866f), r), _mm256_set1_ps(-4.371138828673793e-08f)),
+                       _mm256_cmp_ps(ay, ax, _CMP_GT_OQ));
+  r = _mm256_blendv_ps(r, _mm256_add_ps(_mm256_sub_ps(_mm256_set1_ps(3.1415927410125732f), r), _mm256_set1_ps(-8.742277657347586e-08f)), x);
+  r = _mm256_or_ps(r, _mm256_and_ps(sign, y));
+  const int odd = _mm256_movemask_ps(_mm256_cmp_ps(mx, _mm256_set1_ps(INFINITY), _CMP_NLT_UQ)) |
+                  _mm256_movemask_ps(_mm256_cmp_ps(mn, mn, _CMP_UNORD_Q)) | _mm256_movemask_ps(_mm256_cmp_ps(ax, ay, _CMP_UNORD_Q));
+  if(odd)
+    { float ys[8], xs[8], rs[8];
+      _mm256_storeu_ps(ys, y); _mm256_storeu_ps(xs, x); _mm256_storeu_ps(rs, r);
+      for(int k = 0; k < 8; k++) if(odd & (1 << k)) rs[k] = atan2(ys[k], xs[k]);
+      r = _mm256_loadu_ps(rs); }
+  return r; }
+inline vecStatus avxPhase_32fc(const cf32 *src, f32 *dest, int length)
+{ int i = 0;
+  for(; i + 8 <= length; i += 8)
+    { __m256 a = _mm256_loadu_ps(avxF(src + i)), b = _mm256_loadu_ps(avxF(src + i + 4));
+      _mm256_storeu_ps(dest + i, avxAtan2_8(avxCim(a, b), avxCre(a, b))); }
+  for(; i < length; i++) dest[i] = atan2(src[i].im, src[i].re);
+  return vecNoErr; }
+
+#undef vectorAdd_f32_I
+#undef vectorAdd_f64_I
+#undef vectorAdd_cf32_I
+#undef vectorAddC_f64
+#undef vectorAddC_f32
+#undef vectorAddC_f32_I
+#undef vectorAddC_f64_I
+#undef vectorAddProduct_cf32
+#undef vectorConj_cf32
+#undef vectorConj_cf32_I
+#undef vectorConjFlip_cf32
+#undef vectorCopy_u8
+#undef vectorCopy_s16
+#undef vectorCopy_s32
+#undef vectorCopy_f32
+#undef vectorCopy_cf32
+#undef vectorCopy_f64
+#undef vectorCos_f32
+#undef vectorConvertScaled_s16f32
+#undef vectorConvert_s16f32
+#undef vectorConvert_s32f32
+#undef vectorConvert_f64f32
+#undef vectorDivide_f32
+#undef vectorDotProduct_f64
+#undef vectorFlip_cf32
+#undef vectorMagnitude_cf32
+#undef vectorMean_cf32
+#undef vectorMul_f32
+#undef vectorMul_f32_I
+#undef vectorMul_cf32_I
+#undef vectorMul_cf32
+#undef vectorMul_f32cf32
+#undef vectorMulC_f32
+#undef vectorMulC_f32_I
+#undef vectorMulC_cf32_I
+#undef vectorMulC_cf32
+#undef vectorMulC_f64_I
+#undef vectorMulC_f64
+#undef vectorPhase_cf32
+#undef vectorRealToComplex_f32
+#undef vectorReal_cf32
+#undef vectorSet_f32
+#undef vectorSin_f32
+#undef vectorSinCos_f32
+#undef vectorSquare_f32_I
+#undef vectorSquare_f64_I
+#undef vectorSub_f32_I
+#undef vectorSub_cf32_I
+#undef vectorSub_cf32
+#undef vectorSum_cf32
+#undef vectorAbs_f32_I
+#undef vectorDivC_f32_I
+#undef vectorSqrt_f32_I
+
+#define vectorAdd_f32_I(src, srcdest, length)                               avxAdd_32f_I(src, srcdest, length)
+#define vectorAdd_f64_I(src, srcdest, length)                               avxAdd_64f_I(src, srcdest, length)
+#define vectorAdd_cf32_I(src, srcdest, length)                              avxAdd_32fc_I(src, srcdest, length)
+#define vectorAddC_f64(src, val, dest, length)                              avxAddC_64f(src, val, dest, length)
+#define vectorAddC_f32(src, val, dest, length)                              avxAddC_32f(src, val, dest, length)
+#define vectorAddC_f32_I(val, srcdest, length)                              avxAddC_32f_I(val, srcdest, length)
+#define vectorAddC_f64_I(val, srcdest, length)                              avxAddC_64f_I(val, srcdest, length)
+#define vectorAddProduct_cf32(src1, src2, accumulator, length)              avxAddProduct_32fc(src1, src2, accumulator, length)
+#define vectorConj_cf32(src, dest, length)                                  avxConj_32fc(src, dest, length)
+#define vectorConj_cf32_I(srcdest, length)                                  avxConj_32fc_I(srcdest, length)
+#define vectorConjFlip_cf32(src, dest, length)                              avxConjFlip_32fc(src, dest, length)
+#define vectorCopy_u8(src, dest, length)                                    avxCopy_8u(src, dest, length)
+#define vectorCopy_s16(src, dest, length)                                   avxCopy_16s(src, dest, length)
+#define vectorCopy_s32(src, dest, length)                                   avxCopy_32s(src, dest, length)
+#define vectorCopy_f32(src, dest, length)                                   avxCopy_32f(src, dest, length)
+#define vectorCopy_cf32(src, dest, length)                                  avxCopy_32fc(src, dest, length)
+#define vectorCopy_f64(src, dest, length)                                   avxCopy_64f(src, dest, length)
+#define vectorCos_f32(src, dest, length)                                    avxCos_32f(src, dest, length)
+#define vectorConvertScaled_s16f32(src, dest, length, scalefactor)          avxConvertScaled_16s32f(src, dest, length, scalefactor)
+#define vectorConvert_s16f32(src, dest, length)                             avxConvert_16s32f(src, dest, length)
+#define vectorConvert_s32f32(src, dest, length)                             avxConvert_32s32f(src, dest, length)
+#define vectorConvert_f64f32(src, dest, length)                             avxConvert_64f32f(src, dest, length)
+#define vectorDivide_f32(src1, src2, dest, length)                          avxDivide_32f(src1, src2, dest, length)
+#define vectorDotProduct_f64(src1, src2, length, output)                    avxDotProduct_64f(src1, src2, length, output)
+#define vectorFlip_cf32(src, dest, length)                                  avxFlip_32fc(src, dest, length)
+#define vectorMagnitude_cf32(src, dest, length)                             avxMagnitude_32fc(src, dest, length)
+#define vectorMean_cf32(src, length, mean, hint)                            avxMean_32fc(src, length, mean, hint)
+#define vectorMul_f32(src1, src2, dest, length)                             avxMul_32f(src1, src2, dest, length)
+#define vectorMul_f32_I(src, srcdest, length)                               avxMul_32f_I(src, srcdest, length)
+#define vectorMul_cf32_I(src, srcdest, length)                              avxMul_32fc_I(src, srcdest, length)
+#define vectorMul_cf32(src1, src2, dest, length)                            avxMul_32fc(src1, src2, dest, length)
+#define vectorMul_f32cf32(src1, src2, dest, length)                         avxMul_32f32fc(src1, src2, dest, length)
+#define vectorMulC_f32(src, val, dest, length)                              avxMulC_32f(src, val, dest, length)
+#define vectorMulC_f32_I(val, srcdest, length)                              avxMulC_32f_I(val, srcdest, length)
+#define vectorMulC_cf32_I(val, srcdest, length)                             avxMulC_32fc_I(val, srcdest, length)
+#define vectorMulC_cf32(src, val, dest, length)                             avxMulC_32fc(src, val, dest, length)
+#define vectorMulC_f64_I(val, srcdest, length)                              avxMulC_64f_I(val, srcdest, length)
+#define vectorMulC_f64(src, val, dest, length)                              avxMulC_64f(src, val, dest, length)
+#define vectorPhase_cf32(src, dest, length)                                 avxPhase_32fc(src, dest, length)
+#define vectorRealToComplex_f32(real, imag, complex, length)                avxRealToCplx_32f(real, imag, complex, length)
+#define vectorReal_cf32(complex, real, length)                              avxReal_32fc(complex, real, length)
+#define vectorSet_f32(val, dest, length)                                    avxSet_32f(val, dest, length)
+#define vectorSin_f32(src, dest, length)                                    avxSin_32f(src, dest, length)
+#define vectorSinCos_f32(src, sin, cos, length)                             avxSinCos_32f(src, sin, cos, length)
+#define vectorSquare_f32_I(srcdest, length)                                 avxSqr_32f_I(srcdest, length)
+#define vectorSquare_f64_I(srcdest, length)                                 avxSqr_64f_I(srcdest, length)
+#define vectorSub_f32_I(src, srcdest, length)                               avxSub_32f_I(src, srcdest, length)
+#define vectorSub_cf32_I(src, srcdest, length)                              avxSub_32fc_I(src, srcdest, length)
+#define vectorSub_cf32(src1, src2, dest, length)                            avxSub_32fc(src1, src2, dest, length)
+#define vectorSum_cf32(src, length, sum, hint)                              avxSum_32fc(src, length, sum)
+#define vectorAbs_f32_I(srcdest, length)                                    avxAbs_32f_I(srcdest, length)
+#define vectorDivC_f32_I(val, srcdest, length)                              avxDivC_32f_I(val, srcdest, length)
+#define vectorSqrt_f32_I(srcdest, len)                                      avxSqrt_32f_I(srcdest, len)
+
+#endif /* AVX2 and FMA */
+
 #endif /* Generic Architecture */
 
 inline vecStatus genericSplitScaled_16s32f(const s16 *src, f32 **dest, int numchannels, int chanlen) {

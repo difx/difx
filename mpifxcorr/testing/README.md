@@ -2,9 +2,10 @@
 
 Correctness tests and a benchmark for the vector routines in
 `mpifxcorr/src/architecture.h.in`: the generic section (FFTW and plain C++,
-used when mpifxcorr is built without Intel IPP) and, when IPP is available,
-the IPP section.  IPP is taken as correct; the tests check every routine
-against a reference model of IPP's documented behaviour.
+used when mpifxcorr is built without Intel IPP), with and without its
+AVX2/FMA code, and, when IPP is available, the IPP section.  IPP is taken as
+correct; the tests check every routine against a reference model of IPP's
+documented behaviour.
 
 | program              | purpose |
 |----------------------|---------|
@@ -28,6 +29,23 @@ empty only the generic section is built and tested (as on macOS/Arm, where
 IPP is not available).  Any of these, and `CXX`/`CXXFLAGS`, can be overridden
 on the make command line.  MPI is not needed.
 
+The generic section is built as several implementations, which are tested
+and timed side by side:
+
+| implementation | code | flags |
+|----------------|------|-------|
+| `generic` | plain C++ | `CXXFLAGS` (default `-O2 -g`) |
+| `gcc-O2`  | plain C++, vectorized by the compiler alone | `CXXFLAGS $(SIMDARCH)` |
+| `gcc-O3`  | the same at `-O3` | `CXXFLAGS $(SIMDARCH) -O3` |
+| `avx2`    | with the AVX2/FMA intrinsics | `CXXFLAGS $(SIMDARCH)` |
+| `ipp`     | Intel IPP | `CXXFLAGS $(IPP_CFLAGS)` |
+
+`SIMDARCH` is `-march=x86-64-v3` (AVX2 and FMA: Intel Haswell, AMD Zen and
+later) by default.  The `gcc-*` and `avx2` builds are made only on x86_64
+machines with AVX2 and FMA, since other code in them is compiled for AVX2
+too; elsewhere only `generic` (and `ipp`) are built.  The plain builds are
+compiled with `-DARCH_NO_SIMD`.
+
 ## How it works
 
 The generic and IPP sections define the same `vector*` names with different
@@ -36,7 +54,10 @@ of `architecture.h.in` for each (`@ipp_enabled@` set to 0 and 1:
 `arch_generic.h`, `arch_ipp.h`), and each is compiled into its own file of
 thin wrappers (`arch_generic.cpp`, `arch_ipp.cpp`).  The wrappers use neutral
 types (`arch_api.h`) and register themselves by name; the test and benchmark
-programs look routines up by name in each implementation.
+programs look routines up by name in each implementation (`arch_impls.cpp`).
+`arch_generic.cpp` is compiled once per generic build, and makes the
+header's inline functions static so that the linker cannot merge copies
+compiled with different flags.
 
 The wrappers are generated from a table in `gen_wrappers.py` into
 `arch_wrappers.inc` (kept in git, so python is only needed to change the
@@ -140,3 +161,77 @@ with IPP the generic time relative to IPP.
 
 Run-to-run variation is a few percent on an idle machine; the shortest
 memory-bound routines vary most.
+
+## AVX2/FMA code in the generic section
+
+The end of the generic section of `architecture.h.in` has AVX2/FMA versions of
+53 routines: those mpifxcorr calls (fringe rotation: `SinCos`,
+`RealToComplex`, complex multiplies; cross multiplication: `AddProduct_cf32`;
+sums, copies, conjugates and flips; the double precision model arithmetic)
+and similar simple ones.  They are compiled in when the compiler targets a CPU
+with AVX2 and FMA, and replace the plain versions through the `vector*`
+macros; with `-DARCH_NO_SIMD`, or for any other CPU, the plain code is used
+unchanged.  Routines with a known failure keep the plain code, so that both
+builds give the same results.
+
+To use it in a build of mpifxcorr without IPP, configure with e.g.
+`CXXFLAGS="-g -O2 -march=x86-64-v3"` (any Intel CPU since Haswell, AMD Zen)
+or `-march=native` for the build machine only.  It makes no difference to an
+IPP build, where the generic section is not used.
+
+The results are those of the plain code except for rounding: products and
+sums may be fused (FMA), long sums add in a different order, and `Sin`,
+`Cos`, `SinCos` and `Phase` use polynomials.  Measured against double
+precision over 4 million random arguments per range, sin and cos are within
+1.6 ulp for any |x| up to 10^6 (arguments of 65536 and over, infinities and
+NaNs go to `sinf`/`cosf`), and `Phase` (atan2) within 3.1 ulp for magnitudes
+from 1e-30 to 1e30, with the special values of signed zeros, infinities and
+NaNs as in libm.  IPP's `_A21` functions guarantee about 4 ulp.
+
+### Speed
+
+Xeon Silver 4514Y (Sapphire Rapids), g++ 14.2, IPP 2026.0, one core.  The
+geometric mean, over the 53 routines, of the time of each build divided by the
+time of `avx2` (so above 1 means `avx2` is faster; for `ipp`, below 1 means
+IPP is faster):
+
+| length | generic | gcc-O2 | gcc-O3 | gcc-O3 AVX-512 | ipp |
+|-------:|--------:|-------:|-------:|---------------:|----:|
+| 16     | 2.5     | 2.5    | 1.39   |                | 1.85 * |
+| 256    | 5.5     | 5.5    | 1.78   | 1.37           | 0.93 |
+| 4096   | 4.6     | 4.6    | 1.63   | 1.48           | 0.86 |
+
+\* at length 16 IPP's overhead per call dominates.
+"gcc-O3 AVX-512" is the plain code built with `SIMDARCH=-march=x86-64-v4`.
+
+- At mpifxcorr's usual `-O2`, targeting AVX2 alone changes nothing: gcc
+  vectorizes almost none of the plain loops, as it cannot rule out
+  overlapping arrays.
+- At `-O3` gcc vectorizes the simple element-by-element loops about as well
+  as the intrinsics, but not sin/cos (`SinCos_f32` 10.7 times slower at 4096),
+  atan2 (12x), sums (`Sum`, `Mean`: 25-31x; `DotProduct_f64`: 3.8x), square
+  roots, or the complex arithmetic that needs permutes (`AddProduct_cf32`
+  1.85x, `Mul_cf32` 1.7x, `ConjFlip_cf32` 1.85x).
+- IPP uses AVX-512 on this CPU, so it is up to about 2x faster than `avx2` on
+  in-cache arithmetic (`SinCos_f32` 2.2x at 4096) and about the same where
+  memory bandwidth limits both.
+
+Selected routines (ns per call):
+
+| routine | n | generic | gcc-O2 | gcc-O3 | avx2 | ipp |
+|---------|--:|--------:|-------:|-------:|-----:|----:|
+| `SinCos_f32`        | 256  | 1258 | 1268 | 1340 | 207  | 115  |
+| `SinCos_f32`        | 4096 | 31348 | 30900 | 35886 | 3367 | 1556 |
+| `AddProduct_cf32`   | 256  | 358  | 407  | 193  | 74   | 44   |
+| `AddProduct_cf32`   | 4096 | 6020 | 6339 | 3179 | 1715 | 1333 |
+| `Mul_cf32`          | 4096 | 4950 | 4770 | 2389 | 1439 | 2436 |
+| `MulC_cf32`         | 4096 | 3976 | 3377 | 1605 | 1014 | 2201 |
+| `RealToComplex_f32` | 4096 | 2130 | 2128 | 1127 | 1097 | 958  |
+| `Add_cf32_I`        | 4096 | 2114 | 2114 | 823  | 826  | 1447 |
+| `Mean_cf32`         | 4096 | 6453 | 6452 | 6451 | 206  | 220  |
+| `DotProduct_f64`    | 4096 | 3161 | 3161 | 3162 | 833  | 755  |
+| `Phase_cf32`        | 4096 | 52251 | 52251 | 52303 | 4386 | 4155 |
+
+The FFTs are FFTW in every generic build, about 1.3-2.8 times slower than
+IPP's; FFTW's own SIMD code is chosen at run time, so the compiler flags do
+not affect it.
