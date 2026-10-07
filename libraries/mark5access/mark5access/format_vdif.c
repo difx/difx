@@ -44,6 +44,7 @@ static float lut1bit[256][8];
 static float lut2bit[256][4];
 static float lut4bit[256][2];
 static float lut8bit[256];
+static double lut8bitoffset;	/* offset used to make lut8bit */
 static float zeros[8];
 static float complex complex_zeros[8];
 
@@ -88,6 +89,7 @@ struct vdif_fast_mode
 	unsigned char lutplane[4][16];	/* SIMD: byte k of the float for each code */
 	unsigned char codeidx[VDIF_FAST_MAXNARROW][VDIF_FAST_MAXUNITFLOATS];	/* narrow: code within byte */
 	float bytelut[256][VDIF_FAST_MAXUNITFLOATS];	/* narrow: floats of each byte value, channel by channel */
+	float offset8, rhi8, rlo8;	/* SIMD 8 bit: value = fma(b - offset8, rhi8, (b - offset8)*rlo8) */
 };
 
 /* internal data specific to VDIF */
@@ -155,6 +157,7 @@ static void initluts()
 
 		/* lut8bit */
 		lut8bit[b] = (b-offset8bit)/3.3;	/* This scaling mimics 2-bit data if 8 bit RMS==~10 */
+		lut8bitoffset = offset8bit;
 
 		/* Complex lookups */
 
@@ -6397,6 +6400,38 @@ static int vdif_fast_init_mode(struct vdif_fast_mode *fm, int nchan, int nbit, i
 	/* Where one byte gives 8 floats of one channel (1 bit, 1 channel) the
 	 * plain C byte table copy (32 bytes per input byte) is faster than the
 	 * SIMD kernel, so don't use SIMD there */
+	/* For 8/16/32 bit the plain C kernel (auto-vectorized by the compiler) is
+	 * faster than the SIMD one for real 16/32 bit data with 1 or 2 values
+	 * per sample, and with 32 values per sample (where the transpose runs
+	 * out of registers), so SIMD is used for the others only */
+	if(allowsimd && nbit >= 8 && fm->npad*fm->parts < 32 &&
+	   !(nbit >= 16 && fm->parts == 1 && fm->npad <= 2))
+	{
+		fm->usesimd = 1;
+		if(nbit == 8)
+		{
+			/* (b - offset)/3.3 computed in double then rounded to float, as in
+			 * lut8bit, is reproduced in float by a two-part reciprocal and a
+			 * fused multiply-add.  This holds for every byte value with both
+			 * offsets in use; check, and don't use SIMD if it ever fails. */
+			int b;
+
+			fm->offset8 = lut8bitoffset;
+			fm->rhi8 = 1.0/3.3;
+			fm->rlo8 = 1.0/3.3 - (double)fm->rhi8;
+			for(b = 0; b < 256; ++b)
+			{
+				float x = (float)b - fm->offset8;
+				float v = fmaf(x, fm->rhi8, x*fm->rlo8);
+
+				if(memcmp(&v, &lut8bit[b], sizeof(float)) != 0)
+				{
+					fm->usesimd = 0;
+					break;
+				}
+			}
+		}
+	}
 	if(allowsimd && nbit <= 4 && fm->planes <= 32 && !(fm->planes == 0 && fm->unitfloats == 8))
 	{
 		const float *codelut = vdif_fast_codelut(nbit);
@@ -6443,13 +6478,6 @@ static int vdif_fast_init_mode(struct vdif_fast_mode *fm, int nchan, int nbit, i
 	{
 		return -1;
 	}
-	/* Likewise for 16 bit data with 8 or more values per sample, where the
-	 * plain C kernel's channel by channel passes are a little slower */
-	if(nbit == 16 && fm->npad*fm->parts >= 8)
-	{
-		return -1;
-	}
-
 	return 0;
 }
 
@@ -6529,28 +6557,36 @@ static __attribute__((noinline)) void vdif_scalar_wide(const struct vdif_fast_mo
 	}
 }
 
-/* 8/16/32 bit plain C kernel: units are samples of P bytes; values are
- * computed as in the per-mode decoders */
-static __attribute__((noinline)) void vdif_scalar_bytes(const struct vdif_fast_mode *fm, const unsigned char *in, int nunit, float **out)
+/* 8/16/32 bit plain C kernel, inlined with constant nbit, V (values per
+ * sample: npad*parts) and parts so that compilers can vectorize the loops
+ * (strided loads become interleaved vector loads).  Values are computed
+ * with expressions that give results identical to the per-mode decoders':
+ *   8 bit:  the per-mode decoders' table.  (b - offset)*(1/3.3) in double
+ *           matches it for all 256 values, but vectorizing that through
+ *           64-bit lanes was 1.3-6x slower than the table lookup
+ *   16 bit: (v - 32768)/8 is exact in float
+ *   32 bit: v/8 - 2^28 = (v - 2^31)/8, and rounding (v - 2^31) to float and
+ *           then scaling by 1/8 is exact */
+static inline __attribute__((always_inline)) void vdif_scalar_bytes_n(const struct vdif_fast_mode *fm,
+	const unsigned char *in, int nunit, float **out, const int nbit, const int V, const int parts)
 {
-	const int P = fm->planes;
-	const int B = fm->nbit/8;
-	const int parts = fm->parts;
+	const int B = nbit/8;
+	const int S = V*B;		/* bytes per sample */
 	int u, c, p;
 
 	for(c = 0; c < fm->nchan; ++c)
 	{
 		for(p = 0; p < parts; ++p)
 		{
-			const unsigned char *ip = in + (c*parts + p)*B;
-			float *op = out[c] + p;
+			const unsigned char *restrict ip = in + (c*parts + p)*B;
+			float *restrict op = out[c] + p;
 
-			switch(fm->nbit)
+			switch(nbit)
 			{
 			case 8:
 				for(u = 0; u < nunit; ++u)
 				{
-					op[u*parts] = lut8bit[ip[u*P]];
+					op[u*parts] = lut8bit[ip[u*S]];
 				}
 				break;
 			case 16:
@@ -6558,8 +6594,7 @@ static __attribute__((noinline)) void vdif_scalar_bytes(const struct vdif_fast_m
 				{
 					uint16_t v;
 
-					memcpy(&v, ip + u*P, 2);
-					/* exact in float, so identical to the double expression */
+					memcpy(&v, ip + u*S, 2);
 					op[u*parts] = ((int)le16toh(v) - 32768)*0.125f;
 				}
 				break;
@@ -6568,13 +6603,36 @@ static __attribute__((noinline)) void vdif_scalar_bytes(const struct vdif_fast_m
 				{
 					uint32_t v;
 
-					memcpy(&v, ip + u*P, 4);
-					op[u*parts] = le32toh(v)/8.0 - (1<<28);
+					memcpy(&v, ip + u*S, 4);
+					op[u*parts] = (float)(int32_t)(le32toh(v) ^ 0x80000000u)*0.125f;
 				}
 				break;
 			}
 		}
 	}
+}
+
+static __attribute__((noinline)) void vdif_scalar_bytes(const struct vdif_fast_mode *fm, const unsigned char *in, int nunit, float **out)
+{
+#define VDIF_BYTES_CASE(nbit, V, parts) \
+	case (nbit)*1000 + (V)*10 + (parts): vdif_scalar_bytes_n(fm, in, nunit, out, nbit, V, parts); break;
+
+	switch(fm->nbit*1000 + fm->npad*fm->parts*10 + fm->parts)
+	{
+	VDIF_BYTES_CASE(8, 1, 1)  VDIF_BYTES_CASE(8, 2, 1)  VDIF_BYTES_CASE(8, 4, 1)
+	VDIF_BYTES_CASE(8, 8, 1)  VDIF_BYTES_CASE(8, 16, 1)
+	VDIF_BYTES_CASE(8, 2, 2)  VDIF_BYTES_CASE(8, 4, 2)  VDIF_BYTES_CASE(8, 8, 2)
+	VDIF_BYTES_CASE(8, 16, 2) VDIF_BYTES_CASE(8, 32, 2)
+	VDIF_BYTES_CASE(16, 1, 1) VDIF_BYTES_CASE(16, 2, 1) VDIF_BYTES_CASE(16, 4, 1)
+	VDIF_BYTES_CASE(16, 8, 1)
+	VDIF_BYTES_CASE(16, 2, 2) VDIF_BYTES_CASE(16, 4, 2) VDIF_BYTES_CASE(16, 8, 2)
+	VDIF_BYTES_CASE(16, 16, 2) VDIF_BYTES_CASE(16, 32, 2)
+	VDIF_BYTES_CASE(32, 1, 1) VDIF_BYTES_CASE(32, 2, 2)
+	default:
+		vdif_scalar_bytes_n(fm, in, nunit, out, fm->nbit, fm->npad*fm->parts, fm->parts);
+		break;
+	}
+#undef VDIF_BYTES_CASE
 }
 
 /* Plain C decode of nunit units.  The kernels are kept out of line: inlined
@@ -6740,6 +6798,232 @@ static inline __attribute__((always_inline)) void vdif_neon_wide(const struct vd
 	}
 }
 
+
+/* 8/16/32 bit: convert one plane (one value of each of the N samples in a
+ * block: 16 bytes, 8 16-bit or 4 32-bit words) to N/4 float vectors, with
+ * results identical to the per-mode decoders (see vdif_scalar_bytes_n) */
+static inline __attribute__((always_inline)) void vdif_neon_convert8(const struct vdif_fast_mode *fm,
+	uint8x16_t v, float32x4_t *q)
+{
+	const float32x4_t off = vdupq_n_f32(fm->offset8);
+	const uint16x8_t lo = vmovl_u8(vget_low_u8(v));
+	const uint16x8_t hi = vmovl_high_u8(v);
+	uint32x4_t w[4];
+	int k;
+
+	w[0] = vmovl_u16(vget_low_u16(lo));
+	w[1] = vmovl_high_u16(lo);
+	w[2] = vmovl_u16(vget_low_u16(hi));
+	w[3] = vmovl_high_u16(hi);
+	for(k = 0; k < 4; ++k)
+	{
+		float32x4_t x = vsubq_f32(vcvtq_f32_u32(w[k]), off);
+
+		q[k] = vfmaq_n_f32(vmulq_n_f32(x, fm->rlo8), x, fm->rhi8);
+	}
+}
+
+static inline __attribute__((always_inline)) void vdif_neon_convert16(uint16x8_t v, float32x4_t *q)
+{
+	const int16x8_t s = vreinterpretq_s16_u16(veorq_u16(v, vdupq_n_u16(0x8000)));
+
+	q[0] = vmulq_n_f32(vcvtq_f32_s32(vmovl_s16(vget_low_s16(s))), 0.125f);
+	q[1] = vmulq_n_f32(vcvtq_f32_s32(vmovl_high_s16(s)), 0.125f);
+}
+
+static inline __attribute__((always_inline)) void vdif_neon_convert32(uint32x4_t v, float32x4_t *q)
+{
+	q[0] = vmulq_n_f32(vcvtq_f32_s32(vreinterpretq_s32_u32(veorq_u32(v, vdupq_n_u32(0x80000000u)))), 0.125f);
+}
+
+/* Store the N/4 vectors of one real channel, or of the re and im parts of
+ * one complex channel, for block b */
+static inline __attribute__((always_inline)) void vdif_neon_store_values(float *op, int b, const int N,
+	const float32x4_t *re, const float32x4_t *im, const int parts)
+{
+	int k;
+
+	if(parts == 1)
+	{
+		for(k = 0; k < N/4; ++k)
+		{
+			vst1q_f32(op + b*N + 4*k, re[k]);
+		}
+	}
+	else
+	{
+		for(k = 0; k < N/4; ++k)
+		{
+			float32x4x2_t z;
+
+			z.val[0] = re[k];
+			z.val[1] = im[k];
+			vst2q_f32(op + 2*b*N + 8*k, z);
+		}
+	}
+}
+
+/* Unshuffle stages turning V registers holding N consecutive samples of V
+ * values into V planes (as in vdif_neon_wide), for one lane type */
+#define VDIF_NEON_UNSHUFFLE(r, V, uzp1, uzp2, vtype) \
+	{ \
+		vtype tmp_[32]; \
+		int s_, k_; \
+		for(s_ = 1; s_ < (V); s_ *= 2) \
+		{ \
+			for(k_ = 0; k_ < (V)/2; ++k_) \
+			{ \
+				tmp_[k_] = uzp1((r)[2*k_], (r)[2*k_+1]); \
+				tmp_[(V)/2 + k_] = uzp2((r)[2*k_], (r)[2*k_+1]); \
+			} \
+			for(k_ = 0; k_ < (V); ++k_) \
+			{ \
+				(r)[k_] = tmp_[k_]; \
+			} \
+		} \
+	}
+
+/* 8/16/32 bit: nblock blocks of N = 128/nbit samples of V values each.
+ * Inlined with constant nbit, V and parts. */
+static inline __attribute__((always_inline)) void vdif_neon_bytes_n(const struct vdif_fast_mode *fm,
+	const unsigned char *in, int nblock, float **out, const int nbit, const int V, const int parts)
+{
+	const int N = 128/nbit;
+	const int blockbytes = N*V*nbit/8;
+	int b, j, k;
+
+	for(b = 0; b < nblock; ++b)
+	{
+		const unsigned char *bp = in + (size_t)b*blockbytes;
+		float32x4_t re[4], im[4];
+
+		if(nbit == 8)
+		{
+			uint8x16_t pl[32];
+
+			if(V == 2)
+			{
+				uint8x16x2_t t = vld2q_u8(bp);
+
+				pl[0] = t.val[0];
+				pl[1] = t.val[1];
+			}
+			else if(V == 4)
+			{
+				uint8x16x4_t t = vld4q_u8(bp);
+
+				for(k = 0; k < 4; ++k)
+				{
+					pl[k] = t.val[k];
+				}
+			}
+			else
+			{
+				for(k = 0; k < V; ++k)
+				{
+					pl[k] = vld1q_u8(bp + 16*k);
+				}
+				VDIF_NEON_UNSHUFFLE(pl, V, vuzp1q_u8, vuzp2q_u8, uint8x16_t)
+			}
+			for(j = 0; j < V && j/parts < fm->nchan; j += parts)
+			{
+				vdif_neon_convert8(fm, pl[j], re);
+				if(parts == 2)
+				{
+					vdif_neon_convert8(fm, pl[j+1], im);
+				}
+				vdif_neon_store_values(out[j/parts], b, N, re, im, parts);
+			}
+		}
+		else if(nbit == 16)
+		{
+			const uint16_t *wp = (const uint16_t *)bp;
+			uint16x8_t pl[32];
+
+			if(V == 2)
+			{
+				uint16x8x2_t t = vld2q_u16(wp);
+
+				pl[0] = t.val[0];
+				pl[1] = t.val[1];
+			}
+			else if(V == 4)
+			{
+				uint16x8x4_t t = vld4q_u16(wp);
+
+				for(k = 0; k < 4; ++k)
+				{
+					pl[k] = t.val[k];
+				}
+			}
+			else
+			{
+				for(k = 0; k < V; ++k)
+				{
+					pl[k] = vld1q_u16(wp + 8*k);
+				}
+				VDIF_NEON_UNSHUFFLE(pl, V, vuzp1q_u16, vuzp2q_u16, uint16x8_t)
+			}
+			for(j = 0; j < V && j/parts < fm->nchan; j += parts)
+			{
+				vdif_neon_convert16(pl[j], re);
+				if(parts == 2)
+				{
+					vdif_neon_convert16(pl[j+1], im);
+				}
+				vdif_neon_store_values(out[j/parts], b, N, re, im, parts);
+			}
+		}
+		else
+		{
+			const uint32_t *wp = (const uint32_t *)bp;
+			uint32x4_t pl[2];
+
+			if(V == 2)
+			{
+				uint32x4x2_t t = vld2q_u32(wp);
+
+				pl[0] = t.val[0];
+				pl[1] = t.val[1];
+			}
+			else
+			{
+				pl[0] = vld1q_u32(wp);
+			}
+			for(j = 0; j < V && j/parts < fm->nchan; j += parts)
+			{
+				vdif_neon_convert32(pl[j], re);
+				if(parts == 2)
+				{
+					vdif_neon_convert32(pl[j+1], im);
+				}
+				vdif_neon_store_values(out[j/parts], b, N, re, im, parts);
+			}
+		}
+	}
+}
+
+static __attribute__((noinline)) void vdif_neon_bytes(const struct vdif_fast_mode *fm,
+	const unsigned char *in, int nblock, float **out)
+{
+#define VDIF_NEON_BYTES_CASE(nbit, V, parts) \
+	case (nbit)*1000 + (V)*10 + (parts): vdif_neon_bytes_n(fm, in, nblock, out, nbit, V, parts); break;
+
+	switch(fm->nbit*1000 + fm->npad*fm->parts*10 + fm->parts)
+	{
+	VDIF_NEON_BYTES_CASE(8, 1, 1)  VDIF_NEON_BYTES_CASE(8, 2, 1)  VDIF_NEON_BYTES_CASE(8, 4, 1)
+	VDIF_NEON_BYTES_CASE(8, 8, 1)  VDIF_NEON_BYTES_CASE(8, 16, 1)
+	VDIF_NEON_BYTES_CASE(8, 2, 2)  VDIF_NEON_BYTES_CASE(8, 4, 2)  VDIF_NEON_BYTES_CASE(8, 8, 2)
+	VDIF_NEON_BYTES_CASE(8, 16, 2) VDIF_NEON_BYTES_CASE(8, 32, 2)
+	VDIF_NEON_BYTES_CASE(16, 1, 1) VDIF_NEON_BYTES_CASE(16, 2, 1) VDIF_NEON_BYTES_CASE(16, 4, 1)
+	VDIF_NEON_BYTES_CASE(16, 8, 1)
+	VDIF_NEON_BYTES_CASE(16, 2, 2) VDIF_NEON_BYTES_CASE(16, 4, 2) VDIF_NEON_BYTES_CASE(16, 8, 2)
+	VDIF_NEON_BYTES_CASE(16, 16, 2) VDIF_NEON_BYTES_CASE(16, 32, 2)
+	VDIF_NEON_BYTES_CASE(32, 1, 1) VDIF_NEON_BYTES_CASE(32, 2, 2)
+	}
+#undef VDIF_NEON_BYTES_CASE
+}
+
 #endif /* VDIF_FAST_NEON */
 
 /* Decode nunit units from in; out[c] receives nunit*unitfloats floats */
@@ -6748,7 +7032,18 @@ static void vdif_fast_units(const struct vdif_fast_mode *fm, const unsigned char
 	int done = 0;
 
 #ifdef VDIF_FAST_NEON
-	if(fm->usesimd && nunit >= 16)
+	if(fm->usesimd && fm->nbit >= 8)
+	{
+		const int N = 128/fm->nbit;	/* samples (units) per block */
+		int nblock = nunit/N;
+
+		if(nblock > 0)
+		{
+			vdif_neon_bytes(fm, in, nblock, out);
+			done = N*nblock;
+		}
+	}
+	else if(fm->usesimd && nunit >= 16)
 	{
 		int nblock = nunit/16;
 
