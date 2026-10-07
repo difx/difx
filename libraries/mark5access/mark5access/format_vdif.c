@@ -54,6 +54,34 @@ static float complex complex_lut4bit[256];
 /* for use in counting high states; 2-bit support only at this time */
 static unsigned char countlut2bit[256][4];
 
+/* SIMD decoders for 1, 2 and 4 bit data; see "SIMD decoders" below.
+ * Define VDIF_NO_SIMD at compile time, or set environment variable
+ * VDIF_NO_SIMD at run time, to use the per-mode scalar decoders instead. */
+#if defined(__ARM_NEON) && !defined(VDIF_NO_SIMD)
+#define VDIF_SIMD_NEON 1
+#include <arm_neon.h>
+#endif
+
+#define VDIF_SIMD_MAXNARROW	4	/* max packed channels when a sample is < 1 byte */
+#define VDIF_SIMD_MAXGROUP	8	/* max groups of 16 floats per channel per block */
+
+struct vdif_simd_mode
+{
+	int nbit;		/* 1, 2 or 4 */
+	int nchan;		/* channels decoded */
+	int npad;		/* channels packed: nchan rounded up to a power of 2 */
+	int parts;		/* 1 = real, 2 = complex */
+	int unitbytes;		/* smallest whole number of bytes holding whole samples */
+	int unitsamples;	/* samples per channel per unit */
+	int unitfloats;		/* floats per channel per unit (unitsamples*parts) */
+	int planes;		/* bytes per sample (wide modes), or 0 for narrow modes */
+	int ngroup;		/* narrow modes: groups of 16 floats per channel per 16 byte block */
+	unsigned char sel[VDIF_SIMD_MAXNARROW][VDIF_SIMD_MAXGROUP][16];	/* byte within block */
+	signed char shift[VDIF_SIMD_MAXNARROW][VDIF_SIMD_MAXGROUP][16];	/* minus bit offset */
+	float lut[16];			/* value of each code */
+	unsigned char lutplane[4][16];	/* byte k of lut[code], for building floats bytewise */
+};
+
 /* internal data specific to VDIF */
 struct mark5_format_vdif
 {
@@ -61,6 +89,7 @@ struct mark5_format_vdif
 	int frameheadersize;		/* 16 (legacy) or 32 (normal) */
 	int leapsecs;			/* relative to reference epoch of VDIF data */
 	int completesamplesperword;	/* number of samples for each channel in one 32-bit word */
+	struct vdif_simd_mode simd;	/* used by the SIMD decoders only */
 };
 
 static void initluts()
@@ -6254,6 +6283,408 @@ static int vdif_complex_decode_1channel_32bit_decimation1(struct mark5_stream *m
 
 /* Other decoders go here */
 
+/************************ SIMD decoders *****************************/
+
+/* Generic decoders for 1, 2 and 4 bit data, real or complex, any number of
+ * channels the per-mode decoders above support.  They produce identical
+ * output to those decoders.
+ *
+ * The payload is consumed in "units": the smallest whole number of bytes
+ * holding whole samples of every channel (one byte, or one sample if a
+ * sample is a byte or more).  Frame boundaries and blanking are checked
+ * once per run of units, not once per byte.  Within a run, blocks of 16
+ * units go through a SIMD kernel and any remainder through a scalar loop.
+ *
+ * Both kernels end the same way: a vector of 16 codes in output order is
+ * turned into 16 floats with four 16-entry byte table lookups (one per byte
+ * of the float) that are interleaved on store.  They differ in how the codes
+ * are gathered:
+ *
+ *   narrow (a sample of all channels is < 1 byte; block = 16 bytes):
+ *     codes = (tbl(block, sel) >> shift) & mask, with per-mode sel/shift
+ *   wide (a sample is >= 1 byte; block = 16 samples):
+ *     transpose the block into byte planes, plane k holding byte k of each
+ *     of the 16 samples; then each channel's codes are (plane >> s) & mask
+ *
+ * Complex data is decoded as a stream of floats (re, im, re, im, ...).
+ */
+
+/* returns 0 if the mode can be handled */
+static int vdif_simd_init_mode(struct vdif_simd_mode *sm, int nchan, int nbit, int iscomplex)
+{
+	int samplebits, ncode, c, f, k;
+
+	memset(sm, 0, sizeof(*sm));
+
+	if(nbit != 1 && nbit != 2 && nbit != 4)
+	{
+		return -1;
+	}
+
+	sm->nbit = nbit;
+	sm->nchan = nchan;
+	sm->parts = iscomplex ? 2 : 1;
+	for(sm->npad = 1; sm->npad < nchan; sm->npad *= 2)
+	{
+	}
+	samplebits = sm->npad*nbit*sm->parts;
+	sm->unitbytes = samplebits <= 8 ? 1 : samplebits/8;
+	sm->unitsamples = sm->unitbytes*8/samplebits;
+	sm->unitfloats = sm->unitsamples*sm->parts;
+
+	if(samplebits >= 8)
+	{
+		sm->planes = samplebits/8;
+		if(sm->planes > 32)
+		{
+			return -1;
+		}
+	}
+	else
+	{
+		sm->ngroup = sm->unitfloats;	/* 16 units per block, so 16*unitfloats floats per channel */
+		if(sm->npad > VDIF_SIMD_MAXNARROW || sm->ngroup > VDIF_SIMD_MAXGROUP)
+		{
+			return -1;
+		}
+		for(c = 0; c < nchan; ++c)
+		{
+			for(f = 0; f < 16*sm->unitfloats; ++f)
+			{
+				int u = f/sm->unitfloats;
+				int fu = f%sm->unitfloats;
+				int bit = ((fu/sm->parts*sm->npad + c)*sm->parts + fu%sm->parts)*nbit;
+
+				sm->sel[c][f/16][f%16] = u + bit/8;
+				sm->shift[c][f/16][f%16] = -(bit%8);
+			}
+		}
+	}
+
+	/* code values, taken from the scalar tables so they are identical */
+	ncode = 1 << nbit;
+	for(k = 0; k < ncode; ++k)
+	{
+		unsigned char b[4];
+		int i;
+
+		switch(nbit)
+		{
+		case 1:
+			sm->lut[k] = lut1bit[k][0];
+			break;
+		case 2:
+			sm->lut[k] = lut2bit[k][0];
+			break;
+		case 4:
+			sm->lut[k] = lut4bit[k][0];
+			break;
+		}
+		memcpy(b, &sm->lut[k], 4);	/* bytes in memory order, as stored */
+		for(i = 0; i < 4; ++i)
+		{
+			sm->lutplane[i][k] = b[i];
+		}
+	}
+
+	return 0;
+}
+
+/* Decode units [0, nunit) from in without SIMD.  Used for remainders. */
+static void vdif_simd_scalar_units(const struct vdif_simd_mode *sm, const unsigned char *in, int nunit, float **out)
+{
+	const int mask = (1 << sm->nbit) - 1;
+	int u, c, k;
+
+	for(c = 0; c < sm->nchan; ++c)
+	{
+		float *op = out[c];
+
+		for(u = 0; u < nunit; ++u)
+		{
+			const unsigned char *up = in + u*sm->unitbytes;
+
+			for(k = 0; k < sm->unitfloats; ++k)
+			{
+				int bit = ((k/sm->parts*sm->npad + c)*sm->parts + k%sm->parts)*sm->nbit;
+
+				*op++ = sm->lut[(up[bit/8] >> (bit%8)) & mask];
+			}
+		}
+	}
+}
+
+#ifdef VDIF_SIMD_NEON
+
+/* 16 codes (each < 16) to 16 floats at dst */
+static inline __attribute__((always_inline)) void vdif_neon_store_codes(uint8x16_t codes,
+	const uint8x16_t *lutplane, float *dst)
+{
+	uint8x16x4_t fb;
+
+	fb.val[0] = vqtbl1q_u8(lutplane[0], codes);
+	fb.val[1] = vqtbl1q_u8(lutplane[1], codes);
+	fb.val[2] = vqtbl1q_u8(lutplane[2], codes);
+	fb.val[3] = vqtbl1q_u8(lutplane[3], codes);
+	vst4q_u8((uint8_t *)dst, fb);
+}
+
+/* Narrow modes: nblock blocks of 16 bytes */
+static void vdif_neon_narrow(const struct vdif_simd_mode *sm, const unsigned char *in, int nblock, float **out)
+{
+	const uint8x16_t mask = vdupq_n_u8((1 << sm->nbit) - 1);
+	const int nchan = sm->nchan;
+	const int ngroup = sm->ngroup;
+	uint8x16_t lutplane[4];
+	int b, c, g;
+
+	for(c = 0; c < 4; ++c)
+	{
+		lutplane[c] = vld1q_u8(sm->lutplane[c]);
+	}
+
+	for(b = 0; b < nblock; ++b)
+	{
+		const uint8x16_t v = vld1q_u8(in + 16*b);
+
+		for(c = 0; c < nchan; ++c)
+		{
+			for(g = 0; g < ngroup; ++g)
+			{
+				uint8x16_t codes;
+
+				codes = vqtbl1q_u8(v, vld1q_u8(sm->sel[c][g]));
+				codes = vandq_u8(vshlq_u8(codes, vld1q_s8(sm->shift[c][g])), mask);
+				vdif_neon_store_codes(codes, lutplane, out[c] + (b*ngroup + g)*16);
+			}
+		}
+	}
+}
+
+/* Wide modes: nblock blocks of 16 samples of P bytes each.  Inlined with
+ * constant P so the transpose stays in registers. */
+static inline __attribute__((always_inline)) void vdif_neon_wide(const struct vdif_simd_mode *sm,
+	const unsigned char *in, int nblock, float **out, const int P)
+{
+	const int nbit = sm->nbit;
+	const int nchan = sm->nchan;
+	const int codesperbyte = 8/nbit;
+	const uint8x16_t mask = vdupq_n_u8((1 << nbit) - 1);
+	uint8x16_t lutplane[4];
+	int b, c, k, q, s;
+
+	for(c = 0; c < 4; ++c)
+	{
+		lutplane[c] = vld1q_u8(sm->lutplane[c]);
+	}
+
+	for(b = 0; b < nblock; ++b)
+	{
+		const unsigned char *bp = in + 16*P*b;
+		uint8x16_t plane[32];
+
+		/* transpose: plane[k] = byte k of samples 0..15 */
+		if(P == 1)
+		{
+			plane[0] = vld1q_u8(bp);
+		}
+		else if(P == 2)
+		{
+			uint8x16x2_t t = vld2q_u8(bp);
+
+			plane[0] = t.val[0];
+			plane[1] = t.val[1];
+		}
+		else if(P == 4)
+		{
+			uint8x16x4_t t = vld4q_u8(bp);
+
+			plane[0] = t.val[0];
+			plane[1] = t.val[1];
+			plane[2] = t.val[2];
+			plane[3] = t.val[3];
+		}
+		else
+		{
+			/* log2(P) unshuffle stages: each sends even bytes of the whole
+			 * block to the first half of the registers, odd to the second */
+			uint8x16_t tmp[32];
+
+			for(k = 0; k < P; ++k)
+			{
+				plane[k] = vld1q_u8(bp + 16*k);
+			}
+			for(s = 1; s < P; s *= 2)
+			{
+				for(k = 0; k < P/2; ++k)
+				{
+					tmp[k] = vuzp1q_u8(plane[2*k], plane[2*k+1]);
+					tmp[P/2 + k] = vuzp2q_u8(plane[2*k], plane[2*k+1]);
+				}
+				for(k = 0; k < P; ++k)
+				{
+					plane[k] = tmp[k];
+				}
+			}
+		}
+
+		/* each plane holds codesperbyte codes per sample, in channel/part order */
+		for(k = 0; k < P; ++k)
+		{
+			for(q = 0; q < codesperbyte; q += sm->parts)
+			{
+				int e = k*codesperbyte + q;	/* code index within the sample */
+				uint8x16_t re;
+
+				c = e/sm->parts;
+				if(c >= nchan)
+				{
+					continue;	/* padding channel */
+				}
+				re = vandq_u8(vshlq_u8(plane[k], vdupq_n_s8(-q*nbit)), mask);
+				if(sm->parts == 1)
+				{
+					vdif_neon_store_codes(re, lutplane, out[c] + 16*b);
+				}
+				else
+				{
+					uint8x16_t im = vandq_u8(vshlq_u8(plane[k], vdupq_n_s8(-(q+1)*nbit)), mask);
+
+					vdif_neon_store_codes(vzip1q_u8(re, im), lutplane, out[c] + 32*b);
+					vdif_neon_store_codes(vzip2q_u8(re, im), lutplane, out[c] + 32*b + 16);
+				}
+			}
+		}
+	}
+}
+
+#endif /* VDIF_SIMD_NEON */
+
+/* Decode nunit units from in; out[c] receives nunit*unitfloats floats */
+static void vdif_simd_units(const struct vdif_simd_mode *sm, const unsigned char *in, int nunit, float **out)
+{
+	int done = 0;
+
+#ifdef VDIF_SIMD_NEON
+	int nblock = nunit/16;
+
+	if(nblock > 0)
+	{
+		switch(sm->planes)
+		{
+		case 0:  vdif_neon_narrow(sm, in, nblock, out);   break;
+		case 1:  vdif_neon_wide(sm, in, nblock, out, 1);  break;
+		case 2:  vdif_neon_wide(sm, in, nblock, out, 2);  break;
+		case 4:  vdif_neon_wide(sm, in, nblock, out, 4);  break;
+		case 8:  vdif_neon_wide(sm, in, nblock, out, 8);  break;
+		case 16: vdif_neon_wide(sm, in, nblock, out, 16); break;
+		case 32: vdif_neon_wide(sm, in, nblock, out, 32); break;
+		}
+		done = 16*nblock;
+	}
+#endif
+
+	if(done < nunit)
+	{
+		float *rest[64];
+		int c;
+
+		for(c = 0; c < sm->nchan; ++c)
+		{
+			rest[c] = out[c] + done*sm->unitfloats;
+		}
+		vdif_simd_scalar_units(sm, in + done*sm->unitbytes, nunit - done, rest);
+	}
+}
+
+/* Same semantics as the per-mode decoders: decodes whole units (so may write
+ * past nsamp if nsamp is not a multiple of the sample granularity), steps
+ * to the next frame as soon as one is finished, returns the number of
+ * samples decoded from valid data or -1 at end of data. */
+static int vdif_simd_decode(struct mark5_stream *ms, int nsamp, float **data)
+{
+	const struct vdif_simd_mode *sm = &((const struct mark5_format_vdif *)(ms->formatdata))->simd;
+	const int U = sm->unitbytes;
+	const int P = sm->unitsamples;
+	const int F = sm->unitfloats;
+	float *out[64];
+	int o = 0, i, c, k;
+	int nblank = 0;
+
+	i = ms->readposition;
+
+	while(o < nsamp)
+	{
+		/* units remaining in frame; rounded up because readposition need not
+		 * be a whole number of units (as with mark5_unpack_with_offset()
+		 * for non power of 2 nchan), and the per-mode decoders then finish
+		 * the unit that straddles the end of the frame */
+		int nunit = (ms->databytes - i + U - 1)/U;
+		int want = (nsamp - o + P - 1)/P;
+		int nvalid;
+
+		if(nunit > want)
+		{
+			nunit = want;
+		}
+
+		/* units starting before blankzoneendvalid[0] are valid */
+		if(i >= ms->blankzoneendvalid[0])
+		{
+			nvalid = 0;
+		}
+		else
+		{
+			nvalid = (ms->blankzoneendvalid[0] - i + U - 1)/U;
+			if(nvalid > nunit)
+			{
+				nvalid = nunit;
+			}
+		}
+
+		for(c = 0; c < sm->nchan; ++c)
+		{
+			out[c] = data[c] + (size_t)o*(F/P);
+		}
+		if(nvalid > 0)
+		{
+			vdif_simd_units(sm, ms->payload + i, nvalid, out);
+		}
+		if(nvalid < nunit)
+		{
+			for(c = 0; c < sm->nchan; ++c)
+			{
+				for(k = nvalid*F; k < nunit*F; ++k)
+				{
+					out[c][k] = 0.0f;
+				}
+			}
+			nblank += nunit - nvalid;
+		}
+
+		i += nunit*U;
+		o += nunit*P;
+
+		if(i >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - P*nblank;
+}
+
+static int vdif_simd_complex_decode(struct mark5_stream *ms, int nsamp, float complex **data)
+{
+	return vdif_simd_decode(ms, nsamp, (float **)data);
+}
+
 /************************ 2-bit state counters *********************/
 /* Note: these only count high vs. low states, not full state counts */
 
@@ -8191,6 +8622,21 @@ struct mark5_format_generic *new_mark5_format_generalized_vdif(int framesperperi
 	    }
 
 	}
+
+#ifdef VDIF_SIMD_NEON
+	/* replace the per-mode decoder with the SIMD one where possible */
+	if(getenv("VDIF_NO_SIMD") == 0 && vdif_simd_init_mode(&v->simd, nchan, nbit, usecomplex) == 0)
+	{
+		if(usecomplex)
+		{
+			f->complex_decode = vdif_simd_complex_decode;
+		}
+		else
+		{
+			f->decode = vdif_simd_decode;
+		}
+	}
+#endif
 
 	return f;
 }
