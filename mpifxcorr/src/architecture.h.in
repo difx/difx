@@ -56,15 +56,8 @@
 #include <ippcore.h>
 #include <ippversion.h>
 
-#ifdef IPP9
-#define IPP_9_API
-#elif(IPP_VERSION_MAJOR == 2018)
-#define IPP_9_API
-#elif(IPP_VERSION_MAJOR == 2019)
-#define IPP_9_API
-#elif(IPP_VERSION_MAJOR == 2020)
-#define IPP_9_API
-#elif(IPP_VERSION_MAJOR == 2021)
+// IPP 9.0 and later (2017, 2018, ... 2026, ...) removed the old API
+#if defined(IPP9) || (IPP_VERSION_MAJOR >= 9)
 #define IPP_9_API
 #endif
 
@@ -132,8 +125,8 @@
 #define vectorAdd_f64(src1, src2, dest, length)                             ippsAdd_64f(src1, src2, dest, length)
 #define vectorAdd_s16(src1, src2, dest, length)                             ippsAdd_16s(src1, src2, dest, length)
 #define vectorAdd_s32(src1, src2, dest, length)                             ippsAdd_32s_Sfs(src1, src2, dest, length, 0)
-#define vectorAdd_cf32(src1, src2, dest, length)                            ippsAdd_32fc_I(src1, src2, dest, length)
-#define vectorAdd_cf64(src1, src2, dest, length)                            ippsAdd_64fc_I(src1, src2, dest, length)
+#define vectorAdd_cf32(src1, src2, dest, length)                            ippsAdd_32fc(src1, src2, dest, length)
+#define vectorAdd_cf64(src1, src2, dest, length)                            ippsAdd_64fc(src1, src2, dest, length)
 
 #define vectorAddC_f64(src, val, dest, length)                              ippsAddC_64f(src, val, dest, length)
 #define vectorAddC_f32(src, val, dest, length)                              ippsAddC_32f(src, val, dest, length)
@@ -223,7 +216,11 @@
 #define vectorZero_cf64(dest, length)                                       ippsZero_64fc(dest, length)
 #define vectorZero_f32(dest, length)                                        ippsZero_32f(dest, length)
 #define vectorZero_s16(dest, length)                                        ippsZero_16s(dest, length)
-#define vectorZero_s32(dest, length)                                        genericZero_32s(dest, length)
+#ifdef IPP_9_API
+#define vectorZero_s32(dest, length)                                        ippsZero_32s(dest, length)
+#else
+#define vectorZero_s32(dest, length)                                        ippsZero_32f((Ipp32f *)(dest), length)
+#endif
 
 
 
@@ -378,7 +375,21 @@ inline vecStatus vectorInitDFTR_f32(vecDFTSpecR_f32 **dftspec, int length, int f
 
 #define vectorScaledFFT_RtoC_s16(src, dest, fftspec, fftbuffer, scale)      ippsFFTFwd_RToCCS_16s_Sfs(src, dest, fftspec, fftbuffer, scale)
 
+#ifdef IPP_9_API
+// since IPP 9.0 ippsFIRGenLowpass_64f needs a work buffer
+inline vecStatus vectorGenerateFIRLowpass_f64(f64 freq, f64 *taps, int length, IppWinType window, IppBool normalise) {
+  int bufsize;
+  vecStatus status = ippsFIRGenGetBufferSize(length, &bufsize);
+  if (status != ippStsNoErr) return status;
+  u8 *buf = ippsMalloc_8u(bufsize);
+  if (!buf) return ippStsMemAllocErr;
+  status = ippsFIRGenLowpass_64f(freq, taps, length, window, normalise, buf);
+  ippsFree(buf);
+  return status;
+}
+#else
 #define vectorGenerateFIRLowpass_f64(freq, taps, length, window, normalise) ippsFIRGenLowpass_64f(freq, taps, length, window, normalise)
+#endif
 
 // For difx_monitor // Note 2D
 #define vector2DFFT_CtoC_cf32(src, sstp, dest, dstp, fftspec, fftbuff)    ippiFFTFwd_CToC_32fc_C1R(src, sstp, dest, dstp, fftspec, fftbuff)

@@ -1550,6 +1550,43 @@ TEST(FFT2D_cf32, "FFT2D_cf32_init", "FFT2D_cf32_fwd", "FFT2D_cf32_free")
 	fr(spec);
 }
 
+/* Windowed sinc lowpass with a Hamming window, normalised to unit sum (IPP
+ * requires at least 5 taps and 0 < freq < 0.5, freq relative to the sampling
+ * rate) */
+TEST(GenerateFIRLowpass_f64, "GenerateFIRLowpass_f64")
+{
+	typedef int (*FN)(double, double *, int);
+	FN f = c.fn<FN>("GenerateFIRLowpass_f64");
+	static const int ntaps[] = { 5, 6, 7, 16, 63, 64, 255 };
+	static const double freqs[] = { 0.01, 0.1, 0.25, 0.45 };
+
+	for(int n : ntaps)
+	{
+		for(double freq : freqs)
+		{
+			GBuf<double> t(n);
+			std::vector<double> want(n);
+			double sum = 0;
+
+			c.label = "GenerateFIRLowpass_f64 n=" + std::to_string(n) + " freq=" + std::to_string(freq);
+			c.status(f(freq, t.p(), n), "GenerateFIRLowpass_f64");
+			for(int i = 0; i < n; ++i)
+			{
+				double x = 2*M_PI*freq*(i - 0.5*(n - 1));
+				double h = 2*freq*(x == 0 ? 1 : sin(x)/x);
+
+				want[i] = h*(0.54 - 0.46*cos(2*M_PI*i/(n - 1)));
+				sum += want[i];
+			}
+			for(int i = 0; i < n; ++i)
+			{
+				c.close("taps", i, t[i], want[i]/sum, 64*DEPS);
+			}
+			t.check(c, "taps");
+		}
+	}
+}
+
 /* ---------------------------------------------------------------- main */
 
 /* Library bugs known but not yet fixed: reported as xfail, see README */
