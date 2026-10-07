@@ -429,8 +429,8 @@ inline vecStatus vectorInitDFTR_f32(vecDFTSpecR_f32 **dftspec, int length, int f
 #define MAX_U32                  MAX_U16 // ((1<<32) - 1)
 #define TWO_PI                   6.283185307179586476925286766559
 #define vecHintAlg               int
-#define vecFFT_NoReNorm          0 // FFTW is always no renomalise
-#define vecFFT_ReNorm            0 // FFTW is always no renomalise
+#define vecFFT_NoReNorm          0 // FFTW never normalises
+#define vecFFT_ReNorm            2 // inverse real transforms divide by N, as IPP_FFT_DIV_INV_BY_N
 #define vecAlgHintFast           0 // FFTW is always Fast
 #define vecAlgHintAccurate       0
 
@@ -469,12 +469,16 @@ typedef struct {
   double im;
 } fc64;  // = fftw_complex
 
-// These fill in for the IppsFFTSpec_R_32f structures. 
+// These fill in for the IppsFFTSpec_R_32f structures.  As with IPP one spec
+// does both directions: p is the forward (r2c) plan from in to out, pinv the
+// inverse (c2r) plan from out to in.
 typedef struct { 
   fftwf_plan p;
   f32 * in; 
   cf32 * out; // Perhaps should be fftwf_complex
   int len; int len2; int len3;
+  fftwf_plan pinv;
+  int flag;
 } GenFFTPtrRf32;
 
 typedef struct { 
@@ -767,14 +771,16 @@ inline vecStatus genericSub_32f_I(const f32 *src, f32 *srcdest, int length)
 { for(int i=0;i<length;i++) {srcdest[i] -= src[i];} return vecNoErr; }
 
 /* #define vectorSub_s32(src1, src2, dest, length)                             ippsSub_32s_Sfs(src1, src2, dest, length, 0) */
+// As ippsSub_32s_Sfs: dest = src2 - src1
 inline vecStatus genericSub_32s(const s32 *src1,const s32 *src2, s32 *dest, int length)
-{ for(int i=0;i<length;i++) {dest[i] = src1[i]-src2[i];} return vecNoErr; }
+{ for(int i=0;i<length;i++) {dest[i] = src2[i]-src1[i];} return vecNoErr; }
 /* #define vectorSub_cf32_I(src, srcdest, length)                              ippsSub_32fc_I(src, srcdest, length) */
 inline vecStatus genericSub_32fc_I(const cf32 *src, cf32 *srcdest, int length)
 { for(int i=0;i<length;i++) {srcdest[i].re -= src[i].re;srcdest[i].im -= src[i].im;} return vecNoErr; }
 /*#define vectorSub_cf32(src1, src2, dest, length)                            ippsSub_32fc(src1, src2, dest, length)*/
+// As ippsSub_32fc: dest = src2 - src1
 inline vecStatus genericSub_32fc(const cf32 *src1,const cf32 *src2, cf32 *dest, int length)
-{ for(int i=0;i<length;i++) {dest[i].re = src1[i].re-src2[i].re;dest[i].im = src1[i].im-src2[i].im;} return vecNoErr; }
+{ for(int i=0;i<length;i++) {dest[i].re = src2[i].re-src1[i].re;dest[i].im = src2[i].im-src1[i].im;} return vecNoErr; }
 
 /* #define vectorSum_cf32(src, length, sum, hint)                              ippsSum_32fc(src, length, sum, hint) */
 inline vecStatus genericSum_32fc(const cf32 *src, int length, cf32 *sum)
@@ -800,13 +806,17 @@ inline vecStatus genericInitDFTR_f32(GenFFTPtrRf32 **fftspec, int length, int fl
   fftspec[0]->len = length;
   fftspec[0]->len2 = 1;
   fftspec[0]->len3 = 1;
+  fftspec[0]->flag = flag;
   fftspec[0]->in = (f32 *) fftwf_malloc(fftspec[0]->len*sizeof(f32)); 
   fftspec[0]->out = (cf32 *) fftwf_malloc((fftspec[0]->len/2+1)*sizeof(cf32)); 
   pthread_mutex_lock(&FFTinitMutex);
   fftspec[0]->p = fftwf_plan_dft_r2c_1d(fftspec[0]->len,fftspec[0]->in, (fftwf_complex *) fftspec[0]->out, FFTW_ESTIMATE);
+  fftspec[0]->pinv = fftwf_plan_dft_c2r_1d(fftspec[0]->len, (fftwf_complex *) fftspec[0]->out, fftspec[0]->in, FFTW_ESTIMATE);
   pthread_mutex_unlock(&FFTinitMutex);
+  *wbufsize = 0;	// FFTW needs no work buffer
+  *fftworkbuf = 0;
   return vecNoErr;
-} // Always FORWARD
+} // Forward with p, inverse with pinv
 
 inline vecStatus genericInitDFTCR_f32(GenFFTPtrCRf32 **fftspec, int length, int flag, vecHintAlg hint, int *wbufsize, u8 **fftworkbuf) {
   fftspec[0] = (GenFFTPtrCRf32 *) malloc(sizeof(GenFFTPtrCRf32)); 
@@ -818,8 +828,10 @@ inline vecStatus genericInitDFTCR_f32(GenFFTPtrCRf32 **fftspec, int length, int 
   pthread_mutex_lock(&FFTinitMutex);
   fftspec[0]->p = fftwf_plan_dft_c2r_1d(fftspec[0]->len,(fftwf_complex *) fftspec[0]->in, fftspec[0]->out, FFTW_ESTIMATE); 
   pthread_mutex_unlock(&FFTinitMutex);
+  *wbufsize = 0;	// FFTW needs no work buffer
+  *fftworkbuf = 0;
   return vecNoErr;
-} // Always BACKWARDS
+} // Always BACKWARDS, unnormalised
 
 inline vecStatus genericInitDFTC_cf32(GenFFTPtrCfc32 **fftspec, int length, int flag, vecHintAlg hint, int *wbufsize, u8 **fftworkbuf) {
   fftspec[0] = (GenFFTPtrCfc32 *) malloc(sizeof(GenFFTPtrCfc32)); 
@@ -841,6 +853,9 @@ inline vecStatus genericInitFFTC_cf32(GenFFTPtrCfc32 **fftspec, int order, int f
 }  
 inline vecStatus genericInitFFTR_f32(GenFFTPtrRf32 **fftspec, int order, int flag, vecHintAlg hint, int *wbufsize, u8 **fftworkbuf) {
   return genericInitDFTR_f32(fftspec, 1<<order, flag, hint, wbufsize, fftworkbuf);
+}  
+inline vecStatus genericInitFFTCR_f32(GenFFTPtrCRf32 **fftspec, int order, int flag, vecHintAlg hint, int *wbufsize, u8 **fftworkbuf) {
+  return genericInitDFTCR_f32(fftspec, 1<<order, flag, hint, wbufsize, fftworkbuf);
 }  
 
 inline vecStatus generic2DInitFFTC_32fc(GenFFTPtrCfc32 **fftspec, int orderx, int ordery, int flag, vecHintAlg hint)
@@ -986,6 +1001,7 @@ inline vecStatus genFreeFFTR_f32(GenFFTPtrRf32* fftspec) {
   fftwf_free(fftspec->out);
   pthread_mutex_lock(&FFTinitMutex);
   fftwf_destroy_plan(fftspec->p);
+  fftwf_destroy_plan(fftspec->pinv);
   pthread_mutex_unlock(&FFTinitMutex);
   free(fftspec);return vecNoErr; 
 }
@@ -1026,7 +1042,19 @@ inline vecStatus genFFT_CtoC_cf32(const cf32 *src, cf32 *dest, GenFFTPtrCfc32* f
      fftwf_execute(fftspec->p);
      memcpy(dest, fftspec->out, fftspec->len*sizeof(cf32));
      return vecNoErr; }
+// Inverse of the real forward transform, as ippsFFTInv_CCSToR_32f: input is
+// CCS (len/2+1 complex values), output len reals, divided by len if the
+// spec was made with vecFFT_ReNorm
 inline vecStatus genFFT_CtoR_f32(const f32* src, f32* dest, GenFFTPtrRf32*fftspec,u8 * fftbuffer)
+   { memcpy(fftspec->out, src, (fftspec->len/2+1)*sizeof(cf32)); 
+     fftwf_execute(fftspec->pinv); 
+     if(fftspec->flag == vecFFT_ReNorm)
+       { f32 s = 1.0f/fftspec->len; for(int i=0;i<fftspec->len;i++) dest[i] = fftspec->in[i]*s; }
+     else
+       memcpy(dest, fftspec->in, fftspec->len*sizeof(f32)); 
+     return vecNoErr; }
+// The same with an inverse-only spec (vectorInitDFTCR_f32/vectorInitFFTCR_f32): unnormalised
+inline vecStatus genFFT_CtoR_f32(const f32* src, f32* dest, GenFFTPtrCRf32*fftspec,u8 * fftbuffer)
    { memcpy(fftspec->in, src, (fftspec->len/2+1)*sizeof(cf32)); 
      fftwf_execute(fftspec->p); 
      memcpy(dest, fftspec->out, fftspec->len*sizeof(f32)); 

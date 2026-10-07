@@ -1,0 +1,9 @@
+test_architecture
+bench_architecture
+*.o
+*.dSYM
+*.csv
+arch_generic.h
+arch_ipp.h
+arch_generic_skips.h
+arch_ipp_skips.h
