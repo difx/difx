@@ -7851,6 +7851,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	unsigned int word2;
 	const unsigned char *headerbytes;
 	unsigned char bitspersample;
+	int npad;
 	int dataframelength;
 	double dns;
 
@@ -7874,17 +7875,22 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	ms->framebytes = f->databytesperpacket + f->frameheadersize;
 	ms->blanker = blanker_vdif;
 
+	/* VDIF packs channels in powers of 2: e.g. 3 channels are stored as 4 */
+	for(npad = 1; npad < ms->nchan; npad *= 2)
+	{
+	}
+
 	/* FIXME: if nbit is not a power of 2, this formula breaks down! */
-	ms->samplegranularity = 8/(ms->nchan*bitspersample*ms->decimation);
+	ms->samplegranularity = 8/(npad*bitspersample*ms->decimation);
 	if(ms->samplegranularity <= 0)
 	{
 		ms->samplegranularity = 1;
 	}
 	
-	ms->framesamples = ms->databytes*8/(ms->nchan*bitspersample*ms->decimation);
+	ms->framesamples = ms->databytes*8/(npad*bitspersample*ms->decimation);
 
 	// Don't think these are needed..... CJP
-        f->completesamplesperword = 32/(bitspersample*ms->nchan);
+        f->completesamplesperword = 32/(bitspersample*npad);
 
         ms->framegranularity = 1;
         if(ms->framesperperiod > 0 && ms->alignmentseconds > 0)
@@ -8001,7 +8007,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		ms->payloadoffset = f->frameheadersize;
 		ms->databytes = f->databytesperpacket;
 		ms->framebytes = f->databytesperpacket + f->frameheadersize;
-		ms->framesamples = ms->databytes*8/(ms->nchan*bitspersample*ms->decimation);
+		ms->framesamples = ms->databytes*8/(npad*bitspersample*ms->decimation);
 		
 		/* get time again so ms->framens is used */
 		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);

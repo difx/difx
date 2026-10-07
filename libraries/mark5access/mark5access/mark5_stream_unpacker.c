@@ -116,6 +116,23 @@ int mark5_unpack(struct mark5_stream *ms, const void *packed, float **unpacked, 
 	return ms->decode(ms, nsamp, unpacked);
 }
 
+/* Byte offset within a frame's payload of sample offsetsamples, given the
+ * number of bits per sample of one channel.  VDIF packs channels in powers
+ * of 2 (e.g. 3 channels are stored as 4), so round nchan up for VDIF. */
+static int unpack_readposition(const struct mark5_stream *ms, int offsetsamples, int bitspersample)
+{
+	int nchan = ms->nchan;
+
+	if(ms->format == MK5_FORMAT_VDIF || ms->format == MK5_FORMAT_VDIFL)
+	{
+		for(nchan = 1; nchan < ms->nchan; nchan *= 2)
+		{
+		}
+	}
+
+	return (offsetsamples % ms->framesamples)*nchan*bitspersample*ms->decimation/8;
+}
+
 int mark5_unpack_with_offset(struct mark5_stream *ms, const void *packed, int offsetsamples, float **unpacked, int nsamp)
 {
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
@@ -132,7 +149,7 @@ int mark5_unpack_with_offset(struct mark5_stream *ms, const void *packed, int of
 	}
 
 	/* set readposition to first desired sample */
-	ms->readposition = (offsetsamples % ms->framesamples)*ms->nchan*ms->nbit*ms->decimation/8;
+	ms->readposition = unpack_readposition(ms, offsetsamples, ms->nbit);
 
 	return ms->decode(ms, nsamp, unpacked);
 }
@@ -174,7 +191,7 @@ int mark5_unpack_complex_with_offset(struct mark5_stream *ms, const void *packed
 	}
 
 	/* set readposition to first desired sample */
-	ms->readposition = (offsetsamples % ms->framesamples)*ms->nchan*ms->nbit*2*ms->decimation/8;
+	ms->readposition = unpack_readposition(ms, offsetsamples, ms->nbit*2);
 
 	/* Do NOT call ms->blanker(ms) here: mark5_stream_next_frame() above has
 	 * already run either the blanker (frame validated good) or

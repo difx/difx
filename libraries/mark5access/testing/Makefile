@@ -37,6 +37,7 @@ bench_vdif_unpack: bench_vdif_unpack.c vdif_common.o vdif_common.h $(M5LIB)
 
 test: test_vdif_unpack
 	./test_vdif_unpack
+	VDIF_NO_SIMD=1 ./test_vdif_unpack -m '*-1bit-*,*-2bit-*,*-4bit-*'
 	SYMMETRIC_8_BIT_VDIF=1 ./test_vdif_unpack -m '*-8bit-*'
 
 bench: bench_vdif_unpack

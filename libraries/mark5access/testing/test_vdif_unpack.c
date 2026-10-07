@@ -572,17 +572,16 @@ static const char *testnames[NUM_TESTS] = { "meta", "stream", "blank", "unpack",
  * can be updated. */
 static const char *known_failure(const struct vdif_mode *m, enum testkind t)
 {
-	if(m->npad != m->nchan)
-	{
-		if(t == TEST_META)
-		{
-			return "format_vdif.c init computes framesamples/samplegranularity from nchan, not nchan rounded up to a power of 2";
-		}
-		if(t == TEST_UNPACK)
-		{
-			return "mark5_unpack*_with_offset() computes readposition and frame from unpadded nchan";
-		}
-	}
+	/* No known failures at present.  Entries look like:
+	 *
+	 * if(!m->iscomplex && m->nbit == 4 && m->nchan == 16 && t == TEST_BLANK)
+	 * {
+	 *	return "description of the library bug";
+	 * }
+	 */
+	(void)m;
+	(void)t;
+
 	return 0;
 }
 

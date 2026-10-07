@@ -977,10 +977,20 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
     case K5VSSP:
     case K5VSSP32:
     case INTERLACEDVDIF:
-      framesamples = getFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*getDNumRecordedBands(configindex, datastreamindex)*streamdecimationfactor);
+      {
+      int framebands = getDNumRecordedBands(configindex, datastreamindex);
+      if(stream.format == VDIF || stream.format == VDIFL || stream.format == INTERLACEDVDIF) {
+        //VDIF packs channels in powers of 2 (e.g. 3 bands are stored as 4), as does mark5access.
+        //vex2difx normally pads the recorded bands to a power of 2 already, in which case this has no effect
+        int paddedbands = 1;
+        while(paddedbands < framebands)
+          paddedbands *= 2;
+        framebands = paddedbands;
+      }
+      framesamples = getFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*framebands*streamdecimationfactor);
       framebytes = getFrameBytes(configindex, datastreamindex);
       if(stream.format == INTERLACEDVDIF) { //separate frames for each subband - change numsamples, framebytes to the muxed version
-        framesamples = getMultiplexedFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*getDNumRecordedBands(configindex, datastreamindex)*streamdecimationfactor);
+        framesamples = getMultiplexedFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*framebands*streamdecimationfactor);
         framebytes = getMultiplexedFrameBytes(configindex, datastreamindex);
       }
       if(stream.sampling == COMPLEX)
@@ -989,6 +999,7 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
       }
 
       return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, framebytes, framesamples, stream.format);
+      }
 
       break;
     default:
