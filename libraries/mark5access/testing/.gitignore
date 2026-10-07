@@ -3,3 +3,4 @@ bench_vdif_unpack
 *.o
 *.dSYM
 *.csv
+test_codif_unpack

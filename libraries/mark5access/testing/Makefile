@@ -18,9 +18,10 @@ CFLAGS   ?= -O2 -g
 CFLAGS   += -Wall -I$(M5TOP)
 # libmark5access may be linked with codifio; take the flags configure found
 EXTRALIBS ?= $(shell sed -n 's/^CODIFIO_LIBS = //p' $(M5LIBDIR)/Makefile 2>/dev/null)
+CODIFIO_CFLAGS ?= $(shell sed -n 's/^CODIFIO_CFLAGS = //p' $(M5LIBDIR)/Makefile 2>/dev/null)
 LDLIBS    = $(M5LIB) $(EXTRALIBS) -lm
 
-PROGS = test_vdif_unpack bench_vdif_unpack
+PROGS = test_vdif_unpack test_codif_unpack bench_vdif_unpack
 
 all: $(PROGS)
 
@@ -32,14 +33,18 @@ vdif_common.o: vdif_common.c vdif_common.h
 test_vdif_unpack: test_vdif_unpack.c vdif_common.o vdif_common.h $(M5LIB)
 	$(CC) $(CFLAGS) -o $@ test_vdif_unpack.c vdif_common.o $(LDLIBS)
 
+test_codif_unpack: test_codif_unpack.c vdif_common.o vdif_common.h $(M5LIB)
+	$(CC) $(CFLAGS) $(CODIFIO_CFLAGS) -o $@ test_codif_unpack.c vdif_common.o $(LDLIBS)
+
 bench_vdif_unpack: bench_vdif_unpack.c vdif_common.o vdif_common.h $(M5LIB)
 	$(CC) $(CFLAGS) -o $@ bench_vdif_unpack.c vdif_common.o $(LDLIBS)
 
-test: test_vdif_unpack
+test: test_vdif_unpack test_codif_unpack
 	./test_vdif_unpack
 	VDIF_NO_SIMD=1 ./test_vdif_unpack
 	VDIF_LEGACY_DECODE=1 ./test_vdif_unpack
 	SYMMETRIC_8_BIT_VDIF=1 ./test_vdif_unpack -m '*-8bit-*'
+	./test_codif_unpack
 
 bench: bench_vdif_unpack
 	./bench_vdif_unpack

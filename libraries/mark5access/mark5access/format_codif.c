@@ -63,7 +63,7 @@ struct mark5_format_codif
 
 #warning "********FIXME***** CODIF supports offset binary and 2s complement. Update luts"
 
-int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex_decodeFunc *complex_decode, countFunc *count);
+static int codif_set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex_decodeFunc *complex_decode, countFunc *count);
 double get_codif_framens(const codif_header *header);
 int get_codif_framegranularity(const codif_header *header);
 
@@ -295,55 +295,6 @@ static int codif_decode_2channel_1bit(struct mark5_stream *ms, int nsamp, float 
 	return nsamp - 4*nblank;
 }
 
-/* this is 3 channels packed into a 4-channel format.  The highest number channel is ignored */
-static int codif_decode_3channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp = zeros;
-			nblank++;
-		}
-		else
-		{
-			fp = lut1bit[buf[i]];
-		}
-
-		i++;
-
-		data[0][o] = fp[0];
-		data[1][o] = fp[1];
-		data[2][o] = fp[2];
-		o++;
-		data[0][o] = fp[4];
-		data[1][o] = fp[5];
-		data[2][o] = fp[6];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - 2*nblank;
-}
-
 static int codif_decode_4channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
@@ -392,150 +343,6 @@ static int codif_decode_4channel_1bit(struct mark5_stream *ms, int nsamp, float 
 	ms->readposition = i;
 
 	return nsamp - 2*nblank;
-}
-
-/* this is 5 channels packed into a 8-channel format.  The 3 highest channels are ignored */
-static int codif_decode_5channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp = zeros;
-			nblank++;
-		}
-		else
-		{
-			fp = lut1bit[buf[i]];
-		}
-
-		i++;
-
-		data[0][o] = fp[0];
-		data[1][o] = fp[1];
-		data[2][o] = fp[2];
-		data[3][o] = fp[3];
-		data[4][o] = fp[4];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - nblank;
-}
-
-/* this is 6 channels packed into a 8-channel format.  The 2 highest channels are ignored */
-static int codif_decode_6channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp = zeros;
-			nblank++;
-		}
-		else
-		{
-			fp = lut1bit[buf[i]];
-		}
-
-		i++;
-
-		data[0][o] = fp[0];
-		data[1][o] = fp[1];
-		data[2][o] = fp[2];
-		data[3][o] = fp[3];
-		data[4][o] = fp[4];
-		data[5][o] = fp[5];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - nblank;
-}
-
-/* this is 7 channels packed into a 8-channel format.  The highest channel is ignored */
-static int codif_decode_7channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp = zeros;
-			nblank++;
-		}
-		else
-		{
-			fp = lut1bit[buf[i]];
-		}
-
-		i++;
-
-		data[0][o] = fp[0];
-		data[1][o] = fp[1];
-		data[2][o] = fp[2];
-		data[3][o] = fp[3];
-		data[4][o] = fp[4];
-		data[5][o] = fp[5];
-		data[6][o] = fp[6];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - nblank;
 }
 
 static int codif_decode_8channel_1bit(struct mark5_stream *ms, int nsamp, float **data)
@@ -819,50 +626,6 @@ static int codif_decode_2channel_2bit(struct mark5_stream *ms, int nsamp, float 
 	return nsamp - 2*nblank;
 }
 
-static int codif_decode_3channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp = zeros;
-			nblank++;
-		}
-		else
-		{
-			fp = lut2bit[buf[i]];
-		}
-
-		i++;
-
-		data[0][o] = fp[0];
-		data[1][o] = fp[1];
-		data[2][o] = fp[2];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - nblank;
-}
-
 static int codif_decode_4channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
@@ -891,156 +654,6 @@ static int codif_decode_4channel_2bit(struct mark5_stream *ms, int nsamp, float 
 		data[1][o] = fp[1];
 		data[2][o] = fp[2];
 		data[3][o] = fp[3];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - nblank;
-}
-
-static int codif_decode_5channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp0, *fp1;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp0 = fp1 = zeros;
-			nblank++;
-			i+=2;
-		}
-		else
-		{
-			fp0 = lut2bit[buf[i]];
-			i++;
-			fp1 = lut2bit[buf[i]];
-			i++;
-		}
-
-
-		data[0][o] = fp0[0];
-		data[1][o] = fp0[1];
-		data[2][o] = fp0[2];
-		data[3][o] = fp0[3];
-		data[4][o] = fp1[0];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - nblank;
-}
-
-static int codif_decode_6channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp0, *fp1;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp0 = fp1 = zeros;
-			nblank++;
-			i+=2;
-		}
-		else
-		{
-			fp0 = lut2bit[buf[i]];
-			i++;
-			fp1 = lut2bit[buf[i]];
-			i++;
-		}
-
-
-		data[0][o] = fp0[0];
-		data[1][o] = fp0[1];
-		data[2][o] = fp0[2];
-		data[3][o] = fp0[3];
-		data[4][o] = fp1[0];
-		data[5][o] = fp1[1];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - nblank;
-}
-
-static int codif_decode_7channel_2bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp0, *fp1;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp0 = fp1 = zeros;
-			nblank++;
-			i+=2;
-		}
-		else
-		{
-			fp0 = lut2bit[buf[i]];
-			i++;
-			fp1 = lut2bit[buf[i]];
-			i++;
-		}
-
-
-		data[0][o] = fp0[0];
-		data[1][o] = fp0[1];
-		data[2][o] = fp0[2];
-		data[3][o] = fp0[3];
-		data[4][o] = fp1[0];
-		data[5][o] = fp1[1];
-		data[6][o] = fp1[2];
 
 		if(i >= ms->databytes)
 		{
@@ -1487,52 +1100,6 @@ static int codif_decode_2channel_4bit(struct mark5_stream *ms, int nsamp, float 
 	return nsamp - nblank;
 }
 
-static int codif_decode_3channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp0, *fp1;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp0 = fp1 = zeros;
-			nblank++;
-			i += 2;
-		}
-		else
-		{
-			fp0 = lut4bit[buf[i]];
-			i++;
-			fp1 = lut4bit[buf[i]];
-			i++;
-		}
-
-		data[0][o] = fp0[0];
-		data[1][o] = fp0[1];
-		data[2][o] = fp1[0];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - nblank;
-}
-
 static int codif_decode_4channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
@@ -1563,165 +1130,6 @@ static int codif_decode_4channel_4bit(struct mark5_stream *ms, int nsamp, float 
 		data[1][o] = fp0[1];
 		data[2][o] = fp1[0];
 		data[3][o] = fp1[1];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - nblank;
-}
-
-static int codif_decode_5channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp0, *fp1, *fp2, *fp3;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			nblank++;
-			i += 4;
-		}
-		else
-		{
-			fp0 = lut4bit[buf[i]];
-			i++;
-			fp1 = lut4bit[buf[i]];
-			i++;
-			fp2 = lut4bit[buf[i]];
-			i++;
-			fp3 = lut4bit[buf[i]];
-			i++;
-		}
-
-		data[0][o] = fp0[0];
-		data[1][o] = fp0[1];
-		data[2][o] = fp1[0];
-		data[3][o] = fp1[1];
-		data[4][o] = fp2[0];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - nblank;
-}
-
-static int codif_decode_6channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp0, *fp1, *fp2, *fp3;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			nblank++;
-			i += 4;
-		}
-		else
-		{
-			fp0 = lut4bit[buf[i]];
-			i++;
-			fp1 = lut4bit[buf[i]];
-			i++;
-			fp2 = lut4bit[buf[i]];
-			i++;
-			fp3 = lut4bit[buf[i]];
-			i++;
-		}
-
-		data[0][o] = fp0[0];
-		data[1][o] = fp0[1];
-		data[2][o] = fp1[0];
-		data[3][o] = fp1[1];
-		data[4][o] = fp2[0];
-		data[5][o] = fp2[1];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - nblank;
-}
-
-static int codif_decode_7channel_4bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp0, *fp1, *fp2, *fp3;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			nblank++;
-			i += 4;
-		}
-		else
-		{
-			fp0 = lut4bit[buf[i]];
-			i++;
-			fp1 = lut4bit[buf[i]];
-			i++;
-			fp2 = lut4bit[buf[i]];
-			i++;
-			fp3 = lut4bit[buf[i]];
-			i++;
-		}
-
-		data[0][o] = fp0[0];
-		data[1][o] = fp0[1];
-		data[2][o] = fp1[0];
-		data[3][o] = fp1[1];
-		data[4][o] = fp2[0];
-		data[5][o] = fp2[1];
-		data[6][o] = fp3[0];
 
 		if(i >= ms->databytes)
 		{
@@ -1852,6 +1260,7 @@ static int codif_decode_2channel_8bit(struct mark5_stream *ms, int nsamp, float 
 		{
 			fp0 = fp1 = zeros;
 			nblank++;
+			i += 2;
 		}
 		else
 		{
@@ -1863,55 +1272,6 @@ static int codif_decode_2channel_8bit(struct mark5_stream *ms, int nsamp, float 
 
 		data[0][o] = fp0[0];
 		data[1][o] = fp1[0];
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i;
-
-	return nsamp - nblank;
-}
-
-static int codif_decode_3channel_8bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-	const unsigned char *buf;
-	const float *fp0, *fp1, *fp2, *fp3;
-	int o, i;
-	int nblank = 0;
-
-	buf = ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
-		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			nblank++;
-		}
-		else
-		{
-			fp0 = &lut8bit[buf[i]];
-			i++;
-			fp1 = &lut8bit[buf[i]];
-			i++;
-			fp2 = &lut8bit[buf[i]];
-			i++;
-			fp3 = &lut8bit[buf[i]];
-			i++;
-		}
-
-		data[0][o] = fp0[0];
-		data[1][o] = fp1[0];
-		data[2][o] = fp2[0];
 
 		if(i >= ms->databytes)
 		{
@@ -1945,6 +1305,7 @@ static int codif_decode_4channel_8bit(struct mark5_stream *ms, int nsamp, float 
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			nblank++;
+			i += 4;
 		}
 		else
 		{
@@ -2041,8 +1402,8 @@ static int codif_decode_2channel_16bit(struct mark5_stream *ms, int nsamp, float
 		}
 		else
 		{
-		        data[0][o] = buf[i++]/8;
-		        data[1][o] = buf[i++]/8;
+		        data[0][o] = buf[i++]/8.0;
+		        data[1][o] = buf[i++]/8.0;
 		}
 
 
@@ -2062,9 +1423,9 @@ static int codif_decode_2channel_16bit(struct mark5_stream *ms, int nsamp, float
 	return nsamp - nblank;
 }
 
-static int codif_decode_3channel_16bit(struct mark5_stream *ms, int nsamp, float **data)
+static int codif_decode_4channel_16bit(struct mark5_stream *ms, int nsamp, float **data)
 {
-	const int16_t *buf;
+        const int16_t *buf;
 	int o, i;
 	int nblank = 0;
 
@@ -2074,51 +1435,6 @@ static int codif_decode_3channel_16bit(struct mark5_stream *ms, int nsamp, float
 	for(o = 0; o < nsamp; o++)
 	{
 		if(i*2 >= ms->blankzoneendvalid[0])
-		{
-			data[0][o] = 0.0;
-			data[1][o] = 0.0;
-			data[2][o] = 0.0;
-			nblank++;
-			i += 4;
-		}
-		else
-		{
-		        data[0][o] = buf[i++]/8;
-		        data[1][o] = buf[i++]/8;
-		        data[2][o] = buf[i++]/8;
-			i++;
-		}
-
-
-		if(i*2 >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = (const int16_t*)ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i*2;
-
-	return nsamp - nblank;
-}
-
-
-static int codif_decode_4channel_16bit(struct mark5_stream *ms, int nsamp, float **data)
-{
-        const int16_t *buf;
-	int o, i;
-	int nblank = 0;
-
-	buf = (const int16_t*)ms->payload;
-	i = ms->readposition;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i >= ms->blankzoneendvalid[0])
 		{
 			data[0][o] = 0.0;
 			data[1][o] = 0.0;
@@ -2159,11 +1475,11 @@ static int codif_decode_8channel_16bit(struct mark5_stream *ms, int nsamp, float
 	int nblank = 0;
 
 	buf = (const int16_t*)ms->payload;
-	i = ms->readposition;
+	i = ms->readposition/2;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		if(i >= ms->blankzoneendvalid[0])
+		if(i*2 >= ms->blankzoneendvalid[0])
 		{
 			data[0][o] = 0.0;
 			data[1][o] = 0.0;
@@ -2212,11 +1528,11 @@ static int codif_decode_16channel_16bit(struct mark5_stream *ms, int nsamp, floa
 	int nblank = 0;
 
 	buf = (const int16_t*)ms->payload;
-	i = ms->readposition;
+	i = ms->readposition/2;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		if(i >= ms->blankzoneendvalid[0])
+		if(i*2 >= ms->blankzoneendvalid[0])
 		{
 			data[0][o] = 0.0;
 			data[1][o] = 0.0;
@@ -2353,7 +1669,6 @@ static int codif_complex_decode_1channel_1bit(struct mark5_stream *ms, int nsamp
 		data[0][o] = fcp[2];
 		o++;
 		data[0][o] = fcp[3];
-		o++;
 
 		if(i >= ms->databytes)
 		{
@@ -2400,7 +1715,6 @@ static int codif_complex_decode_2channel_1bit(struct mark5_stream *ms, int nsamp
 		o++;
 		data[0][o] = fcp[2];
 		data[1][o] = fcp[3];
-		o++;
 
 		if(i >= ms->databytes)
 		{
@@ -3137,6 +2451,7 @@ static int codif_complex_decode_1channel_8bit(struct mark5_stream *ms, int nsamp
 		{
 			data[0][o] = complex_zeros[0];
 			nblank++;
+			i += 2;
 		}
 		else
 		{
@@ -3177,6 +2492,7 @@ static int codif_complex_decode_2channel_8bit(struct mark5_stream *ms, int nsamp
 			data[0][o] = complex_zeros[0];
 			data[1][o] = complex_zeros[0];
 			nblank++;
+			i += 4;
 		}
 		else
 		{
@@ -3220,6 +2536,7 @@ static int codif_complex_decode_4channel_8bit(struct mark5_stream *ms, int nsamp
 			data[2][o] = complex_zeros[0];
 			data[3][o] = complex_zeros[0];
 			nblank++;
+			i += 8;
 		}
 		else
 		{
@@ -3366,6 +2683,7 @@ static int codif_complex_decode_1channel_16bit(struct mark5_stream *ms, int nsam
 		{
 			data[0][o] = complex_zeros[0];
 			nblank++;
+			i += 2;
 		}
 		else
 		{
@@ -3406,6 +2724,7 @@ static int codif_complex_decode_2channel_16bit(struct mark5_stream *ms, int nsam
 			data[0][o] = complex_zeros[0];
 			data[1][o] = complex_zeros[0];
 			nblank++;
+			i += 4;
 		}
 		else
 		{
@@ -3446,8 +2765,9 @@ static int codif_complex_decode_4channel_16bit(struct mark5_stream *ms, int nsam
 		{
 		  for (j=0; j<4; j++) {
 			data[j][o] = complex_zeros[0];
-			nblank++;
 		  }
+		  nblank++;
+		  i += 8;
 		}
 		else
 		{
@@ -3489,54 +2809,13 @@ static int codif_complex_decode_8channel_16bit(struct mark5_stream *ms, int nsam
 		{
 		  for (j=0; j<8; j++) {
 			data[j][o] = complex_zeros[0];
-			nblank++;
 		  }
+		  nblank++;
+		  i += 16;
 		}
 		else
 		{
 		  for (j=0; j<8; j++) {
-		        data[j][o] = (buf[i] + buf[i+1]*I)/8.0;  // Assume RMS==8
-			i+=2;
-		  }
-		}
-
-		if(i*2 >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
-			{
-				return -1;
-			}
-			buf = (const int16_t *)ms->payload;
-			i = 0;
-		}
-	}
-
-	ms->readposition = i*2;
-
-	return nsamp - nblank;
-}
-
-static int codif_complex_decode_14channel_16bit(struct mark5_stream *ms, int nsamp, float complex **data)
-{
-	const int16_t *buf;
-	int o, i, j;
-	int nblank = 0;
-
-	buf = (const int16_t *)ms->payload;
-	i = ms->readposition/2;
-
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i*2 >= ms->blankzoneendvalid[0])
-		{
-		  for (j=0; j<14; j++) {
-			data[j][o] = complex_zeros[0];
-			nblank++;
-		  }
-		}
-		else
-		{
-		  for (j=0; j<14; j++) {
 		        data[j][o] = (buf[i] + buf[i+1]*I)/8.0;  // Assume RMS==8
 			i+=2;
 		  }
@@ -3573,8 +2852,9 @@ static int codif_complex_decode_16channel_16bit(struct mark5_stream *ms, int nsa
 		{
 		  for (j=0; j<16; j++) {
 			data[j][o] = complex_zeros[0];
-			nblank++;
 		  }
+		  nblank++;
+		  i += 32;
 		}
 		else
 		{
@@ -3652,6 +2932,111 @@ static int codif_complex_decode_1channel_32bit(struct mark5_stream *ms, int nsam
 
 /************************ 2-bit state counters *********************/
 /* Note: these only count high vs. low states, not full state counts */
+
+/* Generic decoder for any number of channels and bits.  CODIF packs channels
+ * densely, so with a channel count that is not a power of 2 a sample need not
+ * start on a byte boundary: decode in units of samplegranularity samples,
+ * which always span a whole number of bytes.  Channel c of sample s starts at
+ * bit (s*nchan + c)*bitspersample of the unit, real part first for complex.
+ * Values are as the per-mode decoders give.  Slower than those decoders, so
+ * used only where there is none. */
+static inline float codif_generic_value(const unsigned char *p, int bit, int nbit)
+{
+	const unsigned char *b = p + bit/8;
+	uint32_t code;
+
+	switch(nbit)
+	{
+	case 1:
+		return lut1bit[(b[0] >> (bit % 8)) & 0x01][0];
+	case 2:
+		return lut2bit[(b[0] >> (bit % 8)) & 0x03][0];
+	case 4:
+		return lut4bit[(b[0] >> (bit % 8)) & 0x0F][0];
+	case 8:
+		return lut8bit[b[0]];
+	case 16:
+		return (int16_t)(b[0] | (b[1] << 8))/8.0;
+	case 32:
+		{
+			float f;
+
+			code = b[0] | (b[1] << 8) | (b[2] << 16) | ((uint32_t)b[3] << 24);
+			memcpy(&f, &code, sizeof(f));
+
+			return f;
+		}
+	}
+
+	return 0.0;
+}
+
+static int codif_decode_generic_floats(struct mark5_stream *ms, int nsamp, float **data, int parts)
+{
+	const int nbit = ms->nbit;
+	const int nchan = ms->nchan;
+	const int G = ms->samplegranularity;			/* samples per unit */
+	const int U = G*nchan*nbit*parts/8;			/* bytes per unit */
+	int o, i, s, c, p;
+	int nblank = 0;
+
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o += G)
+	{
+		if(i >= ms->blankzoneendvalid[0])
+		{
+			for(c = 0; c < nchan; ++c)
+			{
+				for(s = 0; s < G*parts; ++s)
+				{
+					data[c][o*parts + s] = 0.0;
+				}
+			}
+			nblank += G;
+		}
+		else
+		{
+			const unsigned char *up = ms->payload + i;
+
+			for(s = 0; s < G; ++s)
+			{
+				for(c = 0; c < nchan; ++c)
+				{
+					for(p = 0; p < parts; ++p)
+					{
+						data[c][(o + s)*parts + p] = codif_generic_value(up, ((s*nchan + c)*parts + p)*nbit, nbit);
+					}
+				}
+			}
+		}
+
+		i += U;
+
+		if(i >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int codif_decode_generic(struct mark5_stream *ms, int nsamp, float **data)
+{
+	return codif_decode_generic_floats(ms, nsamp, data, 1);
+}
+
+static int codif_complex_decode_generic(struct mark5_stream *ms, int nsamp, float complex **data)
+{
+	return codif_decode_generic_floats(ms, nsamp, (float **)data, 2);
+}
 
 static int codif_count_1channel_2bit(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
@@ -4197,6 +3582,11 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 		}
 		f->databytesperpacket = dataarraylength;
 
+		/* refresh what was derived from the values just checked */
+		ms->payloadoffset = f->frameheadersize;
+		ms->databytes = f->databytesperpacket;
+		ms->framebytes = f->databytesperpacket + f->frameheadersize;
+
 		if (ms->nchan != 0 && ms->nchan != getCODIFNumChannels(header))
 		{
 			fprintf(m5stderr, "CODIF Warning: Changing nchan from %d to %d for %s\n",
@@ -4229,12 +3619,12 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
 		else
 		  ms->iscomplex = 0;
 
-		status = set_decoder(ms->nbit, ms->nchan, header->iscomplex, &ms->decode, &ms->complex_decode, &ms->count);
+		status = codif_set_decoder(ms->nbit, ms->nchan, header->iscomplex, &ms->decode, &ms->complex_decode, &ms->count);
 	
 		if (!status) {
 		  fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d for %s\n", ms->nchan, ms->nbit,
 			  ms->streamname);
-		  return 0;
+		  return -1;
 		}
 		
 	} 
@@ -4254,11 +3644,20 @@ static int mark5_format_codif_init(struct mark5_stream *ms)
         }
 	ms->framesamples = ms->databytes*8/(ms->nchan*bitspersample*ms->decimation);
 
-	/* FIXME: if nbit is not a power of 2, this formula breaks down! */
-	ms->samplegranularity = 8/(ms->nchan*bitspersample*ms->decimation);
-	if(ms->samplegranularity <= 0)
+	/* Smallest number of samples spanning a whole number of bytes.  Channels
+	 * are packed densely, so e.g. 3 channels of 2 bits need 4 samples. */
 	{
-		ms->samplegranularity = 1;
+		int samplebits = ms->nchan*bitspersample*ms->decimation;
+		int a = samplebits, b = 8;
+
+		while(b)
+		{
+			int t = a % b;
+
+			a = b;
+			b = t;
+		}
+		ms->samplegranularity = 8/a;	/* 8/gcd(samplebits, 8) */
 	}
 	
 	// Don't think these are needed..... CJP
@@ -4332,13 +3731,17 @@ static int mark5_format_codif_validate(const struct mark5_stream *ms)
 
 	if(getCODIFSync(header) != CODIF_SYNC)
 	{
+#ifdef DEBUG
 	        fprintf(m5stderr, "mark5_format_codif_validate: Skipping frame with wrong sync (0x%08X)\n", getCODIFSync(header));
+#endif
 	        return 0;
 	}
 
 	if(getCODIFFrameBytes(header) == 0)
 	{
+#ifdef DEBUG
 		fprintf(m5stderr, "mark5_format_codif_validate: Skipping frame with Data Frame Length of zero\n");
+#endif
 		return 0;
 	}
 
@@ -4362,7 +3765,9 @@ static int mark5_format_codif_validate(const struct mark5_stream *ms)
 		{
 			fprintf(m5stdout, "CODIF validate[%lld]: %d %d %f : %d %d %lld\n",
 				ms->framenum,   mjd_d, sec_d, ns_d,   mjd_t, sec_t, ns_t);
+#ifdef DEBUG
 			fprintf(m5stdout, "DEBUG: %d %d\n", getCODIFFrameEpochSecOffset(header), getCODIFFrameNumber(header));
+#endif
 			return 0;
 		}
 	}
@@ -4370,7 +3775,9 @@ static int mark5_format_codif_validate(const struct mark5_stream *ms)
 	/* Check the invalid bit */
 	if(getCODIFFrameInvalid(header))
 	{
+#ifdef DEBUG
 		fprintf(m5stderr, "mark5_format_codif_validate: Skipping invalid frame\n");
+#endif
 		return 0;
 	}
 
@@ -4392,7 +3799,7 @@ void mark5_format_codif_set_leapsecs(struct mark5_stream *ms, int leapsecs)
 	f->leapsecs = leapsecs;
 }
 
-int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex_decodeFunc *complex_decode, countFunc *count) {
+static int codif_set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex_decodeFunc *complex_decode, countFunc *count) {
     int decoderindex = 0;
 
     if(nbit == 1) /* inc by 1000 for each successive value to allow full range of nchan */
@@ -4437,6 +3844,22 @@ int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex
     *complex_decode = 0;
     *count = 0;
 
+    /* CODIF packs channels densely with no power of 2 requirement; the
+     * per-mode decoders below assume samples of a power of 2 number of
+     * channels, so use the generic decoder for other channel counts */
+    if((nchan & (nchan - 1)) != 0)
+      {
+	if(usecomplex)
+	  {
+	    *complex_decode = codif_complex_decode_generic;
+	  }
+	else
+	  {
+	    *decode = codif_decode_generic;
+	  }
+	return 1;
+      }
+
     if(!usecomplex) 
       {
 	switch(decoderindex)
@@ -4447,20 +3870,8 @@ int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex
 	  case 2:
 	    *decode = codif_decode_2channel_1bit;
 	    break;
-	  case 3:
-	    *decode = codif_decode_3channel_1bit;
-	    break;
 	  case 4:
 	    *decode = codif_decode_4channel_1bit;
-	    break;
-	  case 5:
-	    *decode = codif_decode_5channel_1bit;
-	    break;
-	  case 6:
-	    *decode = codif_decode_6channel_1bit;
-	    break;
-	  case 7:
-	    *decode = codif_decode_7channel_1bit;
 	    break;
 	  case 8:
 	    *decode = codif_decode_8channel_1bit;
@@ -4480,21 +3891,9 @@ int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex
 	    *decode = codif_decode_2channel_2bit;
 	    *count = codif_count_2channel_2bit;
 	    break;
-	  case 1003:
-	    *decode = codif_decode_3channel_2bit;
-	    break;
 	  case 1004:
 	    *decode = codif_decode_4channel_2bit;
 	    *count = codif_count_4channel_2bit;
-	    break;
-	  case 1005:
-	    *decode = codif_decode_5channel_2bit;
-	    break;
-	  case 1006:
-	    *decode = codif_decode_6channel_2bit;
-	    break;
-	  case 1007:
-	    *decode = codif_decode_7channel_2bit;
 	    break;
 	  case 1008:
 	    *decode = codif_decode_8channel_2bit;
@@ -4519,20 +3918,8 @@ int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex
 	  case 2002:
 	    *decode = codif_decode_2channel_4bit;
 	    break;
-	  case 2003:
-	    *decode = codif_decode_3channel_4bit;
-	    break;
 	  case 2004:
 	    *decode = codif_decode_4channel_4bit;
-	    break;
-	  case 2005:
-	    *decode = codif_decode_5channel_4bit;
-	    break;
-	  case 2006:
-	    *decode = codif_decode_6channel_4bit;
-	    break;
-	  case 2007:
-	    *decode = codif_decode_7channel_4bit;
 	    break;
 	  case 2008:
 	    *decode = codif_decode_8channel_4bit;
@@ -4544,9 +3931,6 @@ int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex
 	  case 3002:
 	    *decode = codif_decode_2channel_8bit;
 	    break;
-	  case 3003:
-	    *decode = codif_decode_3channel_8bit;
-	    break;
 	  case 3004:
 	    *decode = codif_decode_4channel_8bit;
 	    break;
@@ -4557,16 +3941,13 @@ int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex
 	  case 4002:
 	    *decode = codif_decode_2channel_16bit;
 	    break;
-	  case 4003:
-	    *decode = codif_decode_3channel_16bit;
-	    break;
 	  case 4004:
 	    *decode = codif_decode_4channel_16bit;
 	    break;
-	  case 4005:
+	  case 4008:
 	    *decode = codif_decode_8channel_16bit;
 	    break;
-	  case 4006:
+	  case 4016:
 	    *decode = codif_decode_16channel_16bit;
 	    break;
 	    
@@ -4577,8 +3958,8 @@ int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex
 	
 	if(*decode == 0)
 	  {
-	    fprintf(m5stderr, "CODIF: Unsupported combination channels=%d and bits=%d\n", nchan, nbit);
-	    return 0;
+	    /* no dedicated decoder: use the generic one */
+	    *decode = codif_decode_generic;
 	  }
       }      
     else
@@ -4664,9 +4045,6 @@ int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex
 	  case 4008:
 	    *complex_decode = codif_complex_decode_8channel_16bit;
 	    break;
-	  case 4014:
-	    *complex_decode = codif_complex_decode_14channel_16bit;
-	    break;
 	  case 4016:
 	    *complex_decode = codif_complex_decode_16channel_16bit;
 	    break;
@@ -4678,8 +4056,8 @@ int set_decoder(int nbit, int nchan, int usecomplex, decodeFunc *decode, complex
 	
 	if(*complex_decode == 0)
 	  {
-	    fprintf(m5stderr, "CODIF: Unsupported combination, complex channels=%d and bits=%d\n", nchan, nbit);
-	    return 0;
+	    /* no dedicated decoder: use the generic one */
+	    *complex_decode = codif_complex_decode_generic;
 	  }
 	
       }
@@ -4730,7 +4108,7 @@ struct mark5_format_generic *new_mark5_format_codif(int framesperperiod,
 	f->iscomplex = usecomplex;
 	f->count = 0;
 
-	status = set_decoder(nbit, nchan, usecomplex, &f->decode, &f->complex_decode, &f->count);
+	status = codif_set_decoder(nbit, nchan, usecomplex, &f->decode, &f->complex_decode, &f->count);
 	
 	if (!status) {
 	  fprintf(m5stderr, "CODIF: Unsupported combination decimation=%d, channels=%d and bits=%d\n", decimation, nchan, nbit);
@@ -4793,7 +4171,9 @@ int find_codif_frame(const unsigned char *data, int length, size_t *offset, int 
     uint32_t fsA, fsB, secA, secB;
     codif_header *header;
     
-    for (*offset=0; *offset<length; (*offset)++) {
+    if (length < 2*CODIF_HEADER_BYTES) return -1;
+
+    for (*offset=0; *offset + 2*CODIF_HEADER_BYTES <= (size_t)length; (*offset)++) {
       header = (codif_header*)(data + *offset);
       
       if (header->sync != CODIF_SYNC) continue; // Sync
@@ -4802,7 +4182,7 @@ int find_codif_frame(const unsigned char *data, int length, size_t *offset, int 
       if (!is_legal_codif_framesize(fsA)) {
 	//continue;
       }
-      if (fsA+*offset*2*CODIF_HEADER_BYTES> length) continue;  // Need two frame headers plus offset
+      if (*offset + fsA + 2*CODIF_HEADER_BYTES > (size_t)length) continue;  // Need this frame and the next header
 
       secA = header->seconds;
       refEpochA = header->epoch;
@@ -4879,8 +4259,18 @@ int get_codif_framegranularity(const codif_header *header)
 	{
 		bitspersample *= 2;
 	}
-	uint64_t framesperperiod = (header->totalsamples * getCODIFNumChannels(header) * bitspersample) / (getCODIFFrameBytes(header)*8);
+	uint64_t framesperperiod;
 	int granularity;
+
+	if(getCODIFFrameBytes(header) == 0)
+	{
+		return -1;
+	}
+	framesperperiod = (header->totalsamples * getCODIFNumChannels(header) * bitspersample) / (getCODIFFrameBytes(header)*8);
+	if(framesperperiod == 0)
+	{
+		return -1;
+	}
 	for (granularity=1; granularity<1024; ++granularity)
 	{
 		if (((uint64_t)1000000000*granularity*getCODIFPeriod(header)) % (framesperperiod) == 0)
@@ -4896,53 +4286,50 @@ int get_codif_framegranularity(const codif_header *header)
 	return(granularity);
 }
 
+/* Number of distinct thread IDs in consecutive frames of dataframesize bytes
+ * (header included); stops at the first frame that does not look like CODIF
+ * of that size.  Returns -1 if there are more than can be counted. */
 int get_codif_threads(const unsigned char *data, size_t length, int dataframesize)
 {
-        const int maxThreads = 1024; //  Actual max is 2^16, but unlikely that many on one data stream
-	size_t i;
-	unsigned short int threads[maxThreads];
+	enum { maxThreads = 1024 };	/* Actual max is 2^16, but unlikely that many on one data stream */
+	uint16_t threads[maxThreads];
 	unsigned int nThread = 0;
+	size_t i;
 
-	for(i = 0; i < length-32; i += dataframesize)
+	if(dataframesize <= CODIF_HEADER_BYTES)
 	{
-		const uint32_t *frame;
-		unsigned short int thread;
-		unsigned short int t; 
-		
-		frame = (uint32_t *)(data+i);
+		return 0;
+	}
 
-		// sanity check that we are still in sync
-		if(dataframesize != (frame[2] & 0x00FFFFFF) << 3)
+	for(i = 0; i + CODIF_HEADER_BYTES <= length; i += dataframesize)
+	{
+		const codif_header *header = (const codif_header *)(data + i);
+		uint16_t thread;
+		unsigned int t;
+
+		/* sanity check that we are still in sync */
+		if(getCODIFSync(header) != CODIF_SYNC || getCODIFFrameBytes(header) + CODIF_HEADER_BYTES != (uint64_t)dataframesize)
 		{
 			break;
 		}
-		thread = (frame[3] >> 16) & 0x03FF;
-		if(nThread == 0)
+		thread = getCODIFThreadID(header);
+		for(t = 0; t < nThread; ++t)
 		{
-			threads[0] = thread;
-			++nThread;
+			if(threads[t] == thread)
+			{
+				break;
+			}
 		}
-		else
+		if(t == nThread)
 		{
-			for(t = 0; t < nThread; ++t)
+			if(nThread == maxThreads)
 			{
-				if(threads[t] == thread)
-				{
-					break;
-				}
+				return -1;
 			}
-			if(t == nThread)
-			{
-				if(nThread == maxThreads)
-				{
-					return -1;
-				}
-				threads[nThread] = thread;
-				++nThread;
-			}
+			threads[nThread] = thread;
+			++nThread;
 		}
 	}
 
 	return nThread;
 }
-
