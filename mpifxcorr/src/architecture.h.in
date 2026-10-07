@@ -732,8 +732,18 @@ inline vecStatus genericPhase_32fc(const cf32 *src, f32 *dest, int length)
 { for(int i=0;i<length;i++) {dest[i] = atan2(src[i].im,src[i].re);} return vecNoErr; }
 
 /* #define vectorRealToComplex_f32(real, imag, complex, length)                ippsRealToCplx_32f(real, imag, complex, length) */
+// real or imag may be NULL, meaning zero.  The NULL tests are made once,
+// outside the loops, so that compilers can vectorize them.
 inline vecStatus genericRealToCplx_32f(const f32 *real, const f32 *imag, cf32 *complx, int length)
-{ for(int i=0;i<length;i++) {if (real) complx[i].re = real[i]; else complx[i].re=0; if (imag) complx[i].im=imag[i]; else complx[i].im=0;} return vecNoErr; }
+{ if(real && imag)
+    for(int i=0;i<length;i++) {complx[i].re = real[i]; complx[i].im = imag[i];}
+  else if(real)
+    for(int i=0;i<length;i++) {complx[i].re = real[i]; complx[i].im = 0;}
+  else if(imag)
+    for(int i=0;i<length;i++) {complx[i].re = 0; complx[i].im = imag[i];}
+  else
+    for(int i=0;i<length;i++) {complx[i].re = 0; complx[i].im = 0;}
+  return vecNoErr; }
 
 /* #define vectorReal_cf32(complex, real, length)                              ippsReal_32fc(complex, real, length) */
 inline vecStatus genericReal_32fc(const cf32 *c, f32 *re, int l)
@@ -747,10 +757,21 @@ inline vecStatus genericSin_32f(const f32 *src, f32 *dest, int length)
 { for(int i=0;i<length;i++) {dest[i] = sinf(src[i]);} return vecNoErr; }
 
 /* #define vectorSinCos_f32(src, sin, cos, length)                             ippsSinCos_32f_A21(src, sin, cos, length) */
+// sincosf computes both with one argument reduction; it is a GNU extension
+// (__sincosf on macOS), so fall back to sinf and cosf elsewhere
+#if defined(__APPLE__)
+#define GENERIC_SINCOSF(x, s, c) __sincosf(x, s, c)
+#elif defined(__GLIBC__) && defined(_GNU_SOURCE)
+#define GENERIC_SINCOSF(x, s, c) sincosf(x, s, c)
+#endif
 inline vecStatus genericSinCos_32f(const f32 *src, f32 *sin, f32 *cos, int length)
-/* { for(int i=0;i<length;i++) {sincosf(src[i],sin+i,cos+i);} return vecNoErr; } */
-{ for(int i=0;i<length;i++) sin[i]=sinf(src[i]);
+{
+#ifdef GENERIC_SINCOSF
+  for(int i=0;i<length;i++) GENERIC_SINCOSF(src[i], sin+i, cos+i);
+#else
+  for(int i=0;i<length;i++) sin[i]=sinf(src[i]);
   for(int i=0;i<length;i++) cos[i]=cosf(src[i]);
+#endif
   return vecNoErr; }
 
 /* #define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)           ippsSplitScaled_16s32f_D2L(src, dest, numchannels, chanlen) */
@@ -1031,14 +1052,27 @@ inline vecStatus genFreeFFTCR_f32(GenFFTPtrCRf32* fftspec) {
 // I believe it is NEVER USED?
 /* #define vectorFreeFFTC_f32(fftspec)                                         ippsFFTFree_C_32f(fftspec) */
 
-// Should use memmove? Is the (len/2+1) copy working as expected? 
+// The forward transforms run the plan directly on the caller's arrays when
+// FFTW allows it: the arrays do not overlap (the plans are out of place) and
+// have the same alignment as the arrays the plan was made with.  Otherwise
+// the data are copied through the spec's own arrays.  FFTW leaves the input
+// of out-of-place r2c and c2c transforms unchanged.
+inline bool genFFTDirectOK(const void *src, size_t srcbytes, const void *dest, size_t destbytes, const void *planin, const void *planout)
+   { const char *s = (const char *)src, *d = (const char *)dest;
+     return (s + srcbytes <= d || d + destbytes <= s) &&
+            fftwf_alignment_of((float *)src) == fftwf_alignment_of((float *)planin) &&
+            fftwf_alignment_of((float *)dest) == fftwf_alignment_of((float *)planout); }
 inline vecStatus genFFT_RtoC_f32(const f32* src,f32* dest, GenFFTPtrRf32*fftspec,u8 * fftbuffer)
-   { memcpy(fftspec->in, src, fftspec->len*sizeof(f32)); 
+   { if(genFFTDirectOK(src, fftspec->len*sizeof(f32), dest, (fftspec->len/2+1)*sizeof(cf32), fftspec->in, fftspec->out))
+       { fftwf_execute_dft_r2c(fftspec->p, (f32 *)src, (fftwf_complex *)dest); return vecNoErr; }
+     memcpy(fftspec->in, src, fftspec->len*sizeof(f32)); 
      fftwf_execute(fftspec->p); 
      memcpy(dest, fftspec->out, (fftspec->len/2+1)*sizeof(cf32)); 
      return vecNoErr; }
 inline vecStatus genFFT_CtoC_cf32(const cf32 *src, cf32 *dest, GenFFTPtrCfc32* fftspec, u8 *fftbuffer)  
-   { memcpy(fftspec->in, src, fftspec->len*sizeof(cf32)); 
+   { if(genFFTDirectOK(src, fftspec->len*sizeof(cf32), dest, fftspec->len*sizeof(cf32), fftspec->in, fftspec->out))
+       { fftwf_execute_dft(fftspec->p, (fftwf_complex *)src, (fftwf_complex *)dest); return vecNoErr; }
+     memcpy(fftspec->in, src, fftspec->len*sizeof(cf32)); 
      fftwf_execute(fftspec->p);
      memcpy(dest, fftspec->out, fftspec->len*sizeof(cf32));
      return vecNoErr; }

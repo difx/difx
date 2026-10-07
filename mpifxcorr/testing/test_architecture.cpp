@@ -1330,29 +1330,42 @@ static void complex_fft_test(Ctx &c, const char *name, bool isorder, std::vector
 	{
 		int N = isorder ? 1 << sz : sz;
 
+		/* shift: source offset by one element, so not aligned as FFTW's own
+		 * arrays are (mpifxcorr's real FFTs start at arbitrary samples) */
 		for(int flag = ARCH_FFT_NORENORM; flag <= ARCH_FFT_RENORM; ++flag)
+		for(int shift = 0; shift <= 1; ++shift)
 		{
 			void *spec = 0;
 			unsigned char *buf = 0;
 			int bufsize = 0;
-			GBuf<acf32> x(N), X(N);
+			GBuf<acf32> xmem(N + 1), X(N);
+			acf32 *xp = xmem.p() + shift;
 			std::vector<double> xr(N), xi(N), Xr, Xi;
 			double norm2 = 0;
 
-			c.label = std::string(name) + " N=" + std::to_string(N) + (flag ? " ReNorm" : " NoReNorm");
+			c.label = std::string(name) + " N=" + std::to_string(N) + (flag ? " ReNorm" : " NoReNorm") + (shift ? " offset source" : "");
 			c.status(init(sz, flag, &spec, &buf, &bufsize), "init");
 			check_init_outputs(c, buf, bufsize);
-			fill(c, x.p(), N, -1, 1);
+			fill(c, xp, N, -1, 1);
 			for(int j = 0; j < N; ++j)
 			{
-				xr[j] = x[j].re;
-				xi[j] = x[j].im;
+				xr[j] = xp[j].re;
+				xi[j] = xp[j].im;
 				norm2 += xr[j]*xr[j] + xi[j]*xi[j];
 			}
 			norm2 = sqrt(norm2);
 			ref_dft(xr, xi, Xr, Xi);
 			/* forward transform: unnormalised with either flag */
-			c.status(fwd(spec, buf == ARCH_UNSET_PTR ? 0 : buf, x.p(), X.p()), "forward");
+			c.status(fwd(spec, buf == ARCH_UNSET_PTR ? 0 : buf, xp, X.p()), "forward");
+			for(int j = 0; j < N; ++j)
+			{
+				++c.res.nchecked;
+				if(xp[j].re != xr[j] || xp[j].im != xi[j])
+				{
+					c.fail("forward transform changed its input at %d", j);
+					break;
+				}
+			}
 			for(int k = 0; k < N; ++k)
 			{
 				c.close("X.re", k, X[k].re, Xr[k], fft_tol(N, norm2));
@@ -1381,26 +1394,37 @@ static void real_fft_test(Ctx &c, const char *name, bool isorder, std::vector<in
 		int N = isorder ? 1 << sz : sz;
 
 		for(int flag = ARCH_FFT_NORENORM; flag <= ARCH_FFT_RENORM; ++flag)
+		for(int shift = 0; shift <= 1; ++shift)
 		{
 			void *spec = 0;
 			unsigned char *buf = 0;
 			int bufsize = 0;
-			GBuf<float> x(N), X(N + 2), y(N);
+			GBuf<float> xmem(N + 1), X(N + 2), y(N);
+			float *xp = xmem.p() + shift;
 			std::vector<double> xr(N), xi(N, 0.0), Xr, Xi;
 			double norm2 = 0;
 
-			c.label = std::string(name) + " N=" + std::to_string(N) + (flag ? " ReNorm" : " NoReNorm");
+			c.label = std::string(name) + " N=" + std::to_string(N) + (flag ? " ReNorm" : " NoReNorm") + (shift ? " offset source" : "");
 			c.status(init(sz, flag, &spec, &buf, &bufsize), "init");
 			check_init_outputs(c, buf, bufsize);
-			fill(c, x.p(), N, -1, 1);
+			fill(c, xp, N, -1, 1);
 			for(int j = 0; j < N; ++j)
 			{
-				xr[j] = x[j];
+				xr[j] = xp[j];
 				norm2 += xr[j]*xr[j];
 			}
 			norm2 = sqrt(norm2);
 			ref_dft(xr, xi, Xr, Xi);
-			c.status(fwd(spec, buf == ARCH_UNSET_PTR ? 0 : buf, x.p(), X.p()), "forward");
+			c.status(fwd(spec, buf == ARCH_UNSET_PTR ? 0 : buf, xp, X.p()), "forward");
+			for(int j = 0; j < N; ++j)
+			{
+				++c.res.nchecked;
+				if(xp[j] != xr[j])
+				{
+					c.fail("forward transform changed its input at %d", j);
+					break;
+				}
+			}
 			for(int k = 0; k <= N/2; ++k)
 			{
 				c.close("X.re (CCS)", k, X[2*k], Xr[k], fft_tol(N, norm2));
@@ -1423,7 +1447,7 @@ static void real_fft_test(Ctx &c, const char *name, bool isorder, std::vector<in
 				c.status(inv(spec, buf == ARCH_UNSET_PTR ? 0 : buf, Xin.p(), y.p()), "inverse");
 				for(int j = 0; j < N; ++j)
 				{
-					c.close("y", j, y[j], scale*x[j], scale*fft_tol(N, norm2));
+					c.close("y", j, y[j], scale*xr[j], scale*fft_tol(N, norm2));
 				}
 				y.check(c, "y");
 			}
