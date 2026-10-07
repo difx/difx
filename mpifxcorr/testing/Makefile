@@ -22,6 +22,11 @@ FFTW3F_CFLAGS ?= $(shell sed -n 's/^FFTW3F_CFLAGS = //p' $(TOPMAKEFILE) 2>/dev/n
 FFTW3F_LIBS   ?= $(shell sed -n 's/^FFTW3F_LIBS = //p' $(TOPMAKEFILE) 2>/dev/null)
 IPP_CFLAGS    ?= $(shell sed -n 's/^IPP_CFLAGS = //p' $(TOPMAKEFILE) 2>/dev/null)
 IPP_LIBS      ?= $(shell sed -n 's/^IPP_LIBS = //p' $(TOPMAKEFILE) 2>/dev/null)
+# configure does not look for FFTW when IPP is enabled; ask pkg-config
+ifeq ($(strip $(FFTW3F_CFLAGS)$(FFTW3F_LIBS)),)
+FFTW3F_CFLAGS := $(shell pkg-config --cflags fftw3f 2>/dev/null)
+FFTW3F_LIBS   := $(shell pkg-config --libs fftw3f 2>/dev/null)
+endif
 
 IMPL_OBJS = arch_generic.o
 LIBS      = $(FFTW3F_LIBS) -lpthread -lm
