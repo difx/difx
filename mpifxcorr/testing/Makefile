@@ -2,6 +2,14 @@
 # architecture.h (generic FFTW/C++ section, and the Intel IPP section when
 # IPP is available).
 #
+# The generic section is built as up to four implementations:
+#   generic   plain C++ code with CXXFLAGS (-DARCH_NO_SIMD)
+#   gcc-O2    plain C++ code with CXXFLAGS $(SIMDARCH): vectorized by the
+#             compiler alone, at mpifxcorr's usual -O2 (-DARCH_NO_SIMD)
+#   gcc-O3    the same with -O3 added (-DARCH_NO_SIMD)
+#   avx2      CXXFLAGS $(SIMDARCH): with the AVX2/FMA intrinsics code
+# All but generic are built only on x86_64 machines with AVX2 and FMA.
+#
 #   make            build test_architecture and bench_architecture
 #   make test       run the correctness tests
 #   make bench      run the benchmark
@@ -28,7 +36,16 @@ FFTW3F_CFLAGS := $(shell pkg-config --cflags fftw3f 2>/dev/null)
 FFTW3F_LIBS   := $(shell pkg-config --libs fftw3f 2>/dev/null)
 endif
 
-IMPL_OBJS = arch_generic.o
+# target CPU for the gcc-O2, gcc-O3 and avx2 builds: AVX2 and FMA (Intel
+# Haswell, AMD Zen and later)
+SIMDARCH    ?= -march=x86-64-v3
+
+IMPL_OBJS = arch_impls.o arch_generic.o
+# their objects contain other code compiled for AVX2 too, so only on machines with it
+HAVE_AVX2 := $(shell $(CXX) -march=native -dM -E -x c++ /dev/null 2>/dev/null | grep -cE '__(AVX2|FMA)__')
+ifeq ($(HAVE_AVX2),2)
+IMPL_OBJS += arch_gccO2.o arch_gccO3.o arch_avx2.o
+endif
 LIBS      = $(FFTW3F_LIBS) -lpthread -lm
 ifneq ($(strip $(IPP_LIBS)),)
 IMPL_OBJS += arch_ipp.o
@@ -56,8 +73,17 @@ arch_generic_skips.h: arch_generic.cpp arch_generic.h arch_wrappers.inc arch_api
 arch_ipp_skips.h: arch_ipp.cpp arch_ipp.h arch_wrappers.inc arch_api.h find_skips.sh
 	./find_skips.sh arch_ipp.cpp $@ arch_ipp.h $(CXX) $(CXXFLAGS) $(IPP_CFLAGS)
 
-arch_generic.o: arch_generic.cpp arch_generic.h arch_generic_skips.h arch_wrappers.inc arch_api.h
-	$(CXX) $(CXXFLAGS) $(FFTW3F_CFLAGS) -c -o $@ arch_generic.cpp
+GENERIC_DEPS = arch_generic.cpp arch_generic.h arch_generic_skips.h arch_wrappers.inc arch_api.h
+arch_generic.o: $(GENERIC_DEPS)
+	$(CXX) $(CXXFLAGS) $(FFTW3F_CFLAGS) -DARCH_NO_SIMD -c -o $@ arch_generic.cpp
+arch_gccO2.o: $(GENERIC_DEPS)
+	$(CXX) $(CXXFLAGS) $(SIMDARCH) $(FFTW3F_CFLAGS) -DARCH_NO_SIMD -DARCH_IMPL_NAME='"gcc-O2"' -DARCH_IMPL_ORDER=2 -c -o $@ arch_generic.cpp
+arch_gccO3.o: $(GENERIC_DEPS)
+	$(CXX) $(CXXFLAGS) $(SIMDARCH) -O3 $(FFTW3F_CFLAGS) -DARCH_NO_SIMD -DARCH_IMPL_NAME='"gcc-O3"' -DARCH_IMPL_ORDER=3 -c -o $@ arch_generic.cpp
+arch_avx2.o: $(GENERIC_DEPS)
+	$(CXX) $(CXXFLAGS) $(SIMDARCH) $(FFTW3F_CFLAGS) -DARCH_IMPL_NAME='"avx2"' -DARCH_IMPL_ORDER=4 -c -o $@ arch_generic.cpp
+arch_impls.o: arch_impls.cpp arch_api.h
+	$(CXX) $(CXXFLAGS) -c -o $@ arch_impls.cpp
 arch_ipp.o: arch_ipp.cpp arch_ipp.h arch_ipp_skips.h arch_wrappers.inc arch_api.h
 	$(CXX) $(CXXFLAGS) $(IPP_CFLAGS) -c -o $@ arch_ipp.cpp
 

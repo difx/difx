@@ -11,9 +11,11 @@
  * generic (FFTW + plain C++) code.  The two cannot be compiled into one
  * translation unit (same names, different types), so each is compiled into
  * its own file of thin wrappers (arch_generic.cpp, arch_ipp.cpp) using only
- * the neutral types below, and registers the wrappers by name.  The test and
- * benchmark programs look routines up by name in each implementation that
- * was built. */
+ * the neutral types below, and registers the wrappers by name.  The generic
+ * wrappers may be compiled more than once with different flags (e.g. with
+ * and without the SIMD code), each copy being a separate implementation.
+ * The test and benchmark programs look routines up by name in each
+ * implementation that was built. */
 
 #ifndef ARCH_API_H
 #define ARCH_API_H
@@ -33,6 +35,7 @@ typedef void (*arch_fn)(void);
 struct ArchImpl
 {
 	std::string name;
+	int order;				/* position in reports */
 	std::map<std::string, arch_fn> fns;
 	std::map<std::string, int> skipped;	/* routines left out: ARCH_SKIP_BROKEN or ARCH_SKIP_ABSENT */
 
@@ -67,9 +70,20 @@ enum { ARCH_FFT_NORENORM = 0, ARCH_FFT_RENORM = 1 };
 #define ARCH_UNSET_PTR ((unsigned char *)0x5A5A5A5A5A5A5A5AULL)
 #define ARCH_UNSET_INT (-123456789)
 
-ArchImpl &arch_generic_impl();
-#ifdef HAVE_IPP
-ArchImpl &arch_ipp_impl();
-#endif
+/* every implementation linked in, in no particular order */
+std::vector<const ArchImpl *> &arch_impls();
+
+struct ArchImplRegister
+{
+	ArchImplRegister(ArchImpl &impl, const char *name, int order)
+	{
+		impl.name = name;
+		impl.order = order;
+		arch_impls().push_back(&impl);
+	}
+};
+
+/* the implementations, sorted by order */
+std::vector<const ArchImpl *> arch_impls_sorted();
 
 #endif

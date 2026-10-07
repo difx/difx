@@ -1605,7 +1605,9 @@ static const char *known_failure(const std::string &impl, const std::string &tes
 		{ "MaxIndx_f32", "genericMaxIndx_32f starts from -1e30, wrong if all values are below that" },
 	};
 
-	if(impl == "generic")
+	/* every build of the generic section: the SIMD code leaves these
+	 * routines to the plain C code */
+	if(impl != "ipp")
 	{
 		std::map<std::string, const char *>::const_iterator it = generic.find(test);
 
@@ -1703,7 +1705,8 @@ static void usage(const char *pgm)
 {
 	printf("Usage: %s [options]\n\n", pgm);
 	printf("Tests the vector routines of mpifxcorr's architecture.h in each implementation\n");
-	printf("built (generic; IPP if available) against a reference model of IPP behaviour.\n\n");
+	printf("built (generic, its compiler-vectorized and SIMD builds where supported; IPP\n");
+	printf("if available) against a reference model of IPP behaviour.\n\n");
 	printf("Options:\n");
 	printf("  -m <patterns>  only routines matching comma separated glob patterns\n");
 	printf("  -l             list routines and their availability, then exit\n");
@@ -1736,17 +1739,17 @@ int main(int argc, char **argv)
 		}
 	}
 
-	impls.push_back(&arch_generic_impl());
-#ifdef HAVE_IPP
-	impls.push_back(&arch_ipp_impl());
-#endif
+	impls = arch_impls_sorted();
 
 	printf("Testing architecture.h routines: %s", impls[0]->name.c_str());
 	for(size_t k = 1; k < impls.size(); ++k)
 	{
 		printf(", %s", impls[k]->name.c_str());
 	}
-	printf("%s (seed %llu)\n\n", impls.size() == 1 ? " (IPP not available here)" : "", o.seed);
+#ifndef HAVE_IPP
+	printf(" (IPP not available here)");
+#endif
+	printf(" (seed %llu)\n\n", o.seed);
 
 	printf("%-22s", "routine");
 	for(const ArchImpl *impl : impls)

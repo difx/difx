@@ -188,9 +188,10 @@ BENCH(MulC_f64) { return scal<double>(impl, n, "MulC_f64"); }
 BENCH(AddC_f32_I) { return scal_i<float>(impl, n, "AddC_f32_I", 1e-6f); }
 BENCH(AddC_f64_I) { return scal_i<double>(impl, n, "AddC_f64_I", 1e-9); }
 BENCH(AddC_s16_I) { return scal_i<int16_t>(impl, n, "AddC_s16_I", 0); }
-BENCH(MulC_f32_I) { return scal_i<float>(impl, n, "MulC_f32_I", 1.0f); }
-BENCH(MulC_f64_I) { return scal_i<double>(impl, n, "MulC_f64_I", 1.0); }
-BENCH(DivC_f32_I) { return scal_i<float>(impl, n, "DivC_f32_I", 1.0f); }
+/* -1: values stay bounded, and IPP returns at once when multiplying by 1 */
+BENCH(MulC_f32_I) { return scal_i<float>(impl, n, "MulC_f32_I", -1.0f); }
+BENCH(MulC_f64_I) { return scal_i<double>(impl, n, "MulC_f64_I", -1.0); }
+BENCH(DivC_f32_I) { return scal_i<float>(impl, n, "DivC_f32_I", -1.0f); }
 BENCH(MulC_cf32_I)
 {
 	typedef int (*FN)(acf32, acf32 *, int);
@@ -521,7 +522,8 @@ static void usage(const char *pgm)
 {
 	printf("Usage: %s [options]\n\n", pgm);
 	printf("Benchmarks the vector routines of mpifxcorr's architecture.h in each\n");
-	printf("implementation built (generic; IPP if available).\n\n");
+	printf("implementation built (generic, its compiler-vectorized and SIMD builds where\n");
+	printf("supported; IPP if available).\n\n");
 	printf("Options:\n");
 	printf("  -m <patterns>  only routines matching comma separated glob patterns\n");
 	printf("  -n <list>      comma separated vector lengths [default 4096]\n");
@@ -542,6 +544,7 @@ int main(int argc, char **argv)
 	double logsum = 0;
 	int nratio = 0;
 	FILE *csv = 0;
+	std::string ref = "generic";
 
 	o.patterns = 0;
 	o.csvout = 0;
@@ -581,10 +584,15 @@ int main(int argc, char **argv)
 	pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
 #endif
 
-	impls.push_back(&arch_generic_impl());
-#ifdef HAVE_IPP
-	impls.push_back(&arch_ipp_impl());
-#endif
+	impls = arch_impls_sorted();
+	/* times are also given relative to IPP, or without it to plain generic */
+	for(const ArchImpl *impl : impls)
+	{
+		if(impl->name == "ipp")
+		{
+			ref = "ipp";
+		}
+	}
 
 	if(o.baseline)
 	{
@@ -659,7 +667,7 @@ int main(int argc, char **argv)
 	printf("%-22s %-8s %7s %12s %10s %10s", "routine", "impl", "length", "ns/call", "ns/elem", "Melem/s");
 	if(impls.size() > 1)
 	{
-		printf(" %10s", "vs ipp");
+		printf(" %10s", ("vs " + ref).c_str());
 	}
 	if(!base.empty())
 	{
@@ -673,19 +681,19 @@ int main(int argc, char **argv)
 		printf("%-22s %-8s %7d %12.1f %10.3f %10.1f", c.name.c_str(), c.impl->name.c_str(), c.n, ns, ns/c.n, c.n/ns*1e3);
 		if(impls.size() > 1)
 		{
-			/* time relative to IPP for the same routine and length */
-			double ippns = 0;
+			/* time relative to the reference for the same routine and length */
+			double refns = 0;
 
 			for(const Case &d : cases)
 			{
-				if(d.name == c.name && d.n == c.n && d.impl->name == "ipp")
+				if(d.name == c.name && d.n == c.n && d.impl->name == ref)
 				{
-					ippns = 1e9*d.best;
+					refns = 1e9*d.best;
 				}
 			}
-			if(ippns > 0)
+			if(refns > 0)
 			{
-				printf(" %9.2fx", ns/ippns);
+				printf(" %9.2fx", ns/refns);
 			}
 			else
 			{

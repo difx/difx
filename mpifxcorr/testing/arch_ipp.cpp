@@ -23,13 +23,7 @@
 #include "arch_ipp_skips.h"
 
 static ArchImpl ippImpl;
-
-ArchImpl &arch_ipp_impl()
-{
-	ippImpl.name = "ipp";
-
-	return ippImpl;
-}
+static ArchImplRegister registerImpl(ippImpl, "ipp", 99);
 
 #define ARCH_RNDMODE(r)	((r) ? vecRndNear : vecRndZero)
 #define ARCH_FFTFLAG(f)	((f) ? vecFFT_ReNorm : vecFFT_NoReNorm)

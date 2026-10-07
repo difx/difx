@@ -7,30 +7,48 @@
  *   (at your option) any later version.                                   *
  ***************************************************************************/
 
+/* This file may be compiled several times with different flags, each copy
+ * being a separate implementation (see Makefile): ARCH_IMPL_NAME and
+ * ARCH_IMPL_ORDER name it and place it in reports.  The functions of
+ * architecture.h are inline, so the linker would keep only one copy of each
+ * across the implementations; they are made static here, so that each copy
+ * keeps its own code.  System headers are included first so that this does
+ * not reach them. */
+#ifndef ARCH_IMPL_NAME
+#define ARCH_IMPL_NAME "generic"
+#endif
+#ifndef ARCH_IMPL_ORDER
+#define ARCH_IMPL_ORDER 1
+#endif
+
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <pthread.h>
+#include <fftw3.h>
+#if defined(__x86_64__) || defined(__i386__)
+#include <immintrin.h>
+#endif
 #include "arch_api.h"
+
+/* defined in mode.cpp in mpifxcorr; one shared definition here */
+inline pthread_mutex_t FFTinitMutex = PTHREAD_MUTEX_INITIALIZER;
+
+#define inline static inline
 #include "arch_generic.h"	/* ../src/architecture.h.in with @ipp_enabled@ = 0 */
+#undef inline
 
 #if ARCH != GENERIC
 #error "arch_generic.h does not select the generic architecture"
 #endif
 
-/* defined in mode.cpp in mpifxcorr */
-pthread_mutex_t FFTinitMutex = PTHREAD_MUTEX_INITIALIZER;
-
 /* Routines whose vector* macro does not compile in the generic section (see
- * README).  `make check-compile` tries each of them again. */
+ * README) */
 #include "arch_generic_skips.h"
 
 static ArchImpl genericImpl;
-
-ArchImpl &arch_generic_impl()
-{
-	genericImpl.name = "generic";
-
-	return genericImpl;
-}
+static ArchImplRegister registerImpl(genericImpl, ARCH_IMPL_NAME, ARCH_IMPL_ORDER);
 
 /* the generic section has no rounding mode constants and ignores the mode */
 #define ARCH_RNDMODE(r)	(r)
