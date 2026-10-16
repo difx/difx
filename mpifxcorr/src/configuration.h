@@ -386,6 +386,14 @@ public:
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
     return (f == INTERLACEDVDIF && s == UNIXFILE); 
   }
+  inline bool isVDIFOneThreadFake(int datastreamindex) const
+  {
+    dataformat f;
+    datasource s;
+    f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
+    s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
+    return (f == VDIF && s == FAKESTREAM); 
+  }
   inline bool isVDIFFake(int datastreamindex) const
   {
     dataformat f;
