@@ -20,7 +20,13 @@ import sys
 
 def getAlistData(alistname, refStation, remStation=None, verbose=True, relabelLinears=True):
 
-    af = afiob.alist(alistname)
+    try:
+        af = afiob.alist(alistname)
+    except Exception as e:
+        print("Failed to load A-list file (%s)." % (e))
+        print("Did you load the HOPS environment?")
+        return None
+
     N = af.nfringe
 
     timeseries = {}  # timeseries[key:<unix timestamp>] = [key:<baseline>][key<polpair>:snr]
@@ -230,24 +236,26 @@ def scatterplotAlistData(timeseries, refAnt, verbose=False):
     plt.tight_layout()
 
 
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("-s", "--min-snr", dest="minSnr", type=int, default=12, help="min. SNR needed in at least one pol-pair (default: 12)")
-parser.add_argument("-v", dest="verbose", action='store_true',   help="verbose output")
-parser.add_argument("refRemSt", metavar="reference-station-code", help="Reference station 1-letter ID, or two letters for a specific baseline.")
-parser.add_argument("alistFile", nargs='+', metavar="Alist-file", help="The input alist file(s). Note: Each file should be produced with alist -v 6.")
-args = parser.parse_args()
+if __name__ == "__main__":
 
-for alistname in args.alistFile:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("-s", "--min-snr", dest="minSnr", type=int, default=12, help="min. SNR needed in at least one pol-pair (default: 12)")
+    parser.add_argument("-v", dest="verbose", action='store_true',   help="verbose output")
+    parser.add_argument("refRemSt", metavar="reference-station-code", help="Reference station 1-letter ID, or two letters for a specific baseline.")
+    parser.add_argument("alistFile", nargs='+', metavar="Alist-file", help="The input alist file(s). Note: Each file should be produced with alist -v 6.")
+    args = parser.parse_args()
 
-    print ("File: %s" % (str(alistname)))
+    for alistname in args.alistFile:
 
-    refSt, remSt = args.refRemSt[0], None
-    if len(args.refRemSt) >= 2: remSt = args.refRemSt[1]
+        print ("File: %s" % (str(alistname)))
 
-    timeseries = getAlistData(alistname, refSt, remSt, verbose=args.verbose)
+        refSt, remSt = args.refRemSt[0], None
+        if len(args.refRemSt) >= 2:
+            remSt = args.refRemSt[1]
 
-    plotAlistData(timeseries, refSt, min_snr=args.minSnr, verbose=args.verbose)
+        timeseries = getAlistData(alistname, refSt, remSt, verbose=args.verbose)
 
-    scatterplotAlistData(timeseries, refSt, verbose=args.verbose)
-
-    plt.show()
+        if timeseries and len(timeseries) > 0:
+            plotAlistData(timeseries, refSt, min_snr=args.minSnr, verbose=args.verbose)
+            scatterplotAlistData(timeseries, refSt, verbose=args.verbose)
+            plt.show()
