@@ -419,7 +419,9 @@ void PCalExtractorTrivial::clear()
     _samplecount = 0;
     _finalized   = false;
     vectorZero_cf32(_cfg->pcal_complex, _N_bins * 2);
-    vectorZero_f32 (_cfg->pcal_real,    _N_bins * 2);
+    if (_cfg->pcal_owned)  {
+        vectorZero_f32 (_cfg->pcal_real,    _N_bins * 2);
+    }
 }
 
 /**
@@ -596,7 +598,9 @@ void PCalExtractorShifting::clear()
     _samplecount = 0;
     _finalized   = false;
     vectorZero_cf32(_cfg->pcal_complex, _N_bins * 2);
-    vectorZero_f32 (_cfg->pcal_real,    _N_bins * 2);
+    if (_cfg->pcal_owned) {
+        vectorZero_f32 (_cfg->pcal_real,    _N_bins * 2);
+    }
     vectorZero_cf32(_cfg->rotated,      _cfg->rotatorlen * 2);
 }
 
@@ -1024,7 +1028,9 @@ void PCalExtractorImplicitShift::clear()
     _samplecount = 0;
     _finalized   = false;
     vectorZero_cf32(_cfg->pcal_complex, _N_bins * 2);
-    vectorZero_f32 (_cfg->pcal_real,    _N_bins * 2);
+    if (_cfg->pcal_owned) {
+        vectorZero_f32(_cfg->pcal_real, _N_bins * 2);
+    }
 }
 
 /**

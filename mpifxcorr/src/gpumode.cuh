@@ -238,6 +238,10 @@ protected:
     // precalc
     GpuMemHelper<int> *nearestSamples;
 
+    // toggle for reseting pcal_output_real and pcal_output_complex to zero
+    bool pcalResetInitialized = false;
+
+
     //GpuMemHelper<int> *counts_gpu;
 private:
     cufftHandle fft_plan;

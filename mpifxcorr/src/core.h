@@ -30,6 +30,7 @@
 #include "architecture.h"
 #include "configuration.h"
 #include "difxmessage.h"
+#include <vector>
 
 class Configuration;
 class Mode;
@@ -229,7 +230,7 @@ protected:
   * @param threadid The id of the thread which is doing the processing
   * @param modes The Mode objects which have the pcal results
   */
-  void copyPCalTones(int index, int threadid, Mode ** modes);
+  void copyPCalTones(int index, int threadid, Mode ** modes, const std::vector<char> *slot_validsubint = nullptr);
 
  /**
   * Does any uvshifting necessary and averages down in frequency into the coreresults

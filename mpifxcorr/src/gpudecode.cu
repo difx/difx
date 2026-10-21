@@ -9,6 +9,16 @@
 #include <string.h>
 #include <strings.h>
 
+#define PCAL_DEBUG_FFTLOOP       0
+#define PCAL_DEBUG_SUBLOOP       0
+#define PCAL_DEBUG_BAND          0
+#define PCAL_DEBUG_CH_FIRST      0
+#define PCAL_DEBUG_CH_COUNT      64
+
+/* Select one tiled channel block: blockIdx.y. */
+#define PCAL_DEBUG_TILE_Y        0
+
+
 #define MARK5_FILL_WORD64 0x1122334411223344ULL
 
 // 2*pi to double precision - matches architecture.h's TWO_PI (IPP_2PI) that the
@@ -287,7 +297,43 @@ __global__ void gpu_fused_fringe(
 		const int n_bins = N_pcal_bins[bandindex];
 		const long so = (long)datasamples + global_sample;
 		const int bin = (int)(((so % n_bins) + n_bins) % n_bins);
+        // DEBUGGING
+    	const size_t pidx =
+    		bandindex * (size_t)pcal_bin_stride_length + (size_t)bin;
+    
+    	const bool print_pcal =
+    		(fftloop == PCAL_DEBUG_FFTLOOP) &&
+    		(subloopindex == PCAL_DEBUG_SUBLOOP) &&
+    		(bandindex == PCAL_DEBUG_BAND) &&
+    		(channelindex >= PCAL_DEBUG_CH_FIRST) &&
+    		(channelindex < PCAL_DEBUG_CH_FIRST + PCAL_DEBUG_CH_COUNT);
+    
+    	if (print_pcal) {
+    		printf("PCAL-UNTILED: fftloop=%d subloop=%zu band=%zu chan=%zu "
+    			   "sampleIndex=%d global_sample=%ld frame=%d "
+    			   "srcVal=%+.7f n_bins=%d datasamples=%d so=%ld "
+    			   "bin=%d stride=%d pidx=%zu\n",
+    			   fftloop,
+    			   subloopindex,
+    			   bandindex,
+    			   channelindex,
+    			   sample_index,
+    			   global_sample,
+    			   (global_sample >= 0) ?
+    				   (int)(global_sample / ms.framesamples) : -1,
+    			   srcVal,
+    			   n_bins,
+    			   datasamples,
+    			   so,
+    			   bin,
+    			   pcal_bin_stride_length,
+    			   pidx);
+    	} 
+        // END DEBUGGING
+
 		atomicAdd(&pcal_output[bandindex * pcal_bin_stride_length + bin], srcVal);
+
+
 	}
 
 	const size_t destIndex = (subloopindex * fftchannels * numrecordedbands) + (bandindex * fftchannels) + channelindex;
@@ -494,7 +540,131 @@ __global__ void gpu_fused_fringe_tiled(const FringeTileArgs a) {
 				const int n_bins = a.N_pcal_bins[bandindex];
 				const long so = (long)a.datasamples + global_sample;
 				const int bin = (int)(((so % n_bins) + n_bins) % n_bins);
-				const size_t pidx = bandindex * a.pcal_bin_stride_length + bin;
+				//const size_t pidx = bandindex * a.pcal_bin_stride_length + bin;
+				const size_t pidx = bandindex * (size_t)a.pcal_bin_stride_length + (size_t)bin;
+// DEBUG ********************************************************************************************
+
+const size_t first_pcal_output_index_for_band =
+	bandindex * (size_t)a.pcal_bin_stride_length;
+
+const size_t one_past_last_pcal_output_index_for_band =
+	first_pcal_output_index_for_band + (size_t)n_bins;
+
+/*
+ * For 1-bit data, valid decoded values are 0, -1, and +1.
+ * Zero is valid here because invalid frames, tail samples, and pre-start
+ * samples are intentionally folded as zero.
+ *
+ * For 2-bit data, use the values directly from the same constant lookup
+ * table used by bitsread_gpu():
+ *
+ *     lutall[2] = -HiMag
+ *     lutall[3] = -1.0
+ *     lutall[4] = +1.0
+ *     lutall[5] = +HiMag
+ */
+bool decoded_raw_sample_is_unexpected = false;
+
+if (a.ms.nbit == 1) {
+	decoded_raw_sample_is_unexpected =
+		(c.x != 0.0f) &&
+		(c.x != -1.0f) &&
+		(c.x != 1.0f);
+} else if (a.ms.nbit == 2) {
+	decoded_raw_sample_is_unexpected =
+		(c.x != 0.0f) &&
+		(c.x != lutall[2]) &&
+		(c.x != lutall[3]) &&
+		(c.x != lutall[4]) &&
+		(c.x != lutall[5]);
+}
+
+/*
+ * These are PCAL mapping failures detectable after bin and pidx have
+ * already been calculated.
+ *
+ * Note: n_bins must be positive before the modulo operation above.
+ * That is an existing precondition of the accumulation code, so it cannot
+ * be diagnosed here after the fact.
+ */
+const bool pcal_mapping_is_invalid =
+	(a.pcal_bin_stride_length <= 0) ||
+	(n_bins > a.pcal_bin_stride_length) ||
+	(bin < 0) ||
+	(bin >= n_bins) ||
+	(pidx < first_pcal_output_index_for_band) ||
+	(pidx >= one_past_last_pcal_output_index_for_band);
+
+/*
+ * Print an anomaly from any FFT loop, subloop, tile, band, or channel.
+ * This condition affects printf only. PCAL accumulation remains unchanged.
+ */
+const bool print_pcal =
+	pcal_mapping_is_invalid ||
+	decoded_raw_sample_is_unexpected;
+
+if (print_pcal) {
+	printf(
+		"PCAL-TILED-ANOMALY: "
+		"fftloop=%d "
+		"subloopindex=%u "
+		"blockIndexX=%u blockIndexY=%u blockIndexZ=%u "
+		"threadIndex=%d "
+		"bandTileSize=%d channelTileSize=%d "
+		"bandLocalIndex=%d channelLocalIndex=%d "
+		"bandindex=%u channelindex=%u "
+		"sample_index=%d "
+		"global_sample_low_32_bits=0x%08x "
+		"decoded_raw_sample=%+.7f "
+		"number_of_pcal_bins=%d "
+		"pcal_bin_stride_length=%d "
+		"pcal_bin=%d "
+		"first_pcal_output_index_for_band=%u "
+		"pcal_output_index=%u "
+		"one_past_last_pcal_output_index_for_band=%u "
+		"pcal_mapping_is_invalid=%d "
+		"decoded_raw_sample_is_unexpected=%d\n",
+
+		a.fftloop,
+		(unsigned int)subloopindex,
+
+		(unsigned int)blockIdx.x,
+		(unsigned int)blockIdx.y,
+		(unsigned int)blockIdx.z,
+
+		tid,
+
+		BT,
+		CT,
+
+		band_local,
+		ch_local,
+
+		(unsigned int)bandindex,
+		(unsigned int)channelindex,
+
+		sample_index,
+
+		(unsigned int)((unsigned long long)global_sample & 0xffffffffULL),
+
+		c.x,
+
+		n_bins,
+		a.pcal_bin_stride_length,
+		bin,
+
+		(unsigned int)first_pcal_output_index_for_band,
+		(unsigned int)pidx,
+		(unsigned int)one_past_last_pcal_output_index_for_band,
+
+		(int)pcal_mapping_is_invalid,
+		(int)decoded_raw_sample_is_unexpected);
+}
+
+// END DEBUG ********************************************************************************************
+				
+
+
 				if (CPLX) {
 					cuFloatComplex *dst = &((cuFloatComplex *)a.pcal_output)[pidx];
 					atomicAdd(&dst->x, c.x);

@@ -17,6 +17,7 @@
 #include <cstdio>
 #include "mathutil.h"
 #include <unistd.h>
+#include <mpi.h>
 
 
 using namespace std::chrono;
@@ -765,6 +766,22 @@ int GPUMode::process_gpu_tofft(int fftloop, int numBufferedFFTs, int startblock,
         // sure finishWeights() does not overwrite them from the device.
         weightsOnDevice = false;
 
+
+        // DEBUG ********************************************
+        if (datastreamindex == 2) {
+            std::cerr
+                << "PCAL-GPU-TOFFT-INVALID: "
+                << "mode=" << this
+                << " ds=" << datastreamindex
+                << " procSlot=" << procSlot
+                << " datasec=" << datasec
+                << " datans=" << datans
+                << " datalengthbytes=" << datalengthbytes
+                << " offsetseconds=" << offsetseconds
+                << std::endl;
+        }
+        // END DEBUG *****************************************
+
         // Invalid subint: process_gpu_afterfft() will no-op on this flag. No
         // stream drain here - the memsets are enqueued on cuStream and ordered
         // ahead of everything the pipeline issues next; GPUCore's per-slot
@@ -777,17 +794,38 @@ int GPUMode::process_gpu_tofft(int fftloop, int numBufferedFFTs, int startblock,
     //valid_frames = new GpuMemHelper<bool>(framestounpack, cuStream, false); 
 
     // Reset pcal accumulation only once at the start of a subintegration.
-     if (!(config->getDPhaseCalIntervalMHz(configindex, datastreamindex) == 0) &&
-            (datasec != pcalResetDataSec || datans != pcalResetDataNs)) {
+    // Bug fix MSD 
+    const bool pcalEnabled =
+        (config->getDPhaseCalIntervalMHz(
+            configindex,
+            datastreamindex) != 0);
+    
+    if (pcalEnabled &&
+        (!pcalResetInitialized ||
+         datasec != pcalResetDataSec ||
+         datans != pcalResetDataNs)) {
+    
         if (usecomplex) {
-            checkCuda(cudaMemsetAsync(pcal_output_complex->gpuPtr(), 0,
-                                      sizeof(cuFloatComplex) * numrecordedbands * pcal_bin_stride_length, cuStream));
+            checkCuda(cudaMemsetAsync(
+                pcal_output_complex->gpuPtr(),
+                0,
+                sizeof(cuFloatComplex) *
+                    numrecordedbands *
+                    pcal_bin_stride_length,
+                cuStream));
         } else {
-            checkCuda(cudaMemsetAsync(pcal_output_real->gpuPtr(), 0,
-                                      sizeof(float) * numrecordedbands * pcal_bin_stride_length, cuStream));
+            checkCuda(cudaMemsetAsync(
+                pcal_output_real->gpuPtr(),
+                0,
+                sizeof(float) *
+                    numrecordedbands *
+                    pcal_bin_stride_length,
+                cuStream));
         }
+    
         pcalResetDataSec = datasec;
         pcalResetDataNs = datans;
+        pcalResetInitialized = true;
     }
  
  
@@ -968,11 +1006,46 @@ int GPUMode::process_gpu_tofft(int fftloop, int numBufferedFFTs, int startblock,
 int GPUMode::process_gpu_afterfft(int fftloop, int numBufferedFFTs, int startblock,
                                   int numblocks)
 {
-    // No-op for an invalid subint (process_gpu_tofft already zeroed fftd/conj/
-    // gDataWeights/validity and set the flag). Mirrors the old single-function
-    // early return; GPUCore's per-slot validsubint drives the tail skip.
-    if (tofftInvalidSubint)
+    int pcal_debug_mpi_rank = -1;
+    MPI_Comm_rank(
+        MPI_COMM_WORLD,
+        &pcal_debug_mpi_rank);
+
+    if (datastreamindex == 2) {
+        std::cerr
+            << "PCAL-GPU-AFTERFFT-ENTRY: "
+            << "mpi_rank=" << pcal_debug_mpi_rank
+            << " mode=" << this
+            << " ds=" << datastreamindex
+            << " procSlot=" << procSlot
+            << " tofftInvalidSubint="
+            << static_cast<int>(tofftInvalidSubint)
+            << " datasec=" << datasec
+            << " datans=" << datans
+            << " datalengthbytes=" << datalengthbytes
+            << " offsetseconds=" << offsetseconds
+            << std::endl;
+    }
+
+    // No-op for an invalid subint.
+    if (tofftInvalidSubint) {
+        if (datastreamindex == 2) {
+            std::cerr
+                << "PCAL-GPU-AFTERFFT-SKIP-INVALID: "
+                << "mpi_rank=" << pcal_debug_mpi_rank
+                << " mode=" << this
+                << " ds=" << datastreamindex
+                << " procSlot=" << procSlot
+                << " datasec=" << datasec
+                << " datans=" << datans
+                << " datalengthbytes=" << datalengthbytes
+                << " offsetseconds=" << offsetseconds
+                << std::endl;
+        }
+
         return numBufferedFFTs;
+    }
+
 
     auto begin_time = high_resolution_clock::now();
     int *counts = savedProcessCounts;
@@ -1014,12 +1087,37 @@ int GPUMode::process_gpu_afterfft(int fftloop, int numBufferedFFTs, int startblo
         if (usecomplex) {
             pcal_output_complex->copyToHost();
             pcal_output_complex_gpu_mode = reinterpret_cast<cf32 *>(pcal_output_complex->ptr());
+            //if (datastreamindex == 2) {
+            //std::cerr
+            //    << "PCAL-GPU-HOST-READY: "
+            //    << "mode=" << thisgrep -n "validsubint" ./mpifxcorr/src/gpucore.cuh
+            //    << " complex_gpu_buffer="
+            //    << pcal_output_complex_gpu_mode
+            //    << std::endl;
+            //}
         } else {
             pcal_output_real->copyToHost();
             pcal_output_real_gpu_mode = pcal_output_real->ptr();
+
+        //    if (datastreamindex == 2) {
+        //        std::cerr
+        //            << "PCAL-GPU-HOST-READY: "
+        //            << "mpi_rank=" << pcal_debug_mpi_rank
+        //            << " mode=" << this
+        //            << " ds=" << datastreamindex
+        //            << " procSlot=" << procSlot
+        //            << " datasec=" << datasec
+        //            << " datans=" << datans
+        //            << " real_gpu_buffer="
+        //            << pcal_output_real_gpu_mode
+        //            << std::endl;
+        //    }            
+
         }
     }
     cudaEventRecord(ev_pcal, cuStream);
+
+
 
     // ==========================================
     // 7. FRACTIONAL ROTATION
