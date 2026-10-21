@@ -35,6 +35,7 @@
 #include "vdiffile.h"
 #include "vdifnetwork.h"
 #include "vdiffake.h"
+#include "vdifonethreadfake.h"
 #ifdef HAVE_MARK6SG
 #include "mark5bmark6_datastream.h"
 #include "vdifmark6_datastream.h"
@@ -449,6 +450,10 @@ int main(int argc, char *argv[])
         stream = new VDIFNetworkDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
         stream->verbose = verbose;
         cverbose << startl << "Opening VDIFNetworkDataStream" << endl;
+      } else if(config->isVDIFOneThreadFake(datastreamnum)) {
+        stream = new VDIFOneThreadFakeDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+        stream->verbose = verbose;
+        cverbose << startl << "Opening VDIFOneThreadFakeDataStream" << endl;
       } else if(config->isVDIFFake(datastreamnum)) {
         stream = new VDIFFakeDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
         stream->verbose = verbose;

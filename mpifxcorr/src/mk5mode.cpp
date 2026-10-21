@@ -53,7 +53,7 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
       if(conf->isNetwork(dsindex))
         mark5stream->blanker = blanker_none;
       if(mark5stream->samplegranularity > 1)
-        samplestounpack += mark5stream->samplegranularity;
+        samplestounpack += (mark5stream->samplegranularity - 1);
       string orig_streamname(mark5stream->streamname);
       sprintf(mark5stream->streamname, "DS%d <%s>", dsindex, orig_streamname.c_str());
       if(framesamples != mark5stream->framesamples)
@@ -94,7 +94,6 @@ Mk5Mode::~Mk5Mode()
 float Mk5Mode::unpack(int sampleoffset, int subloopindex)
 {
   float goodsamples;
-  int mungedoffset = 0;
 
   //work out where to start from
   unpackstartsamples = sampleoffset - (sampleoffset % mark5stream->samplegranularity);
@@ -115,12 +114,12 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
   {
     goodsamples = mark5_unpack_with_offset(mark5stream, data, unpackstartsamples, unpackedarrays, samplestounpack);
   }
+
   if(mark5stream->samplegranularity > 1)
     { // CHRIS not sure what this is mean to do
       // WALTER: unpacking of some mark5 modes (those with granularity > 1) must be unpacked not as individual samples but in groups of sample granularity
     int erasedsamples = 0;
-
-    mungedoffset = sampleoffset % mark5stream->samplegranularity;
+    int mungedoffset = sampleoffset % mark5stream->samplegranularity;
     // For complex data the erasure must be done in complex-sample units:
     // unpackedcomplexarrays is a cast of the same memory, so indexing the
     // float array with these (complex-sample) bounds zeroes float elements
@@ -162,10 +161,12 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
     }
     goodsamples -= erasedsamples/(float)(mark5stream->nchan);
   }
+
   if(perbandweights)
   {
-    int totalinvalid;
-
+    int totalinvalid = 0;
+    for(int b = 0; b < mark5stream->nchan; ++b)
+      invalid[b] = 0;
     if(usecomplex)
     {
       blank_vdif_EDV4_complex(data, unpackstartsamples, (mark5_float_complex**)unpackedcomplexarrays, samplestounpack, invalid);
@@ -175,7 +176,6 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
       blank_vdif_EDV4(data, unpackstartsamples, unpackedarrays, samplestounpack, invalid);
     }
 
-    totalinvalid = 0;
     for(int b = 0; b < mark5stream->nchan; ++b)
     {
       perbandweights[subloopindex][b] = (goodsamples - invalid[b])/(float)unpacksamples;
@@ -183,6 +183,8 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
     }
 
     goodsamples -= (float)totalinvalid/(float)(mark5stream->nchan);
+
+    // now goodsamples should have average number of samples over channels
   }
 
   if(goodsamples < 0)
