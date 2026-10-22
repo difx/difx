@@ -232,13 +232,13 @@ GPUMode::GPUMode(Configuration *conf, int confindex, int dsindex, int recordedba
     
 
     size_t buffer_payload_bytes = (config->getMaxDataBytes() / config->getMultiplexedFrameBytes(confindex, dsindex)) * config->getMultiplexedFramePayloadBytes(confindex, dsindex);
-    std::cout << "buffer_payload_bytes: " << buffer_payload_bytes << std::endl;
+    //std::cout << "buffer_payload_bytes: " << buffer_payload_bytes << std::endl;
 
     size_t unpacked_size = buffer_payload_bytes * 8 / (config->getDNumBits(confindex, dsindex) * config->getDNumRecordedBands(confindex, dsindex));
     if (usecomplex) {
         unpacked_size /= 2;
     }
-    std::cout << "unpacked_size: " << unpacked_size << std::endl;
+    //std::cout << "unpacked_size: " << unpacked_size << std::endl;
 
     // in gpumode.cu, right after unpacked_size is computed:
     size_t maxframes = config->getMaxDataBytes() /
@@ -767,21 +767,6 @@ int GPUMode::process_gpu_tofft(int fftloop, int numBufferedFFTs, int startblock,
         weightsOnDevice = false;
 
 
-        // DEBUG ********************************************
-        if (datastreamindex == 2) {
-            std::cerr
-                << "PCAL-GPU-TOFFT-INVALID: "
-                << "mode=" << this
-                << " ds=" << datastreamindex
-                << " procSlot=" << procSlot
-                << " datasec=" << datasec
-                << " datans=" << datans
-                << " datalengthbytes=" << datalengthbytes
-                << " offsetseconds=" << offsetseconds
-                << std::endl;
-        }
-        // END DEBUG *****************************************
-
         // Invalid subint: process_gpu_afterfft() will no-op on this flag. No
         // stream drain here - the memsets are enqueued on cuStream and ordered
         // ahead of everything the pipeline issues next; GPUCore's per-slot
@@ -1011,38 +996,8 @@ int GPUMode::process_gpu_afterfft(int fftloop, int numBufferedFFTs, int startblo
         MPI_COMM_WORLD,
         &pcal_debug_mpi_rank);
 
-    if (datastreamindex == 2) {
-        std::cerr
-            << "PCAL-GPU-AFTERFFT-ENTRY: "
-            << "mpi_rank=" << pcal_debug_mpi_rank
-            << " mode=" << this
-            << " ds=" << datastreamindex
-            << " procSlot=" << procSlot
-            << " tofftInvalidSubint="
-            << static_cast<int>(tofftInvalidSubint)
-            << " datasec=" << datasec
-            << " datans=" << datans
-            << " datalengthbytes=" << datalengthbytes
-            << " offsetseconds=" << offsetseconds
-            << std::endl;
-    }
-
     // No-op for an invalid subint.
     if (tofftInvalidSubint) {
-        if (datastreamindex == 2) {
-            std::cerr
-                << "PCAL-GPU-AFTERFFT-SKIP-INVALID: "
-                << "mpi_rank=" << pcal_debug_mpi_rank
-                << " mode=" << this
-                << " ds=" << datastreamindex
-                << " procSlot=" << procSlot
-                << " datasec=" << datasec
-                << " datans=" << datans
-                << " datalengthbytes=" << datalengthbytes
-                << " offsetseconds=" << offsetseconds
-                << std::endl;
-        }
-
         return numBufferedFFTs;
     }
 

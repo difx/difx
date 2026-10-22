@@ -168,9 +168,6 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
       numlookups++;
 
     interpolator = new f64[3];
-    fprintf(stderr, "getNumBufferedFFTs(confindex) = %d\n",
-        config->getNumBufferedFFTs(configindex));
-    std::cout << "get_use_gpu(): " << config->get_use_gpu() << std::endl;
     
     fftoutputs = new cf32**[numrecordedbands + numzoombands];
     conjfftoutputs = new cf32**[numrecordedbands + numzoombands];
@@ -847,7 +844,6 @@ void Mode::setData(u8 * d, int dbytes, int dscan, int dsec, int dns)
 {
   data = d;
   datalengthbytes = dbytes;
-  //std::cout << "Setting data length as " << dbytes << std::endl;
   datascan = dscan;
   datasec = dsec;
   datans = dns;
@@ -870,32 +866,14 @@ void Mode::finalisepcal()
 
   for(int i=0;i<numrecordedbands;i++)
   {    
-
     const bool pcal_debug_target =
       config->get_use_gpu() &&
       datastreamindex == 2 &&
       i == 5;
       
-      
     const int pcal_tone_count = extractor[i]->getLength();
     // Grab pcal output from GPU if we are in GPU mode 
-    if (config->get_use_gpu()) { 
-      if(pcal_debug_target) {
-        std::cerr
-            << "PCAL-FINAL-STATE: "
-            << "mode=" << this
-            << " ds=" << datastreamindex
-            << " band=" << i
-            << " datasec=" << datasec
-            << " datans=" << datans
-            << " real_gpu_buffer="
-            << pcal_output_real_gpu_mode
-            << " complex_gpu_buffer="
-            << pcal_output_complex_gpu_mode
-            << " pcal_bin_stride_length="
-            << pcal_bin_stride_length
-            << std::endl;
-      }      
+    if (config->get_use_gpu()) {      
         if (pcal_bin_stride_length <= 0) {
             vectorZero_cf32(pcalresults[i], pcal_tone_count);
             csevere << startl << "invalid pcal_bin_stride_length=" << pcal_bin_stride_length << endl;
@@ -919,72 +897,10 @@ void Mode::finalisepcal()
           extractor[i]->setPcalComplex(pcal_output_complex_gpu_mode+(i*(pcal_bin_stride_length)));
         } else {     
           extractor[i]->setPcalReal(pcal_output_real_gpu_mode+(i*(pcal_bin_stride_length)));    
-
-          if(pcal_debug_target) {
-            const f32 *raw_pcal =
-              pcal_output_real_gpu_mode +
-              (i * pcal_bin_stride_length);
-
-            int nonzero_raw_bin_count = 0;
-            int nonfinite_raw_bin_count = 0;
-            f32 largest_raw_absolute_value = 0.0f;
-
-            for(int pcal_bin = 0;
-                pcal_bin < pcal_bin_stride_length;
-                pcal_bin++) {
-              const f32 value =
-                raw_pcal[pcal_bin];
-
-              if(!std::isfinite(value)) {
-                nonfinite_raw_bin_count++;
-                continue;
-              }
-
-              const f32 absolute_value =
-                std::fabs(value);
-
-              if(absolute_value >
-                 largest_raw_absolute_value) {
-                largest_raw_absolute_value =
-                  absolute_value;
-              }
-
-              if(value != 0.0f) {
-                nonzero_raw_bin_count++;
-              }
-            }
-
-            std::cerr
-                << "PCAL-FINAL-RAW: "
-                << "mode=" << this
-                << " ds=" << datastreamindex
-                << " band=" << i
-                << " nonzero_raw_bin_count="
-                << nonzero_raw_bin_count
-                << " nonfinite_raw_bin_count="
-                << nonfinite_raw_bin_count
-                << " largest_raw_absolute_value="
-                << largest_raw_absolute_value
-                << std::endl;
-          }
         }
     }
     uint64_t samples = extractor[i]->getFinalPCal(pcalresults[i]);
 
-    if(pcal_debug_target) {
-      const cf32 target_tone =
-        pcalresults[i][6];
-
-      std::cerr
-          << "PCAL-FINAL-RESULT: "
-          << "mode=" << this
-          << " ds=" << datastreamindex
-          << " band=" << i
-          << " samples=" << samples
-          << " tone_6_real=" << target_tone.re
-          << " tone_6_imag=" << target_tone.im
-          << std::endl;
-    }    
 
     //if ((samples == 0) && (datasec != INVALID_SUBINT) && (datalengthbytes > 1)) {
         //cdebug << startl << "finalisepcal band " << i << " samples==0 over valid subint " << datasec << "s+" << datans << "ns" << endl;

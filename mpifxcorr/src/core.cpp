@@ -1164,19 +1164,7 @@ void Core::copyPCalTones(int index, int threadid, Mode ** modes, const std::vect
           static_cast<int>((*slot_validsubint)[i]);
       }
 
-      //std::cerr
-      //    << "PCAL-COPY-GATE: "
-      //    << "core_slot=" << index
-      //    << " scan=" << procslots[index].offsets[0]
-      //    << " slot_sec=" << procslots[index].offsets[1]
-      //    << " slot_ns=" << procslots[index].offsets[2]
-      //    << " datastream=" << i
-      //    << " slot_valid=" << slot_valid
-      //    << " valid_vector_size="
-      //    << (slot_validsubint == nullptr ?
-      //        -1 :
-      //        static_cast<int>(slot_validsubint->size()))
-      //    << std::endl;
+
     }
 
 
@@ -1186,107 +1174,6 @@ void Core::copyPCalTones(int index, int threadid, Mode ** modes, const std::vect
       continue;
     }      
       modes[i]->finalisepcal();
-
-// DEBUG
-static int pcal_valid_copy_debug_count = 0;
-
-      if(mpiid == 9 &&
-         i == 2 &&
-         slot_validsubint != nullptr &&
-         i < static_cast<int>(slot_validsubint->size()) &&
-         (*slot_validsubint)[i] &&
-         pcal_valid_copy_debug_count < 20) {
-        int total_tone_count = 0;
-        int nonzero_tone_count = 0;
-        int nonfinite_component_count = 0;
-        f32 largest_tone_absolute_value = 0.0f;
-
-        for(int debug_band = 0;
-            debug_band < config->getDNumRecordedBands(
-                procslots[index].configindex, i);
-            debug_band++) {
-          const int debug_localfreqindex =
-            config->getDLocalRecordedFreqIndex(
-              procslots[index].configindex,
-              i,
-              debug_band);
-
-          const int debug_band_tone_count =
-            config->getDRecordedFreqNumPCalTones(
-              procslots[index].configindex,
-              i,
-              debug_localfreqindex);
-
-          for(int debug_tone = 0;
-              debug_tone < debug_band_tone_count;
-              debug_tone++) {
-            const cf32 tone =
-              modes[i]->getPcal(
-                debug_band,
-                debug_tone);
-
-            total_tone_count++;
-
-            if(!std::isfinite(tone.re)) {
-              nonfinite_component_count++;
-            }
-
-            if(!std::isfinite(tone.im)) {
-              nonfinite_component_count++;
-            }
-
-            if(tone.re != 0.0f ||
-               tone.im != 0.0f) {
-              nonzero_tone_count++;
-            }
-
-            const f32 tone_real_absolute_value =
-              std::fabs(tone.re);
-
-            const f32 tone_imag_absolute_value =
-              std::fabs(tone.im);
-
-            if(tone_real_absolute_value >
-               largest_tone_absolute_value) {
-              largest_tone_absolute_value =
-                tone_real_absolute_value;
-            }
-
-            if(tone_imag_absolute_value >
-               largest_tone_absolute_value) {
-              largest_tone_absolute_value =
-                tone_imag_absolute_value;
-            }
-          }
-        }
-
-        const cf32 target_tone =
-          modes[i]->getPcal(5, 6);
-
-        std::cerr
-            << "PCAL-COPY-VALID-SUMMARY: "
-            << "core_slot=" << index
-            << " scan=" << procslots[index].offsets[0]
-            << " slot_sec=" << procslots[index].offsets[1]
-            << " slot_ns=" << procslots[index].offsets[2]
-            << " datastream=" << i
-            << " mode=" << modes[i]
-            << " total_tone_count=" << total_tone_count
-            << " nonzero_tone_count=" << nonzero_tone_count
-            << " nonfinite_component_count="
-            << nonfinite_component_count
-            << " largest_tone_absolute_value="
-            << largest_tone_absolute_value
-            << " target_band_5_tone_6_real="
-            << target_tone.re
-            << " target_band_5_tone_6_imag="
-            << target_tone.im
-            << std::endl;
-
-        pcal_valid_copy_debug_count++;
-      }
-
-// END DEBUG
 
       resultindex = config->getCoreResultPCalOffset(procslots[index].configindex, i);
 

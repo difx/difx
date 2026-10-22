@@ -1050,52 +1050,11 @@ The four columns are:
   pcalmjd = dumpmjd + dumpseconds/86400.0;
 
 
-  // For Debugging
-  char pcal_debug_timestamp[32];
-  snprintf(pcal_debug_timestamp,
-           sizeof(pcal_debug_timestamp),
-           "%.7f",
-           pcalmjd);
-
-  const bool print_bad_pcal_record = std::fabs(pcalmjd - 60733.8519560) < 5e-8;
-
-
-  if (std::fabs(pcalmjd - 60733.85196) < 1e-4) {
-    std::cout << std::setprecision(15) << "pcalmjd=" << pcalmjd << std::endl;
-  }
-  // END DEBUGGING
-
 
   for(int i=0;i<numdatastreams;i++)
   {
     if(config->getDPhaseCalIntervalMHz(currentconfigindex, i) > 0)
     {
-      // DEBUG
-//     if(print_bad_pcal_record) {
-//        int mpi_rank = -1;
-//        MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-//        std::cout << startl
-//                  << "PCAL-WRITE record: "
-//                  << "mpi_rank=" << mpi_rank
-//                  << "visID=" << visID
-//                  << " currentconfigindex=" << currentconfigindex
-//                  << " currentscan=" << currentscan
-//                  << " currentstartseconds=" << currentstartseconds
-//                  << " currentstartns=" << currentstartns
-//                  << " dumpmjd=" << dumpmjd
-//                  << " dumpseconds=" << std::setprecision(12)
-//                  << dumpseconds
-//                  << " pcalmjd=" << std::setprecision(12)
-//                  << pcalmjd
-//                  << " datastream=" << i
-//                  << " station="
-//                  << config->getDStationName(currentconfigindex, i)
-//                  << " pcal_result_base_index="
-//                  << config->getCoreResultPCalOffset(
-//                       currentconfigindex, i)
-//                  << std::endl;
-//      }      
-      //END DEBUG
       nonzero = false;
       // write the header string
       sprintf(pcalstr, "%s %13.7f %9.7f %d %d %d",
@@ -1118,55 +1077,6 @@ The four columns are:
             pcalline += noToneAvailable;
             continue; //move on
           }
-
-
-          // DEBUG
-//          if(print_bad_pcal_record) {
-//            const int pcal_result_base_index =
-//              config->getCoreResultPCalOffset(currentconfigindex, i);
-//
-//            const int pcal_result_relative_index =
-//              resultindex - pcal_result_base_index;
-//
-//            const bool lower_sideband =
-//              config->getDRecordedLowerSideband(
-//                currentconfigindex,
-//                i,
-//                config->getDLocalRecordedFreqIndex(
-//                  currentconfigindex, i, j));
-//
-//            const f32 raw_real =
-//              results[resultindex].re;
-//
-//            const f32 raw_imag =
-//              results[resultindex].im;
-//
-//            const f32 written_imag =
-//              lower_sideband ? raw_imag : -raw_imag;
-//
-//            std::cout << startl
-//                      << "PCAL-WRITE tone: "
-//                      << "visID=" << visID
-//                      << " pcalmjd=" << std::setprecision(12)
-//                      << pcalmjd
-//                      << " datastream=" << i
-//                      << " recorded_band=" << j
-//                      << " tone_index=" << t
-//                      << " resultindex=" << resultindex
-//                      << " pcal_result_relative_index="
-//                      << pcal_result_relative_index
-//                      << " lower_sideband=" << lower_sideband
-//                      << " raw_real=" << raw_real
-//                      << " raw_imag=" << raw_imag
-//                      << " written_real=" << raw_real
-//                      << " written_imag=" << written_imag
-//                      << " finite_real="
-//                      << std::isfinite(raw_real)
-//                      << " finite_imag="
-//                      << std::isfinite(raw_imag)
-//                      << std::endl;
-//          }
-          // END DEBUG
 
 
           tonefreq = 1e-6*config->getDRecordedFreqPCalToneFreqHz(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);

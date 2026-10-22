@@ -1234,7 +1234,7 @@ GPUCore::issue_afterfft_xmac_drain(int index, int threadid, int startblock, int 
     DIFX_NVTX_POP(); // station_processing
 
     {
-//
+
 
 
         // ---------------------------------------------------------------------
@@ -1571,21 +1571,7 @@ void GPUCore::completegpudata(int index, int threadid, int startblock, int numbl
     // the pcal tones. On the GPU path finalisepcal re-sets the extractor data
     // from the pinned pcal_output before reading, so resetting here (in the tail,
     // just before copyPCalTones) is equivalent to the old prep-time reset and
-    // avoids the next subint's reset clobbering this subint's pcal.
-    //if (mpiid == 9) {
-    //    std::cerr
-    //        << "PCAL-GPU-COMPLETE: "
-    //        << "core_slot=" << index
-    //        << " scan=" << procslots[index].offsets[0]
-    //        << " slot_sec=" << procslots[index].offsets[1]
-    //        << " slot_ns=" << procslots[index].offsets[2]
-    //        << " core_mpiid=" << mpiid
-    //        << " core_mpiid=" << mpiid
-    //        << " ds2_valid="
-    //        << static_cast<int>(gpuprocslots[index].validsubint[2])
-    //        << " mode_ds2=" << modes[2]
-    //        << std::endl;
-    //}
+    // avoids the next subint's reset deleting this subint's pcal.
 
     for (int j = 0; j < numdatastreams; j++) {
         if (config->getDPhaseCalIntervalMHz(procslots[index].configindex, j) > 0)
