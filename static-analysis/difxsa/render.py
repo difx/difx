@@ -80,7 +80,13 @@ class Renderer:
 
     def src_link(self, f, text=None):
         url = self.source_url.format(sha=self.sha, file=f.file, line=f.line)
-        return f"[{text or f.line}]({url})"
+        link = f"[{text or f.line}]({url})"
+        for file, line, note in getattr(f, "related", []):
+            url = self.source_url.format(sha=self.sha, file=file, line=line)
+            title = note.replace('"', "'") if note else "related"
+            where = line if file == f.file else f"{os.path.basename(file)}:{line}"
+            link += f' ↳ [{where}]({url} "{esc(title)}")'
+        return link
 
     # -- common pieces ------------------------------------------------------
     def run_line(self):

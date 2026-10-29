@@ -1,7 +1,7 @@
 """The common record every tool's output is normalised into."""
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 # Normalised severities, most severe first.
 SEVERITIES = ["error", "warning", "performance", "portability", "style"]
@@ -17,6 +17,9 @@ class Finding:
     check: str      # tool-specific rule id
     severity: str   # one of SEVERITIES
     message: str
+    # other places that explain the finding, e.g. where leaked memory was
+    # allocated: [[file, line, note], ...]
+    related: list = field(default_factory=list)
 
     def key(self):
         """Identity that survives unrelated edits moving the line (for run-to-run diffs)."""

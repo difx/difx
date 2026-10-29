@@ -17,6 +17,13 @@ from ..findings import Finding
 HEADER = re.compile(r"^### (?P<file>\S+) \(exit (?P<exit>-?\d+)\) in (?P<dir>.+)$")
 DIAG = re.compile(r"^(?P<file>[^:\s][^:]*):(?P<line>\d+):(?P<col>\d+): "
                   r"(?P<sev>warning|error): (?P<msg>.*?)(?: \[(?P<check>[^\]]+)\])?$")
+NOTE = re.compile(r"^(?P<file>[^:\s][^:]*):(?P<line>\d+):(?P<col>\d+): note: (?P<msg>.*)$")
+# Analyzer path notes that point at the origin of a problem reported elsewhere
+# (a leak is reported where the memory is lost, not where it was allocated).
+ORIGIN_NOTE = re.compile(r"Memory is allocated|Returned allocated memory|Stream opened here|"
+                         r"initialized to a null pointer value|Null pointer value stored|"
+                         r"declared without an initial value|Storing uninitialized value")
+MAX_RELATED = 2
 
 # Check-name prefix -> normalised severity (default: warning).
 SEVERITY_BY_PREFIX = {
@@ -64,17 +71,28 @@ class ClangTidy(Tool):
             f.writelines(outputs)
 
     def parse(self, comp, raw_path):
-        result, cwd = [], self.ctx.src
+        result, cwd, current = [], self.ctx.src, None
         with open(raw_path) as f:
             for line in f:
                 line = line.rstrip("\n")
                 h = HEADER.match(line)
                 if h:
-                    cwd = h["dir"]
+                    cwd, current = h["dir"], None
+                    continue
+                n = NOTE.match(line)
+                if n:
+                    if current and ORIGIN_NOTE.search(n["msg"]) \
+                            and len(current.related) < MAX_RELATED:
+                        rel = self.rel(os.path.normpath(os.path.join(cwd, n["file"])))
+                        entry = [rel, int(n["line"]), n["msg"]]
+                        if (rel, int(n["line"])) != (current.file, current.line) \
+                                and entry not in current.related:
+                            current.related.append(entry)
                     continue
                 m = DIAG.match(line)
                 if not m:
-                    continue
+                    continue  # source snippet lines between a warning and its notes
+                current = None
                 path = os.path.normpath(os.path.join(cwd, m["file"]))
                 if not self.in_component(comp, path):
                     continue
@@ -82,6 +100,7 @@ class ClangTidy(Tool):
                 severity = "error" if m["sev"] == "error" else next(
                     (s for p, s in SEVERITY_BY_PREFIX.items() if check.startswith(p)),
                     "warning")
-                result.append(Finding(comp.path, self.rel(path), int(m["line"]),
-                                      int(m["col"]), self.name, check, severity, m["msg"]))
+                current = Finding(comp.path, self.rel(path), int(m["line"]),
+                                  int(m["col"]), self.name, check, severity, m["msg"])
+                result.append(current)
         return result

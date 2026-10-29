@@ -38,16 +38,23 @@ class Cppcheck(Tool):
         for err in ET.parse(raw_path).getroot().iter("error"):
             if err.get("id") in IGNORED_IDS or err.get("severity") == "information":
                 continue
-            loc = err.find("location")  # first location is the primary one
-            if loc is None:
+            # anchor at the first location inside the component (the first one listed
+            # may be in a header of another library); the others become related
+            locs = [(os.path.join(self.ctx.src, l.get("file")), l) for l in err.iter("location")]
+            mine = [(p, l) for p, l in locs if self.in_component(comp, p)]
+            if not mine:
                 continue
-            path = os.path.join(self.ctx.src, loc.get("file"))
-            if not self.in_component(comp, path):
-                continue
+            path, loc = mine[0]
+            related, seen = [], {int(loc.get("line", 0))}
+            for p, l in locs:
+                line = int(l.get("line", 0))
+                if self.rel(p) == self.rel(path) and line not in seen:
+                    seen.add(line)
+                    related.append([self.rel(p), line, l.get("info", "")])
             severity = err.get("severity")
             if severity not in ("error", "warning", "performance", "portability"):
                 severity = "style"
             result.append(Finding(comp.path, self.rel(path), int(loc.get("line", 0)),
                                   int(loc.get("column", 0)), self.name, err.get("id"),
-                                  severity, err.get("msg")))
+                                  severity, err.get("msg"), related[:2]))
         return result
