@@ -86,7 +86,7 @@ becomes a scripts-only unit (ruff, shellcheck) with its own page, e.g.
 | cppcheck | `[tools.cppcheck] args` | uses the compile database |
 | ruff | `ruff.toml` | Python: syntax errors (one finding per Python 2 file), undefined names, invalid comparisons |
 | shellcheck | `[tools.shellcheck] args` | sh/bash scripts (by extension or `#!`), warning and above |
-| typos | `typos.toml` | spelling in all tracked text files of built components; domain words / variable names whitelisted there |
+| typos | `typos.toml` | spelling in all tracked text files of built components; words inside longer identifiers (e.g. `FIRSR` in `ippsFIRSRGetSize`) are ignored; domain words / variable names whitelisted there |
 | clang-format | `[tools.clang-format]` | disabled until DiFX has a `.clang-format` |
 
 ## Claude summary
