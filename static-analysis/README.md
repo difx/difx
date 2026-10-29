@@ -9,7 +9,7 @@ library only) plus the tools; intended to run unattended, e.g. daily from cron.
 ```bash
 cd difx/static-analysis
 ./sa.py components          # what will be built / analysed
-./sa.py run                 # fresh clone + build + compile db + all tools
+./sa.py run                 # fresh clone + build + compile db + all tools + wiki pages
 ```
 
 Individual steps:
@@ -19,6 +19,8 @@ Individual steps:
 ./sa.py compdb --report-only            # re-filter the database and show coverage
 ./sa.py analyse                         # run all enabled tools
 ./sa.py analyse --only difxio,mpifxcorr --tools clang-tidy
+./sa.py render                          # markdown for the latest run into the wiki clone
+./sa.py render --date 2026-10-29        # ... or for a given run
 ```
 
 ## What it does
@@ -42,6 +44,20 @@ Individual steps:
 
 Untracked files (flex/bison output and other generated sources) and the globs in
 `analysis.exclude` are never analysed.
+4. **render**: compares each component's findings with the previous run of the
+   same branch (matched on file, tool, check and message, so code moving up or
+   down does not count as a change) and writes markdown into the wiki clone
+   (`paths.wiki` / `paths.wiki_subdir`):
+   - `Static-Analysis.md`: counts per component by severity, grouped as
+     libraries / mpifxcorr / applications / utilities, new/fixed, trend
+   - `<category>/SA-<component path>.md`: one page per component with new and
+     fixed findings, counts by check, and findings by file (collapsible), each
+     linked to the source line on GitHub at the analysed commit
+
+   GitHub wiki page names are global, hence the `SA-` prefix
+   (`report.page_prefix`).  Generated pages carry a marker comment; pages for
+   components no longer analysed are removed, nothing else is touched.  The
+   wiki clone is only written, never committed or pushed.
 
 ## Tools
 

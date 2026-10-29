@@ -16,7 +16,7 @@ wiki_subdir = "Static-Analysis"
 [source]
 # Repository (path or URL) and ref checked out fresh for every analysis build.
 repo = "."
-ref = "HEAD"
+ref = "dev"
 
 [build]
 jobs = 8
@@ -46,6 +46,16 @@ exclude = [
     "*/ltmain.sh", "*/install-sh", "*/depcomp", "*/missing", "*/config.guess",
     "*/config.sub", "*/compile", "*/aclocal.m4", "*/m4/libtool.m4", "*/m4/lt*.m4",
 ]
+
+[report]
+# Wiki page names are global, so component pages are named <page_prefix>-<path>.
+page_prefix = "SA"
+top_page = "Static-Analysis"
+# Source links in the reports.
+source_url = "https://github.com/difx/difx/blob/{sha}/{file}#L{line}"
+# Findings listed per table before truncating; runs shown in the trend table.
+max_listed = 300
+trend_runs = 14
 
 [tools.clang-tidy]
 enabled = true

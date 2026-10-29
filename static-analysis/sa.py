@@ -4,7 +4,8 @@
     sa.py components    list components from install-difx and whether they are analysed
     sa.py compdb        fresh checkout + build under an interceptor -> compile_commands.json
     sa.py analyse       run the enabled tools on the analysed components
-    sa.py run           compdb followed by analyse (the daily job)
+    sa.py render        compare with the previous run; write markdown into the wiki clone
+    sa.py run           compdb, analyse and render (the daily job)
 
 Needs only Python 3.11+ and the tools themselves; see README.md.
 """
@@ -12,7 +13,7 @@ Needs only Python 3.11+ and the tools themselves; see README.md.
 import argparse
 import sys
 
-from difxsa import analyse, compdb, components, config
+from difxsa import analyse, compdb, components, config, render
 
 
 def cmd_components(cfg, args):
@@ -36,7 +37,9 @@ def main():
 
     p_db = sub.add_parser("compdb", help="build and generate compile_commands.json")
     p_an = sub.add_parser("analyse", help="run the analysis tools")
-    p_run = sub.add_parser("run", help="compdb + analyse")
+    p_re = sub.add_parser("render", help="write markdown reports into the wiki clone")
+    p_re.add_argument("--branch", help="results branch (default: the current checkout's)")
+    p_run = sub.add_parser("run", help="compdb + analyse + render")
     for p in (p_db, p_run):
         p.add_argument("--no-checkout", action="store_true",
                        help="reuse the existing work checkout instead of re-cloning")
@@ -46,7 +49,9 @@ def main():
         p.add_argument("--only", type=csv, help="comma-separated component names")
         p.add_argument("--tools", type=csv, help="comma-separated tool names "
                        "(default: those enabled in the config)")
-        p.add_argument("--date", help="results date label (default: today)")
+    for p in (p_an, p_run, p_re):
+        p.add_argument("--date", help="results date label (default: today; "
+                       "for render: the latest run)")
     args = parser.parse_args()
 
     cfg = config.load(args.config)
@@ -59,6 +64,10 @@ def main():
                             build=not getattr(args, "report_only", False))
     if args.command in ("analyse", "run"):
         status = analyse.run(cfg, only=args.only, tools=args.tools, date=args.date) or status
+    if args.command == "render":
+        status = render.run(cfg, branch=args.branch, date=args.date)
+    elif args.command == "run":
+        status = render.run(cfg, date=args.date) or status
     return status
 
 
