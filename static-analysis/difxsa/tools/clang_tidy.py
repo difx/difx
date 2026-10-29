@@ -43,6 +43,9 @@ class ClangTidy(Tool):
             cmd.append("--config-file=" + self.ctx.repo_path(self.settings["config"]))
         return cmd + [path]
 
+    def inputs(self, files):
+        return files.compiled
+
     def run(self, comp, files, raw_path):
         with open(self.ctx.db_path) as f:
             directory = {e["file"]: e["directory"] for e in json.load(f)}

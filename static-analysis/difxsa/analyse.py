@@ -1,5 +1,9 @@
 """Step 2: run the enabled tools over each analysed component.
 
+Besides the install-difx components, every directory below analysis.script_roots
+that holds Python or shell scripts outside those components is analysed as a
+scripts-only unit (by the tools that look at scripts), e.g. sites/MPIfR.
+
 Output below <results>/<branch>/<date>/:
     <component path>/<tool>.<ext>   raw tool output
     <component path>/findings.json  normalised findings of all tools
@@ -11,6 +15,7 @@ import datetime
 import fnmatch
 import json
 import os
+import re
 import subprocess
 import time
 from collections import Counter
@@ -21,6 +26,8 @@ from .config import REPO_ROOT
 from .tools import TOOLS, ComponentFiles
 
 SOURCE_EXT = compdb.C_CXX_EXT | {".h", ".hh", ".hpp", ".hxx", ".H"}
+PYTHON_EXT = {".py"}
+SHELL_EXT = {".sh", ".bash"}
 
 
 def log(msg):
@@ -41,20 +48,76 @@ class Context:
         return os.path.join(REPO_ROOT, path)
 
 
-def component_files(comp, src, compiled, tracked, exclude):
+def script_kind(src, rel):
+    """'python', 'shell' or None, from the extension or else the #! line."""
+    ext = os.path.splitext(rel)[1]
+    if ext in PYTHON_EXT:
+        return "python"
+    if ext in SHELL_EXT:
+        return "shell"
+    if ext:
+        return None
+    try:
+        with open(os.path.join(src, rel), "rb") as f:
+            first = f.readline(200)
+    except OSError:
+        return None
+    if not first.startswith(b"#!"):
+        return None
+    if b"python" in first:
+        return "python"
+    if re.search(rb"[/ ](ba)?sh\b", first):
+        return "shell"
+    return None
+
+
+def script_owner(rel, comps, roots):
+    """Path of the unit a script belongs to: its component, else its directory below a root."""
+    owners = [c.path for c in comps if rel.startswith(c.path + "/")]
+    if owners:
+        return max(owners, key=len)
+    parts = rel.split("/")
+    if parts[0] in roots and len(parts) >= 3:
+        return "/".join(parts[:2])
+    return None
+
+
+def assign_scripts(src, tracked, comps, roots, exclude):
+    """{unit path: {"python": [...], "shell": [...]}} for all tracked, non-excluded scripts."""
+    units = {}
+    for rel in tracked:
+        if any(fnmatch.fnmatch(rel, pat) for pat in exclude):
+            continue
+        kind = script_kind(src, rel)
+        owner = script_owner(rel, comps, roots) if kind else None
+        if owner:
+            units.setdefault(owner, {"python": [], "shell": []})[kind].append(rel)
+    return units
+
+
+def component_files(comp, src, compiled, tracked, scripts, exclude):
+    def excluded(rel):
+        return any(fnmatch.fnmatch(rel, pat) for pat in exclude)
+
     def keep(rel):
-        return rel.startswith(comp.path + "/") and not any(
-            fnmatch.fnmatch(rel, pat) for pat in exclude)
+        return (not comp.scripts_only and rel.startswith(comp.path + "/")
+                and not excluded(rel))
 
     def ext(p):
         return os.path.splitext(p)[1]
 
+    def absolute(paths):
+        return [os.path.join(src, p) for p in paths]
+
     tracked_set = set(tracked)
+    mine = scripts.get(comp.path, {})
     # untracked compiled files are generated (flex/bison output etc.)
     return ComponentFiles(
         compiled=[os.path.join(src, p) for p in compiled if keep(p) and p in tracked_set],
         sources=[os.path.join(src, p) for p in tracked if keep(p) and ext(p) in SOURCE_EXT],
         tracked=[os.path.join(src, p) for p in tracked if keep(p)],
+        python=absolute(mine.get("python", [])),
+        shell=absolute(mine.get("shell", [])),
     )
 
 
@@ -83,15 +146,6 @@ def run(cfg, only=None, tools=None, date=None):
                   jobs=a.get("jobs", os.cpu_count()), tool_bin=cfg.tool_bin)
     checkout = compdb.read_checkout(work)
 
-    comps = [c for c in components.read_components(cfg.path("install_script"), cfg.excluded)
-             if c.analysed]
-    only = only or a.get("components")
-    if only:
-        unknown = set(only) - {c.name for c in comps}
-        if unknown:
-            raise RuntimeError(f"not analysed components: {', '.join(sorted(unknown))}")
-        comps = [c for c in comps if c.name in only]
-
     active = select_tools(cfg, ctx, tools)
     if not active:
         raise RuntimeError("no tools to run")
@@ -101,6 +155,20 @@ def run(cfg, only=None, tools=None, date=None):
     tracked = subprocess.run(["git", "-C", src, "ls-files"], check=True, text=True,
                              stdout=subprocess.PIPE).stdout.splitlines()
     exclude = a.get("exclude", [])
+
+    comps = [c for c in components.read_components(cfg.path("install_script"), cfg.excluded)
+             if c.analysed]
+    roots = a.get("script_roots", components.CATEGORY_ORDER)
+    scripts = assign_scripts(src, tracked, comps, roots, exclude)
+    for path in sorted(set(scripts) - {c.path for c in comps}):
+        comps.append(components.Component(path, True, path.split("/")[0], path,
+                                           scripts_only=True))
+    only = only or a.get("components")
+    if only:
+        unknown = set(only) - {c.name for c in comps}
+        if unknown:
+            raise RuntimeError(f"not analysed components: {', '.join(sorted(unknown))}")
+        comps = [c for c in comps if c.name in only]
 
     date = date or datetime.date.today().isoformat()
     branchdir = cfg.results_dir(checkout["branch"])
@@ -115,15 +183,21 @@ def run(cfg, only=None, tools=None, date=None):
             previous = json.load(f)
         if previous.get("checkout", {}).get("sha") != checkout["sha"]:
             previous = {}
+            # a Claude summary of the replaced results no longer applies
+            for stale in ("claude-summary.md", "claude-digest.md"):
+                if os.path.exists(os.path.join(rundir, stale)):
+                    os.remove(os.path.join(rundir, stale))
     active_names = {t.name for t in active}
 
     summary = {}
     for comp in comps:
         compdir = os.path.join(rundir, comp.path)
         os.makedirs(compdir, exist_ok=True)
-        files = component_files(comp, src, compiled, tracked, exclude)
+        files = component_files(comp, src, compiled, tracked, scripts, exclude)
         result, timing = [], {}
         for tool in active:
+            if not tool.inputs(files):
+                continue
             raw = os.path.join(compdir, f"{tool.name}.{tool.raw_ext}")
             t0 = time.time()
             tool.run(comp, files, raw)
@@ -136,16 +210,20 @@ def run(cfg, only=None, tools=None, date=None):
         findings.save(result, findings_file)
         counts = Counter(f.tool for f in result)
         summary[comp.name] = {
-            "path": comp.path, "category": comp.category,
+            "path": comp.path, "category": comp.category, "scripts_only": comp.scripts_only,
             "files": {"compiled": len(files.compiled), "sources": len(files.sources),
-                      "tracked": len(files.tracked)},
-            "counts": {t: counts.get(t, 0) for t in sorted(counts.keys() | active_names)},
+                      "tracked": len(files.tracked), "python": len(files.python),
+                      "shell": len(files.shell)},
+            "counts": {t: counts.get(t, 0) for t in sorted(counts.keys() | set(timing))},
             "seconds": timing,
         }
         log(f"{comp.path:34s} " + "  ".join(f"{t}={n}" for t, n in
                                              summary[comp.name]["counts"].items()))
 
     merged = previous.get("components", {})
+    if not only:
+        # every unit was analysed: drop ones that no longer exist
+        merged = {k: v for k, v in merged.items() if k in summary}
     for name, s in summary.items():
         s["seconds"] = {**merged.get(name, {}).get("seconds", {}), **s["seconds"]}
         merged[name] = s

@@ -15,6 +15,9 @@ class ClangFormat(Tool):
     name = "clang-format"
     default_exe = "clang-format"
 
+    def inputs(self, files):
+        return files.sources
+
     def run(self, comp, files, raw_path):
         style = self.settings.get("style", "file")
         with open(raw_path, "w") as f:

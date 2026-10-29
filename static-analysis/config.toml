@@ -31,7 +31,7 @@ tool_bin = "../difx-sa-work/venv/bin"
 # Components enabled in install-difx that are built but not analysed, with the reason.
 [components.exclude]
 difxcalc11 = "Fortran (calc11)"
-python = "Python only"
+python = "Python only (its scripts are still checked by ruff)"
 
 [analysis]
 # Raw output and findings go to <results>/<branch>/<date>/<component path>/.
@@ -45,7 +45,12 @@ exclude = [
     # autotools boilerplate committed in some directories
     "*/ltmain.sh", "*/install-sh", "*/depcomp", "*/missing", "*/config.guess",
     "*/config.sub", "*/compile", "*/aclocal.m4", "*/m4/libtool.m4", "*/m4/lt*.m4",
+    # third-party code
+    "applications/hops/*",
 ]
+# Directories below these are also analysed for Python / shell scripts (ruff,
+# shellcheck), one unit per <root>/<dir>, even when install-difx does not build them.
+script_roots = ["libraries", "mpifxcorr", "applications", "utilities", "sites"]
 
 [report]
 # Wiki page names are global, so component pages are named <page_prefix>-<path>.
@@ -59,6 +64,22 @@ trend_runs = 14
 # Where `sa.py publish` pushes the wiki clone.
 wiki_remote = "origin"
 wiki_branch = "master"
+
+[summary]
+# `sa.py summary` (on demand only): the claude CLI, found on PATH, ~/.local/bin or
+# in the VS Code extension unless set here; model "" means the CLI default.
+claude = ""
+model = ""
+max_turns = 40
+prompt = "static-analysis/claude-summary-prompt.md"
+
+[tools.compiler]
+# Warnings from the compiler that built each file (gcc/g++/mpicxx from the compile
+# database), run with -fsyntax-only plus these flags; nothing is built.
+enabled = true
+flags = ["-Wall", "-Wextra",
+         # deliberate in DiFX: partial table initialisers, callback signatures
+         "-Wno-missing-field-initializers", "-Wno-unused-parameter"]
 
 [tools.clang-tidy]
 enabled = true
@@ -78,6 +99,15 @@ args = ["--enable=warning,style,performance,portability", "--inline-suppr",
 # Off until DiFX agrees a .clang-format style; with no style every line differs.
 enabled = false
 style = "file"
+
+[tools.ruff]
+enabled = true
+config = "static-analysis/ruff.toml"
+
+[tools.shellcheck]
+enabled = true
+# warning and above; info/style (e.g. quoting suggestions) would dominate
+args = ["--severity=warning"]
 
 [tools.typos]
 enabled = true

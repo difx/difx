@@ -15,6 +15,14 @@ cd difx/static-analysis
 
 or all in one: `./sa.py run --publish`.
 
+Occasionally, for an AI review of the latest results (never part of `run`):
+
+```bash
+./sa.py summary                     # Claude summary of everything, then re-render
+./sa.py summary --only difxio,mpifxcorr
+./sa.py publish                     # the summary appears as Static-Analysis-Claude-Summary
+```
+
 Individual steps:
 
 ```bash
@@ -46,7 +54,11 @@ Individual steps:
    plus `run.json` (commit, tool versions, counts) and a `latest` symlink.
 
 Untracked files (flex/bison output and other generated sources) and the globs in
-`analysis.exclude` are never analysed.
+`analysis.exclude` (autotools boilerplate, third-party `applications/hops`) are
+never analysed.  Python and shell scripts are also checked outside the built
+components: every `<root>/<dir>` below `analysis.script_roots` that holds scripts
+becomes a scripts-only unit (ruff, shellcheck) with its own page, e.g.
+`sites/MPIfR`, `applications/polconvert`.
 4. **render**: compares each component's findings with the previous run of the
    same branch (matched on file, tool, check and message, so code moving up or
    down does not count as a change) and writes markdown into the wiki clone
@@ -69,10 +81,24 @@ Untracked files (flex/bison output and other generated sources) and the globs in
 
 | Tool | Config | Notes |
 |---|---|---|
+| compiler | `[tools.compiler] flags` | the gcc/g++/mpicxx that built each file, `-fsyntax-only -Wall -Wextra` (minus deliberate patterns) |
 | clang-tidy | `clang-tidy.yaml` | curated bug-finding checks, incl. clang static analyzer core/unix/cplusplus |
 | cppcheck | `[tools.cppcheck] args` | uses the compile database |
-| typos | `typos.toml` | spelling in all tracked text files; domain words / variable names whitelisted there |
+| ruff | `ruff.toml` | Python: syntax errors (one finding per Python 2 file), undefined names, invalid comparisons |
+| shellcheck | `[tools.shellcheck] args` | sh/bash scripts (by extension or `#!`), warning and above |
+| typos | `typos.toml` | spelling in all tracked text files of built components; domain words / variable names whitelisted there |
 | clang-format | `[tools.clang-format]` | disabled until DiFX has a `.clang-format` |
+
+## Claude summary
+
+`sa.py summary` writes a digest of the latest run (counts, all errors, other
+findings grouped by check with examples, new findings) and runs the `claude` CLI
+headless in the analysed source tree with read-only tools (`Read,Grep,Glob`), using
+the prompt in `claude-summary-prompt.md`.  It checks findings against the code and
+reports likely real bugs, noise worth suppressing and next steps.  The result is
+saved with the run and rendered as its own wiki page.  The CLI is found on `PATH`,
+in `~/.local/bin`, or in the VS Code extension (`summary.claude` overrides); a full
+summary takes several minutes and uses the account's Claude quota.
 
 Adding a tool: a module in `difxsa/tools/` with a `Tool` subclass (`run` writes raw
 output, `parse` returns `Finding`s), listed in `TOOLS`, plus a `[tools.<name>]`
@@ -80,14 +106,14 @@ section in `config.toml`.
 
 ## Requirements
 
-Debian packages: `bear clang-tidy clang-format cppcheck` (LLVM 19), and the
-normal DiFX build dependencies.  `libomp-19-dev` is recommended so clang can parse
-mpifxcorr's OpenMP code.  Tools not packaged by Debian go in a venv that
+Debian packages: `bear clang-tidy clang-format cppcheck shellcheck libomp-19-dev`
+(LLVM 19; libomp so clang can parse mpifxcorr's OpenMP code), and the normal DiFX
+build dependencies.  Tools not packaged by Debian go in a venv that
 `build.tool_bin` points at (searched before `PATH`):
 
 ```bash
 python3 -m venv ../difx-sa-work/venv
-../difx-sa-work/venv/bin/pip install typos lizard
+../difx-sa-work/venv/bin/pip install typos ruff lizard
 ```
 
 ## Running unattended

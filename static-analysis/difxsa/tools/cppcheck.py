@@ -18,6 +18,9 @@ class Cppcheck(Tool):
     raw_ext = "xml"
     default_exe = "cppcheck"
 
+    def inputs(self, files):
+        return files.compiled
+
     def run(self, comp, files, raw_path):
         builddir = os.path.join(self.ctx.workdir, "cppcheck-build", comp.path)
         os.makedirs(builddir, exist_ok=True)

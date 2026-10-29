@@ -6,6 +6,7 @@
     sa.py analyse       run the enabled tools on the analysed components
     sa.py render        compare with the previous run; write markdown into the wiki clone
     sa.py publish       commit the generated wiki pages and push them
+    sa.py summary       on demand: ask Claude to summarise the latest run (then render)
     sa.py run           compdb, analyse and render (--publish: and publish)
 
 Needs only Python 3.11+ and the tools themselves; see README.md.
@@ -14,7 +15,7 @@ Needs only Python 3.11+ and the tools themselves; see README.md.
 import argparse
 import sys
 
-from difxsa import analyse, compdb, components, config, publish, render
+from difxsa import analyse, compdb, components, config, publish, render, summary
 
 
 def cmd_components(cfg, args):
@@ -42,6 +43,10 @@ def main():
     p_re.add_argument("--branch", help="results branch (default: the current checkout's)")
     p_pub = sub.add_parser("publish", help="commit and push the generated wiki pages")
     p_pub.add_argument("--no-push", action="store_true", help="commit only")
+    p_sum = sub.add_parser("summary", help="ask Claude to summarise the latest run")
+    p_sum.add_argument("--only", type=csv, help="focus on these components / directories")
+    p_sum.add_argument("--model", help="Claude model (default: summary.model or the CLI default)")
+    p_sum.add_argument("--max-turns", type=int, help="limit on Claude's tool calls")
     p_run = sub.add_parser("run", help="compdb + analyse + render [+ publish]")
     p_run.add_argument("--publish", action="store_true",
                        help="also commit and push the wiki pages")
@@ -75,6 +80,9 @@ def main():
         status = render.run(cfg, date=args.date) or status
         if args.publish:
             status = publish.run(cfg) or status
+    if args.command == "summary":
+        status = summary.run(cfg, only=args.only, model=args.model, max_turns=args.max_turns)
+        status = status or render.run(cfg)
     if args.command == "publish":
         status = publish.run(cfg, push=not args.no_push)
     return status

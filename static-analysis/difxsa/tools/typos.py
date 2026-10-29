@@ -14,6 +14,9 @@ class Typos(Tool):
     raw_ext = "jsonl"
     default_exe = "typos"
 
+    def inputs(self, files):
+        return files.tracked
+
     def run(self, comp, files, raw_path):
         # --force-exclude: apply the config's excludes to files named on the command line
         cmd = [self.exe, "--format", "json", "--force-exclude"]

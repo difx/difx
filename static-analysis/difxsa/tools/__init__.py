@@ -24,6 +24,8 @@ class ComponentFiles:
     compiled: list = field(default_factory=list)  # in compile_commands.json
     sources: list = field(default_factory=list)   # tracked C/C++ sources and headers
     tracked: list = field(default_factory=list)   # every tracked file
+    python: list = field(default_factory=list)    # *.py and python #! scripts
+    shell: list = field(default_factory=list)     # *.sh, *.bash and sh/bash #! scripts
 
 
 class Tool:
@@ -46,6 +48,10 @@ class Tool:
         return next((l.strip() for l in out.splitlines() if "version" in l.lower()),
                     out.strip().splitlines()[0] if out.strip() else "unknown")
 
+    def inputs(self, files):
+        """The files this tool looks at; the tool is skipped when there are none."""
+        raise NotImplementedError
+
     def run(self, comp, files, raw_path):
         """Run on one component, writing raw output to raw_path."""
         raise NotImplementedError
@@ -61,7 +67,8 @@ class Tool:
         return self.rel(path).startswith(comp.path + "/")
 
 
-from . import clang_format, clang_tidy, cppcheck, typos  # noqa: E402
+from . import clang_format, clang_tidy, compiler, cppcheck, ruff, shellcheck, typos  # noqa: E402
 
-TOOLS = {t.name: t for t in (clang_tidy.ClangTidy, cppcheck.Cppcheck,
-                             clang_format.ClangFormat, typos.Typos)}
+TOOLS = {t.name: t for t in (compiler.Compiler, clang_tidy.ClangTidy, cppcheck.Cppcheck,
+                             clang_format.ClangFormat, ruff.Ruff, shellcheck.Shellcheck,
+                             typos.Typos)}

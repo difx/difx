@@ -21,7 +21,7 @@ SPECIAL = {
     "perl": ("libraries", "libraries/vex"),
 }
 
-CATEGORY_ORDER = ["libraries", "mpifxcorr", "applications", "utilities"]
+CATEGORY_ORDER = ["libraries", "mpifxcorr", "applications", "utilities", "sites"]
 
 
 @dataclass
@@ -31,6 +31,7 @@ class Component:
     category: str      # libraries, utilities, applications or mpifxcorr
     path: str          # relative to the repository root
     excluded: str = "" # reason, if enabled but not analysed
+    scripts_only: bool = False  # a directory of scripts, not an install-difx component
 
     @property
     def analysed(self):
