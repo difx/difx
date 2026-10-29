@@ -954,7 +954,7 @@ static int loadPhasedArrayConfigFile(DifxInput *D, const char *fileName)
 	dpa->accTime = atoi(DifxParametersvalue(pp, r));
 	r = DifxParametersfind(pp, r, "COMPLEX OUTPUT");
 	dpa->complexOutput = 0;
-	if(strcasecmp(DifxParametersvalue(pp, r), "TRUE"))
+	if(strcasecmp(DifxParametersvalue(pp, r), "TRUE") == 0)
 	{
 		dpa->complexOutput = 1;
 	}
