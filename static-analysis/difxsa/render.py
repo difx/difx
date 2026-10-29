@@ -75,7 +75,9 @@ class Renderer:
         return os.path.join(folder, self.page_name(comp_path) + ".md")
 
     def link(self, title, page):
-        return f"[[{title}|{page}]]"
+        # not [[title|page]]: its "|" would split a table cell; wiki pages resolve
+        # relative to /wiki/ whatever directory their file is in
+        return f"[{title}]({page})"
 
     def src_link(self, f, text=None):
         url = self.source_url.format(sha=self.sha, file=f.file, line=f.line)
