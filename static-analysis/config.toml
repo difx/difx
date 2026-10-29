@@ -56,6 +56,9 @@ source_url = "https://github.com/difx/difx/blob/{sha}/{file}#L{line}"
 # Findings listed per table before truncating; runs shown in the trend table.
 max_listed = 300
 trend_runs = 14
+# Where `sa.py publish` pushes the wiki clone.
+wiki_remote = "origin"
+wiki_branch = "master"
 
 [tools.clang-tidy]
 enabled = true

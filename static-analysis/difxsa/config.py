@@ -42,6 +42,17 @@ class Config:
         tb = self.build.get("tool_bin")
         return resolve(tb) if tb else None
 
+    def results_dir(self, branch):
+        """Results of one branch: <analysis.results>/<branch with / -> ->."""
+        root = self.raw.get("analysis", {}).get("results", "../difx-sa-work/results")
+        return os.path.join(resolve(root), branch.replace("/", "-"))
+
+    @property
+    def wiki_dir(self):
+        """Directory in the wiki clone that holds the generated pages."""
+        return os.path.join(self.path("wiki"),
+                            self.raw["paths"].get("wiki_subdir", "Static-Analysis"))
+
     @property
     def excluded(self):
         return self.raw.get("components", {}).get("exclude", {})

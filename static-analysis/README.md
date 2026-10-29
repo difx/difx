@@ -10,7 +10,10 @@ library only) plus the tools; intended to run unattended, e.g. daily from cron.
 cd difx/static-analysis
 ./sa.py components          # what will be built / analysed
 ./sa.py run                 # fresh clone + build + compile db + all tools + wiki pages
+./sa.py publish             # commit the regenerated pages in the wiki clone and push
 ```
+
+or all in one: `./sa.py run --publish`.
 
 Individual steps:
 
@@ -56,8 +59,11 @@ Untracked files (flex/bison output and other generated sources) and the globs in
 
    GitHub wiki page names are global, hence the `SA-` prefix
    (`report.page_prefix`).  Generated pages carry a marker comment; pages for
-   components no longer analysed are removed, nothing else is touched.  The
-   wiki clone is only written, never committed or pushed.
+   components no longer analysed are removed, nothing else is touched.
+5. **publish**: commits only the generated directory in the wiki clone
+   (message: branch, commit, date, total / new / fixed), rebases on the remote
+   and pushes to `report.wiki_branch`.  It refuses to push if that would also
+   publish local wiki commits touching other pages.  `--no-push` commits only.
 
 ## Tools
 
@@ -84,11 +90,14 @@ python3 -m venv ../difx-sa-work/venv
 ../difx-sa-work/venv/bin/pip install typos lizard
 ```
 
-## Running from cron
+## Running unattended
+
+A full run (build ~6 min, analysis ~3 min on 32 cores) needs no interaction, so
+it can also go in cron, e.g. weekly:
 
 ```cron
 # m h dom mon dow
-30 2 * * *  cd $HOME/difx/static-analysis && ./sa.py run > ../../difx-sa-work/logs/cron.log 2>&1
+30 2 * * 1  cd /path/to/difx/static-analysis && ./sa.py run --publish > ../../difx-sa-work/logs/cron.log 2>&1
 ```
 
-A full run (build ~6 min, analysis ~3 min on 32 cores) needs no interaction.
+Pushing needs non-interactive write access to the wiki (e.g. an SSH key).

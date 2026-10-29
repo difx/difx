@@ -5,7 +5,8 @@
     sa.py compdb        fresh checkout + build under an interceptor -> compile_commands.json
     sa.py analyse       run the enabled tools on the analysed components
     sa.py render        compare with the previous run; write markdown into the wiki clone
-    sa.py run           compdb, analyse and render (the daily job)
+    sa.py publish       commit the generated wiki pages and push them
+    sa.py run           compdb, analyse and render (--publish: and publish)
 
 Needs only Python 3.11+ and the tools themselves; see README.md.
 """
@@ -13,7 +14,7 @@ Needs only Python 3.11+ and the tools themselves; see README.md.
 import argparse
 import sys
 
-from difxsa import analyse, compdb, components, config, render
+from difxsa import analyse, compdb, components, config, publish, render
 
 
 def cmd_components(cfg, args):
@@ -39,7 +40,11 @@ def main():
     p_an = sub.add_parser("analyse", help="run the analysis tools")
     p_re = sub.add_parser("render", help="write markdown reports into the wiki clone")
     p_re.add_argument("--branch", help="results branch (default: the current checkout's)")
-    p_run = sub.add_parser("run", help="compdb + analyse + render")
+    p_pub = sub.add_parser("publish", help="commit and push the generated wiki pages")
+    p_pub.add_argument("--no-push", action="store_true", help="commit only")
+    p_run = sub.add_parser("run", help="compdb + analyse + render [+ publish]")
+    p_run.add_argument("--publish", action="store_true",
+                       help="also commit and push the wiki pages")
     for p in (p_db, p_run):
         p.add_argument("--no-checkout", action="store_true",
                        help="reuse the existing work checkout instead of re-cloning")
@@ -68,6 +73,10 @@ def main():
         status = render.run(cfg, branch=args.branch, date=args.date)
     elif args.command == "run":
         status = render.run(cfg, date=args.date) or status
+        if args.publish:
+            status = publish.run(cfg) or status
+    if args.command == "publish":
+        status = publish.run(cfg, push=not args.no_push)
     return status
 
 

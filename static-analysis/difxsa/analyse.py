@@ -17,7 +17,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 from . import compdb, components, findings
-from .config import REPO_ROOT, resolve
+from .config import REPO_ROOT
 from .tools import TOOLS, ComponentFiles
 
 SOURCE_EXT = compdb.C_CXX_EXT | {".h", ".hh", ".hpp", ".hxx", ".H"}
@@ -39,10 +39,6 @@ class Context:
     @staticmethod
     def repo_path(path):
         return os.path.join(REPO_ROOT, path)
-
-
-def branch_dirname(branch):
-    return branch.replace("/", "-")
 
 
 def component_files(comp, src, compiled, tracked, exclude):
@@ -107,8 +103,7 @@ def run(cfg, only=None, tools=None, date=None):
     exclude = a.get("exclude", [])
 
     date = date or datetime.date.today().isoformat()
-    branchdir = os.path.join(resolve(a.get("results", "../difx-sa-work/results")),
-                             branch_dirname(checkout["branch"]))
+    branchdir = cfg.results_dir(checkout["branch"])
     rundir = os.path.join(branchdir, date)
     log(f"{checkout['branch']} @ {checkout['sha'][:10]} -> {rundir}")
 
