@@ -1,0 +1,30 @@
+# Curated clang-tidy checks for DiFX.  Start with checks that find bugs; style
+# families (readability-*, modernize-*) are left out until the bug findings are
+# under control.  Disabled entries are high-volume and low-value for legacy C/C++.
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-reserved-identifier,
+  -bugprone-assignment-in-if-condition,
+  -bugprone-switch-missing-default-case,
+  -bugprone-branch-clone,
+  -bugprone-multi-level-implicit-pointer-conversion,
+  clang-analyzer-core.*,
+  clang-analyzer-cplusplus.*,
+  clang-analyzer-deadcode.*,
+  clang-analyzer-unix.*,
+  cert-flp30-c,
+  cert-str34-c,
+  concurrency-thread-canceltype-asynchronous,
+  misc-redundant-expression,
+  misc-misplaced-const,
+  misc-throw-by-value-catch-by-reference,
+  performance-*,
+  -performance-avoid-endl,
+  -performance-enum-size,
+  readability-misleading-indentation,
+WarningsAsErrors: ''
+FormatStyle: none

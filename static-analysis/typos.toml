@@ -1,0 +1,31 @@
+# typos configuration for DiFX: accepted domain words and abbreviations.
+# See https://github.com/crate-ci/typos/blob/master/docs/reference.md
+
+[files]
+extend-exclude = [
+    # documents and binary formats
+    "*.pdf", "*.ps", "*.eps", "*.png", "*.jpg", "*.gif", "*.class", "*.jar",
+    # VLBI data and schedules used as test input
+    "*.fits", "*.vdif", "*.m5b", "*.codif", "*.bindir", "*.vex", "*.vex2", "*.vex.obs",
+    "*.skd", "sampledata/", "vex2testdata/",
+]
+
+[default.extend-words]
+DBE = "DBE"         # digital back end
+EVN = "EVN"         # European VLBI Network
+HSA = "HSA"         # High Sensitivity Array
+CONNFIG = "CONNFIG" # "PHASED ARRAY CONNFIG FILE" is a .input file keyword; do not fix
+
+[default.extend-identifiers]
+# variable names that look like misspellings
+ba = "ba"
+clen = "clen"
+fo = "fo"
+iy = "iy"
+iz = "iz"
+IY = "IY"
+IZ = "IZ"
+nd = "nd"
+pathc = "pathc"
+Rto = "Rto"
+strng = "strng"

@@ -1,0 +1,71 @@
+# DiFX static-analysis suite configuration.
+# Relative paths are relative to the DiFX repository root.
+
+[paths]
+# Scratch area for the analysis checkout, build, install prefix, logs and results.
+workdir = "../difx-sa-work"
+# Sourced before building.  DIFXROOT is redirected to <workdir>/install so the
+# analysis build never touches the normal DiFX installation.
+setup_script = "setup.bash"
+# The `components` dict in this script decides what is built and analysed.
+install_script = "install-difx"
+# Local clone of the DiFX wiki; reports are written below wiki_subdir.
+wiki = "../difx.wiki"
+wiki_subdir = "Static-Analysis"
+
+[source]
+# Repository (path or URL) and ref checked out fresh for every analysis build.
+repo = "."
+ref = "HEAD"
+
+[build]
+jobs = 8
+# Extra arguments for install-difx (the suite adds --doonly and --makeflags itself).
+install_args = ["--nodoc"]
+# Interceptor used to record compile commands: "auto" (bear if found, else compiledb),
+# "bear" or "compiledb".
+compdb_tool = "auto"
+# Directory searched (before PATH) for helper tools such as bear and compiledb.
+tool_bin = "../difx-sa-work/venv/bin"
+
+# Components enabled in install-difx that are built but not analysed, with the reason.
+[components.exclude]
+difxcalc11 = "Fortran (calc11)"
+python = "Python only"
+
+[analysis]
+# Raw output and findings go to <results>/<branch>/<date>/<component path>/.
+results = "../difx-sa-work/results"
+jobs = 16
+# Optional subset of the analysed components, e.g. ["difxio", "mpifxcorr"]; default all.
+# components = []
+# fnmatch globs (repo-relative) never analysed, e.g. third-party code.
+# Untracked files (flex/bison output and other generated sources) are always skipped.
+exclude = [
+    # autotools boilerplate committed in some directories
+    "*/ltmain.sh", "*/install-sh", "*/depcomp", "*/missing", "*/config.guess",
+    "*/config.sub", "*/compile", "*/aclocal.m4", "*/m4/libtool.m4", "*/m4/lt*.m4",
+]
+
+[tools.clang-tidy]
+enabled = true
+config = "static-analysis/clang-tidy.yaml"
+# Extra compiler arguments for clang.  Note clang needs its own omp.h
+# (Debian: libomp-19-dev) for mpifxcorr's datamuxer.cpp; GCC's does not parse.
+extra_args = []
+
+[tools.cppcheck]
+enabled = true
+args = ["--enable=warning,style,performance,portability", "--inline-suppr",
+        "--suppress=missingIncludeSystem", "--suppress=unmatchedSuppression",
+        # C89-style declarations at block start are house style, not defects
+        "--suppress=variableScope"]
+
+[tools.clang-format]
+# Off until DiFX agrees a .clang-format style; with no style every line differs.
+enabled = false
+style = "file"
+
+[tools.typos]
+enabled = true
+config = "static-analysis/typos.toml"
