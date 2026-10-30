@@ -29,7 +29,7 @@ Individual steps:
 ./sa.py compdb                          # clone, build under bear, compile_commands.json
 ./sa.py compdb --report-only            # re-filter the database and show coverage
 ./sa.py analyse                         # run all enabled tools
-./sa.py analyse --only difxio,mpifxcorr --tools clang-tidy
+./sa.py analyse --only difxio,mpifxcorr --tools clang-tidy   # adds to the latest run of this commit
 ./sa.py render                          # markdown for the latest run into the wiki clone
 ./sa.py render --date 2026-10-29        # ... or for a given run
 ```

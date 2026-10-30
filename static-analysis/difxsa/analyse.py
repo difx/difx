@@ -9,6 +9,9 @@ Output below <results>/<branch>/<date>/:
     <component path>/findings.json  normalised findings of all tools
     run.json                        checkout, tool versions, per-component counts
 and <results>/<branch>/latest -> <date>.
+
+A partial run (--only / --tools) adds to the latest run of the same commit
+rather than starting a new date with only its own results.
 """
 
 import datetime
@@ -21,7 +24,7 @@ import time
 from collections import Counter
 from dataclasses import dataclass
 
-from . import compdb, components, findings
+from . import compdb, components, diff, findings
 from .config import REPO_ROOT
 from .tools import TOOLS, ComponentFiles
 
@@ -146,6 +149,7 @@ def run(cfg, only=None, tools=None, date=None):
                   jobs=a.get("jobs", os.cpu_count()), tool_bin=cfg.tool_bin)
     checkout = compdb.read_checkout(work)
 
+    partial = bool(only or tools)
     active = select_tools(cfg, ctx, tools)
     if not active:
         raise RuntimeError("no tools to run")
@@ -170,23 +174,31 @@ def run(cfg, only=None, tools=None, date=None):
             raise RuntimeError(f"not analysed components: {', '.join(sorted(unknown))}")
         comps = [c for c in comps if c.name in only]
 
-    date = date or datetime.date.today().isoformat()
     branchdir = cfg.results_dir(checkout["branch"])
+    if not date:
+        date = datetime.date.today().isoformat()
+        dates = diff.run_dates(branchdir)
+        if partial and dates and date not in dates:
+            date = dates[-1]
     rundir = os.path.join(branchdir, date)
     log(f"{checkout['branch']} @ {checkout['sha'][:10]} -> {rundir}")
 
-    # a partial (--only / --tools) rerun of the same checkout keeps the day's other results
+    # a partial (--only / --tools) rerun of the same checkout keeps the run's other results
     runfile = os.path.join(rundir, "run.json")
     previous = {}
     if os.path.exists(runfile):
         with open(runfile) as f:
             previous = json.load(f)
-        if previous.get("checkout", {}).get("sha") != checkout["sha"]:
-            previous = {}
-            # a Claude summary of the replaced results no longer applies
-            for stale in ("claude-summary.md", "claude-digest.md"):
-                if os.path.exists(os.path.join(rundir, stale)):
-                    os.remove(os.path.join(rundir, stale))
+    if partial and previous.get("checkout", {}).get("sha") != checkout["sha"]:
+        # the run would hold only these results, and render would report the rest as fixed
+        raise RuntimeError(f"no full run of {checkout['sha'][:10]} in {rundir}; "
+                           "run `sa.py analyse` without --only/--tools first")
+    if previous and previous.get("checkout", {}).get("sha") != checkout["sha"]:
+        previous = {}
+        # a Claude summary of the replaced results no longer applies
+        for stale in ("claude-summary.md", "claude-digest.md"):
+            if os.path.exists(os.path.join(rundir, stale)):
+                os.remove(os.path.join(rundir, stale))
     active_names = {t.name for t in active}
 
     summary = {}
