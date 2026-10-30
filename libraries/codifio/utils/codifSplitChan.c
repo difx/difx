@@ -42,8 +42,8 @@ void kill_signal (int);
 double tim(void);
 
 // Globals needed for signal handling
-volatile int time_to_quit = 0;
-volatile int sig_received = 0;
+volatile sig_atomic_t time_to_quit = 0;
+volatile sig_atomic_t sig_received = 0;
 
 int split32(uint8_t *in, uint8_t **out, int nbytes, int nchunk);
 
@@ -66,12 +66,12 @@ static void usage()
 
 int main (int argc, char * const argv[]) {
   int frameSize=0, nfile, infile, *outfile, opt, frameperbuf, nframe, i, n;
-  int nread, status, nwrote, tmp, nchan=0, bits, sampleBits, isComplex=0, dataSize=0;
+  int nread, status, nwrote, tmp, nchan=0, bits, sampleBits, isComplex=0;
+  uint64_t dataSize=0;
   int first, bufsize=0, odatasize=0, oframesize=0, obufsize;
   int completeSample, splitBits, nout=0, result;
-  //float ftmp;
   char outname[MAXSTR+1] = "";
-  uint8_t *buf, **obuf, **pout, *pin;
+  uint8_t *buf=NULL, **obuf=NULL, **pout=NULL, *pin=NULL;
   char *slashptr, *dotptr, msg[MAXSTR+50], *infilename;
   const char *extptr;
   codif_header *header;
@@ -160,8 +160,13 @@ int main (int argc, char * const argv[]) {
   }
 
   /* Install a ^C catcher */
-  signal (SIGINT, kill_signal);
-
+  struct sigaction sa;
+  sa.sa_handler = kill_signal;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;          // or SA_RESTART, see below
+  sigaction(SIGINT, &sa, NULL);
+  sigaction(SIGTERM, &sa, NULL);
+  
   //t0 = tim(); /* So we can time average write per file */
 
   first = 1;
@@ -442,25 +447,24 @@ int main (int argc, char * const argv[]) {
   signal (sig_received, SIG_DFL);
   if (time_to_quit) raise (sig_received);
 
-  if (outdir!=NULL) free(outdir);
-  if (buf==NULL) free(buf);
-  if (pout==NULL) free(pout);
-
+  free(outdir);
+  free(buf);
+  for (i=0;i<nout;i++) free(pout[i]);
+  free(pout);
   
   return(0);
 }
 
-void kill_signal (int sig) {
-  /* We may get called twice */
+void kill_signal(int sig)
+{
   if (time_to_quit) {
-    fprintf(stderr, "kill_signal called second time\n");
+    static const char msg[] = "kill_signal called second time\n";
+    (void)write(STDERR_FILENO, msg, sizeof msg - 1);
     return;
   }
   time_to_quit = 1;
   sig_received = sig;
-
-  signal (sig, kill_signal); /* Re-install ourselves to disable double signals */
-}  
+}
 
 double tim(void) {
   struct timeval tv;
@@ -477,7 +481,7 @@ int split32(uint8_t *in, uint8_t **out, int nbytes, int nchunk) {
   // Assumes bound checks have already been run - e.g. arrays are of
   // the right size etc
   int i, j, k;
-  uint32_t *in32 = (uint32_t*)in;
+  const uint32_t *in32 = (uint32_t*)in;
   uint32_t **out32 = (uint32_t**)out;
 
   k = 0;

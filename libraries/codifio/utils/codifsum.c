@@ -11,7 +11,7 @@
 #define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS 64
 
-#define OPENOPTIONS O_RDONLY|O_LARGEFILE
+#define OPENOPTIONS (O_RDONLY|O_LARGEFILE)
 
 #endif
 
@@ -38,7 +38,7 @@ int main (int argc, char **argv) {
   uint16_t stationID;
   ssize_t nread;
   off_t sook;
-  char msg[300], buf[CODIF_HEADER_BYTES], *stnCode, timestr[40];
+  char msg[300], buf[CODIF_HEADER_BYTES], timestr[40];
   codif_header *header;
 
  struct option options[] = {
@@ -112,14 +112,13 @@ int main (int argc, char **argv) {
     }
 
     if (skip>0) {
-      off_t sook = lseek(file, skip, SEEK_SET);
+      sook = lseek(file, skip, SEEK_SET);
       if (sook==-1) {
 	perror("Error seeking within file\n");
 	close(file);
 	exit(1);
       }
     }
-    stnCode = (char*)&stationID;
 
     int first = 1;
     while (1) {
@@ -137,6 +136,8 @@ int main (int argc, char **argv) {
       }
 
       stationID = getCODIFStationID(header);
+      unsigned char c0 = stationID & 0xFF;          // low byte
+      unsigned char c1 = (stationID >> 8) & 0xFF;   // high byte      
 
       int bits = getCODIFBitsPerSample(header);
       int nchan = getCODIFNumChannels(header);
@@ -162,7 +163,7 @@ int main (int argc, char **argv) {
 	}
       } else {
       
-	printf("FRAME#:      %d\n", getCODIFFrameNumber(header));
+	printf("FRAME#:      %" PRIu32 "\n", getCODIFFrameNumber(header));
 	printf("SECONDS:     %d     %02d/%02d/%d  %s\n", getCODIFFrameEpochSecOffset(header),
 	       day, month, year, timestr);
 
@@ -182,10 +183,10 @@ int main (int argc, char **argv) {
 	printf("THREADID:    %d\n", getCODIFThreadID(header));
 	printf("GROUPID:     %d\n", getCODIFGroupID(header));
 	printf("SECONDARYID: %d\n", getCODIFSecondaryID(header));
-	if(stnCode[0] >= ' ' && stnCode[0] <= 127 && (stnCode[1] >= ' ' || stnCode[1] == 0) && stnCode[1] <= 127) {
-	printf("ANTID:       %c%c\n", stnCode[1], stnCode[0]);
+	if(c0 >= ' ' && c1 < 127 && (c1==0 || (c1 >= ' ' && c1 < 127))) {
+	  printf("ANTID:       %c%c\n", c1, c0);
 	} else {
-	  printf("ANTID:       %d\n", stationID);
+	  printf("ANTID:       %u\n", stationID);
 	}
 
 	printf("\n");
@@ -205,9 +206,9 @@ int main (int argc, char **argv) {
 	if (first) {
 	  first = 0;
 	  // Want to seek to last frame of file
-	  struct stat buf;
-	  fstat(file, &buf);
-	  off_t size = buf.st_size;
+	  struct stat stat_buf;
+	  fstat(file, &stat_buf);
+	  off_t size = stat_buf.st_size;
 	  off_t lastframe = ((size - skip) - framesize)/framesize; // Offset in frames
 	  lastframe *= framesize + skip;  // Convert back to bytes
 
@@ -287,7 +288,7 @@ int turns_to_string(double turns, char type, int dps, int nstr, char str[])
   /* Split into whole number of turns and fractional part. This allows us to
      achieve maximum precision in the seconds part since we can always add
      back a whole number of hours/degrees to the final result without worrying
-     about propogation of rounding effects. */
+     about propagation of rounding effects. */
   whole_turns = (int)turns;
   turns -= (double)whole_turns;
 
