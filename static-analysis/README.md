@@ -89,20 +89,60 @@ becomes a scripts-only unit (ruff, shellcheck) with its own page, e.g.
 | typos | `typos.toml` | spelling in all tracked text files of built components; words inside longer identifiers (e.g. `FIRSR` in `ippsFIRSRGetSize`) are ignored; domain words / variable names whitelisted there |
 | clang-format | `[tools.clang-format]` | disabled until DiFX has a `.clang-format` |
 
-## Claude summary
-
-`sa.py summary` writes a digest of the latest run (counts, all errors, other
-findings grouped by check with examples, new findings) and runs the `claude` CLI
-headless in the analysed source tree with read-only tools (`Read,Grep,Glob`), using
-the prompt in `claude-summary-prompt.md`.  It checks findings against the code and
-reports likely real bugs, noise worth suppressing and next steps.  The result is
-saved with the run and rendered as its own wiki page.  The CLI is found on `PATH`,
-in `~/.local/bin`, or in the VS Code extension (`summary.claude` overrides); a full
-summary takes several minutes and uses the account's Claude quota.
-
 Adding a tool: a module in `difxsa/tools/` with a `Tool` subclass (`run` writes raw
 output, `parse` returns `Finding`s), listed in `TOOLS`, plus a `[tools.<name>]`
 section in `config.toml`.
+
+## Claude summary (AI review)
+
+An optional review of the latest results by Claude, run by hand when wanted; it is
+never part of `sa.py run`.
+
+### Getting a review
+
+1. Make sure there is a full run of the current checkout (`./sa.py run`, or
+   `compdb` + `analyse`).  `summary` stops if `<workdir>/src` has moved on from
+   the analysed commit.
+2. Run the summary from a terminal (VS Code need not be open):
+   ```bash
+   cd difx/static-analysis
+   ./sa.py summary                          # everything; several minutes
+   ./sa.py summary --only difxio,mpifxcorr  # or concentrate on some components (cheaper)
+   ```
+3. Read `<results>/dev/latest/claude-summary.md`, or the re-rendered page
+   `Static-Analysis/Static-Analysis-Claude-Summary.md` in the wiki clone.
+4. If it is worth sharing, `./sa.py publish` puts it on the wiki, linked from the
+   Static-Analysis page.  Otherwise leave it: it stays local.
+
+The summary belongs to its run: a later full `analyse` of a new commit removes it.
+
+### Requirements
+
+- The `claude` command-line tool, installed and logged in.  It is looked for on
+  `PATH`, in `~/.local/bin` and `~/.claude/local`, then in the VS Code extension
+  (`~/.vscode*/extensions/anthropic.claude-code-*`), whose copy shares the
+  extension's login in `~/.claude`.  `[summary] claude` in `config.toml` sets the
+  path explicitly.
+- Claude quota: it runs on the logged-in account.  `--only` keeps a session small.
+- `[summary] model` / `--model` choose the model (default: the CLI's default);
+  `max_turns` / `--max-turns` (default 40) limit how long it may explore.  If it
+  fails having run out of turns, raise that.
+
+### What it does
+
+1. Writes `claude-digest.md` into the run directory: counts per unit, every
+   error-level finding, the other findings grouped by check with examples, and
+   findings new since the previous run.
+2. Runs `claude -p` headless in the analysed checkout (`<workdir>/src`) with the
+   prompt in `claude-summary-prompt.md` and read-only tools only (`Read`, `Grep`,
+   `Glob`): it can read the code to check findings, but cannot change files or run
+   commands.
+3. Saves the answer as `claude-summary.md` (headed as an AI review to check before
+   acting on) and re-renders the wiki pages.
+
+The summary has sections Overview, Most likely real bugs (with confidence and a
+suggested fix), Likely false positives and noise, Python and shell scripts, and
+Suggested next steps.  Edit `claude-summary-prompt.md` to change what it asks for.
 
 ## Requirements
 
