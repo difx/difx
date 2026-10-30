@@ -12,8 +12,8 @@
 #define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS 64
 
-#define OPENREADOPTIONS O_RDONLY|O_LARGEFILE
-#define OPENWRITEOPTIONS O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE
+#define OPENREADOPTIONS (O_RDONLY|O_LARGEFILE)
+#define OPENWRITEOPTIONS (O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE)
 
 #endif
 
@@ -61,21 +61,21 @@ static void usage()
   fprintf(stderr, "\nUsage: %s  <CODIF input file> [<CODIF input file> ...]\n", program);
   fprintf(stderr, "\nOptions:\n");
   fprintf(stderr, "\n-skip <bytes>    Skip <bytes> bytes a the start of each file\n");
-  fprintf(stderr, "-o <Output directory>  Existng Directory to write output files\n");
+  fprintf(stderr, "-o <Output directory>  Existing Directory to write output files\n");
 }
 
 int main (int argc, char * const argv[]) {
-  int frameSize=0, nfile, infile, *outfile, rate, opt, frameperbuf, nframe, i, n;
+  int frameSize=0, nfile, infile, *outfile, opt, frameperbuf, nframe, i, n;
   int nread, status, nwrote, tmp, nchan=0, bits, sampleBits, isComplex=0, dataSize=0;
-  int nextract=0, first, sock, bufsize=0, odatasize=0, oframesize=0, obufsize;
+  int first, bufsize=0, odatasize=0, oframesize=0, obufsize;
   int completeSample, splitBits, nout=0, result;
-  float ftmp;
-  double t0;
+  //float ftmp;
   char outname[MAXSTR+1] = "";
   uint8_t *buf, **obuf, **pout, *pin;
-  char *slashptr, *dotptr, msg[MAXSTR+50], *infilename, *extptr;
+  char *slashptr, *dotptr, msg[MAXSTR+50], *infilename;
+  const char *extptr;
   codif_header *header;
-  unsigned long long totalsent;
+  //unsigned long long totalsent;
 
   int (*split_func)(uint8_t *in, uint8_t **out, int nbytes, int nchunk);
 
@@ -92,7 +92,7 @@ int main (int argc, char * const argv[]) {
     {0, 0, 0, 0}
   };
 
-  first = 1;
+  //first = 1;
   outfile = 0;
   split_func = NULL;
   
@@ -125,9 +125,13 @@ int main (int argc, char * const argv[]) {
 
     case 'o':
       outdir = strdup(optarg);
-      if (outdir[strlen(outdir)-1] == '/')  {// Remove trailing "/"
-	outdir[strlen(outdir)-1] = 0;
+      if (outdir == NULL) {
+	perror("strdup failed");
+	exit(EXIT_FAILURE);
       }
+      size_t len = strlen(outdir);
+      if (len > 0 && outdir[len-1] == '/')   // Remove trailing "/"
+	outdir[len-1] = 0;
       break;
 
     case 'h':
@@ -158,7 +162,7 @@ int main (int argc, char * const argv[]) {
   /* Install a ^C catcher */
   signal (SIGINT, kill_signal);
 
-  t0 = tim(); /* So we can time average write per file */
+  //t0 = tim(); /* So we can time average write per file */
 
   first = 1;
   for (nfile=optind; nfile<argc; nfile++) {
@@ -437,6 +441,11 @@ int main (int argc, char * const argv[]) {
      handling */
   signal (sig_received, SIG_DFL);
   if (time_to_quit) raise (sig_received);
+
+  if (outdir!=NULL) free(outdir);
+  if (buf==NULL) free(buf);
+  if (pout==NULL) free(pout);
+
   
   return(0);
 }
