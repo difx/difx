@@ -52,6 +52,12 @@ class Tool:
         """The files this tool looks at; the tool is skipped when there are none."""
         raise NotImplementedError
 
+    def start(self, units):
+        """Optionally start work on all (component, files) units ahead of run()."""
+
+    def stop(self):
+        """Release whatever start() set up, cancelling work not yet collected."""
+
     def run(self, comp, files, raw_path):
         """Run on one component, writing raw output to raw_path."""
         raise NotImplementedError

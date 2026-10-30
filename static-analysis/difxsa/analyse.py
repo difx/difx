@@ -201,36 +201,45 @@ def run(cfg, only=None, tools=None, date=None):
                 os.remove(os.path.join(rundir, stale))
     active_names = {t.name for t in active}
 
+    units = [(comp, component_files(comp, src, compiled, tracked, scripts, exclude))
+             for comp in comps]
+    for tool in active:
+        tool.start([(comp, files) for comp, files in units if tool.inputs(files)])
+
+    # seconds per tool: for tools that start() early, time spent waiting for results
     summary = {}
-    for comp in comps:
-        compdir = os.path.join(rundir, comp.path)
-        os.makedirs(compdir, exist_ok=True)
-        files = component_files(comp, src, compiled, tracked, scripts, exclude)
-        result, timing = [], {}
+    try:
+        for comp, files in units:
+            compdir = os.path.join(rundir, comp.path)
+            os.makedirs(compdir, exist_ok=True)
+            result, timing = [], {}
+            for tool in active:
+                if not tool.inputs(files):
+                    continue
+                raw = os.path.join(compdir, f"{tool.name}.{tool.raw_ext}")
+                t0 = time.time()
+                tool.run(comp, files, raw)
+                result += tool.parse(comp, raw)
+                timing[tool.name] = round(time.time() - t0, 1)
+            findings_file = os.path.join(compdir, "findings.json")
+            if comp.name in previous.get("components", {}) and os.path.exists(findings_file):
+                result += [f for f in findings.load(findings_file) if f.tool not in active_names]
+            result = findings.dedupe(result)
+            findings.save(result, findings_file)
+            counts = Counter(f.tool for f in result)
+            summary[comp.name] = {
+                "path": comp.path, "category": comp.category, "scripts_only": comp.scripts_only,
+                "files": {"compiled": len(files.compiled), "sources": len(files.sources),
+                          "tracked": len(files.tracked), "python": len(files.python),
+                          "shell": len(files.shell)},
+                "counts": {t: counts.get(t, 0) for t in sorted(counts.keys() | set(timing))},
+                "seconds": timing,
+            }
+            log(f"{comp.path:34s} " + "  ".join(f"{t}={n}" for t, n in
+                                                 summary[comp.name]["counts"].items()))
+    finally:
         for tool in active:
-            if not tool.inputs(files):
-                continue
-            raw = os.path.join(compdir, f"{tool.name}.{tool.raw_ext}")
-            t0 = time.time()
-            tool.run(comp, files, raw)
-            result += tool.parse(comp, raw)
-            timing[tool.name] = round(time.time() - t0, 1)
-        findings_file = os.path.join(compdir, "findings.json")
-        if comp.name in previous.get("components", {}) and os.path.exists(findings_file):
-            result += [f for f in findings.load(findings_file) if f.tool not in active_names]
-        result = findings.dedupe(result)
-        findings.save(result, findings_file)
-        counts = Counter(f.tool for f in result)
-        summary[comp.name] = {
-            "path": comp.path, "category": comp.category, "scripts_only": comp.scripts_only,
-            "files": {"compiled": len(files.compiled), "sources": len(files.sources),
-                      "tracked": len(files.tracked), "python": len(files.python),
-                      "shell": len(files.shell)},
-            "counts": {t: counts.get(t, 0) for t in sorted(counts.keys() | set(timing))},
-            "seconds": timing,
-        }
-        log(f"{comp.path:34s} " + "  ".join(f"{t}={n}" for t, n in
-                                             summary[comp.name]["counts"].items()))
+            tool.stop()
 
     merged = previous.get("components", {})
     if not only:

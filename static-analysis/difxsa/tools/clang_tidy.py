@@ -1,5 +1,9 @@
 """clang-tidy, run per translation unit in parallel; text output is parsed.
 
+The translation units of all components go into one worker pool up front
+(start()), so a small component does not leave workers idle and a large one
+does not wait for the one before; run() collects one component's results.
+
 clang-tidy prints file names as the compiler saw them, i.e. relative to the
 translation unit's build directory, so each TU's output in the raw file is
 preceded by a header line carrying that directory.
@@ -41,6 +45,8 @@ class ClangTidy(Tool):
     def __init__(self, settings, ctx):
         super().__init__(settings, ctx)
         self.extra_args = ["-Wno-unknown-warning-option", *settings.get("extra_args", [])]
+        self.pool = None
+        self.pending = {}  # component path -> futures of its TU outputs
 
     def _command(self, path):
         # all non-system headers; findings outside the component are dropped in parse()
@@ -53,22 +59,34 @@ class ClangTidy(Tool):
     def inputs(self, files):
         return files.compiled
 
+    def _one(self, path):
+        p = subprocess.run(self._command(path), text=True, errors="replace",
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # stderr is mostly "N warnings generated"; keep it only on failure
+        tail = p.stderr if p.returncode else ""
+        return (f"### {self.rel(path)} (exit {p.returncode}) in {self.directory[path]}\n"
+                f"{p.stdout}{tail}")
+
+    def start(self, units):
+        if self.pool is None:
+            with open(self.ctx.db_path) as f:
+                self.directory = {e["file"]: e["directory"] for e in json.load(f)}
+            self.pool = ThreadPoolExecutor(self.ctx.jobs)
+        for comp, files in units:
+            self.pending[comp.path] = [self.pool.submit(self._one, p) for p in files.compiled]
+
     def run(self, comp, files, raw_path):
-        with open(self.ctx.db_path) as f:
-            directory = {e["file"]: e["directory"] for e in json.load(f)}
-
-        def one(path):
-            p = subprocess.run(self._command(path), text=True, errors="replace",
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            # stderr is mostly "N warnings generated"; keep it only on failure
-            tail = p.stderr if p.returncode else ""
-            return (f"### {self.rel(path)} (exit {p.returncode}) in {directory[path]}\n"
-                    f"{p.stdout}{tail}")
-
-        with ThreadPoolExecutor(self.ctx.jobs) as pool:
-            outputs = list(pool.map(one, files.compiled))
+        if comp.path not in self.pending:
+            self.start([(comp, files)])
+        outputs = [fut.result() for fut in self.pending.pop(comp.path)]
         with open(raw_path, "w") as f:
             f.writelines(outputs)
+
+    def stop(self):
+        if self.pool is not None:
+            self.pool.shutdown(cancel_futures=True)
+            self.pool = None
+        self.pending.clear()
 
     def parse(self, comp, raw_path):
         result, cwd, current = [], self.ctx.src, None

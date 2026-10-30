@@ -36,7 +36,8 @@ python = "Python only (its scripts are still checked by ruff)"
 [analysis]
 # Raw output and findings go to <results>/<branch>/<date>/<component path>/.
 results = "../difx-sa-work/results"
-jobs = 16
+# Parallel clang-tidy / compiler / cppcheck jobs (default: all cores).
+jobs = 32
 # Optional subset of the analysed components, e.g. ["difxio", "mpifxcorr"]; default all.
 # components = []
 # fnmatch globs (repo-relative) never analysed, e.g. third-party code.
