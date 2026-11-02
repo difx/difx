@@ -2,7 +2,9 @@
 
 Runs existing static-analysis tools over the DiFX components that `install-difx`
 builds, and normalises their output for reporting.  Plain Python 3.11+ (standard
-library only) plus the tools; intended to run unattended, e.g. daily from cron.
+library only) plus the tools.  Meant to be run occasionally by hand (a full
+`sa.py run --publish` takes about 10 minutes), but needs no interaction, so it
+can also run from cron.
 
 ## Quick start
 
