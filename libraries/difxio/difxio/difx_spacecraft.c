@@ -920,7 +920,7 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 			writeDifxLine1(out, "SPACECRAFT %d ID", i, ds[i].ephemObject);
 		}
 		writeDifxLineInt1(out, "SPACECRAFT %d ROWS", i, ds[i].nPoint);
-		if(ds[i].axisVectors == 0 || ds[i].timeFrameOffset == 0)
+		if(ds[i].axisVectors == 0 && ds[i].timeFrameOffset == 0)
 		{
 			for(j = 0; j < ds[i].nPoint; ++j)
 			{
@@ -942,7 +942,7 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 				writeDifxLine2(out, "SPACECRAFT %d ROW %d", i, j, value);
 			}
 		}
-		else if(ds[i].axisVectors == 0 && ds[i].timeFrameOffset == 0)
+		else if(ds[i].axisVectors != 0 && ds[i].timeFrameOffset != 0)
 		{
 			for(j = 0; j < ds[i].nPoint; ++j)
 			{
