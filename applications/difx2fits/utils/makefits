@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2009-2025 by Walter Brisken                             *
+#   Copyright (C) 2009-2026 by Walter Brisken & Anthony Sowinski          *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -383,6 +383,17 @@ class JobList:
 						print('Executing: %s' % cmd)
 					system(cmd)
 			j += 1
+
+		# check difxlog files for errors
+		for j in self.jobs:
+			cmd = 'grep -e ERROR -e SEVERE -m 10'
+			fileName = dir + '/' + j.name + '.difxlog'
+			if isfile(fileName):
+				cmd = cmd + ' ' + fileName
+				cmd = cmd + ' |grep -v lockSlot |grep -v readbufferslots'
+				if verbose:
+					print('Executing: %s' % cmd)
+				system(cmd)
 
 		# merge and gzip difxlog files
 		logFile = '%s/%s.difxlog' % (cwd, self.kv['pass'])
