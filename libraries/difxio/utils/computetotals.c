@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2019 by Walter Brisken                             *
+ *   Copyright (C) 2015-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -42,7 +42,7 @@ void usage()
 	printf("residualdelafile and adds the model.\n\n");
 	printf("The residuals file should be a text file with N+1 columns of numbers:\n");
 	printf("Column 1 should be the MJD (including fraction) of the residual\n");
-	printf("Cols 2 to N+1 should be redidual for each antenna\n\n");
+	printf("Cols 2 to N+1 should be residual for each antenna\n\n");
 }
 
 int main(int argc, char **argv)
@@ -154,7 +154,7 @@ int main(int argc, char **argv)
 		char line[MaxLineLen];
 		char mjdResidStr[20];
 		long double mjdResid, resid[20];
-		char *rv;
+		const char *rv;
 		int n, antennaId;
 		long double delay;
 		int intMjd;
