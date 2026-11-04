@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "difxio/parsedifx.h"
 
 /* utility to provide read-only access to DiFX style text parameter files */
@@ -34,6 +35,12 @@ DifxParameters *newDifxParameters()
 	alloc_rows = 100;
 
 	dp = (DifxParameters *)calloc(1, sizeof(DifxParameters));
+	if(!dp)
+	{
+		fprintf(stderr, "Error: newDifxParameters(): cannot allocate %ld bytes\n", sizeof(DifxParameters));
+
+		exit(0);
+	}
 	dp->alloc_rows = alloc_rows;
 	dp->rows = (DifxRow *)calloc(alloc_rows, sizeof(DifxRow));
 
@@ -57,6 +64,12 @@ void growDifxParameters(DifxParameters *dp)
 	alloc_rows = dp->alloc_rows;
 
 	newrows = (DifxRow *)calloc(2*alloc_rows, sizeof(DifxRow));
+	if(!newrows)
+	{
+		fprintf(stderr, "Error: growDifxParameters(): cannot allocate %ld bytes\n", 2*alloc_rows*sizeof(DifxRow));
+
+		exit(0);
+	}
 	for(i = 0; i < alloc_rows; ++i)
 	{
 		copyrow(newrows + i, dp->rows + i);
