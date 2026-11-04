@@ -146,6 +146,65 @@ The summary has sections Overview, Most likely real bugs (with confidence and a
 suggested fix), Likely false positives and noise, Python and shell scripts, and
 Suggested next steps.  Edit `claude-summary-prompt.md` to change what it asks for.
 
+## Claude bug review (`sa.py review`)
+
+Separate from the tools above: Claude reads the code itself, looking for serious
+bugs (memory errors, logic errors, wrong units or maths, races; not style), and
+writes them as issues on wiki pages that anyone can edit.  The method is the skill
+[`.claude/skills/difx-bug-review/SKILL.md`](../.claude/skills/difx-bug-review/SKILL.md),
+which can also be used by hand in VS Code (`/difx-bug-review libraries/vdifio/src`).
+
+### How it works
+
+- The code is split into **units** of a few thousand lines (`[[review.units]]` in
+  `config.toml`, in priority order, each with its model: Opus for difxio, vdifio and
+  mpifxcorr, Sonnet for the rest).
+- `--init` pins a separate checkout (`<review dir>/src`) at `review.ref` and queues
+  every unit.  All units are reviewed at that one commit, whatever happens to the
+  normal checkout or to `sa.py run`.
+- Each unit is one headless `claude -p` session in that checkout with read-only tools
+  (Read, Grep, Glob), the skill as its instructions, the unit's file list, and the
+  static-analysis findings for those files as leads (when the latest results are of
+  the same commit).  It answers in JSON; `sa.py` quotes the code snippets itself from
+  the pinned checkout.
+- **Wiki pages** (`Code-Review/` in the wiki clone): one `Review-<component>` page per
+  component plus the `Code-Review` index.  Component pages are meant to be edited by
+  people (each issue has a Status line and Notes), so they are never regenerated: new
+  issues are appended (an issue already on the page is recognised by its file,
+  function and code snippet), and only the "Reviewed" block between the
+  `review:units` markers is rewritten.  The index is generated, with issue counts by
+  status read from the pages.  Links point at the reviewed commit, so their line
+  numbers stay valid; the snippets let people find the code after it changes.
+- `<review dir>/state.json` holds the queue (todo / running / done / failed) and a
+  ledger of every claude call (tokens, the cost Claude reports, minutes).  Raw output
+  and answers are kept in `<review dir>/<sha>/`.
+
+### Running it
+
+```bash
+./sa.py review --init                 # once: pin review.ref, queue all units
+./sa.py review --status               # queue, issues found, cost per unit, cost this week
+./sa.py review --only dirlist --dry-run   # show the prompt, run nothing
+./sa.py review --max-units 1          # review the next queued unit; pages written locally
+./sa.py review --publish              # work through the queue, publishing after each unit
+./sa.py review --pages --publish      # (re)write and publish pages from finished units
+./sa.py review --reset dirlist        # requeue a unit; --retry re-runs failed ones
+```
+
+A run stops when the queue is empty, after `--max-units`, when Claude reports its
+usage limit (the unit stays queued), or when the cost Claude reports for the current
+quota week (`week_start`, e.g. `Fri 08:00`) reaches `weekly_cost_cap`.  On a
+subscription that cost is not billed; it is only a consistent measure of usage.
+Only one `sa.py review` runs at a time (a lock file), so cron can fire it often:
+
+```cron
+# every 2 hours, 22:00-06:00: pick up where the last run stopped
+0 22,0,2,4,6 * * *  cd /path/to/difx/static-analysis && ./sa.py review --publish >> ../../difx-sa-work/logs/review.log 2>&1
+```
+
+To review a newer commit later, `--init` again: units are requeued and new issues are
+appended to the existing pages; issues already there are not repeated.
+
 ## Requirements
 
 Debian packages: `bear clang-tidy clang-format cppcheck shellcheck libomp-19-dev`

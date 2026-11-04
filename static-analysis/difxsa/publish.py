@@ -58,12 +58,14 @@ def foreign_commits(wiki, remote_ref, subdir):
     return result
 
 
-def run(cfg, push=True, branch=None):
+def run(cfg, push=True, branch=None, subdir=None, message=None):
+    """Commit subdir of the wiki clone (default: the static-analysis pages) and push."""
     wiki = cfg.path("wiki")
-    subdir = os.path.relpath(cfg.wiki_dir, wiki)
+    subdir = subdir or os.path.relpath(cfg.wiki_dir, wiki)
     remote = cfg.raw.get("report", {}).get("wiki_remote", "origin")
     wiki_branch = cfg.raw.get("report", {}).get("wiki_branch", "master")
-    branch = branch or compdb.read_checkout(cfg.workdir)["branch"]
+    if not message:
+        branch = branch or compdb.read_checkout(cfg.workdir)["branch"]
 
     current = git(wiki, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
     if current != wiki_branch:
@@ -73,7 +75,7 @@ def run(cfg, push=True, branch=None):
     if git(wiki, "diff", "--cached", "--quiet", "--", subdir, check=False).returncode == 0:
         log(f"no changes in {subdir}")
     else:
-        msg = commit_message(cfg, branch)
+        msg = message or commit_message(cfg, branch)
         # a pathspec commits only these paths, whatever else is staged
         git(wiki, "commit", "-q", "-m", msg, "--", subdir)
         log(f"committed: {msg}")
