@@ -199,7 +199,7 @@ bool loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandDa
 
 	if(n == 0)
 	{
-		n = loadBasebandFilelistOld(fileName, basebandFiles);
+		loadBasebandFilelistOld(fileName, basebandFiles);
 	}
 
 	return true;
@@ -268,7 +268,7 @@ int CorrSetup::setkv(const std::string &key, const std::string &value)
 {
 	std::stringstream ss;
 	int nWarn = 0;
-	char *ptr;
+	const char *ptr;
 
 	ss << value;
 
@@ -617,12 +617,12 @@ PhaseCentre::PhaseCentre()
 	initialise(DEFAULT_RA, DEFAULT_DEC, DEFAULT_NAME);
 }
 
-PhaseCentre::PhaseCentre(double r, double d, std::string name)
+PhaseCentre::PhaseCentre(double r, double d, const std::string &name)
 {
 	initialise(r, d, name);
 }
 
-void PhaseCentre::initialise(double r, double d, std::string name)
+void PhaseCentre::initialise(double r, double d, const std::string &name)
 {
 	ra = r;
 	dec = d;
@@ -782,19 +782,10 @@ int SourceSetup::setkv(const std::string &key, const std::string &value, PhaseCe
 	return nWarn;
 }
 
-DatastreamSetup::DatastreamSetup(const std::string &name) : difxName(name)
+DatastreamSetup::DatastreamSetup(const std::string &name) : difxName(name), networkPort("0"), windowSize(0), dataSource(DataSourceUnspecified), dataSampling(NumSamplingTypes), startBand(-1), nBand(0), tSys(0.0), frameSize(0), nBit(0), filelistReadFail(false)
 {
-	networkPort = "0";
-	windowSize = 0;
-	dataSource = DataSourceUnspecified;
-	dataSampling = NumSamplingTypes;	// flag that no sampling is is identified here
-	startBand = -1;
-	nBand = 0;				// Zero implies all.
-	tSys = 0.0;
-	frameSize = 0;
-	nBit = 0;
-
-	filelistReadFail = false;
+	// dataSampling = NumSamplingType is flag that no sampling is is identified here
+	// nBand = 0:  Zero implies all.
 }
 
 
@@ -839,7 +830,7 @@ int DatastreamSetup::setkv(const std::string &key, const std::string &value)
 		dataSampling = stringToSamplingType(value.c_str());
 		if(dataSampling >= NumSamplingTypes)
 		{
-			std::cerr << "Error: datastream " << difxName << " has illegal samping type set: " << value << std::endl;
+			std::cerr << "Error: datastream " << difxName << " has illegal sampling type set: " << value << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -1375,7 +1366,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 		defaultDatastreamSetup.dataSampling = stringToSamplingType(value.c_str());
 		if(defaultDatastreamSetup.dataSampling >= NumSamplingTypes)
 		{
-			std::cerr << "Error: antenna " << vexName << " has illegal samping type set: " << value << std::endl;
+			std::cerr << "Error: antenna " << vexName << " has illegal sampling type set: " << value << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -1742,10 +1733,11 @@ int GlobalZoom::setkv(const std::string &key, const std::string &value)
 		ZoomFreq * newfreq = &(zoomFreqs.back());
 		std::string::size_type last = 0;
 		std::string::size_type at = 0;
-		std::string::size_type splitat = 0;
-		std::string nestedkeyval;
 		while(at != std::string::npos)
 		{
+			std::string::size_type splitat;
+			std::string nestedkeyval;
+			
 			at = value.find_first_of('/', last);
 			nestedkeyval = value.substr(last, at-last);
 			splitat = nestedkeyval.find_first_of('@');
@@ -1762,11 +1754,8 @@ int GlobalZoom::setkv(const std::string &key, const std::string &value)
 	return nWarn;
 }
 
-GlobalOutputband::GlobalOutputband(const std::string &name)
+GlobalOutputband::GlobalOutputband(const std::string &name) : difxName(name), outputBandwidth(0), outputBandwidthMode(OutputBandwidthOff)
 {
-	difxName = name;
-	outputBandwidth = 0;
-	outputBandwidthMode = OutputBandwidthOff;
 	autobands.clear();
 }
 
@@ -2852,7 +2841,7 @@ int CorrParams::checkSetupValidity()
 	// This keeps the mpifxcorr implementation of outputbands simple and autocorrs need no special code path
 	if(!exhaustiveAutocorrs && globalOutputbands.size() >= 1)
 	{
-		GlobalOutputband* ob = &globalOutputbands.back();
+		const GlobalOutputband* ob = &globalOutputbands.back();
 		if(ob->outputBandwidthMode != OutputBandwidthOff)
 		{
 			exhaustiveAutocorrs = true;

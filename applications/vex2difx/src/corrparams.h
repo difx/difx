@@ -41,8 +41,8 @@ extern const double MJD_UNIX0;	// MJD at beginning of unix time
 extern const double SEC_DAY;
 extern const double MUSEC_DAY;
 
-#define AXIS_OFFSET_NOT_SET	-999
-#define ANTENNA_COORD_NOT_SET	-9e10
+#define AXIS_OFFSET_NOT_SET	(-999)
+#define ANTENNA_COORD_NOT_SET	(-9e10)
 
 #define MAX_DX_ORDER	4
 
@@ -63,11 +63,11 @@ public:
 	static const double DEFAULT_DEC;
 
 	//constructors
-	PhaseCentre(double ra, double dec, std::string name);
+	PhaseCentre(double ra, double dec, const std::string &name);
 	PhaseCentre();
 
 	//methods
-	void initialise(double ra, double dec, std::string name);
+	void initialise(double ra, double dec, const std::string &name);
 	bool isFixedSource() const { return (X != 0.0 || Y != 0.0 || Z != 0.0); };
 	bool isSpacecraft() const { return (!ephemFile.empty()); };
 
@@ -207,7 +207,7 @@ public:
 	bool polSwap;		// If true, swap polarizations
 	bool polConvert;	// request change of basis from RL->XY or XY->RL
 	float phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
-	long phaseCalIntervalDivisor;// 1 default, >1 for infinite fractions e.g. interval 700 MHz / divisior 9 = spacing 77.777... MHz
+	long phaseCalIntervalDivisor;// 1 default, >1 for infinite fractions e.g. interval 700 MHz / divisor 9 = spacing 77.777... MHz
 	enum ToneSelection toneSelection;	// Which tones to propagate to FITS
 	double toneGuardMHz;	// to avoid getting tones too close to band edges; default = bandwidth/8
 	int tcalFrequency;	// [Hz] (= 80 for VLBA)
