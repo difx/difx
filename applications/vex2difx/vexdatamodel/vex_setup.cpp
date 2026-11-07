@@ -437,7 +437,7 @@ int VexSetup::getPolarizations() const
 	return rv;
 }
 
-VexStream *VexSetup::getVexStreamByLink(const std::string streamLink)
+VexStream *VexSetup::getVexStreamByLink(const std::string &streamLink)
 {
 	for(std::vector<VexStream>::iterator it = streams.begin(); it != streams.end(); ++it)
 	{
@@ -450,7 +450,7 @@ VexStream *VexSetup::getVexStreamByLink(const std::string streamLink)
 	return 0;
 }
 
-VexChannel *VexSetup::getVexChannelByLink(const std::string chanLink)
+VexChannel *VexSetup::getVexChannelByLink(const std::string &chanLink)
 {
 	for(std::vector<VexChannel>::iterator it = channels.begin(); it != channels.end(); ++it)
 	{

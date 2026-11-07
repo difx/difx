@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2019 by Walter Brisken                             *
+#   Copyright (C) 2008-2026 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -537,7 +537,7 @@ for a in argv[1:]:
 		elif a.lower() in ['-e', '--exper']:
 			getexper = True
 		else:
-			print('unrecongized option %s' % a)
+			print('unrecognized option %s' % a)
 			exit(0)
 	elif getexper:
 		getexper = False

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -39,7 +39,7 @@ public:
 	bool hasScan(const std::string &scanName) const;
 	bool hasAntenna(const std::string &antennaName) const;
 	void genEvents(const std::list<Event> &eventList);
-	void createJobs(std::vector<Job> &jobs, Interval &jobTimeRange, const VexData *V, double minLength, double maxLength, double maxSize) const;
+	void createJobs(std::vector<Job> &jobs, const Interval &jobTimeRange, const VexData *V, double minLength, double maxLength, double maxSize) const;
 };
 
 std::ostream& operator << (std::ostream &os, const JobGroup &x);

@@ -143,7 +143,7 @@ struct iless
 	}
 };
 
-int Job::generateFlagFile(const VexData &V, const std::list<Event> events, const char *fileName, unsigned int invalidMask) const
+int Job::generateFlagFile(const VexData &V, const std::list<Event> &events, const char *fileName, unsigned int invalidMask) const
 {
 	std::vector<JobFlag> flags;
 	std::map<std::string,unsigned int,iless> antIds;

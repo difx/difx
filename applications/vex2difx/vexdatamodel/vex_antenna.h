@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -92,7 +92,7 @@ public:
 	std::vector<VexBasebandData> files;	// indexed by file number
 	std::vector<VexNetworkData> ports;	// indexed by stream number
 
-	std::vector<VexEquipment> equipment;	// relevant infom from $DAS block
+	std::vector<VexEquipment> equipment;	// relevant inform from $DAS block
 	
 	std::vector<VexExtension> extensions;	// extensions linked from $STATION block
 

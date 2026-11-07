@@ -74,7 +74,7 @@ public:
 	bool recordChanIgnore(int recChan) const;	// return true if this record channel should not be correlated
 	unsigned int nThread() const { return threads.size(); }		// number of threads
 
-	VexThread *getVexThreadByLink(const std::string threadLink);
+	VexThread *getVexThreadByLink(const std::string &threadLink);
 	VexThread *getVexThreadByThreadId(int threadId);
 
 	double sampRate;		// [Hz]

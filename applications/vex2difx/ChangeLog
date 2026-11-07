@@ -3,6 +3,7 @@ Version 3.1.1
 * Reduce build warnings using g++ 15.2.1.
 * fix vexpeek segfault if listing modules but none present
 * vex2v2d: work toward making this generic and not VLBA specific
+* Minor fixes suggested by Claude applied
 
 Version 3.1.0
 -------------
@@ -155,7 +156,7 @@ Version 2.5.0
 * outPath global parameter added: all .difx/ output gets put here rather than ./
 * Split vex2difx.cpp into smaller pieces (in progress)
 * If baseband data files are provided via file lists and some jobs have
-  missing data, exlude antennas as necessary and write a "nodata" file
+  missing data, exclude antennas as necessary and write a "nodata" file
 * Allow phase cal interval of 200 MHz (KVN) without warning since extraction works
 * Fix guardNS calculation (finally!)...
   - Needed to consider bits per sample and number of baseband channels
@@ -179,7 +180,7 @@ Version 2.5.0
   - Error : A problem with input data that cannot be ignored.
   - Developer error : A case where the program detected internal self inconsistency.  This implies a bug in the code.
 * Support mark6 media
-* Allow guardNS = 0 (default) --> mpifxcorr choses the smallest reasonable value
+* Allow guardNS = 0 (default) --> mpifxcorr chooses the smallest reasonable value
 * Allow strideLength = 0 (default) --> mpifxcorr chooses a pretty good value for you (per datastream)
 * Allow xmacLength = 0 (default) -> mpifxcorr chooses a pretty good value for you
 * Don't allow changing from or to VDIF format with the .v2d file since channel order is defined differently for these two types.
@@ -207,7 +208,7 @@ Version 2.4.0
 * Detect mismatched bandwidths and issue warning
 * Fix smart tone selection for phase cal interval != 1 MHz
 * Make tone selection default the same whether an ANTENNA section exists or not (default is Smart)
-* EB and AR to use VLBA Cannonical Thread Ids for VDIF
+* EB and AR to use VLBA Canonical Thread Ids for VDIF
 * Respect record enable bit in SCHED section (enable column must be > 0 to retain the data)
 * Bugfix for allocating bands to baselines for some combinations of zoom bands and LSB
 * Reading complex type and #bits from vexfile
@@ -215,7 +216,7 @@ Version 2.4.0
 
 Version 2.3.0
 ~~~~~~~~~~~~~
-* Suport for VDIFL added
+* Support for VDIFL added
 * Move some NRAO-specific utilities outside this package
 * vexpeek: new --format and --diskusage options
 * Version for DiFX-2.3, Dec 20, 2013
@@ -236,7 +237,7 @@ Version 2.2.0
 * Add a few features (ephemDeltaT, ephemStellarAber, ephemClockError) useful in
   exploring spacecraft ephemeris but probably not useful for operations
 * change zoom band definition to always be USB (specify lower edge freq)
-* Reorder Mark5B tracks to accomodate bitstream masks
+* Reorder Mark5B tracks to accommodate bitstream masks
 * Consider two sources within 1 mas of each other to be the same
 * Added separate mjdStart and mjdStop parameters for each antenna
 * Version for DiFX-2.2, May 31, 2013
@@ -271,8 +272,8 @@ Version 2.0.1
 * Follow refs to CLOCK entries; fall back on unreffed clocks only if no other clocks found first
 * Follow refs to TAPELOG_OBS entries; fall back on unreffed VSNs only if no other VSNs found first
 * Support proper vex epoch for SITE; allow mjd to continue to work
-* Generalize vexDate just a bit to allow for the posibility of vexdate without all date fields
-* Add sampling parameter to ANTENNA confuration
+* Generalize vexDate just a bit to allow for the possibility of vexdate without all date fields
+* Add sampling parameter to ANTENNA configuration
 * When cross-pol enabled, allow correlation of R-L even if one antenna doesn't have both polarizations
 * Try different subintNS until the readsize becomes reasonable (probably some tuning to be done still)
 * Propagate .vex file phase cal extraction into .input file* Pass tcalFreq from .v2d to .input

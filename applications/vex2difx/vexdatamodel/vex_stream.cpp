@@ -666,7 +666,7 @@ int VexStream::dataFrameSize() const
 	return s;
 }
 
-VexThread *VexStream::getVexThreadByLink(const std::string threadLink)
+VexThread *VexStream::getVexThreadByLink(const std::string &threadLink)
 {
 	for(std::vector<VexThread>::iterator it = threads.begin(); it != threads.end(); ++it)
 	{

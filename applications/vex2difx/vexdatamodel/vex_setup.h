@@ -69,8 +69,8 @@ public:
 	bool hasDuplicateSubbands() const;
 	int getPolarizations() const;
 	int getConvertedPolarizations() const;
-	VexStream *getVexStreamByLink(const std::string streamLink);
-	VexChannel *getVexChannelByLink(const std::string chanLink);
+	VexStream *getVexStreamByLink(const std::string &streamLink);
+	VexChannel *getVexChannelByLink(const std::string &chanLink);
 	VexIF *getVexIFByLink(const std::string &ifLink);
 	const VexIF *getVexIFByLink(const std::string &ifLink) const;
 

@@ -2978,9 +2978,6 @@ static void usage(int argc, char **argv)
 	cout << endl;
 	cout << "See https://github.com/difx/difx/wiki/vex2difx for more information" << endl;
 	cout << endl;
-	cout << "NOTE: This version now supports much of the vex2 specification (as well as the" << endl;
-	cout << "vex 1.5 specification) but it is only lightly tested.  Proceed with caution." << endl;
-	cout << endl;
 }
 
 static void runCommand(const char *cmd, int verbose)

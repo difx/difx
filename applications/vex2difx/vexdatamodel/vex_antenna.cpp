@@ -205,7 +205,7 @@ bool usesCanonicalVDIF(const std::string &antName)
 		}
 		else
 		{
-			char separators[] = ",: ";
+			const char separators[] = ",: ";
 			char *t;
 			std::string token;
 

@@ -73,7 +73,7 @@ It is passed to {\tt mpifxcorr} and has reference to other files.
 The {\tt .calc} file is primarily used as input to generate the delay model {\tt .im} file that {\tt mpifxcorr} requires.
 Finally a {\tt .flag} file is written.
 This file is used to mask data that may be inadvertently correlated but that is irrelevant to the particular job.
-This is important espeically when the observing antenna array is broken into subarrays, each observing different sources.
+This is important especially when the observing antenna array is broken into subarrays, each observing different sources.
 It is also important in cases where an observation is interrupted but where data for the interrupting observation is accessible to the correlator.
 See the DiFX reference manual \url{...} for more information.
 
@@ -191,12 +191,12 @@ This is because VDIF determines channel order strictly from the {\tt \$FREQ} sec
 \subsubsection{Number of bits}
 
 The number of bits per sample can be specified in the format parameters.
-However, if the \vx file has tracks defined in the {\tt \$TRACKS} block, the number of bits is determined by the absense or presense of magnitude tracks: if a magnitude track is found, 2 bits is assumed, otherwise 1 bit is used.
+However, if the \vx file has tracks defined in the {\tt \$TRACKS} block, the number of bits is determined by the absence or presence of magnitude tracks: if a magnitude track is found, 2 bits is assumed, otherwise 1 bit is used.
 Any format parameter in the \vd file containing number of bits will override that in the \vx file, however it is deduced.
 These sources of bits per sample, listed in increasing priority, are:
 \begin{enumerate}
 \item {\tt track\_frame\_format} statement in a {\tt \$TRACKS} block of the \vx file
-\item Existence of magnitude tracks listed in {\tt fanout\_def} statments in a {\tt \$TRACKS} block of the \vx file
+\item Existence of magnitude tracks listed in {\tt fanout\_def} statements in a {\tt \$TRACKS} block of the \vx file
 \item {\tt format} statement in a {\tt ANTENNA} section of the \vd file
 \item {\tt format} statement in a {\tt DATASTREAM} section of the \vd file
 \end{enumerate}
@@ -209,7 +209,7 @@ These sources of channel count, listed in increasing priority, are:
 \begin{enumerate}
 \item {\tt track\_frame\_format} statement in a {\tt \$TRACKS} block of the \vx file
 \item Number of {\tt chan\_def} entries in a {\tt \$FREQ} block of the \vx file
-\item Number of sign tracks listed in {\tt fanout\_def} statments in a {\tt \$TRACKS} block of the \vx file
+\item Number of sign tracks listed in {\tt fanout\_def} statements in a {\tt \$TRACKS} block of the \vx file
 \item {\tt format} statement in a {\tt ANTENNA} section of the \vd file
 \item {\tt format} statement in a {\tt DATASTREAM} section of the \vd file
 \end{enumerate}
@@ -233,7 +233,7 @@ The sources of fanout, listed in increasing priority, are:
 \subsubsection{Threads}
 
 Threads are relevant only to multi-threaded VDIF format.
-With one exception (see Sec.~\ref{sec:canonicalthreads}) an explicit list of threads must be provided throug a format parameter for any multi-threaded VDIF format using syntax number 1 of Table~\ref{tab:format}.
+With one exception (see Sec.~\ref{sec:canonicalthreads}) an explicit list of threads must be provided through a format parameter for any multi-threaded VDIF format using syntax number 1 of Table~\ref{tab:format}.
 The sources of thread information, listed in increasing priority, are:
 \begin{enumerate}
 \item Canonical thread values (see Sec.~\ref{sec:canonicalthreads})
@@ -324,7 +324,7 @@ There are two mechanisms:
 
 \subsection{Antenna properties}
 
-Note that within the DiFX ecosystem three terms, ``station'', ``antenna'', and ``telescope'' are all used more or less interchangably.
+Note that within the DiFX ecosystem three terms, ``station'', ``antenna'', and ``telescope'' are all used more or less interchangeably.
 Within the vex format itself there is a distinction between ``station'' and ``antenna'', and there is no concept of ``telescope''.
 
 \subsubsection{Antenna name}
@@ -353,7 +353,7 @@ Specification of the clock model is somewhat complicated due to numerous options
 The convention used by vex is that the clock offset is positive if the Data Acquisition System (DAS) time tick is early (i.e., the station clock is running fast) and accordingly the full name in the vex file is {\em clock\_early}.
 In all other parts of the system the opposite sign convention is used, that is the clock offset is how late (slow) the DAS clock is.
 Thus there is the added confusion that clock information provided by the \vd file has the opposite sign as equivalent data in the \vx file.
-Internally within \vexdifx and the {\tt .input} file used by {\tt mpifxcorr} the clock model is represented by a 5 term polynomial and a refrence epoch.
+Internally within \vexdifx and the {\tt .input} file used by {\tt mpifxcorr} the clock model is represented by a 5 term polynomial and a reference epoch.
 
 The \vx file can provide multiple clock models per antenna through a {\tt clock\_early} statement, each with four parameters:
 \begin{itemize}
@@ -402,7 +402,7 @@ Each data stream has a data source parameter which is equal to one of the follow
 \end{itemize}
 The data source can usually be left implicitly defined, but if it needs to be forced (such as in the case of fake data) it can be with the {\tt source} parameter in either the {\tt ANTENNA} section (if no explicit datastreams are defined) or in the {\tt DATASTREAM} section.
 
-There are three possilbe places to specify baseband data: The {\tt TAPELOG\_OBS} section of a {\tt .vex} file, or either the {\tt ANTENNA} or {\tt DATASTREAM} section of a {\tt .v2d} file.
+There are three possible places to specify baseband data: The {\tt TAPELOG\_OBS} section of a {\tt .vex} file, or either the {\tt ANTENNA} or {\tt DATASTREAM} section of a {\tt .v2d} file.
 If one or more {\tt DATASTREAM} sections are defined for an antenna, data should not be specified in the corresponding {\tt ANTENNA} section.  
 Data specified in the {\tt .v2d} file will take precedence over data in the {\tt .vex} file.
 
@@ -411,7 +411,7 @@ Data specified in the {\tt .v2d} file will take precedence over data in the {\tt
 
 A datastream in the DiFX context is a logical stream of data containing data from one or more baseband channels.
 A single file or a sequence of files that do not overlap in time could be a datastream.  A datasteam could also be recordings on a Mark5 module or a network socket from an eVLBI source.
-Use of multiple datastreams becomes important in heterogeneous VLBI arrays where one or more antenna records data onto two records simultanously.
+Use of multiple datastreams becomes important in heterogeneous VLBI arrays where one or more antenna records data onto two records simultaneously.
 With the advent of very wideband backends (e.g., DBBC3, ALMA, other EHT telescopes, and VGOS) the use of multiple datastreams will become increasing important.
 
 New with the DiFX 2.5 version of \vexdifx is support for multiple datastreams per antenna.
@@ -559,9 +559,9 @@ See the \vexdifx wiki for details on changing the tones to be extracted and sele
 
 This section describes what triggers splitting of a project into more than one job.
 There are two fundamentally different reasons for jobs to be split into smaller pieces.
-\vexdifx will first split the scans into seperate groups depending on their observing mode.
+\vexdifx will first split the scans into separate groups depending on their observing mode.
 Observations made with different frequencies, bandwidths, sidebands, time resolution, or frequency resolution will be divided into different scan groups.
-Each of these scan groups may then be broken down futher according to the following criteria:
+Each of these scan groups may then be broken down further according to the following criteria:
 \begin{itemize}
 \item {\em Single scan flag} : If the parameter {\tt singleScan} is set to true, there will be a job boundary between every scan.
 \item {\em Scan gap} : If the time between two scans in a scan group is larger than a preset duration they will be split (default is 3 minutes but this can be overridden with the {\tt maxGap} global parameter).

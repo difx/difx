@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2016 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -65,7 +65,7 @@ void JobGroup::genEvents(const std::list<Event> &eventList)
 	}
 }
 
-void JobGroup::createJobs(std::vector<Job> &jobs, Interval &jobTimeRange, const VexData *V, double minLength, double maxLength, double maxSize) const
+void JobGroup::createJobs(std::vector<Job> &jobs, const Interval &jobTimeRange, const VexData *V, double minLength, double maxLength, double maxSize) const
 {
 	std::list<Event>::const_iterator s, e;
 	jobs.push_back(Job());
@@ -143,9 +143,10 @@ void JobGroup::createJobs(std::vector<Job> &jobs, Interval &jobTimeRange, const 
 std::ostream& operator << (std::ostream &os, const JobGroup &x)
 {
 	int p = os.precision();
+	const Interval &i = x;
 	
 	os.precision(12);
-	os << "Group: scans " << x.scans.front() << " - " << x.scans.back() << " = " << (const Interval &)x << std::endl;
+	os << "Group: scans " << x.scans.front() << " - " << x.scans.back() << " = " << i << std::endl;
 	os.precision(p);
 	
 	return os;
