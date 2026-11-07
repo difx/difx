@@ -67,7 +67,6 @@ int process_file(const char *filename, int threadID, int groupID) {
 
 int main(int argc, char *argv[]) {
   int opt, status, tmp;
-  int option_index = 0;
 
   int groupID = -1;
   int threadID = -1;
