@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011-2017 by Walter Brisken                             *
+ *   Copyright (C) 2011-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -50,6 +50,12 @@ int *newRemap(int nItem)
 	int *Remap;
 
 	Remap = (int *)calloc(nItem+1, sizeof(int));
+	if(!Remap)
+	{
+		fprintf(stderr, "Error: newRemap(): cannot allocate %ld bytes\n", (nItem+1)*sizeof(int));
+
+		exit(0);
+	}
 	Remap[nItem] = -1;
 
 	return Remap;

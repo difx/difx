@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2025 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -156,7 +156,7 @@ int computeDifxSpacecraftEphemerisFromXYZ(DifxSpacecraft *ds, double mjd0, doubl
 	double state[6];
 	int p;
 
-	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and intializing */
+	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and initializing */
 	{
 		ds->nPoint = nPoint;
 		ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
@@ -216,7 +216,7 @@ static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, d
 	int spiceHandle;
 	int p;
 
-	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and intializing */
+	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and initializing */
 	{
 		ds->nPoint = nPoint;
 		ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
@@ -403,7 +403,7 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 		ldpool_c(naifFile);
 	}
 
-	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and intializing */
+	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and initializing */
 	{
 		ds->nPoint = nPoint;
 		ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
@@ -584,7 +584,7 @@ int computeDifxSpacecraftTwoLineElement(DifxSpacecraft *ds, double mjd0, double 
 	strncpy_warn(lines[1], line2, MaxLineLength);
 	lines[1][MaxLineLength-1] = 0;
 
-	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and intializing */
+	if(!ds->pos || ds->nPoint == 0)	/* state vector array needs allocating and initializing */
 	{
 		ds->nPoint = nPoint;
 		ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
@@ -776,7 +776,7 @@ DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1, const D
 }
 
 
-static void evalPoly4(long double poly[4], long double t, long double *V)
+static void evalPoly4(const long double poly[4], long double t, long double *V)
 {
 	*V = poly[0] + t*(poly[1] + t*(poly[2] + t*poly[3]));
 }
@@ -920,7 +920,7 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 			writeDifxLine1(out, "SPACECRAFT %d ID", i, ds[i].ephemObject);
 		}
 		writeDifxLineInt1(out, "SPACECRAFT %d ROWS", i, ds[i].nPoint);
-		if(ds[i].axisVectors == 0 || ds[i].timeFrameOffset == 0)
+		if(ds[i].axisVectors == 0 && ds[i].timeFrameOffset == 0)
 		{
 			for(j = 0; j < ds[i].nPoint; ++j)
 			{
@@ -942,7 +942,7 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 				writeDifxLine2(out, "SPACECRAFT %d ROW %d", i, j, value);
 			}
 		}
-		else if(ds[i].axisVectors == 0 && ds[i].timeFrameOffset == 0)
+		else if(ds[i].axisVectors != 0 && ds[i].timeFrameOffset != 0)
 		{
 			for(j = 0; j < ds[i].nPoint; ++j)
 			{

@@ -118,20 +118,12 @@ bool AutoBands::Outputband::isComplete() const
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-AutoBands::AutoBands()
-{
-	this->outputbandwidth = -1;
-	this->verbosity = 0;
-	this->permitgaps = false;
-	this->autozoomgranularity = 0;
+AutoBands::AutoBands() : outputbandwidth(-1), verbosity(0), permitgaps(false), autozoomgranularity(0)
+{	
 }
 
-AutoBands::AutoBands(double outputbandwidth_Hz, int verbosity, bool permitgaps)
+AutoBands::AutoBands(double outputbandwidth_Hz, int verbosity_, bool permitgaps_) : outputbandwidth(outputbandwidth_Hz), verbosity(verbosity_), permitgaps(permitgaps_), autozoomgranularity(0)
 {
-	this->outputbandwidth = outputbandwidth_Hz;
-	this->verbosity = verbosity;
-	this->permitgaps = permitgaps;
-	this->autozoomgranularity = 0;
 	clear();
 }
 
@@ -139,14 +131,14 @@ AutoBands::~AutoBands()
 {
 }
 
-void AutoBands::setVerbosity(int verbosity)
+void AutoBands::setVerbosity(int verbosity_)
 {
-	this->verbosity = verbosity;
+	verbosity = verbosity_;
 }
 
 void AutoBands::clear()
 {
-	this->Nant = 0;
+	Nant = 0;
 	spans.clear();
 	outputbands.clear();
 	userOutputbands.clear();
@@ -170,11 +162,11 @@ void AutoBands::setBandwidth(double outputbandwidth_Hz)
  */
 void AutoBands::setAutozoomGranularity(const double& azgranularity_Hz)
 {
-    if (azgranularity_Hz >= 0)
-    {
-        this->autozoomgranularity = azgranularity_Hz;
-		std::cout << "AutoBands::setAutozoomGranularity " << this->autozoomgranularity << " Hz\n";
-    }
+	if (azgranularity_Hz >= 0)
+	{
+		autozoomgranularity = azgranularity_Hz;
+		std::cout << "AutoBands::setAutozoomGranularity " << autozoomgranularity << " Hz\n";
+	}
 }
 
 /**

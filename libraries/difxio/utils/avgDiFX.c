@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2024 by Walter Brisken                             *
+ *   Copyright (C) 2015-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -279,6 +279,12 @@ AverageInput *openAverageInput(const char *filename)
 	char pattern[DIFXIO_FILENAME_LENGTH];
 
 	A = (AverageInput *)calloc(1, sizeof(AverageInput));
+	if(!A)
+	{
+		fprintf(stderr, "Error: openAverageInput(): cannot allocate %ld bytes\n", sizeof(AverageInput));
+
+		exit(0);
+	}
 
 	A->D = loadDifxInput(filename);
 	if(!A->D)

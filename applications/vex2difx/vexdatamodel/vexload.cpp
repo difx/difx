@@ -521,20 +521,17 @@ static int getAntennas(VexData *V, Vex *v)
 
 		for(n = (const struct nasmyth *)get_station_lowl(stn, T_NASMYTH, B_ANTENNA, v); n != 0; n = (struct nasmyth *)get_station_lowl_next())
 		{
-			if(n)
+			VexAntenna::NasmythType t;
+		
+			t = stringToNasmyth(n->platform);
+			if(t == VexAntenna::NasmythError)
 			{
-				VexAntenna::NasmythType t;
-			
-				t = stringToNasmyth(n->platform);
-				if(t == VexAntenna::NasmythError)
-				{
-					std::cerr << "Warning: unsupported Nasmyth platform type: " << n->platform << std::endl;
-					++nWarn;
-				}
-				else
-				{
-					A->nasmyth[n->band] = t;
-				}
+				std::cerr << "Warning: unsupported Nasmyth platform type: " << n->platform << std::endl;
+				++nWarn;
+			}
+			else
+			{
+				A->nasmyth[n->band] = t;
 			}
 		}
 
@@ -762,7 +759,7 @@ static int getAntennas(VexData *V, Vex *v)
 				}
 			}
 		}
-		for(void *p = get_station_lowl(stn, T_EXTENSION, B_EXTENSIONS, v); p; p = get_station_lowl_next())
+		for(void *sl = get_station_lowl(stn, T_EXTENSION, B_EXTENSIONS, v); sl; sl = get_station_lowl_next())
 		{
 			char *value, *units;
 			int name, link;
@@ -770,19 +767,19 @@ static int getAntennas(VexData *V, Vex *v)
 			A->extensions.push_back(VexExtension());
 			VexExtension &E = A->extensions.back();
 
-			vex_field(T_EXTENSION, p, 1, &link, &name, &value, &units);
+			vex_field(T_EXTENSION, sl, 1, &link, &name, &value, &units);
 			if(value)
 			{
 				E.owner = value;
 
-				vex_field(T_EXTENSION, p, 2, &link, &name, &value, &units);
+				vex_field(T_EXTENSION, sl, 2, &link, &name, &value, &units);
 				if(value)
 				{
 					E.name = value;
 				}
 				for(int i = 3; value; ++i)
 				{
-					vex_field(T_EXTENSION, p, i, &link, &name, &value, &units);
+					vex_field(T_EXTENSION, sl, i, &link, &name, &value, &units);
 					if(value)
 					{
 						E.value.push_back(value);
@@ -1211,9 +1208,8 @@ static int collectIFInfo(VexSetup &setup, VexData *V, Vex *v, const char *antDef
 	
 	//ADDED BACK: TODO we assign the comments below to vif.comment; should check if there is a way
 	// to do so here instead of going through this temp array
-	void *p;
 
-	for(p = get_all_lowl(antDefName, modeDefName, T_COMMENT_TRAILING, B_IF, v); p; p = get_all_lowl_next())
+	for(void *p = get_all_lowl(antDefName, modeDefName, T_COMMENT_TRAILING, B_IF, v); p; p = get_all_lowl_next())
 	{
 		p2array[p2count++] = p;
 	}
@@ -1221,7 +1217,7 @@ static int collectIFInfo(VexSetup &setup, VexData *V, Vex *v, const char *antDef
 	// the collected comments and ifdef fields will always line up, so just run a count
 	p2count = 0;
 
-	for(p = get_all_lowl(antDefName, modeDefName, T_IF_DEF, B_IF, v); p; p = get_all_lowl_next())
+	for(void *p = get_all_lowl(antDefName, modeDefName, T_IF_DEF, B_IF, v); p; p = get_all_lowl_next())
 	{
 		double phaseCal, phaseCalBase;
 		int link, name;
@@ -1338,7 +1334,7 @@ static int collectIFInfo(VexSetup &setup, VexData *V, Vex *v, const char *antDef
 		} 
 		else
 		{
-			vif.comment = "\0";
+			vif.comment = "";
 		}
 	}
 
@@ -1502,7 +1498,7 @@ static int collectPcalInfo(std::map<std::string,std::vector<unsigned int> > &pca
 		
 		for(int q = 2; ; ++q)
 		{
-			int v, y;
+			int val, y;
 			
 			y = vex_field(T_PHASE_CAL_DETECT, p, q, &link, &name, &value, &units);
 			if(y < 0)
@@ -1510,8 +1506,8 @@ static int collectPcalInfo(std::map<std::string,std::vector<unsigned int> > &pca
 				break;
 			}
 			
-			v = atoi(value);
-			if(v == 0)
+			val = atoi(value);
+			if(val == 0)
 			{
 				// zero value implies next value indicates state counting
 				++q;
@@ -1519,7 +1515,7 @@ static int collectPcalInfo(std::map<std::string,std::vector<unsigned int> > &pca
 			else
 			{
 				// Move from vex's 1-based tones to DiFX's 0-based; negative tone numbers don't change
-				int difxToneId = (v > 1) ? (v - 1) : v;
+				int difxToneId = (val > 1) ? (val - 1) : val;
 				Q.push_back(difxToneId);
 			}
 		}
@@ -1542,7 +1538,7 @@ int collectFreqChannels(std::vector<VexChannel> &freqChannels, VexSetup &setup, 
 	for(void *p = get_all_lowl(antDefName, modeDefName, T_BBC_ASSIGN, B_BBC, v); p; p = get_all_lowl_next())
 	{
 		vex_field(T_BBC_ASSIGN, p, 3, &link, &name, &value, &units);
-		VexIF *vif = setup.getVexIFByLink(value);
+		const VexIF *vif = setup.getVexIFByLink(value);
 
 		if(vif == 0)
 		{
@@ -1667,7 +1663,7 @@ static int collectExtensions(VexSetup &setup, Vex *v, const char *antDefName, co
 	return nWarn;
 }
 
-VexChannel *getVexChannelByLink(std::vector<VexChannel> &freqChannels, const std::string chanLink)
+VexChannel *getVexChannelByLink(std::vector<VexChannel> &freqChannels, const std::string &chanLink)
 {
 	for(std::vector<VexChannel>::iterator it = freqChannels.begin(); it != freqChannels.end(); ++it)
 	{
@@ -2117,7 +2113,7 @@ static int getBitstreamsSetup(VexSetup &setup, Vex *v, const char *antDefName, c
 			{
 				std::cerr << "Error: Antenna " << antDefName << " Mode " << modeDefName << " Chan " << it->first << " violates vex2difx's constraint on bit stream assignments." << std::endl;
 				std::cerr << "  2-bit data must have the sign bit on an even channel with the magnitude bit in the next bitstream." << std::endl;
-				std::cerr << "  Sign assignment = " << ba.sign[0] <<" Mag assignemnt = " << ba.mag[0] << std::endl;
+				std::cerr << "  Sign assignment = " << ba.sign[0] <<" Mag assignment = " << ba.mag[0] << std::endl;
 				exit(0);
 			}
 		}
@@ -2369,7 +2365,7 @@ static int getDatastreamsSetup(VexSetup &setup, Vex *v, const char *antDefName, 
 	for(p = get_all_lowl(antDefName, modeDefName, T_CHANNEL, B_DATASTREAMS, v); p; p = get_all_lowl_next())
 	{
 		VexStream *stream;
-		VexThread *thread;
+		const VexThread *thread;
 		VexChannel *channel;
 		char *chanLink;
 		int threadChan;
@@ -2472,6 +2468,7 @@ static int getModes(VexData *V, Vex *v)
 	const char *antModeIncompleteFilename = "IncompleteModes.txt";
 	int nWarn = 0;
 	FILE *antModeIncompleteFile = 0;
+	int failedOpen = 0;
 	int nIncomplete = 0;
 	int nTotal = 0;
 
@@ -2501,7 +2498,7 @@ static int getModes(VexData *V, Vex *v)
 			{
 				++nIncomplete;
 
-				if(reportIncompleteModes)
+				if(reportIncompleteModes && failedOpen == 0)
 				{
 					if(antModeIncompleteFile == 0)
 					{
@@ -2509,16 +2506,22 @@ static int getModes(VexData *V, Vex *v)
 						if(antModeIncompleteFile == 0)
 						{
 							std::cerr << "Error: cannot open " << antModeIncompleteFilename << " for write." << std::endl;
+							++failedOpen;
 						}
-						fprintf(antModeIncompleteFile, 
-							"An entry is made below for each combination of antenna and mode in which\n"
-							"minimal critical information ($FREQ, $BBC, and $IF) are not linked.  These\n"
-							"antenna/mode combinations will not be configured for correlation.  Note that\n"
-							"this situation can arise for legitimate reasons, but it might be worth\n"
-							"inspecting this list for anything that is not expected.\n\n");
+						else
+						{
+							fprintf(antModeIncompleteFile, 
+								"An entry is made below for each combination of antenna and mode in which\n"
+								"minimal critical information ($FREQ, $BBC, and $IF) are not linked.  These\n"
+								"antenna/mode combinations will not be configured for correlation.  Note that\n"
+								"this situation can arise for legitimate reasons, but it might be worth\n"
+								"inspecting this list for anything that is not expected.\n\n");
+						}
 					}
-					
-					fprintf(antModeIncompleteFile, "%d : Incomplete description for antenna %s in mode %s\n", nIncomplete, antDefName, modeDefName);
+					if(antModeIncompleteFile != 0)
+					{
+						fprintf(antModeIncompleteFile, "%d : Incomplete description for antenna %s in mode %s\n", nIncomplete, antDefName, modeDefName);
+					}
 				}
 
 				continue;
@@ -2660,7 +2663,7 @@ static int getVSNs(VexData *V, Vex *v)
 
 static int getEOPs(VexData *V, Vex *v)
 {
-	llist *block;
+	const llist *block;
 	int N = 0;
 	int nWarn = 0;
 
@@ -2746,11 +2749,14 @@ static int getVexRev(VexData *V, Vex *v)
 
 	if(v->version)
 	{
-		lowl *w;
+		const lowl *w;
 
 		w = (lowl *)(v->version->ptr);
 
-		V->setVersion((char *)(w->item));
+		if(w)
+		{
+			V->setVersion((char *)(w->item));
+		}
 	}
 	else
 	{

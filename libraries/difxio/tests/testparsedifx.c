@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 	/* free from memory */
 	deleteDifxParameters(dp);
 
-	/*** Next, demonstrate buiding DifxParameters object from a set of
+	/*** Next, demonstrate building DifxParameters object from a set of
 	     strings as you might do if constructing from stdin ***/
 	
 	printf("Making new DifxParameters structure by hand\n");

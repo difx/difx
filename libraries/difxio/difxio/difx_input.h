@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2024 by Walter Brisken, Adam Deller,               *
+ *   Copyright (C) 2007-2026 by Walter Brisken, Adam Deller,               *
  *                              Helge Rottmann and Jan Wagner              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -82,7 +82,7 @@ extern "C" {
  * antennas as listed in .input file TELESCOPE tables due to both sorting
  * and combining of multiple jobs.
  *
- * Some arrays take as indicies the original antenna index as found in .input
+ * Some arrays take as indices the original antenna index as found in .input
  * files.  These are:  DifxConfig.baselineFreq2IF[][][] and
  * DifxConfig.ant2dsId[][]
  */
@@ -122,7 +122,7 @@ extern const char dataSourceNames[][MAX_DATA_SOURCE_NAME_LENGTH];
 enum SamplingType
 {
 	SamplingReal = 0,
-	SamplingComplex,	/* "standard" complex sampling: separate quanization of real and imag */
+	SamplingComplex,	/* "standard" complex sampling: separate quantization of real and imag */
 	SamplingComplexDSB,	/* Complex double sideband sampling */
 	NumSamplingTypes	/* must remain as last entry */
 };
@@ -255,7 +255,7 @@ enum TaperFunction
 extern const char taperFunctionNames[][MAX_TAPER_FUNCTION_STRING_LENGTH];
 
 
-/* FIXME: in future version, handle Frequency, EOP, ... MergeModes in more consistant manner, perhaps as a new structure rather than individual enums */
+/* FIXME: in future version, handle Frequency, EOP, ... MergeModes in more consistent manner, perhaps as a new structure rather than individual enums */
 
 /* keep this current with freqMergeModeNames in difx_freq.c */
 enum FreqMergeMode
@@ -399,9 +399,9 @@ typedef struct
 	int nAntenna;
 	int nDatastream;	/* number of datastreams attached */
 	int nBaseline;		/* number of baselines */
-	int *datastreamId;	/* 0-based; datastream table indx */
+	int *datastreamId;	/* 0-based; datastream table index */
 				/* -1 terminated [ds # < nDatastream]  */
-	int *baselineId;	/* baseline table indicies for this config */
+	int *baselineId;	/* baseline table indices for this config */
 				/* -1 terminated [bl # < nBaseline] */
 	
 	int freqSetId;		/* 0-based number -- unique FITS/AIPS IF index to the DifxInput freqSet array */
