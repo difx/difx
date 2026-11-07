@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015 by Walter Brisken                                  *
+ *   Copyright (C) 2015-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -28,7 +28,7 @@
 class MediaChange : public Interval
 {
 public:
-	MediaChange(std::string A, double start, double stop) : Interval(start, stop), ant(A) {}
+	MediaChange(const std::string &A, double start, double stop) : Interval(start, stop), ant(A) {}
 
 	std::string ant;
 };
