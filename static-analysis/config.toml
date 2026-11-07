@@ -113,3 +113,194 @@ args = ["--severity=warning"]
 [tools.typos]
 enabled = true
 config = "static-analysis/typos.toml"
+
+[review]
+# `sa.py review`: Claude reviews the code unit by unit for serious bugs (method in
+# the skill file) and appends issues to wiki pages that people may edit.  Runs one
+# unit at a time from a queue, so it can be stopped and resumed (e.g. from cron).
+# Pinned checkout, queue state and raw answers: <dir>/src, <dir>/state.json, <dir>/<sha>/.
+dir = "../difx-sa-work/reviews"
+ref = "dev"
+skill = ".claude/skills/difx-bug-review/SKILL.md"
+# claude CLI as for [summary] ("" = find it); per-unit limits.
+claude = ""
+max_turns = 80
+effort = ""            # "", "low", "medium", "high" ("" = the CLI default)
+timeout_minutes = 90
+# Stop starting units once the cost Claude reports for this week (USD equivalent,
+# week starting week_start) reaches the cap; 0 = no cap.
+weekly_cost_cap = 0
+week_start = "Fri 08:00"
+# Static-analysis findings from these tools are passed as leads when the latest
+# results are of the same commit.
+lead_tools = ["compiler", "clang-tidy", "cppcheck"]
+# Never reviewed (in addition to analysis.exclude): test programs.
+exclude = ["*/tests/*", "*/test/*"]
+lead_severities = ["error", "warning"]
+# Wiki: pages <wiki_subdir>/<page_prefix>-<component>.md and <wiki_subdir>/<index_page>.md
+wiki_subdir = "Code-Review"
+page_prefix = "Review"
+index_page = "Code-Review"
+
+# Units in priority order.  files / exclude: fnmatch globs relative to the
+# repository root ('*' also matches '/'); only tracked C/C++/flex/bison files count.
+[[review.units]]
+name = "difxio-input"
+component = "difxio"
+model = "opus"
+files = ["libraries/difxio/difxio/difx_input.*", "libraries/difxio/difxio/parsedifx.*",
+         "libraries/difxio/difxio/difx_input_merge.c", "libraries/difxio/difxio/difx_config.c"]
+
+[[review.units]]
+name = "difxio-objects"
+component = "difxio"
+model = "opus"
+files = ["libraries/difxio/difxio/*"]
+exclude = ["libraries/difxio/difxio/difx_input.*", "libraries/difxio/difxio/parsedifx.*",
+           "libraries/difxio/difxio/difx_input_merge.c", "libraries/difxio/difxio/difx_config.c"]
+
+[[review.units]]
+name = "vdifio-lib"
+component = "vdifio"
+model = "opus"
+files = ["libraries/vdifio/src/*"]
+
+[[review.units]]
+name = "mpifxcorr-control"
+component = "mpifxcorr"
+model = "opus"
+files = ["mpifxcorr/src/configuration.*", "mpifxcorr/src/model.*", "mpifxcorr/src/polyco.*",
+         "mpifxcorr/src/fraction.h", "mpifxcorr/src/mpifxcorr.cpp", "mpifxcorr/src/fxmanager.*",
+         "mpifxcorr/utils/*"]
+
+[[review.units]]
+name = "mpifxcorr-core"
+component = "mpifxcorr"
+model = "opus"
+files = ["mpifxcorr/src/core.*", "mpifxcorr/src/mode.*", "mpifxcorr/src/visibility.*",
+         "mpifxcorr/src/pcal*", "mpifxcorr/src/switchedpower.*"]
+
+[[review.units]]
+name = "mpifxcorr-datastreams"
+component = "mpifxcorr"
+model = "opus"
+files = ["mpifxcorr/src/*"]
+exclude = ["mpifxcorr/src/configuration.*", "mpifxcorr/src/model.*", "mpifxcorr/src/polyco.*",
+           "mpifxcorr/src/fraction.h", "mpifxcorr/src/mpifxcorr.cpp", "mpifxcorr/src/fxmanager.*",
+           "mpifxcorr/src/core.*", "mpifxcorr/src/mode.*", "mpifxcorr/src/visibility.*",
+           "mpifxcorr/src/pcal*", "mpifxcorr/src/switchedpower.*"]
+
+[[review.units]]
+name = "dirlist"
+component = "dirlist"
+model = "sonnet"
+files = ["libraries/dirlist/*"]
+
+[[review.units]]
+name = "codifio"
+component = "codifio"
+model = "sonnet"
+files = ["libraries/codifio/*"]
+
+[[review.units]]
+name = "difxmessage"
+component = "difxmessage"
+model = "sonnet"
+files = ["libraries/difxmessage/*"]
+
+[[review.units]]
+name = "difxio-utils"
+component = "difxio"
+model = "sonnet"
+files = ["libraries/difxio/utils/*", "libraries/difxio/tests/*"]
+
+[[review.units]]
+name = "vdifio-utils"
+component = "vdifio"
+model = "sonnet"
+files = ["libraries/vdifio/utils/*"]
+
+[[review.units]]
+name = "difx2fits-main"
+component = "difx2fits"
+model = "sonnet"
+files = ["applications/difx2fits/src/fitsPH.c", "applications/difx2fits/src/fitsUV.*",
+         "applications/difx2fits/src/fitsTS.c", "applications/difx2fits/src/fits.*",
+         "applications/difx2fits/src/difx2fits.*"]
+
+[[review.units]]
+name = "difx2fits-tables"
+component = "difx2fits"
+model = "sonnet"
+files = ["applications/difx2fits/src/*"]
+exclude = ["applications/difx2fits/src/fitsPH.c", "applications/difx2fits/src/fitsUV.*",
+           "applications/difx2fits/src/fitsTS.c", "applications/difx2fits/src/fits.*",
+           "applications/difx2fits/src/difx2fits.*"]
+
+[[review.units]]
+name = "vex2difx-params"
+component = "vex2difx"
+model = "sonnet"
+files = ["applications/vex2difx/src/corrparams.*", "applications/vex2difx/src/applycorrparams.*",
+         "applications/vex2difx/src/autobands.*", "applications/vex2difx/src/freq.*",
+         "applications/vex2difx/src/zoomfreq.*"]
+
+[[review.units]]
+name = "vex2difx-main"
+component = "vex2difx"
+model = "sonnet"
+files = ["applications/vex2difx/src/*"]
+exclude = ["applications/vex2difx/src/corrparams.*", "applications/vex2difx/src/applycorrparams.*",
+           "applications/vex2difx/src/autobands.*", "applications/vex2difx/src/freq.*",
+           "applications/vex2difx/src/zoomfreq.*"]
+
+[[review.units]]
+name = "vex2difx-vexload"
+component = "vex2difx"
+model = "sonnet"
+files = ["applications/vex2difx/vexdatamodel/vexload.*"]
+
+[[review.units]]
+name = "vex2difx-datamodel"
+component = "vex2difx"
+model = "sonnet"
+files = ["applications/vex2difx/vexdatamodel/*"]
+exclude = ["applications/vex2difx/vexdatamodel/vexload.*"]
+
+[[review.units]]
+name = "mark5access-core"
+component = "mark5access"
+model = "sonnet"
+files = ["libraries/mark5access/mark5access/*", "libraries/mark5access/bbsum/*"]
+exclude = ["libraries/mark5access/mark5access/*format_*"]
+
+[[review.units]]
+name = "mark5access-formats"
+component = "mark5access"
+model = "sonnet"
+files = ["libraries/mark5access/mark5access/format_*", "libraries/mark5access/mark5access/mark5_format_mark5b.c",
+         "libraries/mark5access/mark5access/mark5_format_kvn5b.c", "libraries/mark5access/mark5access/mark5_format_d2k.*"]
+
+[[review.units]]
+name = "mark5access-formats-vlba"
+component = "mark5access"
+model = "sonnet"
+files = ["libraries/mark5access/mark5access/mark5_format_vlba*", "libraries/mark5access/mark5access/mark5_format_mark4.c"]
+
+[[review.units]]
+name = "mark5access-examples"
+component = "mark5access"
+model = "sonnet"
+files = ["libraries/mark5access/examples/*"]
+
+[[review.units]]
+name = "misc"
+component = "misc"
+model = "sonnet"
+files = ["utilities/misc/*"]
+
+[[review.units]]
+name = "vex-parser"
+component = "vex2difx"
+model = "sonnet"
+files = ["applications/vex2difx/vex/*"]

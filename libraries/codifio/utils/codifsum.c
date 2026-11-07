@@ -63,7 +63,7 @@ int main (int argc, char **argv) {
     if (status!=1)                                          \
       fprintf(stderr, "Bad %s option %s\n", #var, optarg);  \
     else                                                    \
-      var = tmp;                                            \
+      (var) = tmp;					    \
     break; }
 
 #define CASEFLOAT(ch,var)                                   \
@@ -73,7 +73,7 @@ int main (int argc, char **argv) {
     if (status!=1)                                          \
       fprintf(stderr, "Bad %s option %s\n", #var, optarg);  \
     else                                                    \
-      var = ftmp;                                           \
+      (var) = ftmp;					    \
     break
     
     switch (opt) {
@@ -183,7 +183,7 @@ int main (int argc, char **argv) {
 	printf("THREADID:    %d\n", getCODIFThreadID(header));
 	printf("GROUPID:     %d\n", getCODIFGroupID(header));
 	printf("SECONDARYID: %d\n", getCODIFSecondaryID(header));
-	if(c0 >= ' ' && c1 < 127 && (c1==0 || (c1 >= ' ' && c1 < 127))) {
+	if (c0 >= ' ' && c0 < 127 && (c1 == 0 || (c1 >= ' ' && c1 < 127))) {
 	  printf("ANTID:       %c%c\n", c1, c0);
 	} else {
 	  printf("ANTID:       %u\n", stationID);

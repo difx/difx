@@ -8,6 +8,7 @@
     sa.py publish       commit the generated wiki pages and push them
     sa.py summary       on demand: ask Claude to summarise the latest run (then render)
     sa.py run           compdb, analyse and render (--publish: and publish)
+    sa.py review        Claude bug review, one unit at a time, into Code-Review wiki pages
 
 Needs only Python 3.11+ and the tools themselves; see README.md.
 """
@@ -15,7 +16,7 @@ Needs only Python 3.11+ and the tools themselves; see README.md.
 import argparse
 import sys
 
-from difxsa import analyse, compdb, components, config, publish, render, summary
+from difxsa import analyse, compdb, components, config, publish, render, review, summary
 
 
 def cmd_components(cfg, args):
@@ -47,6 +48,21 @@ def main():
     p_sum.add_argument("--only", type=csv, help="focus on these components / directories")
     p_sum.add_argument("--model", help="Claude model (default: summary.model or the CLI default)")
     p_sum.add_argument("--max-turns", type=int, help="limit on Claude's tool calls")
+    p_rev = sub.add_parser("review", help="Claude bug review of the queued units")
+    p_rev.add_argument("--init", nargs="?", const="", metavar="REF",
+                       help="pin the review checkout at REF (default review.ref) and requeue all units")
+    p_rev.add_argument("--only", type=csv, help="units or components to review")
+    p_rev.add_argument("--max-units", type=int, help="stop after this many units")
+    p_rev.add_argument("--publish", action="store_true",
+                       help="pull the wiki, add each finished unit's issues, commit and push")
+    p_rev.add_argument("--retry", action="store_true", help="also re-run failed units")
+    p_rev.add_argument("--reset", type=csv, help="put these units back in the queue")
+    p_rev.add_argument("--model", help="override the units' model")
+    p_rev.add_argument("--status", action="store_true", help="show the queue and costs")
+    p_rev.add_argument("--pages", action="store_true",
+                       help="only (re)write the wiki pages from finished units (with --publish: and push)")
+    p_rev.add_argument("--dry-run", action="store_true",
+                       help="show the prompt for the next unit without running claude")
     p_run = sub.add_parser("run", help="compdb + analyse + render [+ publish]")
     p_run.add_argument("--publish", action="store_true",
                        help="also commit and push the wiki pages")
@@ -83,6 +99,11 @@ def main():
     if args.command == "summary":
         status = summary.run(cfg, only=args.only, model=args.model, max_turns=args.max_turns)
         status = status or render.run(cfg)
+    if args.command == "review":
+        status = review.run(cfg, init_ref=args.init, only=args.only, max_units=args.max_units,
+                            publish_pages_=args.publish, retry=args.retry, status=args.status,
+                            pages=args.pages, model=args.model, dry_run=args.dry_run,
+                            reset=args.reset)
     if args.command == "publish":
         status = publish.run(cfg, push=not args.no_push)
     return status
