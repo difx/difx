@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: DiFX users mailing list
+    url: https://listmgr.nrao.edu/mailman/listinfo/difx-users
+    about: For general usage questions and discussion, please use the difx-users mailing list.
+  - name: DiFX developers mailing list
+    url: https://listmgr.nrao.edu/mailman/listinfo/difx-developers
+    about: For development discussion and joining the DiFX project.
