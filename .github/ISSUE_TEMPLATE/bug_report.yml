@@ -1,0 +1,115 @@
+name: Bug report
+description: Report a crash, wrong result, build failure or other problem in DiFX
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem.
+        Please search [existing issues](https://github.com/difx/difx/issues) first to avoid duplicates.
+
+  - type: input
+    id: version
+    attributes:
+      label: DiFX version / commit
+      description: Release tag, branch, or `git rev-parse HEAD` output.
+      placeholder: e.g. 2.8.1, dev @ 1a2b3c4
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which part of DiFX is affected? Select all that apply.
+      multiple: true
+      options:
+        - mpifxcorr (correlator)
+        - vex2difx / calcif2 / job preparation
+        - difx2fits / difx2mark4 / output conversion
+        - mark5access
+        - vdifio
+        - Other libraries (difxio, difxmessage, ...)
+        - Other applications / utilities
+        - Build system (CMake / autotools)
+        - Documentation
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build
+    attributes:
+      label: Installation method
+      options:
+        - CMake
+        - autotools (install-difx)
+        - Docker
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, compiler, MPI implementation and versions.
+      placeholder: e.g. Ubuntu 22.04, gcc 11.4, OpenMPI 4.1.2
+    validations:
+      required: true
+
+  - type: input
+    id: data-format
+    attributes:
+      label: Data format
+      description: If the problem involves baseband data, which format is it?
+      placeholder: e.g. VDIF_8000-2048-16-2, Mark5B-2048-16-2, CODIF
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear description of what went wrong.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Commands run and relevant input files (`.v2d`, `.vex`, `.input`, ...).
+      placeholder: |
+        1. vex2difx test.v2d
+        2. startdifx -n test_1000.input
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log output
+      description: Relevant error messages or log output. This will be rendered as code automatically.
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that may help, e.g. whether it worked in an earlier version.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues and this is not a duplicate.
+          required: true
