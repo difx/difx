@@ -281,7 +281,7 @@ AverageInput *openAverageInput(const char *filename)
 	A = (AverageInput *)calloc(1, sizeof(AverageInput));
 	if(!A)
 	{
-		fprintf(stderr, "Error: openAverageInput(): cannot allocate %ld bytes\n", sizeof(AverageInput));
+		fprintf(stderr, "Error: openAverageInput(): cannot allocate %lu bytes\n", sizeof(AverageInput));
 
 		exit(0);
 	}

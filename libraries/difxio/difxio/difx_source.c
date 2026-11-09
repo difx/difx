@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2011 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -24,12 +24,18 @@
 #include "difxio/parsedifx.h"
 #include "difxio/difx_write.h"
 
-DifxSource *newDifxSourceArray(int nSource)
+DifxSource *newDifxSourceArray(unsigned int nSource)
 {
 	DifxSource *ds;
-	int s;
+	unsigned int s;
 
 	ds = (DifxSource *)calloc(nSource, sizeof(DifxSource));
+	if(!ds)
+	{
+		fprintf(stderr, "Error: newDifxSourceArray(): cannot allocate %lu bytes.\n", nSource*sizeof(DifxSource));
+
+		exit(0);
+	}
 	for(s = 0; s < nSource; ++s)
 	{
 		ds[s].spacecraftId = -1;

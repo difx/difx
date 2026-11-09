@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2025 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2007-2026 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -64,7 +64,7 @@ DifxInput *newDifxInput()
 	D = (DifxInput *)calloc(1, sizeof(DifxInput));
 	if(!D)
 	{
-		fprintf(stderr, "Error: newDifxInput(): cannot allocate %ld bytes\n", sizeof(DifxInput));
+		fprintf(stderr, "Error: newDifxInput(): cannot allocate %lu bytes\n", sizeof(DifxInput));
 
 		exit(0);
 	}
@@ -348,6 +348,12 @@ static int *deriveAntennaMap(const DifxInput *D, const DifxParameters *p, int *n
 	}
 
 	antennaMap = (int *)calloc(nTel, sizeof(int));
+	if(!antennaMap)
+	{
+		fprintf(stderr, "Error: deriveAntennaMap(): cannot allocate %ld bytes of data.\n", nTel*sizeof(int));
+
+		exit(0);
+	}
 
 	for(t = 0; t < nTel; ++t)
 	{
@@ -450,7 +456,7 @@ static int generateFreqSets(DifxInput *D, const DifxDataFilterOptions *filterOpt
 	freqIsUsed = (int *)calloc(D->nFreq+1, sizeof(int));
 	if(!freqIsUsed)
 	{
-		fprintf(stderr, "Error: generateFreqSets(): cannot allocate %ld bytes\n", (D->nFreq+1)*sizeof(int));
+		fprintf(stderr, "Error: generateFreqSets(): cannot allocate %lu bytes\n", (D->nFreq+1)*sizeof(int));
 
 		exit(0);
 	}
@@ -591,6 +597,7 @@ static int generateFreqSets(DifxInput *D, const DifxDataFilterOptions *filterOpt
 		if(dc->polMask & DIFXIO_POL_ERROR || dc->polMask == 0)
 		{
 			fprintf(stderr, "Error: generateFreqSets: polMask = 0x%03x is unsupported by FITS-IDI!\n", dc->polMask);
+			free(freqIsUsed);
 
 			return -1;
 		}
@@ -940,7 +947,7 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D, const DifxParameters *
 /* return -1 on a failure */
 static int loadPhasedArrayConfigFile(DifxInput *D, const char *fileName)
 {
-	DifxParameters *pp;
+	const DifxParameters *pp;
 	DifxPhasedArray *dpa;
 	int r;
 
@@ -1230,11 +1237,16 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 				return 0;
 			}
 		}
-		N = strlen(dc->name);
 		dc->doPolar = -1;	/* to be calculated later */
 
 		/* initialize datastream index array */
 		dc->datastreamId = (int *)calloc(dc->nDatastream+1, sizeof(int));
+		if(dc->datastreamId)
+		{
+			fprintf(stderr, "Error: parseDifxInputConfigurationTable(): cannot allocate %lu bytes for datastreamIds\n", (dc->nDatastream+1)*sizeof(int));
+
+			exit(0);
+		}
 		
 		/* here "dsId" is "datastream # within conf" */
 		for(dsId = 0; dsId <= D->nDatastream; ++dsId)
@@ -1657,7 +1669,8 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 		nRecBand = 0;
 		for(i = 0; i < D->datastream[e].nRecFreq; ++i)
 		{
-			char *clockOffStr, *str, *tok;
+			char *clockOffStr, *str;
+			const char *tok;
 
 			r = DifxParametersfind1(ip, r+1, "REC FREQ INDEX %d", i);
 			D->datastream[e].recFreqId[i] = atoi(DifxParametersvalue(ip, r));
@@ -1703,8 +1716,6 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 		nr = 0;
 		for(i = 0; ; ++i)
 		{
-			int v;
-
 			v = DifxParametersfind1(ip, r, "REC BAND %d POL", i);
 			if(v <= 0 || v > r+2*i+2)
 			{
@@ -1780,8 +1791,6 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 		nz = 0;
 		for(i = 0; ; ++i)
 		{
-			int v;
-
 			v = DifxParametersfind1(ip, r, "ZOOM BAND %d POL", i);
 			if(v <= 0 || v > r+2*i+2)
 			{
@@ -2049,7 +2058,7 @@ static DifxInput *deriveDifxInputValues(DifxInput *D, const DifxDataFilterOption
 
 		for(dsId = 0; dsId < D->config[c].nDatastream; ++dsId)
 		{
-			DifxDatastream *ds;
+			const DifxDatastream *ds;
 			int e;
 
 			e = D->config[c].datastreamId[dsId];
@@ -2828,7 +2837,7 @@ static DifxInput *parseCalcServerInfo(DifxInput *D, const DifxParameters *p)
 	return D;
 }
 
-static int parsePoly1(const DifxParameters *p, int r, char *key, int i1, int i2, double *array, int n)
+static int parsePoly1(const DifxParameters *p, int r, const char *key, int i1, int i2, double *array, int n)
 {
 	const char *v;
 	int i, l, m;
@@ -3203,7 +3212,7 @@ static int populateFlags(DifxInput *D)
 	int n=0, p;
 	int nUndecoded = 0;
 	char line[MaxLineLength+1];
-	char *ptr;
+	const char *ptr;
 	DifxJob *J;
 	int nFlag = 0;
 
@@ -3351,6 +3360,12 @@ static DifxInput *deriveFitsSourceIds(DifxInput *D)
 	/* temporary arrays to keep track of unique sources */
 	fs = (int *)calloc(D->nSource*D->nFreqSet, sizeof(int));
 	ffs = (int *)calloc(D->nSource*D->nFreqSet, sizeof(int));
+	if(!fs || !ffs)
+	{
+		fprintf(stderr, "Error: deriveFitsSourceIds(): cannot allocate %lu bytes of memory.\n", 2*D->nSource*D->nFreqSet*sizeof(int));
+
+		exit(0);
+	}
 
 	for(i = 0; i < D->nSource; ++i)
 	{
@@ -3448,7 +3463,7 @@ static void setOrbitingAntennas(DifxInput *D)
 int DifxInputCalculateDoPolar(DifxInput *D, int configId)
 {
 	int b, f, blId;
-	DifxBaseline *bl;
+	const DifxBaseline *bl;
 	DifxConfig *dc;
 
 	dc = D->config + configId;
@@ -4801,6 +4816,12 @@ int* DifxInputGetOutputFreqs(const DifxInput *D)
 	}
 
 	outputfreqs = (int *)calloc(D->nFreq + 1, sizeof(int));
+	if(!outputfreqs)
+	{
+		fprintf(stderr, "Error: DifxInputGetOutputFreqs(): cannot allocate %lu bytes.\n", (D->nFreq+1)*sizeof(int));
+
+		exit(0);
+	}
 	for(n = 0; n < D->nFreq + 1; ++n)
 	{
 		outputfreqs[n] = -1;

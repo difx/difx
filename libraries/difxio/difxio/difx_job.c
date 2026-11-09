@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2017 by Walter Brisken                             *
+ *   Copyright (C) 2007-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "difxio/difx_input.h"
 #include "difxio/parsedifx.h"
 
@@ -67,12 +68,18 @@ enum TaperFunction stringToTaperFunction(const char *str)
 	return f;
 }
 
-DifxJob *newDifxJobArray(int nJob)
+DifxJob *newDifxJobArray(unsigned int nJob)
 {
 	DifxJob *dj;
-	int j;
+	unsigned int j;
 
 	dj = (DifxJob *)calloc(nJob, sizeof(DifxJob));
+	if(!dj)
+	{
+		fprintf(stderr, "Error: newDifxJobArray(): cannot allocate %lu bytes.\n", nJob*sizeof(DifxJob));
+
+		exit(0);
+	}
 	for(j = 0; j < nJob; ++j)
 	{
 		snprintf(dj[j].obsCode,       DIFXIO_OBSCODE_LENGTH,  "%s", "DIFX");
@@ -160,7 +167,7 @@ void printDifxJob(const DifxJob *dj)
 	fprintDifxJob(stdout, dj);
 }
 
-void copyDifxJob(DifxJob *dest, const DifxJob *src, int *antennaIdRemap)
+void copyDifxJob(DifxJob *dest, const DifxJob *src, const int *antennaIdRemap)
 {
 	int f;
 	
@@ -229,7 +236,7 @@ DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
 }
 
 /* Warning: fileBase should be at least DIFXIO_FILENAME_LENGTH long */
-void generateDifxJobFileBase(DifxJob *dj, char *fileBase)
+void generateDifxJobFileBase(const DifxJob *dj, char *fileBase)
 {
 	int i, p;
 

@@ -612,7 +612,7 @@ int VexStream::snprintDifxFormatName(char *outString, int maxLength) const
 	}
 	else if(format == FormatCODIF)
 	{
-		n = snprintf(outString, maxLength, "%s%d", DataFormatNames[format], alignmentPeriod);
+		n = snprintf(outString, maxLength, "%s%u", DataFormatNames[format], alignmentPeriod);
 	}
 	else if(format == FormatS2)
 	{

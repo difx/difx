@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2025 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -74,7 +74,7 @@ static int calculateWorstcaseGuardNS(double sampleRate, int subintNS, int nBit, 
 	return static_cast<int>(round(nsAccumulate + MaxEarthGeomSlipRate*subintNS*1.0e-9 + 1.0));
 }
 
-static DifxJob *makeDifxJob(string directory, const Job& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext, const CorrParams *P)
+static DifxJob *makeDifxJob(const string &directory, const Job& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext, const CorrParams *P)
 {
 	DifxJob *job;
 	const char *difxVersion;

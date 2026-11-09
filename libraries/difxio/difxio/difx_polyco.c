@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -179,7 +179,7 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 	{	
 		DifxPolyco *dp;
 		char buffer[BufferSize];
-		char *ptr;
+		const char *ptr;
 		int n, r, c, len;
 
 		ptr = fgets(buffer, BufferSize-1, in);
@@ -257,7 +257,7 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 		}
 
 		/* get the end of line character out of the file */
-		ptr = fgets(buffer, BufferSize-1, in);	
+		fgets(buffer, BufferSize-1, in);	
 
 		// Correct for "FUT time" 
 		if(dp->mjd < 20000.0)

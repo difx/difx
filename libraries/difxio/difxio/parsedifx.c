@@ -37,7 +37,7 @@ DifxParameters *newDifxParameters()
 	dp = (DifxParameters *)calloc(1, sizeof(DifxParameters));
 	if(!dp)
 	{
-		fprintf(stderr, "Error: newDifxParameters(): cannot allocate %ld bytes\n", sizeof(DifxParameters));
+		fprintf(stderr, "Error: newDifxParameters(): cannot allocate %lu bytes\n", sizeof(DifxParameters));
 
 		exit(0);
 	}
@@ -66,7 +66,7 @@ void growDifxParameters(DifxParameters *dp)
 	newrows = (DifxRow *)calloc(2*alloc_rows, sizeof(DifxRow));
 	if(!newrows)
 	{
-		fprintf(stderr, "Error: growDifxParameters(): cannot allocate %ld bytes\n", 2*alloc_rows*sizeof(DifxRow));
+		fprintf(stderr, "Error: growDifxParameters(): cannot allocate %lu bytes\n", 2*alloc_rows*sizeof(DifxRow));
 
 		exit(0);
 	}

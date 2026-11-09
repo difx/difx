@@ -23,10 +23,10 @@
 #include <algorithm>
 
 // To capitalize a string
-#define Upper(s) transform(s.begin(), s.end(), s.begin(), static_cast<int(*)(int)>(toupper))
+#define Upper(s) transform((s).begin(), (s).end(), (s).begin(), static_cast<int(*)(int)>(toupper))
 
 // To uncapitalize a string
-#define Lower(s) transform(s.begin(), s.end(), s.begin(), static_cast<int(*)(int)>(tolower))
+#define Lower(s) transform((s).begin(), (s).end(), (s).begin(), static_cast<int(*)(int)>(tolower))
 
 extern "C" {
 int fvex_double(char **field, char **units, double *d);
