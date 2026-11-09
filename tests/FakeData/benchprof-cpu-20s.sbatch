@@ -57,8 +57,12 @@ set -e
 
 SETUP=/home/adeller/setup_gpudifx.claude
 SRCDIR="${SLURM_SUBMIT_DIR:-$PWD}"
-WORKDIR=/fred/oz168/adeller/claude/testing/benchprof-cpu
-NTHREAD="${NTHREAD:-32}"        # Core-rank processing threads; sweep this (see header)
+NTHREAD="${NTHREAD:-32}"        # processing threads PER Core rank; sweep this (see header)
+NCORE="${NCORE:-1}"             # Core ranks; NCORE=2 needs --ntasks=13 (manager + 10 datastreams + 2 cores)
+# One workdir per configuration, so sweep points can sit in the queue together.
+WORKDIR=/fred/oz168/adeller/claude/testing/benchprof-cpu-${NCORE}x${NTHREAD}
+want=$((11 + NCORE))
+[ "${SLURM_NTASKS:-$want}" = "$want" ] || { echo "ERROR: NCORE=$NCORE needs --ntasks=$want, got $SLURM_NTASKS" >&2; exit 1; }
 
 . "$SETUP"
 export DIFX_MESSAGE_GROUP=$(hostname -i)
@@ -73,6 +77,7 @@ sed -i 's|^mjdStop .*|mjdStop  = 59675.09629650|' benchprof.v2d
 # Give the single Core rank enough threads to use the node. The GPU run leaves
 # this at 10 because the GPU path forces one thread regardless.
 sed -i "s|^nThread = .*|nThread = ${NTHREAD}|" benchprof.v2d
+sed -i "s|^nCore = .*|nCore = ${NCORE}|" benchprof.v2d
 
 vex2difx benchprof.v2d
 difxcalc benchprof_1.calc
@@ -82,7 +87,7 @@ nds=$(awk '/^ACTIVE DATASTREAMS/{print $3}' benchprof_1.input)
 # corner-turn is out of BOTH sides of the comparison.
 sed -i -E 's|(DATA FORMAT:[[:space:]]+)INTERLACEDVDIF/[0-9:]+|\1VDIF|' benchprof_1.input
 
-echo "=== $(hostname): $(nproc --all) cores, $((${SLURM_CPUS_PER_TASK:-1} * ${SLURM_NTASKS:-1})) reserved, nThread=$NTHREAD ==="
+echo "=== $(hostname): $(nproc --all) cores, $((${SLURM_CPUS_PER_TASK:-1} * ${SLURM_NTASKS:-1})) reserved, nCore=$NCORE x nThread=$NTHREAD ==="
 lscpu | grep -E "^Model name|^CPU\(s\)|^Core\(s\)|^Socket" || true
 difxlog benchprof_1 "$WORKDIR/benchprof_1.difxlog" 4 &
 difxlogpid=$!
@@ -94,5 +99,10 @@ t1=$(date +%s.%N)
 kill "$difxlogpid" 2>/dev/null || true
 
 echo "=== CPU-only wall $(echo "$t0 $t1" | awk '{printf "%.1f", $2-$1}')s for a ~20 s data window ==="
+# Steady-state rate, start-up excluded: the manager logs one "STATUS Running" per
+# 1 s integration, so (last - first) / (count - 1) is wall seconds per data second.
+grep 'STATUS Running' "$WORKDIR/benchprof_1.difxlog" \
+  | while read -r _ mon day hms yr _; do date -d "$mon $day $hms $yr" +%s; done \
+  | awk 'NR==1{f=$1} {l=$1; n=NR} END{if (n>2) printf "=== steady state: %.2f s wall per 1 s of data = %.3fx real time (%d integrations) ===\n", (l-f)/(n-1), (n-1)/(l-f), n}'
 out=$(ls -S "$WORKDIR"/benchprof_1.difx/DIFX_* 2>/dev/null | head -1)
 [ -n "$out" ] && [ -s "$out" ] && echo "output OK: $(stat -c %s "$out") bytes" || { echo "ERROR: no output" >&2; exit 1; }
