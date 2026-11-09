@@ -1,11 +1,11 @@
 ####### DIFX VERSION ########################
-export DIFX_VERSION=adam_performance_gains
+export DIFX_VERSION=trunk
 
 ####### ROOT PATHS ##########################
-export DIFXROOT=/home/mike/adam_performance_gains_09_23_2026
+export DIFXROOT=/usr/local/difx
 export DIFX_PREFIX=$DIFXROOT
-export PGPLOTDIR=/usr/lib/ 
-export IPPROOT=/home/mike/intel/oneapi/ipp/2021.10
+export PGPLOTDIR=
+export IPPROOT=/opt/intel
 
 ####### COMPILER ############################
 export DIFXMPIDIR=/usr
@@ -14,8 +14,8 @@ export MPICXX="${DIFXMPIDIR}"/bin/mpicxx
 ####### LIBRARY PATHS #######################
 ####### Uncomment and modify if needed, #####
 ####### such as 64-bit OpenSuSE #############
-export IPP_LIBRARY_PATH="${IPPROOT}"/lib/intel64:"${IPPROOT}"/include/ipp/
-export MPI_LIBRARY_PATH="${DIFXMPIDIR}"/lib/x86_64-linux-gnu
+# export IPP_LIBRARY_PATH="${IPPROOT}"/ipp/lib/intel64:"${IPPROOT}"/compiler/lib/intel64
+# export MPI_LIBRARY_PATH="${DIFXMPIDIR}"/lib64
 
 ####### USE GFORTRAN IN PREFERENCE TO G77? ##
 ####### Comment out if not desired ##########
@@ -127,14 +127,14 @@ else
 fi
 
 ####### LIBRARY/EXECUTABLE PATHS ############
-
-
 PrependPath PATH             "${DIFXMPIDIR}"/bin
 PrependPath PATH             "${DIFXROOT}"/bin
-PrependPath LD_LIBRARY_PATH "${MPI_LIBRARY_PATH}"
-PrependPath LD_LIBRARY_PATH "${IPP_LIBRARY_PATH}"
-
-
+if [ -n "${IPP_LIBRARY_PATH}" ]; then
+    PrependPath LD_LIBRARY_PATH "${IPP_LIBRARY_PATH}"
+fi
+if [ -n "${MPI_LIBRARY_PATH}" ]; then
+    PrependPath LD_LIBRARY_PATH "${MPI_LIBRARY_PATH}"
+fi
 if [ "$OS" = "darwin" ] 
 then
   PrependPath DYLD_LIBRARY_PATH  "${DIFXROOT}/lib"
