@@ -1,0 +1,64 @@
+name: Feature request
+description: Suggest a new feature or improvement for DiFX
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement.
+        Please search [existing issues](https://github.com/difx/difx/issues) first to avoid duplicates.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      multiple: true
+      options:
+        - mpifxcorr (correlator)
+        - vex2difx / calcif2 / job preparation
+        - difx2fits / difx2mark4 / output conversion
+        - mark5access
+        - vdifio
+        - Other libraries (difxio, difxmessage, ...)
+        - Other applications / utilities
+        - Build system (CMake / autotools)
+        - Documentation
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What problem would this feature solve? What is your use case?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you would like.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds or alternative approaches you have considered.
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: References, related issues, sample data, etc.
+
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to submit a pull request for this feature (see [CONTRIBUTION.md](https://github.com/difx/difx/blob/main/CONTRIBUTION.md)).
