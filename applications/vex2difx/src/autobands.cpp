@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -118,11 +118,11 @@ bool AutoBands::Outputband::isComplete() const
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-AutoBands::AutoBands() : outputbandwidth(-1), verbosity(0), permitgaps(false), autozoomgranularity(0)
+AutoBands::AutoBands() : outputbandwidth(-1), autozoomgranularity(0), permitgaps(false), verbosity(0)
 {	
 }
 
-AutoBands::AutoBands(double outputbandwidth_Hz, int verbosity_, bool permitgaps_) : outputbandwidth(outputbandwidth_Hz), verbosity(verbosity_), permitgaps(permitgaps_), autozoomgranularity(0)
+AutoBands::AutoBands(double outputbandwidth_Hz, int verbosity_, bool permitgaps_) : outputbandwidth(outputbandwidth_Hz), autozoomgranularity(0), permitgaps(permitgaps_), verbosity(verbosity_)
 {
 	clear();
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2025 by Walter Brisken                             *
+ *   Copyright (C) 2009-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -782,7 +782,7 @@ int SourceSetup::setkv(const std::string &key, const std::string &value, PhaseCe
 	return nWarn;
 }
 
-DatastreamSetup::DatastreamSetup(const std::string &name) : difxName(name), networkPort("0"), windowSize(0), dataSource(DataSourceUnspecified), dataSampling(NumSamplingTypes), startBand(-1), nBand(0), tSys(0.0), frameSize(0), nBit(0), filelistReadFail(false)
+DatastreamSetup::DatastreamSetup(const std::string &name) : difxName(name), networkPort("0"), windowSize(0), frameSize(0), nBit(0), dataSource(DataSourceUnspecified), dataSampling(NumSamplingTypes), startBand(-1), nBand(0), tSys(0.0), filelistReadFail(false)
 {
 	// dataSampling = NumSamplingType is flag that no sampling is is identified here
 	// nBand = 0:  Zero implies all.
