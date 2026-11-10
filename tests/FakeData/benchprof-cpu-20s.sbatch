@@ -52,17 +52,36 @@
 #     cd <checkout>/tests/FakeData && sbatch --export=ALL,NTHREAD=32 benchprof-cpu-20s.sbatch
 #
 # Compare its "wall ...s for a ~20 s data window" against the GPU run's.
+#
+# SEVERAL CORE PROCESSES, AND PINNING THEM. NCORE runs that many Core ranks with
+# NTHREAD threads each (11 + NCORE MPI ranks in all). Every rank busy-polls, so a
+# run keeps about NCORE x (NTHREAD + 1) + 11 cores busy - keep that under the
+# allocation. When the rank count differs from --ntasks, every rank is given the
+# WHOLE allocation (srun --whole), so ask for the whole node and let NCORE decide:
+#
+#     sbatch --ntasks=16 --cpus-per-task=4 --export=ALL,NCORE=2,NTHREAD=24,BIND=socket benchprof-cpu-20s.sbatch
+#
+# BIND=socket pins Core rank k to socket k mod (sockets), all of its threads with
+# it; the manager and DataStreams stay unpinned. The default, BIND=none, leaves
+# the kernel free to move threads across sockets. Each pinned rank prints the
+# affinity it actually got (lines starting "bind:"), so check those.
 
 set -e
 
 SETUP=/home/adeller/setup_gpudifx.claude
 SRCDIR="${SLURM_SUBMIT_DIR:-$PWD}"
 NTHREAD="${NTHREAD:-32}"        # processing threads PER Core rank; sweep this (see header)
-NCORE="${NCORE:-1}"             # Core ranks; NCORE=2 needs --ntasks=13 (manager + 10 datastreams + 2 cores)
+NCORE="${NCORE:-1}"             # Core ranks (see header)
+BIND="${BIND:-none}"            # none | socket (see header)
+case "$BIND" in none|socket) ;; *) echo "ERROR: BIND must be none or socket, got '$BIND'" >&2; exit 1 ;; esac
 # One workdir per configuration, so sweep points can sit in the queue together.
-WORKDIR=/fred/oz168/adeller/claude/testing/benchprof-cpu-${NCORE}x${NTHREAD}
-want=$((11 + NCORE))
-[ "${SLURM_NTASKS:-$want}" = "$want" ] || { echo "ERROR: NCORE=$NCORE needs --ntasks=$want, got $SLURM_NTASKS" >&2; exit 1; }
+WORKDIR=/fred/oz168/adeller/claude/testing/benchprof-cpu-${NCORE}x${NTHREAD}-${BIND}
+nranks=$((11 + NCORE))          # manager + 10 datastreams + the Core ranks
+if [ "${SLURM_NTASKS:-$nranks}" = "$nranks" ]; then
+    stepopts=()
+else
+    stepopts=(--whole --overcommit)   # every rank may use the whole allocation
+fi
 
 . "$SETUP"
 export DIFX_MESSAGE_GROUP=$(hostname -i)
@@ -87,14 +106,31 @@ nds=$(awk '/^ACTIVE DATASTREAMS/{print $3}' benchprof_1.input)
 # corner-turn is out of BOTH sides of the comparison.
 sed -i -E 's|(DATA FORMAT:[[:space:]]+)INTERLACEDVDIF/[0-9:]+|\1VDIF|' benchprof_1.input
 
-echo "=== $(hostname): $(nproc --all) cores, $((${SLURM_CPUS_PER_TASK:-1} * ${SLURM_NTASKS:-1})) reserved, nCore=$NCORE x nThread=$NTHREAD ==="
-lscpu | grep -E "^Model name|^CPU\(s\)|^Core\(s\)|^Socket" || true
+# Rank roles are fixed by mpifxcorr: 0 = manager, 1..nds = DataStreams, then Cores.
+cat > bindwrap.sh <<EOF
+#!/bin/bash
+r=\${SLURM_PROCID:-0}
+if [ "$BIND" = socket ] && [ "\$r" -gt "$nds" ]; then
+    nsock=\$(lscpu -p=SOCKET | grep -v '^#' | sort -u | wc -l)
+    sock=\$(( (r - $nds - 1) % nsock ))
+    cpus=\$(lscpu -p=CPU,SOCKET | grep -v '^#' | awk -F, -v s=\$sock '\$2==s{print \$1}' | paste -sd,)
+    # The kernel intersects this with the job's cpuset, so CPUs we don't own drop out.
+    taskset -pc "\$cpus" \$\$ >/dev/null
+    echo "bind: rank \$r (Core \$((r - $nds - 1))) -> socket \$sock, affinity \$(taskset -pc \$\$ | sed 's/.*: //')" >&2
+fi
+exec "\$@"
+EOF
+chmod +x bindwrap.sh
+
+echo "=== $(hostname): $(nproc --all) cores, $((${SLURM_CPUS_PER_TASK:-1} * ${SLURM_NTASKS:-1})) reserved, nCore=$NCORE x nThread=$NTHREAD, $nranks ranks, bind=$BIND ==="
+echo "=== job cpuset: $(grep Cpus_allowed_list /proc/self/status | awk '{print $2}') ==="
+lscpu | grep -E "^Model name|^CPU\(s\)|^Core\(s\)|^Socket|^NUMA node" || true
 difxlog benchprof_1 "$WORKDIR/benchprof_1.difxlog" 4 &
 difxlogpid=$!
 
 t0=$(date +%s.%N)
-srun --ntasks="$SLURM_NTASKS" --cpu-bind=none \
-     mpifxcorr benchprof_1.input --nocommandthread
+srun --ntasks="$nranks" "${stepopts[@]}" --cpu-bind=none \
+     ./bindwrap.sh mpifxcorr benchprof_1.input --nocommandthread
 t1=$(date +%s.%N)
 kill "$difxlogpid" 2>/dev/null || true
 
