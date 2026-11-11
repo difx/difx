@@ -101,6 +101,6 @@ for filelistfilename in filelistnames:
         if (filelistfile.lineno() == filelength):
             line += ' #'
         line += ' ' * 7 + scanrange.pop(0)
-        print line
+        print (line)
 
     fileinput.close()

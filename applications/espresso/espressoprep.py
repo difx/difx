@@ -168,6 +168,11 @@ def get_options(usage):
             help="Run interactively, else assume slurm/pbs batch jobs")
     
     (options, args) = parser.parse_args()
+
+    if len(args) < 1:
+        parser.print_help()
+        parser.error("Give v2d filename")
+
     return options, args
 
 
@@ -185,10 +190,6 @@ options, args = get_options(usage)
 
 if options.testjob and options.clockjob:
     raise Exception("Don't use both -t and -c together!")
-
-if len(args) < 1:
-    parser.print_help()
-    parser.error("Give v2d filename")
 
 # Can be overridden with the options switch.
 ntasks_per_node = int(options.ntasks_per_node)
