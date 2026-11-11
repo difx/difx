@@ -693,7 +693,6 @@ int main(int argc, char **argv)
 		if(mjdFile != stdin)
 		{
 			fclose(mjdFile);
-			mjdFile = 0;
 		}
 	}
 
