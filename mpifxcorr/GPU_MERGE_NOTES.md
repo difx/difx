@@ -213,11 +213,14 @@ libraries.
 - **Fixed by Walter before the merge:** the `stder` typo in
   `libraries/difxio/tests/teststringarray.c` (`8ecf5579e`), which broke
   `install-difx`.
-- **Not addressed (deliberately):** why the unpacker returns a negative value.
-  Since `db2e775e5`, `samplestounpack = unpacksamples + granularity - 1` is no
-  longer a whole number of sample groups. The mark5access decoders return
-  `nsamp - 4*nblank`, which comes out at -1 when the whole window is blank.
-  `mk5mode_gpu.cu` still uses `+ granularity`.
+- **Fixed on dev after the merge (`458af882f`, merged to dev as `9bb152c58`,
+  into gpudifx as `bac049fa2`):** why the unpacker returned a negative value.
+  Since `db2e775e5`, `samplestounpack = unpacksamples + granularity - 1` was no
+  longer a whole number of sample groups. The mark5access decoders work in
+  whole groups and return `nsamp - G*nblank`, which came out at -1 when the
+  whole window was blank (8 "Error trying to unpack" alerts per Synthetic usb
+  job). `samplestounpack` is now rounded up to whole groups, which matches the
+  `+ granularity` that `mk5mode_gpu.cu` uses.
 
 ## 7. Open items for review and follow-up
 

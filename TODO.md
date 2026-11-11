@@ -58,9 +58,6 @@ ADACS checkout, or bring site-neutral versions across first).
       is on PATH; `install-difx` passes the flag explicitly, but running configure by hand does not.
 - [ ] Continuous integration: a self-hosted runner on the GPU desktop running
       `tests/Synthetic/run-local.sh` (correctness) and `run-bench.sh` (benchmark ledger).
-- [ ] Upstream (dev): mark5access decoders return `nsamp - 4*nblank`, which comes out at -1 on
-      fully blank data when `nsamp` is not a multiple of the sample granularity, as now
-      happens after `db2e775e5`. `mk5mode_gpu.cu` still uses `+ granularity`.
 
 ## GPU feature queue
 
