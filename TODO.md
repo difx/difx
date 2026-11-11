@@ -32,8 +32,20 @@ ADACS checkout, or bring site-neutral versions across first).
       a test case where the old and new sample offsets give different bin positions (or use real pcal data).
 - [ ] GPU pcal bin count: take `N_bins` from the extractor; reject fractional tone spacing and
       the shifting extractors on the GPU.
-- [ ] GPU pcal precision: accumulate in double or with per-block partial sums (float32 `atomicAdd`
-      differs by about 1e-3 on strong tones).
+- [ ] **Do a real pcal test** (real baseband data with an injected pcal comb, CPU vs GPU) before
+      changing the GPU pcal accumulation. The Synthetic data has a single CW tone, not a comb, so
+      its other "tones" are noise and overstate the error.
+- [ ] GPU pcal precision. The GPU sums each bin over a whole subint into one float (`atomicAdd`);
+      the CPU does the same per Core thread (so its pcal also depends slightly on the thread
+      count). Measured on Synthetic TEST2 (strong on-grid tone): ~1e-3 on the tone. The summed
+      values are a few fixed quantisation levels, so the rounding is a bias that grows with the
+      accumulator, worst for long subints. Options, decide after the real-data test:
+      (a) partial bins per group of consecutive FFT windows, folded once per subint (patch kept
+      at `gpudifx-merge-test/tools/pcal-window-group-partials.patch`; ~1e-5 on a modelled comb,
+      but not reliably better on a single strong tone);
+      (b) exact integer counts per bin (net counts of the +-1 and +-HiMag levels, or of the code
+      for >=4-bit), converted to float once per subint: exact, no double precision, order
+      independent, so bit-reproducible.
 - [ ] Commit `phaseCalInt > 0` Synthetic scenarios and a CPU-vs-GPU pcal comparison to
       `run-local.sh` / `run-slurm.sh` (the scenarios and `pcal_compare.py` exist locally in the merge-test area).
 - [ ] Switch the GPU code from `getDPhaseCalIntervalMHz` to `getDPhaseCalIntervalHz` (8 calls).
@@ -58,6 +70,11 @@ ADACS checkout, or bring site-neutral versions across first).
       is on PATH; `install-difx` passes the flag explicitly, but running configure by hand does not.
 - [ ] Continuous integration: a self-hosted runner on the GPU desktop running
       `tests/Synthetic/run-local.sh` (correctness) and `run-bench.sh` (benchmark ledger).
+- [ ] Widen the test matrix beyond CPU vs GPU per scenario: (a) 1 thread vs N threads per
+      Core (with 1 thread the CPU output is byte-identical run to run, so it can be checked
+      exactly; N threads can expose ordering and race bugs); (b) several subintegration sizes;
+      (c) other job parameters that change how data is split (e.g. integration time, guard
+      samples). Wire them into `run-local.sh` / `run-slurm.sh` as optional axes.
 
 ## GPU feature queue
 
@@ -74,6 +91,11 @@ ADACS checkout, or bring site-neutral versions across first).
 
 - [ ] `Core` becomes a virtual base with `CPUCore`/`GPUCore`; `Mode` becomes a virtual base, with
       `Mk5Mode` as the frame-based branch and `CPUMk5Mode`/`GPUMk5Mode` under it.
+- [ ] Rename and probably restructure `mk5mode` / `mk5mode_gpu`: at minimum `cpumk5mode` /
+      `gpumk5mode`. More importantly, the GPU class is a misnomer: it does its own unpacking,
+      does not link against mark5access, and can only handle frame-based formats, so its name
+      and place in the hierarchy should say "GPU, frame-based" rather than "Mark5". Settle
+      this together with the `Mode` hierarchy item above.
 - [ ] Decide keep/remove for the WDEBUG/HDRDEBUG/SPECDEBUG and NVTX scaffolding.
 - [ ] PCal: a first-class "ingest folded bins" interface and one reset/finalise path for CPU
       and GPU (today the GPU path half-uses the extractor via `config->get_use_gpu()`).
