@@ -54,6 +54,28 @@ export CALC_SERVER=localhost
 ####### such as Open MPI 1.8.4 ##############
 # export DIFX_MPIRUNOPTIONS="--mca mpi_yield_when_idle 1 --mca rmaps seq"
 
+####### CUDA (GPU builds only) ##############
+# export CUDAROOT=/usr/local/cuda
+# export NVCCFLAGS="-arch=sm_75"
+
+####### SITE-SPECIFIC SETTINGS ##############
+# Rather than editing the values above, put your own settings (DIFXROOT,
+# DIFXMPIDIR, IPPROOT, CUDAROOT, ...) in setup.local.bash beside this file, or
+# in the file named by $DIFX_SETUP_LOCAL.  It is read here, so it overrides
+# anything above.  setup.local.bash is ignored by git, so local paths never end
+# up in a commit; see setup.local.bash.example.  DIFX_PREFIX and MPICXX follow
+# DIFXROOT and DIFXMPIDIR unless the local file sets them itself.
+_difxlocal="${DIFX_SETUP_LOCAL:-$(dirname "${BASH_SOURCE[0]}")/setup.local.bash}"
+if [ -f "$_difxlocal" ]; then
+  unset DIFX_PREFIX MPICXX
+  . "$_difxlocal"
+  export DIFX_PREFIX="${DIFX_PREFIX:-$DIFXROOT}"
+  export MPICXX="${MPICXX:-${DIFXMPIDIR}/bin/mpicxx}"
+elif [ -n "$DIFX_SETUP_LOCAL" ]; then
+  echo "Warning: DIFX_SETUP_LOCAL=$DIFX_SETUP_LOCAL does not exist; using defaults"
+fi
+unset _difxlocal
+
 ####### No User configurable values below here
 
 ####### Operating System, use $OSTYPE
@@ -133,6 +155,10 @@ fi
 ####### LIBRARY/EXECUTABLE PATHS ############
 PrependPath PATH             "${DIFXMPIDIR}"/bin
 PrependPath PATH             "${DIFXROOT}"/bin
+if [ -n "$CUDAROOT" ] && [ -d "$CUDAROOT" ]; then
+  PrependPath PATH            "${CUDAROOT}"/bin
+  PrependPath LD_LIBRARY_PATH "${CUDAROOT}"/lib64
+fi
 if [ -n "${IPP_LIBRARY_PATH}" ]; then
     PrependPath LD_LIBRARY_PATH "${IPP_LIBRARY_PATH}"
 fi

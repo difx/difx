@@ -26,11 +26,6 @@ setenv USEGFORTRAN "yes"
 ####### PERL VERSION/SUBVERSION #############
 set perlver="5"
 set perlsver="5.10.1"
-if ($?PERL5LIB) then
-  PREPEND PERL5LIB ${DIFXROOT}/share/perl/$perlver
-else
-  setenv PERL5LIB ${DIFXROOT}/share/perl/$perlver
-endif
 
 ####### PORTS FOR DIFXMESSAGE ###############
 # Uncomment these to enable DIFX_MESSAGES
@@ -59,7 +54,42 @@ setenv CALC_SERVER localhost
 ####### such as Open MPI 1.8.4 ##############
 # setenv DIFX_MPIRUNOPTIONS "--mca mpi_yield_when_idle 1 --mca rmaps seq"
 
+####### CUDA (GPU builds only) ##############
+# setenv CUDAROOT /usr/local/cuda
+# setenv NVCCFLAGS "-arch=sm_75"
+
+####### SITE-SPECIFIC SETTINGS ##############
+# Rather than editing the values above, put your own settings (DIFXROOT,
+# DIFXMPIDIR, IPPROOT, CUDAROOT, ...) in setup.local.csh, or in the file named
+# by $DIFX_SETUP_LOCAL.  It is read here, so it overrides anything above.
+# setup.local.csh is ignored by git; see setup.local.csh.example.  csh cannot
+# tell where a sourced script lives, so without DIFX_SETUP_LOCAL the file is
+# looked for in the current directory.  DIFX_PREFIX and MPICXX follow DIFXROOT
+# and DIFXMPIDIR unless the local file sets them itself.
+if ($?DIFX_SETUP_LOCAL) then
+  set _difxlocal="$DIFX_SETUP_LOCAL"
+else
+  set _difxlocal="setup.local.csh"
+endif
+if (-f "$_difxlocal") then
+  unsetenv DIFX_PREFIX
+  unsetenv MPICXX
+  source "$_difxlocal"
+  if (! $?DIFX_PREFIX) setenv DIFX_PREFIX $DIFXROOT
+  if (! $?MPICXX) setenv MPICXX $DIFXMPIDIR/bin/mpicxx
+else if ($?DIFX_SETUP_LOCAL) then
+  echo "Warning: DIFX_SETUP_LOCAL=$DIFX_SETUP_LOCAL does not exist; using defaults"
+endif
+unset _difxlocal
+
 ####### No User configurable values below here
+
+####### PERL MODULE PATH (after the local settings, as it uses DIFXROOT)
+if ($?PERL5LIB) then
+  PREPEND PERL5LIB ${DIFXROOT}/share/perl/$perlver
+else
+  setenv PERL5LIB ${DIFXROOT}/share/perl/$perlver
+endif
 
 ####### Operating System, use $OSTYPE
 
@@ -89,6 +119,12 @@ endif
 ####### LIBRARY/EXECUTABLE PATHS ############
 PREPEND PATH             ${DIFXMPIDIR}/bin
 PREPEND PATH             ${DIFXROOT}/bin
+if ($?CUDAROOT) then
+  if (-d $CUDAROOT) then
+    PREPEND PATH            ${CUDAROOT}/bin
+    PREPEND LD_LIBRARY_PATH ${CUDAROOT}/lib64
+  endif
+endif
 if $?IPP_LIBRARY_PATH then
     PREPEND LD_LIBRARY_PATH $IPP_LIBRARY_PATH
 endif
