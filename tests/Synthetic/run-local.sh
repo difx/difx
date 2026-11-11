@@ -21,6 +21,12 @@
 #   DIFF_THRESHOLD diffDiFX.py threshold (default: 0.0005)
 #   NTASKS         MPI ranks per job     (default: ACTIVE DATASTREAMS + 2,
 #                  read from each scenario's .input)
+#   REFERENCE_SETUP_SCRIPT
+#                  setup script of a second, reference DiFX build (e.g. a dev
+#                  checkout).  If set, each scenario is also correlated on the
+#                  CPU entirely with that build's tools (vex2difx, difxcalc,
+#                  mpifxcorr) and compared with this build's CPU output
+#                  (cpu:reference).  Same name as in run-slurm.sh.
 #
 # Scenarios listed in GPU_UNSUPPORTED below are SKIPped on the GPU legs
 # (GPUMode NOT_SUPPORTED("lower sideband")); remove entries as GPU support
@@ -35,10 +41,11 @@ cd "$SYNTHDIR"
 : "${SETUP_SCRIPT:=$SYNTHDIR/../../setup.bash}"
 : "${DIFF_THRESHOLD:=0.0005}"
 : "${NTASKS:=}"
+: "${REFERENCE_SETUP_SCRIPT:=}"
 
 # Per-run state as files (mirrors run-slurm.sh; keys use '~' separators).
 STATE="$(mktemp -d "${TMPDIR:-/tmp}/difx-local-test.XXXXXX")"
-trap 'rm -rf "$STATE"' EXIT
+trap 'rm -rf "${STATE:?}"' EXIT
 state_set() { printf '%s' "$2" > "$STATE/$1"; }
 state_get() { cat "$STATE/$1" 2>/dev/null; }
 state_has() { [ -f "$STATE/$1" ]; }
@@ -60,15 +67,49 @@ fi
 MODES=(cpu gpu0 gpu1)
 COMPARISONS=("cpu:gpu0" "cpu:gpu1")
 
+# Optional reference leg: a CPU run with another DiFX build.
+if [ -n "$REFERENCE_SETUP_SCRIPT" ]; then
+    if [ ! -f "$REFERENCE_SETUP_SCRIPT" ]; then
+        echo "ERROR: REFERENCE_SETUP_SCRIPT=$REFERENCE_SETUP_SCRIPT not found" >&2
+        exit 2
+    fi
+    MODES+=(reference)
+    COMPARISONS+=("cpu:reference")
+fi
+
+# The setup script for a mode: each mode uses only its own build's tools.
+mode_setup() {
+    if [ "$1" = reference ]; then echo "$REFERENCE_SETUP_SCRIPT"; else echo "$SETUP_SCRIPT"; fi
+}
+
+# The mpifxcorr a setup script puts on PATH (sourced in a subshell).
+which_mpifxcorr() {
+    ( set +u; . "$1" >/dev/null 2>&1; command -v mpifxcorr ) 2>/dev/null
+}
+
 gpu_unsupported() {
     local s
     for s in "${GPU_UNSUPPORTED[@]}"; do [ "$s" = "$1" ] && return 0; done
     return 1
 }
 
+# True for the modes that run on the GPU.
+is_gpu_mode() {
+    case "$1" in gpu*) return 0 ;; *) return 1 ;; esac
+}
+
 echo "Scenarios : ${SCENARIOS[*]}"
 echo "Modes     : ${MODES[*]}"
 echo "Workdir   : $WORKDIR"
+echo "mpifxcorr : $(which_mpifxcorr "$SETUP_SCRIPT")"
+if [ -n "$REFERENCE_SETUP_SCRIPT" ]; then
+    REF_BIN="$(which_mpifxcorr "$REFERENCE_SETUP_SCRIPT")"
+    echo "Reference : $REF_BIN  (from $REFERENCE_SETUP_SCRIPT)"
+    if [ "$REF_BIN" = "$(which_mpifxcorr "$SETUP_SCRIPT")" ]; then
+        echo "ERROR: the reference setup script selects the same mpifxcorr as SETUP_SCRIPT" >&2
+        exit 2
+    fi
+fi
 echo
 
 ######## Ensure synthetic VDIF data exists ###################################
@@ -91,7 +132,7 @@ prep_mode() {
         return 1
     fi
 
-    rm -rf "$jobdir"
+    rm -rf "${jobdir:?}"
     mkdir -p "$jobdir"
 
     cp "$SYNTHDIR/$v2d" "$jobdir/"
@@ -103,7 +144,9 @@ prep_mode() {
         ln -sf "$SYNTHDIR/$vdif" "$jobdir/$vdif"
     done
 
-    if ( set -e; set +u; . "$SETUP_SCRIPT"; set -u; cd "$jobdir"; \
+    local setup
+    setup="$(mode_setup "$mode")"
+    if ( set -e; set +u; . "$setup"; set -u; cd "$jobdir"; \
          vex2difx "$v2d"; difxcalc "${expname}.calc" ) \
          > "$jobdir/prep.log" 2>&1; then
         state_set "prep~$scen~$mode" 1
@@ -116,7 +159,7 @@ prep_mode() {
 echo "== Preparing job directories =="
 for scen in "${SCENARIOS[@]}"; do
     for mode in "${MODES[@]}"; do
-        if [ "$mode" != cpu ] && gpu_unsupported "$scen"; then
+        if is_gpu_mode "$mode" && gpu_unsupported "$scen"; then
             state_set "rc~$scen~$mode" SKIP
             continue
         fi
@@ -144,13 +187,37 @@ run_mode() {
         np=$(awk '/^ACTIVE DATASTREAMS/{print $3+2}' "$jobdir/${expname}.input")
     fi
 
-    rm -rf "$jobdir/${expname}.difx"
-    ( set +u; . "$SETUP_SCRIPT"; set -u; cd "$jobdir"; \
+    local setup
+    setup="$(mode_setup "$mode")"
+    rm -rf "${jobdir:?}/${expname:?}.difx" "${jobdir:?}/${expname:?}.difxlog"
+    # mpifxcorr sends its alerts (info, warnings, errors) over difxmessage,
+    # not to stdout, so run difxlog alongside it (as startdifx does) to keep
+    # them in <jobdir>/<expname>.difxlog.  Jobs run one at a time, so the
+    # shared identity (the job name) does not mix logs between modes.
+    ( set +u; . "$setup"; set -u; cd "$jobdir"; \
       [ -n "$pipeline" ] && export DIFX_GPU_PIPELINE=$pipeline; \
+      logpid=""; \
+      if command -v difxlog >/dev/null 2>&1; then \
+          difxlog "$expname" "${expname}.difxlog" 4 & logpid=$!; sleep 1; \
+      else \
+          echo "WARNING: difxlog not found; alerts will not be saved"; \
+      fi; \
       mpirun --oversubscribe --mca mpi_yield_when_idle 1 \
           -machinefile "$SYNTHDIR/machines" -np "$np" \
-          mpifxcorr "${expname}.input" --nocommandthread $usegpu ) \
+          mpifxcorr "${expname}.input" --nocommandthread $usegpu; \
+      rc=$?; \
+      if [ -n "$logpid" ]; then sleep 1; kill "$logpid" 2>/dev/null; wait "$logpid" 2>/dev/null; fi; \
+      exit $rc ) \
       > "$jobdir/${mode}.mpilog" 2>&1
+}
+
+# log_summary <jobdir> <expname> -> " (difxlog: N ERROR, M SEVERE/FATAL)" or ""
+log_summary() {
+    local log="$1/$2.difxlog" nerr nsev
+    [ -f "$log" ] || { echo " (no difxlog)"; return; }
+    nerr=$(grep -c ' ERROR ' "$log")
+    nsev=$(grep -cE ' (SEVERE|FATAL) ' "$log")
+    [ "$nerr" -gt 0 ] || [ "$nsev" -gt 0 ] && echo " (difxlog: $nerr ERROR, $nsev SEVERE/FATAL)"
 }
 
 echo "== Running correlations (sequential) =="
@@ -163,7 +230,7 @@ for scen in "${SCENARIOS[@]}"; do
         state_has "prep~$scen~$mode" || { state_set "rc~$scen~$mode" 1; continue; }
         if run_mode "$scen" "$mode"; then
             state_set "rc~$scen~$mode" 0
-            echo "  [$scen/$mode] completed"
+            echo "  [$scen/$mode] completed$(log_summary "$WORKDIR/$scen/$mode" "test-$scen")"
         else
             state_set "rc~$scen~$mode" 1
             echo "  [$scen/$mode] FAILED (see $WORKDIR/$scen/$mode/${mode}.mpilog)" >&2

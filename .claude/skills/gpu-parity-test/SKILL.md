@@ -43,7 +43,16 @@ mkdir -p local-runs && ./run-local.sh 2>&1 | tee local-runs/run-local-$(date +%Y
 - Job directories, `.mpilog` files and diffDiFX output go under `local-runs/<scenario>/<mode>/`.
   Keep logs there, next to the jobs, not in a temporary directory, so someone else can
   look at them.
+- mpifxcorr reports warnings and errors over difxmessage, not on stdout, so `run-local.sh`
+  runs `difxlog` beside each job: the alerts are in `<jobdir>/test-<scenario>.difxlog`, and
+  the run output flags any ERROR, SEVERE or FATAL lines. A PASS with logged errors still
+  needs looking at.
 - Overrides: `DIFF_THRESHOLD` (default `0.0005`), `WORKDIR`, `SETUP_SCRIPT`, `NTASKS`.
+- Reference build: set `REFERENCE_SETUP_SCRIPT` to another DiFX build's `setup.bash`
+  (typically a dev checkout, ideally a `git worktree` with its own `setup.local.bash` and
+  install prefix) to add a CPU run made entirely with that build's tools and a
+  `cpu:reference` column. It catches changes to CPU output relative to dev, which the
+  CPU-vs-GPU columns cannot see.
 - Scenarios in `GPU_UNSUPPORTED` (the lower-sideband ones) are SKIPped on the GPU legs.
   Remove a scenario from that list only in the commit that implements it on the GPU.
 - Which scenario covers what: `multi` is the only multi-station, multi-band one; `dualpol`
