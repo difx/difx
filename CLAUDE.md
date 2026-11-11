@@ -160,4 +160,9 @@ when changing anything that uses these macros.
 - GPU work happens on `gpudifx`. The shared backlog is `TODO.md` (update it as items land or
   appear), and `mpifxcorr/GPU_MERGE_NOTES.md` records how the branch was merged from the
   ADACS fork. Merge dev into `gpudifx` with `git merge --no-ff origin/dev`, not a rebase.
+- Project skills in `.claude/skills/` cover the routine steps on `gpudifx`:
+  `rebuild-and-verify` (rebuild, then prove the installed binary is the new one),
+  `gpu-parity-test` (CPU-vs-GPU Synthetic suite), `sync-with-dev` (merging dev in and sending
+  shared-code fixes back), `wrap-up` (end of session), and `difx-bug-review`, which includes
+  the CPU/GPU code map to check for parity.
 - See `CONTRIBUTION.md` for the full contributor workflow (joining the project vs. forking).

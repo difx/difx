@@ -656,6 +656,7 @@ replay_pid*
 /tests/Synthetic/*.threads
 /tests/Synthetic/*.fits
 /tests/Synthetic/*.machines
+/tests/Synthetic/local-runs/
 
 # Site-specific settings read by setup.bash / setup.csh (see setup.local.*.example)
 /setup.local.bash

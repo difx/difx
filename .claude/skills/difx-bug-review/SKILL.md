@@ -58,6 +58,44 @@ VEX file → `vex2difx` → `.input`/`.calc` → `calcif2`/`difxcalc` → `.im` 
 7. **Data-format decoding**: header bit fields (masks and shifts), endianness, assumed
    frame sizes, invalid-frame and fill-pattern handling.
 
+## On the gpudifx branch: CPU/GPU parity
+
+When built `WITH_CUDA`, mpifxcorr has a second implementation of most station and
+baseline processing. The two must give the same visibilities to floating-point
+rounding, and **one path changed without the other is the most common bug on this
+branch**. When the code under review is on either side of this map, read the other
+side too, and report any difference in behaviour (units, sample offsets, sign
+conventions, edge handling, which samples or windows are included) as a `logic` or
+`units` issue, citing both locations.
+
+| Stage | CPU | GPU |
+|---|---|---|
+| Unpacking, invalid and blank frames | `Mk5_CPUMode::unpack` (`mk5mode.cpp`) | `gpu_blank_frames`, `Mk5_GPUMode::blankFrames` (`mk5mode_gpu.cu`), unpack in `gpu_fused_fringe*` (`gpudecode.cu`) |
+| Data weights per FFT window | `CPUMode::process` (`cpumode.cpp`) | `GPUMode::set_weights`, `gpu_set_weights`, `finishWeights` (`gpumode.cu`) |
+| Fringe rotation, delay | `CPUMode::process` | `gpu_precompute_fringe_rotator`, `GPUMode::fringeRotation` (`gpumode.cu`), `gpu_fused_fringe*` (`gpudecode.cu`) |
+| Fractional-sample correction | `CPUMode::process` | `GPUMode::fractionalRotation`, `gpu_resultsrotatorMultiply` (`gpumode.cu`) |
+| Phase-cal extraction | `PCal` extractors (`pcal.cpp`), called from `CPUMode::process` | `DOPCAL` fold in `gpu_fused_fringe*` (`gpudecode.cu`), copied back in `GPUMode::process_gpu_afterfft`, handed over via `PCal::setPcalReal`/`setPcalComplex`; `mode.cpp` branches on `config->get_use_gpu()` |
+| Cross-multiply, autocorrelations, averaging | `Core::processdata` (`core.cpp`) | `GPUCore` (`gpucore.cu`): `gpu_fuse_xmac_and_average`, `completegpudata`, XMAC plans |
+| Baseline weights | `Core::processdata` | `gpu_baseline_weights` (`gpucore.cu`) |
+| Post-processing, uv shift | `Core::uvshiftAndAverage*` (`core.cpp`) | shared; check that GPU results reach it in the same layout |
+
+Further rules:
+- Anything the GPU path does not implement must be refused with `NOT_SUPPORTED` at
+  start-up, not silently produce output (e.g. lower sideband, multiple phase centres,
+  pulsar binning). A configuration that reaches GPU code it does not support is a
+  `critical` issue.
+- Host/device buffer ownership: who allocates, who frees, and whether a buffer is reset
+  between subints (`copyToDevice`/`copyToHost` order). Compare with what the CPU path
+  resets.
+- Precision: float32 where the CPU uses double (sample offsets, phases, frequencies in Hz)
+  and float32 `atomicAdd` accumulation over many terms.
+- Moved code: `Mode::process` on dev is `CPUMode::process` here, and dev's `Mk5Mode` is
+  `Mk5_CPUMode`. A fix made on dev to the old name may still be missing here, and on the
+  GPU twin.
+- Known, deliberately unfixed issues are listed in `TODO.md` and
+  `mpifxcorr/GPU_MERGE_NOTES.md`; mention one only if you find it has a worse effect
+  than recorded there.
+
 ## Do not report
 
 - Style, naming, formatting, comments, modernisation (`auto`, `nullptr`, smart pointers),
