@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -105,17 +105,23 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 	const int MaxLineLength=99;
 	int i, v;
 	char line[MaxLineLength+1];
-	char *ptr;
+	const char *ptr;
 
 	/* reset the parameter list, if needed */
-        if(vis->headerversion < 1)
+	if(vis->headerversion < 1)
 	{
 		resetDifxParameters(vis->params);
 	}
 
 	v = fread(&(vis->sync), sizeof(int), 1, vis->infile);
+	if(v <= 0)
+	{
+		fprintf(stderr, "Error: DifxVisRecordgetnext(): sync word not read for vis %d\n", vis->visnum);
 
-        if(vis->sync == VISRECORD_SYNC_WORD_DIFX1) /* old style ascii header */
+		return -1;
+	}
+
+	if(vis->sync == VISRECORD_SYNC_WORD_DIFX1) /* old style ascii header */
 	{
 		line[0] = 'B';
 		line[1] = 'A';
@@ -136,19 +142,19 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 			}
 			DifxParametersaddrow(vis->params, line);
 		}
-                vis->baseline = atoi(vis->params->rows[0].value);
+		vis->baseline = atoi(vis->params->rows[0].value);
 		vis->mjd = atoi(vis->params->rows[1].value);
 		vis->seconds = atof(vis->params->rows[2].value);
 		vis->configindex = atoi(vis->params->rows[3].value);
 		vis->sourceindex = atoi(vis->params->rows[4].value);
-                vis->freqindex = atoi(vis->params->rows[5].value);
-                vis->polpair[0] = vis->params->rows[6].value[0];
+		vis->freqindex = atoi(vis->params->rows[5].value);
+		vis->polpair[0] = vis->params->rows[6].value[0];
 		vis->polpair[1] = vis->params->rows[6].value[1];
 		vis->pulsarbin = atoi(vis->params->rows[7].value);
 		vis->dataweight = atof(vis->params->rows[9].value);
 		vis->uvw[0] = atof(vis->params->rows[10].value);
 		vis->uvw[1] = atof(vis->params->rows[11].value);
-                vis->uvw[2] = atof(vis->params->rows[12].value);
+		vis->uvw[2] = atof(vis->params->rows[12].value);
 	}
 	else if (vis->sync == VISRECORD_SYNC_WORD_DIFX2)
 	{
@@ -172,14 +178,14 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 		}
 		else /* dunno what to do */
 		{
-			fprintf(stderr, "Error: DifxVisRecordgetnext: got a sync of %x and version of %d for visibility number %d\n", vis->sync, vis->headerversion, vis->visnum);
+			fprintf(stderr, "Error: DifxVisRecordgetnext(): got a sync of %x and version of %d for visibility number %d\n", vis->sync, vis->headerversion, vis->visnum);
 
 			return -1;
 		}
 	}
 	else
 	{
-		fprintf(stderr, "Error: DifxVisRecordgetnext: got a sync of %x for visibility number %d\n", vis->sync, vis->visnum);
+		fprintf(stderr, "Error: DifxVisRecordgetnext(): got a sync of %x for visibility number %d\n", vis->sync, vis->visnum);
 
 		return -1;
 	}
@@ -187,8 +193,7 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 	v = fread(vis->visdata, sizeof(cplx32f), vis->nchan, vis->infile);
 	if(v < vis->nchan)
 	{
-		fprintf(stderr, "Error: DifxVisRecordgetnext: incomplete visibility record number %d\n",
-			vis->visnum);
+		fprintf(stderr, "Error: DifxVisRecordgetnext(): incomplete visibility record number %d\n", vis->visnum);
 
 		return -1;
 	}
@@ -198,8 +203,7 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 	return vis->visnum;
 }
 
-int DifxVisRecordfindnext(DifxVisRecord *vis, int baseline, int freqid, 
-	const char *pol)
+int DifxVisRecordfindnext(DifxVisRecord *vis, int baseline, int freqid, const char *pol)
 {
 	int v;
 

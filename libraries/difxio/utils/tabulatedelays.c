@@ -357,6 +357,10 @@ int main(int argc, char **argv)
 	if(!D)
 	{
 		fprintf(stderr, "Nothing to do!  Quitting.  Run with -h for help information.\n");
+		if(mjdFile != 0 && mjdFile != stdin)
+		{
+			fclose(mjdFile);
+		}
 
 		return EXIT_SUCCESS;
 	}
@@ -365,6 +369,10 @@ int main(int argc, char **argv)
 	if(!D)
 	{
 		fprintf(stderr, "Update failed: D == 0.  Quitting.\n");
+		if(mjdFile != 0 && mjdFile != stdin)
+		{
+			fclose(mjdFile);
+		}
 		
 		return EXIT_FAILURE;
 	}
@@ -460,7 +468,7 @@ int main(int argc, char **argv)
 			double mjd;
 			int intmjd;
 			double sec;
-			char *rv;
+			const char *rv;
 
 			const DifxScan *ds;
 			int refAnt;	/* points to a valid antenna in this poly */
@@ -685,6 +693,7 @@ int main(int argc, char **argv)
 		if(mjdFile != stdin)
 		{
 			fclose(mjdFile);
+			mjdFile = 0;
 		}
 	}
 
@@ -811,7 +820,7 @@ int main(int argc, char **argv)
 					else
 					{
 						for(a = 0; a < D->nAntenna; ++a)
-						{
+				{
 							if(noAxis && D->antenna[a].mount != AntennaMountAltAz)
 							{
 								fprintf(stderr, "Unsupported option: --noaxis can only be used with alt-az mounts.\n");

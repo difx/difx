@@ -266,7 +266,7 @@ DifxParameters *newDifxParametersfromfile(const char *filename)
 
 	for(;;)
 	{
-		char *ptr;
+		const char *ptr;
 		
 		ptr = fgets(line, MAX_DIFX_INPUT_LINE_LENGTH, in);
 		if(ptr == 0)
@@ -544,6 +544,12 @@ int DifxStringArrayadd(DifxStringArray *sa, const char *str, int max)
 	{
 		sa->nAlloc *= 2;
 		sa->str = (char **)realloc(sa->str, sa->nAlloc*sizeof(char *));
+	}
+	if(!sa->str)
+	{
+		fprintf(stderr, "Error: DifxStringArrayadd(): sa->str is null after (re)alloc.\n");
+
+		exit(0);
 	}
 
 	if(str)

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2016 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -99,7 +99,7 @@ unsigned int printDifxInputCompatibilityStatistics(int verbose)
 	return n;
 }
 
-/* This function determines if two DifxInput are not mergable
+/* This function determines if two DifxInput are not mergeable
  * because difxio does not currently support it, but could
  * in the future */
 int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2, const DifxMergeOptions *mergeOptions)
