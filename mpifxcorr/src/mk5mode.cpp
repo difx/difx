@@ -191,8 +191,9 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
   {
     cerror << startl << "Error trying to unpack Mark5 format data at sampleoffset " << sampleoffset << " from data seconds " << datasec << " plus " << datans << " ns!!!" << endl;
     goodsamples = 0;
-    for(int b = 0; b < mark5stream->nchan; ++b)
-      invalid[b] = 0;
+    if(invalid)  // only allocated for INTERLACEDVDIF; NULL otherwise
+      for(int b = 0; b < mark5stream->nchan; ++b)
+        invalid[b] = 0;
   }
 
   return goodsamples/(float)unpacksamples;
