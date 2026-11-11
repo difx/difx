@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2024 Walter Brisken                                *
+ *   Copyright (C) 2013-2026 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #ifdef HAVE_OPENMP
 #include <omp.h>
@@ -8633,6 +8634,12 @@ void testvdifcornerturners(int outputBytes, int nTest)
 		FILE *in;
 		int nRead;
 		threadData[t] = (unsigned char *)malloc(outputBytes);
+		if(!threadData[t])
+		{
+			fprintf(stderr, "Error: testvdifcornerturners(): cannot allocate %d bytes for thread %d of %d.\n", outputBytes, t, maxThreads);
+
+			exit(0);
+		}
 		
 		/* fill with random values */
 		in = fopen(devRandom, "r");

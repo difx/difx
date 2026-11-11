@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2024 Walter Brisken                                *
+ *   Copyright (C) 2013-2026 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -24,11 +24,11 @@
 /** local helper that looks at 3 back-to-back frames and checks that they are consistent for an assumed framesize */
 static int comparethreeframes(const unsigned char *buffer, int offset, int frameSize, int bufferSize)
 {
-	struct vdif_header *vh1, *vh2, *vh3;
+	const struct vdif_header *vh1, *vh2, *vh3;
 
-	vh1 = (struct vdif_header *)(buffer + offset);
-	vh2 = (struct vdif_header *)(buffer + offset + frameSize);
-	vh3 = (struct vdif_header *)(buffer + offset + 2*frameSize);
+	vh1 = (const struct vdif_header *)(buffer + offset);
+	vh2 = (const struct vdif_header *)(buffer + offset + frameSize);
+	vh3 = (const struct vdif_header *)(buffer + offset + 2*frameSize);
 	if(offset + 2*frameSize >= bufferSize)
 	{
 		return EVDIFBUFFERSMALL;
@@ -121,10 +121,10 @@ int determinevdifframeoffset(const unsigned char *buffer, int bufferSize, int fr
 
 	for(i = 0; i < N ; ++i)
 	{
-		struct vdif_header *vh1, *vh2;
+		const struct vdif_header *vh1, *vh2;
 
-		vh1 = (struct vdif_header *)(buffer + i);
-		vh2 = (struct vdif_header *)(buffer + i + frameSize);
+		vh1 = (const struct vdif_header *)(buffer + i);
+		vh2 = (const struct vdif_header *)(buffer + i + frameSize);
 
 		/* Use some simple constraints to ensure we don't get unlucky */
 		if(getVDIFFrameBytes(vh1) == frameSize &&

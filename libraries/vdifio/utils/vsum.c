@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2025 by Walter Brisken, Mark Wainright             *
+ *   Copyright (C) 2013-2026 by Walter Brisken, Mark Wainright             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,8 +31,8 @@
 
 const char program[] = "vsum";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>";
-const char version[] = "0.9";
-const char verdate[] = "20250212";
+const char version[] = "0.10";
+const char verdate[] = "20261112";
 
 static void usage(const char *pgm)
 {
@@ -93,6 +93,12 @@ static void summarizeFileExhaustive(const char *fileName, int isMark6)
 		}
 
 		vh = (vdif_header *)malloc(sum.frameSize);
+		if(!vh)
+		{
+			fprintf(stderr, "Error: summarizeFileExhaustive(): cannot allocate %lu bytes.\n", (unsigned long int)(sum.frameSize));
+
+			return;
+		}
 		in = fopen(fileName, "r");
 
 		while(fread(vh, sum.frameSize, 1, in) > 0)

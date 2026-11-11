@@ -69,8 +69,8 @@ const char *VDIFErrorMessage(int errorCode)
 	}
 }
 
-int createVDIFHeader(vdif_header *header, int dataarraylength, int threadid, int bits, int nchan,
-		      int iscomplex, char stationid[3]) {
+int createVDIFHeader(vdif_header *header, int dataarraylength, int threadid, int bits, int nchan, int iscomplex, const char stationid[3])
+{
   int lognchan;
 
   header->epoch = 0;
@@ -185,7 +185,7 @@ int setVDIFFrameMJDSec(vdif_header *header, uint64_t mjdsec)
   return(VDIF_NOERROR);
 }
 
-uint64_t getVDIFFrameMJDSec(vdif_header *header)
+uint64_t getVDIFFrameMJDSec(const vdif_header *header)
 {
   uint64_t emjd = getVDIFEpochMJD(header);
   return emjd*86400 + header->seconds;
