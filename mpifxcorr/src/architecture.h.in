@@ -109,14 +109,14 @@
 #define vecStatus                IppStatus
 
 //now the vector functions themselves
-#define vectorAlloc_u8(length)   ippsMalloc_8u(length)
-#define vectorAlloc_s16(length)  ippsMalloc_16s(length)
-#define vectorAlloc_cs16(length) ippsMalloc_16sc(length)
-#define vectorAlloc_s32(length)  ippsMalloc_32s(length)
-#define vectorAlloc_f32(length)  ippsMalloc_32f(length)
-#define vectorAlloc_cf32(length) ippsMalloc_32fc(length)
-#define vectorAlloc_f64(length)  ippsMalloc_64f(length)
-#define vectorAlloc_cf64(length) ippsMalloc_64fc(length)
+#define vectorAlloc_u8(length)   ippsMalloc_8u_L(length)
+#define vectorAlloc_s16(length)  ippsMalloc_16s_L(length)
+#define vectorAlloc_cs16(length) ippsMalloc_16sc_L(length)
+#define vectorAlloc_s32(length)  ippsMalloc_32s_L(length)
+#define vectorAlloc_f32(length)  ippsMalloc_32f_L(length)
+#define vectorAlloc_cf32(length) ippsMalloc_32fc_L(length)
+#define vectorAlloc_f64(length)  ippsMalloc_64f_L(length)
+#define vectorAlloc_cf64(length) ippsMalloc_64fc_L(length)
 
 #define vectorFree(memptr)       ippsFree(memptr)
 
