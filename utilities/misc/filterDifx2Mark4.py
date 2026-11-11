@@ -116,7 +116,7 @@ if __name__ == "__main__":
                 sys.exit(1)
 
         # parse timeranges
-        pattern = re.compile("(\d{4}y\d{1,3}d\d{1,2}h\d{1,2}m\d{1,2}s)\-(\d{4}y\d{1,3}d\d{1,2}h\d{1,2}m\d{1,2}s)")
+        pattern = re.compile(r"(\d{4}y\d{1,3}d\d{1,2}h\d{1,2}m\d{1,2}s)\-(\d{4}y\d{1,3}d\d{1,2}h\d{1,2}m\d{1,2}s)")
         # 
         rangeList = []
         if options.timerange is not None:

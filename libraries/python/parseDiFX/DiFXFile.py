@@ -38,7 +38,7 @@ class DiFXFile:
         if not self.valid:
             return
         
-        self.difxfilepath = self.metainfo.common['difxfile']
+        self.difxfilepath = self.metainfo.common['difxfile'].strip()
 
         glob_pattern = self.difxfilepath + '/DIFX_*'
         if phasecenterId is not None:

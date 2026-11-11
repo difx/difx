@@ -56,7 +56,7 @@ def nextconfig(config):
 	return None
 
 def printconfig(config):
-	print('Congig:')
+	print('Config:')
 	for c in config:
 		print('  %s = %s' % (c[0], c[2][c[1]]))
 

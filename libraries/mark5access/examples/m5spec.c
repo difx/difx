@@ -73,7 +73,7 @@ static void usage(const char *pgm)
 	printf("    CODIFC_5000-51200m27-8-1 (51200 frames every 27 seconds, x5000 bytes x 8 bits / 27 ~= 76 Mbps\n");
 	printf("    This allows you to specify rates that are not an integer Mbps value, such as 32/27 CODIF oversampling\n\n");
 	printf("  <nchan> is the number of spectral points to make per baseband channel\n\n");
-	printf("  <nint> is the number of FFT frames to spectrometize; 0 -> run until end of file\n\n");
+	printf("  <nint> is the number of FFT frames to spectrometize (or seconds with -t); 0 -> run until end of file\n\n");
 	printf("  <outfile> is the name of the output file\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
 	printf("\n");
@@ -81,16 +81,28 @@ static void usage(const char *pgm)
 	printf("    -version\n");
 	printf("    -V         Print version info and quit\n\n");
 	printf("    -dbbc\n");
-	printf("    -B         Assume DBBC polarisation order (all Rcp then all Lcp)\n");
+	printf("    -D         Assume DBBC polarisation order (all Rcp then all Lcp)\n");
 	printf("               Default is to assume Rcp/Lcp channel pairs\n\n");
 	printf("    -nopol\n");
 	printf("    -P         Do not compute cross pol terms\n\n");
 	printf("    -double\n");
 	printf("    -d         Double sideband (complex) data\n\n");
+	printf("    -lsb\n");
+	printf("    -L         Lower sideband data. Spectrum is flipped so frequency\n");
+	printf("               increases with channel number\n\n");
 	printf("    -nonorm\n");
 	printf("    -N         Do not normalise\n\n");
 	printf("    -autocorr\n");
 	printf("    -a         Compute autocorrelation instead of spectrum\n\n");
+	printf("    -time\n");
+	printf("    -t         Treat nint as time in seconds, not number of FFTs\n");
+	printf("               Can be fractional. Rounded to nearest number of FFTs (minimum 1)\n\n");
+	printf("    -all\n");
+	printf("    -A         Calculate multiple integrations using whole file\n\n");
+	printf("    -bin\n");
+	printf("    -B         Dump in binary format, not ASCII\n\n");
+	printf("    -lo=<x>\n");
+	printf("    -l <x>     Sky frequency (MHz) of middle of band, written to binary header\n\n");
 	printf("    -bchan=<x>\n");
 	printf("    -b <x>     Start output at channel number <x> (0-based)\n\n");
 	printf("    -echan=<x>\n");
@@ -99,19 +111,16 @@ static void usage(const char *pgm)
 	printf("    -h         Print this help info and quit\n\n");
 }
 
-int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nchan, int nint, int chunk, long long *total, long long *unpacked, int doublesideband)
+int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, double complex **cdata,
+		       int nchan, int nint, int chunk, long long *total, long long *unpacked, int doublesideband, int lsb, fftw_plan *plan)
 {
-	fftw_plan *plan;
-	double complex **cdata;
 	int j;
 
-	plan = (fftw_plan *)malloc(ms->nchan*sizeof(fftw_plan));
-	cdata = (double complex **)malloc(ms->nchan*sizeof(double complex *));
+
 	for(j = 0; j < ms->nchan; ++j)
-	{
-		cdata[j] = (double complex*)fftw_malloc(nchan*sizeof(double complex));
-		plan[j] = fftw_plan_dft_1d(nchan, cdata[j], zdata[j], FFTW_FORWARD, FFTW_MEASURE);
-	}
+	  memset(&spec[j][0], 0, sizeof(double)*nchan);
+	for(j = 0; j < ms->nchan/2; ++j)
+	  memset(&zx[j][0], 0, sizeof(fftw_complex)*nchan);
 
 	for(j = 0; j < nint; ++j)
 	{
@@ -147,9 +156,10 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 			for(c = 0; c < nchan; ++c)
 			{
 				double re, im;
-				
-				re = creal(zdata[i][c]);
-				im = cimag(zdata[i][c]);
+				int k = lsb ? (nchan-c)%nchan : c; // LSB: mirror f -> -f
+
+				re = creal(zdata[i][k]);
+				im = cimag(zdata[i][k]);
 				spec[i][c] += re*re + im*im;
 			}
 		}
@@ -160,20 +170,15 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 
 			for(c = 0; c < nchan; ++c)
 			{
-				zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
+				int k = lsb ? (nchan-c)%nchan : c;
+				fftw_complex cx = zdata[2*i][k]*~zdata[2*i+1][k];
+
+				zx[i][c] += lsb ? ~cx : cx; // LSB inverts cross pol phase
 			}
 		}
 	}
 
-	for(j = 0; j < ms->nchan; ++j)
-	{
-		fftw_destroy_plan(plan[j]);
-		fftw_free(cdata[j]);
-	}
-	free(plan);
-	free(cdata);
-
-	fftw_cleanup();
+	if (*unpacked==0) return(-1);
 
 	// If Double sideband need to move stuff around
 
@@ -209,7 +214,7 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 	return 0;
 }
 
-int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nchan, int nint, int chunk, long long *total, long long *unpacked, polmodetype polmode)
+int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nchan, int nint, int chunk, long long *total, long long *unpacked, polmodetype polmode, int lsb)
 {
 	fftw_plan *plan;
 	double **data;
@@ -222,6 +227,12 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 		data[j] = (double *)fftw_malloc((chunk+2)*sizeof(double));
 		plan[j] = fftw_plan_dft_r2c_1d(nchan*2, data[j], zdata[j], FFTW_MEASURE);
 	}
+
+	for(j = 0; j < ms->nchan; ++j)
+	  memset(&spec[j][0], 0, sizeof(double)*nchan);
+	for(j = 0; j < ms->nchan/2; ++j)
+	  memset(&zx[j][0], 0, sizeof(fftw_complex)*nchan);
+
 	for(j = 0; j < nint; ++j)
 	{
 		int status;
@@ -256,9 +267,10 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 			for(c = 0; c < nchan; ++c)
 			{
 				double re, im;
-				
-				re = creal(zdata[i][c]);
-				im = cimag(zdata[i][c]);
+				int k = lsb ? nchan-c : c; // LSB: use bins 1..nchan (Nyquist is bottom of band) reversed
+
+				re = creal(zdata[i][k]);
+				im = cimag(zdata[i][k]);
 				spec[i][c] += re*re + im*im;
 			}
 		}
@@ -271,7 +283,10 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 
 				for(c = 0; c < nchan; ++c)
 				{
-					zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
+					int k = lsb ? nchan-c : c;
+					fftw_complex cx = zdata[2*i][k]*~zdata[2*i+1][k];
+
+					zx[i][c] += lsb ? ~cx : cx; // LSB inverts cross pol phase
 				}
 			}
 		} 
@@ -283,7 +298,10 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 
 				for(c = 0; c < nchan; ++c)
 				{
-					zx[i][c] += zdata[i][c]*~zdata[i+ms->nchan/2][c];
+					int k = lsb ? nchan-c : c;
+					fftw_complex cx = zdata[i][k]*~zdata[i+ms->nchan/2][k];
+
+					zx[i][c] += lsb ? ~cx : cx; // LSB inverts cross pol phase
 				}
 			}
 		}
@@ -296,27 +314,33 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 	free(plan);
 	free(data);
 
-	fftw_cleanup();
+	// Don't call fftw_cleanup() here - it invalidates the plans still held by spec()
+
+	if (*unpacked==0) return(-1);
 
 	return 0;
 }
 
 
-int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode, int doublesideband, int nonorm, int bchan, int echan, int doAutocorr)
+int spec(const char *filename, const char *formatname, int nchan, double nintval, const char *outfile, long long offset, polmodetype polmode,
+	 int doublesideband, int lsb, int nonorm, int bchan, int echan, int doAutocorr, int doTime, int doAll, int doBin, double skyFreq)
 {
 	struct mark5_stream *ms;
 	double **spec;
+	float *outspec;
 	fftw_complex **zdata, **zx;
-	int i, c;
+	fftw_plan *plan;
+	double complex **cdata;
+	int i, j, c, status;
 	int chunk;
+	int nint;
 	long long total, unpacked;
 	FILE *out;
-	double f, sum, chanbw;
+	double f, sum, bandwidth, chanbw;
 	double x, y;
 	int docomplex;
 	double deltat;
-
-	total = unpacked = 0;
+	char *outfilename;
 
 	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(filename, offset),
@@ -333,7 +357,6 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 
 	if(ms->iscomplex) 
 	{
-		printf("Complex decode\n");
 		docomplex = 1;
 		chunk = nchan;
 	}
@@ -349,48 +372,138 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	}
 
 	deltat = 1.0/ms->samprate;
+	
+	if (doTime && nintval > 0.0) {
+		double n = round(nintval/(nchan*deltat*(2-docomplex))); // Allow for different Nyquist
 
-	out = fopen(outfile, "w");
-	if(!out)
-	{
-		fprintf(stderr, "Error: cannot open %s for write\n", outfile);
-		delete_mark5_stream(ms);
-
-		return EXIT_FAILURE;
+		if (n < 1.0) n = 1.0; // Round up to at least one FFT
+		nint = (n < 2000000000.0) ? n : 2000000000;
+		printf("\nSetting nint to %d\n", nint);
+	} else if (nintval >= 1.0) {
+		nint = (nintval < 2000000000.0) ? nintval : 2000000000; // #FFTs, any fraction ignored
+	} else {
+		nint = 2000000000; // 0 -> run until end of file
 	}
+	
+	double tint = deltat*nchan*nint;
+	if (!docomplex) tint *=2; // Nyquist
+
+	bandwidth = ms->samprate/(2.0e6);
+	if (docomplex) bandwidth *= 2;
+	chanbw = bandwidth/nchan;
+	
+	printf("  IntegrationTime = %.3f sec\n", tint);
 
 	spec = (double **)malloc(ms->nchan*sizeof(double *));
 	zdata = (fftw_complex **)malloc(ms->nchan*sizeof(fftw_complex *));
 	zx = (fftw_complex **)malloc((ms->nchan/2)*sizeof(fftw_complex *));
 	for(i = 0; i < ms->nchan; ++i)
 	{
-		spec[i] = (double *)calloc(nchan, sizeof(double));
-		zdata[i] = (fftw_complex *)fftw_malloc((nchan+2)*sizeof(fftw_complex));
+	  spec[i] = (double *)malloc(nchan*sizeof(double));
+	  zdata[i] = (fftw_complex *)malloc((nchan+2)*sizeof(fftw_complex));
 	}
+	if (doBin) outspec = (float*)malloc(nchan*sizeof(float));
+	
 	for(i = 0; i < ms->nchan/2; ++i)
 	{
-		zx[i] = (fftw_complex *)calloc(nchan, sizeof(fftw_complex));
+	  zx[i] = (fftw_complex *)calloc(nchan, sizeof(fftw_complex));
 	}
 
-	if(docomplex)
+	plan = (fftw_plan *)malloc(ms->nchan*sizeof(fftw_plan));
+	cdata = (double complex **)malloc(ms->nchan*sizeof(double complex *));
+	for(j = 0; j < ms->nchan; ++j)
 	{
-		harvestComplexData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked, doublesideband);
-	} 
-	else
-	{
-		harvestRealData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked, polmode);
+		cdata[j] = (double complex*)fftw_malloc(nchan*sizeof(double complex));
+		plan[j] = fftw_plan_dft_1d(nchan, cdata[j], zdata[j], FFTW_FORWARD, FFTW_MEASURE);
 	}
 
-	fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
+	if (doBin) {
+	  out = fopen(outfile, "wb");
+	  if(!out)
+	  {
+		fprintf(stderr, "Error: cannot open %s for write\n", outfile);
+		delete_mark5_stream(ms);
 
-	chanbw = ms->samprate/(2.0e6*nchan);
-	if(docomplex)
-	{
-		chanbw *= 2;
+		return EXIT_FAILURE;
+	  }
+
+
+	  uint32_t headu32;
+#define WRITEUINT32(var)			\
+	  headu32 = var;				\
+	  fwrite(&headu32, sizeof(uint32_t), 1, out);	\
+	  // Error checking needed                   
+
+	  float headf32;
+#define WRITEFLOAT(var)			\
+	  headf32 = var;			\
+	  fwrite(&headf32, sizeof(float), 1, out);	\
+	  // Error checking needed                   
+
+	  double headf64;
+#define WRITEDOUBLE(var)			\
+	  headf64 = var;				\
+	  fwrite(&headf64, sizeof(double), 1, out);	\
+	  // Error checking needed                   
+
+      
+	  WRITEUINT32(0);              // Version Number
+	  WRITEUINT32(echan-bchan);    // Number of spectral points saved
+	  WRITEUINT32(nchan);          // Total number of ectral points
+	  WRITEUINT32(bchan);          // First point saved
+	  WRITEUINT32(ms->nchan);      // Number of IF (VLBI channels)
+	  WRITEUINT32(bandwidth*1e6);  // Bandwidth (Hz)
+	  WRITEUINT32(ms->mjd);        // MJD of first integration
+	  // NB: Fraction of a second is truncated. With sub-second integrations, times derived from this
+	  // (start + n*tint) can be out by up to 1 sec. Fixing needs a header change (and reader update)
+	  WRITEUINT32(ms->sec + ms->ns/1e9 );   // Seconds within day of first integration
+	  WRITEFLOAT(tint);            // Integration time in seconds
+	  if (skyFreq>0) {
+	    WRITEDOUBLE(skyFreq*1e6);    // Sky frequency of middle of band
+	  } else { 
+	    WRITEDOUBLE(bandwidth/2);    // Sky frequency of middle of band
+	  }
 	}
+	
+	int loop=0;
+	while (1) { // Loop over integrations, will only loop once if doAll is false
+	  total = unpacked = 0;
 
-	if(doAutocorr)
-	{
+	  if(docomplex)
+	  {
+	      status = harvestComplexData(ms, spec, zdata, zx, cdata, nchan, nint, chunk, &total, &unpacked, doublesideband, lsb, plan);
+
+	  } 
+	  else
+	  {
+	      status = harvestRealData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked, polmode, lsb);
+	  }
+
+	  if (status!=0) {
+	    break;
+	  }
+	    
+	  fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
+
+	  if (!doBin) {
+	    if (doAll) {
+	      int l = strlen(outfile)+20;
+	      outfilename = malloc(l); // Is there are too many files, the names will overwrite - snprintf will not corrupt memory
+	      snprintf(outfilename, l, "%s.%03d", outfile, loop);
+	    } else {
+	      outfilename = strdup(outfile);
+	    }
+	    out = fopen(outfilename, "w");
+	    if(!out)
+	    {
+		fprintf(stderr, "Error: cannot open %s for write\n", outfilename);
+		delete_mark5_stream(ms);
+
+		return EXIT_FAILURE;
+	    }
+	  }
+	  if(doAutocorr)
+	  {
 		fftw_plan acplan;
 		double *psdtmp;
 		double*psd;
@@ -477,7 +590,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 				}
 			}
 		}
-
+		
 		for(l = 0; l < acsize; ++l)
 		{
 			fprintf(out, "%f ", 2.0*l*deltat*1000000.0);
@@ -498,30 +611,43 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 		free(ac);
 		free(psdtmp);
 		fftw_destroy_plan(acplan);
-	}
-	else
-	{
-		/* normalize across all ifs/channels */
-		sum = 0.0;
-		for(c = 0; c < nchan; ++c)
+	  } // if doAutocorr
+	  else
+	  {
+		if(nonorm)
 		{
+		  f = 1.0/unpacked/256.0;
+		}
+		else
+		{  
+		  /* normalize across all ifs/channels */
+		  sum = 0.0;
+		  for(c = 0; c < nchan; ++c)
+		  {
 			for(i = 0; i < ms->nchan; ++i)
 			{
 				sum += spec[i][c];
 			}
+		  }
+
+		  f = ms->nchan*nchan/sum;
 		}
 
-		f = ms->nchan*nchan/sum;
-		if(nonorm)
-		{
-			//printf("Norm Factor = %.3g\n", 1/f);
-			//f *= unpacked*256;
-			//printf("Updated Norm Factor = %.3g\n", 1/f);
-			f = 1.0/unpacked/256.0;
+		if (doBin) {
+		  for(i = 0; i < ms->nchan; ++i)
+		    {
+		      for(c = bchan; c < echan; ++c)
+		      {
+			outspec[c] = f*spec[i][c]; // Convert to float
+		      }
+		      fwrite(&outspec[bchan], sizeof(float), (echan-bchan), out);
+		    }
 		}
-	
-		for(c = bchan; c < echan; ++c)
+		else
 		{
+		
+		  for(c = bchan; c < echan; ++c)
+		  {
 			fprintf(out, "%f ", (double)c*chanbw);
 			for(i = 0; i < ms->nchan; ++i)
 			{
@@ -537,13 +663,24 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 				}
 			}
 			fprintf(out, "\n");
+		  }
 		}
+	  }
+	  if (!doBin) {
+	    fclose(out);
+	    free(outfilename);
+	  }
+	  
+	  if (!doAll) break;
+	  loop++;
 	}
 
-	fclose(out);
-
+	if (doBin) fclose(out);
+	
 	for(i = 0; i < ms->nchan; ++i)
 	{
+		fftw_destroy_plan(plan[i]);
+		fftw_free(cdata[i]);
 		fftw_free(zdata[i]);
 		free(spec[i]);
 	}
@@ -551,10 +688,15 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	{
 		free(zx[i]);
 	}
+	free(plan);
+	free(cdata);
 	free(zx);
 	free(zdata);
 	free(spec);
+	if (doBin) free(outspec);
 	delete_mark5_stream(ms);
+
+	fftw_cleanup();
 
 	return EXIT_SUCCESS;
 }
@@ -562,34 +704,45 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 int main(int argc, char **argv)
 {
 	long long offset = 0;
-	int nchan, nint;
+	int nchan;
+	double nint;
 	int bchan=-1, echan=-1;
 	int retval;
 	polmodetype polmode = VLBA;
 	int doublesideband = 0;
+	int lsb = 0;
 	int nonorm = 0;
 	int doAutocorr = 0;
+	int doTime = 0;
+	int doAll = 0;
+	int doBin = 0;
+	double skyfreq = 0.0;
 	struct sigaction new_sigint_action;
 #if USEGETOPT
 	int opt;
 	struct option options[] = {
 		{"version", 0, 0, 'V'}, // Version
-		{"double", 0, 0, 'd'}, // Double sideband complex
-		{"nonorm", 0, 0, 'N'}, // Don't normalise
-		{"dbbc", 0, 0, 'B'},  // DBBC channel ordering
-		{"nopol", 0, 0, 'P'}, // Don't compute the crosspol terms
+		{"double", 0, 0, 'd'},  // Double sideband complex
+		{"lsb", 0, 0, 'L'},     // Lower sideband, flip spectrum
+		{"nonorm", 0, 0, 'N'},  // Don't normalise
+		{"dbbc", 0, 0, 'D'},    // DBBC channel ordering
+		{"nopol", 0, 0, 'P'},   // Don't compute the crosspol terms
 		{"help", 0, 0, 'h'},
-		{"autocorr", 0, 0, 'a'}, // compute autocorrelation function instead
+		{"autocorr", 0, 0, 'a'},// compute autocorrelation function instead
+		{"time", 0, 0, 't'},    // Treat nint as time in seconds, not number of FFTs
+		{"all", 0, 0, 'A'},     // Produce multiple integrations using all of file
+		{"bin", 0, 0, 'B'},     // Dump spectra in binary format
+		{"lo", 1, 0, 'l'},      // Sky frequency of middle of band
 		{"bchan", 1, 0, 'b'},
 		{"echan", 1, 0, 'e'},
 		{0, 0, 0, 0}
 	};
 
-	while((opt = getopt_long_only(argc, argv, "NVdBPhb:e:", options, NULL)) != EOF)
+	while((opt = getopt_long_only(argc, argv, "NVdDLPhBAatl:b:e:", options, NULL)) != EOF)
 	{
 		switch (opt) 
 		{
-		case 'B': // DBBC Pol mode (all Rcp then all LCP)
+		case 'D': // DBBC Pol mode (all Rcp then all LCP)
 			polmode = DBBC;
 			printf("Assuming DBBC polarisation order\n");
 			break;
@@ -602,6 +755,11 @@ int main(int argc, char **argv)
 		case 'd': // Double sideband
 			doublesideband = 1;
 			printf("Assuming double sideband data\n");
+			break;
+
+		case 'L': // Lower sideband
+			lsb = 1;
+			printf("Assuming lower sideband data\n");
 			break;
 
 		case 'N': // No normalisation
@@ -623,6 +781,22 @@ int main(int argc, char **argv)
 
 		case 'a': // autocorr  (do FFT of spectrum before writing out)
 			doAutocorr = 1;
+			break;
+
+		case 'A': // all  (Generate multiple integrations using whole file)
+		        doAll = 1;
+			break;
+
+		case 'B': // bin  (Write spectra in binary format)
+		        doBin = 1;
+			break;
+
+		case 'l': // lo  (Sky frequency of middle of band, MHz)
+		        skyfreq = atof(optarg);
+			break;
+
+		case 't': // time  (Treat nint as time in seconds)
+			doTime = 1;
 			break;
 
 		case 'h': // help
@@ -697,11 +871,7 @@ int main(int argc, char **argv)
 	}
 
 	nchan = atol(argv[optind+2]);
-	nint  = atol(argv[optind+3]);
-	if(nint <= 0)
-	{
-		nint = 2000000000L;
-	}
+	nint  = atof(argv[optind+3]); // #FFTs, or seconds with -t. Converted to #FFTs in spec()
 
 	if(argc-optind > 5)
 	{
@@ -729,7 +899,7 @@ int main(int argc, char **argv)
 		echan = nchan;
 	}
 
-	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, nonorm, bchan, echan, doAutocorr);
+	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, doublesideband, lsb, nonorm, bchan, echan, doAutocorr, doTime, doAll, doBin, skyfreq);
 
 	return retval;
 }

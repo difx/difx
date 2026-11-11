@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
+#include <difxio/difxio_macros.h>
 #include "transient_wrapper_data.h"
 
 const char program[] = "transient_wrapper";
@@ -229,7 +230,7 @@ static int getFreeMB(const char *path)
 	int v;
 	int size = 0;
 
-	v = snprintf(cmd, MaxCommandLength, "df -m %s\n", path);
+	snprintf_warn(cmd, MaxCommandLength, "df -m %s\n", path);
 
 	pin = popen(cmd, "r");
 	if(!pin)

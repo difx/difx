@@ -594,6 +594,8 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 		double frac_freq_MHz;
 		double *pulseCalSamples;
 
+		pulseCalSamples = 0;
+
 		ds = d->subband + s;
 		cs = ds->cs;
 		//freq_MHz = ds->df->freq + 0.5*ds->df->bw;
@@ -622,7 +624,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 
 		if(d->parameters && d->parameters->pulseCalInterval > 0)
 		{
-			const epsilon = 0.001;	/* [MHz] don't use tones closer to band edge than this */
+			const double epsilon = 0.001;	/* [MHz] don't use tones closer to band edge than this */
 			double cosFactor, sinFactor;
 			int tone1, tone2;	/* index of first and last tone to use */
 
@@ -845,7 +847,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			fftw_execute(ds->ifftPlan);
 
 /* 8. apply pulse cal if desired */
-			if(d->parameters && d->parameters->pulseCalInterval > 0)
+			if(pulseCalSamples)
 			{
 				for(i = 0; i < ds->nSamp; ++i)
 				{
@@ -858,7 +860,7 @@ void datastreamProcess(const DifxInput *D, const CommonSignal *C, Datastream *d)
 			memcpy(ds->samples1sec + startSample, ds->samps, ds->nSamp*sizeof(double));
 		}
 
-		if(d->parameters && d->parameters->pulseCalInterval > 0)
+		if(pulseCalSamples)
 		{
 			free(pulseCalSamples);
 		}

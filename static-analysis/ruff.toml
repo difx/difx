@@ -1,0 +1,4 @@
+# ruff configuration for DiFX Python scripts.  Definite errors only for now:
+# syntax errors (incl. Python 2 leftovers), undefined names, invalid comparisons.
+[lint]
+select = ["E9", "F63", "F7", "F82"]

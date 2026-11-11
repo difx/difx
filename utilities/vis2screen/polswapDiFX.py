@@ -59,7 +59,7 @@ def polswapDifxFile(basename, targetAnts, doOverwrite=False, doPcal=True, verbos
 		difxoutdir = difx.difxfilename[0:difx.difxfilename.rfind('/')]
 		difxoutname = str(difx.difxfilename) + '_polswapped'
 
-	difxout = open(difxoutname, 'w')
+	difxout = open(difxoutname, 'wb')
 
 	# Parse each visibility entry
 	vr = difx.nextVisibilityRecord()

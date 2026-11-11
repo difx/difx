@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014 by Jan Wagner                                      *
+ *   Copyright (C) 2014-2025 by Jan Wagner                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -17,7 +17,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 #ifndef MARK6_SG_DEFINES__H
-#define MARK6_SG_DEFINEL__H
+#define MARK6_SG_DEFINES__H
 
 #define MARK6_SG_MAXFILES           32
 #define MARK6_SG_ROOT_PATTERN       "/mnt/disks/[1-4]/[0-7]/data/"

@@ -48,10 +48,10 @@ volatile int time_to_quit = 0;
 volatile int sig_received = 0;
 
 int main (int argc, char * const argv[]) {
-  int framesize, nfile, infile, outfile[MAXTHREAD], opt, i, status, s, nFrame, thisThread;
+  int framesize, nfile, infile, outfile[MAXTHREAD], opt, i, status, nFrame, thisThread;
   size_t bufsize, allocatedbytes;
   ssize_t nread, nwrote;
-  double t0, ftmp;
+  double t0;
   char outname[MAXSTR+1], outtemplate[MAXSTR+1];
   char outdir[MAXSTR+1] = "";
   char *dotptr, *fptr, msg[MAXSTR+50];

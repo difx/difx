@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2024 by Walter Brisken, Adam Deller,               *
+ *   Copyright (C) 2007-2026 by Walter Brisken, Adam Deller,               *
  *                              Helge Rottmann and Jan Wagner              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -82,7 +82,7 @@ extern "C" {
  * antennas as listed in .input file TELESCOPE tables due to both sorting
  * and combining of multiple jobs.
  *
- * Some arrays take as indicies the original antenna index as found in .input
+ * Some arrays take as indices the original antenna index as found in .input
  * files.  These are:  DifxConfig.baselineFreq2IF[][][] and
  * DifxConfig.ant2dsId[][]
  */
@@ -122,7 +122,7 @@ extern const char dataSourceNames[][MAX_DATA_SOURCE_NAME_LENGTH];
 enum SamplingType
 {
 	SamplingReal = 0,
-	SamplingComplex,	/* "standard" complex sampling: separate quanization of real and imag */
+	SamplingComplex,	/* "standard" complex sampling: separate quantization of real and imag */
 	SamplingComplexDSB,	/* Complex double sideband sampling */
 	NumSamplingTypes	/* must remain as last entry */
 };
@@ -255,7 +255,7 @@ enum TaperFunction
 extern const char taperFunctionNames[][MAX_TAPER_FUNCTION_STRING_LENGTH];
 
 
-/* FIXME: in future version, handle Frequency, EOP, ... MergeModes in more consistant manner, perhaps as a new structure rather than individual enums */
+/* FIXME: in future version, handle Frequency, EOP, ... MergeModes in more consistent manner, perhaps as a new structure rather than individual enums */
 
 /* keep this current with freqMergeModeNames in difx_freq.c */
 enum FreqMergeMode
@@ -399,9 +399,9 @@ typedef struct
 	int nAntenna;
 	int nDatastream;	/* number of datastreams attached */
 	int nBaseline;		/* number of baselines */
-	int *datastreamId;	/* 0-based; datastream table indx */
+	int *datastreamId;	/* 0-based; datastream table index */
 				/* -1 terminated [ds # < nDatastream]  */
-	int *baselineId;	/* baseline table indicies for this config */
+	int *baselineId;	/* baseline table indices for this config */
 				/* -1 terminated [bl # < nBaseline] */
 	
 	int freqSetId;		/* 0-based number -- unique FITS/AIPS IF index to the DifxInput freqSet array */
@@ -744,12 +744,12 @@ typedef struct
 /* DifxJob functions */
 enum AberCorr stringToAberCorr(const char* str);
 enum TaperFunction stringToTaperFunction(const char *str);
-DifxJob *newDifxJobArray(int nJob);
+DifxJob *newDifxJobArray(unsigned int nJob);
 void deleteDifxJobArray(DifxJob *dj, int nJob);
 void printDifxJob(const DifxJob *dj);
 void fprintDifxJob(FILE *fp, const DifxJob *dj);
-void copyDifxJob(DifxJob *dest, const DifxJob *src, int *antennaIdRemap);
-void generateDifxJobFileBase(DifxJob *dj, char *fileBase);
+void copyDifxJob(DifxJob *dest, const DifxJob *src, const int *antennaIdRemap);
+void generateDifxJobFileBase(const DifxJob *dj, char *fileBase);
 DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1, const DifxJob *dj2, int ndj2, int *jobIdRemap, int *antennaIdRemap, int *ndj);
 void DifxJobQuashTrivialRemaps(DifxJob *dj);
 
@@ -926,23 +926,23 @@ int simplifyDifxRules(DifxInput *D);
 int ruleAppliesToScanSource(const DifxRule * dr, const DifxScan * ds, const DifxSource * src);
 
 /* DifxPolyModel functions */
-DifxPolyModel ***newDifxPolyModelArray(int nAntenna, int nSrcs, int nPoly);
-DifxPolyModel *dupDifxPolyModelColumn(const DifxPolyModel *src, int nPoly);
-void deleteDifxPolyModelArray(DifxPolyModel ***dpm, int nAntenna, int nSrcs);
-void printDifxPolyModel(const DifxPolyModel *dpm, int antennaId, int sourceId, int polyId);
-void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm, int antennaId, int sourceId, int polyId);
-void fprintDifxPolyModelWithIndices(FILE *fp, const DifxPolyModel *dpm, int antennaId, int sourceId, int polyId);
+DifxPolyModel ***newDifxPolyModelArray(unsigned int nAntenna, unsigned int nSrcs, unsigned int nPoly);
+DifxPolyModel *dupDifxPolyModelColumn(const DifxPolyModel *src, unsigned int nPoly);
+void deleteDifxPolyModelArray(DifxPolyModel ***dpm, unsigned int nAntenna, unsigned int nSrcs);
+void printDifxPolyModel(const DifxPolyModel *dpm, unsigned int antennaId, unsigned int sourceId, unsigned int polyId);
+void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm, unsigned int antennaId, unsigned int sourceId, unsigned int polyId);
+void fprintDifxPolyModelWithIndices(FILE *fp, const DifxPolyModel *dpm, unsigned int antennaId, unsigned int sourceId, unsigned int polyId);
 
-DifxPolyModelLMExtension ***newDifxPolyModelLMExtensionArray(int nAntenna, int nSrcs, int nPoly);
-DifxPolyModelLMExtension *dupDifxPolyModelLMExtensionColumn(const DifxPolyModelLMExtension *src, int nPoly);
-void deleteDifxPolyModelLMExtensionArray(DifxPolyModelLMExtension ***lme, int nAntenna, int nSrcs);
+DifxPolyModelLMExtension ***newDifxPolyModelLMExtensionArray(unsigned int nAntenna, unsigned int nSrcs, unsigned int nPoly);
+DifxPolyModelLMExtension *dupDifxPolyModelLMExtensionColumn(const DifxPolyModelLMExtension *src, unsigned int nPoly);
+void deleteDifxPolyModelLMExtensionArray(DifxPolyModelLMExtension ***lme, unsigned int nAntenna, unsigned int nSrcs);
 
-DifxPolyModelXYZExtension ***newDifxPolyModelXYZExtensionArray(int nAntenna, int nSrcs, int nPoly);
-DifxPolyModelXYZExtension *dupDifxPolyModelXYZExtensionColumn(const DifxPolyModelXYZExtension *src, int nPoly);
-void deleteDifxPolyModelXYZExtensionArray(DifxPolyModelXYZExtension ***xyze, int nAntenna, int nSrcs);
+DifxPolyModelXYZExtension ***newDifxPolyModelXYZExtensionArray(unsigned int nAntenna, unsigned int nSrcs, unsigned int nPoly);
+DifxPolyModelXYZExtension *dupDifxPolyModelXYZExtensionColumn(const DifxPolyModelXYZExtension *src, unsigned int nPoly);
+void deleteDifxPolyModelXYZExtensionArray(DifxPolyModelXYZExtension ***xyze, unsigned int nAntenna, unsigned int nSrcs);
 
-int evaluateDifxInputDelayRate(long double *delay, long double *rate, const DifxInput *D, int intmjd, double sec, int antennaId, int sourceId);
-int evaluateDifxInputUVW(double uvw[3], const DifxInput *D, int intmjd, double sec, int antennaId, int sourceId);
+int evaluateDifxInputDelayRate(long double *delay, long double *rate, const DifxInput *D, int intmjd, double sec, unsigned int antennaId, unsigned int sourceId);
+int evaluateDifxInputUVW(double uvw[3], const DifxInput *D, int intmjd, double sec, unsigned int antennaId, unsigned int sourceId);
 
 /* DifxScan functions */
 DifxScan *newDifxScanArray(int nScan);
@@ -990,7 +990,7 @@ void sixVectorSetTime(sixVector *v, int mjd, double sec);
 int populateSpiceLeapSecondsFromEOP(const DifxEOP *eop, int nEOP);
 
 /* DifxSource functions */
-DifxSource *newDifxSourceArray(int nSource);
+DifxSource *newDifxSourceArray(unsigned int nSource);
 void deleteDifxSourceArray(DifxSource *ds, int nSource);
 void printDifxSource(const DifxSource *ds);
 void fprintDifxSource(FILE *fp, const DifxSource *ds);

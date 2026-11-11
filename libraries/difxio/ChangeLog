@@ -1,6 +1,7 @@
 3.8.1
 * Post DiFX-2.9
 * Using gcc 15.2.1, clean up most of the remaining warnings
+* Make some fixes based on Claude analysis
 
 3.8.0
 * Post DiFX 2.8
@@ -87,7 +88,7 @@
 
 3.4.0
 * Fix X/Y polarization issue
-* Change internal representation of networkPort from integer to string to accomodate ethernet device names
+* Change internal representation of networkPort from integer to string to accommodate ethernet device names
 * Fix polarization detection in cases where antennas have heterogeneous polarization needs
 * Add psrflag utility -- looks at fringe rates beating against pulsar period with full pulsar gate as a window function 
 * Psrflag utility updated to allow user-settable threshold
@@ -140,7 +141,7 @@
   - Merge fixes from trunk
   - Add network table infrastructure
   - Load > 1 pulsar polynomial from a file
-  - Move flags to DifxJob so combinig multiple subarrays results in accurate
+  - Move flags to DifxJob so combining multiple subarrays results in accurate
     application of flags.  NOTE: This breaks the API
   - Infrastructure for writing for file-based correlation
   - When sorting antennas, update the scan table (nAntenna, im and model)

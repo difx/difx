@@ -19,7 +19,8 @@ int main(int argc, char** argv)
   string line;
   char pol[3];
   pol[2] = 0;
-  bool badvisibility, goodsync;
+  //bool badvisibility;
+  bool goodsync;
   double uvw[3];
   int baseline, mjd, confindex, srcindex, freqindex, pbin, numchannels;
   double weight,sec;

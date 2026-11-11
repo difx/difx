@@ -41,6 +41,7 @@ def usage():
     usage = ""
     usage += "%s   %s  \n" % (__prog__, __author__)
     usage += "A program to list the current raw data inventory (modules and/or files).\n\n"
+    usage += "Media belonging to released experiments are marked by a * symbol.\n\n"
     usage += "NOTE: %s requires the DIFXROOT environment to be defined." % __prog__
     usage += "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf."
     usage += "If the configuration is not found a sample one will be created for you."

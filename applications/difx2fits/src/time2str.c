@@ -16,7 +16,7 @@
 #endif
 
 /* forward declarations */
-static int ltostr ();
+static int ltostr (long, char *, int, int);
 
 /*******************************************************************************
 */

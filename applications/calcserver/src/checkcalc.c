@@ -172,10 +172,7 @@ int main (argc, argv)
      return 0;
 };
 
-getCALC_res *
-getcalc_1(argp, clnt)
-	struct getCALC_arg *argp;
-	CLIENT *clnt;
+getCALC_res * getcalc_1(struct getCALC_arg *argp, CLIENT *clnt)
 {
 	static getCALC_res clnt_res;
         enum clnt_stat clnt_stat;

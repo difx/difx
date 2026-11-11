@@ -133,6 +133,11 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D, struct fits_keywords *p_fi
 	{
 		nPoly = 2;
 	}
+	if(nPoly > 9)
+	{
+		fprintf(stderr, "Error: DifxInput2FitsGM(): polynomial size too large (%d > 9)\n", nPoly);
+		exit(0);
+	}
 
 	onPhase  = (float *)calloc(nBand, sizeof(float));
 	if(onPhase == 0)

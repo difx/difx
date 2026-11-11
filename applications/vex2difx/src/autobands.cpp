@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -118,20 +118,12 @@ bool AutoBands::Outputband::isComplete() const
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-AutoBands::AutoBands()
-{
-	this->outputbandwidth = -1;
-	this->verbosity = 0;
-	this->permitgaps = false;
-	this->autozoomgranularity = 0;
+AutoBands::AutoBands() : outputbandwidth(-1), autozoomgranularity(0), permitgaps(false), verbosity(0)
+{	
 }
 
-AutoBands::AutoBands(double outputbandwidth_Hz, int verbosity, bool permitgaps)
+AutoBands::AutoBands(double outputbandwidth_Hz, int verbosity_, bool permitgaps_) : outputbandwidth(outputbandwidth_Hz), autozoomgranularity(0), permitgaps(permitgaps_), verbosity(verbosity_)
 {
-	this->outputbandwidth = outputbandwidth_Hz;
-	this->verbosity = verbosity;
-	this->permitgaps = permitgaps;
-	this->autozoomgranularity = 0;
 	clear();
 }
 
@@ -139,14 +131,14 @@ AutoBands::~AutoBands()
 {
 }
 
-void AutoBands::setVerbosity(int verbosity)
+void AutoBands::setVerbosity(int verbosity_)
 {
-	this->verbosity = verbosity;
+	verbosity = verbosity_;
 }
 
 void AutoBands::clear()
 {
-	this->Nant = 0;
+	Nant = 0;
 	spans.clear();
 	outputbands.clear();
 	userOutputbands.clear();
@@ -170,11 +162,11 @@ void AutoBands::setBandwidth(double outputbandwidth_Hz)
  */
 void AutoBands::setAutozoomGranularity(const double& azgranularity_Hz)
 {
-    if (azgranularity_Hz >= 0)
-    {
-        this->autozoomgranularity = azgranularity_Hz;
-		std::cout << "AutoBands::setAutozoomGranularity " << this->autozoomgranularity << " Hz\n";
-    }
+	if (azgranularity_Hz >= 0)
+	{
+		autozoomgranularity = azgranularity_Hz;
+		std::cout << "AutoBands::setAutozoomGranularity " << autozoomgranularity << " Hz\n";
+	}
 }
 
 /**

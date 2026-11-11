@@ -93,11 +93,17 @@ void Mark6Meta::parse(string rootPath)
     string line;
     string group;
 
-    // check if directory exists
-    if (( stat( rootPath.c_str(), &info ) != 0 ) || (!info.st_mode & S_IFDIR))
+    //cout << "Entering: Mark6Meta::parse" <<endl;
+    if (rootPath.empty())
     {
-        throw  Mark6MountException("The meta directory: " + rootPath + " does not exist");
-        
+        //cout << "Meta root path not set" << endl;
+        return;
+    }
+    // check if directory exists
+    if (( stat( rootPath.c_str(), &info ) != 0 ) || !(info.st_mode & S_IFDIR))
+    {
+        return;
+        ///throw  Mark6MountException("The meta directory: " + rootPath + " does not exist");
     }
     
     // read contents of eMSN file
@@ -140,7 +146,7 @@ void Mark6Meta::parse(string rootPath)
     {
         ifstream groupfile(path.c_str());
 
-        int count = 0;
+        unsigned int count = 0;
         int groupCount = -1;
         while(getline(groupfile, line, ':')) 
         {

@@ -688,13 +688,20 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 		
 		const int MaxCommandLength = 1024;
 		char cmd[MaxCommandLength];
+		int v;
 
 		if(opts->verbose > 1)
 		{
 			printDifxInput(D);
 		}
 
-		snprintf(cmd, MaxCommandLength, "%s %s %s.calc", delayModel, opts->extra, prefix);
+		v = snprintf(cmd, MaxCommandLength, "%s %s %s.calc", delayModel, opts->extra, prefix);
+		if(v >= MaxCommandLength)
+		{
+			fprintf(stderr, "Developer error: runfile(): cmd[] too small: %d <= %d\n", MaxCommandLength, v);
+			
+			exit(0);
+		}
 		if(opts->verbose > 0)
 		{
 			printf("Executing the following: %s\n", cmd);

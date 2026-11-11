@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2016-2017 by Chris Phillips                             *
+ *   Copyright (C) 2016-2026 by Chris Phillips                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -87,36 +87,36 @@ int createCODIFHeader(codif_header *header, uint32_t dataarraylength, uint16_t t
 		      uint16_t sampleblocklength, uint16_t period, uint64_t totalsamples, int iscomplex, char stationid[3],
 		      uint16_t secondaryid);
 
-static inline uint64_t wordswap(uint64_t a) {uint64_t b; uint32_t *c = (uint32_t*)&a; uint32_t *d = (uint32_t*)&b; d[0] = c[1]; d[1]=c[0]; return b;}
+static inline uint64_t wordswap(uint64_t a) {uint64_t b; const uint32_t *c = (uint32_t*)&a; uint32_t *d = (uint32_t*)&b; d[0] = c[1]; d[1]=c[0]; return b;}
 
 /* Functions to grab just one value from the raw header */
 static inline int getCODIFComplex(const codif_header *header) { return (int)header->iscomplex; }
-static inline int getCODIFThreadID(const codif_header *header) { return (int)header->threadid; }
-static inline int getCODIFGroupID(const codif_header *header) { return (int)header->groupid; }
-static inline int getCODIFHeaderBytes(const codif_header *header) { return CODIF_HEADER_BYTES; }
+static inline uint16_t getCODIFThreadID(const codif_header *header) { return (int)header->threadid; }
+static inline uint16_t getCODIFGroupID(const codif_header *header) { return (int)header->groupid; }
+static inline uint8_t getCODIFHeaderBytes(const codif_header *header) { (void)header; return CODIF_HEADER_BYTES; }
 static inline uint64_t getCODIFFrameBytes(const codif_header *header) { return ((uint64_t)header->framelength8)*8; }
-static inline int getCODIFPeriod(const codif_header *header) { return (int)header->period; }
-static inline int getCODIFSync(const codif_header *header) { return (int)header->sync; }
+static inline uint16_t getCODIFPeriod(const codif_header *header) { return (int)header->period; }
+static inline uint32_t getCODIFSync(const codif_header *header) { return (int)header->sync; }
 static inline uint64_t getCODIFTotalSamples(const codif_header *header) { return header->totalsamples; }
 
 uint64_t getCODIFFrameMJDSec(codif_header *header);
 int getCODIFFrameMJD(const codif_header *header);
 double getCODIFFrameDMJD(const codif_header *header, double framepersec);
-static inline int getCODIFFrameSecond(const codif_header *header) { return ((int)header->seconds)%86400; }
+static inline uint32_t getCODIFFrameSecond(const codif_header *header) { return ((int)header->seconds)%86400; }
 static inline uint32_t getCODIFFrameNumber(const codif_header *header) { return (uint32_t)header->frame; }
-static inline int getCODIFStationID(const codif_header *header) { return (int)header->stationid; }
-static inline int getCODIFSecondaryID(const codif_header *header) { return (int)header->secondaryid; }
-static inline int getCODIFBitsPerSample(const codif_header *header) { return ((int)header->nbits); }
-static inline int getCODIFRepresentation(const codif_header *header) { return ((int)header->representation); }
-static inline int getCODIFProtocol(const codif_header *header) { return ((int)header->protocol); }
-static inline int getCODIFVersion(const codif_header *header) { return ((int)header->version); }
-static inline int getCODIFNumChannels(const codif_header *header) {return (int)header->nchan;} 
-static inline int getCODIFSampleblockLength(codif_header *header) { return (int)header->blocklength;}
+static inline uint16_t getCODIFStationID(const codif_header *header) { return (int)header->stationid; }
+static inline uint16_t getCODIFSecondaryID(const codif_header *header) { return (int)header->secondaryid; }
+static inline uint8_t getCODIFBitsPerSample(const codif_header *header) { return ((int)header->nbits); }
+static inline uint8_t getCODIFRepresentation(const codif_header *header) { return ((int)header->representation); }
+static inline uint8_t getCODIFProtocol(const codif_header *header) { return ((int)header->protocol); }
+static inline uint8_t getCODIFVersion(const codif_header *header) { return ((int)header->version); }
+static inline uint16_t getCODIFNumChannels(const codif_header *header) {return (int)header->nchan;} 
+static inline uint16_t getCODIFSampleblockLength(const codif_header *header) { return (int)header->blocklength;}
 static inline int getCODIFFrameInvalid(const codif_header *header) { return (int)header->invalid; }
 static inline int getCODIFIsPower(const codif_header *header) { return (int)header->power; }
 static inline int getCODIFCalEnabled(const codif_header *header) { return (int)header->calEnabled; }
-static inline int getCODIFFrameEpochSecOffset(const codif_header *header) { return (int)header->seconds; }
-static inline int getCODIFEpoch(const codif_header *header) { return (int)header->epoch; }
+static inline uint32_t getCODIFFrameEpochSecOffset(const codif_header *header) { return (int)header->seconds; }
+static inline uint8_t getCODIFEpoch(const codif_header *header) { return (int)header->epoch; }
 
 int getCODIFFrameperperiod(const codif_header *header);
 double getCODIFFramepersec(const codif_header *header);

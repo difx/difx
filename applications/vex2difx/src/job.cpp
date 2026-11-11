@@ -143,7 +143,7 @@ struct iless
 	}
 };
 
-int Job::generateFlagFile(const VexData &V, const std::list<Event> events, const char *fileName, unsigned int invalidMask) const
+int Job::generateFlagFile(const VexData &V, const std::list<Event> &events, const char *fileName, unsigned int invalidMask) const
 {
 	std::vector<JobFlag> flags;
 	std::map<std::string,unsigned int,iless> antIds;
@@ -425,10 +425,11 @@ VexAntenna::NasmythType Job::getJobNasmythType(const VexData *V, const std::stri
 std::ostream& operator << (std::ostream &os, const Job &x)
 {
 	int p = os.precision();
+	const Interval &i = x;
 	
 	os.precision(12);
 	os << "Job " << x.jobSeries << "_" << x.jobId << std::endl;
-	os << "  " << (const Interval&)x << std::endl;
+	os << "  " << i << std::endl;
 	os << "  duty cycle = " << x.dutyCycle << std::endl;
 	os << "  scans =";
 	for(std::vector<std::string>::const_iterator s = x.scans.begin(); s != x.scans.end(); ++s)

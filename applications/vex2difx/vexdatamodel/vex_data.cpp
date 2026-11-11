@@ -359,7 +359,7 @@ unsigned int VexData::nAntennasWithRecordedData(const VexScan &scan) const
 	return nAnt;
 }
 
-bool VexData::removeScan(const std::string name)
+bool VexData::removeScan(const std::string &name)
 {
 	int removed = false;
 
@@ -539,7 +539,7 @@ int VexData::getNumAntennaRecChans(const std::string &antName) const
 
 // returns false if antenna was not there.  Otherwise true
 // this function essentially wipes out any record of this antenna being part of observing
-bool VexData::removeAntenna(const std::string name)
+bool VexData::removeAntenna(const std::string &name)
 {
 	bool rv = false;
 

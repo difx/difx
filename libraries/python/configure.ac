@@ -1,10 +1,10 @@
-AC_INIT([python], [1.4])
+AC_INIT([python],[1.4])
 
 AM_INIT_AUTOMAKE([foreign])
 
 AC_SUBST([pylibdir], [$libdir/python])
 
-AC_OUTPUT([ \
+AC_CONFIG_FILES([ \
 	Makefile \
 	difxdb/Makefile \
 	difxfile/Makefile \
@@ -13,3 +13,4 @@ AC_OUTPUT([ \
 	parseDiFX/Makefile \
 	difxplot/Makefile \
 ])
+AC_OUTPUT

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -265,7 +265,7 @@ bool VexSetup::usesFormat(enum VexStream::DataFormat format) const
 unsigned int VexSetup::getBits() const
 {
 	unsigned int b1, b2;
-	bool first = true;
+	static bool first = true;
 
 	b1 = getMinBits();
 	b2 = getMaxBits();
@@ -437,7 +437,7 @@ int VexSetup::getPolarizations() const
 	return rv;
 }
 
-VexStream *VexSetup::getVexStreamByLink(const std::string streamLink)
+VexStream *VexSetup::getVexStreamByLink(const std::string &streamLink)
 {
 	for(std::vector<VexStream>::iterator it = streams.begin(); it != streams.end(); ++it)
 	{
@@ -450,7 +450,7 @@ VexStream *VexSetup::getVexStreamByLink(const std::string streamLink)
 	return 0;
 }
 
-VexChannel *VexSetup::getVexChannelByLink(const std::string chanLink)
+VexChannel *VexSetup::getVexChannelByLink(const std::string &chanLink)
 {
 	for(std::vector<VexChannel>::iterator it = channels.begin(); it != channels.end(); ++it)
 	{

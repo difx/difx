@@ -85,7 +85,7 @@ def buildIndex(inputfilename, difxfile, antList, verbosity=0):
 		ant2name = telescopes[ant2-1].name.upper()
 
 		# Number of channels in this baseband
-		nchan = freqs[freqindex].numchan / freqs[freqindex].specavg
+		nchan = freqs[freqindex].numchan // freqs[freqindex].specavg
 
 		# Info string
 		sband = 'U'

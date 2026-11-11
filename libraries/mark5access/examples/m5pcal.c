@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2023 by Walter Brisken                             *
+ *   Copyright (C) 2010-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,8 +31,8 @@
 
 const char program[] = "m5pcal";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.11";
-const char verdate[] = "20231112";
+const char version[] = "0.12";
+const char verdate[] = "20260313";
 
 int ChunkSize = 0;
 const int MaxTones = 4096;
@@ -387,6 +387,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 			
 			if(status < 0)
 			{
+				die = 1;
 				break;
 			}
 			else

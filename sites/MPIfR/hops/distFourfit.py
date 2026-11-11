@@ -151,7 +151,7 @@ class ExperimentDirAnalyzer:
 	def listScanFittedBaselines(self, scandir: str, doAuto=False, freqgroup='?') -> Set[str]:
 		'''Return a list of already fringe fitted baselines in subdirectory. Example: ['AX', 'AL', 'AS', 'SX', 'LX', 'SL']'''
 		baselines = set()
-		if len(freqgroup) is not 1:
+		if len(freqgroup) != 1:
 			freqgroup = '?'
 		globpattern = scandir + '/' + '??.' + freqgroup + '.*'
 		for fpath in glob.glob(globpattern):

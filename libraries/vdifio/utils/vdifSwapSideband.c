@@ -131,7 +131,6 @@ int main (int argc, char * const argv[]) {
   Ipp8u *buf, *mask;
   char  *slashptr, msg[MAXSTR+50];
   vdif_header *header;
-  unsigned long long totalsent;
 
   int memsize = BUFSIZE;
   int offset = 0;
@@ -228,7 +227,6 @@ int main (int argc, char * const argv[]) {
   signal (SIGINT, kill_signal);
 
   t0 = tim(); /* So we can time average write per file */
-  totalsent = 0;
   
   first = 1;
   for (nfile=optind; nfile<argc; nfile++) {
@@ -328,7 +326,7 @@ int main (int argc, char * const argv[]) {
 	  MEMSET_8U(mask+headersize, submask, datasize);
 
 	} else {
-	  Ipp64u subsubmask, submask;
+	  Ipp64u subsubmask, submask=0;
 	  int sampPerWord = 64/2/nchan;
 	  if (nchan>16) {
 	    fprintf(stderr, "Error: Do not support nchan=%d (line %d). Aborting\n", nchan, __LINE__);
@@ -367,12 +365,17 @@ int main (int argc, char * const argv[]) {
       }
       sprintf(outname, "%s/%s", outdir, argv[nfile]);
     } else {// File contains a "/"
+      int v;
       slashptr++;
       if (strlen(outdir)+strlen(slashptr)+1 > MAXSTR) {
 	fprintf(stderr, "%s/%s too long. Increase \"MAXSTR(%d)\"\n", outdir, slashptr, MAXSTR);
 	return(1);
       }
-      sprintf(outname, "%s/%s", outdir, slashptr);
+      v = snprintf(outname, MAXSTR, "%s/%s", outdir, slashptr);
+      if(v >= MAXSTR) {
+	fprintf(stderr, "%s/%s too long. Increase \"MAXSTR(%d)\"\n", outdir, slashptr, MAXSTR);
+	return(1);
+      }
     }
   
     outfile = open(outname, OPENWRITEOPTIONS, S_IRWXU|S_IRWXG|S_IRWXO); 

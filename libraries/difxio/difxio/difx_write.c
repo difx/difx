@@ -94,7 +94,6 @@ static int writeDifxLineKey(FILE *out, const char *key)
 	}
 	
 	line[i] = 0;
-	++i;
 	fprintf(out, "%s", line);
 
 	return 0;

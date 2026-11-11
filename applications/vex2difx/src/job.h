@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2022 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,7 +35,7 @@ public:
 
 	void assignAntennas(const VexData &V, std::list<std::pair<int,std::string> > &removedAntennas, bool sortAntennas=true);
 	bool hasScan(const std::string &scanName) const;
-	int generateFlagFile(const VexData &V, const std::list<Event> events, const char *fileName, unsigned int invalidMask=0xFFFFFFFF) const;
+	int generateFlagFile(const VexData &V, const std::list<Event> &events, const char *fileName, unsigned int invalidMask=0xFFFFFFFF) const;
 
 	// return the approximate number of Operations required to compute this scan
 	double calcOps(const VexData *V, int fftSize, bool doPolar) const;

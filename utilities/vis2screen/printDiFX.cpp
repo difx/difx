@@ -59,7 +59,7 @@ int main(int argc, char** argv)
         cout << visibilities[2*i] << " + " << visibilities[2*i+1] << " i; ";
       cout << endl;
     }
-    else;
+    else
       cout << "For baseline " << baseline << ", at time " << mjd << "/" << sec << ", the source was " << srcindex << " and the config was " << confindex << ", with uvw (" << uvw[0] << "," << uvw[1] << "," << uvw[2] << ").  For freq " << freqindex << ", pol " << pol << ", pulsar bin " << pbin << ", there are " << numchannels << " channels; visibilities[0] = " << visibilities[0] << " + " << visibilities[1] << " i.  The middle visibility is " << visibilities[numchannels] << " + " << visibilities[numchannels + 1] << " i." << ", and the weight was " << weight << endl;
   }
 

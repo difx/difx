@@ -17,7 +17,7 @@ AC_C_BIGENDIAN
 
 # Checks for programs.
 AC_PATH_PROG([PYTHON],[python])
-AC_PROG_CC
+AC_PROG_CC_C99
 LT_INIT
 
 # Checks for libraries.

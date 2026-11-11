@@ -1,3 +1,7 @@
+Version 0.3
+-----------
+* Remove a do-nothing line to allow building cleanly with g++ 15.2.1
+
 Version 0.2
 -----------
 * Fix rounding in calculating start nanoseconds

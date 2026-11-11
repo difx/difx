@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2022 by Walter Brisken and Jan Wagner              *
+ *   Copyright (C) 2009-2026 by Walter Brisken and Jan Wagner              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -161,12 +161,12 @@ void antennaSummary(const VexData *V, int doFormat, int doUsage)
 		}
 		if(doUsage)
 		{
-			int p = std::cout.precision();
-			double drate=0.0, usage;
-			usage = totalDiskUsageGB(V, it->first, &drate);
+			int p2 = std::cout.precision();
+			double drate=0.0, diskUsage;
+			diskUsage = totalDiskUsageGB(V, it->first, &drate);
 			std::cout.precision(3);
-			std::cout << std::fixed << " " << usage << " " << (int)drate;
-			std::cout.precision(p);
+			std::cout << std::fixed << " " << diskUsage << " " << (int)drate;
+			std::cout.precision(p2);
 		}
 		std::cout << std::endl;
 	}
@@ -321,17 +321,17 @@ void scan2List(const VexData *V, int level)
 {
 	std::set<char> bands;
 
-	for(unsigned int s = 0; s < V->nScan(); ++s)
+	for(unsigned int scanId = 0; scanId < V->nScan(); ++scanId)
 	{
-		const VexScan *scan = V->getScan(s);
+		const VexScan *scan = V->getScan(scanId);
 		const VexMode *M = V->getModeByDefName(scan->modeDefName);
 		std::cout << std::left << std::setw(8) << scan->defName << " ";
 		std::cout << std::left << std::setw(12) << scan->sourceDefName << " ";
 
 		bands.clear();
-		for(std::map<std::string,VexSetup>::const_iterator s = M->setups.begin(); s != M->setups.end(); ++s)
+		for(std::map<std::string,VexSetup>::const_iterator setup = M->setups.begin(); setup != M->setups.end(); ++setup)
 		{
-			for(std::vector<VexChannel>::const_iterator v = s->second.channels.begin(); v != s->second.channels.end(); ++v)
+			for(std::vector<VexChannel>::const_iterator v = setup->second.channels.begin(); v != setup->second.channels.end(); ++v)
 			{
 				bands.insert(v->bandCode());
 			}

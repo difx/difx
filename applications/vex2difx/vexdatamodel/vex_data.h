@@ -139,7 +139,7 @@ public:
 	void setScanSize(unsigned int num, double size);
 	void getScanList(std::list<std::string> &scans) const;
 	unsigned int nAntennasWithRecordedData(const VexScan &scan) const;
-	bool removeScan(const std::string name);	// Note: cannot pass name as reference!
+	bool removeScan(const std::string &name);	// Note: cannot pass name as reference!
 	void deletePhaseCenters(unsigned int num);
 	void addPhaseCenter(unsigned int num, const std::string &name);
 
@@ -153,7 +153,7 @@ public:
 	void setAntennaPosition(const std::string &antName, double X, double Y, double Z);
 	void setAntennaAxisOffset(const std::string &antName, double axisOffset);
 	int getNumAntennaRecChans(const std::string &name) const;
-	bool removeAntenna(const std::string name);	// Note: cannot pass name as reference!
+	bool removeAntenna(const std::string &name);	// Note: cannot pass name as reference!
 	void setAntennaPolConvert(const std::string &name, bool doConvert);
 	void setAntennaDifxName(const std::string &name, const std::string &difxName);
 	void setAntennaVgosComplexFlip(const std::string &name, bool vgosComplexFlip);

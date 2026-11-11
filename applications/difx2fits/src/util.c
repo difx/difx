@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2021 by Walter Brisken & Leonid Petrov             *
+ *   Copyright (C) 2008-2025 by Walter Brisken & Leonid Petrov             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glob.h>
+#include "difxio/difxio_macros.h"
 #include "difx2fits.h"
 #include "util.h"
 
@@ -203,7 +204,7 @@ int sortjobpcal(const DifxInput *D, int antennaId, int *jobxref)
 		int v;
 
 		strarr[i] = malloc(DIFXIO_FILENAME_LENGTH+1);
-		v = snprintf(globPattern, DIFXIO_FILENAME_LENGTH, "%s/PCAL*%s", D->job[i].outputFile, D->antenna[antennaId].name);
+		snprintf_warn(globPattern, DIFXIO_FILENAME_LENGTH, "%s/PCAL*%s", D->job[i].outputFile, D->antenna[antennaId].name);
 		v = glob2(__FUNCTION__, globPattern, 0, 0, &globBuffer);
 		if(v == 0)
 		{

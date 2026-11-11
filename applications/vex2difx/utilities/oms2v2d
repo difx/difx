@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2009-2025 by Walter Brisken                             *
+#   Copyright (C) 2009-2026 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -586,7 +586,7 @@ else:
 if isfile(v2dFile):
 	if force:
 		if verbose > 0:
-			print('Warning: overwriting exisiting file %s.\n' % v2dFile)
+			print('Warning: overwriting existing file %s.\n' % v2dFile)
 	else:
 		print('Error: output file %s exists.  Run with --force to continue.\n' % v2dFile)
 		exit(0)

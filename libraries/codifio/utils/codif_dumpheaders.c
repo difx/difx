@@ -107,7 +107,7 @@ double t0, t1, t2;
 
 int main (int argc, char * const argv[]) {
   char *buf, *ptr, timestr[MAXSTR];
-  int threadIndex, fileIndex, tmp, opt, status, sock, skip, i, nfile;
+  int threadIndex, fileIndex, tmp, opt, status, sock, skip, i, nfile=0;
   int valid, period, thisthread = -1, thisgroup = -1;
   ssize_t nread, nwrote, nwrite;
   char msg[MAXSTR];
@@ -277,6 +277,7 @@ int main (int argc, char * const argv[]) {
       nwrote = write(ofile, buf, nwrite);
       if (nwrote==-1) {
 	perror("Error writing outfile");
+#warning the logic of the following statement is poor: nfile is always 0 and ofile is not an array
 	for (i=0;i<nfile;i++) close(ofile);
 	exit(1);
       } else if (nwrote!=nwrite) {
@@ -292,6 +293,7 @@ int main (int argc, char * const argv[]) {
     nwrote = write(ofile, buf, nwrite);
     if (nwrote==-1) {
       perror("Error writing outfile");
+#warning the logic of the following statement is poor: nfile is always 0 and ofile is not an array
       for (i=0;i<nfile;i++) close(ofile);
       exit(1);
     } else if (nwrote!=nwrite) {

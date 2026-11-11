@@ -574,7 +574,7 @@ def writethreads(basename, threads):
                 o.write('%d\n' % t)
         o.close()
 
-def writemachines(basename, hostname, results, datastreams, overheadcores, verbose, dorankfile=False, datastreamsOnly=False):
+def writemachines(basename, hostname, results, datastreams, overheadcores, verbose, dorankfile=False, datastreamsOnly=False, threadsperproc=0):
         """
         Write machines file to be used by mpirun
         """
@@ -735,19 +735,34 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
             
         # compute nodes
         for node in difxmachines.getComputeNodes():
-            usedThreads = 0
+
+            availThreads = node.threads
             # if compute node is also used as datastream nodes reduce number of threads
             if node.name in dsnodes:
-                usedThreads = dsnodes.count(node.name)
+                availThreads = availThreads - dsnodes.count(node.name)
           
             # if head node is also used as compute nodes reduce number of threads by one
             if node.name in hostname:
-                usedThreads = 1
-                
-            if (args.nocompute == False):
-                o.write('%s\n' % (node.name))
+                availThreads = availThreads - 1
 
-            threads.append(node.threads-usedThreads)
+            while availThreads > 0:
+                if threadsperproc <= 0 or threadsperproc > node.threads:
+                    assignedThreads = availThreads
+                    if verbose:
+                        print ("Compute %s: adding a %d-thread process, %d unassigned cores remain" % (node.name, assignedThreads, availThreads-assignedThreads))
+                elif availThreads >= threadsperproc:
+                    assignedThreads = min(availThreads, threadsperproc)
+                    if verbose:
+                        print ("Compute %s: adding a %d-thread process, %d unassigned cores remain" % (node.name, assignedThreads, availThreads-assignedThreads))
+                else:
+                    if verbose:
+                        print ("Compute %s: no further process added, %d threads do not fit %d free cores" % (node.name, threadsperproc, availThreads))
+                    break
+                    
+                if (args.nocompute == False):
+                    o.write('%s\n' % (node.name))
+                    threads.append(assignedThreads)
+                availThreads = availThreads - assignedThreads
 
         o.close()
 
@@ -794,7 +809,7 @@ def uniqueVsns(datastreams):
         else:
                 return 1
 
-def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb, dorankfile):
+def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb, dorankfile, threadsperproc):
         ok = True
 
         # check if host is an allowed headnode
@@ -867,7 +882,7 @@ def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb, dora
         if not ok:
                 return 1
 
-        t = writemachines(basename, hostname, results, datastreams, overheadcores, verbose, dorankfile)
+        t = writemachines(basename, hostname, results, datastreams, overheadcores, verbose, dorankfile=dorankfile, threadsperproc=threadsperproc)
 
         if len(t) == 0:
                 return 1
@@ -1017,6 +1032,7 @@ if __name__ == "__main__":
         parser.add_argument("-n", "--nothreads", dest="dothreads", action="store_false", default=True, help="don't write a .threads file")
         parser.add_argument("-d", "--difxdb", dest="usedifxdb", action="store_true", default=False, help="use difxdb to obtain data location")
         parser.add_argument("-r", "--rankfile", dest="dorankfile", action="store_true", default=False, help="additionally write an OpenMPI rank file")
+        parser.add_argument("-t", "--threads-per-proc", dest="threadsperproc", type=int, default=0, help="number of threads per compute process (default 0: take all cores)")
         parser.add_argument("--ignore-incomplete-module", dest="ignoreIncompleteModules", action="store_true", default=True, help="Proceed even when Mark6 modules are found to be incomplete.")
         parser.add_argument("--nocompute", action="store_true", default=False, help="Do not include compute nodes in the .machines file.")
         parser.add_argument("--all-datastreams", dest="mergeAllDatastreams", action="store_true", default=False, help="Look up datastream nodes from all DiFX input files; implies --nocompute.")
@@ -1029,6 +1045,7 @@ if __name__ == "__main__":
         dothreads = args.dothreads
         useDifxDb = args.usedifxdb
         dorankfile = args.dorankfile
+        threadsperproc = args.threadsperproc
         if args.mergeAllDatastreams:
                 args.nocompute = True
 
@@ -1098,10 +1115,9 @@ if __name__ == "__main__":
             exit(1)
 
         if args.mergeAllDatastreams:
-                v = runDatastreamsMerged(files, 'io_nodes', verbose, dothreads, useDifxDb)
+            v = runDatastreamsMerged(files, 'io_nodes', verbose, dothreads, useDifxDb)
         else:
-        
-                for file in files:
-                        v = run(file, machinesfile, overheadcores, verbose, dothreads, useDifxDb, dorankfile)
-                        if v != 0:
-                                exit(v)
+            for file in files:
+                v = run(file, machinesfile, overheadcores, verbose, dothreads, useDifxDb, dorankfile, threadsperproc)
+                if v != 0:
+                    exit(v)

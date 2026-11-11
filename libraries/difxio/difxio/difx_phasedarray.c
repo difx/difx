@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2015 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "difxio/difx_input.h"
 
 
@@ -72,6 +73,12 @@ DifxPhasedArray *newDifxPhasedarrayArray(int nPhasedArray)
 	DifxPhasedArray *dpa;
 
 	dpa = (DifxPhasedArray *)calloc(nPhasedArray, sizeof(DifxPhasedArray));
+	if(!dpa)
+	{
+		fprintf(stderr, "Error: newDifxPhasedarrayArray(): error relloc of %lu bytes.\n", (unsigned long int)(nPhasedArray*sizeof(DifxPhasedArray)));
+
+		exit(0);
+	}
 
 	return dpa;
 }
@@ -80,6 +87,12 @@ DifxPhasedArray *newDifxPhasedarrayArray(int nPhasedArray)
 DifxPhasedArray *growDifxPhasedarrayArray(DifxPhasedArray *dpa, int origSize)
 {
 	dpa = (DifxPhasedArray *)realloc(dpa, (origSize+1)*sizeof(DifxPhasedArray));
+	if(!dpa)
+	{
+		fprintf(stderr, "Error: growDifxPhasedarrayArray(): error relloc of %lu bytes.\n", (unsigned long int)((origSize+1)*sizeof(DifxPhasedArray)));
+
+		exit(0);
+	}
 	memset(dpa+origSize, 0, sizeof(DifxPhasedArray));
 
 	return dpa;

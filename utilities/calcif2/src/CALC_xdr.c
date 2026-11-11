@@ -3,14 +3,18 @@
  * It was generated using rpcgen.
  */
 
+#include <stdarg.h>
 #include "CALCServer.h"
 
-bool_t
-xdr_getCALC_arg(xdrs, objp)
-	register XDR *xdrs;
-	getCALC_arg *objp;
+bool_t xdr_getCALC_arg(XDR *xdrs, ...)
 {
+	va_list a_list;
+	getCALC_arg *objp;
         int i;
+
+	va_start(a_list, xdrs);
+	objp = va_arg(a_list, getCALC_arg *);
+	va_end(a_list);
 
 	if (!xdr_long(xdrs, &objp->request_id))
 		return (FALSE);
@@ -83,12 +87,15 @@ xdr_getCALC_arg(xdrs, objp)
 	return (TRUE);
 }
 
-bool_t
-xdr_CALCRecord(xdrs, objp)
-	register XDR *xdrs;
-	CALCRecord *objp;
+bool_t xdr_CALCRecord(XDR *xdrs, ...)
 {
+	va_list a_list;
+	CALCRecord *objp;
         int i;
+
+	va_start(a_list, xdrs);
+	objp = va_arg(a_list, CALCRecord *);
+	va_end(a_list);
 
 	if (!xdr_long(xdrs, &objp->request_id))
 		return (FALSE);
@@ -121,11 +128,16 @@ xdr_CALCRecord(xdrs, objp)
 	return (TRUE);
 }
 
-bool_t
-xdr_getCALC_res(xdrs, objp)
-	register XDR *xdrs;
-	getCALC_res *objp;
+bool_t xdr_getCALC_res(XDR *xdrs, ...)
 {
+	va_list a_list;
+	getCALC_res *objp;
+
+	va_start(a_list, xdrs);
+	objp = va_arg(a_list, getCALC_res *);
+	va_end(a_list);
+
+
 	if (!xdr_int(xdrs, &objp->error))
 		return (FALSE);
 	switch (objp->error) {

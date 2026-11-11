@@ -483,7 +483,8 @@ plt.gcf().subplots_adjust(bottom=0.11, top=0.89, left=0.15, right=0.85, wspace=0
 # gcf() means 'get current figure', a handle for accessing its properties
 
 # normal axes
-ax = SubplotHost(fig, 1,1,1, aspect=aspect_value*abs((xplmax-xplmin)/(yplmax-yplmin)), axisbg=bg_color)
+ax = SubplotHost(fig, 1,1,1, aspect=aspect_value*abs((xplmax-xplmin)/(yplmax-yplmin)))
+ax.set_facecolor(bg_color)
 # 1,1,1 mean nrows, ncols and plot_number
 ax.patch.set_alpha(1.0)
 # X AXIS
@@ -595,7 +596,7 @@ if zplot and showGood:
              
   cbar.set_label('SNR', fontsize = cbartitlefontsize, color = cbartitlefontcolor)
   #cbar.set_ticks(cbartickarray, update_ticks=True) -- not needed, defined in the cbar setup above
-  cbar.set_ticklabels(cbarlabels, update_ticks=True)
+  cbar.set_ticklabels(cbarlabels)
   #cbar.update_ticks() -- may be necessary in some cases to avoid glitches
   cbar.outline.set_color('black')
   cbar.outline.set_linewidth(3)

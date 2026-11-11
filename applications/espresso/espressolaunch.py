@@ -237,12 +237,14 @@ def run_batch(corrjoblist, outdir):
     job_errors = []
     errors = []
     speedups = {}
+    job_finish = False
     for jobid, jobname in zip(jobids, jobnames):
 
         #time.sleep(1)
         job_logfilename = espressolib.get_difxlogname(outdir, jobname)
         if os.path.exists(job_logfilename):
-            job_ok, job_errors, job_finish = chk_difxlog(open(job_logfilename).readlines(), jobname)
+            job_ok, job_errors, job_finish = chk_difxlog(
+                    open(job_logfilename).readlines(), jobname)
             job_errors = [
                     "{:s}: {:s}".format(jobname, err) for err in job_errors]
         else:
