@@ -497,6 +497,10 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, const struct CommandLineOptio
 			dv->polStart = -6;
 		}
 	}
+	else
+	{
+		dv->polStart = -9;
+	}
 
 	/* room for input vis record: 3 for real, imag, weight */
 	dv->spectrum = (float *)calloc(3*dv->D->nInChan, sizeof(float));
