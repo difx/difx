@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2011-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,17 +20,25 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "difxio/parsedifx.h"
 #include "difxio/difx_write.h"
 
 int main()
 {
+	const char outfile[] = "wwh.txt";
 	FILE *out;
 	DifxStringArray sa;
 
 	DifxStringArrayinit(&sa);	/* needed because the array started out uninitialized */
 
-	out = fopen("wwh.txt", "w");
+	out = fopen(outfile, "w");
+	if(!out)
+	{
+		fprintf(stder, "Error: cannot open %s for write.\n", outfile);
+
+		exit(0);
+	}
 
 	DifxStringArrayprint(&sa);
 
