@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "difxio/difx_input.h"
 
 
@@ -28,6 +29,12 @@ DifxPulsar *newDifxPulsarArray(int nPulsar)
 	DifxPulsar *dp;
 
 	dp = (DifxPulsar *)calloc(nPulsar, sizeof(DifxPulsar));
+	if(!dp)
+	{
+		fprintf(stderr, "Error: newDifxPulsarArray(): cannot alloc %lu bytes\n", (unsigned long int)(nPulsar*sizeof(DifxPulsar)));
+
+		exit(0);
+	}
 
 	return dp;
 }
@@ -36,6 +43,12 @@ DifxPulsar *newDifxPulsarArray(int nPulsar)
 DifxPulsar *growDifxPulsarArray(DifxPulsar *dp, int origSize)
 {
 	dp = (DifxPulsar *)realloc(dp, (origSize+1)*sizeof(DifxPulsar));
+	if(!dp)
+	{
+		fprintf(stderr, "Error: growDifxPulsarArray(): cannot realloc %lu bytes\n", (unsigned long int)((origSize+1)*sizeof(DifxPulsar)));
+
+		exit(0);
+	}
 	memset(dp+origSize, 0, sizeof(DifxPulsar));
 
 	return dp;
