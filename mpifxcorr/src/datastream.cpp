@@ -29,6 +29,7 @@
 #include <sys/time.h>
 #include "config.h"
 #include "alert.h"
+#include "mode.h"
 
 // Raw socket support is OS dependent.  For now only Linux is supported
 #ifdef __linux__
@@ -128,6 +129,10 @@ void DataStream::initialise()
   estimatedbytes = config->getEstimatedBytes();
   consumedbytes = 0;
   lastconsumedbytes = 0;
+
+  //std::cout << "maxbytes " << maxbytes << std::endl;
+  //std::cout << "bufferfactor " << databufferfactor << std::endl;
+  //std::cout << "bufferbytes " << bufferbytes << std::endl;
 
   //cinfo << startl << "******DATASTREAM " << mpiid << ": Initialise. bufferbytes=" << bufferbytes << "  numdatasegments=" << numdatasegments << "  readbytes=" << readbytes << endl;
 
@@ -311,6 +316,7 @@ void DataStream::execute()
       else
       {
         //data is ok
+        //std::cout << "sendbytes in datastream.cpp: " << bufferinfo[atsegment].sendbytes << std::endl;
         MPI_Issend(&databuffer[startpos], bufferinfo[atsegment].sendbytes, MPI_UNSIGNED_CHAR, targetcore, CR_PROCESSDATA, MPI_COMM_WORLD, &(bufferinfo[atsegment].datarequests[bufferinfo[atsegment].numsent]));
         MPI_Issend(bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent], bufferinfo[atsegment].controllength, MPI_INT, targetcore, CR_PROCESSCONTROL, MPI_COMM_WORLD, &(bufferinfo[atsegment].controlrequests[bufferinfo[atsegment].numsent]));
       }

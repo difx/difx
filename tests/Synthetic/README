@@ -22,4 +22,65 @@ run-usb-dsb.sh			Real USB vs complex double sideband (USB)
 run-lsb-dsb.sh			Real USB vs complex double sideband (LSB)
 run-complex-complex.sh		Complex USB vs Complex USB (single sindeband)
 
+Two further scenarios exist for the CPU-vs-GPU harnesses (run-local.sh,
+run-slurm.sh) rather than run-all.sh:
+
+test-multi			5 stations x 4 subbands - the multi-datastream
+				and multi-band machinery
+test-dualpol			2 stations, 2 polarisations at the SAME sky
+				frequency, doPolar = True. The only scenario with
+				more than 2 pol products, so the ONLY one that
+				exercises the cross-polarisation autocorrelations
+				(on either the CPU or the GPU path). Added
+				2026-08-28; sized to run as committed (nChan=1024,
+				tInt=2, 60 s scan) rather than needing the manual
+				scale-down the older scenarios get.
+
+
+AUTOMATED REGRESSION ON A SLURM CLUSTER (run-slurm.sh)
+------------------------------------------------------
+
+run-all.sh just correlates the data and makes no attempt to check that the
+result is correct. run-slurm.sh instead turns these same scenarios into a
+pass/fail regression suite for use on a SLURM cluster (e.g. OzSTAR). For each
+scenario it correlates the data twice - once on CPU and once on GPU (mpifxcorr
+--usegpu) - as separate batch jobs, then uses diffDiFX.py to compare the raw
+visibility output and reports PASS/FAIL/ERROR. This is intended as the safety
+net when changing the GPU correlator: CPU and GPU output should agree.
+
+Setup (once):
+
+    cp slurm.conf.example slurm.conf
+    # edit slurm.conf: account, setup script, working directory, per-job
+    # SLURM resources, comparison threshold (see comments in that file)
+
+Run:
+
+    ./run-slurm.sh            # all scenarios
+    ./run-slurm.sh usb lsb    # just the named scenarios
+
+It creates one self-contained job directory per scenario and mode under WORKDIR
+(from slurm.conf), generates the .input/.calc/.im there with vex2difx+difxcalc,
+submits the batch jobs, and once they finish diffs the outputs. A final summary
+table shows one row per scenario:
+
+    PASS  - CPU and GPU visibilities agree to within DIFF_THRESHOLD
+    FAIL  - a difference exceeded the threshold, or the headers disagreed
+    ERROR - a correlation job failed or produced no output to compare
+
+run-slurm.sh exits non-zero if any comparison is not PASS. Detailed per-file
+diff logs are left under WORKDIR/<scenario>/diff/.
+
+Optional reference-version comparison: set REFERENCE_SETUP_SCRIPT in slurm.conf
+to a setup script for a trusted reference DiFX build (e.g. a released DiFX-2.9).
+When set, each scenario is also correlated with that build (CPU only) and the
+current CPU and GPU outputs are additionally diffed against it, adding
+cpu:reference and gpu:reference columns to the summary. This catches drift
+against a known-good baseline, not just CPU-vs-GPU disagreement within the
+branch under test. Leave it blank (the default) to skip the reference leg.
+
+The existing run-*.sh / run-all.sh scripts are unchanged and still work for
+local (mpirun, no correctness check) runs. slurm.conf and all generated test
+artifacts are git-ignored.
+
 

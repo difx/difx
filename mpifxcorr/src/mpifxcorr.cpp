@@ -23,6 +23,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <unistd.h>
+#include <getopt.h>
 #include <signal.h>
 #include "configuration.h"
 #include "fxmanager.h"
@@ -50,6 +51,12 @@
 #include <unistd.h>
 #include "alert.h"
 #include <errno.h>
+
+#ifdef USE_CUDA
+#include "gpucore.cuh"
+#endif
+
+void usage(const char *const argv0);
 
 //act on an XML command message which was received
 bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
@@ -269,8 +276,86 @@ int main(int argc, char *argv[])
   double restartseconds = 0.0;
   char processor_name[MPI_MAX_PROCESSOR_NAME];
   char difxMessageID[DIFX_MESSAGE_PARAM_LENGTH];
-
   char myhostname[200];
+
+    // Argument parsing
+  int use_gpu = 0;
+  char *input_file;
+
+  static struct option long_options[] = {
+    {"nocommandthread", no_argument,       0, 0 },
+    {"usegpu",          no_argument,       0, 0 },
+    {"verbose",         no_argument,       0, 0 },
+    {"vgoscomplex",     no_argument,       0, 0 },
+    {"help",            no_argument,       0, 0 },
+    {0,                 0,                 0, 0 },
+  };
+  int opt_idx;
+  int c;
+  while(-1 != (c = getopt_long(argc, argv, "M:r", long_options, &opt_idx))) {
+    switch(c) {
+    case 0:
+      switch(opt_idx) {
+        case 0:
+          nocommandthread = true;
+          break; // --nocommandthread
+        case 1:
+#ifdef USE_CUDA
+          use_gpu = 1;
+#else
+          std::cerr << "GPU support not compiled with this version of mpifxcorr, sorry!" << std::endl;
+          return EXIT_FAILURE;
+#endif
+          break; // --usegpu
+		case 2:
+		  verbose = true;
+		  break; // --verbose
+		case 3:
+		  cwarn << startl << "Enabling VGOS hack; raw samples of *all* VDIFC stations will have the sign of the imaginary part reversed i.e. the sideband inverted during unpacking!" << endl;
+		  vgoscomplexvdifhack = true;
+		  break; // --vgoscomplex
+        case 4:
+          usage(argv[0]);
+          return EXIT_SUCCESS;
+          break; // --help
+      }
+      break;
+    case 'M': { // -M<monhostname>
+      monitor = true;
+      monitoropt = string(optarg);
+      size_t colindex1 = monitoropt.find_first_of(':');
+      size_t colindex2 = monitoropt.find_last_of(':');
+
+      if(colindex1 == colindex2) {
+        port = atoi(monitoropt.substr(colindex1 + 1).c_str());
+        monitor_skip = 1;
+      } else {
+        port = atoi(monitoropt.substr(colindex1 + 1, colindex2-colindex1-1).c_str());
+        monitor_skip = atoi(monitoropt.substr(colindex2 + 1).c_str());
+      }
+      strncpy(monhostname, monitoropt.substr(2,colindex1-2).c_str(), sizeof(monhostname)-1);
+      }
+      break;
+    case 'r': // -rNN
+      restartseconds = atof(optarg);
+      break;
+    }
+  }
+
+  if(optind == argc) {
+    // No input filename specified
+    std::cerr << "No input file specified.\n\n" << std::endl;
+    usage(argv[0]);
+    return EXIT_FAILURE;
+  } else if(optind + 1 != argc) {
+    std::cerr << "More input files than expected - you can only put one input file on the command line\n\n" << std::endl;
+    usage(argv[0]);
+    return EXIT_FAILURE;
+  } else {
+    input_file = argv[optind];
+  }
+
+  // All arguments have been gathered up, now do things...
   gethostname(myhostname, sizeof(myhostname)-1);
 #if(ARCH == INTEL && defined(IPP_VERSION_MAJOR) && (IPP_VERSION_MAJOR<2021))
   ippSetNumThreads(1);
@@ -284,80 +369,24 @@ int main(int argc, char *argv[])
   MPI_Comm_dup(world, &return_comm);
   MPI_Get_processor_name(processor_name, &namelen);
 
-  if(argc < 2 || argc > 6)
-  {
-    cerr << "Error: invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]] [-rNewStartSec] [--nocommandthread] [--vgoscomplex] [--verbose] " << endl;
-    MPI_Barrier(world);
-    MPI_Finalize();
-    return EXIT_FAILURE;
-  }
-
   //setup difxmessage
-  generateIdentifier(argv[1], difxMessageID);
+  generateIdentifier(input_file, difxMessageID);
   difxMessageInit(myID, difxMessageID);
-  difxMessageSetInputFilename(argv[1]);
+  difxMessageSetInputFilename(input_file);
   if(myID == 0)
   {
-    if(isDifxMessageInUse() && !nocommandthread)
+    if(isDifxMessageInUse())
     {
       cout << "NOTE: difxmessage is in use.  If you are not running errormon/errormon2, you are missing all the (potentially important) info messages!" << endl;
     }
   }
 
   cinfo << startl << "MPI Process " << myID << " is running on host " << processor_name << endl;
- 
-  for(int i=2;i<argc;i++)
-  {
-    if(argv[i][0]=='-' && argv[i][1]=='M')
-    {
-      monitor = true;
-      monitoropt = string(argv[i]);
-      size_t colindex1 = monitoropt.find_first_of(':');
-      size_t colindex2 = monitoropt.find_last_of(':');
-
-      if(colindex2 == colindex1)
-      {
-        port = atoi(monitoropt.substr(colindex1 + 1).c_str());
-        monitor_skip = 1;
-      }
-      else
-      {
-        port = atoi(monitoropt.substr(colindex1 + 1, colindex2-colindex1-1).c_str());
-        monitor_skip = atoi(monitoropt.substr(colindex2 + 1).c_str());
-      }
-      strncpy(monhostname, monitoropt.substr(2,colindex1-2).c_str(), sizeof(monhostname)-1);
-    }
-    else if(argv[i][0]=='-' && argv[i][1]=='r')
-    {
-      restartseconds = atof(argv[i] + 2);
-    }
-    else if(strcmp(argv[i], "--nocommandthread") == 0)
-    {
-      nocommandthread = true;
-    }
-    else if(strcmp(argv[i], "--vgoscomplex") == 0)
-    {
-      cwarn << startl << "Enabling VGOS hack; raw samples of *all* VDIFC stations will have the sign of the imaginary part reversed i.e. the sideband inverted during unpacking!" << endl;
-      vgoscomplexvdifhack = true;
-    }
-    else if (strcmp(argv[i], "--verbose") == 0)
-    {
-      verbose = true;
-    }
-    else
-    {
-      cfatal << startl << "Invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]] [-rNewStartSec] [--nocommandthread] [--vgoscomplex] [--verbose]" << endl;
-      MPI_Barrier(world);
-      MPI_Finalize();
-      return EXIT_FAILURE;
-    }
-  }
-
   cinfo << startl << "MPI Process " << myID << " is about to process input file" << endl;
 
   cverbose << startl << "About to process the input file..." << endl;
   //process the input file to get all the info we need
-  config = new Configuration(argv[1], myID, world, restartseconds);
+  config = new Configuration(input_file, myID, world, restartseconds, use_gpu);
   if(!config->consistencyOK())
   {
     //There was a problem with the input file, so shut down gracefully
@@ -483,7 +512,17 @@ int main(int argc, char *argv[])
     }
     else //im a processing core
     {
+#ifdef USE_CUDA
+      if(use_gpu) {
+	std::cout << "starting GPUCore" << std::endl;      
+        core = new GPUCore(myID, config, datastreamids, return_comm);
+        //std::cout << "ending GPUCore" << std::endl;
+      } else {
+        core = new Core(myID, config, datastreamids, return_comm);
+      }
+#else
       core = new Core(myID, config, datastreamids, return_comm);
+#endif
       MPI_Barrier(world);
       cinfo << startl << "Estimated memory usage by Core: " << core->getEstimatedBytes()/1048576.0 << " MB" << endl;
       core->execute();
@@ -492,13 +531,14 @@ int main(int argc, char *argv[])
   }
 
   //  /* See comment about MPI bindings above */
-  //catch (MPI::Exception e)
-  //{
-  //  cerror << startl << "Caught an exception!!! " << e.Get_error_string() << endl;
-  //  return EXIT_FAILURE;
-  //}
-
+//  catch (MPI::Exception e)
+//  {
+//    cerror << startl << "Caught an exception!!! " << e.Get_error_string() << endl;
+//    return EXIT_FAILURE;
+//  }
+  std::cout << "starting MPI_Finalize" << std::endl;
   MPI_Finalize();
+  std::cout << "ending MPI_Finalize" << std::endl;
 
   if (isDifxMessageInUse() && !nocommandthread) {
     if(myID == 0) difxMessageSendDifxParameter("keepacting", "false", DIFX_MESSAGE_ALLMPIFXCORR);
@@ -512,17 +552,33 @@ int main(int argc, char *argv[])
     else cverbose << startl << "Command thread return value " << prv << endl;
   }
 
+
+  std::cout << "Starting cleanup" << std::endl;
   delete [] coreids;
   delete [] datastreamids;
 
   if(manager) delete manager;
   if(stream) delete stream;
   if(core) delete core;
+  std::cout << "Ending cleanup" << std::endl;
 
   //delete config;  	// FIXME!!! Revisit this commented out destructor sometime.
   			// It is currently commented out to prevent hang on exit
 
   cinfo << startl << "MPI ID " << myID << " says BYE!" << endl;
   return EXIT_SUCCESS;
+}
+
+void usage(const char *const argv0) {
+  std::cout << argv0 << " <inputfilename> [options] -- DiFX correlator, MPI-enabled\n"
+    "Most functionality is documented separately.\n"
+    "The following arguments are understood:\n"
+    " -M<monhostname>:port[:monitor_skip]\n"
+    " -rNN.N        -- where NN.N = NewStartSec\n"
+    " --nocommandthread\n"
+    " --usegpu      -- Use GPU acceleration\n"
+	" --verbose     -- Show verbose output of stream summaries\n"
+	" --vgoscomplex -- Enabling VGOS hack; raw samples of *all* VDIFC stations will have the sign of the imaginary part reversed\n"
+    << std::endl;
 }
 // vim: shiftwidth=2:softtabstop=2:expandtab

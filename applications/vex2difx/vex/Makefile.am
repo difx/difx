@@ -1,6 +1,8 @@
 
 AM_YFLAGS = -d -y
 AM_CPPFLAGS = -Dyyerror=vexerror -Dyylval=vexlval -Dyyin=vexin -Dyyparse=vexparse -Dyylex=vexlex
+# Legacy K&R-style C: empty () prototypes conflict with C23 (GCC 15 default)
+AM_CFLAGS = -std=gnu17
 
 BUILT_SOURCES = \
 	vex_parse.tab.h \

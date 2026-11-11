@@ -32,6 +32,10 @@
 #include <arpa/inet.h>
 #include <difxmessage.h>
 #include "alert.h"
+#include "mode.h"
+#include <mpi.h>
+
+#include <signal.h>
 
 #ifndef MAX_PATH
 #define MAX_PATH 256
@@ -192,7 +196,27 @@ Visibility::~Visibility()
 bool Visibility::addData(cf32* subintresults)
 {
   int status;
+  static bool stopped_once = false;
 
+//  int mpi_rank = -1;
+//  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+//
+//  if(!stopped_once &&
+//     mpi_rank == 0 &&
+//     visID == 0 &&
+//     currentscan == 0 &&
+//     currentstartseconds == 0 &&
+//     currentstartns == 0) {
+//    stopped_once = true;
+//
+//    std::cerr << startl
+//          << "PCAL-GDB STOP: "
+//          << "rank=" << mpi_rank
+//          << " visID=" << visID
+//          << endl;
+//
+//    raise(SIGSTOP);
+//  }
   status = vectorAdd_cf32_I(subintresults, results, resultlength);
   if(status != vecNoErr)
     csevere << startl << "Error copying results in Vis. " << visID << endl;
@@ -796,6 +820,10 @@ void Visibility::writeSWIN(int dumpmjd, double dumpseconds)
   char polpair[3] = {'\0','\0','\0'}; //the polarisation eg RR, LL
   const char noToneAvailable[] = " -1 0 0 0";
 
+
+
+
+
   if(currentscan >= model->getNumScans()) {
     cwarn << startl << "Visibility will not write out time " << dumpmjd << "/" << dumpseconds << " since currentscan is " << currentscan << " and numscans is " << model->getNumScans() << endl;
     return;
@@ -988,6 +1016,8 @@ The four columns are:
   config->mjd2ymd(dumpmjd, year, month, day);
   pcalmjd = dumpmjd + dumpseconds/86400.0;
 
+
+
   for(int i=0;i<numdatastreams;i++)
   {
     if(config->getDPhaseCalIntervalHz(currentconfigindex, i) > 0)
@@ -1014,6 +1044,7 @@ The four columns are:
             pcalline += noToneAvailable;
             continue; //move on
           }
+
 
           tonefreq = 1e-6*config->getDRecordedFreqPCalToneFreqHz(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
           if(config->getDRecordedLowerSideband(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j)))

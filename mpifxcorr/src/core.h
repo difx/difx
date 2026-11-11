@@ -18,11 +18,12 @@
 #define CORE_H
 
 #include "architecture.h"
-#include "datastream.h"
 #include "configuration.h"
-#include "mode.h"
 #include "difxmessage.h"
-#include <pthread.h>
+#include <vector>
+
+class Configuration;
+class Mode;
 
 /**
 @class Core
@@ -44,7 +45,7 @@ public:
   * @param rcomm An MPI_Comm object used for communicating to the FxManager only
   */
   Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm);
-  ~Core();
+  virtual ~Core();
 
  /**
   * Until told to terminate, sits in a loop receiving raw data from the Datastreams into the circular buffer and processing it
@@ -58,7 +59,7 @@ public:
   long long getEstimatedBytes();
 
   /// The number of elements in the send/receive circular buffer
-  static const int RECEIVE_RING_LENGTH;
+  static const int RECEIVE_RING_LENGTH = 4;
 
   /// The minimum weight for filterbank STA data to be sent
   static const double MINIMUM_FILTERBANK_WEIGHT;
@@ -70,7 +71,53 @@ protected:
   */
   static void * launchNewProcessThread(void * tdata);
 
-private:
+  ///Structure containing all of the pointers to scratch space for a single thread
+  typedef struct {
+    f32 **** baselineweight; //[freq][pulsarbin][baseline][pol]
+    f32 *** baselineshiftdecorr; //[freq][baseline][phasecentre]
+    cf32 * threadcrosscorrs;
+    s32 *** bins; //[fftsubloop][freq][channel]
+    cf32* pulsarscratchspace;
+    cf32******* pulsaraccumspace; //[freq][stride][baseline][source][polproduct][bin][channel]
+    f64 * chanfreqs;
+    cf32 * rotated;
+    cf32 * rotator;
+    cf32 * channelsums;
+    f32 * argument;
+    int shifterrorcount;
+    DifxMessageSTARecord * starecordbuffer;
+    bool dumpsta;
+    bool dumpkurtosis;
+  } threadscratchspace;
+
+ /**
+  * Processes a single thread's section of a single subintegration
+  * @param index The index in the circular send/receive buffer to be processed
+  * @param threadid The id of the thread which is doing the processing
+  * @param startblock The first FFT block which is this thread's responsibility
+  * @param numblocks The number of FFT blocks which this thread will take care of
+  * @param modes The Mode objects which handle the station-based processing
+  * @param currentpolyco The correct Polyco object for this time slice - null if not pulsar binning
+  * @param scratchspace Space for all of the intermediate results for this thread
+  */
+  void processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, threadscratchspace * scratchspace);
+
+  /**
+   * Forward a call onwards to config->getMode. This is virtual to allow
+   * GPUMode to override it (and pass 'true' for usegpu); in the future it
+   * could maybe use a more sophisticated factory/constructor for Modes.
+   * @param configindex Passed on to config->getMode
+   * @param datastreamindex Passed on to config->getMode
+   * @return Whatever config->getMode returns
+   */
+  virtual Mode *getMode(const int configindex, const int datastreamindex) {
+    return config->getMode(configindex, datastreamindex, false);
+  }
+
+// TODO PWC: This used to be 'private' but I changed it to 'protected' when we
+// introduced GPUCore. Work out what should actually be protected and what
+// should be private
+protected:
   /// Structure containing all the information necessary to describe one element in the circular send/receive buffer, and all the necessary space to
   /// store data and results
   typedef struct {
@@ -96,25 +143,6 @@ private:
     pthread_mutex_t acweightcopylock;
     pthread_mutex_t pcalcopylock;
   } processslot;
-
-  ///Structure containing all of the pointers to scratch space for a single thread
-  typedef struct {
-    f32 **** baselineweight; //[freq][pulsarbin][baseline][pol]
-    f32 *** baselineshiftdecorr; //[freq][baseline][phasecentre]
-    cf32 * threadcrosscorrs;
-    s32 *** bins; //[fftsubloop][freq][channel]
-    cf32* pulsarscratchspace;
-    cf32******* pulsaraccumspace; //[freq][stride][baseline][source][polproduct][bin][channel]
-    f64 * chanfreqs;
-    cf32 * rotated;
-    cf32 * rotator;
-    cf32 * channelsums;
-    f32 * argument;
-    int shifterrorcount;
-    DifxMessageSTARecord * starecordbuffer;
-    bool dumpsta;
-    bool dumpkurtosis;
-  } threadscratchspace;
 
   /// Structure containing a pointer to the current Core and the sequence id of the thread that will be launched, so it knows which part of the time slice to process
   typedef struct {
@@ -146,7 +174,7 @@ private:
   * While the correlation is continuing, processes the given thread's share of the next element in the send/receive circular buffer
   * @param threadid The id of the thread which is doing the processing, which tells us which section of the time slice this call will process
   */
-  void loopprocess(int threadid);
+  virtual void loopprocess(int threadid);
 
  /**
   * Receives data from all telescopes into the given index of the circular send/receive buffer, as well as control info from the FxManager
@@ -155,18 +183,6 @@ private:
   * @return The number of data messages received (0 or 1)
   */
   int receivedata(int index, bool * terminate);
-
- /**
-  * Processes a single thread's section of a single subintegration
-  * @param index The index in the circular send/receive buffer to be processed
-  * @param threadid The id of the thread which is doing the processing
-  * @param startblock The first FFT block which is this thread's responsibility
-  * @param numblocks The number of FFT blocks which this thread will take care of
-  * @param modes The Mode objects which handle the station-based processing
-  * @param currentpolyco The correct Polyco object for this time slice - null if not pulsar binning
-  * @param scratchspace Space for all of the intermediate results for this thread
-  */
-  void processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, threadscratchspace * scratchspace);
 
  /**
   * Averages the autocorrelations down, sends off STA dumps down a socket if required and copies to coreresults
@@ -178,6 +194,13 @@ private:
   * @param scratchspace Space for all of the intermediate results for this thread
   */
   void averageAndSendAutocorrs(int index, int threadid, double nsoffset, double nswidth, Mode ** modes, threadscratchspace * scratchspace);
+
+  /** Set by GPUCore when the device accumulates autocorrelations straight into
+   * the results buffer (DIFX_GPU_XMAC_AUTOCORR). It suppresses the host-side
+   * fold of Mode::autocorrelations in averageAndSendAutocorrs - and, with it,
+   * STA dumps, which have nothing left to read. See
+   * docs/gpu-autocorr-design.md. Always false on the CPU path. */
+  bool deviceautocorrs = false;
 
  /**
   * Averages the kurtosis down and sends off as a series of STA dumps down a socket
@@ -197,7 +220,7 @@ private:
   * @param threadid The id of the thread which is doing the processing
   * @param modes The Mode objects which have the pcal results
   */
-  void copyPCalTones(int index, int threadid, Mode ** modes);
+  void copyPCalTones(int index, int threadid, Mode ** modes, const std::vector<char> *slot_validsubint = nullptr);
 
  /**
   * Does any uvshifting necessary and averages down in frequency into the coreresults

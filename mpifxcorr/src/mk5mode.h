@@ -18,16 +18,16 @@
 #define MK5MODE_H
 
 #include <mark5access.h>
-#include "mode.h"
+#include "cpumode.h"
 
 /** 
- @class Mk5Mode 
+ @class Mk5_CPUMode
  @brief A mode for Mk4 formatted or VLBA formatted Mk5 data
 
  A mode for MkIV, VLBA, or Mark5B formatted Mk5 data.  All types of band setup should be supported.
  @author Adam Deller
  */
-class Mk5Mode : public Mode
+class Mk5_CPUMode : public CPUMode
 {
   public:
  /**
@@ -58,9 +58,9 @@ class Mk5Mode : public Mode
    * @param format The data format type e.g. MARK5B, VDIF, VLBA etc
   */
 
-  Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqclkoffsdelta,double * recordedfreqphaseoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, Configuration::datasampling sampling, Configuration::complextype tcomplex, bool fbank, bool linear2circular, int fringerotorder, int arraystridelen, bool cacorrs, int framebytes, int framesamples, Configuration::dataformat format);
+  Mk5_CPUMode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqclkoffsdelta,double * recordedfreqphaseoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, Configuration::datasampling sampling, Configuration::complextype tcomplex, bool fbank, bool linear2circular, int fringerotorder, int arraystridelen, bool cacorrs, int framebytes, int framesamples, Configuration::dataformat format);
 
-  virtual ~Mk5Mode();
+  virtual ~Mk5_CPUMode();
 
   protected:
  /** 

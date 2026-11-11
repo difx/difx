@@ -1,0 +1,1276 @@
+VEX_rev = 1.5;
+*    SCHED vers: Release 11.6; April 2020
+*    VEX/SCHED:  1.5.87
+*    Other versions: Sched:  11.6  Plot: 1.06  JPL-ephem: 1.01
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = bd247c3;
+*                                                      +------------+
+*                         PI revision number:          |    1.0000  |
+*                                                      +------------+
+*    mode:       2048-16-2
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def bd247c3;
+     exper_name = bd247c3;
+     exper_description = "bd247";
+     PI_name = "A.T. Deller";
+     PI_email = adeller@astro.swin.edu.au;
+*    address:   Swinburne University
+*               PO Box 218
+*               Hawthorn VIC 3122 Australia
+*                
+*    phone:     +61-3-9214-5307 (w)
+*    during obs:+61-3-9214-5307 (w)
+*    fax:       +61-3-9214-8797
+*    notes:     fringe finder, manual pcal, amplitude check: J0745+1011
+*
+*    year, doy: 2022,  96
+*    date     : Wed  6 Apr 2022
+*    MJD      : 59675
+     exper_nominal_start=2022y096d01h20m11s;
+     exper_nominal_stop=2022y096d02h20m12s;
+*
+     target_correlator = SOCORRO;
+*
+*    integr_time    :     2.000 s
+*    number_channels:    64
+*    number_antenna : 10
+*    cross_polarize : No
+*    weight_func    : UNIFORM
+*    distrib_medium : FTP
+*    distrib_format : FITS
+*    source_pos_cat : FROM .SUM FILE ONLY
+*    corr_notes : 
+*               7 correlation passes requested: gated+ungated on J0737, and
+*               5 calib passes at different inbeam positions.
+*
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def 20cm-vlba;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = 1392.00MHz16x32MHz:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $IF = LO@2400MHzDPolNoTone:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $BBC = 16BBCs:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+     ref $TRACKS = MARK5B.16Ch2bit1to1:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = NoDetect:Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def Sc;
+     ref $SITE = VLBA_SC;
+     ref $ANTENNA = VLBA_SC;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Hn;
+     ref $SITE = VLBA_HN;
+     ref $ANTENNA = VLBA_HN;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Nl;
+     ref $SITE = VLBA_NL;
+     ref $ANTENNA = VLBA_NL;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Fd;
+     ref $SITE = VLBA_FD;
+     ref $ANTENNA = VLBA_FD;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def La;
+     ref $SITE = VLBA_LA;
+     ref $ANTENNA = VLBA_LA;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Pt;
+     ref $SITE = VLBA_PT;
+     ref $ANTENNA = VLBA_PT;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Kp;
+     ref $SITE = VLBA_KP;
+     ref $ANTENNA = VLBA_KP;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Ov;
+     ref $SITE = VLBA_OV;
+     ref $ANTENNA = VLBA_OV;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Br;
+     ref $SITE = VLBA_BR;
+     ref $ANTENNA = VLBA_BR;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*
+def Mk;
+     ref $SITE = VLBA_MK;
+     ref $ANTENNA = VLBA_MK;
+     ref $DAS = 2RDBE2+NONE<;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def VLBA_SC;
+     site_type = fixed;
+     site_name = VLBA_SC;
+     site_ID = Sc;
+*    elev=  -15.02 long= 064:35:01. lat= 17:45:23.7
+     site_position = 2607848.69850 m:-5488069.48010 m: 1932739.81690 m;
+     site_velocity =  0.007700   m/yr:  0.009280   m/yr:  0.012480  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 20.0: 25.0: 40.0: 45.0: 50.0: 55.0:
+                                60.0: 65.0: 70.0: 75.0: 80.0: 85.0: 95.0:100.0:
+                               105.0:110.0:115.0:120.0:125.0:130.0:135.0:140.0:
+                               145.0:150.0:155.0:160.0:165.0:175.0:180.0:185.0:
+                               190.0:200.0:205.0:210.0:215.0:220.0:230.0:235.0:
+                               240.0:245.0:250.0:260.0:265.0:270.0:275.0:280.0:
+                               360.0;
+     horizon_map_el =  2.0 deg:  2.0:  3.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 6.0:  6.0:  8.0:  9.0:  9.0:  8.0:  8.0:  9.0:
+                                10.0: 12.0: 14.0: 16.0: 16.0: 15.0: 13.0: 13.0:
+                                12.0: 11.0: 11.0: 10.0:  9.0:  9.0: 11.0: 13.0:
+                                14.0: 14.0: 15.0: 13.0: 12.0: 10.0: 10.0:  9.0:
+                                 8.0:  8.0:  7.0:  7.0:  6.0:  4.0:  3.0:  2.0:
+                                 2.0;
+enddef;
+*
+def VLBA_HN;
+     site_type = fixed;
+     site_name = VLBA_HN;
+     site_ID = Hn;
+*    elev=  295.57 long= 071:59:11. lat= 42:56:01.0
+     site_position = 1446374.75710 m:-4447939.69470 m: 4322306.20610 m;
+     site_velocity = -0.015660   m/yr: -0.001620   m/yr:  0.004160  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 30.0: 35.0: 40.0: 45.0: 65.0: 70.0: 80.0:
+                                85.0: 90.0: 95.0:100.0:105.0:110.0:115.0:120.0:
+                               125.0:130.0:135.0:140.0:145.0:150.0:155.0:160.0:
+                               165.0:170.0:190.0:195.0:200.0:205.0:210.0:220.0:
+                               225.0:230.0:235.0:240.0:245.0:250.0:255.0:270.0:
+                               275.0:290.0:295.0:315.0:320.0:325.0:330.0:335.0:
+                               345.0:350.0:355.0:360.0;
+     horizon_map_el =  6.0 deg:  6.0:  6.0:  4.0:  5.0:  4.0:  4.0:  5.0:  5.0:
+                                 4.0:  5.0:  4.0:  4.0:  5.0:  3.0:  4.0:  4.0:
+                                 5.0:  4.0:  6.0:  5.0:  7.0:  7.0:  5.0:  3.0:
+                                 5.0:  4.0:  4.0:  2.0:  5.0:  5.0:  6.0:  6.0:
+                                 5.0:  6.0:  4.0:  5.0:  5.0:  4.0:  5.0:  5.0:
+                                 4.0:  4.0:  5.0:  5.0:  6.0:  5.0:  5.0:  6.0:
+                                 6.0:  5.0:  5.0:  6.0;
+enddef;
+*
+def VLBA_NL;
+     site_type = fixed;
+     site_name = VLBA_NL;
+     site_ID = Nl;
+*    elev=  222.22 long= 091:34:26. lat= 41:46:17.1
+     site_position = -130872.60440 m:-4762317.09070 m: 4226850.97730 m;
+     site_velocity = -0.015370   m/yr:  0.001300   m/yr: -0.002380  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 75.0: 80.0: 85.0:100.0:105.0:110.0:115.0:
+                               120.0:125.0:130.0:135.0:140.0:145.0:150.0:155.0:
+                               160.0:165.0:170.0:190.0:195.0:200.0:220.0:225.0:
+                               360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  3.0:  6.0:  6.0:  8.0:  7.0:  7.0:
+                                 6.0:  7.0:  7.0:  6.0:  6.0:  7.0:  7.0:  6.0:
+                                 5.0:  4.0:  3.0:  3.0:  2.0:  3.0:  3.0:  2.0:
+                                 2.0;
+enddef;
+*
+def VLBA_FD;
+     site_type = fixed;
+     site_name = VLBA_FD;
+     site_ID = Fd;
+*    elev= 1606.42 long= 103:56:41. lat= 30:38:06.1
+     site_position =-1324009.41200 m:-5332181.95760 m: 3231962.34920 m;
+     site_velocity = -0.012560   m/yr:  0.000440   m/yr: -0.005050  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0: 30.0: 35.0: 40.0: 45.0:
+                                50.0: 55.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:
+                                90.0: 95.0:100.0:105.0:110.0:115.0:150.0:155.0:
+                               160.0:220.0:225.0:230.0:240.0:245.0:250.0:255.0:
+                               260.0:265.0:270.0:275.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:315.0:325.0:330.0:335.0:340.0:
+                               345.0:360.0;
+     horizon_map_el =  5.0 deg:  4.0:  5.0:  5.0:  3.0:  3.0:  2.0:  3.0:  2.0:
+                                 2.0:  3.0:  4.0:  7.0:  5.0:  4.0:  4.0:  5.0:
+                                 6.0:  6.0:  5.0:  4.0:  3.0:  2.0:  2.0:  3.0:
+                                 2.0:  2.0:  4.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 5.0:  5.0:  4.0:  4.0:  3.0:  3.0:  2.0:  2.0:
+                                 3.0:  4.0:  5.0:  4.0:  4.0:  5.0:  6.0:  6.0:
+                                 5.0:  5.0;
+enddef;
+*
+def VLBA_LA;
+     site_type = fixed;
+     site_name = VLBA_LA;
+     site_ID = La;
+*    elev= 1962.43 long= 106:14:44. lat= 35:46:30.4
+     site_position =-1449752.68140 m:-4975298.57780 m: 3709123.79710 m;
+     site_velocity = -0.014230   m/yr:  0.000450   m/yr: -0.005270  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 75.0: 80.0: 85.0:130.0:135.0:145.0:150.0:
+                               250.0:255.0:300.0:305.0:315.0:320.0:340.0:345.0:
+                               360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  3.0:  2.0:  2.0:  3.0:  3.0:  2.0:
+                                 2.0:  3.0:  3.0:  4.0:  4.0:  3.0:  3.0:  2.0:
+                                 2.0;
+enddef;
+*
+def VLBA_PT;
+     site_type = fixed;
+     site_name = VLBA_PT;
+     site_ID = Pt;
+*    elev= 2364.68 long= 108:07:09. lat= 34:18:03.7
+     site_position =-1640954.03570 m:-5014816.02810 m: 3575411.73740 m;
+     site_velocity = -0.014350   m/yr: -0.000090   m/yr: -0.005920  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:165.0:
+                               170.0:180.0:185.0:190.0:195.0:200.0:240.0:245.0:
+                               250.0:255.0:265.0:270.0:275.0:280.0:285.0:360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  3.0:  3.0:  2.0:  3.0:  2.0:  2.0:
+                                 3.0:  3.0:  4.0:  4.0:  3.0:  4.0:  4.0:  3.0:
+                                 4.0:  3.0:  3.0:  4.0:  3.0:  3.0:  2.0:  2.0;
+enddef;
+*
+def VLBA_KP;
+     site_type = fixed;
+     site_name = VLBA_KP;
+     site_ID = Kp;
+*    elev= 1901.99 long= 111:36:44. lat= 31:57:22.7
+     site_position =-1995678.93100 m:-5037317.69820 m: 3357327.96450 m;
+     site_velocity = -0.013440   m/yr:  0.000670   m/yr: -0.006850  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 45.0: 50.0: 55.0: 60.0: 65.0: 70.0: 75.0:
+                                80.0: 85.0: 90.0: 95.0:105.0:110.0:115.0:120.0:
+                               150.0:155.0:165.0:170.0:180.0:185.0:215.0:220.0:
+                               225.0:230.0:235.0:240.0:255.0:260.0:265.0:270.0:
+                               360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  5.0:  6.0:  7.0:  7.0:  8.0:  8.0:
+                                 9.0:  6.0:  3.0:  2.0:  2.0:  3.0:  3.0:  2.0:
+                                 2.0:  3.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 4.0:  5.0:  5.0:  4.0:  4.0:  3.0:  3.0:  2.0:
+                                 2.0;
+enddef;
+*
+def VLBA_OV;
+     site_type = fixed;
+     site_name = VLBA_OV;
+     site_ID = Ov;
+*    elev= 1196.31 long= 118:16:37. lat= 37:13:53.9
+     site_position =-2409150.52770 m:-4478573.07980 m: 3838617.29990 m;
+     site_velocity = -0.018330   m/yr:  0.006500   m/yr: -0.003940  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0: 25.0: 30.0: 35.0: 40.0:
+                                45.0: 50.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:
+                                90.0: 95.0:100.0:105.0:110.0:115.0:120.0:125.0:
+                               130.0:145.0:150.0:155.0:175.0:180.0:185.0:190.0:
+                               195.0:200.0:205.0:210.0:230.0:235.0:240.0:245.0:
+                               250.0:260.0:265.0:270.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:350.0:355.0:360.0;
+     horizon_map_el =  3.0 deg:  5.0:  5.0:  7.0:  9.0: 10.0: 12.0: 13.0: 13.0:
+                                14.0: 15.0: 15.0: 13.0: 12.0: 11.0: 10.0:  9.0:
+                                 8.0:  7.0:  6.0:  6.0:  5.0:  4.0:  3.0:  3.0:
+                                 4.0:  4.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:
+                                 5.0:  5.0:  6.0:  7.0:  7.0:  6.0:  7.0:  8.0:
+                                 9.0:  9.0:  8.0:  7.0:  7.0:  5.0:  4.0:  4.0:
+                                 3.0:  3.0:  2.0:  2.0:  3.0:  3.0;
+enddef;
+*
+def VLBA_BR;
+     site_type = fixed;
+     site_name = VLBA_BR;
+     site_ID = Br;
+*    elev=  250.47 long= 119:40:59. lat= 48:07:52.4
+     site_position =-2112065.30820 m:-3705356.51420 m: 4726813.61240 m;
+     site_velocity = -0.014730   m/yr:  0.000110   m/yr: -0.007690  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 25.0: 30.0: 40.0: 45.0: 70.0:
+                                75.0:120.0:125.0:130.0:135.0:155.0:160.0:185.0:
+                               190.0:195.0:220.0:225.0:235.0:240.0:245.0:250.0:
+                               255.0:265.0:270.0:275.0:300.0:305.0:310.0:315.0:
+                               330.0:335.0:340.0:345.0:350.0:360.0;
+     horizon_map_el =  2.0 deg:  2.0:  3.0:  2.0:  2.0:  3.0:  3.0:  4.0:  4.0:
+                                 5.0:  5.0:  4.0:  4.0:  3.0:  3.0:  2.0:  2.0:
+                                 3.0:  4.0:  4.0:  3.0:  3.0:  4.0:  4.0:  5.0:
+                                 6.0:  6.0:  5.0:  6.0:  6.0:  5.0:  6.0:  5.0:
+                                 5.0:  4.0:  4.0:  3.0:  2.0:  2.0;
+enddef;
+*
+def VLBA_MK;
+     site_type = fixed;
+     site_name = VLBA_MK;
+     site_ID = Mk;
+*    elev= 3763.00 long= 155:27:19. lat= 19:48:05.0
+     site_position =-5464075.27360 m:-2495247.68250 m: 2148297.56170 m;
+     site_velocity = -0.014020   m/yr:  0.062490   m/yr:  0.031830  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2020y001d;
+     site_position_epoch =   58849;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0:120.0:125.0:130.0:135.0:
+                               140.0:145.0:150.0:155.0:160.0:165.0:170.0:175.0:
+                               185.0:190.0:195.0:200.0:205.0:210.0:215.0:220.0:
+                               255.0:260.0:270.0:275.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:315.0:320.0:325.0:330.0:335.0:
+                               340.0:345.0:350.0:355.0:360.0;
+     horizon_map_el =  5.0 deg:  4.0:  3.0:  3.0:  2.0:  2.0:  4.0:  5.0:  5.0:
+                                 4.0:  4.0:  6.0:  8.0:  8.0: 11.0: 12.0: 13.0:
+                                13.0: 11.0: 11.0:  9.0:  7.0:  5.0:  3.0:  2.0:
+                                 2.0:  3.0:  3.0:  5.0:  6.0:  8.0: 10.0: 12.0:
+                                14.0: 12.0: 11.0:  9.0: 10.0: 11.0: 10.0: 12.0:
+                                14.0: 12.0:  9.0:  7.0:  5.0;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def VLBA_SC;
+     axis_type = az : el;
+     antenna_motion = el :  28.5 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  84.5 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13550 m;
+enddef;
+*
+def VLBA_HN;
+     axis_type = az : el;
+     antenna_motion = el :  26.7 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  81.3 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.12990 m;
+enddef;
+*
+def VLBA_NL;
+     axis_type = az : el;
+     antenna_motion = el :  28.7 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  82.5 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13080 m;
+enddef;
+*
+def VLBA_FD;
+     axis_type = az : el;
+     antenna_motion = el :  30.5 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  84.3 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13170 m;
+enddef;
+*
+def VLBA_LA;
+     axis_type = az : el;
+     antenna_motion = el :  29.5 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  82.0 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13100 m;
+enddef;
+*
+def VLBA_PT;
+     axis_type = az : el;
+     antenna_motion = el :  29.3 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  82.3 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13750 m;
+enddef;
+*
+def VLBA_KP;
+     axis_type = az : el;
+     antenna_motion = el :  29.4 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  80.8 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13090 m;
+enddef;
+*
+def VLBA_OV;
+     axis_type = az : el;
+     antenna_motion = el :  28.7 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  84.5 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13090 m;
+enddef;
+*
+def VLBA_BR;
+     axis_type = az : el;
+     antenna_motion = el :  29.0 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  83.6 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13040 m;
+enddef;
+*
+def VLBA_MK;
+     axis_type = az : el;
+     antenna_motion = el :  28.3 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  86.8 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     pointing_sector = &ccw  : az : -90.00 deg:  90.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 1
+     pointing_sector = &n    : az :  90.00 deg: 270.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 2
+     pointing_sector = &cw   : az : 270.00 deg: 450.00 deg: el :  2.25 deg: 90.00 deg; * cable wrap zone 3
+     axis_offset =    2.13360 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+def 2RDBE2+NONE<;
+     record_transport_type = Mark5C;
+     electronics_rack_type = RDBE2;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def J0737-3039PT;
+     source_name = J0737-3039PT;
+*    this source had calibrator code:  
+*    Pointing center for pulsar + inbeams
+     ra = 07h37m31.2500000s; dec = -30d32'41.000000"; ref_coord_frame = J2000;
+*    ra = 07h35m33.4064449s; dec = -30d25'51.232946"; ref_coord_frame = B1950;
+*    ra = 07h38m23.1390457s; dec = -30d35'54.574669"; ref_coord_frame = Date;
+enddef;
+*
+def J0730-3208;
+     source_name = J0730-3208;
+*    this source had calibrator code: V
+*    alternate source name: 0728-320
+*    rfc_2018a Petrov and Kovalev, in preparation  75 observations
+     ra = 07h30m38.2983510s; dec = -32d08'20.180140"; ref_coord_frame = J2000;
+*    ra = 07h28m43.2795589s; dec = -32d01'57.965684"; ref_coord_frame = B1950;
+*    ra = 07h31m28.9058294s; dec = -32d11'21.920469"; ref_coord_frame = Date;
+enddef;
+*
+def J0745+1011;
+     source_name = J0745+1011;
+*    this source had calibrator code: V
+*    alternate source name: 0742+103
+*    rfc_2018a Petrov and Kovalev, in preparation  11604 observations
+     ra = 07h45m33.0595230s; dec =  10d11'12.692270"; ref_coord_frame = J2000;
+*    ra = 07h42m48.4646236s; dec =  10d18'32.657923"; ref_coord_frame = B1950;
+*    ra = 07h46m45.5810207s; dec =  10d07'56.652373"; ref_coord_frame = Date;
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def 1392.00MHz16x32MHz;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     sample_rate =    64.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  1392.00 MHz : U :  32.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = :  1392.00 MHz : U :  32.00 MHz : &CH02 : &BBC02 : &NoCal; *Lcp
+     chan_def = :  1424.00 MHz : U :  32.00 MHz : &CH03 : &BBC03 : &NoCal; *Rcp
+     chan_def = :  1424.00 MHz : U :  32.00 MHz : &CH04 : &BBC04 : &NoCal; *Lcp
+     chan_def = :  1456.00 MHz : U :  32.00 MHz : &CH05 : &BBC05 : &NoCal; *Rcp
+     chan_def = :  1456.00 MHz : U :  32.00 MHz : &CH06 : &BBC06 : &NoCal; *Lcp
+     chan_def = :  1488.00 MHz : U :  32.00 MHz : &CH07 : &BBC07 : &NoCal; *Rcp
+     chan_def = :  1488.00 MHz : U :  32.00 MHz : &CH08 : &BBC08 : &NoCal; *Lcp
+     chan_def = :  1520.00 MHz : U :  32.00 MHz : &CH09 : &BBC09 : &NoCal; *Rcp
+     chan_def = :  1520.00 MHz : U :  32.00 MHz : &CH10 : &BBC10 : &NoCal; *Lcp
+     chan_def = :  1648.00 MHz : U :  32.00 MHz : &CH11 : &BBC11 : &NoCal; *Rcp
+     chan_def = :  1648.00 MHz : U :  32.00 MHz : &CH12 : &BBC12 : &NoCal; *Lcp
+     chan_def = :  1680.00 MHz : U :  32.00 MHz : &CH13 : &BBC13 : &NoCal; *Rcp
+     chan_def = :  1680.00 MHz : U :  32.00 MHz : &CH14 : &BBC14 : &NoCal; *Lcp
+     chan_def = :  1712.00 MHz : U :  32.00 MHz : &CH15 : &BBC15 : &NoCal; *Rcp
+     chan_def = :  1712.00 MHz : U :  32.00 MHz : &CH16 : &BBC16 : &NoCal; *Lcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*
+def LO@2400MHzDPolNoTone;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     if_def = &IF_A : A : R :  2400.00 MHz : L ; * PCall off!   14600.00   2400.00  20cm     0 NA
+     if_def = &IF_C : C : L :  2400.00 MHz : L ; * PCall off!   14600.00   2400.00  20cm     0 NA
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 16BBCs;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     BBC_assign = &BBC01 :  1 : &IF_A;
+     BBC_assign = &BBC02 :  2 : &IF_C;
+     BBC_assign = &BBC03 :  3 : &IF_A;
+     BBC_assign = &BBC04 :  4 : &IF_C;
+     BBC_assign = &BBC05 :  5 : &IF_A;
+     BBC_assign = &BBC06 :  6 : &IF_C;
+     BBC_assign = &BBC07 :  7 : &IF_A;
+     BBC_assign = &BBC08 :  8 : &IF_C;
+     BBC_assign = &BBC09 :  9 : &IF_A;
+     BBC_assign = &BBC10 : 10 : &IF_C;
+     BBC_assign = &BBC11 : 11 : &IF_A;
+     BBC_assign = &BBC12 : 12 : &IF_C;
+     BBC_assign = &BBC13 : 13 : &IF_A;
+     BBC_assign = &BBC14 : 14 : &IF_C;
+     BBC_assign = &BBC15 : 15 : &IF_A;
+     BBC_assign = &BBC16 : 16 : &IF_C;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def NoDetect;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+     phase_cal_detect = &NoCal;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+def MARK5B.16Ch2bit1to1;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*    firmware_type = RDBE_PFB;
+*    format = MARK5B, and fan-out = 1
+*    mode requires  64.00Mb/s/tr; stations using disks
+     track_frame_format = MARK5B;
+     fanout_def =   : &CH01 : sign : 1:  2;
+     fanout_def =   : &CH01 :  mag : 1:  3;
+     fanout_def =   : &CH02 : sign : 1:  4;
+     fanout_def =   : &CH02 :  mag : 1:  5;
+     fanout_def =   : &CH03 : sign : 1:  6;
+     fanout_def =   : &CH03 :  mag : 1:  7;
+     fanout_def =   : &CH04 : sign : 1:  8;
+     fanout_def =   : &CH04 :  mag : 1:  9;
+     fanout_def =   : &CH05 : sign : 1: 10;
+     fanout_def =   : &CH05 :  mag : 1: 11;
+     fanout_def =   : &CH06 : sign : 1: 12;
+     fanout_def =   : &CH06 :  mag : 1: 13;
+     fanout_def =   : &CH07 : sign : 1: 14;
+     fanout_def =   : &CH07 :  mag : 1: 15;
+     fanout_def =   : &CH08 : sign : 1: 16;
+     fanout_def =   : &CH08 :  mag : 1: 17;
+     fanout_def =   : &CH09 : sign : 1: 18;
+     fanout_def =   : &CH09 :  mag : 1: 19;
+     fanout_def =   : &CH10 : sign : 1: 20;
+     fanout_def =   : &CH10 :  mag : 1: 21;
+     fanout_def =   : &CH11 : sign : 1: 22;
+     fanout_def =   : &CH11 :  mag : 1: 23;
+     fanout_def =   : &CH12 : sign : 1: 24;
+     fanout_def =   : &CH12 :  mag : 1: 25;
+     fanout_def =   : &CH13 : sign : 1: 26;
+     fanout_def =   : &CH13 :  mag : 1: 27;
+     fanout_def =   : &CH14 : sign : 1: 28;
+     fanout_def =   : &CH14 :  mag : 1: 29;
+     fanout_def =   : &CH15 : sign : 1: 30;
+     fanout_def =   : &CH15 :  mag : 1: 31;
+     fanout_def =   : &CH16 : sign : 1: 32;
+     fanout_def =   : &CH16 :  mag : 1: 33;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def DiskVoid;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*     Head positions irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def DiskVoid;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =Sc:Hn:Nl:Fd:La:Pt:Kp:Ov:Br:Mk
+*    barrel-roll set to 'roll_off', so reverse-roll by  0 (1 head)
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment bd247c3 
+* bd247                                                                   
+scan No0001;
+     start=2022y096d01h20m11s; mode=20cm-vlba; source=J0730-3208;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Sc:    0 sec:   60 sec:    0.000 GB:   : &n    : 1;
+     station=Hn:    0 sec:   60 sec:    0.000 GB:   : &n    : 1;
+     station=Nl:    0 sec:   60 sec:    0.000 GB:   : &n    : 1;
+     station=Fd:    0 sec:   60 sec:    0.000 GB:   : &n    : 1;
+     station=La:    0 sec:   60 sec:    0.000 GB:   : &n    : 1;
+     station=Pt:    0 sec:   60 sec:    0.000 GB:   : &n    : 1;
+     station=Kp:    0 sec:   60 sec:    0.000 GB:   : &n    : 1;
+     station=Ov:    0 sec:   60 sec:    0.000 GB:   : &n    : 1;
+     station=Br:    0 sec:   60 sec:    0.000 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:    0.000 GB:   : &n    : 1;
+endscan;
+scan No0002;
+     start=2022y096d01h21m11s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  115 sec:   15.385 GB:   : &n    : 1;
+     station=Hn:   12 sec:  115 sec:   15.385 GB:   : &n    : 1;
+     station=Nl:   12 sec:  115 sec:   15.385 GB:   : &n    : 1;
+     station=Fd:   11 sec:  115 sec:   15.385 GB:   : &n    : 1;
+     station=La:   11 sec:  115 sec:   15.385 GB:   : &n    : 1;
+     station=Pt:   11 sec:  115 sec:   15.385 GB:   : &n    : 1;
+     station=Kp:   11 sec:  115 sec:   15.385 GB:   : &n    : 1;
+     station=Ov:   10 sec:  115 sec:   15.385 GB:   : &n    : 1;
+     station=Br:   10 sec:  115 sec:   15.385 GB:   : &n    : 1;
+     station=Mk:    9 sec:  115 sec:   15.385 GB:   : &n    : 1;
+endscan;
+scan No0003;
+     start=2022y096d01h23m16s; mode=20cm-vlba; source=J0730-3208;
+     station=Sc:    3 sec:   60 sec:   41.538 GB:   : &n    : 1;
+     station=Hn:    2 sec:   60 sec:   41.538 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:   41.795 GB:   : &n    : 1;
+     station=Fd:    1 sec:   60 sec:   42.051 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:   42.051 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:   42.051 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:   42.051 GB:   : &n    : 1;
+     station=Ov:    0 sec:   60 sec:   42.051 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:   42.051 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:   42.308 GB:   : &n    : 1;
+endscan;
+scan No0004;
+     start=2022y096d01h24m16s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  114 sec:   56.154 GB:   : &n    : 1;
+     station=Hn:   12 sec:  114 sec:   56.154 GB:   : &n    : 1;
+     station=Nl:   12 sec:  114 sec:   56.667 GB:   : &n    : 1;
+     station=Fd:   11 sec:  114 sec:   57.179 GB:   : &n    : 1;
+     station=La:   11 sec:  114 sec:   57.179 GB:   : &n    : 1;
+     station=Pt:   11 sec:  114 sec:   57.179 GB:   : &n    : 1;
+     station=Kp:   11 sec:  114 sec:   57.179 GB:   : &n    : 1;
+     station=Ov:   10 sec:  114 sec:   57.179 GB:   : &n    : 1;
+     station=Br:   11 sec:  114 sec:   57.179 GB:   : &n    : 1;
+     station=Mk:    9 sec:  114 sec:   57.692 GB:   : &n    : 1;
+endscan;
+scan No0005;
+     start=2022y096d01h26m20s; mode=20cm-vlba; source=J0730-3208;
+     station=Sc:    3 sec:   60 sec:   82.307 GB:   : &n    : 1;
+     station=Hn:    2 sec:   60 sec:   82.307 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:   83.077 GB:   : &n    : 1;
+     station=Fd:    1 sec:   60 sec:   83.846 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:   83.846 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:   83.846 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:   83.846 GB:   : &n    : 1;
+     station=Ov:    0 sec:   60 sec:   83.846 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:   83.846 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:   84.615 GB:   : &n    : 1;
+endscan;
+scan No0006;
+     start=2022y096d01h27m20s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  115 sec:   96.923 GB:   : &n    : 1;
+     station=Hn:   12 sec:  115 sec:   96.923 GB:   : &n    : 1;
+     station=Nl:   12 sec:  115 sec:   97.948 GB:   : &n    : 1;
+     station=Fd:   11 sec:  115 sec:   98.974 GB:   : &n    : 1;
+     station=La:   11 sec:  115 sec:   98.974 GB:   : &n    : 1;
+     station=Pt:   11 sec:  115 sec:   98.974 GB:   : &n    : 1;
+     station=Kp:   11 sec:  115 sec:   98.974 GB:   : &n    : 1;
+     station=Ov:   10 sec:  115 sec:   98.974 GB:   : &n    : 1;
+     station=Br:   11 sec:  115 sec:   98.974 GB:   : &n    : 1;
+     station=Mk:    9 sec:  115 sec:  100.000 GB:   : &n    : 1;
+endscan;
+scan No0007;
+     start=2022y096d01h29m25s; mode=20cm-vlba; source=J0730-3208;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Sc:    3 sec:   60 sec:  123.077 GB:   : &n    : 1;
+     station=Hn:    2 sec:   60 sec:  123.077 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  124.359 GB:   : &n    : 1;
+     station=Fd:    1 sec:   60 sec:  125.641 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  125.641 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  125.641 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  125.641 GB:   : &n    : 1;
+     station=Ov:    0 sec:   60 sec:  125.641 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  125.641 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  126.923 GB:   : &n    : 1;
+endscan;
+scan No0008;
+     start=2022y096d01h30m25s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  114 sec:  137.692 GB:   : &n    : 1;
+     station=Hn:   12 sec:  114 sec:  137.692 GB:   : &n    : 1;
+     station=Nl:   12 sec:  114 sec:  139.230 GB:   : &n    : 1;
+     station=Fd:   11 sec:  114 sec:  140.769 GB:   : &n    : 1;
+     station=La:   11 sec:  114 sec:  140.769 GB:   : &n    : 1;
+     station=Pt:   11 sec:  114 sec:  140.769 GB:   : &n    : 1;
+     station=Kp:   11 sec:  114 sec:  140.769 GB:   : &n    : 1;
+     station=Ov:   10 sec:  114 sec:  140.769 GB:   : &n    : 1;
+     station=Br:   11 sec:  114 sec:  140.769 GB:   : &n    : 1;
+     station=Mk:    9 sec:  114 sec:  142.307 GB:   : &n    : 1;
+endscan;
+scan No0009;
+     start=2022y096d01h32m29s; mode=20cm-vlba; source=J0730-3208;
+     station=Sc:    3 sec:   60 sec:  163.846 GB:   : &n    : 1;
+     station=Hn:    2 sec:   60 sec:  163.846 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  165.641 GB:   : &n    : 1;
+     station=Fd:    1 sec:   60 sec:  167.435 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  167.435 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  167.435 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  167.435 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  167.435 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  167.435 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  169.230 GB:   : &n    : 1;
+endscan;
+scan No0010;
+     start=2022y096d01h33m29s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  115 sec:  178.461 GB:   : &n    : 1;
+     station=Hn:   12 sec:  115 sec:  178.461 GB:   : &n    : 1;
+     station=Nl:   12 sec:  115 sec:  180.512 GB:   : &n    : 1;
+     station=Fd:   11 sec:  115 sec:  182.564 GB:   : &n    : 1;
+     station=La:   11 sec:  115 sec:  182.564 GB:   : &n    : 1;
+     station=Pt:   11 sec:  115 sec:  182.564 GB:   : &n    : 1;
+     station=Kp:   11 sec:  115 sec:  182.564 GB:   : &n    : 1;
+     station=Ov:   11 sec:  115 sec:  182.564 GB:   : &n    : 1;
+     station=Br:   11 sec:  115 sec:  182.564 GB:   : &n    : 1;
+     station=Mk:    9 sec:  115 sec:  184.615 GB:   : &n    : 1;
+endscan;
+scan No0011;
+     start=2022y096d01h35m34s; mode=20cm-vlba; source=J0730-3208;
+     station=Sc:    3 sec:   60 sec:  204.615 GB:   : &n    : 1;
+     station=Hn:    2 sec:   60 sec:  204.615 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  206.923 GB:   : &n    : 1;
+     station=Fd:    1 sec:   60 sec:  209.230 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  209.230 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  209.230 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  209.230 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  209.230 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  209.230 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  211.538 GB:   : &n    : 1;
+endscan;
+scan No0012;
+     start=2022y096d01h36m34s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  114 sec:  219.230 GB:   : &n    : 1;
+     station=Hn:   12 sec:  114 sec:  219.230 GB:   : &n    : 1;
+     station=Nl:   12 sec:  114 sec:  221.794 GB:   : &n    : 1;
+     station=Fd:   11 sec:  114 sec:  224.358 GB:   : &n    : 1;
+     station=La:   11 sec:  114 sec:  224.358 GB:   : &n    : 1;
+     station=Pt:   11 sec:  114 sec:  224.358 GB:   : &n    : 1;
+     station=Kp:   11 sec:  114 sec:  224.358 GB:   : &n    : 1;
+     station=Ov:   11 sec:  114 sec:  224.358 GB:   : &n    : 1;
+     station=Br:   11 sec:  114 sec:  224.358 GB:   : &n    : 1;
+     station=Mk:    9 sec:  114 sec:  226.923 GB:   : &n    : 1;
+endscan;
+scan No0013;
+     start=2022y096d01h38m38s; mode=20cm-vlba; source=J0730-3208;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Sc:    3 sec:   60 sec:  245.384 GB:   : &n    : 1;
+     station=Hn:    2 sec:   60 sec:  245.384 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  248.204 GB:   : &n    : 1;
+     station=Fd:    1 sec:   60 sec:  250.769 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  251.025 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  251.025 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  251.025 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  251.025 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  251.025 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  253.846 GB:   : &n    : 1;
+endscan;
+scan No0014;
+     start=2022y096d01h39m38s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  115 sec:  259.999 GB:   : &n    : 1;
+     station=Hn:   12 sec:  115 sec:  259.999 GB:   : &n    : 1;
+     station=Nl:   12 sec:  115 sec:  263.076 GB:   : &n    : 1;
+     station=Fd:   11 sec:  115 sec:  265.897 GB:   : &n    : 1;
+     station=La:   11 sec:  115 sec:  266.153 GB:   : &n    : 1;
+     station=Pt:   11 sec:  115 sec:  266.153 GB:   : &n    : 1;
+     station=Kp:   11 sec:  115 sec:  266.153 GB:   : &n    : 1;
+     station=Ov:   11 sec:  115 sec:  266.153 GB:   : &n    : 1;
+     station=Br:   11 sec:  115 sec:  266.153 GB:   : &n    : 1;
+     station=Mk:    9 sec:  115 sec:  269.230 GB:   : &n    : 1;
+endscan;
+scan No0015;
+     start=2022y096d01h41m43s; mode=20cm-vlba; source=J0730-3208;
+     station=Sc:    3 sec:   60 sec:  286.153 GB:   : &n    : 1;
+     station=Hn:    2 sec:   60 sec:  286.153 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  289.486 GB:   : &n    : 1;
+     station=Fd:    1 sec:   60 sec:  292.307 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  292.820 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  292.820 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  292.820 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  292.820 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  292.820 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  296.153 GB:   : &n    : 1;
+endscan;
+scan No0016;
+     start=2022y096d01h42m43s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  114 sec:  300.768 GB:   : &n    : 1;
+     station=Hn:   12 sec:  114 sec:  300.768 GB:   : &n    : 1;
+     station=Nl:   12 sec:  114 sec:  304.358 GB:   : &n    : 1;
+     station=Fd:   11 sec:  114 sec:  307.435 GB:   : &n    : 1;
+     station=La:   11 sec:  114 sec:  307.948 GB:   : &n    : 1;
+     station=Pt:   11 sec:  114 sec:  307.948 GB:   : &n    : 1;
+     station=Kp:   11 sec:  114 sec:  307.948 GB:   : &n    : 1;
+     station=Ov:   11 sec:  114 sec:  307.948 GB:   : &n    : 1;
+     station=Br:   11 sec:  114 sec:  307.948 GB:   : &n    : 1;
+     station=Mk:   10 sec:  114 sec:  311.538 GB:   : &n    : 1;
+endscan;
+scan No0017;
+     start=2022y096d01h44m47s; mode=20cm-vlba; source=J0730-3208;
+     station=Sc:    3 sec:   60 sec:  326.922 GB:   : &n    : 1;
+     station=Hn:    2 sec:   60 sec:  326.922 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  330.768 GB:   : &n    : 1;
+     station=Fd:    1 sec:   60 sec:  333.845 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  334.358 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  334.615 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  334.615 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  334.615 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  334.615 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  338.461 GB:   : &n    : 1;
+endscan;
+scan No0018;
+     start=2022y096d01h45m47s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  115 sec:  341.538 GB:   : &n    : 1;
+     station=Hn:   12 sec:  115 sec:  341.538 GB:   : &n    : 1;
+     station=Nl:   12 sec:  115 sec:  345.640 GB:   : &n    : 1;
+     station=Fd:   11 sec:  115 sec:  348.973 GB:   : &n    : 1;
+     station=La:   11 sec:  115 sec:  349.486 GB:   : &n    : 1;
+     station=Pt:   11 sec:  115 sec:  349.743 GB:   : &n    : 1;
+     station=Kp:   11 sec:  115 sec:  349.743 GB:   : &n    : 1;
+     station=Ov:   11 sec:  115 sec:  349.743 GB:   : &n    : 1;
+     station=Br:   11 sec:  115 sec:  349.743 GB:   : &n    : 1;
+     station=Mk:   10 sec:  115 sec:  353.845 GB:   : &n    : 1;
+endscan;
+scan No0019;
+     start=2022y096d01h47m52s; mode=20cm-vlba; source=J0730-3208;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Sc:    3 sec:   60 sec:  367.691 GB:   : &n    : 1;
+     station=Hn:    2 sec:   60 sec:  367.691 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  372.050 GB:   : &n    : 1;
+     station=Fd:    1 sec:   60 sec:  375.384 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  375.896 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  376.409 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  376.409 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  376.409 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  376.409 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  380.768 GB:   : &n    : 1;
+endscan;
+scan No0020;
+     start=2022y096d01h48m52s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  114 sec:  382.307 GB:   : &n    : 1;
+     station=Hn:   12 sec:  114 sec:  382.307 GB:   : &n    : 1;
+     station=Nl:   12 sec:  114 sec:  386.922 GB:   : &n    : 1;
+     station=Fd:   11 sec:  114 sec:  390.255 GB:   : &n    : 1;
+     station=La:   11 sec:  114 sec:  391.025 GB:   : &n    : 1;
+     station=Pt:   11 sec:  114 sec:  391.537 GB:   : &n    : 1;
+     station=Kp:   11 sec:  114 sec:  391.537 GB:   : &n    : 1;
+     station=Ov:   11 sec:  114 sec:  391.537 GB:   : &n    : 1;
+     station=Br:   11 sec:  114 sec:  391.537 GB:   : &n    : 1;
+     station=Mk:   10 sec:  114 sec:  396.153 GB:   : &n    : 1;
+endscan;
+scan No0021;
+     start=2022y096d01h50m56s; mode=20cm-vlba; source=J0730-3208;
+     station=Sc:    3 sec:   60 sec:  408.461 GB:   : &n    : 1;
+     station=Hn:    2 sec:   60 sec:  408.461 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  413.332 GB:   : &n    : 1;
+     station=Fd:    1 sec:   60 sec:  416.666 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  417.435 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  417.948 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  418.204 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  418.204 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  418.204 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  423.076 GB:   : &n    : 1;
+endscan;
+scan No0022;
+     start=2022y096d01h51m56s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  115 sec:  423.076 GB:   : &n    : 1;
+     station=Hn:   12 sec:  115 sec:  423.076 GB:   : &n    : 1;
+     station=Nl:   12 sec:  115 sec:  428.204 GB:   : &n    : 1;
+     station=Fd:   11 sec:  115 sec:  431.537 GB:   : &n    : 1;
+     station=La:   11 sec:  115 sec:  432.563 GB:   : &n    : 1;
+     station=Pt:   11 sec:  115 sec:  433.076 GB:   : &n    : 1;
+     station=Kp:   11 sec:  115 sec:  433.332 GB:   : &n    : 1;
+     station=Ov:   11 sec:  115 sec:  433.332 GB:   : &n    : 1;
+     station=Br:   11 sec:  115 sec:  433.332 GB:   : &n    : 1;
+     station=Mk:   10 sec:  115 sec:  438.460 GB:   : &n    : 1;
+endscan;
+scan No0023;
+     start=2022y096d01h54m01s; mode=20cm-vlba; source=J0730-3208;
+     station=Sc:    3 sec:   60 sec:  449.230 GB:   : &n    : 1;
+     station=Hn:    3 sec:   60 sec:  449.230 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  454.614 GB:   : &n    : 1;
+     station=Fd:    1 sec:   60 sec:  457.948 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  458.973 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  459.486 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  459.999 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  459.999 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  459.999 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  465.383 GB:   : &n    : 1;
+endscan;
+scan No0024;
+     start=2022y096d01h55m01s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  114 sec:  463.845 GB:   : &n    : 1;
+     station=Hn:   12 sec:  114 sec:  463.845 GB:   : &n    : 1;
+     station=Nl:   12 sec:  114 sec:  469.486 GB:   : &n    : 1;
+     station=Fd:   11 sec:  114 sec:  472.819 GB:   : &n    : 1;
+     station=La:   11 sec:  114 sec:  473.845 GB:   : &n    : 1;
+     station=Pt:   11 sec:  114 sec:  474.614 GB:   : &n    : 1;
+     station=Kp:   11 sec:  114 sec:  475.127 GB:   : &n    : 1;
+     station=Ov:   11 sec:  114 sec:  475.127 GB:   : &n    : 1;
+     station=Br:   11 sec:  114 sec:  475.127 GB:   : &n    : 1;
+     station=Mk:   10 sec:  114 sec:  480.768 GB:   : &n    : 1;
+endscan;
+scan No0025;
+     start=2022y096d01h57m05s; mode=20cm-vlba; source=J0730-3208;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Sc:    3 sec:   60 sec:  489.999 GB:   : &n    : 1;
+     station=Hn:    3 sec:   60 sec:  489.999 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  495.896 GB:   : &n    : 1;
+     station=Fd:    1 sec:   60 sec:  499.230 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  500.255 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  501.024 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  501.794 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  501.794 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  501.794 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  507.691 GB:   : &n    : 1;
+endscan;
+scan No0026;
+     start=2022y096d01h58m05s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  115 sec:  504.614 GB:   : &n    : 1;
+     station=Hn:   12 sec:  115 sec:  504.614 GB:   : &n    : 1;
+     station=Nl:   12 sec:  115 sec:  510.768 GB:   : &n    : 1;
+     station=Fd:   11 sec:  115 sec:  514.101 GB:   : &n    : 1;
+     station=La:   11 sec:  115 sec:  515.127 GB:   : &n    : 1;
+     station=Pt:   11 sec:  115 sec:  516.153 GB:   : &n    : 1;
+     station=Kp:   11 sec:  115 sec:  516.922 GB:   : &n    : 1;
+     station=Ov:   11 sec:  115 sec:  516.922 GB:   : &n    : 1;
+     station=Br:   11 sec:  115 sec:  516.922 GB:   : &n    : 1;
+     station=Mk:   10 sec:  115 sec:  523.076 GB:   : &n    : 1;
+endscan;
+scan No0027;
+     start=2022y096d02h00m10s; mode=20cm-vlba; source=J0730-3208;
+     station=Sc:    3 sec:   60 sec:  530.768 GB:   : &n    : 1;
+     station=Hn:    3 sec:   60 sec:  530.768 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  537.178 GB:   : &n    : 1;
+     station=Fd:    2 sec:   60 sec:  540.511 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  541.537 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  542.563 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  543.588 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  543.588 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  543.588 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  549.999 GB:   : &n    : 1;
+endscan;
+scan No0028;
+     start=2022y096d02h01m10s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  114 sec:  545.383 GB:   : &n    : 1;
+     station=Hn:   12 sec:  114 sec:  545.383 GB:   : &n    : 1;
+     station=Nl:   12 sec:  114 sec:  552.050 GB:   : &n    : 1;
+     station=Fd:   11 sec:  114 sec:  555.383 GB:   : &n    : 1;
+     station=La:   11 sec:  114 sec:  556.409 GB:   : &n    : 1;
+     station=Pt:   11 sec:  114 sec:  557.435 GB:   : &n    : 1;
+     station=Kp:   11 sec:  114 sec:  558.717 GB:   : &n    : 1;
+     station=Ov:   11 sec:  114 sec:  558.717 GB:   : &n    : 1;
+     station=Br:   11 sec:  114 sec:  558.717 GB:   : &n    : 1;
+     station=Mk:   10 sec:  114 sec:  565.383 GB:   : &n    : 1;
+endscan;
+scan No0029;
+     start=2022y096d02h03m14s; mode=20cm-vlba; source=J0730-3208;
+     station=Sc:    3 sec:   60 sec:  571.537 GB:   : &n    : 1;
+     station=Hn:    3 sec:   60 sec:  571.537 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  578.460 GB:   : &n    : 1;
+     station=Fd:    2 sec:   60 sec:  581.793 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  582.819 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  583.845 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  585.383 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  585.383 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  585.383 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  592.306 GB:   : &n    : 1;
+endscan;
+scan No0030;
+     start=2022y096d02h04m14s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  115 sec:  586.152 GB:   : &n    : 1;
+     station=Hn:   12 sec:  115 sec:  586.152 GB:   : &n    : 1;
+     station=Nl:   12 sec:  115 sec:  593.332 GB:   : &n    : 1;
+     station=Fd:   12 sec:  115 sec:  596.665 GB:   : &n    : 1;
+     station=La:   11 sec:  115 sec:  597.691 GB:   : &n    : 1;
+     station=Pt:   11 sec:  115 sec:  598.716 GB:   : &n    : 1;
+     station=Kp:   11 sec:  115 sec:  600.511 GB:   : &n    : 1;
+     station=Ov:   11 sec:  115 sec:  600.511 GB:   : &n    : 1;
+     station=Br:   11 sec:  115 sec:  600.511 GB:   : &n    : 1;
+     station=Mk:   10 sec:  115 sec:  607.691 GB:   : &n    : 1;
+endscan;
+scan No0031;
+     start=2022y096d02h06m19s; mode=20cm-vlba; source=J0730-3208;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Sc:    2 sec:   60 sec:  612.306 GB:   : &n    : 1;
+     station=Hn:    3 sec:   60 sec:  612.306 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  619.742 GB:   : &n    : 1;
+     station=Fd:    2 sec:   60 sec:  623.075 GB:   : &n    : 1;
+     station=La:    1 sec:   60 sec:  624.101 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  625.127 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  626.922 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  627.178 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  627.178 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  634.614 GB:   : &n    : 1;
+endscan;
+scan No0032;
+     start=2022y096d02h07m19s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  114 sec:  626.922 GB:   : &n    : 1;
+     station=Hn:   12 sec:  114 sec:  626.922 GB:   : &n    : 1;
+     station=Nl:   12 sec:  114 sec:  634.614 GB:   : &n    : 1;
+     station=Fd:   12 sec:  114 sec:  637.947 GB:   : &n    : 1;
+     station=La:   11 sec:  114 sec:  638.973 GB:   : &n    : 1;
+     station=Pt:   11 sec:  114 sec:  639.998 GB:   : &n    : 1;
+     station=Kp:   11 sec:  114 sec:  642.050 GB:   : &n    : 1;
+     station=Ov:   11 sec:  114 sec:  642.306 GB:   : &n    : 1;
+     station=Br:   11 sec:  114 sec:  642.306 GB:   : &n    : 1;
+     station=Mk:   10 sec:  114 sec:  649.998 GB:   : &n    : 1;
+endscan;
+scan No0033;
+     start=2022y096d02h09m23s; mode=20cm-vlba; source=J0730-3208;
+     station=Sc:    2 sec:   60 sec:  653.075 GB:   : &n    : 1;
+     station=Hn:    3 sec:   60 sec:  653.075 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  661.024 GB:   : &n    : 1;
+     station=Fd:    2 sec:   60 sec:  664.357 GB:   : &n    : 1;
+     station=La:    2 sec:   60 sec:  665.383 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  666.409 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  668.460 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  668.973 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  668.973 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  676.921 GB:   : &n    : 1;
+endscan;
+scan No0034;
+     start=2022y096d02h10m23s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  115 sec:  667.691 GB:   : &n    : 1;
+     station=Hn:   12 sec:  115 sec:  667.691 GB:   : &n    : 1;
+     station=Nl:   12 sec:  115 sec:  675.896 GB:   : &n    : 1;
+     station=Fd:   12 sec:  115 sec:  679.229 GB:   : &n    : 1;
+     station=La:   11 sec:  115 sec:  680.255 GB:   : &n    : 1;
+     station=Pt:   11 sec:  115 sec:  681.280 GB:   : &n    : 1;
+     station=Kp:   11 sec:  115 sec:  683.588 GB:   : &n    : 1;
+     station=Ov:   11 sec:  115 sec:  684.101 GB:   : &n    : 1;
+     station=Br:   11 sec:  115 sec:  684.101 GB:   : &n    : 1;
+     station=Mk:   10 sec:  115 sec:  692.306 GB:   : &n    : 1;
+endscan;
+scan No0035;
+     start=2022y096d02h12m28s; mode=20cm-vlba; source=J0730-3208;
+     station=Sc:    2 sec:   60 sec:  693.845 GB:   : &n    : 1;
+     station=Hn:    3 sec:   60 sec:  693.845 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  702.306 GB:   : &n    : 1;
+     station=Fd:    2 sec:   60 sec:  705.639 GB:   : &n    : 1;
+     station=La:    2 sec:   60 sec:  706.665 GB:   : &n    : 1;
+     station=Pt:    1 sec:   60 sec:  707.691 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  709.998 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  710.768 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  710.768 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  719.229 GB:   : &n    : 1;
+endscan;
+scan No0036;
+     start=2022y096d02h13m28s; mode=20cm-vlba; source=J0737-3039PT;
+     station=Sc:   12 sec:  114 sec:  708.460 GB:   : &n    : 1;
+     station=Hn:   12 sec:  114 sec:  708.460 GB:   : &n    : 1;
+     station=Nl:   12 sec:  114 sec:  717.178 GB:   : &n    : 1;
+     station=Fd:   12 sec:  114 sec:  720.511 GB:   : &n    : 1;
+     station=La:   12 sec:  114 sec:  721.537 GB:   : &n    : 1;
+     station=Pt:   11 sec:  114 sec:  722.562 GB:   : &n    : 1;
+     station=Kp:   11 sec:  114 sec:  724.870 GB:   : &n    : 1;
+     station=Ov:   11 sec:  114 sec:  725.896 GB:   : &n    : 1;
+     station=Br:   11 sec:  114 sec:  725.896 GB:   : &n    : 1;
+     station=Mk:   10 sec:  114 sec:  734.614 GB:   : &n    : 1;
+endscan;
+scan No0037;
+     start=2022y096d02h15m32s; mode=20cm-vlba; source=J0730-3208;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Sc:    2 sec:   60 sec:  734.614 GB:   : &n    : 1;
+     station=Hn:    3 sec:   60 sec:  734.614 GB:   : &n    : 1;
+     station=Nl:    2 sec:   60 sec:  743.588 GB:   : &n    : 1;
+     station=Fd:    2 sec:   60 sec:  746.921 GB:   : &n    : 1;
+     station=La:    2 sec:   60 sec:  747.947 GB:   : &n    : 1;
+     station=Pt:    2 sec:   60 sec:  748.973 GB:   : &n    : 1;
+     station=Kp:    1 sec:   60 sec:  751.280 GB:   : &n    : 1;
+     station=Ov:    1 sec:   60 sec:  752.562 GB:   : &n    : 1;
+     station=Br:    1 sec:   60 sec:  752.562 GB:   : &n    : 1;
+     station=Mk:    0 sec:   60 sec:  761.537 GB:   : &n    : 1;
+endscan;
+scan No0038;
+     start=2022y096d02h17m02s; mode=20cm-vlba; source=J0745+1011;
+     station=Sc:   27 sec:  190 sec:  749.229 GB:   : &n    : 1;
+     station=Hn:   61 sec:  190 sec:  749.229 GB:   : &n    : 1;
+     station=Nl:   63 sec:  190 sec:  758.460 GB:   : &n    : 1;
+     station=Fd:   61 sec:  190 sec:  761.793 GB:   : &n    : 1;
+     station=La:   64 sec:  190 sec:  762.819 GB:   : &n    : 1;
+     station=Pt:   65 sec:  190 sec:  763.844 GB:   : &n    : 1;
+     station=Kp:   65 sec:  190 sec:  766.152 GB:   : &n    : 1;
+     station=Ov:   65 sec:  190 sec:  767.691 GB:   : &n    : 1;
+     station=Br:   65 sec:  190 sec:  767.691 GB:   : &n    : 1;
+     station=Mk:   24 sec:  190 sec:  776.921 GB:   : &n    : 1;
+endscan;
+*------------------------------------------------------------------------------
+*---- log data below was appended by vex2obs ver 0.4.14 ----
+*------------------------------------------------------------------------------
+$TAPELOG_OBS;
+def Br;
+  VSN = 9 : LBO%0170 : 2022y096d01h20m11s : 2022y096d02h20m12s;  * shelf = BB86
+enddef;
+def Fd;
+  VSN = 9 : LBO%0127 : 2022y096d01h20m11s : 2022y096d02h20m12s;  * shelf = BB40
+enddef;
+def Hn;
+  VSN = 9 : JPLK%020 : 2022y096d01h20m11s : 2022y096d02h20m12s;  * shelf = BB45
+enddef;
+def Kp;
+  VSN = 9 : LBO%0055 : 2022y096d01h20m11s : 2022y096d02h20m12s;  * shelf = BB60
+enddef;
+def La;
+  VSN = 9 : LBO%0147 : 2022y096d01h20m11s : 2022y096d02h20m12s;  * shelf = BB62
+enddef;
+def Mk;
+  VSN = 9 : LBO%0092 : 2022y096d01h20m11s : 2022y096d02h20m12s;  * shelf = BB36
+enddef;
+def Nl;
+  VSN = 9 : LBO%0040 : 2022y096d01h20m11s : 2022y096d02h20m12s;  * shelf = BB20
+enddef;
+def Ov;
+  VSN = 9 : LBO%0020 : 2022y096d01h20m11s : 2022y096d02h20m12s;  * shelf = BB50
+enddef;
+def Pt;
+  VSN = 9 : LBO%0075 : 2022y096d01h20m11s : 2022y096d02h20m12s;  * shelf = BB68
+enddef;
+def Sc;
+  VSN = 9 : LBO%0037 : 2022y096d01h20m11s : 2022y096d02h20m12s;  * shelf = BB12
+enddef;
+*------------------------------------------------------------------------------
+$CLOCK;
+def Br;
+  clock_early = 2022y096d01h20m11s : 1.14841554e-08 sec : 2022y094d02h52m06s : 7.78970036e-14;  * offset = -0.34 usec
+    * clock_start =    24.52 ns  clock_end =    24.80 ns
+enddef;
+def Fd;
+  clock_early = 2022y096d01h20m11s : -2.08667757e-05 sec : 2022y094d02h51m52s : -4.05740424e-13;  * offset = -0.46 usec
+    * clock_start = -20934.66 ns  clock_end = -20936.12 ns
+enddef;
+def Hn;
+  clock_early = 2022y096d01h20m11s : -1.01797743e-05 sec : 2022y094d02h51m49s : -2.08978122e-13;  * offset = -0.26 usec
+    * clock_start = -10214.74 ns  clock_end = -10215.49 ns
+enddef;
+def Kp;
+  clock_early = 2022y096d01h20m11s : -4.18442157e-06 sec : 2022y094d02h52m04s : -9.38403478e-14;  * offset = -0.26 usec
+    * clock_start = -4200.12 ns  clock_end = -4200.46 ns
+enddef;
+def La;
+  clock_early = 2022y096d01h20m11s : 5.17957801e-06 sec : 2022y094d02h51m47s : 1.40065823e-13;  * offset = -0.23 usec
+    * clock_start =  5203.01 ns  clock_end =  5203.52 ns
+enddef;
+def Mk;
+  clock_early = 2022y096d01h20m11s : -1.45693379e-06 sec : 2022y094d02h52m07s : -1.91504423e-13;  * offset = -0.17 usec
+    * clock_start = -1488.97 ns  clock_end = -1489.66 ns
+enddef;
+def Nl;
+  clock_early = 2022y096d01h20m11s : -1.86766180e-05 sec : 2022y094d02h51m32s : -4.05238060e-13;  * offset = -0.31 usec
+    * clock_start = -18744.42 ns  clock_end = -18745.88 ns
+enddef;
+def Ov;
+  clock_early = 2022y096d01h20m11s : -6.56607306e-06 sec : 2022y094d02h51m50s : -3.75823712e-13;  * offset = -0.22 usec
+    * clock_start = -6628.95 ns  clock_end = -6630.30 ns
+enddef;
+def Pt;
+  clock_early = 2022y096d01h20m11s : -6.84178946e-07 sec : 2022y094d12h20m44s : -1.65591095e-13;  * offset = -0.16 usec
+    * clock_start =  -706.23 ns  clock_end =  -706.83 ns
+enddef;
+def Sc;
+  clock_early = 2022y096d01h20m11s : -2.42645134e-05 sec : 2022y092d18h51m35s : -9.13891658e-14;  * offset = -0.35 usec
+    * clock_start = -24290.33 ns  clock_end = -24290.66 ns
+enddef;
+*------------------------------------------------------------------------------
+$EOP;
+def EOP59673_FINAL;
+  TAI-UTC= 37 sec;
+  A1-TAI= 0 sec;
+  eop_ref_epoch=2022y094d;
+  num_eop_points=1;
+  eop_interval=24 hr;
+  ut1-utc  = -0.100076 sec;
+  x_wobble = 0.04495 asec;
+  y_wobble = 0.43357 asec;
+  * data version = 2022y111d00h00m00s;
+enddef;
+def EOP59674_FINAL;
+  TAI-UTC= 37 sec;
+  A1-TAI= 0 sec;
+  eop_ref_epoch=2022y095d;
+  num_eop_points=1;
+  eop_interval=24 hr;
+  ut1-utc  = -0.099966 sec;
+  x_wobble = 0.04549 asec;
+  y_wobble = 0.43610 asec;
+  * data version = 2022y111d00h00m00s;
+enddef;
+def EOP59675_FINAL;
+  TAI-UTC= 37 sec;
+  A1-TAI= 0 sec;
+  eop_ref_epoch=2022y096d;
+  num_eop_points=1;
+  eop_interval=24 hr;
+  ut1-utc  = -0.099608 sec;
+  x_wobble = 0.04629 asec;
+  y_wobble = 0.43826 asec;
+  * data version = 2022y111d00h00m00s;
+enddef;
+def EOP59676_FINAL;
+  TAI-UTC= 37 sec;
+  A1-TAI= 0 sec;
+  eop_ref_epoch=2022y097d;
+  num_eop_points=1;
+  eop_interval=24 hr;
+  ut1-utc  = -0.099089 sec;
+  x_wobble = 0.04759 asec;
+  y_wobble = 0.44010 asec;
+  * data version = 2022y111d00h00m00s;
+enddef;
+def EOP59677_FINAL;
+  TAI-UTC= 37 sec;
+  A1-TAI= 0 sec;
+  eop_ref_epoch=2022y098d;
+  num_eop_points=1;
+  eop_interval=24 hr;
+  ut1-utc  = -0.098522 sec;
+  x_wobble = 0.04929 asec;
+  y_wobble = 0.44185 asec;
+  * data version = 2022y111d00h00m00s;
+enddef;

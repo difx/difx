@@ -140,6 +140,46 @@ dnl **** Find mark5access library                         ****
 dnl **********************************************************
 PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.7)
 
+dnl **********************************************************
+dnl **** Check for CUDA                                   ****
+dnl **********************************************************
+
+AC_ARG_VAR([NVCC],[CUDA compiler command (default: nvcc)])
+AC_ARG_VAR([NVCCFLAGS],[extra flags for nvcc, e.g. -arch=sm_75])
+NVCC=${NVCC:-nvcc}
+AC_CHECK_PROG([with_cuda],[$NVCC],[yes],[no])
+
+AC_ARG_ENABLE(cuda,
+	[AS_HELP_STRING([--enable-cuda],[compile with GPU acceleration using CUDA])],
+	[AS_IF([test "x$enableval" == "xyes"],[with_cuda=yes],[with_cuda=no])],
+	[])
+
+
+CUDA_LIBS=
+AM_CONDITIONAL(WITH_CUDA, [test "x$with_cuda" == "xyes"])
+
+AS_IF([test "x$with_cuda" == "xyes"],[
+	AC_SUBST(NVCC)
+	AC_SUBST(NVCCFLAGS)
+	dnl This needs to go into the linker command, because in the end mpicc
+	dnl (rather than nvcc) will be called to link everything together.
+	dnl Derive the CUDA lib dir from nvcc's location, since the toolkit's
+	dnl lib64 is typically not in the default linker search path.
+	AC_PATH_PROG([NVCC_FULLPATH],[$NVCC])
+	cuda_prefix=`dirname \`dirname "$NVCC_FULLPATH"\``
+	CUDA_LIBS="-lcudart -lcufft"
+	AS_IF([test -d "${cuda_prefix}/lib64"],[
+		CUDA_LIBS="-L${cuda_prefix}/lib64 -Wl,-rpath,${cuda_prefix}/lib64 ${CUDA_LIBS}"
+	])
+	dnl Plain C++ files also include CUDA headers (e.g. cuComplex.h via mode.h)
+	AS_IF([test -d "${cuda_prefix}/include"],[
+		CPPFLAGS="${CPPFLAGS} -I${cuda_prefix}/include"
+	])
+	AC_DEFINE([USE_CUDA], [1], [Compile CUDA-based GPU acceleration.])
+	AC_MSG_NOTICE([GPU support through CUDA will be **enabled** on this build])
+],[
+	AC_MSG_NOTICE([GPU support through CUDA will be **disabled** on this build])
+])
 
 dnl for Mutex lock in datastream.cpp
 AC_CHECK_LIB(rt, clock_gettime)
@@ -150,7 +190,7 @@ dnl Note: $MATH_LIBS is not included here.  It is added as needed
 dnl in _LDADD options for binaries that link to libmpifxcorr.
 dnl this allows utilities that don't need IPP not to be linked
 dnl with that library.
-LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${MARK6SG_LIBS} ${SS_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} ${DIRLIST_LIBS} $LIBS"
+LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${MARK6SG_LIBS} ${SS_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} ${DIRLIST_LIBS} ${CUDA_LIBS} $LIBS"
 
 
 dnl **********************************************************

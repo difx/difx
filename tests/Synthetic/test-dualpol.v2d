@@ -1,0 +1,53 @@
+
+vex=test-dualpol.vex
+
+maxLength = 86400
+maxGap = 86400
+maxSize =  1000000
+minLength=1
+
+dataBufferFactor = 256
+nDataSegments = 64
+tweakIntTime = true
+
+antennas = T1, T2
+
+threadsFile = threads
+nCore = 1
+nThread = 10
+startSeries = 0
+
+SETUP default
+{
+  # Sized to be runnable as committed: 1024 channels, 2 s integrations and a 60 s
+  # scan against the 50 s of data createData.sh makes. The older scenarios are
+  # committed at nChan=4096 / tInt=1 / 1200 s scans, which is why they get scaled
+  # down by hand before every local run - this one does not need that.
+  nChan=1024
+  tInt=2
+  # doPolar is the point of this scenario: with two polarisations recorded it
+  # gives 4 pol products per baseline, so maxproducts > 2 and DiFX writes the
+  # CROSS-POLARISATION AUTOCORRELATIONS. Every other synthetic scenario is
+  # single-pol, which leaves that path (and the GPU kernel block that computes
+  # it) with no test coverage at all.
+  doPolar = True
+}
+
+ANTENNA T1 {
+ clockOffset = 0
+ phaseCalInt = 0
+ file = TEST1-dualpol.vdif
+}
+
+ANTENNA T2 {
+ clockOffset = 0
+ phaseCalInt = 0
+ file = TEST2-dualpol.vdif
+}
+
+# EOPs downloaded at 2020-07-25 18:48:46 (+1000)
+EOP 58946 { xPole=0.056100 yPole=0.409450 tai_utc=37 ut1_utc=-0.230025 }
+EOP 58947 { xPole=0.056700 yPole=0.410030 tai_utc=37 ut1_utc=-0.231634 }
+EOP 58948 { xPole=0.057490 yPole=0.410990 tai_utc=37 ut1_utc=-0.233215 }
+EOP 58949 { xPole=0.058030 yPole=0.412040 tai_utc=37 ut1_utc=-0.234641 }
+EOP 58950 { xPole=0.058440 yPole=0.412980 tai_utc=37 ut1_utc=-0.235786 }

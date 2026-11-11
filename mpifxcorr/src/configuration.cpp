@@ -22,9 +22,10 @@
 #include <iterator>
 #include <iomanip>
 #include "mpifxcorr.h"
-#include "mk5mode.h"
 #include "configuration.h"
-#include "mode.h"
+#include "cpumode.h"
+#include "mk5mode.h"
+#include "mk5mode_gpu.cuh"
 #include "visibility.h"
 #include "alert.h"
 #include "vdifio.h"
@@ -50,8 +51,8 @@ static unsigned int calcstridelength(unsigned int arraylength)
   }
 }
 
-Configuration::Configuration(const char * configfile, int id, MPI_Comm& comm, double restartsec)
-  : mpiid(id), enableMpi(true), consistencyok(true), restartseconds(restartsec), jobname("na")
+Configuration::Configuration(const char * configfile, int id, MPI_Comm& comm, double restartsec, bool use_gpu)
+  : mpiid(id), enableMpi(true), consistencyok(true), restartseconds(restartsec), jobname("na"), use_gpu(use_gpu)
 {
   commonread = false;
   datastreamread = false;
@@ -95,8 +96,8 @@ Configuration::Configuration(const char * configfile, int id, MPI_Comm& comm, do
 }
 
 
-Configuration::Configuration(const char * configfile, int id, double restartsec)
-  : mpiid(id), enableMpi(false), consistencyok(true), restartseconds(restartsec), jobname("na")
+Configuration::Configuration(const char * configfile, int id, double restartsec, bool use_gpu)
+  : mpiid(id), enableMpi(false), consistencyok(true), restartseconds(restartsec), jobname("na"), use_gpu(use_gpu)
 {
   commonread = false;
   datastreamread = false;
@@ -796,6 +797,7 @@ int Configuration::getDataBytes(int configindex, int datastreamindex) const
   int validlength, payloadbytes, framebytes, numframes;
   const datastreamdata &currentds = datastreamtable[configs[configindex].datastreamindices[datastreamindex]];
   const freqdata &arecordedfreq = freqtable[currentds.recordedfreqtableindices[0]]; 
+  //std::cout << "arecordedfreq.decimationfactor is " << arecordedfreq.decimationfactor << " and configs[configindex].blockspersend is " << configs[configindex].blockspersend << " and currentds.numrecordedbands is " << currentds.numrecordedbands << " and currentds.numbits is " << currentds.numbits << " and arecordedfreq.numchannels is " << arecordedfreq.numchannels << endl;
   validlength = (arecordedfreq.decimationfactor*configs[configindex].blockspersend*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
   if(currentds.format == MKIV || currentds.format == VLBA || currentds.format == VLBN || currentds.format == MARK5B || currentds.format == KVN5B || currentds.format == VDIF ||currentds.format == VDIFL || currentds.format == INTERLACEDVDIF || currentds.format == CODIF)
   {
@@ -905,6 +907,10 @@ int Configuration::getDMatchingBand(int configindex, int datastreamindex, int ba
 
 int Configuration::getCNumProcessThreads(int corenum) const
 {
+    if (use_gpu) {
+        return 1;
+    }
+
   if(numcoreconfs == 0)
     return 1;
   if(corenum < numcoreconfs)
@@ -929,7 +935,7 @@ bool Configuration::stationUsed(int telescopeindex) const
   return toreturn;
 }
 
-Mode* Configuration::getMode(int configindex, int datastreamindex)
+Mode* Configuration::getMode(int configindex, int datastreamindex, const bool usegpu)
 {
   configdata conf = configs[configindex];
   const datastreamdata& stream = datastreamtable[conf.datastreamindices[datastreamindex]];
@@ -943,28 +949,44 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
   switch(stream.format)
   {
     case LBASTD:
+      if(usegpu) {
+        cfatal << startl << "GPU processing not yet supported for LBASTD, bailing out" << endl;
+        return NULL;
+      }
       if(stream.numbits != 2)
         cerror << startl << "All LBASTD Modes must have 2 bit sampling - overriding input specification!!!" << endl;
-      return new LBAMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth,  stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 2/*bits*/, stream.filterbank, stream.linear2circular, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, LBAMode::stdunpackvalues);
+      return new LBA_CPUMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth,  stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 2/*bits*/, stream.filterbank, stream.linear2circular, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, LBA_CPUMode::stdunpackvalues);
       break;
     case LBAVSOP:
+      if(usegpu) {
+        cfatal << startl << "GPU processing not yet supported for LBAVSOP, bailing out" << endl;
+        return NULL;
+      }
       if(stream.numbits != 2)
         cerror << startl << "All LBASTD Modes must have 2 bit sampling - overriding input specification!!!" << endl;
-      return new LBAMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 2/*bits*/, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, LBAMode::vsopunpackvalues);
+      return new LBA_CPUMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 2/*bits*/, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, LBA_CPUMode::vsopunpackvalues);
       break;
     case LBA8BIT:
+      if(usegpu) {
+        cfatal << startl << "GPU processing not yet supported for LBA8BIT, bailing out" << endl;
+        return NULL;
+      }
       if(stream.numbits != 8) {
         cerror << startl << "8BIT LBA mode must have 8 bits! aborting" << endl;
         return NULL;
       }
-      return new LBA8BitMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 8/*bits*/, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs);
+      return new LBA8Bit_CPUMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 8/*bits*/, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs);
       break;
     case LBA16BIT:
+      if(usegpu) {
+        cfatal << startl << "GPU processing not yet supported for LBA16BIT, bailing out" << endl;
+        return NULL;
+      }
       if(stream.numbits != 16) {
         cerror << startl << "16BIT LBA mode must have 16 bits! aborting" << endl;
         return NULL;
       }
-      return new LBA16BitMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 16/*bits*/, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs);
+      return new LBA16Bit_CPUMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 16/*bits*/, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs);
       break;
     case MKIV:
     case VLBA:
@@ -987,8 +1009,17 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
       {
         framesamples /= 2;
       }
-
-      return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, framebytes, framesamples, stream.format);
+      if(usegpu) {
+        //the GPU unpack kernels (gpudecode.cu) assume VDIF frames throughout,
+        //including reading the vdif_header invalid bit for per-frame validity
+        if(stream.format != VDIF && stream.format != VDIFL && stream.format != INTERLACEDVDIF) {
+          cfatal << startl << "GPU processing currently supports only VDIF-family formats (VDIF/VDIFL/INTERLACEDVDIF), not format " << stream.format << " - bailing out" << endl;
+          return NULL;
+        }
+        return new Mk5_GPUMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, framebytes, framesamples, stream.format);
+      } else {
+        return new Mk5_CPUMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, framebytes, framesamples, stream.format);
+      }
 
       break;
     default:
@@ -2524,6 +2555,10 @@ bool Configuration::populateResultLengths()
           }
         }//if(freq is output)
       }
+      //the cross-correlation block (all baselines' visibilities) is now complete; record its
+      //length so the GPU path can transfer back just this leading region (the XMAC output) and
+      //add the trailing weight/autocorrelation/pcal sections on the host separately
+      configs[c].coreresultxcorrslength = coreresultindex;
       for(int i=0;i<freqtablelength;i++) //then append the baseline weights
       {
         if(isFrequencyUsed(c,i))

@@ -143,6 +143,20 @@ class PCal {
       */
       static int calcNumTones(long bw, const fraction& offset, const fraction& step);
 
+      /**
+       * Sets pcal accumulation buffer for GPU implementation.
+       * The extractor borrows (does not own) the buffer from then on.
+       * @param pcal_real Pointer to real valued pcal accumulation buffer
+       */
+      void setPcalReal(f32* pcal_real);
+
+      /**
+       * Sets pcal accumulation buffer for GPU implementation in the complex case.
+       * The extractor borrows (does not own) the buffer from then on.
+       * @param pcal_complex Pointer to complex valued pcal accumulation buffer
+       */
+      void setPcalComplex(cf32* pcal_complex);
+
    public:
       /**
        * Clear the extracted and accumulated PCal data by setting it to zero.

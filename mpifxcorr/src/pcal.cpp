@@ -120,6 +120,8 @@ class pcal_config_pimpl {
     cf32*    rotated;        // temporary
     cf32*    pcal_complex;   // temporary unassembled output, later final output
     f32*     pcal_real;      // temporary unassembled output for the pcaloffsethz==0.0f case
+    bool     pcal_complex_owned = true; // false once an external (GPU) buffer is injected via setPcalComplex()
+    bool     pcal_real_owned = true;    // false once an external (GPU) buffer is injected via setPcalReal()
     size_t   rotatorlen;
     size_t   pcal_index;     // zero, changes when extract() is called at least once with "leftover" samples
     size_t   rotator_index;  // zero, changes when extract() is called at least once with "leftover" samples
@@ -144,11 +146,11 @@ pcal_config_pimpl::~pcal_config_pimpl()
        vectorFree(rotated);
        rotated = NULL;
    }
-   if (pcal_complex) {
+   if (pcal_complex && pcal_complex_owned) {
        vectorFree(pcal_complex);
        pcal_complex = NULL;
    }
-   if (pcal_real) {
+   if (pcal_real && pcal_real_owned) {
        vectorFree(pcal_real);
        pcal_real = NULL;
    }
@@ -336,6 +338,40 @@ int PCal::calcNumTones(long bw, const fraction& offset, const fraction& step)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+// BASE CLASS: external accumulation buffers (GPU path)
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Sets pcal accumulation buffer for GPU implementation.
+ * The extractor frees its own buffer (if it still owns one) and from then on
+ * borrows the given buffer: it neither frees nor zeroes it (the GPU resets it).
+ * @param pcal_real Pointer to real valued pcal accumulation buffer
+ */
+void PCal::setPcalReal(f32* pcal_real)
+{
+    if (_cfg->pcal_real_owned && _cfg->pcal_real != NULL) {
+        vectorFree(_cfg->pcal_real);
+    }
+    _cfg->pcal_real = pcal_real;
+    _cfg->pcal_real_owned = false;
+}
+
+/**
+ * Sets pcal accumulation buffer for GPU implementation in the complex case.
+ * The extractor frees its own buffer (if it still owns one) and from then on
+ * borrows the given buffer: it neither frees nor zeroes it (the GPU resets it).
+ * @param pcal_complex Pointer to complex valued pcal accumulation buffer
+ */
+void PCal::setPcalComplex(cf32* pcal_complex)
+{
+    if (_cfg->pcal_complex_owned && _cfg->pcal_complex != NULL) {
+        vectorFree(_cfg->pcal_complex);
+    }
+    _cfg->pcal_complex = pcal_complex;
+    _cfg->pcal_complex_owned = false;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 // BASE CLASS: c'stor
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -478,8 +514,10 @@ void PCalExtractorTrivial::clear()
 {
     _samplecount = 0;
     _finalized   = false;
-    vectorZero_cf32(_cfg->pcal_complex, _cfg->N_bins * 2);
-    vectorZero_f32 (_cfg->pcal_real,    _cfg->N_bins * 2);
+    if (_cfg->pcal_complex_owned)
+        vectorZero_cf32(_cfg->pcal_complex, _cfg->N_bins * 2);
+    if (_cfg->pcal_real_owned)
+        vectorZero_f32 (_cfg->pcal_real,    _cfg->N_bins * 2);
 }
 
 /**
@@ -659,8 +697,10 @@ void PCalExtractorShifting::clear()
 {
     _samplecount = 0;
     _finalized   = false;
-    vectorZero_cf32(_cfg->pcal_complex, _cfg->N_bins * 2);
-    vectorZero_f32 (_cfg->pcal_real,    _cfg->N_bins * 2);
+    if (_cfg->pcal_complex_owned)
+        vectorZero_cf32(_cfg->pcal_complex, _cfg->N_bins * 2);
+    if (_cfg->pcal_real_owned)
+        vectorZero_f32 (_cfg->pcal_real,    _cfg->N_bins * 2);
     vectorZero_cf32(_cfg->rotated,      _cfg->rotatorlen * 2);
 }
 
@@ -886,8 +926,10 @@ void PCalExtractorShiftingComplex::clear()
 {
     _samplecount = 0;
     _finalized   = false;
-    vectorZero_cf32(_cfg->pcal_complex, _cfg->N_bins * 2);
-    vectorZero_f32 (_cfg->pcal_real,    _cfg->N_bins * 2);
+    if (_cfg->pcal_complex_owned)
+        vectorZero_cf32(_cfg->pcal_complex, _cfg->N_bins * 2);
+    if (_cfg->pcal_real_owned)
+        vectorZero_f32 (_cfg->pcal_real,    _cfg->N_bins * 2);
     vectorZero_cf32(_cfg->rotated,      _cfg->rotatorlen * 2);
 }
 
@@ -1089,8 +1131,10 @@ void PCalExtractorImplicitShift::clear()
 {
     _samplecount = 0;
     _finalized   = false;
-    vectorZero_cf32(_cfg->pcal_complex, _cfg->N_bins * 2);
-    vectorZero_f32 (_cfg->pcal_real,    _cfg->N_bins * 2);
+    if (_cfg->pcal_complex_owned)
+        vectorZero_cf32(_cfg->pcal_complex, _cfg->N_bins * 2);
+    if (_cfg->pcal_real_owned)
+        vectorZero_f32 (_cfg->pcal_real,    _cfg->N_bins * 2);
 }
 
 /**
@@ -1283,8 +1327,10 @@ void PCalExtractorImplicitShiftFractional::clear()
 {
     _samplecount = 0;
     _finalized   = false;
-    vectorZero_cf32(_cfg->pcal_complex, _cfg->N_bins * 2);
-    vectorZero_f32 (_cfg->pcal_real,    _cfg->N_bins * 2);
+    if (_cfg->pcal_complex_owned)
+        vectorZero_cf32(_cfg->pcal_complex, _cfg->N_bins * 2);
+    if (_cfg->pcal_real_owned)
+        vectorZero_f32 (_cfg->pcal_real,    _cfg->N_bins * 2);
 }
 
 /**
@@ -1478,7 +1524,8 @@ void PCalExtractorImplicitShiftComplex::clear()
 {
     _samplecount = 0;
     _finalized   = false;
-    vectorZero_cf32(_cfg->pcal_complex, _cfg->N_bins * 2);
+    if (_cfg->pcal_complex_owned)
+        vectorZero_cf32(_cfg->pcal_complex, _cfg->N_bins * 2);
 }
 
 /**

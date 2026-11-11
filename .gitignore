@@ -643,3 +643,16 @@ inc/
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# tests/Synthetic - local SLURM config and generated correlation artifacts
+/tests/Synthetic/slurm.conf
+/tests/Synthetic/TEST*.vdif
+/tests/Synthetic/*.difx/
+/tests/Synthetic/*.difxlog
+/tests/Synthetic/*.input
+/tests/Synthetic/*.calc
+/tests/Synthetic/*.im
+/tests/Synthetic/*.flag
+/tests/Synthetic/*.threads
+/tests/Synthetic/*.fits
+/tests/Synthetic/*.machines

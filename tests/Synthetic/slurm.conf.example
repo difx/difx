@@ -1,0 +1,63 @@
+# Configuration for run-slurm.sh (the SLURM-based synthetic regression harness).
+#
+# Copy this file to "slurm.conf" and edit the values to suit your cluster/account,
+# then run ./run-slurm.sh.  slurm.conf is git-ignored so your local settings are
+# never committed.  If slurm.conf is missing, run-slurm.sh falls back to these
+# example values (which almost certainly need adjusting) and prints a warning.
+#
+# This file is sourced by bash, so it is plain KEY=value shell syntax.
+
+######## Cluster / account ###################################################
+
+# SLURM account to charge (sbatch --account).
+SLURM_ACCOUNT=oz168
+
+# SLURM partition/queue.  Leave blank to use the cluster default.
+SLURM_PARTITION=
+
+# Directory in which per-scenario job directories are created.  Must be
+# readable/writable from both the login node and the compute nodes (e.g. a
+# scratch/project filesystem).
+WORKDIR=/fred/oz168/adeller/difx-synthetic-tests
+
+######## DiFX environment ####################################################
+
+# Setup script sourced to put the DiFX build under test on PATH.  Used both by
+# the driver (for vex2difx/difxcalc/diffDiFX.py) and inside every CPU and GPU
+# sbatch job (for mpifxcorr).  This should point at the branch you are testing.
+SETUP_SCRIPT=/home/adeller/setup_gpudifx.mikebranch
+
+######## Per-mode SLURM resources ############################################
+# NTASKS is used both for #SBATCH --ntasks and for "srun -n<NTASKS>".  Each
+# scenario needs (antenna count + 2) ranks: 1 manager + N datastreams + 1 core.
+# The 2-antenna scenarios need >= 4; the 5-antenna "multi" scenario needs >= 7.
+# 7 below therefore covers every current scenario (larger values just add idle
+# core ranks).  run-slurm.sh refuses to queue a job whose ntasks is too small
+# for its scenario, so an under-sized value fails immediately, not after a
+# queue wait.  TIME is walltime in [HH:]MM:SS.  MEM_PER_CPU is in MB.
+
+CPU_NTASKS=7
+CPU_TIME=10:00
+CPU_MEM_PER_CPU=3000
+
+GPU_NTASKS=7
+GPU_TIME=10:00
+GPU_MEM_PER_CPU=4000
+GPU_GRES=gpu:1
+
+######## Optional reference-version leg ######################################
+# If REFERENCE_SETUP_SCRIPT is non-empty, each scenario is ALSO correlated with
+# a third, CPU-only "reference" DiFX build (e.g. a released DiFX-2.9), and the
+# current CPU and GPU outputs are additionally diffed against it.  This catches
+# drift against a trusted baseline, not just CPU-vs-GPU disagreement within the
+# current branch.  Leave blank to skip the reference leg entirely (the default).
+REFERENCE_SETUP_SCRIPT=
+REFERENCE_NTASKS=7
+REFERENCE_TIME=10:00
+REFERENCE_MEM_PER_CPU=3000
+
+######## Comparison ##########################################################
+
+# Percentage threshold passed to diffDiFX.py (-t).  A comparison FAILS if any
+# record's percentage absolute difference exceeds this.
+DIFF_THRESHOLD=0.0005

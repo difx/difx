@@ -7666,6 +7666,76 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 	return 1;
 }
 
+/* Synthesise valid VDIF frame headers into a buffer (used to frame fake/test
+ * data - the analogue of the sync-word writers for VLBA/Mark5B/Mark4).  Unlike
+ * those formats VDIF has no sync word and mark5_format_vdif_validate() checks
+ * both the invalid bit and time consistency, so we must write self-consistent,
+ * monotonically increasing frame times with the invalid bit cleared.  The
+ * absolute epoch is arbitrary (seconds start at 0); as for the other fake
+ * formats the datastream supplies the absolute time separately. */
+static void mark5_format_vdif_genheaders(const struct mark5_stream *ms, int n, unsigned char *where)
+{
+	const struct mark5_format_vdif *v;
+	int i, lg2nchan, framespersecond, seconds, framenum;
+	unsigned int word0, word1, word2, word3, legacybit, complexbit;
+
+	if(!ms)
+	{
+		fprintf(m5stdout, "mark5_format_vdif_genheaders: ms=0\n");
+
+		return;
+	}
+
+	v = (const struct mark5_format_vdif *)(ms->formatdata);
+
+	/* frames per second: standard VDIF wraps the frame number every second */
+	framespersecond = (int)(1.0e9/ms->framens + 0.5);
+	if(framespersecond < 1)
+	{
+		framespersecond = 1;
+	}
+
+	/* VDIF stores log2 of the channel count */
+	for(lg2nchan = 0; (1 << lg2nchan) < ms->nchan; ++lg2nchan) {}
+
+	legacybit  = (v->frameheadersize == 16) ? 1u : 0u;
+	complexbit = ms->iscomplex ? 1u : 0u;
+
+	/* word2 (version 0, log2 nchan, frame length/8) and word3 (complex flag,
+	 * bits/sample-1, thread 0, station 0) are constant across all frames */
+	word2 = (((unsigned int)(ms->framebytes/8)) & 0x00FFFFFF) | (((unsigned int)lg2nchan & 0x1F) << 24);
+	word3 = (((unsigned int)(ms->nbit-1) & 0x1F) << 26) | (complexbit << 31);
+
+	seconds = 0;
+	framenum = 0;
+
+	for(i = 0; i < n; ++i)
+	{
+		word0 = ((unsigned int)seconds & 0x3FFFFFFF) | (legacybit << 30); /* invalid bit (31) = 0 */
+		word1 = ((unsigned int)framenum & 0x00FFFFFF);                    /* ref epoch 0 in bits 29:24 */
+
+		memset(where, 0, v->frameheadersize);
+#ifdef WORDS_BIGENDIAN
+		where[0]  = word0 >> 24; where[1]  = word0 >> 16; where[2]  = word0 >> 8; where[3]  = word0;
+		where[4]  = word1 >> 24; where[5]  = word1 >> 16; where[6]  = word1 >> 8; where[7]  = word1;
+		where[8]  = word2 >> 24; where[9]  = word2 >> 16; where[10] = word2 >> 8; where[11] = word2;
+		where[12] = word3 >> 24; where[13] = word3 >> 16; where[14] = word3 >> 8; where[15] = word3;
+#else
+		((unsigned int *)where)[0] = word0;
+		((unsigned int *)where)[1] = word1;
+		((unsigned int *)where)[2] = word2;
+		((unsigned int *)where)[3] = word3;
+#endif
+		where += ms->framebytes;
+
+		if(++framenum >= framespersecond)
+		{
+			framenum = 0;
+			++seconds;
+		}
+	}
+}
+
 static int mark5_format_vdif_resync(struct mark5_stream *ms)
 {
 	/* FIXME: not implemented yet */
@@ -7779,6 +7849,7 @@ struct mark5_format_generic *new_mark5_format_generalized_vdif(int framesperperi
 	f->final_format = mark5_format_vdif_final;
 	f->validate = mark5_format_vdif_validate;
 	f->resync = mark5_format_vdif_resync;
+	f->genheaders = mark5_format_vdif_genheaders;
 	f->decimation = decimation;
 	f->decode = 0;
 	f->iscomplex = 0;

@@ -1,0 +1,266 @@
+VEX_rev = 1.5;
+*    Synthetic multi-subband, multi-station scenario: 4 x 4 MHz USB
+*    subbands, 5 stations. Exercises the multi-datastream / multi-band
+*    machinery that the 2-station single-subband scenarios do not.
+*    Modelled on test-usb.vex.
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = test;
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def test;
+     exper_name = test;
+     exper_description = "Test DIFX multi-subband multi-station correlation";
+     PI_name = "Adam Deller";
+     PI_email = vlbiobs@atnf.csiro.au;
+     exper_nominal_start=2020y100d07h00m00s;
+     exper_nominal_stop=2020y100d07h10m00s;
+     target_correlator = LBA;
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def test;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = 2400.00MHz4x4MHz:T1:T2:T3:T4:T5;
+     ref $IF = LO@2000MHzRPolNoTone:T1:T2:T3:T4:T5;
+     ref $BBC = 4BBCs:T1:T2:T3:T4:T5;
+     ref $TRACKS = VDIF.4Ch2bit:T1:T2:T3:T4:T5;
+     ref $HEAD_POS = LBAVoid:T1:T2:T3:T4:T5;
+     ref $ROLL = NoRoll:T1:T2:T3:T4:T5;
+     ref $PASS_ORDER = LBADummy:T1:T2:T3:T4:T5;
+     ref $PHASE_CAL_DETECT = NoDetect:T1:T2:T3:T4:T5;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def T1;
+     ref $SITE = TEST1;
+     ref $ANTENNA = TEST1;
+     ref $DAS = VDIF;
+enddef;
+*
+def T2;
+     ref $SITE = TEST2;
+     ref $ANTENNA = TEST2;
+     ref $DAS = VDIF;
+enddef;
+*
+def T3;
+     ref $SITE = TEST3;
+     ref $ANTENNA = TEST3;
+     ref $DAS = VDIF;
+enddef;
+*
+def T4;
+     ref $SITE = TEST4;
+     ref $ANTENNA = TEST4;
+     ref $DAS = VDIF;
+enddef;
+*
+def T5;
+     ref $SITE = TEST5;
+     ref $ANTENNA = TEST5;
+     ref $DAS = VDIF;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def TEST1;
+     site_type = fixed;
+     site_name = TEST1;
+     site_ID = T1;
+     site_position =-4751639.85972 m: 2791700.35670 m:-3200491.11339 m;
+     site_velocity = -0.030990   m/yr: -0.004580   m/yr:  0.042030  m/yr;
+     site_position_epoch =   50449;
+enddef;
+*
+def TEST2;
+     site_type = fixed;
+     site_name = TEST2;
+     site_ID = T2;
+     site_position =-4751600.85972 m: 2791700.35670 m:-3200550.11339 m;
+     site_velocity = -0.030990   m/yr: -0.004580   m/yr:  0.042030  m/yr;
+     site_position_epoch =   50499;
+enddef;
+*
+def TEST3;
+     site_type = fixed;
+     site_name = TEST3;
+     site_ID = T3;
+*    Parkes-like
+     site_position =-4554232.48810 m: 2816758.86590 m:-3454035.87550 m;
+     site_velocity = -0.031980   m/yr: -0.004160   m/yr:  0.043730  m/yr;
+     site_position_epoch =   50449;
+enddef;
+*
+def TEST4;
+     site_type = fixed;
+     site_name = TEST4;
+     site_ID = T4;
+*    Hobart-like
+     site_position =-3950237.35900 m: 2522347.68100 m:-4311561.87900 m;
+     site_velocity = -0.037930   m/yr:  0.008010   m/yr:  0.041270  m/yr;
+     site_position_epoch =   50449;
+enddef;
+*
+def TEST5;
+     site_type = fixed;
+     site_name = TEST5;
+     site_ID = T5;
+*    Ceduna-like
+     site_position =-3753442.74570 m: 3912709.75300 m:-3348067.60950 m;
+     site_velocity = -0.041340   m/yr: -0.000340   m/yr:  0.049270  m/yr;
+     site_position_epoch =   50449;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def TEST1;
+     axis_type = az : el;
+     antenna_motion = el :  20.0 deg/min :  3 sec;
+     antenna_motion = az :  40.0 deg/min :  3 sec;
+     axis_offset =    0.00000 m;
+enddef;
+*
+def TEST2;
+     axis_type = az : el;
+     antenna_motion = el :  19.0 deg/min :  3 sec;
+     antenna_motion = az :  38.0 deg/min :  3 sec;
+     axis_offset =    0.00000 m;
+enddef;
+*
+def TEST3;
+     axis_type = az : el;
+     antenna_motion = el :  20.0 deg/min :  3 sec;
+     antenna_motion = az :  40.0 deg/min :  3 sec;
+     axis_offset =    0.00000 m;
+enddef;
+*
+def TEST4;
+     axis_type = az : el;
+     antenna_motion = el :  20.0 deg/min :  3 sec;
+     antenna_motion = az :  40.0 deg/min :  3 sec;
+     axis_offset =    0.00000 m;
+enddef;
+*
+def TEST5;
+     axis_type = az : el;
+     antenna_motion = el :  20.0 deg/min :  3 sec;
+     antenna_motion = az :  40.0 deg/min :  3 sec;
+     axis_offset =    0.00000 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+def VDIF;
+     record_transport_type = VDIF;
+     electronics_rack_type = VDIF;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def TEST;
+     source_name = TEST;
+     ra = 01h00m00.0000000s; dec = -80d00'00.000000"; ref_coord_frame = J2000;
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def 2400.00MHz4x4MHz;
+* mode =  1    stations =T1:T2:T3:T4:T5
+     sample_rate =   8.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  200.00 MHz : U :   4.00 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = :  204.00 MHz : U :   4.00 MHz : &CH02 : &BBC02 : &NoCal; *Rcp
+     chan_def = :  208.00 MHz : U :   4.00 MHz : &CH03 : &BBC03 : &NoCal; *Rcp
+     chan_def = :  212.00 MHz : U :   4.00 MHz : &CH04 : &BBC04 : &NoCal; *Rcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*
+def LO@2000MHzRPolNoTone;
+* mode =  1    stations =T1:T2:T3:T4:T5
+     if_def = &IF_2N : 2N : R :  2000.00 MHz : U ; * PCall off!
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 4BBCs;
+* mode =  1    stations =T1:T2:T3:T4:T5
+     BBC_assign = &BBC01 :  1 : &IF_2N;
+     BBC_assign = &BBC02 :  2 : &IF_2N;
+     BBC_assign = &BBC03 :  3 : &IF_2N;
+     BBC_assign = &BBC04 :  4 : &IF_2N;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def NoDetect;
+* mode =  1    stations =T1:T2:T3:T4:T5
+     phase_cal_detect = &NoCal;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+def VDIF.4Ch2bit;
+  track_frame_format = VDIF/8032/2;
+  fanout_def = A : &CH01 : sign : 1 : 00;
+  fanout_def = A : &CH01 : mag  : 1 : 01;
+  fanout_def = A : &CH02 : sign : 1 : 02;
+  fanout_def = A : &CH02 : mag  : 1 : 03;
+  fanout_def = A : &CH03 : sign : 1 : 04;
+  fanout_def = A : &CH03 : mag  : 1 : 05;
+  fanout_def = A : &CH04 : sign : 1 : 06;
+  fanout_def = A : &CH04 : mag  : 1 : 07;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def LBAVoid;
+* mode =  1    stations =T1:T2:T3:T4:T5
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def LBADummy;
+* mode =  1    stations =T1:T2:T3:T4:T5
+     S2_group_order = 0;
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =T1:T2:T3:T4:T5
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment test
+scan No0001;
+     start=2020y100d07h00m00s; mode=test; source=TEST;
+     station=T1:    0 sec:  60 sec:    0.000 GB:   0 :       : 1;
+     station=T2:    0 sec:  60 sec:    0.000 GB:   0 :       : 1;
+     station=T3:    0 sec:  60 sec:    0.000 GB:   0 :       : 1;
+     station=T4:    0 sec:  60 sec:    0.000 GB:   0 :       : 1;
+     station=T5:    0 sec:  60 sec:    0.000 GB:   0 :       : 1;
+endscan;

@@ -19,6 +19,7 @@
 #include "fxmanager.h"
 #include "alert.h"
 #include "config.h"
+#include "cpumode.h"
 
 Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   : mpiid(id), config(conf), return_comm(rcomm)
@@ -153,7 +154,10 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   difxMessageInitBinary();
 }
 
-const int Core::RECEIVE_RING_LENGTH = 4;
+// Value is given in core.h so that code outside core.cpp (e.g. the GPU objects in
+// libmpifxcorr.a) can use it without linking core.o; this out-of-class definition
+// remains for any odr-use (address taken / bound to a const reference).
+const int Core::RECEIVE_RING_LENGTH;
 const double Core::MINIMUM_FILTERBANK_WEIGHT = 0.333;
 
 Core::~Core()
@@ -387,6 +391,7 @@ long long Core::getEstimatedBytes()
 
 void Core::loopprocess(int threadid)
 {
+    cout << threadid << endl;
   int perr, numprocessed, startblock, numblocks, lastconfigindex, numpolycos, maxchan, maxpolycos, stadumpchannels, strideplussteplen, maxrotatestrideplussteplength, maxxmaclength, slen;
   double sec;
   bool pulsarbin, somepulsarbin, somescrunch, dumpingsta, nowdumpingsta;
@@ -478,7 +483,7 @@ void Core::loopprocess(int threadid)
   //grab the lock we really want, unlock the end section and signal the main thread we're ready to go
   perr = pthread_mutex_lock(&(procslots[0].slotlocks[threadid]));
   if(perr != 0)
-    csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying lock mutex 0" << endl; 
+    csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying lock mutex 0" << endl;
   perr = pthread_mutex_unlock(&(procslots[RECEIVE_RING_LENGTH-1].slotlocks[threadid]));
   if(perr != 0)
     csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock mutex " << RECEIVE_RING_LENGTH-1 << endl;
@@ -702,19 +707,19 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     modes[j]->setDumpKurtosis(scratchspace->dumpkurtosis);
     if(scratchspace->dumpkurtosis)
       modes[j]->zeroKurtosis();
-    
+
     //reset pcal
     if(config->getDPhaseCalIntervalHz(procslots[index].configindex, j) > 0)
     {
       // Calculate the sample time. Every band has the same bandwidth.
       sampletimens = 1.0/(2.0*config->getDRecordedBandwidth(procslots[index].configindex, j, 0))*1e+3;
-      
+
       // Get the ns start time of the whole block.
       starttimens = procslots[index].offsets[2];
-      
+
       // Calculate the FFT size in number of samples.
       fftsize = 2*config->getFNumChannels(config->getDRecordedFreqIndex(procslots[index].configindex, j, 0));
-      
+
       modes[j]->resetpcal();
     }
   }
@@ -795,7 +800,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
         i = fftloop*numBufferedFFTs + fftsubloop + startblock;
 	if(i >= startblock+numblocks)
 	  break; //may not have to fully complete last fftloop
-        modes[j]->process(i, fftsubloop);
+        ((CPUMode*)modes[j])->process(i, fftsubloop);
         numfftsprocessed++;
       }
     }
@@ -1128,9 +1133,17 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock mutex " << index << endl;
 }
 
-void Core::copyPCalTones(int index, int threadid, Mode ** modes)
+void Core::copyPCalTones(int index, int threadid, Mode ** modes, const std::vector<char> *slot_validsubint)
 {
+
+  //std::cout << "index = %d, threadid = %d" << index << threadid << std::endl << std::endl << std::endl;
   int resultindex, localfreqindex, perr;
+
+  static int pcal_copy_debug_count = 0;
+
+  const int pcal_copy_debug_mpi_rank = 9;
+  const int pcal_copy_debug_resultindex = 8462;
+  const int pcal_copy_debug_max_print_count = 32;
 
   //lock the pcal copylock, so we're the only one adding to the result array (pcal section)
   perr = pthread_mutex_lock(&(procslots[index].pcalcopylock));
@@ -1142,8 +1155,29 @@ void Core::copyPCalTones(int index, int threadid, Mode ** modes)
   {
     if(config->getDPhaseCalIntervalHz(procslots[index].configindex, i) > 0)
     {
+    if(mpiid == 9 && i == 2) {
+      int slot_valid = -1;
+
+      if(slot_validsubint != nullptr &&
+         i < static_cast<int>(slot_validsubint->size())) {
+        slot_valid =
+          static_cast<int>((*slot_validsubint)[i]);
+      }
+
+
+    }
+
+
+    if(slot_validsubint != nullptr &&
+       (i >= static_cast<int>(slot_validsubint->size()) ||
+        !(*slot_validsubint)[i])) {
+      continue;
+    }      
       modes[i]->finalisepcal();
+
       resultindex = config->getCoreResultPCalOffset(procslots[index].configindex, i);
+
+
       for(int j=0;j<config->getDNumRecordedBands(procslots[index].configindex, i);j++)
       {
         localfreqindex = config->getDLocalRecordedFreqIndex(procslots[index].configindex, i, j);
@@ -1176,6 +1210,24 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
   datastreamsaveraged = false;
   writecrossautocorrs = modes[0]->writeCrossAutoCorrs();
   maxproducts = config->getMaxProducts();
+
+  //Short Term Accumulate dumps read Mode::autocorrelations, which do not exist
+  //when the device accumulated the autocorrelations straight into the results
+  //buffer. Decline the dump and say so once, rather than multicasting stale or
+  //zeroed spectra to a monitoring tool. DIFX_GPU_XMAC_AUTOCORR=0 restores both
+  //the Mode-side path and STA. See docs/gpu-autocorr-design.md.
+  if(deviceautocorrs && scratchspace->dumpsta)
+  {
+    static bool warnedaboutsta = false;
+    if(!warnedaboutsta)
+    {
+      cwarn << startl << "STA (Short Term Accumulate) dumps are not available while the GPU "
+            << "computes autocorrelations on the device; no STA data will be sent. Run with "
+            << "DIFX_GPU_XMAC_AUTOCORR=0 if STA is needed." << endl;
+      warnedaboutsta = true;
+    }
+    scratchspace->dumpsta = false;
+  }
 
   //if STA send needed but we can average datastream results in freq first, do so
   if(scratchspace->dumpsta && config->getMinPostAvFreqChannels(procslots[index].configindex) >= config->getSTADumpChannels())
@@ -1225,7 +1277,7 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
         // the number of channels (since we use an un-normalised FFT) and the number of integrations (i.e. time)
         // which is the weight
         renormvalue = 1.0/(2*freqchannels*modes[i]->getWeight(false, j));
-        
+
         if(datastreamsaveraged) {
           // if the data has been averaged above, then we need to adjust normalisation factor
           // because channels are summed below, not averaged
@@ -1257,13 +1309,21 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
     //cout << "Finished doing some STA stuff" << endl;
   }
 
-  //if required, average the datastreams down in frequency
-  if(!datastreamsaveraged) {
+  //if required, average the datastreams down in frequency. averageFrequency()
+  //averages the Mode autocorrelations and nothing else, so with device
+  //autocorrelations there is nothing here to average.
+  if(!datastreamsaveraged && !deviceautocorrs) {
     for(int i=0;i<numdatastreams;i++) {
       modes[i]->averageFrequency();
     }
   }
 
+  //Fold the Mode autocorrelations into the results buffer - unless the device
+  //already wrote them there, in which case there is nothing to copy and no lock
+  //to take (this whole block, and the D2H that feeds it, is what the
+  //autocorrelations-in-XMAC change removes; see docs/gpu-autocorr-design.md).
+  if(!deviceautocorrs)
+  {
   //lock the autocorr copylock, so we're the only one adding to the result array (datastream section)
   perr = pthread_mutex_lock(&(procslots[index].autocorrcopylock));
   if(perr != 0)
@@ -1306,6 +1366,7 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
   if(perr != 0)
     csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock autocorr copy mutex!!!" << endl;
 
+  } //end of the !deviceautocorrs autocorrelation fold
   //lock the acweight copylock, so we're the only one adding to the result array (autocorr weight section)
   perr = pthread_mutex_lock(&(procslots[index].acweightcopylock));
   if(perr != 0)
@@ -2184,7 +2245,7 @@ void Core::updateconfig(int oldconfigindex, int configindex, int threadid, int &
   //cdebug << startl << "About to create some new modes..." << endl;
   //get the config to create the appropriate Modes for us
   for(int i=0;i<numdatastreams;i++) {
-    modes[i] = config->getMode(configindex, i);
+    modes[i] = this->getMode(configindex, i);
     if(modes[i] == NULL || !modes[i]->initialisedOK()) {
       cfatal << startl << "Problem initialising a mode during a config change - aborting!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
