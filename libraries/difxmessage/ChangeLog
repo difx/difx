@@ -3,6 +3,7 @@ Version 2.9
 * Fix type of some variables from "long" to "int"
 * Improve error handling for errormon2 (add exception messages where needed, avoid AttributeError)
 * Version bump for DiFX 2.9
+* Fix issues identified by Static Analysis
 
 Version 2.8.1
 ~~~~~~~~~~~~~
@@ -101,7 +102,7 @@ Add new Mark5 state "record"
 Add SMART monitor message type for disk diagnostics
   one document per disk (i.e., 8 per module)
 Change Condition message type to DriveStats
-  attempts made to retain backward comatibility
+  attempts made to retain backward compatibility
 Add dispersion measure to transient message
 Fix parsing of Mark5 version messages and include a couple extra parameters
 Add support for "restartSeconds" to DifxStartMessage
@@ -145,7 +146,7 @@ Version 7.1
 ~~~~~~~~~~~
 Do better job expanding "entities" in XML formation
  - do expansion more universally
- - encode ascii values 1-31, 128-255 in [[]] so they can be idenfied and not crash parsers
+ - encode ascii values 1-31, 128-255 in [[]] so they can be identified and not crash parsers
 Add new Mark5 States: Test TestWrite and TestRead
 Improve safety of string manipulation
  - TODO: entity expansion safety

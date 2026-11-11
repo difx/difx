@@ -39,9 +39,9 @@ extern "C" {
 #define DIFX_MESSAGE_MAX_CORES		100
 #define DIFX_MESSAGE_MAX_SCANNAME_LEN	64
 #define DIFX_MESSAGE_MAX_ENV		8
-#define DIFX_MESSAGE_ALLMPIFXCORR	-1
-#define DIFX_MESSAGE_ALLCORES		-2
-#define DIFX_MESSAGE_ALLDATASTREAMS	-3
+#define DIFX_MESSAGE_ALLMPIFXCORR	(-1)
+#define DIFX_MESSAGE_ALLCORES		(-2)
+#define DIFX_MESSAGE_ALLDATASTREAMS	(-3)
 #define DIFX_MESSAGE_N_DRIVE_STATS_BINS	8
 #define DIFX_MESSAGE_N_CONDITION_BINS	DIFX_MESSAGE_N_DRIVE_STATS_BINS	/* deprecated */
 #define DIFX_MESSAGE_MARK5_VSN_LENGTH	8
@@ -53,7 +53,7 @@ extern "C" {
 #define DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH	64
 #define DIFX_MESSAGE_HOSTNAME_LENGTH	256
 
-/* Actual string lengths to accomodate trailing zero */
+/* Actual string lengths to accommodate trailing zero */
 #define DIFX_MESSAGE_MARK5_VSN_STR_LENGTH	(DIFX_MESSAGE_MARK5_VSN_LENGTH+1)
 #define DIFX_MESSAGE_MARK6_MSN_STR_LENGTH	(DIFX_MESSAGE_MARK6_MSN_LENGTH+1)
 #define DIFX_MESSAGE_MARK6_GROUP_STR_LENGTH	(DIFX_MESSAGE_MARK6_GROUP_LENGTH+1)
@@ -172,7 +172,7 @@ enum DifxState
 	DIFX_STATE_DONE,	/* Normal end to DiFX */
 	DIFX_STATE_ABORTING,	/* Unplanned early end due to runtime error */
 	DIFX_STATE_TERMINATING,	/* Caught SIGINT, closing down */
-	DIFX_STATE_TERMINATED,	/* Finished cleaning up adter SIGINT */
+	DIFX_STATE_TERMINATED,	/* Finished cleaning up after SIGINT */
 	DIFX_STATE_MPIDONE,	/* mpi process has finished */
 	DIFX_STATE_CRASHED,	/* mpi process has crashed */
 	NUM_DIFX_STATES		/* this needs to be the last line of enum */
@@ -689,9 +689,9 @@ int difxMessageSendMark6Activity(const DifxMessageMark6Activity *mark6activity);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
 int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version);
 int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats);
-int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, double visMJD, int numdatastreams, float *weight);
+int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, double visMJD, int numdatastreams, const float *weight);
 int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const char *stateMessage);
-int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage, double visMJD, int numdatastreams, float *weight, double mjdStart, double mjdStop);
+int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage, double visMJD, int numdatastreams, const float *weight, double mjdStart, double mjdStop);
 int difxMessageSendLoad(const DifxMessageLoad *load);
 int difxMessageSendDifxAlert(const char *errorMessage, int severity);
 int difxMessageSendDifxInfo(const char *infoMessage);

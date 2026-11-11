@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken                             *
+ *   Copyright (C) 2007-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -166,7 +166,7 @@ const char DriveStatsTypeStrings[][24] =
 	"read",
 	"write",
 	"unknown",	/* Really, this should never be used! */
-	"test"		/* Testing the send mechansim */
+	"test"		/* Testing the send mechanism */
 };
 
 /* Note! Keep this in sync with enum DifxStartFunctionType in difxmessage.h */

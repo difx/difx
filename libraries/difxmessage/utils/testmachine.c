@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2012 by Walter Brisken                             *
+ *   Copyright (C) 2010-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,6 +34,12 @@ int pingtest(const char *hostname)
 	snprintf(cmd, MaxCommandLength, "ping -c 1 -w 1 -q %s", hostname);
 
 	p = popen(cmd, "r");
+	if(!p)
+	{
+		fprintf(stderr, "Error: pingtest(): popen(%s, \"r\") failed.\n", cmd);
+
+		return -1;
+	}
 
 	while(!feof(p))
 	{

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2024 by Walter Brisken                             *
+#   Copyright (C) 2008-2026 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -21,7 +21,7 @@
 
 # Note: this utility can run under python2.7 or python3
 
-from sys import argv, exit
+from sys import argv, exit, stdout
 from os import popen, getenv
 from glob import glob
 import socket
@@ -33,8 +33,8 @@ import signal
 
 program = 'errormon'
 author  = 'Walter Brisken'
-version = '0.9'
-verdate = '20240626'
+version = '0.10'
+verdate = '20261111'
 
 defaultLevel = 4
 

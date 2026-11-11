@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#define MARK5_LOCK_WAIT_FOREVER		-1
+#define MARK5_LOCK_WAIT_FOREVER		(-1)
 #define MARK5_LOCK_DONT_WAIT		0
 
 int lockMark5(int wait);	/* max wait time in seconds, or -1 to imply wait forever */
