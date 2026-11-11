@@ -205,17 +205,69 @@ Only one `sa.py review` runs at a time (a lock file), so cron can fire it often:
 To review a newer commit later, `--init` again: units are requeued and new issues are
 appended to the existing pages; issues already there are not repeated.
 
-## Requirements
+## Installing the tools
 
-Debian packages: `bear clang-tidy clang-format cppcheck shellcheck libomp-19-dev`
-(LLVM 19; libomp so clang can parse mpifxcorr's OpenMP code), and the normal DiFX
-build dependencies.  Tools not packaged by Debian go in a venv that
-`build.tool_bin` points at (searched before `PATH`):
+`sa.py run` needs:
+
+| What | Why |
+|---|---|
+| Python 3.11 or newer | `sa.py` itself (uses `tomllib`; standard library only) |
+| git and the normal DiFX build dependencies (compilers, MPI, autotools, ...) | the fresh checkout and build |
+| `bear` (or `compiledb` from pip) | records the build into `compile_commands.json`; `build.compdb_tool = "auto"` tries bear, then compiledb |
+| `clang-tidy` | analysis (developed with LLVM 19) |
+| LLVM's OpenMP headers (`libomp`), same LLVM version as clang-tidy | so clang can parse mpifxcorr's OpenMP code |
+| `cppcheck`, `shellcheck` | analysis |
+| `typos`, `ruff` | analysis; installed with pip into a venv (see below) |
+| `clang-format` | optional; the tool is disabled in `config.toml` |
+
+`sa.py summary` and `sa.py review` also need the `claude` command-line tool (see
+above); `run` does not.
+
+### Debian / Ubuntu
 
 ```bash
-python3 -m venv ../difx-sa-work/venv
-../difx-sa-work/venv/bin/pip install typos ruff lizard
+sudo apt install git python3 python3-venv bear clang-tidy cppcheck shellcheck libomp-19-dev
+sudo apt install clang-format        # optional
 ```
+
+Tested on Debian 13 (bear 3.1.6, clang-tidy 19.1.7, cppcheck 2.17.1, shellcheck
+0.10.0, Python 3.13).  If your release's default `clang-tidy` is not LLVM 19,
+install a matching pair instead, e.g. `clang-tidy-18 libomp-18-dev`.
+
+### Red Hat family (RHEL / Rocky / Alma 9, Fedora)
+
+Not yet tested; package names may need adjusting (most likely `libomp-devel`).
+
+```bash
+# RHEL-like 9: bear, cppcheck and ShellCheck come from EPEL
+sudo dnf install epel-release
+sudo dnf config-manager --set-enabled crb      # RHEL proper: subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
+sudo dnf install git python3.11 bear clang-tools-extra cppcheck ShellCheck libomp-devel
+
+# Fedora: no EPEL needed, and the default python3 is new enough
+sudo dnf install git python3 bear clang-tools-extra cppcheck ShellCheck libomp-devel
+```
+
+`clang-tools-extra` provides both clang-tidy and clang-format.  On RHEL 9 the
+default `python3` is 3.9, which is too old: use `python3.11` for the venv below and
+to run `sa.py` (`python3.11 ./sa.py run`).
+
+### Python tools (all systems)
+
+Tools that are not packaged go in a venv that `build.tool_bin` in `config.toml`
+points at (searched before `PATH`):
+
+```bash
+python3 -m venv ../difx-sa-work/venv           # python3.11 on RHEL 9
+../difx-sa-work/venv/bin/pip install typos ruff
+../difx-sa-work/venv/bin/pip install compiledb  # only if bear is not available
+```
+
+### Checking
+
+`./sa.py components` should list what will be built.  An analysis tool that cannot
+be found is skipped with `WARNING: <tool> not found, skipped`, so check the start
+of the `analyse` output; `run.json` records the version of every tool that did run.
 
 ## Running unattended
 
