@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2016-2017 by Walter Brisken                             *
+ *   Copyright (C) 2016-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -45,7 +45,7 @@ int loadOldFileList(DirList &D, const char *fileName, std::stringstream &error)
 	for(int s = 0; !feof(in); ++s)
 	{
 		DirListDatum*DD;
-		char *v;
+		const char *v;
 		bool ok;
 		char dummy[257];
 

@@ -35,7 +35,7 @@ int main()
 	out = fopen(outfile, "w");
 	if(!out)
 	{
-		fprintf(stder, "Error: cannot open %s for write.\n", outfile);
+		fprintf(stderr, "Error: cannot open %s for write.\n", outfile);
 
 		exit(0);
 	}
