@@ -56,9 +56,6 @@ ADACS checkout, or bring site-neutral versions across first).
       from installing; `--noconf` should refuse components that have never been configured.
 - [ ] CUDA should be opt-in in `mpifxcorr/configure.ac`. Today it is enabled whenever `nvcc`
       is on PATH; `install-difx` passes the flag explicitly, but running configure by hand does not.
-- [ ] `architecture.h.gpu.in` has already fallen behind `architecture.h.in` (no IPP 2020 entry,
-      uses `IPP9`): generate both from one template.
-- [ ] Offer the `setup.local.bash` / `setup.local.csh` mechanism to dev (it is generic).
 - [ ] Continuous integration: a self-hosted runner on the GPU desktop running
       `tests/Synthetic/run-local.sh` (correctness) and `run-bench.sh` (benchmark ledger).
 - [ ] Upstream (dev): mark5access decoders return `nsamp - 4*nblank`, which comes out at -1 on
@@ -89,6 +86,9 @@ ADACS checkout, or bring site-neutral versions across first).
 
 ## Longer term
 
+- [ ] Route the GPU code through the `architecture.h` abstraction (`ARCH == CUDA` and
+      `DIFX_USE_CUFFTW` exist in `architecture.h.in` but nothing sets or tests them yet), so the
+      GPU code path could also be built without CUDA.
 - [ ] **Interlaced-VDIF demux on the DataStream: the real production bottleneck** (~1.7 Gbps/core).
       Reorder per-thread frames by memcpy, then de-interleave channels on the GPU.
 - [ ] Subints larger than GPU memory: process a subint in chunks of FFT windows.

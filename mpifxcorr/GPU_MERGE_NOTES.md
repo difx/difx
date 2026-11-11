@@ -257,9 +257,13 @@ Build and configuration:
    is on PATH (`AC_CHECK_PROG`). `install-difx` always passes
    `--enable-cuda`/`--disable-cuda`, but running configure by hand does not.
    It should probably be opt-in for the main repository.
-9. `architecture.h.gpu.in` is a separate copy of `architecture.h.in` and has
-   already fallen behind it (it lacks dev's IPP 2020 -> `IPP_9_API` entry and
-   uses the macro name `IPP9`). Consider generating both from one template.
+9. `architecture.h.gpu.in` was a separate copy of `architecture.h.in` that
+   `configure.ac` never used (it generates `src/architecture.h` only from
+   `architecture.h.in`, for CUDA builds too), and it had fallen behind (no IPP
+   2020 entry, `IPP9`, no `ippsMalloc_*_L`). **Resolved after the merge:** its
+   CUDA-specific parts (`#define CUDA 4`, `<cufftw.h>` in the generic section,
+   now behind `DIFX_USE_CUFFTW`) were folded into `architecture.h.in`, and the
+   copy was deleted. Nothing sets or tests either yet (see `TODO.md`).
 10. Source comments point to the `docs/` files that were not merged (section 2).
 
 Not checked:

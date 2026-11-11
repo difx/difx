@@ -27,6 +27,7 @@
 #define INTEL   1
 #define AMD     2
 #define GENERIC 3
+#define CUDA    4   // reserved: nothing selects or tests ARCH == CUDA yet
 
 //define the MPI tags
 #define CR_TERMINATE      0
@@ -449,7 +450,13 @@ inline vecStatus vectorInitDFTR_f32(vecDFTSpecR_f32 **dftspec, int length, int f
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#ifdef DIFX_USE_CUFFTW
+// cuFFT's FFTW-compatible interface, so the generic FFTW calls below run on
+// the GPU. Not enabled by configure yet; it needs -lcufftw at link time.
+#include <cufftw.h>
+#else
 #include <fftw3.h>
+#endif
 
 //start with the types
 typedef struct {
