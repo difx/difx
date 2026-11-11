@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 #include "difxio/difx_input.h"
 #include "difxio/difx_write.h"
 
@@ -135,6 +136,12 @@ DifxAntenna *newDifxAntennaArray(int nAntenna)
 	int a, i;
 
 	da = (DifxAntenna *)calloc(nAntenna, sizeof(DifxAntenna));
+	if(!da)
+	{
+		fprintf(stderr, "Error: newDifxAntennaArray(): cannot allocate %lu bytes.\n", (unsigned long int)(nAntenna*sizeof(DifxAntenna)));
+
+		exit(0);
+	}
 	for(a = 0; a < nAntenna; ++a)
 	{
 		da[a].spacecraftId = -1;
@@ -218,7 +225,7 @@ int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2)
 	}
 }
 
-/* FIXME: I think the logic here may be a bit corrupt.  Low danger as truely identical clocks will still pass. */
+/* FIXME: I think the logic here may be a bit corrupt.  Low danger as truly identical clocks will still pass. */
 int isSameDifxAntennaClock(const DifxAntenna *da1, const DifxAntenna *da2)
 {
 	int i;

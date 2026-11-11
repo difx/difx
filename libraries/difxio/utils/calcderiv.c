@@ -340,15 +340,15 @@ int run(const char *fileBase, int verbose, double deltaLM, double deltaXYZ)
 {
 	const int CommandLength = 1024;
 	DifxInput *D;
-	DifxSource *source;
-	DifxScan *scan;
+	const DifxSource *source;
+	const DifxScan *scan;
 	int sourceId, scanId, pc;
 	int nLM = 0;
 	int nXYZ = 0;
 	char command[CommandLength];
 	int rv;
 	char calcProgram[CommandLength];
-	char *s;
+	const char *s;
 
 	s = getenv("DIFX_CALC_PROGRAM");
 	if(s == 0)

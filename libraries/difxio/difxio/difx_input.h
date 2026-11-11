@@ -750,7 +750,7 @@ void printDifxJob(const DifxJob *dj);
 void fprintDifxJob(FILE *fp, const DifxJob *dj);
 void copyDifxJob(DifxJob *dest, const DifxJob *src, const int *antennaIdRemap);
 void generateDifxJobFileBase(const DifxJob *dj, char *fileBase);
-DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1, const DifxJob *dj2, int ndj2, int *jobIdRemap, int *antennaIdRemap, int *ndj);
+DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1, const DifxJob *dj2, int ndj2, int *jobIdRemap, const int *antennaIdRemap, int *ndj);
 void DifxJobQuashTrivialRemaps(DifxJob *dj);
 
 /* DifxFreq functions */

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2022 by Walter Brisken, Adam Deller & Helge Rottmann *
+ *   Copyright (C) 2008-2026 by Walter Brisken, Adam Deller & Helge Rottmann *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 #include "difxio/difx_input.h"
 #include "difxio/difx_write.h"
 
@@ -283,12 +284,19 @@ int reorderDifxFreqs(DifxInput *D)
 	n = D->nFreq;
 
 	newOrder = (int *)calloc(n+1, sizeof(int));
+	lessThan = (char **)calloc(n+1, sizeof(char *));
+	if(!newOrder || !lessThan)
+	{
+		fprintf(stderr, "Error: reorderDifxFreqs(): allocation failure for n=%d\n", n);
+
+		exit(0);
+	}
+
 	for(i = 0; i < n; ++i)
 	{
 		newOrder[i] = -1;	/* not yet determined */
 	}
 
-	lessThan = (char **)calloc(n+1, sizeof(char *));
 	for(i = 0; i < n; ++i)
 	{
 		lessThan[i] = (char *)calloc(n, sizeof(char));	/* zero is false */

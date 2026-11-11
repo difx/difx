@@ -210,7 +210,7 @@ void copyDifxJob(DifxJob *dest, const DifxJob *src, const int *antennaIdRemap)
 /* simply append dj2 after dj1 return new size on call stack : ndj */
 DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
 	const DifxJob *dj2, int ndj2, int *jobIdRemap, 
-	int *antennaIdRemap, int *ndj)
+	const int *antennaIdRemap, int *ndj)
 {
 	DifxJob *dj;
 	int i;

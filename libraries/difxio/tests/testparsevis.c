@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2011 by Walter Brisken                             *
+ *   Copyright (C) 2007-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -21,9 +21,9 @@
 #include <stdlib.h>
 #include "difxio/parsevis.h"
 
-const char program[] = "difxfringe";
+const char program[] = "textparsevis";
 const char version[] = "0.1";
-const char verdate[] = "20111129";
+const char verdate[] = "20261110";
 const char author[]  = "Walter Brisken";
 
 int usage(const char *pgm)
@@ -42,10 +42,6 @@ int fringe(const char *filename, int nchan, int baseline, const char *pol)
 	int v;
 
 	FILE *out;
-
-	/* suppress warnings */
-	baseline = 0;
-	pol = 0;
 
 	out = fopen(outFilename, "w");
 	if(!out)

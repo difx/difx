@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2025 by Walter Brisken                             *
+ *   Copyright (C) 2014-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -24,6 +24,7 @@
 #include <complex.h>
 #include <fftw3.h>
 #include <time.h>
+#include <unistd.h>
 #include "difx_input.h"
 #include "difxio_macros.h"
 
@@ -253,6 +254,12 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 
 			snprintf_warn(fileName, DIFXIO_FILENAME_LENGTH, "%s.%s-%s.rates", pulsarName, D->antenna[i].name, D->antenna[j].name);
 			out = fopen(fileName, "w");
+			if(!out)
+			{
+				fprintf(stderr, "Error: cannot open %s for write.\n", fileName);
+
+				exit(0);
+			}
 
 			for(scanId = 0; scanId < D->nScan; ++scanId)
 			{
