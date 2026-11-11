@@ -34,6 +34,7 @@ import astropy.time
 import datetime
 import subprocess
 import fileinput
+import time
 
 
 def get_corrhosts(hostsfilename):

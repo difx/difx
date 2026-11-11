@@ -34,7 +34,7 @@ std::string unquoteString(const std::string &str);
 bool tokenize(std::vector<std::string> &tokens, std::string &comment, const std::string &inputString);
 
 // Turns a string into MJD 
-// The following formats are allowd:
+// The following formats are allowed:
 // 1. decimal mjd:  55345.113521
 // 2. ISO 8601 dateTtime strings:  2009-03-08T12:34:56.121
 // 3. VLBA-like time:   2009MAR08-12:34:56.121

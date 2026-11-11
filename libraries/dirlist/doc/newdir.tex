@@ -38,13 +38,13 @@ Walter Brisken
 
 Many uses have been found for files containing directory listings of VLBI media.
 These include diagnostics of the recordings and correlation preparation.
-During correlation these listings are used by DiFX as an authoratative index to the data to be processed and in cases where recordings are problematic, such files can be edited by humans to remove problematic periods of time or repair incorrect information.
+During correlation these listings are used by DiFX as an authoritative index to the data to be processed and in cases where recordings are problematic, such files can be edited by humans to remove problematic periods of time or repair incorrect information.
 
 The format currently used for correlation directly off Mark5 modules has been evolved from that used by the VLBA hardware correlator almost a decade ago.
 Over time the original, very simplistic, format has been strained by new requirements.
 Direct correlation from Mark6 modules will bring new needs.
-This document describes a proposed file format to supercede that currently used by DiFX.
-It will include support for file-based correlation as well as correlation off data modules and will be extensible to accomodate dramatically different needs in the future.
+This document describes a proposed file format to supersede that currently used by DiFX.
+It will include support for file-based correlation as well as correlation off data modules and will be extensible to accommodate dramatically different needs in the future.
 A C++ library is being developed to handle I/O, validation and manipulation of such files, as well as conversion from existing formats.
 
 \section{Limitations of the current format}
@@ -71,7 +71,7 @@ Based on past history and foreseen upcoming needs, the following are seen as req
 \item The file should be clearly identifiable as a directory listing file.
 \item The file must store data in human readable text.
 \item The file should be easy for humans to edit without introducing errors.
-\item The format should allow an extensible header: it should be possible to add additional information without breaking compatibity with previous generations of parsers.
+\item The format should allow an extensible header: it should be possible to add additional information without breaking compatibility with previous generations of parsers.
 \item The format should support all past Mark5 use cases.
 \item The format should support all known Mark6 use cases.
 \item The format should allow identification of partner modules (Mark6 case).
