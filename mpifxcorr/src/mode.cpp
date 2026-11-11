@@ -149,7 +149,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     unpackedarrays = new f32*[numrecordedbands];
     if (usecomplex) unpackedcomplexarrays = new cf32*[numrecordedbands];
     for(int i=0;i<numrecordedbands;i++) {
-      unpackedarrays[i] = vectorAlloc_f32(unpacksamples);
+      unpackedarrays[i] = vectorAlloc_f32(unpacksamples+8);
       estimatedbytes += sizeof(f32)*unpacksamples;
       if (usecomplex) unpackedcomplexarrays[i] = (cf32*) unpackedarrays[i];
     }
