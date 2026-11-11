@@ -16,8 +16,12 @@ The whole tree uses GNU autotools (`configure.ac` + `Makefile.am` per component 
 top-level `configure`). The supported way to build everything is the top-level `install-difx`
 script, driven by environment variables set in `setup.bash` (or `setup.csh`).
 
+Never put machine-specific paths into `setup.bash`/`setup.csh`: they are tracked and generic.
+Local settings go in the git-ignored `setup.local.bash` (template: `setup.local.bash.example`),
+which `setup.bash` reads if present. See README.md.
+
 ```bash
-# one-time: copy/edit setup.bash for local paths (DIFXROOT, IPPROOT, MPICXX, PGPLOTDIR, ...)
+# one-time: cp setup.local.bash.example setup.local.bash, then set DIFXROOT, IPPROOT, CUDAROOT, ...
 source setup.bash
 
 # build + install everything essential (stops on first error by default)
@@ -153,4 +157,7 @@ when changing anything that uses these macros.
 
 - Never commit directly to `main`. Branch from `origin/main` or `origin/dev` for any change
   (`git checkout -b feature-xxx origin/main`), then open a PR.
+- GPU work happens on `gpudifx`. The shared backlog is `TODO.md` (update it as items land or
+  appear), and `mpifxcorr/GPU_MERGE_NOTES.md` records how the branch was merged from the
+  ADACS fork. Merge dev into `gpudifx` with `git merge --no-ff origin/dev`, not a rebase.
 - See `CONTRIBUTION.md` for the full contributor workflow (joining the project vs. forking).
