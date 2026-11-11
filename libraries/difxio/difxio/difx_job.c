@@ -76,7 +76,7 @@ DifxJob *newDifxJobArray(unsigned int nJob)
 	dj = (DifxJob *)calloc(nJob, sizeof(DifxJob));
 	if(!dj)
 	{
-		fprintf(stderr, "Error: newDifxJobArray(): cannot allocate %lu bytes.\n", nJob*sizeof(DifxJob));
+		fprintf(stderr, "Error: newDifxJobArray(): cannot allocate %lu bytes.\n", (unsigned long int)(nJob*sizeof(DifxJob)));
 
 		exit(0);
 	}

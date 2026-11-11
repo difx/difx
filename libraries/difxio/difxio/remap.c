@@ -52,7 +52,7 @@ int *newRemap(int nItem)
 	Remap = (int *)calloc(nItem+1, sizeof(int));
 	if(!Remap)
 	{
-		fprintf(stderr, "Error: newRemap(): cannot allocate %lu bytes\n", (nItem+1)*sizeof(int));
+		fprintf(stderr, "Error: newRemap(): cannot allocate %lu bytes\n", (unsigned long int)((nItem+1)*sizeof(int)));
 
 		exit(0);
 	}

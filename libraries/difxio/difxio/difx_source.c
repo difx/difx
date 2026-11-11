@@ -32,7 +32,7 @@ DifxSource *newDifxSourceArray(unsigned int nSource)
 	ds = (DifxSource *)calloc(nSource, sizeof(DifxSource));
 	if(!ds)
 	{
-		fprintf(stderr, "Error: newDifxSourceArray(): cannot allocate %lu bytes.\n", nSource*sizeof(DifxSource));
+		fprintf(stderr, "Error: newDifxSourceArray(): cannot allocate %lu bytes.\n", (unsigned long int)(nSource*sizeof(DifxSource)));
 
 		exit(0);
 	}

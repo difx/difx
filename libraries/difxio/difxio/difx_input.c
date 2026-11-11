@@ -64,7 +64,7 @@ DifxInput *newDifxInput()
 	D = (DifxInput *)calloc(1, sizeof(DifxInput));
 	if(!D)
 	{
-		fprintf(stderr, "Error: newDifxInput(): cannot allocate %lu bytes\n", sizeof(DifxInput));
+		fprintf(stderr, "Error: newDifxInput(): cannot allocate %lu bytes\n", (unsigned long int)sizeof(DifxInput));
 
 		exit(0);
 	}
@@ -456,7 +456,7 @@ static int generateFreqSets(DifxInput *D, const DifxDataFilterOptions *filterOpt
 	freqIsUsed = (int *)calloc(D->nFreq+1, sizeof(int));
 	if(!freqIsUsed)
 	{
-		fprintf(stderr, "Error: generateFreqSets(): cannot allocate %lu bytes\n", (D->nFreq+1)*sizeof(int));
+		fprintf(stderr, "Error: generateFreqSets(): cannot allocate %lu bytes\n", (unsigned long int)((D->nFreq+1)*sizeof(int)));
 
 		exit(0);
 	}
@@ -1243,7 +1243,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 		dc->datastreamId = (int *)calloc(dc->nDatastream+1, sizeof(int));
 		if(dc->datastreamId)
 		{
-			fprintf(stderr, "Error: parseDifxInputConfigurationTable(): cannot allocate %lu bytes for datastreamIds\n", (dc->nDatastream+1)*sizeof(int));
+			fprintf(stderr, "Error: parseDifxInputConfigurationTable(): cannot allocate %lu bytes for datastreamIds\n", (unsigned long int)((dc->nDatastream+1)*sizeof(int)));
 
 			exit(0);
 		}
@@ -2870,7 +2870,7 @@ static int parsePoly1(const DifxParameters *p, int r, const char *key, int i1, i
 	return r;
 }
 
-static int parsePoly1_limited(const DifxParameters *p, int r, int dr, char *key, int i1, int i2, double *array, int n, int zeroMissing)
+static int parsePoly1_limited(const DifxParameters *p, int r, int dr, const char *key, int i1, int i2, double *array, int n, int zeroMissing)
 {
 	const char *v;
 	int i, l, m;
@@ -3362,7 +3362,7 @@ static DifxInput *deriveFitsSourceIds(DifxInput *D)
 	ffs = (int *)calloc(D->nSource*D->nFreqSet, sizeof(int));
 	if(!fs || !ffs)
 	{
-		fprintf(stderr, "Error: deriveFitsSourceIds(): cannot allocate %lu bytes of memory.\n", 2*D->nSource*D->nFreqSet*sizeof(int));
+		fprintf(stderr, "Error: deriveFitsSourceIds(): cannot allocate %lu bytes of memory.\n", (unsigned long int)(2*D->nSource*D->nFreqSet*sizeof(int)));
 
 		exit(0);
 	}
@@ -3749,7 +3749,7 @@ static int mergeDifxInputFreqSetsUnion(DifxInput *D)
 	/* Now start populating the IFs */
 	for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 	{
-		DifxFreqSet *dfs;
+		const DifxFreqSet *dfs;
 
 		dfs = D->freqSet + freqSetId;
 		for(i = 0; i < dfs->nIF; ++i)
@@ -4818,7 +4818,7 @@ int* DifxInputGetOutputFreqs(const DifxInput *D)
 	outputfreqs = (int *)calloc(D->nFreq + 1, sizeof(int));
 	if(!outputfreqs)
 	{
-		fprintf(stderr, "Error: DifxInputGetOutputFreqs(): cannot allocate %lu bytes.\n", (D->nFreq+1)*sizeof(int));
+		fprintf(stderr, "Error: DifxInputGetOutputFreqs(): cannot allocate %lu bytes.\n", (unsigned long int)((D->nFreq+1)*sizeof(int)));
 
 		exit(0);
 	}
