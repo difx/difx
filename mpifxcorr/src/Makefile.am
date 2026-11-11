@@ -39,7 +39,6 @@ mpifxcorr_SOURCES = \
 	mark5bfile.cpp \
 	vdiffile.cpp \
 	vdiffake.cpp \
-	vdifonethreadfake.cpp \
 	vdifnetwork.cpp \
 	polyco.cpp \
 	alert.cpp \
@@ -73,7 +72,6 @@ library_include_HEADERS = \
 	mark5bfile.h \
 	vdiffile.h \
 	vdiffake.h \
-	vdifonethreadfake.h \
 	vdifnetwork.h \
 	alert.h 
 
@@ -100,7 +98,6 @@ libmpifxcorr_a_SOURCES = \
 	mark5bfile.cpp \
 	vdiffile.cpp \
 	vdiffake.cpp \
-	vdifonethreadfake.cpp \
 	vdifnetwork.cpp \
 	datamuxer.cpp \
 	$(mark5_files) \
@@ -131,7 +128,6 @@ neuteredmpifxcorr_SOURCES = \
 	mark5bfile.cpp \
 	vdiffile.cpp \
 	vdiffake.cpp \
-	vdifonethreadfake.cpp \
 	vdifnetwork.cpp \
 	datamuxer.cpp \
 	$(mark5_files) \
