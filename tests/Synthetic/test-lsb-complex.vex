@@ -14,9 +14,9 @@ $EXPER;
 def test;
      exper_name = test;
      exper_description = "Test DIFX Complex correlaton";
-     PI_name = "Chris Phillips";
-     PI_email = vlbiobs@atnf.csiro.au;
-*    address:   ATNF
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
 *                
 *                
 *                
@@ -41,8 +41,8 @@ def test;
 *    distrib_format : FITS
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Chris Phillips
-*                     ATNF
+*                     Bob Bobson
+*                     Fake Address
 *
 enddef;
 *------------------------------------------------------------------------------
