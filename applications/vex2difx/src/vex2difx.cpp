@@ -260,7 +260,6 @@ static DifxAntenna *makeDifxAntennas(const Job &J, const VexData *V, int *n)
 	return A;
 }
 
-// NOTE: FIXME: before this gets called, all datasource=NONE datastreams should be stripped.
 
 void handleDatasourceFile(int streamId, DifxDatastream *dd, const VexAntenna *ant, const VexData *V, const Job& J)
 {
@@ -295,6 +294,8 @@ void handleDatasourceFile(int streamId, DifxDatastream *dd, const VexAntenna *an
         dd->file[j] = strdup(files[j].c_str());
     }
 }
+
+// NOTE: FIXME: before this gets called, all datasource=NONE datastreams should be stripped.
 static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int nSet, DifxAntenna *difxAntennas, const Shelves &shelves)
 {
 	DifxDatastream *datastreams;
