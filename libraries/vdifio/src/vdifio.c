@@ -213,7 +213,7 @@ int setVDIFEpochMJD(vdif_header *header, int mjd) {
   if (month>6) {
     epoch++;
   }
-  epoch %= 64;     // 6 bit field
+  epoch %= 128;    // 7 bit field
   header->epoch = epoch;
   return(VDIF_NOERROR);
 }
@@ -266,7 +266,7 @@ int setVDIFEpochTime(vdif_header *header, time_t time) {
   if (t.tm_mon>=6) {
     epoch++;
   }
-  epoch %= 64;     // 6 bit field
+  epoch %= 128;    // 7 bit field
   header->epoch = epoch;
 
   return(VDIF_NOERROR);
