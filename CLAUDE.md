@@ -41,8 +41,8 @@ cd /some/build/dir && /path/to/repo/install-difx
 ```
 
 Core dependencies: MPI (`mpicxx`), and either Intel IPP or FFTW (generic backend). PGPLOT is
-needed only for optional components (`--withmonitor`, `--withfb`, `--withhops`). Many components
-(HOPS, PolConvert, Mark6 support, GUI server, datasim, etc.) are opt-in via `--with*` flags and
+needed only for optional components (`--withmonitor`, `--withhops`). Many components
+(HOPS, PolConvert, Mark6 support, datasim, etc.) are opt-in via `--with*` flags and
 are NOT built by default.
 
 To build/rebuild a single component directly (once `setup.bash` has been sourced and the tree has
@@ -146,7 +146,7 @@ when changing anything that uses these macros.
   baseband data formats, used by both mpifxcorr datastreams and standalone utilities.
 - `libraries/difxmessage`: multicast status/monitoring message bus used across the DiFX
   system (`DIFX_MESSAGE_GROUP`/`DIFX_MESSAGE_PORT` in `setup.bash`); `applications/difx_monitor`
-  and `applications/guiServer`/`applications/DiFXGUI`/`applications/gui` consume it.
+  and `applications/DiFXGUI`/`applications/gui` consume it.
 - `libraries/vex`: VEX schedule file parser used by `vex2difx`.
 - `utilities/`: standalone helper tools (data simulation, format manipulation, benchmarking,
   pulsar folding, etc.) — mostly thin wrappers around the libraries above.
