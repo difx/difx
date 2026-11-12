@@ -49,8 +49,6 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D, struct fits_keywords *p_fi
 	int32_t bbChan[array_MAX_BANDS];
 	int freqSetId;
 	int nBand;
-	int i;
-	int32_t freqId1;	/* 1-based index for FITS file */
 	const DifxFreqSet *dfs;
 	const DifxIF *IF;
 
@@ -83,10 +81,11 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D, struct fits_keywords *p_fi
 	fitsWriteInteger(out, "TABREV", 2, "");
 	fitsWriteEnd(out);
 
-	freqId1 = 0;
-
 	for(freqSetId = 0; freqSetId < D->nFreqSet; ++freqSetId)
 	{
+		int32_t freqId1;	/* 1-based index for FITS file */
+		int i;
+		
 		dfs = D->freqSet + freqSetId;
 
 		freqId1 = freqSetId + 1;

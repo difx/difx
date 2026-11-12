@@ -3,8 +3,8 @@
 /* return day of year given year, month, day */
 int ymd2doy(int yr, int mo, int day)
 {
-	int monstart1[] = {0,31,59,90,120,151,181,212,243,273,304,334};
-	int monstart2[] = {0,31,60,91,121,152,182,213,244,274,305,335};
+	const int monstart1[] = {0,31,59,90,120,151,181,212,243,273,304,334};
+	const int monstart2[] = {0,31,60,91,121,152,182,213,244,274,305,335};
 	int L2;
 	
 	L2 = yr/4-(yr+7)/4-yr/100+(yr+99)/100+yr/400-(yr+399)/400;
