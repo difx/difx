@@ -44,17 +44,6 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
     //create the mark5_stream used for unpacking
     mark5stream = new_mark5_stream( new_mark5_stream_unpacker(0), new_mark5_format_generic_from_string(formatname) );
 
-
-    if(config->useVGOSComplexVDIFHack(confindex, dsindex))
-    {
-      string stName = config->getDStationName(confindex, dsindex);
-      printf("Mk5Mode::Mk5Mode : Using VGOS Complex VDIF Hack for station %s (data stream %d)\n", stName.c_str(), dsindex);
-      mark5stream->invert_imaginary = 1;
-    } else {
-      //printf("Mk5Mode::Mk5Mode : NOT using VGOS Complex VDIF Hack for stream index %d\n", dsindex);
-      mark5stream->invert_imaginary = 0;
-    }
-
     if(mark5stream == 0)
     {
       cfatal << startl << "Mk5Mode::Mk5Mode : mark5stream is null" << endl;
@@ -62,6 +51,16 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
     }
     else
     {
+      if(config->useVGOSComplexVDIFHack(confindex, dsindex))
+      {
+        string stName = config->getDStationName(confindex, dsindex);
+        printf("Mk5Mode::Mk5Mode : Using VGOS Complex VDIF Hack for station %s (data stream %d)\n", stName.c_str(), dsindex);
+        mark5stream->invert_imaginary = 1;
+      } else {
+        //printf("Mk5Mode::Mk5Mode : NOT using VGOS Complex VDIF Hack for stream index %d\n", dsindex);
+        mark5stream->invert_imaginary = 0;
+      }
+
       if(conf->isNetwork(dsindex))
         mark5stream->blanker = blanker_none;
       if(mark5stream->samplegranularity > 1)
