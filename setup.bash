@@ -2,10 +2,10 @@
 export DIFX_VERSION=DEV
 
 ####### ROOT PATHS ##########################
-export DIFXROOT=/usr/local/difx
+export DIFXROOT=/home/mike/dev/vgos_sideband_correction
 export DIFX_PREFIX=$DIFXROOT
 export PGPLOTDIR=
-export IPPROOT=/opt/intel
+export IPPROOT=/home/mike/intel/oneapi
 
 ####### COMPILER ############################
 export DIFXMPIDIR=/usr
