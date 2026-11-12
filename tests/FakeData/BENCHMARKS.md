@@ -10,7 +10,8 @@ cost of 4 s of data.
 
 Run it with `./run-bench.sh [repeats]` (default 3; report best-of-N to
 suppress scheduling noise on the oversubscribed desktop). `USEGPU=0`
-benchmarks the CPU path; `EXTRA_ENV="DIFX_GPU_PIN_INPUT=0"` etc. for A/B
+benchmarks the CPU path; `PCALINT=1` turns on phase-cal extraction (1 MHz
+tones) at every station; `EXTRA_ENV="DIFX_GPU_PIN_INPUT=0"` etc. for A/B
 legs. The script prints a ready-to-paste ledger row.
 
 **Since 2026-07-22 the benchmark defaults to single-thread VDIF** (the fake
@@ -72,6 +73,8 @@ Rules:
 | 2026-11-12 | f606b1ae5 (measured pre-commit) | gpu DIFX_FAKE_PAYLOAD=none | 6.7 | 16.7 | 10.0 | the old all-zero payload, same binary and session: per-repeat 9.8 10.0 10.1 / 10.2 10.4 10.4, mean 10.15 s. Drifts up ~0.3 s over the session in both legs. |
 | 2026-11-12 | f606b1ae5 (measured pre-commit) | cpu DIFX_FAKE_PAYLOAD=random | 27.4 | 124.2 | 96.8 | CPU A/B, legs random/none/none/random: per-repeat 97.5 96.7 96.5 / 97.3 99.3 97.2, mean 97.4 s. No payload effect (−0.2%). Logs: `payload-ab-cpu.log`. An earlier attempt hung at start-up (FxManager lost wakeup, fixed in f606b1ae5 via dev); rerun on the fixed binary. |
 | 2026-11-12 | f606b1ae5 (measured pre-commit) | cpu DIFX_FAKE_PAYLOAD=none | 27.4 | 124.5 | 97.1 | the old all-zero payload: per-repeat 96.3 97.1 96.7 / 97.5 98.3 99.7, mean 97.6 s. |
+| 2026-11-12 | 69f80e768 | gpu pcal 1 MHz | 7.0 | 17.9 | 10.9 | **cost of phase cal on the GPU.** `PCALINT=1`: phase cal at all 10 stations, 1 MHz tone interval, i.e. 32 tones extracted per 32 MHz band (PCAL files checked). Same-session A/B, legs pcal then no-pcal, 3 repeats each; per-repeat T5−T1 10.5 10.9 11.1 vs 9.9 10.2 10.1, means 10.83 vs 10.07 s: **+0.8 s (+8%)**. One more pcal repeat afterwards gave 11.1, so the pcal leg running first (warm-up) does not explain it. Logs: `pcal-ab-gpu-pcal1.log`, `pcal-ab-gpu-pcal0.log`. |
+| 2026-11-12 | 69f80e768 | gpu | 6.8 | 16.9 | 10.1 | no-pcal leg of the A/B above. Matches the f606b1ae5 rows (10.2), so the two dev merges since then (VGOS sideband flip, guiServer/difxfilterbank removal) cost nothing. |
 
 ## A100 kernel profile at `edad94b34` (landed 2026-08-28, job 15956983)
 

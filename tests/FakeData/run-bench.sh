@@ -13,6 +13,8 @@
 #         SINGLE_THREAD_VDIF=0 keep interlaced VDIF (default: rewrite the fake
 #                              data to single-thread VDIF, bypassing the
 #                              DataStream corner-turn; needs mark5access genheaders)
+#         PCALINT=<MHz>        extract phase cal at every station with this tone
+#                              interval (default 0: no phase cal, as in benchsimreal.v2d)
 #         EXTRA_ENV=...        e.g. EXTRA_ENV="DIFX_GPU_PIN_INPUT=0"
 #                              (DIFX_FAKE_PAYLOAD=random|zero|none selects the
 #                              fake payload; random is the default, none is the
@@ -24,6 +26,7 @@ cd "$(dirname "$0")"
 REPEATS=${1:-3}
 : "${USEGPU:=1}"
 : "${EXTRA_ENV:=}"
+: "${PCALINT:=0}"
 
 # 1s and 5s windows from the same mjdStart (see benchsimreal.v2d comments);
 # stops are padded ~0.3ms high so 8-decimal MJD rounding cannot shorten the
@@ -38,7 +41,8 @@ usegpuflag=""
 set +u; . ../../setup.bash > /dev/null 2>&1; set -u
 
 gen() { # gen <name> <mjdstop>
-    sed -e "s/^mjdStop .*/mjdStop  = $2/" benchsimreal.v2d > "$1.v2d"
+    sed -e "s/^mjdStop .*/mjdStop  = $2/" \
+        -e "s/^\( *phaseCalInt *=\).*/\1 $PCALINT/" benchsimreal.v2d > "$1.v2d"
     vex2difx "$1.v2d" > /dev/null
     # Benchmark the GPU without the DataStream interlaced-VDIF corner-turn:
     # rewrite the fake data to single-thread VDIF (needs mark5access genheaders).
@@ -74,7 +78,7 @@ run() { # run <name> -> prints wall seconds
 gen bench1s "$STOP1"
 gen bench5s "$STOP5"
 
-echo "# repeats=$REPEATS usegpu=$USEGPU extra_env='$EXTRA_ENV'"
+echo "# repeats=$REPEATS usegpu=$USEGPU pcalint=$PCALINT extra_env='$EXTRA_ENV'"
 echo "# repeat  T1s  T5s  delta(=T5-T1)"
 best1=""; best5=""
 for r in $(seq "$REPEATS"); do
@@ -89,4 +93,4 @@ bestd=$(echo "$best1 $best5" | awk '{printf "%.1f", $2-$1}')
 commit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
 echo
 echo "best-of-$REPEATS metric (T5-T1): ${bestd}s   [T1=${best1}s T5=${best5}s]"
-echo "ledger row: | $(date +%F) | $commit | $([ "$USEGPU" = 1 ] && echo gpu || echo cpu)${EXTRA_ENV:+ $EXTRA_ENV} | ${best1} | ${best5} | ${bestd} |  |"
+echo "ledger row: | $(date +%F) | $commit | $([ "$USEGPU" = 1 ] && echo gpu || echo cpu)$([ "$PCALINT" != 0 ] && echo " pcal ${PCALINT} MHz")${EXTRA_ENV:+ $EXTRA_ENV} | ${best1} | ${best5} | ${bestd} |  |"
