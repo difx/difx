@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2016-2017 by Walter Brisken                             *
+ *   Copyright (C) 2016-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -128,11 +128,11 @@ int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 		}
 
 		// strip CR/LF chars from end
-		for(unsigned int j = 0; line[j]; ++j)
+		for(unsigned int k = 0; line[k]; ++k)
 		{
-			if(line[j] < ' ')
+			if(line[k] < ' ')
 			{
-				line[j] = 0;
+				line[k] = 0;
 
 				break;
 			}

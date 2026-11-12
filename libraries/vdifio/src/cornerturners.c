@@ -8204,7 +8204,7 @@ static void cornerturn_64thread_128bit(unsigned char *outputBuffer, const unsign
   }
 }
 
-
+/* NOTE: nThread can be negative, indicating request to use an alternate (generally less performant) corner turner */
 void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned char * const *, int)
 {
 	if(nThread == 1)
