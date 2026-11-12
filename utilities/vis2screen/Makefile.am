@@ -6,7 +6,7 @@ dist_bin_SCRIPTS = diffDiFX.py diffDiFX2.py checkDiFXViz.py plotDiFX.py \
 	plotResidualSpectrum.py polswapDiFX.py polrelabelDiFX.py stripantennaDiFX.py \
 	printDiFX.py printDiFXInput.py printDiFXPCal.py replaceAntennaDiFX.py \
 	removeNonzoomAutosDiFX.py removeZerovalAutoDiFX.py plotDiFXLogs.py \
-	plotFringeSpectrum.py
+	plotFringeSpectrum.py fringeCheckDiFX.py
 
 AM_CXXFLAGS = $(DIFXMESSAGE_CFLAGS) $(FXCORR_CFLAGS) $(IPP_CFLAGS) 
 printDiFX_SOURCES = printDiFX.cpp
