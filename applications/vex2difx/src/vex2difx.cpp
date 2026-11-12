@@ -262,12 +262,46 @@ static DifxAntenna *makeDifxAntennas(const Job &J, const VexData *V, int *n)
 
 // NOTE: FIXME: before this gets called, all datasource=NONE datastreams should be stripped.
 
+void handleDatasourceFile(int streamId, DifxDatastream *dd, const VexAntenna *ant, const VexData *V, const Job& J)
+{
+    int nFile = ant->files.size();
+    int count = 0;
+    vector<string> files;
+    const VexScan *vexScan;
+
+    for(int j = 0; j < nFile; ++j)
+    {
+            // loop over all scans of the current job
+            for(vector<string>::const_iterator si = J.scans.begin(); si != J.scans.end(); ++si)
+            {
+                vexScan = V->getScanByDefName(*si);
+                if (!vexScan->hasAntenna(ant->name))
+                    continue;
+                // obtain start/stop of the current antenna within the scan
+                const Interval *antInterval = vexScan->getAntennaInterval(ant->name);
+                // check if file interval matches the antenna interval
+                if(ant->files[j].streamId == streamId && antInterval->overlap(ant->files[j]) > 0.0)
+                {
+                    files.push_back(ant->files[j].filename);
+                    ++count;
+                }
+            }
+    }
+
+    DifxDatastreamAllocFiles(dd, count);
+
+    for (int j=0; j < files.size(); ++j)
+    {
+        dd->file[j] = strdup(files[j].c_str());
+    }
+}
 static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int nSet, DifxAntenna *difxAntennas, const Shelves &shelves)
 {
 	DifxDatastream *datastreams;
 	int nDatastream;
 	int di;
 	const VexMode *M;
+        const VexScan *vexScan;
 
 	// Determine worst case (but typical) number of datastreams for this job
 	M = V->getModeByDefName(J.modeName);
@@ -288,6 +322,7 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int n
 	for(int s = 0; s < nSet; ++s)
 	{
 		int antennaId = 0;
+                // loop over all antennas of the current job
 		for(std::vector<std::string>::const_iterator a = J.jobAntennas.begin(); a != J.jobAntennas.end(); ++a)
 		{
 			int nd;
@@ -322,78 +357,35 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int n
 					snprintf(dd->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", ant->ports[d].networkPort.c_str());
 					break;
 				case DataSourceFile:
-					{
-						int nFile = ant->files.size();
-						int count = 0;
-
-						for(int j = 0; j < nFile; ++j)
-						{
-							if(ant->files[j].streamId == d && J.overlap(ant->files[j]) > 0.0)
-							{
-								++count;
-							}
-						}
-
-						DifxDatastreamAllocFiles(dd, count);
-
-						count = 0;
-
-						for(int j = 0; j < nFile; ++j)
-						{
-							if(ant->files[j].streamId == d && J.overlap(ant->files[j]) > 0.0)
-							{
-								dd->file[count] = strdup(ant->files[j].filename.c_str());
-								++count;
-							}
-						}
-					}
+                                        {
+                                        handleDatasourceFile(d, dd, ant, V, J);
+                                        }
 					break;
 				case DataSourceMark6:
-					{
-						// mark6 has both files and vsns
-						int nFile = ant->files.size();
-						int count = 0;
-
-						for(int j = 0; j < nFile; ++j)
-						{
-							if(ant->files[j].streamId == d && J.overlap(ant->files[j]) > 0.0)
-							{
-								++count;
-							}
-						}
-
-						DifxDatastreamAllocFiles(dd, count);
-
-						count = 0;
-
-						for(int j = 0; j < nFile; ++j)
-						{
-							if(ant->files[j].streamId == d && J.overlap(ant->files[j]) > 0.0)
-							{
-								dd->file[count] = strdup(ant->files[j].filename.c_str());
-								++count;
-							}
-						}
+                                        {
+					// mark6 has both files and vsns
+                                        handleDatasourceFile(d, dd, ant, V, J);
+					
 						
-						string sVSN;
-						int nVSN = ant->vsns.size();
-						count = 0;
+                                        string sVSN;
+                                        int nVSN = ant->vsns.size();
+                                        int count = 0;
 
-						for(int j = 0; j < nVSN; ++j)
-						{
-							if(ant->vsns[j].streamId == d && J.overlap(ant->vsns[j]) > 0.0)
-							{
-								sVSN = ant->vsns[j].filename;
-								++count;
-							}
-						}
+                                        for(int j = 0; j < nVSN; ++j)
+                                        {
+                                                if(ant->vsns[j].streamId == d && J.overlap(ant->vsns[j]) > 0.0)
+                                                {
+                                                        sVSN = ant->vsns[j].filename;
+                                                        ++count;
+                                                }
+                                        }
 
-						if(!shelf.empty())
-						{
-							shelf += ",";
-						}
-						shelf += shelves.getShelf(sVSN);
-					}
+                                        if(!shelf.empty())
+                                        {
+                                                shelf += ",";
+                                        }
+                                        shelf += shelves.getShelf(sVSN);
+                                        }
 					break;
 				case DataSourceModule:
 					{
@@ -454,6 +446,7 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int n
 
 	return datastreams;
 }
+
 
 static int getBand(vector<pair<int,int> >& bandMap, int fqId)
 {
@@ -3264,6 +3257,7 @@ int main(int argc, char **argv)
 		
 		exit(EXIT_FAILURE);
 	}
+
 
 	applyCorrParams(V, *P, nWarn, nError, canonicalVDIFUsers);
 
