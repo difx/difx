@@ -61,7 +61,8 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
         // blank window returns a negative count (e.g. -1).  So round up to a
         // whole number of groups; the decoders write that many samples anyway.
         int g = mark5stream->samplegranularity;
-        samplestounpack = ((samplestounpack + g - 1 + g - 1)/g)*g;
+        int samplesneeded = samplestounpack + g - 1;  // window can start up to g-1 samples early
+        samplestounpack = ((samplesneeded + g - 1)/g)*g;  // round up to whole groups of g
       }
       string orig_streamname(mark5stream->streamname);
       sprintf(mark5stream->streamname, "DS%d <%s>", dsindex, orig_streamname.c_str());
