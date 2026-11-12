@@ -395,7 +395,7 @@ class Node:
     slurm_numProc = 0
 
     def __str__(self):
-        result = "name=%s threads=%s isHeadnode=%s isMk5=%s isMk6=%s fileUrls=%s networkUrls=%s" % (self.name, self.threads, self.isHeadnode, self.isMk5, self.isMk6, self.fileUrls, self.networkUrls)
+        result = "name=%s threads=%s isHeadnode=%s isMk5=%s isMk6=%s isFake=%s fileUrls=%s networkUrls=%s" % (self.name, self.threads, self.isHeadnode, self.isMk5, self.isMk6, self.isFake, self.fileUrls, self.networkUrls)
         if self.isInSlurm:
             result += " slurm:maxProc=%d slurm:numProc=%d" % (self.slurm_maxProc, self.slurm_numProc)
         return(result)
