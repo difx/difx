@@ -23,7 +23,6 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
-#include <cuComplex.h>
 
 using namespace std;
 

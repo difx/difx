@@ -14,6 +14,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program.  If not, see <http://www.gnu.org/licenses/>. *
  ***************************************************************************/
+#include "config.h"
 #include <mpi.h>
 #include <string.h>
 #include <climits>
@@ -25,7 +26,9 @@
 #include "configuration.h"
 #include "cpumode.h"
 #include "mk5mode.h"
+#ifdef USE_CUDA
 #include "mk5mode_gpu.cuh"
+#endif
 #include "visibility.h"
 #include "alert.h"
 #include "vdifio.h"
@@ -1016,7 +1019,12 @@ Mode* Configuration::getMode(int configindex, int datastreamindex, const bool us
           cfatal << startl << "GPU processing currently supports only VDIF-family formats (VDIF/VDIFL/INTERLACEDVDIF), not format " << stream.format << " - bailing out" << endl;
           return NULL;
         }
+#ifdef USE_CUDA
         return new Mk5_GPUMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, framebytes, framesamples, stream.format);
+#else
+        cfatal << startl << "GPU processing requested, but this mpifxcorr was built without CUDA - bailing out" << endl;
+        return NULL;
+#endif
       } else {
         return new Mk5_CPUMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen[datastreamindex], conf.writeautocorrs, framebytes, framesamples, stream.format);
       }
