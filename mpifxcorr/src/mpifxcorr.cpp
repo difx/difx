@@ -54,6 +54,8 @@
 
 #ifdef USE_CUDA
 #include "gpucore.cuh"
+#include <cuda_runtime_api.h>
+#include <cufft.h>
 #endif
 
 void usage(const char *const argv0);
@@ -272,6 +274,31 @@ static void logVectorLibrary(int myID)
 #endif
 }
 
+//log whether GPU support is compiled in and, if so, the CUDA versions compiled
+//against and loaded at run time.  None of these calls creates a CUDA context,
+//so this is safe on every process, including those without a GPU.
+static void logGpuSupport(int myID)
+{
+#ifdef USE_CUDA
+  // CUDA encodes versions as 1000*major + 10*minor
+  auto cudaversion = [](int v) { return to_string(v/1000) + "." + to_string((v%1000)/10); };
+  int runtimeversion = 0, driverversion = 0, fftmajor = 0, fftminor = 0, fftpatch = 0;
+  string loaded = "unknown";
+  if(cudaRuntimeGetVersion(&runtimeversion) == cudaSuccess)
+    loaded = cudaversion(runtimeversion);
+  if(cufftGetProperty(MAJOR_VERSION, &fftmajor) == CUFFT_SUCCESS &&
+     cufftGetProperty(MINOR_VERSION, &fftminor) == CUFFT_SUCCESS &&
+     cufftGetProperty(PATCH_LEVEL, &fftpatch) == CUFFT_SUCCESS)
+    loaded += ", cuFFT " + to_string(fftmajor) + "." + to_string(fftminor) + "." + to_string(fftpatch);
+  string driver = "no CUDA driver found";
+  if(cudaDriverGetVersion(&driverversion) == cudaSuccess && driverversion > 0)
+    driver = "driver supports CUDA up to " + cudaversion(driverversion);
+  cinfo << startl << "MPI Process " << myID << " GPU support: CUDA (compiled against CUDA " << cudaversion(CUDART_VERSION) << ", cuFFT " << CUFFT_VER_MAJOR << "." << CUFFT_VER_MINOR << "." << CUFFT_VER_PATCH << "); loaded runtime " << loaded << "; " << driver << endl;
+#else
+  cinfo << startl << "MPI Process " << myID << " GPU support: not compiled in" << endl;
+#endif
+}
+
 //main method - run by everyone
 int main(int argc, char *argv[])
 {
@@ -404,6 +431,7 @@ int main(int argc, char *argv[])
 
   cinfo << startl << "MPI Process " << myID << " is running on host " << processor_name << endl;
   logVectorLibrary(myID);
+  logGpuSupport(myID);
 
   cinfo << startl << "MPI Process " << myID << " is about to process input file" << endl;
 

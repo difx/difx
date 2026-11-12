@@ -257,6 +257,11 @@ GPUCore::GPUCore(const int id, Configuration *const conf, int *const dids, MPI_C
         : Core(id, conf, dids, rcomm) {
     cudaDeviceProp prop;
     checkCuda(cudaGetDeviceProperties(&prop, 0));
+    cinfo << startl << "GPU Core " << mpiid << " using CUDA device 0: " << prop.name
+          << " (compute capability " << prop.major << "." << prop.minor << ", "
+          << prop.multiProcessorCount << " SMs, "
+          << static_cast<long>(prop.totalGlobalMem/107374182.4 + 0.5)/10.0
+          << " GiB, PCI bus " << prop.pciBusID << ")" << endl;
 
     cudaMaxThreadsPerBlock = prop.maxThreadsPerBlock;
     cudaMultiProcessorCount = prop.multiProcessorCount;
