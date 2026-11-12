@@ -244,6 +244,27 @@ static void generateIdentifier(const char *inputfile, char *identifier)
   }
 }
 
+//log the vector/FFT library chosen in architecture.h at compile time, and the
+//version actually loaded at run time (which can differ between hosts)
+static void logVectorLibrary(int myID)
+{
+#if(ARCH == INTEL)
+  const IppLibraryVersion * ippversion = ippsGetLibVersion();
+  string compiled = "unknown version";
+#ifdef IPP_VERSION_STR
+  compiled = IPP_VERSION_STR;
+#endif
+#ifdef IPP_9_API
+  compiled += ", IPP 9 API";
+#endif
+  cinfo << startl << "MPI Process " << myID << " vector library: Intel IPP (compiled against " << compiled << "); loaded " << (ippversion ? ippversion->Name : "unknown") << " " << (ippversion ? ippversion->Version : "") << endl;
+#elif(ARCH == GENERIC)
+  cinfo << startl << "MPI Process " << myID << " vector library: generic, FFTW (no IPP); loaded " << fftwf_version << endl;
+#else
+  cinfo << startl << "MPI Process " << myID << " vector library: architecture " << ARCH << endl;
+#endif
+}
+
 //main method - run by everyone
 int main(int argc, char *argv[])
 {
@@ -305,7 +326,8 @@ int main(int argc, char *argv[])
   }
 
   cinfo << startl << "MPI Process " << myID << " is running on host " << processor_name << endl;
- 
+  logVectorLibrary(myID);
+
   for(int i=2;i<argc;i++)
   {
     if(argv[i][0]=='-' && argv[i][1]=='M')

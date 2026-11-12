@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2024 by Adam Deller / Walter Brisken               *
+ *   Copyright (C) 2009-2026 by Adam Deller / Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -46,21 +46,21 @@ extern "C" {
 
 /* Some of the error codes are defined below */
 
-#define EVDIFFAIL			-2000	/* generic "i failed" response */
-#define EVDIFCANTOPEN			-2001
-#define EVDIFCANTSEEK			-2002
-#define EVDIFCANTSTAT			-2003
-#define EVDIFCANTMALLOC			-2004
-#define EVDIFSHORTREAD			-2005
-#define EVDIFBUFFERSMALL		-2006
-#define EVDIFCANTGETFRAMESIZE		-2007
-#define EVDIFCANTGETFRAMEOFFSET		-2008
-#define EVDIFTOOMANYTHREADS		-2009
-#define EVDIFNOCORNERTURNER		-2010
-#define EVDIFTHREADOUTOFRANGE		-2011
-#define EVDIFNULLINPUT			-2012	/* generic "you gave me a null pointer" response */
-#define EVDIFBADINPUT			-2013	/* generic "input parameters don't make sense" response */
-#define EVDIFBADFRAMENUMBER		-2014
+#define EVDIFFAIL			(-2000)	/* generic "i failed" response */
+#define EVDIFCANTOPEN			(-2001)
+#define EVDIFCANTSEEK			(-2002)
+#define EVDIFCANTSTAT			(-2003)
+#define EVDIFCANTMALLOC			(-2004)
+#define EVDIFSHORTREAD			(-2005)
+#define EVDIFBUFFERSMALL		(-2006)
+#define EVDIFCANTGETFRAMESIZE		(-2007)
+#define EVDIFCANTGETFRAMEOFFSET		(-2008)
+#define EVDIFTOOMANYTHREADS		(-2009)
+#define EVDIFNOCORNERTURNER		(-2010)
+#define EVDIFTHREADOUTOFRANGE		(-2011)
+#define EVDIFNULLINPUT			(-2012)	/* generic "you gave me a null pointer" response */
+#define EVDIFBADINPUT			(-2013)	/* generic "input parameters don't make sense" response */
+#define EVDIFBADFRAMENUMBER		(-2014)
 
 
 /* *** implemented in vdifio.c *** */
@@ -71,8 +71,8 @@ typedef struct vdif_header {
    uint32_t invalid : 1;
 
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
@@ -97,8 +97,8 @@ typedef struct vdif_edv1_header {	/* NICT extensions: see http://www.vlbi.org/vd
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
@@ -124,8 +124,8 @@ typedef struct vdif_edv2_header_generic { /* Nominally for ALMA: https://vlbi.or
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8
    uint32_t nchan : 5;
@@ -151,8 +151,8 @@ typedef struct vdif_edv2_header_alma {	/* For ALMA, ratified very poorly documen
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
@@ -180,8 +180,8 @@ typedef struct vdif_edv2_header_r2dbe { /* Not documented on vlbi.org, not ratif
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8
    uint32_t nchan : 5;
@@ -210,8 +210,8 @@ typedef struct vdif_edv2_header {	/* For ALMA & R2DBE, incomplete document descr
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
@@ -239,8 +239,8 @@ typedef struct vdif_edv3_header {	/* VLBA extensions: see http://www.vlbi.org/vd
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
@@ -275,8 +275,8 @@ typedef struct vdif_edv4_header {	/* proposed extension extensions: (WFB email t
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
@@ -312,8 +312,7 @@ int ymd2doy(int yr, int mo, int day);
 int ymd2mjd(int yr, int mo, int day);
 
 /* Function to completely fill header struct, returns non-zero on error */
-int createVDIFHeader(vdif_header *header, int dataarraylength, int threadid, int bits, int nchan,
-		     int iscomplex, char stationid[3]);
+int createVDIFHeader(vdif_header *header, int dataarraylength, int threadid, int bits, int nchan, int iscomplex, const char stationid[3]);
 
 /* Functions to grab just one value from the raw header */
 static inline int getVDIFComplex(const vdif_header *header) { return (int)header->iscomplex; }
@@ -321,7 +320,7 @@ static inline int getVDIFLegacy(const vdif_header *header) { return (int)header-
 static inline int getVDIFThreadID(const vdif_header *header) { return (int)header->threadid; }
 static inline int getVDIFHeaderBytes(const vdif_header *header) { return header->legacymode ? VDIF_LEGACY_HEADER_BYTES : VDIF_HEADER_BYTES; }
 static inline int getVDIFFrameBytes(const vdif_header *header) { return (int)(header->framelength8)*8; }
-uint64_t getVDIFFrameMJDSec(vdif_header *header);
+uint64_t getVDIFFrameMJDSec(const vdif_header *header);
 int getVDIFFrameMJD(const vdif_header *header);
 double getVDIFFrameDMJD(const vdif_header *header, int framepersec);
 static inline int getVDIFFrameSecond(const vdif_header *header) { return ((int)header->seconds)%86400; }
@@ -508,7 +507,7 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 //
 // When the underlying VDIF file is highly "clumpy" and its data are passed directly
 // to vdifmux(), it can happen that a thread is not found at all inside the small
-// window that vdifmux() operates on. This leads to outlier frames erroneusly considered
+// window that vdifmux() operates on. This leads to outlier frames erroneously considered
 // as "missing" and results in excess Invalid -marked VDIF frames from vdifmux().
 
 struct vdif_file_reader {

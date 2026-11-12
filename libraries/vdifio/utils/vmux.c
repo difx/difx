@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2025 by Walter Brisken                             *
+ *   Copyright (C) 2013-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -26,8 +26,8 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.15";
-const char verdate[] = "20250215";
+const char version[] = "0.16";
+const char verdate[] = "20261112";
 
 const int defaultChunkSize = 10000000;
 const int defaultNGap = 100;
@@ -430,7 +430,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	else if(prealign)
+	else
 	{
 		summarizevdiffile(&summary, inFile, 0);
 		if(summary.framesPerSecond <= 0)
@@ -470,7 +470,7 @@ int main(int argc, char **argv)
 	src = (unsigned char *)malloc(srcChunkSize);
 	dest = (unsigned char *)malloc(destChunkSize);
 	tmpframe = (unsigned char *)malloc(inputframesize*nThread);
-	if(!src || !dest | !tmpframe)
+	if(!src || !dest || !tmpframe)
 	{
 		fprintf(stderr, "Allocation failed! Reduce the chunk size and try again.\n");
 
@@ -489,7 +489,7 @@ int main(int argc, char **argv)
 	{
 		n = fread(src, 1, VDIF_HEADER_BYTES, in);
 	}
-	else if(prealign)
+	else
 	{
 		n = vdifreaderRead(&reader, src, VDIF_HEADER_BYTES);
 	}
@@ -560,10 +560,6 @@ int main(int argc, char **argv)
 		int V;
 
 		if(useStdin || !prealign)
-		{
-			n = fread(src+leftover, 1, srcChunkSize-leftover, in);
-		}
-		else if(!prealign)
 		{
 			n = fread(src+leftover, 1, srcChunkSize-leftover, in);
 		}

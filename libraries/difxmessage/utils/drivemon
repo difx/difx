@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+
+# This is a Mark5-only program that is still in python2
+# There is no reason to convert to python3 as this will be removed in the near future
 
 PROGRAM = 'drivemon'
 VERSION = '0.1'

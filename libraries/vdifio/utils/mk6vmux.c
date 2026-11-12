@@ -184,6 +184,12 @@ int main(int argc, char **argv)
 
 	src = (unsigned char *)malloc(srcChunkSize);
 	dest = (unsigned char *)malloc(destChunkSize);
+	if(!src || !dest)
+	{
+		fprintf(stderr, "Error: cannot allocate %lu bytes.\n", (unsigned long int)(srcChunkSize+destChunkSize));
+
+		exit(EXIT_FAILURE);
+	}
 
 	/* read just enough of the stream to peek at a frame header */
 
@@ -193,7 +199,7 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "Error reading first header.  Only %d of %d bytes were read\n", n, VDIF_HEADER_BYTES);
 
-		return EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
 	leftover = n;
 
@@ -213,7 +219,7 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "Error configuring vdifmux: %d\n", rv);
 
-		return EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
 
 	nChanPerThread = getVDIFNumChannels(vh);
@@ -226,7 +232,7 @@ int main(int argc, char **argv)
 		{
 			fprintf(stderr, "Error adjusting vdifmux for %d channels per thread\n", nChanPerThread);
 
-			return EXIT_FAILURE;
+			exit(EXIT_FAILURE);
 		}
 	}
 

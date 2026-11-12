@@ -1,0 +1,13 @@
+# Site-specific DiFX settings.  Copy this file to setup.local.bash (in the same
+# directory as setup.bash) and edit it; setup.bash reads it if it exists.
+# setup.local.bash is ignored by git, so the paths in it stay on this machine.
+# Set only what differs from the defaults in setup.bash.  Alternatively, keep
+# the file anywhere and point DIFX_SETUP_LOCAL at it before sourcing setup.bash.
+
+# export DIFX_VERSION=mybuild
+# export DIFXROOT=/path/to/install/prefix
+# export IPPROOT=/opt/intel
+# export DIFXMPIDIR=/usr/lib64/openmpi
+# export CUDAROOT=/usr/local/cuda
+# export NVCCFLAGS="-arch=sm_80"      # sm_75 Turing, sm_80 A100, sm_90 H100
+# export DIFX_MACHINES=/path/to/difx.machines
