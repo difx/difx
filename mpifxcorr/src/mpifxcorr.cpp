@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
   };
   int opt_idx;
   int c;
-  while(-1 != (c = getopt_long(argc, argv, "M:r", long_options, &opt_idx))) {
+  while(-1 != (c = getopt_long(argc, argv, "M:r:", long_options, &opt_idx))) {
     switch(c) {
     case 0:
       switch(opt_idx) {
@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
           break; // --help
       }
       break;
-    case 'M': { // -M<monhostname>
+    case 'M': { // -M<monhostname>:port[:monitor_skip]; optarg excludes the "-M"
       monitor = true;
       monitoropt = string(optarg);
       size_t colindex1 = monitoropt.find_first_of(':');
@@ -375,12 +375,15 @@ int main(int argc, char *argv[])
         port = atoi(monitoropt.substr(colindex1 + 1, colindex2-colindex1-1).c_str());
         monitor_skip = atoi(monitoropt.substr(colindex2 + 1).c_str());
       }
-      strncpy(monhostname, monitoropt.substr(2,colindex1-2).c_str(), sizeof(monhostname)-1);
+      strncpy(monhostname, monitoropt.substr(0,colindex1).c_str(), sizeof(monhostname)-1);
       }
       break;
     case 'r': // -rNN
       restartseconds = atof(optarg);
       break;
+    default: // unknown option or missing argument; getopt_long has printed which
+      usage(argv[0]);
+      return EXIT_FAILURE;
     }
   }
 
