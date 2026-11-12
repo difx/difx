@@ -314,7 +314,6 @@ int main(int argc, char *argv[])
   int * datastreamids;
   bool monitor = false;
   bool nocommandthread = false;
-  bool vgoscomplexvdifhack = false;
   bool verbose = false;
   string monitoropt;
   pthread_t commandthread;
@@ -334,7 +333,6 @@ int main(int argc, char *argv[])
     {"nocommandthread", no_argument,       0, 0 },
     {"usegpu",          no_argument,       0, 0 },
     {"verbose",         no_argument,       0, 0 },
-    {"vgoscomplex",     no_argument,       0, 0 },
     {"help",            no_argument,       0, 0 },
     {0,                 0,                 0, 0 },
   };
@@ -358,11 +356,7 @@ int main(int argc, char *argv[])
 		case 2:
 		  verbose = true;
 		  break; // --verbose
-		case 3:
-		  cwarn << startl << "Enabling VGOS hack; raw samples of *all* VDIFC stations will have the sign of the imaginary part reversed i.e. the sideband inverted during unpacking!" << endl;
-		  vgoscomplexvdifhack = true;
-		  break; // --vgoscomplex
-        case 4:
+        case 3:
           usage(argv[0]);
           return EXIT_SUCCESS;
           break; // --help
@@ -447,7 +441,6 @@ int main(int argc, char *argv[])
     MPI_Abort(MPI_COMM_WORLD, 1);
     return EXIT_FAILURE;
   }
-  config->setVGOSComplexVDIFHack(vgoscomplexvdifhack); // hopefully a temporary thing till VGOS fixes their firmware
 
   //handle difxmessage setup for sending and receiving
   if (isDifxMessageInUse() && !nocommandthread) { 
@@ -629,7 +622,6 @@ void usage(const char *const argv0) {
     " --nocommandthread\n"
     " --usegpu      -- Use GPU acceleration\n"
 	" --verbose     -- Show verbose output of stream summaries\n"
-	" --vgoscomplex -- Enabling VGOS hack; raw samples of *all* VDIFC stations will have the sign of the imaginary part reversed\n"
     << std::endl;
 }
 // vim: shiftwidth=2:softtabstop=2:expandtab

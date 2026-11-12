@@ -43,6 +43,7 @@ Mk5_CPUMode::Mk5_CPUMode(Configuration * conf, int confindex, int dsindex, int r
     }
     //create the mark5_stream used for unpacking
     mark5stream = new_mark5_stream( new_mark5_stream_unpacker(0), new_mark5_format_generic_from_string(formatname) );
+
     if(mark5stream == 0)
     {
       cfatal << startl << "Mk5_CPUMode::Mk5_CPUMode : mark5stream is null" << endl;
@@ -50,6 +51,16 @@ Mk5_CPUMode::Mk5_CPUMode(Configuration * conf, int confindex, int dsindex, int r
     }
     else
     {
+      if(config->useVGOSComplexVDIFHack(confindex, dsindex))
+      {
+        string stName = config->getDStationName(confindex, dsindex);
+        printf("Mk5Mode::Mk5Mode : Using VGOS Complex VDIF Hack for station %s (data stream %d)\n", stName.c_str(), dsindex);
+        mark5stream->invert_imaginary = 1;
+      } else {
+        //printf("Mk5Mode::Mk5Mode : NOT using VGOS Complex VDIF Hack for stream index %d\n", dsindex);
+        mark5stream->invert_imaginary = 0;
+      }
+
       if(conf->isNetwork(dsindex))
         mark5stream->blanker = blanker_none;
       if(mark5stream->samplegranularity > 1)
@@ -112,13 +123,6 @@ float Mk5_CPUMode::unpack(int sampleoffset, int subloopindex)
   if(usecomplex) 
   {
     goodsamples = mark5_unpack_complex_with_offset(mark5stream, data, unpackstartsamples, (mark5_float_complex**)unpackedcomplexarrays, samplestounpack);
-    if(config->useVGOSComplexVDIFHack())
-    {
-      for(int i = 0; i < mark5stream->nchan; ++i)
-      {
-        vectorConj_cf32_I(unpackedcomplexarrays[i], samplestounpack);
-      }
-    }
   }
   else
   {

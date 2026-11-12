@@ -48,6 +48,13 @@ Mk5_GPUMode::Mk5_GPUMode(Configuration * conf, int confindex, int dsindex, int r
     }
     else
     {
+      // The fused GPU decoder does not read mark5stream->invert_imaginary, so it would
+      // silently ignore the VGOS sideband flip that Mk5_CPUMode applies. Refuse instead.
+      if(config->useVGOSComplexVDIFHack(confindex, dsindex))
+      {
+        cfatal << startl << "Mk5_GPUMode::Mk5_GPUMode : vgosComplexFlip is set for station " << config->getDStationName(confindex, dsindex) << " but the GPU correlator does not implement it yet; correlate this job without --usegpu" << endl;
+        initok = false;
+      }
       if(conf->isNetwork(dsindex))
         mark5stream->blanker = blanker_none;
       if(mark5stream->samplegranularity > 1)
