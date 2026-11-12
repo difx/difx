@@ -116,12 +116,7 @@ DataStream::~DataStream()
 void DataStream::initialise()
 {
   int status, currentconfigindex, currentoverflowbytes, overflowbytes = 0;
-  int maxbytes = config->getMaxDataBytes(streamnum);
-
-  if ((uint64_t)maxbytes*databufferfactor>4294967296LL) { // Will overflow 32bit int
-    cfatal << startl << "Datastream " << mpiid << " cannot allocate databuffer of " << (uint64_t)maxbytes*databufferfactor/1024/1024/1024 << " GB - 32bit overflow. Aborting!!!" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
-  }
+  uint64_t maxbytes = config->getMaxDataBytes(streamnum);
 
   bufferbytes = databufferfactor*maxbytes;
   readbytes = bufferbytes/numdatasegments;
@@ -140,7 +135,7 @@ void DataStream::initialise()
   databuffer = vectorAlloc_u8(bufferbytes + overflowbytes + 4); // a couple extra for mark5 case
   estimatedbytes += bufferbytes + overflowbytes + 8;
   if(databuffer == NULL) {
-    cfatal << startl << "Datastream " << mpiid << " could not allocate databuffer (length " << bufferbytes + overflowbytes << ") - aborting!!!" << endl;
+    cfatal << startl << "Datastream " << mpiid << " could not allocate databuffer (length " << (bufferbytes + overflowbytes + 4) << ") - aborting!!!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
   vectorZero_u8(databuffer, bufferbytes + overflowbytes + 4);
