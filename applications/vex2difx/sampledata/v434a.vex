@@ -15,15 +15,15 @@ $EXPER;
 def v434a;
      exper_name = v434a;
      exper_description = "VLBI monitoring of the periastron passage of PSR B1259-63";
-     PI_name = "Javier Moldon";
-     PI_email = jmoldon@am.ub.es;
-*    address:   Departament Astronomia i Meteorologia
-*               Facultat de Fisica (UB)
-*               Marti i Franques, 1
-*               E-08028 Barcelona, SPAIN
-*    phone:     +34-934039233
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
 *    during obs:
-*    fax:       +34-934021133
+*    fax:       Fake Phone
 *    notes:     Target source                            B1259
 *               Phase reference                     J1256-6449
 *               Astrometric Check                   J1245-6458
@@ -45,10 +45,10 @@ def v434a;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  :
-*                     Javier Moldon
-*                     Departament Astronomia i Meteorologia
-*                     Marti i Franques, 1
-*                     E-08028 Barcelona, SPAIN
+*                     Bob Bobson
+*                     Fake Address
+*
+*
 *
 enddef;
 *------------------------------------------------------------------------------

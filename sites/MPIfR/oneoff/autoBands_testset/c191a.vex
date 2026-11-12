@@ -15,15 +15,15 @@ $EXPER;
 def c191a;
      exper_name = c191a;
      exper_description = "C191A: MH004A M87  94-00h00 -> 94-11h00 UT";
-     PI_name = "Global mm-VLBI Array (GMVA)";
-     PI_email = tkrichbaum@mpifr-bonn.mpg.de;
-*    address:   Max-Planck-Institut fuer Radioastronomie
-*               Auf dem Huegel 69
-*               53121 Bonn
-*               Germany
-*    phone:     0049-228-525-295
-*    during obs:0049-2257-301-155
-*    fax:       0049-2257-301-106
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *    notes:     3mm RDBE_PFB, VLBA 7mm autopeak
 *               3mm dual polarisation for all
 *               measure Tsys before AND after each VLBI scan also provide tau
@@ -45,10 +45,10 @@ def c191a;
 *    distrib_format : FITS
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     H. Rottmann
-*                     Max-Planck-Institut fuer Radioastronomie
-*                     Auf dem Huegel 69
-*                     D-53121 Bonn, Germany
+*                     Bob Bobson
+*                     Fake Address
+*
+*
 *    corr_notes : 
 *               dual polarisation setup using 32 MHz channels
 *               ALMA, GLT, NOEMA, KVN to be correlated in zoom mode

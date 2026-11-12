@@ -15,14 +15,14 @@ $EXPER;
 def v521c;
      exper_name = v521c;
      exper_description = "K-band Reference Sources-2";
-     PI_name = "Aletha de Witt";
-     PI_email = alet@hartrao.ac.za;
-*    address:   Hartebeesthoek Radio Astronomy Observatory
-*               Farm 502 JQ, Hartebeesthoek, Broederstroom Road
-*               Krugersdorp District, Gauteng, South Africa
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
 *                
-*    phone:     +27 12 301 3222
-*    during obs:+27 12 301 3100
+*    phone:     Fake Phone
+*    during obs:Fake Phone
 *    fax:        
 *
 *    year, doy: 2016, 303
@@ -42,8 +42,8 @@ def v521c;
 *    distrib_format : FITS
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Cormac
-*                     Curtin University
+*                     Bob Bobson
+*                     Fake Address
 *
 enddef;
 *------------------------------------------------------------------------------
