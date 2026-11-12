@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2016-2017 by Walter Brisken                             *
+ *   Copyright (C) 2016-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,7 +31,7 @@ int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 	FILE *in;
 	char line[MaxLineLength+1];
 	int i, j, nscans, n;
-	char *v;
+	const char *v;
 	char bankName[2];
 	char dirLabel[MaxLineLength];
 	char extra[5][20];
@@ -118,21 +118,21 @@ int loadOldDirList(DirList &D, const char *fileName, std::stringstream &error)
 	for(int s = 0; !feof(in); ++s)
 	{
 		DirListDatumMark5 *DM5;
-		char *v;
+		const char *rv;
 		bool ok;
 
-		v = fgets(line, MaxLineLength, in);
-		if(!v)
+		rv = fgets(line, MaxLineLength, in);
+		if(!rv)
 		{
 			break;
 		}
 
 		// strip CR/LF chars from end
-		for(unsigned int i = 0; line[i]; ++i)
+		for(unsigned int k = 0; line[k]; ++k)
 		{
-			if(line[i] < ' ')
+			if(line[k] < ' ')
 			{
-				line[i] = 0;
+				line[k] = 0;
 
 				break;
 			}

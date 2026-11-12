@@ -2,7 +2,7 @@
 # coding: latin-1
 
 #**************************************************************************
-#   Copyright (C) 2008-2024 by Helge Rottmann, Mark Wainright             *
+#   Copyright (C) 2008-2026 by Helge Rottmann, Mark Wainright             *
 #                           and Walter Brisken                            *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
@@ -177,7 +177,7 @@ class Mk6MessageParser:
     def parseStatusMessage(self, dom, row):
         '''
         deprecated 
-        Mark6StatusMessage will become obsolete and will be superseeded by  Mark6SlotStatusMessage
+        Mark6StatusMessage will become obsolete and will be superseded by  Mark6SlotStatusMessage
 
         '''
 

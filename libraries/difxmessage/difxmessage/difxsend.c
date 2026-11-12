@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2016 by Walter Brisken                             *
+ *   Copyright (C) 2007-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -30,7 +30,7 @@ const int MIN_SEND_GAP=20;
  * official "entity" replacements.
  *
  * Returns:
- *   Increse of string size on success, or -1 on error.
+ *   Increase of string size on success, or -1 on error.
  */
 static int expandEntityReferences(char *dest, const char *src, int maxLength)
 {
@@ -429,7 +429,7 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 			fprintf(stderr, "difxMessageSendDriveStats: message body overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
 
 			return -1;
-		}
+	}
 
 		size = snprintf(message, DIFX_MESSAGE_LENGTH,
 			difxMessageXMLFormat,
@@ -463,38 +463,38 @@ int difxMessageSendMark6SlotStatus(const DifxMessageMark6SlotStatus *mark6slotst
 
 	// validate msn and covert to upper case
 	if(strlen(mark6slotstatus->msn) != 8)
-        {
-                strcpy(msn, "none");
-        }
-        else
-        {
-                for(i = 0; i < 9; ++i)
-                {
-                        msn[i] = toupper(mark6slotstatus->msn[i]);
-                }
-        }
+	{
+		strcpy(msn, "none");
+	}
+	else
+	{
+		for(i = 0; i < 9; ++i)
+		{
+			msn[i] = toupper(mark6slotstatus->msn[i]);
+		}
+	}
 
-        size = snprintf(body, DIFX_MESSAGE_LENGTH,
+	size = snprintf(body, DIFX_MESSAGE_LENGTH,
 
-                "<mark6SlotStatus>"
-                  "%s"
-                  "<slot>%d</slot>"
-                  "<msn>%8s</msn>"
-                  "<group>%s</group>"
-                  "<numDisks>%d</numDisks>"
-                  "<numMissingDisks>%d</numMissingDisks>"
-                  "<state>%d</state>"
-                  "<message>%s</message>"
-                "</mark6SlotStatus>",
+		"<mark6SlotStatus>"
+		  "%s"
+		  "<slot>%d</slot>"
+		  "<msn>%8s</msn>"
+		  "<group>%s</group>"
+		  "<numDisks>%d</numDisks>"
+		  "<numMissingDisks>%d</numMissingDisks>"
+		  "<state>%d</state>"
+		  "<message>%s</message>"
+		"</mark6SlotStatus>",
 
-                difxMessageInputFilenameTag,
-                mark6slotstatus->slot,
-                msn,
+		difxMessageInputFilenameTag,
+		mark6slotstatus->slot,
+		msn,
 		mark6slotstatus->group,	
 		mark6slotstatus->numDisks,	
 		mark6slotstatus->numMissingDisks,
-                mark6slotstatus->state,
-                mark6slotstatus->message);
+		mark6slotstatus->state,
+		mark6slotstatus->message);
 
 	if(size >= DIFX_MESSAGE_LENGTH)
 	{
@@ -537,93 +537,93 @@ int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status)
 	
 	// validate msn1 and covert to upper case
 	if(strlen(mark6status->msn1) != 8)
-        {
-                strcpy(msn1, "none");
-        }
-        else
-        {
-                for(i = 0; i < 9; ++i)
-                {
-                        msn1[i] = toupper(mark6status->msn1[i]);
-                }
-        }
+	{
+		strcpy(msn1, "none");
+	}
+	else
+	{
+		for(i = 0; i < 9; ++i)
+		{
+			msn1[i] = toupper(mark6status->msn1[i]);
+		}
+	}
 	// validate msn2 and covert to upper case
 	if(strlen(mark6status->msn2) != 8)
-        {
-                strcpy(msn2, "none");
-        }
-        else
-        {
-                for(i = 0; i < 9; ++i)
-                {
-                        msn2[i] = toupper(mark6status->msn2[i]);
-                }
-        }
+	{
+		strcpy(msn2, "none");
+	}
+	else
+	{
+		for(i = 0; i < 9; ++i)
+		{
+			msn2[i] = toupper(mark6status->msn2[i]);
+		}
+	}
 	// validate msn3 and covert to upper case
 	if(strlen(mark6status->msn3) != 8)
-        {
-                strcpy(msn3, "none");
-        }
-        else
-        {
-                for(i = 0; i < 9; ++i)
-                {
-                        msn3[i] = toupper(mark6status->msn3[i]);
-                }
-        }
+	{
+		strcpy(msn3, "none");
+	}
+	else
+	{
+		for(i = 0; i < 9; ++i)
+		{
+			msn3[i] = toupper(mark6status->msn3[i]);
+		}
+	}
 	// validate msn4 and covert to upper case
 	if(strlen(mark6status->msn4) != 8)
-        {
-                strcpy(msn4, "none");
-        }
-        else
-        {
-                for(i = 0; i < 9; ++i)
-                {
-                        msn4[i] = toupper(mark6status->msn4[i]);
-                }
-        }
+	{
+		strcpy(msn4, "none");
+	}
+	else
+	{
+		for(i = 0; i < 9; ++i)
+		{
+			msn4[i] = toupper(mark6status->msn4[i]);
+		}
+	}
 
 	size = snprintf(scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s", mark6status->scanName);
 
-        if(size >= DIFX_MESSAGE_MAX_SCANNAME_LEN)
-        {
-                fprintf(stderr, "difxMessageSendMark6Status: scanName is too long (%d >= %d) and has been truncated.\n", size, DIFX_MESSAGE_MAX_SCANNAME_LEN);
-        }
+	if(size >= DIFX_MESSAGE_MAX_SCANNAME_LEN)
+	{
+		fprintf(stderr, "difxMessageSendMark6Status: scanName is too long (%d >= %d) and has been truncated.\n", size, DIFX_MESSAGE_MAX_SCANNAME_LEN);
+	}
 
-        size = snprintf(body, DIFX_MESSAGE_LENGTH,
+	size = snprintf(body, DIFX_MESSAGE_LENGTH,
 
-                "<mark6Status>"
-                  "%s"
-                  "<slot1MSN>%s</slot1MSN>"
-                  "<slot2MSN>%s</slot2MSN>"
-                  "<slot3MSN>%s</slot3MSN>"
-                  "<slot4MSN>%s</slot4MSN>"
-                  "<slot1Group>%s</slot1Group>"
-                  "<slot2Group>%s</slot2Group>"
-                  "<slot3Group>%s</slot3Group>"
-                  "<slot4Group>%s</slot4Group>"
-                  "<slot1Disks>%d</slot1Disks>"
-                  "<slot2Disks>%d</slot2Disks>"
-                  "<slot3Disks>%d</slot3Disks>"
-                  "<slot4Disks>%d</slot4Disks>"
-                  "<slot1MissingDisks>%d</slot1MissingDisks>"
-                  "<slot2MissingDisks>%d</slot2MissingDisks>"
-                  "<slot3MissingDisks>%d</slot3MissingDisks>"
-                  "<slot4MissingDisks>%d</slot4MissingDisks>"
-                  "<state>%s</state>"
-                  "<scanNumber>%d</scanNumber>"
-                  "<scanName>%s</scanName>"
-                  "<position>%lld</position>"
-                  "<playRate>%5.3f</playRate>"
-                  "<dataMJD>%9.7f</dataMJD>"
-                "</mark6Status>",
+		"<mark6Status>"
+		  "%s"
+		  "<slot1MSN>%s</slot1MSN>"
+		  "<slot2MSN>%s</slot2MSN>"
+		  "<slot3MSN>%s</slot3MSN>"
+		  "<slot4MSN>%s</slot4MSN>"
+		  "<slot1Group>%s</slot1Group>"
+		  "<slot2Group>%s</slot2Group>"
+		  "<slot3Group>%s</slot3Group>"
+		  "<slot4Group>%s</slot4Group>"
+		  "<slot1Disks>%d</slot1Disks>"
+		  "<slot2Disks>%d</slot2Disks>"
+		  "<slot3Disks>%d</slot3Disks>"
+		  "<slot4Disks>%d</slot4Disks>"
+		  "<slot1MissingDisks>%d</slot1MissingDisks>"
+		  "<slot2MissingDisks>%d</slot2MissingDisks>"
+		  "<slot3MissingDisks>%d</slot3MissingDisks>"
+		  "<slot4MissingDisks>%d</slot4MissingDisks>"
+		  "<state>%s</state>"
+		  "<scanNumber>%d</scanNumber>"
+		  "<scanName>%s</scanName>"
+		  "<position>%lld</position>"
+		  "<playRate>%5.3f</playRate>"
+		  "<dataMJD>%9.7f</dataMJD>"
+		"</mark6Status>",
 
-                difxMessageInputFilenameTag,
-                msn1,
-                msn2,
-                msn3,
-                msn4,
+		difxMessageInputFilenameTag,
+		msn1,
+		msn2,
+		msn3,
+		msn4,
 		mark6status->group1,	
 		mark6status->group2,	
 		mark6status->group3,	
@@ -636,12 +636,12 @@ int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status)
 		mark6status->bank2MissingDisks,	
 		mark6status->bank3MissingDisks,	
 		mark6status->bank4MissingDisks,	
-                Mark6StateStrings[mark6status->state],
-                mark6status->scanNumber,
-                scanName,
-                mark6status->position,
-                mark6status->rate,
-                mark6status->dataMJD);
+		Mark6StateStrings[mark6status->state],
+		mark6status->scanNumber,
+		scanName,
+		mark6status->position,
+		mark6status->rate,
+		mark6status->dataMJD);
 
 	if(size >= DIFX_MESSAGE_LENGTH)
 	{
@@ -777,7 +777,7 @@ int difxMessageSendMark6Activity(const DifxMessageMark6Activity *mark6activity)
 	char activeVsn[DIFX_MESSAGE_MARK6_MSN_STR_LENGTH];
 	int size;
 
-        memset(activeVsn, 0, DIFX_MESSAGE_MARK6_MSN_STR_LENGTH);
+	memset(activeVsn, 0, DIFX_MESSAGE_MARK6_MSN_STR_LENGTH);
 
 	if(strlen(mark6activity->activeVsn) != DIFX_MESSAGE_MARK6_MSN_LENGTH)
 	{
@@ -937,7 +937,7 @@ int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
 	return difxMessageSend2(message, size);
 }
 
-int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, double visMJD, int numdatastreams, float *weight)
+int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, double visMJD, int numdatastreams, const float *weight)
 {
 	char message[DIFX_MESSAGE_LENGTH];
 	char weightstr[DIFX_MESSAGE_LENGTH];
@@ -1067,8 +1067,7 @@ int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const 
 	return difxMessageSend2(message, size);
 }
 
-int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage,
-	double visMJD, int numdatastreams, float *weight, double mjdStart, double mjdStop)
+int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage, double visMJD, int numdatastreams, const float *weight, double mjdStart, double mjdStop)
 {
 	char message[DIFX_MESSAGE_LENGTH];
 	char weightstr[DIFX_MESSAGE_LENGTH];
@@ -1427,7 +1426,7 @@ int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int 
 			"<index%d>%d</index%d>", i+1, index[i], i+1);
 		if(p >= DIFX_MESSAGE_LENGTH)
 		{
-			fprintf(stderr, "difxMessageSendDifxParameterGeneral: message indicies overflow (%d >= %d)\n", p, DIFX_MESSAGE_LENGTH);
+			fprintf(stderr, "difxMessageSendDifxParameterGeneral: message indices overflow (%d >= %d)\n", p, DIFX_MESSAGE_LENGTH);
 
 			return -1;
 		}

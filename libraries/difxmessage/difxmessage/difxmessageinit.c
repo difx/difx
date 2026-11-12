@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2017 by Walter Brisken                             *
+ *   Copyright (C) 2007-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -78,7 +78,7 @@ int difxMessageInitFull(int mpiId, const char *identifier, const char *published
 	
 	if(identifier != difxMessageIdentifier)
 	{
-		/* only copy if the pointers differ -- there are legitmate reasons why they may be the same */
+		/* only copy if the pointers differ -- there are legitimate reasons why they may be the same */
 		snprintf(difxMessageIdentifier, DIFX_MESSAGE_IDENTIFIER_LENGTH, "%s", identifier);
 	}
 
@@ -117,7 +117,7 @@ int difxMessageInitFull(int mpiId, const char *identifier, const char *published
 		if (ntohl(addr.s_addr)>>28!=14) { 
 		  difxMessageUnicast = 1;
 		  if (difxMessageMpiProcessId==0) 
-		    printf("Warning: Unicast (%s -> %08X) difxMessage in use. Some functionallity may be reduced\n", difxMessageGroup, ntohl(addr.s_addr));
+		    printf("Warning: Unicast (%s -> %08X) difxMessage in use. Some functionality may be reduced\n", difxMessageGroup, ntohl(addr.s_addr));
 		} 
 	}
 	else

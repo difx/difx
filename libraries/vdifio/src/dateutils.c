@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2024 by Adam Deller / Walter Brisken               *
+ *   Copyright (C) 2009-2026 by Adam Deller / Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -37,8 +37,8 @@ void mjd2ymd(int mjd, int *year, int *month, int *day)
 
 int ymd2doy(int yr, int mo, int day)
 {
-        int monstart1[] = {0,31,59,90,120,151,181,212,243,273,304,334};
-        int monstart2[] = {0,31,60,91,121,152,182,213,244,274,305,335};
+        const int monstart1[] = {0,31,59,90,120,151,181,212,243,273,304,334};
+        const int monstart2[] = {0,31,60,91,121,152,182,213,244,274,305,335};
         int L2;
 
         L2 = yr/4-(yr+7)/4-yr/100+(yr+99)/100+yr/400-(yr+399)/400;

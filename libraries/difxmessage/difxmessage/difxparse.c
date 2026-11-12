@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2024 by Walter Brisken                             *
+ *   Copyright (C) 2007-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -967,7 +967,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						strncpy_warn(G->body.mk5Control.command, s, DIFX_MESSAGE_PARAM_LENGTH);
 					}
-                                        else if(strcmp(elem, "targetNode") == 0)
+					else if(strcmp(elem, "targetNode") == 0)
 					{
 						strncpy_warn(G->body.mk5Control.targetNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH);
 					}

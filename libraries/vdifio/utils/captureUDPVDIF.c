@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2024 by Adam Deller                                *
+ *   Copyright (C) 2010-2026 by Adam Deller                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,7 +32,7 @@
 const char program[] = "captureUDPVDIF";
 const char author[]  = "Adam Deller <adeller@nrao.edu>";
 const char version[] = "0.1";
-const char verdate[] = "20100319";
+const char verdate[] = "20261112";
 
 #define BUFFERSEGBYTES 1000000
 #define NUMSEGMENTS    4
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
   int serversock, status, socketnumber, receivedbytes, udpbufbytes, udpport;
   int currentframes;
   int done;
-  vdif_header *header;
+  const vdif_header *header;
   struct sockaddr_in server;    /* Socket address */
   struct msghdr msg;
   struct iovec iov[1];
@@ -169,7 +169,6 @@ int main(int argc, char **argv)
   }
   wtd.keepwriting = 1;
   wtd.ready       = 0;
-  wtd.filename    = argv[2];
   //launch the writer thread
   perr = pthread_create(&writethread, NULL, launchNewWriteThread, (void *)(&wtd));
   if(perr != 0) {

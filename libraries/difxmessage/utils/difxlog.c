@@ -62,12 +62,17 @@ int checkPid(int pid)
 	v = snprintf(cmd, CommandLength, "ps -p %d -o pid --no-headers", pid);
 	if(v >= CommandLength)
 	{
-		fprintf(stderr, "Developer error: checkPid: CommandLength=%d is too small (%d wanted)\n",
-			CommandLength, v);
+		fprintf(stderr, "Developer error: checkPid(): CommandLength=%d is too small (%d wanted).\n", CommandLength, v);
 		exit(0);
 	}
 
 	p = popen(cmd, "r");
+	if(!p)
+	{
+		fprintf(stderr, "Error: checkPid(): popen(%s, \"r\") returned null.", cmd);
+
+		return -1;
+	}
 	c = fgets(s, StrLength-1, p);
 	pclose(p);
 	if(c == 0)
@@ -98,7 +103,7 @@ int main(int argc, char **argv)
 	time_t t, lastt;
 	char timestr[TimeLength];
 	char tag[TagLength];
-        char *wgtfmt = getenv("DIFX_WEIGHTS_FORMAT");
+        const char *wgtfmt = getenv("DIFX_WEIGHTS_FORMAT");
 
         /* fall back to default short format */
         if (!wgtfmt || wgtfmt[0] != '%') wgtfmt = "%5.2f";

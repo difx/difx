@@ -65,7 +65,17 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
       if(conf->isNetwork(dsindex))
         mark5stream->blanker = blanker_none;
       if(mark5stream->samplegranularity > 1)
-        samplestounpack += (mark5stream->samplegranularity - 1);
+      {
+        // unpack() starts up to granularity-1 samples early (at a group
+        // boundary), so unpacksamples + granularity - 1 samples are needed.
+        // mark5access decodes only whole groups of samplegranularity, and its
+        // return value assumes nsamp is a multiple of it: otherwise a fully
+        // blank window returns a negative count (e.g. -1).  So round up to a
+        // whole number of groups; the decoders write that many samples anyway.
+        int g = mark5stream->samplegranularity;
+        int samplesneeded = samplestounpack + g - 1;  // window can start up to g-1 samples early
+        samplestounpack = ((samplesneeded + g - 1)/g)*g;  // round up to whole groups of g
+      }
       string orig_streamname(mark5stream->streamname);
       sprintf(mark5stream->streamname, "DS%d <%s>", dsindex, orig_streamname.c_str());
       if(framesamples != mark5stream->framesamples)
@@ -203,8 +213,9 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
   {
     cerror << startl << "Error trying to unpack Mark5 format data at sampleoffset " << sampleoffset << " from data seconds " << datasec << " plus " << datans << " ns!!!" << endl;
     goodsamples = 0;
-    for(int b = 0; b < mark5stream->nchan; ++b)
-      invalid[b] = 0;
+    if(invalid)  // only allocated for INTERLACEDVDIF; NULL otherwise
+      for(int b = 0; b < mark5stream->nchan; ++b)
+        invalid[b] = 0;
   }
 
   return goodsamples/(float)unpacksamples;

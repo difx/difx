@@ -1,6 +1,7 @@
 
 dist_bin_SCRIPTS = \
 	difxspeed \
+	genvex2 \
 	oms2v2d \
 	vlog \
 	mk6filelist \

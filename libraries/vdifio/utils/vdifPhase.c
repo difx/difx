@@ -54,7 +54,7 @@ void usage()
 
 /*
  * The following function interpolates a spectrum with a mathematically correct
- * formulation assuming the underlying signal is a pure tone.  The argumemt
+ * formulation assuming the underlying signal is a pure tone.  The argument
  * should be a pointer to an element of an array that is a local peak.
  * Both neighboring elements must be accessible.  The return value
  * will be in the range [-0.5, 0.5], represting the array index, relative
