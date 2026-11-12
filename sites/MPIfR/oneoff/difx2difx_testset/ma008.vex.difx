@@ -16,14 +16,14 @@ def ma008;
      exper_name = ma008;
 *      exper_description = "GMVA Session March 2017, Exp. MG002";
 *      PI_name = "GMVA/K. Akiyama";
-     PI_email = walef@mpifr-bonn.mpg.de;
-*    address:   Max-Planck-Institut fuer Radioastronomie
-*               Auf dem Huegel 69
-*               53121 Bonn
-*               Germany
-*    phone:     0049-228-525-295
-*    during obs:0049-2257-301-155
-*    fax:       0049-2257-301-106
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *    notes:     3mm RDBE_DDC, VLBA 7mm autopeak
 *               3mm dual polarisation
 *               mode w. 4x128 MHz at VLBA and EB
@@ -46,10 +46,10 @@ def ma008;
 *    distrib_format : FITS
 *    source_pos_cat : STANDARD
 *    distribute_to  :
-*                     W. Alef
-*                     Max-Planck-Institut fuer Radioastronomie
-*                     Auf dem Huegel 69
-*                     D-53121 Bonn, Germany
+*                     Bob Bobson
+*                     Fake Address
+*
+*
 *    corr_notes :
 *               dual polarisation 4x 128 MHz at VLBA
 *               2x512 MHz bandwidth for European sites

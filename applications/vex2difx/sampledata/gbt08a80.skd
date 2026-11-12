@@ -14,14 +14,14 @@ $EXPER;
 def gbt08a80;
      exper_name = gbt08a80;
      exper_description = "Simultaneous GBT/Arecibo Pulsar Timing";
-     PI_name = "Paul Demorest";
-     PI_email = pdemores@nrao.edu;
-*    address:   National Radio Astronomy Observatory
-*               520 Edgemont Rd.
-*               Charlottesville, VA 22901
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
 *                
-*    phone:     434-244-6838
-*    during obs:510-468-6803
+*    phone:     Fake Phone
+*    during obs:Fake Phone
 *    fax:        
 *
 *    year, doy: 2008, 179

@@ -15,14 +15,14 @@ $EXPER;
 def MT831;
      exper_name = MT831;
      exper_description = "VLBA Monitoring";
-     PI_name = "NRAO AOC Data Analysts";
-     PI_email = analysts@nrao.edu;
-*    address:   NRAO-AOC
-*               P.O.Box O
-*               Socorro NM 87801, U.S.A.
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
 *                
-*    phone:     +1-505-835-7000 (front)
-*    during obs:+1-505-835-7359 (Paul)
+*    phone:     Fake Phone
+*    during obs:Fake Phone
 *    fax:        
 *    notes:     VLBA Monitoring test in dynamic scheduling
 *               and runs for 90 minutes (1.5 hours) total.
@@ -47,9 +47,9 @@ def MT831;
 *    distrib_medium : DAT
 *    source_pos_cat : SCHEDULE
 *    distribute_to  : 
-*                     Analysts Office
-*                     NRAO-AOC
-*                     P.O.Box O, Socorro NM 87801, U.S.A.
+*                     Bob Bobson
+*                     Fake Address
+*
 *    corr_notes : 
 *                 Note: Job scripts will make 3 different setups, plus
 *                 a 512Mbps in 2 passes. Please correlate at highest priority.
