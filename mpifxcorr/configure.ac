@@ -147,18 +147,29 @@ dnl **********************************************************
 AC_ARG_VAR([NVCC],[CUDA compiler command (default: nvcc)])
 AC_ARG_VAR([NVCCFLAGS],[extra flags for nvcc, e.g. -arch=sm_75])
 NVCC=${NVCC:-nvcc}
-AC_CHECK_PROG([with_cuda],[$NVCC],[yes],[no])
 
+dnl CUDA is opt-in: a GPU build happens only with --enable-cuda, never just
+dnl because nvcc is on PATH (sourcing setup.bash with CUDAROOT set puts it there).
 AC_ARG_ENABLE(cuda,
-	[AS_HELP_STRING([--enable-cuda],[compile with GPU acceleration using CUDA])],
-	[AS_IF([test "x$enableval" == "xyes"],[with_cuda=yes],[with_cuda=no])],
-	[])
+	[AS_HELP_STRING([--enable-cuda],[compile with GPU acceleration using CUDA (default: no); nvcc must be on PATH, or set NVCC])],
+	[AS_CASE([$enableval],
+		[yes],[with_cuda=yes],
+		[no],[with_cuda=no],
+		[AC_MSG_ERROR([bad value '$enableval' for --enable-cuda])])],
+	[with_cuda=no])
+
+dnl Asking for CUDA without a CUDA compiler is an error, not a silent CPU-only build.
+AS_IF([test "x$with_cuda" = "xyes"],[
+	AC_CHECK_PROG([have_nvcc],[$NVCC],[yes],[no])
+	AS_IF([test "x$have_nvcc" != "xyes"],
+		[AC_MSG_ERROR([--enable-cuda was given but '$NVCC' was not found: put the CUDA toolkit's bin directory on PATH (e.g. CUDAROOT in setup.local.bash) or set NVCC])])
+])
 
 
 CUDA_LIBS=
-AM_CONDITIONAL(WITH_CUDA, [test "x$with_cuda" == "xyes"])
+AM_CONDITIONAL(WITH_CUDA, [test "x$with_cuda" = "xyes"])
 
-AS_IF([test "x$with_cuda" == "xyes"],[
+AS_IF([test "x$with_cuda" = "xyes"],[
 	AC_SUBST(NVCC)
 	AC_SUBST(NVCCFLAGS)
 	dnl This needs to go into the linker command, because in the end mpicc

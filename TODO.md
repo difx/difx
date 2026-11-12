@@ -66,8 +66,6 @@ ADACS checkout, or bring site-neutral versions across first).
       `DIFX_BUILDDIR` (default outside the source tree) and a warning on in-tree builds;
       one component failing (e.g. a test program) should not stop that component's library
       from installing; `--noconf` should refuse components that have never been configured.
-- [ ] CUDA should be opt-in in `mpifxcorr/configure.ac`. Today it is enabled whenever `nvcc`
-      is on PATH; `install-difx` passes the flag explicitly, but running configure by hand does not.
 - [ ] Continuous integration: a self-hosted runner on the GPU desktop running
       `tests/Synthetic/run-local.sh` (correctness) and `run-bench.sh` (benchmark ledger).
 - [ ] Widen the test matrix beyond CPU vs GPU per scenario: (a) 1 thread vs N threads per

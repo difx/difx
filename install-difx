@@ -669,11 +669,10 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx, compnam
         if compname == "difxio" and withspice:
             configstring += " --with-spice-root={0}".format(spicedir)
         if check_configureAC_has(cfp+"/configure.ac", "enable-cuda"):
-            # Always state the choice explicitly. configure.ac autodetects CUDA
-            # from nvcc on PATH (AC_CHECK_PROG), so saying nothing means "GPU
-            # build iff nvcc happens to be visible" - and sourcing setup.bash
-            # puts it there. Passing --disable-cuda is what makes a CPU-only
-            # build requestable at all.
+            # Always state the choice explicitly. configure.ac now defaults to
+            # no CUDA (--enable-cuda opts in, and fails if nvcc is missing);
+            # passing the flag either way keeps install-difx independent of
+            # that default.
             configstring += " --enable-cuda " if with_cuda else " --disable-cuda "
         run(configstring)
 

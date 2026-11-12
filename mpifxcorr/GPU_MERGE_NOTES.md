@@ -256,10 +256,12 @@ Cleanup:
    allocates (a small leak; the GPU path does not use them).
 
 Build and configuration:
-8. **CUDA is enabled by default in `mpifxcorr/configure.ac`** whenever `nvcc`
-   is on PATH (`AC_CHECK_PROG`). `install-difx` always passes
-   `--enable-cuda`/`--disable-cuda`, but running configure by hand does not.
-   It should probably be opt-in for the main repository.
+8. CUDA was enabled by default in `mpifxcorr/configure.ac` whenever `nvcc`
+   was on PATH (`AC_CHECK_PROG`); `install-difx` always passed
+   `--enable-cuda`/`--disable-cuda`, but running configure by hand did not.
+   **Resolved after the merge:** CUDA is now opt-in (`--enable-cuda`, default
+   no), and `--enable-cuda` without a CUDA compiler is a configure error
+   rather than a silent CPU-only build.
 9. `architecture.h.gpu.in` was a separate copy of `architecture.h.in` that
    `configure.ac` never used (it generates `src/architecture.h` only from
    `architecture.h.in`, for CUDA builds too), and it had fallen behind (no IPP
