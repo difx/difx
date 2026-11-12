@@ -34,12 +34,24 @@ Notes:
 - Wall-time scaling on an RTX 2070: 15 s of data (the default window)
   takes ~260 s.
 - **Benchmarking only - do not use for correctness testing.** The fake
-  datastream writes valid VDIF headers over untouched (uninitialised)
-  payload bytes, so every antenna delivers essentially the same
-  pathological stream: correlation sums grow coherently (~N, not sqrt N),
-  amplifying FP rounding differences, and the XMAC's atomic adds make the
-  output non-bit-reproducible run to run (~1e-6 relative variation).
-  Correctness lives in tests/Synthetic.
+  datastream writes valid VDIF headers over a payload that is, by default,
+  pseudo-random noise seeded per datastream (`DIFX_FAKE_PAYLOAD=random`):
+  uncorrelated white noise at every antenna, with no signal to check
+  against. Correctness lives in tests/Synthetic.
+- The seed is fixed, so the input is the same on every run, but the output
+  is not bit-identical: the GPU XMAC accumulates with atomic adds, and the
+  CPU Core's threads add their results into the shared visibilities in
+  whatever order they finish. Two runs agree to well within the Synthetic
+  diffDiFX threshold (`diffDiFX.py -t 0.0005`): on 2026-11-12, CPU vs CPU
+  1.4e-5 %, GPU vs GPU 9e-6 %, CPU vs GPU 8.6e-5 % mean absolute
+  difference. So a threshold comparison against an earlier run is a usable
+  regression check.
+- Before 2026-11-12 the payload was all zeros (the headers were written
+  over a zeroed buffer), i.e. a constant signal identical at every antenna
+  with all the power in the DC channel. `DIFX_FAKE_PAYLOAD=none` restores
+  that, and `zero` writes explicit zeros. A same-session A/B found no
+  timing difference on the GPU or the CPU path (BENCHMARKS.md), so ledger
+  rows from before and after the change are comparable.
 
 ## Profiling (Nsight Systems)
 

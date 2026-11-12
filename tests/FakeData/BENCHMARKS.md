@@ -20,6 +20,13 @@ dominated the pipeline - see the A100 section §10). Set `SINGLE_THREAD_VDIF=0`
 to keep the interlaced demux. Rows dated on/before 2026-07-21 are all
 interlaced and are NOT directly comparable to single-thread rows.
 
+**Since 2026-11-12 the fake payload is pseudo-random** (white noise seeded
+per datastream; `DIFX_FAKE_PAYLOAD=random`, the default). Earlier rows ran on
+an all-zero payload, a constant signal identical at every antenna.
+`DIFX_FAKE_PAYLOAD=none` reproduces that. The same-session A/B rows dated
+2026-11-12 show no timing difference on either path, so older rows remain
+comparable.
+
 Rules:
 - Machine otherwise idle (no builds, no nsys, no browser). **On the cluster
   that means `sbatch --cpus-per-task=5 <script>`** — a co-tenant job stalls the
@@ -61,6 +68,10 @@ Rules:
 | 2026-08-28 | (autocorr incr 2, corrected plan) | gpu DIFX_GPU_XMAC_AUTOCORR=1 | 6.8 | 17.6 | 10.8 | autocorrelations as real baselines - 45 -> 55 per frequency, each carrying the frequency's pol products. `gpu_fuse_xmac_and_average` 34.0 -> 52.9 us/call, kernel busy 1360 -> 1420 ms (+4.4%) on the 2-station benchprof2, which is the WORST case (autocorrelations are 2/3 of its products; 22% on a 10-station job). Still +7% of wall because the rotator is also still computing them - increment 3 removes that. |
 | 2026-08-28 | (autocorr incr 2, first plan - superseded) | gpu DIFX_GPU_XMAC_AUTOCORR=1 | 6.9 | 18.0 | 11.1 | autocorrelations computed in the XMAC as synthetic baselines - **10% SLOWER, and the reason the design is being revised** (gpu-autocorr-design.md). One synthetic baseline per output run re-reads the spectra: for benchprof2 the runs go 4 -> 68 and band-reads 8 -> 96, taking `gpu_fuse_xmac_and_average` 34.0 -> 104.5 us/call and kernel busy 1360 -> 1584 ms. The rotator only gives back 85 ms on this card. Correct (all scenarios PASS both gate states) but not landed on; gate stays off. |
 | 2026-08-27 | (tiled fused fringe) | gpu DIFX_GPU_FRINGE_TILE=0 | 6.8 | 17.7 | 10.9 | the untiled path in the same binary and the same session - the A/B baseline for the row above, and it reproduces the 2026-08-26 10.8 s row, so there is no session drift in the comparison. |
+| 2026-11-12 | f606b1ae5 (measured pre-commit) | gpu DIFX_FAKE_PAYLOAD=random | 6.8 | 17.0 | 10.2 | **new default payload.** Same-session A/B against the old all-zero payload (rows below), one binary, legs none/random/random/none, 3 repeats each; per-repeat T5−T1 10.3 10.1 10.3 / 10.1 10.1 10.3, mean 10.20 s. No payload effect (+0.5%, inside the spread). Logs: `payload-ab-gpu.log`. Measured on the uncommitted change; the code is that of f606b1ae5 except for dev's VDIF epoch-table extension, which fake data never reaches. |
+| 2026-11-12 | f606b1ae5 (measured pre-commit) | gpu DIFX_FAKE_PAYLOAD=none | 6.7 | 16.7 | 10.0 | the old all-zero payload, same binary and session: per-repeat 9.8 10.0 10.1 / 10.2 10.4 10.4, mean 10.15 s. Drifts up ~0.3 s over the session in both legs. |
+| 2026-11-12 | f606b1ae5 (measured pre-commit) | cpu DIFX_FAKE_PAYLOAD=random | 27.4 | 124.2 | 96.8 | CPU A/B, legs random/none/none/random: per-repeat 97.5 96.7 96.5 / 97.3 99.3 97.2, mean 97.4 s. No payload effect (−0.2%). Logs: `payload-ab-cpu.log`. An earlier attempt hung at start-up (FxManager lost wakeup, fixed in f606b1ae5 via dev); rerun on the fixed binary. |
+| 2026-11-12 | f606b1ae5 (measured pre-commit) | cpu DIFX_FAKE_PAYLOAD=none | 27.4 | 124.5 | 97.1 | the old all-zero payload: per-repeat 96.3 97.1 96.7 / 97.5 98.3 99.7, mean 97.6 s. |
 
 ## A100 kernel profile at `edad94b34` (landed 2026-08-28, job 15956983)
 

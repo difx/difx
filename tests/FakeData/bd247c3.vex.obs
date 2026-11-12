@@ -15,15 +15,15 @@ $EXPER;
 def bd247c3;
      exper_name = bd247c3;
      exper_description = "bd247";
-     PI_name = "A.T. Deller";
-     PI_email = adeller@astro.swin.edu.au;
-*    address:   Swinburne University
-*               PO Box 218
-*               Hawthorn VIC 3122 Australia
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
 *                
-*    phone:     +61-3-9214-5307 (w)
-*    during obs:+61-3-9214-5307 (w)
-*    fax:       +61-3-9214-8797
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *    notes:     fringe finder, manual pcal, amplitude check: J0745+1011
 *
 *    year, doy: 2022,  96

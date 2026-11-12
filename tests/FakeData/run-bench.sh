@@ -14,6 +14,9 @@
 #                              data to single-thread VDIF, bypassing the
 #                              DataStream corner-turn; needs mark5access genheaders)
 #         EXTRA_ENV=...        e.g. EXTRA_ENV="DIFX_GPU_PIN_INPUT=0"
+#                              (DIFX_FAKE_PAYLOAD=random|zero|none selects the
+#                              fake payload; random is the default, none is the
+#                              all-zero payload of rows before 2026-11-12)
 
 set -u
 cd "$(dirname "$0")"
