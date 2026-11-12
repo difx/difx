@@ -64,7 +64,7 @@ def getUsage():
 	usage = ""
 	usage += "%s   %s  %s (last changes by %s) \n" % (__prog__, __build__, __author__, __lastAuthor__)
 	usage += "A watchdog program to monitor progress of difx jobs and to automatically kill hanging jobs.\n"
-	usage += "A job that has not made any progress for more than 300s (default can be overriden; see -i option below)\n"
+	usage += "A job that has not made any progress for more than 300s (default can be overridden; see -i option below)\n"
 	usage += "is assumed to be hanging and will be ended. In addition any associated difxlog\n"
 	usage += "will also be stopped. Difxwatch parses multicast state messages to determine start\n"
 	usage += "and progress of difx jobs.\n"
