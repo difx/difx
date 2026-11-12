@@ -19,14 +19,33 @@ echo "$DIFXROOT"; which mpifxcorr nvcc mpicxx
 - Site paths (`DIFXROOT`, `IPPROOT`, `CUDAROOT`, `NVCCFLAGS`, MPI) belong in the
   git-ignored `setup.local.bash` (template: `setup.local.bash.example`), never in
   `setup.bash`. See README.md.
-- If your login shell already puts another DiFX install on `PATH`, `LD_LIBRARY_PATH` or
-  `PKG_CONFIG_PATH`, `setup.bash` adds the new one in front but does not remove the old
-  one. A component that fails to install can then make later components configure
-  against the old install's headers and `.pc` files without any error. Take the other
-  install out of your login environment, or check `ldd` carefully (step 4).
-- CUDA is enabled whenever `nvcc` is on `PATH` when mpifxcorr is configured. For a GPU
-  build, set `CUDAROOT` and the right `-arch` in `NVCCFLAGS` (for example `sm_75` for
-  Turing, `sm_80` for an A100).
+- **Only one DiFX install may be on your paths.** Another install on `PATH`,
+  `LD_LIBRARY_PATH` or `PKG_CONFIG_PATH` (an older one from your login shell, or the other
+  branch's) lets a build pick up its headers, `.pc` files and libraries without any error.
+  That is how vdifio's utilities came to be compiled against an old `codifio.h`.
+  `setup.bash` removes every other DiFX install it recognises: by contents (`bin/mpifxcorr`
+  or a `difxio.pc`), not just by "difx" in the name. When run interactively it prints what
+  it removed. Installs in `/usr`, `/usr/local` or `/opt` are left in place with a warning;
+  remove those from your login environment yourself. Check after sourcing; this must
+  print nothing:
+
+  ```bash
+  for v in PATH LD_LIBRARY_PATH PKG_CONFIG_PATH PYTHONPATH; do
+    tr ':' '\n' <<< "${!v}" | while read -r d; do
+      r=$(DiFXInstallRoot "$d"); [ -n "$r" ] && [ "$r" != "${DIFXROOT%/}" ] && echo "$v: $d"
+    done
+  done
+  ```
+
+  To switch between installs (gpudifx and a dev reference build, say), source the other
+  checkout's `setup.bash`; a new shell is safest.
+- **Don't borrow components from another install.** Build what you need into this
+  install. For example, mark6sg is optional (`--also=mark6sg`). If it is missing, vdifio,
+  mark5access and mpifxcorr build without Mark6 support, rather than taking it from
+  elsewhere.
+- CUDA is opt-in: `install-difx --withcuda` (mpifxcorr `configure --enable-cuda`). Then
+  `nvcc` must be on `PATH`, or configure stops. Set `CUDAROOT` and the right `-arch` in
+  `NVCCFLAGS` (for example `sm_75` for Turing, `sm_80` for an A100).
 
 ## 2. Find the build directory
 
@@ -42,7 +61,15 @@ First build of a new install:
 
 ```bash
 mkdir -p <builddir> && cd <builddir>
-<repo>/install-difx --withcuda --withpython --nodoc --makeflags='-j 8'
+<repo>/install-difx --withcuda --withpython --nodoc --makeflags='-j 8' --also=mark6sg
+```
+
+After configuring, check that no component took headers or libraries from another
+install. Every `-I` and `-L` printed must be `$DIFXROOT`, the system, IPP, CUDA or MPI:
+
+```bash
+grep -h -E '^[A-Z0-9_]*(CFLAGS|CPPFLAGS|CXXFLAGS|LDFLAGS|LIBS) =' $(find <builddir> -name Makefile) \
+  | grep -o -E -- '-[IL][^ ]+' | sort -u
 ```
 
 ## 3. Rebuild
@@ -74,7 +101,7 @@ ldd "$(which mpifxcorr)" | grep -E 'difx|mark5|vdif|cuda|ipp|mpi'
 
 - The binary's time must be after your last source edit.
 - `ldd` must show the DiFX libraries from `$DIFXROOT/lib`, not from another install, and
-  the CUDA and MPI libraries you expect.
+  the CUDA and MPI libraries you expect. That includes `libmark6sg` and `libmark6gather`.
 - For a change that is hard to see in the output, check for a new string:
   `strings "$(which mpifxcorr)" | grep '<new message>'`.
 
