@@ -15,14 +15,14 @@ $EXPER;
 def n20018;
      exper_name = n20018;
      exper_description = "USNO Daily UT1-UTC Measurement";
-     PI_name = "Alan Fey";
-     PI_email = ut1@nrao.edu;
-*    address:   United States Naval Observatory
-*               3450 Massachusetts Ave, NW
-*               Washington, DC 20392-5420
-*                U.S.A.
-*    phone:     202 762 1517
-*    during obs:202 762 1517
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
 *    fax:        
 *    notes:     DELZN-based UT1-UTC measurement
 *
@@ -43,9 +43,9 @@ def n20018;
 *    distrib_format : FITS
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Walter Brisken
-*                     P. O. Box O
-*                     Socorro NM 87801
+*                     Bob Bobson
+*                     Fake Address
+*
 *
 enddef;
 *------------------------------------------------------------------------------

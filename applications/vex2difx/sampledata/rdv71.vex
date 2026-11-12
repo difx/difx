@@ -7,7 +7,7 @@ $EXPER;
   def RDV71;
     exper_name = RDV71;
     exper_description = "Fifth R&D VLBA session of 2008";
-    PI_name = DG;
+    PI_name = "Bob Bobson";
     target_correlator = VLBA;
   enddef;
 *-----------------------   end $EXPER              ----------------------*
