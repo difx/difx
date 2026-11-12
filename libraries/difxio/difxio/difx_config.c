@@ -38,6 +38,7 @@ DifxConfig *newDifxConfigArray(int nConfig)
 	}
 	for(configId = 0; configId < nConfig; ++configId)
 	{
+		dc[configId].phasedArrayId = -1;
 		dc[configId].doPolar = -1;
 		dc[configId].pulsarId = -1;
 		dc[configId].strideLength = 16;
@@ -615,7 +616,7 @@ int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const Dif
 		if(config->phasedArrayId >= 0 && phasedarray)
 		{
 			writeDifxLine(out, "PHASED ARRAY", "TRUE");
-			writeDifxLine(out, "PHASED ARRAY CONNFIG FILE", phasedarray[config->phasedArrayId].fileName);
+			writeDifxLine(out, "PHASED ARRAY CONFIG FILE", phasedarray[config->phasedArrayId].fileName);
 		}
 		else
 		{

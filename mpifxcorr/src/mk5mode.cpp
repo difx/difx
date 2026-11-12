@@ -43,6 +43,7 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
     }
     //create the mark5_stream used for unpacking
     mark5stream = new_mark5_stream( new_mark5_stream_unpacker(0), new_mark5_format_generic_from_string(formatname) );
+
     if(mark5stream == 0)
     {
       cfatal << startl << "Mk5Mode::Mk5Mode : mark5stream is null" << endl;
@@ -50,6 +51,9 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
     }
     else
     {
+      // VGOS sideband correction: mark5access inverts the imaginary part while unpacking
+      mark5stream->invert_imaginary = config->useVGOSComplexVDIFHack(confindex, dsindex) ? 1 : 0;
+
       if(conf->isNetwork(dsindex))
         mark5stream->blanker = blanker_none;
       if(mark5stream->samplegranularity > 1)
@@ -112,13 +116,6 @@ float Mk5Mode::unpack(int sampleoffset, int subloopindex)
   if(usecomplex) 
   {
     goodsamples = mark5_unpack_complex_with_offset(mark5stream, data, unpackstartsamples, (mark5_float_complex**)unpackedcomplexarrays, samplestounpack);
-    if(config->useVGOSComplexVDIFHack())
-    {
-      for(int i = 0; i < mark5stream->nchan; ++i)
-      {
-        vectorConj_cf32_I(unpackedcomplexarrays[i], samplestounpack);
-      }
-    }
   }
   else
   {

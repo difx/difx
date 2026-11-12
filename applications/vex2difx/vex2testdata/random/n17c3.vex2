@@ -17,14 +17,14 @@ $EXPER;
 def N17C3;
      exper_name = N17C3 : C;
      exper_description = "Network Monitoring Experiment";
-     PI_name = "Benito Marcote";
-     PI_email = marcote@jive.eu;
-*    address:   JIVE
-*               Postbus 2
-*               7990 AA Dwingeloo
-*               The Netherlands
-*    phone:     +31-521-596508
-*    during obs:+31-521-596508
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
 *    fax:       
 *    6cm NME and ftp fringe test for session 3/2017 with 2 modes
 *    (512 and 2048 Mbps, L+R, 2-bit sampling, 8 and 32 MHz filters)
@@ -77,7 +77,7 @@ def N17C3;
 *    distrib_format : FITS
 *    source_pos_cat : STANDARD
 *    distribute_to  :
-*                     Benito Marcote
+*                     Bob Bobson
 *                     
 *                     
 *                     

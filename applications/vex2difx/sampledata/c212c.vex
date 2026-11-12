@@ -15,15 +15,15 @@ $EXPER;
 def c212c;
      exper_name = c212c;
      exper_description = "GMVA Oct. 2021,  part3";
-     PI_name = "Global mm-VLBI Array (GMVA)";
-     PI_email = tkrichbaum@mpifr-bonn.mpg.de;
-*    address:   Max-Planck-Institut fuer Radioastronomie
-*               Auf dem Huegel 69
-*               53121 Bonn
-*               Germany
-*    phone:     0049-228-525-295
-*    during obs:0049-2257-301-155
-*    fax:       0049-2257-301-106
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *    notes:     Using Sched 11.6
 *               VLBA at 86+43 GHz
 *
@@ -44,10 +44,10 @@ def c212c;
 *    distrib_format : FITS
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     H. Rottmann
-*                     Max-Planck-Institut fuer Radioastronomie
-*                     Auf dem Huegel 69
-*                     D-53121 Bonn, Germany
+*                     Bob Bobson
+*                     Fake Address
+*
+*
 *    corr_notes : 
 *               dual polarisation setup using 64/128 MHz channels
 *

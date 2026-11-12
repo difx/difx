@@ -71,8 +71,8 @@ typedef struct vdif_header {
    uint32_t invalid : 1;
 
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
@@ -97,8 +97,8 @@ typedef struct vdif_edv1_header {	/* NICT extensions: see http://www.vlbi.org/vd
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
@@ -124,8 +124,8 @@ typedef struct vdif_edv2_header_generic { /* Nominally for ALMA: https://vlbi.or
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8
    uint32_t nchan : 5;
@@ -151,8 +151,8 @@ typedef struct vdif_edv2_header_alma {	/* For ALMA, ratified very poorly documen
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
@@ -180,8 +180,8 @@ typedef struct vdif_edv2_header_r2dbe { /* Not documented on vlbi.org, not ratif
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8
    uint32_t nchan : 5;
@@ -210,8 +210,8 @@ typedef struct vdif_edv2_header {	/* For ALMA & R2DBE, incomplete document descr
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
@@ -239,8 +239,8 @@ typedef struct vdif_edv3_header {	/* VLBA extensions: see http://www.vlbi.org/vd
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
@@ -275,8 +275,8 @@ typedef struct vdif_edv4_header {	/* proposed extension extensions: (WFB email t
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;

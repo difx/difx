@@ -32,6 +32,10 @@ VDIFFakeDataStream::VDIFFakeDataStream(const Configuration * conf, int snum, int
 		VDIFDataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
 {
 	cinfo << startl << "VDIF fake datastream starting" << endl;
+
+	// dataRead() only ever writes frame headers into readbuffer, and vdifmux
+	// copies the frames from there, so the payload is what readbuffer holds.
+	fillFakePayload(readbuffer, readbuffersize, "readbuffer");
 }
 
 VDIFFakeDataStream::~VDIFFakeDataStream()
@@ -119,9 +123,9 @@ int VDIFFakeDataStream::dataRead(int buffersegment)
 	{
 		for(int t = 0; t < nthreads; ++t)
 		{
-			memcpy(dest, &header, sizeof(header));
 			header.threadid = threads[t];
-			
+			memcpy(dest, &header, sizeof(header));
+
 			dest += inputframebytes;
 		}
 		nextVDIFHeader(&header, framespersecond);

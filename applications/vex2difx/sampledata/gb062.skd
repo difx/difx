@@ -15,15 +15,15 @@ $EXPER;
 def GB062;
      exper_name = GB062;
      exper_description = "36rd epoch of obs. of SN1993J in M81: VLBA/MkV 6 pol.";
-     PI_name = "N. Bartel";
-     PI_email = bartel@yorku.ca;
-*    address:   York University
-*               Toronto, ON M3J 1P3
-*               Canada
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
 *                
-*    phone:     +1-416-736-5424 (work)
-*    during obs:+1-416-483-9068 (home)
-*    fax:       +1-416-736-5516
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *    notes:     Fringe finder  : 0954+658
 *               Pol. Calibrator: 0954+658, OQ208
 *               Amplitude check: 0954+658, OQ208
@@ -42,10 +42,10 @@ def GB062;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Norbert Bartel
-*                     York University, Dept of Physics and Astronomy, 4700 Keele St.
-*                     Toronto, ONT M3J 1P3
-*                     Canada
+*                     Bob Bobson
+*                     Fake Address
+*
+*
 *
 enddef;
 *------------------------------------------------------------------------------

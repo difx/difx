@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2025 by Walter Brisken, Adam Deller,               *
+ *   Copyright (C) 2009-2026 by Walter Brisken, Adam Deller,               *
  *                              Chris Phillips, Geoffrey Crew              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -50,6 +50,12 @@ static float complex complex_zeros[8];
 static float complex complex_lut1bit[256][4];
 static float complex complex_lut2bit[256][2];
 static float complex complex_lut4bit[256];
+
+
+/* Pre complex conjugated lookup tables for complex LSB VGOS hack */
+static float complex complex_lut1bit_conj[256][4];
+static float complex complex_lut2bit_conj[256][2];
+static float complex complex_lut4bit_conj[256];
 
 /* for use in counting high states; 2-bit support only at this time */
 static unsigned char countlut2bit[256][4];
@@ -127,6 +133,8 @@ static void initluts()
 		         l =  (b>> (2*i)) & 0x1;
 			 li = (b>> (2*i+1)) & 0x1;
 			 complex_lut1bit[b][i] =  lut2level[l] + lut2level[li]*I;
+			 /* Conjugated equivalent for VGOS Hack */
+			 complex_lut1bit_conj[b][i] = lut2level[l] - lut2level[li]*I;
 		}
 
 		/* 2 bit real, 2 bit imaginary */
@@ -135,12 +143,16 @@ static void initluts()
 		         l =  (b>> (4*i)) & 0x3;
 			 li = (b>> (4*i+2)) & 0x3;
 			 complex_lut2bit[b][i] =  lut4level[l] + lut4level[li]*I;
+			 /* Conjugated equivalent for VGOS Hack */
+			 complex_lut2bit_conj[b][i] = lut4level[l] - lut4level[li]*I;
 		}
 
 		/* 4 bit real, 4 bit imaginary */
 		l =  b & 0xF;
 		li = (b>>4) & 0xF;
 		complex_lut4bit[b] =  lut16level[l] + lut16level[li]*I;
+		/* Conjugated equivalent for VGOS Hack */
+		complex_lut4bit_conj[b] = lut16level[l] - lut16level[li]*I;
 	}
 }
 
@@ -154,7 +166,7 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms, int *mjd,
 
 	/* table below is valid for year 2000.0 to 2032.0 and contains mjd on Jan 1 and Jul 1
 	 * for each year. */
-	static int mjdepochs[64] = 
+	static int mjdepochs[128] = 
 	{
 		51544, 51726, 51910, 52091, 52275, 52456, 52640, 52821,  /* 2000-2003 */
 		53005, 53187, 53371, 53552, 53736, 53917, 54101, 54282,  /* 2004-2007 */
@@ -163,7 +175,18 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms, int *mjd,
 		57388, 57570, 57754, 57935, 58119, 58300, 58484, 58665,  /* 2016-2019 */
 		58849, 59031, 59215, 59396, 59580, 59761, 59945, 60126,  /* 2020-2023 */
 		60310, 60492, 60676, 60857, 61041, 61222, 61406, 61587,  /* 2024-2027 */
-		61771, 61953, 62137, 62318, 62502, 62683, 62867, 63048   /* 2028-2031 */
+		61771, 61953, 62137, 62318, 62502, 62683, 62867, 63048,  /* 2028-2031 */
+
+		/* newly supported VDIF epochs based on 2026 amendment to VDIF standard */
+		63232, 63414, 63598, 63779, 63963, 64144, 64328, 64509,  /* 2032-2035 */
+		64693, 64875, 65059, 65240, 65424, 65605, 65789, 65970,  /* 2036-2039 */
+		66154, 66336, 66520, 66701, 66885, 67066, 67250, 67431,  /* 2040-2043 */
+		67615, 67797, 67981, 68162, 68346, 68527, 68711, 68892,  /* 2044-2047 */
+		69076, 69258, 69442, 69623, 69807, 69988, 70172, 70353,  /* 2048-2051 */
+		70537, 70719, 70903, 71084, 71268, 71449, 71633, 71814,  /* 2052-2055 */
+		71998, 72180, 72364, 72545, 72729, 72910, 73094, 73275,  /* 2056-2059 */
+		73459, 73641, 73825, 74006, 74190, 74371, 74555, 74736   /* 2060-2063 */
+
 	};
 
 	if(!ms)
@@ -3159,6 +3182,8 @@ static int vdif_complex_decode_1channel_1bit_decimation1(struct mark5_stream *ms
 
 	buf = ms->payload;
 	i = ms->readposition;
+	/* Select the lookup table based on whether the VGOS hack is enabled or not */
+	const float complex (*selected_lut)[4] = ms->invert_imaginary ? complex_lut1bit_conj : complex_lut1bit;
 
 	for(o = 0; o < nsamp; ++o)
 	{
@@ -3169,7 +3194,7 @@ static int vdif_complex_decode_1channel_1bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp = complex_lut1bit[buf[i]];
+			fcp = selected_lut[buf[i]];
 		}
 
 		++i;
@@ -3205,6 +3230,9 @@ static int vdif_complex_decode_2channel_1bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table based on whether the VGOS hack is enabled or not */
+	const float complex (*selected_lut)[4] = ms->invert_imaginary ? complex_lut1bit_conj : complex_lut1bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3217,7 +3245,7 @@ static int vdif_complex_decode_2channel_1bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp = complex_lut1bit[buf[i]];
+			fcp = selected_lut[buf[i]];
 		}
 
 		++i;
@@ -3251,6 +3279,9 @@ static int vdif_complex_decode_4channel_1bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table based on whether the VGOS hack is enabled or not */
+	const float complex (*selected_lut)[4] = ms->invert_imaginary ? complex_lut1bit_conj : complex_lut1bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3263,7 +3294,7 @@ static int vdif_complex_decode_4channel_1bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp = complex_lut1bit[buf[i]];
+			fcp = selected_lut[buf[i]];
 		}
 
 		++i;
@@ -3296,6 +3327,9 @@ static int vdif_complex_decode_8channel_1bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table based on whether the VGOS hack is enabled or not */
+	const float complex (*selected_lut)[4] = ms->invert_imaginary ? complex_lut1bit_conj : complex_lut1bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3309,9 +3343,9 @@ static int vdif_complex_decode_8channel_1bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut1bit[buf[i]];
+			fcp0 = selected_lut[buf[i]];
 			++i;
-			fcp1 = complex_lut1bit[buf[i]];
+			fcp1 = selected_lut[buf[i]];
 			++i;
 		}
 
@@ -3347,6 +3381,9 @@ static int vdif_complex_decode_16channel_1bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+    /* Select the lookup table based on whether the VGOS hack is enabled or not */
+	const float complex (*selected_lut)[4] = ms->invert_imaginary ? complex_lut1bit_conj : complex_lut1bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3360,13 +3397,13 @@ static int vdif_complex_decode_16channel_1bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut1bit[buf[i]];
+			fcp0 = selected_lut[buf[i]];
 			++i;
-			fcp1 = complex_lut1bit[buf[i]];
+			fcp1 = selected_lut[buf[i]];
 			++i;
-			fcp2 = complex_lut1bit[buf[i]];
+			fcp2 = selected_lut[buf[i]];
 			++i;
-			fcp3 = complex_lut1bit[buf[i]];
+			fcp3 = selected_lut[buf[i]];
 			++i;
 		}
 
@@ -3410,6 +3447,9 @@ static int vdif_complex_decode_1channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3422,7 +3462,7 @@ static int vdif_complex_decode_1channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp = complex_lut2bit[buf[i]];
+			fcp = selected_lut[buf[i]];
 		}
 
 		++i;
@@ -3454,6 +3494,9 @@ static int vdif_complex_decode_2channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3466,7 +3509,7 @@ static int vdif_complex_decode_2channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp = complex_lut2bit[buf[i]];
+			fcp = selected_lut[buf[i]];
 		}
 
 		i++;
@@ -3497,6 +3540,9 @@ static int vdif_complex_decode_3channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3510,8 +3556,8 @@ static int vdif_complex_decode_3channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
 		}
 
 		data[0][o] = fcp0[0];
@@ -3541,6 +3587,9 @@ static int vdif_complex_decode_4channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3554,8 +3603,8 @@ static int vdif_complex_decode_4channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
 		}
 
 		data[0][o] = fcp0[0];
@@ -3586,6 +3635,9 @@ static int vdif_complex_decode_5channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3599,9 +3651,9 @@ static int vdif_complex_decode_5channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -3635,6 +3687,9 @@ static int vdif_complex_decode_6channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3648,9 +3703,9 @@ static int vdif_complex_decode_6channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -3684,6 +3739,9 @@ static int vdif_complex_decode_7channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+    /* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3697,10 +3755,10 @@ static int vdif_complex_decode_7channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
 		}
 
 		data[0][o] = fcp0[0];
@@ -3734,6 +3792,9 @@ static int vdif_complex_decode_8channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3747,10 +3808,10 @@ static int vdif_complex_decode_8channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
 		}
 
 		data[0][o] = fcp0[0];
@@ -3785,6 +3846,9 @@ static int vdif_complex_decode_9channel_2bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3798,11 +3862,11 @@ static int vdif_complex_decode_9channel_2bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i]];
 			i += 4;
 		}
 
@@ -3839,6 +3903,9 @@ static int vdif_complex_decode_10channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3852,11 +3919,11 @@ static int vdif_complex_decode_10channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i]];
 			i += 4;
 		}
 
@@ -3894,6 +3961,9 @@ static int vdif_complex_decode_11channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3907,12 +3977,12 @@ static int vdif_complex_decode_11channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i++]];
-			fcp5 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i++]];
+			fcp5 = selected_lut[buf[i]];
 			i += 3;
 		}
 
@@ -3951,6 +4021,9 @@ static int vdif_complex_decode_12channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -3964,12 +4037,12 @@ static int vdif_complex_decode_12channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i++]];
-			fcp5 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i++]];
+			fcp5 = selected_lut[buf[i]];
 			i += 3;
 		}
 
@@ -4009,6 +4082,9 @@ static int vdif_complex_decode_13channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4022,13 +4098,13 @@ static int vdif_complex_decode_13channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i++]];
-			fcp5 = complex_lut2bit[buf[i++]];
-			fcp6 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i++]];
+			fcp5 = selected_lut[buf[i++]];
+			fcp6 = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -4069,6 +4145,9 @@ static int vdif_complex_decode_14channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4082,13 +4161,13 @@ static int vdif_complex_decode_14channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i++]];
-			fcp5 = complex_lut2bit[buf[i++]];
-			fcp6 = complex_lut2bit[buf[i]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i++]];
+			fcp5 = selected_lut[buf[i++]];
+			fcp6 = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -4130,6 +4209,9 @@ static int vdif_complex_decode_15channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4143,14 +4225,14 @@ static int vdif_complex_decode_15channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i++]];
-			fcp5 = complex_lut2bit[buf[i++]];
-			fcp6 = complex_lut2bit[buf[i++]];
-			fcp7 = complex_lut2bit[buf[i++]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i++]];
+			fcp5 = selected_lut[buf[i++]];
+			fcp6 = selected_lut[buf[i++]];
+			fcp7 = selected_lut[buf[i++]];
 		}
 
 		data[0][o] = fcp0[0];
@@ -4192,6 +4274,9 @@ static int vdif_complex_decode_16channel_2bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4205,14 +4290,14 @@ static int vdif_complex_decode_16channel_2bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			fcp0 = complex_lut2bit[buf[i++]];
-			fcp1 = complex_lut2bit[buf[i++]];
-			fcp2 = complex_lut2bit[buf[i++]];
-			fcp3 = complex_lut2bit[buf[i++]];
-			fcp4 = complex_lut2bit[buf[i++]];
-			fcp5 = complex_lut2bit[buf[i++]];
-			fcp6 = complex_lut2bit[buf[i++]];
-			fcp7 = complex_lut2bit[buf[i++]];
+			fcp0 = selected_lut[buf[i++]];
+			fcp1 = selected_lut[buf[i++]];
+			fcp2 = selected_lut[buf[i++]];
+			fcp3 = selected_lut[buf[i++]];
+			fcp4 = selected_lut[buf[i++]];
+			fcp5 = selected_lut[buf[i++]];
+			fcp6 = selected_lut[buf[i++]];
+			fcp7 = selected_lut[buf[i++]];
 		}
 
 		data[0][o] = fcp0[0];
@@ -4255,6 +4340,9 @@ static int vdif_complex_decode_32channel_2bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4270,7 +4358,7 @@ static int vdif_complex_decode_32channel_2bit_decimation1(struct mark5_stream *m
 		{
 		  for (j=0; j<16; j++) 
 		  {
-		        fcp[j] = complex_lut2bit[buf[i]]; 
+		        fcp[j] = selected_lut[buf[i]]; 
 			i++;
 		  }
 		}
@@ -4306,6 +4394,9 @@ static int vdif_complex_decode_64channel_2bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+	/* Select the lookup table we're using based on whether the VGOS hack is engaged or not  */
+	const float complex (*selected_lut)[2] = ms->invert_imaginary ? complex_lut2bit_conj : complex_lut2bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4321,7 +4412,7 @@ static int vdif_complex_decode_64channel_2bit_decimation1(struct mark5_stream *m
 		{
 		  for (j=0; j<32; j++) 
 		  {
-		        fcp[j] = complex_lut2bit[buf[i]]; 
+		        fcp[j] = selected_lut[buf[i]]; 
 			i++;
 		  }
 		}
@@ -4356,6 +4447,9 @@ static int vdif_complex_decode_1channel_4bit_decimation1(struct mark5_stream *ms
 	const unsigned char *buf;
 	int o, i;
 	int nblank = 0;
+   
+    /* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
 
 	buf = ms->payload;
 	i = ms->readposition;
@@ -4369,7 +4463,7 @@ static int vdif_complex_decode_1channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i]];
 		}
 
 		++i;
@@ -4396,6 +4490,9 @@ static int vdif_complex_decode_2channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4410,8 +4507,8 @@ static int vdif_complex_decode_2channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
 		}
 
 		if(i >= ms->databytes)
@@ -4436,6 +4533,9 @@ static int vdif_complex_decode_3channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4451,9 +4551,9 @@ static int vdif_complex_decode_3channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -4479,6 +4579,9 @@ static int vdif_complex_decode_4channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4495,10 +4598,10 @@ static int vdif_complex_decode_4channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
 		}
 
 		if(i >= ms->databytes)
@@ -4523,6 +4626,9 @@ static int vdif_complex_decode_5channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4540,11 +4646,11 @@ static int vdif_complex_decode_5channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i]];
 			i += 4;
 		}
 
@@ -4570,6 +4676,9 @@ static int vdif_complex_decode_6channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4588,12 +4697,12 @@ static int vdif_complex_decode_6channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i]];
 			i += 3;
 		}
 
@@ -4619,6 +4728,9 @@ static int vdif_complex_decode_7channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4638,13 +4750,13 @@ static int vdif_complex_decode_7channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -4670,6 +4782,9 @@ static int vdif_complex_decode_8channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4690,14 +4805,14 @@ static int vdif_complex_decode_8channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
 		}
 
 		if(i >= ms->databytes)
@@ -4722,6 +4837,9 @@ static int vdif_complex_decode_9channel_4bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4743,15 +4861,15 @@ static int vdif_complex_decode_9channel_4bit_decimation1(struct mark5_stream *ms
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i]];
 			i += 8;
 		}
 
@@ -4777,6 +4895,9 @@ static int vdif_complex_decode_10channel_4bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4799,16 +4920,16 @@ static int vdif_complex_decode_10channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i]];
 			i += 7;
 		}
 
@@ -4834,6 +4955,9 @@ static int vdif_complex_decode_11channel_4bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4857,17 +4981,17 @@ static int vdif_complex_decode_11channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i++]];
-			data[10][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i++]];
+			data[10][o] = selected_lut[buf[i]];
 			i += 6;
 		}
 
@@ -4893,6 +5017,9 @@ static int vdif_complex_decode_12channel_4bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
+
 	buf = ms->payload;
 	i = ms->readposition;
 
@@ -4917,18 +5044,18 @@ static int vdif_complex_decode_12channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i++]];
-			data[10][o] = complex_lut4bit[buf[i++]];
-			data[11][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i++]];
+			data[10][o] = selected_lut[buf[i++]];
+			data[11][o] = selected_lut[buf[i]];
 			i += 5;
 		}
 
@@ -4953,6 +5080,9 @@ static int vdif_complex_decode_13channel_4bit_decimation1(struct mark5_stream *m
 	const unsigned char *buf;
 	int o, i;
 	int nblank = 0;
+
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
 
 	buf = ms->payload;
 	i = ms->readposition;
@@ -4979,19 +5109,19 @@ static int vdif_complex_decode_13channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i++]];
-			data[10][o] = complex_lut4bit[buf[i++]];
-			data[11][o] = complex_lut4bit[buf[i++]];
-			data[12][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i++]];
+			data[10][o] = selected_lut[buf[i++]];
+			data[11][o] = selected_lut[buf[i++]];
+			data[12][o] = selected_lut[buf[i]];
 			i += 4;
 		}
 
@@ -5016,6 +5146,9 @@ static int vdif_complex_decode_14channel_4bit_decimation1(struct mark5_stream *m
 	const unsigned char *buf;
 	int o, i;
 	int nblank = 0;
+
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
 
 	buf = ms->payload;
 	i = ms->readposition;
@@ -5043,20 +5176,20 @@ static int vdif_complex_decode_14channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i++]];
-			data[10][o] = complex_lut4bit[buf[i++]];
-			data[11][o] = complex_lut4bit[buf[i++]];
-			data[12][o] = complex_lut4bit[buf[i++]];
-			data[13][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i++]];
+			data[10][o] = selected_lut[buf[i++]];
+			data[11][o] = selected_lut[buf[i++]];
+			data[12][o] = selected_lut[buf[i++]];
+			data[13][o] = selected_lut[buf[i]];
 			i += 3;
 		}
 
@@ -5081,6 +5214,9 @@ static int vdif_complex_decode_15channel_4bit_decimation1(struct mark5_stream *m
 	const unsigned char *buf;
 	int o, i;
 	int nblank = 0;
+
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
 
 	buf = ms->payload;
 	i = ms->readposition;
@@ -5109,21 +5245,21 @@ static int vdif_complex_decode_15channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i++]];
-			data[10][o] = complex_lut4bit[buf[i++]];
-			data[11][o] = complex_lut4bit[buf[i++]];
-			data[12][o] = complex_lut4bit[buf[i++]];
-			data[13][o] = complex_lut4bit[buf[i++]];
-			data[14][o] = complex_lut4bit[buf[i]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i++]];
+			data[10][o] = selected_lut[buf[i++]];
+			data[11][o] = selected_lut[buf[i++]];
+			data[12][o] = selected_lut[buf[i++]];
+			data[13][o] = selected_lut[buf[i++]];
+			data[14][o] = selected_lut[buf[i]];
 			i += 2;
 		}
 
@@ -5148,6 +5284,9 @@ static int vdif_complex_decode_16channel_4bit_decimation1(struct mark5_stream *m
 	const unsigned char *buf;
 	int o, i;
 	int nblank = 0;
+
+	/* Select lookup table based a whether the complex VGOS Hack is enabled or not */
+	const float complex *selected_lut = ms->invert_imaginary ? complex_lut4bit_conj : complex_lut4bit;
 
 	buf = ms->payload;
 	i = ms->readposition;
@@ -5177,22 +5316,22 @@ static int vdif_complex_decode_16channel_4bit_decimation1(struct mark5_stream *m
 		}
 		else
 		{
-			data[0][o] = complex_lut4bit[buf[i++]];
-			data[1][o] = complex_lut4bit[buf[i++]];
-			data[2][o] = complex_lut4bit[buf[i++]];
-			data[3][o] = complex_lut4bit[buf[i++]];
-			data[4][o] = complex_lut4bit[buf[i++]];
-			data[5][o] = complex_lut4bit[buf[i++]];
-			data[6][o] = complex_lut4bit[buf[i++]];
-			data[7][o] = complex_lut4bit[buf[i++]];
-			data[8][o] = complex_lut4bit[buf[i++]];
-			data[9][o] = complex_lut4bit[buf[i++]];
-			data[10][o] = complex_lut4bit[buf[i++]];
-			data[11][o] = complex_lut4bit[buf[i++]];
-			data[12][o] = complex_lut4bit[buf[i++]];
-			data[13][o] = complex_lut4bit[buf[i++]];
-			data[14][o] = complex_lut4bit[buf[i++]];
-			data[15][o] = complex_lut4bit[buf[i++]];
+			data[0][o] = selected_lut[buf[i++]];
+			data[1][o] = selected_lut[buf[i++]];
+			data[2][o] = selected_lut[buf[i++]];
+			data[3][o] = selected_lut[buf[i++]];
+			data[4][o] = selected_lut[buf[i++]];
+			data[5][o] = selected_lut[buf[i++]];
+			data[6][o] = selected_lut[buf[i++]];
+			data[7][o] = selected_lut[buf[i++]];
+			data[8][o] = selected_lut[buf[i++]];
+			data[9][o] = selected_lut[buf[i++]];
+			data[10][o] = selected_lut[buf[i++]];
+			data[11][o] = selected_lut[buf[i++]];
+			data[12][o] = selected_lut[buf[i++]];
+			data[13][o] = selected_lut[buf[i++]];
+			data[14][o] = selected_lut[buf[i++]];
+			data[15][o] = selected_lut[buf[i++]];
 		}
 
 		if(i >= ms->databytes)
@@ -5218,34 +5357,64 @@ static int vdif_complex_decode_1channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+
+	
 	buf = ms->payload;
 	i = ms->readposition;
-
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+        if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			data[0][o] = 0.0;
-			++nblank;
-		}
-		else
-		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-		}
-
-		i+= 2;
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				++nblank;
 			}
-			buf = ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I; 
+			}
+	
+			i+= 2;
+	
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
-	}
-
+        } 
+        else 
+        { 
+	        for(o = 0; o < nsamp; ++o)
+	        {
+	                if(i >= ms->blankzoneendvalid[0])
+	                {
+	                        data[0][o] = 0.0;
+	                        ++nblank;
+	                }
+	                else
+	                {
+	                        data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+	                }
+	
+	                i+= 2;
+	
+	                if(i >= ms->databytes)
+	                {
+	                        if(mark5_stream_next_frame(ms) < 0)
+	                        {
+	                                return -1;
+	                        }
+	                        buf = ms->payload;
+	                        i = 0;
+	                }
+	        }
+        }
+ 
 	ms->readposition = i;
 
 	return nsamp - nblank;
@@ -5257,34 +5426,67 @@ static int vdif_complex_decode_2channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			data[0][o] = 0.0;
-			data[1][o] = 0.0;
-			++nblank;
-			i += 4;
-		}
-		else
-		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-		}
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				++nblank;
+				i += 4;
 			}
-			buf = ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				++nblank;
+				i += 4;
+			}
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5299,37 +5501,73 @@ static int vdif_complex_decode_3channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			data[0][o] = 0.0;
-			data[1][o] = 0.0;
-			data[2][o] = 0.0;
-			++nblank;
-			i += 8;
-		}
-		else
-		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 4;
-		}
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				++nblank;
+				i += 8;
 			}
-			buf = ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[2][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 4;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				++nblank;
+				i += 8;
+			}
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 4;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5344,40 +5582,79 @@ static int vdif_complex_decode_4channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			data[0][o] = 0.0;
-			data[1][o] = 0.0;
-			data[2][o] = 0.0;
-			data[3][o] = 0.0;
-			++nblank;
-			i += 8;
-		}
-		else
-		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-		}
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				++nblank;
+				i += 8;
 			}
-			buf = ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[2][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[3][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				++nblank;
+				i += 8;
+			}
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5392,43 +5669,85 @@ static int vdif_complex_decode_5channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			data[0][o] = 0.0;
-			data[1][o] = 0.0;
-			data[2][o] = 0.0;
-			data[3][o] = 0.0;
-			data[4][o] = 0.0;
-			++nblank;
-			i += 16;
-		}
-		else
-		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 8;
-		}
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				data[4][o] = 0.0;
+				++nblank;
+				i += 16;
 			}
-			buf = ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[2][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[3][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[4][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 8;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				data[4][o] = 0.0;
+				++nblank;
+				i += 16;
+			}
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 8;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5443,46 +5762,91 @@ static int vdif_complex_decode_6channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			data[0][o] = 0.0;
-			data[1][o] = 0.0;
-			data[2][o] = 0.0;
-			data[3][o] = 0.0;
-			data[4][o] = 0.0;
-			data[5][o] = 0.0;
-			++nblank;
-			i += 16;
-		}
-		else
-		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[5][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 6;
-		}
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				data[4][o] = 0.0;
+				data[5][o] = 0.0;
+				++nblank;
+				i += 16;
 			}
-			buf = ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[2][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[3][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[4][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[5][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 6;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				data[4][o] = 0.0;
+				data[5][o] = 0.0;
+				++nblank;
+				i += 16;
+			}
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[5][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 6;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5497,49 +5861,97 @@ static int vdif_complex_decode_7channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			data[0][o] = 0.0;
-			data[1][o] = 0.0;
-			data[2][o] = 0.0;
-			data[3][o] = 0.0;
-			data[4][o] = 0.0;
-			data[5][o] = 0.0;
-			data[6][o] = 0.0;
-			++nblank;
-			i += 16;
-		}
-		else
-		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[5][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[6][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 4;
-		}
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				data[4][o] = 0.0;
+				data[5][o] = 0.0;
+				data[6][o] = 0.0;
+				++nblank;
+				i += 16;
 			}
-			buf = ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[2][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[3][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[4][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[5][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[6][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 4;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				data[4][o] = 0.0;
+				data[5][o] = 0.0;
+				data[6][o] = 0.0;
+				++nblank;
+				i += 16;
+			}
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[5][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[6][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 4;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5554,52 +5966,103 @@ static int vdif_complex_decode_8channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			data[0][o] = 0.0;
-			data[1][o] = 0.0;
-			data[2][o] = 0.0;
-			data[3][o] = 0.0;
-			data[4][o] = 0.0;
-			data[5][o] = 0.0;
-			data[6][o] = 0.0;
-			data[7][o] = 0.0;
-			++nblank;
-			i += 16;
-		}
-		else
-		{
-			data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[5][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[6][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-			data[7][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I; 
-			i += 2;
-		}
-
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				data[4][o] = 0.0;
+				data[5][o] = 0.0;
+				data[6][o] = 0.0;
+				data[7][o] = 0.0;
+				++nblank;
+				i += 16;
 			}
-			buf = ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[2][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[3][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[4][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[5][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[6][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[7][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+				i += 2;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				data[4][o] = 0.0;
+				data[5][o] = 0.0;
+				data[6][o] = 0.0;
+				data[7][o] = 0.0;
+				++nblank;
+				i += 16;
+			}
+			else
+			{
+				data[0][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[1][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[2][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[3][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[4][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[5][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[6][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+				data[7][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+				i += 2;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5614,38 +6077,75 @@ static int vdif_complex_decode_9channel_8bit_decimation1(struct mark5_stream *ms
 	int o, i, j;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-		        for(j = 0; j < 9; ++j)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				data[j][o] = 0.0;
+			        for(j = 0; j < 9; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
 			}
-			++nblank;
-			i += 32;
-		}
-		else
-		{
-			for(j = 0; j < 9; ++j)
+			else
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
-				i += 2;
+				for(j = 0; j < 9; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 14;
 			}
-			i += 14;
-		}
 
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->databytes)
 			{
-				return -1;
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
 			}
-			buf = ms->payload;
-			i = 0;
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+			        for(j = 0; j < 9; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
+			}
+			else
+			{
+				for(j = 0; j < 9; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 14;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5660,38 +6160,75 @@ static int vdif_complex_decode_10channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-		        for(j = 0; j < 10; ++j)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				data[j][o] = 0.0;
+			        for(j = 0; j < 10; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
 			}
-			++nblank;
-			i += 32;
-		}
-		else
-		{
-			for(j = 0; j < 10; ++j)
+			else
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
-				i += 2;
+				for(j = 0; j < 10; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 12;
 			}
-			i += 12;
-		}
 
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->databytes)
 			{
-				return -1;
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
 			}
-			buf = ms->payload;
-			i = 0;
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+			        for(j = 0; j < 10; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
+			}
+			else
+			{
+				for(j = 0; j < 10; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 12;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5706,38 +6243,76 @@ static int vdif_complex_decode_11channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-		        for(j = 0; j < 11; ++j)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				data[j][o] = 0.0;
+			        for(j = 0; j < 11; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
 			}
-			++nblank;
-			i += 32;
-		}
-		else
-		{
-			for(j = 0; j < 11; ++j)
+			else
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
-				i += 2;
+				for(j = 0; j < 11; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 10;
 			}
-			i += 10;
-		}
 
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->databytes)
 			{
-				return -1;
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
 			}
-			buf = ms->payload;
-			i = 0;
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+			        for(j = 0; j < 11; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
+			}
+			else
+			{
+				for(j = 0; j < 11; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 10;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5752,38 +6327,75 @@ static int vdif_complex_decode_12channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-		        for(j = 0; j < 12; ++j)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				data[j][o] = 0.0;
+			        for(j = 0; j < 12; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
 			}
-			++nblank;
-			i += 32;
-		}
-		else
-		{
-			for(j = 0; j < 12; ++j)
+			else
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
-				i += 2;
+				for(j = 0; j < 12; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 8;
 			}
-			i += 8;
-		}
 
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->databytes)
 			{
-				return -1;
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
 			}
-			buf = ms->payload;
-			i = 0;
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+			        for(j = 0; j < 12; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
+			}
+			else
+			{
+				for(j = 0; j < 12; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 8;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5798,38 +6410,75 @@ static int vdif_complex_decode_13channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-		        for(j = 0; j < 13; ++j)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				data[j][o] = 0.0;
+			        for(j = 0; j < 13; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
 			}
-			++nblank;
-			i += 32;
-		}
-		else
-		{
-			for(j = 0; j < 13; ++j)
+			else
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
-				i += 2;
+				for(j = 0; j < 13; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 6;
 			}
-			i += 6;
-		}
 
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->databytes)
 			{
-				return -1;
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
 			}
-			buf = ms->payload;
-			i = 0;
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+			        for(j = 0; j < 13; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
+			}
+			else
+			{
+				for(j = 0; j < 13; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 6;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5844,38 +6493,75 @@ static int vdif_complex_decode_14channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-		        for(j = 0; j < 14; ++j)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				data[j][o] = 0.0;
+			        for(j = 0; j < 14; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
 			}
-			++nblank;
-			i += 32;
-		}
-		else
-		{
-			for(j = 0; j < 14; ++j)
+			else
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
-				i += 2;
+				for(j = 0; j < 14; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 4;
 			}
-			i += 4;
-		}
 
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->databytes)
 			{
-				return -1;
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
 			}
-			buf = ms->payload;
-			i = 0;
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+			        for(j = 0; j < 14; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
+			}
+			else
+			{
+				for(j = 0; j < 14; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 4;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5890,38 +6576,75 @@ static int vdif_complex_decode_15channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-		        for(j = 0; j < 15; ++j)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				data[j][o] = 0.0;
+			        for(j = 0; j < 15; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
 			}
-			++nblank;
-			i += 32;
-		}
-		else
-		{
-			for(j = 0; j < 15; ++j)
+			else
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
+				for(j = 0; j < 15; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
 				i += 2;
 			}
-			i += 2;
-		}
 
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->databytes)
 			{
-				return -1;
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
 			}
-			buf = ms->payload;
-			i = 0;
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+			        for(j = 0; j < 15; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
+			}
+			else
+			{
+				for(j = 0; j < 15; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+				i += 2;
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5936,37 +6659,73 @@ static int vdif_complex_decode_16channel_8bit_decimation1(struct mark5_stream *m
 	int o, i, j;
 	int nblank = 0;
 
+
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-		        for(j = 0; j < 16; ++j)
+			if(i >= ms->blankzoneendvalid[0])
 			{
-				data[j][o] = 0.0;
+			        for(j = 0; j < 16; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
 			}
-			++nblank;
-			i += 32;
-		}
-		else
-		{
-			for(j = 0; j < 16; ++j)
+			else
 			{
-		        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]]*I;
-				i += 2;
+				for(j = 0; j < 16; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] - lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
 			}
-		}
 
-		if(i >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i >= ms->databytes)
 			{
-				return -1;
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
 			}
-			buf = ms->payload;
-			i = 0;
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i >= ms->blankzoneendvalid[0])
+			{
+			        for(j = 0; j < 16; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
+			}
+			else
+			{
+				for(j = 0; j < 16; ++j)
+				{
+			        	data[j][o] = lut8bit[buf[i]] + lut8bit[buf[i+1]] * I;
+					i += 2;
+				}
+			}
+
+			if(i >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -5983,31 +6742,61 @@ static int vdif_complex_decode_1channel_16bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+
 	buf = (const uint16_t *)ms->payload;
 	i = ms->readposition/2;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i*2 >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			data[0][o] = 0.0;
-			++nblank;
-		}
-		else
-		{
-			data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-		}
-		
-		i += 2;
-
-		if(i*2 >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i*2 >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				++nblank;
 			}
-			buf = (const uint16_t *)ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+			}
+			
+			i += 2;
+
+			if(i*2 >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = (const uint16_t *)ms->payload;
+				i = 0;
+			}
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i*2 >= ms->blankzoneendvalid[0])
+			{
+				data[0][o] = 0.0;
+				++nblank;
+			}
+			else
+			{
+				data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+			}
+			
+			i += 2;
+
+			if(i*2 >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = (const uint16_t *)ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -6022,34 +6811,67 @@ static int vdif_complex_decode_2channel_16bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+
 	buf = (const uint16_t *)ms->payload;
 	i = ms->readposition/2;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i*2 >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			data[0][o] = 0.0;
-			data[1][o] = 0.0;
-			++nblank;
-			i += 4;
-		}
-		else
-		{
-			data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;
-			data[1][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;
-		}
-
-		if(i*2 >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i*2 >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				++nblank;
+				i += 4;
 			}
-			buf = (const uint16_t *)ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;
+				data[1][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+				i += 2;
+			}
+
+			if(i*2 >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = (const uint16_t *)ms->payload;
+				i = 0;
+			}
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i*2 >= ms->blankzoneendvalid[0])
+			{
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				++nblank;
+				i += 4;
+			}
+			else
+			{
+				data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;
+				data[1][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
+				i += 2;
+			}
+
+			if(i*2 >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = (const uint16_t *)ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -6064,40 +6886,79 @@ static int vdif_complex_decode_4channel_16bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+
 	buf = (const uint16_t *)ms->payload;
 	i = ms->readposition/2;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i*2 >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			data[0][o] = 0.0;
-			data[1][o] = 0.0;
-			data[2][o] = 0.0;
-			data[3][o] = 0.0;
-			++nblank;
-			i += 8;
-		}
-		else
-		{
-			data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;                           
-			data[1][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;                           
-			data[2][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;                           
-			data[3][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;
-		}
-
-		if(i*2 >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i*2 >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				++nblank;
+				i += 8;
 			}
-			buf = (const uint16_t *)ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                           
+				data[1][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                           
+				data[2][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                           
+				data[3][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;
+			}
+
+			if(i*2 >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = (const uint16_t *)ms->payload;
+				i = 0;
+			}
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i*2 >= ms->blankzoneendvalid[0])
+			{
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				++nblank;
+				i += 8;
+			}
+			else
+			{
+				data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                           
+				data[1][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                           
+				data[2][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                           
+				data[3][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;
+			}
+
+			if(i*2 >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = (const uint16_t *)ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -6112,52 +6973,103 @@ static int vdif_complex_decode_8channel_16bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+
 	buf = (const uint16_t*)ms->payload;
 	i = ms->readposition/2;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i*2 >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			data[0][o] = 0.0;
-			data[1][o] = 0.0;
-			data[2][o] = 0.0;
-			data[3][o] = 0.0;
-			data[4][o] = 0.0;
-			data[5][o] = 0.0;
-			data[6][o] = 0.0;
-			data[7][o] = 0.0;
-			++nblank;
-			i += 16;
-		}
-		else
-		{
-			data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;                                                           
-			data[1][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;                                                           
-			data[2][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;                                                           
-			data[3][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;                                                           
-			data[4][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;                                                           
-			data[5][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;                                                           
-			data[6][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;                                                           
-			data[7][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-			i += 2;
-		}
-
-		if(i*2 >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i*2 >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				data[4][o] = 0.0;
+				data[5][o] = 0.0;
+				data[6][o] = 0.0;
+				data[7][o] = 0.0;
+				++nblank;
+				i += 16;
 			}
-			buf = (const uint16_t *)ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[1][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[2][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[3][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[4][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[5][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[6][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[7][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;
+			}
+
+			if(i*2 >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = (const uint16_t *)ms->payload;
+				i = 0;
+			}
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i*2 >= ms->blankzoneendvalid[0])
+			{
+				data[0][o] = 0.0;
+				data[1][o] = 0.0;
+				data[2][o] = 0.0;
+				data[3][o] = 0.0;
+				data[4][o] = 0.0;
+				data[5][o] = 0.0;
+				data[6][o] = 0.0;
+				data[7][o] = 0.0;
+				++nblank;
+				i += 16;
+			}
+			else
+			{
+				data[0][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[1][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[2][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[3][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[4][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[5][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[6][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;                                                           
+				data[7][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+				i += 2;
+			}
+
+			if(i*2 >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = (const uint16_t *)ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -6172,37 +7084,73 @@ static int vdif_complex_decode_16channel_16bit_decimation1(struct mark5_stream *
 	int o, i, j;
 	int nblank = 0;
 
+
 	buf = (const uint16_t *)ms->payload;
 	i = ms->readposition/2;
 
-	for(o = 0; o < nsamp; ++o)
-	{
-		if(i*2 >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; ++o)
 		{
-			for(j = 0; j < 16; ++j)
+			if(i*2 >= ms->blankzoneendvalid[0])
 			{
-				data[j][o] = 0.0;
+				for(j = 0; j < 16; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
 			}
-			++nblank;
-			i += 32;
-		}
-		else
-		{
-			for(j = 0; j < 16; ++j)
+			else
 			{
-				data[j][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768)*I/8.0;
-				i += 2;
+				for(j = 0; j < 16; ++j)
+				{
+					data[j][o] = (le16toh(buf[i])-32768)/8.0 - (le16toh(buf[i+1])-32768) * I/8.0;
+					i += 2;
+				}
 			}
-		}
 
-		if(i*2 >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i*2 >= ms->databytes)
 			{
-				return -1;
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = (const uint16_t *)ms->payload;
+				i = 0;
 			}
-			buf = (const uint16_t *)ms->payload;
-			i = 0;
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; ++o)
+		{
+			if(i*2 >= ms->blankzoneendvalid[0])
+			{
+				for(j = 0; j < 16; ++j)
+				{
+					data[j][o] = 0.0;
+				}
+				++nblank;
+				i += 32;
+			}
+			else
+			{
+				for(j = 0; j < 16; ++j)
+				{
+					data[j][o] = (le16toh(buf[i])-32768)/8.0 + (le16toh(buf[i+1])-32768) * I/8.0;
+					i += 2;
+				}
+			}
+
+			if(i*2 >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = (const uint16_t *)ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -6219,31 +7167,62 @@ static int vdif_complex_decode_1channel_32bit_decimation1(struct mark5_stream *m
 	int o, i;
 	int nblank = 0;
 
+	
+
 	buf = (const uint32_t *)ms->payload;
 	i = ms->readposition/4;
 
-	for(o = 0; o < nsamp; o++)
-	{
-		if(i*4 >= ms->blankzoneendvalid[0])
+	if (ms->invert_imaginary) {  /* Flip sign of the imaginary component depending on invert_imaginary flag */
+		for(o = 0; o < nsamp; o++)
 		{
-			data[0][o] = 0.0;
-			nblank++;
-		}
-		else
-		{
-			data[0][o] = (le32toh(buf[i])/8.0 - (1<<28)) + (le32toh(buf[i+1])/8.0 - (1<<28))*I;
-		}
-
-		i += 2;
-
-		if(i*4 >= ms->databytes)
-		{
-			if(mark5_stream_next_frame(ms) < 0)
+			if(i*4 >= ms->blankzoneendvalid[0])
 			{
-				return -1;
+				data[0][o] = 0.0;
+				nblank++;
 			}
-			buf = (const uint32_t *)ms->payload;
-			i = 0;
+			else
+			{
+				data[0][o] = (le32toh(buf[i])/8.0 - (1<<28)) - (le32toh(buf[i+1])/8.0 - (1<<28)) * I;
+			}
+
+			i += 2;
+
+			if(i*4 >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = (const uint32_t *)ms->payload;
+				i = 0;
+			}
+		}
+	}
+	else
+	{
+		for(o = 0; o < nsamp; o++)
+		{
+			if(i*4 >= ms->blankzoneendvalid[0])
+			{
+				data[0][o] = 0.0;
+				nblank++;
+			}
+			else
+			{
+				data[0][o] = (le32toh(buf[i])/8.0 - (1<<28)) + (le32toh(buf[i+1])/8.0 - (1<<28)) * I;
+			}
+
+			i += 2;
+
+			if(i*4 >= ms->databytes)
+			{
+				if(mark5_stream_next_frame(ms) < 0)
+				{
+					return -1;
+				}
+				buf = (const uint32_t *)ms->payload;
+				i = 0;
+			}
 		}
 	}
 
@@ -7666,6 +8645,76 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 	return 1;
 }
 
+/* Synthesise valid VDIF frame headers into a buffer (used to frame fake/test
+ * data - the analogue of the sync-word writers for VLBA/Mark5B/Mark4).  Unlike
+ * those formats VDIF has no sync word and mark5_format_vdif_validate() checks
+ * both the invalid bit and time consistency, so we must write self-consistent,
+ * monotonically increasing frame times with the invalid bit cleared.  The
+ * absolute epoch is arbitrary (seconds start at 0); as for the other fake
+ * formats the datastream supplies the absolute time separately. */
+static void mark5_format_vdif_genheaders(const struct mark5_stream *ms, int n, unsigned char *where)
+{
+	const struct mark5_format_vdif *v;
+	int i, lg2nchan, framespersecond, seconds, framenum;
+	unsigned int word0, word1, word2, word3, legacybit, complexbit;
+
+	if(!ms)
+	{
+		fprintf(m5stdout, "mark5_format_vdif_genheaders: ms=0\n");
+
+		return;
+	}
+
+	v = (const struct mark5_format_vdif *)(ms->formatdata);
+
+	/* frames per second: standard VDIF wraps the frame number every second */
+	framespersecond = (int)(1.0e9/ms->framens + 0.5);
+	if(framespersecond < 1)
+	{
+		framespersecond = 1;
+	}
+
+	/* VDIF stores log2 of the channel count */
+	for(lg2nchan = 0; (1 << lg2nchan) < ms->nchan; ++lg2nchan) {}
+
+	legacybit  = (v->frameheadersize == 16) ? 1u : 0u;
+	complexbit = ms->iscomplex ? 1u : 0u;
+
+	/* word2 (version 0, log2 nchan, frame length/8) and word3 (complex flag,
+	 * bits/sample-1, thread 0, station 0) are constant across all frames */
+	word2 = (((unsigned int)(ms->framebytes/8)) & 0x00FFFFFF) | (((unsigned int)lg2nchan & 0x1F) << 24);
+	word3 = (((unsigned int)(ms->nbit-1) & 0x1F) << 26) | (complexbit << 31);
+
+	seconds = 0;
+	framenum = 0;
+
+	for(i = 0; i < n; ++i)
+	{
+		word0 = ((unsigned int)seconds & 0x3FFFFFFF) | (legacybit << 30); /* invalid bit (31) = 0 */
+		word1 = ((unsigned int)framenum & 0x00FFFFFF);                    /* ref epoch 0 in bits 29:24 */
+
+		memset(where, 0, v->frameheadersize);
+#ifdef WORDS_BIGENDIAN
+		where[0]  = word0 >> 24; where[1]  = word0 >> 16; where[2]  = word0 >> 8; where[3]  = word0;
+		where[4]  = word1 >> 24; where[5]  = word1 >> 16; where[6]  = word1 >> 8; where[7]  = word1;
+		where[8]  = word2 >> 24; where[9]  = word2 >> 16; where[10] = word2 >> 8; where[11] = word2;
+		where[12] = word3 >> 24; where[13] = word3 >> 16; where[14] = word3 >> 8; where[15] = word3;
+#else
+		((unsigned int *)where)[0] = word0;
+		((unsigned int *)where)[1] = word1;
+		((unsigned int *)where)[2] = word2;
+		((unsigned int *)where)[3] = word3;
+#endif
+		where += ms->framebytes;
+
+		if(++framenum >= framespersecond)
+		{
+			framenum = 0;
+			++seconds;
+		}
+	}
+}
+
 static int mark5_format_vdif_resync(struct mark5_stream *ms)
 {
 	/* FIXME: not implemented yet */
@@ -7779,6 +8828,7 @@ struct mark5_format_generic *new_mark5_format_generalized_vdif(int framesperperi
 	f->final_format = mark5_format_vdif_final;
 	f->validate = mark5_format_vdif_validate;
 	f->resync = mark5_format_vdif_resync;
+	f->genheaders = mark5_format_vdif_genheaders;
 	f->decimation = decimation;
 	f->decode = 0;
 	f->iscomplex = 0;

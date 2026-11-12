@@ -475,6 +475,8 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da, int do
 				writeDifxLineDouble2(out, "CLOCK COEFF %d/%d", i, j, "%17.15e", da[i].clockcoeff[j]);
 			}
 			n += 3+da[i].clockorder+1;
+			writeDifxLine1(out, "TELESCOPE %d VGOS COMPLEX FLIP", i, da[i].vgosComplexFlip ? "true" : "false");
+			++n;
 		}
 		if(doShelf)
 		{

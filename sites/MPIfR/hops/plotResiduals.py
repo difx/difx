@@ -14,6 +14,7 @@ import sys
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("-n","--no-plot", dest="noPlot",action='store_true',  help="do not do graphical output")
+parser.add_argument("--png", action='store_true', help="save png image")
 parser.add_argument("-q", "--min-quality", dest="minQual", type=int, choices=range(1,10),default=5, help="min. fringe quality to consider (default: 5)")
 parser.add_argument("-s", "--min-snr", dest="minSnr", type=int, default=7, help="min. SNR to consider (default: 7)")
 parser.add_argument("-m", "--max-fr", dest="maxFr", type=float, default=100, help="max. fringe rate in mHz. Any fringe rate larger than this value will be reported. (default: 100mHz)")
@@ -235,3 +236,7 @@ fig.text(0.20, 0.01, polTxt,  family='sans-serif', bbox={'facecolor':'white', 'a
 plt.gcf().autofmt_xdate()
 if args.noPlot == False:
     plt.show()
+
+if args.png:
+    plt.savefig("residuals.png", bbox_inches='tight')
+    print(f"Plot saved to residuals.png")

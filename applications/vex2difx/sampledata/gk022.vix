@@ -18,15 +18,15 @@ $EXPER;
 def GK022;
      exper_name = GK022;
      exper_description = "VLBI polarimtery of 4 radio galaxies";
-     PI_name = "Preeti Kharb";
-     PI_email = rhea@iiap.ernet.in;
-*    address:   Indian Institute of Astrophysics
-*               Koramangala
-*               Bangalore 560 034
-*               INDIA
-*    phone:     91 80 553 0672
-*    during obs:91 80 553 8664
-*    fax:       91 80 553 4043
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *
 *    year, doy: 2002,  60
 *    date     : Fri  1 Mar 2002
@@ -46,9 +46,9 @@ def GK022;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Preeti Kharb
-*                     Indian Institute of Astrophysics
-*                     Koramangala, Bangalore 560 034, India
+*                     Bob Bobson
+*                     Fake Address
+*
 *
 enddef;
 *------------------------------------------------------------------------------

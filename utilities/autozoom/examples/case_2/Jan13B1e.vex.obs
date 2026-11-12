@@ -8,7 +8,7 @@ $EXPER;
     exper_name = Jan13B1e;
     exper_num = 1111;
     exper_description = ALMAtest;
-    PI_name = GBC;
+    PI_name = "Bob Bobson";
     target_correlator = DiFX;
   enddef;
 *-----------------------   end $EXPER              ----------------------*
