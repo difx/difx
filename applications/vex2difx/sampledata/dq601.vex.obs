@@ -15,14 +15,14 @@ $EXPER;
 def DQ601;
      exper_name = DQ601;
      exper_description = "VLBA Monitoring";
-     PI_name = "NRAO AOC Data Analysts";
-     PI_email = analysts@nrao.edu;
-*    address:   NRAO-AOC
-*               P.O.Box O
-*               Socorro NM 87801, U.S.A.
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
 *                
-*    phone:     +1-505-835-7000 (front)
-*    during obs:+1-505-835-7359 (Paul)
+*    phone:     Fake Phone
+*    during obs:Fake Phone
 *    fax:        
 *    notes:     VLBA Monitoring test in dynamic scheduling
 *               and runs for 82 minutes (1.36 hours) total.
@@ -44,9 +44,9 @@ def DQ601;
 *    distrib_format : FITS
 *    source_pos_cat : SCHEDULE
 *    distribute_to  : 
-*                     Analysts Office
-*                     NRAO-AOC
-*                     P.O.Box O, Socorro NM 87801, U.S.A.
+*                     Bob Bobson
+*                     Fake Address
+*
 *    corr_notes : 
 *               Please correlate at highest priority,
 *               and notify analysts when complete. ThanX..

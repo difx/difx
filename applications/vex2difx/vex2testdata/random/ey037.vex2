@@ -15,15 +15,15 @@ $EXPER;
 def EY037;
      exper_name = EY037;
      exper_description = "e-EVN: EY037, EG102L";
-     PI_name = "Yang, Gabanyi";
-     PI_email = marcote@jive.eu;
-*    address:   JIVE
-*               Oude Hoogeveensedijk 4
-*               Dwingeloo
-*               Netherlands
-*    phone:     +31 521 596 508
-*    during obs:+31 521 596 530
-*    fax:       +31 521 596 539
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *    ###########################################################
 *    ########## Please, make sure PHASE CAL is OFF. ############
 *    ###########################################################
@@ -46,10 +46,10 @@ def EY037;
 *    distrib_format : FITS
 *    source_pos_cat : FROM SCHEDULE
 *    distribute_to  :
-*                     N/A
-*                     N/A
-*                     N/A
-*                     N/A
+*                     Bob Bobson
+*                     Fake Address
+*
+*
 *
 enddef;
 *------------------------------------------------------------------------------
