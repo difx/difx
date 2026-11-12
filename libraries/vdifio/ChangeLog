@@ -3,6 +3,7 @@ Version 1.7
 * Post DiFX-2.9.0
 * Clean up some compiler warnings
 * Some static analysis cleanups and fixes
+* configure: look for codifio before mark6sg, so a codifio.h in a separate mark6sg install is not used
 
 Version 1.6
 ~~~~~~~~~~~
