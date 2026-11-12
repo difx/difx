@@ -1,5 +1,5 @@
 /***************************************************************************
- *  Copyright (C) 2015-2024 by Walter Brisken                              *
+ *  Copyright (C) 2015-2026 by Walter Brisken                              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -21,6 +21,7 @@
 #define _GNU_SOURCE
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <glob.h>
 #include <mark6sg/mark6gather.h>
 #include "mark6gather_vdif.h"
@@ -49,7 +50,7 @@ static void *fileEndSummarizer(void *arg)
 	Mark6File *F;
 	FILE *in;
 	unsigned char *buffer;
-	struct vdif_header *vh0;
+	const struct vdif_header *vh0;
 	int hasEDV3 = 0;        /* no VLBA headers found yet */
 	int i, N, rv;
 
@@ -61,6 +62,10 @@ static void *fileEndSummarizer(void *arg)
 	}
 
 	in = fopen(F->fileName, "r");
+	if(!in)
+	{
+		return (void *)(-6);
+	}
 		
 	rv = fseeko(in, F->stat.st_size - S->bufferSize, SEEK_SET);
 	if(rv != 0)
@@ -71,6 +76,12 @@ static void *fileEndSummarizer(void *arg)
 	}
 
 	buffer = (unsigned char *)malloc(S->bufferSize);
+	if(!buffer)
+	{
+		fprintf(stderr, "Error: fileEndSummarizer(): cannot allocate %lu bytes.\n", (unsigned long int)(S->bufferSize));
+
+		exit(0);
+	}
 
 	rv = fread(buffer, 1, S->bufferSize, in);
 	if(rv < S->bufferSize)
@@ -160,7 +171,7 @@ int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int 
 	int i, N, f;
 	int readBytes;
 	char hasThread[VDIF_MAX_THREAD_ID + 1];
-	struct vdif_header *vh0;	/* pointer to the prototype header */
+	const struct vdif_header *vh0;	/* pointer to the prototype header */
 	int hasEDV3 = 0;        /* no VLBA headers found yet */
 	Mark6Gatherer *G;
 	struct sumArgs *S;
@@ -307,6 +318,12 @@ int summarizevdifmark6(struct vdif_file_summary *sum, const char *scanName, int 
 
 	S = (struct sumArgs *)calloc(G->nFile, sizeof(struct sumArgs));
 	sumThread = (pthread_t *)malloc(G->nFile*sizeof(pthread_t));
+	if(!sumThread)
+	{
+		fprintf(stderr, "Error: summarizevdifmark6(): cannot allocate %lu bytes.\n", (unsigned long int)(G->nFile*sizeof(pthread_t)));
+
+		exit(0);
+	}
 
 	/* Here read bits of the ends of each file of the set to make sure the info we get is complete */
 	/* Do this in parallel for each file */
