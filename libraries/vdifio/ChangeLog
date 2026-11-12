@@ -4,6 +4,7 @@ Version 1.7
 * Clean up some compiler warnings
 * Some static analysis cleanups and fixes
 * configure: look for codifio before mark6sg, so a codifio.h in a separate mark6sg install is not used
+* Support 7-bit epoch field, matching amendment of VDIF standard in 2026
 
 Version 1.6
 ~~~~~~~~~~~
