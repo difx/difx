@@ -50,7 +50,7 @@ enum
 	FreqTypeDiFxFreq
 };
 
-static int parseFlag(char *line, char *antName, double timeRange[2], char *reason, int *recBand, int *chanRange)
+static int parseFlag(const char *line, char *antName, double timeRange[2], char *reason, int *recBand, int *chanRange)
 {
 	int n;
 
@@ -104,7 +104,7 @@ static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes, co
 	FITS_WRITE_ITEM (FL->arrayId1, p_fitsbuf);	  /* ARRAY ID */
 	FITS_WRITE_ITEM (FL->baselineId1, p_fitsbuf);	  /* ANTENNA IDS */
 	FITS_WRITE_ITEM (FL->freqId1, p_fitsbuf);	  /* FREQ ID */
-	FITS_WRITE_ITEM (FL->timeRange, p_fitsbuf);	  /* TIME RANAGE */
+	FITS_WRITE_ITEM (FL->timeRange, p_fitsbuf);	  /* TIME RANGE */
 	FITS_WRITE_ARRAY(FL->bandMask, p_fitsbuf, FL->nBand); /* BANDS */
 	FITS_WRITE_ITEM (FL->chanRange1, p_fitsbuf);	  /* CHANNELS */
 	FITS_WRITE_ITEM (polMask, p_fitsbuf);		  /* POLARIZATIONS */
@@ -142,7 +142,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 		const int MaxLineLength=1000;
 		const DifxConfig *dc;
 		const DifxFreqSet *dfs;
-		char *rv;
+		const char *rv;
 		char antName[DIFXIO_NAME_LENGTH];
 		char line[MaxLineLength+1];
 		int recBand;

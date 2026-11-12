@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,14 +33,14 @@
 #include "sniffer.h"
 #endif
 
-#define HEADER_READ_ERROR	-1
-#define NEXT_FILE_ERROR		-2
-#define DATA_READ_ERROR		-3
-#define SKIPPED_RECORD 		-4
-#define CONFIG_CHANGE_ERROR	-5
-#define BAND_ID_ERROR		-6
-#define POL_ID_ERROR		-7
-#define NFLOAT_ERROR		-8
+#define HEADER_READ_ERROR	(-1)
+#define NEXT_FILE_ERROR		(-2)
+#define DATA_READ_ERROR		(-3)
+#define SKIPPED_RECORD 		(-4)
+#define CONFIG_CHANGE_ERROR	(-5)
+#define BAND_ID_ERROR		(-6)
+#define POL_ID_ERROR		(-7)
+#define NFLOAT_ERROR		(-8)
 
 static int DifxVisInitData(DifxVis *dv)
 {
@@ -141,7 +141,7 @@ int DifxVisNextFile(DifxVis *dv)
 	v = regcomp(&fileMatch, "\\S*/DIFX_([0-9]+)_([0-9]+)\\.s([0-9]+)\\.b([0-9]+)", REG_EXTENDED);
 	if(v != 0)
 	{
-		fprintf(stderr, "Developer error: DifxVisNextFile: regular expresson won't compile\n");
+		fprintf(stderr, "Developer error: DifxVisNextFile: regular expression won't compile\n");
 
 		exit(EXIT_FAILURE);
 	}
@@ -204,13 +204,6 @@ int DifxVisNextFile(DifxVis *dv)
 	}
 
 	regfree(&fileMatch);
-
-	if(!dv->in)
-	{
-		fprintf(stderr, "Error opening file %s\n", dv->globbuf.gl_pathv[dv->curFile]);
-
-		return -1;
-	}
 
 	/* Inc the last timestamp by epsilon */
 	for(antennaId = 0; antennaId < dv->D->nAntenna; ++antennaId)
@@ -1262,7 +1255,7 @@ static int RecordIsTransitioning(const DifxVis *dv)
 
 static int RecordIsFlagged(const DifxVis *dv)
 {
-	DifxJob *job;
+	const DifxJob *job;
 	double mjd;
 	int antennaId1, antennaId2;
 	int flagId;
@@ -1487,7 +1480,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 #ifdef HAVE_FFTW
 	Sniffer *S = 0;
 #endif
-	DelayCal *DC = 0;
+	const DelayCal *DC = 0;
 	DelayCalCache DCC;
 	Bandpass *B = 0;
 	int *includeSourceIdList = 0;
@@ -1849,7 +1842,6 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 					flushSniffer(S);
 					deleteSniffer(S);
 					fftw_cleanup();
-					S = 0;
 				}
 #endif
 				return 0;
@@ -1890,13 +1882,11 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		flushSniffer(S);
 		deleteSniffer(S);
 		fftw_cleanup();
-		S = 0;
 	}
 #endif
 	if(B)
 	{
 		deleteBandpass(B);
-		B = 0;
 	}
 
 	if(jobMatrix)
@@ -1908,7 +1898,6 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	if(includeSourceIdList)
 	{
 		free(includeSourceIdList);
-		includeSourceIdList = 0;
 	}
 
 	if(nNegWeight > 0)
