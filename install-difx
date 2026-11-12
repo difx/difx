@@ -49,8 +49,6 @@ The install-difx options are:
 
    --withmonitor   Try to build the difx_monitor application (requires pgplot)
 
-   --withfb        Build filterbank (which requires pgplot)
-
    --withguiserver Build guiServer
 
    --withhops      Build HOPS (which requires pgplot)
@@ -106,7 +104,7 @@ The install-difx options are:
                    ["perl", "difxio", "difxmessage", "mark5access", "vdifio",
                     "calcif2", "difx2profile", "misc","vis2screen",
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
-                    "mpifxcorr", "difxfilterbank", "hops", "m6support",
+                    "mpifxcorr", "hops", "m6support",
                     "polconvert", "guiServer", "mk5daemon", "difx_monitor",
                     "datasim", "difxcalc11", "mark6sg", "mark6meta", "espresso"]
    --skip='...'    Does a normal build, but skips components in a comma
@@ -228,7 +226,6 @@ components = {"perl"          :False,
               "difx2mark4"    :False,
               "mpifxcorr"     :True,
               "mark6sg"       :False,
-              "difxfilterbank":False,
               "hops"          :False,
               "m6support"     :False,
               "polconvert"    :False,
@@ -350,8 +347,6 @@ if len(opts) > 0:
             components["datasim"] = True
         if o == "--perl":
             components["perl"] = True
-        if o == "--withfb":
-            components["difxfilterbank"] = True
         if o == "--withhops":
             components["hops"] = True
         if o == "--withm6support":
@@ -503,8 +498,6 @@ if components["vex2difx"]:
     apptargets.append(["vex2difx",   difx_version, True,True,True,False])
 if components["difx2mark4"]:
     apptargets.append(["difx2mark4", difx_version, True,True,True,False])
-if components["difxfilterbank"]:
-    apptargets.append(["difxfilterbank", difx_version, True,False,False,True])
 if components["hops"]:
     apptargets.append(["hops",       difx_version, True,True,True,False])
 if components["m6support"]:
