@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2024 Walter Brisken                                *
+ *   Copyright (C) 2013-2026 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -133,6 +133,8 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 
 	if(fseeko(in, 0, SEEK_SET) < 0)	/* can't seek: can't summarize. */
 	{
+		fclose(in);
+
 		return EVDIFCANTSEEK;
 	}
 
@@ -140,6 +142,8 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 	rv = stat(fileName, &st);
 	if(rv < 0)
 	{
+		fclose(in);
+
 		return EVDIFCANTSTAT;
 	}
 
@@ -300,11 +304,10 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 
 			return offset;	/* pass error code on */
 		}
-		vh0 = (struct vdif_header *)(buffer + offset);
 
 		for(i = 0; i < N; )
 		{
-			struct vdif_header *vh;
+			const struct vdif_header *vh;
 			int f, s;
 
 			vh = (struct vdif_header *)(buffer + i);
