@@ -270,7 +270,8 @@ Build and configuration:
    2020 entry, `IPP9`, no `ippsMalloc_*_L`). **Resolved after the merge:** its
    CUDA-specific parts (`#define CUDA 4`, `<cufftw.h>` in the generic section,
    now behind `DIFX_USE_CUFFTW`) were folded into `architecture.h.in`, and the
-   copy was deleted. Nothing sets or tests either yet (see `TODO.md`).
+   copy was deleted. Nothing sets or tests either yet (see the wiki to-do list,
+   linked from `TODO.md`).
 10. Source comments point to the `docs/` files that were not merged (section 2).
 
 Not checked:

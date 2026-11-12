@@ -157,9 +157,10 @@ when changing anything that uses these macros.
 
 - Never commit directly to `main`. Branch from `origin/main` or `origin/dev` for any change
   (`git checkout -b feature-xxx origin/main`), then open a PR.
-- GPU work happens on `gpudifx`. The shared backlog is `TODO.md` (update it as items land or
-  appear), and `mpifxcorr/GPU_MERGE_NOTES.md` records how the branch was merged from the
-  ADACS fork. Merge dev into `gpudifx` with `git merge --no-ff origin/dev`, not a rebase.
+- GPU work happens on `gpudifx`. The shared backlog is the to-do list on the DiFX wiki,
+  linked from `TODO.md` (update it as items land or appear), and
+  `mpifxcorr/GPU_MERGE_NOTES.md` records how the branch was merged from the ADACS fork.
+  Merge dev into `gpudifx` with `git merge --no-ff origin/dev`, not a rebase.
 - Project skills in `.claude/skills/` cover the routine steps on `gpudifx`:
   `rebuild-and-verify` (rebuild, then prove the installed binary is the new one),
   `gpu-parity-test` (CPU-vs-GPU Synthetic suite), `sync-with-dev` (merging dev in and sending

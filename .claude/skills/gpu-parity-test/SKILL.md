@@ -25,8 +25,8 @@ Check each of these; a wrong answer here gives a meaningless result.
    3.6 GB). Generate them with `./createData.sh`, or symlink them from another checkout
    that already has them. `ls tests/Synthetic/*.vdif` should list them.
 3. **`tests/Synthetic/threads` exists.** Every `.v2d` names `threadsFile = threads`, but the
-   file is not committed yet (see `TODO.md`). If it is missing, create it with the two
-   lines `NUMBER OF CORES:    1` and `10`.
+   file is not committed yet (it is on the wiki to-do list, linked from `TODO.md`). If it
+   is missing, create it with the two lines `NUMBER OF CORES:    1` and `10`.
 4. **Scenario size.** Most scenarios are committed at full size (`nChan=4096`, long scans)
    and take a long time. Scaling `nChan` or the scan length down in your working copy is
    fine for a quick check, but **never commit those edits**.
@@ -71,11 +71,12 @@ extraction. If your change touches pcal (`pcal.cpp`, the `DOPCAL` paths in
 with `phaseCalInt = 1` in each ANTENNA block of the `.v2d` (usb, usb-complex and
 complex-complex at least), run CPU and GPU, and compare the `PCAL_*` files tone by tone.
 A comparison script exists in the merge-test area (`pcal_compare.py`; see
-`mpifxcorr/GPU_MERGE_NOTES.md`); committing it with the scenarios is a `TODO.md` item.
+`mpifxcorr/GPU_MERGE_NOTES.md`); committing it with the scenarios is on the wiki to-do
+list.
 
 Expected: CPU and GPU agree closely, except on strong on-grid tones in real (non-complex)
 data, where float32 `atomicAdd` on the GPU gives differences around 1e-3 that also vary
-from run to run. That is known (`TODO.md`, GPU pcal precision), not a regression. An
+from run to run. That is known (wiki to-do list, GPU pcal precision), not a regression. An
 all-zero GPU dump after the first subint, or a constant phase offset, is a real bug.
 
 ## 4. Reading the result

@@ -1,6 +1,6 @@
 ---
 name: wrap-up
-description: End a working session on gpudifx so the next person (or session) can pick it up - nothing left uncommitted, the diff reviewed and pushed, TODO.md and the benchmark ledger updated, and what is pending stated plainly. Use when the user says they are finishing, stopping, rebooting or handing over.
+description: End a working session on gpudifx so the next person (or session) can pick it up - nothing left uncommitted, the diff reviewed and pushed, the wiki to-do list and the benchmark ledger updated, and what is pending stated plainly. Use when the user says they are finishing, stopping, rebooting or handing over.
 ---
 
 # Session wrap-up (gpudifx)
@@ -35,8 +35,9 @@ Do these in order, then stop. Do not start new work during a wrap-up.
 
 ## 3. Update the shared records
 
-- **`TODO.md`**: delete items that landed (the commit records them), add what came up,
-  and keep the "Agreed order" section current.
+- **The to-do list on the wiki** (linked from `TODO.md`): delete items that landed (the
+  commit records them), add what came up, and keep the "Agreed order" section current.
+  It is outside the repository, so show the user the change before saving it.
 - **`tests/FakeData/BENCHMARKS.md`**: any timing or profile worth keeping, with the
   commit, machine, GPU and configuration it was measured on.
 - **`mpifxcorr/GPU_MERGE_NOTES.md`**: tick off a merge follow-up from section 7 if one

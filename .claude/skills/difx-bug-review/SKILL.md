@@ -92,9 +92,9 @@ Further rules:
 - Moved code: `Mode::process` on dev is `CPUMode::process` here, and dev's `Mk5Mode` is
   `Mk5_CPUMode`. A fix made on dev to the old name may still be missing here, and on the
   GPU twin.
-- Known, deliberately unfixed issues are listed in `TODO.md` and
-  `mpifxcorr/GPU_MERGE_NOTES.md`; mention one only if you find it has a worse effect
-  than recorded there.
+- Known, deliberately unfixed issues are listed in the wiki to-do list (linked from
+  `TODO.md`) and `mpifxcorr/GPU_MERGE_NOTES.md`; mention one only if you find it has a
+  worse effect than recorded there.
 
 ## Do not report
 

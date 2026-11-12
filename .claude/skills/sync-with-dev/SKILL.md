@@ -34,7 +34,8 @@ git config branch.gpudifx.rebase merges
    - `pcal.cpp` is dev's file plus the GPU buffer injection (`setPcalReal`,
      `setPcalComplex`, the `*_owned` flags). Take dev's version and re-apply the injection.
    - Any behaviour change to CPU processing also needs a decision about its GPU twin (see
-     the CPU/GPU map in the `difx-bug-review` skill). Port it, or add it to `TODO.md`.
+     the CPU/GPU map in the `difx-bug-review` skill). Port it, or add it to the wiki to-do
+     list (linked from `TODO.md`).
 3. **Merge without committing:**
    ```bash
    git merge --no-ff --no-commit origin/dev
@@ -46,15 +47,15 @@ git config branch.gpudifx.rebase merges
 4. **Build and test** before committing: `rebuild-and-verify`, then `gpu-parity-test`
    (all scenarios, plus phase cal if `pcal.cpp` or `mode.cpp` changed).
 5. **Commit** (only after the user has seen the diff and agreed). The message lists what
-   came from dev, every hand port, and anything deferred to `TODO.md`. Then review the
-   result as a reviewer will see it:
+   came from dev, every hand port, and anything deferred to the wiki to-do list. Then
+   review the result as a reviewer will see it:
    ```bash
    git show --remerge-diff HEAD      # only what differs from git's own automatic merge
    ```
    Correct anything you find with `git commit --amend` **before** pushing.
-6. **Record it.** Update `TODO.md` (new follow-ups, items closed). Add a section to
-   `mpifxcorr/GPU_MERGE_NOTES.md` only if the merge needed real decisions (hand ports,
-   behaviour changes), so reviewers can find them.
+6. **Record it.** Update the wiki to-do list, linked from `TODO.md`: new follow-ups, items
+   closed. Add a section to `mpifxcorr/GPU_MERGE_NOTES.md` only if the merge needed real
+   decisions (hand ports, behaviour changes), so reviewers can find them.
 7. **Push** `gpudifx`, with the user's agreement.
 
 ## B. Sending a fix for shared code to dev
@@ -84,5 +85,5 @@ When work on gpudifx finds a bug that dev also has (in code that is not GPU-spec
 
 - `git rebase` of gpudifx onto dev, or `git push --force` to gpudifx or dev.
 - Committing a fix to shared code only on gpudifx when dev has the same bug.
-- Merging gpudifx into dev. That needs the refactor in `TODO.md` and a separate review
-  first.
+- Merging gpudifx into dev. That needs the refactor in the wiki to-do list and a separate
+  review first.
