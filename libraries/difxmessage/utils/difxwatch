@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2024 by Walter Brisken                             *
+#   Copyright (C) 2008-2026 by Helge Rottmann & Walter Brisken            *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -38,9 +38,8 @@ import signal
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision: 9272 $"
-__date__ ="$Date: 2019-11-13 13:23:47 +0800 (三, 2019-11-13) $"
-__lastAuthor__="$Author: WalterBrisken $"
+__build__= "version 3.1"
+__lastAuthor__="WalterBrisken"
 
 ##############################################################################
 # Parameters
@@ -218,7 +217,7 @@ def run():
 					if time() - lastActivity > maxIdleSec:
 
 						#get pid of mpirun instance associated with the job
-						out = commands.getoutput('ps -C mpirun -o pid,cmd ' )
+						out = subprocess.getoutput('ps -C mpirun -o pid,cmd ' )
 
 						# kill it
 						for line in out.split("\n"):
@@ -228,7 +227,7 @@ def run():
 								subprocess.call(['kill', pid])
 
 						# get pid of difxlog instance associated with the job
-						out = commands.getoutput('ps -C difxlog -o pid,cmd ' )
+						out = subprocess.getoutput('ps -C difxlog -o pid,cmd ' )
 						
 						for line in out.split("\n"):
 							if jobId in line:

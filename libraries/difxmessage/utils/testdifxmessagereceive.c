@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 				return 0;
 			}
 			printf("Listening only for message of type %d = %s\n", type, DifxMessageTypeStrings[type]);
-			if(t < 0)
+			if(u < 0)
 			{
 				specialMode = 1;
 			}
