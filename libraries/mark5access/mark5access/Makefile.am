@@ -26,10 +26,8 @@ c_sources = \
 	mark5_stream_memory.c \
 	mark5_stream_unpacker.c \
 	mark5_format_vlba.c \
-	mark5_format_vlba_nomod.c \
 	mark5_format_mark4.c \
 	mark5_format_mark5b.c \
-	mark5_format_kvn5b.c \
 	mark5_format_d2k.c \
 	format_vdif.c \
 	$(codif_c_sources) \

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2024 by Walter Brisken, Richard Dodson             *
+ *   Copyright (C) 2006-2026 by Walter Brisken, Richard Dodson             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -262,8 +262,6 @@ int mark5_unpack_complex_with_offset(struct mark5_stream *ms, const void *packed
 
 struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan, int nbit, int fanout, int decimation);
 
-struct mark5_format_generic *new_mark5_format_vlba_nomod(int Mbps, int nchan, int nbit, int fanout, int decimation);
-
 /*   Mark4 format */
 
 struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan, int nbit, int fanout, int decimation);
@@ -305,12 +303,6 @@ int find_codif_frame(const unsigned char *data, int length, size_t *offset, int 
 
 int get_codif_threads(const unsigned char *data, size_t length, int dataframesize);
   
-/*   KVNMark5B format: under development */
-
-struct mark5_format_generic *new_mark5_format_kvn5b(int Mbps, int nchan, int nbit, int decimation);
-
-struct mark5_format_generic *new_mark5_format_d2k(int Mbps, int nchan, int nbit, int decimation);
-
 /*   Generate format from a string description */
 
 struct mark5_format_generic *new_mark5_format_generic_from_string( const char *formatname);
