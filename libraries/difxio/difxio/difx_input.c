@@ -1241,7 +1241,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D, const DifxParam
 
 		/* initialize datastream index array */
 		dc->datastreamId = (int *)calloc(dc->nDatastream+1, sizeof(int));
-		if(dc->datastreamId)
+		if(!dc->datastreamId)
 		{
 			fprintf(stderr, "Error: parseDifxInputConfigurationTable(): cannot allocate %lu bytes for datastreamIds\n", (unsigned long int)((dc->nDatastream+1)*sizeof(int)));
 
