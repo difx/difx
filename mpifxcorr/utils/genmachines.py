@@ -30,7 +30,7 @@ import struct
 import subprocess
 import signal
 import sys
-#from optparse import OptionParser
+import random
 import argparse
 from xml.parsers import expat
 from copy import deepcopy
@@ -53,7 +53,7 @@ defaultDifxMessageGroup = '224.2.2.1'
 #ignoreIncompleteModules = True
 
 MARK6_VSN_IDS = ['%']
-VALID_DS_TYPES = ['FILE', 'MODULE', 'MARK6']
+VALID_DS_TYPES = ['FILE', 'MODULE', 'MARK6', 'FAKE']
 
 def getmonthdate(daynumber, yearnumber):
     md = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365]
@@ -668,6 +668,17 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                         print(nodecount, len(difxmachines.getComputeNodes()))
                         break
                 
+            elif stream.type == 'FAKE':
+
+                matchNodes = []
+                currentUrl = ""
+                fakeNodes = difxmachines.getFakeNodes()
+            
+                if len(fakeNodes) > 0:
+                    # randomly assign a elligible FAKE datastream node
+                    # could be done in a more sophisticated way taking account the actual bookings
+                    dsnodes.append( fakeNodes[random.randint(0, len(fakeNodes))].name)
+
             elif stream.type == "MODULE":    
                 matchNode = ""
                 for r in results:
