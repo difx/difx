@@ -39,7 +39,8 @@ Do these in order, then stop. Do not start new work during a wrap-up.
   commit records them), add what came up, and keep the "Agreed order" section current.
   It is outside the repository, so show the user the change before saving it.
 - **`tests/FakeData/BENCHMARKS.md`**: any timing or profile worth keeping, with the
-  commit, machine, GPU and configuration it was measured on.
+  commit, machine, GPU and configuration it was measured on. Headline results also go on
+  the wiki benchmarks page; the `benchmark` skill says which goes where.
 - **`mpifxcorr/GPU_MERGE_NOTES.md`**: tick off a merge follow-up from section 7 if one
   was closed.
 - Fix any reference you noticed to a file or branch that no longer exists.

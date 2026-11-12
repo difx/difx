@@ -164,6 +164,7 @@ when changing anything that uses these macros.
 - Project skills in `.claude/skills/` cover the routine steps on `gpudifx`:
   `rebuild-and-verify` (rebuild, then prove the installed binary is the new one),
   `gpu-parity-test` (CPU-vs-GPU Synthetic suite), `sync-with-dev` (merging dev in and sending
-  shared-code fixes back), `wrap-up` (end of session), and `difx-bug-review`, which includes
-  the CPU/GPU code map to check for parity.
+  shared-code fixes back), `benchmark` (FakeData speed benchmark, and where its results are
+  recorded: `tests/FakeData/BENCHMARKS.md` and the wiki benchmarks page), `wrap-up` (end of
+  session), and `difx-bug-review`, which includes the CPU/GPU code map to check for parity.
 - See `CONTRIBUTION.md` for the full contributor workflow (joining the project vs. forking).
