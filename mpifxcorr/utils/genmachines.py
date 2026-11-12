@@ -44,8 +44,8 @@ except ImportError:
     sys.exit(1)
 
 author  = 'Walter Brisken and Helge Rottmann'
-version = '2.5.2'
-verdate = '20250509'
+version = '2.9.1'
+verdate = '20261012'
 minMachinefileVersion = "1.0"   # cluster definition file must have at least this version
 
 defaultDifxMessagePort = 50200
@@ -53,6 +53,7 @@ defaultDifxMessageGroup = '224.2.2.1'
 #ignoreIncompleteModules = True
 
 MARK6_VSN_IDS = ['%']
+VALID_DS_TYPES = ['FILE', 'MODULE', 'MARK6']
 
 def getmonthdate(daynumber, yearnumber):
     md = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365]
@@ -577,6 +578,11 @@ def writethreads(basename, threads):
 def writemachines(basename, hostname, results, datastreams, overheadcores, verbose, dorankfile=False, datastreamsOnly=False, threadsperproc=0):
         """
         Write machines file to be used by mpirun
+
+        Args:
+            basename (str): the basename (including full path) of the difx job
+            hostname (str): the hostname of the head node
+            
         """
 
         dsnodes = []
@@ -824,6 +830,10 @@ def run(infile, machinesfile, overheadcores, verbose, dothreads, useDifxDb, dora
                 exit(1)
                                 
         datastreams =  getDatastreamsFromInputFile(infile, verbose)
+
+        for stream in datastreams:
+            if stream.type not in VALID_DS_TYPES:
+                print('Warning: datastream type %s not supported. No datastream node will be assigned to this stream' % (stream.type))
 
         if verbose > 0:
                 print('Datastreams:')
