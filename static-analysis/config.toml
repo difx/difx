@@ -304,3 +304,36 @@ name = "vex-parser"
 component = "vex2difx"
 model = "sonnet"
 files = ["applications/vex2difx/vex/*"]
+
+[[review.units]]
+name = "mark6sg"
+component = "mark6sg"
+model = "sonnet"
+files = ["libraries/mark6sg/*"]
+exclude = ["libraries/mark6sg/jsmn/*"]   # third-party JSON parser (MIT)
+
+[[review.units]]
+name = "mark6meta"
+component = "mark6meta"
+model = "sonnet"
+files = ["libraries/mark6meta/*"]
+
+[[review.units]]
+name = "datasim"
+component = "datasim"
+model = "sonnet"
+files = ["applications/datasim/*"]
+
+[[review.units]]
+name = "m6support-vdifuse"
+component = "m6support"
+model = "sonnet"
+files = ["applications/m6support/vdif*"]
+exclude = ["applications/m6support/vdif_time*"]
+
+[[review.units]]
+name = "m6support-tools"
+component = "m6support"
+model = "sonnet"
+files = ["applications/m6support/[!v]*", "applications/m6support/vdif_time*",
+         "applications/m6support/vdfxmsg*"]
