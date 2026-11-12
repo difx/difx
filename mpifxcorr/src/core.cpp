@@ -391,7 +391,6 @@ long long Core::getEstimatedBytes()
 
 void Core::loopprocess(int threadid)
 {
-    cout << threadid << endl;
   int perr, numprocessed, startblock, numblocks, lastconfigindex, numpolycos, maxchan, maxpolycos, stadumpchannels, strideplussteplen, maxrotatestrideplussteplength, maxxmaclength, slen;
   double sec;
   bool pulsarbin, somepulsarbin, somescrunch, dumpingsta, nowdumpingsta;

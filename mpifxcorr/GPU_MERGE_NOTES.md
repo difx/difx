@@ -251,7 +251,9 @@ Cleanup:
    counters in `cpumode.cpp` (incremented without locking from several
    threads), the duplicated `PCAL_FINAL_DEBUG_*` `#define`s and
    `pcal_debug_target` in `mode.cpp`, debug blocks in `copyPCalTones`, and
-   commented-out debug code across the GPU files.
+   commented-out debug code across the GPU files. **Partly resolved after
+   the merge:** the `Core` thread-id print and a per-FFT `cout` of unpacked
+   data in `CPUMode::process` (fringe rotation order 0) were removed.
 7. `GPUMode` never frees the host `unpackedarrays` that `Mode::Mode`
    allocates (a small leak; the GPU path does not use them).
 

@@ -730,7 +730,6 @@ void CPUMode::process(int index, int subloopindex)  //frac sample error is in mi
               if(status != vecNoErr)
                 csevere << startl << "Error in conjugate!!!" << status << endl;
             }
-	    std::cout << "unpacked data: " << unpackedarrays[j][nearestsample - unpackstartsamples] << std::endl;
             break;
           case 1: // Linear
              //std::cout << "linear" << std::endl;

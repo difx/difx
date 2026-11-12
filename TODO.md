@@ -51,7 +51,7 @@ ADACS checkout, or bring site-neutral versions across first).
 - [ ] Switch the GPU code from `getDPhaseCalIntervalMHz` to `getDPhaseCalIntervalHz` (8 calls).
 - [ ] Commit `tests/Synthetic/threads`: every `.v2d` there names `threadsFile = threads`, but the
       file only exists in local checkouts.
-- [ ] Remove leftover debug code: `cout << threadid` in `Core`, the `debug_dataweight_cpu_*`
+- [ ] Remove leftover debug code: the `debug_dataweight_cpu_*`
       counters, `PCAL_FINAL_DEBUG_*`, debug blocks in `copyPCalTones`, commented-out printf.
 - [ ] `GPUMode` leaks the host `unpackedarrays` allocated by `Mode::Mode`.
 - [ ] Check whether `GPUCore` needs dev's "ignore negative pulsar bin weights" change.
