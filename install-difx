@@ -49,10 +49,6 @@ The install-difx options are:
 
    --withmonitor   Try to build the difx_monitor application (requires pgplot)
 
-   --withfb        Build filterbank (which requires pgplot)
-
-   --withguiserver Build guiServer
-
    --withhops      Build HOPS (which requires pgplot)
 
    --withm6support Build Mark6 support (which requires FUSE)
@@ -109,8 +105,8 @@ The install-difx options are:
                    ["perl", "difxio", "difxmessage", "mark5access", "vdifio",
                     "calcif2", "difx2profile", "misc","vis2screen",
                     "calcserver", "difx2fits", "vex2difx", "difx2mark4",
-                    "mpifxcorr", "difxfilterbank", "hops", "m6support",
-                    "polconvert", "guiServer", "mk5daemon", "difx_monitor",
+                    "mpifxcorr", "hops", "m6support",
+                    "polconvert", "mk5daemon", "difx_monitor",
                     "datasim", "difxcalc11", "mark6sg", "mark6meta", "espresso"]
    --skip='...'    Does a normal build, but skips components in a comma
                    separated list (drawn from the --doonly list).
@@ -177,7 +173,7 @@ try:
         ["force", "help", "verb",
          "help-options", "help-environment", "help-examples", "withcuda",
          "mk5daemon", "withmonitor", "withdatasim", "perl", "withfb",
-         "withhops", "withm6support", "withguiserver", "withpython",
+         "withhops", "withm6support", "withpython",
          "withpolconvert", "withspice=", "noinstall", "reconf", "noconf", "clean",
          "g77", "extraflags=", "makeflags=", "withmark6meta",
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine",
@@ -232,11 +228,9 @@ components = {"perl"          :False,
               "difx2mark4"    :False,
               "mpifxcorr"     :True,
               "mark6sg"       :False,
-              "difxfilterbank":False,
               "hops"          :False,
               "m6support"     :False,
               "polconvert"    :False,
-              "guiServer"     :False,
               "mk5daemon"     :False,
               "difx_monitor"  :False,
               "datasim"       :False,
@@ -354,8 +348,6 @@ if len(opts) > 0:
             components["datasim"] = True
         if o == "--perl":
             components["perl"] = True
-        if o == "--withfb":
-            components["difxfilterbank"] = True
         if o == "--withhops":
             components["hops"] = True
         if o == "--withm6support":
@@ -364,8 +356,6 @@ if len(opts) > 0:
             components["mark6meta"] = True
         if o == "--withpolconvert":
             components["polconvert"] = True
-        if o == "--withguiserver":
-            components["guiServer"] = True
         if o == "--withpython":
             dopybindings = True
         if o == "--withspice":
@@ -509,16 +499,12 @@ if components["vex2difx"]:
     apptargets.append(["vex2difx",   difx_version, True,True,True,False])
 if components["difx2mark4"]:
     apptargets.append(["difx2mark4", difx_version, True,True,True,False])
-if components["difxfilterbank"]:
-    apptargets.append(["difxfilterbank", difx_version, True,False,False,True])
 if components["hops"]:
     apptargets.append(["hops",       difx_version, True,True,True,False])
 if components["m6support"]:
     apptargets.append(["m6support",  difx_version, True,False,True,False])
 if components["polconvert"]:
     apptargets.append(["polconvert", difx_version, True,False,True,False])
-if components["guiServer"]:
-    apptargets.append(["guiServer",  difx_version, True,False,False,True])
 if components["mk5daemon"]:
     apptargets.append(["mk5daemon",  difx_version, True,False,True,False])
 if components["difx_monitor"]:

@@ -51,15 +51,8 @@ Mk5_CPUMode::Mk5_CPUMode(Configuration * conf, int confindex, int dsindex, int r
     }
     else
     {
-      if(config->useVGOSComplexVDIFHack(confindex, dsindex))
-      {
-        string stName = config->getDStationName(confindex, dsindex);
-        printf("Mk5Mode::Mk5Mode : Using VGOS Complex VDIF Hack for station %s (data stream %d)\n", stName.c_str(), dsindex);
-        mark5stream->invert_imaginary = 1;
-      } else {
-        //printf("Mk5Mode::Mk5Mode : NOT using VGOS Complex VDIF Hack for stream index %d\n", dsindex);
-        mark5stream->invert_imaginary = 0;
-      }
+      // VGOS sideband correction: mark5access inverts the imaginary part while unpacking
+      mark5stream->invert_imaginary = config->useVGOSComplexVDIFHack(confindex, dsindex) ? 1 : 0;
 
       if(conf->isNetwork(dsindex))
         mark5stream->blanker = blanker_none;

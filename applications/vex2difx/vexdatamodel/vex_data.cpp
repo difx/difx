@@ -887,7 +887,6 @@ void VexData::setAntennaVgosComplexFlip(const std::string &name, bool vgosComple
 	{
 		if(it->name == name)
 		{
-			std::cout << "Setting vgosComplexFlip for antenna " << name << " to " << vgosComplexFlip << std::endl;
 			it->vgosComplexFlip = vgosComplexFlip;
 		}
 	}
