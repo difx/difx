@@ -499,6 +499,7 @@ typedef struct
 	int spacecraftId;	/* -1 if not a spacecraft */
 	char pol[2];            /* polarization codes (one per nPol) : L R X Y, H or V. */
 	char shelf[DIFXIO_SHELF_LENGTH];  /* shelf location of module; really this should not be here! */
+	int vgosComplexFlip; /* flag indicating if complex data needs a sideband correction */
 } DifxAntenna;
 
 typedef struct

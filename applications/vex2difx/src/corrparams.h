@@ -229,6 +229,10 @@ public:
 	std::string filelistFile;
 	bool filelistReadFail;
 
+
+	// VGOS specific sideband correction flag
+	bool vgosComplexFlip = false;
+
 	void addDatastream(const std::string &dsName);
 };
 

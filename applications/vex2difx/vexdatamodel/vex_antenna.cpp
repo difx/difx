@@ -330,7 +330,8 @@ std::ostream& operator << (std::ostream &os, const VexAntenna &x)
 		"\n  posEpoch=" << x.posEpoch <<
 		"\n  axisType=" << x.axisType <<
 		"\n  axisOffset=" << x.axisOffset <<
-		"\n  tcalFrequency=" << x.tcalFrequency << std::endl;
+		"\n  tcalFrequency=" << x.tcalFrequency << 
+		"\n  vgosComplexFlip=" << (x.vgosComplexFlip ? "true" : "false") << std::endl;
 
 	for(std::vector<VexClock>::const_iterator it = x.clocks.begin(); it != x.clocks.end(); ++it)
 	{

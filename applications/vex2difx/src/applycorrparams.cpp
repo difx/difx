@@ -715,6 +715,8 @@ static void applyCorrParams_Antenna(VexData *V, const CorrParams &params, unsign
 		}
 
 		V->setAntennaPolConvert(A->name, as->polConvert);
+		V->setAntennaVgosComplexFlip(A->name, as->vgosComplexFlip);
+
 	}
 }
 

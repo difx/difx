@@ -280,7 +280,6 @@ int main(int argc, char *argv[])
   int * datastreamids;
   bool monitor = false;
   bool nocommandthread = false;
-  bool vgoscomplexvdifhack = false;
   bool verbose = false;
   string monitoropt;
   pthread_t commandthread;
@@ -307,7 +306,7 @@ int main(int argc, char *argv[])
 
   if(argc < 2 || argc > 6)
   {
-    cerr << "Error: invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]] [-rNewStartSec] [--nocommandthread] [--vgoscomplex] [--verbose] " << endl;
+    cerr << "Error: invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]] [-rNewStartSec] [--nocommandthread] [--verbose] " << endl;
     MPI_Barrier(world);
     MPI_Finalize();
     return EXIT_FAILURE;
@@ -357,18 +356,13 @@ int main(int argc, char *argv[])
     {
       nocommandthread = true;
     }
-    else if(strcmp(argv[i], "--vgoscomplex") == 0)
-    {
-      cwarn << startl << "Enabling VGOS hack; raw samples of *all* VDIFC stations will have the sign of the imaginary part reversed i.e. the sideband inverted during unpacking!" << endl;
-      vgoscomplexvdifhack = true;
-    }
     else if (strcmp(argv[i], "--verbose") == 0)
     {
       verbose = true;
     }
     else
     {
-      cfatal << startl << "Invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]] [-rNewStartSec] [--nocommandthread] [--vgoscomplex] [--verbose]" << endl;
+      cfatal << startl << "Invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]] [-rNewStartSec] [--nocommandthread] [--verbose]" << endl;
       MPI_Barrier(world);
       MPI_Finalize();
       return EXIT_FAILURE;
@@ -389,7 +383,6 @@ int main(int argc, char *argv[])
     MPI_Abort(MPI_COMM_WORLD, 1);
     return EXIT_FAILURE;
   }
-  config->setVGOSComplexVDIFHack(vgoscomplexvdifhack); // hopefully a temporary thing till VGOS fixes their firmware
 
   //handle difxmessage setup for sending and receiving
   if (isDifxMessageInUse() && !nocommandthread) { 

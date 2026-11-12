@@ -1486,6 +1486,9 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	{
 		ss >> toneGuardMHz;
 	}
+
+
+
 	else if(key == "toneSelection")
 	{
 		std::string ts;
@@ -1600,6 +1603,10 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	else if(key == "mjdStop")
 	{
 		ss >> mjdStop;
+	}
+	else if(key == "vgosComplexFlip")
+	{
+		vgosComplexFlip = parseBoolean(value);
 	}
 	else
 	{
