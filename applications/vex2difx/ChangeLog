@@ -4,6 +4,7 @@ Version 3.1.1
 * fix vexpeek segfault if listing modules but none present
 * vex2v2d: work toward making this generic and not VLBA specific
 * Minor fixes suggested by Claude applied
+* Remove support for VLBN and KVN5B formats (no longer supported by mpifxcorr)
 
 Version 3.1.0
 -------------

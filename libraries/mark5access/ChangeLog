@@ -2,6 +2,7 @@ Version 1.7.1
 * Post DiFX-2.9.0
 * m5pcal: quit gracefully rather than segfault when reading from pipe and EOF
 * Support 7 bits in VDIF epoch field
+* Remove support for VLBA data without modulation (never used), KVN5B format (incomplete support) and D2K format (never used)
 
 Version 1.7
 * Post DiFX-2.8

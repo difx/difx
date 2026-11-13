@@ -67,7 +67,7 @@ bool VexStream::Init()
 		exit(EXIT_FAILURE);
 	}
 
-	// of form <fmt>1_<fanout>	VLBA, Mark4, VLBN only
+	// of form <fmt>1_<fanout>	VLBA, Mark4 only
 	v = regcomp(&matchType4, "^([A-Z]+)1_([124])$", REG_EXTENDED);
 	if(v != 0)
 	{
@@ -94,7 +94,7 @@ bool VexStream::Init()
 		exit(EXIT_FAILURE);
 	}
 
-	// of form <fmt>1_<fanout>-<Mbps>-<nChan>-<bits>	Mark4, VLBA, VLBN only
+	// of form <fmt>1_<fanout>-<Mbps>-<nChan>-<bits>	Mark4, VLBA only
 	v = regcomp(&matchType7, "^([A-Z]+)1_([1-9]+[0-9]*)-([1-9]+[0-9]*)-([1-9]+[0-9]*)-([1-9]+[0-9]*)$", REG_EXTENDED);
 	if(v != 0)
 	{
@@ -132,9 +132,7 @@ char VexStream::DataFormatNames[NumDataFormats+1][16] =
 	"CODIF",
 	"MARK5B",
 	"VLBA",
-	"VLBN",
 	"MKIV",
-	"KVN5B",
 	"LBASTD",
 	"LBAVSOP",
 	"S2",
@@ -183,18 +181,10 @@ enum VexStream::DataFormat VexStream::stringToDataFormat(const std::string &str)
 	{
 		return FormatVLBA;
 	}
-	else if(strcasecmp(str.c_str(), "VLBN") == 0)
-	{
-		return FormatVLBN;
-	}
 	else if(strcasecmp(str.c_str(), "MKIV") == 0 ||
 	        strcasecmp(str.c_str(), "Mark4") == 0)
 	{
 		return FormatMark4;
-	}
-	else if(strcasecmp(str.c_str(), "KVN5B") == 0)
-	{
-		return FormatKVN5B;
 	}
 	else if(strcasecmp(str.c_str(), "LBA") == 0 ||
 	        strcasecmp(str.c_str(), "LBASTD") == 0)
@@ -369,7 +359,7 @@ bool VexStream::parseFormatString(const std::string &formatName)
 		{
 			return false;
 		}
-		if(format != FormatVLBA && format != FormatVLBN && format != FormatMark4)
+		if(format != FormatVLBA && format != FormatMark4)
 		{
 			format = NumDataFormats;
 
@@ -414,13 +404,13 @@ bool VexStream::parseFormatString(const std::string &formatName)
 	}
 	else if(regexec(&matchType7, formatName.c_str(), 6, match, 0) == 0)
 	{
-		// of form <fmt>1_<fanout>-<Mbps>-<nChan>-<bits>	Mark4, VLBA, VLBN only
+		// of form <fmt>1_<fanout>-<Mbps>-<nChan>-<bits>	Mark4, VLBA only
 		format = stringToDataFormat(formatName.substr(0, match[1].rm_eo));
 		if(format == NumDataFormats)
 		{
 			return false;
 		}
-		if(format != FormatVLBA && format != FormatVLBN && format != FormatMark4)
+		if(format != FormatVLBA && format != FormatMark4)
 		{
 			format = NumDataFormats;
 
@@ -497,7 +487,7 @@ bool VexStream::isTrackFormat() const
 		return true;
 	}
 
-	return (format == FormatVLBA || format == FormatVLBN || format == FormatMark4 || format == FormatMark5B || format == FormatKVN5B);
+	return (format == FormatVLBA || format == FormatMark4 || format == FormatMark5B);
 }
 
 bool VexStream::isLBAFormat() const
@@ -507,7 +497,7 @@ bool VexStream::isLBAFormat() const
 
 bool VexStream::formatHasFanout() const
 {
-	return (format == FormatVLBA || format == FormatVLBN || format == FormatMark4);
+	return (format == FormatVLBA || format == FormatMark4);
 }
 
 bool VexStream::isVDIFFormat() const
@@ -642,14 +632,12 @@ int VexStream::dataFrameSize() const
 		s = VDIFFrameSize;
 		break;
 	case FormatVLBA:
-	case FormatVLBN:
 		s = 2520*fanout*nBit*nextPowerOf2(nRecordChan);
 		break;
 	case FormatMark4:
 		s = 2500*fanout*nBit*nextPowerOf2(nRecordChan);
 		break;
 	case FormatMark5B:
-	case FormatKVN5B:
 		s = 10016;
 		break;
 	case FormatS2:

@@ -7,6 +7,7 @@
 * In mk5mode, one extra element was being unpacked when granularity > 1
 * Change IPP allocation routines to those that take long int sizes
   - No checks anymore for exceeding 2 GB uint32 limit in datastream allocation
+* Remove support for VLBA data without modulation (never used), KVN5B (never completed), and K5 (never completed)
 
 Version 2.9
 ~~~~~~~~~~~
