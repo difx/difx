@@ -782,11 +782,6 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						G->body.transient.dm = atof(s);
 					}
-				case DIFX_MESSAGE_VSIS:
-					if(strcmp(elem, "vsis") == 0)
-					{
-						strncpy_warn(G->body.vsis.vsis, s, DIFX_MESSAGE_LENGTH);
-					}
 					break;
 				default:
 					break;
@@ -956,9 +951,6 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    destDir = %s\n", G->body.transient.destDir);
 		printf("    comment = %s\n", G->body.transient.comment);
 		printf("    DM = %8.6f\n", G->body.transient.dm);
-		break;
-	case DIFX_MESSAGE_VSIS:
-		printf("    vsis = %s\n", G->body.vsis.vsis);
 		break;
 	default:
 		break;
