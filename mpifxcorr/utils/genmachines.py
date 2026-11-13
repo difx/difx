@@ -20,7 +20,6 @@
 #**************************************************************************
 
 
-#from string import   
 from sys import exit
 from os import getenv, umask, environ
 from os.path import isfile
@@ -44,8 +43,8 @@ except ImportError:
     sys.exit(1)
 
 author  = 'Walter Brisken and Helge Rottmann'
-version = '2.9.1'
-verdate = '20261012'
+version = '3.0.0'
+verdate = '20261013'
 minMachinefileVersion = "1.0"   # cluster definition file must have at least this version
 
 defaultDifxMessagePort = 50200
@@ -53,7 +52,7 @@ defaultDifxMessageGroup = '224.2.2.1'
 #ignoreIncompleteModules = True
 
 MARK6_VSN_IDS = ['%']
-VALID_DS_TYPES = ['FILE', 'MODULE', 'MARK6', 'FAKE']
+VALID_DS_TYPES = ['FILE', 'MARK6', 'FAKE']
 
 def getmonthdate(daynumber, yearnumber):
     md = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365]
@@ -92,8 +91,7 @@ def isListEmpty(inList):
 
 class MessageParser:
     """
-    Parses Mark5StatusMessage and Mark6StatusMessage,
-    as well as multi expansion chassis Mark6SlotStatusMessage
+    Parses Mark6StatusMessage and Mark6SlotStatusMessage,
     """
 
     def __init__(self):
@@ -121,7 +119,7 @@ class MessageParser:
         del self._parser # get rid of circular references
 
     def start(self, tag, attrs):
-        if tag in ['mark5Status', 'mark6Status', 'mark6SlotStatus']:
+        if tag in ['mark6Status', 'mark6SlotStatus']:
                 self.type = tag
                 self.ok = True
 
@@ -133,18 +131,6 @@ class MessageParser:
         #print('parseMark6Slot tag ', tag, ' value ', self.tmp)
         self.fields[tag] = self.tmp
 
-    def parseMark5(self,tag):
-        if tag == 'bankAVSN' and self.ok:
-                if len(self.tmp) != 8:
-                        self.vsnA = 'none'
-                else:
-                        self.vsnA = self.tmp.upper()
-        if tag == 'bankBVSN' and self.ok:
-                if len(self.tmp) != 8:
-                        self.vsnB = 'none'
-                else:
-                        self.vsnB = self.tmp.upper()
-
     def end(self, tag):
         if tag == 'from':
                 self.unit = self.tmp.lower()
@@ -153,8 +139,6 @@ class MessageParser:
                 self.fields['slot'] = self.slot
         elif tag == 'state' and self.ok:
                 self.state = self.tmp
-        elif self.type == 'mark5Status':
-                self.parseMark5(tag)
         elif self.type == 'mark6Status':
                 self.parseMark6(tag)
         elif self.type == 'mark6SlotStatus':
@@ -165,9 +149,7 @@ class MessageParser:
 
     def getinfo(self):
         if self.ok:
-                if self.type == 'mark5Status':
-                        return [self.unit, self.type, self.vsnA, self.vsnB, self.state, self.sender]
-                elif self.type == 'mark6Status':
+                if self.type == 'mark6Status':
                         return [self.unit, self.type, self.fields, self.state, self.sender]
                 elif self.type == 'mark6SlotStatus':
                         return [self.unit, self.type, self.fields, self.state, self.sender]
@@ -241,7 +223,6 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
         missingVsns = deepcopy(vsnlist)
 
         # First send out a call for VSNs
-        sendRequest("mark5","getvsn")
         sendRequest("mark6","getvsn")
 
         # Now listen for responses, until either time runs out or we get all we need
@@ -272,18 +253,7 @@ def getVsnsByMulticast(maxtime, datastreams, verbose):
                         if srchost in machines and msgtype!='mark6SlotStatus':
                                 continue
 
-                        if msgtype == "mark5Status":
-                                if info[2] in missingVsns and info[3] in missingVsns:
-                                        conflicts.append(info)
-                                if info[2] in missingVsns:
-                                        missingVsns.remove(info[2])
-                                        if info[4] != 'Idle' and info[4] != 'Close':
-                                                notidle.append(info[2])
-                                if info[3] in missingVsns:
-                                        missingVsns.remove(info[3])
-                                        if info[4] != 'Idle' and info[4] != 'Close':
-                                                notidle.append(info[3])
-                        elif msgtype == 'mark6Status':
+                        if msgtype == 'mark6Status':
                                 for key in ['slot1MSN', 'slot2MSN', 'slot3MSN', 'slot4MSN']:
                                         if key in list(info[2].keys()):
                                                 if info[2][key] in missingVsns:
@@ -543,14 +513,11 @@ def getDatastreamsFromInputFile(inputfile, verbose):
                         
 
                         if ds < nds:
-                            if datastreams[ds].type == 'MODULE':
-                                datastreams[ds].vsn = value
-                            elif datastreams[ds].type == 'FILE':
+                            if datastreams[ds].type == 'FILE':
                                 if datastreams[ds].path == "":
                                     datastreams[ds].path = os.path.dirname(value)
                                     if not datastreams[ds].path.endswith("/"):
                                         datastreams[ds].path += "/"
-
 
                             elif datastreams[ds].type == 'MARK6':
                                 mark6flag = True
@@ -678,25 +645,6 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                     # randomly assign a elligible FAKE datastream node
                     # could be done in a more sophisticated way taking account the actual bookings
                     dsnodes.append( fakeNodes[random.randint(0, len(fakeNodes))].name)
-
-            elif stream.type == "MODULE":    
-                matchNode = ""
-                for r in results:
-                    # find  module either in bank A or B
-                    if r[2] == stream.vsn or r[3] == stream.vsn:
-                            if r[0] in difxmachines.getMk5NodeNames():
-                                matchNode = r[0]
-                            else:
-                                # use message sending host
-                                matchNode = r[5]
-
-                if matchNode in difxmachines.getMk5NodeNames():
-                    dsnodes.append(matchNode)
-                elif len(stream.vsn) < 1:
-                    print('Warning: A stream of type MODULE has a blank VSN - check your VEX $TAPELOG_OBS time ranges')
-                else:
-                    print('Warning: stream type MODULE with VSN %s, matching node %s not listed as an active mark5 host in machines file' % (str(stream.vsn),matchNode))
-                    return []
 
             elif stream.type == "MARK6":
                 matchNode = ""  
@@ -936,10 +884,6 @@ def runDatastreamsMerged(inputfiles, machinesfile, verbose, dothreads, useDifxDb
                                 if ds.path not in datastream_file_paths:
                                         datastream_file_paths.append(ds.path)
                                         datastream_files.append(ds)
-                        elif ds.type == 'MODULE':
-                                if ds.vsn not in datastream_module_SNs:
-                                        datastream_module_SNs.append(ds.vsn)
-                                        datastream_modules.append(ds)
                         elif ds.type == 'MARK6':
                                 if str(ds.msn) not in datastream_module_SNs:
                                         datastream_module_SNs.append(str(ds.msn))
@@ -1020,7 +964,7 @@ class Datastream:
         NETWORK datastreams not yet supported
         """
         def __init__(self):
-                self.type = ""  # allowed types MODULE FILE MARK6
+                self.type = ""  
                 self.vsn = ""   # module VSN in case of MODULE datasource
                 self.msn = []   # module MSN in case of MARK6 datasource
                 self.path = ""          # path in case of FILE datasource
