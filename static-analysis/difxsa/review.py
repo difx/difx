@@ -402,7 +402,7 @@ def review_unit(cfg, state, unit, claude, model_override=None, dry_run=False):
 # ---------------------------------------------------------------- wiki pages
 
 def wiki_dir(cfg):
-    return os.path.join(cfg.path("wiki"), settings(cfg).get("wiki_subdir", "Code-Review"))
+    return os.path.join(cfg.path("wiki"), settings(cfg).get("wiki_subdir", "Development/Code Quality/Code Review"))
 
 
 def page_name(cfg, component):
@@ -644,9 +644,9 @@ def write_index(cfg, state):
         "pages.", "",
         "| Component | Units reviewed | Issues | " + " | ".join(cols) + " |",
         "|---|---|---:|" + "---:|" * len(cols)] + rows + [
-        "", "See also the [static-analysis results](Static-Analysis).", ""])
+        "", "See also the [static-analysis results](Static Analysis).", ""])
     os.makedirs(wiki_dir(cfg), exist_ok=True)
-    with open(os.path.join(wiki_dir(cfg), settings(cfg).get("index_page", "Code-Review")
+    with open(os.path.join(wiki_dir(cfg), settings(cfg).get("index_page", "Code Review")
                            + ".md"), "w") as f:
         f.write(text)
 
@@ -672,7 +672,7 @@ def update_pages(cfg, state, pull):
 def publish_pages(cfg, state, units_done, push=True):
     wiki = cfg.path("wiki")
     subdir = os.path.relpath(wiki_dir(cfg), wiki)
-    msg = (f"Code-Review: {', '.join(units_done) if units_done else 'update'} "
+    msg = (f"Code Review: {', '.join(units_done) if units_done else 'update'} "
            f"({state['ref']} @ {state['sha'][:10]})")
     return publish.run(cfg, push=push, subdir=subdir, message=msg)
 

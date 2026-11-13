@@ -65,7 +65,7 @@ becomes a scripts-only unit (ruff, shellcheck) with its own page, e.g.
    same branch (matched on file, tool, check and message, so code moving up or
    down does not count as a change) and writes markdown into the wiki clone
    (`paths.wiki` / `paths.wiki_subdir`):
-   - `Static-Analysis.md`: counts per component by severity, grouped as
+   - `Static Analysis.md`: counts per component by severity, grouped as
      libraries / mpifxcorr / applications / utilities, new/fixed, trend
    - `<category>/SA-<component path>.md`: one page per component with new and
      fixed findings, counts by check, and findings by file (collapsible), each
@@ -112,7 +112,7 @@ never part of `sa.py run`.
    ./sa.py summary --only difxio,mpifxcorr  # or concentrate on some components (cheaper)
    ```
 3. Read `<results>/dev/latest/claude-summary.md`, or the re-rendered page
-   `Static-Analysis/Static-Analysis-Claude-Summary.md` in the wiki clone.
+   `Development/Code Quality/Static Analysis/Static-Analysis-Claude-Summary.md` in the wiki clone.
 4. If it is worth sharing, `./sa.py publish` puts it on the wiki, linked from the
    Static-Analysis page.  Otherwise leave it: it stays local.
 
@@ -167,8 +167,8 @@ which can also be used by hand in VS Code (`/difx-bug-review libraries/vdifio/sr
   static-analysis findings for those files as leads (when the latest results are of
   the same commit).  It answers in JSON; `sa.py` quotes the code snippets itself from
   the pinned checkout.
-- **Wiki pages** (`Code-Review/` in the wiki clone): one `Review-<component>` page per
-  component plus the `Code-Review` index.  Component pages are meant to be edited by
+- **Wiki pages** (`Development/Code Quality/Code Review/` in the wiki clone): one `Review-<component>` page per
+  component plus the `Code Review` index.  Component pages are meant to be edited by
   people (each issue has a Status line and Notes), so they are never regenerated: new
   issues are appended (an issue already on the page is recognised by its file,
   function and code snippet), and only the "Reviewed" block between the
