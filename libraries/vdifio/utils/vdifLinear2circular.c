@@ -92,11 +92,12 @@ int main (int argc, char * const argv[]) {
   int nread, status, nwrote, tmp, nchan=0, bits, isComplex=0, legacy=0, datasize=0;
   int first, bufsize=0, cfact, completeSample, samplesperFrame, headersize, frameperSec, bufperSec;
   float ftmp;
-  double t0, sfa, sfb, N;
+  double sfa, sfb, N;
   Ipp8u *buf, *data;
-  Ipp32f *mean, *stddev, *scratch, *avPower, ratio=0;
+  const Ipp32f *mean, *stddev, *scratch, *avPower;
   Ipp32fc **unpacked, **rotated, phaseC; 
-  char  *slashptr, *filename, msg[MAXSTR+50], outfilename[MAXSTR+1];
+  const char *slashptr;
+  char *filename, msg[MAXSTR+50], outfilename[MAXSTR+1];
   vdif_header *header;
 
   int memsize = BUFSIZE;
@@ -223,8 +224,6 @@ int main (int argc, char * const argv[]) {
   /* Install a ^C catcher */
   signal (SIGINT, kill_signal);
 
-  t0 = tim(); /* So we can time average write per file */
-  
   first = 1;
   for (nfile=optind; nfile<argc; nfile++) {
     filename = argv[nfile];
@@ -576,7 +575,7 @@ double tim(void) {
 void unpack8bit(Ipp8u *in, Ipp32f **out, int nchan, int iscomplex, int n, int offset) {
   // Unpack n *output* samples from 8 bit unsigned integers
   // Messes with input data
-  Ipp8s *ins;
+  const Ipp8s *ins;
   IppStatus status;
 
 
@@ -616,7 +615,7 @@ void unpack8bit(Ipp8u *in, Ipp32f **out, int nchan, int iscomplex, int n, int of
 void unpack16bit(Ipp16u *in, Ipp32f **out, int nchan, int iscomplex, int n, int offset) {
   // Unpack n *output* samples from 16 bit unsigned integers
   // Messes with input data
-  Ipp16s *ins;
+  const Ipp16s *ins;
   IppStatus status;  
   int cfact = (iscomplex) ? 2 : 1;
   
