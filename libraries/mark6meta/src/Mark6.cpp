@@ -203,7 +203,7 @@ void Mark6::modInit (int slot, string vsn)
     //cout << "Starting modinit" << endl;
     //cout << "Number of slots: " << numSlots_m << endl;
 
-    if ((slot < 0) || (slot > numSlots_m))
+    if ((slot < 0) || (slot >= numSlots_m))
         throw  Mark6Exception("Invalid slot number");
 
     initRawDevice_m = true;
