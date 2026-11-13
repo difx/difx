@@ -444,14 +444,6 @@ public:
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
     return (f == MARK5B && s == FAKESTREAM); 
   }
-  inline bool isMark5BMark5(int datastreamindex) const
-  {
-    dataformat f;
-    datasource s;
-    f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
-    s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
-    return (f == MARK5B && s == MK5MODULE);
-  }
   inline bool isMark5BMark6(int datastreamindex) const
   {
     dataformat f;
@@ -467,14 +459,6 @@ public:
     f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
     return (f == MARK5B && s == NETWORKSTREAM);
-  }
-  inline bool isNativeMkV(int datastreamindex) const
-  { 
-    dataformat f;
-    datasource s;
-    f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
-    s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
-    return ((f == MKIV || f == VLBA || f == MARK5B || f == VDIF || f == VDIFL || f == INTERLACEDVDIF || f == CODIF) && s == MK5MODULE); 
   }
 
   // Return the number of framebytes as seen by Datastream (as in the data source)

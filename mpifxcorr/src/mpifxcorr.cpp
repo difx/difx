@@ -29,9 +29,7 @@
 #include "core.h"
 #include "datastream.h"
 #include "mk5.h"
-#include "nativemk5.h"
 #include "mark5bfile.h"
-#include "mark5bmark5.h"
 #include "vdiffile.h"
 #include "vdifnetwork.h"
 #include "vdiffake.h"
@@ -472,18 +470,10 @@ int main(int argc, char *argv[])
         stream = new Mark5BDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
         stream->verbose = verbose;
           cverbose << startl << "Opening Mark5BDataStream" << endl;
-      } else if(config->isMark5BMark5(datastreamnum)) {
-        stream = new Mark5BMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
-        stream->verbose = verbose;
-        cverbose << startl << "Opening Mark5BMark5DataStream" << endl;
       } else if(config->isMkV(datastreamnum)) {
         stream = new Mk5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
         stream->verbose = verbose;
         cverbose << startl << "Opening Mk5DataStream" << endl;
-      } else if(config->isNativeMkV(datastreamnum)){
-        stream = new NativeMk5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
-        stream->verbose = verbose;
-          cverbose << startl << "Opening NativeMk5DataStream" << endl;
       }
       else {
         stream = new DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());

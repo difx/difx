@@ -98,8 +98,7 @@ else
 	DIRLIST_CFLAGS=""
 	DIRLIST_LIBS=""
 	echo ''
-	echo 'No suitable dirlist.pc file was found so native'
-	echo 'Mark5 and Mark6 support will not be attempted.'
+	echo 'No suitable dirlist.pc file was found so native Mark6 support will not be attempted.'
 	echo ''
 fi
 AM_CONDITIONAL(HAS_DIRLIST, $has_dirlist)
@@ -108,32 +107,6 @@ AM_CONDITIONAL(HAS_DIRLIST, $has_dirlist)
 AC_SUBST(difxlibs, [${DIRLIST_LIBS} ${M5ACCESS_LIBS}])
 AC_SUBST(difxcflags, [${DIRLIST_CFLAGS} ${M5ACCESS_CFLAGS}])
 
-dnl **********************************************************
-dnl **** Look for StreamStor libraries                    ****
-dnl **** cause native Mark5 to be built if found.         ****
-dnl **********************************************************
-if test ${has_dirlist} = true; then
-	ss_enabled=true
-	PKG_CHECK_EXISTS([streamstor >= 8.0],
-		[ PKG_CHECK_MODULES(SS, streamstor) ],
-		[ AC_MSG_NOTICE([Did not find STREAMSTOR in $PKG_CONFIG_PATH])
-		  ss_enabled=false])
-	if test ${ss_enabled} = true; then
-		CPPFLAGS="${CPPFLAGS} ${SS_CFLAGS}"
-		CXXFLAGS="${CXXFLAGS} ${SS_CFLAGS}"
-		AC_CHECK_HEADERS([xlrapi.h])
-	else
-		SS_CFLAGS=""
-		SS_LIBS=""
-		echo ''
-		echo 'No suitable streamstor.pc file was found so the native'
-		echo 'Mark5 support will be suppressed.'
-		echo ''
-	fi
-else
-	ss_enabled=false
-fi
-AM_CONDITIONAL(WITH_SS, $ss_enabled)
 
 dnl **********************************************************
 dnl **** Find mark5access library                         ****
@@ -150,7 +123,7 @@ dnl Note: $MATH_LIBS is not included here.  It is added as needed
 dnl in _LDADD options for binaries that link to libmpifxcorr.
 dnl this allows utilities that don't need IPP not to be linked
 dnl with that library.
-LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${MARK6SG_LIBS} ${SS_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} ${DIRLIST_LIBS} $LIBS"
+LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${MARK6SG_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} ${DIRLIST_LIBS} $LIBS"
 
 
 dnl **********************************************************

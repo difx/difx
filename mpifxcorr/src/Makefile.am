@@ -1,15 +1,3 @@
-if WITH_SS
-mark5_files = \
-	mark5utils.cpp \
-	nativemk5.cpp \
-	mark5bmark5.cpp \
-	watchdog.cpp
-else
-mark5_files = \
-	nativemk5_stubs.cpp \
-	mark5bmark5_stubs.cpp
-endif
-
 if WITH_MARK6SG
 mark6_files = \
 	vdifmark6_datastream.cpp \
@@ -44,7 +32,6 @@ mpifxcorr_SOURCES = \
 	alert.cpp \
 	pcal.cpp \
 	switchedpower.cpp \
-	$(mark5_files) \
 	$(mark6_files)
 
 library_includedir = $(includedir)/mpifxcorr
@@ -63,9 +50,6 @@ library_include_HEADERS = \
 	model.h \
 	mode.h \
 	polyco.h \
-	nativemk5.h \
-	watchdog.h \
-	mark5utils.h \
 	mpifxcorr.h \
 	switchedpower.h \
 	datamuxer.h \
@@ -100,7 +84,6 @@ libmpifxcorr_a_SOURCES = \
 	vdiffake.cpp \
 	vdifnetwork.cpp \
 	datamuxer.cpp \
-	$(mark5_files) \
 	$(mark6_files)
 
 libfxcorr_a_SOURCES = \
@@ -130,7 +113,6 @@ neuteredmpifxcorr_SOURCES = \
 	vdiffake.cpp \
 	vdifnetwork.cpp \
 	datamuxer.cpp \
-	$(mark5_files) \
 	$(mark6_files)
 
 neuteredmpifxcorr_CXXFLAGS = -DNEUTERED_DIFX $(AM_CXXFLAGS)

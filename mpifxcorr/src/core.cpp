@@ -61,7 +61,7 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   int overheadbytes = 0;
   for(int i=0;i<numdatastreams;i++)
   {
-    if(config->isMkV(i) || config->isNativeMkV(i))
+    if(config->isMkV(i))
       overheadbytes = config->getFrameBytes(0, i);
   }
   databytes += overheadbytes;
