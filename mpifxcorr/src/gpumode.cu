@@ -56,6 +56,14 @@ bool GPUMode::useGpuWeights() {
     return usegpu;
 }
 
+bool GPUMode::sidebandCpuCompat() {
+    static const bool enabled = []() {
+        const char *e = getenv("DIFX_GPU_SIDEBAND_CPUCOMPAT");
+        return (e != NULL) && atoi(e) != 0;
+    }();
+    return enabled;
+}
+
 void GPUMode::finishWeights(bool validsubint) {
     // Host-weights fallback (static, whole-run) fills the host arrays directly
     // in process_gpu_afterfft, and an invalid subint has no device outputs to
@@ -192,18 +200,22 @@ __global__ void gpu_set_weights(const int *nearest, const bool *validFrames,
             ? (ns + fftchannels - 1) / framesamples
             : (nearest[w + 1] - 1) / framesamples;
 
-        const float ok_start =
-            (start_frame >= 0 && start_frame < nframes && validFrames[start_frame]) ? 1.0f : 0.0f;
-        if (start_frame == end_frame) {
-            weight = ok_start;
-        } else if (start_frame + 1 == end_frame) {
-            const float ok_end =
-                (end_frame < nframes && validFrames[end_frame]) ? 1.0f : 0.0f;
-            const float frac_first =
-                (float)(end_frame * framesamples - ns) / (float)fftchannels;
-            weight = frac_first * ok_start + (1.0f - frac_first) * ok_end;
+        // Each frame the window touches contributes its share of the window;
+        // the last frame takes whatever is left. For one or two frames this is
+        // the original arithmetic; a window longer than a frame can touch three
+        // or more (e.g. 8192-sample FFTs on 8000-sample frames), as on the CPU.
+        float remaining = 1.0f;
+        int pos = ns;
+        for (int f = start_frame; f < end_frame; f++) {
+            const float ok = (f >= 0 && f < nframes && validFrames[f]) ? 1.0f : 0.0f;
+            const float frac = (float)((f + 1) * framesamples - pos) / (float)fftchannels;
+            weight += frac * ok;
+            remaining -= frac;
+            pos = (f + 1) * framesamples;
         }
-        // (a window spanning >2 frames keeps weight 0)
+        const float ok_end =
+            (end_frame >= 0 && end_frame < nframes && validFrames[end_frame]) ? 1.0f : 0.0f;
+        weight += remaining * ok_end;
     }
 
     dataweight[w] = weight;
@@ -351,16 +363,87 @@ GPUMode::GPUMode(Configuration *conf, int confindex, int dsindex, int recordedba
     // filled each subint by gpu_precompute_fringe_rotator).
     gBigA = new GpuMemHelper<double>((size_t)cfg_numBufferedFFTs * numrecordedbands, cuStream, true);
     gBigBred = new GpuMemHelper<double>((size_t)cfg_numBufferedFFTs * numrecordedbands, cuStream, true);
+    // Sideband handling is done entirely while decoding: each band is turned
+    // into upper sideband there (gpudecode.cu band_transform_gpu), and from then
+    // on it is processed as an upper sideband band whose LO is the lower band
+    // edge. Per band:
+    //   complex LSB         conjugate                            LO = edge - bw
+    //   complex DSB         (-1)^n: shifts the band by bw/2       LO = lower edge
+    //   complex DSB LSB     both                                 LO = edge - bw
+    //   real LSB            (-1)^n: mirrors the band              LO = edge - bw
+    // with n the absolute sample number, and the VGOS sideband flip
+    // (vgosComplexFlip, VDIF complex data only, as on the CPU where
+    // mark5access's VDIF decoders apply it) toggling the conjugation: data
+    // labelled LSB but flipped are really USB, and are not conjugated. The
+    // output channels then run from the lowest sky frequency upwards, as on the
+    // CPU path.
+    //
+    // DIFX_GPU_SIDEBAND_CPUCOMPAT=1 selects a test path that reproduces the
+    // CPU's post-FFT handling (Mode/CPUMode::process) to machine precision:
+    // the same decode-time conjugation, but the CPU's fringe-rotation LO, its
+    // channel frequencies for the fractional-sample correction, n counted
+    // within the FFT window (= the CPU's swap of FFT halves), and its
+    // unconjugated DC channel for complex LSB:
+    //                       decode                LO            frac-sample offset
+    //   real LSB            (-1)^j                edge          -bw
+    //   complex LSB         conjugate             +edge         -bw, channel 0 conjugated
+    //   complex DSB USB     (-1)^j                edge + bw/2   -bw/2
+    //   complex DSB LSB     conjugate, (-1)^j     edge - bw/2   -bw/2
+    const Configuration::dataformat dsformat = config->getDataFormat(configindex, datastreamindex);
+    decodeFormat = (dsformat == Configuration::CODIF) ? GPUDECODE_CODIF : GPUDECODE_VDIF;
+    const bool vgosflip = usecomplex && decodeFormat == GPUDECODE_VDIF &&
+                          config->useVGOSComplexVDIFHack(configindex, datastreamindex);
+    const bool cpucompat = sidebandCpuCompat();
+    gBandFlags = new GpuMemHelper<unsigned char>(numrecordedbands, cuStream);
+    gFracFreqOffset = new GpuMemHelper<double>(numrecordedbands, cuStream);
+    anyBandTransform = false;
+
     // Copy the lofreq and freq clock offset values to the GPU
     for (auto i = 0; i < numrecordedbands; i++) {
         int localfreqindex = config->getDLocalRecordedFreqIndex(configindex, datastreamindex, i);
-        gLoFreqs->ptr()[i] = config->getDRecordedFreq(configindex, datastreamindex, localfreqindex);
+        const bool lsb = config->getDRecordedLowerSideband(configindex, datastreamindex, localfreqindex);
+        const double edge = config->getDRecordedFreq(configindex, datastreamindex, localfreqindex);
+        const double bw = config->getDRecordedBandwidth(configindex, datastreamindex, localfreqindex);
+        unsigned char flags = 0;
+        double lo = lsb ? edge - bw : edge;
+        double fracoffset = 0.0;
+        if (usecomplex) {
+            if (lsb != vgosflip)
+                flags |= GPUDECODE_BAND_CONJ;
+            if (usedouble)
+                flags |= GPUDECODE_BAND_ALTSIGN;
+        } else if (lsb) {
+            flags |= GPUDECODE_BAND_ALTSIGN;
+        }
+        if (cpucompat) {
+            if (flags & GPUDECODE_BAND_ALTSIGN)
+                flags |= GPUDECODE_BAND_ALTSIGN_WINDOW;
+            if (usecomplex && usedouble) {
+                lo = lsb ? edge - bw / 2.0 : edge + bw / 2.0;
+                fracoffset = -bw / 2.0;
+            } else if (lsb) {
+                lo = edge;
+                fracoffset = -bw;
+                if (usecomplex)
+                    flags |= GPUDECODE_BAND_CONJ_DC;
+            }
+        }
+        gBandFlags->ptr()[i] = flags;
+        gFracFreqOffset->ptr()[i] = fracoffset;
+        if (flags)
+            anyBandTransform = true;
+        gLoFreqs->ptr()[i] = lo;
         grecordedfreqclockoffsets->ptr()[i] = recordedfreqclockoffsets[localfreqindex];
         grecordedfreqclockoffsetsdelta->ptr()[i] = recordedfreqclockoffsetsdelta[localfreqindex];
         grecordedfreqlooffsets->ptr()[i] = recordedfreqlooffsets[localfreqindex];
     }
 
     gLoFreqs->copyToDevice();
+    gBandFlags->copyToDevice();
+    gFracFreqOffset->copyToDevice();
+    if (cpucompat && anyBandTransform)
+        cwarn << startl << "GPUMode: DIFX_GPU_SIDEBAND_CPUCOMPAT is set: lower/double sideband bands of datastream "
+              << datastreamindex << " use the CPU-compatible test path" << endl;
     grecordedfreqclockoffsets->copyToDevice();
     grecordedfreqclockoffsetsdelta->copyToDevice();
     grecordedfreqlooffsets->copyToDevice();
@@ -482,6 +565,8 @@ GPUMode::~GPUMode() {
     delete[] countsStatic;
     delete[] savedProcessCounts;
     delete gInterpolator;
+    delete gBandFlags;
+    delete gFracFreqOffset;
     delete gFracSampleError;
     delete gBigA;
     delete gBigBred;
@@ -643,28 +728,22 @@ int GPUMode::process_gpu_tofft(int fftloop, int numBufferedFFTs, int startblock,
         NOT_SUPPORTED("fringerotationorder = " + to_string(fringerotationorder));
     }
 
-    if (usedouble) {
-        NOT_SUPPORTED("usedouble branch");
-    }
-
     for (auto i = 0; i < numrecordedfreqs; i++) {
         if (recordedfreqlooffsets[i] > 0.0 || recordedfreqlooffsets[i] < 0.0) {
             NOT_SUPPORTED("lo offsets");
         }
     }
 
-    if (usecomplex && usedouble) {
-        NOT_SUPPORTED("complex double-sideband data");
-    } //else if (usecomplex) {
-     //   NOT_SUPPORTED("complex data");
-    //}
-
     if (deltapoloffsets) {
         NOT_SUPPORTED("deltapoloffsets");
     }
 
-    if (config->getDRecordedLowerSideband(configindex, datastreamindex, 0)) {
-        NOT_SUPPORTED("lower sideband");
+    // Lower sideband, double sideband and the VGOS flip are handled while
+    // decoding (see the GPUMode constructor). The phase cal extracted on the
+    // GPU folds the decoded samples, so for those bands it would see the
+    // transformed data; that has not been checked against the CPU yet.
+    if (anyBandTransform && config->getDPhaseCalIntervalMHz(configindex, datastreamindex) != 0) {
+        NOT_SUPPORTED("phase cal on lower-sideband, double-sideband or VGOS-flipped bands");
     }
 
     if (dumpkurtosis) {
@@ -700,6 +779,25 @@ int GPUMode::process_gpu_tofft(int fftloop, int numBufferedFFTs, int startblock,
     gValidSamples->setHostSlot(procSlot);
 
 
+
+    // packeddata_gpu holds getMaxDataBytes(). Mk5DataStream (VDIF, CODIF, ...)
+    // sends exactly getDataBytes(), which never exceeds that, but a datastream
+    // that keeps the base class's guard-scaled send size could deliver more:
+    // never copy past the buffer.
+    {
+        const int maxdatabytes = config->getMaxDataBytes();
+        if (datalengthbytes > maxdatabytes) {
+            const int fb = config->getMultiplexedFrameBytes(configindex, datastreamindex);
+            static bool warned = false;
+            if (!warned) {
+                cwarn << startl << "GPUMode: datastream " << datastreamindex << " delivered " << datalengthbytes
+                      << " bytes, more than the " << maxdatabytes << "-byte GPU input buffer; using the first "
+                      << (maxdatabytes / fb) * fb << " bytes" << endl;
+                warned = true;
+            }
+            datalengthbytes = (maxdatabytes / fb) * fb;
+        }
+    }
 
     // Copy packed data to device, needed to refactor this since we moved packed data allocation to the constructor.
     cudaEventRecord(ev_start, cuStream);
@@ -842,7 +940,7 @@ int GPUMode::process_gpu_tofft(int fftloop, int numBufferedFFTs, int startblock,
     // (real / all-zero / fill-pattern / invalid-bit) once per subint. The
     // delivered tail past the true end of data is unspecified buffer content
     // and can differ from run to run, so each run's log needs its own dump.
-    if (weightDebugFrom() >= 0 && datasec >= weightDebugFrom()) {
+    if (weightDebugFrom() >= 0 && datasec >= weightDebugFrom() && decodeFormat == GPUDECODE_VDIF) {
         static const char* dbg_names[4] = {"zero", "invalidbit", "fill", "real"};
         int dbg_framebytes = config->getMultiplexedFrameBytes(configindex, datastreamindex);
         int prevclass = -1;
@@ -1305,17 +1403,19 @@ void GPUMode::set_weights(int subloopindex, int nframes, int *counts, int numBuf
             end_frame = (nearestSamples->ptr()[subloopindex] + fftchannels - 1) / framesamples;
         else
             end_frame = (nearestSamples->ptr()[subloopindex + 1] - 1) / framesamples;
-        if (start_frame == end_frame) {
-            // This FFT window does not cross a frame boundary
-            dataweight[subloopindex] = frame_ok(start_frame);
-        } else if (start_frame + 1 == end_frame) {
-            // Crosses frame boundary: set weight proportional to occupancy in each frame
-            float frac_first_frame = (float)(end_frame * framesamples - nearestSamples->ptr()[subloopindex]) / (float)fftchannels;
-            dataweight[subloopindex] = (frac_first_frame) * frame_ok(start_frame) + (1 - frac_first_frame) * frame_ok(end_frame);
-        } else {
-            cerr << "FFT window somehow spans more than two frames. This is suspicious to me but maybe allowed?" << std::endl;
-            abort();
-        };
+        // Weight proportional to the window's occupancy of each frame it
+        // touches (as gpu_set_weights; a window longer than a frame can touch
+        // three or more)
+        float weight = 0.0f, remaining = 1.0f;
+        int pos = nearestSamples->ptr()[subloopindex];
+        for (int f = start_frame; f < end_frame; f++) {
+            const float frac = (float)((f + 1) * framesamples - pos) / (float)fftchannels;
+            weight += frac * frame_ok(f);
+            remaining -= frac;
+            pos = (f + 1) * framesamples;
+        }
+        weight += remaining * frame_ok(end_frame);
+        dataweight[subloopindex] = weight;
     }
     // Need to access samplegranularity which was out of scope
     
@@ -1332,8 +1432,8 @@ void GPUMode::set_weights(int subloopindex, int nframes, int *counts, int numBuf
             // Loop over all recorded bands looking for the matching frequency we should be dealing with
             int count = 0;
             for (int j = 0; j < numrecordedbands; j++) {
-                // For upper sideband bands, normally just need to copy the fftd channels.
-                // However for complex double upper sideband, the two halves of the frequency space are swapped, so they need to be swapped back
+                // Every band reaches the FFT as upper sideband (lower and double
+                // sideband are converted while decoding), so fftd_gpu needs no reordering.
 
                 if (config->matchingRecordedBand(configindex, datastreamindex, i, j)) {
                     indices->ptr()[(i * MAX_INDICIES) + count++] = j;
@@ -1485,8 +1585,8 @@ void GPUMode::fringeRotation(int fftloop, int numBufferedFFTs, int startblock, i
     // * BigA and BigB (computed just below)
     // * Which samples are valid - ie that we need to operate on
 
-    //  For LSB data, gLoFreqs needs to have already been corrected for the fact that we will convert to
-    // USB in unpacking. This means than loFreq = loFreq - bandwidth.
+    // gLoFreqs holds each band's lower edge: lower-sideband bands were turned
+    // into upper sideband while decoding (see the constructor).
 
     // Precompute the per-(window, band) fringe-rotation coefficients once for
     // this subint (one thread per window/band), so the per-sample rotation
@@ -1532,6 +1632,8 @@ __global__ void gpu_resultsrotatorMultiply(
         const unsigned int* const indices,
         const double* const recordedfreqclockoffsets,
         const double* const recordedfreqclockoffsetsdelta,
+        const double* const fracFreqOffset,
+        const unsigned char* const bandflags,
         const double recordedbandwidth,
         int fftloop,
         int startblock,
@@ -1601,15 +1703,20 @@ __global__ void gpu_resultsrotatorMultiply(
         // Calculate fracsampleerror - recordedfreqclockoffsets[f] + recordedfreqclockoffsetsdelta[f]/2
         double bigAval = fracSampleError[subloopindex] - recordedfreqclockoffsets[bandindex] + recordedfreqclockoffsetsdelta[bandindex] / 2;
 
-        // Calculate fftchannels[j] = recordedbandwidth * j / fftchannels
-        double subFreq = recordedbandwidth * (double) channelindex / (double) recordedbandchannels;
+        // Calculate fftchannels[j] = recordedbandwidth * j / fftchannels (every
+        // band is upper sideband by now; fracFreqOffset is non-zero only on the
+        // CPU-compatible sideband test path)
+        double subFreq = recordedbandwidth * (double) channelindex / (double) recordedbandchannels + fracFreqOffset[bandindex];
 
         // Calculate
         double exponent = bigAval * subFreq;
         exponent -= int(exponent);
         cuFloatComplex cr;
         __sincosf(TWO_PI * exponent, &cr.y, &cr.x);
-        const cuFloatComplex v = cuCmulf(gpufftd_gpu[dataIndex], cr);
+        cuFloatComplex in = gpufftd_gpu[dataIndex];
+        if (channelindex == 0 && (bandflags[bandindex] & GPUDECODE_BAND_CONJ_DC))
+            in.y = -in.y;
+        const cuFloatComplex v = cuCmulf(in, cr);
         gpufftd_gpu[dataIndex] = v;
 
         // Autocorrelation, straight from the register: v * conj(v) is |v|^2,
@@ -1685,6 +1792,7 @@ void GPUMode::fractionalRotation(int fftloop, int numBufferedFFTs, int startbloc
                 gFracSampleError->gpuPtr(), gValidSamples->gpuPtr(), nullptr,
                 grecordedfreqclockoffsets->gpuPtr(),
                 grecordedfreqclockoffsetsdelta->gpuPtr(),
+                gFracFreqOffset->gpuPtr(), gBandFlags->gpuPtr(),
                 recordedbandwidth, fftloop, startblock, numblocks,
                 fftchannels, recordedbandchannels, numrecordedbands,
                 numrecordedfreqs, false, nullptr);
@@ -1695,6 +1803,7 @@ void GPUMode::fractionalRotation(int fftloop, int numBufferedFFTs, int startbloc
                 indices->gpuPtr(),
                 grecordedfreqclockoffsets->gpuPtr(),
                 grecordedfreqclockoffsetsdelta->gpuPtr(),
+                gFracFreqOffset->gpuPtr(), gBandFlags->gpuPtr(),
                 recordedbandwidth, fftloop, startblock, numblocks,
                 fftchannels, recordedbandchannels, numrecordedbands,
                 numrecordedfreqs, calccrosspolautocorrs,

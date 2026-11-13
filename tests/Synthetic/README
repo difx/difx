@@ -36,6 +36,20 @@ test-dualpol			2 stations, 2 polarisations at the SAME sky
 				tInt=2, 60 s scan) rather than needing the manual
 				scale-down the older scenarios get.
 
+Long-baseline sideband scenarios (lb-usb, lb-lsb, lb-usb-complex,
+lb-lsb-complex), added 2026-11-13: T2 is about 3200 km from T1 and the data
+are simulated WITH each antenna's geometric delay, by utilities/vdifsim (not
+built by install-difx: autoreconf -fi, configure with CC=mpicc and
+--prefix=$DIFXROOT, make install). createLongBaseline.sh generates them
+(TESTLB*.vdif, 200 MB), with a weak source (correlation coefficient 0.010,
+so the cross-correlations are noise-dominated, as on most VLBI baselines).
+T2 holds the same signal in all four, recorded as
+real/complex USB/LSB (the LSB files are made from the USB ones with
+vdif2bit_flip_odd.py, which is exactly what vdifsim does for LSB), so a
+correct correlator gives lb-lsb the same visibilities as lb-usb.
+sideband-invariance.py compares them; run-local.sh runs these scenarios
+(when their data exist) and reports that comparison as PASS/FAIL for the GPU.
+
 
 AUTOMATED REGRESSION ON A SLURM CLUSTER (run-slurm.sh)
 ------------------------------------------------------

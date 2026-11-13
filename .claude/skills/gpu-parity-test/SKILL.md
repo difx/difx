@@ -53,8 +53,22 @@ mkdir -p local-runs && ./run-local.sh 2>&1 | tee local-runs/run-local-$(date +%Y
   install prefix) to add a CPU run made entirely with that build's tools and a
   `cpu:reference` column. It catches changes to CPU output relative to dev, which the
   CPU-vs-GPU columns cannot see.
-- Scenarios in `GPU_UNSUPPORTED` (the lower-sideband ones) are SKIPped on the GPU legs.
+- Scenarios in `GPU_UNSUPPORTED` (none at present) are SKIPped on the GPU legs.
   Remove a scenario from that list only in the commit that implements it on the GPU.
+- The lower/double sideband scenarios (`lsb`, `lsb-complex`, `usb-dsb`, `lsb-dsb`) have
+  one more leg, `gpucompat` (`DIFX_GPU_SIDEBAND_CPUCOMPAT=1`, a GPU test path that
+  reproduces the CPU's post-FFT sideband handling). For those scenarios `cpu:gpucompat`
+  is the CPU-vs-GPU check and must PASS. `cpu:gpu0` and `cpu:gpu1` are diffed with
+  channel 0 excluded and reported as **INFO**, which never passes or fails the run: the
+  production GPU path converts sidebands while decoding, so it differs from the CPU by
+  around 0.03% (DSB) to 0.06% (LSB). This exception (`SIDEBAND_INFO_ONLY` in
+  `run-local.sh`) goes once the CPU handles sidebands the same way.
+- The production GPU sideband path is checked instead by the **sideband invariance**
+  section: the long-baseline scenarios (`lb-*`, 3200 km, data simulated with delays by
+  `createLongBaseline.sh`, which needs `vdifsim`) hold the same signal recorded as USB and
+  as LSB, and `lb-lsb`/`lb-lsb-complex` on `gpu0` and `gpu1` must match their USB
+  partner's CPU output to the threshold. `run-local.sh` includes them whenever
+  `TESTLB1.vdif` exists; generate the data before a merge or a sideband change.
 - Which scenario covers what: `multi` is the only multi-station, multi-band one; `dualpol`
   is the only one with cross-polarisation autocorrelations; `usb-complex` and
   `complex-complex` cover complex sampling. A change to one of those code paths needs its
@@ -86,7 +100,7 @@ all-zero GPU dump after the first subint, or a constant phase offset, is a real 
   you call `diffDiFX.py` by hand, search its output yourself.
 - PASS means agreement within the threshold. Typical CPU-vs-GPU differences are around
   1e-5 to 1e-4 percent.
-- Both `gpu0` and `gpu1` must PASS. If only one fails, suspect the pipelined
+- Both `gpu0` and `gpu1` must PASS (INFO on the sideband scenarios, see above). If only one fails, suspect the pipelined
   transfer and host-tail overlap path (`DIFX_GPU_PIPELINE=1`) or a race.
 - **Never check a GPU change by comparing two GPU runs byte for byte** (`cmp`, checksums).
   The XMAC accumulates with `atomicAdd`, so the same binary gives slightly different

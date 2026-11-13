@@ -1,6 +1,7 @@
 #include <mark5access.h>
 #include <mark5access/mark5_stream.h>
 #include <vdifio.h>
+#include <codifio.h>
 #include "gpudecode.cuh"
 #include <iostream>
 #include <bitset>
@@ -35,6 +36,30 @@ static const float FourBit1sigma = 2.95;
 
 // Stack all quantization levels (nbit <= 2) float values in one array and use nbit to offset accordingly
 __constant__ float lutall[6] = {-1.0, 1.0, -HiMag, -1.0, 1.0, HiMag};
+// The same for CODIF, whose 1- and 2-bit encodings differ from VDIF's
+// (mark5access format_codif.c initluts): 1 bit 0 -> +1, 1 -> -1;
+// 2 bit {+1, +HiMag, -HiMag, -1}.
+__constant__ float lutcodif[6] = {1.0, -1.0, 1.0, HiMag, -HiMag, -1.0};
+
+__device__ __forceinline__ float lut_gpu(int index, bool codif) {
+	return codif ? lutcodif[index] : lutall[index];
+}
+
+// CODIF samples of 4 bits or more are two's complement, scaled as in mark5access
+// format_codif.c: 4 bit /FourBit1sigma, 8 bit /71, 16 bit /8.
+__device__ __forceinline__ float codif_multibits_gpu(int32_t word, int pos, int nbit) {
+	int v = (int)((word >> pos) & ((1L << nbit) - 1));
+	if (v >= (1 << (nbit - 1)))
+		v -= (1 << nbit);
+	switch (nbit) {
+	case 4:
+		return v / FourBit1sigma;
+	case 8:
+		return v / 71.0f;
+	default:
+		return v / 8.0f;
+	}
+}
 
 __device__ __forceinline__ float bitsread_gpu(char byte, int pos, int nbit) {
 	// std::cout << "Byte : " << std::bitset<8>(byte) << std::endl;
@@ -47,6 +72,13 @@ __device__ __forceinline__ cuFloatComplex complex_bitsread_gpu(char byte, int po
 	return make_cuFloatComplex(lutall[((byte >> pos) & ((1 << nbit) - 1)) + (nbit << 1) - 2], lutall[((byte >> (pos+nbit)) & ((1 << nbit) - 1)) + (nbit << 1) - 2]);
 }
 
+
+// Offset-binary zero point of VDIF samples of 4 bits or more, as in mark5access
+// format_vdif.c: 4 bit levels are (v - 7.5)/FourBit1sigma, symmetric about
+// zero with no zero level; 8 and 16 bit are (v - 2^(nbit-1)) scaled.
+__device__ __forceinline__ float vdif_multibit_offset(int nbit) {
+	return (nbit == 4) ? 7.5f : (float)(1L << (nbit - 1));
+}
 
 __device__ __forceinline__ float multibitsread_gpu(int32_t word, int pos, int nbit) {
 	// Larger numbers of bits have equidistant quantization spacing
@@ -70,7 +102,7 @@ __device__ __forceinline__ float multibitsread_gpu(int32_t word, int pos, int nb
 		break;
 	}
 
-	return (((word >> pos) & ((1L << nbit) - 1)) - (1L << (nbit - 1))) * quant_factor;
+	return (((word >> pos) & ((1L << nbit) - 1)) - vdif_multibit_offset(nbit)) * quant_factor;
 }
 
 
@@ -93,7 +125,7 @@ __device__ __forceinline__ cuFloatComplex complex_multibitsread_gpu(int32_t word
 		break;
 	}
 
-	return make_cuFloatComplex(((((word >> pos) & ((1L << nbit) - 1)) - (1L << (nbit - 1))) * quant_factor),((((word >> (pos+nbit)) & ((1L << nbit) - 1)) - (1L << (nbit - 1))) * quant_factor));
+	return make_cuFloatComplex(((((word >> pos) & ((1L << nbit) - 1)) - vdif_multibit_offset(nbit)) * quant_factor),((((word >> (pos+nbit)) & ((1L << nbit) - 1)) - vdif_multibit_offset(nbit)) * quant_factor));
 }
 
 
@@ -136,12 +168,8 @@ __device__ int blanker_vdif_gpu(struct mark5_stream *ms)
 	 * directly rather than calling getVDIFFrameInvalid()/
 	 * getVDIFFrameBytes(), which are host-only static inlines.
 	 *
-	 * FIXME: hard-coding vdif_header is only safe because the GPU path is
-	 * restricted to VDIF-family formats (enforced in Configuration::getMode).
-	 * If/when the GPU branch grows CODIF (or other) support, the frame
-	 * validity test must be made format-aware - a per-format validate hook
-	 * like the CPU's mark5_format_*_validate(), selected at setup time,
-	 * with formats that carry no per-frame validity flag skipping the test. */
+	 * This is the VDIF-family test; gpu_blank_frames selects
+	 * blanker_codif_gpu for CODIF. */
 	if(ms->frame)
 	{
 		const vdif_header *vh = (const vdif_header *)ms->frame;
@@ -166,6 +194,34 @@ __device__ int blanker_vdif_gpu(struct mark5_stream *ms)
 	}
 }
 
+// CODIF twin of blanker_vdif_gpu, mirroring mark5_format_codif_validate() and
+// blanker_codif() on the CPU: a frame is bad if its sync word is wrong, its
+// Data Frame Length is zero, its invalid bit is set, or its payload starts or
+// ends with fill pattern. (The CPU's frame-time test is inert in the unpacker
+// context, as for VDIF.)
+__device__ int blanker_codif_gpu(struct mark5_stream *ms)
+{
+	if(!ms->payload)
+	{
+		return 0;
+	}
+	if(ms->frame)
+	{
+		const codif_header *ch = (const codif_header *)ms->frame;
+		if(ch->sync != CODIF_SYNC || ch->framelength8 == 0 || ch->invalid)
+		{
+			return 0;
+		}
+	}
+	const unsigned long long *data = (const unsigned long long *)ms->payload;
+	const int nword = ms->databytes/8;
+	if(data[0] == MARK5_FILL_WORD64 || data[nword-1] == MARK5_FILL_WORD64)
+	{
+		return 0;
+	}
+	return 1;
+}
+
 // The number of ignored channels when nchan is not a power of two (the packed
 // bitstream carries the next power of two of channels; the unused ones are
 // skipped). Depends only on nchan, so the launcher precomputes it once per
@@ -183,15 +239,20 @@ __host__ __device__ __forceinline__ int channel_skip(int nchan) {
 // decode+fringe kernel; the old gpu_unpack looped this over every channel and
 // wrote the result to a global unpacked buffer that the fringe kernel then read
 // straight back. framepayload = packed + frame*framebytes + payloadoffset.
+// codif selects CODIF's sample encoding instead of VDIF's.
 __device__ __forceinline__ float decode_one_gpu(
 		const unsigned char *framepayload, int nbit, int nchan, int decimation,
-		int skipped, int sample_in_frame, int band) {
+		int skipped, int sample_in_frame, int band, bool codif) {
 	const bool bitreadflag = (nbit == 1) || (nbit == 2);
 	int bit_counter = sample_in_frame * nbit * (nchan * decimation + skipped) + band * nbit;
-	if (bitreadflag)
-		return bitsread_gpu(framepayload[bit_counter / 8], bit_counter % 8, nbit);
-	else
-		return multibitsread_gpu(((const u_int32_t *)framepayload)[bit_counter / 32], bit_counter % 32, nbit);
+	if (bitreadflag) {
+		const int pos = bit_counter % 8;
+		return lut_gpu(((framepayload[bit_counter / 8] >> pos) & ((1 << nbit) - 1)) + (nbit << 1) - 2, codif);
+	}
+	const int32_t word = ((const int32_t *)framepayload)[bit_counter / 32];
+	if (codif)
+		return codif_multibits_gpu(word, bit_counter % 32, nbit);
+	return multibitsread_gpu(word, bit_counter % 32, nbit);
 }
 
 // Complex twin of decode_one_gpu (real+imag packed adjacently per sample, so
@@ -199,13 +260,41 @@ __device__ __forceinline__ float decode_one_gpu(
 // mk5_decode_complex_sample_gpu bit layout).
 __device__ __forceinline__ cuFloatComplex decode_one_complex_gpu(
 		const unsigned char *framepayload, int nbit, int nchan, int decimation,
-		int skipped, int sample_in_frame, int band) {
+		int skipped, int sample_in_frame, int band, bool codif) {
 	const bool bitreadflag = (nbit == 1) || (nbit == 2);
 	int bit_counter = sample_in_frame * 2 * nbit * (nchan * decimation + skipped) + band * 2 * nbit;
-	if (bitreadflag)
-		return complex_bitsread_gpu(framepayload[bit_counter / 8], bit_counter % 8, nbit);
-	else
-		return complex_multibitsread_gpu(((const u_int32_t *)framepayload)[bit_counter / 32], bit_counter % 32, nbit);
+	if (bitreadflag) {
+		const unsigned char byte = framepayload[bit_counter / 8];
+		const int pos = bit_counter % 8;
+		const int mask = (1 << nbit) - 1;
+		return make_cuFloatComplex(lut_gpu(((byte >> pos) & mask) + (nbit << 1) - 2, codif),
+				lut_gpu(((byte >> (pos + nbit)) & mask) + (nbit << 1) - 2, codif));
+	}
+	const int32_t word = ((const int32_t *)framepayload)[bit_counter / 32];
+	if (codif)
+		return make_cuFloatComplex(codif_multibits_gpu(word, bit_counter % 32, nbit),
+				codif_multibits_gpu(word, bit_counter % 32 + nbit, nbit));
+	return complex_multibitsread_gpu(word, bit_counter % 32, nbit);
+}
+
+// Apply a band's decode-time transforms (GPUDECODE_BAND_* in gpudecode.cuh) to
+// one decoded sample. absample is the sample's absolute number within the
+// second (datasamples + global_sample), so the (-1)^n of ALTSIGN is anchored to
+// station time - like a physical LO - and is continuous from one subint to the
+// next. windowpos is its position in the FFT window, used instead by the
+// CPU-compatible test path (GPUDECODE_BAND_ALTSIGN_WINDOW).
+__device__ __forceinline__ cuFloatComplex band_transform_gpu(cuFloatComplex c, unsigned char flags,
+		long absample, long windowpos) {
+	if (flags & GPUDECODE_BAND_CONJ)
+		c.y = -c.y;
+	if (flags & GPUDECODE_BAND_ALTSIGN) {
+		const long n = (flags & GPUDECODE_BAND_ALTSIGN_WINDOW) ? windowpos : absample;
+		if (n & 1) {
+			c.x = -c.x;
+			c.y = -c.y;
+		}
+	}
+	return c;
 }
 
 // Per-frame validity, one thread per frame. Replaces the validity side of the
@@ -214,7 +303,8 @@ __device__ __forceinline__ cuFloatComplex decode_one_complex_gpu(
 // is needed up front is the good/bad flag per frame that gpu_set_weights and
 // the fused kernel read. blanker_vdif_gpu also sets ms.blankzoneendvalid on the
 // thread-local copy, but only its int return (good=1/bad=0) is kept.
-__global__ void gpu_blank_frames(struct mark5_stream ms, const void *packed, int nframes, bool *valid_frames) {
+__global__ void gpu_blank_frames(struct mark5_stream ms, const void *packed, int nframes, bool *valid_frames,
+		GpuDecodeFormat format) {
 	int frame = blockIdx.x * blockDim.x + threadIdx.x;
 	if (frame >= nframes) return;
 
@@ -222,7 +312,7 @@ __global__ void gpu_blank_frames(struct mark5_stream ms, const void *packed, int
 	ms.payload      = ms.frame + ms.payloadoffset;
 	ms.framenum     = frame;
 
-	valid_frames[frame] = blanker_vdif_gpu(&ms);
+	valid_frames[frame] = (format == GPUDECODE_CODIF) ? blanker_codif_gpu(&ms) : blanker_vdif_gpu(&ms);
 }
 
 // ===========================================================================
@@ -266,7 +356,9 @@ __global__ void gpu_fused_fringe(
 		float *pcal_output,
 		const int *N_pcal_bins,
 		int datasamples,
-		int pcal_bin_stride_length) {
+		int pcal_bin_stride_length,
+		bool codif,
+		const unsigned char *const bandflags) {
 	const size_t subloopindex = blockIdx.x;
 	if (!validSamples[subloopindex]) return;
 
@@ -289,9 +381,11 @@ __global__ void gpu_fused_fringe(
 			const int sample_in_frame = (int)(global_sample - (long)frame * ms.framesamples);
 			const unsigned char *fp = (const unsigned char *)packed +
 					(size_t)frame * ms.framebytes + ms.payloadoffset;
-			srcVal = decode_one_gpu(fp, ms.nbit, ms.nchan, ms.decimation, skipped, sample_in_frame, (int)bandindex);
+			srcVal = decode_one_gpu(fp, ms.nbit, ms.nchan, ms.decimation, skipped, sample_in_frame, (int)bandindex, codif);
 		}
 	}
+	srcVal = band_transform_gpu(make_cuFloatComplex(srcVal, 0.f), bandflags[bandindex],
+			(long)datasamples + global_sample, (long)channelindex).x;
 
 	if (DOPCAL) {
 		const int n_bins = N_pcal_bins[bandindex];
@@ -372,7 +466,9 @@ __global__ void gpu_fused_fringe_complex(
 		cuFloatComplex *pcal_output,
 		const int *N_pcal_bins,
 		int datasamples,
-		int pcal_bin_stride_length) {
+		int pcal_bin_stride_length,
+		bool codif,
+		const unsigned char *const bandflags) {
 	const size_t subloopindex = blockIdx.x;
 	if (!validSamples[subloopindex]) return;
 
@@ -393,9 +489,10 @@ __global__ void gpu_fused_fringe_complex(
 			const int sample_in_frame = (int)(global_sample - (long)frame * ms.framesamples);
 			const unsigned char *fp = (const unsigned char *)packed +
 					(size_t)frame * ms.framebytes + ms.payloadoffset;
-			srcVal = decode_one_complex_gpu(fp, ms.nbit, ms.nchan, ms.decimation, skipped, sample_in_frame, (int)bandindex);
+			srcVal = decode_one_complex_gpu(fp, ms.nbit, ms.nchan, ms.decimation, skipped, sample_in_frame, (int)bandindex, codif);
 		}
 	}
+	srcVal = band_transform_gpu(srcVal, bandflags[bandindex], (long)datasamples + global_sample, (long)channelindex);
 
 	if (DOPCAL) {
 		const int n_bins = N_pcal_bins[bandindex];
@@ -473,6 +570,8 @@ struct FringeTileArgs {
 	const int *N_pcal_bins;
 	int datasamples;
 	int pcal_bin_stride_length;
+	bool codif;
+	const unsigned char *bandflags;
 };
 
 template<int BT, int CT, bool DOPCAL, bool CPLX>
@@ -526,12 +625,13 @@ __global__ void gpu_fused_fringe_tiled(const FringeTileArgs a) {
 							(size_t)frame * a.ms.framebytes + a.ms.payloadoffset;
 					if (CPLX)
 						c = decode_one_complex_gpu(fp, a.ms.nbit, a.ms.nchan, a.ms.decimation,
-								a.skipped, sample_in_frame, (int)bandindex);
+								a.skipped, sample_in_frame, (int)bandindex, a.codif);
 					else
 						c = make_cuFloatComplex(decode_one_gpu(fp, a.ms.nbit, a.ms.nchan,
-								a.ms.decimation, a.skipped, sample_in_frame, (int)bandindex), 0.f);
+								a.ms.decimation, a.skipped, sample_in_frame, (int)bandindex, a.codif), 0.f);
 				}
 			}
+			c = band_transform_gpu(c, a.bandflags[bandindex], (long)a.datasamples + global_sample, (long)channelindex);
 
 			// Phase cal folds the raw, unrotated sample - and, as in the
 			// untiled kernels, folds a zero for a pre-start sample rather than
@@ -795,8 +895,9 @@ static void dispatch_fused_fringe_tiled(cudaStream_t stream, size_t numBufferedF
 // mark5_stream template plumbing in this translation unit, so the caller in
 // mk5mode_gpu.cu just calls a plain function).
 void launch_blank_frames(dim3 grid, dim3 block, cudaStream_t stream,
-		struct mark5_stream ms, const void *packed, int nframes, bool *valid_frames) {
-	gpu_blank_frames<<<grid, block, 0, stream>>>(ms, packed, nframes, valid_frames);
+		struct mark5_stream ms, const void *packed, int nframes, bool *valid_frames,
+		GpuDecodeFormat format) {
+	gpu_blank_frames<<<grid, block, 0, stream>>>(ms, packed, nframes, valid_frames, format);
 }
 
 // Host launcher for the fused decode+fringe kernel. Dispatches on the
@@ -810,8 +911,12 @@ void launch_fused_fringe(cudaStream_t stream,
 		int fftloop, int startblock, int numblocks, size_t fftchannels,
 		struct mark5_stream ms, const void *packed, const bool *valid_frames,
 		int framestounpack,
-		void *pcal_output, const int *N_pcal_bins, int datasamples, int pcal_bin_stride_length) {
-	const int skipped = channel_skip(ms.nchan);
+		void *pcal_output, const int *N_pcal_bins, int datasamples, int pcal_bin_stride_length,
+		GpuDecodeFormat format, const unsigned char *bandflags) {
+	// VDIF pads the channels in a sample to a power of two; CODIF packs them
+	// densely (mark5access format_codif.c)
+	const bool codif = (format == GPUDECODE_CODIF);
+	const int skipped = codif ? 0 : channel_skip(ms.nchan);
 
 	if (fringeTileEnabled()) {
 		FringeTileArgs a;
@@ -835,6 +940,8 @@ void launch_fused_fringe(cudaStream_t stream,
 		a.N_pcal_bins = dopcal ? N_pcal_bins : nullptr;
 		a.datasamples = datasamples;
 		a.pcal_bin_stride_length = pcal_bin_stride_length;
+		a.codif = codif;
+		a.bandflags = bandflags;
 		if (dopcal) {
 			if (usecomplex) dispatch_fused_fringe_tiled<true, true>(stream, numBufferedFFTs, a);
 			else            dispatch_fused_fringe_tiled<true, false>(stream, numBufferedFFTs, a);
@@ -868,25 +975,25 @@ void launch_fused_fringe(cudaStream_t stream,
 					dest, sampleIndexes, validSamples, bigA, bigBred,
 					fftloop, startblock, numblocks, fftchannels,
 					ms, packed, valid_frames, skipped, framestounpack,
-					(cuFloatComplex *)pcal_output, N_pcal_bins, datasamples, pcal_bin_stride_length);
+					(cuFloatComplex *)pcal_output, N_pcal_bins, datasamples, pcal_bin_stride_length, codif, bandflags);
 		else
 			gpu_fused_fringe_complex<false><<<grid, block, 0, stream>>>(
 					dest, sampleIndexes, validSamples, bigA, bigBred,
 					fftloop, startblock, numblocks, fftchannels,
 					ms, packed, valid_frames, skipped, framestounpack,
-					nullptr, nullptr, datasamples, pcal_bin_stride_length);
+					nullptr, nullptr, datasamples, pcal_bin_stride_length, codif, bandflags);
 	} else {
 		if (dopcal)
 			gpu_fused_fringe<true><<<grid, block, 0, stream>>>(
 					dest, sampleIndexes, validSamples, bigA, bigBred,
 					fftloop, startblock, numblocks, fftchannels,
 					ms, packed, valid_frames, skipped, framestounpack,
-					(float *)pcal_output, N_pcal_bins, datasamples, pcal_bin_stride_length);
+					(float *)pcal_output, N_pcal_bins, datasamples, pcal_bin_stride_length, codif, bandflags);
 		else
 			gpu_fused_fringe<false><<<grid, block, 0, stream>>>(
 					dest, sampleIndexes, validSamples, bigA, bigBred,
 					fftloop, startblock, numblocks, fftchannels,
 					ms, packed, valid_frames, skipped, framestounpack,
-					nullptr, nullptr, datasamples, pcal_bin_stride_length);
+					nullptr, nullptr, datasamples, pcal_bin_stride_length, codif, bandflags);
 	}
 }

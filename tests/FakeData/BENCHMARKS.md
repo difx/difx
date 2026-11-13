@@ -75,6 +75,7 @@ Rules:
 | 2026-11-12 | f606b1ae5 (measured pre-commit) | cpu DIFX_FAKE_PAYLOAD=none | 27.4 | 124.5 | 97.1 | the old all-zero payload: per-repeat 96.3 97.1 96.7 / 97.5 98.3 99.7, mean 97.6 s. |
 | 2026-11-12 | 69f80e768 | gpu pcal 1 MHz | 7.0 | 17.9 | 10.9 | **cost of phase cal on the GPU.** `PCALINT=1`: phase cal at all 10 stations, 1 MHz tone interval, i.e. 32 tones extracted per 32 MHz band (PCAL files checked). Same-session A/B, legs pcal then no-pcal, 3 repeats each; per-repeat T5−T1 10.5 10.9 11.1 vs 9.9 10.2 10.1, means 10.83 vs 10.07 s: **+0.8 s (+8%)**. One more pcal repeat afterwards gave 11.1, so the pcal leg running first (warm-up) does not explain it. Logs: `pcal-ab-gpu-pcal1.log`, `pcal-ab-gpu-pcal0.log`. |
 | 2026-11-12 | 69f80e768 | gpu | 6.8 | 16.9 | 10.1 | no-pcal leg of the A/B above. Matches the f606b1ae5 rows (10.2), so the two dev merges since then (VGOS sideband flip, guiServer/difxfilterbank removal) cost nothing. |
+| 2026-11-12 | 3010e52bc + CODIF/sideband decode (measured pre-commit) | gpu | 7.0 | 17.1 | 10.1 | GPU CODIF decoding, decode-time LSB/DSB transforms (a per-band flag read and branch per decoded sample) and window weights over any number of frames: no change (per-repeat 10.0 10.2 10.2). Log: `bench-codif-lsb-gpu.log`. |
 
 ## A100 kernel profile at `edad94b34` (landed 2026-08-28, job 15956983)
 

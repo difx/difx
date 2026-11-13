@@ -48,6 +48,11 @@ parser.add_option("-u", "--uvwtolerance", dest="uvwtolerance", metavar="UVWTOL",
                        "difference is within UVWTOL (they come from the same model " + \
                        "evaluation, so they should agree far tighter than weights) " + \
                        "[default %default]")
+parser.add_option("-x", "--excludechannels", dest="excludechannels", metavar="CHANLIST",
+                  default="",
+                  help="Leave these output channels (comma-separated indices, e.g. 0) out " + \
+                       "of the comparison entirely. Announced prominently in the output, " + \
+                       "since a difference there is then invisible")
 parser.add_option("-i", "--inputfile", dest="inputfile", default="",
                   help="An input file to use as guide for number of channels for each freq") 
 (options, args) = parser.parse_args()
@@ -71,6 +76,11 @@ matchheaders   = options.matchheaders
 inputfile      = options.inputfile
 weighttolerance = float(options.weighttolerance)
 uvwtolerance   = float(options.uvwtolerance)
+try:
+    excludechannels = sorted(set(int(c) for c in options.excludechannels.split(",") if c.strip() != ""))
+except ValueError:
+    parser.error("--excludechannels takes comma-separated channel indices")
+excludeset = set(excludechannels)
 fieldtolerances = {headerfieldnames.index("weight"): weighttolerance}
 for n in ("u", "v", "w"):
     fieldtolerances[headerfieldnames.index(n)] = uvwtolerance
@@ -80,6 +90,15 @@ if skiprecords < 0:
 
 if inputfile == "":
     parser.error("You must supply an input file!")
+
+def announce_exclusion():
+    if excludechannels:
+        print ("*" * 78)
+        print ("*** WARNING: CHANNEL(S) %s EXCLUDED FROM THIS COMPARISON - differences there are NOT checked" % \
+              ",".join(str(c) for c in excludechannels))
+        print ("*" * 78)
+
+announce_exclusion()
 
 (numfreqs, freqs) = parseDiFX.get_freqtable_info(inputfile)
 if numfreqs == 0:
@@ -187,13 +206,17 @@ while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
         refavg = 0.0
         if recordcount >= skiprecords and disagreeskip < 0:
             nonequalchanslist = []
-            for j in range(nchan[0]):
+            compchans = [j for j in range(nchan[0]) if j not in excludeset]
+            ncomp = len(compchans)
+            if ncomp == 0:
+                parser.error("--excludechannels leaves no channels to compare")
+            for j in compchans:
                 diff = vis[1][j] - vis[0][j]
                 if (epsilon > 0 and abs(diff) > epsilon):
                     nonequalchanslist.append(j)
-                absdiffavg  = absdiffavg + abs(diff)/nchan[0]
-                meandiffavg = meandiffavg + diff/nchan[0]
-                refavg = refavg + abs(vis[0][j])/nchan[0]
+                absdiffavg  = absdiffavg + abs(diff)/ncomp
+                meandiffavg = meandiffavg + diff/ncomp
+                refavg = refavg + abs(vis[0][j])/ncomp
             longtermabsdiff += absdiffavg/refavg
             longtermmeandiff += meandiffavg/refavg
             if 100.0*absdiffavg/refavg > threshold:
@@ -209,14 +232,14 @@ while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
                     xy = complex(0.0, 0.0)
                     xx = 0.0
                     amp1avg = 0.0
-                    for j in range(nchan[0]):
+                    for j in compchans:
                         xy += vis[1][j] * vis[0][j].conjugate()
                         xx += abs(vis[0][j])**2
-                        amp1avg = amp1avg + abs(vis[1][j])/nchan[0]
+                        amp1avg = amp1avg + abs(vis[1][j])/ncomp
                     if xx > 0.0:
                         g = xy/xx
                         resid = 0.0
-                        for j in range(nchan[0]):
+                        for j in compchans:
                             resid += abs(vis[1][j] - g*vis[0][j])**2
                         residfrac = math.sqrt(resid/xx)
                         print ("    DIAGNOSTIC: mean amplitude file1 %.6e, file2 %.6e (file2/file1 = %.6f)" % \
@@ -224,7 +247,7 @@ while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
                         print ("    DIAGNOSTIC: best-fit gain file2/file1: amplitude %.6f, phase %+.2f deg; unexplained residual %.4f%% of file1 rms" % \
                               (abs(g), math.degrees(cmath.phase(g)), 100.0*residfrac))
             if nonequalchanslist:
-                print ("EPSILON EXCEEDED! Numerically distinct data on baseline %d, freq %d at MJD/sec %d/%7.2f found in %d/%d channels according to specified numerical precision." % (baseline[0], freqindex[0], mjd[0], seconds[0], len(nonequalchanslist), nchan[0]))
+                print ("EPSILON EXCEEDED! Numerically distinct data on baseline %d, freq %d at MJD/sec %d/%7.2f found in %d/%d channels according to specified numerical precision." % (baseline[0], freqindex[0], mjd[0], seconds[0], len(nonequalchanslist), ncomp))
                 if verbose:
                     print ("Data that follows: [chX]={leftfile re,im + rightfile residual re,im}:")
                     for c in nonequalchanslist:
@@ -247,3 +270,4 @@ while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
 print ("At the end, %d records disagreed on the header" % headerdisagreecount)
 if recordcount > 0:
     print ("After %d records, the mean percentage absolute difference is %10.8f and the mean percentage mean difference is %10.8f + %10.8f i" % (recordcount-skiprecords, 100.0*longtermabsdiff/  (recordcount-skiprecords), 100.0*longtermmeandiff.real/(recordcount-skiprecords), 100.0*longtermmeandiff.imag/(recordcount-skiprecords)))
+announce_exclusion()

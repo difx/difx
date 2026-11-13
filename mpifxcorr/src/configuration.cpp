@@ -1013,10 +1013,10 @@ Mode* Configuration::getMode(int configindex, int datastreamindex, const bool us
         framesamples /= 2;
       }
       if(usegpu) {
-        //the GPU unpack kernels (gpudecode.cu) assume VDIF frames throughout,
-        //including reading the vdif_header invalid bit for per-frame validity
-        if(stream.format != VDIF && stream.format != VDIFL && stream.format != INTERLACEDVDIF) {
-          cfatal << startl << "GPU processing currently supports only VDIF-family formats (VDIF/VDIFL/INTERLACEDVDIF), not format " << stream.format << " - bailing out" << endl;
+        //the GPU decode kernels (gpudecode.cu) know the VDIF-family and CODIF
+        //sample encodings and frame headers (per-frame validity)
+        if(stream.format != VDIF && stream.format != VDIFL && stream.format != INTERLACEDVDIF && stream.format != CODIF) {
+          cfatal << startl << "GPU processing currently supports only VDIF-family formats (VDIF/VDIFL/INTERLACEDVDIF) and CODIF, not format " << stream.format << " - bailing out" << endl;
           return NULL;
         }
 #ifdef USE_CUDA

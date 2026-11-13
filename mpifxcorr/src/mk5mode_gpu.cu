@@ -48,13 +48,6 @@ Mk5_GPUMode::Mk5_GPUMode(Configuration * conf, int confindex, int dsindex, int r
     }
     else
     {
-      // The fused GPU decoder does not read mark5stream->invert_imaginary, so it would
-      // silently ignore the VGOS sideband flip that Mk5_CPUMode applies. Refuse instead.
-      if(config->useVGOSComplexVDIFHack(confindex, dsindex))
-      {
-        cfatal << startl << "Mk5_GPUMode::Mk5_GPUMode : vgosComplexFlip is set for station " << config->getDStationName(confindex, dsindex) << " but the GPU correlator does not implement it yet; correlate this job without --usegpu" << endl;
-        initok = false;
-      }
       if(conf->isNetwork(dsindex))
         mark5stream->blanker = blanker_none;
       if(mark5stream->samplegranularity > 1)
@@ -103,7 +96,7 @@ Mk5_GPUMode::~Mk5_GPUMode()
 }
 
 // Compute per-frame validity (valid_frames) for this subint - one GPU thread
-// per frame runs the VDIF blanker. This is all that survives of the old
+// per frame runs the format's blanker (VDIF family or CODIF). This is all that survives of the old
 // unpack_all: the actual sample decode is fused into the fringe rotation
 // (launchFusedRotate below), which decodes straight from the packed payload.
 void Mk5_GPUMode::blankFrames(int framestounpack)
@@ -111,7 +104,7 @@ void Mk5_GPUMode::blankFrames(int framestounpack)
   const int tpb = 256;
   launch_blank_frames(
       dim3((framestounpack + tpb - 1) / tpb), dim3(tpb), cuStream,
-      *mark5stream, packeddata_gpu->gpuPtr(), framestounpack, valid_frames->gpuPtr());
+      *mark5stream, packeddata_gpu->gpuPtr(), framestounpack, valid_frames->gpuPtr(), decodeFormat);
 
   // Host-weights fallback (DIFX_GPU_WEIGHTS_HOST=1): set_weights() reads
   // valid_frames on the host, so land it and drain - the historic behaviour the
@@ -148,6 +141,7 @@ void Mk5_GPUMode::launchFusedRotate(int numBufferedFFTs, int fftloop,
       fftloop, startblock, numblocks, fftchannels,
       *mark5stream, packeddata_gpu->gpuPtr(), valid_frames->gpuPtr(),
       framestounpack,
-      pcalout, nbins, datasamples, pcal_bin_stride_length);
+      pcalout, nbins, datasamples, pcal_bin_stride_length,
+      decodeFormat, gBandFlags->gpuPtr());
 }
 // vim: shiftwidth=2:softtabstop=2:expandtab

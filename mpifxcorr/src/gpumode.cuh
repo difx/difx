@@ -7,6 +7,7 @@
 #include <cufftXt.h>
 #include "mode.h"
 #include "gpumode_kernels.cuh"
+#include "gpudecode.cuh"
 #include <mutex>
 #include <chrono>
 
@@ -46,6 +47,9 @@ public:
      * mirror. See docs/gpu-autocorr-design.md. */
     static bool deviceAutocorrs();
     static bool useGpuWeights();
+    /// Test path (DIFX_GPU_SIDEBAND_CPUCOMPAT=1): reproduce the CPU's sideband
+    /// handling exactly, for a parity test against the CPU at machine precision.
+    static bool sidebandCpuCompat();
 
     /**
      * Land the device-computed per-window weights on the host and run the
@@ -210,6 +214,17 @@ protected:
     GpuMemHelper<double> *gInterpolator;
     GpuMemHelper<float> *gFracSampleError;
     GpuMemHelper<double> *gLoFreqs;
+    /// Per-recorded-band decode-time transforms (GPUDECODE_BAND_* flags), set
+    /// once in the constructor: every band is turned into upper sideband while
+    /// it is decoded, so nothing after the decode needs to know the sideband.
+    GpuMemHelper<unsigned char> *gBandFlags;
+    /// True if any band has a decode-time transform (LSB, DSB or VGOS flip).
+    bool anyBandTransform;
+    /// Per-band offset (MHz) added to the channel frequencies of the
+    /// fractional-sample correction: 0, except on the CPU-compatible test path.
+    GpuMemHelper<double> *gFracFreqOffset;
+    /// Sample encoding / frame header of this datastream (VDIF family or CODIF).
+    GpuDecodeFormat decodeFormat;
     /// Per-(FFT window, band) fringe-rotation phase slope (bigAval) and
     /// reduced intercept (bigB_reduced), precomputed once per subint by
     /// gpu_precompute_fringe_rotator so the per-sample rotation kernels do not

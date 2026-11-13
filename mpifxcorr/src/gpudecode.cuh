@@ -6,11 +6,32 @@
 
 struct mark5_stream;
 
-// Per-frame validity: one thread per frame runs the VDIF blanker and writes
+// Per-band transforms applied to each decoded sample, so that every band
+// reaches the fringe rotation as upper sideband (set in the GPUMode constructor):
+//  CONJ    - conjugate (complex lower sideband, or the VGOS sideband flip)
+//  ALTSIGN - multiply by (-1)^n, n the absolute sample number in the second:
+//            shifts the band by half the sample rate (complex double sideband
+//            -> single sideband; real lower sideband -> upper sideband)
+#define GPUDECODE_BAND_CONJ    0x1
+#define GPUDECODE_BAND_ALTSIGN 0x2
+// Test path only (DIFX_GPU_SIDEBAND_CPUCOMPAT, see the GPUMode constructor),
+// which reproduces the CPU's post-FFT sideband handling exactly:
+//  ALTSIGN_WINDOW - with ALTSIGN, n is the sample's position in its FFT window
+//                   (equivalent to the CPU's swap of FFT halves)
+//  CONJ_DC        - conjugate output channel 0 after the FFT (the CPU leaves the
+//                   DC bin of complex lower sideband unconjugated)
+#define GPUDECODE_BAND_ALTSIGN_WINDOW 0x4
+#define GPUDECODE_BAND_CONJ_DC        0x8
+
+// Sample encoding and frame header of the packed data
+enum GpuDecodeFormat { GPUDECODE_VDIF = 0, GPUDECODE_CODIF = 1 };
+
+// Per-frame validity: one thread per frame runs the format's blanker and writes
 // valid_frames[frame]. Produces the flags gpu_set_weights and the fused
 // decode+fringe kernel consume (was a by-product of the old gpu_unpack).
 void launch_blank_frames(dim3 grid, dim3 block, cudaStream_t stream,
-		struct mark5_stream ms, const void *packed, int nframes, bool *valid_frames);
+		struct mark5_stream ms, const void *packed, int nframes, bool *valid_frames,
+		GpuDecodeFormat format);
 
 // Fused decode + fringe rotation (+ optional phase-cal folding). Decodes each
 // sample straight from the packed frame payload into a register, rotates it and
@@ -28,6 +49,7 @@ void launch_fused_fringe(cudaStream_t stream,
 		int fftloop, int startblock, int numblocks, size_t fftchannels,
 		struct mark5_stream ms, const void *packed, const bool *valid_frames,
 		int framestounpack,
-		void *pcal_output, const int *N_pcal_bins, int datasamples, int pcal_bin_stride_length);
+		void *pcal_output, const int *N_pcal_bins, int datasamples, int pcal_bin_stride_length,
+		GpuDecodeFormat format, const unsigned char *bandflags);
 
 #endif
