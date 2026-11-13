@@ -536,7 +536,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				else if(strcmp(argv[i], "--freqlist") == 0)
 				{
 					int j, n;
-					char* token;
+					const char* token;
 
 					++i;
 					for (n = 1, j = 0; argv[i][j]; ++j)
@@ -1206,12 +1206,12 @@ static int needToVanVleck(DifxInput **Dset, int n)
 
 		for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 		{
-			int n;
+			int m;
 			int quantBits;
 
-			n = DifxInputGetDatastreamIdsByAntennaId(dsIds, D, antennaId, maxDatastreams);
+			m = DifxInputGetDatastreamIdsByAntennaId(dsIds, D, antennaId, maxDatastreams);
 
-			if(n < 1)	/* should never happen */
+			if(m < 1)	/* should never happen */
 			{
 				quantBits = D->quantBits;	/* a fallback in case of oddness */
 			}
@@ -1315,14 +1315,13 @@ static int convertFits(struct CommandLineOptions *opts, DifxInput **Dset, int pa
 
 			D = mergeDifxInputs(D1, D2, &opts->mergeOptions);
 
-			if(D->nEOP < D1->nEOP || D->nEOP < D2->nEOP)
+			if(!D || D->nEOP < D1->nEOP || D->nEOP < D2->nEOP)
 			{
 				fprintf(stderr, "  Warning: merging of EOP table from file %s failed.  EOP data will be lost for entire merged job set.\n", opts->baseFile[i]);
 			}
 
 			deleteDifxInput(D1);
 			deleteDifxInput(D2);
-			D1 = D2 = 0;
 
 			if(!D)
 			{
@@ -1383,7 +1382,7 @@ static int convertFits(struct CommandLineOptions *opts, DifxInput **Dset, int pa
 
 			if(D->config[c].polMask & DIFXIO_POL_ERROR)
 			{
-				fprintf(stderr, "Error: polarization ather than R, L, X or Y is present. Use option --antpol.\n");
+				fprintf(stderr, "Error: polarization other than R, L, H, V, X or Y is present. Use option --antpol.\n");
 
 				return 0;
 			}
@@ -1557,14 +1556,14 @@ int main(int argc, char **argv)
 
 	for(;;)
 	{
-		int n;
+		int m;
 
-		n = convertFits(opts, Dset, nFits, &nWithoutPhaseCentre);
-		if(n <= 0)
+		m = convertFits(opts, Dset, nFits, &nWithoutPhaseCentre);
+		if(m <= 0)
 		{
 			break;
 		}
-		nConverted += n;
+		nConverted += m;
 		++nFits;
 	}
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2025 by Walter Brisken & Leonid Petrov             *
+ *   Copyright (C) 2008-2026 by Walter Brisken & Leonid Petrov             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glob.h>
+#include <unistd.h>
 #include "difxio/difxio_macros.h"
 #include "difx2fits.h"
 #include "util.h"
@@ -69,7 +70,7 @@ int glob2(const char *label, const char *pattern, int flags, int errfunc(const c
  */
 int globcase(const char *label, const char *match, char *fileName)
 {
-	int i;
+	unsigned int i;
 	int n = 0;
 	glob_t globbuf;
 
@@ -124,8 +125,9 @@ int glob2_sort_pcal_files(glob_t *pglob)
 {
 	const int DatePrefixSize = 14;
 	const char pattern[] = ".difx/PCAL";
-	int i, ind;
-	char *str;
+	unsigned int i;
+	int ind;
+	const char *str;
 	char **strarr;
 	char date_prefix[DatePrefixSize];
 
@@ -135,6 +137,12 @@ int glob2_sort_pcal_files(glob_t *pglob)
 	}
 
 	strarr = (char **)malloc(pglob->gl_pathc*sizeof(char*));
+	if(!strarr)
+	{
+		fprintf(stderr, "Error: glob2_sort_pcal_files(): cannot allocate %lu bytes.\n", (unsigned long int)(pglob->gl_pathc*sizeof(char*)));
+
+		exit(0);
+	}
 
 	for(i = 0; i < pglob->gl_pathc; ++i)
 	{
@@ -164,7 +172,7 @@ int glob2_sort_pcal_files(glob_t *pglob)
 }
 
 /*
- * Generage a cross reference table for chronological sorting of jobs
+ * Generate a cross reference table for chronological sorting of jobs
  * associated with a given antenna with index antennaId.
  * In order to achieve this, the code searches for phase calibration
  * files created by DiFX for a given job and extracts the date from the
@@ -179,7 +187,7 @@ int sortjobpcal(const DifxInput *D, int antennaId, int *jobxref)
 	int ind, i, j;
 	char date_prefix[DatePrefixSize];
 	char **strarr;
-	char *str;
+	const char *str;
 
 	if(UTIL_DEBUG == 1)
 	{
