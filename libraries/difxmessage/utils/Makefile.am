@@ -19,7 +19,6 @@ dist_bin_SCRIPTS = \
 	cpumon \
 	errormon \
 	errormon2 \
-	mk5mon \
 	statemon \
 	restartdifx \
 	difxdiagnosticmon \
