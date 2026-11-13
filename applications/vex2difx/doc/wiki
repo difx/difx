@@ -67,7 +67,6 @@ The format class, <fmt>, can be one of the following:
   * VDIFD (VDIF with double sideband complex samples)
   * INTERLACEDVDIF (explicitly multi-thread VDIF -- often interchangeable with VDIF)
   * Mark5B
-  * KVN5B
   * VLBA
   * Mark4 or MKIV
   * S2

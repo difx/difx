@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2024 by Walter Brisken, Chris Phillips,            *
+ *   Copyright (C) 2006-2026 by Walter Brisken, Chris Phillips,            *
  *                              Jan Wagner, Adam Deller,                   *
  *                              Richard Dodson, ...                        * 
  *                                                                         *
@@ -429,32 +429,6 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 
 		return new_mark5_format_mark5b(a, b, c, e);
 	}
-	else if(strncasecmp(formatname, "KVN5B-", 6) == 0)
-	{
-		r = sscanf(formatname+6, "%d-%d-%d/%d", &a, &b, &c, &e);
-		if(r < 3)
-		{
-			return 0;
-		}
-		if(r < 4)
-		{
-			e = 1;
-		}
-		return new_mark5_format_kvn5b(a, b, c, e);
-	}
-	else if(strncasecmp(formatname, "D2K-", 6) == 0)
-	{
-		r = sscanf(formatname+6, "%d-%d-%d/%d", &a, &b, &c, &e);
-		if(r < 3)
-		{
-			return 0;
-		}
-		if(r < 4)
-		{
-			e = 1;
-		}
-		return new_mark5_format_d2k(a, b, c, e);
-	}
 	else if(strncasecmp(formatname, "VDIF_", 5) == 0)
 	{
 		if (strchr(formatname, newformatseparator) != NULL)
@@ -607,20 +581,6 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 		return new_mark5_format_codif(a,s,b,c,d,e,64,1);
 	}
 #endif
-	else if(strncasecmp(formatname, "VLBN1_", 6) == 0)
-	{
-		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
-		if(r < 4)
-		{
-			return 0;
-		}
-		if(r < 5)
-		{
-			e = 1;
-		}
-
-		return new_mark5_format_vlba_nomod(b, c, d, a, e);
-	}
 	else
 	{
 		fprintf(m5stderr, "Unknown format : %s\n", formatname);
@@ -633,9 +593,9 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 const char *mark5_stream_list_formats()
 {
 #ifdef HAVE_CODIFIO
-	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VDIFC_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIFL_*-*-*-*[/*], VDIFCL_*-*-*-*[/*], KVN5B-*-*-*[/*], D2K-*-*-*[/*], CODIF_*-*m*-*-*[/*], CODIFC_*-*m*-*-*[/*]";
+	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VDIFC_*-*-*-*[/*], VDIFL_*-*-*-*[/*], VDIFCL_*-*-*-*[/*], CODIF_*-*m*-*-*[/*], CODIFC_*-*m*-*-*[/*]";
 #else
-	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VDIFC_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIFL_*-*-*-*[/*], VDIFCL_*-*-*-*[/*], KVN5B-*-*-*[/*], D2K-*-*-*[/*]";
+	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VDIFC_*-*-*-*[/*], VDIFL_*-*-*-*[/*], VDIFCL_*-*-*-*[/*]";
 #endif
 }
 
@@ -705,42 +665,6 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_MARK5B;
-		mbps = (double)b;
-		databytes = 10000;
-		framebytes = databytes+16;
-		framens = 1000.0*(8.0*databytes/(double)b);
-		framesperperiod = (b*1000000)/(8*databytes);
-		if(r > 3)
-		{
-			decimation = e;
-		}
-	}
-	else if(strncasecmp(formatname, "KVN5B-", 6) == 0)
-	{
-		r = sscanf(formatname+6, "%d-%d-%d/%d", &b, &c, &d, &e);
-		if(r < 3)
-		{
-			return 0;
-		}
-		F = MK5_FORMAT_KVN5B;
-		mbps = (double)b;
-		databytes = 10000;
-		framebytes = databytes+16;
-		framens = 1000.0*(8.0*databytes/(double)b);
-		framesperperiod = (b*1000000)/(8*databytes);
-		if(r > 3)
-		{
-			decimation = e;
-		}
-	}
-	else if(strncasecmp(formatname, "D2K-", 6) == 0)
-	{
-		r = sscanf(formatname+6, "%d-%d-%d/%d", &b, &c, &d, &e);
-		if(r < 3)
-		{
-			return 0;
-		}
-		F = MK5_FORMAT_D2K;
 		mbps = (double)b;
 		databytes = 10000;
 		framebytes = databytes+16;
@@ -952,26 +876,6 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		framesperperiod = b;
 		alignmentseconds = s;
 	}
-	else if(strncasecmp(formatname, "VLBN1_", 6) == 0)
-	{
-		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
-		if(r < 4)
-		{
-			return 0;
-		}
-		F = MK5_FORMAT_VLBN;
-		mbps = (double)b;
-		databytes = 2500*a*c*d;
-		framebytes = 2520*a*c*d;
-		framens = 1000*((20000*a*c*d)/b);
-		if(r > 4)
-		{
-			decimation = e;
-		}
-		fanout = a;
-		ntrack = a*c*d;
-		framesperperiod = (50*b)/(a*c*d);
-	}
 	else
 	{
 		return 0;
@@ -1060,7 +964,6 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 		
 		return mf;
 	}
-	/* Warning: there is no way to know if data is KVN5B vs. Mark5B format.  Don't search for KVN5B as that is less standard. */
 
 	/* VLBA modes */
 	for(ntrack = 8; ntrack <= 64; ntrack*=2)
@@ -1257,7 +1160,7 @@ void print_mark5_format(const struct mark5_format *mf)
 	{
 		fprintf(m5stdout, "  ntrack = %d\n", mf->ntrack);
 	}
-	if(mf->format == MK5_FORMAT_VLBA || mf->format == MK5_FORMAT_MARK4 || mf->format == MK5_FORMAT_VLBN)
+	if(mf->format == MK5_FORMAT_VLBA || mf->format == MK5_FORMAT_MARK4)
 	{
 		fprintf(m5stdout, "  fanout = %d\n", mf->fanout);
 	}
