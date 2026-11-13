@@ -132,15 +132,15 @@ void DataStream::initialise()
       overflowbytes = currentoverflowbytes;
   }
   cinfo << startl << "About to allocate " << bufferbytes << " + " << overflowbytes << " bytes in datastream databuffer" << endl;
-  databuffer = vectorAlloc_u8(bufferbytes + overflowbytes + 4); // a couple extra for mark5 case
+  databuffer = vectorAlloc_u8(bufferbytes + overflowbytes);
   estimatedbytes += bufferbytes + overflowbytes + 8;
   if(databuffer == NULL) {
-    cfatal << startl << "Datastream " << mpiid << " could not allocate databuffer (length " << (bufferbytes + overflowbytes + 4) << ") - aborting!!!" << endl;
+    cfatal << startl << "Datastream " << mpiid << " could not allocate databuffer (length " << (bufferbytes + overflowbytes) << ") - aborting!!!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
-  vectorZero_u8(databuffer, bufferbytes + overflowbytes + 4);
+  vectorZero_u8(databuffer, bufferbytes + overflowbytes);
   if(isfake) // fake datastreams write only frame headers into databuffer (see fillFakePayload)
-    fillFakePayload(databuffer, (long long)bufferbytes + overflowbytes + 4, "databuffer");
+    fillFakePayload(databuffer, (long long)bufferbytes + overflowbytes, "databuffer");
   tempbuf = 0;
   tempbytes = 0;
   int mindatabytes = config->getDataBytes(0, streamnum);
