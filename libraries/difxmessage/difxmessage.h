@@ -49,7 +49,6 @@ extern "C" {
 #define DIFX_MESSAGE_MARK6_GROUP_LENGTH 35
 #define DIFX_MESSAGE_DISC_SERIAL_LENGTH	31
 #define DIFX_MESSAGE_DISC_MODEL_LENGTH	31
-#define DIFX_MESSAGE_MAX_SMART_IDS	32
 #define DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH	64
 #define DIFX_MESSAGE_HOSTNAME_LENGTH	256
 
@@ -90,42 +89,6 @@ enum BinaryDataChannels
 	BINARY_STA,
 	BINARY_LTA
 };
-
-/* Note! Keep this in sync with Mk5StateStrings[][24] in difxmessage.c */
-/* Note: all new additions should go to the end of the list. */
-enum Mk5State
-{
-	MARK5_STATE_OPENING = 0,
-	MARK5_STATE_OPEN, 
-	MARK5_STATE_CLOSE, 
-	MARK5_STATE_GETDIR, 
-	MARK5_STATE_GOTDIR, 
-	MARK5_STATE_PLAY, 
-	MARK5_STATE_IDLE, 
-	MARK5_STATE_ERROR,
-	MARK5_STATE_BUSY,
-	MARK5_STATE_INITIALIZING,
-	MARK5_STATE_RESETTING,
-	MARK5_STATE_REBOOTING,
-	MARK5_STATE_POWEROFF,
-	MARK5_STATE_NODATA,
-	MARK5_STATE_NOMOREDATA,
-	MARK5_STATE_PLAYINVALID,
-	MARK5_STATE_START,
-	MARK5_STATE_COPY,	/* Copy from the module */
-	MARK5_STATE_CONDITION,
-	MARK5_STATE_COND_ERROR,
-	MARK5_STATE_TEST,
-	MARK5_STATE_TESTWRITE,
-	MARK5_STATE_TESTREAD,
-	MARK5_STATE_BOOTING,
-	MARK5_STATE_RECORD,
-	MARK5_STATE_COPYTO,	/* Copy to the module */
-	MARK5_STATE_FUSEMK5,	/* module in use by fuseMk5 */
-	NUM_MARK5_STATES	/* this needs to be the last line of enum */
-};
-
-extern const char Mk5StateStrings[][24];
 
 /* Note: all new additions should go to the end of the list. */
 enum Mark6State
@@ -225,6 +188,7 @@ enum DifxStartFunction
 extern const char DifxStartFunctionString[][24];
 
 /* Note! Keep this in sync with DifxMessageTypeStrings[][25] in difxmessage.c */
+/* The "DO_NOT_USE" entries below maintain enum values after removing Mark5 support */
 enum DifxMessageType
 {
 	DIFX_MESSAGE_UNKNOWN = 0,
@@ -232,7 +196,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_ALERT,
 	DIFX_MESSAGE_MARK6STATUS,
 	DIFX_MESSAGE_MARK6SLOTSTATUS,
-	DIFX_MESSAGE_MARK5STATUS,
+	DIFX_MESSAGE_MARK5STATUS_DO_NOT_USE,
 	DIFX_MESSAGE_STATUS,
 	DIFX_MESSAGE_INFO,
 	DIFX_MESSAGE_DATASTREAM,
@@ -240,11 +204,11 @@ enum DifxMessageType
 	DIFX_MESSAGE_PARAMETER,
 	DIFX_MESSAGE_START,
 	DIFX_MESSAGE_STOP,
-	DIFX_MESSAGE_MARK5VERSION,
-	DIFX_MESSAGE_CONDITION,	/* this is deprecated.  Use DIFX_MESSAGE_DISKSTAT instead */
+	DIFX_MESSAGE_MARK5VERSION_DO_NOT_USE,
+	DIFX_MESSAGE_CONDITION_DO_NOT_USE,
 	DIFX_MESSAGE_TRANSIENT,
-	DIFX_MESSAGE_SMART,
-	DIFX_MESSAGE_DRIVE_STATS,
+	DIFX_MESSAGE_SMART_DO_NOT_USE,
+	DIFX_MESSAGE_DRIVE_STATS_DO_NOT_USE,
 	DIFX_MESSAGE_DIAGNOSTIC,
 	DIFX_MESSAGE_FILETRANSFER,
 	DIFX_MESSAGE_FILEOPERATION,
@@ -274,20 +238,6 @@ enum DriveStatsType
 };
 
 extern const char DriveStatsTypeStrings[][24];
-
-typedef struct
-{
-	enum Mk5State state;
-	char vsnA[DIFX_MESSAGE_MARK5_VSN_STR_LENGTH];
-	char vsnB[DIFX_MESSAGE_MARK5_VSN_STR_LENGTH];
-	unsigned int status;
-	char activeBank;
-	int scanNumber;
-	char scanName[DIFX_MESSAGE_MAX_SCANNAME_LEN];
-	long long position;	/* play pointer */
-	float rate;		/* Mbps */
-	double dataMJD;
-} DifxMessageMk5Status;
 
 typedef struct
 {
@@ -338,28 +288,6 @@ typedef struct
         float rate;             /* Mbps */
         double dataMJD;
 } DifxMessageMark6Activity;
-
-typedef struct
-{
-	char ApiVersion[8];
-	char ApiDateCode[12];
-	char FirmwareVersion[8];
-	char FirmDateCode[12];
-	char MonitorVersion[8];
-	char XbarVersion[8];
-	char AtaVersion[8];
-	char UAtaVersion[8];
-	char DriverVersion[8];
-	char BoardType[12];
-	int SerialNum;
-	char DB_PCBType[12];
-	char DB_PCBSubType[12];
-	char DB_PCBVersion[8];
-	char DB_FPGAConfig[12];
-	char DB_FPGAConfigVersion[8];
-	unsigned int DB_SerialNum;
-	unsigned int DB_NumChannels;
-} DifxMessageMk5Version;
 
 typedef struct
 {
@@ -528,33 +456,6 @@ typedef struct
 	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 } DifxMessageStop;
 
-typedef struct
-{
-	char serialNumber[DIFX_MESSAGE_DISC_SERIAL_STR_LENGTH];
-	char modelNumber[DIFX_MESSAGE_DISC_MODEL_STR_LENGTH];
-	int diskSize;	/* GB */
-	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_STR_LENGTH];
-	int moduleSlot;
-	double startMJD, stopMJD;
-	int bin[DIFX_MESSAGE_N_DRIVE_STATS_BINS];
-	enum DriveStatsType type;
-	long long startByte;
-} DifxMessageDriveStats;
-
-/* This message type contains S.M.A.R.T. information for one disk in
- * a Mark5 module. Typically 8 such messages will be needed to 
- * convey results from the conditioning of one module.
- */
-typedef struct
-{
-	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_STR_LENGTH];
-	int moduleSlot;
-	double mjdData;	/* MJD when data was taken */
-	int nValue;
-	int id[DIFX_MESSAGE_MAX_SMART_IDS];
-	long long value[DIFX_MESSAGE_MAX_SMART_IDS];
-} DifxMessageSmart;
-
 /* This is used to tell Mk5daemon to copy some data at the end of the
  * correlation to a disk file */
 typedef struct
@@ -591,10 +492,8 @@ typedef struct
 	int seqNumber;
 	union
 	{
-		DifxMessageMk5Status	mk5status;
 		DifxMessageMark6Status	mark6status;
 		DifxMessageMark6SlotStatus	mark6slotstatus;
-		DifxMessageMk5Version	mk5version;
 		DifxMessageLoad		load;
 		DifxMessageAlert	alert;
 		DifxMessageStatus	status;
@@ -604,9 +503,7 @@ typedef struct
 		DifxMessageParameter	param;
 		DifxMessageStart	start;
 		DifxMessageStop		stop;
-		DifxMessageDriveStats	driveStats;
 		DifxMessageTransient	transient;
-		DifxMessageSmart	smart;
 		DifxMessageDiagnostic	diagnostic;
 		DifxMessageFileTransfer    fileTransfer;
 		DifxMessageFileOperation    fileOperation;
@@ -686,9 +583,6 @@ int difxMessageSendProcessState(const char *state);
 int difxMessageSendMark6Status(const DifxMessageMark6Status *mark6status);
 int difxMessageSendMark6SlotStatus(const DifxMessageMark6SlotStatus *mark6slotstatus);
 int difxMessageSendMark6Activity(const DifxMessageMark6Activity *mark6activity);
-int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
-int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version);
-int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats);
 int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, double visMJD, int numdatastreams, const float *weight);
 int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const char *stateMessage);
 int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage, double visMJD, int numdatastreams, const float *weight, double mjdStart, double mjdStop);
@@ -708,7 +602,6 @@ int difxMessageSendDifxParameter1(const char *name, int index1, const char *valu
 int difxMessageSendDifxParameter2(const char *name, int index1, int index2, const char *value, int mpiDestination);
 int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int *index, const char *value, int mpiDestination);
 int difxMessageSendDifxTransient(const DifxMessageTransient *transient);
-int difxMessageSendDifxSmart(double mjdData, const char *vsn, int slot, int nValue, const int *ids, const long long *values);
 int difxMessageSendBinary(const char *data, int destination, int size);
 int difxMessageSendVsis(const char *state, const char *to);
 

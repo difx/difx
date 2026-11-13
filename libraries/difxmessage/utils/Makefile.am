@@ -8,23 +8,18 @@ LDADD = \
 bin_PROGRAMS = \
 	testdifxmessagesend \
 	testdifxmessagereceive \
-	testdifxmessagereceivecond \
-	testdifxmessagedrivestats \
 	testseqnumbers \
 	testm5lock \
 	sendtransient \
-	sendsmart \
 	updatedifxclock \
 	difxlog \
 	probemachine
 
 dist_bin_SCRIPTS = \
 	cpumon \
-	getsmart \
 	errormon \
 	errormon2 \
 	mk5mon \
-	smartmon \
 	statemon \
 	restartdifx \
 	difxdiagnosticmon \
@@ -45,14 +40,8 @@ testdifxmessagereceive_SOURCES = \
 testseqnumbers_SOURCES = \
 	testseqnumbers.c
 
-testdifxmessagereceivecond_SOURCES = \
-	testdifxmessagereceivecond.c
-
 sendtransient_SOURCES = \
 	sendtransient.c
-
-sendsmart_SOURCES = \
-	sendsmart.c
 
 updatedifxclock_SOURCES = \
 	updatedifxclock.c
@@ -62,7 +51,4 @@ difxlog_SOURCES = \
 
 testm5lock_SOURCES = \
 	testm5lock.c
-
-testdifxmessagedrivestats_SOURCES = \
-	testdifxmessagedrivestats.c
 

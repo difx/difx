@@ -1,9 +1,13 @@
+Version 2.9.1
+~~~~~~~~~~~~~
+* Fix issues identified by Static Analysis
+* Remove support for Mark5 hardware messaging
+
 Version 2.9
 ~~~~~~~~~~~~~
 * Fix type of some variables from "long" to "int"
 * Improve error handling for errormon2 (add exception messages where needed, avoid AttributeError)
 * Version bump for DiFX 2.9
-* Fix issues identified by Static Analysis
 
 Version 2.8.1
 ~~~~~~~~~~~~~

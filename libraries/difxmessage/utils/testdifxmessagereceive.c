@@ -313,18 +313,6 @@ int main(int argc, char **argv)
 					{
 						switch(type)
 						{
-						case DIFX_MESSAGE_DRIVE_STATS:
-							printf("%s %d : %d : %8d %8d %8d %7d %6d %5d %5d %5d\n",
-								G.body.driveStats.moduleVSN, G.body.driveStats.moduleSlot, G.body.driveStats.type,
-								G.body.driveStats.bin[0],
-								G.body.driveStats.bin[1],
-								G.body.driveStats.bin[2],
-								G.body.driveStats.bin[3],
-								G.body.driveStats.bin[4],
-								G.body.driveStats.bin[5],
-								G.body.driveStats.bin[6],
-								G.body.driveStats.bin[7]);
-							break;
 						default:
 							printf("Message received\n");
 							break;

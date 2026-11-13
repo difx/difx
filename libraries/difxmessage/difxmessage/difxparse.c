@@ -217,37 +217,6 @@ static void XMLCALL startElement(void *userData, const char *name,
 			}
 		}
 	}
-	else if(G->type == DIFX_MESSAGE_SMART)
-	{
-		DifxMessageSmart *S;
-
-		S = &G->body.smart;
-		if(strcmp(name, "smart") == 0)
-		{
-			if(S->nValue < DIFX_MESSAGE_MAX_SMART_IDS)
-			{
-				for(i = 0; atts[i]; i+=2)
-				{
-					if(strcmp(atts[i], "id") == 0)
-					{
-						S->id[S->nValue] = atoi(atts[i+1]);
-					}
-					if(strcmp(atts[i], "value") == 0)
-					{
-						S->value[S->nValue] = atoll(atts[i+1]);
-					}
-				}
-				S->nValue++;
-			}
-		}
-	}
-	else if(G->type == DIFX_MESSAGE_MARK5VERSION)
-	{
-		if(strcmp(name, "DaughterBoard") == 0)
-		{
-			G->_inDB = 1;
-		}
-	}
 
 	G->_xml_level++;
 	strcpy(G->_xml_element[G->_xml_level], name);
@@ -310,17 +279,6 @@ static void XMLCALL endElement(void *userData, const char *name)
 								}
 								G->body.status.maxDS = -1;
 							}
-							else if(G->type == DIFX_MESSAGE_SMART)
-							{
-								int i;
-
-								for(i = 0; i < DIFX_MESSAGE_MAX_SMART_IDS; i++)
-								{
-									G->body.smart.id[i] = 0;
-									G->body.smart.value[i] = 0LL;
-								}
-								G->body.smart.nValue = 0;
-							}
 						}
 					}
 				}
@@ -371,190 +329,6 @@ static void XMLCALL endElement(void *userData, const char *name)
 					else if(strcmp(elem, "input") == 0)
 					{
 						strncpy_warn(G->body.alert.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH);
-					}
-					break;
-				case DIFX_MESSAGE_MARK5STATUS:
-					if(strcmp(elem, "bankAVSN") == 0)
-					{
-						strncpy_warn(G->body.mk5status.vsnA, s, DIFX_MESSAGE_MARK5_VSN_STR_LENGTH);
-					}
-					else if(strcmp(elem, "bankBVSN") == 0)
-					{
-						strncpy_warn(G->body.mk5status.vsnB, s, DIFX_MESSAGE_MARK5_VSN_STR_LENGTH);
-					}
-					else if(strcmp(elem, "statusWord") == 0)
-					{
-						sscanf(s, "%16x", &G->body.mk5status.status);
-					}
-					else if(strcmp(elem, "activeBank") == 0)
-					{
-						G->body.mk5status.activeBank = s[0];
-					}
-					else if(strcmp(elem, "state") == 0)
-					{
-						enum Mk5State m;
-
-						G->body.mk5status.state = 0;
-						for(m = 0; m < NUM_MARK5_STATES; m++)
-						{
-							if(strcmp(Mk5StateStrings[m], s) == 0)
-							{
-								G->body.mk5status.state = m;
-							}
-						}
-					}
-					else if(strcmp(elem, "scanNumber") == 0)
-					{
-						G->body.mk5status.scanNumber = atoi(s);
-					}
-					else if(strcmp(elem, "scanName") == 0)
-					{
-						strncpy_warn(G->body.mk5status.scanName, s, DIFX_MESSAGE_MAX_SCANNAME_LEN);
-					}
-					else if(strcmp(elem, "position") == 0)
-					{
-						G->body.mk5status.position = atoll(s);
-					}
-					else if(strcmp(elem, "playRate") == 0)
-					{
-						G->body.mk5status.rate = atof(s);
-					}
-					else if(strcmp(elem, "dataMJD") == 0)
-					{
-						G->body.mk5status.dataMJD = atof(s);
-					}
-					break;
-				case DIFX_MESSAGE_CONDITION:
-				case DIFX_MESSAGE_DRIVE_STATS:
-					if(strncmp(elem, "bin", 3) == 0)
-					{
-						int i;
-
-						i = atoi(elem+3);
-						if(i >= 0 && i < DIFX_MESSAGE_N_DRIVE_STATS_BINS)
-						{
-							G->body.driveStats.bin[i] = atoi(s);
-						}
-					}
-					else if(strcmp(elem, "serialNumber") == 0)
-					{
-						strncpy_warn(G->body.driveStats.serialNumber, s, DIFX_MESSAGE_DISC_SERIAL_STR_LENGTH);
-					}
-					else if(strcmp(elem, "modelNumber") == 0)
-					{
-						strncpy_warn(G->body.driveStats.modelNumber, s, DIFX_MESSAGE_DISC_MODEL_STR_LENGTH);
-					}
-					else if(strcmp(elem, "size") == 0)
-					{
-						G->body.driveStats.diskSize = atoi(s);
-					}
-					else if(strcmp(elem, "moduleVSN") == 0)
-					{
-						strncpy_warn(G->body.driveStats.moduleVSN, s, DIFX_MESSAGE_MARK5_VSN_STR_LENGTH);
-					}
-					else if(strcmp(elem, "moduleSlot") == 0)
-					{
-						G->body.driveStats.moduleSlot = atoi(s);
-					}
-					else if(strcmp(elem, "startMJD") == 0)
-					{
-						G->body.driveStats.startMJD = atof(s);
-					}
-					else if(strcmp(elem, "stopMJD") == 0)
-					{
-						G->body.driveStats.stopMJD = atof(s);
-					}
-					else if(strcmp(elem, "type") == 0)
-					{
-						G->body.driveStats.type = stringToDriveStatsType(s);
-					}
-					else if(strcmp(elem, "startByte") == 0)
-					{
-						G->body.driveStats.startByte = atoll(s);
-					}
-					break;
-				case DIFX_MESSAGE_MARK5VERSION:
-					if(strcmp(elem, "DaughterBoard") == 0)
-					{
-						G->_inDB = 0;
-					}
-					else if(G->_inDB == 0)
-					{
-						if(strcmp(elem, "ApiVer") == 0)
-						{
-							strncpy_warn(G->body.mk5version.ApiVersion, s, 8);
-						}
-						else if(strcmp(elem, "ApiDate") == 0)
-						{
-							strncpy_warn(G->body.mk5version.ApiDateCode, s, 12);
-						}
-						else if(strcmp(elem, "FirmVer") == 0)
-						{
-							strncpy_warn(G->body.mk5version.FirmwareVersion, s, 8);
-						}
-						else if(strcmp(elem, "FirmDate") == 0)
-						{
-							strncpy_warn(G->body.mk5version.FirmDateCode, s, 12);
-						}
-						else if(strcmp(elem, "MonVer") == 0)
-						{
-							strncpy_warn(G->body.mk5version.MonitorVersion, s, 8);
-						}
-						else if(strcmp(elem, "XbarVer") == 0)
-						{
-							strncpy_warn(G->body.mk5version.XbarVersion, s, 8);
-						}
-						else if(strcmp(elem, "AtaVer") == 0)
-						{
-							strncpy_warn(G->body.mk5version.AtaVersion, s, 8);
-						}
-						else if(strcmp(elem, "UAtaVer") == 0)
-						{
-							strncpy_warn(G->body.mk5version.UAtaVersion, s, 8);
-						}
-						else if(strcmp(elem, "DriverVer") == 0)
-						{
-							strncpy_warn(G->body.mk5version.DriverVersion, s, 8);
-						}
-						else if(strcmp(elem, "BoardType") == 0)
-						{
-							strncpy_warn(G->body.mk5version.BoardType, s, 12);
-						}
-						else if(strcmp(elem, "SerialNum") == 0)
-						{
-							G->body.mk5version.SerialNum = atoi(s);
-						}
-					}
-					else
-					{
-						if(strcmp(elem, "PCBType") == 0)
-						{
-							strncpy_warn(G->body.mk5version.DB_PCBType, s, 12);
-						}
-						else if(strcmp(elem, "PCBSubType") == 0)
-						{
-							strncpy_warn(G->body.mk5version.DB_PCBSubType, s, 12);
-						}
-						else if(strcmp(elem, "PCBVer") == 0)
-						{
-							strncpy_warn(G->body.mk5version.DB_PCBVersion, s, 8);
-						}
-						else if(strcmp(elem, "FPGAConfig") == 0)
-						{
-							strncpy_warn(G->body.mk5version.DB_FPGAConfig, s, 12);
-						}
-						else if(strcmp(elem, "FPGAConfigVer") == 0)
-						{
-							strncpy_warn(G->body.mk5version.DB_FPGAConfigVersion, s, 8);
-						}
-						else if(strcmp(elem, "SerialNum") == 0)
-						{
-							G->body.mk5version.DB_SerialNum = atoi(s);
-						}
-						else if(strcmp(elem, "NumChannels") == 0)
-						{
-							G->body.mk5version.DB_NumChannels = atoi(s);
-						}
 					}
 					break;
 				case DIFX_MESSAGE_STATUS:
@@ -1008,19 +782,6 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						G->body.transient.dm = atof(s);
 					}
-				case DIFX_MESSAGE_SMART:
-					if(strcmp(elem, "mjd") == 0)
-					{
-						G->body.smart.mjdData = atof(s);
-					}
-					else if(strcmp(elem, "vsn") == 0)
-					{
-						strncpy_warn(G->body.smart.moduleVSN, s, DIFX_MESSAGE_MARK5_VSN_LENGTH);
-					}
-					else if(strcmp(elem, "slot") == 0)
-					{
-						G->body.smart.moduleSlot = atoi(s);
-					}
 				case DIFX_MESSAGE_VSIS:
 					if(strcmp(elem, "vsis") == 0)
 					{
@@ -1073,13 +834,6 @@ int difxMessageParse(DifxMessageGeneric *G, const char *message)
 	XML_Parse(parser, message, strlen(message), 0);
 	XML_ParserFree(parser);
 	
-	/* promote condition type ti disk stat type */
-	if(G->type == DIFX_MESSAGE_CONDITION)
-	{
-		fprintf(stderr, "Note: condition message received.  This is being replaced with a disk stat message.  The sender should be upgraded to use the new type when convenient.\n");
-		G->type = DIFX_MESSAGE_DRIVE_STATS;
-	}
-
 	return G->_xml_error_count;
 }
 
@@ -1115,71 +869,6 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		{
 			printf("    input file = %s\n", G->body.alert.inputFilename);
 		}
-		break;
-	case DIFX_MESSAGE_MARK5STATUS:
-		printf("    state = %s %d\n", 
-			Mk5StateStrings[G->body.mk5status.state],
-			G->body.mk5status.state);
-		printf("    VSN A = %s\n", G->body.mk5status.vsnA);
-		printf("    VSN B = %s\n", G->body.mk5status.vsnB);
-		printf("    status word = 0x%x\n", G->body.mk5status.status);
-		printf("    activeBank = %c\n", G->body.mk5status.activeBank);
-		printf("    scanNumber = %d\n", G->body.mk5status.scanNumber);
-		printf("    scanName = %s\n", G->body.mk5status.scanName);
-		printf("    position = %lld\n", G->body.mk5status.position);
-		printf("    rate = %7.3f Mbps\n", G->body.mk5status.rate);
-		printf("    data MJD = %12.6f\n", G->body.mk5status.dataMJD);
-		break;
-	case DIFX_MESSAGE_MARK5VERSION:
-		printf("    Api Version = %s  Date = %s\n", 
-			G->body.mk5version.ApiVersion,
-			G->body.mk5version.ApiDateCode);
-		printf("    Firmware Version = %s  Date = %s\n", 
-			G->body.mk5version.FirmwareVersion,
-			G->body.mk5version.FirmDateCode);
-		printf("    Monitor Version = %s\n", 
-			G->body.mk5version.MonitorVersion);
-		printf("    Xbar Version = %s\n", 
-			G->body.mk5version.XbarVersion);
-		printf("    Ata Version = %s\n", 
-			G->body.mk5version.AtaVersion);
-		printf("    UAta Version = %s\n", 
-			G->body.mk5version.UAtaVersion);
-		printf("    Driver Version = %s\n", 
-			G->body.mk5version.DriverVersion);
-		printf("    Board Type = %s  Serial Num. = %d\n",
-			G->body.mk5version.BoardType,
-			G->body.mk5version.SerialNum);
-		if(G->body.mk5version.DB_PCBVersion[0] != 0)
-		{
-			printf("    Daughter Board:  Serial number = %u  num channels = %u\n",
-				G->body.mk5version.DB_SerialNum,
-				G->body.mk5version.DB_NumChannels);
-			printf("    Daughter Board:  Type = %s  Subtype = %s  Version = %s\n",
-				G->body.mk5version.DB_PCBType,
-				G->body.mk5version.DB_PCBSubType,
-				G->body.mk5version.DB_PCBVersion);
-			printf("    Daughter Board:  Configuration = %s  Version = %s\n",
-				G->body.mk5version.DB_FPGAConfig,
-				G->body.mk5version.DB_FPGAConfigVersion);
-		}
-		break;
-	case DIFX_MESSAGE_CONDITION:	/* Should not be exercised; falls through to disk_stat */
-	case DIFX_MESSAGE_DRIVE_STATS:
-		printf("    serial number = %s\n", G->body.driveStats.serialNumber);
-		printf("    model number = %s\n", G->body.driveStats.modelNumber);
-		printf("    disk size = %d GB\n", G->body.driveStats.diskSize);
-		printf("    disk stat type = %s\n", DriveStatsTypeStrings[G->body.driveStats.type]);
-		printf("    startbyte = %lld\n", G->body.driveStats.startByte);
-		printf("    module VSN = %s\n", G->body.driveStats.moduleVSN);
-		printf("    drive slot = %d\n", G->body.driveStats.moduleSlot);
-		printf("    MJD = %7.5f to %7.5f\n", G->body.driveStats.startMJD, G->body.driveStats.stopMJD);
-		printf("    stats =");
-		for(i = 0; i < DIFX_MESSAGE_N_DRIVE_STATS_BINS; i++)
-		{
-			printf(" %d", G->body.driveStats.bin[i]);
-		}
-		printf("\n");
 		break;
 	case DIFX_MESSAGE_STATUS:
 		printf("    state = %s %d\n", DifxStateStrings[G->body.status.state], G->body.status.state);
@@ -1267,15 +956,6 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    destDir = %s\n", G->body.transient.destDir);
 		printf("    comment = %s\n", G->body.transient.comment);
 		printf("    DM = %8.6f\n", G->body.transient.dm);
-		break;
-	case DIFX_MESSAGE_SMART:
-		printf("    data MJD = %12.6f", G->body.smart.mjdData);
-		printf("    module VSN = %s\n", G->body.smart.moduleVSN);
-		printf("    module slot = %d\n", G->body.smart.moduleSlot);
-		for(i = 0; i < G->body.smart.nValue; i++)
-		{
-			printf("      SMART id = %d  value = %lld\n", G->body.smart.id[i], G->body.smart.value[i]);
-		}
 		break;
 	case DIFX_MESSAGE_VSIS:
 		printf("    vsis = %s\n", G->body.vsis.vsis);

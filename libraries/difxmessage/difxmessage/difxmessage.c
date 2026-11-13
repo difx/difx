@@ -54,38 +54,6 @@ const char Mark6StateStrings[][24] =
 	"CopyTo"
 };
 
-/* Note! Keep this in sync with enum Mk5Status in difxmessage.h */
-const char Mk5StateStrings[][24] = 
-{
-	"Opening",
-	"Open",
-	"Close",
-	"GetDirectory",
-	"GotDirectory",
-	"Play",
-	"Idle",
-	"Error",
-	"Busy",
-	"Initializing",
-	"Resetting",
-	"Rebooting",
-	"PowerOff",
-	"NoData",
-	"NoMoreData",
-	"PlayInvalid",
-	"PlayStart",
-	"Copy",
-	"Condition",
-	"CondError",
-	"Test",
-	"TestWrite",
-	"TestRead",
-	"Booting",
-	"Recording",
-	"CopyTo",
-	"FuseMk5"
-};
-
 /* Note! Keep this in sync with enum DifxStatus in difxmessage.h */
 const char DifxStateStrings[][24] =
 {
@@ -102,6 +70,7 @@ const char DifxStateStrings[][24] =
 };
 
 /* Note! Keep this in sync with enum DifxMessageType in difxmessage.h */
+/* Keeping removed rows as placeholders to keep the enum unchanged */
 const char DifxMessageTypeStrings[][25] =
 {
 	"Unknown",
@@ -109,7 +78,7 @@ const char DifxMessageTypeStrings[][25] =
 	"DifxAlertMessage",
 	"Mark6StatusMessage",
 	"Mark6SlotStatusMessage",
-	"Mark5StatusMessage",
+	"xxx0",				/* was for Mark5 Status message */
 	"DifxStatusMessage",
 	"DifxInfoMessage",
 	"DifxDatastreamMessage",
@@ -117,11 +86,11 @@ const char DifxMessageTypeStrings[][25] =
 	"DifxParameter",
 	"DifxStart",
 	"DifxStop",
-	"Mark5VersionMessage",
-	"Mark5ConditionMessage", /* this is deprecated; use Mark5DriveStatsMessage instead */
+	"xxx1",				/* was for Mark5 Version message */
+	"xxx2",				/* was for Condition message */
 	"DifxTransientMessage",
-	"DifxSmartMessage",
-	"Mark5DriveStatsMessage",
+	"xxx3",				/* was for SMART message */
+	"xxx4",				/* was for Drive Stats message */
 	"DifxDiagnosticMessage",
 	"DifxFileTransfer",
 	"DifxFileOperation",
