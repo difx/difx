@@ -183,6 +183,15 @@ m5pcal_test_CXXFLAGS = -DNO_ALERT_H -Wall -O0 -g
 
 m5pcal_test_LDADD = ${mathlibs}
 
+# The GPU's per-sample decoders (gpudecode.cu) against mark5access, every sample of
+# every VDIF/CODIF mode: run ./gpudecode_test (exit 0 = all agree).
+if WITH_CUDA
+check_PROGRAMS += gpudecode_test
+endif
+gpudecode_test_SOURCES = test/gpudecode_test.cu
+gpudecode_test_LINK = $(CXXLINK)
+gpudecode_test_LDADD = ${mathlibs}
+
 # Compile CUDA sources. -MMD -MF generates a per-object header-dependency file
 # (gpumode.d, gpucore.d, ...) so that changing a shared .cuh (e.g. a GPUMode
 # member layout) forces every dependent .cu object to recompile. Without this,
@@ -192,6 +201,6 @@ m5pcal_test_LDADD = ${mathlibs}
 .cu.o:
 	$(NVCC) $(NVCCFLAGS) -ccbin $(CXX) -g -O2 $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(mathcflags) $(M5ACCESS_CFLAGS) -Xcompiler -fopenmp -MMD -MF $(@:.o=.d) -c -o $@ $<
 
-CU_DEPFILES = gpumode.d gpucore.d mk5mode_gpu.d gpudecode.d
+CU_DEPFILES = gpumode.d gpucore.d mk5mode_gpu.d gpudecode.d test/gpudecode_test.d
 CLEANFILES = $(CU_DEPFILES)
 -include $(CU_DEPFILES)

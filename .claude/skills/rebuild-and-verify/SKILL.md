@@ -88,8 +88,12 @@ cd <builddir>/mpifxcorr/src && make -j8 && make install
 - If you changed `configure.ac` or a `Makefile.am`, rerun `install-difx` for that
   component without `--noconf`.
 - Unit tests: `make check` in `<builddir>/mpifxcorr/src` builds `sysutil_test`, `pcaltest`
-  and `m5pcal_test` but does not run them. Run `./pcaltest auto` there: 108 pass, plus 2
-  failures that the test itself marks "ought to fail" (same as dev).
+  and `m5pcal_test` (and, in a CUDA build, `gpudecode_test`) but does not run them. Run
+  `./pcaltest auto` there: 108 pass, plus 2 failures that the test itself marks "ought to
+  fail" (same as dev).
+- After any change to `gpudecode.cu` or to mark5access's decoders, run `./gpudecode_test`
+  there: the GPU decoder against mark5access, every sample of every VDIF/CODIF mode. Exit 0
+  means all agree (3 modes are KNOWN mark5access bugs, listed in the test).
 
 ## 4. Verify the install
 

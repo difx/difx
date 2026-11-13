@@ -1,0 +1,586 @@
+# Written by tests/ASKAP/make_askap_job.py
+vex = askap0407-lsb-4bit.vex
+
+startSeries = 0
+minLength = 1
+allowAllClockOffsets = True
+tweakIntTime = True
+exhaustiveAutocorrs = True
+visBufferLength = 8
+threadsFile = askap0407-lsb-4bit.threads
+
+antennas = A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, AA, AB, AC, AD, AE, AF, AG, AH, AI, AJ, AK, AL, AM, AN, AO
+
+ANTENNA A0
+{
+  name = AK07
+  clockOffset = -0.413464
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = A0-P0, A0-P1
+}
+DATASTREAM A0-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak07.p0.codif
+}
+DATASTREAM A0-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak07.p1.codif
+}
+ANTENNA A1
+{
+  name = AK11
+  clockOffset = 0.216000
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = A1-P0, A1-P1
+}
+DATASTREAM A1-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak11.p0.codif
+}
+DATASTREAM A1-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak11.p1.codif
+}
+ANTENNA A2
+{
+  name = AK13
+  clockOffset = 1.044407
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = A2-P0, A2-P1
+}
+DATASTREAM A2-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak13.p0.codif
+}
+DATASTREAM A2-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak13.p1.codif
+}
+ANTENNA A3
+{
+  name = AK14
+  clockOffset = -2.791793
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = A3-P0, A3-P1
+}
+DATASTREAM A3-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak14.p0.codif
+}
+DATASTREAM A3-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak14.p1.codif
+}
+ANTENNA A4
+{
+  name = AK15
+  clockOffset = -6.008853
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = A4-P0, A4-P1
+}
+DATASTREAM A4-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak15.p0.codif
+}
+DATASTREAM A4-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak15.p1.codif
+}
+ANTENNA A5
+{
+  name = AK16
+  clockOffset = -3.526652
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = A5-P0, A5-P1
+}
+DATASTREAM A5-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak16.p0.codif
+}
+DATASTREAM A5-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak16.p1.codif
+}
+ANTENNA A6
+{
+  name = AK17
+  clockOffset = -3.655763
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = A6-P0, A6-P1
+}
+DATASTREAM A6-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak17.p0.codif
+}
+DATASTREAM A6-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak17.p1.codif
+}
+ANTENNA A7
+{
+  name = AK18
+  clockOffset = -0.943317
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = A7-P0, A7-P1
+}
+DATASTREAM A7-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak18.p0.codif
+}
+DATASTREAM A7-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak18.p1.codif
+}
+ANTENNA A8
+{
+  name = AK19
+  clockOffset = -0.381761
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = A8-P0, A8-P1
+}
+DATASTREAM A8-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak19.p0.codif
+}
+DATASTREAM A8-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak19.p1.codif
+}
+ANTENNA A9
+{
+  name = AK20
+  clockOffset = 1.558385
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = A9-P0, A9-P1
+}
+DATASTREAM A9-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak20.p0.codif
+}
+DATASTREAM A9-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak20.p1.codif
+}
+ANTENNA AA
+{
+  name = AK21
+  clockOffset = 0.804316
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AA-P0, AA-P1
+}
+DATASTREAM AA-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak21.p0.codif
+}
+DATASTREAM AA-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak21.p1.codif
+}
+ANTENNA AB
+{
+  name = AK22
+  clockOffset = -0.057694
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AB-P0, AB-P1
+}
+DATASTREAM AB-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak22.p0.codif
+}
+DATASTREAM AB-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak22.p1.codif
+}
+ANTENNA AC
+{
+  name = AK23
+  clockOffset = -3.737943
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AC-P0, AC-P1
+}
+DATASTREAM AC-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak23.p0.codif
+}
+DATASTREAM AC-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak23.p1.codif
+}
+ANTENNA AD
+{
+  name = AK24
+  clockOffset = -5.446484
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AD-P0, AD-P1
+}
+DATASTREAM AD-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak24.p0.codif
+}
+DATASTREAM AD-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak24.p1.codif
+}
+ANTENNA AE
+{
+  name = AK25
+  clockOffset = -4.418968
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AE-P0, AE-P1
+}
+DATASTREAM AE-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak25.p0.codif
+}
+DATASTREAM AE-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak25.p1.codif
+}
+ANTENNA AF
+{
+  name = AK26
+  clockOffset = -2.886066
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AF-P0, AF-P1
+}
+DATASTREAM AF-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak26.p0.codif
+}
+DATASTREAM AF-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak26.p1.codif
+}
+ANTENNA AG
+{
+  name = AK27
+  clockOffset = -7.051762
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AG-P0, AG-P1
+}
+DATASTREAM AG-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak27.p0.codif
+}
+DATASTREAM AG-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak27.p1.codif
+}
+ANTENNA AH
+{
+  name = AK28
+  clockOffset = -5.154158
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AH-P0, AH-P1
+}
+DATASTREAM AH-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak28.p0.codif
+}
+DATASTREAM AH-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak28.p1.codif
+}
+ANTENNA AI
+{
+  name = AK29
+  clockOffset = -2.486765
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AI-P0, AI-P1
+}
+DATASTREAM AI-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak29.p0.codif
+}
+DATASTREAM AI-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak29.p1.codif
+}
+ANTENNA AJ
+{
+  name = AK30
+  clockOffset = -2.917404
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AJ-P0, AJ-P1
+}
+DATASTREAM AJ-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak30.p0.codif
+}
+DATASTREAM AJ-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak30.p1.codif
+}
+ANTENNA AK
+{
+  name = AK31
+  clockOffset = -7.807966
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AK-P0, AK-P1
+}
+DATASTREAM AK-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak31.p0.codif
+}
+DATASTREAM AK-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak31.p1.codif
+}
+ANTENNA AL
+{
+  name = AK33
+  clockOffset = -14.953339
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AL-P0, AL-P1
+}
+DATASTREAM AL-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak33.p0.codif
+}
+DATASTREAM AL-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak33.p1.codif
+}
+ANTENNA AM
+{
+  name = AK34
+  clockOffset = -25.456417
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AM-P0, AM-P1
+}
+DATASTREAM AM-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak34.p0.codif
+}
+DATASTREAM AM-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak34.p1.codif
+}
+ANTENNA AN
+{
+  name = AK35
+  clockOffset = -12.570830
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AN-P0, AN-P1
+}
+DATASTREAM AN-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak35.p0.codif
+}
+DATASTREAM AN-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak35.p1.codif
+}
+ANTENNA AO
+{
+  name = AK36
+  clockOffset = -14.921234
+  clockRate = 0
+  clockEpoch = 57000.0
+  phaseCalInt = 0
+  toneSelection = none
+  datastreams = AO-P0, AO-P1
+}
+DATASTREAM AO-P0
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak36.p0.codif
+}
+DATASTREAM AO-P1
+{
+  format = CODIFC/27/8256/4
+  sampling = COMPLEX_DSB
+  file = @DATA@/ak36.p1.codif
+}
+
+SETUP default
+{
+  tInt = 1.382400
+  subintNS = 13824000
+  nFFTChan = 128
+  nChan = 128
+  doPolar = True
+}
+
+RULE default
+{
+  setup = default
+}
+
+SOURCE 0407-658 { }
+
+# EOPs downloaded at 2026-11-13 19:24:44 (+1100)
+EOP 60377 { xPole=-0.002724 yPole=0.286064 tai_utc=37 ut1_utc=-0.002669 }
+EOP 60378 { xPole=-0.003625 yPole=0.288380 tai_utc=37 ut1_utc=-0.003229 }
+EOP 60379 { xPole=-0.004665 yPole=0.290840 tai_utc=37 ut1_utc=-0.004158 }
+EOP 60380 { xPole=-0.006013 yPole=0.293356 tai_utc=37 ut1_utc=-0.005365 }
+EOP 60381 { xPole=-0.007141 yPole=0.295639 tai_utc=37 ut1_utc=-0.006633 }

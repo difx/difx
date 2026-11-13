@@ -3,8 +3,9 @@
 An end-to-end correlation of real ASKAP data in CODIF format, checked at the fringe level:
 it must give fringes on every baseline at the expected delay, with closure phases near
 zero. It complements `tests/Synthetic` (CPU vs GPU visibility agreement on synthetic
-VDIF) by covering CODIF, oversampled filterbank channels, 1-bit complex sampling, many
-stations and two polarisations per antenna in separate files.
+VDIF) by covering CODIF, oversampled filterbank channels, 1- and 4-bit complex sampling,
+many stations and two polarisations per antenna in separate files. Two datasets:
+`askap1934-lsb-1bit` (the default) and `askap0407-lsb-4bit`.
 
 ## The data: `askap1934-lsb-1bit`
 
@@ -46,13 +47,85 @@ Either:
   Messages such as `Will skip 900 samples for frame alignment` are normal. `codifsum`
   (from DiFX's codifio) prints the CODIF frame headers if you need to check a file.
 
+## The data: `askap0407-lsb-4bit`
+
+PKS 0407-658, observed as the flux calibrator for FRB 20240310 (SB59893, beam 31 in
+CELEBI's processing; the voltage dumps used here are beams 62 and 63).
+
+| | |
+|---|---|
+| Antennas | 25 (AK07 ... AK36) |
+| Polarisations | 2, one file each: beam 62 = X (`<ant>.p0.codif`), beam 63 = Y (`<ant>.p1.codif`) |
+| Channels | 8 coarse channels of 1 MHz, oversampled by 32/27: 1.185185 MHz complex bands centred on 888 ... 895 MHz, lower sideband |
+| Sampling | 4-bit complex (CODIF `CODIFC/27/8256/4`: 8256-byte frames, 27 s period) |
+| Time | 2024-03-10 11:06:05 to 11:06:07 UTC (2 s of the 3.1 s dump; 4-bit dumps are short) |
+| Size | about 1.4 GB of CODIF (50 files) |
+| Phase centre | 04:08:20.380, -65:45:09.08 (J2000; CELEBI's `0407.config`) |
+
+The 4-bit values are two's complement, symmetric about zero with a zero state: in the
+files checked, code k and code -k occur equally often. The CODIF header's `representation`
+field is 1; neither mark5access nor the GPU decoder reads it. ASKAP scales the 4-bit data
+low (rms about 0.5 of a step: most samples are 0 or +-1), which affects only the amplitude
+scale.
+
+Converted like the 1934 data, from the `.vcraft` dumps of FRB 20240310's flux calibrator
+(beams 62 and 63, `ak*_c3_f3.vcraft`), with `p0` from beam 62 and `p1` from beam 63. As
+for the 1934 data, converted CODIF files are kept on OzSTAR and can be provided on request.
+
 ## Running
 
 ```bash
 source ../../setup.bash
-DATA=/path/to/codif ./run-askap.sh            # CPU path
-DATA=/path/to/codif USEGPU=1 ./run-askap.sh   # GPU path (once the GPU correlator supports CODIF)
+DATA=/path/to/codif ./run-askap.sh                        # CPU path, askap1934-lsb-1bit
+DATA=/path/to/codif USEGPU=1 ./run-askap.sh               # GPU path
+DATA=/path/to/codif ./run-askap.sh askap0407-lsb-4bit     # another job
+DATA=/path/to/codif USEGPU=1 DIFX_GPU_SIDEBAND_CPUCOMPAT=1 \
+    WORKDIR=local-runs/askap1934-lsb-1bit-gpucompat ./run-askap.sh  # GPU, CPU-compatible sideband test path
 ```
+
+The GPU output passes the same fringe check. Its visibilities differ from the CPU's by a
+few thousandths of a percent, because the GPU handles the lower sideband at decode time
+(see `tests/Synthetic`); the CPU-compatible test path matches the CPU to the rounding
+level (`diffDiFX.py`, under 5e-4 %).
+
+### Comparing the GPU with the CPU (`COMPARE_WITH`)
+
+Set `COMPARE_WITH` to the directory of an earlier run of the same job (normally the CPU
+run) to diff the new run's visibilities against it with `diffDiFX.py` at `DIFF_THRESHOLD`
+(default 0.0005 %):
+
+```bash
+DATA=/path/to/codif ./run-askap.sh                                    # CPU, local-runs/askap1934-lsb-1bit
+DATA=/path/to/codif USEGPU=1 DIFX_GPU_SIDEBAND_CPUCOMPAT=1 WORKDIR=local-runs/gpucompat \
+    COMPARE_WITH=local-runs/askap1934-lsb-1bit ./run-askap.sh         # PASS/FAIL
+DATA=/path/to/codif USEGPU=1 COMPARE_WITH=local-runs/askap1934-lsb-1bit ./run-askap.sh   # INFO
+```
+
+The result (`compare  : PASS|FAIL|INFO`) counts towards the exit status, except for the
+production GPU path against a CPU-style run (CPU or CPU-compatible GPU): ASKAP data are
+lower sideband, which the production GPU handles at decode time and the CPU after the
+FFT, so that comparison is reported as INFO with channel 0 excluded, as `run-local.sh`
+does on its sideband scenarios. Each run records its path (`cpu`, `gpu`, `gpucompat`) in
+`run-mode` in its directory.
+
+### Speed (`bench-askap.sh`)
+
+```bash
+DATA=/path/to/1934/codif ./bench-askap.sh askap1934-lsb-1bit 2026y006d04h04m28s 3
+DATA=/path/to/0407/codif ./bench-askap.sh askap0407-lsb-4bit - 3
+```
+
+For each of the CPU and GPU paths it times mpifxcorr on the whole job and on the job cut
+at the given stop time (`STOP` in `run-askap.sh`), and reports T(long) - T(short): the cost
+of the data in between, without start-up and shut-down, as T5 - T1 in `tests/FakeData`.
+The 4-bit dump is too short to cut (a cut must hold a whole integration to be checked), so
+it is timed whole (`-`). The data are read into the page cache before every run (`WARM=1`).
+Timing runs keep the fringe check but switch off its thresholds.
+
+The jobs have 46-50 DataStream processes, so a small machine measures contention, not the
+correlator: on a 4-core desktop with the data on a spinning disk the GPU timings varied by
+a factor of three between identical runs. Run it on a node with many cores and fast
+storage.
 
 The job runs in `local-runs/askap1934-lsb-1bit/` (git-ignored; set `WORKDIR` to change it; the
 script refuses to reuse an existing directory). It runs vex2difx, difxcalc and mpifxcorr
@@ -73,6 +146,18 @@ Expected result (DiFX dev, CPU, 8 threads, about 3 minutes on a 4-core desktop):
 The weakest baseline (AK06-AK13) has a parallel-hand S/N of 16 per band (median over
 bands and both hands), against the default threshold of 10.
 
+`askap0407-lsb-4bit` (gpudifx `2915203d5`, 2026-11-13; CPU, GPU and GPU-CPUCOMPAT give the
+same figures):
+
+| | median S/N per band | rms closure phase | largest residual delay |
+|---|---|---|---|
+| XX | 21 | 3.2 deg | 0.1 us |
+| YY | 20 | 3.1 deg | 0.1 us |
+| XY, YX | about 3.5 (noise) | | |
+
+The weakest baseline (AK07-AK16) has a parallel-hand S/N of 17.8. Visibilities: GPU vs CPU
+0.0040 %, GPU-CPUCOMPAT vs CPU 0.000050 % (`diffDiFX.py`).
+
 All integrations have weight 1.00 except the last, which is partial (12 s is not a whole
 number of 1.3824 s integrations).
 
@@ -89,6 +174,13 @@ CELEBI. To regenerate, from this directory:
 ```
 
 The job name is made from `--source`, `--usb` and `--bits` unless `--name` is given.
+`askap0407-lsb-4bit` was made with
+
+```bash
+./make_askap_job.py <vcraft dir>/beam62 <vcraft dir>/beam63 --codifdir @DATA@ \
+    --fcm fcm_delayfix.txt --eop <getEOP.py 60379 output> \
+    --source 0407-658 --ra 04:08:20.380 --dec -65:45:09.08 --bits 4 --framebytes 8256
+```
 
 It follows the conventions of CELEBI (`askap2difx.py`, `vcraft2obs.py`,
 `updatefreqs.py`):
@@ -107,10 +199,8 @@ or mpifxcorr stops with "FFT chunk time ... is not a whole number of nanoseconds
 
 ## Planned
 
-- GPU: the GPU correlator does not support CODIF yet; when it does, `USEGPU=1` here is
-  its end-to-end check.
 - Output bands: combining the oversampled 1.185 MHz channels into contiguous 2 x 4 MHz
   bands with DiFX output bands (needs output band support on the GPU path too).
-- More datasets: a 4-bit one (FRB 20240310), and one with the opposite sideband sense.
+- More datasets: one with the opposite sideband sense (high-band, USB), and one longer 4-bit dump.
 - Fringe-fit level checks (delay and rate solutions, S/N after fringe fitting) for
   accuracy work such as FP16 and windowed overlap-add.
