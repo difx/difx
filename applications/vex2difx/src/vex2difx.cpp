@@ -255,7 +255,6 @@ static DifxAntenna *makeDifxAntennas(const Job &J, const VexData *V, int *n)
 		A[i].offset[0] = ant->axisOffset;
 		A[i].offset[1] = 0.0;
 		A[i].offset[2] = 0.0;
-		A[i].vgosComplexFlip = ant->vgosComplexFlip ? 1 : 0;
 	}
 
 	return A;
@@ -351,6 +350,7 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int n
 				dd->dataSource = stream.dataSource;
 				dd->tSys = stream.difxTsys;
 				dd->dataSampling = stream.dataSampling;
+				dd->vgosComplexFlip = ant->vgosComplexFlip ? 1 : 0;
 				switch(dd->dataSource)
 				{
 				case DataSourceNetwork:
