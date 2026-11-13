@@ -209,7 +209,7 @@ static int getRecordChannelFromTracks(const std::string &antName, const std::str
 			}
 		}
 	}
-	else if(stream.format == VexStream::FormatMark5B || stream.format == VexStream::FormatKVN5B) 
+	else if(stream.format == VexStream::FormatMark5B) 
 	{
 		int delta, track;
 
@@ -1946,7 +1946,7 @@ static int getTracksSetup(VexSetup &setup, Vex *v, const char *antDefName, const
 		stream.nBit = nBit;
 	}
 
-	if(stream.format == VexStream::FormatMark5B || stream.format == VexStream::FormatKVN5B)
+	if(stream.format == VexStream::FormatMark5B)
 	{
 		// Because Mark5B formatters can apply a bitmask, the track numbers may not be contiguous.  Here we go through and reorder track numbers in sequence, starting with 2
 		reorderBitAssignments(ch2tracks, 2);

@@ -53,11 +53,11 @@ enum Mark5Format
 	MK5_FORMAT_MARK5B  =  2,
 	MK5_FORMAT_VDIF    =  3,
 	MK5_FORMAT_VDIFL   =  4,		/* Legacy headers on VDIF */
-	MK5_FORMAT_K5      =  5,		/* Not Yet Implemented */
-	MK5_FORMAT_VLBN    =  6,		/* VLBA format without NRZM */
-	MK5_FORMAT_KVN5B   =  7,		/* Same framing, different bit pattern as Mark5B */
+	MK5_FORMAT_K5      =  5,		/* No longer supported; value reserved */
+	MK5_FORMAT_VLBN    =  6,		/* No longer supported; value reserved */
+	MK5_FORMAT_KVN5B   =  7,		/* No longer supported; value reserved */
 	MK5_FORMAT_VDIFB   =  8,		/* Not to be propagated as an external format */
-	MK5_FORMAT_D2K     =  9,		/* Not to be propagated as an external format */
+	MK5_FORMAT_D2K     =  9,		/* No longer supported; value reserved */
 	MK5_FORMAT_CODIF   = 10
 };
 

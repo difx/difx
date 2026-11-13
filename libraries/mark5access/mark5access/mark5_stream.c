@@ -675,42 +675,6 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			decimation = e;
 		}
 	}
-	else if(strncasecmp(formatname, "KVN5B-", 6) == 0)
-	{
-		r = sscanf(formatname+6, "%d-%d-%d/%d", &b, &c, &d, &e);
-		if(r < 3)
-		{
-			return 0;
-		}
-		F = MK5_FORMAT_KVN5B;
-		mbps = (double)b;
-		databytes = 10000;
-		framebytes = databytes+16;
-		framens = 1000.0*(8.0*databytes/(double)b);
-		framesperperiod = (b*1000000)/(8*databytes);
-		if(r > 3)
-		{
-			decimation = e;
-		}
-	}
-	else if(strncasecmp(formatname, "D2K-", 6) == 0)
-	{
-		r = sscanf(formatname+6, "%d-%d-%d/%d", &b, &c, &d, &e);
-		if(r < 3)
-		{
-			return 0;
-		}
-		F = MK5_FORMAT_D2K;
-		mbps = (double)b;
-		databytes = 10000;
-		framebytes = databytes+16;
-		framens = 1000.0*(8.0*databytes/(double)b);
-		framesperperiod = (b*1000000)/(8*databytes);
-		if(r > 3)
-		{
-			decimation = e;
-		}
-	}
 	/* for VDIF, the datasize per packet must be supplied as first numeric element:
 	 * e.g., VDIF_4000-2048-4-2
 	 */
@@ -912,26 +876,6 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		framesperperiod = b;
 		alignmentseconds = s;
 	}
-	else if(strncasecmp(formatname, "VLBN1_", 6) == 0)
-	{
-		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
-		if(r < 4)
-		{
-			return 0;
-		}
-		F = MK5_FORMAT_VLBN;
-		mbps = (double)b;
-		databytes = 2500*a*c*d;
-		framebytes = 2520*a*c*d;
-		framens = 1000*((20000*a*c*d)/b);
-		if(r > 4)
-		{
-			decimation = e;
-		}
-		fanout = a;
-		ntrack = a*c*d;
-		framesperperiod = (50*b)/(a*c*d);
-	}
 	else
 	{
 		return 0;
@@ -1020,7 +964,6 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 		
 		return mf;
 	}
-	/* Warning: there is no way to know if data is KVN5B vs. Mark5B format.  Don't search for KVN5B as that is less standard. */
 
 	/* VLBA modes */
 	for(ntrack = 8; ntrack <= 64; ntrack*=2)
@@ -1217,7 +1160,7 @@ void print_mark5_format(const struct mark5_format *mf)
 	{
 		fprintf(m5stdout, "  ntrack = %d\n", mf->ntrack);
 	}
-	if(mf->format == MK5_FORMAT_VLBA || mf->format == MK5_FORMAT_MARK4 || mf->format == MK5_FORMAT_VLBN)
+	if(mf->format == MK5_FORMAT_VLBA || mf->format == MK5_FORMAT_MARK4)
 	{
 		fprintf(m5stdout, "  fanout = %d\n", mf->fanout);
 	}
