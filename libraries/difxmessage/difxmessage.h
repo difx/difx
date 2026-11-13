@@ -217,7 +217,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_GETDIRECTORY,
 	DIFX_MESSAGE_MK5CONTROL,
 	DIFX_MESSAGE_MARK5COPY,
-	DIFX_MESSAGE_VSIS, /* stop mk5daemon VSIS to allow fuseMk5 use, start when finished with fuseMk5 */
+	DIFX_MESSAGE_VSIS_DO_NOT_USE, /* stop mk5daemon VSIS to allow fuseMk5 use, start when finished with fuseMk5 */
 	DIFX_MESSAGE_MARK6ACTIVITY,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
@@ -326,11 +326,6 @@ typedef struct
 {
 	char message[DIFX_MESSAGE_LENGTH];
 } DifxMessageInfo;
-
-typedef struct
-{
-	char vsis[DIFX_MESSAGE_LENGTH];
-} DifxMessageVsis;
 
 typedef struct
 {
@@ -512,7 +507,6 @@ typedef struct
 		DifxMessageGetDirectory  getDirectory;
 		DifxMessageMk5Control  mk5Control;
 		DifxMessageMark5Copy  mark5Copy;
-		DifxMessageVsis		vsis;
 		DifxMessageMark6Activity   mark6activity;
 	} body;
 	int _xml_level;			/* internal use only here and below */
@@ -603,7 +597,6 @@ int difxMessageSendDifxParameter2(const char *name, int index1, int index2, cons
 int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int *index, const char *value, int mpiDestination);
 int difxMessageSendDifxTransient(const DifxMessageTransient *transient);
 int difxMessageSendBinary(const char *data, int destination, int size);
-int difxMessageSendVsis(const char *state, const char *to);
 
 int difxMessageReceiveOpen();
 int difxMessageReceiveClose(int sock);

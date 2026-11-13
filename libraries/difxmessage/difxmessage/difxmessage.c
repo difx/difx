@@ -99,7 +99,7 @@ const char DifxMessageTypeStrings[][25] =
 	"DifxGetDirectory",
 	"DifxMk5Control",
 	"DifxMark5Copy",
-	"DifxVsis",
+	"xxx5",				/* was for VSIS messages (e.g., to trigger fuseMk5 */
 	"Mark6ActivityMessage",
 };
 

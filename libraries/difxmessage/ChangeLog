@@ -2,6 +2,12 @@ Version 2.9.1
 ~~~~~~~~~~~~~
 * Fix issues identified by Static Analysis
 * Remove support for Mark5 hardware messaging
+  - Mark5Status
+  - Mark5Version
+  - Condition
+  - DriveStats
+  - SMART
+  - VSIS
 
 Version 2.9
 ~~~~~~~~~~~~~
