@@ -1,9 +1,7 @@
 
 Requirements:
 
-1. You must have the Mark5 streamstor libraries installed
-
-2. difxmessage is needed
+1. difxmessage is needed
 
 To install from a fresh svn checkout, run the following:
 

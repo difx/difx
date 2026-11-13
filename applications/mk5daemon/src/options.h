@@ -4,7 +4,6 @@
 class Options
 {
 public:
-	int isMk5;
 	int isMk6;
 	int isHeadNode;
 	int isEmbedded;

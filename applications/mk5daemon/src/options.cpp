@@ -8,7 +8,6 @@ using namespace std;
  **/
 Options::Options(void)
 {
- 	isMk5 = 0;
         isMk6 = 0;
         isHeadNode = 0;
         isEmbedded = 0;

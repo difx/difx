@@ -69,13 +69,6 @@ int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
 		{
 			return 1;
 		}
-		if(D->isMk5)
-		{
-			if(strcasecmp("mark5", G->to[t]) == 0)
-			{
-				return 1;
-			}
-		}
 		else if(D->isMk6)
 		{
 			if(strcasecmp("mark6", G->to[t]) == 0)
@@ -328,55 +321,6 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 	}
 }
 
-static void reown_vfastr(Mk5Daemon *D, const char *path)
-{
-	char command[MAX_COMMAND_SIZE];
-	char message[DIFX_MESSAGE_LENGTH];
-	int v;
-
-	if(strcmp(D->hostName, "boom") != 0)
-	{
-		return;
-	}
-
-	while(path[0] <= ' ')
-	{
-		if(path[0] == 0)
-		{
-			Logger_logData(D->log, "Null path given to reown_vfastr\n");
-
-			return;
-		}
-		++path;
-	}
-
-	if(strncmp(path, "/home/boom/", 11) != 0)
-	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "reown_vfastr: path=%s does not start with /home/boom/\n", path);
-		Logger_logData(D->log, message);
-
-		return;
-	}
-
-	snprintf(command, MAX_COMMAND_SIZE, "/bin/chgrp --recursive vlba_transient %s", path);
-	snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
-	Logger_logData(D->log, message);
-	v = system(command);
-	if(v < 0)
-	{
-		Logger_logData(D->log, "Execution failed.\n");
-	}
-
-	snprintf(command, MAX_COMMAND_SIZE, "/bin/chmod --recursive g+rw %s", path);
-	snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
-	Logger_logData(D->log, message);
-	v = system(command);
-	if(v < 0)
-	{
-		Logger_logData(D->log, "Execution failed.\n");
-	}
-}
-
 static void umountdisk(Mk5Daemon *D)
 {
 	const char *command;
@@ -511,12 +455,6 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	}
 	else if(strcasecmp(cmd, "GetVSN") == 0)
 	{
-#ifdef HAVE_XLRAPI_H
-		if(D->isMk5)
-		{
-			Mk5Daemon_getModules(D);
-		}
-#endif
 #ifdef HAS_MARK6META
 		if(D->isMk6)
 		{
@@ -525,181 +463,6 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 		}
 #endif
 	}
-#ifdef HAVE_XLRAPI_H
-	else if(strcasecmp(cmd, "Clear") == 0)
-	{
-		D->process = PROCESS_NONE;
-		if(D->isMk5)
-		{
-			Mk5Daemon_getModules(D);
-		}
-	}
-	else if(strncasecmp(cmd, "ResetMark5", 10) == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_resetStreamstor(D);
-		}
-	}
-	else if(strcasecmp(cmd, "getdirA") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_startMk5Dir(D, "A");
-		}
-	}
-	else if(strcasecmp(cmd, "getdirB") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_startMk5Dir(D, "B");
-		}
-	}
-	else if(strcasecmp(cmd, "getdir") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_startMk5Dir(D, "AB");
-		}
-	}
-	else if(strcasecmp(cmd, "stopdir") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_stopMk5Dir(D);
-		}
-	}
-	else if(strcasecmp(cmd, "erase") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_startCondition(D, "");
-		}
-	}
-	else if(strcasecmp(cmd, "condition") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_startCondition(D, "-c");
-		}
-	}
-	else if(strcasecmp(cmd, "conditionR") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_startCondition(D, "-c");
-		}
-	}
-	else if(strcasecmp(cmd, "conditionW") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_startCondition(D, "-c");
-		}
-	}
-	else if(strcasecmp(cmd, "stopcondition") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_stopCondition(D);
-		}
-	}
-	else if(strcasecmp(cmd, "discon") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_diskOn(D, "AB");
-		}
-	}
-	else if(strcasecmp(cmd, "disconA") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_diskOn(D, "A");
-		}
-	}
-	else if(strcasecmp(cmd, "disconB") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_diskOn(D, "B");
-		}
-	}
-	else if(strcasecmp(cmd, "discoff") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_diskOff(D, "AB");
-		}
-	}
-	else if(strcasecmp(cmd, "discoffA") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_diskOff(D, "A");
-		}
-	}
-	else if(strcasecmp(cmd, "discoffB") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_diskOff(D, "B");
-		}
-	}
-	else if(strncasecmp(cmd, "copy ", 5) == 0)
-	{
-		/* protect against malicious use */
-		if(D->isMk5 && !strstr(cmd, ";") 
-		            && !strstr(cmd, "|") 
-		            && !strstr(cmd, ">") 
-		            && !strstr(cmd, "<") )
-		{
-			Mk5Daemon_startMk5Copy(D, cmd+5);
-		}
-	}
-	else if(strcasecmp(cmd, "stopcopy") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_stopMk5Copy(D);
-		}
-	}
-	else if(strcasecmp(cmd, "getver") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_sendStreamstorVersions(D);
-		}
-	}
-	else if(strcmp(cmd, "getsmart") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_sendSmartData(D);
-		}
-	}
-	else if(strcasecmp(cmd, "startfuseMk5A") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_startfuseMk5(D, "A");
-		}
-	}
-	else if(strcasecmp(cmd, "startfuseMk5B") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_startfuseMk5(D, "B");
-		}
-	}
-	else if(strcasecmp(cmd, "stopfuseMk5") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_stopfuseMk5(D);
-		}
-	}
-#endif
 	else if(strncmp(cmd, "mount", 5) == 0 && strlen(cmd) > 5)
 	{
 		mountdisk(D, cmd+5);
@@ -711,10 +474,6 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	else if(strcmp(cmd, "listfs") == 0)
 	{
 		listFilesystems(D);
-	}
-	else if(strncmp(cmd, "reown_vfastr", 12) == 0 && strlen(cmd) > 12)
-	{
-		reown_vfastr(D, cmd+12);
 	}
 	else if(strncasecmp(cmd, "Test", 4) == 0)
 	{
@@ -754,24 +513,6 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 		snprintf_warn(message, DIFX_MESSAGE_LENGTH, "Command=%s not recognized!\n", cmd);
 		Logger_logData(D->log, message);
 	}
-}
-
-void handleDriveStats(Mk5Daemon *D, const DifxMessageGeneric *G)
-{
-	char message[DIFX_MESSAGE_LENGTH];
-	const DifxMessageDriveStats *c;
-
-	if(!messageForMe(D, G))
-	{
-		return;
-	}
-
-	c = &G->body.driveStats;
-
-	snprintf_warn(message, DIFX_MESSAGE_LENGTH, 
-		"Drive statistivs report: from=%s identifier=%s disk=%s[%d]=%s\n", 
-		G->from, G->identifier, c->moduleVSN, c->moduleSlot, c->serialNumber);
-	Logger_logData(D->log, message);
 }
 
 int Mk5Daemon_startMonitor(Mk5Daemon *D)

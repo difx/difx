@@ -50,9 +50,6 @@
 #include <mark6meta/Mark6.h>
 #include <mark6meta/Mark6Meta.h>
 #endif
-#ifdef HAVE_XLRAPI_H
-#include "watchdog.h"
-#endif
 
 using namespace std;
 
@@ -149,9 +146,6 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --nosu \n");
 	fprintf(stderr, "  -n             Don't use su when executing su commands\n"); 
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  --isMk5 \n");
-	fprintf(stderr, "  -m             Force mk5daemon on this host to act as Mark5 regardless of hostname\n"); 
-	fprintf(stderr, "\n");
 	fprintf(stderr, "  --isMk6 \n");
 	fprintf(stderr, "  -6             Force mk5daemon on this host to act as Mark6 regardless of hostname\n"); 
 	fprintf(stderr, "\n");
@@ -166,8 +160,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  DIFX_USER_ID : change user account for executing remote commands from default [%s]\n", DefaultDifxUser);
 	fprintf(stderr, "  DIFX_MPIRUNOPTIONS : use to set mpirun flags when starting DiFX\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "IPv6 compliance: VSIS TCP port: likely\n");
-	fprintf(stderr, "                 DiFX multicast: yes, vis difxmessage\n");
+	fprintf(stderr, "IPv6 compliance:  DiFX multicast: yes, vis difxmessage\n");
 }
 
 
@@ -367,12 +360,6 @@ Mk5Daemon *newMk5Daemon(Options options)
 	gethostname(D->hostName, MK5DAEMON_HOSTNAME_LENGTH);
 	D->hostName[MK5DAEMON_HOSTNAME_LENGTH-1] = 0;
 
-	// isMk5
-	D->isMk5 = strcasestr(D->hostName, "mark5") == 0 ? 0 : 1;
-	if(options.isMk5)
-	{
-		D->isMk5 = 1;
-	}
 	// isMk6
 	D->isMk6 = strcasestr(D->hostName, "mark6") == 0 ? 0 : 1;
 	if(options.isMk6)
@@ -394,45 +381,17 @@ Mk5Daemon *newMk5Daemon(Options options)
 	D->isHeadNode = options.isHeadNode;
 	D->isEmbedded = options.isEmbedded;
 
-	printf("isMk5 = %d hostname = %s\n", D->isMk5, D->hostName);
 	printf("isMk6 = %d hostname = %s\n", D->isMk6, D->hostName);
 	printf("spawned process userid = %s\n", D->userID);
 	signalDie = &D->dieNow;
 	Mk5Daemon_startMonitor(D);
-	Mk5Daemon_startVSIS(D);
 	pthread_mutex_init(&D->processLock, 0);
 	difxMessageSendDifxInfo("mk5daemon starting");
 	D->activeBank = -1;
 
-	D->packetSize = defaultPacketSize;
-	D->dataFrameOffset = defaultDataFrameOffset;
-	D->payloadOffset = defaultPayloadOffset;
-	D->psnOffset = defaultPSNOffset;
-	D->psnMode = defaultPSNMode;
-	D->macFilterControl = defaultMACFilterControl;
-	D->fillPattern = MARK5_FILL_PATTERN;
-	D->netProtocol = NET_PROTOCOL_UDP;
-	strcpy(D->dataSource, "ext");
-	D->bitstreamMask = 0xFFFFFFFF;
-	D->decimationRatio = 1;
-
-	D->recordRate = 2048;	/* just a reference value to start with */
-
-#ifdef HAVE_XLRAPI_H
-	for(int b = 0; b < XLR_MAXBINS; ++b)
-	{
-		D->driveStatsConfig[b].range = defaultStatsRange[b];
-	}
-#endif
 	for(int b = 0; b < N_BANK; ++b)
 	{
 		D->driveFail[b] = -1;	/* no failure */
-	}
-
-	const char *dmsMask = getenv("DEFAULT_DMS_MASK");
-	if(dmsMask)
-	{
-		D->diskStateMask = atoi(dmsMask);
 	}
 
 	/* find all local IP addresses */
@@ -455,18 +414,6 @@ int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose)
 	}
 
 	v = system(command);
-
-	// For some reason system returns -1 even if successful
-	// possibly because of the fork()ed, threaded, ... situation?
-#if 0
-	if(v == -1)
-	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"system() failed running: %s\n", command);
-
-		Logger_logData(D->log, message);
-	}
-#endif
 
 	return v;
 }
@@ -499,7 +446,6 @@ void deleteMk5Daemon(Mk5Daemon *D)
 #endif
 		D->dieNow = 1;
 		Mk5Daemon_stopMonitor(D);
-		Mk5Daemon_stopVSIS(D);
 		deleteLogger(D->log);
 		delete D->macList;
 		delete D->errors;
@@ -539,88 +485,6 @@ int running(const char *name)
 	{
 		return 0;
 	}
-}
-
-int checkStreamstor(Mk5Daemon *D, time_t t)
-{
-	int v, busy;
-	char message[DIFX_MESSAGE_LENGTH];
-
-	if(!D->isMk5)
-	{
-		return 0;
-	}
-
-	v = procGetStreamstor(&busy);
-	if(v < 0 && D->noDriver == 0)
-	{
-		D->noDriver = t;
-		Logger_logData(D->log, "windrvr6 driver went missing!\n");
-		difxMessageSendDifxAlert("windrvr6 disappeared!", DIFX_ALERT_LEVEL_ERROR);
-	}
-	else
-	{
-		if(D->noDriver != 0)
-		{
-			D->noDriver = 0;
-			Logger_logData(D->log, "windrvr6 driver came back!\n");
-			difxMessageSendDifxAlert("windrvr6 reappeared!", DIFX_ALERT_LEVEL_WARNING);
-		}
-	}
-
-	if(D->noDriver)
-	{
-		return -1;
-	}
-
-	if(busy > 2)
-	{
-		D->idleCount = 0;
-		pthread_mutex_lock(&D->processLock);
-		if(D->process == PROCESS_NONE)
-		{
-			Logger_logData(D->log, "Some process took control of windrvr6\n");
-			difxMessageSendDifxAlert("Some process took control of windrvr6", DIFX_ALERT_LEVEL_INFO);
-			D->process = PROCESS_UNKNOWN;
-		}
-		pthread_mutex_unlock(&D->processLock);
-	}
-	else
-	{
-		++D->idleCount;
-	}
-
-	if(D->idleCount > maxIdle && D->process != PROCESS_NONE && !D->processDone)
-	{
-		pthread_mutex_lock(&D->processLock);
-		Logger_logData(D->log, "Some process gave back control of windrvr6\n");
-		difxMessageSendDifxAlert("Some process gave back control of windrvr6", DIFX_ALERT_LEVEL_INFO);
-
-#warning FIXME: watch for a timeout here
-
-		D->process = PROCESS_NONE;
-		pthread_mutex_unlock(&D->processLock);
-	}
-
-	if(t - D->lastMpifxcorrUpdate > 20 && D->process == PROCESS_DATASTREAM)
-	{
-		pthread_mutex_lock(&D->processLock);
-		if(!running("mpifxcorr"))
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "Detected premature end of mpifxcorr at %s\n", ctime(&t));
-			Logger_logData(D->log, message);
-
-			D->process = PROCESS_NONE;
-		}
-		else
-		{
-			/* note that it is still alive */
-			D->lastMpifxcorrUpdate = t;
-		}
-		pthread_mutex_unlock(&D->processLock);
-	}
-
-	return 0;
 }
 
 void sigintHandler(int j)
@@ -722,126 +586,6 @@ int Mk5Daemon_popVSIError(Mk5Daemon *D, char *errorMessage, int maxLength)
 	return n;
 }
 
-#ifdef HAVE_XLRAPI_H
-void handleRecordMessage(Mk5Daemon *D, time_t t)
-{
-	char message[DIFX_MESSAGE_LENGTH];
-	char *r = fgets(message, DIFX_MESSAGE_LENGTH-1, D->recordPipe);
-
-	D->recordLastMessage = t;
-
-	if(r)
-	{
-		char errorMessage[DIFX_MESSAGE_LENGTH];
-		char A[15][40];
-		int n = sscanf(message, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", 
-			A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[8], A[9], A[10], A[11], A[12], A[13], A[14]);
-		if(n > 0)
-		{
-			if(strcmp(A[0], "Pointer") == 0 && n > 2)
-			{
-				D->bytesUsed[D->activeBank] = atoll(A[1]);
-				D->recordRate = atof(A[2]);
-			}
-			else if(strcmp(A[0], "Dir") == 0 && n > 6)
-			{
-				char logMessage[DIFX_MESSAGE_LENGTH];
-				snprintf(logMessage, DIFX_MESSAGE_LENGTH, "Directory entry: %s\n", message+4);
-				Logger_logData(D->log, logMessage);
-			}
-			else if(strcmp(A[0], "Filter") == 0 && n > 5)
-			{
-				D->totalPackets = atoi(A[1]);
-				D->ethernetPackets = atoi(A[2]);
-				D->addressRejects = atoi(A[3]);
-				D->lengthRejects = atoi(A[4]);
-				D->fscRejects = atoi(A[5]);
-			}
-			else if(strcmp(A[0], "Stats") == 0 && n >= 10)
-			{
-				int drive = atoi(A[1]);
-				for(int b = 0; b < 8; ++b)
-				{
-					D->driveStats[D->activeBank][drive][b].count += atoi(A[2+b]);
-				}
-				if(n >= 11)
-				{
-					D->driveStatsReplaced[D->activeBank][drive] = atoi(A[10]);
-				}
-				else
-				{
-					D->driveStatsReplaced[D->activeBank][drive] = 0;
-				}
-			}
-			else if(strcmp(A[0], "Error") == 0)
-			{
-				snprintf(errorMessage, DIFX_MESSAGE_LENGTH, "Record %s", message);
-				Mk5Daemon_addVSIError(D, errorMessage);
-			}
-			else if(strcmp(A[0], "SystemError") == 0)
-			{
-				snprintf(errorMessage, DIFX_MESSAGE_LENGTH, "Streamstor System Error %s during record", A[1]);
-				Mk5Daemon_addVSIError(D, errorMessage);
-			}
-			else if(strncmp(A[0], "Warning", 7) == 0)
-			{
-				Logger_logData(D->log, message);
-			}
-			else if(n > 2 && strcmp(A[0], "Watchdog") == 0 && strcmp(A[1], "caught") == 0)
-			{
-				Logger_logData(D->log, message);
-			}
-			else if(strcmp(A[0], "Halted") == 0)
-			{
-				D->recordState = RECORD_HALTED;
-			}
-			else if(strcmp(A[0], "Overflow") == 0)
-			{
-				D->recordState = RECORD_OVERFLOW;
-			}
-			else if(strcmp(A[0], "Drive") == 0 && n == 3)
-			{
-				if(strcmp(A[2], "failed") == 0)
-				{
-					D->driveFail[D->activeBank] = atoi(A[1]);
-					snprintf(errorMessage, DIFX_MESSAGE_LENGTH, "Drive %s failed during record", A[1]);
-					Mk5Daemon_addVSIError(D, errorMessage);
-				}
-			}
-			else if(strcmp(A[0], "Bank") == 0 && n == 13)
-			{
-				/* new module inserted */
-				int bank = A[1][0]-'A';
-				if(bank >= 0 && bank < N_BANK && bank != D->activeBank)
-				{
-					clearModuleInfo(D, bank);
-					clearMk5Stats(D, bank);
-					if(strcmp(A[2], "none") == 0)
-					{
-						D->vsns[bank][0] = 0;
-					}
-					else
-					{
-						strncpy(D->vsns[bank], A[2], 8);
-						D->vsns[bank][8] = 0;
-					}
-				}
-			}
-		}
-	}
-	if(feof(D->recordPipe))
-	{
-		pclose(D->recordPipe);
-		D->recordPipe = 0;
-		D->recordT0 = D->recordLastMessage = 0;
-		D->recordState = RECORD_OFF;
-
-		clearModuleInfo(D, D->activeBank);
-		Mk5Daemon_getModules(D);
-	}
-}
-#endif
-
 void handleDifxMessage(Mk5Daemon *D, int noSu)
 {
 	char message[DIFX_MESSAGE_LENGTH];
@@ -864,9 +608,6 @@ void handleDifxMessage(Mk5Daemon *D, int noSu)
                         case DIFX_MESSAGE_MARK6STATUS:
 				handleMark6Status(D, &G);
 				break;
-			case DIFX_MESSAGE_MARK5STATUS:
-				handleMk5Status(D, &G);
-				break;
 			case DIFX_MESSAGE_COMMAND:
 				handleCommand(D, &G);
 				break;
@@ -875,21 +616,6 @@ void handleDifxMessage(Mk5Daemon *D, int noSu)
 				break;
 			case DIFX_MESSAGE_STOP:
 				Mk5Daemon_stopMpifxcorr_USNO(D, &G);
-				break;
-			case DIFX_MESSAGE_DRIVE_STATS:
-				handleDriveStats(D, &G);
-				break;
-			case DIFX_MESSAGE_FILETRANSFER:
-				Mk5Daemon_fileTransfer(D, &G);
-				break;
-			case DIFX_MESSAGE_FILEOPERATION:
-				Mk5Daemon_fileOperation(D, &G);
-				break;
-			case DIFX_MESSAGE_VEX2DIFXRUN:
-				Mk5Daemon_vex2DifxRun(D, &G);
-				break;
-			case DIFX_MESSAGE_VSIS:
-				controlVSIS(D, &G);
 				break;
 			default:
 				break;
@@ -941,46 +667,6 @@ void handleAcceptMessage(Mk5Daemon *D)
 	}
 }
 
-#ifdef HAVE_XLRAPI_H
-int Mk5Daemon_stopRecord(Mk5Daemon *D)
-{
-	int recordFD;
-	time_t t0, t;
-	fd_set socks;
-	struct timeval timeout;
-
-	t0 = t = time(0);
-
-	for(;;)
-	{
-		if(D->recordPipe == 0)
-		{
-			break;
-		}
-		if(t - t0 >= 3)
-		{
-			Mk5Daemon_addVSIError(D, "Recording hung during stop request");
-			D->recordState = RECORD_HUNG;
-
-			return -1;	/* Error: recording didn't stop in 3 seconds */
-		}
-		recordFD = fileno(D->recordPipe);
-		FD_ZERO(&socks);
-		FD_SET(recordFD, &socks);
-		timeout.tv_sec = 1;
-		timeout.tv_usec = 0;
-		select(recordFD + 1, &socks, 0, 0, &timeout);
-		t = time(0);
-		if(FD_ISSET(recordFD, &socks))
-		{
-			handleRecordMessage(D, t);
-		}
-	}
-
-	return 0;
-}
-#endif
-
 bool Mk5Daemon_addrMatches(const Mk5Daemon *D, const char *addrString)
 {
 	std::list<std::string>::const_iterator it;
@@ -1024,10 +710,6 @@ int parseCmd (int argc, char **argv, Options &options)
 		else if(strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--nosu") == 0)
 		{
 			options.noSu = 1;
-                }
-		else if(strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--isMk5") == 0)
-		{
-			options.isMk5 = 1;
                 }
 		else if(strcmp(argv[i], "-6") == 0 || strcmp(argv[i], "--isMk6") == 0)
 		{
@@ -1105,21 +787,6 @@ int main(int argc, char **argv)
 #ifdef HAS_MARK6META
     std:: ostringstream mk6out;
     std::streambuf* backup = 0;
-#endif
-
-#ifdef HAVE_XLRAPI_H
-    time_t firstTime;
-    int ok = 0;	/* FIXME: combine with D->ready? */
-    int justStarted = 1;
-    int recordFD;
-    int isMk5 = 1;
-
-    if(XLRDeviceFind() < 1)
-    {
-            isMk5 = 0;
-    }
-#else
-    // int isMk5 = 0;
 #endif
 
     try
@@ -1223,24 +890,6 @@ int main(int argc, char **argv)
 	halfSwapMonInterval = D->swapMonInterval/2 + 3;
 	halfLoadMonInterval = D->loadMonInterval/2;
 
-#ifdef HAVE_XLRAPI_H
-	firstTime = lastTime;
-
-	v = initWatchdog();
-	if(v < 0)
-	{
-		Logger_logData(D->log, "Error starting Streamstor Watchdog");
-	}
-	else
-	{
-		setWatchdogTimeout(60);
-		if(options.isEmbedded)
-		{
-			setWatchdogStream(stdout);
-		}
-	}
-#endif
-
         if(options.isMk6)
         {
 
@@ -1271,10 +920,6 @@ int main(int argc, char **argv)
 		if(t != lastTime)	/* we crossed a 1 second tick */
 		{
 			lastTime = t;
-
-#ifdef HAVE_XLRAPI_H
-			ok = (checkStreamstor(D, t) == 0);
-#endif
 
 			// check every 10 seconds
 			if( (t % D->loadMonInterval) == 0)
@@ -1328,43 +973,6 @@ int main(int argc, char **argv)
                                     //D->mark6.pollDevices();
 			}
 #endif
-
-#ifdef HAVE_XLRAPI_H
-			// check every 5 seconds
-			if( (t % D->loadMonInterval) == halfLoadMonInterval)
-			{
-				if(D->skipGetModule)
-				{
-					D->skipGetModule = 0;
-				}
-				else
-				{
-					Mk5Daemon_getModules(D);
-				}
-			}
-
-			// determine streamstor version for mk5s once at startup
-			if(t - firstTime > 15 && D->isMk5 && isMk5)
-			{
-				if(justStarted)
-				{
-					Mk5Daemon_getStreamstorVersions(D);
-					logStreamstorVersions(D);
-					Mk5Daemon_getModules(D);
-					logMk5Smart(D, BANK_A);
-					logMk5Smart(D, BANK_B);
-					D->systemReady = 1;	/* initial check-out done */
-				}
-				justStarted = 0;
-			}
-
-			/* if record=off was requested but never completed after 5 seconds, raise an error */
-			if(D->recordPipe && D->stopRecordRequestTime > 0 && time(0) - D->stopRecordRequestTime > 5)
-			{
-				Mk5Daemon_addVSIError(D, "Recording hung during stop request");
-				D->recordState = RECORD_HUNG;
-			}
-#endif
 		}
 
 		timeout.tv_sec = 1;
@@ -1392,22 +1000,6 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-#ifdef HAVE_XLRAPI_H
-		if(D->recordPipe)
-		{
-			recordFD = fileno(D->recordPipe);
-			FD_SET(recordFD, &socks);
-			if(recordFD > highSock)
-			{
-				highSock = recordFD;
-			}
-		}
-		else
-		{
-			D->stopRecordRequestTime = 0;
-			recordFD = -2;
-		}
-#endif
 		if(D->difxSock)
 		{
 			FD_SET(D->difxSock, &socks);
@@ -1431,55 +1023,6 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-#ifdef HAVE_XLRAPI_H
-		if(recordFD >= 0 && FD_ISSET(recordFD, &socks))
-		{
-			handleRecordMessage(D, t);
-		}
-
-		if(D->recordState == RECORD_ON && D->recordRate < 0.01 && t - D->recordT0 > 10)
-		{
-			D->recordState = RECORD_WAITING;
-		}
-		else if(D->recordState == RECORD_ON && t - D->recordLastMessage > 5)
-		{
-			D->recordState = RECORD_HUNG;
-			Mk5Daemon_addVSIError(D, "Recording program has hung");
-		}
-		else if(D->recordState == RECORD_WAITING && D->recordRate > 1.0)
-		{
-			D->recordState = RECORD_ON;
-		}
-		else if(D->recordState == RECORD_HUNG && t - D->recordLastMessage < 5)
-		{
-			D->recordState = RECORD_ON;
-			Mk5Daemon_delVSIError(D, "Recording program has hung");
-		}
-#endif
-
-		if(D->acceptSock)
-		{
-			if(FD_ISSET(D->acceptSock, &socks))
-			{
-				handleAcceptMessage(D);
-			}
-
-			for(int c = 0; c < MaxConnections; ++c)
-			{
-				if(FD_ISSET(D->clientSocks[c], &socks))
-				{
-					int v = handleVSIS(D, D->clientSocks[c]);
-					
-					if(v < 0) /* connection closed? */
-					{
-						close(D->clientSocks[c]);
-						D->clientSocks[c] = 0;
-						snprintf(message, DIFX_MESSAGE_LENGTH, "VSI-S connection on slot %d closed\n", c);
-						Logger_logData(D->log, message);
-					}
-				}
-			}
-		}
 		if(D->difxSock && FD_ISSET(D->difxSock, &socks))
 		{
 			handleDifxMessage(D, options.noSu);
@@ -1496,19 +1039,7 @@ int main(int argc, char **argv)
 		}	
 	}
 
-#ifdef HAVE_XLRAPI_H
-	if(D->recordPipe != 0)
-	{
-		pclose(D->recordPipe);
-		D->recordPipe = 0;
-		D->recordState = RECORD_OFF;
-	}
-
-	stopWatchdog();
-#endif
-
 	Mk5Daemon_stopMonitor(D);
-	Mk5Daemon_stopVSIS(D);
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Stopping %s ver. %s\n", program, version);
 	Logger_logData(D->log, message);
