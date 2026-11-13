@@ -28,8 +28,7 @@ char *mjd2str		/* convert MJD to date string */
  * terminator) will be returned.
  */
 {
-    static char *monlist[] = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN", 
-			       "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" };
+    static const char *monlist[] = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" };
     int year;
     int month;
     int day;

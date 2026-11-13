@@ -17,4 +17,4 @@ everything properly.
 If you want to use keyin format gain curves for antennas, you must
 set environment variable GAIN_CURVE_PATH to point to a directory containing
 gain curves in keyin format.  WARNING: All files in that directory will be 
-interpretted as gain curve files!
+interpreted as gain curve files!

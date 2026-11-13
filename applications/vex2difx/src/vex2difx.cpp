@@ -303,7 +303,6 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int n
 	int nDatastream;
 	int di;
 	const VexMode *M;
-        const VexScan *vexScan;
 
 	// Determine worst case (but typical) number of datastreams for this job
 	M = V->getModeByDefName(J.modeName);

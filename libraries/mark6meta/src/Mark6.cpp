@@ -369,7 +369,9 @@ void Mark6::sendSlotStatusMessage()
 
 /**
  * Sends out a Mark6StatusMessage
+ * deprecated use sendSlotStatusMessage instead
  */
+/*
 void Mark6::sendStatusMessage()
 {
     DifxMessageMark6Status dm;
@@ -434,7 +436,7 @@ void Mark6::sendStatusMessage()
        
     difxMessageSendMark6Status(&dm);
 }
-
+*/
 
 
 /**

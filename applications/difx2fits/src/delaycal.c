@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <unistd.h>
 #include "delaycal.h"
 
 void resetDelayCalCache(DelayCalCache *dcc)
@@ -40,6 +41,12 @@ DelayCal *loadDelayCal(const char *filename, const DifxInput *D)
 	}
 
 	dc = (DelayCal *)calloc(1, sizeof(DelayCal));
+	if(!dc)
+	{
+		fprintf(stderr, "Error: loadDelayCal(): cannot allocate %lu bytes.\n", (unsigned long int)sizeof(DelayCal));
+
+		exit(0);
+	}
 	dc->nPol = D->nPol;
 	for(p = 0; p < D->nPol; ++p)
 	{
@@ -49,7 +56,7 @@ DelayCal *loadDelayCal(const char *filename, const DifxInput *D)
 	dc->nAntenna = D->nAntenna;
 	while(1)
 	{
-		char *rv;
+		const char *rv;
 
 		rv = fgets(line, 1023, in);
 		if(!rv)
@@ -77,16 +84,34 @@ DelayCal *loadDelayCal(const char *filename, const DifxInput *D)
 	}
 
 	dc->data = (DelaySolution *)calloc(dc->nSlot, sizeof(DelaySolution));
+	if(!dc->data)
+	{
+		fprintf(stderr, "Error: loadDelayCal(): cannot allocate %lu bytes.\n", (unsigned long int)(dc->nSlot*sizeof(DelaySolution)));
+
+		exit(0);
+	}
 	for(slot = 0; slot < dc->nSlot; ++slot)
 	{
 		int a;
 
 		dc->data[slot].phase = (double **)calloc(dc->nAntenna, sizeof(double *));
 		dc->data[slot].delay = (double **)calloc(dc->nAntenna, sizeof(double *));
+		if(!dc->data[slot].phase || !dc->data[slot].delay)
+		{
+			fprintf(stderr, "Error: loadDelayCal(): cannot allocate %lu bytes.\n", (unsigned long int)(2*dc->nAntenna*sizeof(double *)));
+
+			exit(0);
+		}
 		for(a = 0; a < dc->nAntenna; ++a)
 		{
 			dc->data[slot].phase[a] = (double *)calloc(dc->nBBC, sizeof(double));
 			dc->data[slot].delay[a] = (double *)calloc(dc->nBBC, sizeof(double));
+			if(!dc->data[slot].phase[a] || !dc->data[slot].delay[a])
+			{
+				fprintf(stderr, "Error: loadDelayCal(): cannot allocate %lu bytes.\n", (unsigned long int)(2*dc->nBBC*sizeof(double)));
+
+				exit(0);
+			}
 		}
 	}
 	
@@ -94,8 +119,8 @@ DelayCal *loadDelayCal(const char *filename, const DifxInput *D)
 	slot = -1;
 	while(1)
 	{
-		char *rv;
-		int p, b;
+		const char *rv;
+		int b;
 		char *l;
 
 		rv = fgets(line, 1023, in);

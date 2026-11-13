@@ -8809,7 +8809,20 @@ struct mark5_format_generic *new_mark5_format_generalized_vdif(int framesperperi
 	decoderindex += nchan;
 
 	v = (struct mark5_format_vdif *)calloc(1, sizeof(struct mark5_format_vdif));
+	if(!v)
+	{
+		fprintf(m5stderr, "Error: cannot allocate mark5_format_vdif\n");
+
+		return 0;
+	}
 	f = (struct mark5_format_generic *)calloc(1, sizeof(struct mark5_format_generic));
+	if(!f)
+	{
+		fprintf(m5stderr, "Error: cannot allocate mark5_format_generic\n");
+		free(v);
+
+		return 0;
+	}
 
 	v->frameheadersize = frameheadersize;
 	v->databytesperpacket = databytesperpacket;

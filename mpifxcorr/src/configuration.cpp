@@ -2023,9 +2023,9 @@ void Configuration::processTelescopeTable(istream * input)
       if(line == "TRUE" || line == "true" || line == "T" || line == "t" || line == "1")
       {
         telescopetable[i].vgoscomplexflip = true;
+        if(mpiid == 0)
+          cinfo << startl << "VGOS complex flip enabled for telescope " << telescopetable[i].name << ": the sideband of its complex VDIF data is inverted during unpacking" << endl;
       }
-      //std::cout << "VGOS COMPLEX FLIP for telescope " << i << " (" << telescopetable[i].name << ") is set to " << (telescopetable[i].vgoscomplexflip ? "TRUE" : "FALSE") << std::endl;
-      //std::exit(0);
     }
     // END PARSE VGOS COMPLEX FLIP FLAG
 

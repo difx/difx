@@ -40,7 +40,7 @@ char *timeMjd2str
 char *time2str
     (
     double inTime,	/* date/time (MJD w/ fractional day) to be converted */
-    char *pFormat,	/* input string specifing leading fill character 
+    const char *pFormat,/* input string specifying leading fill character 
 			   and number of digits to right of decimal point 
 			   in seconds field in output string, 
 			   NULL or empty string- same as timeMjd2str() */
@@ -115,7 +115,7 @@ char *srvMjd2str
 char *rad2str		/* convert radians to string */
     (
     double angle,	/* input angle in radians */
-    char *pFormat,	/* input string specifing format of output string */
+    char *pFormat,	/* input string specifying format of output string */
     char *pOutStr	/* pointer to returned string */
     )
 /*
@@ -133,7 +133,7 @@ char *rad2str		/* convert radians to string */
 char *rad2strg
     (
     double angle,	/* input angle in radians */
-    char *pFormat,	/* input string specifing format of output string */
+    const char *pFormat,/* input string specifying format of output string */
     char *pOutStr,	/* returned string ('\0' terminated) */
     int roundFlag	/* TRUE- output string is rounded, FALSE-truncated */
     )
