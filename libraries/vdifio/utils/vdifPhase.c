@@ -3,6 +3,7 @@
 #include <string.h>
 #include <signal.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <complex.h>
 #include <math.h>
 #include <fftw3.h>
@@ -10,8 +11,8 @@
 
 const char program[] = "vdifPhase";
 const char author[] = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.2.1";
-const char verdate[] = "20240430";
+const char version[] = "0.2.2";
+const char verdate[] = "20261113";
 
 const int defaultBits = 2;
 
@@ -103,6 +104,12 @@ void processSpectrum(const double complex *spectrum, int nChan, int bw, double t
 	if(power == 0)
 	{
 		power = (double *)malloc(nChan*sizeof(double));
+		if(!power)
+		{
+			fprintf(stderr, "Error: processSpectrum(): cannot allocate %lu bytes.\n", nChan*sizeof(double));
+
+			exit(0);
+		}
 	}
 
 	for(c = 0; c < nChan; ++c)
@@ -150,10 +157,10 @@ void processSpectrum(const double complex *spectrum, int nChan, int bw, double t
 
 	if(dc != 0.0)
 	{
-		double f;
+		double fac;
 
-		f = M_PI*dc/sin(M_PI*dc);
-		max_power *= f*f;	/* correct peak value for sinc^2() roll-off */
+		fac = M_PI*dc/sin(M_PI*dc);
+		max_power *= fac*fac;	/* correct peak value for sinc^2() roll-off */
 	}
 
 	freq = bw*(max_chan+dc)/nChan;
@@ -377,6 +384,13 @@ int run(const char *fileName, int frameSize, int bw, int thread, int frames, int
 	samples = (double *)fftw_malloc(nSamp * sizeof(double));
 	spectrum = (double complex *)fftw_malloc((nSamp/2 + 1) * sizeof(double complex));
 	psd = (double *)calloc(nSamp/2 + 1, sizeof(double));
+
+	if(!readBuffer || !samples || !spectrum || !psd)
+	{
+		fprintf(stderr, "Error allocating %lu bytes of memory.\n", (unsigned long int)(frameSize + 3*nSamp*sizeof(double) + 3));
+
+		exit(0);
+	}
 
 	dp = (nomFreq % frameRate)/(double)frameRate;
 

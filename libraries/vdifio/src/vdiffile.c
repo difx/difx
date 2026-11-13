@@ -114,7 +114,7 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 	int rv, i, N;
 	FILE *in;
 	char hasThread[VDIF_MAX_THREAD_ID + 1];
-	struct vdif_header *vh0;	/* pointer to the prototype header */
+	const struct vdif_header *vh0;	/* pointer to the prototype header */
 	int hasEDV3 = 0;		/* no VLBA headers found yet */
 	int lasts;
 
