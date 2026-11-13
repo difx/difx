@@ -332,7 +332,7 @@ class JobList:
 			print("Executing: %s" % cmd)
 			system(cmd)
 			if isfile(fitslistfile):
-				printf("File rename failed.  Quitting.")
+				print("File rename failed.  Quitting.")
 				exit(0)
 
 		out = open(fitslistfile, 'w')
@@ -603,7 +603,7 @@ for arg in args:
 
 if len(gcFilesMissing) > 0:
 	print('\nWarning: some gain curve files were not found:')
-	for f in fcFilesMissing:
+	for f in gcFilesMissing:
 		print('  %s' % f)
 	print('')
 

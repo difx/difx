@@ -502,26 +502,11 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
       else
         sprintf(formatname, "VLBA1_%d-%d-%d-%d", fanout, mbps, nchan, nbits);
       break;
-    case VLBN:
-      fanout = framebytes*8/(20160*nbits*nchan);
-      if(fanout*20160*nbits*nchan != framebytes*8)
-      {
-        cfatal << startl << "genMk5FormatName : VLBN format : framebytes = " << framebytes << " is not allowed" << endl;
-        return -1;
-      }
-      if(decimationfactor > 1)
-        sprintf(formatname, "VLBN1_%d-%d-%d-%d/%d", fanout, mbps, nchan, nbits, decimationfactor);
-      else
-        sprintf(formatname, "VLBN1_%d-%d-%d-%d", fanout, mbps, nchan, nbits);
-      break;
     case MARK5B:
       if(decimationfactor > 1)
         sprintf(formatname, "Mark5B-%d-%d-%d/%d", mbps, nchan, nbits, decimationfactor);
       else
         sprintf(formatname, "Mark5B-%d-%d-%d", mbps, nchan, nbits);
-      break;
-    case KVN5B:
-        sprintf(formatname, "KVN5B-%d-%d-%d", mbps, nchan, nbits);
       break;
     case INTERLACEDVDIF: // the correct frame bytes must be supplied to this function (before or after multiplexing, as appropriate)
     case VDIF:
@@ -580,11 +565,9 @@ int Configuration::getFramePayloadBytes(int configindex, int configdatastreamind
   switch(format)
   {
     case VLBA:
-    case VLBN:
       payloadsize = (framebytes/2520)*2500;
       break;
     case MARK5B:
-    case KVN5B:
       payloadsize = framebytes - 16;
       break;
     case INTERLACEDVDIF:
@@ -613,11 +596,9 @@ int Configuration::getMultiplexedFramePayloadBytes(int configindex, int configda
   switch(format)
   {
     case VLBA:
-    case VLBN:
       payloadsize = (framebytes/2520)*2500;
       break;
     case MARK5B:
-    case KVN5B:
       payloadsize = framebytes - 16;
       break;
     case INTERLACEDVDIF:
@@ -802,7 +783,7 @@ int Configuration::getDataBytes(int configindex, int datastreamindex) const
   const freqdata &arecordedfreq = freqtable[currentds.recordedfreqtableindices[0]]; 
   //std::cout << "arecordedfreq.decimationfactor is " << arecordedfreq.decimationfactor << " and configs[configindex].blockspersend is " << configs[configindex].blockspersend << " and currentds.numrecordedbands is " << currentds.numrecordedbands << " and currentds.numbits is " << currentds.numbits << " and arecordedfreq.numchannels is " << arecordedfreq.numchannels << endl;
   validlength = (arecordedfreq.decimationfactor*configs[configindex].blockspersend*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
-  if(currentds.format == MKIV || currentds.format == VLBA || currentds.format == VLBN || currentds.format == MARK5B || currentds.format == KVN5B || currentds.format == VDIF ||currentds.format == VDIFL || currentds.format == INTERLACEDVDIF || currentds.format == CODIF)
+  if(currentds.format == MKIV || currentds.format == VLBA || currentds.format == MARK5B || currentds.format == VDIF ||currentds.format == VDIFL || currentds.format == INTERLACEDVDIF || currentds.format == CODIF)
   {
     //must be an integer number of frames, with enough margin for overlap on either side
     validlength += (arecordedfreq.decimationfactor*(int)(configs[configindex].guardns/(1000.0/(freqtable[currentds.recordedfreqtableindices[0]].bandwidth*2.0))+1.0)*currentds.numrecordedbands*currentds.numbits)/8;
@@ -814,7 +795,7 @@ int Configuration::getDataBytes(int configindex, int datastreamindex) const
       framebytes = currentds.multiplexedframebytes;
     }
     numframes = (validlength/payloadbytes + 2);
-    if(currentds.format == MARK5B || currentds.format == KVN5B) //be cautious in case the frame granularity is 2 (easier than checking)
+    if(currentds.format == MARK5B) //be cautious in case the frame granularity is 2 (easier than checking)
     {
       numframes += numframes%2;
     }
@@ -993,14 +974,10 @@ Mode* Configuration::getMode(int configindex, int datastreamindex, const bool us
       break;
     case MKIV:
     case VLBA:
-    case VLBN:
     case MARK5B:
-    case KVN5B:
     case VDIF:
     case VDIFL:
     case CODIF:
-    case K5VSSP:
-    case K5VSSP32:
     case INTERLACEDVDIF:
       framesamples = getFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*getDNumRecordedBands(configindex, datastreamindex)*streamdecimationfactor);
       framebytes = getFrameBytes(configindex, datastreamindex);
@@ -1503,22 +1480,12 @@ bool Configuration::processDatastreamTable(istream * input)
       datastreamtable[i].format = LBA8BIT;
     else if(line == "LBA16BIT")
       datastreamtable[i].format = LBA16BIT;
-    else if(line == "K5")
-      datastreamtable[i].format = K5VSSP;
-    else if(line == "K5VSSP")
-      datastreamtable[i].format = K5VSSP;
-    else if(line == "K5VSSP32")
-      datastreamtable[i].format = K5VSSP32;
     else if(line == "MKIV")
       datastreamtable[i].format = MKIV;
     else if(line == "VLBA")
       datastreamtable[i].format = VLBA;
-    else if(line == "VLBN")
-      datastreamtable[i].format = VLBN;
     else if(line == "MARK5B")
       datastreamtable[i].format = MARK5B;
-    else if(line == "KVN5B")
-      datastreamtable[i].format = KVN5B;
     else if(line == "VDIF") {
       datastreamtable[i].format = VDIF;
       datastreamtable[i].nummuxthreads = 1;//In case 'vdifio' instead of 'mark5access' does decoding
@@ -1546,7 +1513,7 @@ bool Configuration::processDatastreamTable(istream * input)
     else
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, LBA8BIT, K5, MKIV, VLBA, VLBN, MARK5B, KVN5B, VDIF, VDIFL, INTERLACEDVDIF and CODIF)" << endl;
+        cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, LBA8BIT, MKIV, VLBA, MARK5B, VDIF, VDIFL, INTERLACEDVDIF and CODIF)" << endl;
       return false;
     }
     getinputline(input, &line, "QUANTISATION BITS");

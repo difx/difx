@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2024 by Walter Brisken and Adam Deller             *
+ *   Copyright (C) 2007-2026 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -547,11 +547,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 		    (format == Configuration::VDIF     && dirfmt != MK5_FORMAT_VDIF)   ||
 		    (format == Configuration::VDIFL    && dirfmt != MK5_FORMAT_VDIFL)  ||
 		    (format == Configuration::VLBA     && dirfmt != MK5_FORMAT_VLBA)   ||
-		    (format == Configuration::VLBN     && dirfmt != MK5_FORMAT_VLBA)   ||
-		    (format == Configuration::MKIV     && dirfmt != MK5_FORMAT_MARK4)  ||
-		    (format == Configuration::K5VSSP   && dirfmt != MK5_FORMAT_K5)     ||
-		    (format == Configuration::K5VSSP32 && dirfmt != MK5_FORMAT_K5)     ||
-		    (format == Configuration::KVN5B    && (dirfmt != MK5_FORMAT_MARK5B || dirfmt != MK5_FORMAT_KVN5B))
+		    (format == Configuration::MKIV     && dirfmt != MK5_FORMAT_MARK4)
 		    )
 
 		{

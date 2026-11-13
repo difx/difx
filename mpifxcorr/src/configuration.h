@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2017 by Adam Deller                                *
+ *   Copyright (C) 2006-2026 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -53,7 +53,7 @@ public:
 
   /// Supported types of recorded data format
 
-  enum dataformat {LBASTD, LBAVSOP, LBA8BIT, LBA16BIT, K5VSSP, K5VSSP32, MKIV, VLBA, MARK5B, VDIF, VDIFL, INTERLACEDVDIF, VLBN, KVN5B, CODIF};
+  enum dataformat {LBASTD, LBAVSOP, LBA8BIT, LBA16BIT, MKIV, VLBA, MARK5B, VDIF, VDIFL, INTERLACEDVDIF, CODIF};
 
   /// Supported sources of data
   enum datasource {UNIXFILE, MK5MODULE, NETWORKSTREAM, FAKESTREAM, MK6MODULE};
@@ -391,7 +391,7 @@ public:
     datasource s;
     f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
-    return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == KVN5B || f == VDIF || f == VDIFL || f == INTERLACEDVDIF || f == CODIF) && (s == UNIXFILE || s == NETWORKSTREAM || s == FAKESTREAM)); 
+    return ((f == MKIV || f == VLBA || f == MARK5B || f == VDIF || f == VDIFL || f == INTERLACEDVDIF || f == CODIF) && (s == UNIXFILE || s == NETWORKSTREAM || s == FAKESTREAM)); 
   }
   inline bool isVDIFFile(int datastreamindex) const
   {
@@ -485,7 +485,7 @@ public:
     datasource s;
     f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
-    return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == KVN5B || f == VDIF || f == VDIFL || f == INTERLACEDVDIF || f == CODIF) && s == MK5MODULE); 
+    return ((f == MKIV || f == VLBA || f == MARK5B || f == VDIF || f == VDIFL || f == INTERLACEDVDIF || f == CODIF) && s == MK5MODULE); 
   }
 
   // Return the number of framebytes as seen by Datastream (as in the data source)

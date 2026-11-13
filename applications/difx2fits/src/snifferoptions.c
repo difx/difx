@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2024 by Walter Brisken                                  *
+ *   Copyright (C) 2024-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "snifferoptions.h"
 
 const long long int DefaultSnifferMaxMemory = 2000000000LL;	/* [bytes] */
@@ -31,6 +32,12 @@ SnifferOptions *newSnifferOptions()
 	SnifferOptions *sOpts;
 
 	sOpts = (SnifferOptions *)calloc(1, sizeof(SnifferOptions));
+	if(!sOpts)
+	{
+		fprintf(stderr, "Error: newSnifferOptions(): cannot allocate %lu bytes.\n", (unsigned long int)sizeof(SnifferOptions));
+
+		exit(0);
+	}
 	resetSnifferOptions(sOpts);
 
 	return sOpts;

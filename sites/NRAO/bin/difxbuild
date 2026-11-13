@@ -13,14 +13,16 @@ from glob import glob
 from copy import deepcopy
 
 program = 'difxbuild'
-version = '1.10'
-verdate = '20230626'
+version = '1.12'
+verdate = '20250909'
 author = 'Walter Brisken <wbrisken@nrao.edu>, Mark Wainright <mwainrig@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
 pythonProgram = 'python'
-openmpiVersion = 'https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.4.tar.bz2'       
+#openmpiVersion = 'https://download.open-mpi.org/release/open-mpi/v3.1/openmpi-3.1.4.tar.bz2'       
+#openmpiVersion = 'https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.3.tar.bz2'
+openmpiVersion = 'https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.8.tar.bz2'
 pgplotVersion = '5.2'
 schedVersion = '11.8'
 schedUpdate = ''
@@ -266,14 +268,14 @@ def getippversion(path):
 		print('Reading version from %s' % ippheader)
 		major = minor = None
 		for line in open(ippheader):
-			m = re.search('#define\s+IPP_VERSION_STR\s+"(\S+)"', line)
+			m = re.search('#define\\s+IPP_VERSION_STR\s+"(\\S+)"', line)
 			if m != None:
 				print('Got version %s' % m.group(1))
 				return m.group(1)
 			if major == None:
-				major = re.search('#define\s+IPP_VERSION_MAJOR\s+(\S)', line)
+				major = re.search('#define\\s+IPP_VERSION_MAJOR\s+(\\S)', line)
 			if minor == None:
-				minor = re.search('#define\s+IPP_VERSION_MINOR\s+(\S)', line)
+				minor = re.search('#define\\s+IPP_VERSION_MINOR\s+(\\S)', line)
 		if (major != None and minor != None):
 			ver = major.group(1) + '.' + minor.group(1)
 			print('Have version %s' % ver)
@@ -633,13 +635,6 @@ component_polconvert_trunk = \
 	['aclocal', 'autoconf', 'autoheader', 'automake'] \
 ]
 
-component_guiserver_trunk = \
-[ \
-	'guiServer', \
-	'https://svn.atnf.csiro.au/difx/applications/guiServer/trunk', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
-]
-
 component_gui_trunk = \
 [ \
 	'gui', \
@@ -677,7 +672,7 @@ component_python_trunk = \
 
 component_misc_utils_trunk = \
 [ \
-	'misc_utils', \
+	'misc', \
 	'https://svn.atnf.csiro.au/difx/utilities/trunk/misc', \
 	['aclocal', 'autoconf', 'automake'] \
 ]
@@ -724,13 +719,6 @@ component_difxmonitor_trunk = \
 	['aclocal', 'autoconf', 'automake', 'mpicxx', 'nodef'] \
 ]
 
-component_difxfilterbank_trunk = \
-[ \
-	'difxfilterbank', \
-	'https://svn.atnf.csiro.au/difx/applications/difxfilterbank/trunk', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
-]
-
 component_vlite_trunk = \
 [ \
 	'vliteExecutor', \
@@ -756,11 +744,10 @@ components['DIFX-DEVEL'] = \
 	component_mk5daemon_trunk, \
 	component_difxcalc11_trunk, \
 	component_datasim_trunk, \
-	component_autozoom_trunk, \
+	#component_autozoom_trunk, \
 	component_calcif2_trunk, \
 	component_calcserver_trunk, \
 	component_polconvert_trunk, \
-	component_guiserver_trunk, \
 	#component_gui_trunk, \
 	component_rcwlib_trunk, \
 	component_sniff_trunk, \
@@ -771,9 +758,8 @@ components['DIFX-DEVEL'] = \
 	component_difx2profile_trunk, \
 	component_vdifserver_trunk, \
 	component_nraodifxdb_trunk, \
-	component_difxfilterbank_trunk, \
-	component_difxmonitor_trunk, \
-	component_vlite_trunk, \
+	# component_difxmonitor_trunk, \
+	# component_vlite_trunk, \
 ]
 
 component_difxio_2_1 = \
@@ -997,13 +983,6 @@ component_hops_2_2 = \
 	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
 ]
 
-component_guiserver_2_2 = \
-[ \
-	'guiServer', \
-	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/applications/guiServer', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
-]
-
 components['DIFX-2.2'] = \
 [ \
 	component_difxio_2_2, \
@@ -1021,7 +1000,6 @@ components['DIFX-2.2'] = \
 	component_sniff_2_2, \
 	component_nraodifxdb_2_2, \
 	component_hops_2_2, \
-	component_guiserver_2_2, \
 ]
 
 component_difxio_2_3 = \
@@ -1136,13 +1114,6 @@ component_hops_2_3 = \
 	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
 ]
 
-component_guiserver_2_3 = \
-[ \
-	'guiServer', \
-	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/guiServer', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
-]
-
 component_misc_utils_2_3 = \
 [ \
 	'misc_utils', \
@@ -1178,13 +1149,6 @@ component_difxmonitor_2_3 = \
 	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
 ]
 
-component_difxfilterbank_2_3 = \
-[ \
-	'difxfilterbank', \
-	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/difxfilterbank', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
-]
-
 components['DIFX-2.3'] = \
 [ \
 	component_difxio_2_3, \
@@ -1203,12 +1167,10 @@ components['DIFX-2.3'] = \
 	component_sniff_2_3, \
 	component_nraodifxdb_2_3, \
 	component_hops_2_3, \
-	component_guiserver_2_3, \
 	component_misc_utils_2_3, \
 	component_vis2screen_2_3, \
 	component_difx2profile_2_3, \
 	component_difxdb_2_3, \
-	component_difxfilterbank_2_3, \
 	component_difxmonitor_2_3, \
 	component_vlite_trunk, \
 ]
@@ -1325,13 +1287,6 @@ component_hops_2_4 = \
 	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
 ]
 
-component_guiserver_2_4 = \
-[ \
-	'guiServer', \
-	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/applications/guiServer', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
-]
-
 component_misc_utils_2_4 = \
 [ \
 	'misc_utils', \
@@ -1367,13 +1322,6 @@ component_difxmonitor_2_4 = \
 	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
 ]
 
-component_difxfilterbank_2_4 = \
-[ \
-	'difxfilterbank', \
-	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.4/applications/difxfilterbank', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
-]
-
 components['DIFX-2.4'] = \
 [ \
 	component_difxio_2_4, \
@@ -1392,12 +1340,10 @@ components['DIFX-2.4'] = \
 	component_sniff_2_4, \
 	component_nraodifxdb_2_4, \
 	component_hops_2_4, \
-	component_guiserver_2_4, \
 	component_misc_utils_2_4, \
 	component_vis2screen_2_4, \
 	component_difx2profile_2_4, \
 	component_difxdb_2_4, \
-	component_difxfilterbank_2_4, \
 	component_difxmonitor_2_4, \
 	component_vlite_trunk, \
 ]
@@ -1549,13 +1495,6 @@ component_hops_2_5 = \
 	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
 ]
 
-component_guiserver_2_5 = \
-[ \
-	'guiServer', \
-	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/guiServer', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
-]
-
 component_misc_utils_2_5 = \
 [ \
 	'misc_utils', \
@@ -1591,13 +1530,6 @@ component_difxmonitor_2_5 = \
 	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
 ]
 
-component_difxfilterbank_2_5 = \
-[ \
-	'difxfilterbank', \
-	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.5/applications/difxfilterbank', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
-]
-
 components['DIFX-2.5'] = \
 [ \
 	component_difxio_2_5, \
@@ -1621,12 +1553,10 @@ components['DIFX-2.5'] = \
 	component_sniff_2_5, \
 	component_nraodifxdb_2_5, \
 	component_hops_2_5, \
-	component_guiserver_2_5, \
 	component_misc_utils_2_5, \
 	component_vis2screen_2_5, \
 	component_difx2profile_2_5, \
 	component_difxdb_2_5, \
-	component_difxfilterbank_2_5, \
 	component_difxmonitor_2_5, \
 	component_vlite_trunk, \
 ]
@@ -1786,13 +1716,6 @@ component_hops_2_6 = \
 	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
 ]
 
-component_guiserver_2_6 = \
-[ \
-	'guiServer', \
-	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/guiServer', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
-]
-
 component_misc_utils_2_6 = \
 [ \
 	'misc_utils', \
@@ -1828,13 +1751,6 @@ component_difxmonitor_2_6 = \
 	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
 ]
 
-component_difxfilterbank_2_6 = \
-[ \
-	'difxfilterbank', \
-	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.6/applications/difxfilterbank', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
-]
-
 components['DIFX-2.6'] = \
 [ \
 	component_difxio_2_6, \
@@ -1858,13 +1774,11 @@ components['DIFX-2.6'] = \
 	component_rcwlib_2_6, \
 	component_sniff_2_6, \
 	component_hops_2_6, \
-	component_guiserver_2_6, \
 	component_misc_utils_2_6, \
 	component_vis2screen_2_6, \
 	component_difx2profile_2_6, \
 	component_difxdb_2_6, \
 	component_nraodifxdb_2_6, \
-	component_difxfilterbank_2_6, \
 	#component_difxmonitor_2_6, \
 	component_vlite_trunk, \
 ]
@@ -2032,13 +1946,6 @@ component_hops_2_8 = \
 	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
 ]
 
-component_guiserver_2_8 = \
-[ \
-	'guiServer', \
-	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8/applications/guiServer', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
-]
-
 component_misc_utils_2_8 = \
 [ \
 	'misc_utils', \
@@ -2074,13 +1981,6 @@ component_difxmonitor_2_8 = \
 	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
 ]
 
-component_difxfilterbank_2_8 = \
-[ \
-	'difxfilterbank', \
-	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.8/applications/difxfilterbank', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
-]
-
 components['DIFX-2.8'] = \
 [ \
 	component_difxio_2_8, \
@@ -2105,14 +2005,242 @@ components['DIFX-2.8'] = \
 	component_rcwlib_2_8, \
 	component_sniff_2_8, \
 	component_hops_2_8, \
-	component_guiserver_2_8, \
 	component_misc_utils_2_8, \
 	component_vis2screen_2_8, \
 	component_difx2profile_2_8, \
 	component_difxdb_2_8, \
 	component_nraodifxdb_2_8, \
-	component_difxfilterbank_2_8, \
 	#component_difxmonitor_2_8, \
+	component_vlite_trunk, \
+]
+
+component_difxio_2_9 = \
+[ \
+	'difxio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/libraries/difxio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
+]
+
+component_difxmessage_2_9 = \
+[ \
+	'difxmessage', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/libraries/difxmessage', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_dirlist_2_9 = \
+[ \
+	'dirlist', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/libraries/dirlist', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core' ] \
+]
+
+component_mark5access_2_9 = \
+[ \
+	'mark5access', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/libraries/mark5access', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_vdifio_2_9 = \
+[ \
+	'vdifio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/libraries/vdifio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark6meta_2_9 = \
+[ \
+	'mark6meta', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/libraries/mark6meta', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark6sg_2_9 = \
+[ \
+	'mark6sg', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/libraries/mark6sg', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_codifio_2_9 = \
+[ \
+	'codifio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/libraries/codifio', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_python_2_9 = \
+[ \
+	'python', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/libraries/python', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_mpifxcorr_2_9 = \
+[ \
+	'mpifxcorr', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/mpifxcorr', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
+]
+
+component_difx2fits_2_9 = \
+[ \
+	'difx2fits', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/applications/difx2fits' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_2_9 = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/applications/difx2mark4' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_vex2difx_2_9 = \
+[ \
+	'vex2difx', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/applications/vex2difx' ,\
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_mk5daemon_2_9 = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/applications/mk5daemon' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave', 'core'] \
+]
+
+component_calcif2_2_9 = \
+[ \
+	'calcif2', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/utilities/calcif2' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_calcserver_2_9 = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/applications/calcserver', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_polconvert_2_9 = \
+[ \
+	'polconvert', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/applications/polconvert', \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difxcalc11_2_9 = \
+[ \
+	'difxcalc11', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/applications/difxcalc11', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake', 'core'] \
+]
+
+component_datasim_2_9 = \
+[ \
+	'datasim', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/applications/datasim', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_rcwlib_2_9 = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/sites/NRAO/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_2_9 = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/sites/NRAO/SniffPlots', \
+	['aclocal', 'autoconf', 'automake', 'pgplot'] \
+]
+
+# FIXME -- use git version after moving to RH8
+component_nraodifxdb_2_9 = \
+[ \
+	'nraodifxdb', \
+	'https://svn.aoc.nrao.edu/repos/VLBA/nraodifxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_hops_2_9 = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/applications/hops', \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+]
+
+component_misc_utils_2_9 = \
+[ \
+	'misc', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/utilities/misc', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_vis2screen_2_9 = \
+[ \
+	'vis2screen', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/utilities/vis2screen', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difx2profile_2_9 = \
+[ \
+	'difx2profile', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/utilities/pulsar/difx2profile', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx'] \
+]
+
+component_difxdb_2_9 = \
+[ \
+	'difxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/utilities/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_difxmonitor_2_9 = \
+[ \
+	'difx_monitor', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.9/applications/difx_monitor', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+components['DIFX-2.9'] = \
+[ \
+	component_difxio_2_9, \
+	component_difxmessage_2_9, \
+	component_dirlist_2_9, \
+	component_mark6sg_2_9, \
+	component_codifio_2_9, \
+	component_mark5access_2_9, \
+	component_vdifio_2_9, \
+	component_mark6meta_2_9, \
+	component_python_2_9, \
+	component_mpifxcorr_2_9, \
+	component_difx2fits_2_9, \
+	component_difx2mark4_2_9, \
+	component_vex2difx_2_9, \
+	component_mk5daemon_2_9, \
+	component_calcif2_2_9, \
+	component_calcserver_2_9, \
+	component_polconvert_2_9, \
+	component_difxcalc11_2_9, \
+	component_datasim_2_9, \
+	component_rcwlib_2_9, \
+	component_sniff_2_9, \
+	component_hops_2_9, \
+	component_misc_utils_2_9, \
+	#component_vis2screen_2_9, \
+	component_difx2profile_2_9, \
+	#component_difxdb_2_9, \
+	component_nraodifxdb_2_9, \
+	#component_difxmonitor_2_9, \
 	component_vlite_trunk, \
 ]
 
@@ -2130,6 +2258,9 @@ components['DIFX-2.6.2'] = versionReplace(components['DIFX-2.6'], "DiFX-2.6", "D
 components['DIFX-2.6.3'] = versionReplace(components['DIFX-2.6'], "DiFX-2.6", "DiFX-2.6.3")
 
 components['DIFX-2.8.1'] = versionReplace(components['DIFX-2.8'], "DiFX-2.8", "DiFX-2.8.1")
+
+components['DIFX-2.9.0'] = components['DIFX-2.9']
+components['DIFX-2.9.1'] = components['DIFX-2.9']
 
 
 # commands each have the following elements:
@@ -2628,15 +2759,9 @@ def svnupdate(origComps, params, args, verbose, pretend):
 		if isdir(path):
 			url = popen('svn info %s | grep URL' % path, 'r').readlines()[0].strip().split()[-1]
 
-			if url == 'https://svn.atnf.csiro.au/difx/applications/gui/trunk/guiServer':
-				chdir(srcDir + '/' + comp[0])
-				cmd = 'svn switch %s %s' % (user, comp[1])
-				execute(cmd, verbose, pretend)
-
-			else:
-				updatePaths = updatePaths + ' ' + comp[0]
-				if url != comp[1]:
-					badRepositories.append('%s %s' % (comp[0], path))
+			updatePaths = updatePaths + ' ' + comp[0]
+			if url != comp[1]:
+				badRepositories.append('%s %s' % (comp[0], path))
 		else:
 			chdir(srcDir)
 			cmd = 'svn co %s %s %s %s' % (svnRev, user, comp[1], comp[0])
@@ -2652,6 +2777,37 @@ def svnupdate(origComps, params, args, verbose, pretend):
 		cmd = 'svn update %s %s %s' % (svnRev, user, updatePaths)
 		execute(cmd, verbose, pretend)
 
+def gitlink(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print('No components selected.  Did you mean to append "all" to the command line?\n')
+		return
+	srcDir = environ['DIFX_SRC'] + '/'
+	if not isdir(srcDir):
+		cmd = 'mkdir -p %s' % srcDir
+		execute(cmd, verbose, pretend)
+	difxDir = environ['DIFXROOT'] + '/difx/'
+	badDirs = []
+	for comp in comps:
+		parts = comp[1].split('/')
+		print('Parts = ', parts)
+		if environ['DIFX_VERSION'] == 'DIFX-DEVEL':
+			parts.remove('trunk')
+			difxPath = difxDir + '/'.join(parts[4:])
+		else:
+			difxPath = difxDir + '/'.join(parts[6:])
+		if not isdir(difxPath):
+			badDirs.append(difxPath)
+		else:
+			if verbose > 0:
+				print('Linking %s to %s' % (srcDir, difxPath))
+			cmd = 'ln -s -f %s %s' % (difxPath, srcDir)
+			execute(cmd, verbose, pretend)
+	if len(badDirs) > 0:
+		print('Operation incomplete.  The following directories were not found:\n')
+		for b in badDirs:
+			print('  %s' % b)
+	
 def fromtar(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
@@ -2828,12 +2984,7 @@ def build(origComps, params, args, verbose, pretend):
 				print('\n*** Error building %s ***\n' % comp[0])
 				return 
 			chdir(srcDir+comp[0])
-			if(getcwd() == srcDir+comp[0]):
-				# likely an svn dir
-				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  `svn info | grep "Revision:"` >> %s' % (comp[0], bldLog), verbose, pretend)
-			else:
-				# maybe a versioned component
-				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  %s >> %s' % (comp[0], getcwd(), bldLog), verbose, pretend)
+			execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  %s >> %s' % (comp[0], getcwd(), bldLog), verbose, pretend)
 
 def makedist(origComps, params, args, verbose, pretend):
 	if 'none' in args:
@@ -2950,12 +3101,7 @@ def rebuild(origComps, params, args, verbose, pretend):
 				print('\n*** Error rebuilding %s ***\n' % comp[0])
 				return
 			chdir(srcDir+comp[0])
-			if(getcwd() == srcDir+comp[0]):
-				# likely an svn dir
-				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  `svn info | grep "Changed Rev"` >> %s' % (comp[0], bldLog), verbose, pretend)
-			else:
-				# maybe a versioned component
-				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  %s >> %s' % (comp[0], getcwd(), bldLog), verbose, pretend)
+			execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  %s >> %s' % (comp[0], getcwd(), bldLog), verbose, pretend)
 			
 def dist(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
@@ -3695,7 +3841,7 @@ def openmpi(origComps, params, args, verbose, pretend):
 		chdir(cpuSrcDir)
 		execute('tar %sxvf %s%s' % (td, tarDir, openmpiTarFile), verbose, pretend)
 	chdir(openmpiSrcDir)
-	execute('./configure --prefix=%s --enable-mpi-f77=no --enable-mpi-f90=no --enable-heterogeneous --enable-orterun-prefix-by-default' % cpuDir, verbose, pretend)
+	execute('./configure --prefix=%s --enable-mpi-fortran=no --enable-orterun-prefix-by-default' % cpuDir, verbose, pretend)
 	v = execute('make -j %d' % numMakeCpus, verbose, pretend)
 	if v == 0:
 		v = execute('make install', verbose, pretend)
@@ -3907,6 +4053,15 @@ command_debian = \
 	debian \
 ]
 
+command_gitlink = \
+[ \
+	'gitlink', \
+	'Make symlinks from src/xxx into git directory', \
+	[], \
+	[], \
+	gitlink \
+]
+
 commands = \
 [ \
 	command_list, \
@@ -3927,6 +4082,7 @@ commands = \
 	command_dist, \
 	command_fromtar, \
 	command_debian, \
+	command_gitlink, \
 #	command_remove, \
 ]
 

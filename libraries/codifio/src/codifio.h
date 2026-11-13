@@ -99,7 +99,7 @@ static inline uint16_t getCODIFPeriod(const codif_header *header) { return (int)
 static inline uint32_t getCODIFSync(const codif_header *header) { return (int)header->sync; }
 static inline uint64_t getCODIFTotalSamples(const codif_header *header) { return header->totalsamples; }
 
-uint64_t getCODIFFrameMJDSec(codif_header *header);
+uint64_t getCODIFFrameMJDSec(const codif_header *header);
 int getCODIFFrameMJD(const codif_header *header);
 double getCODIFFrameDMJD(const codif_header *header, double framepersec);
 static inline uint32_t getCODIFFrameSecond(const codif_header *header) { return ((int)header->seconds)%86400; }
@@ -118,7 +118,7 @@ static inline int getCODIFCalEnabled(const codif_header *header) { return (int)h
 static inline uint32_t getCODIFFrameEpochSecOffset(const codif_header *header) { return (int)header->seconds; }
 static inline uint8_t getCODIFEpoch(const codif_header *header) { return (int)header->epoch; }
 
-int getCODIFFrameperperiod(const codif_header *header);
+int getCODIFFrameperperiod(const codif_header *header);	/* older name for getCODIFFramesPerPeriod */
 double getCODIFFramepersec(const codif_header *header);
 int getCODIFEpochMJD(const codif_header *header);
 uint32_t getCODIFFramesPerPeriod(const codif_header *header);
@@ -146,10 +146,10 @@ int setCODIFFrameTime(codif_header *header, time_t time);
 int setCODIFEpochTime(codif_header *header, time_t time);
 static inline void setCODIFEpoch(codif_header *header, int epoch) { header->epoch = epoch; }
 int setCODIFEpochMJD(codif_header *header, int mjd);
-int nextCODIFHeader(codif_header *header, int framepersec);
-int incrementCODIFHeader(codif_header *header, int framepersec, int64_t inc);
+int nextCODIFHeader(codif_header *header, int frameperperiod);
+int incrementCODIFHeader(codif_header *header, int frameperperiod, int64_t inc);
 
-double CODIFframe2mjd(const codif_header *header, int sec, int frame, double frampersec);
+double CODIFframe2mjd(const codif_header *header, int sec, int frame, double framepersec);
 
   //void fprintCODIFHeader(FILE *out, const codif_header *header, enum CODIFHeaderPrintLevel);
   //void printCODIFHeader(const codif_header *header, enum CODIFHeaderPrintLevel);

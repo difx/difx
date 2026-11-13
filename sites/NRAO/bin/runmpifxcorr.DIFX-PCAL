@@ -1,3 +1,0 @@
-#! /bin/bash
-. /home/swc/DiFX-bandmatch/DiFX-pcal/setup_difx
-mpifxcorr $@

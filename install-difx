@@ -172,7 +172,7 @@ try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "fhv",
         ["force", "help", "verb",
          "help-options", "help-environment", "help-examples", "withcuda",
-         "mk5daemon", "withmonitor", "withdatasim", "perl", "withfb",
+         "mk5daemon", "withmonitor", "withdatasim", "perl",
          "withhops", "withm6support", "withpython",
          "withpolconvert", "withspice=", "noinstall", "reconf", "noconf", "clean",
          "g77", "extraflags=", "makeflags=", "withmark6meta",

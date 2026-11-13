@@ -382,7 +382,7 @@ int main (int argc, char * const argv[]) {
     }
   }
   printf("Using framesize=%d\n", framesize);
-  int samplesperframe = framesize*8/completesample; // Treat Re/Im of complex as seperate samples
+  int samplesperframe = framesize*8/completesample; // Treat Re/Im of complex as separate samples
   int framesperperiod = bytesperperiod/framesize;
 
   frameperbuf = memsize/(samplesperframe*cfact*sizeof(Ipp32f));
@@ -769,7 +769,7 @@ float gaussrand() {
 }
 
 double currentmjd () {
-  struct tm *tim;
+  const struct tm *tim;
   struct timeval currenttime;
 
   setenv("TZ", "", 1); /* Force mktime to return gmt not local time */
@@ -829,7 +829,8 @@ int MeanStdDev(const float *src, int length, float *mean, float *StdDev) {
 
 int pack2bit1chan(Ipp32f **in, int off, Ipp8u *out, float mean, float stddev, int len) {
   int i, j, ch[4];
-  float maxposThresh, maxnegThresh, *f;
+  float maxposThresh, maxnegThresh;
+  const float *f;
   
   if (len%4!=0) {
     printf("Can only pack multiple of 4 samples!\n");

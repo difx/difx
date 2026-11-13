@@ -26,7 +26,7 @@
 #include "dateutils.h"
 #include "codifio.h"
 
-#define CODIF_VERSION 3
+#define CODIF_VERSION 2   // Header layout is CODIF version 2 (see CODIFV2 in codifio.h)
 #define CODIF_EPOCH 2000
 
 int createCODIFHeader(codif_header *header, uint32_t dataarraylength, uint16_t threadid, uint16_t groupid, uint8_t bits,
@@ -51,7 +51,6 @@ int createCODIFHeader(codif_header *header, uint32_t dataarraylength, uint16_t t
   else
     header->iscomplex = 0;
   setCODIFBitsPerSample(header, bits);
-  setCODIFVersion(header, 2);
   setCODIFRepresentation(header, 1);
   setCODIFThreadID(header, threadid);
   setCODIFGroupID(header, groupid);
@@ -95,13 +94,9 @@ int getCODIFFrameMJD(const codif_header *header)
   return mjd + header->seconds/86400; // Seconds will usually be greater than one day
 }
 
+// Older name, kept for compatibility. Use getCODIFFramesPerPeriod
 int getCODIFFrameperperiod(const codif_header *header) {
-  int bits = getCODIFBitsPerSample(header);
-  int nchan = getCODIFNumChannels(header);
-  int iscomplex = getCODIFComplex(header);
-  int datasize = getCODIFFrameBytes(header);
-  int sampleperframe = datasize*8/(bits*nchan*(iscomplex+1));
-  return getCODIFTotalSamples(header)/sampleperframe;
+  return (int)getCODIFFramesPerPeriod(header);
 }
 
 double getCODIFFramepersec(const codif_header *header) {
@@ -138,7 +133,7 @@ int setCODIFFrameMJDSec(codif_header *header, uint64_t mjdsec)
   return(CODIF_NOERROR);
 }
 
-uint64_t getCODIFFrameMJDSec(codif_header *header)
+uint64_t getCODIFFrameMJDSec(const codif_header *header)
 {
   uint64_t emjd = getCODIFEpochMJD(header);
   return emjd*86400 + header->seconds;
@@ -157,10 +152,16 @@ int setCODIFFrameSecond(codif_header *header, int seconds)
 }
 
 int setCODIFEpochMJD(codif_header *header, int mjd) {
-  int year, month, day;
+  int year, month, day, epoch;
   mjd2ymd(mjd, &year, &month, &day);
-  header->epoch = (year-CODIF_EPOCH)*2;
-  if (month>6) header->epoch++;
+  epoch = (year-CODIF_EPOCH)*2;
+  if (epoch<0)     // Before CODIF_EPOCH
+    return(CODIF_ERROR);
+  if (month>6) {
+    epoch++;
+  }
+  epoch %= 256;    // 8 bit field
+  header->epoch = epoch;
   return(CODIF_NOERROR);
 }
 
@@ -179,23 +180,23 @@ int nextCODIFHeader(codif_header *header, int frameperperiod) {
 }
 
 int incrementCODIFHeader(codif_header *header, int frameperperiod, int64_t inc) {
-  int secinc=0;
+  int64_t periodinc;
   int64_t frame = header->frame;
-  if (frameperperiod==0) frameperperiod=getCODIFFrameperperiod(header);
+  if (frameperperiod==0) frameperperiod=getCODIFFramesPerPeriod(header);
+  if (frameperperiod<=0) return(CODIF_ERROR);
 
   frame += inc;
-  if (frame>frameperperiod) {
-    secinc = frame/frameperperiod;
-    frame -= secinc*frameperperiod;
-    header->seconds += secinc;
-  } else { // Negative - could optimise this but risk of off by one moderately high
-    while (frame<0) {
-      secinc++;
-      frame += frameperperiod;
+  if (frame>=frameperperiod) {
+    periodinc = frame/frameperperiod;
+    frame -= periodinc*frameperperiod;
+    header->seconds += periodinc*header->period;
+  } else if (frame<0) {
+    periodinc = (-frame + frameperperiod - 1)/frameperperiod;   // ceil(-frame/frameperperiod)
+    if (periodinc*header->period > header->seconds) {  // Would be before epoch started; leave header unchanged
+      return(CODIF_ERROR);
     }
-  
-    assert(abs(secinc)<header->seconds); // Otherwise before epoch started
-    header->seconds -= secinc;  
+    frame += periodinc*frameperperiod;
+    header->seconds -= periodinc*header->period;
   }
   header->frame = frame;
   return(CODIF_NOERROR);
@@ -211,13 +212,13 @@ int setCODIFEpochTime(codif_header *header, time_t time) {
   struct tm t;
 
   gmtime_r(&time, &t);
-  epoch = (t.tm_year-120)*2;
-  if (epoch<0)     // Year is year since CODIF_EPOCH
+  epoch = (t.tm_year+1900-CODIF_EPOCH)*2;
+  if (epoch<0)     // Before CODIF_EPOCH
     return(CODIF_ERROR);
   if (t.tm_mon>=6) {
     epoch++;
   }
-  epoch %= 32;
+  epoch %= 256;    // 8 bit field
   header->epoch = epoch;
 
   return(CODIF_NOERROR);

@@ -278,8 +278,7 @@ exclude = ["libraries/mark5access/mark5access/*format_*"]
 name = "mark5access-formats"
 component = "mark5access"
 model = "sonnet"
-files = ["libraries/mark5access/mark5access/format_*", "libraries/mark5access/mark5access/mark5_format_mark5b.c",
-         "libraries/mark5access/mark5access/mark5_format_kvn5b.c", "libraries/mark5access/mark5access/mark5_format_d2k.*"]
+files = ["libraries/mark5access/mark5access/format_*", "libraries/mark5access/mark5access/mark5_format_mark5b.c"]
 
 [[review.units]]
 name = "mark5access-formats-vlba"

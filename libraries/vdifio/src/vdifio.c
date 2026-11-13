@@ -134,6 +134,7 @@ int getVDIFEpochMJD(const vdif_header *header)
 int setVDIFNumChannels(vdif_header *header, int numchannels)
 {
   unsigned int logchans = 0;
+  assert(numchannels > 0 && (numchannels & (numchannels - 1)) == 0); // Must be a power of 2
   while(numchannels > 1)
     {
       numchannels /= 2;
@@ -204,10 +205,16 @@ int setVDIFFrameSecond(vdif_header *header, int seconds)
 }
 
 int setVDIFEpochMJD(vdif_header *header, int mjd) {
-  int year, month, day;
+  int year, month, day, epoch;
   mjd2ymd(mjd, &year, &month, &day);
-  header->epoch = (year-2000)*2;
-  if (month>6) header->epoch++;
+  epoch = (year-2000)*2;
+  if (epoch<0)     // Before 2000
+    return(VDIF_ERROR);
+  if (month>6) {
+    epoch++;
+  }
+  epoch %= 128;    // 7 bit field
+  header->epoch = epoch;
   return(VDIF_NOERROR);
 }
 
@@ -225,20 +232,20 @@ int nextVDIFHeader(vdif_header *header, int framepersec) {
 }
 
 int incrementVDIFHeader(vdif_header *header, int framepersec, int64_t inc) {
-  int secinc=0;
+  int64_t secinc;
   int64_t frame = header->frame;
   frame += inc;
-  if (frame>framepersec) {
+  if (frame>=framepersec) {
     secinc = frame/framepersec;
     frame -= secinc*framepersec;
     header->seconds += secinc;
-  } else { // Negative - could optimise this but risk of off by one moderately high
-    while (frame<0) {
-      secinc++;
-      frame += framepersec;
+  } else if (frame < 0) {
+    secinc = (-frame + framepersec - 1)/framepersec;   // ceil(-frame/framepersec)
+    if (secinc > header->seconds) {  // Would be before epoch started; leave header unchanged
+      return(VDIF_ERROR);
     }
-    assert(abs(secinc)<header->seconds); // Otherwise before epoch started
-    header->seconds -= secinc;  
+    frame += secinc*framepersec;
+    header->seconds -= secinc;
   }
   header->frame = frame;
   return(VDIF_NOERROR);
@@ -246,7 +253,6 @@ int incrementVDIFHeader(vdif_header *header, int framepersec, int64_t inc) {
 
 uint64_t time2mjdsec(time_t time) {
   return ((uint64_t)UNIXZERO_MJD*24*60*60 + (uint64_t)time);
-
 }
 
 int setVDIFEpochTime(vdif_header *header, time_t time) {
@@ -260,7 +266,7 @@ int setVDIFEpochTime(vdif_header *header, time_t time) {
   if (t.tm_mon>=6) {
     epoch++;
   }
-  epoch %= 32;
+  epoch %= 128;    // 7 bit field
   header->epoch = epoch;
 
   return(VDIF_NOERROR);

@@ -69,13 +69,13 @@ int numMissingFrames(int ** bufferframefull, int bufferframe, int numthreads, in
   return toreturn;
 }
 
-int readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbufferframes, int numthreadbufframes, int framespersecond, int * threadindexmap, char ** threadbuffers, int ** bufferframefull, int processframenumber, int numthreads, int refframemjd, int refframesecond, int refframenumber, int verbose)
+int readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbufferframes, int numthreadbufframes, int framespersecond, const int * threadindexmap, char ** threadbuffers, int ** bufferframefull, int processframenumber, int numthreads, int refframemjd, int refframesecond, int refframenumber, int verbose)
 {
   int i, j, framestoread, storedframes;
   int inputframecount, readbytes, frameoffset, frameindex;
   int framebytes, framemjd, framesecond, framenumber, framethread, threadindex;
   long long currentframenumber;
-  vdif_header *header;
+  const vdif_header *header;
 
   //read from the file
   framestoread = numbufferframes;
@@ -147,7 +147,7 @@ int readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbuffe
 int main(int argc, char **argv)
 {
   char tempbuffer[MAX_VDIF_FRAME_BYTES*2];
-  unsigned int bitmask[9] = {0, 1, 3, 7, 15, 31, 63, 127, 255};
+  const unsigned int bitmask[9] = {0, 1, 3, 7, 15, 31, 63, 127, 255};
   FILE * input;
   FILE * output;
   int inputthreadmbps, numthreads, readbytes, wrotebytes, numbufferframes, threadbufmultiplier, numthreadbufframes;
@@ -348,25 +348,25 @@ int main(int argc, char **argv)
       else{
         if(verbose) {
           fprintf(stderr, "Not all threads had valid data for frame %lld\n", processframenumber);
-  	  if(feof(input))
- 	    fprintf(stderr, "EOF has been reached\n");
-	  else
-	    fprintf(stderr, "EOF has been *not* reached\n");
-	}
-	header = (vdif_header*)(outputbuffer + outputframecount*outputframebytes);
-	setVDIFNumChannels(header, numthreads);
-	setVDIFFrameNumber(header, (processframenumber+refframenumber)%framespersecond);
-	setVDIFFrameBytes(header, outputframebytes);
-	setVDIFBitsPerSample(header, bitspersample);
-	setVDIFThreadID(header, 0);
+          if(feof(input))
+            fprintf(stderr, "EOF has been reached\n");
+          else
+            fprintf(stderr, "EOF has been *not* reached\n");
+        }
+        header = (vdif_header*)(outputbuffer + outputframecount*outputframebytes);
+        setVDIFNumChannels(header, numthreads);
+        setVDIFFrameNumber(header, (processframenumber+refframenumber)%framespersecond);
+        setVDIFFrameBytes(header, outputframebytes);
+        setVDIFBitsPerSample(header, bitspersample);
+        setVDIFThreadID(header, 0);
         header->epoch = refframeepoch; // required for setVDIFFrameMJD to work correctly
         setVDIFFrameMJD(header, refframemjd);
         setVDIFFrameSecond(header, refframesecond + (processframenumber+refframenumber)/framespersecond);
-	setVDIFFrameInvalid(header, 1);
+        setVDIFFrameInvalid(header, 1);
         //clear the data we just used
-	for(i=0;i<numthreads;++i)
-	  bufferframefull[i][processframenumber % numthreadbufframes] = 0;
-	++outputframecount;
+        for(i=0;i<numthreads;++i)
+          bufferframefull[i][processframenumber % numthreadbufframes] = 0;
+        ++outputframecount;
       }  
       framesinbuffer -= (numthreads - nmissing);
       if(f==0 && verbose)

@@ -42,9 +42,7 @@ public:
 		FormatCODIF,
 		FormatMark5B,
 		FormatVLBA,
-		FormatVLBN,
 		FormatMark4,
-		FormatKVN5B,
 		FormatLBASTD,
 		FormatLBAVSOP,		// implied if S2_data_source = VLBA
 		FormatS2,
@@ -100,10 +98,10 @@ private:
 	static regex_t matchType1;	// of form <fmt>/<threads>/<size>/<bits>	(VDIF specific, threads separated by colons)
 	static regex_t matchType2;	// of form <fmt>/<size>/<bits>			(VDIF specific)
 	static regex_t matchType3;	// of form <fmt><size>				(VDIF specific)
-	static regex_t matchType4;	// of form <fmt>1_<fanout>			(VLBA, VLBN, Mark4 specific)
+	static regex_t matchType4;	// of form <fmt>1_<fanout>			(VLBA, Mark4 specific)
 	static regex_t matchType5;	// of form <fmt>_<size>-<Mbps>-<nChan>-<bits>	(VDIF specific)
 	static regex_t matchType6;	// of form <fmt>-<Mbps>-<nChan>-<bits>
-	static regex_t matchType7;	// of form <fmt>1_<fanout>-<Mbps>-<nChan>-<bits> (VLBA, VLBN, Mark4 only)
+	static regex_t matchType7;	// of form <fmt>1_<fanout>-<Mbps>-<nChan>-<bits> (VLBA, Mark4 only)
 	static regex_t matchType8;	// of form <fmt>/<size> or <fmt>-<size>
         static regex_t matchType9;      // of form <fmt>/<period seconds>/<size>/<bits> (CODIF specific)
 };
