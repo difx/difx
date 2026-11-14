@@ -788,7 +788,7 @@ int addMark6GathererFiles(Mark6Gatherer *m6g, int nFile, char **fileList)
 			int s;
 			for(s = 0; s < MARK6_BUFFER_SLOTS; ++s)
 			{
-				Mark6FileReadBlock(m6g->mk6Files + i, s);
+				Mark6FileReadBlock(m6g->mk6Files + startFile + i, s);
 			}
 
 			// get VSN from metadata
