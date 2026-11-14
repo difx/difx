@@ -495,17 +495,10 @@ int openMark6File(Mark6File *m6f, const char *filename)
 
 		return -2;
 	}
-	m6f->readHeader.wb_size = m6f->maxBlockSize;
 	m6f->maxBlockSize = header.block_size;
 	m6f->packetSize = header.packet_size;
 	m6f->packetFormat = header.packet_format;
-	m6f->readBuffer = (char *)malloc(m6f->maxBlockSize-m6f->blockHeaderSize);
-	if(!m6f->readBuffer)
-	{
-		deallocateMark6File(m6f);
-
-		return -5;
-	}
+	m6f->readHeader.wb_size = m6f->maxBlockSize;
 
 	if(m6f->packetSize == 0 || m6f->maxBlockSize <= 16)
 	{
@@ -515,6 +508,14 @@ int openMark6File(Mark6File *m6f, const char *filename)
 		deallocateMark6File(m6f);
 
 		return -7;
+	}
+
+	m6f->readBuffer = (char *)malloc(m6f->maxBlockSize-m6f->blockHeaderSize);
+	if(!m6f->readBuffer)
+	{
+		deallocateMark6File(m6f);
+
+		return -5;
 	}
 
 	if(getFirstBlocks(m6f) < 0)
