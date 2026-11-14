@@ -9,7 +9,6 @@ bin_PROGRAMS = \
 	testdifxmessagesend \
 	testdifxmessagereceive \
 	testseqnumbers \
-	testm5lock \
 	sendtransient \
 	updatedifxclock \
 	difxlog \
@@ -48,6 +47,4 @@ updatedifxclock_SOURCES = \
 difxlog_SOURCES = \
 	difxlog.c
 
-testm5lock_SOURCES = \
-	testm5lock.c
 
