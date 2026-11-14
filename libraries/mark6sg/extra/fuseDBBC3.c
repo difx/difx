@@ -347,7 +347,7 @@ int fusem6_get_scanindex(const mk6module_t* module, const char* scanpath)
 		scanname = strrchr(scanname, '/') + 1;
 	}
 
-	for (scan = 0; module->nscans; scan++) {
+	for (scan = 0; scan < module->nscans; scan++) {
 		if (strcmp(scanname, module->scannames[scan]) == 0) {
 			return scan;
 		}
