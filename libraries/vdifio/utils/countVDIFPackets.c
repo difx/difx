@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2024 by Adam Deller                                *
+ *   Copyright (C) 2010-2026 by Adam Deller                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 //  Following not seemingly used...  -WFB
 //  int refmjd, refsecond, refnumber;
   long long framesread, framesmissed;
-  vdif_header *header;
+  const vdif_header *header;
 
   if(argc != 4)
   {

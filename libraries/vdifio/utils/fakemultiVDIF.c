@@ -48,7 +48,7 @@ int main(int argc, char **argv)
   int bufferoffset, wrotebytes, wholemissedpackets, extrareadbytes;
   int i, verbose;
   long long framesread, invalidpackets, invalidbytes;
-  vdif_header *header;
+  const vdif_header *header;
 
   fprintf(stdout, "REMEMBER! The input file must be single thread!\n\n");
 
@@ -82,6 +82,13 @@ int main(int argc, char **argv)
   invalidpackets = 0;
   invalidbytes = 0;
   readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
+  if(readbytes < VDIF_HEADER_BYTES)
+  {
+    fprintf(stderr, "Error: can't read the first header.  Cannot continue.\n");
+    fclose(output);
+    fclose(input);
+    exit(EXIT_FAILURE);
+  }
   header = (vdif_header*)buffer;
   framebytes = getVDIFFrameBytes(header);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
