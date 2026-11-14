@@ -1,3 +1,8 @@
+Version 3.0.0
+~~~~~~~~~~~
+* Removed Mark5 utilitities
+  - mk5mon
+  - testm5lock
 Version 2.9.1
 ~~~~~~~~~~~~~
 * Fix issues identified by Static Analysis
