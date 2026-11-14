@@ -803,7 +803,7 @@ ssize_t mark6_sg_recvfile(int fd, int sd, size_t nitems, size_t itemlen)
 
     msgs = (struct mmsghdr*)malloc(nitems * sizeof(struct mmsghdr));
     iovecs = (struct iovec*)malloc(nitems * sizeof(struct iovec));
-    memset(msgs, 0, sizeof(nitems * sizeof(struct mmsghdr)));
+    memset(msgs, 0, nitems * sizeof(sizeof(struct mmsghdr)));
 
     while (nwr < count)
     {
