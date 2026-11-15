@@ -55,6 +55,14 @@ fi
 
 # shellcheck disable=SC1090
 set +u; . "$SETUP_SCRIPT" > /dev/null; set -u
+# Send difxmessage to difxlog over loopback on a port nobody else holds.  On the shared
+# group and port from the setup script, another process holding the port (another DiFX
+# job or monitor on the node) can stop difxlog from binding, and difxlog then records
+# nothing without any error.  Everything runs on this host (machines: localhost).
+DIFX_MESSAGE_GROUP=127.0.0.1
+DIFX_MESSAGE_PORT=$(python3 -I -c 'import socket; s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])') \
+    || { echo "ERROR: could not find a free UDP port for difxlog" >&2; exit 1; }
+export DIFX_MESSAGE_GROUP DIFX_MESSAGE_PORT
 if [ -n "$COMPARE_WITH" ]; then
     COMPARE_WITH=$(cd "$COMPARE_WITH" 2>/dev/null && pwd) || { echo "ERROR: COMPARE_WITH is not a directory" >&2; exit 1; }
     ls "$COMPARE_WITH/$JOB.difx"/DIFX_* > /dev/null 2>&1 || { echo "ERROR: no $JOB.difx output in $COMPARE_WITH" >&2; exit 1; }
@@ -110,8 +118,13 @@ kill "$logpid" 2> /dev/null
 wait "$logpid" 2> /dev/null
 echo "mpifxcorr: exit $rc, $(echo "$t0 $t1" | awk '{printf "%.1f", $2-$1}') s, $nds datastreams"
 
-nerr=$(grep -c -E ' (ERROR|SEVERE|FATAL) ' "$JOB.difxlog" 2> /dev/null)
-echo "difxlog  : ${nerr:-?} ERROR/SEVERE/FATAL lines ($WORKDIR/$JOB.difxlog)"
+if [ -s "$JOB.difxlog" ]; then
+    nerr=$(grep -c -E ' (ERROR|SEVERE|FATAL) ' "$JOB.difxlog")
+    echo "difxlog  : $nerr ERROR/SEVERE/FATAL lines ($WORKDIR/$JOB.difxlog)"
+else
+    # mpifxcorr always sends status messages, so an empty log means capture failed
+    echo "difxlog  : WARNING: NOTHING CAPTURED - mpifxcorr's messages (to $DIFX_MESSAGE_GROUP:$DIFX_MESSAGE_PORT) did not reach difxlog; this run has no log"
+fi
 
 difxfile=$(ls "$JOB.difx"/DIFX_* 2> /dev/null | head -1)
 if [ "$rc" != 0 ] || [ -z "$difxfile" ]; then

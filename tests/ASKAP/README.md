@@ -125,7 +125,13 @@ Timing runs keep the fringe check but switch off its thresholds.
 The jobs have 46-50 DataStream processes, so a small machine measures contention, not the
 correlator: on a 4-core desktop with the data on a spinning disk the GPU timings varied by
 a factor of three between identical runs. Run it on a node with many cores and fast
-storage.
+storage, with at least one core per MPI process (48 for these jobs).
+
+`askap-tests-ozstar.sbatch` runs the six correctness runs (CPU, GPU, GPU-CPUCOMPAT for
+each job) and this benchmark as one SLURM job on an OzSTAR GPU node, and packs the results
+without visibilities for sending back. Results so far (10 s of `askap1934-lsb-1bit` in
+4.3 s on one A100, 4.5x the CPU path on the same node) are in
+`tests/FakeData/BENCHMARKS.md`, section "Real data: ASKAP CODIF on an A100 node".
 
 The job runs in `local-runs/askap1934-lsb-1bit/` (git-ignored; set `WORKDIR` to change it; the
 script refuses to reuse an existing directory). It runs vex2difx, difxcalc and mpifxcorr

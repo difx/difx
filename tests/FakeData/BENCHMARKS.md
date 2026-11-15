@@ -211,6 +211,39 @@ of a dual-socket node, while occupying 12 cores rather than 40. The full
 cost/benefit write-up, including August 2026 hardware prices and a VGOS-rate
 sizing exercise, is the artifact recorded in `docs/gpu-payback.pdf`.
 
+## Real data: ASKAP CODIF on an A100 node (tests/ASKAP, added 2026-11-15)
+
+Not FakeData: these time real CRAFT voltage dumps converted to CODIF (`tests/ASKAP`,
+`bench-askap.sh`): 23-25 antennas with one file per polarisation, so 46-50 DataStreams and
+48-52 MPI processes; 8 complex 1.185 MHz bands, lower sideband (`tests/ASKAP/README.md`).
+The metric for `askap1934-lsb-1bit` (1-bit) is T(long) - T(short), the cost of **10 s of
+data** without start-up; the 2 s 4-bit
+`askap0407-lsb-4bit` dump is too short to cut and is timed whole, so its numbers are mostly
+start-up. Median of 3 repeats, data in the page cache (`WARM=1`, `/fred` Lustre),
+gpudifx `5f2704ef5` plus the difxlog fix in `run-askap.sh`, OzSTAR gina nodes (2 x EPYC
+7543, one A100-SXM4-80GB), `tests/ASKAP/askap-tests-ozstar.sbatch`.
+
+| job | CPUs | NTHREAD | 1934 CPU (s) | 1934 GPU (s) | GPU speed-up | 0407 CPU / GPU (s) |
+|---|---|---|---|---|---|---|
+| 20818452 (gina8) | 32 | 24 | 32.7 (30.4-35.8) | 5.3 (4.1-6.6) | 6.2x | 10.6 / 6.1 |
+| 20835854 (gina2) | 32 | 24 | 29.8 (29.5-30.6) | 8.4 (8.2-9.6) | 3.5x | 10.0 / 6.1 |
+| 20948739 (gina2) | 48 | 24 | **19.5** (15.4-24.8) | **4.3** (4.1-4.4) | **4.5x** | 9.0 / 4.9 |
+| 20949560 (gina2) | 64 | 40 | 28.7 (16.9-30.3) | **4.3** (4.3-4.9) | 6.7x | 10.0 / 4.8 |
+
+- **The GPU path processes 10 s of 46-antenna data in 4.3 s: 2.3x real time on one A100**,
+  once every MPI process has a core. With 32 CPUs the GPU job's 48 processes shared cores
+  and its time varied by 60% between nodes (5.3 vs 8.4 s); at 48 and 64 CPUs it is 4.3 s
+  with a spread of a few percent. Request at least 48 CPUs for this job.
+- **The CPU figure is not settled.** The CPU job runs 46 DataStreams plus NTHREAD Core
+  threads, more busy threads than cores in every row, and its repeats spread by up to 60%
+  (the best repeats were 15.4 s at 48 CPUs and 16.9 s at 64). NTHREAD=40 on 64 CPUs was no
+  faster than 24 on 48; a 40-thread Core also spans both sockets (see "CPU baselines"). So
+  the speed-up is 4-7x depending on which CPU number is taken; quote 4.5x (the 48-CPU row,
+  both legs measured in one job) until the CPU leg is better understood.
+- Slurm reports a peak of 7-8 GB of memory and 9-10.5 minutes for the whole test job
+  (six correctness runs plus this benchmark).
+- Not yet measured: data read cold, or staged to node-local disk instead of Lustre.
+
 ## Archived numbers
 
 Superseded measurements - the 2026-07 A100 cluster profiling series and the
