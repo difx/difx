@@ -1,0 +1,69 @@
+Summary: Mark5 utilities for the DiFX suite
+Name: vlbi-mk5daemon
+Version: @version@
+Release: 1
+License: GPL3
+Group: VLBI
+BuildRoot: /var/tmp/vlbi-mk5daemon-@version@-buildroot
+Requires: vlbi-streamstor >= 9.0
+Requires: vlbi-difxmessage >= 2.4.0
+Requires: vlbi-mark5access >= 1.5
+Requires: expat
+Prefix: /usr
+Source: mk5daemon-@version@.tar.gz
+
+%define debug_package %{nil}
+
+%description
+Originally this consisted only of several useful utilites for working with Mark5 units.
+It has been expanded to become an integral part of the DiFX monitor and control system.
+
+%prep
+%setup -q -n mk5daemon-@version@
+
+%build
+%configure
+make
+
+%install
+%makeinstall
+chmod a+x /sbin/poweroff
+chmod a+x /sbin/reboot
+chmod a+x /sbin/halt
+
+%files
+%defattr(-,root,root)
+%{_bindir}/checkdir
+%{_bindir}/fileto5c
+%{_bindir}/killjob
+%{_bindir}/listcpus
+%{_bindir}/listmodules
+%{_bindir}/listmedia
+%{_bindir}/mk5daemon
+%{_bindir}/mk5cat
+%{_bindir}/mk5control
+%{_bindir}/mk5cp
+%{_bindir}/mk5dir
+%{_bindir}/mk6dir
+%{_bindir}/mk5erase
+%{_bindir}/mk5lock
+%{_bindir}/mk5map
+%{_bindir}/mk5putdir
+%{_bindir}/mk5test
+%{_bindir}/record5c
+%{_bindir}/recover
+%{_bindir}/startfusemk5
+%{_bindir}/stopfusemk5
+%{_bindir}/sukill
+%{_bindir}/testmod
+%{_bindir}/vsn
+
+%changelog
+* Tue Aug 02 2016 Walter Brisken <wbrisken@nrao.edu>
+- Change rpm name to vlbi-mk5daemon.*.rpm
+
+* Fri Jun 15 2011 Walter Brisken <wbrisken@nrao.edu>
+- Non-root-building capability
+
+* Fri Mar 11 2011 Walter Brisken <wbrisken@nrao.edu>
+- First rpm version

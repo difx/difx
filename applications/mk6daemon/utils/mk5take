@@ -1,0 +1,43 @@
+#!/usr/bin/env python2
+
+from os import system
+from sys import argv
+
+program = 'mk5take'
+version = '0.2'
+author  = 'Walter Brisken'
+verdate = '20090412'
+
+def usage(prog):
+	print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
+	print '\nA program to stop the Mark5A program on selected Mark5 units, allowing,'
+	print 'among other things, use of the software correlator.'
+	print '\nUsage:  %s [options] <unit1> [<unit2> ... ] ]' % prog
+	print '\nOptions can include:'
+	print '  --help'
+	print '  -h         Print this help information and quit\n'
+	print '  --verbose'
+	print '  -v         Print command to execute to the terminal\n'
+	print 'One or more Mark5 units should be specified with <unit> arguments.'
+	print 'Units are specified with 2 digit numbers, e.g., 08 or 11.  If multiple'
+	print 'units are specified, separate with spaces.  Note that a range of units'
+	print 'can be specified with a hyphen, e.g., 07-12 and that multiple ranges'
+	print 'can be specified, e.g., 07-16 19-23 .\n'
+	print 'Internally this program uses the "stopmark5a" option of mk5control.\n'
+	exit(0)
+
+verbose = False
+
+cmd = 'mk5control stopmark5a'
+for a in argv[1:]:
+	if a in ['-h', '--help']:
+		usage(argv[0])
+	elif a in ['-v', '--verbose']:
+		verbose = True
+	else:
+		cmd = cmd + ' %s' % a
+
+if verbose:
+	print 'Executing: %s' % cmd
+
+system(cmd)

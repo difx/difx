@@ -1,0 +1,271 @@
+Version 2.9.1
+~~~~~~~~~~~~~
+* Post DiFX 2.9.0
+* Don't limit Mark6 slot count for DiFX Message instructions
+  - limit of 4 was present for mk6dir
+  - limit of 6 was present for modinit
+* Eliminate compiler warnings using g++ 15.2.1
+* Look for environment variable DIFX_MPIRUNOPTIONS and use to set mpirun flags when starting DiFX
+* call `which mpirun` rather than mpirun so the full path is sent
+* remove --bynode from mpirun options.  If needed, apply with environment variable DIFX_MPIRUNOPTIONS
+  - At NRAO w/ openmpi-4.1.8 this is now set to --mca rmaps seq --bind-to none --mca pml ucx --mca btl ^uct,ofi --mca mtl ^ofi --mca mpi_yield_when_idle 1 
+
+Version 2.9.0
+~~~~~~~~~~~~~
+* Version for DiFX-2.9.0
+* New Mark6 message types
+* Added script for executing mark6 specific commands through  mk5daemon
+* Support for >1 expansion unit
+
+Version 2.8.0
+~~~~~~~~~~~~~
+* Version for DiFX-2.8, Nov 4, 2022
+
+Version 2.6.1
+~~~~~~~~~~~~~
+* Post DiFX-2.6
+* mk6dir: add extra column to output contaning size of scan in bytes
+* python3ify: listcpus listmedia listmodules and killjob
+  - note that Walter has converted mk5control, but not yet committed because
+    of dependency on the difxfile module which is not yet converted
+* listmedia: increase receive buffer size to 8000
+
+Version 2.6.0
+~~~~~~~~~~~~~
+* Post DiFX-2.5
+* Allow mount command to work on label rather than device
+* listfs command to list available filesystems with labels
+* mk5cp support for append mode: will continue writing partial files of matching filenames
+* mk5cp support for single scan with time range
+* mk5cp support for provided filenames
+* mk5cp try up to 3 additional times on each read error, and print some more diagnostics
+* add mk6dir and mk6state commands
+* add activity message to mk6dir, add remote control of mk6dir to mk5daemon
+* add mk5map2: program to reconstruct directory of mark5 module.  Works only on Mark5B and VDIF, currently tuned for VLBA, but could be generalized later
+* mk5control: respond to new DIFX_MARK6 environment variable which lists 2-digit unit numbers that are mark6 units that would otherwise be assumed to be Mark5 units.
+* mk5control: use machines file rather than env var DIFX_MARK6 if found and if python utilities are installed.
+* fileto5c: add 10 second delay before writing directory -- fixes instability.
+* Version for DiFX-2.6, Mar 4, 2019
+
+Version 2.5.0
+~~~~~~~~~~~~~
+* Count number of streamstor cards and if < 1, don't consider the unit to be a Mark5 unit.
+* mk5cp: don't rewrite directory file unnecessarily
+* Look for sigterm; tie to same exit routine as sigint
+* A few cleanups
+* mk5map now works better on mk5b data.  Still ugly.
+* Support for SDK 9.4: SS_MODE_PCI (default mode) is no longer an option, so don't set it.
+* Initial support for Mark6 units through the mark6meta library
+* Initial support for command line structure
+* mk5dir: can override (presumably incorrect) directory version number with --version1
+* mk5dir: no seg fault if cannot open output file
+* Adopt scripts listcpus and listmodules from calcif2 as this is a more natural home.
+* mk5erase: new option to overwrite module partition.  Might be useful for firmware upgrades.
+* Change .rpm filename to vlbi-mk5daemon.*.rpm
+* mk5cp: report average data rate and total bytes copied.  Use replaced byte counter with lower false detection rate.
+* Periodically (every 30 sec) look at OS swap usage and emit alert if in use
+* mk5putdir: if binary dump file cannot be created, don't seg fault; instead tell user.
+* mk5daemon: add message handling for starting and stopping fuseMk5
+* mk5lock: added support for fuseMk5 locks
+* mk5control: added new commands to start and stop fuseMk5
+* startfusemk5: new utility to start fuseMk5
+* stopfuseMk5: new utility to stop fuseMk5
+* Use sigaction for signal handling
+* REVERT to signal() for signal handling in programs linking to streamstor
+library!  mixing signal() (used within streamstor library) and sigaction() causes problems! 
+* Better handling of interruption in mk5cp
+* Version for DiFX-2.5, May 16, 2017
+
+Version 2.4.0
+~~~~~~~~~~~~~
+* mk5putdir: replace based on binary file / have ability to change version number
+* mk5daemon: add ability to kill a specific job. Invoke with:  mk5control "killmpifxcorr jobId" all
+* New utility  killjob  which executes: mk5control "killmpifxcorr jobId" all
+* When looking at incoming command messages (monitor.cpp), check against all local addresses, not just the "hostname"
+* mk5erase: ask before continuing on write-protected module (even if force is specified)
+* mk5dir: save a copy of the binary directory as well as the decoded directory
+* Revamped support for Mark5 directory structures: vsn, mk5dir
+* mk5erase: if MARK5_CONDITION_PATH env var is set, write conditioning results to file within that path.
+* Version for DiFX-2.4, Nov 4, 2014
+
+Version 2.3.0
+~~~~~~~~~~~~~
+* mk5dir: support SDK9 legacy directories (as per DIMINO 2.2.1 w/ SDK 9.2)
+* mk5cp: add mode to "fix" Mark5B format scans
+* mk5putdir: new utility: replace the on-disk directory
+* mark5 utilities: normalize use of RT mode a bit
+* mk5dir: default: operate without RT mode
+* mk5dir: detect unusual data while decoding directories, namely data where the payload contains a repeating pattern.
+* mk5test: new utility: use XLRSelfTest to test a Streamstor card
+* mk5dir: better VDIF support
+* Version for DiFX-2.3, Dec 20, 2013
+
+Version 2.2.0
+~~~~~~~~~~~~~
+* Speed up directory reading
+* Better .rpm infrastructure
+* IPv6 support added to VSI interface; the whole package at this point is likely IPv6 compliant.
+* Count network traffic from all interfaces, not just eth* and ib*.  lo is ignored.
+* Fixed bugs preventing packet length filtering working in record5c
+* Allow case mismatches in VSI processing
+* Respect -u option when calling system commands
+* -n option allows enables running external commands without su
+* obtain full path to difxlog by reading $DIFXROOT environment
+* check for mk5daemon already running
+* fileto5c: fix order of ops bug
+* fileto5c: copying of directory supported
+* now *mark5* identifies a Mark5 unit, not just mark5*
+* For VDIF format, save the threads to the .dir file
+* Fix for bank_info query with only bank B populated
+* Mark5 Watchdog added to mk5daemon proper
+* Version for DiFX-2.2, May 31, 2013
+
+Version 2.1.0
+~~~~~~~~~~~~~
+* Rename from 1.4.2 prior to DiFX-2.1 tagging
+* Version for DiFX-2.1, May 4, 2012
+
+Version 2.0.2
+~~~~~~~~~~~~~
+* Post DiFX-2.0.1
+* Add SMART dump option to vsn
+* Add mk5map utility to recover a directory where one doesn't exist (experimental, Mark5B @ 2 Gbps only now)
+* Some additional diagnostics in directory reading
+* mk5cp: the --no-dir option allows copying a byte range without reference to a module directory
+* mk5cp: some control over the read chunk size is now given to the user
+* mk5cp: treat "real time" mode the same way as it is treated in mpifxcorr
+* Complete wrapping of XLR calls into WATCHDOG macro statements
+* mk5daemon: collect SMART information.  (currently incomplete; information logged upon installation of modules)
+* Add stand alone Mark5C data recording program "record5c"
+* checkdir: add detection of UKN scans (those rescued by the recording system after a crash)
+* mk5dir: can now write a module directory to a module (Mark5B only and directory version 1 only)
+* Add fileto5c program which copies a file from the OS filesystem to the Mark5 module
+* Add scp capability to mk5cp
+* MPI errors are captured and logged
+* Stand-alone utility "sukill" added
+* Pass on restartSeconds to mpifxcorr in support of restarting jobs
+* Send number of CPU cores in Load messages
+* mk5dir: don't write .dir files with empty scan labels.  Make one up instead.
+
+Version 1.4.1
+~~~~~~~~~~~~~
+* Post DiFX-1.5.4/DiFX-2.0.0
+* NOTE: Active version is now in DiFX-2.0 / trunk
+* Respect DEFAULT_DMS_MASK
+* Add Write-only option to testmod
+* Fix parsing of mark5 directory files: stepping through extra parameters had a bug.
+* No more 1024 scan limit on Mark5 modules
+* Quiet version for vsn
+* Version for DiFX-2.0.1
+
+Version 1.4
+~~~~~~~~~~~
+* Post DiFX-1.5.3
+* Check that input file exists before attempting correlation
+* mk5dir: Mark4 directories from after 2009 Dec 31 would end up with wrong MJD
+* Support for Streamstor SDK 9.0
+* Support for difxVersion in difxStartMessage
+* Don't launch a job near time(0)%10 = 5 to avoid getModules clash
+* Add "recover" Mark5 utility
+* Add mk5erase (similar to SSErase from Haystack) 
+* Fix timerange mk5cp and add byterange copy
+* Use mark5ipc to lock out access to /dev/windrvr6 
+* Remove compatibility with Mark5A program
+* Add very nascent mk5lock utility
+* mk5dir: now by default will change the disk module state
+* add mk5cat
+* vsn: write protection setting and getting
+* testmod: add timing
+* Version for DiFX-2.0.0
+
+Version 1.3
+~~~~~~~~~~~
+* set svn properties
+* mk5dir, mk5cp: use XLRGetDirectory to work around streamstor bug
+* mk5dir: add --force option
+* mount and dismount commands (not using DBUS yet)
+* make destination directory before copy
+* Mark5 maint programs testmod and vsn added
+* checkdir -- ultraverbose mode (-v -v -v -v) to print nicely formatted list of scans (thanks Adam)
+* remove auto-starting of the Mark5A program
+* Fix compiler warnings and move to safer string manipulation
+* rename .c to .cpp to reflect the fact that g++ is needed
+* close popen with pclose (suggested by Martin Ettl)
+* complain if /tmp or correlation destination directory are running low on space
+* update in-line help for mk5control
+* infrastructure in place for transient event copy
+* checkdir -- allow 800 frames per second mode
+* Version for DiFX-1.5.3
+
+Version 1.2
+~~~~~~~~~~~
+* mk5dir -- add suffix to distinguish otherwise identically named scans
+* Clean up permissions and ownership issues when spawning jobs
+* Improve bankswitching
+* Version for DiFX-1.5.2
+
+Version 1.1
+~~~~~~~~~~~
+* XLRClose / XLROpen after XLRSelectBank to prevent read errors
+* add checkdir
+* Version for DiFX-1.5.1
+
+Version 1.0
+~~~~~~~~~~~
+* Version for DiFX-1.5
+
+Version 0.9
+~~~~~~~~~~~
+* go back to using ssh to start new processes -- ensures up-to-date enviromnent
+* ignore child signal to prevent defunct processes
+* use password file to get proper user ids
+* spawn difxlog when starting a job
+* fix dual-link network performance tracking
+* option to start condition_watch upon startup
+
+Version 0.8
+~~~~~~~~~~~
+* Post NRAO-DiFX 1.1 branch
+* don't use tstMark5A anymore
+* lots of careless bug fixes
+* reenable auto getvsn
+* Support for copy in mk5daemon, and support for HUP signal in mk5cp and mk5dir
+* support difxStart messages
+* mk5cp by exp code
+* alert messages for mk5cp and mk5dir
+* minor bug fixes for mk5cp and mk5dir
+* send messages whenever modules are inserted or removed
+* always make sure VSNs are legal
+* use su, not ssh
+* mk5dir and mk5cp now report on replaced data
+* track StreamStor versions
+
+Version 0.7
+~~~~~~~~~~~
+* separate out proc.[ch]
+* function to look for windrvr use
+* periodically report VSNs
+* This version is for NRAO-DiFX 1.1
+
+Version 0.6
+~~~~~~~~~~~
+* fix stopmark5a hang -- mutex not unlocked
+* fix die on quit -- unused %s
+
+Version 0.5
+~~~~~~~~~~~
+* add mk5dir
+
+Version 0.4
+~~~~~~~~~~~
+* more and improved logging
+* usage
+
+Version 0.3
+~~~~~~~~~~~
+* bug fixes.  quite usable now.
+* more logging
+
+Version 0.1
+~~~~~~~~~~~
+* Initial version.  consists of a merge of LogM5 and mk5agent

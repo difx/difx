@@ -1,0 +1,45 @@
+mk5daemon
+~~~~~~~~~
+? Fix reboot->busy or condition->busy state changes
+x ssopen bug?
+* Add IPMI support
+
+Reboot under RHEL7:
+{
+  setuid(0);
+  execl("/usr/bin/systemctl", "reboot", "--force", NULL);
+}
+
+? cope better with disks that generate I/O errors during startMk5Daemon, e.g., avoid this:
+   "The following error has occured: Cannot mount  device /dev/sdq1 at /mnt/disks/3/2.  Reason: Input/output error
+    This might be caused by insufficient permissions. On a Mark6 machine mk5daemon must be started as root!
+    Aborting
+    [Thread 0x2aaaae4d7700 (LWP 24125) exited]
+    [Inferior 1 (process 24117) exited with code 01]"
+
+
+mk5cp
+~~~~~
+x Listen for multicast "stop" message
+* Allow max file size to be specified
+* Allow scan subsets to be specified
+x Watch for disk changes in other bank
+x "mk5scp" mode
+
+mk5dir
+~~~~~~
+x Watch for disk changes in other bank
+* Look for improperly decoded scans and warn user
+
+mk5map
+~~~~~~
+* time to complete
+* understand why mf.frame is often wrong (= 0)
+* support non Mark5B_2048-16-2
+* add to docs
+* option to pass station code
+* put DMS back in
+
+mk6dir
+~~~~~~
+* support module groups instead of single slots; avoid mixing together identically named scans on slot groups 12 and 34 (EHT VLBI)
