@@ -90,7 +90,7 @@ def sniff(filebases, refants, dir, newNames):
 					break
 				for r in refants:
 					if l.find(r) > 0:
-						apd.write(d)
+						apd.write(l)
 						break
 		else:
 			while 1:

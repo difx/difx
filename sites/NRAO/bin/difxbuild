@@ -3081,7 +3081,7 @@ def rebuild(origComps, params, args, verbose, pretend):
 				execute(cmd, verbose, pretend)
 			cmd = 'cp -f %s/%s/gui/dist/*.jar %s' % (srcDir, comp[0], jarDir)
 			execute(cmd, verbose, pretend)
-			cmd = 'cp -rf %s/gui/dist/lib %s' % (srcPath, jarDir)
+			cmd = 'cp -rf %s/gui/dist/lib %s' % (srcDir, jarDir)
 			execute(cmd, verbose, pretend)
 			continue;
 		buildPath = buildDir + comp[0] + '/'
@@ -3473,7 +3473,7 @@ def pyx(origComps, params, args, verbose, pretend):
 		execute('python setup.py install --prefix=%s/../../..' % pythonPath, verbose, pretend)
 
 def psycopg(origComps, params, args, verbose, pretend):
-	if not 'PYTHONPATH' in config:
+	if not 'PYTHONPATH' in environ:
 		print('Need PYTHONPATH env var set.')
 		return
 	pythonPath = environ['PYTHONPATH'].split(':')[0]

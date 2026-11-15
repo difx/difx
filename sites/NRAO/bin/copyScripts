@@ -9,15 +9,15 @@ program = 'copyScript'
 version = '1.0'
 verdate = '20110627'
 
-print '\nThis is %s version %s  %s\n' % (program, version, verdate)
+print('\nThis is %s version %s  %s\n' % (program, version, verdate))
 
 if len(argv) == 1:
-	print ''
-	print 'Usage: %s <project code>' % argv[0]
-	print ''
-	print 'This program will match all files of the form <project code>.XX.py'
-	print 'and send such files to computer XX-cc'
-	print ''
+	print('')
+	print('Usage: %s <project code>' % argv[0])
+	print('')
+	print('This program will match all files of the form <project code>.XX.py')
+	print('and send such files to computer XX-cc')
+	print('')
 
 	exit(0)
 
@@ -28,12 +28,12 @@ else:
 
 for f in files:
 	s = split(f, '.')
-	stn = lower(s[-2])
+	stn = s[-2].lower()
 	if stn == 'gb':
 		cc = 'gb-cc.gb.nrao.edu'
 	else:
 		cc = '%s-cc' % stn
-	print 'Sending %s to %s' % (f, cc)
+	print('Sending %s to %s' % (f, cc))
 	cmd = 'scp %s vlbamon@%s:/export/home/cc/vlba/scripts' % (f, cc)
-	print 'Executing: %s' % cmd
+	print('Executing: %s' % cmd)
 	system(cmd)
