@@ -242,7 +242,31 @@ gpudifx `5f2704ef5` plus the difxlog fix in `run-askap.sh`, OzSTAR gina nodes (2
   both legs measured in one job) until the CPU leg is better understood.
 - Slurm reports a peak of 7-8 GB of memory and 9-10.5 minutes for the whole test job
   (six correctness runs plus this benchmark).
-- Not yet measured: data read cold, or staged to node-local disk instead of Lustre.
+
+### Staging to node-local disk does not help (job 20968281, 2026-11-15)
+
+`tests/ASKAP/bench-askap-staging.sh` via `askap-staging-ozstar.sbatch`, GPU path, 48 CPUs,
+gina302 (A100-80GB, 1 TB RAM). Shared storage is `/fred` (Lustre); local disk is `$JOBFS`
+(`/var/tmp/jobfs`, XFS on a Dell enterprise NVMe). Cold = dropped from the node's page cache
+(`posix_fadvise`, checked: 0.0% resident before every cold run, 100% before every warm one).
+Median of 3:
+
+| job (metric) | shared-cold | local-cold | warm | copy to local disk |
+|---|---|---|---|---|
+| 1934, 10 s of data (T(long) - T(short)) | 4.2 s (3.8-5.6) | 4.0 s (3.8-4.4) | 4.9 s (4.3-5.4) | 12.6 s (1382 MB, 110 MB/s) |
+| 0407, whole 2 s job | 5.2 s (5.2-5.5) | 5.3 s (5.2-5.3) | 5.1 s (5.0-5.1) | 14.1 s (1502 MB, 107 MB/s) |
+
+- **All three legs are the same within the noise**, so reading these jobs straight from
+  Lustre costs nothing: the GPU job reads ~1.1 GB of 1934 data in 4 s (~270 MB/s over 46
+  parallel streams) without waiting for it. The warm leg is not faster than the cold ones.
+- **Staging is a net loss**: a single `cp` copies at ~110 MB/s, so the copy alone takes
+  2.5-3x as long as correlating the job from Lustre (0407: 14.1 + 5.3 s staged against 5.2 s
+  direct).
+- Caveat: "cold" is cold on this node only. Every read in the job came after the timed copy
+  had read the files once, so the Lustre servers may have served some of them from their own
+  caches; a first read of data nobody has touched recently was not measured. The data
+  rates are also modest for Lustre (1934: ~110 MB per second of observation; 0407, 4-bit:
+  ~480 MB/s), so a higher-rate dataset or a busier file system could behave differently.
 
 ## Archived numbers
 

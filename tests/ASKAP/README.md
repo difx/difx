@@ -133,6 +133,25 @@ without visibilities for sending back. Results so far (10 s of `askap1934-lsb-1b
 4.3 s on one A100, 4.5x the CPU path on the same node) are in
 `tests/FakeData/BENCHMARKS.md`, section "Real data: ASKAP CODIF on an A100 node".
 
+### Staging to local disk (`bench-askap-staging.sh`)
+
+```bash
+DATA=/path/to/1934/codif STAGEDIR=/local/disk ./bench-askap-staging.sh askap1934-lsb-1bit 2026y006d04h04m28s 3
+```
+
+`bench-askap.sh` reads from the page cache, so it never touches the disk. This script asks
+whether copying the data to node-local disk before correlating is worth it. It times the
+copy, then the same metric as `bench-askap.sh` with the data read three ways: cold from
+`DATA` (shared storage), cold from the local copy, and warm. "Cold" means dropped from this
+node's page cache with `posix_fadvise` (`pagecache.py`, no root needed); the share still
+cached is checked before every run, and a run is reported as FAILED if the drop did not
+work (on tmpfs, for example, it cannot). Staging pays for a whole job if the copy time plus
+the local-cold time is less than the shared-cold time. `PATHS="cpu gpu"` times both paths
+(default: GPU only). `askap-staging-ozstar.sbatch` runs it on both jobs on an OzSTAR GPU
+node, with `$JOBFS` as the local disk. Result on OzSTAR (2026-11-15): reading from Lustre is
+as fast as from local NVMe or the page cache, and the copy takes 2.5-3x as long as the job,
+so staging does not pay (`tests/FakeData/BENCHMARKS.md`).
+
 The job runs in `local-runs/askap1934-lsb-1bit/` (git-ignored; set `WORKDIR` to change it; the
 script refuses to reuse an existing directory). It runs vex2difx, difxcalc and mpifxcorr
 there, keeps mpifxcorr's alerts in `askap1934-lsb-1bit.difxlog`, and then runs
