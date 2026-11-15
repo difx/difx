@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2026 by Jan Wagner, Walter Brisken & Adam Deller   *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -113,10 +113,10 @@ public:
 			this->constituents.clear();
 		}
 
-		/// Grow the list of consituent bands by one
+		/// Grow the list of constituent bands by one
 		void extend(double fstart, double bw);
 
-		/// Grow the list of consituent bands by one
+		/// Grow the list of constituent bands by one
 		void extend(const Band& b) { this->extend(b.flow, b.bandwidth()); }
 
 		/// Return the total bandwidth of the outputband constituents
@@ -154,7 +154,7 @@ public:
 	/// Return the greatest-common-divisor of a list of frequencies
 	double computeGranularity(const std::vector<double>& freqs) const;
 
-	/// Set bandwidth granularity [Hz] to use if possbile when generating auto-zooms that form outputbands
+	/// Set bandwidth granularity [Hz] to use if possible when generating auto-zooms that form outputbands
 	void setAutozoomGranularity(const double& azgranularity_Hz);
 
 	/// Automatically build a set of outputbands and their constituent bands,
@@ -163,13 +163,13 @@ public:
 	/// these will attempt to be generated. Otherwise, bands are auto-generated.
 	int generateOutputbands(int Nant_min=0, double fstart_Hz=0.0);
 
-	/// Add user-specified outputbands with a single consituent equal to a vex2difx ZoomFreq
+	/// Add user-specified outputbands with a single constituent equal to a vex2difx ZoomFreq
 	void addUserOutputbands(const std::vector<ZoomFreq>& zf);
 
-	/// Add user-specified outputband with a single consituent equal to a vex2difx ZoomFreq
+	/// Add user-specified outputband with a single constituent equal to a vex2difx ZoomFreq
 	void addUserOutputband(const ZoomFreq& zf);
 
-	/// Locate 'inputfreq' among consituents of internal outputbands, then locate that outputband in 'allfreqs'.
+	/// Locate 'inputfreq' among constituents of internal outputbands, then locate that outputband in 'allfreqs'.
 	int lookupDestinationFreq(const freq& inputfreq, const std::vector<freq>& allfreqs) const;
 
 	/// Create a list of intra-outputband channels that contain no imaginary component (edge channels of consitituents)
@@ -211,9 +211,9 @@ private:
 	/// Automatically deduce "good" outputbands to fill the available spectrum
 	int generateOutputbandsAutomatic(int Nant_min=0, double fstart_Hz=0.0);
 
-	/// Simplify an outputband definition by merging its list of consituent bands where possible,
-	/// trimming away any overlapped portions of consituent bands.
-	void simplify(AutoBands::Outputband& mergeable, int Nant_min=0) const;
+	/// Simplify an outputband definition by merging its list of constituent bands where possible,
+	/// trimming away any overlapped portions of constituent bands.
+	void simplify(AutoBands::Outputband& mergeable) const;
 
 	//TODO: double adjustStartFreq(double f0, double f1, double finitial, double df);
 

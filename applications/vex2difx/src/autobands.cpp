@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2026 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2026 by Jan Wagner, Walter Brisken & Adam Deller   *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -157,7 +157,7 @@ void AutoBands::setBandwidth(double outputbandwidth_Hz)
 }
 
 /**
- * Set bandwidth granularity in Hz to use if possbile when generating auto-zooms
+ * Set bandwidth granularity in Hz to use if possible when generating auto-zooms
  * that form outputbands.
  */
 void AutoBands::setAutozoomGranularity(const double& azgranularity_Hz)
@@ -359,7 +359,7 @@ double AutoBands::autoBandwidth()
  * list + filelist) since e.g. the most heavily channelized antenna might actually be absent and
  * thus better optimization of auto-zoombands (i.e., a reduction to fewer zooms) might be possible.
  * However, not all of the required infos are available to vex2difx at the band construction/mapping stage,
- * hence we have to include all antennas in this check even if some antennas might be 'droppped' later on.
+ * hence we have to include all antennas in this check even if some antennas might be 'dropped' later on.
  */
 bool AutoBands::covered(double f0, double f1) const
 {
@@ -375,17 +375,12 @@ bool AutoBands::covered(double f0, double f1) const
 }
 
 /**
- * Simplify an outputband definition by merging its list of consituent bands where possible,
- * trimming away any overlapped portions of consituent bands.
+ * Simplify an outputband definition by merging its list of constituent bands where possible,
+ * trimming away any overlapped portions of constituent bands.
  */
-void AutoBands::simplify(AutoBands::Outputband& mergeable, int Nant_min) const
+void AutoBands::simplify(AutoBands::Outputband& mergeable) const
 {
 	assert(!mergeable.constituents.empty());
-
-	if(Nant_min <= 0)
-	{
-		Nant_min = this->Nant;
-	}
 
 	if(verbosity > 0)
 	{
@@ -521,7 +516,7 @@ void AutoBands::analyze(int Nant_min)
 		}
 	}
 
-	// Mark directly adjecent spans as 'continued'; last entry defaults to .continued=False
+	// Mark directly adjacent spans as 'continued'; last entry defaults to .continued=False
 	for(unsigned n = 1; n < spans.size(); n++)
 	{
 		spans[n-1].continued = (spans[n-1].fhigh == spans[n].flow);
@@ -554,7 +549,7 @@ int AutoBands::generateOutputbands(int Nant_min, double fstart_Hz)
 	}
 
 	// Generate bands in full-auto mode? Or use only explicitly specified/added bands?
-	if(userOutputbands.size() <= 0)
+	if(userOutputbands.empty())
 	{
 		return generateOutputbandsAutomatic(Nant_min, fstart_Hz);
 	}
@@ -648,7 +643,7 @@ int AutoBands::generateOutputbandsAutomatic(int Nant_min, double fstart_Hz)
 			// try a slight shift to begin at a more 'integer' MHz
 			// TODO
 
-			// Now piece together 'self.outputbw' amout of band from consecutive spans
+			// Now piece together 'self.outputbw' amount of band from consecutive spans
 			AutoBands::Outputband ob(foutstart, outputbandwidth);
 			double bw_needed = outputbandwidth;
 			double slicestartfreq = foutstart;
@@ -695,7 +690,7 @@ int AutoBands::generateOutputbandsAutomatic(int Nant_min, double fstart_Hz)
 			// Store the details of the completed outputband
 			if(bw_needed <= 0)
 			{
-				simplify(ob, Nant_min);
+				simplify(ob);
 				assert(ob.isComplete());
 				outputbands.push_back(ob);
 				foutstart += outputbandwidth;
@@ -784,7 +779,7 @@ int AutoBands::generateOutputbandsExplicit(int Nant_min)
 
 		if(newband.isComplete())
 		{
-			simplify(newband, Nant_min);
+			simplify(newband);
 			outputbands.push_back(newband);
 		}
 
@@ -955,7 +950,7 @@ int AutoBands::listEdgeChannels(const AutoBands::Outputband& outputband, std::de
 		}
 
 		// Flag the first bin (DC) of all constituent bands except for the first band; DC bin is okay in first band
-		// Note: no need to flag the last N/2+1 bin (Nyquist) of consituent bands, since all Nyquist except the final end up automatically at DC-bin location of next band
+		// Note: no need to flag the last N/2+1 bin (Nyquist) of constituent bands, since all Nyquist except the final end up automatically at DC-bin location of next band
 		if (m == 0)
 		{
 			if (verbosity > 2)

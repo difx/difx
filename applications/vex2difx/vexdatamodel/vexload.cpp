@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2025 by Walter Brisken                             *
+ *   Copyright (C) 2009-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -2770,7 +2770,7 @@ static int getVexRev(VexData *V, Vex *v)
 
 static int getExper(VexData *V, Vex *v)
 {
-	llist *block;
+	const llist *block;
 	double start, stop;
 	int nWarn = 0;
 

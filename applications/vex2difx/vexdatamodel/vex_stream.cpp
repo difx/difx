@@ -606,7 +606,7 @@ int VexStream::snprintDifxFormatName(char *outString, int maxLength) const
 	}
 	else if(format == FormatS2)
 	{
-		std::cerr << "Warning: S2 format encounted.  This could be LBAVSOP or LBASTD.  Defaulting to LBAVSOP!" << std::endl;
+		std::cerr << "Warning: S2 format encountered.  This could be LBAVSOP or LBASTD.  Defaulting to LBAVSOP!" << std::endl;
 
 		n = snprintf(outString, maxLength, "%s", DataFormatNames[FormatLBAVSOP]);
 	}

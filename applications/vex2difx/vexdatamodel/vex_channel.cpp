@@ -54,6 +54,7 @@ void VexChannel::selectTones(float toneIntervalMHz, float toneBaseMHz, enum Tone
 		std::vector<unsigned int>::iterator it;
 
 		// Here what we do is turn negative tone indices (i.e., counting from end of band) to positive ones
+		// FIXME: tones is unsigned.  Does this reflect a logic error elsewhere?
 		for(it = tones.begin(); it != tones.end(); ++it)
 		{
 			if(*it < 0)
