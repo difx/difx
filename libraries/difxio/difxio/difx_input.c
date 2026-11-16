@@ -1521,22 +1521,6 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D, const DifxParameter
 			D->antenna[a].clockcoeff[i] = atof(DifxParametersvalue(ip, r));
 		}
 
-		/* ==================== VGOS COMPLEX FLIP ==================== */
-		r = DifxParametersfind1(ip, 0, "TELESCOPE %d VGOS COMPLEX FLIP", a);
-		if(r >= 0)
-		{
-			const char *val = DifxParametersvalue(ip, r);
-			if(strcasecmp(val, "true") == 0 || strcmp(val, "1") == 0)
-			{
-				D->antenna[a].vgosComplexFlip = 1;
-			}
-			else
-			{
-				D->antenna[a].vgosComplexFlip = 0;
-			}
-		}
-		/* Note: If key is absent, newDifxAntennaArray already zeroed it to 0 (false) */
-		/* =========================================================================== */
 	}
 
 	return D;
@@ -1600,6 +1584,18 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 			fprintf(stderr, "Developer error: parseDifxInputDatastreamTable: DIFXIO_FORMAT_LENGTH was set too small (%d).  This use case needed it to be %d\n", DIFXIO_FORMAT_LENGTH, v);
 
 			exit(0);
+		}
+
+		/* Optional: VGOS COMPLEX FLIP, written immediately after DATA FORMAT.
+		 * Only accept it on the very next row so a missing key can't pick up a
+		 * later datastream's value.  If absent, newDifxDatastreamArray (calloc)
+		 * has already set it to 0 (false). */
+		r1 = DifxParametersfind(ip, r+1, "VGOS COMPLEX FLIP");
+		if(r1 == r+1)
+		{
+			const char *val = DifxParametersvalue(ip, r1);
+			D->datastream[e].vgosComplexFlip = (strcasecmp(val, "true") == 0 || strcmp(val, "1") == 0);
+			r = r1;
 		}
 	
 		r = DifxParametersfind(ip, r+1, "QUANTISATION BITS");

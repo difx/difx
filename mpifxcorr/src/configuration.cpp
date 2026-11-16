@@ -1477,6 +1477,17 @@ bool Configuration::processDatastreamTable(istream * input)
         cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, LBA8BIT, MKIV, VLBA, MARK5B, VDIF, VDIFL, INTERLACEDVDIF and CODIF)" << endl;
       return false;
     }
+    // VGOS COMPLEX FLIP is optional; it defaults to false when absent
+    datastreamtable[i].vgoscomplexflip = false;
+    if(getinputline_opt(input, &line, "VGOS COMPLEX FLIP"))
+    {
+      if(line == "TRUE" || line == "true" || line == "T" || line == "t" || line == "1")
+      {
+        datastreamtable[i].vgoscomplexflip = true;
+        if(mpiid == 0)
+          cinfo << startl << "VGOS complex flip enabled for datastream " << i << ": the sideband of its complex VDIF data is inverted during unpacking" << endl;
+      }
+    }
     getinputline(input, &line, "QUANTISATION BITS");
     datastreamtable[i].numbits = atoi(line.c_str());
 
@@ -2009,26 +2020,6 @@ void Configuration::processTelescopeTable(istream * input)
       getinputline(input, &line, "CLOCK COEFF ", i);
       telescopetable[i].clockpoly[j] = atof(line.c_str());
     }
-
-    // PARSE VGOS COMPLEX FLIP FLAG
-    // vgoscomplexflip has a default value of false this key may not be present in the input file
-    telescopetable[i].vgoscomplexflip = false;
-   
-    ostringstream keystream;
-    keystream << "TELESCOPE " << i << " VGOS COMPLEX FLIP";
-    
- 
-    if(getinputline_opt(input, &line, keystream.str()))
-    {
-      if(line == "TRUE" || line == "true" || line == "T" || line == "t" || line == "1")
-      {
-        telescopetable[i].vgoscomplexflip = true;
-        if(mpiid == 0)
-          cinfo << startl << "VGOS complex flip enabled for telescope " << telescopetable[i].name << ": the sideband of its complex VDIF data is inverted during unpacking" << endl;
-      }
-    }
-    // END PARSE VGOS COMPLEX FLIP FLAG
-
   }
 }
 

@@ -509,6 +509,7 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 		fprintf(fp, "      window size = %d\n", dd->windowSize);
 	}
 	fprintf(fp, "    format = %s\n", dd->dataFormat);
+	fprintf(fp, "    vgosComplexFlip = %d\n", dd->vgosComplexFlip);
 	fprintf(fp, "    quantization bits = %d\n", dd->quantBits);
 	fprintf(fp, "    sampling = %s\n", samplingTypeNames[dd->dataSampling]);
 	fprintf(fp, "    nRecFreq = %d\n", dd->nRecFreq);
@@ -583,6 +584,7 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2, c
 	
 	if(dd1->antennaId != antennaId2 ||
 	   strcmp(dd1->dataFormat, dd2->dataFormat) != 0 ||
+	   dd1->vgosComplexFlip != dd2->vgosComplexFlip ||
 	   dd1->dataSampling != dd2->dataSampling ||
 	   dd1->nRecFreq != dd2->nRecFreq ||
 	   dd1->nRecBand != dd2->nRecBand ||
@@ -697,6 +699,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src, const i
 
 		exit(0);
 	}
+	dest->vgosComplexFlip = src->vgosComplexFlip;
 	dest->dataSampling = src->dataSampling;
 	dest->dataSource = src->dataSource;
 	dest->quantBits = src->quantBits;
@@ -788,6 +791,7 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 
 		exit(0);
 	}
+	dest->vgosComplexFlip = src->vgosComplexFlip;
 	dest->dataSampling = src->dataSampling;
 	v = snprintf(dest->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", src->networkPort);
 	if(v >= DIFXIO_ETH_DEV_SIZE)
@@ -996,6 +1000,7 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	writeDifxLineInt(out, "TELESCOPE INDEX", dd->antennaId);
 	writeDifxLineDouble(out, "TSYS", "%f", dd->tSys);
 	writeDifxLine(out, "DATA FORMAT", dd->dataFormat);
+	writeDifxLine(out, "VGOS COMPLEX FLIP", dd->vgosComplexFlip ? "true" : "false");
 	writeDifxLineInt(out, "QUANTISATION BITS", dd->quantBits);
 	writeDifxLineInt(out, "DATA FRAME SIZE", dd->dataFrameSize);
 	writeDifxLine(out, "DATA SAMPLING", samplingTypeNames[dd->dataSampling]);
