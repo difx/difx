@@ -43,7 +43,7 @@ GetOptions('debug'=>\$debug, 'bits=i'=>\$bits, 'framesize=i'=>\$framesize, 'das=
 if (@ARGV<2) {
   print<<EOF;
  
-Error: Too few argments 
+Error: Too few arguments 
 
   addVDIF.pl [options] <vexfile> <StationId> [<StationID> ....]
 

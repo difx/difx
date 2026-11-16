@@ -106,7 +106,7 @@ if ($evlbi) {
   $mjd += $seconds/(60*60*24);
 
   if ($mjd>$startmjd) {
-    print "Exeriment has not yet started\n";
+    print "Experiment has not yet started\n";
     $startmjd = $mjd;
   } else {
 
@@ -287,7 +287,7 @@ sub server_comm {
   } elsif ($ret =~ /<status>.*<\/status>/s) {
     return $1;
   } else {
-    warn "Did not understand server $recorder reponse ($ret): $!\n";
+    warn "Did not understand server $recorder response ($ret): $!\n";
     return undef;
   }
 }

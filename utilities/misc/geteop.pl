@@ -159,7 +159,7 @@ sub printUsage
         print "----------------------------------------------------------------------\n";
         print " Script to obtain EOP values from this URL:\n";
         print " $FINALS_URL\n";
-        print " The EOPS are reformated to a format that can be used in the vex file.\n";
+        print " The EOPS are reformatted to a format that can be used in the vex file.\n";
         print "----------------------------------------------------------------------\n";
         print "\nUsage: EMAIL_ADDR=you\@domain $0 yyyy-doy numEOP [EOPsuffix]\n\n";
         print "yyyy-doy: the year and day-of-year of the first EOP value to obtain\n";

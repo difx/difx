@@ -39,7 +39,7 @@ int main (int argc, char **argv) {
   ssize_t nread;
   off_t sook;
   char msg[300], buf[CODIF_HEADER_BYTES], timestr[40];
-  codif_header *header;
+  const codif_header *header;
 
  struct option options[] = {
     {"skip", 1, 0, 'S'},
@@ -164,7 +164,7 @@ int main (int argc, char **argv) {
       } else {
       
 	printf("FRAME#:      %" PRIu32 "\n", getCODIFFrameNumber(header));
-	printf("SECONDS:     %d     %02d/%02d/%d  %s\n", getCODIFFrameEpochSecOffset(header),
+	printf("SECONDS:     %" PRIu32 "     %02d/%02d/%d  %s\n", getCODIFFrameEpochSecOffset(header),
 	       day, month, year, timestr);
 
 	printf("\n");

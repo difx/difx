@@ -136,7 +136,7 @@ int main (int argc, char * const argv[]) {
 
     case 'h':
       usage();
-
+      free(outdir);
       return(1);
     break;
     
@@ -151,6 +151,7 @@ int main (int argc, char * const argv[]) {
   if (buf==NULL) {
     sprintf(msg, "Trying to allocate %d bytes", CODIF_HEADER_BYTES);
     perror(msg);
+    free(outdir);
     return(1);
   }
   header = (codif_header*)buf;
@@ -185,10 +186,12 @@ int main (int argc, char * const argv[]) {
 	sprintf(msg, "Trying to skip %d bytes at start of file", offset);
 	perror(msg);
 	close(infile);
+	free(outdir);
 	return(1);
       } else if (ss!=offset) {
 	fprintf(stderr, "Could not skip %d bytes at start of file - aborting", offset);
 	close(infile);
+	free(outdir);
 	return(1);
       }
     } else {
@@ -272,27 +275,25 @@ int main (int argc, char * const argv[]) {
       oframesize = odatasize+CODIF_HEADER_BYTES; 
       if (oframesize%8) { // Not multiple of 8
 	fprintf(stderr, "Using output frame size of %d. This is not valid - aborting\n", oframesize);
+	free(outdir);
+	free(buf);
 	return(1);
       }
       obufsize = frameperbuf*oframesize;
       obuf = malloc(nout*sizeof(uint8_t*));
       if (obuf==NULL) {
-	//sprintf(msg, "Trying to allocate %d Kbytes", obufsize/1024);
-	sprintf(msg, "Trying to allocate pointers");
-	perror(msg);
+	perror("Trying to allocate pointers");
 	break;
       }
       pout = malloc(nout*sizeof(uint8_t*));
       if (pout==NULL) {
-	sprintf(msg, "Trying to allocate pointers");
-	perror(msg);
+	perror("Trying to allocate pointers");
 	break;
       }
 
       outfile = malloc(nout*sizeof(int));
       if (outfile==NULL) {
-	sprintf(msg, "Trying to allocate pointers");
-	perror(msg);
+	perror("Trying to allocate pointers");
 	break;
       }
 
@@ -449,7 +450,8 @@ int main (int argc, char * const argv[]) {
 
   free(outdir);
   free(buf);
-  for (i=0;i<nout;i++) free(pout[i]);
+  for (i=0;i<nout;i++) free(obuf[i]);
+  free(obuf);
   free(pout);
   
   return(0);
