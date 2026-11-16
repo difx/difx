@@ -109,8 +109,7 @@ public:
   inline bool useVGOSComplexVDIFHack(int configindex, int datastreamindex) const
   {
     int dsTableIndex = configs[configindex].datastreamindices[datastreamindex];
-    int tIndex = datastreamtable[dsTableIndex].telescopeindex;
-    return telescopetable[tIndex].vgoscomplexflip;
+    return datastreamtable[dsTableIndex].vgoscomplexflip;
   }
   inline long long getEstimatedBytes() const { return estimatedbytes; }
   inline int getVisBufferLength() const { return visbufferlength; }
@@ -895,7 +894,6 @@ private:
     int clockorder;
     double clockrefmjd;
     double * clockpoly;
-    bool vgoscomplexflip;
   } telescopedata;
 
   ///Storage struct for data from the datastream table of the input file
@@ -908,6 +906,7 @@ private:
     datasampling sampling;
     complextype tcomplex;
     bool ismuxed;
+    bool vgoscomplexflip;   // invert the sideband of complex VDIF data while unpacking
     long phasecalintervalhz;
     long phasecaldenominator; // default 1, >1 to interpret phasecalintervalhz as nominator of a fraction
     long phasecalbasehz;
