@@ -1,41 +1,9 @@
-if WITH_STREAMSTOR
-streamstor_sources = \
-	modules.cpp \
-	mark5a.cpp \
-	smart.cpp \
-	smart.h \
-	watchdog.cpp \
-	watchdog.h \
-	ssversions.cpp
-else
-streamstor_sources = 
-endif
-
 bin_PROGRAMS = \
 	mk6daemon
 
 mk6daemon_SOURCES = \
-	difx.cpp \
-	loadmon.cpp \
-	swapmon.cpp \
-	logger.cpp \
-	logger.h \
-	monitor.cpp \
-	vsis.cpp \
-	vsis_commands.h \
-	vsis_commands.cpp \
-	getdir.cpp \
-	getfilelist.cpp \
-	datacopy.cpp \
-	fuse.cpp \
-	condition.cpp \
-	options.cpp \
-	options.h \
+	main.cpp \
 	proc.cpp \
-	proc.h \
-	swap.cpp \
-	swap.h \
-	macros.h \
-	mk5daemon.cpp \
-	mk5daemon.h \
-	$(streamstor_sources)
+	Logger.cpp \
+	Mk6Daemon.h \
+	Mk6Daemon.cpp

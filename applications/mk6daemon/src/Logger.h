@@ -1,6 +1,4 @@
 /***************************************************************************
- *   Copyright (C) 2016 by Walter Brisken                                  *
- *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
  *   the Free Software Foundation; either version 3 of the License, or     *
@@ -17,56 +15,29 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include <cstdio>
-#include <cstring>
-#include <cstdlib>
-#include "swap.h"
 
-/* Value returned into "usage": positive number means swap in use [kBytes] */
-/* Return value: 0 = success, != 0 means error */
-int getSwapUsage(int *usage)
+#ifndef __LOGGER_H__
+#define __LOGGER_H__
+
+
+#include <fstream>
+#include <iostream>
+#include <sstream>
+
+// Enum to represent log levels
+enum LogLevel { DEBUG, INFO, WARNING, ERROR, CRITICAL };
+
+class Logger
 {
-	const int MaxLineLength=256;
-	FILE *pin;
-	char line[MaxLineLength+1];
-	const char *c;
+public:
+    Logger(const std::string& logfile, bool toConsole);
+    ~Logger();
+    void log(LogLevel level, const std::string message);
 
-	*usage = 0;
+private:
+    std::ofstream m_logFile; 
+    std::string levelToString(LogLevel level);
+    bool m_toConsole;
+};
 
-	pin = popen("free", "r");
-	if(!pin)
-	{
-		return -1;
-	}
-
-	/* read first line: column heads, and discard */
-	for(int l = 0; l < 10; ++l)
-	{
-		char name[20];
-		int data[6];
-		int n;
-
-		c = fgets(line, MaxLineLength, pin);
-		if(c == 0)
-		{
-			pclose(pin);
-
-			return -2;
-		}
-		n = sscanf(line, "%s%d%d%d%d%d%d", name, data+0, data+1, data+2, data+3, data+4, data+5);
-		if(n > 3 && strcmp(name, "Mem:") == 0)
-		{
-			*usage -= data[2];
-		}
-		else if(n > 2 && strcmp(name, "Swap:") == 0)
-		{
-			*usage += data[1];
-			
-			break;	/* we got all the info we need */
-		}
-	}
-
-	pclose(pin);
-
-	return 0;	/* success */
-}
+#endif
