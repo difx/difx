@@ -15,7 +15,7 @@ def parseOptions():
     des = 'Program to shift $CLOCK section entries of vex.obs '
     des += 'to an new epoch.  The clock drifts are used to calculate '
     des += 'a new offset via:  clock_early = old + (dt) * drift.  The '
-    des += 'units are asssumed to be sec and sec/sec if not specified. '
+    des += 'units are assumed to be sec and sec/sec if not specified. '
     use = '%(prog)s [options]\n'
     epi = ''
     parser = argparse.ArgumentParser(epilog=epi, description=des, usage=use)

@@ -144,7 +144,7 @@ sub getStationsFromVex
         $st_text	=~  y/[ ]//d;
 	@SplitAnzahl    =   split   (/[=;]/, $st_text);
 	
-	# check if this station was exluded by the user (via the -e option)
+	# check if this station was excluded by the user (via the -e option)
 	if (grep $_ eq uc($SplitAnzahl[1]), @excludeStations)
 	{
 		next;
@@ -285,7 +285,7 @@ sub parseVex
 				$vexScans[$scanCount]{"STATION_OFFSET"}{$station} = $2;
 				$vexScans[$scanCount]{"STATION_DURATION"}{$station} = $3;
 
-				# remeber longest duration that occurs in this scan
+				# remember longest duration that occurs in this scan
 				if ($3 > $vexScans[$scanCount]{"MAX_DURATION"})
 				{
 					$vexScans[$scanCount]{"MAX_DURATION"} = $3;
@@ -498,7 +498,7 @@ sub getScanNames
         	chomp($line);                                
 		if  ($line  =~  /\d{1,2}h\d{1,2}m\d{1,2}\.\d{2}s\s+([A-Z]\s+=\s+.+_.+)/)
                 {
-			# now parse the scan defintion
+			# now parse the scan definition
 			@tok = split (/ /, $1);
 			for (my $i = 0; $i <= $#tok; $i++)
 			{
@@ -685,7 +685,7 @@ sub printUsage
     print "OUTPUT\n";
     print "---------------------------------------------------------------------------- \n";    
     print " Output-Files :   vexfilename.pclist\n";    
-    print " \t vexfilename.pclist 	correlation summary (identical to sceen output)\n";    
+    print " \t vexfilename.pclist 	correlation summary (identical to screen output)\n";    
     print " \t recor.joblist 		recorrelation list\n";    
     print "\n";    
     print "Legend:\n";    

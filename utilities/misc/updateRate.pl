@@ -13,7 +13,7 @@ foreach (@ARGV) {
   if (/^(\S+):(\S+)$/) {
     $rates{uc $1} = $2;
   } else {
-    die "Bad argment $_\n";
+    die "Bad argument $_\n";
   }
 }
 

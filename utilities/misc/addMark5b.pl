@@ -34,7 +34,7 @@ my $debug=0;
 if (@ARGV<2) {
   print<<EOF;
  
-Error: Too few argments 
+Error: Too few arguments 
 
   vex2mark5b.pl <vexfile> <StationId> [<StationID> ....]
 

@@ -8,7 +8,7 @@
     sa.py publish       commit the generated wiki pages and push them
     sa.py summary       on demand: ask Claude to summarise the latest run (then render)
     sa.py run           compdb, analyse and render (--publish: and publish)
-    sa.py review        Claude bug review, one unit at a time, into Code-Review wiki pages
+    sa.py review        Claude bug review, one unit at a time, into Code Review wiki pages
 
 Needs only Python 3.11+ and the tools themselves; see README.md.
 """

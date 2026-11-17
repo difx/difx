@@ -79,7 +79,7 @@ def getdevices(slot):
     else:
       b = string.split(out)
 
-  # --- IF THE LENGHT OF B IS > 0 THEN IT WAS ASSIGNED, CONCATENATE OUTPUT
+  # --- IF THE LENGTH OF B IS > 0 THEN IT WAS ASSIGNED, CONCATENATE OUTPUT
   if len(b) > 0:
       scsi_list = a + b
   elif len(a) > 0:
@@ -218,7 +218,7 @@ for i in range(len(disks)):
   out = subp.communicate();
   time.sleep(0.1)
     
-  # make new partions
+  # make new partitions
   print("Partitioning disk", disks[i]['dev_num'], "device", disks[i]['disk'])
   partcmd = ['sudo', 'parted', '-s', disks[i]['disk'], 'mktable', 'gpt']
   subp = subprocess.Popen(partcmd, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
