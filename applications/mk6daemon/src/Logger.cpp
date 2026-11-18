@@ -63,16 +63,16 @@ void Logger::log(LogLevel level, const string message)
 string Logger::levelToString(LogLevel level) 
 { 
     switch (level) { 
-    case DEBUG: 
-      return "DEBUG"; 
+    case VERBOSE: 
+      return "VERBOSE"; 
     case INFO: 
       return "INFO"; 
     case WARNING: 
       return "WARNING"; 
     case ERROR: 
       return "ERROR"; 
-    case CRITICAL: 
-      return "CRITICAL"; 
+    case NONE: 
+      return "NONE"; 
     default: 
       return "UNKNOWN"; 
     } 

@@ -25,7 +25,8 @@
 #include <sstream>
 
 // Enum to represent log levels
-enum LogLevel { DEBUG, INFO, WARNING, ERROR, CRITICAL };
+//enum LogLevel { DEBUG, INFO, WARNING, ERROR, CRITICAL };
+enum LogLevel { NONE, ERROR, INFO, WARNING, VERBOSE };
 
 class Logger
 {
