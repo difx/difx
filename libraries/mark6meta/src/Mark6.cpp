@@ -56,8 +56,11 @@ Mark6::Mark6(void)
     // treat uninitialized disks (needed for modInit mode)
     initRawDevice_m = false;
     
+    mark6meta::Logger::log(mark6meta::LogLevel::Verbose, "Initializing");
+    
     // Create the udev object 
     udev_m = udev_new();
+   
     if (!udev_m) {
             throw Mark6Exception (string("Cannot create new udev object.") );
     }
@@ -72,7 +75,8 @@ Mark6::Mark6(void)
 
     // identify SAS controllers
     int numControllerDetect = enumerateControllers();
-    clog << "Detected " << numControllerDetect << " SAS controllers installed in this machine." << endl;
+    mark6meta::Logger::log(mark6meta::LogLevel::Verbose, "Found " + std::to_string(numControllerDetect) + " SAS controllers.");
+    
 
     // look for controller config in /etc/default
     int numControllerConf = readControllerConfig();
@@ -82,19 +86,20 @@ Mark6::Mark6(void)
         writeControllerConfig();
         numControllerConf = readControllerConfig();
     }
-    clog << "Found " << numControllerConf << " controller defintions in config file." << endl;
+
     if (numControllerConf == 0)
         throw Mark6Exception (string("Config file contains no valid controller definitions. Check ") + configFile_m + "\nDeleting the file will create a new config upon the next restart.");
+
+    mark6meta::Logger::log(mark6meta::LogLevel::Verbose, "Found " + std::to_string(numControllerConf) + " controller defintions in " + configFile_m);
 
     if (numControllerDetect == 0)
         throw Mark6Exception (string("Did not find any SAS controllers. Is this a mark6?") );
     else if (numControllerDetect < numControllerConf) 
         throw Mark6Exception (string("Detected fewer SAS controllers than defined in the configuration.") );
     else if (numControllerDetect > numControllerConf) 
-        clog << "WARNING: Detected more SAS controllers than defined in the configuration. Check " << configFile_m;
+    	mark6meta::Logger::log(mark6meta::LogLevel::Warning, "Detected more SAS controllers than defined in the configuration. Check " + configFile_m);
 
     numSlots_m = numControllerDetect * 2;
-    
 
     // create array holding slot ids
     for (int i=0; i < numSlots_m; i++)
@@ -323,7 +328,6 @@ void Mark6::sendActivityMessage(string vsn, int slot, string message)
  */
 void Mark6::sendSlotStatusMessage()
 {
-    //clog << "Mark6::sendStatusMessage" << endl;
     DifxMessageMark6SlotStatus dm;
 
     // set module group for each bank
@@ -463,7 +467,8 @@ void Mark6::manageDeviceChange()
             if (tempDevices[i].isValid() == false)
             {
                 //cout << "disk " << tempDevices[i].getName() << " is not a valid Mark6 disk device. Discarding." << endl;
-                clog << "disk " << tempDevices[i].getName() << " is not a valid Mark6 disk device. Discarding." << endl;
+
+    		mark6meta::Logger::log(mark6meta::LogLevel::Verbose, "disk " + tempDevices[i].getName() + " is not a valid Mark6 disk device. Discarding.");
                 continue;
             }
 
@@ -486,7 +491,7 @@ void Mark6::manageDeviceChange()
 
             } catch (exception& e) {
                 // log the exception and go on (needed when dealing with unitialized modules)
-                clog << e.what() << endl;
+    		mark6meta::Logger::log(mark6meta::LogLevel::Error, e.what() );
             }
 
             // determine size
@@ -535,7 +540,9 @@ void Mark6::manageDeviceChange()
                         //  - grouping unclear, default to single group identical to disk eMSN metadata
                         std::string defaultGroup(tempDevices[i].getMeta().getEMSN());
                         defaultGroup.resize(DIFX_MESSAGE_MARK6_MSN_LENGTH);
-                        clog << "Warning: metadata partition of disk " << tempDevices[i].getName() << " lacks 'group', defaulting group to " << defaultGroup << endl;
+
+    			mark6meta::Logger::log(mark6meta::LogLevel::Warning, "metadata partition of disk " + tempDevices[i].getName() + " lacks 'group', defaulting group to " + defaultGroup);
+
                         std::vector<std::string> tempGroup;
                         tempGroup.push_back(defaultGroup);
                         modules_m[slot].setGroupMembers(tempGroup);
@@ -757,7 +764,6 @@ void Mark6::pollDevices()
     vector<std::string> tempPartitions;
 
     //cout << "Polling for new devices" << endl;
-    //clog << "Polling for new devices" << endl;
 
     
     /*for(std::vector<Mark6DiskDevice>::size_type i = 0; i != newDevices_m.size(); i++) {
@@ -918,15 +924,15 @@ void Mark6::pollDevices()
                 cout << endl;
 */
                 
-//                cout << "Currently mounted modules:" << endl;
-                clog << "Currently mounted modules:" << endl;
+/*              cout << "Currently mounted modules:" << endl;
+
+    		mark6meta::Logger::log(mark6meta::LogLevel::Verbose, "Currently mounted modules:");
                 for (unsigned int iSlot=0; iSlot < controllers_m.size()*2; iSlot++)
                 {
                     //modules_m[iSlot].isComplete();
                     //cout << "Slot " << iSlot << " = " << modules_m[iSlot].getEMSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << modules_m[iSlot].isComplete() << endl;
  //                   cout << "Slot " << iSlot+1 << " = " << modules_m[iSlot].getEMSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << endl;
-                    clog << "Slot " << iSlot+1 << " = " << modules_m[iSlot].getVSN() << " (" << modules_m[iSlot].getNumDiskDevices() << " disks) " << endl;
-		    /*if (modules_m[iSlot].getNumDiskDevices() > 0)
+		    if (modules_m[iSlot].getNumDiskDevices() > 0)
 		    {
 			//if (modules_m[iSlot].diskDevices_m.empty()) { continue; }
 			map<int, string> serials = modules_m[iSlot].getDiskDevice(0)->getMeta().getSerials();
@@ -938,8 +944,9 @@ void Mark6::pollDevices()
 			   cout << "matching " << it->first << " " << it->second << endl;
 			}
                         cout << endl;
-		    }*/
+		    }
                 }
+*/
 
     }
 
@@ -1062,7 +1069,7 @@ void Mark6::writeControllerConfig()
 
     conf.close();
 
-    clog << "Wrote new sas controller configuration: " << configFile_m << ". Check if automatic slot assignments matches local cabling" << endl;
+    mark6meta::Logger::log(mark6meta::LogLevel::Info, "Wrote new sas controller configuration: " + configFile_m + ". Check that automatic slot assignment matches local cabling.");
 
 }
 
@@ -1084,7 +1091,6 @@ void Mark6::writeControllerConfig()
       ifstream conf (configFile_m.c_str());
       if (conf.is_open())
       {
-          clog << "Read controller config from " << configFile_m << endl;
           while ( getline (conf,line) )
           {
               if (line.rfind("#", 0) == 0 || line.size() < 1) // todo: " lrtrim(line).size() "
@@ -1105,10 +1111,6 @@ void Mark6::writeControllerConfig()
         return(-1);
     }
 
-    /*for(std::size_t i = 0; i < controllers_m.size(); ++i) {
-        clog << controllers_m[i].getName() << " " << controllers_m[i].getOrder() << endl;
-    }*/
-
     return(count);
 }
 
@@ -1117,7 +1119,6 @@ void Mark6::writeControllerConfig()
  *
  * @returns the number of SAS controllers identified in the system
  * */
-
 int Mark6::enumerateControllers()
 {
 struct udev_enumerate *enumerate;
@@ -1125,9 +1126,6 @@ struct udev_enumerate *enumerate;
     struct udev_device *dev;
 
     // obtain the list of currently present block devices
-    
-    //clog << "enumerateControllers" << endl;
-    
     enumerate = udev_enumerate_new(udev_m);
     udev_enumerate_add_match_subsystem(enumerate, "sas_host");
     udev_enumerate_scan_devices(enumerate);
@@ -1202,7 +1200,6 @@ struct udev_enumerate *enumerate;
         else
                 cout << "not found" << endl;
 
-        //clog << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << " " << phy_count << endl;
         //cout << "Detected SAS controller: " << controller.getName() << " " << controller.getPath() << " " << controller.getDriver() << endl;
 #endif
 
@@ -1222,9 +1219,6 @@ int Mark6::enumerateDevices()
     struct udev_device *dev;
         
     // obtain the list of currently present block devices
-
-    //clog << "enumerateDevices" << endl;
-
     enumerate = udev_enumerate_new(udev_m);
     udev_enumerate_add_match_subsystem(enumerate, "block");
     udev_enumerate_scan_devices(enumerate);
@@ -1306,8 +1300,7 @@ int Mark6::enumerateDevices()
                       newDevices_m.push_back(disk);                   
                       devCount++;
                   } catch (exception& e) {
-                      clog << e.what() << endl;
-                      //clog << "Error" << endl;
+    		      mark6meta::Logger::log(mark6meta::LogLevel::Error, e.what());
                       break;
                   }
 	    }

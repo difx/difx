@@ -26,6 +26,54 @@
 #include "Mark6DiskDevice.h"
 #include "Mark6Module.h"
 #include "Mark6Controller.h"
+#include <functional>
+#include <format>
+
+namespace mark6meta {
+
+/**
+  Enumeration class for storing valid log levels
+**/
+enum class LogLevel {
+    None = 0,
+    Error = 1,
+    Info = 2,
+    Warning = 3,
+    Verbose = 4
+};
+
+using LogCallback = std::function<void(LogLevel, std::string_view)>;
+
+/**
+  Internal logging class
+
+  Log messages  can be accesses by the caller by defining and passing a callback function
+  via the set_callback function
+**/
+class Logger {
+public:
+    static void set_callback(LogCallback cb, LogLevel max_level = LogLevel::Info) {
+        callback_ = std::move(cb);
+        level_ = max_level;
+    }
+
+    template <typename... Args>
+    static void log(LogLevel lvl, Args&&... args) {
+        // Early exit prevents stringstream allocation when disabled
+        if (!callback_ || lvl > level_) {
+            return;
+        }
+        std::ostringstream oss;
+        (oss << ... << std::forward<Args>(args)); // C++17 fold expression
+        callback_(lvl, oss.str());
+    }
+
+private:
+    static inline LogCallback callback_ = nullptr;
+    static inline LogLevel level_ = LogLevel::None;
+};
+
+} // namespace mark6meta
 
 /**
  * Custom exception class for reporting Mark6 related errors
