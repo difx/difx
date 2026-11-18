@@ -39,7 +39,7 @@ public:
         std::string messageGroup;
         bool dieNow;
 
-        Mk6Daemon(const std::string& logPath, bool logToConsole);
+        Mk6Daemon(Logger *logger, bool logToConsole);
         ~Mk6Daemon();
 
         void initFromEnv();

@@ -13,14 +13,11 @@ using namespace std;
 const unsigned int Mk6Daemon::LOAD_MON_INTERVAL = 30;
 const unsigned int Mk6Daemon::MK6_MON_INTERVAL = 5;
 
-
-
-
 /**
  * Constructor
  **/
 //Mk6Daemon::Mk6Daemon(void)
-Mk6Daemon::Mk6Daemon(const std::string& logPath, bool logToConsole) : logPath_m(logPath)
+Mk6Daemon::Mk6Daemon(Logger *logger, bool logToConsole) : logger_m(logger)
 {
     char hostName[32];
     maxUserIdLength_m = 32;
@@ -35,16 +32,19 @@ Mk6Daemon::Mk6Daemon(const std::string& logPath, bool logToConsole) : logPath_m(
     messagePort = 52000;
     gethostname(hostName, 32);
     hostname_m = (string)hostName;
+//    logger_m = logger;
 
 
     //initialize multicast 
     difxMessageInitFull(-1, "mk6daemon", hostname_m.c_str());
     startMCListen();
 
+    logFile_m = makeLogfileName();
+
+    //validate();
 
     //construct logger
-    logFile_m = makeLogfileName();
-    logger_m = new Logger(logFile_m, logToConsole);
+    //logger_m = new Logger(logFile_m, logToConsole);
 
     logger_m->log(INFO, "mk6daemon starting");
     difxMessageSendDifxInfo("mk6daemon starting");
@@ -88,6 +88,11 @@ void Mk6Daemon::validate()
         //validate logPath is writable
         if (access(logPath_m.c_str(), W_OK) != 0) {
             throw runtime_error(("log path is not writable: " + logPath_m));
+        }
+	//
+        //validate logFile is writable
+        if (access(logFile_m.c_str(), W_OK) != 0) {
+            throw runtime_error(("log file is not writable: " + logFile_m));
         }
   
 	// check length of userID
@@ -240,8 +245,6 @@ void Mk6Daemon::receiveDifxMessage()
 
         asctime(now);
         n = difxMessageReceive(mcSock_m, message, DIFX_MESSAGE_LENGTH-1, from);
-                          //cout << message << endl;
-        cout << "n = " << n << endl;
         if (n <= 0)
             break;
         count++;
