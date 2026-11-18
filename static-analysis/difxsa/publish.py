@@ -52,7 +52,9 @@ def foreign_commits(wiki, remote_ref, subdir):
     """Local commits not on the remote that touch files outside subdir."""
     result = []
     for sha in git(wiki, "rev-list", f"{remote_ref}..HEAD").stdout.split():
-        files = git(wiki, "diff-tree", "--no-commit-id", "--name-only", "-r", sha).stdout.split()
+        # -z: NUL-separated and unquoted, since wiki paths may contain spaces
+        out = git(wiki, "diff-tree", "--no-commit-id", "--name-only", "-z", "-r", sha).stdout
+        files = [f for f in out.split("\0") if f]
         if any(not f.startswith(subdir + "/") for f in files):
             result.append(git(wiki, "log", "-1", "--format=%h %s", sha).stdout.strip())
     return result
