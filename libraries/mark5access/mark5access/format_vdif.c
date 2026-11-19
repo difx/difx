@@ -222,7 +222,7 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms, int *mjd,
 #endif
 
 	seconds = word0 & 0x3FFFFFFF;	/* bits 0 to 29 */
-	refepoch = (word1 >> 24) & 0x3F;
+	refepoch = (word1 >> 24) & 0x7F;
 
 	seconds += v->leapsecs;
 	days = seconds/86400;
@@ -8691,7 +8691,7 @@ static void mark5_format_vdif_genheaders(const struct mark5_stream *ms, int n, u
 	for(i = 0; i < n; ++i)
 	{
 		word0 = ((unsigned int)seconds & 0x3FFFFFFF) | (legacybit << 30); /* invalid bit (31) = 0 */
-		word1 = ((unsigned int)framenum & 0x00FFFFFF);                    /* ref epoch 0 in bits 29:24 */
+		word1 = ((unsigned int)framenum & 0x00FFFFFF);                    /* ref epoch 0 in bits 30:24 */
 
 		memset(where, 0, v->frameheadersize);
 #ifdef WORDS_BIGENDIAN
@@ -9515,14 +9515,14 @@ int get_vdif_threads(const unsigned char *data, size_t length, int dataframesize
 	return nThread;
 }
 
-typedef struct vdif_edv4_header {	/* proposed extension extensions: (WFB email to VDIF committee 2015/10/09) */
+typedef struct vdif_edv4_header {
    uint32_t seconds : 30;
    uint32_t legacymode : 1;
    uint32_t invalid : 1;
    
    uint32_t frame : 24;
-   uint32_t epoch : 6;
-   uint32_t unassigned : 2;
+   uint32_t epoch : 7;		// Changed from 6 to 7 bits in fall 2027
+   uint32_t unassigned : 1;
    
    uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
