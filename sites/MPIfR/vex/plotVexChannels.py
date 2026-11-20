@@ -332,7 +332,7 @@ class Charting:
 		a = 0.3 + 0.1*(self.zoombarcount % 2)
 		self.zoombarcount += 1
 
-		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='white', facecolor=color, alpha=a))
+		ax.add_patch(patches.Polygon(xy=list(zip(x,y)), fill=True, edgecolor='white', facecolor=color, alpha=a))
 
 
 	def plotOutputbandBar(self, ax, ymin, ymax, channel, color=[0.0/255,152.0/255,143.0/255]):
@@ -344,7 +344,7 @@ class Charting:
 		a = 0.1 + 0.1*(self.obbarcount % 2)
 		self.obbarcount += 1
 
-		ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color, alpha=a))
+		ax.add_patch(patches.Polygon(xy=list(zip(x,y)), fill=True, edgecolor='black', facecolor=color, alpha=a))
 
 
 	def visualize(self, vexChannels, zoomChannels=None, outputBands=None, fqNameSubset=None):
