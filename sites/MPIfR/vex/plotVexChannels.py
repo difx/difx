@@ -1,9 +1,6 @@
 #!/usr/bin/python
-# NB: using the extremely convenient JIVE 'vex.py' module based on MultiDict+lex+yacc,
-# alas, it so far did not readily port to python3 (todo!) and catches only the first chan_def
-# of a block (while in obsolete python2 it worked). fixery for MultiDict.py in progress.
 '''
-Usage: plotVexChannels.py <vexfile.vex|.vex.obs> 
+Usage: plotVexChannels.py <vexfile.vex|.vex.obs>
                           [<v2dfile.v2d>] [<jobfile.input>]
                           [<freqName> <freqName> ...]
 
