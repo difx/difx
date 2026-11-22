@@ -82,7 +82,7 @@ def SolveAmpClosure(M, W):
 			print('bad exp: k=%d x=%f' % (k, x[k]))
 
 	return x
-	
+
 def nextBaseline(bl1, bl2):
 	if bl2[0] == bl1[0] and bl2[1] == bl1[1]+1:
 		return True
@@ -106,7 +106,7 @@ def loadAPD(filename):
 	else:
 		print('Unrecognized APD file format')
 		return None, None
-	
+
 	currentTime = [-1, -1.0, 1, '', []]
 	times = []
 	for d in data[1:]:
@@ -165,7 +165,7 @@ def process(times, chans, degree, reftime=0.0):
 				R = ants.index(refant)
 			except:
 				continue
-		
+
 		results = []
 		for b in range(len(D[0][4])):
 			if b in chans:
@@ -203,7 +203,7 @@ def process(times, chans, degree, reftime=0.0):
 			D[t] /= n
 		M = np.polyfit(T, D, degree)
 		clockUpdate[ants[a]] = M
-	
+
 	return reftime, clockUpdate
 
 
@@ -345,7 +345,7 @@ def updateV2D(reftime, clockUpdate, inputFile, outputFile):
 				if len(clockUpdate[ant]) > 1:
 					rate += clockUpdate[ant][-2] / 1000.0
 					delta += (epoch - reftime)*clockUpdate[ant][-2] / 1000.0
-			
+
 			if not newTokens[-1].isspace():
 				newTokens.append(' ')
 			if rate != 0 or 'clockEpoch' in values:

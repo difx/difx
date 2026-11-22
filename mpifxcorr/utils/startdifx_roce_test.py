@@ -112,7 +112,7 @@ class Parser:
 
         def data(self, data):
                 if self.tag == 'message':
-                        self.tmp = self.tmp + data      
+                        self.tmp = self.tmp + data
                 else:
                         self.tmp = data
 
@@ -123,7 +123,7 @@ class Parser:
                         return ''
 
 def watchJob(jobId):
-        
+
         if verbose > 1:
                 print('Watching %s:' % jobId)
 
@@ -171,7 +171,7 @@ def watchJob(jobId):
                                 pass
         except KeyboardInterrupt:
                 pass
-        
+
         if verbose > 1:
                 print('Watching %s:' % jobId)
 
@@ -227,11 +227,11 @@ def updateMpiOptions():
         if opt is not None:
                 mpiOptions = opt
 
-        
+
 def updateEnvironment(filename):
-        
+
         savedEnvironment = []
-        
+
         if isfile(filename):
                 lines = open(filename).readlines()
                 for l in lines:
@@ -268,7 +268,7 @@ def getjobdifxversion(fileBase):
                         version = l[20:].strip()
                 if l[:12] == 'DIFX LABEL':
                         label = l[20:].strip()
-        
+
         return version, label
 
 def testDifxVersion(fileBase, override):
@@ -296,23 +296,23 @@ def testDifxVersion(fileBase, override):
 
         if label == '':
                 label = version
-        
+
         return version, label
-        
+
 
 def sendMessage(fileBase, state, statusmessage):
         group = getenv('DIFX_MESSAGE_GROUP')
         if group == None:
                 group = defaultgroup
-        
+
         port = getenv('DIFX_MESSAGE_PORT')
         if port == None:
                 port = defaultport
         else:
                 port = int(port)
-                
+
         identifier = fileBase.split('/')[-1]
-        
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, defaultttl)
 
@@ -335,7 +335,7 @@ def sendMessage(fileBase, state, statusmessage):
                   "</body>" \
                 "</difxMessage>\n" % \
                 (socket.gethostname(), identifier, state, statusmessage)
-        
+
         sock.sendto(message.encode('utf-8'), (group, port) )
 
 
@@ -350,7 +350,7 @@ def getNodes(fileBase):
         for t in threadData[1:]:
                 threads.append(int(t))
         machineData = open(fileBase + '.machines').readlines()
-        
+
         nDatastream = len(machineData) - len(threads) - 1
 
         for m in range(1, nDatastream+1):
@@ -373,13 +373,13 @@ def sendStartMessage(fileBase, difxVersion, localHeadNode, restartSeconds):
         group = getenv('DIFX_MESSAGE_GROUP')
         if group == None:
                 group = defaultgroup
-        
+
         port = getenv('DIFX_MESSAGE_PORT')
         if port == None:
                 port = defaultport
         else:
                 port = int(port)
-                
+
         headNode = getenv('DIFX_HEAD_NODE')
         # -l option overrides DIFX_HEAD_NODE
         if localHeadNode:
@@ -387,7 +387,7 @@ def sendStartMessage(fileBase, difxVersion, localHeadNode, restartSeconds):
         corrHeadNode = headNode
 
         identifier = fileBase.split('/')[-1]
-        
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, defaultttl)
 
@@ -406,7 +406,7 @@ def sendStartMessage(fileBase, difxVersion, localHeadNode, restartSeconds):
                 for q in pList[p]:
                         processors = processors + q + " "
                 processors = processors.strip() + "\"/>"
-        
+
         if restartSeconds > 0:
                 restartOption = '<restartSeconds>%f</restartSeconds>' % restartSeconds
         else:
@@ -452,7 +452,7 @@ def doMachines(fileBase, machinesPolicy, cache):
 
         cmd = 'grep "FILE " %s.input' % fileBase
         files = popen(cmd, 'r').readlines()
-        
+
         cmd = 'grep "CORE CONF FILENAME" %s.input' % fileBase
         f = popen(cmd, 'r').readlines()
         if len(f) == 1:
@@ -521,7 +521,7 @@ def runMessage(fileBase, machinesCache, restartSeconds):
 
         if not isfile(fileBase+'.input'):
                 return 'Error: input file %s.input not found' % fileBase
-        
+
         if not isfile(fileBase+'.im'):
                 if args.makeModel and isfile(fileBase+'.calc'):
                         if delayModelOptions != None and len(delayModelOptions) > 0:
@@ -535,7 +535,7 @@ def runMessage(fileBase, machinesCache, restartSeconds):
                         system('%s %s %s.calc' % (delayModelProgram, calcOptions, fileBase))
                 else:
                         return 'Error: model not available for %s' % fileBase
-        
+
         if restartSeconds > 0:
                 if not isdir(fileBase+'.difx'):
                         print('Warning: restartSeconds = %d and no existing output!' % restartSeconds)
@@ -547,8 +547,8 @@ def runMessage(fileBase, machinesCache, restartSeconds):
                         system('rm -rf %s.difx' % fileBase)
                 else:
                         print('Warning: output file %s.difx exists' % fileBase)
-                        return 
-        
+                        return
+
         np = doMachines(fileBase, args.machinesPolicy, machinesCache)
         if np <= 0:
                 return 'Error: %s.machines not found' % fileBase
@@ -577,7 +577,7 @@ def runDirect(fileBase, machinesCache, restartSeconds):
 
         if not isfile(fileBase+'.input'):
                 return 'Error: input file %s.input not found' % fileBase
-        
+
         if not isfile(fileBase+'.im'):
                 if args.makeModel and isfile(fileBase+'.calc'):
                         if delayModelOptions != None and len(delayModelOptions) > 0:
@@ -591,7 +591,7 @@ def runDirect(fileBase, machinesCache, restartSeconds):
                         system('%s %s %s.calc' % (delayModelProgram, calcOptions, fileBase))
                 else:
                         return 'Error: model not available for %s' % fileBase
-        
+
         if restartSeconds > 0:
                 if not isdir(fileBase+'.difx'):
                         print('Warning: restartSeconds = %d and no existing output!' % restartSeconds)
@@ -604,7 +604,7 @@ def runDirect(fileBase, machinesCache, restartSeconds):
                 else:
                         print('Warning: output file %s.difx exists' % fileBase)
                         return
-        
+
         # generate machine file
         np = doMachines(fileBase, args.machinesPolicy, machinesCache)
         if np <= 0:
@@ -631,7 +631,7 @@ def runDirect(fileBase, machinesCache, restartSeconds):
                 difxProgram = 'mpifxcorr'
         else:
                 difxProgram = 'runmpifxcorr.' + difxLabel
-        if verbose > 1:	
+        if verbose > 1:
                 print("difxProgram: %s" % (difxProgram))
 
         if restartSeconds > 0.0:
@@ -710,12 +710,12 @@ def checkFiles(fileBase, level):
                                 print('\nFile %s appears to have a problem.  Correlation will likely fail.' % s[2])
                                 nBad += 1
                 # FIXME: add other file check options here as they are implemented
-        
+
         if nBad > 0:
                 exit(0)
 
 def run(fileBase, machinesCache, restartSeconds):
-        
+
         if args.checkfiles != None:
                 checkFiles(fileBase, args.checkfiles)
 
@@ -742,7 +742,7 @@ def run(fileBase, machinesCache, restartSeconds):
 
                 if curmjd > end:
                         print('Skipping job %s because its end time has passed.' % fileBase)
-                        return None 
+                        return None
 
                 waitMJD(mjd + args.wait/86400.0)
 
@@ -839,7 +839,7 @@ for a in joblist:
                         fileBaseList.append(fb)
                 else:
                         fileBaseList.append(cwd + '/' + fb)
-        
+
 # verify that joblist is not empty
 if len(fileBaseList) < 1:
         optParser.error("ERROR: At least one .input or .joblist file must be given.")
@@ -858,7 +858,7 @@ if args.useStartMessage and args.useLocalHead == False and headNode == None:
         print("ERROR: Environment variable DIFX_HEAD_NODE must be defined.")
         print("Alternatively  you can use the -l option in case mk5daemon -H is running locally on this host.")
         exit(1)
-        
+
 nBad = 0
 for fileBase in fileBaseList:
         if not isfile(fileBase + '.input'):

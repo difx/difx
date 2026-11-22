@@ -244,7 +244,7 @@ class APDDelays:
 				MM[N+i][N+i] = 1.0
 			else:
 				VV[N+i] = -Yi[i]
-				
+
 		# constrain refant values
 		refantWeight = Wij.mean()	# just need this to be right order of magnitude
 		refantDelay = 0.0
