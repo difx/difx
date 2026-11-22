@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <unistd.h>
 #include <inttypes.h>
 #include <math.h>
 #include <vdifio.h>
@@ -54,6 +55,12 @@ StateCountRegister *newStateCountRegister(int threadId, int nBit, int dataBytes)
 	StateCountRegister *reg;
 
 	reg = (StateCountRegister *)calloc(1, sizeof(StateCountRegister));
+	if(!reg)
+	{
+		fprintf(stderr, "Error: newStateCountRegister(): cannot allocate %lu bytes\n", (unsigned long int)sizeof(StateCountRegister));
+
+		exit(0);
+	}
 	reg->threadId = threadId;
 	reg->nBit = nBit;
 	reg->dataBytes = dataBytes;
@@ -99,8 +106,8 @@ void deleteStateCountRegisters(StateCountRegister **regs)
 void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum StateCountPrintLevel pl, unsigned int inc, unsigned int eomask)
 {
 	int a=-1, b=-1;	/* first and last index with non-zero counts */
-	unsigned int i;
-	unsigned int N;
+	int i;
+	int N;
 	double offset;
 
 	N = 1 << reg->nBit;
@@ -125,7 +132,7 @@ void fprintStateCountRegister(FILE *out, const StateCountRegister *reg, enum Sta
 
 	if(a < 0 || b < 0)
 	{
-		fprintf(out, "# No values for threadId = %d\n", reg->threadId);
+		fprintf(out, "# No values for threadId = %u\n", reg->threadId);
 	}
 	else
 	{
@@ -328,12 +335,12 @@ int main(int argc, char **argv)
 	StateCountRegister **regs;
 	vdif_header vh;
 	unsigned char *data = 0;
-	int dataSize = 0;
+	unsigned int dataSize = 0;
 	enum StateCountPrintLevel pl = StateCountPrintCompact;
 	FILE *in = 0, *out = 0;
 	uint64_t frameCount = 0;
 	int t;
-	unsigned int a;
+	int a;
 	unsigned int inc = 1;
 	int printThread = -1;
 	unsigned int eomask = 0x03;
@@ -465,13 +472,19 @@ int main(int argc, char **argv)
 	}
 
 	regs = newStateCountRegisters();
+	if(!regs)
+	{
+		fprintf(stderr, "Error: memory allocation failure.\n");
+
+		return EXIT_FAILURE;
+	}
 
 	setSignals();
 
 	while(!die)
 	{
 		size_t rv;
-		int payloadSize;
+		unsigned int payloadSize;
 
 		rv = fread(&vh, sizeof(vdif_header), 1, in);
 		if(rv != 1)
@@ -487,19 +500,28 @@ int main(int argc, char **argv)
 		payloadSize = getVDIFFrameBytes(&vh) - VDIF_HEADER_BYTES;
 		if(payloadSize < 8 || payloadSize > 1<<20)
 		{
-			fprintf(stderr, "Error: unreasonable payload size: %d.  Corrupt file?\n", payloadSize);
+			fprintf(stderr, "Error: unreasonable payload size: %u.  Corrupt file?\n", payloadSize);
 
 			return EXIT_FAILURE;
 		}
 		if(dataSize == 0)
 		{
-			free(data);
+			if(data)
+			{
+				free(data);
+			}
 			data = (unsigned char*)malloc(payloadSize);
+			if(!data)
+			{
+				fprintf(stderr, "Error: memory allocation failed (%u bytes).\n", payloadSize);
+
+				return EXIT_FAILURE;
+			}
 			dataSize = payloadSize;
 		}
 		else if(payloadSize != dataSize)
 		{
-			fprintf(stderr, "Changing payload size!  %d != %d.  Corrupt file?\n", payloadSize, dataSize);
+			fprintf(stderr, "Changing payload size!  %u != %u.  Corrupt file?\n", payloadSize, dataSize);
 
 			return EXIT_FAILURE;
 		}
@@ -512,13 +534,13 @@ int main(int argc, char **argv)
 		{
 			if(regs[vh.threadid]->nBit != getVDIFBitsPerSample(&vh))
 			{
-				fprintf(stderr, "Weird: threadId %d nBit changed from %d to %d.  Stopping.\n", vh.threadid, regs[vh.threadid]->nBit, getVDIFBitsPerSample(&vh));
+				fprintf(stderr, "Weird: threadId %u nBit changed from %u to %d.  Stopping.\n", vh.threadid, regs[vh.threadid]->nBit, getVDIFBitsPerSample(&vh));
 				
 				break;
 			}
 			if(regs[vh.threadid]->dataBytes != payloadSize)
 			{
-				fprintf(stderr, "Weird: threadId %d payload size changed from %d to %d.  Stopping.\n", vh.threadid, regs[vh.threadid]->dataBytes, payloadSize);
+				fprintf(stderr, "Weird: threadId %u payload size changed from %u to %u.  Stopping.\n", vh.threadid, regs[vh.threadid]->dataBytes, payloadSize);
 			}
 		}
 	

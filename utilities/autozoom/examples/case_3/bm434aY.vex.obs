@@ -15,15 +15,15 @@ $EXPER;
 def bm434a;
      exper_name = bm434a;
      exper_description = "3mm VLBA+ALMA+Europe observing";
-     PI_name = "Lynn Matthews";
-     PI_email = lmatthew@haystack.mit.edu;
-*    address:   MIT Haystack Observatory
-*               Route 40
-*               Westford, MA 01886
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
 *                
-*    phone:     781 981 5400
-*    during obs:+56 224676560
-*    fax:       781 981 0590
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *    notes:     Will use reference pointing.
 *               Trigger will be based on conditions in western hemisphere
 *                 Effelsberg may join if triggered on 2 Aug or 3 Aug only
@@ -46,10 +46,10 @@ def bm434a;
 *    distrib_format : FITS
 *    source_pos_cat : SCHEDULE
 *    distribute_to  : 
-*                     Don Sousa
-*                     MIT Haystack Observatory
-*                     Route 40
-*                     Westford, MA 01886
+*                     Bob Bobson
+*                     Fake Address
+*
+*
 *    corr_notes : 
 *               Socorro will correlate VLBA-VLBA baselines only.
 *               Baseband data will then be transferred to Haystack to

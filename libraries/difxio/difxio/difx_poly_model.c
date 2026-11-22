@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,30 +20,49 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "difxio/difx_input.h"
 
 
-DifxPolyModel ***newDifxPolyModelArray(int nAntenna, int nSrcs, int nPoly)
+DifxPolyModel ***newDifxPolyModelArray(unsigned int nAntenna, unsigned int nSrcs, unsigned int nPoly)
 {
 	DifxPolyModel ***dpm;
-	int a;
+	unsigned int a;
 
 	dpm = (DifxPolyModel ***)calloc(nAntenna, sizeof(DifxPolyModel **));
+	if(!dpm)
+	{
+		fprintf(stderr, "Error: newDifxPolyModelArray(): cannot allocate %lu bytes for dpm.\n", (unsigned long int)(nAntenna*sizeof(DifxPolyModel **)));
+
+		exit(0);
+	}
 	for(a = 0; a < nAntenna; ++a)
 	{
-		int s;
+		unsigned int s;
 
 		dpm[a] = (DifxPolyModel **)calloc(nSrcs, sizeof(DifxPolyModel *));
+		if(!dpm[a])
+		{
+			fprintf(stderr, "Error: newDifxPolyModelArray(): cannot allocate %lu bytes for dpm[%u].\n", (unsigned long int)(nSrcs*sizeof(DifxPolyModel *)), a);
+
+			exit(0);
+		}
 		for(s = 0; s < nSrcs; ++s)
 		{
 			dpm[a][s] = (DifxPolyModel *)calloc(nPoly, sizeof(DifxPolyModel));
+			if(!dpm[a][s])
+			{
+				fprintf(stderr, "Error: newDifxPolyModelArray(): cannot allocate %lu bytes for dpm[%u][%u].\n", (unsigned long int)(nSrcs*sizeof(DifxPolyModel)), a, s);
+
+				exit(0);
+			}
 		}
 	}
 
 	return dpm;
 }
 
-DifxPolyModel *dupDifxPolyModelColumn(const DifxPolyModel *src, int nPoly)
+DifxPolyModel *dupDifxPolyModelColumn(const DifxPolyModel *src, unsigned int nPoly)
 {
 	DifxPolyModel *dest;
 
@@ -53,23 +72,29 @@ DifxPolyModel *dupDifxPolyModelColumn(const DifxPolyModel *src, int nPoly)
 	}
 
 	dest = (DifxPolyModel *)calloc(nPoly, sizeof(DifxPolyModel));
+	if(!dest)
+	{
+		fprintf(stderr, "Error: dupDifxPolyModelColumn(): cannot allocate %lu bytes.\n", (unsigned long int)(nPoly*sizeof(DifxPolyModel)));
+
+		exit(0);
+	}
 
 	memcpy(dest, src, nPoly*sizeof(DifxPolyModel));
 
 	return dest;
 }
 
-void deleteDifxPolyModelArray(DifxPolyModel ***dpm, int nAntenna, int nSrcs)
+void deleteDifxPolyModelArray(DifxPolyModel ***dpm, unsigned int nAntenna, unsigned int nSrcs)
 {
 	if(dpm)
 	{
-		int a;
+		unsigned int a;
 
 		for(a = 0; a < nAntenna; ++a)
 		{
 			if(dpm[a])
 			{
-				int s;
+				unsigned int s;
 
 				for(s = 0; s < nSrcs; ++s)
 				{
@@ -82,9 +107,9 @@ void deleteDifxPolyModelArray(DifxPolyModel ***dpm, int nAntenna, int nSrcs)
 	}
 }
 
-void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm, int antennaId, int sourceId, int polyId)
+void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm, unsigned int antennaId, unsigned int sourceId, unsigned int polyId)
 {
-	fprintf(fp, "    DifxPolyModel [antennaId = %2d sourceId = %2d polyId = %2d]: %p\n", antennaId, sourceId, polyId, dpm);
+	fprintf(fp, "    DifxPolyModel [antennaId = %2u sourceId = %2u polyId = %2u]: %p\n", antennaId, sourceId, polyId, dpm);
 	if(dpm)
 	{
 		fprintf(fp, "        mjd, sec = %d, %d\n", dpm->mjd, dpm->sec);
@@ -92,33 +117,51 @@ void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm, int antennaId, int 
 	}
 }
 
-void printDifxPolyModel(const DifxPolyModel *dpm, int antennaId, int sourceId, int polyId)
+void printDifxPolyModel(const DifxPolyModel *dpm, unsigned int antennaId, unsigned int sourceId, unsigned int polyId)
 {
 	fprintDifxPolyModel(stdout, dpm, antennaId, sourceId, polyId);
 }
 
 
-DifxPolyModelLMExtension ***newDifxPolyModelLMExtensionArray(int nAntenna, int nSrcs, int nPoly)
+DifxPolyModelLMExtension ***newDifxPolyModelLMExtensionArray(unsigned int nAntenna, unsigned int nSrcs, unsigned int nPoly)
 {
 	DifxPolyModelLMExtension ***lme;
-	int a;
+	unsigned int a;
 
 	lme = (DifxPolyModelLMExtension ***)calloc(nAntenna, sizeof(DifxPolyModelLMExtension **));
+	if(!lme)
+	{
+		fprintf(stderr, "Error: newDifxPolyModelLMExtensionArray(): cannot allocate %lu bytes for lme.\n", (unsigned long int)(nAntenna*sizeof(DifxPolyModelLMExtension **)));
+
+		exit(0);
+	}
 	for(a = 0; a < nAntenna; ++a)
 	{
-		int s;
+		unsigned int s;
 
 		lme[a] = (DifxPolyModelLMExtension **)calloc(nSrcs, sizeof(DifxPolyModelLMExtension *));
+		if(!lme[a])
+		{
+			fprintf(stderr, "Error: newDifxPolyModelLMExtensionArray(): cannot allocate %lu bytes for lme[%u].\n", (unsigned long int)(nAntenna*sizeof(DifxPolyModelLMExtension *)), a);
+
+			exit(0);
+		}
 		for(s = 0; s < nSrcs; ++s)
 		{
 			lme[a][s] = (DifxPolyModelLMExtension *)calloc(nPoly, sizeof(DifxPolyModelLMExtension));
+			if(!lme[a][s])
+			{
+				fprintf(stderr, "Error: newDifxPolyModelLMExtensionArray(): cannot allocate %lu bytes for lme[%u][%u].\n", (unsigned long int)(nAntenna*sizeof(DifxPolyModelLMExtension)), a, s);
+
+				exit(0);
+			}
 		}
 	}
 
 	return lme;
 }
 
-DifxPolyModelLMExtension *dupDifxPolyModelLMExtensionColumn(const DifxPolyModelLMExtension *src, int nPoly)
+DifxPolyModelLMExtension *dupDifxPolyModelLMExtensionColumn(const DifxPolyModelLMExtension *src, unsigned int nPoly)
 {
 	DifxPolyModelLMExtension *dest;
 
@@ -128,23 +171,29 @@ DifxPolyModelLMExtension *dupDifxPolyModelLMExtensionColumn(const DifxPolyModelL
 	}
 
 	dest = (DifxPolyModelLMExtension *)calloc(nPoly, sizeof(DifxPolyModelLMExtension));
+	if(!dest)
+	{
+		fprintf(stderr, "Error: dupDifxPolyModelLMExtensionColumn(): cannot allocate %lu bytes.\n", (unsigned long int)(nPoly*sizeof(DifxPolyModelLMExtension)));
+
+		exit(0);
+	}
 
 	memcpy(dest, src, nPoly*sizeof(DifxPolyModelLMExtension));
 
 	return dest;
 }
 
-void deleteDifxPolyModelLMExtensionArray(DifxPolyModelLMExtension ***lme, int nAntenna, int nSrcs)
+void deleteDifxPolyModelLMExtensionArray(DifxPolyModelLMExtension ***lme, unsigned int nAntenna, unsigned int nSrcs)
 {
 	if(lme)
 	{
-		int a;
+		unsigned int a;
 
 		for(a = 0; a < nAntenna; ++a)
 		{
 			if(lme[a])
 			{
-				int s;
+				unsigned int s;
 
 				for(s = 0; s < nSrcs; ++s)
 				{
@@ -159,27 +208,45 @@ void deleteDifxPolyModelLMExtensionArray(DifxPolyModelLMExtension ***lme, int nA
 
 
 
-DifxPolyModelXYZExtension ***newDifxPolyModelXYZExtensionArray(int nAntenna, int nSrcs, int nPoly)
+DifxPolyModelXYZExtension ***newDifxPolyModelXYZExtensionArray(unsigned int nAntenna, unsigned int nSrcs, unsigned int nPoly)
 {
 	DifxPolyModelXYZExtension ***xyze;
-	int a;
+	unsigned int a;
 
 	xyze = (DifxPolyModelXYZExtension ***)calloc(nAntenna, sizeof(DifxPolyModelXYZExtension **));
+	if(!xyze)
+	{
+		fprintf(stderr, "Error: newDifxPolyModelXYZExtensionArray(): cannot allocate %lu bytes for xyze.\n", (unsigned long int)(nAntenna*sizeof(DifxPolyModelXYZExtension **)));
+
+		exit(0);
+	}
 	for(a = 0; a < nAntenna; ++a)
 	{
-		int s;
+		unsigned int s;
 
 		xyze[a] = (DifxPolyModelXYZExtension **)calloc(nSrcs, sizeof(DifxPolyModelXYZExtension *));
+		if(!xyze[a])
+		{
+			fprintf(stderr, "Error: newDifxPolyModelXYZExtensionArray(): cannot allocate %lu bytes for xyze[%u].\n", (unsigned long int)(nAntenna*sizeof(DifxPolyModelXYZExtension *)), a);
+
+			exit(0);
+		}
 		for(s = 0; s < nSrcs; ++s)
 		{
 			xyze[a][s] = (DifxPolyModelXYZExtension *)calloc(nPoly, sizeof(DifxPolyModelXYZExtension));
+			if(!xyze[a][s])
+			{
+				fprintf(stderr, "Error: newDifxPolyModelXYZExtensionArray(): cannot allocate %lu bytes for xyze[%u][%u].\n", (unsigned long int)(nAntenna*sizeof(DifxPolyModelXYZExtension)), a, s);
+
+				exit(0);
+			}
 		}
 	}
 
 	return xyze;
 }
 
-DifxPolyModelXYZExtension *dupDifxPolyModelXYZExtensionColumn(const DifxPolyModelXYZExtension *src, int nPoly)
+DifxPolyModelXYZExtension *dupDifxPolyModelXYZExtensionColumn(const DifxPolyModelXYZExtension *src, unsigned int nPoly)
 {
 	DifxPolyModelXYZExtension *dest;
 
@@ -189,23 +256,29 @@ DifxPolyModelXYZExtension *dupDifxPolyModelXYZExtensionColumn(const DifxPolyMode
 	}
 
 	dest = (DifxPolyModelXYZExtension *)calloc(nPoly, sizeof(DifxPolyModelXYZExtension));
+	if(!dest)
+	{
+		fprintf(stderr, "Error: dupDifxPolyModelXYZExtensionColumn(): cannot allocate %lu bytes.\n", (unsigned long int)(nPoly*sizeof(DifxPolyModelXYZExtension)));
+
+		exit(0);
+	}
 
 	memcpy(dest, src, nPoly*sizeof(DifxPolyModelXYZExtension));
 
 	return dest;
 }
 
-void deleteDifxPolyModelXYZExtensionArray(DifxPolyModelXYZExtension ***xyze, int nAntenna, int nSrcs)
+void deleteDifxPolyModelXYZExtensionArray(DifxPolyModelXYZExtension ***xyze, unsigned int nAntenna, unsigned int nSrcs)
 {
 	if(xyze)
 	{
-		int a;
+		unsigned int a;
 
 		for(a = 0; a < nAntenna; ++a)
 		{
 			if(xyze[a])
 			{
-				int s;
+				unsigned int s;
 
 				for(s = 0; s < nSrcs; ++s)
 				{
@@ -219,11 +292,15 @@ void deleteDifxPolyModelXYZExtensionArray(DifxPolyModelXYZExtension ***xyze, int
 }
 
 /* Use Cramer's rule to evaluate polynomial */
-static long double evaluatePoly(const double *p, int n, double x)
+static long double evaluatePoly(const double *p, unsigned int n, double x)
 {
 	long double y;
 	int i;
 
+	if(n == 0)
+	{
+		return 0;
+	}
 	if(n == 1)
 	{
 		return p[0];
@@ -239,12 +316,12 @@ static long double evaluatePoly(const double *p, int n, double x)
 	return y;
 }
 
-static long double evaluatePolyDeriv(const double *p, int n, double x)
+static long double evaluatePolyDeriv(const double *p, unsigned int n, double x)
 {
 	long double y;
-	int i;
+	unsigned int i;
 
-	if(n == 1)
+	if(n <= 1)
 	{
 		return 0;
 	}
@@ -267,7 +344,7 @@ static long double evaluatePolyDeriv(const double *p, int n, double x)
 /* outputs delay in us and rate in us/s */
 /* set sourceId = -1 to not select on source */
 /* return value = 0 on success, < 0 on error */
-int evaluateDifxInputDelayRate(long double *delay, long double *rate, const DifxInput *D, int intmjd, double sec, int antennaId, int sourceId)
+int evaluateDifxInputDelayRate(long double *delay, long double *rate, const DifxInput *D, int intmjd, double sec, unsigned int antennaId, unsigned int sourceId)
 {
 	int scanId;
 	double mjd;
@@ -286,7 +363,7 @@ int evaluateDifxInputDelayRate(long double *delay, long double *rate, const Difx
 			continue;
 		}
 
-		if(sourceId >= 0 && sourceId != scan->pointingCentreSrc)
+		if(sourceId != scan->pointingCentreSrc)
 		{
 			continue;
 		}
@@ -332,7 +409,7 @@ int evaluateDifxInputDelayRate(long double *delay, long double *rate, const Difx
 /* outputs UVW coords in meters */
 /* set sourceId = -1 to not select on source */
 /* return value = 0 on success, < 0 on error */
-int evaluateDifxInputUVW(double uvw[3], const DifxInput *D, int intmjd, double sec, int antennaId, int sourceId)
+int evaluateDifxInputUVW(double uvw[3], const DifxInput *D, int intmjd, double sec, unsigned int antennaId, unsigned int sourceId)
 {
 	int scanId;
 	double mjd;
@@ -342,7 +419,7 @@ int evaluateDifxInputUVW(double uvw[3], const DifxInput *D, int intmjd, double s
 	for(scanId = 0; scanId < D->nScan; ++scanId)
 	{
 		const DifxScan *scan;
-		int p;	/* polynomial index in scan */
+		unsigned int p;	/* polynomial index in scan */
 
 		scan = D->scan + scanId;
 
@@ -351,7 +428,7 @@ int evaluateDifxInputUVW(double uvw[3], const DifxInput *D, int intmjd, double s
 			continue;
 		}
 
-		if(sourceId >= 0 && sourceId != scan->pointingCentreSrc)
+		if(sourceId != scan->pointingCentreSrc)
 		{
 			continue;
 		}

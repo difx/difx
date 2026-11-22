@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2024 Walter Brisken, Jan Wagner                    *
+ *   Copyright (C) 2013-2026 Walter Brisken, Jan Wagner                    *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -916,14 +916,14 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 				if(mask != vm->goodMask)
 				{
-					int64_t i;
+					int64_t vt;
 					/* point to random data rather than nowhere for invalid frames */
 
-					for(i = 0; i < vm->nThread; ++i)
+					for(vt = 0; vt < vm->nThread; ++vt)
 					{
-						if( (mask & (1LL << i)) == 0)
+						if( (mask & (1LL << vt)) == 0)
 						{
-							threadBuffers[i] = src;
+							threadBuffers[vt] = src;
 						}
 					}
 

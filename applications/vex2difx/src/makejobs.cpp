@@ -114,7 +114,6 @@ static void genJobGroups(std::vector<JobGroup> &JGs, const VexData *V, const Cor
 				JG.scans.push_back(*it);
 				it = scans.erase(it);
 				scan1 = scan2;
-				corrSetup1 = corrSetup2;
 			}
 			else
 			{	

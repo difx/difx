@@ -147,6 +147,18 @@ protected:
 
   virtual void initialiseFake(int configindex);
 
+ /**
+  * Fills the payload of a fake-data buffer.  Fake datastreams only ever write frame headers, so without this the
+  * payload is all zeros (databuffer is zeroed in initialise(); VDIFFakeDataStream's large readbuffer comes straight
+  * from mmap), i.e. a constant signal identical at every antenna.  Env DIFX_FAKE_PAYLOAD selects: random (default;
+  * pseudo-random bytes seeded per datastream so antennas are uncorrelated), zero (memset), none (leave the buffer as
+  * it is: the old behaviour; for readbuffer, unwritten pages then stay on the kernel's shared zero page)
+  * @param buf The buffer to fill
+  * @param nbytes Its length in bytes
+  * @param bufname Name of the buffer, for the log
+  */
+  void fillFakePayload(u8 * buf, long long nbytes, const char * bufname);
+
  /** 
   * Reads in the header information from a buffer read in from the network, and sets the current segment time information accordingly
   * Should take into account intclockseconds when setting the file time and readseconds
@@ -169,7 +181,7 @@ protected:
   const int databufferfactor, numdatasegments;
   int activescan, activesec, activens;
   int streamnum, atsegment, readscan, readseconds, corrstartday, corrstartseconds, readbytes, readnanoseconds, intclockseconds;
-  uint32_t bufferbytes; // Maybe should be 64bit, but that then will fail on 32bit machines
+  uint64_t bufferbytes;
   long long estimatedbytes;
   bool dataremaining;
   readinfo * bufferinfo;

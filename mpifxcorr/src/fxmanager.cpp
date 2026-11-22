@@ -656,10 +656,26 @@ void FxManager::loopwrite()
   perr = pthread_mutex_lock(&(bufferlock[config->getVisBufferLength()-1]));
   if(perr != 0)
     csevere << startl << "Error in initial fxmanager writethread lock of the end section!!!" << endl;
+  // Set the flag and signal while holding bufferlock[1], the mutex the main thread waits on writecond with.
+  // The main thread holds it until it is inside pthread_cond_wait, so this cannot slip in between its check
+  // of writethreadinitialised and its wait (that lost wakeup deadlocked the manager at startup).
+  // With a vis buffer length of 2, bufferlock[1] is the end section this thread has just locked.
+  if(config->getVisBufferLength() != 2)
+  {
+    perr = pthread_mutex_lock(&(bufferlock[1]));
+    if(perr != 0)
+      csevere << startl << "Error in initial fxmanager writethread lock of the second section!!!" << endl;
+  }
   writethreadinitialised = true;
   perr = pthread_cond_signal(&writecond);
   if(perr != 0)
     csevere << startl << "FXMANAGER: Writethread error trying to signal main thread to wake up!!!" << endl;
+  if(config->getVisBufferLength() != 2)
+  {
+    perr = pthread_mutex_unlock(&(bufferlock[1]));
+    if(perr != 0)
+      csevere << startl << "Error in initial fxmanager writethread unlock of the second section!!!" << endl;
+  }
 
   while(keepwriting)
   {

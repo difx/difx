@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
 #include "difxio/difx_input.h"
 #include "difxio/difx_write.h"
 
@@ -30,6 +31,12 @@ DifxScan *newDifxScanArray(int nScan)
 	int s;
 
 	ds = (DifxScan *)calloc(nScan, sizeof(DifxScan));
+	if(!ds)
+	{
+		fprintf(stderr, "Error: newDifxScanArray(): cannot allocate %lu bytes.\n", (unsigned long int)(nScan*sizeof(DifxScan)));
+
+		exit(0);
+	}
 	for(s = 0; s < nScan; ++s)
 	{
 		ds[s].configId = -1;
@@ -438,7 +445,7 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double iat, double *dt)
 {
 	int i;
 	double m1, m2;
-	DifxPolyModel *dp;
+	const DifxPolyModel *dp;
 	DifxPolyModel **im=0;
 
 	if(!ds)

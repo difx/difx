@@ -172,7 +172,7 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fi
 		row.antId1 = a+1;
 		if(ae != 0 && ae->mountType[0])
 		{
-			int mt;
+			enum AntennaMountType mt;
 
 			mt = stringToMountType(ae->mountType);
 

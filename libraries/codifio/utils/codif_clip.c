@@ -12,8 +12,8 @@
 #define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS 64
 
-#define OPENREADOPTIONS O_RDONLY|O_LARGEFILE
-#define OPENWRITEOPTIONS O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE
+#define OPENREADOPTIONS (O_RDONLY|O_LARGEFILE)
+#define OPENWRITEOPTIONS (O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE)
 
 #endif
 
@@ -40,7 +40,8 @@ void handle_error(const char *msg) {
 
 int main(int argc, char *argv[]) {
   int nchan=0, bits=0, isComplex=0, dataSize=0, frameSize=0;
-  char *output_dir = NULL, errormsg[1000];
+  const char *output_dir = NULL;
+  char errormsg[1000];
   int opt;
 
   struct option options[] = {
@@ -110,7 +111,7 @@ int main(int argc, char *argv[]) {
       handle_error("Error reading header");
     }
 
-    nchan = getCODIFNumChannels(header);
+    //nchan = getCODIFNumChannels(header);
     bits = getCODIFBitsPerSample(header);
     isComplex = getCODIFComplex(header);
     dataSize = getCODIFFrameBytes(header);
@@ -181,6 +182,7 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
+#warning clip_band probbaly needs real vs complex samples changes
 void clip_band(unsigned char *buffer, ssize_t bytes, int bits, int dataSize, bool ssb) {
   int frameSize = dataSize + CODIF_HEADER_BYTES;
   int nframe = bytes / frameSize;

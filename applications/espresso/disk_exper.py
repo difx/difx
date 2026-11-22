@@ -22,7 +22,7 @@
 # the output of disk_reporty.py and to format a default file for input to
 # lbafilecheck.py
 # This script assumes the canonical directory names: <exper>-<station>
-# Cormac Reynolds. Original progam: July 2010
+# Cormac Reynolds. Original program: July 2010
 
 
 from __future__ import print_function, division

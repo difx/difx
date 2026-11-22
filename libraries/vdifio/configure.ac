@@ -63,6 +63,15 @@ if test -n "$PYTHON" -a "x$REQUESTED_PYTHON_CTYPES" = "xyes"; then
 fi
 AM_CONDITIONAL([ENABLE_PYTHON_CTYPES], [test -n "$PYTHON" -a "x$REQUESTED_PYTHON_CTYPES" = "xyes" -a -n "$GOT_PYTHON_CTYPES"])
 
+dnl Add codif support to a handful of the utilities.  This comes before mark6sg so that
+dnl codifio.h is taken from this DiFX tree when mark6sg is found in a different install.
+PKG_CHECK_MODULES(CODIFIO, codifio, [HAVE_CODIFIO=1],  [HAVE_CODIFIO=0])
+AM_CONDITIONAL([USE_CODIFIO], [test "$HAVE_CODIFIO" -eq 1])
+AS_IF([test "$HAVE_CODIFIO" -eq 1], [AC_DEFINE([USE_CODIFIO], [1], [Define if using codifio.])])
+if test ${HAVE_CODIFIO} = 1; then
+      	CFLAGS="${CFLAGS} ${CODIFIO_CFLAGS}"
+fi
+
 PKG_CHECK_MODULES([MARK6SG], [mark6sg >= 2.0.3], [HAVE_MARK6SG=true], [HAVE_MARK6SG=false])
 AM_CONDITIONAL(USE_MARK6SG, $HAVE_MARK6SG)
 if test ${HAVE_MARK6SG} = true; then
@@ -114,14 +123,6 @@ if test ${ipp_enabled} = 1; then
 fi
 dnl **********************************************************
 
-
-dnl Add codif support to a handful of the utilities
-PKG_CHECK_MODULES(CODIFIO, codifio, [HAVE_CODIFIO=1],  [HAVE_CODIFIO=0])
-AM_CONDITIONAL([USE_CODIFIO], [test "$HAVE_CODIFIO" -eq 1])
-AS_IF([test "$HAVE_CODIFIO" -eq 1], [AC_DEFINE([USE_CODIFIO], [1], [Define if using codifio.])])
-if test ${HAVE_CODIFIO} = 1; then
-      	CFLAGS="${CFLAGS} ${CODIFIO_CFLAGS}"
-fi
 
 # Prepare output files
 

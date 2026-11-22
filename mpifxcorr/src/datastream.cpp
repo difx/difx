@@ -116,12 +116,7 @@ DataStream::~DataStream()
 void DataStream::initialise()
 {
   int status, currentconfigindex, currentoverflowbytes, overflowbytes = 0;
-  int maxbytes = config->getMaxDataBytes(streamnum);
-
-  if ((uint64_t)maxbytes*databufferfactor>4294967296LL) { // Will overflow 32bit int
-    cfatal << startl << "Datastream " << mpiid << " cannot allocate databuffer of " << (uint64_t)maxbytes*databufferfactor/1024/1024/1024 << " GB - 32bit overflow. Aborting!!!" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
-  }
+  uint64_t maxbytes = config->getMaxDataBytes(streamnum);
 
   bufferbytes = databufferfactor*maxbytes;
   readbytes = bufferbytes/numdatasegments;
@@ -140,10 +135,12 @@ void DataStream::initialise()
   databuffer = vectorAlloc_u8(bufferbytes + overflowbytes + 4); // a couple extra for mark5 case
   estimatedbytes += bufferbytes + overflowbytes + 8;
   if(databuffer == NULL) {
-    cfatal << startl << "Datastream " << mpiid << " could not allocate databuffer (length " << bufferbytes + overflowbytes << ") - aborting!!!" << endl;
+    cfatal << startl << "Datastream " << mpiid << " could not allocate databuffer (length " << (bufferbytes + overflowbytes + 4) << ") - aborting!!!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
   vectorZero_u8(databuffer, bufferbytes + overflowbytes + 4);
+  if(isfake) // fake datastreams write only frame headers into databuffer (see fillFakePayload)
+    fillFakePayload(databuffer, (long long)bufferbytes + overflowbytes + 4, "databuffer");
   tempbuf = 0;
   tempbytes = 0;
   int mindatabytes = config->getDataBytes(0, streamnum);
@@ -986,6 +983,37 @@ void DataStream::loopfileread()
     cverbose << startl << "Datastream " << mpiid << "'s readthread is exiting!!! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
   else
     cverbose << startl << "Datastream " << mpiid << "'s readthread is exiting, after not finding any data at all!" << endl;
+}
+
+void DataStream::fillFakePayload(u8 * buf, long long nbytes, const char * bufname)
+{
+  const char * mode = getenv("DIFX_FAKE_PAYLOAD");
+
+  if(mode && strcmp(mode, "none") == 0) {
+    cinfo << startl << "Fake data payload (" << bufname << "): left as allocated (DIFX_FAKE_PAYLOAD=none)" << endl;
+    return;
+  }
+  if(mode && strcmp(mode, "zero") == 0) {
+    memset(buf, 0, nbytes);
+    cinfo << startl << "Fake data payload (" << bufname << "): zeros (DIFX_FAKE_PAYLOAD=zero)" << endl;
+    return;
+  }
+  if(mode && strcmp(mode, "random") != 0)
+    cwarn << startl << "DIFX_FAKE_PAYLOAD=" << mode << " not recognised (random, zero or none); using random" << endl;
+
+  // splitmix64, seeded per datastream.  The bytes repeat each time the buffer is reused, which is fine for timing.
+  uint64_t s = 0x9E3779B97F4A7C15ULL * (uint64_t)(streamnum + 1);
+  long long i;
+  for(i = 0; i + 8 <= nbytes; i += 8) {
+    uint64_t z = (s += 0x9E3779B97F4A7C15ULL);
+    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
+    z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+    z ^= z >> 31;
+    memcpy(buf + i, &z, 8);
+  }
+  for(; i < nbytes; i++)
+    buf[i] = (u8)(i * 0x9D + streamnum);
+  cinfo << startl << "Fake data payload (" << bufname << "): pseudo-random, seeded from datastream " << streamnum << endl;
 }
 
 void DataStream::initialiseFake(int configindex)

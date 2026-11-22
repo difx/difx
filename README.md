@@ -49,9 +49,27 @@ $ git checkout dev
 
 
 
+#### Site-specific settings: `setup.local.bash`
+
+`setup.bash` (and `setup.csh`) hold generic defaults and are tracked by git, so **do not
+edit them for your machine**. Put your own settings in `setup.local.bash` next to
+`setup.bash` instead. `setup.bash` reads it if it exists, and git ignores it, so your
+local paths cannot be committed or pushed by accident:
+
 ```bash
-# make sure the settings in setup.bash are correct (you will probably need to modify e.g. IPPROOT, MPICXX, etc)
-$ source setup.bash # (or .csh). 
+$ cp setup.local.bash.example setup.local.bash
+$ $EDITOR setup.local.bash      # e.g. DIFXROOT, IPPROOT, DIFXMPIDIR, CUDAROOT, NVCCFLAGS
+```
+
+Set only what differs from the defaults. `DIFX_PREFIX` and `MPICXX` follow `DIFXROOT` and
+`DIFXMPIDIR` unless you set them too. To keep the file elsewhere (for example one per
+machine, outside the repository), point `DIFX_SETUP_LOCAL` at it before sourcing
+`setup.bash`. csh users do the same with `setup.local.csh` (see `setup.local.csh.example`).
+Because csh cannot tell where a sourced script lives, either source `setup.csh` from its
+own directory or set `DIFX_SETUP_LOCAL`.
+
+```bash
+$ source setup.bash # (or .csh).
 # You will probably want to add this to your .bashrc or .cshrc files
 
 # Help on options for that last bit are available with ./install-difx --help.

@@ -15,8 +15,8 @@ $EXPER;
 def e22b19;
      exper_name = e22b19;
      exper_description = "ALMA+EHT VLBI March 2022";
-     PI_name = "EHTC";
-     PI_email = not@an.address;
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
 *    year, doy: 2022,  78
 *    date     : Sat 19 Mar 2022
 *    MJD      : 59657

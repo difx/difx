@@ -53,7 +53,7 @@ int findFrame(const char *buffer, int frameSize, int lastMJD)
 
 	for(i = 0; i < frameSize - 32; ++i)
 	{
-		vdif_header *h;
+		const vdif_header *h;
 
 		h = (vdif_header *)(buffer + i);
 		if(getVDIFFrameBytes(h) == frameSize && (getVDIFFrameMJD(h) == lastMJD || getVDIFFrameMJD(h) == lastMJD+1))
@@ -169,24 +169,37 @@ fixing the vlite buffer... */
 			n = findFrame(buffer, frameSize, lastMJD);
 			if(n < 0)
 			{
-				FILE *jnq;
-				fprintf(stderr, "Lost frame sync.\n");
-
-				jnq = fopen("/tmp/jnq.vdif", "w");
-				n = fwrite(buffer, frameSize, 1, jnq);
-
-				if(jnq && n == 1)
+				static int firstSyncLost = 1;
+				
+				if(firstSyncLost)
 				{
-					fprintf(stderr, "bad frame written to /tmp/jnq.vdif\n");
-				}
-				else
-				{
-					fprintf(stderr, "could not write bad frame\n");
-				}
+					const char jnqFilename[] = "/tmp/LostSyncFrame.vdif";
+					FILE *jnq;
 
-				if(jnq)
-				{
-					fclose(jnq);
+					firstSyncLost = 0;
+
+					fprintf(stderr, "Lost frame sync.\n");
+
+					jnq = fopen(jnqFilename, "w");
+					if(!jnq)
+					{
+						fprintf(stderr, "Note: cannot open %s for writing sample lost sync frame.\n", jnqFilename);
+					}
+					else
+					{
+						n = fwrite(buffer, frameSize, 1, jnq);
+
+						if(n == 1)
+						{
+							fprintf(stderr, "Bad frame written to %s .\n", jnqFilename);
+						}
+						else
+						{
+							fprintf(stderr, "Could not write bad frame to %s .\n", jnqFilename);
+						}
+
+						fclose(jnq);
+					}
 				}
 
 				break;

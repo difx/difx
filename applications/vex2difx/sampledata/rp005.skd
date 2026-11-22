@@ -14,14 +14,14 @@ $EXPER;
 def rp005;
      exper_name = rp005;
      exper_description = "e-VLBI science experiments rp005, rb001, rp006";
-     PI_name = "Z. Paragi, A. Brunthaler, M. P";
-     PI_email = zparagi@jive.nl;
-*    address:   JIVE
-*               Postbus 2
-*               7990 AA Dwingeloo
-*               The Netherlands
-*    phone:     +31 (0)521 596 536
-*    during obs:+31 (0)521 596 500
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
 *    fax:        
 *
 *    year, doy: 2006, 348
@@ -38,7 +38,7 @@ def rp005;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Zsolt Paragi
+*                     Bob Bobson
 *
 enddef;
 *------------------------------------------------------------------------------

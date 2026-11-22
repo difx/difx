@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2024 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
+#include <unistd.h>
 #include "config.h"
 #include "difx2fits.h"
 #include "other.h"
@@ -68,7 +69,7 @@ static int processWeatherFile(const DifxInput *D, struct fits_keywords *p_fits_k
 		double time;
 		float timeInt;
 		int i, antId;
-		char *rv;
+		const char *rv;
 		/* 1-based index for FITS below */
 		int32_t antId1;
 
@@ -247,16 +248,28 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fi
 
 	/* calloc space for storing table in FITS format */
 	fitsbuf = (char **)malloc(D->nAntenna*sizeof(char *));
+	if(!fitsbuf)
+	{
+		fprintf(stderr, "Error: DifxInput2FitsWR(): Cannot allocate %lu bytes for fitsbuf\n", (unsigned long int)(D->nAntenna*sizeof(char *)));
+
+		exit(EXIT_FAILURE);
+	}
 	for(i = 0; i < D->nAntenna; ++i)
 	{
 		fitsbuf[i] = (char *)calloc(nRowBytes, 1);
+		if(!fitsbuf[i])
+		{
+			fprintf(stderr, "Error: DifxInput2FitsWR(): Cannot allocate %d bytes for fitsbuf[%d]\n", nRowBytes, i);
+
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	mjdLast = (double *)calloc(D->nAntenna, sizeof(double));
 	alreadyHasWeather = (int *)calloc(D->nAntenna, sizeof(int));
-	if(alreadyHasWeather == 0)
+	if(!mjdLast || !alreadyHasWeather)
 	{
-		fprintf(stderr, "Error: DifxInput2FitsWR: Cannot allocate %d integers for alreadyHasWeather\n", D->nAntenna);
+		fprintf(stderr, "Error: DifxInput2FitsWR(): Cannot allocate %lu bytess for mjdLast and alreadyHasWeather\n", (unsigned long int)(D->nAntenna*sizeof(double) + D->nAntenna*sizeof(int)));
 
 		exit(EXIT_FAILURE);
 	}

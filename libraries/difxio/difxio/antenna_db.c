@@ -323,7 +323,7 @@ void fprintAntennaDBEntry(FILE *out, const AntennaDBEntry *ae)
 
 const AntennaDBEntry *antennaDBGetByIndex(unsigned int index)
 {
-	int N;
+	size_t N;
 
 	N = sizeof(antennaDBEntries)/sizeof(AntennaDBEntry);
 

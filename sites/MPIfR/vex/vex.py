@@ -91,7 +91,7 @@ def p_blocks(t):
               | blocks block'''
     t[0] = t[1]
     if len(t) > 2:
-        t[0].update(t[2])
+        t[0].extend(t[2])
         pass
     return
 
@@ -112,7 +112,7 @@ def p_block_content(t):
                      | block_content scan_block'''
     t[0] = t[1]
     if len(t) > 2:
-        t[0].update(t[2])
+        t[0].extend(t[2])
         pass
     return
 
@@ -135,7 +135,7 @@ def p_block_lines(t):
         t[0] = MultiDict()
     else:
         t[0] = t[1]
-        t[0].update(t[2])
+        t[0].extend(t[2])
         pass
     return
 

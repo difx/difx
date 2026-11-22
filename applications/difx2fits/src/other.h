@@ -12,9 +12,9 @@
 char *mjd2str(long, char *);
 int mjd2dayno(long, int *);
 int mjd2date(long, int*, int*, int*);
-char *time2str(double, char *, char *);
+char *time2str(double, const char *, char *);
 char *rad2str(double, char *, char *);
-char *rad2strg(double, char *, char *, int);
+char *rad2strg(double, const char *, char *, int);
 char *timeMjd2str(double, char *);
 char *srvMjd2str(double inTime, char *pOutStr);
 

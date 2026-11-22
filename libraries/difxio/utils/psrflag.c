@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2025 by Walter Brisken                             *
+ *   Copyright (C) 2014-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -24,6 +24,7 @@
 #include <complex.h>
 #include <fftw3.h>
 #include <time.h>
+#include <unistd.h>
 #include "difx_input.h"
 #include "difxio_macros.h"
 
@@ -137,7 +138,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 	int i, j;
 	int nBin, bin;
 	double m;
-	double binEnd0, binEnd1, binWeight1;
+	double binWeight1;
 	FILE *out;
 	FILE *flagOut;
 	char T1[20], T2[20];
@@ -176,8 +177,6 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 			bin = 0;
 		}
 
-		binEnd0 = D->pulsar[pulsarId].binEnd[(bin+nBin-1) % nBin];
-		binEnd1 = D->pulsar[pulsarId].binEnd[bin];
 		binWeight1 = D->pulsar[pulsarId].binWeight[bin];
 
 		gate[i] = binWeight1;
@@ -255,6 +254,12 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 
 			snprintf_warn(fileName, DIFXIO_FILENAME_LENGTH, "%s.%s-%s.rates", pulsarName, D->antenna[i].name, D->antenna[j].name);
 			out = fopen(fileName, "w");
+			if(!out)
+			{
+				fprintf(stderr, "Error: cannot open %s for write.\n", fileName);
+
+				exit(0);
+			}
 
 			for(scanId = 0; scanId < D->nScan; ++scanId)
 			{
@@ -317,7 +322,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double t
 							fqm = fq + (0.5 + l)*spbw;
 
 							index = (int)(fabs((R1-R2)*fqm)*(f/f0)*tInt*fftSize/dataSize +0.5);
-							if(index < fftSize)
+							if(index <= fftSize/2)
 							{
 								M += Fgate[index];
 							}

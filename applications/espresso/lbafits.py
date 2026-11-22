@@ -85,7 +85,7 @@ def main():
             if len(phasecentres) > 1:
                 fitsfile += f".P{pc:d}" 
             if len(bins) > 1:
-                fitsfile += f".B{pc:d}" 
+                fitsfile += f".B{b:d}" 
             fitsfile += ".FITS"
             fitsfiles += [fitsfile]
 

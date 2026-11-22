@@ -638,7 +638,7 @@ static int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *recei
 		{
 			const int MaxVLBATcalLineLength = 100;
 			char line[MaxVLBATcalLineLength];
-			char *rv;
+			const char *rv;
 	
 			rv = fgets(line, MaxVLBATcalLineLength-1, in);
 			if(!rv)
@@ -803,9 +803,9 @@ static int loadDifxTcalDIFX(DifxTcal *dt)
 	{
 		const int MaxVLBATcalLineLength = 100;
 		char line[MaxVLBATcalLineLength];
-		char *rv;
 		char antenna[MAX_DIFX_TCAL_ANTENNA_LENGTH] = "";
 		char receiver[MAX_DIFX_TCAL_RECEIVER_LENGTH] = "";
+		const char *rv;
 		int i, n;
 		float freq, tcal1, tcal2;
 		char pol1[2], pol2[2];

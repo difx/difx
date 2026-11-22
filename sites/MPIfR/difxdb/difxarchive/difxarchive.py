@@ -69,11 +69,11 @@ def exitOnError(exception):
     Exit routine to be called whenever an error/exception has occured
     '''
 
-    # print("Unexpected error:", sys.exc_info()[0])
+    print("Unexpected error:", sys.exc_info()[0])
     logger.error(exception)
 
     # destroy kerberos tickets
-    destroyTicket()
+    #destroyTicket()
 
     logger.info("Aborting")
     cleanup()
@@ -110,11 +110,8 @@ def getTicket(user):
     if options.verbose:
         logger.info("Kerberos auth: " + str(' '.join(kinit_args)))
     kinit = Popen(kinit_args, stdin=PIPE, stdout=PIPE, stderr=PIPE, env=tmpEnv)
-    kinit.stdin.write('%s\n' % password)
-    kinit.wait()
-    if options.verbose:
-        rc = kinit.read()
-        logger.info("Kerberos auth result: " + str(rc))
+    kinit.stdin.write(('%s' % password).encode() + b'\n')
+    kinit.communicate()
 
 
 def destroyTicket():
@@ -154,7 +151,7 @@ def getTransferFileCount(source, destination, rsyncOptions=""):
         logger.info("Executing: " + str(cmd))
     proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=tmpEnv)
 
-    remainder = proc.communicate()[0]
+    remainder = str(proc.communicate()[0])
 
     matchTotal = re.findall(r'Number of files: (\d+)', remainder)
     if len(matchTotal) > 0:
@@ -181,14 +178,15 @@ def syncDir(path, user, config, fileCount):
 
     logger.info( "Syncing files from %s to: %s" % (path, server))
 
-    cmd = 'rsync -av --no-perms --chmod=ugo=rwX --progress %s %s@%s:%s' % ( path, user, server, remotePath) 
+    cmd = 'rsync -av --no-perms --chmod=ugo=rwX --progress %s %s@%s:%s' % (path, user, server, remotePath)
 
     proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=tmpEnv)
 
-    while True:
-        output = proc.stdout.readline()
+    for output in proc.communicate():
+        output = str(output)
+        print('syncDir dbg: ', output)
 
-        if not output:
+        if not output or len(output) <= 0:
             break
 
         if 'to-check' in output:
@@ -238,11 +236,11 @@ def syncReferenceDir(path, referencePath, fileCount, options):
     logger.info( "Syncing reference files from %s to: %s" % (path, referencePath))
 
     proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,env=tmpEnv)    
+    for output in proc.communicate():
+        output = str(output)
+        print('syncRefDir dbg: ', output)
 
-    while True:
-        output = proc.stdout.readline()
-
-        if not output:
+        if not output or len(output) <= 0:
             break
 
         if 'to-check' in output:
@@ -454,8 +452,9 @@ def packDirectory(rootPath, packDir, outDir, filename, recurse=True):
     if options.verbose:
         print ("Executing command: ", command)
 
-    child = pexpect.spawn(command, logfile = sys.stdout, timeout=None)
-    ret = child.expect([pexpect.EOF,pexpect.TIMEOUT, "Error"])
+    #child = pexpect.spawn(command, logfile = sys.stdout, timeout=None) # logfile fails in Py 3.12
+    child = pexpect.spawn(command, timeout=None)
+    ret = child.expect([pexpect.EOF, pexpect.TIMEOUT, "Error"])
     if ret != 0:
         exitOnError("Error creating archive: %s " % (tarfilename))
 
@@ -523,7 +522,7 @@ def confirmAction():
             print ('Not continuing.\n')
 
             # destroy kerberos tickets
-            destroyTicket()
+            #destroyTicket()
             exit(0)
 
 
@@ -569,6 +568,7 @@ def getArchiveDirs(path):
 
     # find all files and subdirectories under path
     for dirpath, dirnames, filenames in os.walk(path):
+        print(dirpath, dirnames)
         # inspect the top level directories
         if fringeDir in dirnames:
             archiveDirs.append(fringeDir)
@@ -581,11 +581,11 @@ def getArchiveDirs(path):
         for dir in dirnames:
             match = reProdDir.match(dir)
             if match:
-                if match.group(1) > version:
+                if int(match.group(1)) > version:
                     prodDirs = []
-                if match.group(1) >= version:
+                if int(match.group(1)) >= version:
                     prodDirs.append(dir)
-                    version = match.group(1)
+                    version = int(match.group(1))
 
         for dir in prodDirs:
             archiveDirs.append(dir)
@@ -719,10 +719,12 @@ if __name__ == "__main__":
     completeSuccess = False
 
     try:
+    #if True:
         if not options.dbOnly:
 
             # obtain kerberos ticket
-            getTicket(user)
+            #print('getTicket for ', user)
+            #getTicket(user)
 
             # construct the list of files and directories to be archived
             archiveDirs, filenames = getArchiveDirs(path)
@@ -731,11 +733,11 @@ if __name__ == "__main__":
             # pack the directories
             for dir in archiveDirs:
                 packDirectoryResumably(path, dir, archiveDir, dir + ".tar", recurse=True)
-                renewTicket(user)
+                #renewTicket(user)
                 logger.info("Alive")
             ## now pack the top-level files
             packDirectoryResumably(path, path, archiveDir, "main.tar", recurse=False)
-            renewTicket(user)
+            #renewTicket(user)
 
             # Now sync the tar files to the backup server
             passCount = 0
@@ -754,7 +756,7 @@ if __name__ == "__main__":
                 logger.info ("Pass %d. Syncing %d files" % (passCount, fileCount))
                 passCount +=1
             logger.info("Finished")
-            renewTicket(user)
+            #renewTicket(user)
 
 
             # Now copy the reference files
@@ -838,13 +840,14 @@ if __name__ == "__main__":
         completeSuccess = True
 
     except Exception as e:
+        print('Error! ', e)
         pass
         #exitOnError(e)
     except KeyboardInterrupt:
         sys.exit(1)
     finally:
         # destroy kerberos tickets
-        destroyTicket()
+        #destroyTicket()
         logger.info ("Done")
         if completeSuccess:
             # allow deletion of tar files in cleanup()

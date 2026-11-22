@@ -3,7 +3,6 @@
 EMAIL=difx@difx.com
 
 URL=ftp://gdc.cddis.eosdis.nasa.gov/vlbi/gsfc/ancillary/solve_apriori/
-COMMAND=''
 
 EOP=usno500_finals.erp
 UT1=ut1ls.dat

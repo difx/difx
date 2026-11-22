@@ -586,7 +586,7 @@ else:
 if isfile(v2dFile):
 	if force:
 		if verbose > 0:
-			print('Warning: overwriting exisiting file %s.\n' % v2dFile)
+			print('Warning: overwriting existing file %s.\n' % v2dFile)
 	else:
 		print('Error: output file %s exists.  Run with --force to continue.\n' % v2dFile)
 		exit(0)

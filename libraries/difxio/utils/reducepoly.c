@@ -235,13 +235,13 @@ double evaluatePolyDeriv(const double *p, int n, double x)
 	return y;
 }
 
-void reducePoly(DifxInput *D, int nPoly)
+void reducePoly(const DifxInput *D, int nPoly)
 {
 	int s;
 	
 	for(s = 0; s < D->nScan; ++s)
 	{
-		DifxScan *ds;
+		const DifxScan *ds;
 		int refAnt;	/* points to a valid antenna in this poly */
 		int p, i;
 

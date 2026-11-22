@@ -15,15 +15,15 @@ $EXPER;
 def v252i;
      exper_name = v252i;
      exper_description = "Tracking Active galactic Nuclei with Austral Mas Interferometry";
-     PI_name = RoopeshOjha;
-     PI_email = rojha@usno.navy.mil;
-*    address:   U S Naval Observatory
-*               3450 Massachusetts Ave, NW
-*               Washington DC 20392, USA
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
 *                
-*    phone:     +1-202-762-0607
+*    phone:     Fake Phone
 *    during obs: 
-*    fax:       +1-202-762-1514
+*    fax:       Fake Phone
 *    notes:     Fringe finder : 0144-522, 1934-638
 *
 *    year, doy: 2008, 332
@@ -40,10 +40,10 @@ def v252i;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     RoopeshOjha
-*                     U S Naval Observatory
-*                     3450 Massachusetts Ave, NW
-*                     Washington DC 20392, USA
+*                     Bob Bobson
+*                     Fake Address
+*
+*
 *
 enddef;
 *------------------------------------------------------------------------------

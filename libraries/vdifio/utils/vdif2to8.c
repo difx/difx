@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013-2024 by Walter Brisken, Chris Phillips             *
+ *   Copyright (C) 2013-2026 by Walter Brisken, Chris Phillips             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -76,7 +76,7 @@ int vdif2to8(FILE *out, FILE *in, int inputFrameBytes)
 	unsigned char *outputBuffer;
 	int arrayEnd = 0;
 	int index = 0;
-	int outputFrameBytes;
+	size_t outputFrameBytes;
 	long long nSkip = 0;
 
 	void (*convert)(unsigned char *, const unsigned char *, int);
@@ -88,7 +88,7 @@ int vdif2to8(FILE *out, FILE *in, int inputFrameBytes)
 	outputBuffer = malloc(outputFrameBytes);
 	if(!outputBuffer)
 	{
-		fprintf(stderr, "Cannot allocate %d bytes\n", inputBufferSize);
+		fprintf(stderr, "Cannot allocate %lu bytes\n", (unsigned long int)inputBufferSize);
 
 		return -1;
 	}
@@ -118,6 +118,10 @@ int vdif2to8(FILE *out, FILE *in, int inputFrameBytes)
 			}
 			
 			v = fread(inputBuffer+nLeft, 1, inputBufferSize-nLeft, in);
+			if(v == 0)
+			{
+				break;
+			}
 			arrayEnd = nLeft + v;
 			if(arrayEnd < inputFrameBytes)
 			{
@@ -151,7 +155,7 @@ int vdif2to8(FILE *out, FILE *in, int inputFrameBytes)
 
 		if(v != outputFrameBytes)
 		{
-			fprintf(stderr, "Error: short write: %d/%d bytes.  Stopping.\n", (int)v, outputFrameBytes);
+			fprintf(stderr, "Error: short write: %lu/%lu bytes.  Stopping.\n", (long unsigned int)v, (long unsigned int)outputFrameBytes);
 			fprintf(stderr, "Is the disk full?\n");
 
 			break;

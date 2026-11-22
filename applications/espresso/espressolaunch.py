@@ -105,7 +105,7 @@ def fill_operator_log(logfile):
 
 
 def run_interactive(corrjoblist, outdir):
-    """Run jobs in an interactive enviroment"""
+    """Run jobs in an interactive environment"""
     good_jobs = []
     bad_jobs = []
     job_errors = []
@@ -402,6 +402,11 @@ def get_options(usage):
             " specified (no other arguments required)")
     
     (options, args) = parser.parse_args()
+
+    if len(args) < 1 and not options.expt_all:
+        parser.print_help()
+        parser.error("Give job name(s), or -a <expname>")
+
     return options, args
 
 
@@ -421,10 +426,6 @@ explicitly)
 """
 
 options, args = get_options(usage)
-
-if len(args) < 1 and not options.expt_all:
-    parser.print_help()
-    parser.error("Give job name(s), or -a <expname>")
 
 # Determine the name of the correlator pass from the first jobname or the -a
 # switch

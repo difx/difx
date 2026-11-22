@@ -17,7 +17,7 @@
 
 int strings_equal (const char *, const char *);
 
-void error_message(char *message) /*includefile */
+void error_message(const char *message) /*includefile */
 {
   fprintf(stderr,"ERROR: %s\n",message);
   exit(1);
@@ -181,7 +181,7 @@ void swap_longlong( long long *pl ) /* includefile */
 
 int little_endian() /*includefile*/
 {
-  char *ostype;
+  const char *ostype;
 
   if((ostype = (char *)getenv("OSTYPE")) == NULL )
     error_message("environment variable OSTYPE not set!");
@@ -235,7 +235,7 @@ int compute_spectra, do_vanvleck, hanning, hamming, zerolagdump;
 int headeronly;
 char ifstream[8];
 
-void send_string(char *string) /* includefile */
+void send_string(const char *string) /* includefile */
 {
   int len;
   len=strlen(string);

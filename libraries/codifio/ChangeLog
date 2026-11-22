@@ -1,3 +1,13 @@
+Version 0.10
+~~~~~~~~~~~~
+* Post DiFX-2.9
+* setCODIFEpochTime: compute epoch relative to 2000 (was 2020) and wrap modulo 256 (8 bit field)
+* setCODIFEpochMJD: return error before 2000 and wrap modulo 256
+* incrementCODIFHeader: advance seconds by whole periods, fix wrap at exact period boundary, return error rather than assert if before epoch
+* createCODIFHeader: version set consistently to 2
+* getCODIFFrameperperiod now calls getCODIFFramesPerPeriod; getCODIFFrameMJDSec takes const header
+* nextCODIFHeader/incrementCODIFHeader: parameter renamed frameperperiod to reflect its meaning
+
 Version 0.9
 ~~~~~~~~~~~
 * Added utility codifSplitChan

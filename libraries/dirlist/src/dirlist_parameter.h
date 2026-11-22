@@ -56,7 +56,7 @@ public:
 	double getDouble(unsigned int index = 0) const;
 	const std::string &getString(unsigned int index = 0) const;
 
-	void print() const;		// diagnositic print
+	void print() const;		// diagnostic print
 	void print(std::ostream &os, bool doEOL = true) const;
 
 private:

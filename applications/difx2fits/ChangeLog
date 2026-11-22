@@ -1,5 +1,6 @@
 Version 3.8.1
 * Post DiFX-2.9.0
+* Implement some fixes suggested by static code analysis
 
 
 Version 3.8.0
@@ -13,7 +14,7 @@ Version 3.8.0
 * Add external utility (apd2antenna) that converts .apd file into antenna-based quantities
 * Sniffer: option to write out bandpass
 * Add external utility (bp2antenna) that converts .bandpass file into antenna-based quantities with possibility to smooth in frequency
-* Clean up and fix some logic related to diagostic UV dumping
+* Clean up and fix some logic related to diagnostic UV dumping
 * EXPERIMENTAL: Add option to apply a complex bandpass prior to writing .FITS file.  see top of src/bandpass.h for some additional info. 
 * EXPERIMENTAL: Add option to apply a delay (as function of time and subband) from a .aapd file prior to writing .FITS file.
   - This is intended for diagnostic purposes only
@@ -45,7 +46,7 @@ Version 3.7.0
 * pass CommandLineOptions to more of the major subroutines to improve the code
 * (along with corresponding difxio commit) remove polxy2hv from DifxInput
 * various pulse cal and polarizations additions as described below:
-* option to perform van Vleck corections within difx2fits.
+* option to perform van Vleck corrections within difx2fits.
   - Activated by one or more of the following conditions:
     - command line argument --vanVleck
     - different sampling on different antennas
@@ -98,7 +99,7 @@ Commit 9???  2020.09.18
 
   Added statistics of printing skipped records.
 
-  Added additinal debugging statements with verbose > 3.
+  Added additional debugging statements with verbose > 3.
 
 Commit 9637  2020.07.30
 
@@ -172,9 +173,9 @@ Version 3.5.0
 * Slight restructuring if difx2fits.c: load all filesets at beginning; no need to keep reloading them
 * plotpcal2 : second attempt to plot pcals in a more general way.  Still not super satisfactory.
 * Fix a case where absence of pulse cal file leads to seg fault (NRAO bug VLB-134, second part)
-* Fix a long-standing (introduced in 2009 for DiFX-2.0) problem in generating the MC table:  The last term in the clock polynomial (ususally the rate) was ignored, causing incorrect entries in both the clock (due to drift since the reference time) and clock rate columns of this table.
+* Fix a long-standing (introduced in 2009 for DiFX-2.0) problem in generating the MC table:  The last term in the clock polynomial (usually the rate) was ignored, causing incorrect entries in both the clock (due to drift since the reference time) and clock rate columns of this table.
 * Support multiple datastreams per antenna.  Only changes really needed were in handling of DiFX-extracted pulse cal.
-* Lynn Matthews reported a problem with AN tables when performing VBGLU.  Problem was found to be populating POLCALA and POLCALB arrays witn NOPCAL=0, causing confusion in AIPS.  Fixed.
+* Lynn Matthews reported a problem with AN tables when performing VBGLU.  Problem was found to be populating POLCALA and POLCALB arrays with NOPCAL=0, causing confusion in AIPS.  Fixed.
 * Fix jobmatrix output when subneting and/or given difx files not in time order
 * Adding support for taking union of frequency setups; depends on incomplete implementation in difxio
 * Don't raise a warning for a normal case where the sniffer buffer can be breached by one element.  Just ignore it and move on.
@@ -212,7 +213,7 @@ upgrade of difxio.
 * Add DIFX_LABEL env var to FITS files
 * Make sniffer plots more consistent with AIPS.  They will always show USB now and should have the same phase sense.
 * Use the SX gain table rows when SX observing is used.  Thanks to James Miller-Jones for reporting the problem.
-* pcal, weather, tsys, and flag files could be compromized by observations spanning the new year.
+* pcal, weather, tsys, and flag files could be compromised by observations spanning the new year.
   - Now handle day of year jumps
   - Also handle possible use of mjds rather than days of year in future
 * increase number of phase cal tones allowed

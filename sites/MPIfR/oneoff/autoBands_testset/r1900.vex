@@ -7,7 +7,7 @@ $EXPER;
   def R1900;
     exper_name = R1900;
     exper_description = IVS-R1;
-    PI_name = NASA;
+    PI_name = "Bob Bobson";
     target_correlator = BONN;
   enddef;
 *-----------------------   end $EXPER              ----------------------*

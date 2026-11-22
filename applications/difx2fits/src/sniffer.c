@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "sniffer.h"
 
 typedef struct
@@ -113,7 +114,11 @@ static void resetAccumulator(Accumulator *A)
 	A->mjdCount = 0;
 }
 
-static Accumulator *newAccumulatorArray(Sniffer *S, int n, int writeBandpass)
+/* FIXME: in function below
+   1. check all memory allocations for failure
+   2. do we need to use fftw's alloc/dealloc routines for some of these?
+ */
+static Accumulator *newAccumulatorArray(const Sniffer *S, int n, int writeBandpass)
 {
 	Accumulator *A;
 	int a;
@@ -122,6 +127,12 @@ static Accumulator *newAccumulatorArray(Sniffer *S, int n, int writeBandpass)
 	nBBC = S->nIF*S->nPol;
 
 	A = (Accumulator *)calloc(n, sizeof(Accumulator));
+	if(!A)
+	{
+		fprintf(stderr, "Error: newAccumulatorArray(): cannot allocate %lu bytes.\n", (unsigned long int)(n*sizeof(Accumulator)));
+
+		exit(0);
+	}
 	for(a = 0; a < n; ++a)
 	{
 		int i;
@@ -710,7 +721,7 @@ void deleteSniffer(Sniffer *S)
  *  - determine actual peak value
  *  - don't care about actual coordinate system -- leave that to the calling function
  */
-static double peakup(double peak[3], int i, int n, double w)
+static double peakup(const double peak[3], int i, int n, double w)
 {
 	double d, f;
 
@@ -733,7 +744,7 @@ static double peakup(double peak[3], int i, int n, double w)
 }
 
 /* unlike above function, this just returns the offset in pixels from the center pixel */
-static void peakup2D(double peak[3][3], double *deltaj, double *deltai, double *value)
+static void peakup2D(const double peak[3][3], double *deltaj, double *deltai, double *value)
 {
 	double dzdj = (peak[2][1] - peak[0][1]) / 2.0;
 	double dzdi = (peak[1][2] - peak[1][0]) / 2.0;
@@ -1045,27 +1056,37 @@ static void findDelayRatePeak(const Sniffer *S, double *delay, double *phaseRate
 		first = 0;
 		if(getenv("WRITEFIRSTDELAY") != 0)
 		{
+			const char firstDelayFilename[] = "/tmp/firstDelay.txt";
 			FILE *out;
-			int i;
-			double factor, scale;
 
-			printf("Saving first diagnostic delay spectrum to /tmp/firstDelay.txt\n");
-			factor = 1.0/(S->bw*S->fftOversample*chanBinFactor/1000.0);
-			scale = 1.0/max2;
-			out = fopen("/tmp/firstDelay.txt", "w");
-			for(i = 0; i < S->fft_nx/2; ++i)
+			out = fopen(firstDelayFilename, "w");
+			if(out)
 			{
-				z = S->fftbuffer[bestj*S->fft_nx + i + S->fft_nx/2];
-				amp2 = creal(z*~z);
-				fprintf(out, "%f %e\n", (i-S->fft_nx/2)*factor, amp2*scale);
+				double factor, scale;
+				int i;
+
+				printf("Saving first diagnostic delay spectrum to %s\n", firstDelayFilename);
+				factor = 1.0/(S->bw*S->fftOversample*chanBinFactor/1000.0);
+				scale = 1.0/max2;
+
+				for(i = 0; i < S->fft_nx/2; ++i)
+				{
+					z = S->fftbuffer[bestj*S->fft_nx + i + S->fft_nx/2];
+					amp2 = creal(z*~z);
+					fprintf(out, "%f %e\n", (i-S->fft_nx/2.0)*factor, amp2*scale);
+				}
+				for(i = 0; i < S->fft_nx/2; ++i)
+				{
+					z = S->fftbuffer[bestj*S->fft_nx + i];
+					amp2 = creal(z*~z);
+					fprintf(out, "%f %e\n", i*factor, amp2*scale);
+				}
+				fclose(out);	
 			}
-			for(i = 0; i < S->fft_nx/2; ++i)
+			else
 			{
-				z = S->fftbuffer[bestj*S->fft_nx + i];
-				amp2 = creal(z*~z);
-				fprintf(out, "%f %e\n", i*factor, amp2*scale);
+				printf("Cannot open %s for write so won't write diagnostic first delay spectrum.\n", firstDelayFilename);
 			}
-			fclose(out);	
 		}
 	}
 
@@ -1606,7 +1627,6 @@ int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 
 		if(writeNewConfig)
 		{
-			int bbc;
 			int nBBC;
 
 			nBBC = S->nIF*S->nPol;

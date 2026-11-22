@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2025 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -74,7 +74,7 @@ static int calculateWorstcaseGuardNS(double sampleRate, int subintNS, int nBit, 
 	return static_cast<int>(round(nsAccumulate + MaxEarthGeomSlipRate*subintNS*1.0e-9 + 1.0));
 }
 
-static DifxJob *makeDifxJob(string directory, const Job& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext, const CorrParams *P)
+static DifxJob *makeDifxJob(const string &directory, const Job& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext, const CorrParams *P)
 {
 	DifxJob *job;
 	const char *difxVersion;
@@ -134,7 +134,7 @@ static DifxJob *makeDifxJob(string directory, const Job& J, int nAntenna, const 
 
 			exit(EXIT_FAILURE);
 		}
-		v = snprintf(jobName, DIFXIO_FILENAME_LENGTH, format, J.jobSeries.c_str(), J.jobId, ext);
+		snprintf_warn(jobName, DIFXIO_FILENAME_LENGTH, format, J.jobSeries.c_str(), J.jobId, ext);
 	}
 	else
 	{
@@ -144,7 +144,7 @@ static DifxJob *makeDifxJob(string directory, const Job& J, int nAntenna, const 
 
 			exit(EXIT_FAILURE);
 		}
-		v = snprintf(jobName, DIFXIO_FILENAME_LENGTH, "%s", J.jobSeries.c_str());
+		snprintf_warn(jobName, DIFXIO_FILENAME_LENGTH, "%s", J.jobSeries.c_str());
 	}
 	v = snprintf(fileBase, DIFXIO_FILENAME_LENGTH, "%s/%s", directory.c_str(), jobName);
 	if(v >= DIFXIO_FILENAME_LENGTH)
@@ -260,8 +260,42 @@ static DifxAntenna *makeDifxAntennas(const Job &J, const VexData *V, int *n)
 	return A;
 }
 
-// NOTE: FIXME: before this gets called, all datasource=NONE datastreams should be stripped.
 
+void handleDatasourceFile(int streamId, DifxDatastream *dd, const VexAntenna *ant, const VexData *V, const Job& J)
+{
+    int nFile = ant->files.size();
+    int count = 0;
+    vector<string> files;
+    const VexScan *vexScan;
+
+    for(int j = 0; j < nFile; ++j)
+    {
+            // loop over all scans of the current job
+            for(vector<string>::const_iterator si = J.scans.begin(); si != J.scans.end(); ++si)
+            {
+                vexScan = V->getScanByDefName(*si);
+                if (!vexScan->hasAntenna(ant->name))
+                    continue;
+                // obtain start/stop of the current antenna within the scan
+                const Interval *antInterval = vexScan->getAntennaInterval(ant->name);
+                // check if file interval matches the antenna interval
+                if(ant->files[j].streamId == streamId && antInterval->overlap(ant->files[j]) > 0.0)
+                {
+                    files.push_back(ant->files[j].filename);
+                    ++count;
+                }
+            }
+    }
+
+    DifxDatastreamAllocFiles(dd, count);
+
+    for (int j=0; j < files.size(); ++j)
+    {
+        dd->file[j] = strdup(files[j].c_str());
+    }
+}
+
+// NOTE: FIXME: before this gets called, all datasource=NONE datastreams should be stripped.
 static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int nSet, DifxAntenna *difxAntennas, const Shelves &shelves)
 {
 	DifxDatastream *datastreams;
@@ -288,6 +322,7 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int n
 	for(int s = 0; s < nSet; ++s)
 	{
 		int antennaId = 0;
+                // loop over all antennas of the current job
 		for(std::vector<std::string>::const_iterator a = J.jobAntennas.begin(); a != J.jobAntennas.end(); ++a)
 		{
 			int nd;
@@ -315,6 +350,7 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int n
 				dd->dataSource = stream.dataSource;
 				dd->tSys = stream.difxTsys;
 				dd->dataSampling = stream.dataSampling;
+				dd->vgosComplexFlip = ant->vgosComplexFlip ? 1 : 0;
 				switch(dd->dataSource)
 				{
 				case DataSourceNetwork:
@@ -322,78 +358,35 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int n
 					snprintf(dd->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", ant->ports[d].networkPort.c_str());
 					break;
 				case DataSourceFile:
-					{
-						int nFile = ant->files.size();
-						int count = 0;
-
-						for(int j = 0; j < nFile; ++j)
-						{
-							if(ant->files[j].streamId == d && J.overlap(ant->files[j]) > 0.0)
-							{
-								++count;
-							}
-						}
-
-						DifxDatastreamAllocFiles(dd, count);
-
-						count = 0;
-
-						for(int j = 0; j < nFile; ++j)
-						{
-							if(ant->files[j].streamId == d && J.overlap(ant->files[j]) > 0.0)
-							{
-								dd->file[count] = strdup(ant->files[j].filename.c_str());
-								++count;
-							}
-						}
-					}
+                                        {
+                                        handleDatasourceFile(d, dd, ant, V, J);
+                                        }
 					break;
 				case DataSourceMark6:
-					{
-						// mark6 has both files and vsns
-						int nFile = ant->files.size();
-						int count = 0;
-
-						for(int j = 0; j < nFile; ++j)
-						{
-							if(ant->files[j].streamId == d && J.overlap(ant->files[j]) > 0.0)
-							{
-								++count;
-							}
-						}
-
-						DifxDatastreamAllocFiles(dd, count);
-
-						count = 0;
-
-						for(int j = 0; j < nFile; ++j)
-						{
-							if(ant->files[j].streamId == d && J.overlap(ant->files[j]) > 0.0)
-							{
-								dd->file[count] = strdup(ant->files[j].filename.c_str());
-								++count;
-							}
-						}
+                                        {
+					// mark6 has both files and vsns
+                                        handleDatasourceFile(d, dd, ant, V, J);
+					
 						
-						string sVSN;
-						int nVSN = ant->vsns.size();
-						count = 0;
+                                        string sVSN;
+                                        int nVSN = ant->vsns.size();
+                                        int count = 0;
 
-						for(int j = 0; j < nVSN; ++j)
-						{
-							if(ant->vsns[j].streamId == d && J.overlap(ant->vsns[j]) > 0.0)
-							{
-								sVSN = ant->vsns[j].filename;
-								++count;
-							}
-						}
+                                        for(int j = 0; j < nVSN; ++j)
+                                        {
+                                                if(ant->vsns[j].streamId == d && J.overlap(ant->vsns[j]) > 0.0)
+                                                {
+                                                        sVSN = ant->vsns[j].filename;
+                                                        ++count;
+                                                }
+                                        }
 
-						if(!shelf.empty())
-						{
-							shelf += ",";
-						}
-						shelf += shelves.getShelf(sVSN);
-					}
+                                        if(!shelf.empty())
+                                        {
+                                                shelf += ",";
+                                        }
+                                        shelf += shelves.getShelf(sVSN);
+                                        }
 					break;
 				case DataSourceModule:
 					{
@@ -454,6 +447,7 @@ static DifxDatastream *makeDifxDatastreams(const Job& J, const VexData *V, int n
 
 	return datastreams;
 }
+
 
 static int getBand(vector<pair<int,int> >& bandMap, int fqId)
 {
@@ -1006,7 +1000,7 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 								continue;
 							}
 							
-							// Excape if this baseline is not requested
+							// Escape if this baseline is not requested
 							if(!P->useBaseline(D->antenna[a1].name, D->antenna[a2].name))
 							{
 								continue;
@@ -1376,7 +1370,7 @@ static void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
 
 static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const VexData *V, const CorrParams *P, const VexScan *S)
 {
-	int nConfig, nFFTsPerIntegration, nSubintsPerIntegration;
+	int nConfig, nSubintsPerIntegration;
 	int max5div, max2div;
 	int fftDurNS;
 	DifxConfig *config;
@@ -1434,7 +1428,6 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	floatFFTDurNS = 1000000000.0/corrSetup->FFTSpecRes;
 	fftDurNS = static_cast<int>(floatFFTDurNS);
 	dataRate = mode->getHighestSampleRate()*mode->getBits()*mode->subbands.size();
-	nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
 
 	//first test how big a single FFT is - if it is too big, fail with a warning and a suggestion
 	if(floatFFTDurNS > (1LL<<31) - 1)
@@ -1474,6 +1467,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	else //first try to set a reasonable subintNS
 	{
 		int64_t nscounter;
+		int nFFTsPerIntegration;
 
 		nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
 
@@ -1614,7 +1608,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 			bestfractionaldiff = fabs(1.0 - (floatSubintDurNS/1.0e9)/config->tInt);
 			for(int i = 0; i <= max5div; ++i)
 			{
-				for(int j = 0; j <= max5div; ++j)
+				for(int j = 0; j <= max2div; ++j)
 				{
 					double test_tint = (floatSubintDurNS/1.0e9)*pow(5.0,i)*pow(2.0,j);
 					if(fabs(1.0 - (test_tint)/config->tInt) < bestfractionaldiff)
@@ -1685,7 +1679,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 
 // For a zoom freq provideable by multiple recfreqs, return recfreq id for which the zoom is farthest from the edes, or return -1 on error/not-found
 // TODO: the choice is still suboptimal
-static int bestMatchingFreq(const ZoomFreq &zoomfreq, const std::vector<int> matchingFreqs, const DifxDatastream *dd, const vector<freq> &freqs)
+static int bestMatchingFreq(const ZoomFreq &zoomfreq, const std::vector<int> &matchingFreqs, const DifxDatastream *dd, const vector<freq> &freqs)
 {
 	const double upper_zoombandedge = zoomfreq.frequency + zoomfreq.bandwidth;
 	const double lower_zoombandedge = zoomfreq.frequency;
@@ -1700,7 +1694,7 @@ static int bestMatchingFreq(const ZoomFreq &zoomfreq, const std::vector<int> mat
 		std::cout << "], length " << matchingFreqs.size() << endl;
 	}
 
-	if(matchingFreqs.size() <= 0)
+	if(matchingFreqs.size() == 0)
 	{
 		return -1;
 	}
@@ -1730,25 +1724,15 @@ static int bestMatchingFreq(const ZoomFreq &zoomfreq, const std::vector<int> mat
 	}
 
 	// Find the best matching input band by maximizing the distance from a band edge
-	double edge_dist_l = 0.0;
-	double edge_dist_u = 0.0;
 	std::vector<int>::size_type best_input_band_index = 0;
 	double ed_min = 0.0;
-	std::vector<double> ed1_vec;
-	std::vector<double> ed2_vec;
-	std::vector<double> input_center;
-	std::vector<double> input_centers;
 	for(size_t jj = 0; jj < matchingFreqs.size(); ++jj)
 	{
+		double edge_dist_l;
+		double edge_dist_u;
+		
 		edge_dist_l = abs(lower_zoombandedge - input_bands_lower_edge[jj]);
 		edge_dist_u = abs(upper_zoombandedge - input_bands_upper_edge[jj]);
-		if(0)
-		{
-			std::cout << "input_bands_lower_edge[" << jj << "] = " << input_bands_lower_edge[jj] << std::endl;
-			std::cout << "input_bands_upper_edge[" << jj  << "] = " << input_bands_upper_edge[jj] << std::endl;
-			std::cout << "edge_dist_l = " << edge_dist_l << std::endl;
-			std::cout << "edge_dist_u = " << edge_dist_u << std::endl;
-		}
 		if(0 == jj)
 		{
 			ed_min = min(edge_dist_l,edge_dist_u);
@@ -1759,12 +1743,6 @@ static int bestMatchingFreq(const ZoomFreq &zoomfreq, const std::vector<int> mat
 			ed_min = min(edge_dist_l,edge_dist_u);
 			best_input_band_index = jj;
 		}
-	}
-
-	if(0)
-	{
-		std::cout << "ed_min = " << ed_min << std::endl;
-		std::cout << "best_input_band_index = " << best_input_band_index << " corresponding to freq = " << matchingFreqs[best_input_band_index] << std::endl;
 	}
 
 	return matchingFreqs[best_input_band_index];
@@ -1808,6 +1786,11 @@ static int fixDatastreamTable(DifxInput *D)
 					DifxFreq *df;
 
 					D->freq = (DifxFreq *)realloc(D->freq, (D->nFreq + 1)*sizeof(DifxFreq));
+					if(D->freq == 0)
+					{
+						std::cerr << "Cannot increase size of D->freq to " << (D->nFreq + 1) << " elements." << std::endl;
+						exit(0);
+					}
 					
 					df = D->freq + D->nFreq;
 					memcpy(df, D->freq, sizeof(DifxFreq));		// copy much of this channel from [0]
@@ -1833,6 +1816,11 @@ static int fixDatastreamTable(DifxInput *D)
 				ds->nRecPol = (int *)realloc(ds->nRecPol, N*sizeof(int));
 				ds->recFreqId = (int *)realloc(ds->recFreqId, N*sizeof(int));
 				ds->recFreqDestId = (int *)realloc(ds->recFreqDestId, N*sizeof(int));
+				if(ds->clockOffset == 0 || ds->clockOffsetDelta == 0 || ds->phaseOffset == 0 || ds->freqOffset == 0 || ds->nRecPol ==0 || ds->recFreqId == 0 || ds->recFreqDestId == 0)
+				{
+					std::cerr << "Error: fixDatastreamTable(): realloc failed." << std::endl;
+					exit(0);
+				}
 				ds->clockOffset[N-1] = 0.0;
 				ds->clockOffsetDelta[N-1] = 0.0;
 				ds->phaseOffset[N-1] = 0.0;
@@ -1876,7 +1864,7 @@ static void populateSourceTable(DifxInput *D, const Job& J, const VexData *V, se
 		const VexSource *S = V->getSourceBySourceName(*it);
 		if(!S)
 		{
-			std::cerr << "Developer error: populateSourceTable(): soruce " << *it << " not found in VexData" << std::endl;
+			std::cerr << "Developer error: populateSourceTable(): source " << *it << " not found in VexData" << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -2200,7 +2188,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 	int nPulsar=0;
 	int nbin, maxPulsarBins;
 	unsigned int maxScanPhaseCentres;
-	int nZoomBands, fqId, destFqId, polcount, zoomChans = 0, minChans;
+	int nZoomBands, destFqId, polcount, zoomChans = 0, minChans;
 	int decimation, worstcaseguardns;
 	DifxDatastream *dd;
 	double globalBandwidth;
@@ -2425,13 +2413,13 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 				std::string rxname(""); // TODO: how to determine rxName for any global outputband, if possible at all?
 
 				// register outputband
-				int fqId = addFreqId(
+				unsigned int fqId = addFreqId(
 					freqs,
 					itOb->fbandstart, itOb->bandwidth, 'U',
 					corrSetup->FFTSpecRes, corrSetup->outputSpecRes,
 					decimation, /*zoom:*/1, 0, rxname // final zero points to the noTone pulse cal setup.
 				);
-				if (verbose > 0)
+				if(verbose > 0)
 				{
 					cout << "Output band at " << std::fixed << itOb->fbandstart*1e-6 << " MHz USB "
 						<< std::fixed << itOb->bandwidth*1e-6 << " MHz received fq id " << fqId << "\n";
@@ -2448,7 +2436,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 				{
 					const int fqId = D->datastream[dsid].recFreqId[fq];
 					const int dstFqId = gob->autobands.lookupDestinationFreq(freqs[fqId], freqs);
-					if (dstFqId < 0)
+					if(dstFqId < 0)
 					{
 						blockedfreqids[antid].insert(fqId);
 						// cout << "ant " << antid << " blocking recFq " << fq << " freqId " << fqId << " because of no dstFqId\n";
@@ -2513,15 +2501,15 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 					dd->phaseCalBaseMHz = setup.phaseCalBaseMHz();
 					dd->tcalFrequency = antenna->tcalFrequency;
 
-					// Get data fields from v2d that are not part of VEX definition
-					dd->phaseCalIntervalDivisor = antennaSetup->phaseCalIntervalDivisor;
-					// FIXME: eventually zoom bands will migrate to the VexMode/VexSetup infrastructure.  until then, use antennaSetup directly
 					if(antennaSetup)
 					{
 						nZoomBands = 0;
 						
 						int nZoomFreqs = antennaSetup->zoomFreqs.size();
 
+						// Get data fields from v2d that are not part of VEX definition
+						dd->phaseCalIntervalDivisor = antennaSetup->phaseCalIntervalDivisor;
+						// FIXME: eventually zoom bands will migrate to the VexMode/VexSetup infrastructure.  until then, use antennaSetup directly
 						if(nZoomFreqs > 0)
 						{
 							int *parentFreqIndices = new int[nZoomFreqs];
@@ -2534,6 +2522,7 @@ static int writeJob(const Job& J, const VexData *V, const CorrParams *P, const s
 							for(int i = 0; i < nZoomFreqs; ++i)
 							{
 								const ZoomFreq &zf = antennaSetup->zoomFreqs[i];
+								unsigned int fqId;
 
 								std::vector<int> matchingFreqs;
 								for(int j = 0; j < dd->nRecFreq; ++j)
@@ -2983,9 +2972,6 @@ static void usage(int argc, char **argv)
 	cout << endl;
 	cout << "See https://github.com/difx/difx/wiki/vex2difx for more information" << endl;
 	cout << endl;
-	cout << "NOTE: This version now supports much of the vex2 specification (as well as the" << endl;
-	cout << "vex 1.5 specification) but it is only lightly tested.  Proceed with caution." << endl;
-	cout << endl;
 }
 
 static void runCommand(const char *cmd, int verbose)
@@ -3272,6 +3258,7 @@ int main(int argc, char **argv)
 		
 		exit(EXIT_FAILURE);
 	}
+
 
 	applyCorrParams(V, *P, nWarn, nError, canonicalVDIFUsers);
 

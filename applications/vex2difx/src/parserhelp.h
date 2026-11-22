@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2015 by Chris Phillips                             *
+ *   Copyright (C) 2014-2026 by Chris Phillips                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -43,7 +43,7 @@ int getOp(std::string &value, int &plus);
 double parseDouble(const std::string &value);
 
 // Turns a string into MJD
-// The following formats are allowd:
+// The following formats are allowed:
 // 1. decimal mjd:  55345.113521
 // 2. ISO 8601 dateTtime strings:  2009-03-08T12:34:56.121
 // 3. VLBA-like time:   2009MAR08-12:34:56.121

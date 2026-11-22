@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2011-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -127,7 +127,7 @@ void fsummarizeDifxTcal(FILE *out, const DifxTcal *dt);
 
 /* below here are site-specific functions */
 
-/* 1. For a constant Tcal value over all frquencies */
+/* 1. For a constant Tcal value over all frequencies */
 
 int setDifxTcalConstant(DifxTcal *dt, float tcal1, char pol1, float tcal2, char pol2);
 

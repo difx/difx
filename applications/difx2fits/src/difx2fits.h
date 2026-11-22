@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2024 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -28,7 +28,7 @@
 #define array_MAX_STATES	4
 #define MAX_INPUT_FILES		4096
 
-/* This sets leap secons if for some reason they were not otherwise conveyed */
+/* This sets leap seconds if for some reason they were not otherwise conveyed */
 #define DEFAULT_IAT_UTC 33
 
 enum AllPcalTonesMode

@@ -129,6 +129,12 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 	
 	fitsSource = (int *)malloc(D->nSource*D->nFreqSet*sizeof(int));
 	fitsFreqSet = (int *)malloc(D->nSource*D->nFreqSet*sizeof(int));
+	if(!fitsSource || !fitsFreqSet)
+	{
+		fprintf(stderr, "Error: DifxInput2FitsSU(): cannot allocate %lu bytes.\n", (unsigned long int)(2*D->nSource*D->nFreqSet*sizeof(int)));
+
+		exit(0);
+	}
 	for(sourceId = 0; sourceId < D->nSource*D->nFreqSet; ++sourceId)
 	{
 		fitsSource[sourceId] = -1;
@@ -190,7 +196,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 			continue;
 		}
 		
-		/* Note: if any of these 4 nubmers are changed, expect AIPS to not handle these correctly */
+		/* Note: if any of these 4 numbers are changed, expect AIPS to not handle these correctly */
 		muRA = 0.0;
 		muDec = 0.0;
 		parallax = 0.0;

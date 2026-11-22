@@ -643,3 +643,7 @@ inc/
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Site-specific settings read by setup.bash / setup.csh (see setup.local.*.example)
+/setup.local.bash
+/setup.local.csh

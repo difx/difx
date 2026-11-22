@@ -8,7 +8,7 @@ $EXPER;
     exper_name = autozoom;
     exper_num = 7000;
     exper_description = AVzoom;
-    PI_name = GBC;
+    PI_name = "Bob Bobson";
     target_correlator = DiFX;
   enddef;
 *-----------------------   end $EXPER              ----------------------*

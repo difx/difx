@@ -9,7 +9,7 @@
    nVDIFFrame       Maximum number of VDIF frames to be processed
    samplesperframe  Number of time samples per CODIF frame (2x # values for complex data)
    fftSize:         Size of forward fft
-   ifftSize:        Size of invers fft (<fftsize)
+   ifftSize:        Size of inverse fft (<fftsize)
    vdifframesamples Number of VDIF times samples per frame (complex)
 
    readFrames:    Raw CODIF data  
@@ -290,7 +290,7 @@ int main (int argc, char * const argv[]) {
       //printf("DEBUG: Bandwidth=%f\n", bandwidth);
 
       if (targetBandwidth*1.0e6*outchan>bandwidth) {
-	fprintf(stderr, "Requested output bandwidth > input bandwidth. Quiting\n");
+	fprintf(stderr, "Requested output bandwidth > input bandwidth. Quitting\n");
 	close(infile);
 	close(outfile);
 	exit(1);
@@ -437,7 +437,7 @@ int main (int argc, char * const argv[]) {
 
       if (nread<=0) break;
       if (nread*samplesperframe % fftSize) {
-	fprintf(stderr, "Error: Cannot fit interal nuber of FFTs into read data\n");
+	fprintf(stderr, "Error: Cannot fit integral number of FFTs into read data\n");
 	close(infile);
 	close(outfile);
 	exit(1);
@@ -734,7 +734,7 @@ int converttoVDIF(Ipp32fc *dataBuf, Ipp8u *vdifData, vdif_header *vheader, int f
     status = ippsCopy_8u((Ipp8u*)vheader, &vdifData[fullFrameSize*j], VDIF_HEADER_BYTES);
     IPPERROR(status);
 
-    // What FFTs does this frame corresond to
+    // What FFTs does this frame correspond to
     int iFFT0 = (int)floor((double)(samplesperframe*i+nOffset)/(double)ifftSize);
     int iFFT1 = (int)floor((double)(samplesperframe*i+nOffset+ifftSize)/(double)ifftSize);
     int valid = 1;

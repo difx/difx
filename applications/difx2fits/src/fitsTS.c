@@ -91,6 +91,10 @@ static int parseTsys(char *line, char *antName, double *time, float *timeInt, fl
 			return -5;
 		}
 		n = sscanf(line+i, "%*s%s", tsmAntName);
+		if(n != 1)
+		{
+			return -7;
+		}
 		
 		return -6;
 	}
@@ -335,7 +339,7 @@ static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, in
 	int scanId = -1;
 	int i, v, n;
 	int nRecBand = -1;
-	char *rv;
+	const char *rv;
 	int currentScanId = -1;
 	int currentConfigId = -1;
 	int nAccum = 0;
@@ -588,6 +592,10 @@ static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, in
 	}
 
 	globfree(&globBuffer);
+	if(in)
+	{
+		fclose(in);
+	}
 
 	return nRec;
 }

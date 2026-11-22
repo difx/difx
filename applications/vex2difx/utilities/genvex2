@@ -1,0 +1,442 @@
+#!/bin/env python
+import datetime
+import random
+import math
+import argparse
+from sys import exit
+from os import system
+
+program = 'genvex2'
+
+# TODO
+# support subarrays
+
+
+mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
+
+def mjd2vex(mjd, dateonly=False):
+	md = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+	d = int(mjd)
+	s = int((mjd - d)*86400.0 + 0.5)
+	dt = datetime.timedelta(d, s)
+	t = mjd0 + dt
+	d = t.day + md[t.month-1]
+	if t.year % 4 == 0 and t.month > 2:
+		d += 1
+	if dateonly:
+		return '%dy%03dd' % (t.year, d)
+	else:
+		return '%dy%03dd%02dh%02dm%02ds' % (t.year, d, t.hour, t.minute, t.second)
+
+# index is zero-based
+def sourceName(index):
+	return 'S%03d' % (index + 1)
+
+# index is zero-based
+def antennaID(index):
+	return 'A%02d' % (index + 1)
+
+# index is zero-based
+def antennaName(index):
+	return 'ANTENNA%02d' % (index + 1)
+
+def antennaIDList(nAntenna, sep=':'):
+	ants = []
+	for a in range(nAntenna):
+		ants.append(antennaID(a))
+	return sep.join(ants)
+
+# ra in radians; output is vex complant
+def rad2ra(ra):
+	hours = ra*12.0/math.pi
+	while hours < 0.0:
+		hours += 24.0
+	while hours >= 24.0:
+		hours -= 24.0
+	h = int(hours)
+	minutes = (hours - h)*60.0
+	m = int(minutes)
+	seconds = (minutes - m)*60.0
+	return '%02dh%02dm%08.5fs' % (h, m, seconds)
+
+# dec in radians; output is vex compliant
+def rad2dec(dec):
+	degs = dec*180.0/math.pi
+	if degs < 0.0:
+		sign = '-'
+		degs = -degs
+	else:
+		sign = ''
+	d = int(degs)
+	minutes = (degs - d)*60.0
+	m = int(minutes)
+	seconds = (minutes - m)*60.0
+	return '%s%02dd%02d\'%07.4f"' % (sign, d, m, seconds)
+
+# returns (x,y,z) randomly distributed on the unit sphere
+def randomShell():
+	r = 2.0
+	while r > 1.0:
+		x = random.uniform(-1.0, 1.0)
+		y = random.uniform(-1.0, 1.0)
+		z = random.uniform(-1.0, 1.0)
+		r = math.sqrt(x*x+y*y+z*z)
+	return (x/r, y/r, z/r)
+
+# same as randomShell, but return in ra/dec in radians
+def randomRaDec():
+	(x,y,z) = randomShell()
+	return (math.atan2(y, x), math.asin(z))
+
+def printBar(out):
+	out.write('*------------------------------------------------------------------------------\n')
+
+def printIntro(out, project, startMJD, endMJD):
+	out.write('VEX_rev = 2.0;\n')
+	printBar(out)
+	out.write('$GLOBAL;\n')
+	out.write('\tref $EXPER = %s;\n' % project)
+	printBar(out)
+	out.write('$EXPER;\n')
+	out.write('def %s;\n' % project)
+	out.write('\texper_name = %s;\n' % project)
+	out.write('\texper_nominal_start=%s;\n' % mjd2vex(startMJD));
+	out.write('\texper_nominal_stop=%s\n;' % mjd2vex(endMJD));
+	out.write('enddef;\n')
+
+def printMODE(out, nAntenna):
+	ants = antennaIDList(nAntenna)
+	out.write('$MODE;\n')
+	out.write('def MODE0;\n')
+	out.write('\tref $FREQ = FREQ0:%s;\n' % ants)
+	out.write('\tref $IF = IF0:%s;\n' % ants)
+	out.write('\tref $BBC = BBC0:%s;\n' % ants)
+	out.write('\tref $DATASTREAMS = DATASTREAMS0:%s;\n' % ants)
+	out.write('enddef;\n')
+
+def printSTATIONs(out, nAntenna):
+	out.write('$STATION;\n')
+	for a in range(nAntenna):
+		name = antennaName(a)
+		out.write('def %s;\n' % antennaID(a))
+		out.write('\tref $SITE = %s;\n' % name)
+		out.write('\tref $ANTENNA = %s;\n' % name)
+		out.write('enddef;\n')
+
+def printSITEs(out, nAntenna):
+	radiusEquator = 6378137.0	# m
+	radiusPole = 6356752.0		# m
+	out.write('$SITE;\n')
+	for a in range(nAntenna):
+		name = antennaName(a)
+		(x,y,z) = randomShell()
+		vx = random.uniform(-0.01, 0.01)
+		vy = random.uniform(-0.01, 0.01)
+		vz = random.uniform(-0.01, 0.01)
+		epoch = 60000.0
+		out.write('def %s;\n' % name)
+		out.write('\tsite_type = fixed;\n')
+		out.write('\tsite_name = %s;\n' % name)
+		out.write('\tsite_ID = %s;\n' % antennaID(a))
+		out.write('\tsite_position = %f m : %f m : %f m ;\n' % (x*radiusEquator, y*radiusEquator, z*radiusPole))
+		out.write('\tsite_velocity = %f m/yr : %f m/yr : %f m/yr ;\n' % (vx, vy, vz))
+		out.write('\tsite_position_epoch = %f ;\n' % epoch)
+		out.write('enddef;\n')
+
+def printANTENNAs(out, nAntenna):
+	out.write('$ANTENNA;\n')
+	for a in range(nAntenna):
+		out.write('def %s;\n' % antennaName(a))
+		out.write('\taxis_type = az : el ;\n')
+		out.write('\taxis_offset = %f m;\n' % random.uniform(2.0, 2.1))
+		out.write('enddef;\n')
+
+def printSOURCEs(out, nSource):
+	out.write('$SOURCE;\n')
+	for s in range(nSource):
+		name = sourceName(s)
+		(ra, dec) = randomRaDec()
+		out.write('def %s;\n' % name)
+		out.write('\tsource_name = %s;\n' % name)
+		out.write('\tra = %s; dec = %s; ref_coord_frame = J2000;\n' % (rad2ra(ra), rad2dec(dec)))
+		out.write('enddef;\n')
+
+def printFREQ(out, baseFreqs, chanbw, pols, channelsPerPol):
+	out.write('$FREQ;\n')
+	out.write('def FREQ0;\n')
+	out.write('\tsample_rate = %5.3f Ms/sec;\n' % (chanbw*2))
+	row = 0
+	nBand = len(baseFreqs)
+	chanSetsPerBand = (channelsPerPol-1)//nBand + 1
+
+	for q in range(channelsPerPol):
+		s = q // chanSetsPerBand
+		r = q % chanSetsPerBand
+		sb = 'LU'[q % 2]	# alternate sidebands
+		freq = baseFreqs[s] + 2*(r//2)*chanbw
+		for pol in pols:
+			row += 1
+			out.write('\tchan_def = : %4.2f MHz : %s : %4.2f MHz : &CH%02d : &BBC%02d : ; * %s-pol\n' % (freq, sb, chanbw, row, row, pol))
+	out.write('enddef;\n')
+
+def printIF(out, baseFreqs, pols, ifSideband, pcalInt):
+	out.write('$IF;\n')
+	out.write('def IF0;\n')
+	k = ord('A')
+	if pcalInt == 0:
+		pcal = ''
+	else:
+		pcal = ': %d MHz' % pcalInt
+	for baseFreq in baseFreqs:
+		for p in range(len(pols)):
+			pol = pols[p]
+			ifName = chr(k)
+			k += 1
+			out.write('\tif_def = &IF_%s : : %s : %4.2f MHz : %s %s ;\n' % (ifName, pol, baseFreq - 500, ifSideband, pcal))
+	out.write('enddef;\n')
+
+def printBBC(out, pols, channelsPerPol):
+	out.write('$BBC;\n')
+	out.write('def BBC0;\n')
+	row = 0
+	for q in range(channelsPerPol):
+		for p in range(len(pols)):
+			pol = pols[p]
+			ifName = 'ABCDEFGH'[p]
+			row += 1
+			out.write('\tBBC_assign = &BBC%02d : %d : &IF_%s;\n' % (row, row, ifName))
+	out.write('enddef;\n')
+	
+def printDATASTREAMS(out, chanbw, nChan, nBit, vdifPayload, isComplex, chanPerThread):
+	out.write('$DATASTREAMS;\n')
+	out.write('def DATASTREAMS0;\n')
+	out.write('\tdatastream = &DS1 : VDIF;\n')
+	if isComplex:
+		sampleType = 'complex'
+	else:
+		sampleType = 'real'
+	for c in range(nChan):
+		t = c // chanPerThread
+		if c % chanPerThread == 0:
+			out.write('\tthread = &DS1 : &thread%d : %d : %d : %3.1f Ms/sec : %d : %s : %d;\n' % (t, t, chanPerThread, 2*chanbw, nBit, sampleType, vdifPayload))
+		out.write('\tchannel = &DS1 : &thread%d : &CH%02d : %d;\n' % (t, c+1, c % chanPerThread))
+	out.write('enddef;\n')
+
+# returns a list of scans organized as a dictionary based on antenna ID
+# scans[antID] = list of scans
+# each scan is [name, startmjd, endmjd]
+def printSCHED(out, startMJD, nScan, nAntenna, nSource, scanDur, scanGap):
+	out.write('$SCHED;\n')
+	mjd = startMJD
+	scans = {}
+	for a in range(nAntenna):
+		scans[antennaID(a)] = []
+	for scan in range(nScan):
+		scanName = 'No%04d' % (scan+1)
+		out.write('scan %s;\n' % scanName)
+		srcName = sourceName(scan % nSource)
+		out.write('\tstart=%s; mode=MODE0; source=%s;\n' % (mjd2vex(mjd), srcName))
+		for a in range(nAntenna):
+			out.write('\tstation=%s: 0 sec : %d sec : : : : 1;\n' % (antennaID(a), scanDur))
+			scans[antennaID(a)].append([scanName, mjd, mjd+scanDur/86400.0])
+		mjd += (scanDur + scanGap)/86400.0
+		out.write('endscan;\n')
+	return scans
+
+def printCLOCK(out, nAntenna, startMJD):
+	out.write('$CLOCK;\n')
+	offset = -1.4e-6
+	rate = -5e-13
+	for a in range(nAntenna):
+		offset += 1e-7
+		rate += 1e-14
+		ref = mjd2vex(startMJD-1)
+		out.write('def %s;\n' % antennaID(a))
+		out.write('\tclock_early = %s : %e sec : %s : %e ;\n' % (ref, offset, ref, rate))
+		out.write('enddef;\n')
+	
+def printEOP(out, startMJD):
+	m0 = int(startMJD - 1.5)
+	out.write('$EOP;\n')
+	for n in range(5):
+		m = m0 + n
+		ut1utc = 0.08 + m*0.0001
+		xw = 0.14
+		yw = 0.31
+		out.write('def EOP%d;\n' % m)
+		out.write('\tTAI-UTC= 37 sec;\n')
+		out.write('\tA1-TAI= 0 sec;\n')
+		out.write('\teop_ref_epoch=%s;\n' % mjd2vex(m, True))
+		out.write('\tnum_eop_points=1;\n')
+		out.write('\teop_interval=24 hr;\n')
+		out.write('\tut1-utc  = %8.6f sec;\n' % ut1utc)
+		out.write('\tx_wobble = %7.5f asec;\n' % xw)
+		out.write('\ty_wobble = %7.5f asec;\n' % yw)
+		out.write('enddef;\n')
+
+def genFilelistFile(project, antID, filename, antScans, path):
+	out = open(filename, 'w')
+	for scan in antScans:
+		out.write('%s/%s_%s_%s %13.7f %13.7f\n' % (path, project, antID, scan[0], scan[1], scan[2]))
+	out.close()
+
+def genFilelistFiles(project, filelistFiles, scans, paths):
+	for k, v in filelistFiles.items():
+		if k in paths:
+			path = paths[k]
+		elif '*' in paths:
+			path = paths['*']
+		else:
+			path = '/tmp/OtherAntennas'
+			print('Defaulting antenna %s file store to %s' % (k, path))
+		system('mkdir -p %s' % path)
+		try:
+			genFilelistFile(project, k, v, scans[k], path)
+		except:
+			print('No scans for antenna %s' % k)
+	
+# -----
+
+random.seed()
+
+# Some defaults
+defaultBaseFreqs = "4500"
+scansPerSource = 2
+startMJD = 61285.0	# [days]
+isComplex = False	
+singleScan = True
+nAntenna = 6
+nSource = 2
+baseFreqs = []		# [MHz] ref frequency for first channel
+chanbw = 4.0		# [MHz] channel bandwidth
+pols = 'RL'		# list of polarizations
+channelsPerPol = 1
+ifSideband = 'U'	# IF sideband: U or L
+pcalInt = 5		# [MHz] (integer) pulse cal comb spacing
+nBit = 2		# bits per sample
+vdifPayload = 5000	# [bytes] VDIF frame size excluding header
+scanDur = 30		# [sec]
+scanGap = 5		# [sec]
+tInt = 1		# [sec] correlator integration time
+specRes = 0.1		# [MHz]
+nScan = 0
+chanPerThread = 1
+
+parser = argparse.ArgumentParser(program, 'program to generate sample vex2 and v2d files for use in testing', '')
+parser.add_argument('project', help='project code')
+parser.add_argument('-a', '--antennas', type=int, help='number of antennas [%d]' % nAntenna, default=nAntenna)
+parser.add_argument('-s', '--sources', type=int, help='number of sources [%d]' % nSource, default=nSource)
+parser.add_argument('-c', '--chansperpol', type=int, help='number of channels per polarization [%d]' % channelsPerPol, default=channelsPerPol)
+parser.add_argument('-t', '--chansperthread', type=int, help='number of channels thread [%d]' % chanPerThread, default=chanPerThread)
+parser.add_argument('-n', '--scans', type=int, help='number of scans [%d per source]' % scansPerSource, default=scansPerSource)
+parser.add_argument('-f', '--freq', help='base frequency (MHz); comma separate values for multi-band [%s]' % defaultBaseFreqs, default=defaultBaseFreqs)
+parser.add_argument('-p', '--polarizations', type=str, help='specify polarizations [%s]' % pols, default=pols)
+parser.add_argument('-b', '--chanbw', type=int, help='channel bandwidth (MHz) [%d]' % chanbw, default=chanbw)
+parser.add_argument('-d', '--dur', type=int, help='scan duration (sec) [%d]' % scanDur, default=scanDur)
+parser.add_argument('-g', '--gap', type=int, help='scan gap (sec) [%d]' % scanGap, default=scanGap)
+parser.add_argument('-v', '--payload', type=int, help='VDIF payload size (bytes) [%d]' % vdifPayload, default=vdifPayload)
+parser.add_argument('-l', '--iflowersideband', action='store_true', help='Set IF to be LSB (default is USB)')
+parser.add_argument('-x', '--complex', action='store_true', help='specify complex-valued data (default is real)')
+parser.add_argument('-1', '--onebit', action='store_true', help='specify 1-bit sampling (default is 2 bits)')
+parser.add_argument('-4', '--fourbit', action='store_true', help='specify 4-bit sampling (default is 2 bits)')
+parser.add_argument('-8', '--eightbit', action='store_true', help='specify 8-bit sampling (default is 2 bits)')
+parser.add_argument('-S', '--singleThread', action='store_true', help='put all channels in one thread')
+args = parser.parse_args()
+
+project = args.project
+nAntenna = args.antennas
+nSource = args.sources
+channelsPerPol = args.chansperpol
+chanPerThread = args.chansperthread
+nScan = args.scans
+for v in args.freq.split(','):
+	baseFreqs.append(float(v))
+chanbw = args.chanbw
+pols = args.polarizations.upper()
+scanDur = args.dur
+scanGap = args.gap
+vdifPayload = args.payload
+if vdifPayload % 8 != 0:
+	print('Error: VDIF payload must be a multiple of 8 bytes')
+	exit(0)
+if args.iflowersideband:
+	ifSideband = 'L'
+isComplex = args.complex
+if args.onebit:
+	nBit = 1
+if args.fourbit:
+	nBit = 4
+if args.eightbit:
+	nBit = 8
+
+paths = {}
+
+# Derived parameters
+if nScan == 0:
+	nScan = nSource*scansPerSource
+endMJD = startMJD + (nScan*(scanDur + scanGap) - scanGap)/86400.0
+nChan = channelsPerPol * len(pols)
+if args.singleThread:
+	chanPerThread = nChan
+fftSpecRes = specRes * 0.5
+vexFile = project.lower()+'.vex'
+v2dFile = project.lower()+'.v2d'
+
+if nChan % chanPerThread != 0:
+	print('Error: must have integer number of channels per thread: %d %% %d = %d' % (nChan, chanPerThread, nChan % chanPerThread))
+	exit(0)
+
+# Write .vex file
+out = open(vexFile, 'w')
+printIntro(out, project, startMJD, endMJD)
+printBar(out)
+printMODE(out, nAntenna)
+printBar(out)
+printSTATIONs(out, nAntenna)
+printBar(out)
+printSITEs(out, nAntenna)
+printBar(out)
+printANTENNAs(out, nAntenna)
+printBar(out)
+printSOURCEs(out, nSource)
+printBar(out)
+printFREQ(out, baseFreqs, chanbw, pols, channelsPerPol)
+printBar(out)
+printIF(out, baseFreqs, pols, ifSideband, pcalInt)
+printBar(out)
+printBBC(out, pols, channelsPerPol)
+printBar(out)
+printDATASTREAMS(out, chanbw, nChan, nBit, vdifPayload, isComplex, chanPerThread)
+printBar(out)
+scans = printSCHED(out, startMJD, nScan, nAntenna, nSource, scanDur, scanGap)
+printBar(out)
+printCLOCK(out, nAntenna, startMJD)
+printBar(out)
+printEOP(out, startMJD)
+out.close()
+
+# Write .v2d file if requested
+out = open(v2dFile, 'w')
+out.write('vex = %s\n\n' % vexFile)
+if singleScan:
+	out.write('singleScan = true\n\n')
+out.write('antennas = %s\n\n' % antennaIDList(nAntenna, ', '))
+filelistFiles = {}
+for a in range(nAntenna):
+	ant = antennaID(a)
+	ds = ant + '_0'
+	filelist = '%s.%s.filelist' % (project.lower(), ant.lower())
+	out.write('DATASTREAM %s { filelist=%s }\n' % (ds, filelist))
+	out.write('ANTENNA %s { toneSelection=smart datastreams=%s }\n\n' % (ant, ds))
+	filelistFiles[ant] = filelist
+out.write('SETUP default\n')
+out.write('{\n')
+out.write('\ttInt = %4.2f\n' % tInt)
+out.write('\tspecRes = %6.4f\n' % specRes)
+out.write('\tfftSpecRes = %6.4f\n' % fftSpecRes)
+out.write('\tdoPolar = True\n')
+out.write('\tnumBufferedFFTs = 10\n')
+out.write('}\n')
+out.close()
+
+genFilelistFiles(project, filelistFiles, scans, paths)

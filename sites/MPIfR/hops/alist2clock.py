@@ -236,7 +236,7 @@ print ("{:8s} {:2s} {:>8s} {:>10s} {:>10s} {:4s}".format("scan", "bl", "snr", "d
 for index, validrow in valid.iterrows():
     print ("{:8s} {:2s} {:8.2f} {:+10.6f} {:+10.6f} {:2.0f}".format(validrow['scan_id'], validrow['baseline'], validrow["avg_snr"], validrow["avg_sbdelay"], validrow["avg_rate"], validrow["navg"] ))
 
-### New approach with linking of sub-arrays
+### Determine clock offsets wrt reference station directly or via multiple hops (e.g. for overlapped sub-arrays)
 
 Nstations = len(stations)
 stationIndices = { stn: stations.index(stn) for stn in stations }
@@ -346,3 +346,33 @@ if args.scode:
                 rate = rate + Rnn[ref,rem]*1e-12
             print('def %s; clock_early = %s : %+9.4f usec : %s : %+.6fe-12; enddef; * adjusted' % (remname2, dep, dly*1e6, rep, rate*1e12))
 
+if True:
+
+    print('')
+    print('clocks.dat')
+    print('CLOCK')
+    print('# Station ID    Delay (usec)    Rate (sec/sec)')
+
+    for remname2 in vexclock_ordering:
+
+        vclk = vexclocks[remname2]
+        dly = vclk['delay_s']
+
+        idx = stMap.index[stMap['twoletter'] == remname2]
+        if idx.empty:
+            # print("  * warn: no reverse mapping for {} found in {}". format(remname2, args.scode))
+            # remname1 = ''
+            continue
+        else:
+            remname1 = stMap["oneletter"].iloc[idx[0]]
+
+        if remname1 == args.ref or remname1 not in stations:
+            # dly_s = '%+.4f' % (dly*1e6)
+            # print('%-15s %-15s' % (remname2, dly_s)) # 'ref' or 'unchanged' entry
+            pass
+        else:
+            rem = stations.index(remname1)
+            dly = dly + Dnn[ref,rem]*1e-6
+            dly_s = '%+.4f' % (dly*1e6)
+            l = '%-15s %-15s' % (remname2, dly_s)
+            print(l.strip())

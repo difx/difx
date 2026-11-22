@@ -7,7 +7,7 @@ $EXPER;
   def VGT319;
     exper_name = VGT319;
     exper_description = "VGOS broadband session";
-    PI_name = BONN;
+    PI_name = "Bob Bobson";
     target_correlator = BONN;
   enddef;
 *-----------------------   end $EXPER              ----------------------*

@@ -524,7 +524,7 @@ static void GainRowsSetTimeBand(GainRow *G, int nRow)
 
 int loadGainCurves(const DifxInput *D, GainRow *G)
 {
-	char *path;
+	const char *path;
 	int nRow = 0;
 	int v;
 	unsigned int f;
@@ -656,7 +656,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 	double freq;
 	int messages = 0;
 	/* 1-based indices for FITS file */
-	int32_t antId1, freqId1, arrayId1;
+	int32_t antId1, arrayId1;
 
 	/* Note: This is a particular NaN variant the FITS-IDI format/convention
 	 * wants, namely 0xFFFFFFFF */
@@ -675,7 +675,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 	G = calloc(MAXENTRIES, sizeof(GainRow));
 	if(!G)
 	{
-		fprintf(stderr, "Error: DifxInput2FitsGN: could not allocate G (%lu bytes)\n", MAXENTRIES*sizeof(GainRow));
+		fprintf(stderr, "Error: DifxInput2FitsGN: could not allocate G (%lu bytes)\n", (unsigned long int)(MAXENTRIES*sizeof(GainRow)));
 
 		exit(EXIT_FAILURE);
 	}
@@ -740,7 +740,6 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 	{
 		int freqSetId;
 
-		freqId1 = 0;
 		antName = D->antenna[antId].name;
 		antId1 = antId + 1;
 		bad = 0;
@@ -749,6 +748,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			const DifxFreqSet *dfs;
 			int sxFlag;
+			int32_t freqId1;
 
 			dfs = D->freqSet + freqSetId;
 
@@ -761,13 +761,13 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 				freq = dfs->IF[i].freq;	/* MHz */
 
 				if((3900 <= freq) && (freq < 8000) && isDifxAntennaInGroup(&D->antenna[antId], VLBI_GROUP_VLBA))
-				  { //we are at C-band VLBA -> inter/extrapolate gains
-				    r = handleCbandGain(G, nRow, &D->antenna[antId], freq, mjd);
-				  }
+				{ //we are at C-band VLBA -> inter/extrapolate gains
+					r = handleCbandGain(G, nRow, &D->antenna[antId], freq, mjd);
+				}
 				else
-				  {
-				  r = getVLBAGainRow(G, nRow, &D->antenna[antId], freq, mjd, sxFlag);
-				  }
+				{
+					r = getVLBAGainRow(G, nRow, &D->antenna[antId], freq, mjd, sxFlag);
+				}
 
 				if(r < 0)
 				{

@@ -15,15 +15,15 @@ $EXPER;
 def GL030;
      exper_name = GL030;
      exper_description = "GL030 MkIV format 21 cm line 2007 OCT 19 05:00 -> OCT 19 17:00 UT";
-     PI_name = "Wendy Lane Peters";
-     PI_email = wendy.peters@nrl.navy.mil;
-*    address:   Naval Research Lab, Code 7213
-*               4555 Overlook Ave. SW
-*               Washington, DC 20375
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
 *                
-*    phone:     1-703-973-0630
-*    during obs:1-757-345-6429
-*    fax:       1-202-404-8894
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *    notes:     Use phased array at WSRT
 *               Includes NON_STANDARD FREQUENCIES
 *               Please switch PCAL OFF (spectral line experiment)
@@ -43,9 +43,9 @@ def GL030;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     W. Peters
-*                     249 Mill Stream Way
-*                     Williamsburg, VA 23185
+*                     Bob Bobson
+*                     Fake Address
+*
 *    corr_notes : 
 *                 Two correlation passes required for spectral res.
 *                 First pass, chans 1 & 2; 2nd pass chans 3 & 4.

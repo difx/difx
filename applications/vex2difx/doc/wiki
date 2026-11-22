@@ -1,7 +1,7 @@
 
 ===== vex2difx =====
 
-vex2difx is a program that takes a vex files (such as one produced by sched with various tables based on observe-time data appended) and a configuration file (described below) and generates one or more .input files for use with difx.  Each .input file is accompanied by a .calc file which is used by calcif2 to generate the .delay and .uvw files needed at correlation time.  vex2difx along with calcif2 supercedes the functionality of vex2config and vex2model.
+vex2difx is a program that takes a vex files (such as one produced by sched with various tables based on observe-time data appended) and a configuration file (described below) and generates one or more .input files for use with difx.  Each .input file is accompanied by a .calc file which is used by calcif2 to generate the .delay and .uvw files needed at correlation time.  vex2difx along with calcif2 supersedes the functionality of vex2config and vex2model.
 
 ===== The vex2difx philosophy =====
 
@@ -67,7 +67,6 @@ The format class, <fmt>, can be one of the following:
   * VDIFD (VDIF with double sideband complex samples)
   * INTERLACEDVDIF (explicitly multi-thread VDIF -- often interchangeable with VDIF)
   * Mark5B
-  * KVN5B
   * VLBA
   * Mark4 or MKIV
   * S2
@@ -126,7 +125,7 @@ or
 | maxReadSize    | int    | bytes | 25000000   | Max read size in bytes (larger values cause issues with Mk5 module playback) |
 | minReadSize    | int    | bytes | 10000000   | Min read size in bytes (smaller values mean probable inefficiency) |
 
-Note that the baselines parameter supports the following syntaxes:  A1-A2   A1+A2+A3-A4+A5   A1-*  A1+A2-* and so on.  For each list member, all baselines consistant with an antenna match on both sides will be kept.
+Note that the baselines parameter supports the following syntaxes:  A1-A2   A1+A2+A3-A4+A5   A1-*  A1+A2-* and so on.  For each list member, all baselines consistent with an antenna match on both sides will be kept.
 
 ==== SOURCE sections ====
 

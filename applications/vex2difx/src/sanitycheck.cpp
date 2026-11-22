@@ -135,9 +135,9 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 
 	// Check clock models
 	bool highOrderClocks = false;
-	for(unsigned int a = 0; a < V->nAntenna(); ++a)
+	for(unsigned int ant = 0; ant < V->nAntenna(); ++ant)
 	{
-		const VexAntenna *A = V->getAntenna(a);
+		const VexAntenna *A = V->getAntenna(ant);
 
 		if(!P->fakeDatasource)
 		{
@@ -162,9 +162,9 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 	}
 
 	// Verify that final source names are legal
-	for(unsigned int s = 0; s < V->nSource(); ++s)
+	for(unsigned int src = 0; src < V->nSource(); ++src)
 	{
-		const VexSource *S = V->getSource(s);
+		const VexSource *S = V->getSource(src);
 
 		if(S->sourceNames.empty())
 		{
@@ -234,39 +234,39 @@ int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 
 			++nWarn;
 		}
-		for(std::map<std::string,VexSetup>::const_iterator  s = M->setups.begin(); s != M->setups.end(); ++s)
+		for(std::map<std::string,VexSetup>::const_iterator  su = M->setups.begin(); su != M->setups.end(); ++su)
 		{
-			for(std::vector<VexStream>::const_iterator t = s->second.streams.begin(); t != s->second.streams.end(); ++t)
+			for(std::vector<VexStream>::const_iterator t = su->second.streams.begin(); t != su->second.streams.end(); ++t)
 			{
 				if(t->nBit == 0)
 				{
-					std::cerr << "Error: number of bits not defined for mode " << M->defName << " antenna " << s->first << std::endl;
+					std::cerr << "Error: number of bits not defined for mode " << M->defName << " antenna " << su->first << std::endl;
 					++nError;
 				}
 				if(t->format == VexStream::FormatVDIF)
 				{
 					if(t->dataFrameSize() <= 0)
 					{
-						if(P->useAntenna(s->first))
+						if(P->useAntenna(su->first))
 						{
-							std::cerr << "Error: data frame size not set for VDIF mode " << M->defName << " antenna " << s->first << std::endl;
+							std::cerr << "Error: data frame size not set for VDIF mode " << M->defName << " antenna " << su->first << std::endl;
 							++nError;
 						}
 						else
 						{
-							std::cerr << "Note: data frame size not set for VDIF mode " << M->defName << " for unused antenna " << s->first << std::endl;
+							std::cerr << "Note: data frame size not set for VDIF mode " << M->defName << " for unused antenna " << su->first << std::endl;
 						}
 					}
 					if(!t->singleThread && t->threads.empty())
 					{
-						if(P->useAntenna(s->first))
+						if(P->useAntenna(su->first))
 						{
-							std::cerr << "Error: no threads specified for INTERLACEDVDIF mode " << M->defName << " antenna " << s->first << std::endl;
+							std::cerr << "Error: no threads specified for INTERLACEDVDIF mode " << M->defName << " antenna " << su->first << std::endl;
 							++nError;
 						}
 						else
 						{
-							std::cerr << "Note: no threads specified for INTERLACEDVDIF mode " << M->defName << " for unused antenna " << s->first << std::endl;
+							std::cerr << "Note: no threads specified for INTERLACEDVDIF mode " << M->defName << " for unused antenna " << su->first << std::endl;
 						}
 					}
 				}

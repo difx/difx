@@ -56,6 +56,11 @@ int main(int argc, char **argv)
   }
 
   buffer = (char*)malloc(buffer_size);
+  if(!buffer)
+  {
+    fprintf(stderr, "Error: Cannot allocate %lu bytes\n", (unsigned long int)buffer_size);
+    exit(EXIT_FAILURE);
+  }
 
   while (1)
   {

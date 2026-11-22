@@ -15,15 +15,15 @@ $EXPER;
 def EH022;
      exper_name = EH022;
      exper_description = "DR21(OH) & DR21(OH)N; cross-pol";
-     PI_name = "Lis Harvey-Smith";
-     PI_email = harvey@jive.nl;
-*    address:   U.Sydney
-*               c/o JIVE
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
 *                
 *                
-*    phone:     369-5504
-*    during obs:369-5504
-*    fax:       369-5504
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *    notes:     Please, make sure PHASE CAL is OFF.
 *
 *    year, doy: 2007, 303
@@ -40,8 +40,8 @@ def EH022;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Lisa Harvey-Smith
-*                     JIVE
+*                     Bob Bobson
+*                     Fake Address
 *    corr_notes : 
 *                 Please, correlate only the first baseband
 *

@@ -881,6 +881,18 @@ void VexData::setAntennaPolConvert(const std::string &antName, bool doConvert)
 	}
 }
 
+void VexData::setAntennaVgosComplexFlip(const std::string &name, bool vgosComplexFlip)
+{
+	for(std::vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
+	{
+		if(it->name == name)
+		{
+			it->vgosComplexFlip = vgosComplexFlip;
+		}
+	}
+}
+
+
 void VexData::addExperEvents(std::list<Event> &events) const
 {
 	addEvent(events, exper.mjdStart, Event::OBSERVE_START, exper.name); 

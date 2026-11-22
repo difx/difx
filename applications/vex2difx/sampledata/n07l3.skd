@@ -14,14 +14,14 @@ $EXPER;
 def N07L3;
      exper_name = N07L3;
      exper_description = "Network Monitoring Expt";
-     PI_name = "Hayley Bignall";
-     PI_email = bignall@jive.nl;
-*    address:   JIVE
-*               Postbus 2
-*               7990 AA Dwingeloo
-*               The Netherlands
-*    phone:     +31-521-596520
-*    during obs:+31-521-596520
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
 *    fax:        
 *    notes:     L-band NME (256 Mbps, 2-bit sampling, 8 MHz filters) for session
 *               Please send the disk pack by express to JIVE
@@ -40,7 +40,7 @@ def N07L3;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Hayley Bignall
+*                     Bob Bobson
 *
 enddef;
 *------------------------------------------------------------------------------

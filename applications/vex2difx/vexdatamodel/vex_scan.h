@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,6 +44,7 @@ public:
 	double mjdVex;					// The start time listed in the vex file
 
 	VexScan(): size(0), mjdVex(0.0) {};
+	VexScan(VexScan const &) = default;
 	const Interval *getAntennaInterval(const std::string &antName) const;
 	bool hasAntenna(const std::string &antName) const;
 	bool getRecordEnable(const std::string &antName) const;

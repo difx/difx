@@ -1,0 +1,14 @@
+# Site-specific DiFX settings.  Copy this file to setup.local.csh and edit it;
+# setup.csh reads it if it exists.  csh cannot tell where a sourced script
+# lives, so either source setup.csh from the directory holding both files, or
+# setenv DIFX_SETUP_LOCAL /full/path/to/setup.local.csh first.
+# setup.local.csh is ignored by git, so the paths in it stay on this machine.
+# Set only what differs from the defaults in setup.csh.
+
+# setenv DIFX_VERSION mybuild
+# setenv DIFXROOT /path/to/install/prefix
+# setenv IPPROOT /opt/intel
+# setenv DIFXMPIDIR /usr/lib64/openmpi
+# setenv CUDAROOT /usr/local/cuda
+# setenv NVCCFLAGS "-arch=sm_80"      # sm_75 Turing, sm_80 A100, sm_90 H100
+# setenv DIFX_MACHINES /path/to/difx.machines

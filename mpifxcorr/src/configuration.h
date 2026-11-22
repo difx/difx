@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2017 by Adam Deller                                *
+ *   Copyright (C) 2006-2026 by Adam Deller                                *
  *                                                                         *
  *   This program is free software: you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -53,7 +53,7 @@ public:
 
   /// Supported types of recorded data format
 
-  enum dataformat {LBASTD, LBAVSOP, LBA8BIT, LBA16BIT, K5VSSP, K5VSSP32, MKIV, VLBA, MARK5B, VDIF, VDIFL, INTERLACEDVDIF, VLBN, KVN5B, CODIF};
+  enum dataformat {LBASTD, LBAVSOP, LBA8BIT, LBA16BIT, MKIV, VLBA, MARK5B, VDIF, VDIFL, INTERLACEDVDIF, CODIF};
 
   /// Supported sources of data
   enum datasource {UNIXFILE, MK5MODULE, NETWORKSTREAM, FAKESTREAM, MK6MODULE};
@@ -106,8 +106,11 @@ public:
   void setJobNameFromConfigfilename(string configfilename);
   inline string getObsCode() const { return obscode; }
   inline void setObsCode(string ocode) { obscode = ocode; }
-  inline void setVGOSComplexVDIFHack(bool enable) { vgoscomplexvdifhack = enable; }
-  inline bool useVGOSComplexVDIFHack() { return vgoscomplexvdifhack; }
+  inline bool useVGOSComplexVDIFHack(int configindex, int datastreamindex) const
+  {
+    int dsTableIndex = configs[configindex].datastreamindices[datastreamindex];
+    return datastreamtable[dsTableIndex].vgoscomplexflip;
+  }
   inline long long getEstimatedBytes() const { return estimatedbytes; }
   inline int getVisBufferLength() const { return visbufferlength; }
   inline bool consistencyOK() const { return consistencyok; }
@@ -376,7 +379,7 @@ public:
     datasource s;
     f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
-    return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == KVN5B || f == VDIF || f == VDIFL || f == INTERLACEDVDIF || f == CODIF) && (s == UNIXFILE || s == NETWORKSTREAM || s == FAKESTREAM)); 
+    return ((f == MKIV || f == VLBA || f == MARK5B || f == VDIF || f == VDIFL || f == INTERLACEDVDIF || f == CODIF) && (s == UNIXFILE || s == NETWORKSTREAM || s == FAKESTREAM)); 
   }
   inline bool isVDIFFile(int datastreamindex) const
   {
@@ -470,7 +473,7 @@ public:
     datasource s;
     f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
-    return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == KVN5B || f == VDIF || f == VDIFL || f == INTERLACEDVDIF || f == CODIF) && s == MK5MODULE); 
+    return ((f == MKIV || f == VLBA || f == MARK5B || f == VDIF || f == VDIFL || f == INTERLACEDVDIF || f == CODIF) && s == MK5MODULE); 
   }
 
   // Return the number of framebytes as seen by Datastream (as in the data source)
@@ -903,6 +906,7 @@ private:
     datasampling sampling;
     complextype tcomplex;
     bool ismuxed;
+    bool vgoscomplexflip;   // invert the sideband of complex VDIF data while unpacking
     long phasecalintervalhz;
     long phasecaldenominator; // default 1, >1 to interpret phasecalintervalhz as nominator of a fraction
     long phasecalbasehz;
@@ -1130,7 +1134,6 @@ private:
   char header[MAX_KEY_LENGTH];
   bool commonread, configread, datastreamread, freqread, ruleread, baselineread;
   bool consistencyok, commandthreadinitialised, commandthreadfailed, dumpsta, dumplta, dumpkurtosis;
-  bool vgoscomplexvdifhack;
   int visbufferlength, databufferfactor, numdatasegments;
   int numdatastreams, numbaselines, numcoreconfs;
   int executeseconds, startmjd, startseconds, startns;

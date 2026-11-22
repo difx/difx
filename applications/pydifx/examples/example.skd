@@ -15,15 +15,15 @@ $EXPER;
 def IRACORR1;
      exper_name = IRACORR1;
      exper_description = "1320+299 complex; 12 Dec 2007 05:00 - 08:00 UT";
-     PI_name = "Franco Mantovani";
-     PI_email = fmantovani@ira.inaf.it;
-*    address:   Istituto di Radioastronomia
-*               Via P. Gobetti, 101
-*               I-40129 Bologna
-*               Italy
-*    phone:     +39 51 6399377
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
 *    during obs: 
-*    fax:       +39 51 6399431
+*    fax:       Fake Phone
 *
 *    year, doy: 2007, 346
 *    date     : Wed 12 Dec 2007
@@ -39,10 +39,10 @@ def IRACORR1;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Franco Mantovani
-*                     Istituto di Radioastronomia
-*                     Via P. Gobetti, 101
-*                     I-40129 Bologna - Italy
+*                     Bob Bobson
+*                     Fake Address
+*
+*
 *    corr_notes : 
 *                 fringe finder: 3C345
 *

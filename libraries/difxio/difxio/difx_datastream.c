@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2024 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -23,6 +23,7 @@
 #include <string.h>
 #include <strings.h>
 #include <math.h>
+#include <unistd.h>
 #include "difxio/difx_write.h"
 
 /* Note: these values cannot have whitespace */
@@ -91,6 +92,12 @@ DifxDatastream *newDifxDatastreamArray(int nDatastream)
 	int s;
 
 	dd = (DifxDatastream *)calloc(nDatastream, sizeof(DifxDatastream));
+	if(!dd)
+	{
+		fprintf(stderr, "Error: newDifxDatastreamArray(): cannot allocate %lu bytes.\n", (unsigned long int)(nDatastream*sizeof(DifxDatastream)));
+
+		exit(0);
+	}
 	for(s = 0; s < nDatastream; ++s)
 	{
 		dd[s].dataSource = DataSourceUnspecified;
@@ -402,40 +409,41 @@ int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, c
 
 	/* Fill in the tone frequencies and on/off values */
 	toneinterval = dd->phaseCalIntervalMHz / dd->phaseCalIntervalDivisor; // NB: rounding errors are uncritical here
-	if ( AllPcalTones == 0 ){
-	     /* Use the phase cal tones specified in the difx input files */
-	     for(t = 0; t < df->nTone; ++t)
-	     {
-     		i = df->tone[t];
-		     if(df->sideband == 'U')
-		     {
-			     j = i;
-		     }
-		     else
-		     {
-			     j = nRecTone - 1 - i;	/* reverse order of LSB tones */
-		     }
-		     if(j >= 0 && j < maxCount)
-		     {
-			     toneFreq[j] = lowest + i*toneinterval;
-		     }
-	     }
-        } 
-        else
-        {
-	     /* Use all the phase cal tones regardless what is in the difx input files */
-	     for( t = 0; t < nRecTone; ++t)
-	     {
-		if ( df->sideband == 'U')
+	if ( AllPcalTones == 0 )
+	{
+		/* Use the phase cal tones specified in the difx input files */
+		for(t = 0; t < df->nTone; ++t)
 		{
-		    toneFreq[t] = lowest  + t*toneinterval;
+			i = df->tone[t];
+			if(df->sideband == 'U')
+			{
+				j = i;
+			}
+			else
+			{
+				j = nRecTone - 1 - i;	/* reverse order of LSB tones */
+			}
+			if(j >= 0 && j < maxCount)
+			{
+				toneFreq[j] = lowest + i*toneinterval;
+			}
 		}
-		else
+	}
+	else
+	{
+		/* Use all the phase cal tones regardless what is in the difx input files */
+		for( t = 0; t < nRecTone; ++t)
 		{
-		    toneFreq[t] = highest - t*toneinterval;
+			if ( df->sideband == 'U')
+			{
+				toneFreq[t] = lowest  + t*toneinterval;
+			}
+			else
+			{
+				toneFreq[t] = highest - t*toneinterval;
+			}
 		}
-	     }
-        } 
+	}
 
 	return nRecTone;
 }
@@ -501,6 +509,7 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 		fprintf(fp, "      window size = %d\n", dd->windowSize);
 	}
 	fprintf(fp, "    format = %s\n", dd->dataFormat);
+	fprintf(fp, "    vgosComplexFlip = %d\n", dd->vgosComplexFlip);
 	fprintf(fp, "    quantization bits = %d\n", dd->quantBits);
 	fprintf(fp, "    sampling = %s\n", samplingTypeNames[dd->dataSampling]);
 	fprintf(fp, "    nRecFreq = %d\n", dd->nRecFreq);
@@ -575,6 +584,7 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2, c
 	
 	if(dd1->antennaId != antennaId2 ||
 	   strcmp(dd1->dataFormat, dd2->dataFormat) != 0 ||
+	   dd1->vgosComplexFlip != dd2->vgosComplexFlip ||
 	   dd1->dataSampling != dd2->dataSampling ||
 	   dd1->nRecFreq != dd2->nRecFreq ||
 	   dd1->nRecBand != dd2->nRecBand ||
@@ -689,6 +699,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src, const i
 
 		exit(0);
 	}
+	dest->vgosComplexFlip = src->vgosComplexFlip;
 	dest->dataSampling = src->dataSampling;
 	dest->dataSource = src->dataSource;
 	dest->quantBits = src->quantBits;
@@ -780,6 +791,7 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 
 		exit(0);
 	}
+	dest->vgosComplexFlip = src->vgosComplexFlip;
 	dest->dataSampling = src->dataSampling;
 	v = snprintf(dest->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", src->networkPort);
 	if(v >= DIFXIO_ETH_DEV_SIZE)
@@ -988,6 +1000,7 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	writeDifxLineInt(out, "TELESCOPE INDEX", dd->antennaId);
 	writeDifxLineDouble(out, "TSYS", "%f", dd->tSys);
 	writeDifxLine(out, "DATA FORMAT", dd->dataFormat);
+	writeDifxLine(out, "VGOS COMPLEX FLIP", dd->vgosComplexFlip ? "true" : "false");
 	writeDifxLineInt(out, "QUANTISATION BITS", dd->quantBits);
 	writeDifxLineInt(out, "DATA FRAME SIZE", dd->dataFrameSize);
 	writeDifxLine(out, "DATA SAMPLING", samplingTypeNames[dd->dataSampling]);
@@ -1024,9 +1037,9 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 			{
 				r = snprintf(v, MaxLineLength, "%.6f:%.6f", dd->clockOffset[i], dd->clockOffsetDelta[i]);
 			}
-		  	else
+			else
 			{
-		    		r = snprintf(v, MaxLineLength, "%.6f:%.6f:%.2f", dd->clockOffset[i], dd->clockOffsetDelta[i], dd->phaseOffset[i]);
+				r = snprintf(v, MaxLineLength, "%.6f:%.6f:%.2f", dd->clockOffset[i], dd->clockOffsetDelta[i], dd->phaseOffset[i]);
 			}
 
 			if(r >= MaxLineLength)

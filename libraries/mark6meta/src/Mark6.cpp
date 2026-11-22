@@ -203,7 +203,7 @@ void Mark6::modInit (int slot, string vsn)
     //cout << "Starting modinit" << endl;
     //cout << "Number of slots: " << numSlots_m << endl;
 
-    if ((slot < 0) || (slot > numSlots_m))
+    if ((slot < 0) || (slot >= numSlots_m))
         throw  Mark6Exception("Invalid slot number");
 
     initRawDevice_m = true;
@@ -369,7 +369,9 @@ void Mark6::sendSlotStatusMessage()
 
 /**
  * Sends out a Mark6StatusMessage
+ * deprecated use sendSlotStatusMessage instead
  */
+/*
 void Mark6::sendStatusMessage()
 {
     DifxMessageMark6Status dm;
@@ -434,7 +436,7 @@ void Mark6::sendStatusMessage()
        
     difxMessageSendMark6Status(&dm);
 }
-
+*/
 
 
 /**

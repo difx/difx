@@ -15,13 +15,13 @@ $EXPER;
 def cband1;
      exper_name = cband1;
      exper_description = "cband1";
-     PI_name = "Walter Brisken";
-     PI_email = wbrisken@nrao.edu;
-*    address:   NRAO/DSOC
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
 *                
 *                
 *                
-*    phone:     505-234-5912
+*    phone:     Fake Phone
 *    during obs: 
 *    fax:        
 *

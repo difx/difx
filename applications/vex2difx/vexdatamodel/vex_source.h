@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2021 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2015-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,7 +32,7 @@ public:
 	enum Type { Star, EarthSatellite, BSP, TLE, Ephemeris, Fixed, Unsupported };
 
 	VexSource() : type(Unsupported), ephemDeltaT(DEFAULT_EPHEMERIS_DELTAT), ephemStellarAber(0.0), ephemClockError(0.0), X(0.0), Y(0.0), Z(0.0), ra(0.0), dec(0.0), calCode(' ') {}
-	VexSource(std::string name, double ra1, double dec1, char calCode1=' ') : type(Star), defName(name), ephemDeltaT(DEFAULT_EPHEMERIS_DELTAT), ephemStellarAber(0.0), ephemClockError(0.0), X(0.0), Y(0.0), Z(0.0), ra(ra1), dec(dec1), calCode(calCode1) {}
+	VexSource(const std::string &name, double ra1, double dec1, char calCode1=' ') : type(Star), defName(name), ephemDeltaT(DEFAULT_EPHEMERIS_DELTAT), ephemStellarAber(0.0), ephemClockError(0.0), X(0.0), Y(0.0), Z(0.0), ra(ra1), dec(dec1), calCode(calCode1) {}
 	bool hasSourceName(const std::string &name) const;
 	bool setSourceType(const char *t1 = 0, const char *t2 = 0, const char *t3 = 0);
 	void setTLE(int lineNum, const char *line);	// lineNum must be 0, 1 or 2

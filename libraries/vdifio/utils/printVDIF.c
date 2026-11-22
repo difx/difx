@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2024 by Adam Deller, Walter Brisken                *
+ *   Copyright (C) 2010-2026 by Adam Deller, Walter Brisken                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
   FILE * input;
   int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
   long long framesread;
-  vdif_header *header;
+  const vdif_header *header;
 
   if(argc != 3)
   {
@@ -61,16 +61,16 @@ int main(int argc, char **argv)
 
   datambps = atoi(argv[2]);
   readbytes = fread(buffer, 1, MaxFrameSize, input); //read the VDIF header
+  if(readbytes <= 0) {
+    fprintf(stderr, "Cannot read from %s\n", argv[1]);
+    exit(EXIT_FAILURE);
+  }
   header = (vdif_header*)buffer;
   framebytes = getVDIFFrameBytes(header);
   if(framebytes > MaxFrameSize) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d), formal max %d\n", framebytes, MaxFrameSize, MAX_VDIF_FRAME_BYTES);
     exit(EXIT_FAILURE);
   }
-  framemjd = getVDIFFrameMJD(header);
-  framesecond = getVDIFFrameSecond(header);
-  framenumber = getVDIFFrameNumber(header);
-  frameinvalid = getVDIFFrameInvalid(header);
   framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
   printf("Frames per second is %d\n", framespersecond);
  

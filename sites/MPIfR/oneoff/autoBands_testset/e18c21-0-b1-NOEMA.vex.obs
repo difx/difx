@@ -16,10 +16,10 @@ def e18c21;
      exper_name = e18c21;
      exper_num = 3644;
      exper_description = "ALMA+EHT VLBI April 2018";
-     PI_name = EHTC;
-     PI_email = not@an.address;
-*    address:   The Event Horizon Telescope Collaboration
-*               Global
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
 *
 *    year, doy: 2018, 110
 *    date     : Fri 20 Apr 2018

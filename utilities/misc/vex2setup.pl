@@ -271,7 +271,7 @@ foreach (@stations) {
 	$bw = $_->bw;
       } else {
 	if ($bw != $_->bw) {
-	  warn "Mixed bandwidth setup - assiming $bw\n";
+	  warn "Mixed bandwidth setup - assuming $bw\n";
 	  last;
 	}
       }
@@ -510,15 +510,15 @@ Options:
   -nchannel <i>       Number of spectral points/IF (default 256)
   -integration <f>    Integration time in seconds (default 1)
   -evlbi              Evlbi mode (default no)
-  -ant <ANT>          Speficy antennas to use, must be given multipe times
+  -ant <ANT>          Specific antennas to use, must be given multipe times
                        E.g. -ant At -ant Pa -ant Mp. Default all
-  -start hh:mm:ss     Specift start time after nominal experiment start
+  -start hh:mm:ss     Specific start time after nominal experiment start
   -duration <DUR>     Duration (in seconds) to correlate from start
   -v2d <s>            Specify v2d file to write (default experiment.v2d)
   -cluster <s>        String format of names for machine file. Must include 
                       printf style integer. E.g. cave%02d-ext (cave00-ext)
   -nodes <i>          Number of nodes to write in machine file
-  -scan <s>          Set start and stop times for a specific scan
+  -scan <s>           Set start and stop times for a specific scan
 
 EOF
   exit(1);

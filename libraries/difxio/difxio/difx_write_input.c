@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "difxio/difx_write.h"
 
 
@@ -226,6 +227,12 @@ static int writeDataTable(FILE *out, const DifxInput *D)
 						char fn[100];
 
 						base = strdup(ds->file[j]);
+						if(!base)
+						{
+							fprintf(stderr, "Error: writeDataTable(): strdup failed.\n");
+
+							exit(0);
+						}
 						base[l-10] = 0;
 						snprintf(fn, 100, "%s%5d_%05d.vdif", base, (int)(D->mjdStart), (int)((D->mjdStart - (int)(D->mjdStart))*86400.0));
 						writeDifxLine2(out, "FILE %d/%d", i, j, fn);

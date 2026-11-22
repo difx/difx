@@ -14,14 +14,14 @@ $EXPER;
 def gp044;
      exper_name = gp044;
      exper_description = "sn2007gr";
-     PI_name = "Z. Paragi";
-     PI_email = zparagi@jive.nl;
-*    address:   JIVE
-*               Postbus 2
-*               7990 AA Dwingeloo
-*               The Netherlands
-*    phone:     +31 (0)521 596 536
-*    during obs:+31 (0)521 596 500
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
 *    fax:        
 *
 *    year, doy: 2007, 309
@@ -49,7 +49,7 @@ def gp044;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Zsolt Paragi
+*                     Bob Bobson
 *    corr_notes : 
 *                 Please use the gp044_gbt.skd as the default (512MB/s),
 *                 and edit for the 1GB/s stations

@@ -15,15 +15,15 @@ $EXPER;
 def GC029;
      exper_name = GC029;
      exper_description = "Deep, high-resolution observations of the Hubble Flanking Field region";
-     PI_name = "Seungyoup Chi";
-     PI_email = chi@astro.rug.nl;
-*    address:   ASTRON
-*               Postbus 2
-*               7990 AA Dwingeloo
-*               The Netherlands
-*    phone:     +31 50 3633505
-*    during obs:+31 65 4306618
-*    fax:       +31 50 3636100
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *    notes:     Please Note... Phase-referencing expt,
 *               Observing frequency is ** 21CM band **
 *               Request only 1 SINGLE WSRT Antenna pleeeeeease
@@ -43,9 +43,9 @@ def GC029;
 *    distrib_medium : DAT
 *    source_pos_cat : CONTACT THE PI
 *    distribute_to  : 
-*                     Mike Garrett
-*                     ASTRON
-*                     Postbus 2, 7990 AA Dwingeloo, the Netherlands
+*                     Bob Bobson
+*                     Fake Address
+*
 *    corr_notes : 
 *                 WARNING: This is to be correlated in 2 passes, in order
 *                 to obtain 256 freq channels/per IF.

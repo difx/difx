@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2014-2019 by Walter Brisken                             *
+#   Copyright (C) 2014-2026 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -81,7 +81,7 @@ rf=x,y "Record Channel Freq"
 f=x "Frequency"
 
       x is the frequency (MHz) of the desired tone(s)
-      Note: more than one tone may match.  They will be orderd by record
+      Note: more than one tone may match.  They will be ordered by record
       channel
 
 f=%x "Frequency mod x"
@@ -93,7 +93,7 @@ r=x "Record channel"
 
       x is the record baseband channel (0-based)
       Note: all tones in that channel will be selected.  Usually for USB
-      the tones will be in order of inceasing frequency and for LSB the
+      the tones will be in order of increasing frequency and for LSB the
       tones will be in order of decreasing frequency
 
 t=x "Tone number"
@@ -147,7 +147,7 @@ t=good "Channels near the end of all record channels"
       Like rt=x,good, but for all channels.  Will produce nChannel delays
       ordered by record channel number.
 
-[data] is a list of DiFX derived pulse cal data. When produced thay come from the .difx/ directories produced by DiFX. There will be a separate file per antenna per job.
+[data] is a list of DiFX derived pulse cal data. When produced they come from the .difx/ directories produced by DiFX. There will be a separate file per antenna per job.
 
 When plotpcal is run it first sorts data by antenna name and makes one plot per antenna using the python matplotlib plotting package. All standard matplotlib features are available.
 

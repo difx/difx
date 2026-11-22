@@ -14,14 +14,14 @@ $EXPER;
 def te068;
      exper_name = te068;
      exper_description = "TIGO-Arecibo formatter test";
-     PI_name = "Zsolt Paragi";
-     PI_email = zparagi@jive.nl;
-*    address:   JIVE
-*               Postbus 2
-*               7990 AA Dwingeloo
-*               The Netherlands
-*    phone:     +31 (0)521 596 536
-*    during obs:+31 (0)521 596 500
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
 *    fax:        
 *
 *    year, doy: 2007, 253
@@ -38,7 +38,7 @@ def te068;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Zsolt Paragi
+*                     Bob Bobson
 *
 enddef;
 *------------------------------------------------------------------------------

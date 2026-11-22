@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 	transient.priority = atof(argv[3]);
 	transient.dm = -1.5;
 	snprintf(transient.jobId, DIFX_MESSAGE_IDENTIFIER_LENGTH, "%s", argv[4]);
-	if(argc > 4)
+	if(argc > 5)
 	{
 		snprintf(transient.destDir, DIFX_MESSAGE_FILENAME_LENGTH, "%s", argv[5]);
 	}

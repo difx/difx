@@ -154,6 +154,10 @@ pcaltest_SOURCES = pcal.cpp mathutil.cpp fraction.h
 
 pcaltest_CXXFLAGS = -DUNIT_TEST -DPCAL_DEBUG -Wall -O0 -g
 
+pcaltest_LDADD = ${mathlibs}
+
 m5pcal_test_SOURCES = pcal.cpp mathutil.cpp fraction.h test/m5pcal_test.cpp
 
 m5pcal_test_CXXFLAGS = -DNO_ALERT_H -Wall -O0 -g
+
+m5pcal_test_LDADD = ${mathlibs}

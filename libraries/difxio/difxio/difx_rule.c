@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Adam Deller & Walter Brisken               *
+ *   Copyright (C) 2009-2026 by Adam Deller & Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "difxio/difx_input.h"
 #include "difxio/difx_write.h"
 
@@ -29,6 +30,12 @@ DifxRule *newDifxRuleArray(int nRule)
 	int r;
 
         dr = (DifxRule *)calloc(nRule, sizeof(DifxRule));
+        if(!dr)
+        {
+		fprintf(stderr, "Error: newDifxRuleArray(): cannot allocate %lu bytes\n", (unsigned long int)sizeof(DifxRule));
+
+        	exit(0);
+        }
         for(r = 0; r < nRule; ++r)
         {
 		dr[r].qual = -1;
@@ -187,7 +194,7 @@ int simplifyDifxRules(DifxInput *D)
 		dr = D->rule + r;
 		for(c = 0; c < D->nConfig; ++c)
 		{
-			DifxConfig *dc;
+			const DifxConfig *dc;
 			
 			dc = D->config+c;
 			if(strcmp(dc->name, dr->configName) == 0)

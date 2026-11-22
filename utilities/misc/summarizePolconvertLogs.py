@@ -127,7 +127,7 @@ def checkDiFXViz(job, opts):
 	pols_crossed = False
 	pols_found = []
 	while True:
-	        hdr = parseDiFX.parse_output_header(difxfile)
+	    hdr = parseDiFX.parse_output_header(difxfile)
 		if len(hdr)==0:
 			break
 		[baseline,mjd,seconds,cfgidx,srcidx,freqindex,polpair,pulsarbin,weight,u,v,w,rawhdr] = hdr

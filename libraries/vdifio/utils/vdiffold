@@ -4,8 +4,8 @@
 
 program = 'vdiffold'
 author  = 'Walter Brisken'
-version = '0.7.2'
-verdate = '20231112'
+version = '0.7.3'
+verdate = '20261112'
 
 from os import system
 from sys import exit, argv
@@ -17,7 +17,7 @@ def usage():
 	print('')
 	printVersion()
 	print('')
-	print('A program to look for switched powre in VDIF files.  Uses vmux')
+	print('A program to look for switched power in VDIF files.  Uses vmux')
 	print('and m5fold to do the heavy lifting.\n')
 	print('Usage : %s <infile> <frame size> <data rate> <threadlist> <nbin> <nint> <freq> <outfile> [<offset> [<nbit>] ]\n' % program)
 	print('  <infile> is the name of the VDIF file\n')

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2015-2024 by Walter Brisken                             *
+ *   Copyright (C) 2015-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,7 +34,7 @@ const char verdate[] = "20230914";
 static void usage(const char *pgm)
 {
 	printf("%s ver. %s  %s  %s\n\n", program, version, author, verdate);
-	printf("A utility to extract specfied threads from a VDIF file.\n\n");
+	printf("A utility to extract specified threads from a VDIF file.\n\n");
 	printf("Usage 1: %s <VDIF input file> <VDIF output file> <threadids>\n\n", pgm);
 	printf("Usage 2: %s <VDIF input files> <VDIF output path> <threadids>\n\n", pgm);
 	printf("<VDIF input file> is the name of the VDIF file to read\n\n");
@@ -109,7 +109,7 @@ int extractThreads(const char *inputFile, const char *outputFile, int nThread, c
 	vdif_header H;
 	const vdif_header *V;
 	char *data;
-	int frameSize;
+	size_t frameSize;
 	int threadCount[VDIF_MAX_THREAD_ID+1];	// count of threads found in the file (for end report)
 	int t;
 	int lastSec = -1;
@@ -143,7 +143,7 @@ int extractThreads(const char *inputFile, const char *outputFile, int nThread, c
 	if(frameSize < 16 || frameSize > 5000000)
 	{
 		fclose(in);
-		fprintf(stderr, "Error: Likely corruption of VDIF data as frame size is %d bytes\n", frameSize);
+		fprintf(stderr, "Error: Likely corruption of VDIF data as frame size is %lu bytes\n", (unsigned long int)frameSize);
 
 		return EXIT_FAILURE;
 	}
@@ -153,7 +153,7 @@ int extractThreads(const char *inputFile, const char *outputFile, int nThread, c
 	if(!data)
 	{
 		fclose(in);
-		fprintf(stderr, "Error: cannot allocate %d bytes\n", frameSize);
+		fprintf(stderr, "Error: cannot allocate %lu bytes\n", (unsigned long int)frameSize);
 
 		return EXIT_FAILURE;
 	}

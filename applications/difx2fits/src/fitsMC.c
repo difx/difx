@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2024 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2026 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -170,7 +170,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D, struct fits_keywords *p_fi
 			/* loop over antennas that might be used by this scan */
 			for(antId = 0; antId < scan->nAntenna; ++antId)
 			{
-				DifxAntenna *da;
+				const DifxAntenna *da;
 
 				da = D->antenna + antId;	/* pointer to DifxAntenna structure */
 

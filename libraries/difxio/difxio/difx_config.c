@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2017 by Walter Brisken                             *
+ *   Copyright (C) 2008-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "difxio/difx_input.h"
 #include "difxio/difx_write.h"
 
@@ -29,8 +30,15 @@ DifxConfig *newDifxConfigArray(int nConfig)
 	int configId;
 
 	dc = (DifxConfig *)calloc(nConfig, sizeof(DifxConfig));
+	if(!dc)
+	{
+		fprintf(stderr, "Error: newDifxConfigArray(): cannot allocate %lu bytes\n", (unsigned long int)(nConfig*sizeof(DifxConfig)));
+
+		exit(0);
+	}
 	for(configId = 0; configId < nConfig; ++configId)
 	{
+		dc[configId].phasedArrayId = -1;
 		dc[configId].doPolar = -1;
 		dc[configId].pulsarId = -1;
 		dc[configId].strideLength = 16;
@@ -461,7 +469,7 @@ int simplifyDifxConfigs(DifxInput *D)
 	int c, c1, c0, s, r;
 	int n0;
 	DifxRule *dr;
-	DifxConfig *dc;
+	const DifxConfig *dc;
 
 	n0 = D->nConfig;
 	if(n0 < 2)
@@ -608,7 +616,7 @@ int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const Dif
 		if(config->phasedArrayId >= 0 && phasedarray)
 		{
 			writeDifxLine(out, "PHASED ARRAY", "TRUE");
-			writeDifxLine(out, "PHASED ARRAY CONNFIG FILE", phasedarray[config->phasedArrayId].fileName);
+			writeDifxLine(out, "PHASED ARRAY CONFIG FILE", phasedarray[config->phasedArrayId].fileName);
 		}
 		else
 		{

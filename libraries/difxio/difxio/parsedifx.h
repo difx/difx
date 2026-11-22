@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken                             *
+ *   Copyright (C) 2007-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -21,7 +21,7 @@
 #define __PARSEDIFX__
 
 /* the following is the maximum length a difx .input (or .calc, ...) line can be.
- * the large value is dictacted by need to support a nearly limitless number of
+ * the large value is dictated by need to support a nearly limitless number of
  * scans or sources in a RULE table
  */
 #define	MAX_DIFX_INPUT_LINE_LENGTH	8192
@@ -119,7 +119,7 @@ int DifxParametersfind2_limited(const DifxParameters *dp, int start_row, int max
 /* Safely get the value of a row */
 const char *DifxParametersvalue(const DifxParameters *dp, int row);
 
-/* find row indicies for several keys */
+/* find row indices for several keys */
 int DifxParametersbatchfind(const DifxParameters *dp, int start, const char keys[][MAX_DIFX_KEY_LEN], int n, int rows[]);
 int DifxParametersbatchfind1(const DifxParameters *dp, int start, const char keys[][MAX_DIFX_KEY_LEN], int index1, int n, int rows[]);
 int DifxParametersbatchfind2(const DifxParameters *dp, int start, const char keys[][MAX_DIFX_KEY_LEN], int index1, int index2, int n, int rows[]);

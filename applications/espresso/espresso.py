@@ -279,7 +279,7 @@ def plot_speedup(logfiles, outdir, expname):
 
 
 def run_interactive(corrjoblist, outdir):
-    """Run jobs in an interactive enviroment"""
+    """Run jobs in an interactive environment"""
     good_jobs = []
     bad_jobs = []
     job_errors = []
@@ -655,8 +655,13 @@ def get_options(usage):
             "--ntasks_per_node",
             type="int", dest="ntasks_per_node", default=None,
             help="Number of MPI processes per node.")
-    
+
     (options, args) = parser.parse_args()
+    
+    if len(args) < 1 and not options.expt_all:
+        parser.print_help()
+        parser.error("Give job name(s)")
+
     return options, args
 
 
@@ -685,10 +690,6 @@ options, args = get_options(usage)
 
 if options.testjob and options.clockjob:
     raise Exception("Don't use both -t and -c together!")
-
-if len(args) < 1 and not options.expt_all:
-    parser.print_help()
-    parser.error("Give job name(s)")
 
 
 # ntasks_per_node defaults 2 if using head node for compute, or 1 if not.

@@ -54,7 +54,7 @@ rf=x,y		"Record Channel   Freq"
 f=x		"Frequency"
 
 	x is the frequency (MHz) of the desired tone(s)
-	Note: more than one tone may match.  They will be orderd by record
+	Note: more than one tone may match.  They will be ordered by record
 	channel
 
 f=%x		"Frequency mod x"
@@ -66,7 +66,7 @@ r=x		"Record channel"
 
 	x is the record baseband channel (0-based)
 	Note: all tones in that channel will be selected.  Usually for USB
-	the tones will be in order of inceasing frequency and for LSB the
+	the tones will be in order of increasing frequency and for LSB the
 	tones will be in order of decreasing frequency
 
 t=x		"Tone number"
@@ -123,7 +123,7 @@ t=good		"Channels near the end of all record channels"
 	ordered by record channel number.
 
 
-[data] is a list of DiFX derived pulse cal data.  When produced thay come
+[data] is a list of DiFX derived pulse cal data.  When produced they come
 from the .difx/ directories produced by DiFX.  There will be a separate file
 per antenna per job.
 
@@ -187,7 +187,7 @@ I think as long as you can get the code and data to work I can work you
 through the driving.  If you want to come up with your own examples,
 possibly using other data available for recentlt correlated data in one of
 the subdirectories of /home/swc/difx/queue feel free!  If you do this you
-should problably select the data with something like:
+should probably select the data with something like:
 
 /home/swc/difx/queue/N4089B/n4089b*.difx/PCAL*
 

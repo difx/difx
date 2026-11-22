@@ -118,15 +118,15 @@ $EXPER;
 def rk18cj;
      exper_name = rk18cj;
      exper_description = "RadioAstron AGN Monitoring";
-     PI_name = "Yuri Kovalev";
-     PI_email = yyk@asc.rssi.ru;
-*    address:   ASC Lebedev
-*               Profsoyuznaya 84/32
-*               117997 Moscow, Russia
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
 *                
-*    phone:     +7-495-3332167
-*    during obs:+7-915-1546281
-*    fax:       +7-495-3332378
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *    notes:     C/K-band, Radioastron-compatible frequency setup
 *               P-CAL is ON
 *               Tsys is ON

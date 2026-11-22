@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2018 by Chris Phillips & Walter Brisken            *
+ *   Copyright (C) 2014-2026 by Chris Phillips & Walter Brisken            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -269,7 +269,7 @@ double parseDouble(const std::string &value)
 }
 
 // Turns a string into MJD 
-// The following formats are allowd:
+// The following formats are allowed:
 // 1. decimal mjd:  55345.113521
 // 2. ISO 8601 dateTtime strings:  2009-03-08T12:34:56.121
 // 3. VLBA-like time:   2009MAR08-12:34:56.121
@@ -279,7 +279,7 @@ double parseTime(const std::string &timeStr)
 	const int TimeLength=54;
 	double mjd;
 	char str[TimeLength];
-	char *p;
+	const char *p;
 	int n;
 	struct tm tm;
 	char dummy;
@@ -300,7 +300,7 @@ double parseTime(const std::string &timeStr)
 		p = strptime(str, "%Yy%jd%Hh%Mm%Ss", &tm);
 
 #ifdef __NOAPPLE__
-		// This no longer seems to be neceesary for OSX
+		// This no longer seems to be necessary for OSX
 		tm.tm_mday = tm.tm_yday+1; // mktime not guaranteed to pick up dayno
 #endif
 	}

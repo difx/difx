@@ -16,7 +16,7 @@ foreach (@ARGV) {
   if (/^(\S+):(\S+)$/) {
     $delays{$1} = $2;
   } else {
-    die "Bad argment $_\n";
+    die "Bad argument $_\n";
   }
 }
 

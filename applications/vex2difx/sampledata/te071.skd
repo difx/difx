@@ -14,14 +14,14 @@ $EXPER;
 def te071;
      exper_name = te071;
      exper_description = "e-VLBI test";
-     PI_name = "Z. Paragi";
-     PI_email = zparagi@jive.nl;
-*    address:   JIVE
-*               Postbus 2
-*               7990 AA Dwingeloo
-*               The Netherlands
-*    phone:     +31 (0)521 596 536
-*    during obs:+31 (0)521 596 500
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
 *    fax:        
 *    notes:     Follows the frequency setups used in TE069, on 12 Sep.
 *               16 MHz subbands, 128-1024 Mbps modes.
@@ -40,7 +40,7 @@ def te071;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Zsolt Paragi
+*                     Bob Bobson
 *
 enddef;
 *------------------------------------------------------------------------------

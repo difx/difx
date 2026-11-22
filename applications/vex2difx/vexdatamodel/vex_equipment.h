@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2022 by Walter Brisken                                  *
+ *   Copyright (C) 2022-2026 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,7 +32,7 @@ public:
 	VexEquipment(const std::string &t, const std::string &d, const std::string &li, const std::string &la = "") : type(t), device(d), link(li), label(la) {}
 
 	// These next for values are directly from the four "equip" parameter fields
-	std::string type;	// Equiment category (typically "rack", "recorder" or "remote"; "guest" for guest equipment)
+	std::string type;	// Equipment category (typically "rack", "recorder" or "remote"; "guest" for guest equipment)
 	std::string device;	// Device (e.g., "DBBC_PFB", "RDBE_DDC", "VNDA", ...)
 	std::string link;	// Equipment link name
 	std::string label;	// (optional)

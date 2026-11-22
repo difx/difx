@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2014-2024 by Walter Brisken, Adam Deller                *
+ *   Copyright (C) 2014-2026 by Walter Brisken, Adam Deller                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -280,7 +280,7 @@ int main(int argc, char **argv)
 					fr = 0;
 					if(mk6Version > 1)
 					{
-						int32_t *blockSize = (int32_t *)(buffer+index+4);
+						const int32_t *blockSize = (const int32_t *)(buffer+index+4);
 						framesPerMark6Block = (*blockSize - mk6BlockHeaderSize)/mk6PacketSize;
 					}
 					/* skip over the block headers to prevent warnings */
@@ -299,7 +299,7 @@ int main(int argc, char **argv)
 					++nSkip;
 					continue;
 				}
-				if(header->eversion == 0 && (header->extended1 != 0 || header->extended2 != 0 || header->extended3 != 0 || header->extended1 != 0))
+				if(header->eversion == 0 && (header->extended1 != 0 || header->extended2 != 0 || header->extended3 != 0 || header->extended4 != 0))
 				{
 					static int first = 1;
 
@@ -338,7 +338,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					printf("First second = %d\n", header->seconds);
+					printf("First second = %d\n", (int)(header->seconds));
 					fflush(stdout);
 				}
 				nFrame = 0;

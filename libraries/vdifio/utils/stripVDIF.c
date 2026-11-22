@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2025 by Adam Deller, Chris Phillips                *
+ *   Copyright (C) 2010-2026 by Adam Deller, Chris Phillips                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -24,8 +24,8 @@
 
 const char program[] = "stripVDIF";
 const char author[]  = "Adam Deller <adeller@nrao.edu>";
-const char version[] = "0.2";
-const char verdate[] = "20200514";
+const char version[] = "0.3";
+const char verdate[] = "20261112";
 
 static void usage()
 {
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
   int skipbytesinitial, skipbytesfront, skipbytesback;
   int readbytes, framebytes=0, stationid, numchannels, bitspersample;
   long long framesread;
-  vdif_header *header;
+  const vdif_header *header;
 
   skipbytesfront   = 0;
   skipbytesback    = 0;
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 
   int narg = argc-optind;
 
-  if(narg < 2 || narg > 5)
+  if(narg < 2 || narg > 6)
   {
     usage();
     return EXIT_FAILURE;

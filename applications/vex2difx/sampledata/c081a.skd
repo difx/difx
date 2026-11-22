@@ -15,15 +15,15 @@ $EXPER;
 def c081a;
      exper_name = c081a;
      exper_description = "3MM May 8, 21h00 UT - May 13, 19h30 UT";
-     PI_name = "Global 3mm VLBI Array (GMVA)";
-     PI_email = tkrichbaum@mpifr-bonn.mpg.de;
-*    address:   Max-Planck-Institut fuer Radioastronomie
-*               Auf dem Huegel 69
-*               53121 Bonn
-*               Germany
-*    phone:     0049-228-525-295
-*    during obs:0049-2257-301-155
-*    fax:       0049-2257-301-106
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
+*    fax:       Fake Phone
 *    notes:     Will use automatic reference pointing.
 *               Europe: measure Tsys in PREOB and POSTOB, provide tau
 *               MK5A disk recording, mixed dual and single polarisation
@@ -42,10 +42,10 @@ def c081a;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Thomas P. Krichbaum
-*                     Max-Planck-Institut fuer Radioastronomie
-*                     Auf dem Huegel 69
-*                     D-53121 Bonn, Germany
+*                     Bob Bobson
+*                     Fake Address
+*
+*
 *    corr_notes : 
 *                 dual polarisation setup
 *

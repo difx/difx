@@ -14,14 +14,14 @@ $EXPER;
 def N07M3;
      exper_name = N07M3;
      exper_description = "Network Monitoring Experiment";
-     PI_name = "Stefanie Muehle";
-     PI_email = muehle@jive.nl;
-*    address:   JIVE
-*               Postbus 2
-*               7990 AA Dwingeloo
-*               The Netherlands
-*    phone:     +31-521-596508
-*    during obs:+31-521-596508
+     PI_name = "Bob Bobson";
+     PI_email = fake@fake.com;
+*    address:   Fake Address
+*
+*
+*
+*    phone:     Fake Phone
+*    during obs:Fake Phone
 *    fax:        
 *    notes:     Please DO NOT use the phase cal signal.
 *               Please note the change of filters at 11:16 UT.
@@ -41,7 +41,7 @@ def N07M3;
 *    distrib_medium : DAT
 *    source_pos_cat : STANDARD
 *    distribute_to  : 
-*                     Stefanie Muehle
+*                     Bob Bobson
 *    corr_notes : 
 *                 please note: data to be correlated at JIVE
 *
