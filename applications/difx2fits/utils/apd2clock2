@@ -180,7 +180,7 @@ class APDDelays:
 			print('degree=%d out of supported range.' % degree)
 			exit(0)
 
-		N = len(self.antennaList)	# Number of antennas 
+		N = len(self.antennaList)	# Number of antennas
 		M = len(self.delays) 		# Number of measurements
 		C = self.nChan			# Number of channels
 		if referenceTime == 0.0:
