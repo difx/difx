@@ -268,14 +268,14 @@ def getippversion(path):
 		print('Reading version from %s' % ippheader)
 		major = minor = None
 		for line in open(ippheader):
-			m = re.search('#define\\s+IPP_VERSION_STR\s+"(\\S+)"', line)
+			m = re.search('#define\\s+IPP_VERSION_STR\\s+"(\\S+)"', line)
 			if m != None:
 				print('Got version %s' % m.group(1))
 				return m.group(1)
 			if major == None:
-				major = re.search('#define\\s+IPP_VERSION_MAJOR\s+(\\S)', line)
+				major = re.search('#define\\s+IPP_VERSION_MAJOR\\s+(\\S)', line)
 			if minor == None:
-				minor = re.search('#define\\s+IPP_VERSION_MINOR\s+(\\S)', line)
+				minor = re.search('#define\\s+IPP_VERSION_MINOR\\s+(\\S)', line)
 		if (major != None and minor != None):
 			ver = major.group(1) + '.' + minor.group(1)
 			print('Have version %s' % ver)

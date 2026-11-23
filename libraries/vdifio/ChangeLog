@@ -8,6 +8,7 @@ Version 1.7
 * setVDIFEpochTime/setVDIFEpochMJD: wrap epoch modulo 128 (was 32, wrong from 2016); setVDIFEpochMJD now errors before 2000
 * incrementVDIFHeader: fix wrap at exact second boundary; return error rather than assert if before epoch
 * setVDIFNumChannels: assert number of channels is a power of 2
+* Add some corner turners that may be needed by VNDA
 
 Version 1.6
 ~~~~~~~~~~~

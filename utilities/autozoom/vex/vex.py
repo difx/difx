@@ -24,7 +24,7 @@ This module provides a simple VEX parser.
 import ply.lex as lex
 import ply.yacc as yacc
 
-from MultiDict import MultiDict
+from multidict import MultiDict
 
 reserved = {
     'def': 'DEF',
@@ -66,7 +66,7 @@ def t_newline(t):
     return
 
 def t_error(t):
-    print "Illegal character '%s'" % t.value[0]
+    print ("Illegal character '%s'" % t.value[0])
     t.lexer.skip(1)
     return
 
@@ -91,7 +91,7 @@ def p_blocks(t):
               | blocks block'''
     t[0] = t[1]
     if len(t) > 2:
-        t[0].update(t[2])
+        t[0].extend(t[2])
         pass
     return
 
@@ -112,7 +112,7 @@ def p_block_content(t):
                      | block_content scan_block'''
     t[0] = t[1]
     if len(t) > 2:
-        t[0].update(t[2])
+        t[0].extend(t[2])
         pass
     return
 
@@ -135,7 +135,7 @@ def p_block_lines(t):
         t[0] = MultiDict()
     else:
         t[0] = t[1]
-        t[0].update(t[2])
+        t[0].extend(t[2])
         pass
     return
 
@@ -182,7 +182,7 @@ def p_word(t):
     return
 
 def p_error(t):
-    raise SyntaxError, "at line %d, token %s" % (t.lineno, t.value)
+    raise SyntaxError("at line %d, token %s" % (t.lineno, t.value))
 
 parser = yacc.yacc(debug=0)
 
@@ -197,4 +197,4 @@ def Vex(file):
 
 if __name__ == "__main__":
     import sys
-    print Vex(sys.argv[1])
+    print (Vex(sys.argv[1]))

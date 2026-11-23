@@ -1,8 +1,6 @@
 #!/usr/bin/python
-# NB: using Python2 because the extremely convenient JIVE 'vex.py' module utilized
-# here is based on MultiDict+lex+yacc and is not readily portable to python3 :-(
 '''
-Usage: plotVexChannels.py <vexfile.vex|.vex.obs> 
+Usage: plotVexChannels.py <vexfile.vex|.vex.obs>
                           [<v2dfile.v2d>] [<jobfile.input>]
                           [<freqName> <freqName> ...]
 
@@ -28,7 +26,6 @@ import math, fractions, os, re, sys
 import vex  # same as utilized by autozooms module
 
 try:
-	import numpy as np
 	import matplotlib.cm as colormaps
 	import matplotlib.pyplot as plt
 	import matplotlib.patches as patches
@@ -320,8 +317,7 @@ class Charting:
 		a = 0.9 + 0.1*(self.wedgecount % 2)
 		self.wedgecount += 1
 
-		# ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color, alpha=a))
-		ax.add_patch(patches.Polygon(xy=np.column_stack([x,y]), fill=True, edgecolor='black', facecolor=color, alpha=a))
+		ax.add_patch(patches.Polygon(xy=list(zip(x,y)), fill=True, edgecolor='black', facecolor=color, alpha=a))
 
 		if channelID:
 			ax.text(channel.flow + bw/4, yy-height/4, str(channelID), fontsize=10)
@@ -336,8 +332,7 @@ class Charting:
 		a = 0.3 + 0.1*(self.zoombarcount % 2)
 		self.zoombarcount += 1
 
-		#ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='white', facecolor=color, alpha=a))
-		ax.add_patch(patches.Polygon(xy=np.column_stack([x,y]), fill=True, edgecolor='white', facecolor=color, alpha=a))
+		ax.add_patch(patches.Polygon(xy=list(zip(x,y)), fill=True, edgecolor='white', facecolor=color, alpha=a))
 
 
 	def plotOutputbandBar(self, ax, ymin, ymax, channel, color=[0.0/255,152.0/255,143.0/255]):
@@ -349,8 +344,7 @@ class Charting:
 		a = 0.1 + 0.1*(self.obbarcount % 2)
 		self.obbarcount += 1
 
-		#ax.add_patch(patches.Polygon(xy=zip(x,y), fill=True, edgecolor='black', facecolor=color, alpha=a))
-		ax.add_patch(patches.Polygon(xy=np.column_stack([x,y]), fill=True, edgecolor='black', facecolor=color, alpha=a))
+		ax.add_patch(patches.Polygon(xy=list(zip(x,y)), fill=True, edgecolor='black', facecolor=color, alpha=a))
 
 
 	def visualize(self, vexChannels, zoomChannels=None, outputBands=None, fqNameSubset=None):
