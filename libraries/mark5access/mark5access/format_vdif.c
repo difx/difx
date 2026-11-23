@@ -3134,11 +3134,11 @@ static int vdif_decode_8channel_16bit_decimation1(struct mark5_stream *ms, int n
 
 static int vdif_decode_1channel_32bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	const uint16_t *buf;
+	const uint32_t *buf;
 	int o, i;
 	int nblank = 0;
 
-	buf = (const uint16_t *)ms->payload;
+	buf = (const uint32_t *)ms->payload;
 	i = ms->readposition/4;
 
 	for(o = 0; o < nsamp; ++o)
@@ -3161,7 +3161,7 @@ static int vdif_decode_1channel_32bit_decimation1(struct mark5_stream *ms, int n
 			{
 				return -1;
 			}
-			buf = (const uint16_t *)ms->payload;
+			buf = (const uint32_t *)ms->payload;
 			i = 0;
 		}
 	}
@@ -11040,7 +11040,7 @@ struct mark5_format_generic *new_mark5_format_generalized_vdif(int framesperperi
 	v->frameheadersize = frameheadersize;
 	v->databytesperpacket = databytesperpacket;
 
-	f->Mbps = ((double)framesperperiod*databytesperpacket)/(1e6*alignmentseconds);
+	f->Mbps = ((double)framesperperiod*databytesperpacket*8)/(1e6*alignmentseconds);
 	f->alignmentseconds = alignmentseconds;
 	f->framesperperiod = framesperperiod;
 	f->nchan = nchan;
