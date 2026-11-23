@@ -22,7 +22,7 @@ Occasionally, for an AI review of the latest results (never part of `run`):
 ```bash
 ./sa.py summary                     # Claude summary of everything, then re-render
 ./sa.py summary --only difxio,mpifxcorr
-./sa.py publish                     # the summary appears as Static-Analysis-Claude-Summary
+./sa.py publish                     # the summary appears as Static Analysis Claude Summary
 ```
 
 Individual steps:
@@ -112,9 +112,9 @@ never part of `sa.py run`.
    ./sa.py summary --only difxio,mpifxcorr  # or concentrate on some components (cheaper)
    ```
 3. Read `<results>/dev/latest/claude-summary.md`, or the re-rendered page
-   `Development/Code Quality/Static Analysis/Static-Analysis-Claude-Summary.md` in the wiki clone.
+   `Development/Code Quality/Static Analysis/Static Analysis Claude Summary.md` in the wiki clone.
 4. If it is worth sharing, `./sa.py publish` puts it on the wiki, linked from the
-   Static-Analysis page.  Otherwise leave it: it stays local.
+   Static Analysis page.  Otherwise leave it: it stays local.
 
 The summary belongs to its run: a later full `analyse` of a new commit removes it.
 
@@ -167,8 +167,9 @@ which can also be used by hand in VS Code (`/difx-bug-review libraries/vdifio/sr
   static-analysis findings for those files as leads (when the latest results are of
   the same commit).  It answers in JSON; `sa.py` quotes the code snippets itself from
   the pinned checkout.
-- **Wiki pages** (`Development/Code Quality/Code Review/` in the wiki clone): one `Review-<component>` page per
-  component plus the `Code Review` index.  Component pages are meant to be edited by
+- **Wiki pages** (`Development/Code Quality/` in the wiki clone, next to the
+  `Static Analysis/` folder): one `Review-<component>` page per component plus the
+  `Code Review` index; `--publish` commits only these files.  Component pages are meant to be edited by
   people (each issue has a Status line and Notes), so they are never regenerated: new
   issues are appended (an issue already on the page is recognised by its file,
   function and code snippet), and only the "Reviewed" block between the

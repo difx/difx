@@ -138,7 +138,8 @@ lead_tools = ["compiler", "clang-tidy", "cppcheck"]
 exclude = ["*/tests/*", "*/test/*"]
 lead_severities = ["error", "warning"]
 # Wiki: pages <wiki_subdir>/<page_prefix>-<component>.md and <wiki_subdir>/<index_page>.md
-wiki_subdir = "Development/Code Quality/Code Review"
+# (wiki_subdir also holds other pages; only these are committed by --publish)
+wiki_subdir = "Development/Code Quality"
 page_prefix = "Review"
 index_page = "Code Review"
 

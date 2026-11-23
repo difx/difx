@@ -1,11 +1,12 @@
 """Step 4: commit the generated wiki pages and push them.
 
-Only the generated directory (paths.wiki_subdir) is committed, so other edits
-in the wiki clone are never swept in.  Before pushing, the clone is rebased on
-the remote; the push is refused if it would also publish local wiki commits
-that touch anything outside the generated directory.
+Only the generated pages are committed (the directory paths.wiki_subdir, or
+the paths a caller gives), so other edits in the wiki clone are never swept in.
+Before pushing, the clone is rebased on the remote; the push is refused if it
+would also publish local wiki commits that touch anything else.
 """
 
+import fnmatch
 import json
 import os
 import subprocess
@@ -48,22 +49,26 @@ def commit_message(cfg, branch):
     return msg
 
 
-def foreign_commits(wiki, remote_ref, subdir):
-    """Local commits not on the remote that touch files outside subdir."""
+def foreign_commits(wiki, remote_ref, patterns):
+    """Local commits not on the remote that touch files matching none of patterns."""
     result = []
     for sha in git(wiki, "rev-list", f"{remote_ref}..HEAD").stdout.split():
         # -z: NUL-separated and unquoted, since wiki paths may contain spaces
         out = git(wiki, "diff-tree", "--no-commit-id", "--name-only", "-z", "-r", sha).stdout
         files = [f for f in out.split("\0") if f]
-        if any(not f.startswith(subdir + "/") for f in files):
+        if any(not any(fnmatch.fnmatchcase(f, p) for p in patterns) for f in files):
             result.append(git(wiki, "log", "-1", "--format=%h %s", sha).stdout.strip())
     return result
 
 
-def run(cfg, push=True, branch=None, subdir=None, message=None):
-    """Commit subdir of the wiki clone (default: the static-analysis pages) and push."""
+def run(cfg, push=True, branch=None, patterns=None, message=None):
+    """Commit the wiki files matching patterns (globs relative to the wiki clone;
+    default: everything below the static-analysis directory) and push."""
     wiki = cfg.path("wiki")
-    subdir = subdir or os.path.relpath(cfg.wiki_dir, wiki)
+    patterns = patterns or [os.path.relpath(cfg.wiki_dir, wiki) + "/**"]
+    # glob magic: '*' stays within one directory, '**/' crosses them
+    pathspecs = [":(glob)" + p for p in patterns]
+    where = ", ".join(patterns)
     remote = cfg.raw.get("report", {}).get("wiki_remote", "origin")
     wiki_branch = cfg.raw.get("report", {}).get("wiki_branch", "master")
     if not message:
@@ -73,13 +78,13 @@ def run(cfg, push=True, branch=None, subdir=None, message=None):
     if current != wiki_branch:
         raise RuntimeError(f"{wiki} is on branch {current}, expected {wiki_branch}")
 
-    git(wiki, "add", "-A", "--", subdir)
-    if git(wiki, "diff", "--cached", "--quiet", "--", subdir, check=False).returncode == 0:
-        log(f"no changes in {subdir}")
+    git(wiki, "add", "-A", "--", *pathspecs)
+    if git(wiki, "diff", "--cached", "--quiet", "--", *pathspecs, check=False).returncode == 0:
+        log(f"no changes in {where}")
     else:
         msg = message or commit_message(cfg, branch)
         # a pathspec commits only these paths, whatever else is staged
-        git(wiki, "commit", "-q", "-m", msg, "--", subdir)
+        git(wiki, "commit", "-q", "-m", msg, "--", *pathspecs)
         log(f"committed: {msg}")
 
     if not push:
@@ -87,10 +92,10 @@ def run(cfg, push=True, branch=None, subdir=None, message=None):
         return 0
     git(wiki, "pull", "-q", "--rebase", "--autostash", remote, wiki_branch)
     remote_ref = f"{remote}/{wiki_branch}"
-    foreign = foreign_commits(wiki, remote_ref, subdir)
+    foreign = foreign_commits(wiki, remote_ref, patterns)
     if foreign:
-        log("NOT pushing: these local wiki commits change pages outside "
-            f"{subdir}; push them yourself if intended:\n  " + "\n  ".join(foreign))
+        log("NOT pushing: these local wiki commits change pages other than "
+            f"{where}; push them yourself if intended:\n  " + "\n  ".join(foreign))
         return 1
     ahead = git(wiki, "rev-list", "--count", f"{remote_ref}..HEAD").stdout.strip()
     if ahead == "0":
