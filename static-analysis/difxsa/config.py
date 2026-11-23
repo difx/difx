@@ -51,7 +51,7 @@ class Config:
     def wiki_dir(self):
         """Directory in the wiki clone that holds the generated pages."""
         return os.path.join(self.path("wiki"),
-                            self.raw["paths"].get("wiki_subdir", "Static-Analysis"))
+                            self.raw["paths"].get("wiki_subdir", "Development/Code Quality/Static Analysis"))
 
     @property
     def excluded(self):

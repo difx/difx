@@ -4,7 +4,7 @@ GitHub wiki page names form one flat namespace, so every page gets a unique name
 (<prefix>-<component path with / -> ->, e.g. SA-libraries-difxio) while the
 files are laid out like the source tree:
 
-    <wiki>/<subdir>/Static-Analysis.md                 summary of all components
+    <wiki>/<subdir>/Static Analysis.md                 summary of all components
     <wiki>/<subdir>/libraries/SA-libraries-difxio.md   one page per component
     <wiki>/<subdir>/mpifxcorr/SA-mpifxcorr.md
     ...
@@ -41,6 +41,12 @@ def esc(text):
     return text
 
 
+def wiki_link(page):
+    """Link target for a wiki page name: GitHub's URL for a page replaces spaces
+    with hyphens, and a markdown link target cannot contain a space."""
+    return page.replace(" ", "-")
+
+
 def severity_counts(items):
     c = Counter(f.severity for f in items)
     return [c.get(s, 0) for s in SEVERITIES]
@@ -63,7 +69,8 @@ class Renderer:
         self.run = run
         self.sha = run["checkout"]["sha"]
         self.prev_date = prev_date
-        self.top = r.get("top_page", "Static-Analysis")
+        self.top = r.get("top_page", "Static Analysis")
+        self.claude_top = self.top + " Claude Summary"
 
     # -- naming --------------------------------------------------------------
     def page_name(self, comp_path):
@@ -76,7 +83,7 @@ class Renderer:
     def link(self, title, page):
         # not [[title|page]]: its "|" would split a table cell; wiki pages resolve
         # relative to /wiki/ whatever directory their file is in
-        return f"[{title}]({page})"
+        return f"[{title}]({wiki_link(page)})"
 
     def src_link(self, f, text=None):
         url = self.source_url.format(sha=self.sha, file=f.file, line=f.line)
@@ -193,7 +200,7 @@ class Renderer:
                "directories. Generated automatically; do not edit by hand.", "",
                self.run_line(), ""]
         if has_claude:
-            out += [f"📝 {self.link('Claude summary of these results', self.top + '-Claude-Summary')}"
+            out += [f"📝 {self.link('Claude summary of these results', self.claude_top)}"
                     " (AI review: likely real bugs, noise, next steps).", ""]
         cmp_ = f"since {self.prev_date}" if self.prev_date else "(first run)"
         head = ("| Component | C/C++ | Scripts | 🔴 Error | 🟠 Warning | 🔵 Perf. | 🟣 Port. "
@@ -328,7 +335,7 @@ def run(cfg, branch=None, date=None):
     has_claude = os.path.exists(claude_file)
     if has_claude:
         with open(claude_file) as f:
-            write(os.path.join(outdir, r.top + "-Claude-Summary.md"), r.claude_page(f.read()),
+            write(os.path.join(outdir, r.claude_top + ".md"), r.claude_page(f.read()),
                   written)
     write(os.path.join(outdir, r.top + ".md"),
           r.summary_page(rows, history(branchdir), not_analysed, has_claude), written)
