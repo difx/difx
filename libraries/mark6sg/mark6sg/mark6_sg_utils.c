@@ -790,8 +790,8 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
         f = fopen(tmppath, "r");
         if (f != NULL)
         {
-            nrd = fread(group_meta_str, sizeof(group_meta_str)-1, 1, f);
-            if (nrd != 1)
+            nrd = fread(group_meta_str, 1, sizeof(group_meta_str)-1, f);
+            if (nrd == 0)
             {
                 if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s read failed\n", tmppath); }
                 memset(group_meta_str, 0, sizeof(group_meta_str));
@@ -816,11 +816,12 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
         json_strlen = st.st_size;
 
         json = malloc(json_strlen + 16);
-        nrd = fread(json, json_strlen, 1, f);
+        nrd = fread(json, 1, json_strlen, f);
         fclose(f);
-        if (nrd < 1)
+        if (nrd == 0)
         {
             if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s could not be read\n", tmppath); }
+            free(json);
             continue;
         }
 
@@ -857,6 +858,8 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
         {
             // "{ 1:{scandata1}, ... }" missing
             if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: JSON data in %s looks bad (no top-level object)\n", tmppath); }
+            free(json);
+            free(tok);
             continue;
         }
 
@@ -907,23 +910,34 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
                     printf("tok[%ld].size=%d l=%d %.*s) \n", tokidx+1, tok[tokidx+1].size, arg_strlen, arg_strlen, arg);
                 }
 
-                if (strncmp(key, "sn", key_strlen) == 0)
+                if (key_strlen >=2 && strncmp(key, "sn", key_strlen) == 0)
                 {
                     // Format is " 'sn': 'wrtest_ys_scan_1009_05' "
                     slistentry.scanname = strndup(arg, arg_strlen);
                     // TODO: add .vdif suffix?
                 }
-                else if (strncmp(key, "size", key_strlen) == 0)
+                else if (key_strlen >= 4 && strncmp(key, "size", key_strlen) == 0)
                 {
                     // Format is " 'size': '7.276' "
                     arg[arg_strlen - 1] = '\0';
                     slistentry.size = atof(arg) * 1024.0*1024.0*1024.0;
                 }
-                else if (strncmp(key, "start_tm", key_strlen) == 0)
+                else if (key_strlen >= 4 && strncmp(key, "start_tm", key_strlen) == 0)
                 {
                     // Format is " 'start_tm': 1412834280.3427939 " and arg has no single hyphens
                     slistentry.starttime = atof(arg);
                 }
+            }
+
+            // Check for bad entries to drop
+            if (slistentry.scanname == NULL)
+            {
+                continue;
+            }
+            if (strlen(slistentry.scanname) == 0)
+            {
+                free(slistentry.scanname);
+                continue;
             }
 
             // Check and ignore if entry is already found in list
@@ -968,6 +982,7 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
         }//(while tokcount)
 
         free(json);
+        free(tok);
     }
 
     if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %d unique scans added\n", nscans); }

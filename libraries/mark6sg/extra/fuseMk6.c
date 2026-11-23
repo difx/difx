@@ -348,7 +348,7 @@ void fusem6_make_scanlist(void)
 		{
 			char* s1 = json_slist_ptr->scanname;  // usually shorter as it has no ".vdif" at the end
 			char* s2 = m_scannamelist[j];         // real files end with ".vdif" or other suffix
-			int match = strncmp(s1, s2, strlen(s1));
+			int match = s1 != NULL && s2 != NULL && strncmp(s1, s2, strlen(s1));
 			// printf(" JSON:%s =? dirlist:%s  : %d\n", s1, s2, match);
 			if (match == 0)
 			{
