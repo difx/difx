@@ -39,7 +39,6 @@ using namespace std;
  */
 Mark6DiskDevice::Mark6DiskDevice(string deviceName) {
     name_m = deviceName;
-    
     reset();   
 }
 
@@ -92,12 +91,21 @@ std::string Mark6DiskDevice::getName() const {
 }
 
 /**
+  * Sets the device name
+  */
+void Mark6DiskDevice::setName(std::string deviceName) {
+	name_m = deviceName;
+}
+
+/**
  * Checks whether this is a valid Mark6 disk device.
  * @returns true if valid; false otherwise 
  */
 bool Mark6DiskDevice::isValid()
 {
     // cout << diskId_m << " " << controllerId_m << endl;
+    if (name_m == "")
+	return(false);
     if (diskId_m == -1)
         return(false);
     if (controllerId_m == -1)
@@ -151,6 +159,9 @@ void Mark6DiskDevice::createPartitions()
 {
     string cmd = "";
 
+    if (!isValid())
+	    return;
+
     cmd = "parted -s -- /dev/" + name_m + " mktable gpt ";
     execCommand(cmd.c_str());
     cmd = "parted -s -- /dev/" + name_m + " mkpart primary xfs 1 -400M ";
@@ -176,6 +187,9 @@ void Mark6DiskDevice::createPartitions()
 void Mark6DiskDevice::clearPartitions()
 {
     string cmd = "";
+
+    if (!isValid())
+	    return;
 
     cmd = "parted -s /dev/" + name_m + " rm 1 ";
     execCommand(cmd.c_str()) ;
@@ -462,9 +476,18 @@ std::string Mark6DiskDevice::getSasAddress() const {
     return mountPath_m;
 }*/
 
+
 /**
  * Destructor
  */
 Mark6DiskDevice::~Mark6DiskDevice() {
 }
 
+
+/**
+  Overloaded << operator
+  */
+std::ostream& operator << ( std::ostream& outs, const Mark6DiskDevice & d )
+{
+	  return outs << "name=" << d.name_m << " type=" << d.fsType_m << " diskId=" << d.diskId_m << " controllerId=" << d.controllerId_m << endl;
+}
