@@ -152,6 +152,7 @@ public:
         int enumerateDevices();
         void cleanUp();
         int getSlot(std::string eMSN);
+	int getNumSlots();
         //void sendStatusMessage();
         void sendSlotStatusMessage();
         void sendActivityMessage(std::string vsn, int slot, std::string msg);
