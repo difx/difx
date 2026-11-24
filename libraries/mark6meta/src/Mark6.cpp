@@ -149,6 +149,16 @@ Mark6::~Mark6()
 }
 
 /**
+  @brief Get the number of slots of the Mark6 system
+
+  @return The number of slots
+  */
+int Mark6::getNumSlots()
+{
+	return(numSlots_m);
+}
+
+/**
  * Check if a directory exists at the given location. If not it will be created.
  * @param[in] path the full path of he directory to be created
  */
@@ -463,11 +473,9 @@ void Mark6::manageDeviceChange()
         // validate all new devices
         for(std::vector<Mark6DiskDevice>::size_type i = 0; i != tempDevices.size(); i++) {
        
-            //cout << "Processing device: " << i << endl;
+    	    mark6meta::Logger::log(mark6meta::LogLevel::Verbose, "Found device " + tempDevices[i].getName());
             if (tempDevices[i].isValid() == false)
             {
-                //cout << "disk " << tempDevices[i].getName() << " is not a valid Mark6 disk device. Discarding." << endl;
-
     		mark6meta::Logger::log(mark6meta::LogLevel::Verbose, "disk " + tempDevices[i].getName() + " is not a valid Mark6 disk device. Discarding.");
                 continue;
             }
@@ -484,14 +492,13 @@ void Mark6::manageDeviceChange()
             try {
                 // mount both partitions
                 tempDevices[i].mountDisk(mountRootData_m, mountRootMeta_m, false);
-                //cout << "Mounting device" << endl;
 
                 // read the meta information
                 tempDevices[i].parseMeta();
 
             } catch (exception& e) {
                 // log the exception and go on (needed when dealing with unitialized modules)
-    		mark6meta::Logger::log(mark6meta::LogLevel::Error, e.what() );
+    		mark6meta::Logger::log(mark6meta::LogLevel::Error, (string)e.what() );
             }
 
             // determine size
@@ -509,6 +516,7 @@ void Mark6::manageDeviceChange()
                 //cout << "mounted " << tempDevices[i].getPartitions()[0].deviceName << " " << tempDevices[i].getPartitions()[1].deviceName << endl;           
                 //cout << "TEST: " << i << " " << tempDevices[i].getPosition() << " " << tempDevices[i].getSerial() << " " << endl;
 
+    		mark6meta::Logger::log(mark6meta::LogLevel::Verbose, "Mounted " + tempDevices[i].getPartitions()[0].deviceName + " " +tempDevices[i].getPartitions()[1].deviceName);
                 mountedDevices_m.push_back(tempDevices[i]);
 
                 int slot = tempDevices[i].getSlot();
@@ -552,6 +560,7 @@ void Mark6::manageDeviceChange()
             else
             {
                 //cout << "mount failed " << tempDevices[i].getPartitions()[0].deviceName << " " << tempDevices[i].getPartitions()[1].deviceName << " will try again" << endl;
+    		mark6meta::Logger::log(mark6meta::LogLevel::Warning, "Mount failed for " + tempDevices[i].getPartitions()[0].deviceName + " " +tempDevices[i].getPartitions()[1].deviceName + " Will try again");
                 if (!initRawDevice_m)
                     newDevices_m.push_back(tempDevices[i]);
                 else
@@ -573,6 +582,7 @@ void Mark6::manageDeviceChange()
         for(std::vector<Mark6DiskDevice>::size_type i = 0; i != tempRemoveDevices.size(); i++) {
                        
 	    //cout << "Removing device: " << tempRemoveDevices[i].getName() << endl;
+    	    mark6meta::Logger::log(mark6meta::LogLevel::Verbose, "Removing device " + tempDevices[i].getName());
             if ((disk = getMountedDevice(tempRemoveDevices[i].getName())) != NULL)
             {
                 // get the module slot           
@@ -601,11 +611,10 @@ void Mark6::manageDeviceChange()
                 else
                 {
                     // something didn't work try again on the next go
+    		    mark6meta::Logger::log(mark6meta::LogLevel::Warning, "Removing device " + tempDevices[i].getName() + " failed. Will try again");
                     removedDevices_m.push_back( tempRemoveDevices[i]);
-                    //cout << " now is still mounted ";
                 }
             }    
-            
         }        
     }    
 }
@@ -825,16 +834,16 @@ void Mark6::pollDevices()
                        // cout << " serial_short="<< udev_device_get_property_value(dev,"ID_SERIAL_SHORT") << endl;
                        // cout << " sas_address="<< udev_device_get_sysattr_value(parent,"sas_address") << endl;
                        
-                       try {
-                            Mark6DiskDevice disk = newDeviceFromUdev(dev);
-                            newDevices_m.push_back(disk);
-                            
-                            // determine size
-                            string res = execCommand(("cat /sys/class/block/" + string(udev_device_get_sysname(dev)) + "/size").c_str());
-                            disk.capacityMB_m = atoi(res.c_str()) * 512 / 1000000000;
-                        } catch (...) {
-                            break;
-                        }
+		       Mark6DiskDevice disk = newDeviceFromUdev(dev);
+		       if (!disk.isValid())
+			    continue;
+
+		       newDevices_m.push_back(disk);
+		    
+		       // determine size
+		       string res = execCommand(("cat /sys/class/block/" + string(udev_device_get_sysname(dev)) + "/size").c_str());
+		       disk.capacityMB_m = atoi(res.c_str()) * 512 / 1000000000;
+                    
 
                         /*     
                         // add new disk device
@@ -951,6 +960,9 @@ void Mark6::pollDevices()
     }
 
 
+/**
+  Constructs a new Mark6DiskDevice from a udev device
+**/
 Mark6DiskDevice Mark6::newDeviceFromUdev(udev_device *dev)
 {
 
@@ -968,22 +980,17 @@ Mark6DiskDevice Mark6::newDeviceFromUdev(udev_device *dev)
     }
 
     string driver = "";
+    Mark6DiskDevice disk("");
 
     if (sysname != NULL)
     {
         string devName = string(sysname);
-        Mark6DiskDevice disk(devName);
+	disk.setName(devName);
 
-        //cout << "debug: " << devpath << endl;
         if (devpath != NULL)
         {
             int controllerId = parseControllerId(string(devpath));
-            if (controllerId == -1)
-                throw Mark6Exception("");
             disk.setControllerId( controllerId );
-            //Mark6Controller *controller = getControllerById(controllerId);
-            //driver = controller->getDriver();
-
         }
   
         //determine disk id (= physical position on bus)
@@ -1017,10 +1024,8 @@ Mark6DiskDevice Mark6::newDeviceFromUdev(udev_device *dev)
         return(disk);
 
     }
-    else
-    {
-        throw Mark6Exception("");
-    }
+
+    return(disk);
 }
 
 
@@ -1238,6 +1243,10 @@ int Mark6::enumerateDevices()
             continue;
         }
 
+	if (udev_device_get_sysname(dev) == NULL) {
+		continue;
+	}
+
         string devtype(udev_device_get_devtype(dev));
 	//cout << devtype << path <<endl;
 
@@ -1295,15 +1304,12 @@ int Mark6::enumerateDevices()
 				//cout << "Disk serial=" << disk.getSerial() << endl;
 			}
                   */
-                  try {
-                      Mark6DiskDevice disk = newDeviceFromUdev(dev);
-                      newDevices_m.push_back(disk);                   
-                      devCount++;
-                  } catch (exception& e) {
-    		      mark6meta::Logger::log(mark6meta::LogLevel::Error, e.what());
-                      break;
-                  }
-	    }
+	          Mark6DiskDevice disk = newDeviceFromUdev(dev);
+		  //if (!disk.isValid())
+		      //continue;
+	          newDevices_m.push_back(disk);                   
+	          devCount++;
+    }
 	    else if (devtype == "partition")
 	    {   
 		if (udev_device_get_sysname(dev) != NULL)
