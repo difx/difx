@@ -49,6 +49,7 @@ public:
     void parseMeta();
     std::vector<Mark6Partition> getPartitions() const;
     std::string getName() const;
+    void setName(std::string deviceName);
     int mountDisk(std::string dataPath, std::string metaPath, bool readwrite);
     int mountPartition(unsigned int partitionNumber, std::string mountPath);
     void unmountDisk();
@@ -69,6 +70,7 @@ public:
     void setSasAddress(std::string sasAddress);
     std::string getSasAddress() const;
     long capacityMB_m;
+    friend std::ostream& operator << ( std::ostream& outs, const Mark6DiskDevice & d);
     
 
 private:
