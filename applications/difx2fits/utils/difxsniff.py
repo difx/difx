@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #**************************************************************************
-#   Copyright (C) 2008-2019 by Walter Brisken                             *
+#   Copyright (C) 2008-2026 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -23,9 +23,9 @@ from sys import argv, exit
 from os import chdir, popen, system, getcwd
 from time import sleep
 
-program = 'difxsniff'
-version = '3.1'
-verdate = '20261112'
+program = 'difxsniff.py'
+version = '3.2'
+verdate = '20261125'
 author  = 'Walter Brisken'
 
 # The plotting programs.  These are the Python ports of the original Fortran
@@ -176,20 +176,20 @@ def sniff(filebases, refants, dir, newNames):
 
 	if newNames:
 		base = filebases[0].split('/')[-1]
-		apdfilename = '%s.apd.ps' % base
-		wtsfilename = '%s.wts.ps' % base
-		acbfilename = '%s.acb.ps' % base
-		xcbfilename = '%s.xcb.ps' % base
+		apdfilename = '%s.apd.pdf' % base
+		wtsfilename = '%s.wts.pdf' % base
+		acbfilename = '%s.acb.pdf' % base
+		xcbfilename = '%s.xcb.pdf' % base
 	else:
-		apdfilename = 'apdfile.ps'
-		wtsfilename = 'wtsfile.ps'
-		acbfilename = 'acbandfile.ps'
-		xcbfilename = 'xcbandfile.ps'
+		apdfilename = 'apdfile.pdf'
+		wtsfilename = 'wtsfile.pdf'
+		acbfilename = 'acbandfile.pdf'
+		xcbfilename = 'xcbandfile.pdf'
 
-	run(PLOTAPD, ['datafile.lis',    '%s/vps' % apdfilename])
-	run(PLOTWT,  ['wtsfile.lis.sum', '%s/vps' % wtsfilename])
-	run(PLOTBP,  ['acbandfile.lis',  '%s/vps' % acbfilename])
-	run(PLOTBP,  ['xcbandfile.lis',  '%s/vps' % xcbfilename])
+	run(PLOTAPD, ['datafile.lis',    '%s' % apdfilename])
+	run(PLOTWT,  ['wtsfile.lis.sum', '%s' % wtsfilename])
+	run(PLOTBP,  ['acbandfile.lis',  '%s' % acbfilename, '--ac-summary', 'acbandsum.pdf'])
+	run(PLOTBP,  ['xcbandfile.lis',  '%s' % xcbfilename, '--xc-summary', 'xcbandmax.pdf'])
 	
 files = []
 refants = []
