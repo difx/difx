@@ -164,9 +164,10 @@ void Mark6DiskDevice::createPartitions()
 
     cmd = "parted -s -- /dev/" + name_m + " mktable gpt ";
     execCommand(cmd.c_str());
-    cmd = "parted -s -- /dev/" + name_m + " mkpart primary xfs 1 -400M ";
+    cmd = "parted -a none -s -- /dev/" + name_m + " mkpart primary xfs 1MiB -400MiB ";
     execCommand(cmd.c_str());
-    cmd = "parted -s -- /dev/" + name_m + " mkpart primary xfs -400M 100%";
+    cout << cmd << endl;
+    cmd = "parted -a none -s -- /dev/" + name_m + " mkpart primary xfs -400MiB 100%";
     execCommand(cmd.c_str());
 
 //  partcmd = ['sudo', 'mkfs.xfs', '-f', disks[i]['disk'] + '1']
