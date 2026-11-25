@@ -68,3 +68,9 @@ for baseURL in baseURLs:
                 wget += '-Rindex* -e robots=off ' + url
                 #print (wget)
                 os.system(wget)
+
+                # Try to get ./jobs/<expt>.vex.obs file that contains VLBA clock offsets
+                url = baseURL + date + "/" + exp + "/jobs/" + exp + ".vex.obs"
+                wget = 'wget ' + url
+                #print (wget)
+                os.system(wget)
