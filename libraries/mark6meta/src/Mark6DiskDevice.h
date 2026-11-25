@@ -71,6 +71,9 @@ public:
     std::string getSasAddress() const;
     long capacityMB_m;
     friend std::ostream& operator << ( std::ostream& outs, const Mark6DiskDevice & d);
+    void incrementRetryCount();
+    int getRetryCount ();
+    void setRetryCount( int value );
     
 
 private:
@@ -84,6 +87,7 @@ private:
     std::string serial_m;
     Mark6Meta meta_m;
     std::string sasAddress_m;
+    int retryCount_m;
     
 };
 

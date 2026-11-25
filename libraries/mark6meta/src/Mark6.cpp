@@ -482,10 +482,27 @@ void Mark6::manageDeviceChange()
 
             // verify that both partitions have been detected for this device
 	    if ((tempDevices[i].getPartitions().size() < 2)  && (!initRawDevice_m)){
-		newDevices_m.push_back(tempDevices[i]);
-		continue;
+		if (tempDevices[i].getRetryCount() < 3) {
+			mark6meta::Logger::log(mark6meta::LogLevel::Warning, "disk " + tempDevices[i].getName() + " contains less than 2 partitions. Retrying.");
+			cout << "HR " << tempDevices[i].getRetryCount()<< endl;
+			tempDevices[i].incrementRetryCount();
+			cout << "HR2 " << tempDevices[i].getRetryCount()<< endl;
+
+			//try again on next poll
+			newDevices_m.push_back(tempDevices[i]);
+			continue;
+		}
+		else {
+			// accept the device even though it contains too few partitions
+			mark6meta::Logger::log(mark6meta::LogLevel::Error, "disk " + tempDevices[i].getName() + " contains less than 2 partitions. Module probably needs to be initialized.");
+			tempDevices[i].setRetryCount(0);
+		}
+
 	    }
             else {
+		// reset retry count
+		tempDevices[i].setRetryCount(0);
+
                 // work around due to partitions not getting detected reliably by udev in case of many simulataneous events
             }
             
@@ -509,7 +526,6 @@ void Mark6::manageDeviceChange()
             long temp;
             ss >> temp;
             tempDevices[i].capacityMB_m = temp * 512 / 1000000000;
-            
                              
             if (tempDevices[i].isMounted())
             {

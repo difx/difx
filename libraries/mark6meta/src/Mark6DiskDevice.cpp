@@ -63,6 +63,7 @@ Mark6DiskDevice::Mark6DiskDevice(const Mark6DiskDevice &device)
     meta_m = device.meta_m;
     sasAddress_m = device.sasAddress_m;
     capacityMB_m = device.capacityMB_m;
+    retryCount_m =  device.retryCount_m;
 }
 
 /**
@@ -77,6 +78,7 @@ void Mark6DiskDevice::reset()
     diskId_m = -1;
     serial_m = "";
     capacityMB_m = 0;
+    retryCount_m = 0;
 }
 
 vector<Mark6DiskDevice::Mark6Partition> Mark6DiskDevice::getPartitions() const {
@@ -166,7 +168,6 @@ void Mark6DiskDevice::createPartitions()
     execCommand(cmd.c_str());
     cmd = "parted -a none -s -- /dev/" + name_m + " mkpart primary xfs 1MiB -400MiB ";
     execCommand(cmd.c_str());
-    cout << cmd << endl;
     cmd = "parted -a none -s -- /dev/" + name_m + " mkpart primary xfs -400MiB 100%";
     execCommand(cmd.c_str());
 
@@ -472,6 +473,30 @@ void Mark6DiskDevice::setSasAddress(std::string sasAddress) {
 std::string Mark6DiskDevice::getSasAddress() const {
     return sasAddress_m;
 }
+
+/**
+  @brief Increments the retry counter by 1
+  */
+void Mark6DiskDevice::incrementRetryCount() {
+	this->retryCount_m += 1;
+}
+
+/**
+  @brief Gets the retry counter
+  @param[out] the retry count
+  */
+int Mark6DiskDevice::getRetryCount() {
+	return(this->retryCount_m);
+}
+
+/**
+  @brief Sets the retry counter
+  @param[in] the new retry count value
+  */
+void Mark6DiskDevice::setRetryCount( int value) {
+	this->retryCount_m = value;
+}
+	
 
 /*std::string Mark6DiskDevice::getMountPath() const {
     return mountPath_m;
