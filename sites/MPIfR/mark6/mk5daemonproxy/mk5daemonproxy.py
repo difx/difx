@@ -53,7 +53,7 @@ class MarkXMulticast:
 		self.s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 		self.s.settimeout(self.socktimeout_sec)
 
-		self.regexpMsgtype = re.compile("<type>(\w*)<\/type>")
+		self.regexpMsgtype = re.compile(r"<type>(\w*)<\/type>")
 
 
 	def requestMSNs(self):
@@ -125,7 +125,7 @@ class MessageStore:
 		self.inactivity_secs_limit = timelimit_secs
 
 		self.proxydata = {} 
-		self.regexpSlotStatus = re.compile("<slot>([0-9]+)<\/slot>")
+		self.regexpSlotStatus = re.compile(r"<slot>([0-9]+)<\/slot>")
 
 
 	def _messageToSlotStr(self, msg):
@@ -245,7 +245,7 @@ class Mark5DaemonProxy:
 
 	def run(self):
 
-		tstart = datetime.datetime.utcnow()
+		tstart = datetime.datetime.now(datetime.UTC)
 
 		self.msgapi.requestMSNs()
 
@@ -269,7 +269,7 @@ class Mark5DaemonProxy:
 						print ('Rx TIMEOUT')
 
 			# Time for a periodic re-check?
-			tnow = datetime.datetime.utcnow()
+			tnow = datetime.datetime.now(datetime.UTC)
 			if (tnow - tlast).seconds < self.update_interval_secs:
 				continue
 
